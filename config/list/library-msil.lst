@@ -1,0 +1,186 @@
+############################################################-*-Makefile-*-####
+# scala library files (paths are relative to ./sources/scala)
+##############################################################################
+# $Id$
+
+AnyVal.java
+Array.java
+Boolean.java
+BufferedIterator.scala
+Byte.java
+CaseClass.scala
+Cell.scala
+Char.java
+Console.scala
+Double.java
+Application.scala
+Enumeration.scala
+Float.java
+Function0.java
+Function1.java
+Function2.java
+Function3.java
+Function4.java
+Function5.java
+Function6.java
+Function7.java
+Function8.java
+Function9.java
+Int.java
+Iterable.scala
+IterableProxy.scala
+Iterator.scala
+List.scala
+Long.java
+MatchError.java
+None.scala
+Option.scala
+Ordered.scala
+PartiallyOrdered.scala
+PartialFunction.scala
+Predef.scala
+Proxy.scala
+Ref.java
+ScalaObject.java
+Seq.scala
+SeqProxy.scala
+Short.java
+Some.scala
+Stream.scala
+Symbol.scala
+Tuple1.scala
+Tuple2.scala
+Tuple3.scala
+Tuple4.scala
+Tuple5.scala
+Tuple6.scala
+Tuple7.scala
+Tuple8.scala
+Tuple9.scala
+Type.java
+Unit.java
+
+collection/Map.scala
+collection/MapProxy.scala
+collection/Set.scala
+collection/SetProxy.scala
+
+collection/mutable/ArrayBuffer.scala
+collection/mutable/Buffer.scala
+collection/mutable/BufferProxy.scala
+collection/mutable/DefaultMapModel.scala
+collection/mutable/DoubleLinkedList.scala
+collection/mutable/HashMap.scala
+collection/mutable/HashSet.scala
+collection/mutable/HashTable.scala
+collection/mutable/History.scala
+collection/mutable/ImmutableMapAdaptor.scala
+collection/mutable/ImmutableSetAdaptor.scala
+collection/mutable/JavaMapAdaptor.scala
+collection/mutable/JavaSetAdaptor.scala
+collection/mutable/LinkedList.scala
+collection/mutable/ListBuffer.scala
+collection/mutable/Location.scala
+collection/mutable/Map.scala
+collection/mutable/MapProxy.scala
+collection/mutable/Message.scala
+collection/mutable/MultiMap.scala
+collection/mutable/MutableList.scala
+collection/mutable/ObservableBuffer.scala
+collection/mutable/ObservableMap.scala
+collection/mutable/ObservableSet.scala
+collection/mutable/PriorityQueue.scala
+collection/mutable/PriorityQueueProxy.scala
+collection/mutable/Publisher.scala
+collection/mutable/Queue.scala
+collection/mutable/QueueProxy.scala
+collection/mutable/ResizableArray.scala
+collection/mutable/RevertableHistory.scala
+collection/mutable/Scriptable.scala
+collection/mutable/Set.scala
+collection/mutable/SetProxy.scala
+collection/mutable/SingleLinkedList.scala
+collection/mutable/Stack.scala
+collection/mutable/StackProxy.scala
+collection/mutable/Subscriber.scala
+collection/mutable/SynchronizedBuffer.scala
+collection/mutable/SynchronizedMap.scala
+collection/mutable/SynchronizedPriorityQueue.scala
+collection/mutable/SynchronizedQueue.scala
+collection/mutable/SynchronizedSet.scala
+collection/mutable/SynchronizedStack.scala
+collection/mutable/Undoable.scala
+
+collection/immutable/ListMap.scala
+collection/immutable/ListSet.scala
+collection/immutable/Map.scala
+collection/immutable/Tree.scala
+collection/immutable/TreeMap.scala
+collection/immutable/TreeSet.scala
+collection/immutable/Queue.scala
+collection/immutable/Set.scala
+collection/immutable/Stack.scala
+
+concurrent/Actor.scala
+concurrent/MailBox.scala
+concurrent/Channel.scala
+concurrent/Lock.scala
+concurrent/SyncChannel.scala
+concurrent/SyncVar.scala
+concurrent/TIMEOUT.scala
+# concurrent/jolib.scala
+concurrent/ops.scala
+concurrent/pilib.scala
+concurrent/Process.scala
+concurrent/NameServer.scala
+
+# mobile/Location.scala
+# mobile/Code.scala
+
+runtime/InterpreterSupport.java
+runtime/NativeLoop.java
+# runtime/NativeMonitor.java
+runtime/ResultOrException.java
+runtime/RunTime.java
+runtime/ScalaRunTime.scala
+
+runtime/matching/Address.scala
+runtime/matching/Context.scala
+runtime/matching/Grammar.scala
+runtime/matching/Match.scala
+runtime/matching/Matcher.scala 
+runtime/matching/NonTerm.scala
+runtime/matching/Pebble.scala
+runtime/matching/Rule.scala
+
+testing/UnitTest.scala
+
+# xml/BindingFactoryAdapter.scala
+# xml/CharData.scala
+# xml/Comment.scala
+# xml/Elem.scala
+# xml/ExternalID.scala
+# xml/EntityRef.scala
+# xml/FactoryAdapter.scala
+# xml/Node.scala
+# xml/NodeSeq.scala
+# xml/PrettyPrinter.scala
+# xml/ProcInstr.scala
+# xml/Text.scala
+# xml/Utility.scala
+
+# xml/dtd/Decl.scala
+# xml/dtd/Parser.scala
+# xml/dtd/RegExp.scala
+# xml/dtd/Scanner.scala
+# xml/dtd/Tokens.scala
+
+# xml/nobinding/NoBindingFactoryAdapter.scala
+# xml/nobinding/XML.scala
+
+# xml/path/Expression.scala
+# xml/path/Tokens.scala
+# xml/path/Scanner.scala
+# xml/path/Parser.scala
+
+##############################################################################
