@@ -11,12 +11,13 @@ import scalac.symtab.Symbol;
 
 public class Names {
 
-    private static final Name LOCAL_PREFIX = Name.fromString("local$");
-    private static final Name OUTER_PREFIX = Name.fromString("outer$");
-    private static final Name SUPER_PREFIX = Name.fromString("super$");
+    private static final String LOCAL_PREFIX = "local$";
+    private static final String OUTER_PREFIX = "outer$";
+    private static final String SUPER_PREFIX = "super$";
+    private static final String scala_Function_PREFIX = "scala.Function";
 
     public static Name LOCAL(Symbol clasz) {
-        return LOCAL_PREFIX.append(clasz.name);
+        return Name.fromString(LOCAL_PREFIX + clasz.name);
     }
 
     public static Name OUTER(Symbol constructor) {
@@ -25,7 +26,7 @@ public class Names {
         Symbol[] constructors = clasz.allConstructors().alternativeSymbols();
         int index = 0;
         while (constructors[index] != constructor) index++;
-        String name = OUTER_PREFIX.toString() + index +"$"+ clasz.owner().name;
+        String name = OUTER_PREFIX + index +"$"+ clasz.owner().name;
         return Name.fromString(name);
     }
 
@@ -36,7 +37,11 @@ public class Names {
     }
 
     public static Name SUPER(Symbol method) {
-        return SUPER_PREFIX.append(method.name);
+        return Name.fromString(SUPER_PREFIX + method.name);
+    }
+
+    public static Name scala_Function(int arity) {
+        return Name.fromString(scala_Function_PREFIX + arity);
     }
 
     public static final Name ERROR = Name.ERROR;
@@ -134,7 +139,7 @@ public class Names {
     public static final Name scala_Char = Name.fromString("scala.Char");
     public static final Name scala_Double = Name.fromString("scala.Double");
     public static final Name scala_Float = Name.fromString("scala.Float");
-    public static final Name scala_Function = Name.fromString("scala.Function");
+    public static final Name scala_Function = Name.fromString(scala_Function_PREFIX);
     public static final Name scala_Int = Name.fromString("scala.Int");
 
     public static final Name scala_Iterable = Name.fromString("scala.Iterable");
