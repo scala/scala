@@ -14,6 +14,8 @@ import scalac.util.Name;
 import Tree.*;
 import java.util.HashMap;
 
+import scalac.util.Names;
+
 /** contains algorithms for `checking' and `normalizing' patterns
  *
  *  @author  Burak Emir
@@ -48,41 +50,60 @@ public class PatternNormalizer {
      *  inSeq: flag, true if we are in a sequence '[' ... ']'
      *  t: the tree to be checked
      */
-    protected boolean check1( Tree t ) {
+    protected boolean check1( Tree t, boolean inAlt ) {
 	switch( t ) {
 
 	case Literal( _ ):
 	    return true;
 
 	case Apply( _, Tree[] args ):
-	    return check1( args );
+	    return check1( args, inAlt );
 
 	case Sequence( Tree[] trees ):
-	    return check1( trees );
+	    return check1( trees, inAlt );
 
 	case Alternative( Tree[] trees ):
-	    return check1( trees );
+	    return check1( trees, true );
 
 	case Bind( Name var, Tree tree ):
-              this.boundVars.put( t.symbol(), Boolean.FALSE );
-              /*
+	    if(( inAlt )
+	       &&( var.toString().lastIndexOf("$") == -1)) {
+
+		unit.error( t.pos,
+			      "variable binding not allowed under alternative");
+		return false;
+	    }
+	    this.boundVars.put( var /*t.symbol()*/, Boolean.FALSE );
+	    /*
               boolean result = check( tree, inSeq );
               if(((Boolean) this.boundVars.get( t.symbol() ))
-                 .booleanValue()) { // occurs recursively
-                    // do something to RESTRICT recursion
+	      .booleanValue()) { // occurs recursively
+	      // do something to RESTRICT recursion
               }
-              */
-              return check1( tree );
+	    */
+	    return check1( tree, inAlt );
 
 	case Typed( _, _):
 	    return true;
 
-	case Ident( _ ):
+	case Ident( Name var ):
+	    if(( inAlt )
+	       &&( var != Names.WILDCARD )
+	       &&( var.toString().lastIndexOf("$") == -1))
+		{
+		unit.error( t.pos,
+			      "variable not allowed under alternative");
+		return false;
+	    }
               /*
               System.out.println( t.symbol().toString() );
               */
-              if( this.boundVars.containsKey( t.symbol() )) {
-                    this.boundVars.put( t.symbol(), Boolean.TRUE );
+	    if(( this.boundVars.containsKey( var /*t.symbol()*/ ))
+	       &&( var.toString().lastIndexOf("$") == -1)) {
+		  unit.error( t.pos,
+			      "recursive patterns not allowed");
+
+		  //this.boundVars.put( t.symbol(), Boolean.TRUE ); //mark recursive
                     //System.out.println( t.symbol() + "occurs recursively");
               }
 
@@ -107,22 +128,22 @@ public class PatternNormalizer {
 
     /** checkPat for every tree in array of trees, see below
      */
-      protected boolean check1( Tree[] trees ) {
+      protected boolean check1( Tree[] trees, boolean inAlt ) {
 	for( int i = 0; i < trees.length; i++ )
-	    if( !check1(  trees[ i ] ))
+	    if( !check1(  trees[ i ], inAlt ))
 		return false;
 	return true;
     }
 
       // if this map contains a symbol as a key, it is bound.
       // if this symbol is mapped to Boolean.True, it occurs recursively
-      HashMap boundVars;
+    HashMap/*Name=>Boolean*/ boundVars;
 
       /**  method
        */
       public boolean check( Tree pat ) {
             this.boundVars = new HashMap();
-            return check1( pat );
+            return check1( pat, false );
     }
 
 

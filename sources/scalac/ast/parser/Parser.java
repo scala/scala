@@ -1153,13 +1153,12 @@ public class Parser implements Tokens {
 	int pos = s.pos;
 
 	Tree pat = pattern();
-
 	if( this.pN.check( pat ) ) { // reports syntax errors as side effect
 	    // normalize
 	    Tree res = pN.wrapAlternative( pN.elimSequence( pN.flattenSequence ( pat )));
 	    return res;
         }
-	//syntaxError( pos, "invalid pattern", false );
+	//syntaxError( pos, "invalid pattern", false ); done in pN.check...
 	return make.Bad(pos);
     }
 
@@ -1245,13 +1244,14 @@ public class Parser implements Tokens {
             }
         }
         while ((s.token == IDENTIFIER) && (s.name != BAR)) {
+	    Name tokn = s.name; // for error message
             top = reduceStack(
                 false, base, top, s.name.precedence(), s.name.isLeftAssoc());
             push(top, s.pos, s.name);
             ident();
             top = simplePattern();
 	    if( TreeInfo.isEmptySequence( top ) ) {
-		syntaxError( top.pos, "empty sequence not allowed here", false);
+		syntaxError( top.pos, "2nd argument to  binary op  "+s.name+" may not be empty sequence pattern", false);
 	    }
         }
         return reduceStack(false, base, top, 0, true);
@@ -1688,7 +1688,7 @@ public class Parser implements Tokens {
      */
     Tree patDefOrDcl(int mods) {
         int pos = s.pos;
-        Tree pat = pattern();
+        Tree pat = validPattern();
 	Tree tp;
         switch (pat) {
 	case Typed(Tree pat1, Tree tp1):
