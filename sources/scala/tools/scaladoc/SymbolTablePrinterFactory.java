@@ -22,17 +22,18 @@ import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Strings;
+import SymbolBooleanFunction;
 
 class SymbolTablePrinterFactory {
 
-    public static SymbolTablePrinter makeHTML(final Page page) {
+    public static SymbolTablePrinter makeHTML(final Page page, final SymbolBooleanFunction isDocumented) {
 
 	return new SymbolTablePrinter(page.getCodePrinter()) {
 
 		public void printSymbol(Symbol sym, boolean addLink) {
 		    String name = sym.nameString();
 		    if (global.debug) name = sym.name.toString();
-		    if (ScalaSearch.isDocumented(sym))
+		    if (isDocumented.apply(sym))
 			if (addLink)
 			    page.printAhref(page.rel(Location.get(sym)),
 					    page.destinationFrame, name);
@@ -50,7 +51,7 @@ class SymbolTablePrinterFactory {
 			Type result = getTypeToPrintForPrefix0(prefix);
 			if (result == prefix || result == null) {
 			    return
-				cleanPrefix(result, global);
+				cleanPrefix(result, global, isDocumented);
 			}
 			prefix = result;
 		    }
@@ -85,7 +86,7 @@ class SymbolTablePrinterFactory {
      *
      * @param prefix
      */
-    static protected Type cleanPrefix(Type prefix, Global global) {
+    static protected Type cleanPrefix(Type prefix, Global global, SymbolBooleanFunction isDocumented) {
 	if (prefix == null) return null;
 	if (prefix.symbol().kind == Kinds.NONE) return null;
 	if (prefix.symbol().isRoot()) return null;
@@ -97,25 +98,25 @@ class SymbolTablePrinterFactory {
 
 	switch(prefix) {
 	case ThisType(Symbol sym):
-	    if (sym.isPackage() && ScalaSearch.isDocumented(sym.module()))
+	    if (sym.isPackage() && isDocumented.apply(sym.module()))
 		return null;
-	    else if (ScalaSearch.isDocumented(sym))
+	    else if (isDocumented.apply(sym))
 		return null;
 	    else
 		return prefix;
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Type pre1 = cleanPrefix(pre, global);
-	    if (pre1 == null && args.length == 0 && ScalaSearch.isDocumented(sym))
+	    Type pre1 = cleanPrefix(pre, global, isDocumented);
+	    if (pre1 == null && args.length == 0 && isDocumented.apply(sym))
 		return null;
 	    else {
 		pre1 = pre1 == null ? global.definitions.ROOT.thisType() : pre1;
 		return Type.typeRef(pre1, sym, args);
 	    }
 	case SingleType(Type pre, Symbol sym):
-	    Type pre1 = cleanPrefix(pre, global);
+	    Type pre1 = cleanPrefix(pre, global, isDocumented);
 	    if (pre1 == null) {
 		if (sym.isClass() || sym.isModule())
-		    if (ScalaSearch.isDocumented(sym)) {
+		    if (isDocumented.apply(sym)) {
 			return null;
 		    }
 		    else

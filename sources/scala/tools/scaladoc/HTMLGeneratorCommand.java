@@ -20,6 +20,7 @@ import scalac.util.ClassPath;
 import scalac.util.OptionParser;
 import scalac.util.Reporter;
 import scalac.util.StringOptionParser;
+import scalac.util.ScalaProgramArgumentParser;
 import scalac.util.Strings;
 
 /**
@@ -41,6 +42,8 @@ public class HTMLGeneratorCommand extends CompilerCommand {
 
     public final BooleanOptionParser noindex;
     public final BooleanOptionParser validate;
+
+    public final ScalaProgramArgumentParser packages;
 
     //########################################################################
     // Public Constructors
@@ -125,6 +128,8 @@ public class HTMLGeneratorCommand extends CompilerCommand {
             "Add a link at the bottom of each generated page",
             false);
 
+        this.packages = new ScalaProgramArgumentParser(this);
+
         remove(nowarn);
         remove(verbose);
         remove(debug);
@@ -161,6 +166,7 @@ public class HTMLGeneratorCommand extends CompilerCommand {
         add(8, doctype);
         add(9, docencoding);
         add(10, validate);
+        add(11, packages);
     }
 
     //########################################################################

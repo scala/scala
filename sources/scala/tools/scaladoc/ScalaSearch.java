@@ -15,6 +15,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 import ch.epfl.lamp.util.Pair;
 
@@ -70,15 +72,8 @@ public class ScalaSearch {
     /** Test if the given symbol is relevant for the documentation.
      */
     public static boolean isRelevant(Symbol sym) {
-	return !isGenerated(sym) && !isLazy(sym) && !isPrivate(sym);
-    }
-
-    /** Test if the given symbol is a documented member, i.e. if it
-     * appears in the documentation.
-     */
-    public static boolean isDocumented(Symbol sym) {
-	return isRelevant(sym) ||
-	    (sym.isModuleClass() && isRelevant(sym.module()));
+	return !isGenerated(sym) && !isLazy(sym) && !isPrivate(sym) &&
+	    !(sym.isPackage() && sym.isClass());
     }
 
     //////////////////////// SCOPE ITERATOR //////////////////////////////
@@ -163,6 +158,35 @@ public class ScalaSearch {
 	    return new Symbol[0];
     }
 
+    /** Apply a given function to all symbols below the given symbol
+     * in the symbol table.
+     */
+    public static void foreach(Symbol sym, SymFun fun, SymbolBooleanFunction isDocumented) {
+	if (isDocumented.apply(sym) && isRelevant(sym)) {
+	    fun.apply(sym);
+	    Symbol[] members = members(sym, isDocumented);
+	    for(int i = 0; i < members.length; i++)
+		foreach(members[i], fun, isDocumented);
+	}
+    }
+
+    /** Return all members of a container symbol.
+     */
+    public static Symbol[] members(Symbol sym, SymbolBooleanFunction isDocumented) {
+	if (isContainer(sym) && !isLazy(sym)) {
+	    List memberList = new LinkedList();
+	    SymbolIterator i = new UnloadLazyIterator(sym.members().iterator(false));
+	    while (i.hasNext()) {
+		Symbol member = i.next();
+		if (isDocumented.apply(member) && isRelevant(sym))
+		    memberList.add(member);
+	    }
+	    return (Symbol[]) memberList.toArray(new Symbol[memberList.size()]);
+	}
+	else
+	    return new Symbol[0];
+    }
+
     ///////////////////////// COMPARATORS ///////////////////////////////
 
     /**
@@ -204,7 +228,7 @@ public class ScalaSearch {
      *
      * @param root
      */
-    public static Symbol[] getSortedPackageList(Symbol root) {
+    public static Symbol[] getSortedPackageList(Symbol root, SymbolBooleanFunction isDocumented) {
 	final List packagesAcc = new LinkedList();
 	foreach(root,
 		new SymFun() {
@@ -212,13 +236,13 @@ public class ScalaSearch {
 			if (sym.isPackage())
 			    packagesAcc.add(sym);
 		    }
-		});
+		}, isDocumented);
 	Symbol[] packages = (Symbol[]) packagesAcc.toArray(new Symbol[packagesAcc.size()]);
 	Arrays.sort(packages, symPathOrder);
 	return packages;
     }
 
-    public static Symbol[][] getSubContainerMembers(Symbol root) {
+    public static Symbol[][] getSubContainerMembers(Symbol root, SymbolBooleanFunction isDocumented) {
 	final List objectsAcc = new LinkedList();
 	final List traitsAcc = new LinkedList();
 	final List classesAcc = new LinkedList();
@@ -232,7 +256,7 @@ public class ScalaSearch {
 			else if (sym.isModule() && !sym.isPackage())
 			    objectsAcc.add(sym);
 		    }
-		}
+		}, isDocumented
 		);
 	Symbol[] objects = (Symbol[]) objectsAcc.toArray(new Symbol[objectsAcc.size()]);
 	Symbol[] traits  = (Symbol[]) traitsAcc.toArray(new Symbol[traitsAcc.size()]);
@@ -241,6 +265,32 @@ public class ScalaSearch {
 	Arrays.sort(traits, symAlphaOrder);
 	Arrays.sort(classes, symAlphaOrder);
 	return new Symbol[][]{ objects, traits, classes };
+    }
+
+    public static Symbol[][] splitMembers(Symbol[] syms) {
+	List fields = new LinkedList();
+	List methods = new LinkedList();
+        List objects = new LinkedList();
+        List traits = new LinkedList();
+        List classes = new LinkedList();
+	List packages = new LinkedList();
+        for (int i = 0; i < syms.length; i++) {
+	    Symbol sym = syms[i];
+	    if (sym.isTrait()) traits.add(sym);
+	    else if (sym.isClass()) classes.add(sym);
+	    else if (sym.isPackage()) packages.add(sym);
+	    else if (sym.isModule()) objects.add(sym);
+	    else if (sym.isMethod()) methods.add(sym);
+	    else fields.add(sym);
+        }
+        return new Symbol[][] {
+	    (Symbol[]) fields.toArray(new Symbol[fields.size()]),
+	    (Symbol[]) methods.toArray(new Symbol[methods.size()]),
+	    (Symbol[]) objects.toArray(new Symbol[objects.size()]),
+	    (Symbol[]) traits.toArray(new Symbol[traits.size()]),
+	    (Symbol[]) classes.toArray(new Symbol[classes.size()]),
+	    (Symbol[]) packages.toArray(new Symbol[packages.size()])
+	};
     }
 
     /////////////////// IMPLEMENTING CLASSES OR OBJECTS //////////////////////
@@ -253,7 +303,7 @@ public class ScalaSearch {
      *
      * @param root
      */
-    public static Map subTemplates(Symbol root) {
+    public static Map subTemplates(Symbol root, SymbolBooleanFunction isDocumented) {
 	final Map subs = new HashMap();
 	foreach(root, new SymFun() { void apply(Symbol sym) {
 	    if (sym.isClass() || sym.isModule()) {
@@ -269,7 +319,7 @@ public class ScalaSearch {
 		}
 	    }
 	}
-	});
+	}, isDocumented);
 	return subs;
     }
 
@@ -282,7 +332,7 @@ public class ScalaSearch {
      *
      * @param root
      */
-    public static Pair index(Symbol root) {
+    public static Pair index(Symbol root, final SymbolBooleanFunction isDocumented) {
 	final Map index = new HashMap();
 	// collecting
 	foreach(root, new SymFun() { void apply(Symbol sym) {
@@ -298,7 +348,7 @@ public class ScalaSearch {
 		symList.add(sym);
 	    }
 	}
-	});
+	    }, isDocumented);
 	// sorting
 	Character[] chars = (Character[]) index.keySet()
 	    .toArray(new Character[index.keySet().size()]);
@@ -390,4 +440,44 @@ public class ScalaSearch {
 	}
 	return new Pair(owners, groups);
     }
+}
+
+/** Compute documented symbols. */
+public class DocSyms {
+
+    Set syms;
+
+    DocSyms(Global global, Symbol[] packages) {
+	syms = new HashSet();
+	for(int i = 0; i < packages.length; i++) {
+	    Symbol pack = packages[i];
+	    // add all sub-members.
+	    ScalaSearch.foreach(pack,
+				new ScalaSearch.SymFun() {
+				    public void apply(Symbol sym) {
+					syms.add(sym);
+				    }
+				}
+				);
+	    // add all super packages.
+	    Symbol owner = pack.owner();
+	    while (owner != Symbol.NONE) {
+		syms.add(owner.module());
+		owner = owner.owner();
+	    }
+	}
+    }
+
+    public boolean contains(Symbol sym) {
+	boolean res = false;
+	if (sym.isParameter())
+	    res = contains(sym.classOwner());
+	else
+	    res = (syms.contains(sym) || syms.contains(sym.module()));
+	return res;
+    }
+}
+
+public abstract class SymbolBooleanFunction {
+    public abstract boolean apply(Symbol sym);
 }

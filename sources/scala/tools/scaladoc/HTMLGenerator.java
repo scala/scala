@@ -47,6 +47,8 @@ import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Strings;
+import SymbolBooleanFunction;
+import scalac.util.ScalaProgramArgumentParser;
 
 /**
  * The class <code>HTMLGenerator</code> generates
@@ -159,10 +161,6 @@ public class HTMLGenerator {
      */
     protected final Global global;
 
-    /** Maps classes to their direct implementing classes or modules.
-     */
-    protected final Map subs;
-
     /** Directory where to put generated HTML pages.
      */
     protected File directory;
@@ -222,6 +220,10 @@ public class HTMLGenerator {
      */
     protected final Symbol root;
 
+    /** Documented Symbols.
+     */
+    protected SymbolBooleanFunction isDocumented;
+
     /**
      * Creates a new instance.
      *
@@ -230,7 +232,6 @@ public class HTMLGenerator {
     protected HTMLGenerator(Global global) {
 	this.global = global;
 	this.root = global.definitions.ROOT;
-	this.subs = ScalaSearch.subTemplates(root);
 	this.uri = Location.makeURI(".");
 
         assert global.args instanceof HTMLGeneratorCommand;
@@ -244,12 +245,36 @@ public class HTMLGenerator {
         this.stylesheet = args.stylesheet.value;
         this.noindex = args.noindex.value;
         this.validate = args.validate.value;
+	Symbol[] packages = getPackages(args.packages);
+	final DocSyms docSyms = new DocSyms(global, packages);
+	this.isDocumented = new SymbolBooleanFunction() {
+		public boolean apply(Symbol sym) {
+		    return docSyms.contains(sym) && ScalaSearch.isRelevant(sym);
+// 			(ScalaSearch.isRelevant(sym) ||
+// 			 ((sym.isModuleClass() && !sym.isPackage()*/)
+// 			  && ScalaSearch.isRelevant(sym.module())));
+		}
+	    };
     }
 
     /** Relative URL of the definition of the given symbol.
      */
     protected String definitionURL(Symbol sym) {
 	return page.rel(Location.get(sym));
+    }
+
+    /** Get the list pf packages to be documented.
+     */
+    protected Symbol[] getPackages(ScalaProgramArgumentParser option) {
+	if (option.main != null) {
+	    Symbol[] packages = new Symbol[option.args.length + 1];
+	    packages[0] = global.definitions.getClass(Name.fromString(option.main)).module();
+	    for(int i = 0; i < option.args.length; i++)
+		packages[i+1] = global.definitions.getClass(Name.fromString(option.args[i])).module();
+	    return packages;
+	}
+	else
+	    return new Symbol[] { root };
     }
 
     /**
@@ -265,7 +290,7 @@ public class HTMLGenerator {
 			title, representation,
 			stylesheet/*, script*/);
 	// Create a printer to print symbols and types.
-	symtab = SymbolTablePrinterFactory.makeHTML(page);
+	symtab = SymbolTablePrinterFactory.makeHTML(page, isDocumented);
 	page.open();
     }
 
@@ -314,7 +339,8 @@ public class HTMLGenerator {
 	ScalaSearch.foreach(root,
 			    new ScalaSearch.SymFun() {
 				public void apply(Symbol sym) {
-				    if (ScalaSearch.isContainer(sym)) {
+				    if (ScalaSearch.isContainer(sym) &&
+					isDocumented.apply(sym)) {
  					createPages(sym);
  					if (sym.isPackage())
  					    createContainerIndexPage(sym);
@@ -362,32 +388,6 @@ public class HTMLGenerator {
 	return comment;
     }
 
-    private Symbol[][] splitMembers(Symbol[] syms) {
-	List fields = new LinkedList();
-	List methods = new LinkedList();
-        List objects = new LinkedList();
-        List traits = new LinkedList();
-        List classes = new LinkedList();
-	List packages = new LinkedList();
-        for (int i = 0; i < syms.length; i++) {
-	    Symbol sym = syms[i];
-	    if (sym.isTrait()) traits.add(sym);
-	    else if (sym.isClass()) classes.add(sym);
-	    else if (sym.isPackage()) packages.add(sym);
-	    else if (sym.isModule()) objects.add(sym);
-	    else if (sym.isMethod()) methods.add(sym);
-	    else fields.add(sym);
-        }
-        return new Symbol[][] {
-	    (Symbol[]) fields.toArray(new Symbol[fields.size()]),
-	    (Symbol[]) methods.toArray(new Symbol[methods.size()]),
-	    (Symbol[]) objects.toArray(new Symbol[objects.size()]),
-	    (Symbol[]) traits.toArray(new Symbol[traits.size()]),
-	    (Symbol[]) classes.toArray(new Symbol[classes.size()]),
-	    (Symbol[]) packages.toArray(new Symbol[packages.size()])
-	};
-    }
-
     /**
      * Generates a HTML page for a class or object definition as well
      * as pages for every inner class or object.
@@ -412,7 +412,7 @@ public class HTMLGenerator {
             "Trait", "Class", "Package" }; // "Constructor"
         String[] inherited = new String[]{ "Fields", "Methods", "Objects",
             "Traits", "Classes", "Packages" };
-	Symbol[][] members = splitMembers(ScalaSearch.members(sym));
+	Symbol[][] members = ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
 	for (int i = 0; i < members.length; i++) {
 	    addMemberSummary(members[i], titles[i] + " Summary");
 	    if (i == 1) addInheritedMembers(sym, inherited[i]);
@@ -563,6 +563,9 @@ public class HTMLGenerator {
 	    printTemplateHtmlSignature(sym, false);
 
 	    // implementing classes or modules
+	    // Maps classes to their direct implementing classes or modules
+	    Map subs = ScalaSearch.subTemplates(root, isDocumented);
+
 	    if (sym.isClass()) {
 		List subList = (List) subs.get(sym);
 		if (subList != null && subList.size() != 0) {
@@ -974,7 +977,7 @@ public class HTMLGenerator {
         page.printHeader(ATTRS_META, getGenerator());
 	page.printOpenBody();
 
-        Symbol[] packages = ScalaSearch.getSortedPackageList(root);
+        Symbol[] packages = ScalaSearch.getSortedPackageList(root, isDocumented);
 
         addDocumentationTitle(new XMLAttribute[]{
             new XMLAttribute("class", "doctitle-larger")});
@@ -1009,11 +1012,11 @@ public class HTMLGenerator {
 
         String[] titles = new String[]{ "Objects", "Traits", "Classes" };
 	if (sym.isRoot()) {
-	    Symbol[][] members = ScalaSearch.getSubContainerMembers(root);
+	    Symbol[][] members = ScalaSearch.getSubContainerMembers(root, isDocumented);
 	    for (int i = 0; i < titles.length; i++)
 		addSymbolTable(members[i], "All " + titles[i], true);
 	} else {
-	    Symbol[][] members = splitMembers(ScalaSearch.members(sym));
+	    Symbol[][] members = ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
 	    for (int i = 0; i < titles.length; i++)
 		addSymbolTable(members[i + 2], titles[i], false);
 	}
@@ -1048,7 +1051,7 @@ public class HTMLGenerator {
         page.printlnCTag("table");
         page.printlnSTag("br");
 
-	Pair index = ScalaSearch.index(root);
+	Pair index = ScalaSearch.index(root, isDocumented);
 	Character[] chars = (Character[]) index.fst;
 	Map map = (Map) index.snd;
 	for (int i  = 0; i < chars.length; i++)
@@ -1187,8 +1190,9 @@ public class HTMLGenerator {
      * symbol (including itself).
      */
     protected void printPath(Symbol sym, String destinationFrame) {
+	sym = sym.isModuleClass() ? sym.module() : sym;
 	String name = removeHtmlSuffix(Location.getURI(sym).toString());
-	if (ScalaSearch.isDocumented(sym)) {
+	if (isDocumented.apply(sym)) {
 	    String target = definitionURL(sym);
 	    page.printlnAhref(target, destinationFrame, name);
 	}
@@ -1203,7 +1207,7 @@ public class HTMLGenerator {
      */
     protected void addIndexEntry(Symbol symbol) {
 	// kind
-	String keyword = symtab.getSymbolKeyword(symbol);
+	String keyword = symbol.isPackage() ? "package" : symtab.getSymbolKeyword(symbol);
         if (keyword != null) page.print(keyword).space();
 	// name
 	symtab.printDefinedSymbolName(symbol, true);
@@ -1278,7 +1282,7 @@ public class HTMLGenerator {
 		System.err.println("Warning: Scaladoc: not found: " + tag);
 		return tag.text;
 	    }
-	    else if (!ScalaSearch.isDocumented(sym)) {
+	    else if (!isDocumented.apply(sym)) {
 		System.err.println("Warning: Scaladoc: not referenced: " + tag);
 		return tag.text;
 	    }

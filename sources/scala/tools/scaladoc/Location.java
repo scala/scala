@@ -65,7 +65,7 @@ public class Location {
     }
     // where
     static public String getName(Symbol sym) {
-	return sym.isClass() ? sym.nameString() + CLASS_SUFFIX : sym.nameString();
+	return sym.isClass() ? sym.simpleName().toString() + CLASS_SUFFIX : sym.simpleName().toString();
     }
     // where
     static private final Map/*<Symbol, Integer>*/ ids = new HashMap();

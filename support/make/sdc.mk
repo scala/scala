@@ -92,6 +92,7 @@ sdc			+= $(sdc_ENCODING:%=-encoding %)
 sdc			+= $(sdc_SOURCE:%=-source %)
 sdc			+= $(sdc_TARGET:%=-target %)
 sdc			+= $(sdc_FILES:%=$(call CYGWIN_FILE,'%'))
+sdc			+= -- scala
 
 ##############################################################################
 # Functions
