@@ -44,7 +44,7 @@ varid     ::=  lower {letter $|$ digit} [`_' [id]]
 id        ::=  upper {letter $|$ digit} [`_' [id]]
             |  varid
             |  op
-	    |  ```string chars`''
+            |  ```string chars`''
 \end{lstlisting}
 
 There are three ways to form an identifier. First, an identifier can
@@ -54,7 +54,7 @@ letters and digits. This may be followed by an underscore
 themselves make up an identifier.  Second, an identifier can be start
 with a special character followed by an arbitrary sequence of special
 characters.  Finally, an identifier may also be formed by an arbitrary
-string between backquotes (host systems may impose some restrictions
+string between back-quotes (host systems may impose some restrictions
 on which strings are legal for identifiers).  As usual, a longest
 match rule applies. For instance, the string
 
@@ -423,7 +423,7 @@ contravariant in their argument types.
 \label{sec:synthetic-types}
 
 The types explained in the following do not denote sets of values, nor
-do they appear explicitely in programs. They are introduced in this
+do they appear explicitly in programs. They are introduced in this
 report as the internal types of defined identifiers.
 
 \subsection{Method Types}
@@ -693,7 +693,7 @@ transitive relation that satisfies the following conditions.
       one has $\mbox{\code{scala.AllRef}} \conforms T$.
 \item A type variable or abstract type $t$ conforms to its upper bound and
       its lower bound conforms to $t$. 
-\item A class type or parameterized type $c$ conforms to any of its basetypes, $b$.
+\item A class type or parameterized type $c$ conforms to any of its base-types, $b$.
 \item A type projection \lstinline@$T$#$t$@ conforms to \lstinline@$U$#$t$@ if 
       $T$ conforms to $U$.
 \item A parameterized type ~\lstinline@$T$[$T_1 \commadots T_n$]@~ conforms to 
@@ -767,7 +767,7 @@ class C extends A[C];
 Then the types ~\lstinline@A[Any], A[A[Any]], A[A[A[Any]]], ...@~ form
 a descending sequence of upper bounds for \code{B} and \code{C}. The
 least upper bound would be the infinite limit of that sequence, which
-does ot exist as a Scala type. Since cases like this are in general
+does not exist as a Scala type. Since cases like this are in general
 impossible to detect, a Scala compiler is free to reject a term
 which has a type specified as a least upper or greatest lower bound,
 and that bound would be more complex than some compiler-set
@@ -840,7 +840,7 @@ or \code{short} is always implicitly converted to a value of type
 
 If an expression $e$ has type $T$ where $T$ does not conform to the
 expected type $pt$ and $T$ has a member named \lstinline@coerce@ of type
-$[]U$ where $U$ does comform to $pt$, then the expression is typed and evaluated is if it was
+$[]U$ where $U$ does conform to $pt$, then the expression is typed and evaluated is if it was
 \lstinline@$e$.coerce@.
 
 
@@ -877,7 +877,7 @@ s_n$, if a simple name in $s_i$ refers to an entity defined by $s_j$
 where $j \geq i$, then every non-empty statement between and including
 $s_i$ and $s_j$ must be an import clause,
 or a function, type, class, or object definition. It may not be 
-a value definition, a variable defninition, or an expression.
+a value definition, a variable definition, or an expression.
 
 \comment{
 Every basic definition may introduce several defined names, separated
@@ -914,7 +914,7 @@ the type definition
 \comment{
 If an element in such a sequence introduces only the defined name,
 possibly with some type or value parameters, but leaves out any
-aditional parts in the definition, then those parts are implicitly
+additional parts in the definition, then those parts are implicitly
 copied from the next subsequent sequence element which consists of
 more than just a defined name and parameters. Examples:
 \begin{itemize}
@@ -1360,7 +1360,7 @@ The last value parameter of a parameter section may be suffixed by
 if a method $m$ with type ~\lstinline@($T_1 \commadots T_n, S$*)$U$@~
 is applied to arguments $(e_1 \commadots e_k)$ where $k \geq n$, then
 $m$ is taken in that application to have type $(T_1 \commadots T_n, S
-\commadots S)U$, with $k - n$ occurences of type $S$.  
+\commadots S)U$, with $k - n$ occurrences of type $S$.  
 \todo{Change to ???: If the method
 is converted to a function type instead of being applied immediately,
 a repeated parameter \lstinline@$T$*@ is taken to be ~\lstinline@scala.Seq[$T$]@~
@@ -1601,7 +1601,7 @@ class F extends B with D with E;
 The mixin base classes and base classes of classes \code{A-F} are given in
 the following table:
 \begin{quote}\begin{tabular}{|l|l|l|} \hline
- \ & Mixin base classses & Base classes \\  \hline
+ \ & Mixin base classes & Base classes \\  \hline
 A & A & A, ScalaObject, AnyRef, Any \\
 B & B & B, A, ScalaObject, AnyRef, Any \\
 C & C & C, A, ScalaObject, AnyRef, Any \\
@@ -1610,7 +1610,7 @@ E & C, D, E & E, B, C, D, A, ScalaObject, AnyRef, Any \\
 F & C, D, E, F & F, B, D, E, C, A, ScalaObject, AnyRef, Any \\ \hline
 \end{tabular}\end{quote}
 Note that \code{D} is inherited twice by \code{F}, once directly, the
-other time indirectly throgh \code{E}. This is permitted, since
+other time indirectly through \code{E}. This is permitted, since
 \code{D} is a trait.
 
 
@@ -1773,9 +1773,9 @@ labeled \code{protected}.
 If $M'$ is not an abstract member, then
 $M$ must be labeled \code{override}.
 \item
-If $M'$ is labelled \code{abstract} and \code{override}, and $M'$ is a
+If $M'$ is labeled \code{abstract} and \code{override}, and $M'$ is a
 member of the static superclass of the class containing the definition
-of $M$, then $M$ must also be labelled \code{abstract} and
+of $M$, then $M$ must also be labeled \code{abstract} and
 \code{override}.
 \end{itemize}
 
@@ -1852,11 +1852,11 @@ definition.
 The \code{override} modifier has an additional significance when
 combined with the \code{abstract} modifier.  That modifier combination
 is only allowed for members of abstract classes.  A member
-labelled \code{abstract} and \code{override} must override some
+labeled \code{abstract} and \code{override} must override some
 member of the superclass of the class containing the definition.
 
 We call a member of a template {\em incomplete} if it is either
-abstract (i.e.\ defined by a declaration), or it is labelled
+abstract (i.e.\ defined by a declaration), or it is labeled
 \code{abstract} and \code{override} and it overrides an incomplete
 member of the template's superclass.
 
@@ -2030,7 +2030,7 @@ This defines a class \code{LinkedList} with an overloaded constructor of type
 \begin{lstlisting}
 [a](): LinkedList[a]   $\overload$
 [a](x: a): LinkedList[a]    $\overload$
-[a](x: a, xs: LinkList[a]): LinkedList[a]  .
+[a](x: a, xs: LinkedList[a]): LinkedList[a]  .
 \end{lstlisting}
 The second constructor alternative constructs an singleton list, while the
 third one constructs a list with a given head and tail.
@@ -3779,7 +3779,7 @@ abstract sealed class Long extends AnyVal  {
   def coerce: Float               // convert to Float
 
   def + (that: Double): Double;   // double addition
-  def + (that: Float): Double;    // float addtion
+  def + (that: Float): Double;    // float addition
   def + (that: Long): Long =      // long addition
   /* analogous for -, *, /, % */
 
@@ -3935,7 +3935,7 @@ case class Tuple$n$[+a_1, ..., +a_n](_1: a_1, ..., _$n$: a_$n$) {
 }
 \end{lstlisting}
 
-The implicity imported \code{Predef} object (\sref{cls:predef}) defines
+The implicitly imported \code{Predef} object (\sref{cls:predef}) defines
 the names \code{Pair} as an alias of \code{Tuple2} and \code{Triple}
 as an alias for \code{Tuple3}.
 
@@ -3979,7 +3979,7 @@ class PartialFunction[-a,+b] extends Function1[a, b] {
 }
 \end{lstlisting}
 
-The implicity imported \code{Predef} object (\sref{cls:predef}) defines the name 
+The implicitly imported \code{Predef} object (\sref{cls:predef}) defines the name 
 \code{Function} as an alias of \code{Function1}.
 
 \subsection{Class \large{\code{Array}}}\label{cls:array}
@@ -4019,7 +4019,7 @@ module Array {
 \section{The \large{\code{Predef}} Object}\label{cls:predef}
 
 The \code{Predef} module defines standard functions and type aliases
-for Scala programs. It is always implicity imported, so that all its
+for Scala programs. It is always implicitly imported, so that all its
 defined members are available without qualification. Here is its
 definition for the JVM environment.
 
@@ -4076,504 +4076,3 @@ object Predef {
 }
 \end{lstlisting}
 
-\appendix
-\chapter{Scala Syntax Summary}
-
-The lexical syntax of Scala is given by the following grammar in EBNF
-form.
-
-\begin{lstlisting}
-  upper          ::=  `A' | $\ldots$ | `Z' | `$\Dollar$' | `_'
-  lower          ::=  `a' | $\ldots$ | `z'
-  letter         ::=  upper | lower
-  digit          ::=  `0' | $\ldots$ | `9'
-  special        ::=  $\mbox{\rm\em ``all other characters except parentheses ([{}]) and periods''}$
-
-  op             ::=  special {special} 
-  varid          ::=  lower {letter | digit} [`_' [id]]
-  id             ::=  upper {letter | digit} [`_' [id]]
-                   | varid
-                   | op
-                   | `\'stringLit
-
-  intLit         ::=  $\mbox{\rm\em ``as in Java''}$
-  floatLit       ::=  $\mbox{\rm\em ``as in Java''}$
-  charLit        ::=  $\mbox{\rm\em ``as in Java''}$
-  stringLit      ::=  $\mbox{\rm\em ``as in Java''}$
-  symbolLit      ::= `\'' id
-
-  comment        ::=  `/*' ``any sequence of characters'' `*/'
-                   |  `//' `any sequence of characters up to end of line''
-\end{lstlisting}
-
-The context-free syntax of Scala is given by the following EBNF
-grammar.
-
-\begin{lstlisting}
-  Literal        ::=  intLit
-                   |  floatLit
-                   |  charLit
-                   |  stringLit
-                   |  symbolLit
-                   |  true
-                   |  false
-                   |  null
-
-  StableId       ::=  id
-                   |  Path `.' id
-  Path           ::=  StableId
-                   |  [id `.'] this
-                   |  [id '.'] super [`[' id `]']`.' id
-
-  Type           ::=  Type1 `=>' Type
-                   |  `(' [Types] `)' `=>' Type
-                   |  Type1
-  Type1          ::=  SimpleType {with SimpleType} [Refinement]
-  SimpleType     ::=  SimpleType TypeArgs
-                   |  SimpleType `#' id
-                   |  StableId
-                   |  Path `.' type
-                   |  `(' Type ')'
-  TypeArgs        ::=  `[' Types `]'
-  Types           ::=  Type {`,' Type}
-  Refinement      ::=  `{' [RefineStat {`;' RefineStat}] `}'
-  RefineStat      ::=  Dcl
-                    |  type TypeDef {`,' TypeDef}
-                    |
-
-  Exprs           ::=  Expr {`,' Expr}
-  Expr            ::=  Bindings `=>' Expr
-                    |  Expr1
-  Expr1           ::=  if `(' Expr1 `)' Expr [[`;'] else Expr]
-                    |  try `{' Block `}' [catch Expr] [finally Expr]
-                    |  do Expr [`;'] while `(' Expr ')'
-                    |  for `(' Enumerators `)' (do | yield) Expr
-                    |  return [Expr]
-                    |  throw Expr
-                    |  [SimpleExpr `.'] id `=' Expr
-                    |  SimpleExpr ArgumentExprs `=' Expr
-                    |  PostfixExpr [`:' Type1]
-  PostfixExpr     ::=  InfixExpr [id]
-  InfixExpr       ::=  PrefixExpr
-                    |  InfixExpr id PrefixExpr
-  PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
-  SimpleExpr      ::=  Literal
-                    |  Path
-                    |  `(' [Expr] `)'
-                    |  BlockExpr
-                    |  new Template 
-                    |  SimpleExpr `.' id 
-                    |  SimpleExpr TypeArgs
-                    |  SimpleExpr ArgumentExprs
-  ArgumentExprs    ::=  `(' [Exprs] ')'
-                    |  BlockExpr
-  BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
-                    |  `{' Block `}'
-  Block           ::=  {BlockStat `;'} [ResultExpr]
-  BlockStat       ::=  Import
-                    |  Def
-                    |  {LocalModifier} ClsDef
-                    |  Expr1
-                    |
-  ResultExpr      ::=  Expr1
-                    |  Bindings `=>' Block
-
-  Enumerators     ::=  Generator {`;' Enumerator}
-  Enumerator      ::=  Generator
-                    |  Expr
-  Generator       ::=  val Pattern1 `<-' Expr
-
-  CaseClause      ::=  case Pattern [`if' PostfixExpr] `=>' Block 
-
-  Constr          ::=  StableId [TypeArgs] [`(' [Exprs] `)']  
-
-  Pattern         ::=  Pattern1 { `|' Pattern1 }
-  Pattern1        ::=  varid `:' Type
-                    |  `_' `:' Type
-                    |  Pattern2
-  Pattern2        ::=  [varid `@'] Pattern3
-  Pattern3        ::=  SimplePattern [ '*' | '?' | '+' ]
-                    |  SimplePattern { id SimplePattern }
-  SimplePattern   ::=  `_'
-                    |  varid
-                    |  Literal
-                    |  StableId [ `(' [Patterns] `)' ]
-                    |  `(' [Patterns] `)'
-  Patterns        ::=  Pattern {`,' Pattern}
-
-  TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
-  FunTypeParamClause ::=  `[' TypeDcl {`,' TypeDcl} `]'
-  TypeParam       ::=  [`+' | `-'] TypeDcl
-  ParamClause     ::=  `(' [Param {`,' Param}] `)'
-  Param           ::=  [def] id `:' Type [`*']
-  Bindings        ::=  id [`:' Type1]
-                    |  `(' Binding {`,' Binding `)'
-  Binding         ::=  id [`:' Type]
-
-  Modifier        ::=  LocalModifier
-                    |  private
-                    |  protected
-                    |  override 
-  LocalModifier   ::=  abstract
-                    |  final
-                    |  sealed
-
-  Template        ::=  Constr {`with' Constr} [TemplateBody]
-  TemplateBody    ::=  `{' [TemplateStat {`;' TemplateStat}] `}'
-  TemplateStat    ::=   Import
-                    |  {Modifier} Def
-                    |  {Modifier} Dcl
-                    |  Expr
-                    |
-
-  Import          ::=  import ImportExpr {`,' ImportExpr}
-  ImportExpr      ::=  StableId `.' (id | `_' | ImportSelectors)
-  ImportSelectors ::=  `{' {ImportSelector `,'} 
-                       (ImportSelector | `_') `}'
-  ImportSelector  ::=  id [`=>' id | `=>' `_']
-
-  Dcl             ::=  val ValDcl {`,' ValDcl}
-                    |  var VarDcl {`,' VarDcl}
-                    |  def FunDcl {`,' FunDcl}
-                    |  type TypeDcl {`,' TypeDcl}
-  ValDcl          ::=  id `:' Type
-  VarDcl          ::=  id `:' Type
-  FunDcl          ::=  id [FunTypeParamClause] {ParamClause} `:' Type
-  TypeDcl         ::=  id [`>:' Type] [`<:' Type]
-
-  Def             ::=  val PatDef {`,' PatDef}
-                    |  var VarDef {`,' VarDef}
-                    |  def FunDef {`,' FunDef}
-                    |  type TypeDef {`,' TypeDef}
-                    |  ClsDef
-  PatDef          ::=  Pattern `=' Expr
-  VarDef          ::=  id [`:' Type] `=' Expr
-                    |  id `:' Type `=' `_'
-  FunDef          ::=  id [FunTypeParamClause] {ParamClause} 
-                       [`:' Type] `=' Expr
-                    |  this ParamClause `=' ConstrExpr
-  TypeDef         ::=  id [TypeParamClause] `=' Type
-  ClsDef          ::=  ([case] class | trait) ClassDef {`,' ClassDef}
-                    |  [case] object ObjectDef {`,' ObjectDef}
-  ClassDef        ::=  id [TypeParamClause] [ParamClause] 
-                       [`:' SimpleType] ClassTemplate
-  ObjectDef       ::=  id [`:' SimpleType] ClassTemplate
-  ClassTemplate   ::=  extends Template
-                    |  TemplateBody
-                    |
-  ConstrExpr      ::=  this ArgumentExprs
-                    |  `{' this ArgumentExprs {`;' BlockStat} `}'
-
-  CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
-  TopStat         ::=  {Modifier} ClsDef
-                    |  Import
-                    |  Packaging
-                    |
-  Packaging       ::=  package QualId `{' {TopStat `;'} TopStat `}'
-  QualId          ::=  id {`.' id}
-\end{lstlisting}
-
-\chapter{Implementation Status}
-
-The present Scala compiler does not yet implement all of the Scala
-specification. Its currently existing omissions and deviations are
-listed below. We are working on a refined implementation that
-addresses these issues.
-\begin{enumerate}
-\item
-Unicode support is still limited. At present we only permit Unicode
-encodings \verb@\uXXXX@ in strings and backquote-enclosed identifiers.
-To define or access a Unicode identifier, you need to put it in
-backquotes and use the \verb@\uXXXX@ encoding.
-\item 
-The unicode operator ``$\Rightarrow$''
-(\sref{sec:idents}) is not yet recognized; you need to use the two
-character ASCII equivalent ``\code{=>}'' instead.
-\item
-The current implementation does not yet support run-time types.
-All types are erased (\sref{sec:erasure}) during compilation. This means that
-the following operations give potentially wrong results.
-\begin{itemize}
-\item
-Type tests and type casts to parameterized types. Here it is only tested
-that a value is an instance of the given top-level type constructor.
-\item
-Type tests and type casts to type parameters and abstract types.  Here
-it is only tested that a value is an instance of the type parameter's upper bound.  
-\item
-Polymorphic array creation. If \code{t} is a type variable or abstract type, then
-\code{new Array[t]} will yield an array of the upper bound of \code{t}.
-\end{itemize}
-\item
-Return expressions are not yet permitted inside an anonymous function
-or inside a call-by-name argument (i.e.\ a function argument corresponding to a 
-\code{def} parameter).
-\item
-Members of the empty package (\sref{sec:packagings}) cannot yet be
-accessed from other source files.  Hence, all library classes and
-objects have to be in some package.
-\item
-At present, auxiliary constructors (\sref{sec:constr-defs}) are only permitted
-for monomorphic classes.
-\item
-The \code{Array} class supports as yet only a restricted set of
-operations as given in \sref{cls:array}. It is planned to extend that
-interface. In particular, arrays will implement the \code{scala.Seq}
-trait as well as the methods needed to support for-comprehensions.
-\item
-At present, all classes used as mixins must be accessible to the Scala
-compiler in source form.
-\end{enumerate}
-
-\end{document}
-
-
-\comment{
-\section{Definitions}
-
-For a possibly recursive definition such as $\LET;x_1 = e_1
-;\ldots; \LET x_n = e_n$, local type inference proceeds as
-follows.
-A first phase assigns {\em a-priori types} to the $x_i$. The a-priori
-type of $x$ is the declared type of $x$ if a declared type is
-given. Otherwise, it is the inherited type, if one is
-given. Otherwise, it is undefined.
-
-A second phase assigns completely defined types to the $x_i$, in some
-order.  The type of $x$ is the a-priori type, if it is completely
-defined. Otherwise, it is the a-priori type of $x$'s right hand side.
-The a-priori type of an expression $e$ depends on the form of $e$.
-\begin{enumerate}
-\item
-The a-priori type of a
-typed expression $e:T$ is $T$.
-\item
-The a-priori type of a class instance
-creation expression $c;\WITH;(b)$ is $C;\WITH;R$ where $C$ is the
-type of the class given in $c$ and $R$ is the a-priori type of block
-$b$.
-\item
-The a-priori type of a block is a record consisting the a-priori
-types of each non-private identifier which is declared in the block
-and which is visible at in last statement of the block.  Here, it is
-required that every import clause $\IMPORT;e_1 \commadots e_n$ refers
-to expressions whose type can be computed with the type information
-determined so far. Otherwise, a compile time error results.
-\item
-The a-priori type of any other expression is the expression's type, if
-that type can be computed with the type information determined so far.
-Otherwise, a compile time error results.
-\end{enumerate}
-The compiler will find an ordering in which types are assigned without
-compiler errors to all variables $x_1 \commadots x_n$, if such an
-ordering exists. This can be achieved by lazy evaluation.
-}
-\section{Exceptions}
-\label{sec:exceptions}
-
-There is a predefined type \code{Throwable}, as well as functions to
-throw and handle values of type \code{Throwable}. These are declared
-as follows.
-
-\begin{lstlisting}
-  class Throwable {
-    def throw[a]: a
-  }
-  class ExceptOrFinally[a] {
-    def except (handler: PartialFunction[Throwable,a]): a
-    def finally (def handler: Unit): a
-  }
-  def try [a] (def body: a): ExceptOrFinally[a]
-\end{lstlisting}
-
-The type \code{Throwable} represents exceptions and error objects; it
-may be identified with an analogous type of the underlying
-implementation such as \code{java.lang.Throwable}. We will in the
-following loosely call values of type \code{Throwable} exceptions.
-
-The \code{throw} method in \code{Throwable} aborts execution of the
-thread executing it and passes the thrown exception to the handler
-that was most recently installed by a
-\code{try} function in the current thread. If no \code{try} method is
-active, the thread terminates.
-
-The \code{try} function executes its body with the given exception
-handler. A \code{try} expression comes in two forms. The first form is
-
-\begin{lstlisting}
-try $body$ except $handler$  .
-\end{lstlisting}
-
-If $body$ executes without an exception being thrown, then executing
-the try expression is equivalent to just executing $body$. If some
-exception is thrown from within $body$ for which \code{handler} is defined,
-the handler is invoked with the thrown exception as argument.
-
-The second form of a try expression is
-
-\begin{lstlisting}
-try $body$ finally $handler$  .
-\end{lstlisting}
-
-This expression will execute $body$. A normal execution of $body$ is
-followed by an invocation of the $handler$ expression.  The $handler$
-expression does not take arguments and has \code{Unit} as result type.
-If execution of the handler expression throws an exception, this
-exception is propagated out of the \code{try} statement.  Otherwise,
-if an exception was thrown in $body$ prior to invocation of $handler$,
-that exception is re-thrown after the invocation. Finally, if both
-$body$ and $handler$ terminate normally, the original result of
-$body$ is the result of the \code{try} expression.
-
-\example An example of a try-except expression:
-
-\begin{lstlisting}
-try {
-  System.in.readString()
-} except {
-  case ex: EndOfFile => ""
-}
-\end{lstlisting}
-
-\example An example of a try-finally expression:
-
-\begin{lstlisting}
-file = open (fileName)
-if (file != null) {
-  try {
-    process (file)
-  } finally {
-    file.close
-  }
-}
-\end{lstlisting}
-
-\section{Concurrency}
-\label{sec:concurrency}
-
-\subsection{Basic Concurrency Constructs}
-
-Scala programs may be executed by several threads that operate
-concurrently.  The thread model used is based on the model of the
-underlying run-time system. We postulate a predefined
-class \code{Thread} for run-time threads,
-\code{fork} function to spawn off a new thread,
-as well as \code{Monitor} and \code{Signal} classes. These are
-specified as follows\notyet{Concurrency constructs are}.
-
-
-\begin{lstlisting}
-class Thread { $\ldots$ }
-def fork (def p: Unit): Thread
-\end{lstlisting}
-
-The \code{fork} function runs its argument computation \code{p} in a
-separate thread.  It returns the thread object immediately to its
-caller.  Unhandled exceptions (\sref{sec:exceptions}) thrown during
-evaluation of \code{p} abort execution of the forked thread and are
-otherwise ignored.
-
-\begin{lstlisting}
-class Monitor {
-  def synchronized [a] (def e: a): a
-}
-\end{lstlisting}
-
-Monitors define a \code{synchronized} method which provides mutual
-exclusion between threads.  It executes its argument computation
-\code{e} while asserting exclusive ownership of the monitor
-object whose method is invoked. If some other thread has ownership of
-the same monitor object, the computation is delayed until the other
-process has relinquished its ownership. Ownership of a monitor is
-relinquished at the end of the argument computation, and while the
-computation is waiting for a signal.
-
-\begin{lstlisting}
-class Signal {
-  def wait: Unit
-  def wait(msec: Long): Unit
-  def notify: Unit
-  def notifyAll: Unit
-}
-\end{lstlisting}
-
-The \code{Signal} class provides the basic means for process
-synchronization.  The \code{wait} method of a signal suspends the
-calling thread until it is woken up by some future invocation of the
-signal's \code{notify} or \code{notifyAll} method. The \code{notify}
-method wakes up one thread that is waiting for the signal. The
-\code{notifyAll} method wakes up all threads that are waiting for the
-signal. A second version of the \code{wait} method takes a time-out
-parameter (given in milliseconds). A thread calling \code{wait(msec)}
-will suspend until unblocked by a \code{notify} or \code{notifyAll}
-method, or until the \code{msec} millseconds have passed.
-
-\subsection{Channels}
-
-\begin{lstlisting}
-class Channel[a] {
-  def write(x: a): Unit
-  def read: a
-}
-\end{lstlisting}
-
-An object of type \code{Channel[a]} Channels offer a write-operation
-which writes data of type \code{a} to the channel, and a read
-operation, which returns written data as a result. The write operation
-is non-blocking; that is it returns immediately without waiting for
-the written data to be read.
-
-\subsection{Message Spaces}
-
-The Scala library also provides message spaces as a higher-level,
-flexible construct for process synchronization and communication. A
-{\em message} is an arbitrary object that inherits from the
-\code{Message} class.
-There is a special message \code{TIMEOUT} which is used to signal a time-out.
-\begin{lstlisting}
-class Message
-case class TIMEOUT extends Message
-\end{lstlisting}
-Message spaces implement the following class.
-\begin{lstlisting}
-class MessageSpace {
-  def send(msg: Message): Unit
-  def receive[a](f: PartialFunction1[Message, a]): a
-  def receiveWithin[a](msec: Long)(f: PartialFunction1[Message, a]): a
-}
-\end{lstlisting}
-The state of a message space consists of a multi-set of messages.
-Messages are added to the space using the \code{send} method. Messages
-are removed using the \code{receive} method, which is passed a message
-processor \code{f} as argument, which is a partial function from
-messages to some arbitrary result type. Typically, this function is
-implemented as a pattern matching expression. The \code{receive}
-method blocks until there is a message in the space for which its
-message processor is defined.  The matching message is then removed
-from the space and the blocked thread is restarted by applying the
-message processor to the message. Both sent messages and receivers are
-ordered in time. A receiver $r$ is applied to a matching message $m$
-only if there is no other (message, receiver) pair which precedes $(m,
-r)$ in the partial ordering on pairs that orders each component in
-time.
-
-The message space class also offers a method \code{receiveWithin}
-which blocks for only a specified maximal amount of time.  If no
-message is received within the specified time interval (given in
-milliseconds), the message processor argument $f$ will be unblocked
-with the special \code{TIMEOUT} message.
-
-case class extends { $\ldots$ }
-
-trait List { }
-class Nil
-class Cons
-
-\comment{changes:
-  Type                    ::=  SimpleType {with SimpleType} [with Refinement]
-                    | class SimpleType
-  SimpleType      ::= SimpleType [TypeArgs]
-                    | `(' [Types] `)'
-                    |
-                    | this
-}

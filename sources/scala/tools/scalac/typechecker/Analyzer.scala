@@ -96,6 +96,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   def lateEnter(unit: Unit, sym: Symbol): unit = {
+    //System.out.println("late enter: " + sym + " " + sym.isModule());//DEBUG
     enterUnit(unit);
     if (sym.rawFirstInfo().isInstanceOf[SourceCompleter]) {
       sym.setInfo(Type.ErrorType);

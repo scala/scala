@@ -2,14 +2,14 @@ bug95.scala:1: illegal inheritance from sealed class
 class C extends AnyVal;
                 ^
 bug95.scala:1: illegal inheritance;
- scala.AnyVal does not conform to scala.ScalaObject's supertype
+ scala.AnyVal does not conform to scala.ScalaObject's supertype java.lang.Object
 class C extends AnyVal;
         ^
 bug95.scala:2: illegal inheritance from sealed class
 class T extends Unit;
                 ^
 bug95.scala:2: illegal inheritance;
- scala.Unit does not conform to scala.ScalaObject's supertype
+ scala.Unit does not conform to scala.ScalaObject's supertype java.lang.Object
 class T extends Unit;
         ^
 four errors found

@@ -23,8 +23,8 @@ interesting programming techniques. The present informal exposition is
 meant to be complemented by the Java Language Reference Manual which
 specifies Scala in a more detailed and precise way.
 
-\paragraph{Acknowledgement}
-We owe a great dept to Sussman and Abelson's wonderful book
+\paragraph{Acknowledgment}
+We owe a great debt to Abelson's and Sussman's wonderful book
 ``Structure and Interpretation of Computer
 Programs''\cite{abelson-sussman:structure}. Many of their examples and
 exercises are also present here. Of course, the working language has
@@ -86,7 +86,7 @@ instance, the name of the array \code{a} is visible in functions
 parameter to them.
 \end{itemize}
 So far, Scala looks like a fairly conventional language with some
-syntactic pecularities. In fact it is possible to write programs in a
+syntactic peculiarities. In fact it is possible to write programs in a
 conventional imperative or object-oriented style. This is important
 because it is one of the things that makes it easy to combine Scala
 components with components written in mainstream languages such as
@@ -106,7 +106,7 @@ def sort(xs: List[int]): List[int] = {
 \end{lstlisting}
 
 The functional program works with lists instead of arrays.\footnote{In
-a future complete implemenetation of Scala, we could also have used arrays
+a future complete implementation of Scala, we could also have used arrays
 instead of lists, but at the moment arrays do not yet support
 \code{filter} and \code{:::}.}
 It captures the essence of the quicksort algorithm in a concise way:
@@ -114,7 +114,7 @@ It captures the essence of the quicksort algorithm in a concise way:
 \item Pick an element in the middle of the list as a pivot.
 \item Partition the lists into two sub-lists containing elements that
 are less than, respectively greater than the pivot element, and a
-third list which contains elements equal to privot.
+third list which contains elements equal to pivot.
 \item Sort the first two sub-lists by a recursive invocation of
 the sort function.\footnote{This is not quite what the imperative algorithm does;
 the latter partitions the array into two sub-arrays containing elements
@@ -328,7 +328,7 @@ on one item. Objects of this class are created by indicating
 \end{itemize}
 The process behavior is defined by its \code{run} method. That method
 repeatedly selects (using \code{receiveWithin}) a message and reacts to it,
-until the auction is closed, which is signalled by a \code{TIMEOUT}
+until the auction is closed, which is signaled by a \code{TIMEOUT}
 message. Before finally stopping, it stays active for another period
 determined by the \code{timeToShutdown} constant and replies to
 further offers that the auction is closed.  
@@ -632,7 +632,7 @@ def sqrtIter(guess: double, x: double): double =
   else sqrtIter(improve(guess, x), x);
 \end{lstlisting}
 Note that \code{sqrtIter} calls itself recursively.  Loops in
-imperative programs can always be modelled by recursion in functional
+imperative programs can always be modeled by recursion in functional
 programs. 
 
 Note also that the definition of \code{sqrtIter} contains a return
@@ -654,7 +654,7 @@ def isGoodEnough(guess: double, x: double) =
   abs(square(guess) - x) < 0.001;
 \end{lstlisting}
 
-Finally, the \code{sqrt} function itself is defined by an aplication
+Finally, the \code{sqrt} function itself is defined by an application
 of \code{sqrtIter}.
 \begin{lstlisting}
 def sqrt(x: double) = sqrtIter(1.0, x);
@@ -800,7 +800,7 @@ executed in constant space.
 
 By contrast, the recursive call in \code{factorial} is followed by a
 multiplication.  Hence, a new stack frame is allocated for the
-recursive instance of factorial, and is decallocated after that
+recursive instance of factorial, and is deallocated after that
 instance has finished. The given formulation of the factorial function
 is not tail-recursive; it needs space proportional to its input
 parameter for its execution.
@@ -810,7 +810,7 @@ More generally, if the last action of a function is a call to another
 both functions. Such calls are called ``tail calls''. In principle,
 tail calls can always re-use the stack frame of the calling function.
 However, some run-time environments (such as the Java VM) lack the
-primititives to make stack frame re-use for tail calls efficient.  A
+primitives to make stack frame re-use for tail calls efficient.  A
 production quality Scala implementation is therefore only required to
 re-use the stack frame of a directly tail-recursive function whose
 last action is a call to itself.  Other tail calls might be optimized
@@ -1377,7 +1377,7 @@ integers, as well as a private field \code{g} which contains the
 \code{gcd} of the constructor arguments. These members are inaccessible
 outside class \code{Rational}. They are used in the implementation of
 the class to eliminate common factors in the constructor arguments in
-order to ensure that nominator and denominator are always in
+order to ensure that numerator and denominator are always in
 normalized form.
 
 \paragraph{Creating and Accessing Objects}
@@ -1478,7 +1478,7 @@ that clients do not have to be rewritten because of that change.
 
 Consider the task of writing a class for sets of integer numbers with
 two operations, \code{incl} and \code{contains}. \code{(s incl x)}
-should return a new set which contains the element \code{x} togther
+should return a new set which contains the element \code{x} together
 with all the elements of set \code{s}. \code{(s contains x)} should
 return true if the set \code{s} contains the element \code{x}, and
 should return \code{false} otherwise. The interface of such sets is
@@ -1750,7 +1750,7 @@ trait Nat {
   def - (that: Nat): Nat;
 }
 \end{lstlisting}
-To implement the operations of class \code{Nat}, we define a subobject
+To implement the operations of class \code{Nat}, we define a sub-object
 \code{Zero} and a subclass \code{Succ} (for successor). Each number
 \code{N} is represented as \code{N} applications of the \code{Succ}
 constructor to \code{Zero}:
@@ -2027,7 +2027,7 @@ would be added. Hence, one can now construct expression trees a bit more concise
 Sum(Sum(Number(1), Number(2)), Number(3))
 \end{lstlisting} 
 \item Case classes and case objects 
-implicity come with implementations of methods
+implicitly come with implementations of methods
 \code{toString}, \code{equals} and \code{hashCode}, which override the
 methods with the same name in class \code{AnyRef}. The implementation
 of these methods takes in each case the structure of a member of a
@@ -2056,7 +2056,7 @@ methods. It computes a hash code from the case class constructor name
 and the hash codes of the constructor arguments, instead of from the object's
 address, which is what the as the default implementation of \code{hashCode} does.
 \item 
-Case classes implicity come with nullary accessor methods which
+Case classes implicitly come with nullary accessor methods which
 retrieve the constructor arguments.
 In our example, \code{Number} would obtain an accessor method
 \begin{lstlisting}
@@ -2418,7 +2418,7 @@ val s = new EmptySet[java.io.File]
                       $\mbox{\sl parameter bound}$ Ord[java.io.File].
 \end{lstlisting}
 To conclude the discussion of type parameter
-bounds, here is the defintion of trait \code{Ord} in scala.
+bounds, here is the definition of trait \code{Ord} in scala.
 \begin{lstlisting}
 package scala;
 trait Ord[t <: Ord[t]]: t {
@@ -2519,7 +2519,7 @@ class Array[+a] {
                                  $\mbox{\sl appears in contravariant position.}$
 }
 \end{lstlisting}
-So far, so good. Intuitively, the compiler was correect in rejecting
+So far, so good. Intuitively, the compiler was correct in rejecting
 the \code{update} method in a co-variant class because \code{update}
 potentially changes state, and therefore undermines the soundness of
 co-variant subtyping. 
@@ -2580,7 +2580,7 @@ often suggest a useful generalization of the contested method.
 \section{Least Types}
 
 Scala does not allow one to parameterize objects with types. That's
-why we orginally defined a generic class \code{EmptyStack[a]}, even
+why we originally defined a generic class \code{EmptyStack[a]}, even
 though a single value denoting empty stacks of arbitrary type would
 do. For co-variant stacks, however, one can use the following idiom:
 \begin{lstlisting}
@@ -2677,14 +2677,14 @@ follows.
 \begin{lstlisting}
 def divmod(x: int, y: int) = Pair(x / y, x % y)
 \end{lstlisting}
-How are elements of tuples acessed? Since tuples are case classes,
+How are elements of tuples accessed? Since tuples are case classes,
 there are two possibilities. One can either access a tuple's fields
 using the names of the constructor parameters \lstinline@_$i$@, as in the following example:
 \begin{lstlisting}
 val xy = divmod(x, y);
 System.out.println("quotient: " + x._1 + ", rest: " + x._2);
 \end{lstlisting}
-Or one uses pattern matching on tuples, as in the following erample:
+Or one uses pattern matching on tuples, as in the following example:
 \begin{lstlisting}
 divmod(x, y) match {
   case Pair(n, d) => 
@@ -3153,7 +3153,7 @@ computation over lists, like:
       \item extracting from a list all elements satisfying a criterion.
       \item combine the elements of a list using some operator.
 \end{itemize}
-Functional programming languages enable programmers to write eneral
+Functional programming languages enable programmers to write general
 functions which implement patterns like this by means of higher order
 functions. We now discuss a set of commonly used higher-order
 functions, which are implemented as methods in class \code{List}.
@@ -3176,7 +3176,7 @@ abstract class List[a] { ...
     case x :: xs => f(x) :: xs.map(f)
   }
 \end{lstlisting}
-Using \code{map}, \code{scaleList} can be more consisely written as follows.
+Using \code{map}, \code{scaleList} can be more concisely written as follows.
 \begin{lstlisting}
 def scaleList(xs: List[double], factor: double) = 
   xs map (x => x * factor)
@@ -3237,7 +3237,7 @@ This pattern is generalized to the \code{filter} method of class \code{List}:
     case x :: xs => if (p(x)) x :: xs.filter(p) else xs.filter(p)
   }
 \end{lstlisting}
-Using \code{filter}, \code{posElems} can be more consisely written as
+Using \code{filter}, \code{posElems} can be more concisely written as
 follows.
 \begin{lstlisting}
 def posElems(xs: List[int]): List[int] = 
@@ -3260,7 +3260,7 @@ To illustrate the use of \code{forall}, consider the question whether
 a number if prime. Remember that a number $n$ is prime of it can be
 divided without remainder only by one and itself. The most direct
 translation of this definition would test that $n$ divided by all
-numbers from 2 upto and excluding itself gives a non-zero
+numbers from 2 up to and excluding itself gives a non-zero
 remainder. This list of numbers can be generated using a function
 \code{List.range} which is defined in object \code{List} as follows.
 \begin{lstlisting}
@@ -3270,7 +3270,7 @@ object List { ...
     if (from >= end) Nil else from :: range(from + 1, end);
 \end{lstlisting}
 For example, \code{List.range(2, n)}
-generates the list of all integers from 2 upto and excluding $n$.
+generates the list of all integers from 2 up to and excluding $n$.
 The function \code{isPrime} can now simply be defined as follows.
 \begin{lstlisting}
 def isPrime(n: int) = 
@@ -3301,7 +3301,7 @@ def product(xs: List[int]): int = xs match {
   case y :: ys => y * product(ys)
 }
 \end{lstlisting}
-But we can also use the generaliztion of this program scheme embodied
+But we can also use the generalization of this program scheme embodied
 in the \code{reduceLeft} method of class \code{List}.  This method
 inserts a given binary operator between adjacent elements of a given list.
 E.g.\ 
@@ -3919,7 +3919,7 @@ constructions for dealing with lists.  But sometimes the level of
 abstraction required by these functions makes a program hard to
 understand.
 
-To help understandbility, Scala has a special notation which
+To help understandability, Scala has a special notation which
 simplifies common patterns of applications of higher-order functions.
 This notation builds a bridge between set-comprehensions in
 mathematics and for-loops in imperative languages such as C or
@@ -3977,15 +3977,15 @@ be written as follows.
 
 For-comprehensions are especially useful for solving combinatorial
 puzzles. An example of such a puzzle is the 8-queens problem: Given a
-standard chessboard, place 8 queens such that no queen is in check from any
+standard chess-board, place 8 queens such that no queen is in check from any
 other (a queen can check another piece if they are on the same
-column, row, or diagional). We will now develop a solution to this
-problem, generalizing it to chessboards of arbitrary size. Hence, the
-problem is to place $n$ queens on a chessboard of size $n \times n$.
+column, row, or diagonal). We will now develop a solution to this
+problem, generalizing it to chess-boards of arbitrary size. Hence, the
+problem is to place $n$ queens on a chess-board of size $n \times n$.
 
 To solve this problem, note that we need to place a queen in each row.
 So we could place queens in successive rows, each time checking that a
-newly placed queen is not in queck from any other queens that have
+newly placed queen is not in check from any other queens that have
 already been placed. In the course of this search, it might arrive
 that a queen to be placed in row $k$ would be in check in all fields
 of that row from queens in row $1$ to $k-1$. In that case, we need to
@@ -4006,7 +4006,7 @@ element for each solution.
 Now, to place the $k$'the queen, we generate all possible extensions
 of each previous solution by one more queen. This yields another list
 of solution lists, this time of length $k$. We continue the process
-until we have reached solutions of the size of the chessboard $n$.
+until we have reached solutions of the size of the chess-board $n$.
 This algorithmic idea is embodied in function \code{placeQueens} below:
 \begin{lstlisting}
 def queens(n: int): List[List[int]] = {
@@ -4041,7 +4041,7 @@ Here is a small example database:
 \begin{lstlisting}
 val books: List[Book] = List(
   Book("Structure and Interpretation of Computer Programs",
-       List("Abelson, Harald", "Sussman, Gerald J.")),
+       List("Abelson, Harold", "Sussman, Gerald J.")),
   Book("Principles of Compiler Design",
        List("Aho, Alfred", "Ullman, Jeffrey")),
   Book("Programming in Modula-2",
@@ -4184,7 +4184,7 @@ For-comprehensions resemble for-loops in imperative languages, except
 that they produce a list of results. Sometimes, a list of results is
 not needed but we would still like the flexibility of generators and
 filters in iterations over lists. This is made possible by a variant
-of the for-comprehension syntax, which excpresses for-loops:
+of the for-comprehension syntax, which expresses for-loops:
 \begin{lstlisting}
 for ( $s$ ) $e$
 \end{lstlisting}
@@ -4270,7 +4270,7 @@ theory underlying functional programming.
 
 In this chapter, we introduce functions with side effects and study
 their behavior. We will see that as a consequence we have to
-fundamenatlly modify up the substitution model of computation which we
+fundamentally modify up the substitution model of computation which we
 employed so far.
 
 \section{Stateful Objects}
@@ -4308,7 +4308,7 @@ In Scala, every defined variable has to be initialized at the point of
 its definition. For instance, the statement ~\code{var x: int;}~ is
 {\em not} regarded as a variable definition, because the initializer
 is missing\footnote{If a statement like this appears in a class, it is
-instead regarded as a variable declaration, which introcuces
+instead regarded as a variable declaration, which introduces
 abstract access methods for the variable, but does not associate these
 methods with a piece of state.}. If one does not know, or does not
 care about, the appropriate initializer, one can use a wildcard
@@ -4739,7 +4739,7 @@ inserts the pair \code{(curtime + delay, action)} into the
         Pair(actiontime, action) :: ag
       case (first @ Pair(time, act)) :: ag1 =>
         if (actiontime < time) Pair(actiontime, action) :: ag
-	else first :: insert(ag1)
+        else first :: insert(ag1)
     }
     agenda = insert(agenda)
   }
@@ -4801,7 +4801,7 @@ sum 15 new_value = false
 \section{Summary}
 
 We have seen in this chapter the constructs that let us model state in
-Scala -- these are variables, assignments, abd imperative control
+Scala -- these are variables, assignments, and imperative control
 structures.  State and Assignment complicate our mental model of
 computation.  In particular, referential transparency is lost.  On the
 other hand, assignment gives us new ways to formulate programs
@@ -4812,8 +4812,8 @@ functional programming or programming with assignments works best.
 
 The previous chapters have introduced variables, assignment and
 stateful objects.  We have seen how real-world objects that change
-with time can be modelled by changing the state of variables in a
-computation.  Time changes in the real world thus are modelled by time
+with time can be modeled by changing the state of variables in a
+computation.  Time changes in the real world thus are modeled by time
 changes in program execution. Of course, such time changes are usually
 stretched out or compressed, but their relative order is the same.
 This seems quite natural, but there is a also price to pay: Our simple
@@ -4822,7 +4822,7 @@ longer applicable once we introduce variables and assignment.
 
 Is there another way? Can we model state change in the real world
 using only immutable functions? Taking mathematics as a guide, the
-answer is clearly yes: A time-changing quantity is simply modelled by
+answer is clearly yes: A time-changing quantity is simply modeled by
 a function \code{f(t)} with a time parameter \code{t}. The same can be
 done in computation. Instead of overwriting a variable with successive
 values, we represent all these values as successive elements in a
@@ -4928,7 +4928,7 @@ This does not work for streams, where we require that the tail of a
 stream should not be evaluated until it is demanded by a \code{tail} operation.
 The argument why list-append \code{:::} cannot be adapted to streams is analogous.
 
-Intstead of \code{x :: xs}, one uses \code{Stream.cons(x, xs)} for
+Instead of \code{x :: xs}, one uses \code{Stream.cons(x, xs)} for
 constructing a stream with first element \code{x} and (unevaluated)
 rest \code{xs}.  Instead of \code{xs ::: ys}, one uses the operation
 \code{xs append ys}.  
@@ -4938,7 +4938,7 @@ rest \code{xs}.  Instead of \code{xs ::: ys}, one uses the operation
 Iterators are the imperative version of streams. Like streams,
 iterators describe potentially infinite lists. However, there is no
 data-structure which contains the elements of an iterator. Instead, 
-iterators aloow one to step through the sequence, using two abstract methods \code{next} and \code{hasNext}.
+iterators allow one to step through the sequence, using two abstract methods \code{next} and \code{hasNext}.
 \begin{lstlisting}
 trait Iterator[+a] {
   def hasNext: boolean;
@@ -5035,7 +5035,7 @@ returns all elements of the original iterator that satisfy a criterion
 \end{lstlisting}
 In fact, \code{filter} returns instances of a subclass of iterators
 which are ``buffered''.  A \code{BufferedIterator} object is an
-interator which has in addition a method \code{head}. This method
+iterator which has in addition a method \code{head}. This method
 returns the element which would otherwise have been returned by
 \code{head}, but does not advance beyond that element. Hence, the
 element returned by \code{head} is returned again by the next call to
@@ -6514,9 +6514,9 @@ class ComputeServer(n: Int) {
     val reply = new SyncVar[a]();
     openJobs.write{
       new Job { 
-	type t = a;
-	def task = p;
-	def ret(x: a) = reply.set(x);
+        type t = a;
+        def task = p;
+        def ret(x: a) = reply.set(x);
       }
     }
     () => reply.get
@@ -6604,7 +6604,7 @@ As a simple example of how mailboxes are used, consider a
 one-place buffer:
 \begin{lstlisting}
 class OnePlaceBuffer {
-  private val m = new MailBox;            // An internal milbox
+  private val m = new MailBox;            // An internal mailbox
   private case class Empty, Full(x: int); // Types of messages we deal with
   m send Empty;                           // Initialization
   def write(x: int): unit =
@@ -6662,10 +6662,10 @@ Otherwise, the message is appended to the linked list of sent messages.
       if (s1 != null) {
         s.next = s1.next; s1.elem
       } else {
-	val r = insert(lastReceiver, new Receiver {
+        val r = insert(lastReceiver, new Receiver {
           def isDefined(msg: Any) = f.isDefinedAt(msg);
         });
-	lastReceiver = r;
+        lastReceiver = r;
         r.elem.wait();
         r.elem.msg
       }
