@@ -68,8 +68,7 @@ public class PatternMatcher extends PatternTool {
         this.root = mk.ConstrPat(selector.pos, selector.type.widen());
         this.root.and = mk.Header(selector.pos,
                                   selector.type.widen(),
-                                  gen.Ident(selector.pos, root.symbol())
-                                  .setType(selector.type.widen()));
+                                  gen.Ident(selector.pos, root.symbol()));
         this.resultVar = new TermSymbol(selector.pos,
                                         fresh.newName(RESULT_N),
                                         owner,
@@ -296,9 +295,7 @@ public class PatternMatcher extends PatternTool {
 							env.newBoundVar(
 											((Tree.Typed)tree).expr.symbol(),
 											tpe.type,
-											make.Ident(tree.pos, casted.name).
-											setType(casted.type()).
-											setSymbol(casted));
+											gen.Ident(tree.pos, casted));
 							break;
 						default:
 							env.newBoundVar(
@@ -442,62 +439,36 @@ public class PatternMatcher extends PatternTool {
             if (casted.pos == Position.FIRSTPOS) {
                 //Symbol atSym = casted.type().lookup(APPLY_N);
 		Tree t =
-		    gen.Apply(
+		    gen.mkApply_V(
 			gen.Select(
 			    gen.Ident(pat.pos, casted),
-			    casted.lookup(APPLY_N)),
+			    defs.FUNCTION_APPLY(1)),
 			new Tree[]{gen.mkIntLit(pat.pos, index)});
 		Type seqType = t.type;
 /*
 		    atSym);
                 Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0];
-                Tree t = make.Select(
-                            pat.pos,
-                            make.Ident(pat.pos, casted.name)
-                                .setType(casted.type())
-                                .setSymbol(casted),
-                            APPLY_N);
-                switch (atSym.type()) {
+                Tree t = gen.Select(gen.Ident(pat.pos, casted), atSym);
+                switch (t.type()) {
                     case OverloadedType(Symbol[] alts, Type[] alttypes):
                         infer.methodAlternative(t, alts, alttypes,
                             new Type[]{defs.INT_TYPE}, seqType);
-                        t = make.Apply(pat.pos, t,
-                                new Tree[]{
-                                    make.Literal(pat.pos, new Integer(index))
-                                        .setType(defs.INT_TYPE)
-                                }).setType(seqType);
-                        break;
-                    default:
-                        t.setSymbol(atSym);
-                        t.setType(atSym.type());
-                        t = make.Apply(pat.pos, t,
-                                new Tree[]{
-                                    make.Literal(pat.pos, new Integer(index))
-                                        .setType(defs.INT_TYPE)
-                                }).setType(seqType);
                 }
+                t = gen.mkApply_V(t, new Tree[]{gen.mkIntLit(pat.pos, index)});
 */
                 target.and = curHeader = mk.Header(pat.pos, seqType, t);
             } else {
                 Symbol ts = ((ClassSymbol) casted.type().symbol())
                     .caseFieldAccessor(index);
 				Type accType = casted.type().memberType(ts);
-				Tree accTree = make.Select(
-                            	pat.pos,
-                            	make.Ident(pat.pos, casted.name)
-                                	.setType(casted.type()).setSymbol(casted),
-                            	ts.name)
-                               		.setType(accType).setSymbol(ts);
+				Tree accTree = gen.Select(gen.Ident(pat.pos, casted), ts);
                	switch (accType) {
                		// scala case accessor
                		case MethodType(_, _):
 						target.and = curHeader = mk.Header(
 							pat.pos,
 							accType.resultType(),
-							make.Apply(
-								pat.pos,
-								accTree,
-								Tree.EMPTY_ARRAY).setType(accType.resultType()));
+							gen.mkApply__(accTree));
 						break;
 					// jaco case accessor
 					default:
@@ -718,10 +689,9 @@ public class PatternMatcher extends PatternTool {
     			case ConstantPat(Object value):
     				return cf.If(
     					cf.Equals(selector,
-    						make.Literal(root.and.or.pos, value).setType(root.and.or.type)),
+    						gen.mkLit(root.and.or.pos, value)),
     					bodyToTree(root.and.or.and),
-    					defaultBody(root.and, matchError)).
-    						setType(resultVar.type());
+    					defaultBody(root.and, matchError));
     			default:
     				return generalSwitchToTree();
     		}
@@ -791,27 +761,14 @@ public class PatternMatcher extends PatternTool {
 
     public Tree generalSwitchToTree() {
         TreeList ts = new TreeList();
+        ts.append(gen.ValDef(root.symbol(), selector));
+        ts.append(gen.ValDef(resultVar, gen.mkDefaultValue(selector.pos, resultVar.type())));
         ts.append(
-            make.ValDef(selector.pos,
-                        0,
-                        root.symbol().name,
-                        gen.mkType(selector.pos, selector.type),
-                        selector).setType(defs.UNIT_TYPE).setSymbol(root.symbol()));
-        ts.append(
-            make.ValDef(selector.pos,
-                        Modifiers.MUTABLE,
-                        resultVar.name,
-                        gen.mkType(selector.pos, resultVar.type()),
-                        gen.mkDefaultValue(selector.pos, resultVar.type()))
-            .setType(defs.UNIT_TYPE)
-            .setSymbol(resultVar));
-        ts.append(
-            make.If(
+            gen.If(
                 selector.pos,
                 toTree(root.and),
-                make.Ident(selector.pos,
-                           resultVar.name).setType(resultVar.type()).setSymbol(resultVar),
-                cf.ThrowMatchError(selector.pos, resultVar.type())).setType(resultVar.type()));
+                gen.Ident(selector.pos, resultVar),
+                cf.ThrowMatchError(selector.pos, resultVar.type())));
         return gen.mkBlock(selector.pos, ts.toArray());
     }
 
@@ -834,11 +791,9 @@ public class PatternMatcher extends PatternTool {
                         System.arraycopy(bound[i], 0, ts, 0, bound[i].length);
                         ts[bound[i].length] = gen.mkBlock(
                             new Tree[]{
-                                make.Assign(
-                                    body[i].pos,
-                                    make.Ident(body[i].pos, resultVar.name)
-                                        .setType(resultVar.type()).setSymbol(resultVar),
-                                    body[i]).setType(defs.UNIT_TYPE),
+                                gen.Assign(
+                                    gen.Ident(body[i].pos, resultVar),
+                                    body[i]),
                                 gen.mkBooleanLit(body[i].pos, true)
                             });
                         if (guard[i] != Tree.Empty)
@@ -935,7 +890,7 @@ public class PatternMatcher extends PatternTool {
 			cases = cases.next;
 		}
 		return gen.Switch(
-			gen.Apply(gen.Select(selector.duplicate(), defs.OBJECT_TAG())),
+			gen.mkApply__(gen.Select(selector.duplicate(), defs.OBJECT_TAG())),
 			tags,
 			bodies,
 			(defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)
@@ -950,65 +905,42 @@ public class PatternMatcher extends PatternTool {
             case DefaultPat():
                 return toTree(node.and);
             case ConstrPat(Symbol casted):
-                return make.If(
-                        selector.pos,
+                return gen.If(
                         gen.mkIsInstanceOf(selector.duplicate(), node.type),
                         gen.mkBlock(
                             new Tree[]{
-                                make.ValDef(selector.pos,
-                                            0,
-                                            casted.name,
-                                            gen.mkType(selector.pos, node.type),
-                                            gen.mkAsInstanceOf(selector.duplicate(), node.type))
-                                    .setType(defs.UNIT_TYPE).setSymbol(casted),
+                                gen.ValDef(casted,
+                                           gen.mkAsInstanceOf(selector.duplicate(), node.type)),
                                 toTree(node.and)}),
-                        toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
+                        toTree(node.or, selector.duplicate()));
             case SequencePat(Symbol casted, int len):
-                Symbol lenSym = casted.type().lookup(LENGTH_N);
-                Tree t = make.Select(selector.pos, gen.mkAsInstanceOf(selector.duplicate(), node.type), LENGTH_N);
-                switch (lenSym.type()) {
-                    case OverloadedType(Symbol[] alts, Type[] alttypes):
-                        infer.methodAlternative(t, alts, alttypes, new Type[0], defs.INT_TYPE);
-                        break;
-                    default:
-                        t.setSymbol(lenSym);
-                        t.setType(lenSym.type());
-                }
-                return make.If(
-                        selector.pos,
+                return gen.If(
                         cf.And(
                             gen.mkIsInstanceOf(selector.duplicate(), node.type),
                             cf.Equals(
-                                make.Apply(
-                                    selector.pos, t,
-                                    Tree.EMPTY_ARRAY).setType(defs.INT_TYPE),
-                                make.Literal(selector.pos, new Integer(len))
-                            .setType(defs.INT_TYPE))),
+                                gen.mkApply__(
+                                    gen.Select(
+                                        gen.mkAsInstanceOf(
+                                            selector.duplicate(), node.type),
+                                        cf.seqListSym_length())),
+                                gen.mkIntLit(selector.pos, len))),
                         gen.mkBlock(
                             new Tree[]{
-                                make.ValDef(selector.pos,
-                                            0,
-                                            casted.name,
-                                            gen.mkType(selector.pos, node.type),
-                                            gen.mkAsInstanceOf(selector.duplicate(), node.type))
-                                    .setType(defs.UNIT_TYPE).setSymbol(casted),
+                                gen.ValDef(casted,
+                                           gen.mkAsInstanceOf(selector.duplicate(), node.type)),
                                 toTree(node.and)}),
-                        toTree(node.or, selector.duplicate()))
-                            .setType(defs.BOOLEAN_TYPE);
+                        toTree(node.or, selector.duplicate()));
             case ConstantPat(Object value):
-                return make.If(
-                        selector.pos,
+                return gen.If(
                         cf.Equals(selector.duplicate(),
-                            make.Literal(selector.pos, value)
-                                .setType(node.type)),
+                            gen.mkLit(selector.pos, value)),
                         toTree(node.and),
-                        toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
+                        toTree(node.or, selector.duplicate()));
             case VariablePat(Tree tree):
-                return make.If(
-                        selector.pos,
+                return gen.If(
                         cf.Equals(selector.duplicate(), tree),
                         toTree(node.and),
-                        toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
+                        toTree(node.or, selector.duplicate()));
             default:
                 throw new ApplicationError();
         }
