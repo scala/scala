@@ -11,7 +11,7 @@ package scala;
 
 trait Monitor {
 
-	def synchronized[a](def p: a): a = NativeMonitor.synchronised(this, p);
+    def synchronized[a](def p: a): a = NativeMonitor.synchronised(this, p);
 
-	def await(def cond: Boolean) = while (!cond) { this.wait() }
+    def await(def cond: Boolean) = while (!cond) { this.wait() }
 }

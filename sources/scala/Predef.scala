@@ -50,7 +50,7 @@ object Predef {
 
     def while(def cond: Boolean)(def body: Unit): Unit = NativeLoop.loopWhile(cond, body);
         /* if (cond) {
-            command; while(cond)(body)
+            body; while(cond)(body)
         } */
 
     trait Until {

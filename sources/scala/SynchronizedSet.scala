@@ -14,66 +14,66 @@ package scala;
 trait SynchronizedSet[A] extends Set[A] with Monitor {
 
     override def size: Int = synchronized {
-    	super.size
+        super.size
     }
 
     override def isEmpty: Boolean = synchronized {
-    	super.isEmpty
+        super.isEmpty
     }
 
     override def contains(elem: A) = synchronized {
-    	super.contains(elem);
+        super.contains(elem);
     }
 
     override def add(elem: A): Unit = synchronized {
-    	super.add(elem);
+        super.add(elem);
     }
 
     override def addAll(elems: A*): Unit = synchronized {
-    	super.addSet(elems);
+        super.addSet(elems);
     }
 
     override def addSet(that: Iterable[A]) = synchronized {
-    	super.addSet(that);
+        super.addSet(that);
     }
 
     override def remove(elem: A): Unit = synchronized {
-    	super.remove(elem);
+        super.remove(elem);
     }
 
     override def removeAll(elems: A*): Unit = synchronized {
-    	super.removeSet(elems);
+        super.removeSet(elems);
     }
 
     override def removeSet(that: Iterable[A]) = synchronized {
-    	super.removeSet(that);
+        super.removeSet(that);
     }
 
     override def intersect(that: Set[A]) = synchronized {
-    	super.intersect(that);
+        super.intersect(that);
     }
 
     override def clear: Unit = synchronized {
-    	super.clear;
+        super.clear;
     }
 
     override def subsetOf(that: Set[A]) = synchronized {
-    	super.subsetOf(that);
+        super.subsetOf(that);
     }
 
     override def foreach(f: A => Unit) = synchronized {
-    	super.foreach(f);
+        super.foreach(f);
     }
 
     override def filter(p: A => Boolean) = synchronized {
-    	super.filter(p);
+        super.filter(p);
     }
 
     override def toList: List[A] = synchronized {
-    	super.toList;
+        super.toList;
     }
 
     override def toString() = synchronized {
-    	super.toString();
+        super.toString();
     }
 }

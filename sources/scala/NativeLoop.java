@@ -15,8 +15,8 @@ public class NativeLoop {
     /** @meta method [?A] (def scala.Boolean, def ?A) scala.Unit;
      */
     public static void loopWhile(scala.Function0 cond, scala.Function0 body) {
-    	while (((scala.Boolean)cond.apply()).asBoolean()) {
-    		body.apply();
-    	}
+        while (((scala.Boolean)cond.apply()).asBoolean()) {
+            body.apply();
+        }
     }
 }
