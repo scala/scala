@@ -90,4 +90,19 @@ trait Iterable[+A] {
         elements foreach { elem => res = elem :: res; }
         res.reverse
     }
+
+    def similar(x:Any) = {
+      x match {
+        case that:Iterable[A] =>
+          val ita = this.elements;
+          val itb = that.elements;
+          var res = true;
+          while( ita.hasNext && itb.hasNext && res ) {
+            res = ( ita.next == itb.next );
+          };
+          !ita.hasNext && !itb.hasNext && res
+        case _ =>
+          false
+      }
+    }
 }

@@ -193,4 +193,19 @@ trait Iterator[+a] with Iterable[a] {
     ahead = new Partner;
     Pair(ahead, new Partner)
   }
+
+  /** converts a prefix of this iterator to a sequence
+  */
+  def toSeq( len:int ):Seq[a] = new Seq[a] {
+    def length: Int = len;
+    def elements = Iterator.this;
+    def apply( i:int ) = {
+      val it = Iterator.this;
+      var j = 0; while( i<i ) it.next;
+      it.next
+    }
+  }
+
+  def toSeq:Seq[a] = toList;
+
 }

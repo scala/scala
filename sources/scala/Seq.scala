@@ -17,7 +17,19 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
+trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
+
+    /** Returns true if the elements in this sequence are equal
+     *  to the elements in another sequence
+     */
+  override def similar( x:Any ):boolean = {
+    x.match {
+      case that:Seq[A] =>
+        ( that.length == this.length ) && super[Iterable].similar( that )
+      case _ =>
+        false
+    };
+  }
 
     /** Returns the length of the sequence.
      *
@@ -45,4 +57,5 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
         }
         res + ")"
     }
+
 }

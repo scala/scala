@@ -23,58 +23,53 @@
   
   object <string ref="objectName"/> {
 
+    import scala.collection.mutable.HashMap;
+
     type childrenT = scala.Seq[scala.xml.Node];
     type attribMap  = scala.collection.immutable.Map[String,String];
-    type attribMapT = scala.collection.mutable.HashMap[String,String];
+    type attribMapT = HashMap[String,String];
     type NodeConstructorType = (childrenT,attribMapT) =&gt; scala.xml.Node;
 
     <elementBinding>
     def constr_&ccElementName;( ch:childrenT, attrs:attribMapT ) = new &ccElementName;(ch:_*) { 
-      val aMap = scala.collection.immutable.ListMap.Empty[String,String].incl( attrs.toList );
-      override def attributes : attribMap = aMap;
-      <attributeBinding>
-      override val &cAttributeName; = attrs.get(&qAttributeName;); 
-      </attributeBinding>
-      val attribHashCode: int = attrs.toList.hashCode() ;
+      private val hmap = attrs;
+      override def attribute = attrs.elements.toSeq( hmap.size );
+
     };
     
-     case class &ccElementName;( ch:scala.xml.Node* ) extends scala.xml.AttributedNode {
-          def label = &qElementName;; 
-          def children = ch;
+     case class &ccElementName;( ch:scala.xml.Node* ) extends scala.xml.Node {
+     
+     def label = &qElementName;;
+     def child = ch;
 
-      override def attributes : attribMap = {
-        var m = scala.collection.immutable.ListMap.Empty[String,String];
-        <attributeBinding>
-        this.&cAttributeName; match {
-          case scala.Some( x ) => m.update( &qAttributeName;, x ); 
-          case scala.None =>;  
-        };
-        </attributeBinding>
-        m
-      }
-
+      private val hmap = new HashMap[String,String];
+      override def attribute:Seq[Pair[String,String]] = Nil;
       <attributeBinding>
-        val &cAttributeName; : scala.Option[String] = scala.None;  /* o'ridden at parse time */
+        def &cAttributeName; : scala.Option[String] = hmap.get(&qAttributeName;);
       </attributeBinding>
+      val attribHashCode: int = hmap.toList.hashCode() ;
 
-      def % (attrs:scala.List[Pair[String,String]]) = new &ccElementName;( children:_* ) {
-
-        private var lmap =  &ccElementName;.this.attributes.incl( attrs );
-        override def attributes : attribMap = lmap;
-        <attributeBinding>        
-        override val &cAttributeName; = lmap.get(&qAttributeName;);
-        </attributeBinding>        
-      }
-
-      def % (attr:Pair[String,String]) = new &ccElementName;( children:_* ) {
-
-        private var lmap =  &ccElementName;.this.attributes.incl( attr );
-        override def attributes : attribMap = lmap;
-        <attributeBinding>        
-        override val &cAttributeName; = lmap.get(&qAttributeName;);
-        </attributeBinding>        
-      }
-
+     /** returns a new &ccElementName; with updated attributes */
+     final def %(attrs: Seq[Pair[String, String]]) = {
+       val newmap = new HashMap[String,String]();
+       for( val p &lt;- attribute.elements ) { newmap += p._1 -&gt; p._2 };
+       for( val p &lt;- attrs )         { newmap += p._1 -&gt; p._2 };
+       new &ccElementName;( child:_* ) {
+         private val hmap = newmap;
+         override def attribute = newmap.elements.toSeq( newmap.size );
+       }
+     }
+  
+     /** returns a new &ccElementName; with updated attribute */
+     final def %(attr: Pair[String, String])  = {
+       val newmap = new HashMap[String,String]();
+       for( val p &lt;- attribute.elements ) { newmap += p._1 -&gt; p._2 };
+       newmap += attr._1 -&gt; attr._2;
+       new &ccElementName;( child:_* ) {
+         private val hmap = newmap;
+         override def attribute = newmap.elements.toSeq( newmap.size );
+       }
+     }
     }
     </elementBinding>
     

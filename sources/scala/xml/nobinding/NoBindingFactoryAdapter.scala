@@ -36,21 +36,22 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
     val elHashCode = Utility.hashCode( label, attrs, children ) ;
 
     val attrList = attrs.toList;
-
     cache.get( elHashCode ).match{
       case Some(cachedElem) =>
-        //System.err.println("[using cached elem +"+cachedElem.toXML+"!]");
-      cachedElem
+        //System.err.println("[using cached elem +"+cachedElem.toXML+"!]"); //DEBUG
+        cachedElem
       case None => val el = if( children.isEmpty ) {
        new Elem( label ) {
-          override def attributes = ListMap.Empty[String,String].incl( attrList );
-          override def hashCode() = Utility.hashCode( label, attrList.hashCode(), children );
+         private val hmap = attrs;
+         override def attribute = attrs.elements.toSeq( attrs.size );
+         override def hashCode() = elHashCode;
         };
       } else {
        new Elem( label, children:_* ) {
-          override def attributes = ListMap.Empty[String,String].incl( attrList );
-          override def hashCode() = Utility.hashCode( label, attrList.hashCode(), children );
-        };
+         private val hmap = attrs;
+         override def attribute = attrs.elements.toSeq( attrs.size );
+         override def hashCode() = elHashCode;
+       };
       }
       cache.update( elHashCode, el );
       el
