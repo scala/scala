@@ -1198,6 +1198,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	return sym.type().asSeenFrom(this, sym.owner());
     }
 
+    /** The stabilized type of `sym', seen as a member of this type.
+     */
+    public Type memberStabilizedType(Symbol sym) {
+        return sym.isStable() && this.isStable()
+            ? Type.singleTypeMethod(this, sym)
+            : this.memberType(sym);
+    }
+
     /** The low bound of `sym', seen as a member of this type.
      */
     public Type memberLoBound(Symbol sym) {
