@@ -268,7 +268,7 @@ class AddInterfaces extends Transformer {
             Tree t = classBody[i];
             Symbol tSym = t.symbol();
 
-            if (!t.hasSymbol() || !phase.memberGoesInInterface(tSym))
+            if (!t.definesSymbol() || !phase.memberGoesInInterface(tSym))
                 continue;
 
             if (tSym.isClass())
@@ -301,12 +301,12 @@ class AddInterfaces extends Transformer {
             Tree t = classBody[i];
             Symbol tSym = t.symbol();
 
-            if (t.hasSymbol() && !classMemberMap.containsKey(tSym))
+            if (t.definesSymbol() && !classMemberMap.containsKey(tSym))
                 continue;
 
             Tree newT = transform(t);
 
-            if (t.hasSymbol() && classMemberMap.containsKey(tSym))
+            if (t.definesSymbol() && classMemberMap.containsKey(tSym))
                 newT.setSymbol((Symbol)classMemberMap.get(tSym));
 
             newClassBody.append(newT);
