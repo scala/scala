@@ -44,7 +44,7 @@ object Predef {
 
     def error(message: String): All = throw new Error(message);
 
-    def exit: scala.Unit = java.lang.System.exit(0);
+    def exit: Unit = java.lang.System.exit(0);
 
     def assert(assertion: Boolean): Unit = {
     	if (!assertion)
