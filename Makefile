@@ -22,6 +22,7 @@ PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
 PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 PROJECT_SOURCES		+= $(SCALAP_SOURCES)
+PROJECT_SOURCES		+= $(SCALATEST_SOURCES)
 
 # scala scripts wrapper
 SCRIPTS_PREFIX		 = $(PROJECT_BINARYDIR)
@@ -44,6 +45,7 @@ SCRIPTS_WRAPPER_ALIASES	+= surus
 SCRIPTS_WRAPPER_ALIASES	+= surus-debug
 SCRIPTS_WRAPPER_ALIASES	+= dtd2scala
 SCRIPTS_WRAPPER_ALIASES += scalap
+SCRIPTS_WRAPPER_ALIASES += scalatest
 SCRIPTS_WRAPPER_MACRO	 = -es@{\#$(1)\#}@'"$(MACRO_$(1):$(INSTALL_PREFIX)/%=$$PREFIX/%)"'@g
 
 # automatic generation of Function<n>.java and Tuple<n>.scala files
@@ -118,6 +120,12 @@ SCALAP_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scalap.lst)
 SCALAP_SOURCES		+= $(SCALAP_LIST:%=$(SCALAP_ROOT)/%)
 SCALAP_SC_FILES	 	 = $(SCALAP_SOURCES)
 
+# scalatest
+SCALATEST_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalatest
+SCALATEST_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scalatest.lst)
+SCALATEST_SOURCES	+= $(SCALATEST_LIST:%=$(SCALATEST_ROOT)/%)
+SCALATEST_JC_FILES	 = $(SCALATEST_SOURCES)
+
 # tools archive
 TOOLS_NAME		 = tools
 TOOLS_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(TOOLS_NAME).jar
@@ -128,6 +136,7 @@ TOOLS_JAR_FILES		+= scaladoc
 TOOLS_JAR_FILES		+= scalai
 TOOLS_JAR_FILES		+= scala/tools/dtd2scala
 TOOLS_JAR_FILES		+= scalap
+TOOLS_JAR_FILES		+= scala/tools/scalatest
 
 # java compilation
 JC_COMPILER		 = PICO
@@ -153,6 +162,7 @@ all		: interpreter
 all		: scaladoc
 all		: dtd2scala
 all		: scalap
+all		: scalatest
 all		: library-doc
 
 force		: fastclean
@@ -161,6 +171,7 @@ force		: fastclean
 fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
+	$(RM) .latest-scalatest-jc
 	$(RM) .latest-dtd2scala-sc
 	$(RM) .latest-scalap-sc
 	$(RM) .latest-scaladoc-jc
@@ -210,6 +221,7 @@ scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-rsrc
 dtd2scala	: .latest-dtd2scala-sc
 scalap		: .latest-scalap-sc
+scalatest	: .latest-scalatest-jc
 library-doc	: .latest-library-sdc
 scalac4ant	:
 	cd support/ant && ant
@@ -228,6 +240,7 @@ scalac4ant	:
 .PHONY		: scaladoc
 .PHONY		: dtd2scala
 .PHONY		: scalap
+.PHONY		: scalatest
 .PHONY		: library-doc
 .PHONY		: scala4ant
 
@@ -307,6 +320,10 @@ scalac4ant	:
 	@$(make) sc target=SCALAP SCALAP_SC_FILES='$?'
 	touch $@
 
+.latest-scalatest-jc		: $(SCALATEST_JC_FILES)
+	@$(make) jc target=SCALATEST SCALATEST_JC_FILES='$?'
+	touch $@
+
 ##############################################################################
 # Rules
 
@@ -373,6 +390,7 @@ $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalap-sc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalatest-jc
 $(TOOLS_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=TOOLS
 
