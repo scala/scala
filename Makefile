@@ -207,8 +207,9 @@ generate		: meta.generate
 
 $(prefix).generate	: $(LATEST_PREFIX)-meta-all
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
-	$(strip $(JAVA) -cp $(JC_CLASSPATH) \
-	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
+	$(strip $(JAVA) -cp $(call CYGWIN_PATH,$(JC_CLASSPATH)) \
+	    meta.GenerateAll $(call CYGWIN_FILE,$(PROJECT_SOURCEDIR)) \
+	    .generated)
 
 .PHONY			: generate
 .PHONY			: $(prefix).generate
