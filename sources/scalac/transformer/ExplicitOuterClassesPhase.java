@@ -99,9 +99,10 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         String s1 = Debug.show(symbol);
         String s2 = symbol.info().toString();
-        //global.nextPhase();
+        symbol.updateInfo(type);
+        global.nextPhase();
         String s3 = type.toString();
-        //global.prevPhase();
+        global.prevPhase();
         System.out.println("!!! symbol = " + s1);
         System.out.println("!!! type   = " + s2 + " -- " + System.identityHashCode(s2));
         System.out.println("!!! new    = " + s3 + " -- " + System.identityHashCode(s3));
@@ -213,6 +214,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             case TypeRef(Type prefix, Symbol symbol, Type[] targs):
                 if (!symbol.isClass()) break;
                 prefix = apply(prefix);
+                targs = map(targs);
                 targs = Type.concat(getOuterTypeArgs(prefix, symbol), targs);
                 return Type.TypeRef(prefix, symbol, targs);
             }
