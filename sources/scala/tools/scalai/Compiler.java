@@ -44,7 +44,6 @@ public class Compiler {
 
     private final Global global;
     private final Definitions definitions;
-    private final TreeGen make;
     private final Constants constants;
     private final ClassLoader loader;
     private final Environment environment;
@@ -57,7 +56,6 @@ public class Compiler {
     public Compiler(Global global, Evaluator evaluator, SymbolWriter writer) {
         this.global = global;
         this.definitions = global.definitions;
-        this.make = global.treeGen;
         this.constants = new Constants();
         this.loader = new PathClassLoader(global.classPath);
         scala.runtime.RunTime.setClassLoader(loader);
@@ -336,31 +334,25 @@ public class Compiler {
             return;
 
         case ValDef(_, _, _, Tree body):
-            if (symbol.isModule()) {
-                environment.insertVariable(symbol, Variable.Module(new CodePromise(new ModuleBuilder(this, symbol, body)), null));
-                if (mustShowDefinition(symbol)) writer.write1(symbol);
-            } else {
-                Variable variable = environment.insertVariable(symbol, Variable.Global(constants.zero(symbol.type())));
-                if (body != Tree.Empty) buffer.add(make.Assign(make.Ident(symbol), body));
-                if (mustShowDefinition(symbol)) buffer.add(
-                    make.Apply(make.Select(make.Ident(WRITER), WRITER_WRITE),
-                        new Tree[] {
-                            make.Ident(newGlobalVariable(SYMBOL_TYPE, symbol)),
-                            make.Ident(symbol)}));
+            assert symbol.isModule() : Debug.show(symbol);
+            environment.insertVariable(symbol, Variable.Module(new CodePromise(new ModuleBuilder(this, symbol, body)), null));
+            if (interactive && writer != null &&
+                symbol.name.toString().startsWith(global.CONSOLE_S)) // !!!
+            {
+                global.prevPhase();
+                buffer.add(global.treeGen.Ident(symbol));
+                global.nextPhase();
             }
             return;
 
         case DefDef(_, _, _, _, _, _):
+            // !!! impossible ? => remove !
             CodePromise function = compile(symbol, (Tree.DefDef)tree);
             environment.insertFunction(symbol, Function.Global(function));
-            if (isEntryPoint(symbol)) {
-                buffer.add(make.Apply(make.Ident(symbol), new Tree[0]));
-            } else if (mustShowDefinition(symbol)) {
-                writer.write1(symbol);
-            }
             return;
 
         default:
+            // !!! impossible ? => remove !
             buffer.add(tree);
             return;
         }
@@ -371,22 +363,6 @@ public class Compiler {
 
     // !!! move elsewhere ?
     public static final Name MAIN_N = Name.fromString("main");
-
-    private boolean isEntryPoint(Symbol symbol) {
-        if (symbol.name != MAIN_N) return false;
-        switch (symbol.type()) {
-        case MethodType(Symbol[] vparams, _): return vparams.length == 0;
-        default: return true;
-        }
-    }
-
-    private boolean mustShowDefinition(Symbol symbol) {
-        // !!! the last test is to avoid printing of lifted symbols
-        return
-            (interactive &&
-                // !!! symbol.owner() == definitions.CONSOLE_CLASS &&
-            writer != null && symbol.name.lastPos((byte)'$') < 0); // !!! '$'
-    }
 
     private Symbol newGlobalVariable(Type type, Object value) {
         Symbol symbol = new TermSymbol(Position.NOPOS,

@@ -275,6 +275,9 @@ public class  Global {
 
         printer.end();
     }
+    // !!! <<< Interpreter stuff
+    public static final String CONSOLE_S = "$console$";
+    // !!! >>> Interpreter stuff
 
     /** stop the compilation process immediately
      */
