@@ -15,6 +15,12 @@ object Predef {
   def List[a](x: a*): List[a] = x as List[a];
   val List = scala.List;
 
+  def Set[a](es: a*): Set[a] = {
+    val set = new HashSet[a];
+    set.addSet(es);
+    set;
+  }
+
   def error(x: String): All = new java.lang.RuntimeException(x).throw;
 
   def try[a](def block: a): Except[a] =
