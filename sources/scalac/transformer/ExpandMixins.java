@@ -127,6 +127,8 @@ public class ExpandMixins extends Transformer {
 
     protected Symbol renameSymbol(Map symbolMap, Symbol oldSymbol) {
         Name newName = freshNameCreator.newName(oldSymbol.name);
+        if (oldSymbol.name.isTypeName()) newName = newName.toTypeName();
+        else if (oldSymbol.name.isConstrName()) newName = newName.toConstrName();
         Symbol newSymbol = oldSymbol.cloneSymbol();
         newSymbol.name = newName;
         symbolMap.put(oldSymbol, newSymbol);

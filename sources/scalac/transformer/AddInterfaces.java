@@ -94,7 +94,9 @@ class AddInterfaces extends SubstTransformer {
         StringBuffer buf = new StringBuffer();
         uniqueName(sym, buf);
         Name newName = Name.fromString(buf.toString());
-        return (sym.name.isTypeName() ? newName.toTypeName() : newName);
+        if (sym.name.isTypeName()) return newName.toTypeName();
+        else if (sym.name.isConstrName()) return newName.toConstrName();
+        else return newName;
     }
 
     protected final static String CLASS_SUFFIX = "$class";
@@ -108,7 +110,9 @@ class AddInterfaces extends SubstTransformer {
 
         String interfaceStr = interfaceName.toString();
         Name className = Name.fromString(interfaceStr + CLASS_SUFFIX);
-        return (interfaceName.isTypeName() ? className.toTypeName() : className);
+        if (interfaceName.isTypeName()) return className.toTypeName();
+        else if (interfaceName.isConstrName()) return className.toConstrName();
+        else return className;
     }
 
     // Modifiers for which we do not create interfaces.
