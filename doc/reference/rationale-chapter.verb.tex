@@ -65,37 +65,21 @@ paradigms within the language itself. The benefits of integration are
 realized fully only if the common language achieves a meaningful
 unification of concepts rather than being merely an agglutination of
 different programming paradigms.  This is what we try to achieve with
-Scala\footnote{Scala stands for ``Software Composition and
-Architecture LAnguage''.}.
+Scala\footnote{Scala stands for ``Scalable Language''.}.
 
-Scala is an object-oriented and functional language with clear
-semantic foundations.
-\begin{itemize}
-\item[] {\em Object-oriented:}
-Scala is a pure object-oriented language in
-the sense that every value is an object. Types and behavior of objects are
-described by classes. Classes can be composed using mixin composition.
-Scala is designed to interact well with mainstream object-oriented
-languages, in particular Java and C\#.
-\item[] {\em Functional:}
-Scala is a functional language in the sense that every function is a
-value. Nesting of function definitions and higher-order functions are
-naturally supported. Scala also supports a general notion of pattern
-matching which can model the algebraic types used in many functional
-languages.
-%\item[] {\em Concurrent:}
-%Scala is a concurrent language in the sense that it supports
-%lightweight threads with flexible constructs for message passing and
-%process synchronization. These constructs are based functional nets, a
-%theory which combines the principles of functional programming and
-%Petri nets in a small kernel language based on Join calculus.
-\item[] {\em Clear semantic foundations:}
-The operational semantics of a Scala program can be formulated as a
-functional net. Scala has an expressive type system which combines
-genericity, subtyping, and a form of intersection types based on mixin
-classes. That type system is in turn based on the foundational type
-theory of name dependent types.
-\end{itemize}
+Scala is both an an object-oriented and functional language.  It is a
+pure object-oriented language in the sense that every value is an
+object. Types and behavior of objects are described by
+classes. Classes can be composed using mixin composition.  Scala is
+designed to interact well with mainstream object-oriented languages,
+in particular Java and C\#.
+
+Scala is also a functional language in the sense that every function
+is a value. Nesting of function definitions and higher-order functions
+are naturally supported. Scala also supports a general notion of
+pattern matching which can model the algebraic types used in many
+functional languages. Furthermore, this notion of pattern matching
+naturally extends to the processing of XML data.
 
 The design of Scala is driven by the desire to unify object-oriented
 and functional elements. Here are three examples how this is achieved:
@@ -119,24 +103,19 @@ This can express both closed and extensible data types, and also
 provides a convenient way to exploit run-time type information in
 cases where static typing is too restrictive.
 \item
-Software architecture languages are often based on a formalized notion
-of component.  A component can be expressed in Scala as a mixin class
-where provided services are defined fields and required services are
-abstract fields. Components are assembled using mixin composition. To
-make this work in all contexts, defined service fields need to be
-constructed lazily on demand. This component/composition design
-pattern relies in an essential way on the object-oriented concept of
-mixin composition and the functional concept of lazy evaluation.
+Module systems of functional languages such as SML or Caml excel in
+abstraction; they allow very precise control over visibility of names
+and types, including the ability to partially abstract over types.  By
+contrast, object-oriented languages excell in composition; they offer
+several composition mechanisms lacking in module systems, including
+inheritance and unlimited recursion between objects and classes.
+Scala unifies the notions of object and module, of module signature
+and interface, as well as of functor and class. This combines the
+abstraction facilities of functional module systems with the
+composition constructs of object-oriented languages. The unification
+is made possible by means of a new type system based on path-dependent
+types \cite{odersky-et-al:fool10}.
 \end{itemize}
-%The theory of functional nets lets us describe both functional and
-%concurrent computations in one reduction rule.  Mutable variables can
-%be described as special cases of concurrent computations, where a
-%variable acts as a concurrent thread that keeps a variable's value
-%until the next write operation. Thereby, a conceptual unification of
-%the theories underlying functions, state, and concurrency is
-%established. The unified theory does not preclude Scala compilers to
-%choose specialized, more efficient implementation techniques, however.
-%\end{itemize}
 
 %The rest of this report is structured as follows. Chapters
 %\ref{sec:simple-examples} to \ref{sec:concurrency} give an informal overview of
@@ -144,6 +123,3 @@ mixin composition and the functional concept of lazy evaluation.
 %chapters contain the language definition. The definition is formulated
 %in prose but tries to be precise.
 
-At present the report is still preliminary. Many examples remain to be filled
-in, and the definition needs to be made more precise and legible. I am grateful
-for all comments that help improve it.

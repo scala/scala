@@ -561,7 +561,8 @@ public class Parser implements Tokens {
 		s.nextToken();
 		ts.append(simpleType());
 	    }
-	    return make.CompoundType(pos, ts.toArray(), Tree.EMPTY_ARRAY);
+	    Tree[] rs = (s.token == LBRACE) ? refinement() : Tree.EMPTY_ARRAY;
+	    return make.CompoundType(pos, ts.toArray(), rs);
 	} else {
 	    return t;
 	}
