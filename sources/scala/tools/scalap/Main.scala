@@ -41,6 +41,29 @@ object Main {
         Console.println("  -cp <pathlist>         specify where to find user class files");
     }
 
+  /** Processes the given scala attribute. */
+  def processScalaAttribute(args: Arguments, reader: ByteArrayReader): Unit = {
+    val info = new ScalaAttribute(reader);
+    val symtab = new EntityTable(info);
+    // construct a new output stream writer
+    val out = new OutputStreamWriter(System.out);
+    val writer = new ScalaWriter(args, out);
+    // output all elements of the scope
+    symtab.root.elements foreach (
+      sym => { writer.printSymbol(sym); writer.println*; });
+    out.flush();
+  }
+
+  /** Processes the given classfile. */
+  def processJavaClassFile(clazz: Classfile): Unit = {
+    // construct a new output stream writer
+    val out = new OutputStreamWriter(System.out);
+    val writer = new JavaWriter(clazz, out);
+    // print the class
+    writer.printClass;
+    out.flush();
+  }
+
     /** Executes scalap with the given arguments and classpath for the
      *  class denoted by 'classname'.
      */
@@ -48,15 +71,18 @@ object Main {
         // find the classfile
         val filename = Names.encode(
             if (classname == "scala.AnyRef") "java.lang.Object"
-            else classname).replace('.', File.separatorChar) + ".class";
-        val file = path.getRoot().lookupPath(filename, false);
+            else classname).replace('.', File.separatorChar);
+        val sfile = path.getRoot().lookupPath(filename + ".symbl", false);
+        val cfile = path.getRoot().lookupPath(filename + ".class", false);
+        if (sfile != null) {
+          processScalaAttribute(args, new ByteArrayReader(sfile.read()));
         // if the classfile exists...
-        if (file != null) {
+        } else if (cfile != null) {
             if (verbose)
                 Console.println(Console.BOLD + "FILENAME" + Console.RESET +
-                                " = " + file.getPath);
+                                " = " + cfile.getPath);
             // construct a reader for the classfile content
-            val reader = new ByteArrayReader(file.read());
+            val reader = new ByteArrayReader(cfile.read());
             // parse the classfile
             val clazz = new Classfile(reader);
             // check if there is a Scala signature attribute
@@ -65,25 +91,10 @@ object Main {
                 // if the attribute is found, we have to extract the scope
                 // from the attribute
                 case Some(a) =>
-                    // parse the Scala attribute
-                    val info = new ScalaAttribute(a.reader);
-                    val symtab = new EntityTable(info);
-                    // construct a new output stream writer
-                    val out = new OutputStreamWriter(System.out);
-                    val writer = new ScalaWriter(args, out);
-                    // output all elements of the scope
-                    symtab.root.elements foreach (
-                        sym => { writer.printSymbol(sym);
-                                 writer.println*; });
-                    out.flush();
+                    processScalaAttribute(args, a.reader);
                 // It must be a Java class
                 case None =>
-                    // construct a new output stream writer
-                    val out = new OutputStreamWriter(System.out);
-                    val writer = new JavaWriter(clazz, out);
-                    // print the class
-                    writer.printClass;
-                    out.flush();
+                  processJavaClassFile(clazz);
             }
         // if the class corresponds to the artificial class scala.Any...
         } else if (classname == "scala.Any") {
