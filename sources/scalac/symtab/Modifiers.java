@@ -66,6 +66,8 @@ public interface Modifiers {
     int ACCESSFLAGS   = PRIVATE | PROTECTED;
     int VARIANCES     = COVARIANT | CONTRAVARIANT;
     int CONSTRFLAGS   = CASE | JAVA;
+    /** Module-class flags inherited by their module */
+    int CLASS2MODULEFLAGS = ACCESSFLAGS | DEPRECATED | JAVA | PACKAGE;
 
     public static class Helper {
 
