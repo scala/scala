@@ -31,7 +31,6 @@ Iterable.scala
 IterableArray.scala
 IterableString.scala
 Iterator.scala
-Labelled.scala
 List.scala
 Long.java
 MatchError.java
