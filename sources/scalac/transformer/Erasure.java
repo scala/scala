@@ -577,35 +577,13 @@ public class Erasure extends Transformer implements Modifiers {
 	return gen.Select(qual, sym);
     }
 
-    /** Subclass relation for class types; empty for other types.
-     */
-    boolean isSubClass(Type tp1, Type tp2) {
-	Symbol sym1 = tp1.symbol();
-	Symbol sym2 = tp2.symbol();
-	return sym1 != null && sym2 != null && sym1.isSubClass(sym2);
-    }
-
     /** Subtyping relation on erased types.
      */
-    boolean isSubType(Type tp1, Type tp2) {
- 	if (isSameAs(tp1, tp2)) return true;
-	switch (tp2) {
-	case UnboxedType(_):
-	    return tp1.isSubType(tp2);
-	case UnboxedArrayType(Type elemtp2):
-	    switch (tp1) {
-	    case UnboxedArrayType(Type elemtp1):
-		return !(elemtp1 instanceof Type.UnboxedType) &&
-		    isSubType(elemtp1, elemtp2);
-	    default:
-		return tp1.isSubType(tp2);
-	    }
-	}
-	switch (tp1) {
-	case UnboxedArrayType(Type elemtp1):
-            if (tp2.symbol() == definitions.ANY_CLASS) return true;
-        }
-	return isSubClass(tp1, tp2);
+    boolean isSubType(Tree tree, Type tp2) {
+        global.nextPhase();
+        boolean test = tp1.isSubType(tp2);
+        global.prevPhase();
+        return test;
     }
 
     /** Equality relation on erased types.
@@ -618,14 +596,14 @@ public class Erasure extends Transformer implements Modifiers {
     }
 
     Tree coerce(Tree tree, Type pt) {
-	return isSubType(tree.type, pt) ? tree : cast(tree, pt);
+	return isSubType(tree, pt) ? tree : cast(tree, pt);
     }
 
     Tree cast(Tree tree, Type pt) {
 	if (global.debug) global.log("cast " + tree + ":" + tree.type + " to " + pt);//debug
 	if (isSameAs(tree.type, pt)) {
 	    return tree;
-	} else if (isSubType(tree.type, pt)) {
+        } else if (isSubType(tree, pt)) {
 	    return tree;
 	} else if (isUnboxed(tree.type) && !isUnboxed(pt)) {
 	    return cast(box(tree), pt);
