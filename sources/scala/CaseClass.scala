@@ -18,10 +18,10 @@ trait CaseClass {
   /** for a case class A(x_0,...,x_(k-1)), returns x_i for 0 &lt;= i &lt; k,
   **  null otherwise
   */
-  def caseElement(n:int):Any ;
+  def caseElement(n: Int): Any ;
 
   /** for a case class A(x_0,...,x_(k-1)), returns k
   */
-  def caseArity: int ;
+  def caseArity: Int ;
 
 }
