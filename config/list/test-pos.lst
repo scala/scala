@@ -4,9 +4,7 @@
 # $Id$
 
 pos/A.scala
-pos/IntSet.scala
 pos/List1.scala
-pos/Rational.scala
 pos/S1.scala
 pos/S3.scala
 pos/S5.scala
@@ -19,11 +17,6 @@ pos/aliases.scala
 pos/cls.scala
 pos/cls1.scala
 pos/clsrefine.scala
-pos/cours1.scala
-pos/cours2.scala
-pos/cours2a.scala
-pos/cours2b.scala
-pos/cours2c.scala
 pos/eta.scala
 pos/exceptions.scala
 pos/imports.scala
@@ -56,8 +49,6 @@ pos/philippe1.scala
 pos/philippe2.scala
 pos/philippe3.scala
 pos/reftest.scala
-pos/sort1.scala
-pos/sqrt.scala
 pos/stable.scala
 pos/strings.scala
 pos/test1.scala
@@ -70,10 +61,5 @@ pos/test5refine.scala
 pos/thistypes.scala
 pos/valdefs.scala
 pos/vincent.scala
-
-cours/constr.scala
-cours/sim.scala
-cours/week10.scala
-cours/week10a.scala
 
 ##############################################################################
