@@ -125,8 +125,9 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   */
   def preFunction(vparams: Array[Tree$ValDef], pt: Type): Type = pt match {
     case Type$TypeRef(pre, psym, ptargs)
-      if (psym.fullName().startsWith(Names.scala_Function) &&
-	  ptargs.length == vparams.length + 1) =>
+      if (ptargs.length == vparams.length + 1 &&
+          vparams.length < global.definitions.FUNCTION_CLASS.length &&
+          psym == global.definitions.FUNCTION_CLASS(vparams.length)) =>
 
       def assignType(vparam: Tree$ValDef, pt: Type): unit =
 	if (vparam.tpe == Tree.Empty && infer.isFullyDefined(pt))
