@@ -25,6 +25,9 @@ LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaTutorial.%)
 
 LATEX_SOURCES		+= ScalaTutorial.tex
 
+# latex
+TEXINPUTS		:= $(PROJECT_SUPPORTDIR)/latex:$(TEXINPUTS):
+
 ##############################################################################
 # Includes
 
