@@ -69,22 +69,27 @@ public class ClassfileParser implements ClassfileConstants {
      */
     public void parse() throws IOException {
         try {
-            if (in.nextInt() != JAVA_MAGIC)
-                throw new IOException("illegal start of class file");
+            int magic = in.nextInt();
+            if (magic != JAVA_MAGIC)
+                throw new IOException("class file '" + in.path + "' "
+                    + "has wrong magic number 0x" + Integer.toHexString(magic)
+                    + ", should be 0x" + Integer.toHexString(JAVA_MAGIC));
             int minorVersion = in.nextChar();
             int majorVersion = in.nextChar();
             if ((majorVersion < JAVA_MAJOR_VERSION) ||
                 ((majorVersion == JAVA_MAJOR_VERSION) &&
                  (minorVersion < JAVA_MINOR_VERSION)))
-                throw new IOException("class file has wrong version " +
-                        majorVersion + "." + minorVersion + ", should be " +
-                        JAVA_MAJOR_VERSION + "." + JAVA_MINOR_VERSION);
+                throw new IOException("class file '" + in.path + "' "
+                    + "has unknown version "
+                    + majorVersion + "." + minorVersion
+                    + ", should be less than "
+                    + JAVA_MAJOR_VERSION + "." + JAVA_MINOR_VERSION);
             pool.indexPool();
             int flags = in.nextChar();
             Name name = readClassName(in.nextChar());
             if (c != global.definitions.getClass(name))
-                throw new IOException("class file '" + in.path +
-                                      "' contains wrong class " + name);
+                throw new IOException("class file '" + in.path + "' "
+                    + "contains wrong class " + name);
             // todo: correct flag transition
             c.flags = transFlags(flags);
             if ((c.flags & Modifiers.DEFERRED) != 0)
@@ -128,8 +133,7 @@ public class ClassfileParser implements ClassfileConstants {
             //System.out.println("modules class: " + c.module().type().symbol());
         } catch (RuntimeException e) {
             if (global.debug) e.printStackTrace();
-            String s = e.getMessage() == null ? "" : " (" +e.getMessage()+ ")";
-            throw new IOException("bad class file" + s);
+            throw new IOException("class file '" + in.path + "' is broken");
         }
     }
 
