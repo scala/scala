@@ -87,7 +87,7 @@
   (let ((file-name (scala-file-name prog-name))
         (classes-dir (get-temp-dir prog-name)))
     (message "Compiling file ~a to directory ~a" file-name classes-dir)
-    (run (socos -d ,classes-dir ,file-name))))
+    (run (scalac -d ,classes-dir ,file-name))))
 
 (define (append-scala-program-output prog-name out-port)
   (let ((classes-dir (get-temp-dir prog-name)))
