@@ -410,9 +410,9 @@ public class Definitions {
         Symbol SCALA_PACKAGE = getClass(Names.scala);
 
         // the top and bottom classes
-        ANY_CLASS = newClass(SCALA_PACKAGE, Names.Any, Modifiers.JAVA);
+        ANY_CLASS = newClass(SCALA_PACKAGE, Names.Any, 0);
 	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
-	ANYREF_CLASS = newAlias(SCALA_PACKAGE, Names.AnyRef, Modifiers.JAVA);
+	ANYREF_CLASS = newAlias(SCALA_PACKAGE, Names.AnyRef, 0);
         ALLREF_CLASS = newClass(SCALA_PACKAGE, Names.AllRef, 0);
         ALL_CLASS = newClass(SCALA_PACKAGE, Names.All, 0);
 

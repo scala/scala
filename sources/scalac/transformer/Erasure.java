@@ -363,7 +363,12 @@ public class Erasure extends GenTransformer implements Modifiers {
         }
         if (global.target == global.TARGET_INT) {
             global.nextPhase();
-            while (!element.symbol().isJava()) element = element.parents()[0];
+            while (true) {
+                Symbol clasz = element.symbol();
+                if (clasz.isJava()) break;
+                if (clasz == definitions.ANY_CLASS) break;
+                element = element.parents()[0];
+            }
             global.prevPhase();
         }
         String name = primitives.getNameForClassForName(element);

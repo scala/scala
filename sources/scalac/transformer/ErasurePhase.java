@@ -65,11 +65,9 @@ public class ErasurePhase extends Phase {
                 if (sym.isInterface()) {
                     Symbol superclass = parents[0].symbol();
                     if (superclass.isJava() && !superclass.isInterface()) {
-                        if (superclass != definitions.ANY_CLASS) {
-                            parents = Type.cloneArray(parents);
-                            parents[0] = definitions.ANYREF_TYPE();
-                            tp = Type.compoundType(parents, members, sym);
-                        }
+                        parents = Type.cloneArray(parents);
+                        parents[0] = definitions.ANYREF_TYPE();
+                        tp = Type.compoundType(parents, members, sym);
                     }
                 }
                 return Type.erasureMap.map(tp);
