@@ -78,7 +78,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	for (int i = 0; i < closure.length; i++) {
 	    Type basetype = closure[i];
 	    Symbol baseclazz = basetype.symbol();
-	    for (Scope.SymbolIterator it = basetype.members().iterator(true);
+	    for (Scope.SymbolIterator it = basetype.members().iterator();
 		 it.hasNext();) {
 		Symbol sym = it.next();
 		if (sym.owner() == baseclazz) checkOverride(pos, clazz, sym);
@@ -86,7 +86,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
 
 	Type[] parents = clazz.info().parents();
-	for (Scope.SymbolIterator it = clazz.members().iterator(true);
+	for (Scope.SymbolIterator it = clazz.members().iterator();
 	     it.hasNext();) {
 	    Symbol sym = it.next();
 	    if ((sym.flags & OVERRIDE) != 0 && sym.owner() == clazz) {
