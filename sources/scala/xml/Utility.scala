@@ -177,7 +177,11 @@ object Utility {
         sb.append(escape(t));
 
       case Comment(text) =>
-        if (stripComment) text else "";
+        if (!stripComment) {
+          sb.append("<!--");
+          sb.append(text);
+          sb.append("-->");
+        }
 
       case _ if x.typeTag$ < 0 =>
         sb.append( x.toString() );
@@ -228,7 +232,11 @@ object Utility {
         sb.append(escape(t));
 
       case Comment(text) =>
-        if (stripComment) text else "";
+        if (!stripComment) {
+	  sb.append("<!--");
+          sb.append(text);
+          sb.append("-->");
+        }
 
       case _ if x.typeTag$ < 0 =>
         sb.append( x.toString() );
