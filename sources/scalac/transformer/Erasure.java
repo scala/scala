@@ -154,6 +154,8 @@ public class Erasure extends Transformer implements Modifiers {
 	    case UnboxedArrayType(Type elemtp1):
 		return !(elemtp1 instanceof Type.UnboxedType) &&
 		    isSubType(elemtp1, elemtp2);
+	    default:
+		return tp1.isSubType(tp2);
 	    }
 	}
 	switch (tp1) {

@@ -1,4 +1,0 @@
-altherr1.scala:5: expected pattern type of cases could not be determined
-  foo() match { case _ => 0 }
-        ^
-one error found

@@ -1835,6 +1835,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** The main attribution function
      */
     public Tree transform(Tree tree) {
+	if ((mode & PATTERNmode) != 0)
+	    new TextTreePrinter().print("transofrming(" + pt + ")").print(tree).println().end();//debug
 	Symbol sym = tree.symbol();
 	if (sym != null && !sym.isInitialized()) sym.initialize();
 	if (global.debug && TreeInfo.isDefinition(tree)) global.log("transforming " + sym);

@@ -27,10 +27,14 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public case ThisType(Symbol sym);
 
     public case TypeRef(Type pre, Symbol sym, Type[] args) {
+	//assert sym != Global.instance.definitions.ALL_CLASS ||
+	//    Global.instance.definitions.ALL_TYPE == null;
 	assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
     }
 
     public case SingleType(Type pre, Symbol sym) {
+	//	assert sym != Global.instance.definitions.SCALA ||
+	//    Global.instance.definitions.SCALA_TYPE == null;
 	assert this instanceof ExtSingleType;
     }
 
@@ -667,6 +671,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    }
 		    for (int i = 0; i < syms2.length; i++) {
 			syms2[i].setInfo(syms1[i].info().subst(syms1, syms2));
+			if (syms2[i].kind == TYPE)
+			    syms2[i].setLoBound(syms1[i].loBound().subst(syms1, syms2));
 		    }
 		    for (int i = 0; i < syms2.length; i++) {
 			members2.enter(syms2[i]);
@@ -701,8 +707,14 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	public Symbol map(Symbol sym) {
 	    Type tp = sym.info();
 	    Type tp1 = apply(tp);
-	    if (tp == tp1) return sym;
-	    else return sym.cloneSymbol().setInfo(tp1);
+	    Symbol sym1 = (tp == tp1) ? sym : sym.cloneSymbol().setInfo(tp1);
+	    if (sym1.kind == TYPE) {
+		Type lb = sym.loBound();
+		Type lb1 = apply(lb);
+		if (lb != lb1)
+		    sym1 = sym1.cloneSymbol().setLoBound(lb1);
+	    }
+	    return sym1;
 	}
 
 	public Type[] map(Type[] tps) {
@@ -740,6 +752,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		}
 		for (int i = 0; i < syms1.length; i++) {
 		    syms1[i].setInfo(syms1[i].info().subst(syms, syms1));
+		    if (syms1[i].kind == TYPE)
+			syms1[i].setLoBound(syms1[i].loBound().subst(syms, syms1));
 		}
 	    }
 	    return syms1;
@@ -938,6 +952,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	Type tp1 = tp.asSeenFrom(this, sym.owner());
 	//if (Global.instance.debug) System.out.println(this + ".memberType(" + sym + ":" + tp + ") = " + tp1);//DEBUG
 	return tp1;
+    }
+
+    public Type memberLoBound(Symbol sym) {
+	return sym.loBound().asSeenFrom(this, sym.owner());
     }
 
 // Substitutions ---------------------------------------------------------------
@@ -1873,6 +1891,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	Symbol[] rsyms = new Symbol[tps.length];
 	Type[] rtps = new Type[tps.length];
+	Type[] rlbs = new Type[tps.length];
 	for (int i = 0; i < allBaseTypes.length; i++) {
 	    for (Scope.Entry e = allBaseTypes[i].members().elems;
 		 e != Scope.Entry.NONE;
@@ -1881,17 +1900,21 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		if ((e.sym.flags & PRIVATE) == 0 && lubType.lookup(name) == e.sym) {
 		    //todo: not memberType?
 		    Type symType = lubThisType.memberInfo(e.sym);
+		    Type symLoBound = lubThisType.memberLoBound(e.sym);
 		    int j = 0;
 		    while (j < tps.length) {
 			rsyms[j] = tps[j].lookupNonPrivate(name);
 			if (rsyms[j] == e.sym) break;
 			rtps[j] = tps[j].memberType(rsyms[j])
 			    .substThis(tps[j].symbol(), lubThisType);
-			if (rtps[j].isSameAs(symType)) break;
+			rlbs[j] = tps[j].memberLoBound(rsyms[j])
+			    .substThis(tps[j].symbol(), lubThisType);
+			if (rtps[j].isSameAs(symType) &&
+			    rlbs[j].isSameAs(symLoBound)) break;
 			j++;
 		    }
 		    if (j == tps.length) {
-			Symbol lubSym = lub(rsyms, rtps, lubType.symbol());
+			Symbol lubSym = lub(rsyms, rtps, rlbs, lubType.symbol());
 			if (lubSym.kind != NONE && !lubSym.info().isSameAs(symType))
 			    members.enter(lubSym);
 		    }
@@ -1910,7 +1933,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	else return NoType;
     }
 
-    private static Symbol lub(Symbol[] syms, Type[] tps, Symbol owner) {
+    private static Symbol lub(Symbol[] syms, Type[] tps, Type[] lbs, Symbol owner) {
 	//System.out.println("lub" + ArrayApply.toString(syms));//DEBUG
 	int lubKind = syms[0].kind;
 	for (int i = 1; i < syms.length; i++) {
@@ -1930,6 +1953,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    break;
 	case TYPE: case ALIAS: case CLASS:
 	    lubSym = new AbsTypeSymbol(syms[0].pos, syms[0].name, owner, 0);
+	    lubSym.setLoBound(glb(lbs));
 	    break;
 	default:
 	    throw new ApplicationError();
@@ -2009,7 +2033,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    Type lb = NoType;
 	    for (int i = 0;
 		 i < treftypes.length &&
-		     lb != Global.instance.definitions.ALL_TYPE;
+		     lb.symbol() != Global.instance.definitions.ALL_CLASS;
 		 i++) {
 		for (int j = 0; j < i; j++) {
 		    if (treftypes[j].symbol() == treftypes[i].symbol())
@@ -2036,32 +2060,39 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     private static boolean addMember(Scope s, Symbol sym, Type glbThisType) {
 	Type syminfo = sym.info().substThis(sym.owner(), glbThisType);
+	Type symlb = sym.loBound().substThis(sym.owner(), glbThisType);
 	Scope.Entry e = s.lookupEntry(sym.name);
 	if (e == Scope.Entry.NONE) {
 	    Symbol sym1 = sym.cloneSymbol();
 	    sym1.setOwner(glbThisType.symbol());
 	    sym1.setInfo(syminfo);
+	    if (sym1.kind == TYPE) sym1.setLoBound(symlb);
 	    s.enter(sym1);
-	    return true;
 	} else {
 	    Type einfo = e.sym.info();
 	    if (einfo.isSameAs(syminfo)) {
-		return true;
 	    } else if (einfo.isSubType(syminfo) && sym.kind != ALIAS) {
-		return true;
 	    } else if (syminfo.isSubType(einfo) && e.sym.kind != ALIAS) {
 		e.sym.setInfo(syminfo);
-		return true;
 	    } else if (sym.kind == VAL && e.sym.kind == VAL ||
 		       sym.kind == TYPE && e.sym.kind == TYPE) {
 		e.sym.setInfo(glb(new Type[]{einfo, syminfo}));
-		return true;
 	    } else {
 		return false;
 	    }
+	    if (e.sym.kind == TYPE && sym.kind == TYPE) {
+		Type elb = e.sym.loBound();
+		if (elb.isSameAs(symlb)) {
+		} else if (symlb.isSubType(elb)) {
+		} else if (elb.isSubType(symlb)) {
+		    e.sym.setLoBound(symlb);
+		} else {
+		    e.sym.setLoBound(lub(new Type[]{elb, symlb}));
+		}
+	    }
 	}
+	return true;
     }
-
 
 // Erasure --------------------------------------------------------------------------
 
@@ -2402,6 +2433,11 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    Type[] ts = new Type[length()];
 	    copyToArray(ts, ts.length - 1, -1);
 	    return ts;
+	}
+
+	public String toString() {
+	    if (this == EMPTY) return "List()";
+	    else return head + "::" + tail;
 	}
 
 	public static List EMPTY = new List(null, null);

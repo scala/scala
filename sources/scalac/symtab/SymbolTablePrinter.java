@@ -363,7 +363,7 @@ public class SymbolTablePrinter {
             type = type.typeArgs()[0];
             star = true;
         }
-        printType(type, inner);
+	printType(type, inner);
         if (star) print("*");
         return this;
     }
@@ -386,7 +386,9 @@ public class SymbolTablePrinter {
         String keyword = getSymbolKeyword(symbol);
         if (keyword != null) print(keyword).space();
         String inner = getSymbolInnerString(symbol);
-        return printSymbolName(symbol).printSymbolType(symbol, inner);
+        return printSymbolName(symbol)
+	    .printType(symbol.loBound(), ">:")
+	    .printSymbolType(symbol, inner);
     }
 
     //########################################################################
@@ -449,7 +451,11 @@ public class SymbolTablePrinter {
 
     /** Prints the given type with the given inner string. */
     public SymbolTablePrinter printType(Type type, String inner) {
-        return printType0(getTypeToPrintForType(type), inner);
+	if ("<:".equals(inner) && type.symbol() == global.definitions.ANY_CLASS ||
+	    ">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS)
+	    return this;
+	else
+	    return printType0(getTypeToPrintForType(type), inner);
     }
     public SymbolTablePrinter printType0(Type type, String inner) {
         switch (type) {

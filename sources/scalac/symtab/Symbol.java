@@ -630,7 +630,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The low bound of this type variable
      */
     public Type loBound() {
-	throw new ApplicationError("loBound inapplicable for " + this);
+	return Global.instance.definitions.ALL_TYPE;
     }
 
     /** Get this.type corresponding to this symbol
@@ -719,7 +719,12 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  of `c' as indirect base class?
      */
     public boolean isSubClass(Symbol c) {
-	return this == c || c.kind == Kinds.ERROR || closurePos(c) >= 0;
+	return this == c ||
+	    c.kind == Kinds.ERROR ||
+	    closurePos(c) >= 0 ||
+	    this == Global.instance.definitions.ALL_CLASS ||
+	    (this == Global.instance.definitions.ALLREF_CLASS &&
+	     c.isSubClass(Global.instance.definitions.ANYREF_CLASS));
     }
 
     /** Get base types of this symbol */
@@ -1004,8 +1009,8 @@ public class TypeSymbol extends Symbol {
     /** Return a fresh symbol with the same fields as this one.
      */
     public Symbol cloneSymbol() {
-	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " in phase " + Global.instance.currentPhase.name());
         TypeSymbol other = new TypeSymbol(kind, pos, name, owner(), flags);
+	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " to " + other + " in phase " + Global.instance.currentPhase.name());
         other.setInfo(info());
         return other;
     }
@@ -1137,8 +1142,8 @@ public class AbsTypeSymbol extends TypeSymbol {
     /** Return a fresh symbol with the same fields as this one.
      */
     public Symbol cloneSymbol() {
-	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " in phase " + Global.instance.currentPhase.name());
         TypeSymbol other = new AbsTypeSymbol(pos, name, owner(), flags);
+	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " to " + other + " in phase " + Global.instance.currentPhase.name());
         other.setInfo(info());
 	other.setLoBound(loBound());
         return other;
@@ -1287,8 +1292,12 @@ public class ClassSymbol extends TypeSymbol {
     /** Get type */
     public Type type() {
 	if (template == null || template.typeArgs().length != typeParams().length) {
-	    template = Type.TypeRef(
-		owner().thisType(), this, type(typeParams()));
+	    Symbol[] tparams = typeParams();
+	    if (tparams.length == 0)
+		template = typeConstructor();
+	    else
+		template = Type.TypeRef(
+		    owner().thisType(), this, type(typeParams()));
 	}
 	return template;
     }

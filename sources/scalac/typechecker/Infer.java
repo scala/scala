@@ -299,7 +299,10 @@ public class Infer implements Modifiers, Kinds {
 	case TypeVar(Type origin, Type.Constraint constr):
 	    if (constr.inst == Type.NoType)
 		if (constr.lobounds != Type.List.EMPTY) {
+		    //System.out.println("LOBOUNDS = " + constr.lobounds);//DEBUG
 		    constr.inst = Type.lub(constr.lobounds.toArray());
+		    //System.out.println("MIN = " + constr.inst);//DEBUG
+
 		} else {
 		    constr.inst = global.definitions.ALL_TYPE;
 		}
@@ -309,7 +312,7 @@ public class Infer implements Modifiers, Kinds {
 	}
     }
 
-    private void maximizeVars(Symbol[] tparams, Type[] tvars, int i)
+    private void solveUpper(Symbol[] tparams, Type[] tvars, int i)
         throws NoInstance {
 	if (tvars[i] != Type.NoType) {
 	    switch (tvars[i]) {
@@ -322,9 +325,10 @@ public class Infer implements Modifiers, Kinds {
 		    Type bound = tparams[i].info();
 		    boolean cyclic = false;
 		    for (int j = 0; j < tvars.length; j++) {
-			if (bound.contains(tparams[j])) {
+			if (bound.contains(tparams[j]) ||
+			    tparams[j].loBound().isSameAs(tparams[i].type())) {
 			    cyclic |= tvars[j] == Type.NoType;
-			    maximizeVars(tparams, tvars, j);
+			    solveUpper(tparams, tvars, j);
 			}
 		    }
 		    if (!cyclic)
@@ -334,6 +338,39 @@ public class Infer implements Modifiers, Kinds {
 		    tvars[i] = ((Type.TypeVar) tvar).constr.inst;
 		}
 		if (tvars[i] == Type.AnyType) tvars[i] = definitions.ANY_TYPE;
+	    }
+	}
+    }
+
+    private void solveLower(Symbol[] tparams, Type[] tvars, int i)
+        throws NoInstance {
+	if (tvars[i] != Type.NoType) {
+	    //System.out.println("solve lower " + tparams[i]);//DEBUG
+	    switch (tvars[i]) {
+	    case TypeVar(Type origin, Type.Constraint constr):
+		if (constr.inst != Type.NoType) {
+		    constr.inst = tvars[i] = instantiate(constr.inst);
+		} else {
+		    Type tvar = tvars[i];
+		    tvars[i] = Type.NoType;
+		    Type bound = tparams[i].loBound();
+		    if (bound != Global.instance.definitions.ALL_TYPE) {
+			boolean cyclic = false;
+			for (int j = 0; j < tvars.length; j++) {
+			    if (bound.contains(tparams[j]) ||
+				tparams[j].info().isSameAs(tparams[i].type())) {
+				cyclic |= tvars[j] == Type.NoType;
+				solveLower(tparams, tvars, j);
+			    }
+			}
+			assert !cyclic;
+			if (!cyclic)
+			    constr.lobounds = new Type.List(
+				bound.subst(tparams, tvars), constr.lobounds);
+		    }
+		    minimizeVar(tvar);
+		    tvars[i] = ((Type.TypeVar) tvar).constr.inst;
+		}
 	    }
 	}
     }
@@ -350,14 +387,30 @@ public class Infer implements Modifiers, Kinds {
         public Type apply(Type t) {
 	    switch (t) {
 	    case PolyType(Symbol[] tparams, Type restp):
+		Type restp1 = apply(restp);
+		Symbol[] tparams1 = Symbol.EMPTY_ARRAY;
+		Symbol[] newparams1 = Symbol.EMPTY_ARRAY;
+		switch (restp1) {
+		case PolyType(_, _):
+		    tparams1 = restp.typeParams();
+		    newparams1 = restp1.typeParams();
+		}
 		Symbol[] newparams = new Symbol[tparams.length];
 		for (int i = 0; i < tparams.length; i++)
 		    newparams[i] = tparams[i].cloneSymbol();
-		for (int i = 0; i < tparams.length; i++)
+		for (int i = 0; i < tparams.length; i++) {
 		    newparams[i].setInfo(
-			newparams[i].info().subst(tparams, newparams));
+			newparams[i].info()
+			.subst(tparams, newparams)
+			.subst(tparams1, newparams1));
+		    newparams[i].setLoBound(
+			newparams[i].loBound()
+			.subst(tparams, newparams)
+			.subst(tparams1, newparams1));
+		}
 		return Type.PolyType(
-		    newparams, apply(restp).subst(tparams, newparams));
+		    newparams, restp1.subst(tparams, newparams));
+
 	    case OverloadedType(_, _):
 		return map(t);
 	    default:
@@ -392,7 +445,7 @@ public class Infer implements Modifiers, Kinds {
     private Symbol[] normalizeArgs(Type[] targs, Symbol[] tparams) {
 	Type.List uninstantiated = Type.List.EMPTY;
 	for (int i = 0; i < targs.length; i++) {
-	    if (targs[i] == Type.NoType) {
+	    if (targs[i] == Global.instance.definitions.ALL_TYPE) {
 		targs[i] = tparams[i].type();
 		uninstantiated = Type.List.append(uninstantiated, targs[i]);
 	    }
@@ -421,10 +474,9 @@ public class Infer implements Modifiers, Kinds {
 	    try {
 		Type[] targs = new Type[tvars.length];
 		for (int i = 0; i < tvars.length; i++) {
-		    minimizeVar(tvars[i]);
-		    targs[i] = instantiate(tvars[i]);
+		    solveLower(tparams, tvars, i);
 		}
-		return targs;
+		return tvars;
 	    } catch (NoInstance ex) {
 	    }
 	}
@@ -537,7 +589,7 @@ public class Infer implements Modifiers, Kinds {
      *  argument types, result type and expected result type.
      *  If this is not possible, throw a `NoInstance' exception, or, if
      *  `needToSucceed' is false alternatively return `null'.
-     *  Undetermined type arguments are represented by `NoType'.
+     *  Undetermined type arguments are represented by `definitions.ALL_TYPE'.
      *  No check that inferred parameters conform to their bounds is made here.
      */
     private Type[] methTypeArgs(Symbol[] tparams,
@@ -587,14 +639,10 @@ public class Infer implements Modifiers, Kinds {
 	}
 	Type[] targs = new Type[tvars.length];
 	for (int i = 0; i < tvars.length; i++) {
-	    minimizeVar(tvars[i]);
-	    Type instType = ((Type.TypeVar) tvars[i]).constr.inst;
-	    targs[i] = (instType == Type.NoType || instType == global.definitions.ALL_TYPE)
-		? Type.NoType
-		: instantiate(tvars[i]);
+	    solveLower(tparams, tvars, i);
 	}
-	//System.out.println(" = " + ArrayApply.toString(targs));//DEBUG
-	return targs;
+	//System.out.println(" = " + ArrayApply.toString(tvars));//DEBUG
+	return tvars;
     }
 
     /** Create and attribute type application node. Pass arguments for that
@@ -738,7 +786,7 @@ public class Infer implements Modifiers, Kinds {
 	if (ctpe1.isSubType(pt)) {
 	    try {
 		for (int i = 0; i < tvars.length; i++) {
-		    maximizeVars(tparams, tvars, i);
+		    solveUpper(tparams, tvars, i);
 		}
 		checkBounds(tparams, tvars, "inferred ");
 		tree.setType(restype.subst(tparams, tvars));
