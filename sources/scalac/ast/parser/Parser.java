@@ -538,7 +538,7 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** SimpleTypedOpt ::= [`:' Type]
+    /** SimpleTypedOpt ::= [`:' SimpleType]
      */
     Tree simpleTypedOpt() {
         if (s.token == COLON) {
@@ -1050,52 +1050,51 @@ public class Parser implements Tokens {
 	    if (TreeInfo.isVarPattern(top))
 		return make.Typed(s.skipToken(), top, type1());
 	}
-	if( s.token == IDENTIFIER )
-	    {
-		if ( s.name == STAR ) /*         p*  becomes  z@( |(p,z))       */
-		    {
-			s.nextToken();
-			Name zname= fresh();
-			Tree zvar = make.Ident( s.pos, zname );
+	if (s.token == IDENTIFIER) {
+            if (s.name == STAR) {    /*         p*  becomes  z@( |(p,z))       */
+                s.nextToken();
+                Name zname = fresh();
+                Tree zvar = make.Ident(s.pos, zname);
 
-			return make.Bind( s.pos, zname,
-					  pN.flattenAlternative( make.Alternative( s.pos, new Tree[] {
-					      make.Subsequence( s.pos, Tree.EMPTY_ARRAY ),
-					      pN.flattenSubsequence( make.Subsequence( s.pos, new Tree[] {
-						  top,
-						  zvar }))
-					  })));
-		    }
-		else if ( s.name == PLUS ) /*    p+   becomes   z@(p,(z| ))     */
-		    {
-			s.nextToken();
-			Name zname= fresh();
-			Tree zvar = make.Ident( s.pos, zname );
+                return make.Bind(s.pos, zname,
+                    pN.flattenAlternative(
+                        make.Alternative(s.pos, new Tree[] {
+                            make.Subsequence(s.pos, Tree.EMPTY_ARRAY),
+                            pN.flattenSubsequence(make.Subsequence(s.pos, new Tree[] {
+                                top,
+                                zvar
+                            }))
+                        })));
+            }
+            else if (s.name == PLUS) {    /*    p+   becomes   z@(p,(z| ))    */
+                s.nextToken();
+                Name zname = fresh();
+                Tree zvar = make.Ident(s.pos, zname);
 
-			return make.Bind( s.pos, zname,
-					  pN.flattenSubsequence( make.Subsequence( s.pos, new Tree[] {
-					      top,
-					      pN.flattenAlternative( make.Alternative( s.pos, new Tree[] {
-						  zvar,
-			 			  make.Subsequence( s.pos, Tree.EMPTY_ARRAY ) }))
-					  })));
-		    }
-		else if ( s.name == OPT ) /*    p?   becomes   (p| )            */
-		    {
-			s.nextToken();
-			return pN.flattenAlternative( make.Alternative( s.pos, new Tree[] {
-			    top,
-			    make.Subsequence( s.pos, Tree.EMPTY_ARRAY )}));
-		    }
-	    }
-	while ((s.token == IDENTIFIER)&&( s.name != BAR )) {
-	    top = reduceStack(
-		false, base, top, s.name.precedence(), s.name.isLeftAssoc());
-	    push(top, s.pos, s.name);
-	    ident();
-	    top = simplePattern();
-	}
-	return reduceStack(false, base, top, 0, true);
+                return make.Bind(s.pos, zname,
+                    pN.flattenSubsequence(make.Subsequence(s.pos, new Tree[] {
+                        top,
+                        pN.flattenAlternative(make.Alternative(s.pos, new Tree[] {
+                            zvar,
+                            make.Subsequence(s.pos, Tree.EMPTY_ARRAY)
+                        }))
+                    })));
+            }
+            else if (s.name == OPT) { /*    p?   becomes   (p| )            */
+                s.nextToken();
+                return pN.flattenAlternative(make.Alternative(s.pos, new Tree[] {
+                    top,
+                    make.Subsequence(s.pos, Tree.EMPTY_ARRAY)}));
+            }
+        }
+        while ((s.token == IDENTIFIER)&&( s.name != BAR )) {
+            top = reduceStack(
+                false, base, top, s.name.precedence(), s.name.isLeftAssoc());
+            push(top, s.pos, s.name);
+            ident();
+            top = simplePattern();
+        }
+        return reduceStack(false, base, top, 0, true);
     }
 
     /** SimplePattern ::= varid [ '@' SimplePattern ]
@@ -1106,33 +1105,31 @@ public class Parser implements Tokens {
      *                 | ((nothing)) //???
      */
     Tree simplePattern() {
-	switch (s.token) {
-	case RPAREN:
-	case COMMA:
-	    return make.Subsequence( s.pos, Tree.EMPTY_ARRAY ); // ((nothing))
-	case IDENTIFIER:
-	    if( s.name == BAR )
-		{
-		    return make.Subsequence( s.pos, Tree.EMPTY_ARRAY ); // ((nothing))
-		}
-	    // else fall through to case THIS
-	case THIS:
-	    Tree t = stableId();
-	    switch( t ) {
-	    case Ident( Name name ):
-		if(( name.isVariable() )&&( s.token == AT ))
-		    {
-			int pos = s.pos;
-			s.nextToken();
-			return make.Bind( pos, name, simplePattern() );
-		    }
-	    }
-	    while (s.token == LPAREN) {
-		t = make.Apply(s.pos, convertToTypeId(t), argumentPatterns());
-	    }
-	    return t;
-	case USCORE:
-	    return make.Ident(s.skipToken(), Names.WILDCARD);
+        switch (s.token) {
+        case RPAREN:
+        case COMMA:
+            return make.Subsequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
+        case IDENTIFIER:
+            if (s.name == BAR) {
+                return make.Subsequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
+            }
+            // else fall through to case THIS
+        case THIS:
+            Tree t = stableId();
+            switch (t) {
+            case Ident(Name name):
+		if ((name.isVariable()) && (s.token == AT)) {
+                    int pos = s.pos;
+                    s.nextToken();
+                    return make.Bind(pos, name, simplePattern());
+                }
+            }
+            while (s.token == LPAREN) {
+                t = make.Apply(s.pos, convertToTypeId(t), argumentPatterns());
+            }
+            return t;
+        case USCORE:
+            return make.Ident(s.skipToken(), Names.WILDCARD);
 	case CHARLIT:
 	case INTLIT:
 	case LONGLIT:
@@ -1142,24 +1139,23 @@ public class Parser implements Tokens {
 	case SYMBOLLIT:
 	case TRUE:
 	case FALSE:
-	case NULL:
-	    return literal(true);
-	case LPAREN:
-	    int p = s.pos;
-	    s.nextToken();
-	    Tree[] ts = patterns();
-	    Tree   t;
-	    if( ts.length == 1 )
-		t = ts[ 0 ];
-	    else
-		{
-		    t = pN.flattenSubsequence( make.Subsequence( s.pos, ts ) );
-		    t = pN.elimSubsequence( t );
-		}
-	    accept(RPAREN);
-	    return t;
-	default:
-	    return syntaxError("illegal start of pattern", true);
+        case NULL:
+            return literal(true);
+        case LPAREN:
+            int p = s.pos;
+            s.nextToken();
+            Tree[] ts = patterns();
+            Tree   t;
+            if (ts.length == 1)
+                t = ts[0];
+            else {
+                t = pN.flattenSubsequence(make.Subsequence(s.pos, ts));
+                t = pN.elimSubsequence(t);
+            }
+            accept(RPAREN);
+            return t;
+        default:
+            return syntaxError("illegal start of pattern", true);
 	}
     }
 
@@ -1834,7 +1830,7 @@ public class Parser implements Tokens {
     }
 
 
-    /** CompilationUnit = [package QualId `;'] TopStatSeq
+    /** CompilationUnit ::= [ package QualId ( `;' | `{' TopStatSeq `}' ) ] TopStatSeq .
      */
     Tree[] compilationUnit() {
 	if (s.token == PACKAGE) {
