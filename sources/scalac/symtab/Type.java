@@ -75,7 +75,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     /** synthetic type of a method  def ...(vparams): result = ...
      */
-    public case MethodType(Symbol[] vparams, Type result);
+    public case MethodType(Symbol[] vparams, Type result) {
+        for (int i = 0; i < vparams.length; i++)
+            assert vparams[i].isParameter() && vparams[i].isTerm(): this;
+    }
 
     /** synthetic type of a method  def ...[tparams]result
      *  For instance, given  def f[a](x: a): a
@@ -87,7 +90,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  For instance, given    def f = 1
      *  f has type   PolyType(new Symbol[]{}, <scala.Int>.type())
      */
-    public case PolyType(Symbol[] tparams, Type result);
+    public case PolyType(Symbol[] tparams, Type result) {
+        for (int i = 0; i < tparams.length; i++)
+            assert tparams[i].isParameter()&&tparams[i].isAbstractType(): this;
+    }
 
     /** synthetic type of an overloaded value whose alternatives are
      *  alts_1, ..., alts_n, with respective types alttypes_1, ..., alttypes_n
