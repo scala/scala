@@ -301,7 +301,8 @@ class AddInterfaces extends Transformer {
             Tree t = classBody[i];
             Symbol tSym = t.symbol();
 
-            if (t.definesSymbol() && !classMemberMap.containsKey(tSym))
+            if (t.definesSymbol() && !(classMemberMap.containsKey(tSym)
+                                       || tSym.isConstructor()))
                 continue;
 
             Tree newT = transform(t);
