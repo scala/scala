@@ -1,5 +1,5 @@
 ############################################################-*-Makefile-*-####
-# scala dtd2scala source files (paths are relative to ./sources/dtd2scala)
+# scalap source files (paths are relative to ./sources/scalap)
 ##############################################################################
 # $Id$
 
