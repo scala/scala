@@ -74,7 +74,7 @@ abstract class HashTable[A] {
 
     protected def entryKey(e: Entry): A;
 
-    protected def entries = new Iterator[Entry] {
+    protected def entries: Iterator[Entry] = new Iterator[Entry] {
         val iterTable = table;
         var idx = table.length - 1;
         var xs = iterTable(idx);
