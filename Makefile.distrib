@@ -4,9 +4,10 @@
 # $Id$
 
 # scala documents
-DOCUMENTS_ROOT		 = $(PROJECT_ROOT)/doc
+DOCUMENTS_ROOT		 = $(PROJECT_DOCUMENTDIR)
 DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/reference/reference.pdf
 DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/reference/examples.pdf
+DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/tutorial/tutorial.pdf
 
 # scala examples
 EXAMPLES_ROOT		 = $(PROJECT_SOURCEDIR)/examples
@@ -14,9 +15,14 @@ EXAMPLES_LIST		+= $(call READLIST, $(PROJECT_LISTDIR)/examples.lst)
 EXAMPLES_FILES		 = $(EXAMPLES_LIST:%=$(EXAMPLES_ROOT)/%)
 
 # emacs scala-mode
-EMACS_ROOT		 = $(PROJECT_ROOT)/support/emacs
+EMACS_ROOT		 = $(PROJECT_SUPPORTDIR)/emacs
 EMACS_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/emacs.lst)
 EMACS_FILES		 = $(EMACS_LIST:%=$(EMACS_ROOT)/%)
+
+# ultraedit scala-mode
+ULTRAEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/ultraedit
+ULTRAEDIT_LIST		+= scala.txt
+ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 
 # scala test
 TEST_ROOT		 = $(PROJECT_ROOT)/test
@@ -29,65 +35,91 @@ TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/%)
 # beta versions
 ##############################################################################
 
-INSTALL			 = $(ROOT)/support/scripts/install
-MIRROR			 = $(ROOT)/support/scripts/mirror
-
 INSTALL_VERSION		 = install-test
-INSTALL_PREFIX		 = $(ROOT)/distribs/scala-test
+INSTALL_PREFIX		 = $(PROJECT_ROOT)/distribs/scala-test
 INSTALL_BINDIR		 = $(INSTALL_PREFIX)/bin
 INSTALL_DOCDIR		 = $(INSTALL_PREFIX)/doc
+INSTALL_APIDOCDIR	 = $(INSTALL_DOCDIR)/api
 INSTALL_LIBDIR		 = $(INSTALL_PREFIX)/lib
-INSTALL_DATADIR		 = $(INSTALL_PREFIX)/share
-INSTALL_DATADIR_ROOT	 = $(INSTALL_DATADIR)/$(PROJECT_NAME)
-INSTALL_DATADIR_LIBRARY	 = $(INSTALL_DATADIR_ROOT)/library
-INSTALL_DATADIR_EXAMPLES = $(INSTALL_DATADIR_ROOT)/examples
-INSTALL_DATADIR_TEST	 = $(INSTALL_DATADIR_ROOT)/test
-INSTALL_DATADIR_EMACS	 = $(INSTALL_DATADIR)/emacs/site-lisp
+INSTALL_SRCDIR		 = $(INSTALL_PREFIX)/src
+INSTALL_EXAMPLEDIR	 = $(INSTALL_PREFIX)/examples
+INSTALL_SUPPORTDIR	 = $(INSTALL_PREFIX)/support
+INSTALL_TESTDIR		 = $(INSTALL_PREFIX)/test
+
+INSTALL_RUNTIME_JARFILE	 = $(INSTALL_LIBDIR)/$(PROJECT_NAME).jar
+INSTALL_FJBG_JARFILE	 = $(INSTALL_LIBDIR)/fjbg.jar
+INSTALL_MSIL_JARFILE	 = $(INSTALL_LIBDIR)/msil.jar
+INSTALL_BCEL_JARFILE	 = $(INSTALL_LIBDIR)/bcel.jar
+INSTALL_BCEL_LICENSE	 = $(INSTALL_LIBDIR)/bcel.LICENSE
+INSTALL_XERCES_JARFILE	 = $(INSTALL_LIBDIR)/xerces.jar
+INSTALL_XERCES_LICENSE	 = $(INSTALL_LIBDIR)/xerces.LICENSE
 
 install-clean		:
 	$(RM) -r $(INSTALL_PREFIX)
 
 install			: $(PROJECT_JAR_ARCHIVE)
-	$(MAKE) -C $(DOCUMENTS_ROOT)/reference all
+	$(MAKE) -C $(DOCUMENTS_ROOT)/reference
+	$(MAKE) -C $(DOCUMENTS_ROOT)/tutorial
 	$(INSTALL) -m 755 -d $(INSTALL_PREFIX)
 	$(INSTALL) -m 755 -d $(INSTALL_BINDIR)
-	$(INSTALL) -m 755 $(ROOT)/bin/.scala_wrapper $(INSTALL_BINDIR)
-	@$(MAKE) SCRIPTS_PREFIX=$(INSTALL_BINDIR) scripts
+	$(INSTALL) -m 644 $(SCRIPTS_WRAPPER).tmpl $(INSTALL_BINDIR)
+	@$(make) \
+	    SCRIPTS_PREFIX=$(INSTALL_BINDIR) \
+	    INSTALL_PREFIX=$(INSTALL_PREFIX) \
+	    MACRO_VERSION=$(INSTALL_VERSION) \
+	    MACRO_RUNTIME_SOURCES=$(INSTALL_SRCDIR) \
+	    MACRO_RUNTIME_CLASSES=$(INSTALL_RUNTIME_JARFILE) \
+	    MACRO_DTD2SCALA_CLASSES=$(INSTALL_LIBDIR) \
+	    MACRO_BCEL_CLASSES=$(INSTALL_BCEL_JARFILE) \
+	    MACRO_FJBG_CLASSES=$(INSTALL_FJBG_JARFILE) \
+	    MACRO_MSIL_CLASSES=$(INSTALL_MSIL_JARFILE) \
+	    MACRO_XERCES_CLASSES=$(INSTALL_XERCES_JARFILE) \
+	    MACRO_JAVA_ARGS= \
+	    scripts
+	$(RM) $(INSTALL_BINDIR)/$(notdir $(SCRIPTS_WRAPPER)).tmpl
 	$(INSTALL) -m 755 -d $(INSTALL_DOCDIR)
 	$(INSTALL) -m 644 $(DOCUMENTS_FILES) $(INSTALL_DOCDIR)
+	@$(make) \
+	    target=LIBRARY \
+	    LIBRARY_SDC_FILES='$(subst $$,\$$$$,$(LIBRARY_SC_FILES))' \
+	    LIBRARY_SDC_OUTPUTDIR=$(INSTALL_APIDOCDIR) \
+	    sdc
 	$(INSTALL) -m 755 -d $(INSTALL_LIBDIR)
-	$(INSTALL) -m 644 $(PROJECT_JAR_ARCHIVE) $(INSTALL_LIBDIR)
-	$(INSTALL) -m 644 $(BCEL_LICENSE) $(INSTALL_LIBDIR)/bcel.LICENSE
-	$(INSTALL) -m 644 $(BCEL_JARFILE) $(INSTALL_LIBDIR)/bcel.jar
-	$(INSTALL) -m 644 $(MSIL_JARFILE) $(INSTALL_LIBDIR)/msil.jar
-	$(INSTALL) -m 644 $(FJBG_JARFILE) $(INSTALL_LIBDIR)/fjbg.jar
-	$(INSTALL) -m 755 -d $(INSTALL_DATADIR)
-	$(INSTALL) -m 755 -d $(INSTALL_DATADIR_ROOT)
-	$(INSTALL) -m 755 -d $(INSTALL_DATADIR_LIBRARY)
+	$(INSTALL) -m 644 $(PROJECT_JAR_ARCHIVE) $(INSTALL_RUNTIME_JARFILE)
+	$(INSTALL) -m 644 $(FJBG_JARFILE) $(INSTALL_FJBG_JARFILE)
+	$(INSTALL) -m 644 $(MSIL_JARFILE) $(INSTALL_MSIL_JARFILE)
+	$(INSTALL) -m 644 $(BCEL_JARFILE) $(INSTALL_BCEL_JARFILE)
+	$(INSTALL) -m 644 $(BCEL_LICENSE) $(INSTALL_BCEL_LICENSE)
+	$(INSTALL) -m 644 $(XERCES_JARFILE) $(INSTALL_XERCES_JARFILE)
+	$(INSTALL) -m 644 $(XERCES_LICENSE) $(INSTALL_XERCES_LICENSE)
+	$(INSTALL) -m 755 -d $(INSTALL_SRCDIR)
 	$(strip $(MIRROR) -m 644 -C $(LIBRARY_ROOT) $(LIBRARY_LIST:%='%') \
-	    $(INSTALL_DATADIR_LIBRARY)/$(PROJECT_NAME))
-	$(INSTALL) -m 755 -d $(INSTALL_DATADIR_EXAMPLES)
+	    $(INSTALL_SRCDIR)/$(PROJECT_NAME))
+	$(INSTALL) -m 755 -d $(INSTALL_EXAMPLEDIR)
 	$(strip $(MIRROR) -m 644 -C $(EXAMPLES_ROOT) $(EXAMPLES_LIST) \
-	    $(INSTALL_DATADIR_EXAMPLES))
-	$(INSTALL) -m 755 -d $(INSTALL_DATADIR)/$(PROJECT_NAME)/test
-	$(INSTALL) -m 755 -d $(INSTALL_DATADIR)/$(PROJECT_NAME)/test/bin
-	$(INSTALL) -m 755 $(ROOT)/test/bin/scala-test $(INSTALL_DATADIR_TEST)/bin
+	    $(INSTALL_EXAMPLEDIR))
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/emacs
+	$(strip $(MIRROR) -m 644 -C $(EMACS_ROOT) $(EMACS_LIST) \
+	    $(INSTALL_SUPPORTDIR)/emacs)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/ultraedit
+	$(strip $(MIRROR) -m 644 -C $(ULTRAEDIT_ROOT) $(ULTRAEDIT_LIST) \
+	    $(INSTALL_SUPPORTDIR)/ultraedit)
+	$(INSTALL) -m 755 -d $(INSTALL_TESTDIR)
+	$(INSTALL) -m 755 -d $(INSTALL_TESTDIR)/bin
+	$(INSTALL) -m 755 $(TEST_ROOT)/bin/scala-test $(INSTALL_TESTDIR)/bin
 	$(strip $(MIRROR) -m 644 -C $(TEST_ROOT) $(TEST_LIST) \
-	    $(INSTALL_DATADIR_TEST))
+	    $(INSTALL_TESTDIR))
 	$(strip $(MIRROR) -m 644 -C $(TEST_ROOT) \
 	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.check) 2>/dev/null) \
-	    $(INSTALL_DATADIR_TEST))
+	    $(INSTALL_TESTDIR))
 	$(strip $(MIRROR) -m 644 -C $(TEST_ROOT) \
 	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.flags) 2>/dev/null) \
-	    $(INSTALL_DATADIR_TEST))
-	$(INSTALL) -m 755 -d $(INSTALL_DATADIR_EMACS)
-	$(strip $(MIRROR) -m 644 -C $(EMACS_ROOT) $(EMACS_LIST) \
-	    $(INSTALL_DATADIR_EMACS))
-	$(INSTALL) -m 644 $(ROOT)/README $(INSTALL_PREFIX)
-	$(INSTALL) -m 644 $(ROOT)/LICENSE $(INSTALL_PREFIX)
+	    $(INSTALL_TESTDIR))
+	$(INSTALL) -m 644 $(PROJECT_ROOT)/README $(INSTALL_PREFIX)
+	$(INSTALL) -m 644 $(PROJECT_ROOT)/LICENSE $(INSTALL_PREFIX)
 	$(ECHO) $(INSTALL_VERSION) > $(INSTALL_PREFIX)/VERSION
 	$(CHMOD) 644 $(INSTALL_PREFIX)/VERSION
-
 
 install-windows		:
 	@if [ ! -d "$(INSTALL_PREFIX)" ]; then \
@@ -97,16 +129,17 @@ install-windows		:
 	$(UNIX2DOS) $(INSTALL_PREFIX)/README
 	$(UNIX2DOS) $(INSTALL_PREFIX)/LICENSE
 	$(UNIX2DOS) $(INSTALL_PREFIX)/VERSION
-	$(UNIX2DOS) $(INSTALL_LIBDIR)/bcel.LICENSE
+	$(UNIX2DOS) $(INSTALL_BCEL_LICENSE)
+	$(UNIX2DOS) $(INSTALL_XERCES_LICENSE)
 	$(TOUCH) $(INSTALL_PREFIX)/VERSION-$(INSTALL_VERSION)
 	@root=`cd "$(INSTALL_PREFIX)"; pwd`; \
 	for file in "" $(SCRIPTS_WRAPPER_ALIASES); do \
 	    if [ -z "$$file" ]; then continue; fi; \
 	    echo -n "Generating $$file.bat ... "; \
-	    srcfile="$(ROOT)/support/windows/scala_wrapper"; \
+	    srcfile="$(PROJECT_SUPPORTDIR)/windows/scala_wrapper"; \
 	    nixfile="$(INSTALL_PREFIX)/bin/$$file"; \
 	    winfile="$(INSTALL_PREFIX)/bin/$$file.bat"; \
-	    nixexec=`SCALA_WRAPPER_EXEC=echo $$nixfile`; \
+	    nixexec=`SCALA_EXEC=echo $$nixfile`; \
 	    winexec="$$nixexec"; \
 	    winexec=`echo "$$winexec" | sed -es"#$$root#%SCALA_HOME%#g"`; \
 	    winexec=`echo "$$winexec" | tr '/' '\\\\' | tr ':' ';'`; \
@@ -121,17 +154,18 @@ install-windows		:
 	    echo "done"; \
 	done
 	$(RM) $(INSTALL_PREFIX)/bin/.scala_wrapper
-	$(FIND) $(INSTALL_DATADIR_LIBRARY) -type f -exec unix2dos "{}" ";"
-	$(FIND) $(INSTALL_DATADIR_EXAMPLES) -type f -exec unix2dos "{}" ";"
-	$(FIND) $(INSTALL_DATADIR_TEST) -type f -exec unix2dos "{}" ";"
-	$(FIND) $(INSTALL_DATADIR_EMACS) -type f -exec unix2dos "{}" ";"
+	$(FIND) $(INSTALL_SRCDIR) -type f -exec $(UNIX2DOS) "{}" ";"
+	$(FIND) $(INSTALL_APIDOCDIR) -type f -exec $(UNIX2DOS) "{}" ";"
+	$(FIND) $(INSTALL_EXAMPLEDIR) -type f -exec $(UNIX2DOS) "{}" ";"
+	$(FIND) $(INSTALL_SUPPORTDIR) -type f -exec $(UNIX2DOS) "{}" ";"
+	$(RM) -r $(INSTALL_TESTDIR)
 
-.PHONY	: install
-.PHONY	: install-windows
+.PHONY			: install
+.PHONY			: install-windows
 
 ##############################################################################
 
-DISTRIB_REPOSITORY	 = $(ROOT)/distribs
+DISTRIB_REPOSITORY	 = $(PROJECT_ROOT)/distribs
 DISTRIB_VERSION		:= $(shell $(DATE) -u "+%Y%m%d-%H%M%S")
 DISTRIB_NAME		 = $(PROJECT_NAME)-$(DISTRIB_VERSION)
 DISTRIB_PREFIX		 = $(DISTRIB_REPOSITORY)/$(DISTRIB_NAME)
@@ -148,12 +182,12 @@ distrib-extract		:
 	tar xvzf $(DISTRIB_ARCHIVE) -C $(DISTRIB_REPOSITORY)
 
 distrib-build-unix	:
-	@$(MAKE) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
+	@$(make) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
 	    INSTALL_VERSION=$(DISTRIB_VERSION) install
 	tar czf $(DISTRIB_ARCHIVE) -C $(DISTRIB_REPOSITORY) $(DISTRIB_NAME)
 
 distrib-build-windows	:
-	@$(MAKE) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
+	@$(make) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
 	    INSTALL_VERSION=$(DISTRIB_VERSION) install-windows
 	$(RM) -f $(DISTRIB_PREFIX).zip
 	cd $(DISTRIB_REPOSITORY); \
@@ -175,47 +209,17 @@ distrib-all-oses	: distrib-build-unix
 distrib-all-oses	: distrib-build-windows
 distrib-all-oses	: distrib-clean
 
-distrib-14		:
-	@if [ -f "$(ROOT)/bin/.scala_wrapper.bak" ]; then \
-	    echo "There is a backup of .scala_wrapper, maybe you should run: "; \
-	    echo "make distrib-13-undo"; \
-	    exit 1; \
-	fi
-	@$(MAKE) distrib-all-oses DISTRIB_VERSION=$(DISTRIB_VERSION);
+distrib			:
+	@$(make) distrib-all-oses DISTRIB_VERSION=$(DISTRIB_VERSION);
 
-distrib-13-undo		:
-	@$(MAKE) clean;
-	mv $(ROOT)/bin/.scala_wrapper.bak $(ROOT)/bin/.scala_wrapper
 
-distrib-13		: PATH:=/home/linuxsoft/apps/java-1.3/bin:$(PATH)
-distrib-13		:
-	@if [ -f "$(ROOT)/bin/.scala_wrapper.bak" ]; then \
-	    echo "Cannot save .scala_wrapper, there is already a backup," \
-	      "maybe you should run: "; \
-	    echo "make distrib-13-undo"; \
-	    exit 1; \
-	fi
-	mv $(ROOT)/bin/.scala_wrapper $(ROOT)/bin/.scala_wrapper.bak
-	$(SED) -e "s/-enableassertions//" $(ROOT)/bin/.scala_wrapper.bak \
-	    > $(ROOT)/bin/.scala_wrapper
-	@$(MAKE) clean;
-	@$(MAKE) COMPILER_JC_FLAGS="$(COMPILER_JC_FLAGS) -target 1.3"
-	@$(MAKE) distrib-all-oses DISTRIB_VERSION=$(DISTRIB_VERSION)-jdk-1.3;
-	@$(MAKE) distrib-13-undo;
-
-distrib			: distrib-14
-#distrib			: distrib-13
-
-.PHONY	: distrib-extract
-.PHONY	: distrib-build-unix
-.PHONY	: distrib-build-windows
-.PHONY	: distrib-clean
-.PHONY	: distrib-unix
-.PHONY	: distrib-windows
-.PHONY	: distrib-all-oses
-.PHONY	: distrib-14
-.PHONY	: distrib-13-undo
-.PHONY	: distrib-13
-.PHONY	: distrib
+.PHONY			: distrib-extract
+.PHONY			: distrib-build-unix
+.PHONY			: distrib-build-windows
+.PHONY			: distrib-clean
+.PHONY			: distrib-unix
+.PHONY			: distrib-windows
+.PHONY			: distrib-all-oses
+.PHONY			: distrib
 
 ##############################################################################

@@ -299,6 +299,7 @@ $(PROJECT_JAR_ARCHIVE)	:
 ##############################################################################
 # Includes
 
+include $(PROJECT_ROOT)/Makefile.distrib
 include $(PROJECT_SUPPORTDIR)/make/jc.mk
 include $(PROJECT_SUPPORTDIR)/make/jar.mk
 include $(PROJECT_SUPPORTDIR)/make/sc.mk
