@@ -156,6 +156,28 @@ object Bug176Test {
 }
 
 //############################################################################
+// Bug 213
+
+trait Bug213Foo {
+  def testAll: Unit;
+  def testAllRef: String;
+}
+
+class Bug213Bar extends Bug213Foo {
+  def testAll = (().asInstanceOf[All] : All);
+  def testAllRef = ("".asInstanceOf[AllRef] : AllRef);
+}
+
+object Bug213Test {
+  def main(args: Array[String]): Unit = {
+    val foo: Bug213Foo = new Bug213Bar;
+    foo.testAll;
+    foo.testAllRef;
+    ()
+  }
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -186,6 +208,7 @@ object Test  {
     test(168, Bug168Test.main(args));
     test(174, Bug174Test.main(args));
     test(176, Bug176Test.main(args));
+    test(213, Bug213Test.main(args));
 
     if (errors > 0) {
       System.out.println();
