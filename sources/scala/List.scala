@@ -132,8 +132,6 @@ trait List[+a] extends Seq[a] {
    */
   def apply(n: Int): a = drop(n).head;
 
-  def at(n: Int): a = drop(n).head;
-
   /** Returns the list resulting from applying the given function <code>f</code> to each
   * element of this list.
   * @param f function to apply to each element.

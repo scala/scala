@@ -21,11 +21,6 @@ object Queue {
 }
 
 class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
-
-    def at(n: Int): A =
-	if (n < out.length) out.at(n)
-	    else (in.reverse).at(n - out.length);
-
   /** Returns the <code>n</code>-th element of this queue.
    * The first element is at position 0.
    * @param n index of the element to return

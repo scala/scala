@@ -11,8 +11,4 @@ package scala;
 
 trait Seq[+A] with Function1[Int, A] with Iterable[A] {
     def length: Int;
-
-    /** @deprecated
-     */
-    //def at(index: Int): A;
 }

@@ -37,7 +37,6 @@ trait Stream[+a] extends Seq[a] {
     else tail.drop(n-1);
 
   def apply(n: int) = drop(n).head;
-  def at(n: int) = drop(n).head;
 
   def takeWhile(p: a => Boolean): Stream[a] =
     if (isEmpty || !p(head)) Stream.empty
