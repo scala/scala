@@ -1,5 +1,10 @@
 package scala.xml;
 
+/** Generic.load( <fileName> ) will load the xml document from file and
+ *  create a tree with scala.Labelled, PCDATA and scala.Symbol objects.
+ *  Text can appear within PCDATA at the leaves.
+ */
+
 object Generic {
 
   def load( filename:String ):Labelled = {
@@ -35,7 +40,6 @@ object Generic {
           new PCDATA( text );
     };
 
-    } // GenericFactoryAdapter
-
+  } // GenericFactoryAdapter
 
 }

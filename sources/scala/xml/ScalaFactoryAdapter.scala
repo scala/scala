@@ -3,6 +3,12 @@ package scala.xml ;
 import scala.xml.javaAdapter.Map ;
 import scala.xml.javaAdapter.HashMap ;
 
+/** a Scala specific dtd2scala.FactoryAdapter, which plays the SAX content handler for the SAX parser
+ *  It implements the three callback methods elementContainsText, createElement and createPCDATA.
+ *  DTDs imported with the dtd2scala tool all use this class as interface to the SAX XML parser, by
+ *  giving concrete values for the factory maps f and g.
+ */
+
 abstract class ScalaFactoryAdapter
     extends dtd2scala.FactoryAdapter()  {
 
@@ -31,8 +37,12 @@ abstract class ScalaFactoryAdapter
         res
     }
 
-
+    /** a mapping from a element name (string) to an element constructor (constr:Seq[Element] => Element)
+     */
     val f: Map[ String, Seq[Element] => Element ];
+
+    /** a mapping from an element name (string) to a truth value indicating whether text (PCDATA) may appear as
+      */
 
     val g: Map[ String, boolean ] ;
 
