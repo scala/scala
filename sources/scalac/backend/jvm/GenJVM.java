@@ -1190,6 +1190,13 @@ class GenJVM {
             case BOX :
             case UNBOX :
             case APPLY : case UPDATE : case LENGTH :
+            case B2B:case B2S:case B2C:case B2I:case B2L:case B2F:case B2D:
+            case S2B:case S2S:case S2C:case S2I:case S2L:case S2F:case S2D:
+            case C2B:case C2S:case C2C:case C2I:case C2L:case C2F:case C2D:
+            case I2B:case I2S:case I2C:case I2I:case I2L:case I2F:case I2D:
+            case L2B:case L2S:case L2C:case L2I:case L2L:case L2F:case L2D:
+            case F2B:case F2S:case F2C:case F2I:case F2L:case F2F:case F2D:
+            case D2B:case D2S:case D2C:case D2I:case D2L:case D2F:case D2D:
                 return false;
             default:
                 throw Debug.abort("unknown primitive", sym);
