@@ -6,7 +6,6 @@
 ** $Id$
 \*                                                                      */
 
-import scalac.ast.parser.PatternNormalizer;
 import scalac.symtab.Modifiers;
 import scalac.ast._;
 import scalac.atree.AConstant;

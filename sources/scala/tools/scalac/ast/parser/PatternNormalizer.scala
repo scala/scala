@@ -26,6 +26,8 @@ import Tree.*;
 
 package scala.tools.scalac.ast.parser {
 
+  import scala.tools.scalac.ast.{TreeList => myTreeList}
+
   /** contains algorithms for `checking' and `normalizing' patterns
   *
   *  @author  Burak Emir
@@ -116,12 +118,12 @@ package scala.tools.scalac.ast.parser {
     /** checkPat for every tree in array of trees, see below
     */
     protected def check1( trees:Array[Tree], inAlt:boolean ):boolean = {
-      var i:int = 0; while ( i < trees.length ) {
-        if( !check1(  trees( i ), inAlt ))
-	  return false;
+      var res = true;
+      var i:int = 0; while (( i < trees.length ) && res) {
+	res = check1(  trees( i ), inAlt );
         i = i + 1;
       }
-      true;
+      res
     }
 
     // if this map contains a symbol as a key, it is bound.
@@ -139,11 +141,12 @@ package scala.tools.scalac.ast.parser {
           unit.error( pat.pos, "sequences not allowed here"); false;
 
         case Tree$Alternative( args ) =>
-          var i = 0; while( i < args.length ) {
+          var res = true;
+          var i = 0; while( res && (i < args.length )) {
             args( i ) match  {
               case Tree$Sequence( _ ) =>
                 unit.error( args( i ).pos, "sequences not allowed here");
-              return false;
+                res = false;
               case _ =>
             };
             i = i + 1
@@ -182,7 +185,7 @@ package scala.tools.scalac.ast.parser {
 
     /** appends every non-empty tree in trees to ts
     */
-    def appendNonEmpty( ts:TreeList, trees:Array[Tree] ):unit = {
+    def appendNonEmpty( ts:myTreeList, trees:Array[Tree] ):unit = {
       var i = 0; while ( i < trees.length ) {
 	if( !isEmptySequence( trees( i ) ) )
 	  ts.append( trees( i ) );
@@ -192,14 +195,14 @@ package scala.tools.scalac.ast.parser {
 
     /** appends tree to ts if it is non-empty, leaves ts unchanged.
     */
-    def appendNonEmpty( ts:TreeList, tree:Tree  ) = {
+    def appendNonEmpty( ts:myTreeList, tree:Tree  ) = {
       if ( !isEmptySequence(tree))
 	ts.append( tree );
     }
 
-    /** takes a (possibly empty) TreeList and make a Sequence out of it
+    /** takes a (possibly empty) myTreeList and make a Sequence out of it
     */
-    def treeListToSequence( pos:int , ts:TreeList  ):Tree = {
+    def treeListToSequence( pos:int , ts:myTreeList  ):Tree = {
       make.Sequence( pos, ts.toArray() );
     }
 
@@ -214,16 +217,16 @@ package scala.tools.scalac.ast.parser {
       val res = new Array[Tree]( ts.length );
       var i = 0; while( i < ts.length ) {
 	res( i ) = flattenAlternative( ts( i ) );
-        i = i+ 1 ;
+        i = i + 1 ;
       }
       res;
     }
 
     // main algo for (1)
-    def flattenAlternative( tree:Tree ):Tree =
+    def flattenAlternative( tree:Tree ):Tree = {
       tree match  {
 	case Tree$Alternative( choices:Array[Tree]  ) =>
-	  val cs = new TreeList();
+	  val cs = new myTreeList();
 	  var i = 0; while( i < choices.length ) {
 	    val child = choices( i );
 	    child match {
@@ -249,23 +252,23 @@ package scala.tools.scalac.ast.parser {
 	case _ =>
 	    tree; // no alternatives can occur
       }
-
+    }
 
     // main algo for (1), precondition: choices are children of an Alternative node
-    def flattenAlternativeChildren( choices:Array[Tree] ):TreeList = {
+    def flattenAlternativeChildren( choices:Array[Tree] ):myTreeList = {
       var allEmpty = true;
-      val cs = new TreeList();
+      val cs = new myTreeList();
       var j = 0; while( j < choices.length ) {
 	val tree = flattenAlternative( choices( j ) ); // flatten child
 	tree match {
 	  case Tree$Alternative( child_choices:Array[Tree] ) =>
 	    val tmp = cs.length();
-	  appendNonEmpty( cs, child_choices );
-	  if( cs.length() != tmp )
-	    allEmpty = false;
+	    appendNonEmpty( cs, child_choices );
+	    if( cs.length() != tmp )
+	      allEmpty = false;
 	  case _ =>
 	    cs.append( tree );
-	  allEmpty = allEmpty && TreeInfo.isEmptySequence( tree );
+	    allEmpty = allEmpty && TreeInfo.isEmptySequence( tree );
 	}
         j = j + 1;
       }
@@ -273,7 +276,7 @@ package scala.tools.scalac.ast.parser {
 	cs.clear();
 	cs.append(make.Sequence(choices( 0 ).pos, Tree.EMPTY_ARRAY));
       }
-      cs;
+      cs
     }
 
     /** (2) nested `Sequence' nodes are flattened (( clique elimination ))
@@ -290,28 +293,27 @@ package scala.tools.scalac.ast.parser {
       res
     }
     // main algo for (2)
-    def flattenSequence( tree:Tree  ):Tree =
-	//System.out.println("flattenSequence of "+tree);
-	tree match {
-	    /*
+    def flattenSequence( tree:Tree  ):Tree = {
+      tree match {
+	/*
 	case Sequence( Tree[] trees ):
-	    trees = flattenSequences( trees );
-	    if(( trees.length == 1 )&&( isEmptySequence( trees[ 0 ] )))
-		trees = Tree.EMPTY_ARRAY;
-	    return make.Sequence( tree.pos, trees );
-	  */
-	  case Tree$Sequence( trees:Array[Tree] ) =>
-	    val ts = new TreeList();
-	    var i = 0; while( i < trees.length ) {
+	trees = flattenSequences( trees );
+	if(( trees.length == 1 )&&( isEmptySequence( trees[ 0 ] )))
+	  trees = Tree.EMPTY_ARRAY;
+	return make.Sequence( tree.pos, trees );
+	*/
+	case Tree$Sequence( trees:Array[Tree] ) =>
+	  val ts = new myTreeList();
+	  var i = 0; while( i < trees.length ) {
 	    val child = trees( i );
-	      child match {
-		case Tree$Sequence( child_trees:Array[Tree]  ) => // grab its flattened children
-		  ts.append( flattenSequenceChildren( child_trees ) );
-		case _ =>
-		  ts.append( child );
-		}
-              i = i + 1;
+	    child match {
+	      case Tree$Sequence( child_trees  ) => // grab its flattened children
+	        ts.append( flattenSequenceChildren( child_trees ) );
+	      case _ =>
+		ts.append( child );
 	    }
+            i = i + 1;
+	  }
 	    /*
 	      System.out.print("ts = ");
 	    for(int jj = 0; jj<ts.length(); jj++) {
@@ -319,19 +321,19 @@ package scala.tools.scalac.ast.parser {
 	    }
 	    System.out.println();
 	    */
-	    treeListToSequence( tree.pos, ts ) ;
-
+	val t = treeListToSequence( tree.pos, ts ) ;
+	t
 	  case Tree$Alternative( choices ) =>
 	    make.Alternative( tree.pos, flattenSequences( choices ));
 	  case Tree$Bind( vble, body ) =>
 	    make.Bind( tree.pos, vble, flattenSequence( body ));
 	  case _ => tree;
 	}
-
+    }
 
     // main algo for (2), precondition: trees are children of a Sequence node
-    def flattenSequenceChildren( trees:Array[Tree] ):TreeList = {
-      val ts = new TreeList();
+    def flattenSequenceChildren( trees:Array[Tree] ):myTreeList = {
+      val ts = new myTreeList();
       var j = 0; while( j < trees.length ) {
 	val tree = flattenSequence( trees( j ) );
 	tree match  {
@@ -357,6 +359,7 @@ package scala.tools.scalac.ast.parser {
 	val res = new Array[Tree] ( ts.length );
 	var i = 0; while( i < ts.length ) {
 	    res( i ) = elimSequence( ts( i ) );
+            i = i + 1
         }
 	res;
     }
@@ -374,7 +377,7 @@ package scala.tools.scalac.ast.parser {
 	    // recurse
 	    //case Sequence( Array[Tree] trees ): // after normalization (2), Sequence is flat
 	    /*
-	    TreeList ts = new TreeList();
+	    myTreeList ts = new myTreeList();
 	    for( int i = 0; i < trees.length; i++ ) {
 		Tree t = trees[ i ];
 		//if( t != Tree.Empty )                          // forget empty subsequences
@@ -394,16 +397,16 @@ package scala.tools.scalac.ast.parser {
     }
 
     /** runs through an array of trees, merging adjacent `Sequence' nodes if possible
-     *  returns a (possibly empty) TreeList
+     *  returns a (possibly empty) myTreeList
      *  precondition: trees are children of a Sequence node
      */
-    def mergeHedge( trees:Array[Tree] ):TreeList = {
-      val ts = new TreeList();
+    def mergeHedge( trees:Array[Tree] ):myTreeList = {
+      val ts = new myTreeList();
       if( trees.length > 1 ) {    // more than one child
 	var left  = trees( 0 );
 	var right:Tree = null;;
 	var merge:Tree = null;
-	var i = 0; while( i < trees.length - 1) {
+	var i = 0; while( i < trees.length - 1 ) {
 	  right = trees( i + 1 );
 	  merge = mergeThem( left, right );
 	  if( merge != null ) {
@@ -433,27 +436,27 @@ package scala.tools.scalac.ast.parser {
     def mergeThem( left:Tree, right:Tree  ):Tree = {
       left match {
 	case Tree$Sequence( treesLeft ) =>             // left tree is subsequence
-	  val ts = new TreeList();
+	  val ts = new myTreeList();
 	  appendNonEmpty( ts, treesLeft );
 	  right match  {
 	    case Tree$Sequence( treesRight ) => // subsequence
 	      appendNonEmpty( ts, treesRight );
 	    case _ => // atom
 	      ts.append( right );
-	  }
+	  };
 	  treeListToSequence( left.pos, ts );
 
 	case _ =>                                          // left tree is atom
 	  right match {
 	    case Tree$Sequence( treesRight ) =>
-	      val ts = new TreeList();
+	      val ts = new myTreeList();
 	      ts.append( left );
 	      appendNonEmpty( ts, treesRight ); // ...and right tree is subsequence
 	      treeListToSequence( left.pos, ts );
-            case _ =>
+            case _ => //  right tree is atom -- no merge
+              null
 	  }
       }
-      null;                                      // ...and right tree is atom -- no merge
     }
 
 
@@ -476,7 +479,7 @@ package scala.tools.scalac.ast.parser {
 
   /** main algo for (4)
     */
-  def wrapAlternative( tree:Tree  ):Tree =
+  def wrapAlternative( tree:Tree  ):Tree = {
     tree match {
       case Tree$Alternative( choices ) =>
         make.Alternative( tree.pos, wrapAlternativeChildren( choices ));
@@ -508,7 +511,7 @@ package scala.tools.scalac.ast.parser {
 	tree;
 
     }
-
+  }
 
   /** algo for (4), precondition: choices are direct successors of an `Alternative' node
   */
@@ -547,7 +550,7 @@ package scala.tools.scalac.ast.parser {
     def isSequenceBranch( tree:Tree  ):boolean = {
 	tree match {
 	case Tree$Sequence( _ ) =>
-	    return true;
+	    true;
 	  case Tree$Alternative( trees:Array[Tree]  )=> // normal form -> just check first child
 	    trees( 0 ) match  {
 	    case Tree$Sequence( _ ) => true;
