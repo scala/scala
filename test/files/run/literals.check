@@ -1,0 +1,16 @@
+test 1e1f == 10.0f was successful
+test 2.f == 2.0f was successful
+test .3f == 0.3f was successful
+test 0f == 0.0f was successful
+test 3.14f == 3.14f was successful
+test 6.022e23f == 6.022e23f was successful
+test 09f == 9.0f was successful
+test 1e1 == 10.0 was successful
+test 2. == 2.0 was successful
+test 2.d == 2.0 was successful
+test .3 == 0.3 was successful
+test 0.0 == 0.0 was successful
+test 0d == 0.0 was successful
+test 3.14 == 3.14 was successful
+test 1e-9d == 1.0e-9 was successful
+test 1e137 == 1.0e137 was successful
