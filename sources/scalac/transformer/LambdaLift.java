@@ -559,6 +559,7 @@ public class LambdaLift extends OwnerTransformer
 	case ClassDef(_, _, _, _, _, _):
 	    ((ClassDef) tree).mods |= LIFTED;
 	    Symbol sym = tree.symbol();
+            sym.flags |= LIFTED;
 	    assert sym.isLocal() : sym;
 	    Symbol constr = sym.primaryConstructor();
 	    liftSymbol(
@@ -569,6 +570,7 @@ public class LambdaLift extends OwnerTransformer
 	case DefDef(_, _, _, _, _, _):
 	    ((DefDef) tree).mods |= LIFTED;
 	    Symbol sym = tree.symbol();
+            sym.flags |= LIFTED;
 	    assert sym.isLocal() : sym;
 	    liftSymbol(
 		sym, get(free.ftvs, sym).toArray(),
