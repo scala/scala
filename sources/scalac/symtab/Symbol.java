@@ -105,6 +105,22 @@ public abstract class Symbol implements Modifiers, Kinds {
         return new TermSymbol(pos, name, this, 0, IS_LABEL);
     }
 
+    /** Creates a new value parameter owned by this symbol. */
+    public final TermSymbol newVParam(int pos, int flags, Name name) {
+        assert isTerm(): Debug.show(this);
+        return newTerm(pos, flags | PARAM, name);
+    }
+
+    /**
+     * Creates a new value parameter owned by this symbol and
+     * initializes it with the type.
+     */
+    public final TermSymbol newVParam(int pos, int flags, Name name,Type type){
+        TermSymbol tparam = newVParam(pos, flags, name);
+        tparam.setInfo(type);
+        return tparam;
+    }
+
     /**
      * Creates a new initialized dummy symbol for template of this
      * class.
