@@ -138,7 +138,6 @@ xml/Node.scala
 xml/Text.scala
 xml/Utility.scala
 
-xml/nobinding/Element.scala
 xml/nobinding/NoBindingFactoryAdapter.scala
 xml/nobinding/XML.scala
 
