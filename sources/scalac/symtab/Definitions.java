@@ -22,30 +22,6 @@ public class Definitions {
     public final Symbol ROOT_CLASS;
     public final Type   ROOT_TYPE;
 
-    /** the scala module
-     */
-    public final Symbol SCALA;
-    public final Symbol SCALA_CLASS;
-    public final Type   SCALA_TYPE;
-
-    /** the java module
-     */
-    public final Symbol JAVA;
-    public final Symbol JAVA_CLASS;
-    public final Type   JAVA_TYPE;
-
-    /** the java.lang module
-     */
-    public final Symbol JAVALANG;
-    public final Symbol JAVALANG_CLASS;
-    public final Type   JAVALANG_TYPE;
-
-    /** the scala.runtime module
-     */
-    public final Symbol SCALARUNTIME;
-    public final Symbol SCALARUNTIME_CLASS;
-    public final Type   SCALARUNTIME_TYPE;
-
     /** the null value
      */
     public final Symbol NULL;
@@ -364,33 +340,8 @@ public class Definitions {
         // this is a prefix for all types inside of the anonymous package
         ROOT_TYPE = ROOT_CLASS.thisType();
 
-        // the scala module
-        SCALA = getModule(Names.scala);
         // the scala class
-        SCALA_CLASS = SCALA.moduleClass();
-        // the scala package as a prefix
-        SCALA_TYPE = Type.singleType(ROOT_TYPE, SCALA);
-
-        // the java module
-        JAVA = getModule(Names.java);
-        // the java class
-        JAVA_CLASS = JAVA.moduleClass();
-        // the java package as a prefix
-        JAVA_TYPE = Type.singleType(ROOT_TYPE, JAVA);
-
-        // the java.lang module
-        JAVALANG = getModule(Names.java_lang);
-        // the java.lang class
-        JAVALANG_CLASS = JAVALANG.moduleClass();
-        // the java.lang package as a prefix
-        JAVALANG_TYPE = Type.singleType(JAVA_TYPE, JAVALANG);
-
-        // the scala.runtime module
-        SCALARUNTIME = getModule(Names.scala_runtime);
-        // the scala.runtime class
-        SCALARUNTIME_CLASS = SCALARUNTIME.moduleClass();
-        // the scala.runtime package as a prefix
-        SCALARUNTIME_TYPE = Type.singleType(SCALA_TYPE, SCALARUNTIME);
+        Symbol SCALA_CLASS = getClass(Names.scala);
 
         // the scala.ANY classs
         ANY_CLASS = new ClassSymbol(
@@ -402,7 +353,6 @@ public class Definitions {
 
         // the java.lang.OBJECT class
         JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
-        JAVA_OBJECT_CLASS.setInfo(pparser.classCompletion); // !!!
 
         // the primitive types
         DOUBLE_CLASS = getClass(Names.scala_Double);
