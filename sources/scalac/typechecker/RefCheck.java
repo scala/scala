@@ -3,6 +3,9 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
+
+// $Id$
+
 package scalac.typechecker;
 
 import java.util.HashMap;
