@@ -53,7 +53,7 @@ jar_FLAGS		 = $(call JAR_LOOKUP,JAR_FLAGS)
 jar_ARCHIVE		 = $(call JAR_LOOKUP,JAR_ARCHIVE)
 jar_MANIFEST		 = $(call JAR_LOOKUP,JAR_MANIFEST)
 jar_INPUTDIR		 = $(call JAR_LOOKUP,JAR_INPUTDIR)
-jar_inputdir		 = $(jar_INPUTDIR:%=-C %)
+jar_inputdir		 = $(jar_INPUTDIR:%=-C $(call CYGWIN_FILE,%))
 jar_FILES		 = $(call JAR_LOOKUP,JAR_FILES)
 
 ##############################################################################
