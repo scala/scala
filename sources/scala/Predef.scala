@@ -157,8 +157,8 @@ object Predef {
     case _ => 0
   }
 
-  /** We can't bootstrap currently with the following views included. We have to
-   *  wait for the next release...
+  /* We can't bootstrap currently with the following views included. We have to
+   * wait for the next release...
    *
   def view[A <% Ordered[A], B <% Ordered[B]](x: Tuple2[A, B]): Ordered[Tuple2[A, B]] =
   		new Ordered[Tuple2[A, B]] with Proxy(x) {
