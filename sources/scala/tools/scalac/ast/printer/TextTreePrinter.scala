@@ -59,7 +59,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     this
   }
 
-  def beginSection(level: int, title: String) = {
+  def beginSection(level: Int, title: String) = {
     out.println("[[" + title + "]]");
     flush();
   }
@@ -100,7 +100,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   case object Definition extends SymbolUsage;
   case object Use extends SymbolUsage;
 
-  protected def print(text: Text): unit = text match {
+  protected def print(text: Text): Unit = text match {
     case None => ;
     case Space => printString(" ")
     case Newline => printNewLine()
@@ -122,7 +122,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     case Sequence(elements) => print(elements)
   }
 
-  protected def print(texts: List[Text]): unit =
+  protected def print(texts: List[Text]): Unit =
     for (val text <- texts) print(text);
 
   protected final val KW_ABSTRACT  = Keyword("abstract");
@@ -199,14 +199,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   protected final val TXT_BAR_SP =
     Sequence(List(Space, TXT_BAR, Space));
 
-  def print(global: scalac_Global): unit = {
+  def print(global: scalac_Global): Unit = {
     val phase: Phase = global.currentPhase;
     beginSection(1, "syntax trees at "+phase+" (after "+phase.prev+")");
     for (val i <- Iterator.range(0, global.units.length))
       print(global.units(i));
   }
 
-  def print(unit: CompilationUnit): unit = {
+  def print(unit: CompilationUnit): Unit = {
     printUnitHeader(unit);
     if (unit.body != null) {
       for (val i <- Iterator.range(0, unit.body.length)) {
@@ -220,10 +220,10 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     flush();
   }
 
-  protected def printUnitHeader(unit: CompilationUnit): unit =
+  protected def printUnitHeader(unit: CompilationUnit): Unit =
     print(Simple("// Scala source: " + unit.source + "\n"));
 
-  protected def printUnitFooter(unit: CompilationUnit): unit =
+  protected def printUnitFooter(unit: CompilationUnit): Unit =
     print(Newline);
 
   def print(tree: Tree): TreePrinter = {
@@ -557,7 +557,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
   // Printing helpers
 
-  protected def printArray(trees: Array[Tree], open: Text, close: Text, sep: Text): unit = {
+  protected def printArray(trees: Array[Tree], open: Text, close: Text, sep: Text): Unit = {
     indent();
     print(open);
     for (val i <- Iterator.range(0, trees.length)) {
@@ -568,7 +568,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     print(close);
   }
 
-  protected def printOpt(prefix: Text, tree: Tree, spaceBefore: boolean): unit =
+  protected def printOpt(prefix: Text, tree: Tree, spaceBefore: boolean): Unit =
     if (tree != Tree.Empty) {
       if (spaceBefore)
         print(Space);
@@ -579,15 +579,15 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
   // Printing of symbols
 
-  protected def printSymbolDefinition(symbol: Symbol, name: Name): unit =
+  protected def printSymbolDefinition(symbol: Symbol, name: Name): Unit =
     print(Identifier(symbol, name, Definition));
 
-  protected def printSymbolUse(symbol: Symbol, name: Name): unit =
+  protected def printSymbolUse(symbol: Symbol, name: Name): Unit =
     print(Identifier(symbol, name, Use));
 
   // Printing of trees
 
-  protected def printType(tree: Tree): unit =
+  protected def printType(tree: Tree): Unit =
     if (global.printtypes) {
       print(TXT_LEFT_BRACE);
       print(if (tree.`type` != null) Simple(tree.`type`.toString())
@@ -599,7 +599,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   // Protected Methods - Printing modifiers
 
   /** Print syntactic modifiers. */
-  protected def printSModifiers(flags: int): unit = {
+  protected def printSModifiers(flags: Int): Unit = {
     if ((flags & Modifiers.ABSTRACT) != 0) {
       print(KW_ABSTRACT);
       print(Space);
@@ -675,7 +675,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   protected def printTemplate(symbol: Symbol,
                               prefix: Text,
                               templ: Tree$Template,
-                              spaceBefore: boolean): unit =
+                              spaceBefore: boolean): Unit =
   {
     if (! (templ.parents.length == 0
            || (templ.parents.length == 1
@@ -728,7 +728,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     }
   }
 
-  protected def printParams(tparams: Array[Tree$AbsTypeDef]): unit =
+  protected def printParams(tparams: Array[Tree$AbsTypeDef]): Unit =
     if (tparams.length > 0) {
       print(TXT_LEFT_BRACKET);
       for (val i <- Iterator.range(0, tparams.length)) {
@@ -738,11 +738,11 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       print(TXT_RIGHT_BRACKET);
     }
 
-  protected def printParams(vparamss: Array[Array[Tree$ValDef]]): unit =
+  protected def printParams(vparamss: Array[Array[Tree$ValDef]]): Unit =
     for (val i <- Iterator.range(0, vparamss.length))
       printParams(vparamss(i));
 
-  protected def printParams(vparams: Array[Tree$ValDef]): unit = {
+  protected def printParams(vparams: Array[Tree$ValDef]): Unit = {
     print(TXT_LEFT_PAREN);
     for (val i <- Iterator.range(0, vparams.length)) {
       if (i > 0) print(TXT_COMMA_SP);
@@ -751,7 +751,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     print(TXT_RIGHT_PAREN);
   }
 
-  protected def printParam(tree: Tree): unit = tree match {
+  protected def printParam(tree: Tree): Unit = tree match {
     case Tree$AbsTypeDef(mods, name, bound, lobound) =>
       printSModifiers(mods);
       printSymbolDefinition(tree.symbol(), name);
@@ -769,7 +769,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       Debug.abort("bad parameter: " + tree);
   }
 
-  protected def printBounds(lobound: Tree, hibound: Tree, mods: int): unit = {
+  protected def printBounds(lobound: Tree, hibound: Tree, mods: Int): Unit = {
     val definitions: Definitions = global.definitions;
     val printLoBound: Boolean =
       if (lobound.getType() != null)
