@@ -814,7 +814,9 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
   }
 
   private def getTypeMethod(clazz: ClassSymbol): Tree = {
-    val flags = if (clazz.isSubClass(defs.SCALAOBJECT_CLASS)) OVERRIDE else 0;
+    val flags =
+      SYNTHETIC
+      | (if (clazz.isSubClass(defs.SCALAOBJECT_CLASS)) OVERRIDE else 0);
     val getTypeSym = clazz
       .newMethod(clazz.pos, flags, Names.getType)
       .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY,
