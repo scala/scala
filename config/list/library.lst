@@ -104,11 +104,12 @@ collection/mutable/SynchronizedMap.scala
 collection/mutable/SynchronizedSet.scala
 collection/mutable/Undo.scala
 
-collection/immutable/Tree.scala
 collection/immutable/ListMap.scala
-collection/immutable/TreeMap.scala
 collection/immutable/ListSet.scala
 collection/immutable/Map.scala
+collection/immutable/Tree.scala
+collection/immutable/TreeMap.scala
+collection/immutable/TreeSet.scala
 collection/immutable/Order.scala
 collection/immutable/Queue.scala
 collection/immutable/Set.scala
