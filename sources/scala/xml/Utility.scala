@@ -98,7 +98,7 @@ object Utility {
 todo: better pretty printing */
 
   def toXML( ch:Iterator[Node] ):String = {
-    ch.foldLeft ("") { (s:String,n:Node) => { val t:String = toXML( n ); s + t }}
+    ch.foldLeft ("") { (s:String,n:Node) => s + n.toString() }
   }
 
   /** for a Node n, returns string representation of n.attributes **/

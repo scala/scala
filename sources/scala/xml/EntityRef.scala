@@ -29,6 +29,6 @@ case class EntityRef( entityName:String ) extends Node {
   override def hashCode() = entityName.hashCode();
 
   /** returns text, with some characters escaped according to XML spec */
-  override def toString() = "&"+entityName+";";
+  final override def toString():String = "&"+entityName+";";
 
 }
