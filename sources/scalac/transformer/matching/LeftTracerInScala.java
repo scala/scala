@@ -277,7 +277,7 @@ public class LeftTracerInScala extends TracerInScala {
 		m.stms = new Tree[2];
 		m.stms[0] = stm;
 		m.stms[1] = gen.mkBooleanLit(Position.FIRSTPOS, true);
-		return cf.Block( Position.FIRSTPOS, m.stms, m.stms[1].type() );
+		return gen.mkBlock(m.stms);
 	    }
 	}
 

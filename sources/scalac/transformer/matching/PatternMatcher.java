@@ -812,7 +812,7 @@ public class PatternMatcher extends PatternTool {
                 make.Ident(selector.pos,
                            resultVar.name).setType(resultVar.type()).setSymbol(resultVar),
                 cf.ThrowMatchError(selector.pos, resultVar.type())).setType(resultVar.type()));
-        return cf.Block(selector.pos, ts.toArray(), resultVar.type());
+        return gen.mkBlock(selector.pos, ts.toArray());
     }
 
     protected Tree toTree(PatternNode node) {
@@ -832,7 +832,7 @@ public class PatternMatcher extends PatternTool {
                     for (int i = guard.length - 1; i >= 0; i--) {
                         Tree[] ts = new Tree[bound[i].length + 1];
                         System.arraycopy(bound[i], 0, ts, 0, bound[i].length);
-                        ts[bound[i].length] = cf.Block(body[i].pos,
+                        ts[bound[i].length] = gen.mkBlock(
                             new Tree[]{
                                 make.Assign(
                                     body[i].pos,
@@ -840,10 +840,10 @@ public class PatternMatcher extends PatternTool {
                                         .setType(resultVar.type()).setSymbol(resultVar),
                                     body[i]).setType(defs.UNIT_TYPE),
                                 gen.mkBooleanLit(body[i].pos, true)
-                            }, defs.BOOLEAN_TYPE);
+                            });
                         if (guard[i] != Tree.Empty)
                             ts[bound[i].length] = cf.And(guard[i], ts[bound[i].length]);
-                        res = cf.Or(cf.Block(body[i].pos, ts, defs.BOOLEAN_TYPE), res);
+                        res = cf.Or(gen.mkBlock(body[i].pos, ts), res);
                     }
                     return res;
                 default:
@@ -953,7 +953,7 @@ public class PatternMatcher extends PatternTool {
                 return make.If(
                         selector.pos,
                         gen.mkIsInstanceOf(selector.duplicate(), node.type),
-                        cf.Block(selector.pos,
+                        gen.mkBlock(
                             new Tree[]{
                                 make.ValDef(selector.pos,
                                             0,
@@ -961,7 +961,7 @@ public class PatternMatcher extends PatternTool {
                                             gen.mkType(selector.pos, node.type),
                                             gen.mkAsInstanceOf(selector.duplicate(), node.type))
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
-                                toTree(node.and)}, defs.BOOLEAN_TYPE),
+                                toTree(node.and)}),
                         toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
             case SequencePat(Symbol casted, int len):
                 Symbol lenSym = casted.type().lookup(LENGTH_N);
@@ -984,7 +984,7 @@ public class PatternMatcher extends PatternTool {
                                     Tree.EMPTY_ARRAY).setType(defs.INT_TYPE),
                                 make.Literal(selector.pos, new Integer(len))
                             .setType(defs.INT_TYPE))),
-                        cf.Block(selector.pos,
+                        gen.mkBlock(
                             new Tree[]{
                                 make.ValDef(selector.pos,
                                             0,
@@ -992,7 +992,7 @@ public class PatternMatcher extends PatternTool {
                                             gen.mkType(selector.pos, node.type),
                                             gen.mkAsInstanceOf(selector.duplicate(), node.type))
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
-                                toTree(node.and)}, defs.BOOLEAN_TYPE),
+                                toTree(node.and)}),
                         toTree(node.or, selector.duplicate()))
                             .setType(defs.BOOLEAN_TYPE);
             case ConstantPat(Object value):

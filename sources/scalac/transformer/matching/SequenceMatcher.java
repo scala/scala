@@ -103,7 +103,7 @@ public class SequenceMatcher extends PatternTool {
                 val.setInfo( key.type() ); // !!! ?
             }
 
-            return cf.Block( body.pos, items, body.type );
+            return gen.mkBlock( body.pos, items );
       }
 
       /** turns body `case pat(x,y,z) => body' into

@@ -153,7 +153,7 @@ public class Autom2Scala  {
 
     // overridden in TracerInScala
     Tree loadCurrentElem( Tree body ) {
-	return cf.Block( Position.FIRSTPOS, new Tree[] {
+	return gen.mkBlock( new Tree[] {
 	    cf.gen.ValDef( this.hasnSym,
 			   cf._hasNext( _iter() ) ),
 	    cf.gen.ValDef( this.curSym,
@@ -162,8 +162,7 @@ public class Autom2Scala  {
 				  gen.mkDefaultValue(cf.pos,curSym.type()))),
 						 //cf.ignoreValue( curSym.type() )
 
-	    body },
-			 body.type() );
+	    body });
     }
 
     Tree currentElem() {

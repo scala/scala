@@ -195,7 +195,7 @@ public class RightTracerInScala extends TracerInScala  {
 
 	Tree t3 = cf.If( cf.isEmpty( _iter() ),
 			 run_finished( 0 ),
-			 gen.Block( new Tree[] {
+			 gen.mkBlock( new Tree[] {
 			     gen.ValDef( targetSym,
 					 cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
 			     gen.ValDef( elemSym,
@@ -204,7 +204,7 @@ public class RightTracerInScala extends TracerInScala  {
 			     body }));
 
 	/*
-	  t3 = gen.Block( new Tree[] {
+	  t3 = gen.mkBlock( new Tree[] {
 	  cf.debugPrintRuntime("enter binderFun"),
 	  cf.debugPrintRuntime(" state:"),
 	  cf.debugPrintRuntime( gen.Ident( pos, stateSym )),
@@ -305,7 +305,7 @@ public class RightTracerInScala extends TracerInScala  {
 
 	res[ j ] = gen.mkBooleanLit( Position.FIRSTPOS, true ); // just `true'
 
-	return cf.Block(Position.FIRSTPOS, res, res[j].type() );
+	return gen.mkBlock(res);
     }
 
     // calling the AlgebraicMatcher here
@@ -422,7 +422,7 @@ public class RightTracerInScala extends TracerInScala  {
 	stms[ j ] = callFun( new Tree[] { cf.SeqTrace_tail( _iter() ),
 					  gen.mkIntLit( cf.pos, ntarget ) } );
 
-	return cf.Block( pos, stms, funRetType() );
+	return gen.mkBlock( pos, stms );
     }
 
     /* returns statements that do the work of the right-transducer

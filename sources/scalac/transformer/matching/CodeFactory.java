@@ -307,21 +307,6 @@ class CodeFactory extends PatternTool {
         //return sym.typeAt(unit.global.ANALYZER_PHASE.id);
     }
 
-
-    protected Tree Block(int pos, Tree[] ts, Type tpe) {
-        if (ts.length == 1)
-            return ts[0];
-        else if (ts.length > 1)
-            switch (ts[ts.length - 1]) {
-	    case Block(Tree[] ts0):
-		Tree[] ts1 = new Tree[ts0.length + ts.length - 1];
-		System.arraycopy(ts, 0, ts1, 0, ts.length - 1);
-		System.arraycopy(ts0, 0, ts1, ts.length - 1, ts0.length);
-		return Block(pos, ts1, tpe);
-            }
-        return gen.Block(pos, ts);
-    }
-
      // unused
        public Tree Negate(Tree tree) {
        switch (tree) {

@@ -394,7 +394,7 @@ public class AlgebraicMatcher extends PatternMatcher {
                 gen.Ident( _m.pos, resultVar ),
                 cf.ThrowMatchError( _m.resultType )).type( _m.resultType ));
         */
-        return cf.Block(_m.pos, ts.toArray(), _m.resultType);
+        return gen.mkBlock(_m.pos, ts.toArray());
     }
 
     protected Tree toTree(PatternNode node) {
@@ -415,15 +415,15 @@ public class AlgebraicMatcher extends PatternMatcher {
                                 ts = new Tree[ 1 ];
 
                           int last = ts.length - 1;
-                        ts[ last ] = cf.Block(body[i].pos,
+                        ts[ last ] = gen.mkBlock(
                                               new Tree[]{
                                                     gen.Assign(gen.Ident( body[i].pos, resultVar ),
                                                                body[i]),
                                                     gen.mkBooleanLit(body[i].pos, true)
-                                              }, defs.BOOLEAN_TYPE);
+                                              });
                         if (guard[i] != Tree.Empty)
                               ts[ last ] = cf.And(guard[i], ts[ last ]);
-                        res = cf.Or(cf.Block(body[i].pos, ts, defs.BOOLEAN_TYPE), res);
+                        res = cf.Or(gen.mkBlock(body[i].pos, ts), res);
                     }
                     return res;
                 default:
