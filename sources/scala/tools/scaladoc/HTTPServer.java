@@ -155,6 +155,8 @@ public class HTTPServer extends Thread {
 
 class RequestProcessor implements Runnable {
 
+    private final static String ENCODING_SCHEME = "UTF-8";
+
     private static List pool = new LinkedList();
     private File documentRootDirectory;
     private String indexFileName = "index.html";
@@ -192,16 +194,21 @@ class RequestProcessor implements Runnable {
      */
     public static Map parseQuery(String query) {
         Map map = new HashMap();
-        String[] bindings = query.split("\\&");
-        String regexp = "([^=]*)=([^=]*)";
-        Pattern p = Pattern.compile(regexp);
-        for(int i = 0; i < bindings.length; i++) {
-            Matcher m = p.matcher(bindings[i]);
-            if (m.find()) {
-                String key = URLDecoder.decode(m.group(1));
-                String value = URLDecoder.decode(m.group(2));
-                map.put(key, value);
+        try {
+            String[] bindings = query.split("\\&");
+            String regexp = "([^=]*)=([^=]*)";
+            Pattern p = Pattern.compile(regexp);
+            for (int i = 0; i < bindings.length; i++) {
+                Matcher m = p.matcher(bindings[i]);
+                if (m.find()) {
+                    String key = URLDecoder.decode(m.group(1), ENCODING_SCHEME);
+                    String value = URLDecoder.decode(m.group(2), ENCODING_SCHEME);
+                    map.put(key, value);
+                }
             }
+        }
+        catch (UnsupportedEncodingException e) {
+            System.out.println("Une exception: " + e);
         }
         return map;
     }
@@ -367,7 +374,9 @@ class RequestProcessor implements Runnable {
         if (name.endsWith(".html") || name.endsWith(".htm")) {
             return "text/html";
         }
-        else if (name.endsWith(".txt") || name.endsWith(".java")) {
+        else if (name.endsWith(".txt") ||
+                 name.endsWith(".java") ||
+                 name.endsWith(".scala")) {
             return "text/plain";
         }
         else if (name.endsWith(".gif")) {
@@ -378,6 +387,9 @@ class RequestProcessor implements Runnable {
         }
         else if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
             return "image/jpeg";
+        }
+        else if (name.endsWith(".png")) {
+            return "image/png";
         }
         else return "text/plain";
     }
