@@ -61,7 +61,7 @@ package scala.collection.immutable;
    *  @return the value of the mapping, if it exists
    */
    override def get(key:KEY) =
-     find(key).match {
+     findValue(key).match {
        case Some(Pair(_,value:VALUE)) => Some(value);
        case _ => None;
      }

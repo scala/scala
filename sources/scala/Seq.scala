@@ -19,18 +19,6 @@ package scala;
  */
 trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
 
-    /** Returns true if the elements in this sequence are equal
-     *  to the elements in another sequence
-     */
-  override def similar( x:Any ):boolean = {
-    x.match {
-      case that:Seq[A] =>
-        ( that.length == this.length ) && super[Iterable].similar( that )
-      case _ =>
-        false
-    };
-  }
-
     /** Returns the length of the sequence.
      *
      *  @return the sequence length.
@@ -43,6 +31,18 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
      */
     def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length);
 
+    /** Returns true if the elements in this sequence are equal
+     *  to the elements in another sequence
+     */
+    def similar(x: Any): Boolean = {
+        x.match {
+          case that: Seq[A] =>
+            (that.length == this.length) && sameElements(that)
+          case _ =>
+            false
+        }
+    }
+
     /** Customizes the <code>toString</code> method.
      *
      *  @return a string representation of this sequence.
@@ -51,9 +51,9 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
         val iter = elements;
         var res = "Seq(";
         if (iter.hasNext) {
-        	res = res + iter.next;
-        	while (iter.hasNext)
-        		res = res + ", " + iter.next;
+            res = res + iter.next;
+            while (iter.hasNext)
+                res = res + ", " + iter.next;
         }
         res + ")"
     }

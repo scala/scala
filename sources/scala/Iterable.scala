@@ -31,7 +31,10 @@ trait Iterable[+A] {
      *
      *  @param  f   a function that is applied to every element.
      */
-    def foreach(f: A => Unit): Unit = elements foreach f;
+    def foreach(f: A => Unit): Unit = {
+        val it = elements;
+        while (it.hasNext) { f(it.next) }
+    }
 
     /** Apply a predicate <code>p</code> to all elements of this
      *  iterable object and return true, iff the predicate yields
@@ -40,69 +43,109 @@ trait Iterable[+A] {
      *  @param   p     the predicate
      *  @returns true, iff the predicate yields true for all elements.
      */
-	def forall(p: A => Boolean): Boolean = elements forall p;
+    def forall(p: A => Boolean): Boolean = {
+        val it = elements;
+        var res = true;
+        while (res && it.hasNext) { res = p(it.next) }
+        res
+    }
 
-	/** Apply a predicate <code>p</code> to all elements of this
-	 *  iterable object and return true, iff there is at least one
-	 *  element for which <code>p</code> yields true.
+    /** Apply a predicate <code>p</code> to all elements of this
+     *  iterable object and return true, iff there is at least one
+     *  element for which <code>p</code> yields true.
      *
      *  @param   p     the predicate
      *  @returns true, iff the predicate yields true for at least one element.
      */
-	def exists(p: A => Boolean): Boolean = elements exists p;
+    def exists(p: A => Boolean): Boolean = {
+        val it = elements;
+        var res = false;
+        while (!res && it.hasNext) { res = p(it.next) }
+        res
+    }
 
-	/** Combines the elements of this list together using the binary
+    /** Find and return the first element of the iterable object satisfying a
+     *  predicate, if any.
+     *
+     *  @param p the predicate
+     *  @return the first element in the iterable object satisfying <code>p</code>,
+     *  or <code>None</code> if none exists.
+     */
+    def find(p: A => Boolean): Option[A] = {
+        val it = elements;
+        var res: Option[A] = None;
+        while (res.isEmpty && it.hasNext) {
+          val e = it.next;
+          if (p(e))
+            res = Some(e);
+        }
+        res
+    }
+
+    /** Combines the elements of this list together using the binary
      *  operator <code>op</code>, from left to right, and starting with
      *  the value <code>z</code>.
      *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
      *  is <code>List(a0, a1, ..., an)</code>.
      */
-	def foldLeft[B](z: B)(op: (B, A) => B): B = elements.foldLeft(z)(op);
+    def foldLeft[B](z: B)(op: (B, A) => B): B = {
+        val it = elements;
+        var acc = z;
+        while (it.hasNext) {
+          acc = op(acc, it.next)
+        }
+        acc
+    }
 
-	/** Combines the elements of this list together using the binary
-	 *  operator <code>op</code>, from rigth to left, and starting with
-	 *  the value <code>z</code>.
-	 *  @return <code>a0 op (... op (an op z)...)</code> if the list
-	 *  is <code>[a0, a1, ..., an]</code>.
-	 */
-	def foldRight[B](z: B)(f: (A, B) => B): B = match {
-	  case Nil => z
-	  case x :: xs => f(x, xs.foldRight(z)(f))
-	}
+    /** Combines the elements of this list together using the binary
+     *  operator <code>op</code>, from rigth to left, and starting with
+     *  the value <code>z</code>.
+     *  @return <code>a0 op (... op (an op z)...)</code> if the list
+     *  is <code>[a0, a1, ..., an]</code>.
+     */
+    def foldRight[B](z: B)(op: (A, B) => B): B = {
+        val it = elements;
+        def fold(z: B): B =
+            if (it.hasNext) op(it.next, fold(z)) else z;
+        fold(z)
+    }
 
     /** Similar to <code>foldLeft</code> but can be used as
      *  an operator with the order of list and zero arguments reversed.
      *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
      */
-	def /:[B](z: B)(f: (B, A) => B): B = foldLeft(z)(f);
+    def /:[B](z: B)(f: (B, A) => B): B = foldLeft(z)(f);
 
     /** An alias for <code>foldRight</code>.
      *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
      */
-  	def :\[B](z: B)(f: (A, B) => B): B = foldRight(z)(f);
+    def :\[B](z: B)(f: (A, B) => B): B = foldRight(z)(f);
 
     /** Transform this iterable object into a list of all elements.
      *
      *  @return  a list which enumerates all elements of this set.
      */
     def toList: List[A] = {
+        val it = elements;
         var res: List[A] = Nil;
-        elements foreach { elem => res = elem :: res; }
+        while (it.hasNext) {
+            res = it.next :: res;
+        }
         res.reverse
     }
 
-    def similar(x:Any) = {
-      x match {
-        case that:Iterable[A] =>
-          val ita = this.elements;
-          val itb = that.elements;
-          var res = true;
-          while( ita.hasNext && itb.hasNext && res ) {
-            res = ( ita.next == itb.next );
-          };
-          !ita.hasNext && !itb.hasNext && res
-        case _ =>
-          false
-      }
+    /** Checks if the other iterable object contains the same elements.
+     *
+     *  @param that  the other iterable object
+     *  @return true, iff both iterable objects contain the same elements.
+     */
+    def sameElements[B >: A](that: Iterable[B]): Boolean = {
+        val ita = this.elements;
+        val itb = that.elements;
+        var res = true;
+        while (res && ita.hasNext && itb.hasNext) {
+            res = (ita.next == itb.next);
+        }
+        !ita.hasNext && !itb.hasNext && res
     }
 }

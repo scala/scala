@@ -13,7 +13,8 @@ package scala;
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
  *
- *  @author  Martin Odersky, Matthias Zenger
+ *  @author  Martin Odersky
+ *  @author  Matthias Zenger
  *  @version 1.1, 04/02/2004
  */
 object Iterator {
@@ -61,27 +62,17 @@ object Iterator {
  *  if there is a next element available, and a <code>next</code> method
  *  which returns the next element and discards it from the iterator.
  *
- *  @author  Martin Odersky, Matthias Zenger
- *  @version 1.1, 04/02/2004
+ *  @author  Martin Odersky
+ *  @author  Matthias Zenger
+ *  @version 1.2, 15/03/2004
  */
 trait Iterator[+a] with Iterable[a] {
+
   def hasNext: Boolean;
+
   def next: a;
 
-  override def foreach(f: a => Unit): Unit =
-    while (hasNext) { f(next) }
-
-  override def forall(p: a => Boolean): Boolean = {
-    var res = true;
-    while (res && hasNext) { res = p(next); }
-    res;
-  }
-
-  override def exists(p: a => Boolean): Boolean = {
-    var res = false;
-    while (!res && hasNext) { res = p(next); }
-    res;
-  }
+  def elements: Iterator[a] = this;
 
   def take(n: Int) = new Iterator[a] {
     var remaining = n;
@@ -91,23 +82,13 @@ trait Iterator[+a] with Iterable[a] {
       else error("next on empty iterator");
   }
 
-  def drop(n: Int): Iterator[a] = if (n > 0) { next; drop(n - 1); } else this;
+  def drop(n: Int): Iterator[a] =
+  	if (n > 0) { next; drop(n - 1) } else this;
 
   def map[b](f: a => b): Iterator[b] = new Iterator[b] {
     def hasNext = Iterator.this.hasNext;
     def next = f(Iterator.this.next)
   }
-
-  override def foldLeft[b](z: b)(f: (b, a) => b): b = {
-    var acc = z;
-    while( hasNext ) {
-      acc = f(acc, next)
-    }
-    acc
-  }
-
-  override def foldRight[b](z: b)(f: (a, b) => b): b =
-  	if (hasNext) f(next, foldRight(z)(f)) else z;
 
   def append[b >: a](that: Iterator[b]) = new Iterator[b] {
     def hasNext = Iterator.this.hasNext || that.hasNext;
@@ -118,12 +99,16 @@ trait Iterator[+a] with Iterable[a] {
     private var cur: Iterator[b] = Iterator.empty;
     def hasNext: Boolean =
       if (cur.hasNext) true
-      else if (Iterator.this.hasNext) { cur = f(Iterator.this.next); hasNext }
-      else false;
+      else if (Iterator.this.hasNext) {
+        cur = f(Iterator.this.next);
+        hasNext
+      } else false;
     def next: b =
       if (cur.hasNext) cur.next
-      else if (Iterator.this.hasNext) { cur = f(Iterator.this.next); next }
-      else error("next on empty iterator");
+      else if (Iterator.this.hasNext) {
+        cur = f(Iterator.this.next);
+        next
+      } else error("next on empty iterator");
   }
 
   def filter(p: a => Boolean): Iterator[a] = new BufferedIterator[a] {
@@ -131,12 +116,9 @@ trait Iterator[+a] with Iterable[a] {
       Iterator.this.buffered;
     private def skip: Unit =
       while (source.hasNext && !p(source.head)) { source.next; () }
-    def hasNext: Boolean =
-      { skip; source.hasNext }
-    def next: a =
-      { skip; source.next }
-    def head: a =
-      { skip; source.head; }
+    def hasNext: Boolean = { skip; source.hasNext }
+    def next: a = { skip; source.next }
+    def head: a = { skip; source.head; }
   }
 
   def zip[b](that: Iterator[b]) = new Iterator[Pair[a, b]] {
@@ -148,18 +130,17 @@ trait Iterator[+a] with Iterable[a] {
     private var hd: a = _;
     private var ahead: Boolean = false;
     def head: a = {
-      if (!ahead) { hd = Iterator.this.next; ahead = true }
+      if (!ahead) {
+        hd = Iterator.this.next;
+        ahead = true
+      }
       hd
     }
     def next: a =
-      if (ahead) { ahead = false; hd }
-      else head;
-    def hasNext: Boolean =
-      ahead || Iterator.this.hasNext;
+      if (ahead) { ahead = false; hd } else head;
+    def hasNext: Boolean = ahead || Iterator.this.hasNext;
     override def buffered: BufferedIterator[a] = this;
   }
-
-  def elements: Iterator[a] = this;
 
   def duplicate: Pair[Iterator[a], Iterator[a]] = {
     var xs: List[a] = Nil;

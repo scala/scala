@@ -167,7 +167,7 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
   *  @param  key     the key of the mapping of interest
   *  @return the value of the mapping, if it exists
   */
-  def find(key:KEY) =  tree.get(key);
+  def findValue(key:KEY) =  tree.get(key);
 
   /**
   *  Gives you an iterator over all elements in the tree.
