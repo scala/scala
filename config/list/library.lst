@@ -67,6 +67,7 @@ collection/SetProxy.scala
 collection/mutable/AppendBuffer.scala
 collection/mutable/ArrayBuffer.scala
 collection/mutable/Buffer.scala
+collection/mutable/BufferProxy.scala
 collection/mutable/DefaultMapModel.scala
 collection/mutable/DoubleLinkedList.scala
 collection/mutable/HashMap.scala
@@ -98,6 +99,7 @@ collection/mutable/SetProxy.scala
 collection/mutable/SingleLinkedList.scala
 collection/mutable/Stack.scala
 collection/mutable/Subscriber.scala
+collection/mutable/SynchronizedBuffer.scala
 collection/mutable/SynchronizedMap.scala
 collection/mutable/SynchronizedSet.scala
 collection/mutable/Undo.scala
