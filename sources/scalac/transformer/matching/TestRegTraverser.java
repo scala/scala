@@ -59,7 +59,13 @@ public class TestRegTraverser extends Traverser {
 		//result = true;
 		break;
 
-                // Matthias PatternMatcher cannot handle this case
+            case Apply(Tree fun, Tree[] args):
+                traverse(fun);
+                traverse(args);
+                if(( args.length == 1 )&&TreeInfo.isEmptySequence(args[ 0 ]))
+                    result = false;
+                return;
+            // Matthias PatternMatcher cannot handle this case
                 /*
 	    case Apply( Tree fn, Tree[] trees ):
                 if( trees.length == 1 )
