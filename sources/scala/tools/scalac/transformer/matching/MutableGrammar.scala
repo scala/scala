@@ -108,8 +108,10 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
       tmp.update( 0, immutable.ListSet.Empty[HRule] );
     };
     val theCaseVars = new Array[Int]( caseVars.size );
+    var i = 0;
     for( val k <- caseVars.keys ) {
-      theCaseVars( k ) = caseVars( k );
+      theCaseVars( i ) = caseVars( k );
+      i = i + 1
     }
     new Grammar( treeTransitions, hedgeTransitions, theCaseVars ) {
       val treeInitials = make.treeInitials;

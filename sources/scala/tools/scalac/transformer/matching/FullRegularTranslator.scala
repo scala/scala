@@ -80,15 +80,16 @@ class FullRegularTranslator(global: scalac_Global) {
   /**
     * precondition: p.length > 0
     */
-  def MakeGrammar( p:Tree* ):Grammar = {
-    val it = p.elements;
+  def MakeGrammar( it:Iterator[Tree$CaseDef] ):Grammar = {
     var k = 0;
     cur = InitialGrammar.make;
     while( it.hasNext )
-      translate( it.next, { k = k + 1; k } );
+      translate( it.next.pat, { k = k + 1; k } );
     cur.toGrammar;
   }
 
+  /** p must be a pattern
+  */
   protected def translate( p:Tree, k:Int ):unit = {
 
     this.varCounter = 0;
@@ -97,7 +98,13 @@ class FullRegularTranslator(global: scalac_Global) {
       MakeHedgeRule( cur.make.initialHedgeNT, EMPTYHEDGE, emptyVars, p );
     } else {
       this.isSequenceType = false;
-      MakeTreeRule( cur.make.initialTreeNT, emptyVars, p );
+      val in = cur.make.initialTreeNT;
+      try {
+        MakeTreeRule( in, emptyVars, p );
+      } catch {
+        case _:WildcardException =>
+	  cur.treeRules += new AnyTreeRule( in );
+      }
     }
 
     if( global.debug ) {

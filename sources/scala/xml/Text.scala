@@ -9,6 +9,7 @@
 
 package scala.xml;
 
+
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML
  *  representations
  * @author Burak Emir

@@ -12,11 +12,13 @@ package scala.xml ;
 import java.lang.StringBuffer ; /* Java dependency! */
 import scala.collection.Map ;
 
-/** Utility functions for processing instances of bound and not bound XML classes,
-** as well as escaping text nodes
+/** Utility functions for processing instances of bound and not bound XML
+**  classes, as well as escaping text nodes
 **/
 
 object Utility {
+
+  def view( s:String ):Text = Text( s );
 
   /** representation of text in a string that is well-formed XML.
   **  the characters &lt; &gt; &amp; and &quot; are escaped

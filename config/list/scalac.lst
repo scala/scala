@@ -23,6 +23,7 @@ ast/printer/TextTreePrinter.scala
 transformer/TransMatch.scala 
 transformer/TransMatchPhase.scala 
 transformer/matching/FullRegularTranslator.scala 
+transformer/matching/GrammarPrinter.scala 
 transformer/matching/MutableGrammar.scala 
 transformer/matching/PatternTest.scala 
 transformer/matching/PatternInfo.scala 

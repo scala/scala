@@ -21,6 +21,7 @@ import scalac.transformer.matching.PartialMatcher ;
 import scalac.transformer.matching.PatternMatcher ;
 import scalac.transformer.matching.TestRegTraverser ;
 import scalac.transformer.matching.AlgebraicMatcher ;
+
 /** A transformer for expanding match expressions into
  *  flat sequences of .is and .as method calls
  *
@@ -28,6 +29,9 @@ import scalac.transformer.matching.AlgebraicMatcher ;
  *  @version    1.1
  */
 package scala.tools.scalac.transformer {
+
+import matching.FullRegularTranslator ;
+import matching.GrammarPrinter ; //DEBUG
 
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
@@ -41,7 +45,10 @@ class TransMatch( global:scalac_Global )
 
   def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
     if( global.newMatch ) {
-      throw new ApplicationError("not implemented");
+      val fm = new FullRegularTranslator( global );
+      val gram = fm.MakeGrammar( scala.Iterator.fromArray( cases ) );
+      Console.println( GrammarPrinter.toString( gram ));
+      throw new ApplicationError("not impl.");
     };
     var containsReg = false;
     var i = 0;
