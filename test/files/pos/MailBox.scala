@@ -26,7 +26,8 @@ class MailBox {
   private var lastReceiver = receivers;
 
   def send(msg: Any): unit = synchronized {
-    var r = receivers, r1 = r.next;
+    var r = receivers;
+    var r1 = r.next;
     while (r1 != null && !r1.elem.isDefined(msg)) {
       r = r1; r1 = r1.next;
     }
@@ -39,7 +40,8 @@ class MailBox {
 
   def receive[a](f: PartialFunction[Any, a]): a = {
     val msg: Any = synchronized {
-      var s = sent, s1 = s.next;
+      var s = sent;
+      var s1 = s.next;
       while (s1 != null && !f.isDefinedAt(s1.elem)) {
         s = s1; s1 = s1.next
       }
@@ -59,7 +61,8 @@ class MailBox {
 
   def receiveWithin[a](msec: long)(f: PartialFunction[Any, a]): a = {
     val msg: Any = synchronized {
-      var s = sent, s1 = s.next;
+      var s = sent;
+      var s1 = s.next;
       while (s1 != null && !f.isDefinedAt(s1.elem)) {
         s = s1; s1 = s1.next ;
       }

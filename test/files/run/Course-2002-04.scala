@@ -59,7 +59,8 @@ object M1 {
 
     def sort1(l: Int, r: Int): Unit = {
       val pivot = xs((l + r) / 2);
-      var i = l, j = r;
+      var i = l;
+      var j = r;
       While (i <= j) {
 	While (less(xs(i), pivot)) { i = i + 1 }
 	While (less(pivot, xs(j))) { j = j - 1 }

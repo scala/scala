@@ -506,7 +506,7 @@ abstract class BasicCircuitSimulator() extends Simulator() {
   }
 
   def orGate2(a1: Wire, a2: Wire, output: Wire) = {
-    val w1 = new Wire(), w2 = new Wire(), w3 = new Wire();
+    val w1, w2, w3 = new Wire();
     inverter(a1, w1);
     inverter(a2, w2);
     andGate(w1, w2, w3);
@@ -517,7 +517,7 @@ abstract class BasicCircuitSimulator() extends Simulator() {
 abstract class CircuitSimulator() extends BasicCircuitSimulator() {
   def demux2(in: Wire, ctrl: List[Wire], out: List[Wire]) : Unit = {
     val ctrlN = ctrl.map(w => { val iw = new Wire(); inverter(w,iw); iw});
-    val w0 = new Wire(), w1 = new Wire(), w2 = new Wire(), w3 = new Wire();
+    val w0, w1, w2, w3 = new Wire();
 
     andGate(in, ctrl(1), w3);
     andGate(in, ctrl(1), w2);
@@ -537,7 +537,7 @@ abstract class CircuitSimulator() extends BasicCircuitSimulator() {
   def demux(in: Wire, ctrl: List[Wire], out: List[Wire]): Unit = ctrl match {
     case List() => connect(in, out.head);
     case c :: rest =>
-      val c_ = new Wire(), w1 = new Wire(), w2 = new Wire();
+      val c_, w1, w2 = new Wire();
       inverter(c, c_);
       andGate(in, c_, w1);
       andGate(in, c, w2);
