@@ -310,7 +310,6 @@ public class ExpressionCompiler {
             // !!!
             return vapply(target, symbol, Tree.EMPTY_ARRAY);
         }
-        if (symbol == definitions.NULL) return Code.Null;
 
         // !!! return something ? raise exception ?
         if (!symbol.isValue()) return Code.Null;

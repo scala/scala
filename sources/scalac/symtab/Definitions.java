@@ -436,12 +436,6 @@ public class Definitions {
     //########################################################################
     // Public Fields - Global values
 
-    /** The null value */
-    public final Symbol NULL;
-
-    /** The zero value (a default null for type variables with bound Any) */
-    public final Symbol ZERO;
-
     /** The universal pattern */
     public final Symbol PATTERN_WILDCARD;
 
@@ -613,8 +607,6 @@ public class Definitions {
             Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
 
         // create global values
-	NULL = newTerm(ROOT_CLASS, Names.null_, 0).setInfo(ALLREF_TYPE());
-	ZERO = newTerm(ROOT_CLASS, Names.ZERO, 0).setInfo(ALL_TYPE());
         PATTERN_WILDCARD = newTerm(ROOT_CLASS, Names.PATTERN_WILDCARD, 0)
             .setType(ALL_TYPE());
     }

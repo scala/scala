@@ -477,9 +477,6 @@ public final class GenMSIL {
 
 	case Ident(Name name):
 	    //log("Ident: " + Debug.show(tree));
-	    if (sym == defs.NULL)
-		//return items.LiteralItem(MSILType.NULL_REF, null);
-		return items.LiteralItem(MSILType.OBJECT, null);
 	    MSILType type = type2MSILType(sym.type());
 	    if ( sym.isModule() ) // ???
  		return load(items.StaticItem

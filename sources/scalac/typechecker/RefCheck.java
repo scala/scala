@@ -535,7 +535,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		tree.pos, varname, sym.owner(), PRIVATE | MUTABLE | SYNTHETIC)
 		.setInfo(sym.type());
 	    sym.owner().members().enterOrOverload(mvar);
-	    Tree vdef = gen.ValDef(mvar, gen.Ident(tree.pos, defs.NULL));
+	    Tree vdef = gen.ValDef(mvar, gen.mkNullLit(tree.pos));
 
 	    // { if (null == m$) m$ = new m$class; m$ }
 	    Symbol eqMethod = getUnaryMemberMethod(
@@ -543,7 +543,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Tree body = gen.Block(new Tree[]{
 		gen.If(
 		    gen.Apply(
-			gen.Select(gen.Ident(tree.pos, defs.NULL), eqMethod),
+			gen.Select(gen.mkNullLit(tree.pos), eqMethod),
 			new Tree[]{gen.mkRef(tree.pos, mvar)}),
 		    gen.Assign(gen.mkRef(tree.pos, mvar), alloc),
 		    gen.Block(tree.pos, Tree.EMPTY_ARRAY)),

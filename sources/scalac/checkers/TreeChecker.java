@@ -300,12 +300,7 @@ public class TreeChecker {
             return true;
 
         case Select(_, _):
-            return location(tree);
-
         case Ident(_):
-            Symbol symbol = tree.symbol();
-            if (symbol == definitions.NULL) return true;
-            if (symbol == definitions.ZERO) return true;
             return location(tree);
 
         case Literal(_):

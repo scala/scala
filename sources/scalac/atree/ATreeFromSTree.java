@@ -222,13 +222,7 @@ public class ATreeFromSTree {
             return make.This(tree, tree.symbol());
 
         case Select(_, _):
-            return make.Load(tree, location(tree));
-
         case Ident(_):
-            if (tree.symbol() == definitions.NULL)
-                return make.Constant(tree, make.NULL);
-            if (tree.symbol() == definitions.ZERO)
-                return make.Constant(tree, make.ZERO);
             return make.Load(tree, location(tree));
 
         case Literal(AConstant value):

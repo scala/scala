@@ -448,11 +448,7 @@ class GenJVM {
             JType type = typeStoJ(sym.info());
             if (sym.isModule())
                 generatedType = genLoadModule(ctx, sym);
-            else if (sym == defs.NULL) {
-                if (expectedType != JType.VOID)
-                    ctx.code.emitACONST_NULL();
-                generatedType = expectedType;
-            } else if (sym.owner().isClass()) {
+            else if (sym.owner().isClass()) {
                 ctx.code.emitALOAD_0();
                 ctx.code.emitGETFIELD(ctx.clazz.getName(), name.toString(), type);
                 generatedType = type;

@@ -217,11 +217,6 @@ public class Erasure extends GenTransformer implements Modifiers {
             if (isUnboxedType(prefix)) qualifier = box(qualifier, true);
 	    return gen.Select(tree.pos, qualifier, symbol);
 
-	case Ident(_):
-            Symbol symbol = tree.symbol();
-	    if (symbol == definitions.ZERO) return gen.mkNullLit(tree.pos);
-            return gen.Ident(tree.pos, symbol);
-
         case Literal(AConstant.ZERO):
 	    return gen.mkNullLit(tree.pos);
 
