@@ -242,11 +242,17 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected boolean isSeqApply( Tree.Apply tree ) {
-        return (tree.args.length == 1  &&
-                (tree.type.symbol().flags & Modifiers.CASE) == 0);
+        if(( tree.args.length == 1 ) && (tree.type.symbol().flags & Modifiers.CASE) == 0)
+            switch (tree.args[0]) {
+            case Sequence( _ ):
+                return true;
+            default:
+                return false;
+            }
+        return false;
     }
 
-    protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
+        protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
         //System.out.println("patternNode("+tree+","+header+")");
         switch (tree) {
             case Bind(Name name,

@@ -60,7 +60,7 @@ class TransMatch( global:scalac_Global )
         ( trees.length == 0 ) || isRegular( trees );
       case Tree$Apply( fn, trees )      =>
         isRegular( trees ) &&
-        !((trees.length == 1) && TreeInfo.isEmptySequence( trees( 0 )))
+      !((trees.length == 1) && TreeInfo.isEmptySequence( trees( 0 )))
       case Tree$Literal(_)              => false;
       case Tree$Select(_,_)             => false;
       case Tree$Typed(_,_)              => false;
