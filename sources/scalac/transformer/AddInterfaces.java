@@ -301,7 +301,7 @@ class AddInterfaces extends SubstTransformer {
         case TypeRef(Type pre, Symbol sym, Type[] args):
             return new Type.TypeRef(fixClassSymbols(pre), getClassSym(sym), args);
         case SingleType(Type pre, Symbol sym):
-            return Type.singleType(fixClassSymbols(pre), getClassSym(sym));
+            return Type.singleType(fixClassSymbols(pre), sym);
         case CompoundType(Type[] parts, Scope members):
             return Type.compoundType(fixClassSymbols(parts),
                                      members,
