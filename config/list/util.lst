@@ -4,6 +4,7 @@
 # $Id$
 
 AbstractFile.java
+EmptyIterator.java
 Position.java
 SourceFile.java
 SourceReader.java
