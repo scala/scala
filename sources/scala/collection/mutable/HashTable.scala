@@ -4,9 +4,8 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
+** $Id$
 \*                                                                      */
-
-// $Id$
 
 package scala.collection.mutable;
 
@@ -45,7 +44,7 @@ abstract class HashTable[A] {
     /** The actual hash table.
      */
     protected var table: Array[List[Entry]] = new Array(initialSize);
-    initTable(initialSize - 1);
+    initTable(table);
 
     /** The number of mappings contained in this hash table.
      */
@@ -107,9 +106,12 @@ abstract class HashTable[A] {
 
     private def entryFor(key: A) = (e: Entry => elemEquals(entryKey(e), key));
 
-    protected def initTable(n: Int): Unit = {
-        table(n) = Nil;
-        if (n > 0) initTable(n - 1);
+    protected def initTable(tb: Array[List[Entry]]): Unit = {
+        var i = tb.length - 1;
+        while (i >= 0) {
+        	tb(i) = Nil;
+        	i = i - 1;
+        }
     }
 
     private def newThreshold(size: Int) =
@@ -117,20 +119,15 @@ abstract class HashTable[A] {
 
     private def resize(newSize: Int) = {
         val newTable: Array[List[Entry]] = new Array(newSize);
-        initTable(newSize - 1);
-        def rehash(i: Int) = {
-            if (i >= 0)
-                rehashList(table(i));
-        }
-        def rehashList(xs: List[Entry]): Unit = xs.match {
-            case Nil => ()
-            case e :: es => {
-                val idx = improve(elemHashCode(entryKey(e))) & (newSize - 1);
+        initTable(newTable);
+        var i = table.length - 1;
+        while (i >= 0) {
+        	table(i).foreach { e => {
+        		val idx = improve(elemHashCode(entryKey(e))) & (newSize - 1);
                 newTable(idx) = e :: newTable(idx);
-                rehashList(es);
-            }
+        	}};
+        	i = i - 1;
         }
-        rehash(table.length - 1);
         table = newTable;
         threshold = newThreshold(newSize);
     }

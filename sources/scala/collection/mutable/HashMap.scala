@@ -23,7 +23,7 @@ class HashMap[A, B] extends scala.collection.mutable.Map[A, B]
     protected def entryKey(e: Entry) = e.key;
 
     override def clear = {
-        initTable(table.length - 1);
+        initTable(table);
         tableSize = 0;
     }
 }
