@@ -15,29 +15,6 @@ import scalac.checkers.Checker;
 
 public abstract class Phase {
 
-    // !!! remove these obsolete methods !
-    public final String name()  {
-        throw new Error("!!! obsolete");
-    }
-    public final String taskDescription() {
-        throw new Error("!!! obsolete");
-    }
-    public final String description()  {
-        throw new Error("!!! obsolete");
-    }
-    public final void initialize(Global global) {
-        throw new Error("!!! obsolete");
-    }
-    public final void initialize(Global global, int id) {
-        throw new Error("!!! obsolete");
-    }
-    public final void apply(Global global) {
-        throw new Error("!!! obsolete");
-    }
-    public final void apply(Unit unit) {
-        throw new Error("!!! obsolete");
-    }
-
     //########################################################################
     // Public Fields
 
