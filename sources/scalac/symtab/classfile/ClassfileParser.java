@@ -98,17 +98,15 @@ public class ClassfileParser implements ClassfileConstants {
             Type[] basetpes = new Type[in.nextChar() + 1];
             this.locals = new Scope();
             this.statics = new Scope();
-            // set type of class
-            Type classType = Type.compoundType(basetpes, locals, c);
-            c.setInfo(classType);
-            // set type of statics
+            // set info of class
+            Type classInfo = Type.compoundType(basetpes, locals, c);
+            c.setInfo(classInfo);
+            // set info of statics class
             Symbol staticsClass = c.dualClass();
-            if (staticsClass.isModuleClass()) {
-                Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
-                staticsClass.setInfo(staticsInfo);
-                staticsClass.module().setInfo(Type.typeRef(staticsClass.owner().thisType(),
-                                            staticsClass, Type.EMPTY_ARRAY));
-            }
+            assert staticsClass.isModuleClass(): Debug.show(staticsClass);
+            Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
+            staticsClass.setInfo(staticsInfo);
+            staticsClass.module().setInfo(make.classType(staticsClass));
             basetpes[0] = supertpe;
             for (int i = 1; i < basetpes.length; i++)
                 basetpes[i] = readClassType(in.nextChar());
@@ -126,7 +124,7 @@ public class ClassfileParser implements ClassfileConstants {
                 if ((c.flags & Modifiers.INTERFACE) == 0)
                     constr.flags |= Modifiers.PRIVATE;
             }
-            attrib.readAttributes(c, classType, CLASS_ATTR);
+            attrib.readAttributes(c, classInfo, CLASS_ATTR);
             //System.out.println("dynamic class: " + c);
             //System.out.println("statics class: " + staticsClass);
             //System.out.println("module: " + c.module());
