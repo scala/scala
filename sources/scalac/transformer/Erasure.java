@@ -204,7 +204,7 @@ public class Erasure extends GenTransformer implements Modifiers {
 	case Select(Tree qualifier, _):
             Symbol symbol = tree.symbol();
             Type prefix = qualifier.type().baseType(symbol.owner()).erasure();
-            assert prefix != Type.NoType: tree + " has type NoType (its owner is" + symbol.owner() + ")";
+            assert prefix != Type.NoType: tree + " -- " + Debug.show(symbol);
 	    qualifier = transform(qualifier);
 	    qualifier = coerce(qualifier, prefix);
 
@@ -389,6 +389,8 @@ public class Erasure extends GenTransformer implements Modifiers {
                 Symbol clasz = element.symbol();
                 if (clasz.isJava()) break;
                 if (clasz == definitions.ANY_CLASS) break;
+                if (isUnboxedSimpleType(element)) break;
+                assert element.parents().length > 0: element;
                 element = element.parents()[0];
             }
             global.prevPhase();
