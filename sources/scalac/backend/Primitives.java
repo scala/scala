@@ -76,6 +76,7 @@ public class Primitives {
     private static final Name OARRAY_SET_N = Name.fromString("oarray_set");
 
     private static final Name BOX_N       = Name.fromString("box");
+    private static final Name UNBOX_N     = Name.fromString("unbox");
 
     private static final Name AS_UVALUE_N = Name.fromString("asUnit");
     private static final Name AS_ZVALUE_N = Name.fromString("asBoolean");
@@ -168,6 +169,27 @@ public class Primitives {
     public final Symbol BOX_OARRAY;
     public final Symbol BOX__ARRAY;
 
+    public final Symbol UNBOX_UVALUE;
+    public final Symbol UNBOX_ZVALUE;
+    public final Symbol UNBOX_BVALUE;
+    public final Symbol UNBOX_SVALUE;
+    public final Symbol UNBOX_CVALUE;
+    public final Symbol UNBOX_IVALUE;
+    public final Symbol UNBOX_LVALUE;
+    public final Symbol UNBOX_FVALUE;
+    public final Symbol UNBOX_DVALUE;
+
+    public final Symbol UNBOX_ZARRAY;
+    public final Symbol UNBOX_BARRAY;
+    public final Symbol UNBOX_SARRAY;
+    public final Symbol UNBOX_CARRAY;
+    public final Symbol UNBOX_IARRAY;
+    public final Symbol UNBOX_LARRAY;
+    public final Symbol UNBOX_FARRAY;
+    public final Symbol UNBOX_DARRAY;
+    public final Symbol UNBOX_OARRAY;
+    public final Symbol UNBOX__ARRAY;
+
     public final Symbol AS_UVALUE;
     public final Symbol AS_ZVALUE;
     public final Symbol AS_BVALUE;
@@ -253,6 +275,26 @@ public class Primitives {
         this.BOX_DARRAY = getBoxArray(boxes, definitions.DOUBLE_TYPE());
         this.BOX_OARRAY = getBoxArray(boxes, definitions.JAVA_OBJECT_TYPE());
         this.BOX__ARRAY = getBoxArray(boxes, definitions.ANY_TYPE());
+        Symbol[] unboxes = getTerm(RUNTIME, UNBOX_N).alternativeSymbols();
+        this.UNBOX_UVALUE = getUnboxValue(unboxes, definitions.UNIT_TYPE());
+        this.UNBOX_ZVALUE = getUnboxValue(unboxes, definitions.BOOLEAN_TYPE());
+        this.UNBOX_BVALUE = getUnboxValue(unboxes, definitions.BYTE_TYPE());
+        this.UNBOX_SVALUE = getUnboxValue(unboxes, definitions.SHORT_TYPE());
+        this.UNBOX_CVALUE = getUnboxValue(unboxes, definitions.CHAR_TYPE());
+        this.UNBOX_IVALUE = getUnboxValue(unboxes, definitions.INT_TYPE());
+        this.UNBOX_LVALUE = getUnboxValue(unboxes, definitions.LONG_TYPE());
+        this.UNBOX_FVALUE = getUnboxValue(unboxes, definitions.FLOAT_TYPE());
+        this.UNBOX_DVALUE = getUnboxValue(unboxes, definitions.DOUBLE_TYPE());
+        this.UNBOX_ZARRAY = getUnboxArray(unboxes, definitions.BOOLEAN_TYPE());
+        this.UNBOX_BARRAY = getUnboxArray(unboxes, definitions.BYTE_TYPE());
+        this.UNBOX_SARRAY = getUnboxArray(unboxes, definitions.SHORT_TYPE());
+        this.UNBOX_CARRAY = getUnboxArray(unboxes, definitions.CHAR_TYPE());
+        this.UNBOX_IARRAY = getUnboxArray(unboxes, definitions.INT_TYPE());
+        this.UNBOX_LARRAY = getUnboxArray(unboxes, definitions.LONG_TYPE());
+        this.UNBOX_FARRAY = getUnboxArray(unboxes, definitions.FLOAT_TYPE());
+        this.UNBOX_DARRAY = getUnboxArray(unboxes, definitions.DOUBLE_TYPE());
+        this.UNBOX_OARRAY = getUnboxArray(unboxes, definitions.ANYREF_TYPE());
+        this.UNBOX__ARRAY = getUnboxArray(unboxes, definitions.ANY_TYPE());
         this.AS_UVALUE = getUniqueTerm(definitions.UNIT_CLASS, AS_UVALUE_N);
         this.AS_ZVALUE = getUniqueTerm(definitions.BOOLEAN_CLASS, AS_ZVALUE_N);
         this.AS_BVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_BVALUE_N);
@@ -304,6 +346,23 @@ public class Primitives {
     private Symbol getBoxArray(Symbol[] alts, Type type) {
         Type array = definitions.ARRAY_CLASS.type();
         return getBoxValue(alts, Type.appliedType(array, new Type[]{type}));
+    }
+
+    private Symbol getUnboxValue(Symbol[] alts, Type type) {
+        for (int i = 0; i < alts.length; i++) {
+            Type result = alts[i].type().resultType();
+            switch (alts[i].type()) {
+            case PolyType(Symbol[] tparams, _):
+                result = result.subst(tparams, Symbol.info(tparams));
+            }
+            if (result.equals(type)) return alts[i];
+        }
+        throw Debug.abort("not found: def " +UNBOX_N+ "(" +type+ "): " +type);
+    }
+
+    private Symbol getUnboxArray(Symbol[] alts, Type type) {
+        Type array = definitions.ARRAY_CLASS.type();
+        return getUnboxValue(alts, Type.appliedType(array, new Type[]{type}));
     }
 
     private Symbol getUniqueTerm(Symbol owner, Name name) {
@@ -502,6 +561,25 @@ public class Primitives {
         addPrimitive(BOX_DARRAY, Primitive.BOX);
         addPrimitive(BOX_OARRAY, Primitive.BOX);
         addPrimitive(BOX__ARRAY, Primitive.BOX);
+        addPrimitive(UNBOX_UVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_ZVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_BVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_SVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_CVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_IVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_LVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_FVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_DVALUE, Primitive.UNBOX);
+        addPrimitive(UNBOX_ZARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_BARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_SARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_CARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_IARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_LARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_FARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_DARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX_OARRAY, Primitive.UNBOX);
+        addPrimitive(UNBOX__ARRAY, Primitive.UNBOX);
         addPrimitive(NEW_ZARRAY, Primitive.NEW_ZARRAY);
         addPrimitive(NEW_BARRAY, Primitive.NEW_BARRAY);
         addPrimitive(NEW_SARRAY, Primitive.NEW_SARRAY);
