@@ -7,8 +7,6 @@ Comment.java
 # DocModule.java
 HTMLGenerator.java
 HTMLGeneratorCommand.java
-HTMLGeneratorPhase.scala
-HTMLGeneratorPhases.scala
 HTTPServer.java
 Location.java
 MLType.scala
