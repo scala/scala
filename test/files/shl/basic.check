@@ -1,0 +1,38 @@
+> > > > > > (): scala.Unit
+> false: scala.Boolean(false)
+> 1: scala.Char(1)
+> 2: scala.Int(2)
+> 3: scala.Long(3)
+> 4.0: scala.Float(4.0)
+> 5.0: scala.Double(5.0)
+> null: scala.AllRef
+> hello: java.lang.String(hello)
+> List(): scala.Nil
+> List(1,2,3): scala.List[scala.Int]
+> > Exception in thread "main" java.lang.Error: error
+        at $console$15.$console$15(<console>:1)
+        at <root>.$console$15(<console>:1)
+> > | val x: scala.Int(5) = 5
+5: scala.Int(5)
+> <console>:1: not found: value y
+y
+^
+> > def fact(scala.Int): scala.Int
+> <console>:1: not found: value fac
+fac(5)
+^
+> 120: scala.Int
+> > | def length[X](scala.Int,scala.List[X]): scala.Int
+> <console>:1: wrong number of arguments for method length(scala.Int,scala.List[X])
+length(Nil)
+      ^
+> 0: scala.Int
+> 5: scala.Int
+> > | | | class Point extends java.lang.Object with scala.ScalaObject {
+  def move(scala.Int,scala.Int): $console$25.Point, 
+  def toString(): java.lang.String
+}
+> val p1: $console$25.Point = Point(3,7)
+> Point(10,10): $console$25.Point
+> > > 
+[Leaving scalarun]

@@ -30,6 +30,8 @@ run/overloads.scala
 run/regularpatmat.scala
 run/runtime.scala
 
+shl/basic.scala
+
 xml/lnk.scala
 xml/xhtml.scala
 
