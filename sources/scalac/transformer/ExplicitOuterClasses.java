@@ -116,7 +116,7 @@ public class ExplicitOuterClasses extends Transformer {
         Iterator classIt = classStack.iterator();
         for (int level = 0; classIt.hasNext(); ++level) {
             Symbol classSym = (Symbol)classIt.next();
-            if (classSym.closurePos(sym) != -1)
+            if (classSym == sym)
                 return level;
         }
         return -1;
