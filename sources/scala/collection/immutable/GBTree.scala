@@ -4,12 +4,14 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
-** =====================================================================*/
+\*                                                                      */
+
+// $Id$
+
 /* General Balanced Trees - highly efficient functional dictionaries.
 **
 ** This is a scala version of gb_trees.erl which is
-** copyrighted (C) 1999-2001 by Sven-Olof Nyström, and Richard Carlsson
+** copyrighted (C) 1999-2001 by Sven-Olof NystrÃ¶m, and Richard Carlsson
 **
 ** An efficient implementation of Prof. Arne Andersson's General
 ** Balanced Trees. These have no storage overhead compared to plain
@@ -43,19 +45,21 @@ object GBTree {
     def Empty[A <: Ord[A], B] = new GBTree[A, B];
 }
 
-/** General Balanced Trees - highly efficient functional dictionaries.
-**
-** An efficient implementation of Prof. Arne Andersson's General
-** Balanced Trees. These have no storage overhead compared to plain
-** unbalanced binary trees, and their performance is in general better
-** than AVL trees.
-** <p>
-** I make no attempt to balance trees after deletions. Since deletions
-** don't increase the height of a tree, I figure this is OK.
-**
-**  @author  Erik Stenman
-**  @version 1.0, 10/07/2003
-*/
+/**
+ * General Balanced Trees - highly efficient functional dictionaries.
+ *
+ * An efficient implementation of Prof. Arne Andersson's General
+ * Balanced Trees. These have no storage overhead compared to plain
+ * unbalanced binary trees, and their performance is in general better
+ * than AVL trees.
+ * <p>
+ * I make no attempt to balance trees after deletions. Since deletions
+ * don't increase the height of a tree, I figure this is OK.
+ *
+ *  @author  Erik Stenman
+ *  @version 1.0, 10/07/2003
+ */
+
 /* Data structure:
 ** - Size - the number of elements in the tree.
 ** - Tree, which is composed of nodes of the form:
@@ -71,10 +75,13 @@ object GBTree {
 class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[A,B]] {
   private type TREE = Tree[A,B];
 
-  /** - size: returns the number of nodes in the tree as an integer.
-   **   Returns 0 (zero) if the tree is empty.
-   **/
+  /**
+   * Returns the number of nodes in the tree as an integer.
+   *
+   * @return   Returns 0 (zero) if the tree is empty.
+   */
   def size = 0;
+
   protected val tree:TREE = Nil[A,B]();
 
   /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,17 +97,19 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
   /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 
-  /** Checks if the tree is empty.
+  /**
+   * Checks if the tree is empty.
    *
-   *  @returns true, iff there is no element in the tree.
+   * @return true, iff there is no element in the tree.
    */
   override def isEmpty = size == 0;
 
-  /** Looks up the key in the tree;
-   ** @returns Option.Some(v),
-   **   or Option.None if the key is not present.
-   **
-   **/
+  /**
+   * Looks up the key in the tree;
+   *
+   * @return Option.Some(v),
+   *         or Option.None if the key is not present.
+   */
   def get(key:A) = get_1(key, tree);
 
   /* Ord is an arithmetic total order, so we should not
@@ -120,7 +129,8 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
       case Nil() => None;
     }
 
-  /* This is a specialized version of `get'.
+  /**
+   * This is a specialized version of `get'.
    */
   override def contains(key:A) = is_defined_1(key, tree);
 
@@ -134,13 +144,13 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
       case Nil() => false
     }
 
-
-
-    /** Retreives the value stored with the <code>key</code>
-     ** in the tree. Assumes that the key is present in the tree.
-     ** @returns the value stored with the <code>key</code>.
-     ** @throws "key not found".
-     **/
+    /**
+     * Retrieves the value stored with the <code>key</code>
+     * in the tree. Assumes that the key is present in the tree.
+     *
+     * @return the value stored with the <code>key</code>.
+     * @throws "key not found".
+     */
     override def apply(key:A):B = apply_1(key, tree);
 
     private def apply_1(key:A,t:Tree[A,B]):B =
@@ -180,15 +190,17 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
 
 
 
-      /** Inserts the key <code>key</code>
-       ** with value <code>value</code> into the tree; returns
-       **   the new tree.
-       ** Assumes that the key is *not* present in the tree.
-       ** @returns tree:GBTree[A,B].
-       ** @throws GBTree.KeyExists(key)
-       **/
+    /**
+     * Inserts the key <code>key</code>
+     * with value <code>value</code> into the tree; returns
+     * the new tree.
+     * Assumes that the key is *not* present in the tree.
+     *
+     * @return tree:GBTree[A,B].
+     * @throws GBTree.KeyExists(key)
+     */
     def insert(key:A, value:B):GBTree[A,B] = {
-	val s1 = size+1;
+	val s1 = size + 1;
 
 	val ITree(t1) = insert_1(key, value, tree, pow(s1, p));
 	mkGBTree(s1,t1);
@@ -309,8 +321,6 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
 	    case Nil() => iter_tail;
 	}
     }
-
-
 
 
     def delete_any(key:A):GBTree[A,B] =

@@ -4,38 +4,43 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala;
 
 
-/** Collection classes supporting this trait provide a method
- *  <code>elements</code> which returns an iterator over all the
- *  elements contained in the collection.
+/**
+ * Collection classes supporting this trait provide a method
+ * <code>elements</code> which returns an iterator over all the
+ * elements contained in the collection.
  *
- *  @author  Matthias Zenger
- *  @version 1.0, 16/07/2003
+ * @author  Matthias Zenger
+ * @version 1.0, 16/07/2003
  */
 trait StructuralEquality[+A <: StructuralEquality[A]] {
 
-    /** Compares this object with the provided object structurally;
-     *  i.e. by looking at the internal structure of aggregated objects.
-     *  <code>===</code> does not have to be compatible with the
-     *  <code>hashCode</code> method.
+    /**
+     * Compares this object with the provided object structurally;
+     * i.e. by looking at the internal structure of aggregated objects.
+     * <code>===</code> does not have to be compatible with the
+     * <code>hashCode</code> method.
      *
-     *  @param   that	the other object
-     *  @returns true, iff <code>this</code> and <code>that</code> are
-     *           structurally equivalent.
+     * @param  that	the other object
+     * @return true, iff <code>this</code> and <code>that</code> are
+     *         structurally equivalent.
      */
     def ===[B >: A](that: B): Boolean = (this == that);
 
-    /** Compares this object with the provided object structurally
-     *  and returns true, iff the two objects differ.
+    /**
+     * Compares this object with the provided object structurally
+     * and returns true, iff the two objects differ.
      *
-     *  @param   that	the other object
-     *  @returns false, iff <code>this</code> and <code>that</code> are
-     *           structurally equivalent.
+     * @param  that	the other object
+     * @return false, iff <code>this</code> and <code>that</code> are
+     *         structurally equivalent.
      */
     def !==[B >: A](that: B): Boolean = !(this === that);
+
 }

@@ -4,30 +4,58 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala.collection.mutable;
 
 
-/** Buffers are used to create sequences of elements incrementally by
- *  appending or prepending new elements. It is also possible to
- *  access and modify elements in a random access fashion via the
- *  index of the element in the sequence.
+/**
+ * Buffers are used to create sequences of elements incrementally by
+ * appending or prepending new elements. It is also possible to
+ * access and modify elements in a random access fashion via the
+ * index of the element in the sequence.
  *
- *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ * @author  Matthias Zenger
+ * @version 1.0, 08/07/2003
  */
 class Buffer[A] with MutableList[A] with StructuralEquality[Buffer[A]] {
 
+    /**
+     * ..
+     *
+     * @param elem
+     */
     def prepend(elem: A) = prependElem(elem);
 
+    /**
+     * ..
+     *
+     * @param elems
+     */
     def append(elems: A*) = (this += elems);
 
+    /**
+     * ..
+     *
+     * @param elem
+     */
     def +=(elem: A) = appendElem(elem);
 
+    /**
+     * ..
+     *
+     * @param iter
+     */
     def +=(iter: Iterable[A]) = iter.elements.foreach(e => appendElem(e));
 
+    /**
+     * ..
+     *
+     * @param n
+     * @param newelem
+     */
     def update(n: Int, newelem: A): Unit = {
         var elem = first;
         var i = n;
@@ -40,6 +68,12 @@ class Buffer[A] with MutableList[A] with StructuralEquality[Buffer[A]] {
         elem.elem = newelem;
     }
 
+    /**
+     * ..
+     *
+     * @param n
+     * @param newelem
+     */
     def insert(n: Int, newelem: A): Unit = {
         if (n == 0)
             prepend(newelem);
@@ -59,6 +93,11 @@ class Buffer[A] with MutableList[A] with StructuralEquality[Buffer[A]] {
         }
     }
 
+    /**
+     * ..
+     *
+     * @param n
+     */
     def remove(n: Int): A = {
         val old = apply(n);
         if (n >= len)
@@ -84,11 +123,15 @@ class Buffer[A] with MutableList[A] with StructuralEquality[Buffer[A]] {
         old;
     }
 
+    /**
+     * Clears the buffer contents
+     */
     def clear: Unit = reset;
 
-    /** Checks if two buffers are structurally identical.
+    /**
+     * Checks if two buffers are structurally identical.
      *
-     *  @returns true, iff both buffers contain the same sequence of elements.
+     * @return true, iff both buffers contain the same sequence of elements.
      */
     override def ===[B >: Buffer[A]](that: B) =
         that.isInstanceOf[Buffer[A]] &&
@@ -96,4 +139,5 @@ class Buffer[A] with MutableList[A] with StructuralEquality[Buffer[A]] {
           elements.zip(other.elements).forall {
             case Pair(thiselem, thatelem) => thiselem == thatelem;
         }};
+
 }
