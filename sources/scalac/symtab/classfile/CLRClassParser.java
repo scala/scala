@@ -30,14 +30,9 @@ public class CLRClassParser extends SymbolLoader {
 
     protected final CLRPackageParser importer;
 
-//     private static final int bindingFlags = BindingFlags.DeclaredOnly
-// 	| BindingFlags.Instance | BindingFlags.Static
-// 	| BindingFlags.Public | BindingFlags.NonPublic;
+    private static Name[] ENUM_CMP_NAMES = new Name[]
+	{ Names.EQ, Names.NE, Names.LT, Names.LE, Names.GT, Names.GE };
 
-    public CLRClassParser(Global global, CLRPackageParser  importer) {
-	super(global);
-	this.importer = importer;
-    }
 
     protected String doComplete(Symbol clazz) {
 	try { return doComplete0(clazz); }
@@ -58,6 +53,8 @@ public class CLRClassParser extends SymbolLoader {
 	Type type = (Type)importer.getMember(clazz);
 	if (type == null)
 	    type = Type.GetType(global.primitives.getCLRClassName(clazz));
+	assert type != null : Debug.show(clazz);
+
 	clazz.flags = translateAttributes(type);
 	Type[] ifaces = type.getInterfaces();
 	scalac.symtab.Type[] baseTypes = new scalac.symtab.Type[ifaces.length+1];
@@ -91,6 +88,7 @@ public class CLRClassParser extends SymbolLoader {
 	    Name classname = Name.fromString(n).toTypeName();
 	    Name aliasname = Name.fromString(ntype.Name).toTypeName();
 	    // put the class at the level of its outermost class
+	    // the owner of a class is always its most specific package
 	    Symbol nclazz = clazz.owner().newLoadedClass(JAVA, classname, this, null);
 	    importer.map(nclazz, ntype);
 	    // create an alias in the module of the outer class
@@ -99,7 +97,6 @@ public class CLRClassParser extends SymbolLoader {
 	    statics.enterNoHide(alias);
 	}
 
-	// read field information
 	FieldInfo[] fields = type.getFields();
 	for (int i = 0; i < fields.length; i++) {
 	    if (fields[i].IsPrivate() || fields[i].IsAssembly()
@@ -108,7 +105,7 @@ public class CLRClassParser extends SymbolLoader {
 	    int mods = translateAttributes(fields[i]);
 	    Name name = Name.fromString(fields[i].Name);
 	    scalac.symtab.Type fieldType = getCLRType(fields[i].FieldType);
-	    if (fields[i].IsLiteral())
+	    if (fields[i].IsLiteral() && !fields[i].FieldType.IsEnum())
 		fieldType = make.constantType(
                     getConstant(fieldType.symbol(), fields[i].getValue()));
 	    Symbol owner = fields[i].IsStatic() ? staticsClass : clazz;
@@ -118,7 +115,6 @@ public class CLRClassParser extends SymbolLoader {
 	    importer.map(field, fields[i]);
 	}
 
-	//PropertyInfo[] props = type.GetProperties(bindingFlags);
 	PropertyInfo[] props = type.getProperties();
 	for (int i = 0; i < props.length; i++) {
 	    MethodInfo getter = props[i].GetGetMethod(true);
@@ -156,7 +152,6 @@ public class CLRClassParser extends SymbolLoader {
 	    importer.map(method, setter);
 	}
 
-	//MethodInfo[] methods = type.GetMethods(bindingFlags);
 	MethodInfo[] methods = type.getMethods();
 	for (int i = 0; i < methods.length; i++) {
 	    if ((importer.getSymbol(methods[i]) != null)
@@ -185,7 +180,25 @@ public class CLRClassParser extends SymbolLoader {
 	    importer.map(method, methods[i]);
 	}
 
-	//ConstructorInfo[] constrs = type.GetConstructors(bindingFlags);
+	// for enumerations introduce dummy comparison methods;
+	// the backend should recognize and replace them with
+	// comparison operations on the primitive underlying type
+	if (type.IsEnum()) {
+	    scalac.symtab.Type[] argTypes = new scalac.symtab.Type[] {ctype};
+	    int mods = Modifiers.JAVA | Modifiers.FINAL;
+	    for (int i = 0; i < ENUM_CMP_NAMES.length; i++) {
+		scalac.symtab.Type enumCmpType =
+		    make.methodType(argTypes,
+				    global.definitions.BOOLEAN_TYPE(),
+				    scalac.symtab.Type.EMPTY_ARRAY);
+		Symbol enumCmp = new TermSymbol
+		    (Position.NOPOS, ENUM_CMP_NAMES[i], clazz, mods);
+		setParamOwners(enumCmpType, enumCmp);
+		enumCmp.setInfo(enumCmpType);
+		members.enterOrOverload(enumCmp);
+	    }
+	}
+
 	ConstructorInfo[] constrs = type.getConstructors();
 	for (int i = 0; i < constrs.length; i++) {
 	    if (constrs[i].IsStatic() || constrs[i].IsPrivate()
@@ -204,8 +217,6 @@ public class CLRClassParser extends SymbolLoader {
             }
 	    setParamOwners(mtype, constr);
 	    constr.setInfo(mtype);
-//  	    System.out.println(clazz.allConstructors() + ": "
-//  			       + clazz.allConstructors().info());
 	    importer.map(constr, constrs[i]);
 	}
 
