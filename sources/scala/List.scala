@@ -204,7 +204,7 @@ object List {
    *  for all corresponding elements of the argument lists.
    *
    *  @param p function to apply to each pair of elements.
-   *  @return <code>n == 0 || (p(a0,b0) && ... && p(an,bn))]</code> if the lists are
+   *  @return <code>n == 0 || (p(a0,b0) &amp;&amp; ... &amp;&amp; p(an,bn))]</code> if the lists are
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>m = min(k,l)</code>
    */
@@ -216,7 +216,7 @@ object List {
    *  for some corresponding elements of the argument lists.
    *
    *  @param p function to apply to each pair of elements.
-   *  @return <code>n != 0 && (p(a0,b0) || ... || p(an,bn))]</code> if the lists are
+   *  @return <code>n != 0 &amp;&amp; (p(a0,b0) || ... || p(an,bn))]</code> if the lists are
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>m = min(k,l)</code>
    */

@@ -25,7 +25,7 @@ case class DocType( name:String, extID:ExternalID, intSubset:Seq[dtd.Decl]) {
   /** hashcode for this processing instruction */
   final override def hashCode() = name.hashCode() + 7 * extID.hashCode() + 41*intSubset.toList.hashCode();
 
-  /** returns "<!DOCTYPE + name + extID? + ("["+intSubSet+"]")? >" */
+  /** returns "&lt;!DOCTYPE + name + extID? + ("["+intSubSet+"]")? >" */
   final override def toString() = {
     val sb = new StringBuffer("<!DOCTYPE ");
     sb.append( name );
