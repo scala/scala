@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.ArrayList;
 
 import scala.runtime.InterpreterSupport;
-import scala.runtime.InterpreterSupport.DefinitionPrinter;
 
 import scalac.util.Debug;
 import scalac.util.Strings;
@@ -56,6 +55,7 @@ public class InterpreterShell {
     private final PrefixMatcher matcher;
     private final Global global;
     private final Interpreter interpreter;
+    private final InterpreterPrinter printer;
 
     private String[] lfiles;
     private String[] ufiles;
@@ -78,6 +78,7 @@ public class InterpreterShell {
         this.matcher = matcher();
         this.global = new Global(command, true);
         this.interpreter = new Interpreter(global);
+        this.printer = new InterpreterPrinter(interpreter, writer);
         this.lfiles = new String[0];
         this.ufiles = new String[0];
     }
@@ -94,10 +95,10 @@ public class InterpreterShell {
         } else {
             if (!interactive) global.reporter.printSummary();
         }
-        if (interactive) loop(new DefaultDefinitionPrinter());
+        if (interactive) loop();
     }
 
-    public void loop(DefinitionPrinter printer) {
+    public void loop() {
         InterpreterSupport.setDefinitionPrinter(printer);
         while (handle(read()));
         InterpreterSupport.setDefinitionPrinter(null);
@@ -245,24 +246,7 @@ public class InterpreterShell {
     }
 
     public void show(EvaluatorResult result, boolean interactive) {
-        switch (result) {
-        case Void:
-            return;
-        case Value(Object value, String type):
-            if (interactive)
-                if (value instanceof String)
-                    writer.println(value + ": " + type);
-                else
-                    show(interpreter.toString(value, type), interactive);
-            return;
-        case Error(EvaluatorException exception):
-            String name = Thread.currentThread().getName();
-            writer.print("Exception in thread \"" + name + "\" ");
-            writer.println(exception.getScalaErrorMessage(true));
-            return;
-        default:
-            throw Debug.abort("illegal case", result);
-        }
+        printer.showResult(result, interactive);
     }
 
     //########################################################################
@@ -444,31 +428,6 @@ public class InterpreterShell {
         int c = reader.read();
         if (c != -1) input.append((char)c);
         return c;
-    }
-
-    //########################################################################
-    // Private Classes
-
-    private class DefaultDefinitionPrinter implements DefinitionPrinter {
-
-        public void showDefinition(String signature) {
-            writer.println(signature);
-        }
-
-        public void showValueDefinition(String signature, Object value) {
-            EvaluatorResult result = interpreter.toString(value, null);
-            switch (result) {
-            case Value(Object string, _):
-                writer.println(signature + " = " + string);
-                return;
-            case Error(EvaluatorException exception):
-                writer.print(signature + " = ");
-                writer.println(exception.getScalaErrorMessage(true));
-                return;
-            default:
-                throw Debug.abort("illegal case", result);
-            }
-        }
     }
 
     //########################################################################
