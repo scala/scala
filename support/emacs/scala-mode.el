@@ -62,7 +62,7 @@ reserved keywords when used alone.")
 (defconst scala-keywords-re
   (regexp-opt '("abstract" "as" "case" "class" "def" "do" "else"
                 "extends" "final" "for" "if" "import" "is"
-                "let" "module" "new" "override" "outer"
+                "let" "module" "new" "override" "object" "outer"
                 "package" "private" "protected" "qualified"
                 "trait" "type" "val" "var" "with" "yield"
                 "null" "this" "super")
@@ -466,8 +466,8 @@ When called repeatedly, indent each time one stop further on the right."
      nil)
 
     ;; modules
-    (,(concat "\\<module\\>\\s *\\(" scala-ident-re "\\)")
-     (1 font-lock-variable-name-face nil))
+    (,(concat "\\<\\(module\\|object\\)\\>\\s *\\(" scala-ident-re "\\)")
+     (2 font-lock-variable-name-face nil))
 
     ;; type definitions
     (,(concat "\\<type\\>\\s *\\(" scala-ident-re "\\)")
