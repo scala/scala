@@ -5,6 +5,8 @@ import scala.xml._;
 
 object fors {
 
+  val e = Node.NoAttributes ;
+
   class Person(_name: String, _age: Int) {
     val name = _name;
     val age = _age;
@@ -40,44 +42,44 @@ object fors {
   type Lst = List[Any];
 
   val books = List(
-    Elem("book",
-         Elem("title",
+    Elem("", "book", e,
+         Elem("", "title", e,
               Text("Structure and Interpretation of Computer Programs")),
-         Elem("author",
+         Elem("", "author", e,
               Text("Abelson, Harald")),
-         Elem("author",
+         Elem("", "author", e,
               Text("Sussman, Gerald J."))),
-    Elem("book",
-         Elem("title",
+    Elem("", "book", e,
+         Elem("", "title", e,
               Text("Principles of Compiler Design")),
-         Elem("author",
+         Elem("", "author", e,
               Text("Aho, Alfred")),
-         Elem("author",
+         Elem("", "author", e,
               Text("Ullman, Jeffrey"))),
-    Elem("book",
-         Elem("title",
+    Elem("", "book", e,
+         Elem("", "title", e,
               Text("Programming in Modula-2")),
-	 Elem("author",
+	 Elem("", "author", e,
               Text("Wirth, Niklaus")))
   );
 
   def findAuthor(books: Lst) =
-    for (val Elem("book",book @ _*) <- books;
-         val Elem("title",Text( title )) <- book;
+    for (val Elem(_, "book",_,book @ _*) <- books;
+         val Elem(_, "title",_,Text( title )) <- book;
          (title indexOf "Program") >= 0;
-         val Elem("author",Text( author )) <- book) yield author;
+         val Elem(_, "author",_,Text( author )) <- book) yield author;
 
-  for (val Elem("book", b @ _*) <- books;
-       val Elem("author", Text( author )) <- b;
+  for (val Elem(_, "book", _, b @ _*) <- books;
+       val Elem(_, "author", _, Text( author )) <- b;
        author startsWith "Ullman";
-       val Elem("title",Text( title )) <- b) yield title;
+       val Elem(_, "title", _,Text( title )) <- b) yield title;
 
   removeDuplicates(
-    for (val Elem("book", b1 @ _* ) <- books;
-         val Elem("book", b2 @ _*) <- books;
+    for (val Elem(_, "book", _, b1 @ _* ) <- books;
+         val Elem(_, "book", _, b2 @ _*) <- books;
 	 b1 != b2;
-	 val Elem("author",Text( a1 )) <- b1;
-	 val Elem("author",Text( a2 )) <- b2;
+	 val Elem(_, "author",_, Text( a1 )) <- b1;
+	 val Elem(_, "author",_, Text( a2 )) <- b2;
 	 a1 == a2) yield Pair(a1, a2));
 
   def removeDuplicates[a](xs: List[a]): List[a] =
