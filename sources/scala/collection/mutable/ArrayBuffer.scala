@@ -17,6 +17,7 @@ package scala.collection.mutable;
  *  @version 1.0, 15/03/2004
  */
 class ArrayBuffer[A] extends Buffer[A] {
+	import java.lang.System.arraycopy;
 
 	protected def initialCapacity: Int = 8;
 
@@ -35,7 +36,7 @@ class ArrayBuffer[A] extends Buffer[A] {
 	protected def ensureCapacity(n: Int): Unit = {
 	    if ((size + n) >= buf.length) {
 	        val newbuf: Array[A] = new Array(buf.length * 2);
-	        System.arraycopy(buf, 0, newbuf, 0, size);
+	        arraycopy(buf, 0, newbuf, 0, size);
 	        buf = newbuf;
 	    }
 	}
@@ -67,7 +68,7 @@ class ArrayBuffer[A] extends Buffer[A] {
      */
     def +:(elem: A): Buffer[A] = {
         ensureCapacity(1);
-        System.arraycopy(buf, 0, buf, 1, size);
+        arraycopy(buf, 0, buf, 1, size);
         buf(0) = elem;
         size = size + 1;
         this
@@ -94,7 +95,7 @@ class ArrayBuffer[A] extends Buffer[A] {
     	val xs = iter.elements.toList;
     	val len = xs.length;
     	ensureCapacity(len);
-    	System.arraycopy(buf, n, buf, n + len, size - n);
+    	arraycopy(buf, n, buf, n + len, size - n);
     	xs.copyToArray(buf, n);
     	size = size + len;
     }
@@ -123,7 +124,7 @@ class ArrayBuffer[A] extends Buffer[A] {
     	if ((n < 0) || (n >= size))
     		error("cannot remove element " + n + " in Buffer");
         val res = buf(n);
-        System.arraycopy(buf, n + 1, buf, n, size - n - 1);
+        arraycopy(buf, n + 1, buf, n, size - n - 1);
         size = size - 1;
         res
     }
