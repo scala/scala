@@ -54,6 +54,7 @@ class AddInterfaces extends Transformer {
     protected Pair/*<Symbol,Symbol>*/ ownerSubst = null;
     protected StackedHashMap identSubst = new StackedHashMap();
     protected SymbolSubstTypeMap typeSubst = new SymbolSubstTypeMap();
+    protected ThisTypeMap thisTypeSubst = null;
 
     protected LinkedList/*<List<Tree>>*/ bodyStack = new LinkedList();
 
@@ -73,7 +74,11 @@ class AddInterfaces extends Transformer {
     public Tree transform(Tree tree) {
         // Update tree type, to take into account the new (type)
         // symbols of enclosing classes / methods.
-        tree.setType(typeSubst.apply(tree.type()));
+        Type newTp = typeSubst.apply(tree.type());
+        if (thisTypeSubst != null)
+            tree.setType(thisTypeSubst.apply(newTp));
+        else
+            tree.setType(newTp);
 
         if (tree.definesSymbol() && !(tree instanceof ClassDef)) {
             // Update symbol's owner, if needed.
@@ -271,6 +276,10 @@ class AddInterfaces extends Transformer {
         Tree[] classBody = classImpl.body;
 
         Map classMemberMap = phase.getClassMemberMap(classSym);
+
+        assert thisTypeSubst == null;
+        thisTypeSubst = new ThisTypeMap(ifaceSym, new Type.ThisType(classSym));
+
         for (int i = 0; i < classBody.length; ++i) {
             Tree t = classBody[i];
             Symbol tSym = t.symbol();
@@ -285,6 +294,8 @@ class AddInterfaces extends Transformer {
 
             newClassBody.append(newT);
         }
+
+        thisTypeSubst = null;
 
         Tree[][] oldParentArgs = extractParentArgs(classImpl.parents);
         Tree[][] parentArgs = new Tree[oldParentArgs.length + 1][];
@@ -318,4 +329,5 @@ class AddInterfaces extends Transformer {
     protected void popOwnerSubst() {
         ownerSubst = (Pair)ownerSubstStack.removeFirst();
     }
+
 }

@@ -258,6 +258,9 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             // modified anymore.
             classSubst = Collections.unmodifiableMap(classSubst);
 
+            ThisTypeMap thisTpMap =
+                new ThisTypeMap(ifaceSym, new Type.ThisType(classSym));
+
             Symbol[] vparams = classConstrSym.valueParams();
             for (int i = 0; i < vparams.length; ++i) {
                 vparams[i].setOwner(classConstrSym);
@@ -288,8 +291,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                         deepCloneSymbol(ifaceMemberSym, classSym, paramsSubst);
                     ifaceMemberSym.flags |= Modifiers.DEFERRED;
 
-                    // TODO substitute symbols in ThisTypes appearing in
-                    // the type of the class member
+                    classMemberSym.updateInfo(thisTpMap.apply(classMemberSym.info()));
                     classMembersMap.put(ifaceMemberSym, classMemberSym);
                 } else {
                     // Member doesn't go in interface, we just make it
@@ -436,6 +438,24 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             return new Type.TypeRef(pre, classSym, args);
         default:
             throw Debug.abort("unexpected constructor type");
+        }
+    }
+}
+
+class ThisTypeMap extends Type.Map {
+    private Symbol sym;
+    private Type tp;
+
+    public ThisTypeMap(Symbol sym, Type tp) {
+        this.sym = sym; this.tp = tp;
+    }
+
+    public Type apply(Type t) {
+        switch (t) {
+        case ThisType(Symbol s):
+            return (s == sym) ? tp : t;
+        default:
+            return map(t);
         }
     }
 }
