@@ -44,12 +44,9 @@ object Bug120Test {
 object Bug135Test {
 
   import scala.collection.immutable.TreeMap;
-  import scala.collection.immutable.Order;
 
   def main(args: Array[String]): Unit = {
-    val intOrder =
-	new Order((x:int,y:int) => x < y, (x:int,y:int) => x == y);
-    val myMap:TreeMap[int,String] = new TreeMap(intOrder);
+    val myMap:TreeMap[int,String] = new TreeMap;
     val map1 = myMap + 42 -> "The answer";
     Console.println(map1.get(42));
   }
