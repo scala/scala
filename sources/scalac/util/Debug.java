@@ -17,6 +17,7 @@ import java.lang.reflect.Field;
 
 import scalac.Global;
 import scalac.ApplicationError;
+import scalac.ast.Tree;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.Scope;
@@ -100,6 +101,7 @@ public abstract class Debug {
     static {
         handlers = new HashMap();
         handlers.put(String.class, DebugToStringHandler.instance);
+        handlers.put(Tree.class, DebugToStringHandler.instance);
         handlers.put(Type.class, DebugType.instance);
         handlers.put(Symbol.class, DebugSymbol.instance);
         handlers.put(Scope.class, DebugScope.instance);
