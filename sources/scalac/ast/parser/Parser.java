@@ -324,7 +324,7 @@ public class Parser implements Tokens {
 		    new Tree[]{finalizer});
 	return t;
     }
-
+/*
      Tree makeWhile(int pos, Tree cond, Tree body) {
  	return
  	    make.Apply(
@@ -347,7 +347,7 @@ public class Parser implements Tokens {
  			Names.While),
  		    new Tree[]{cond});
       }
-
+*/
       Tree makeWhile(int pos, Name lname, Tree cond, Tree body) {
 	Tree continu = make.Apply(
 	    pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
@@ -863,7 +863,7 @@ public class Parser implements Tokens {
 	    accept(RPAREN);
 	    Tree body = expr();
 	    loopNestingDepth--;
-	    return makeWhile(pos/*, lname*/, cond, body);
+	    return makeWhile(pos, lname, cond, body);
 	} else if (s.token == DO) {
 	    Name lname = Name.fromString("label$" + loopNestingDepth);
 	    loopNestingDepth++;
