@@ -13,7 +13,9 @@ import java.lang.reflect.InvocationTargetException;
 
 import scalac.util.Debug;
 
-/** Information about a compiler phase. */
+/**
+ * Information about a compiler phase.
+ */
 public final class PhaseDescriptor {
 
     //########################################################################
