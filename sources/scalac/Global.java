@@ -60,6 +60,7 @@ public abstract class Global {
     public final boolean separate;
     //public final boolean optimize;
     public final boolean debug;
+    public final boolean debuginfo;
     public final boolean explaintypes;
     public final boolean uniqid;
     public final boolean newMatch;
@@ -219,6 +220,7 @@ public abstract class Global {
         this.nopredefs = args.nopredefs.value;
         //this.optimize = args.optimize.optimize;
         this.debug = args.debug.value;
+        this.debuginfo = args.debuginfo.value;
         this.uniqid = args.uniqid.value;
         this.newMatch = args.Xnewmatch.value;
         this.xmlPreserveWS = args.XpreserveWS.value;
