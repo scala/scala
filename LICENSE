@@ -1,10 +1,10 @@
 SCALA LICENSE
 
-Copyright (c) 2003 Swiss Federal Institute of Technology, Lausanne.
+Copyright (c) 2002-04 EPFL, Lausanne.
 All rights reserved.
 
 This software was developed by the Programming Methods Laboratory of the
-Swiss Federal Institute of Technology, Lausanne, Switzerland.
+Swiss Federal Institute of Technology (EPFL), Lausanne, Switzerland.
 
 Permission to use, copy, modify, and distribute this software in source
 or binary form for any purpose with or without fee is hereby granted,
@@ -22,7 +22,7 @@ provided that the following conditions are met:
       includes software developed by the Swiss Federal Institute of
       Technology, Lausanne and its contributors.
 
-   4. Neither the name of the University nor the names of its contributors
+   4. Neither the name of the EPFL nor the names of its contributors
       may be used to endorse or promote products derived from this
       software without specific prior written permission.
 
