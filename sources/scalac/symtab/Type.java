@@ -132,8 +132,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	if (pre.isStable() || pre == ErrorType) {
 	    return new ExtSingleType(pre, sym);
 	} else {
-	    throw new Type.Error(
-		"malformed type: " + pre + "#" + sym.nameString() + ".type");
+	    throw new Type.Malformed(pre, sym.nameString() + ".type");
 	}
     }
 
@@ -168,11 +167,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public static Type typeRef(Type pre, Symbol sym, Type[] args) {
 	if (pre.isLegalPrefix() || pre == ErrorType)
 	    return TypeRef(pre, sym, args);
-	else if (sym.kind == ALIAS)
-	    return pre.memberInfo(sym);
-	else // todo: handle Java-style inner classes
-	    throw new Type.Error(
-		"malformed type: " + pre + "#" + sym.nameString());
+	else if (sym.kind == ALIAS && sym.typeParams().length == args.length)
+	    return sym.info().subst(sym.typeParams(), args)
+		.asSeenFrom(pre, sym.owner());
+	else
+	    throw new Type.Malformed(pre, sym.nameString());
     }
 
     static class ExtSingleType extends SingleType {
@@ -239,21 +238,33 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	return syms;
     }
 
+    /** If this is a reference to a type constructor, add its
+     *  type parameters as arguments
+     */
+    public Type withDefaultArgs() {
+	switch (this) {
+	case TypeRef(Type pre, Symbol sym, Type[] args):
+	    if (args.length == 0 && sym.typeParams().length != 0)
+		return TypeRef(pre, sym, Symbol.type(sym.typeParams()));
+	}
+	return this;
+    }
+
     /** The upper bound of this type. Returns always a TypeRef whose
      * symbol is a class.
      */
     public Type bound() {
-	switch (this) {
+	switch (unalias()) {
         case TypeRef(Type pre, Symbol sym, _):
-            if (sym.kind == ALIAS) return unalias().bound();
             if (sym.kind == TYPE) return pre.memberInfo(sym).bound();
             assert sym.isClass() : Debug.show(sym) + " -- " + this;
             return this;
 	case ThisType(_):
 	case SingleType(_, _):
             return singleDeref().bound();
-	case TypeVar(_, _):
-            return unalias().bound();
+	case TypeVar(Type origin, Constraint constr):
+	    if (constr.inst != NoType) return constr.inst.bound();
+	    else return this;
         default:
             throw Debug.abort("illegal case", this);
         }
@@ -304,10 +315,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** The thistype or singleton type corresponding to values of this type.
       */
     public Type narrow() {
-	switch (this) {
+	switch (unalias()) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.kind == ALIAS) return pre.memberInfo(sym).narrow();
-	    else if (sym.kind == CLASS) return sym.thisType();
+	    if (sym.kind == CLASS) return sym.thisType();
 	    else return ThisType(sym);
 	case CompoundType(_, _):
 	    return symbol().thisType();
@@ -411,7 +421,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    throw new Type.Error("alias chain too long (recursive type alias?): " + this);
 	switch (this) {
         case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.kind == ALIAS) return pre.memberInfo(sym).unalias(n + 1);
+	    if (sym.kind == ALIAS && sym.typeParams().length == args.length)
+		return sym.info().subst(sym.typeParams(), args)
+		    .asSeenFrom(pre, sym.owner()).unalias(n + 1);
 	    break;
 	case TypeVar(Type origin, Constraint constr):
 	    if (constr.inst != NoType) return constr.inst.unalias(n + 1);
@@ -428,14 +440,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case SingleType(_, _):
 	    return singleDeref().parents();
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.kind == ALIAS)
-		return unalias().parents();
-	    else if (sym.kind == CLASS) {
+	    if (sym.kind == CLASS) {
 		assert sym.typeParams().length == args.length : sym + " " + ArrayApply.toString(args) + " " + sym.primaryConstructor().info();//debug
 		return subst(asSeenFrom(sym.info().parents(), pre, sym.owner()),
 			     sym.typeParams(), args);
-	    } else
+	    } else {
 		return new Type[]{sym.info().asSeenFrom(pre, sym.owner())};
+	    }
         case CompoundType(Type[] parts, _):
 	    return parts;
         default:
@@ -593,9 +604,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case ThisType(_):
 	case SingleType(_, _):
 	case CompoundType(_, _):
+	case TypeRef(_, _, _):
 	    return true;
-	case TypeRef(Type pre, Symbol sym, _):
-	    return sym.kind != ALIAS || unalias().isObjectType();
 	default:
 	    return false;
 	}
@@ -952,8 +962,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym == clazz)
 		return this;
-	    else if (sym.kind == TYPE || sym.kind == ALIAS)
-		return pre.memberInfo(sym).baseType(clazz);
+	    else if (sym.kind == TYPE)
+		return sym.info()
+		    .asSeenFrom(pre, sym.owner()).baseType(clazz);
+	    else if (sym.kind == ALIAS)
+		if (sym.typeParams().length == args.length)
+		    return sym.info().subst(sym.typeParams(), args)
+			.asSeenFrom(pre, sym.owner()).baseType(clazz);
+		else return Type.NoType;
 	    else if (clazz.isCompoundSym())
 		return NoType;
 	    else {
@@ -983,10 +999,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public Symbol rebind(Symbol sym) {
 	Symbol sym1 = lookupNonPrivate(sym.name);
 	if (sym1.kind != NONE) {
+	    if ((sym1.flags & LOCKED) != 0)
+		throw new Type.Error("illegal cyclic reference involving " + sym1);
 	    //System.out.println("rebinding " + sym + " to " + sym1);//DEBUG
 	    return sym1;
 	}
-	else return sym;
+	return sym;
     }
 
     /** A map to implement `asSeenFrom'.
@@ -1008,8 +1026,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		return t.toPrefix(sym, pre, clazz);
 
 	    case TypeRef(Type prefix, Symbol sym, Type[] args):
-		if (sym.kind == ALIAS) {
-		    return apply(t.unalias());
+		if (sym.kind == ALIAS && sym.typeParams().length == args.length) {
+		    return apply(
+			sym.info().subst(sym.typeParams(), args)
+			.asSeenFrom(prefix, sym.owner()));
 		} else if (sym.owner().isPrimaryConstructor()) {
 		    assert sym.kind == TYPE;
 		    Type t1 = t.toInstance(sym, pre, clazz);
@@ -1029,7 +1049,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    Type prefix1 = apply(prefix);
 		    if (prefix1 == prefix) return t;
 		    else return singleType(prefix1, prefix1.rebind(sym));
-		} catch (Type.Error ex) {}
+		} catch (Type.Malformed ex) {}
 		return apply(t.singleDeref());
 
 	    default:
@@ -1668,13 +1688,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		return true;
 	    }
 
-	case TypeRef(_, Symbol sym, _):
+	case TypeRef(_, Symbol sym, Type[] args):
 	    switch (that) {
 	    case TypeRef(Type pre1, Symbol sym1, _):
 		if (sym1.kind == TYPE && this.isSubType(that.loBound()))
 		    return true;
 	    }
-	    if (sym.kind == ALIAS)
+	    if (sym.kind == ALIAS && sym.typeParams().length == args.length)
 		return this.unalias().isSubType(that);
 	    else if (sym == Global.instance.definitions.ALL_CLASS)
 		return that.isSubType(Global.instance.definitions.ANY_TYPE);
@@ -1693,8 +1713,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
 
 	switch (that) {
-	case TypeRef(_, Symbol sym1, _):
-	    if (sym1.kind == ALIAS) return this.isSubType(that.unalias());
+	case TypeRef(_, Symbol sym1, Type[] args):
+	    if (sym1.kind == ALIAS && sym1.typeParams().length == args.length)
+		return this.isSubType(that.unalias());
 	    break;
 	}
 
@@ -1920,8 +1941,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	switch (this) {
 	case NoType:
 	    return false;
-	case TypeRef(_, Symbol sym, _):
-	    if (sym.kind == ALIAS) return this.unalias().isSameAs(that);
+	case TypeRef(_, Symbol sym, Type[] args):
+	    if (sym.kind == ALIAS && sym.typeParams().length == args.length)
+		return this.unalias().isSameAs(that);
 	    break;
 	case TypeVar(Type origin, Constraint constr):
 	    if (constr.inst != NoType) return constr.inst.isSameAs(that);
@@ -1929,8 +1951,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
 
 	switch (that) {
-	case TypeRef(_, Symbol sym, _):
-	    if (sym.kind == ALIAS) return this.isSameAs(that.unalias());
+	case TypeRef(_, Symbol sym, Type[] args):
+	    if (sym.kind == ALIAS && sym.typeParams().length == args.length)
+		return this.isSameAs(that.unalias());
 	}
 
 	return false;
@@ -2707,7 +2730,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	private Type upperBound() {
 	    switch (this) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		if (sym.kind == ALIAS || sym.kind == TYPE)
+		if (sym.kind == ALIAS && sym.typeParams().length == args.length
+		    || sym.kind == TYPE)
 		    return pre.memberInfo(sym).upperBound();
 	    }
 	    return this;
@@ -2723,7 +2747,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    switch (sym.kind) {
 	    case ALIAS: case TYPE:
-		return pre.memberInfo(sym).erasure();
+		return sym.info().asSeenFrom(pre, sym.owner()).erasure();
 
 	    case CLASS:
                 if (sym == Global.instance.definitions.UNIT_CLASS) return this;
@@ -3007,6 +3031,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	public Error(String msg) {
 	    super(msg);
 	    this.msg = msg;
+	}
+    }
+
+    public static class Malformed extends Error {
+	public Malformed(Type pre, String tp) {
+	    super("malformed type: " + pre + "#" + tp);
 	}
     }
 

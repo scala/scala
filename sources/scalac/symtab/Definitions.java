@@ -258,7 +258,7 @@ public class Definitions {
 	    SCALA_CLASS, Modifiers.JAVA)
 	    .setInfo(JAVA_OBJECT_TYPE);
         SCALA_CLASS.members().enter(ANYREF_CLASS);
-	ANYREF_TYPE = ANYREF_CLASS.typeConstructor().unalias();
+	ANYREF_TYPE = JAVA_OBJECT_TYPE;
 	ANYREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ANYREF_TYPE));
 
         // the scala.OBJECT class

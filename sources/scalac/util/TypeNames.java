@@ -11,5 +11,6 @@ package scalac.util;
 public class TypeNames {
 
     public static final Name EMPTY = Names.EMPTY.toTypeName();
+    public static final Name WILDCARD_STAR = Name.fromString("_*").toTypeName();
 
 }

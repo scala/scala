@@ -25,10 +25,16 @@ public class UnCurry extends OwnerTransformer
                      implements Modifiers {
 
     UnCurryPhase descr;
+    Unit unit;
 
     public UnCurry(Global global, UnCurryPhase descr) {
         super(global);
 	this.descr = descr;
+    }
+
+    public void apply(Unit unit) {
+	super.apply(unit);
+	this.unit = unit;
     }
 
     /** (ps_1) ... (ps_n) => (ps_1, ..., ps_n)
@@ -55,6 +61,28 @@ public class UnCurry extends OwnerTransformer
 	default:
 	    return tree.setType(
 		Type.MethodType(Symbol.EMPTY_ARRAY, tree.type.widen()));
+	}
+    }
+
+    /** apply parameterless functions and def parameters
+     */
+    Tree applyDef(Tree tree1) {
+	assert tree1.symbol() != null : tree1;
+	switch (tree1.symbol().type()) {
+	case PolyType(Symbol[] tparams, Type restp):
+	    if (tparams.length == 0 && !(restp instanceof Type.MethodType)) {
+		return gen.Apply(asMethod(tree1), new Tree[0]);
+	    } else {
+		return tree1;
+	    }
+	default:
+	    if (tree1.symbol().isDefParameter()) {
+		tree1.type = global.definitions.functionType(
+		    Type.EMPTY_ARRAY, tree1.type.widen());
+		return gen.Apply(gen.Select(tree1, global.definitions.FUNCTION_APPLY(0)));
+	    } else {
+		return tree1;
+	    }
 	}
     }
 
@@ -132,26 +160,18 @@ public class UnCurry extends OwnerTransformer
 	    }
 
 	case Select(_, _):
-	case Ident(_):
-	    if( TreeInfo.isWildcardPattern( tree ) )
+	    return applyDef(super.transform(tree));
+
+	case Ident(Name name):
+	    if (name == TypeNames.WILDCARD_STAR) {
+		unit.error(tree.pos, " argument does not correspond to `*'-parameter");
 		return tree;
-	    Tree tree1 = super.transform(tree);
-	    switch (tree1.symbol().type()) {
-	    case PolyType(Symbol[] tparams, Type restp):
-		if (tparams.length == 0 && !(restp instanceof Type.MethodType)) {
-		    return gen.Apply(asMethod(tree1), new Tree[0]);
-		} else {
-		    return tree1;
-		}
-	    default:
-		if (tree1.symbol().isDefParameter()) {
-		    tree1.type = global.definitions.functionType(
-			Type.EMPTY_ARRAY, tree1.type.widen());
-		    return gen.Apply(gen.Select(tree1, global.definitions.FUNCTION_APPLY(0)));
-		} else {
-		    return tree1;
-		}
+	    } else if (TreeInfo.isWildcardPattern(tree)) {
+		return tree;
+	    } else {
+		return applyDef(super.transform(tree));
 	    }
+
 	default:
 	    return super.transform(tree);
 	}
@@ -170,13 +190,9 @@ public class UnCurry extends OwnerTransformer
 
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
-
 	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
-		assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
-		args = new Tree[]{make.Sequence( pos, args ).setType(params[0].type())};
-
+		args = toSequence(pos, params, args);
 	    }
-
 	    Tree[] args1 = args;
 	    for (int i = 0; i < args.length; i++) {
 		Tree arg = args[i];
@@ -194,6 +210,16 @@ public class UnCurry extends OwnerTransformer
 	    if (args.length == 0) return args; // could be arguments of nullary case pattern
 	    else throw new ApplicationError(methtype);
 	}
+    }
+    private Tree[] toSequence(int pos, Symbol[] params, Tree[] args) {
+	assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
+	if (args.length == 1) {
+	    switch (args[0]) {
+	    case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
+		return new Tree[]{arg};
+	    }
+	}
+	return new Tree[]{make.Sequence( pos, args ).setType(params[0].type())};
     }
 
     /** for every argument to a def parameter `def x: T':

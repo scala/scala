@@ -65,7 +65,7 @@ object List {
    *  @return a pair of lists: the first list in the pair contains the list
    */
   def unzip[a,b](l: List[Pair[a,b]]): Pair[List[a], List[b]] = l match {
-    case Nil => Pair(Nil, Nil)
+    case Nil => new Pair(Nil, Nil)
     case Pair(f, s) :: tail =>
       val Pair(fs, ss) = unzip(tail);
       Pair(f :: fs, s :: ss)

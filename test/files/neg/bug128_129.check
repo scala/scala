@@ -1,7 +1,10 @@
-bug128_129.scala:3: variable not allowed under alternative
+bug128_129.scala:3: '=' expected but identifier found.
     val x | 1 = 2; // not allowed
-        ^
+          ^
+bug128_129.scala:3: illegal start of expression
+    val x | 1 = 2; // not allowed
+                 ^
 bug128_129.scala:10: recursive patterns not allowed
         case PT(a@PT(a)) =>  // not allowed
                      ^
-two errors found
+three errors found

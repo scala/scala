@@ -573,7 +573,7 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** MixinQualifier ::= `(' Id `)'
+    /** MixinQualifier ::= `[' Id `]'
      */
     Name mixinQualifierOpt() {
 	if (s.token == LBRACKET) {
@@ -795,10 +795,11 @@ public class Parser implements Tokens {
     }
 
     /** Exprs ::= Expr {`,' Expr}
+     *          | Expr `:' `_' `*'
      */
     Tree[] exprs() {
         TreeList ts = new TreeList();
-        ts.append(expr());
+        ts.append(expr(true));
         while (s.token == COMMA) {
             s.nextToken();
             ts.append(expr());
@@ -816,12 +817,16 @@ public class Parser implements Tokens {
      *             | return [Expr]
      *             | [SimpleExpr `.'] Id `=' Expr
      *             | SimpleExpr ArgumentExprs `=' Expr
-     *             | PostfixExpr [`:' Type1 | as Type1 | is Type1]
+     *             | PostfixExpr [`:' Type1]
      *  Bindings ::= Id [`:' Type1]
      *             | `(' [Binding {`,' Binding}] `)'
      *  Binding  ::= Id [`:' Type]
      */
     Tree expr() {
+	return expr(false);
+    }
+
+    Tree expr(boolean isArgument) {
 	if (s.token == IF) {
 	    int pos = s.skipToken();
 	    accept(LPAREN);
@@ -908,8 +913,19 @@ public class Parser implements Tokens {
 		}
 	    } else if (s.token == COLON) {
 		int pos = s.skipToken();
-		Tree tp = type1();
-		t = make.Typed(pos, t, tp);
+		if (isArgument && s.token == USCORE) {
+		    int pos1 = s.skipToken();
+		    if (s.token == IDENTIFIER && s.name == Names.STAR) {
+			s.nextToken();
+			t = make.Typed(
+			    pos, t, make.Ident(pos1, TypeNames.WILDCARD_STAR));
+		    } else {
+			syntaxError(s.pos, "`*' expected", true);
+		    }
+		} else {
+		    Tree tp = type1();
+		    t = make.Typed(pos, t, tp);
+		}
 	    }
 	    if (s.token == ARROW) {
 		t = make.Function(s.skipToken(), convertToParams(t), expr());

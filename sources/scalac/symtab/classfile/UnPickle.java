@@ -179,11 +179,14 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		} else {
 		    sym = owner.info().lookup(name);
 		    if (tag == EXTMODCLASSref) {
-			switch (sym.type()) {
-			case OverloadedType(Symbol[] alts, _):
-			    for (int i = 0; i < alts.length; i++)
-				if (alts[i].isModule()) sym = alts[i];
-			}
+			/*
+			if (sym.kind == VAL)
+			    switch (sym.type()) {
+			    case OverloadedType(Symbol[] alts, _):
+				for (int i = 0; i < alts.length; i++)
+				    if (alts[i].isModule()) sym = alts[i];
+			    }
+			*/
 			assert sym.isModule();
 			sym = sym.moduleClass();
 		    }

@@ -45,10 +45,10 @@ object Predef {
     		throw new Error(message);
     }
 
-    type Pair[p, q] = Tuple2[p, q];
+    type Pair[+p, +q] = Tuple2[p, q];
     def Pair[a, b](x: a, y: b) = Tuple2(x, y);
 
-    type Triple[a, b, c] = Tuple3[a, b, c];
+    type Triple[+a, +b, +c] = Tuple3[a, b, c];
     def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
 
     def id[a](x: a): a = x;

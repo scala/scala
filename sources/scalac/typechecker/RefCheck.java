@@ -105,30 +105,34 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	if ((other.flags & PRIVATE) == 0) {
 	    Symbol member1 = clazz.info().lookup(other.name);
 	    if (member1.kind != NONE && member1.owner() != other.owner()) {
-		Type self = clazz.thisType();
-		Type otherinfo = normalizedInfo(self, other);
-		Type template = resultToAny(otherinfo);
-		switch (member1.info()) {
-		case OverloadedType(Symbol[] alts, _):
-		    for (int i = 0; i < alts.length; i++) {
-			if (normalizedInfo(self, alts[i]).isSubType(template)) {
-			    if (member == other)
-				member = alts[i];
-			    else
-				unit.error(
-				    pos,
-				    "ambiguous override: both " +
-				    member + ":" + normalizedInfo(self, member) +
-				    "\n and " + alts[i] + ":" + normalizedInfo(self, alts[i]) +
-				    "\n override " + other + ":" + otherinfo +
-				    other.locationString());
+		if (member1.kind == VAL) {
+		    Type self = clazz.thisType();
+		    Type otherinfo = normalizedInfo(self, other);
+		    Type template = resultToAny(otherinfo);
+		    switch (member1.info()) {
+		    case OverloadedType(Symbol[] alts, _):
+			for (int i = 0; i < alts.length; i++) {
+			    if (normalizedInfo(self, alts[i]).isSubType(template)) {
+				if (member == other)
+				    member = alts[i];
+				else
+				    unit.error(
+					pos,
+					"ambiguous override: both " +
+					member + ":" + normalizedInfo(self, member) +
+					"\n and " + alts[i] + ":" + normalizedInfo(self, alts[i]) +
+					"\n override " + other + ":" + otherinfo +
+					other.locationString());
+			    }
+			}
+			break;
+		    default:
+			if (normalizedInfo(self, member1).isSubType(template)) {
+			    member = member1;
 			}
 		    }
-		    break;
-		default:
-		    if (normalizedInfo(self, member1).isSubType(template)) {
-			member = member1;
-		    }
+		} else {
+		    member = member1;
 		}
 	    }
 	    if (member != other) {
@@ -209,13 +213,26 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		       "\n an overriding definition in the current template is required");
 	} else {
 	    Type self = clazz.thisType();
+
 	    switch (other.kind) {
 	    case CLASS:
  		overrideError(pos, member, other, "cannot override a class");
 		break;
 	    case ALIAS:
+		if (member.typeParams().length != 0)
+		    overrideError(pos, member, other, "may not be parameterized");
+		if (other.typeParams().length != 0)
+		    overrideError(pos, member, other, "may not override parameterized type");
 		if (!self.memberType(member).isSameAs(self.memberType(other)))
 		    overrideTypeError(pos, member, other, self, false);
+		break;
+	    case TYPE:
+		if (member.typeParams().length != 0)
+		    overrideError(pos, member, other, "may not be parameterized");
+		if (!self.memberInfo(member).isSubType(self.memberInfo(other)))
+		    overrideTypeError(pos, member, other, self, false);
+		if (!self.memberLoBound(other).isSubType(self.memberLoBound(member)))
+		    overrideTypeError(pos, member, other, self, true);
 		break;
 	    default:
 		if (other.isConstructor())
@@ -224,11 +241,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (!normalizedInfo(self, member).isSubType(
 			normalizedInfo(self, other)))
 		    overrideTypeError(pos, member, other, self, false);
-		if (member.kind == TYPE &&
-		    !self.memberLoBound(other).isSubType(
-			 self.memberLoBound(member)))
-		    overrideTypeError(pos, member, other, self, true);
-
 	    }
 	}
     }
@@ -911,7 +923,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    return super.transform(tree);
 
 	case AliasTypeDef(_, _, _, _):
-	    validateVariance(sym, sym.info(), NoVariance);
+	    validateVariance(sym, sym.info(), CoVariance);
 	    return super.transform(tree);
 
 	case Template(Tree[] bases, Tree[] body):
@@ -942,11 +954,11 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    return super.transform(tree);
 
 	case Apply(Tree fn, Tree[] args):
+	    // convert case methods to new's
 	    Symbol fsym = TreeInfo.methSymbol(fn);
 	    assert fsym != Symbol.NONE : tree;
 	    if (fsym != null && fsym.isMethod() && !fsym.isConstructor() &&
 		(fsym.flags & CASE) != 0) {
-		// convert case methods to new's
 		Symbol constr = fsym.type().resultType().symbol().primaryConstructor();
 		tree = gen.New(toConstructor(tree, constr));
 	    }
@@ -965,13 +977,16 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    return elimTypeNode(super.transform(tree));
 
 	case Ident(Name name):
+	    if (name == TypeNames.WILDCARD_STAR)
+		return tree;
+
 	    if( TreeInfo.isWildcardPattern( tree ) )
 		return elimTypeNode(tree);
 
 	    //System.out.println("name: "+name);
 	    Scope.Entry e = scopes[level].lookupEntry(name);
 	    //System.out.println("sym: "+sym);
-	    if (sym != null && sym.isLocal() && sym == e.sym) {
+	    if (sym.isLocal() && sym == e.sym) {
 		int i = level;
 		while (scopes[i] != e.owner) i--;
 		int symindex = ((Integer) symIndex.get(tree.symbol())).intValue();
