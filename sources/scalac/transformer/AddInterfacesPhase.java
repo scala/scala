@@ -141,21 +141,9 @@ public class AddInterfacesPhase extends Phase {
         }
     }
 
-    protected void uniqueName(Symbol sym, StringBuffer buf) {
-        Symbol owner = sym.owner();
-
-        if (owner != Symbol.NONE) {
-            uniqueName(owner, buf);
-            buf.append('$');
-        }
-
-        buf.append(sym.name.toString());
-    }
-
     protected Name uniqueName(Symbol sym) {
-        StringBuffer buf = new StringBuffer();
-        uniqueName(sym, buf);
-        Name newName = Name.fromString(buf.toString());
+        Name owner = sym.owner().fullName().replace((byte)'.', (byte)'$');
+        Name newName = Name.fromString(owner.toString() + '$' + sym.name);
         if (sym.name.isTypeName()) return newName.toTypeName();
         else return newName;
     }
