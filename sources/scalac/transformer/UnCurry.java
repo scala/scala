@@ -29,6 +29,8 @@ import scalac.typechecker.DeSugarize ;
  *        convert argument `e' to (expansion of) `() => e'
  *  - for every argument list that corresponds to a repeated parameter
  *       (a_1, ..., a_n) => (Sequence(a_1, ..., a_n))
+ *  - for every argument list that is an escaped sequence
+ *       (a_1:_*) => (a_1)
  */
 public class UnCurry extends OwnerTransformer
                      implements Modifiers {
@@ -220,14 +222,19 @@ public class UnCurry extends OwnerTransformer
 	    else throw new ApplicationError(methtype);
 	}
     }
+
+    /** converts `a_1,...,a_n' to Seq(a_1,...,a_n)
+     *  if a_1 is an escaped sequence  as in  x:_*, takes care of
+     *  escaping
+     */
     private Tree[] toSequence(int pos, Symbol[] params, Tree[] args) {
 	assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
-	if (args.length == 1) {
-	    switch (args[0]) {
-	    case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
-		return new Tree[]{arg};
-	    }
-	}
+ 	if (args.length == 1) {
+            switch (args[0]) {
+            case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
+                return new Tree[]{arg};
+            }
+        }
 	return new Tree[]{make.Sequence( pos, args ).setType(params[0].type())};
     }
 
