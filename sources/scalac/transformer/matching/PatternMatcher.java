@@ -784,7 +784,9 @@ public class PatternMatcher extends PatternTool {
                         Modifiers.MUTABLE,
                         resultVar.name,
                         gen.mkType(selector.pos, typeOf(resultVar)),
-                        Tree.Empty).setType(defs.UNIT_TYPE).setSymbol(resultVar));
+                        gen.mkDefaultValue(selector.pos, typeOf(resultVar)))
+            .setType(defs.UNIT_TYPE)
+            .setSymbol(resultVar));
         ts.append(
             make.If(
                 selector.pos,
