@@ -42,8 +42,8 @@ public final class PhaseDescriptor {
         // transform STOP flags into SKIP flags
         boolean stop = false;
         for (int i = 0; i < phases.length; i++) {
-            stop |= phases[i].hasStopFlag();
             if (stop) phases[i].flags |= SKIP;
+            stop |= phases[i].hasStopFlag();
             if (stop) phases[i].flags &= ~STOP;
         }
         // remove SKIP flag on INITIAL and TERMINAL phases
