@@ -383,11 +383,11 @@ public class HTMLGenerator {
 	if (comment == null) {
 	    String s = (String) global.mapSymbolComment.get(sym);
             // comment inheritance
-//             if (s == null) {
-//                 Symbol overriden = ScalaSearch.overridenBySymbol(sym);
-//                 if (overriden != Symbol.NONE)
-//                     s = "/** (inherited comment)" + getComment(overriden).rawText + "*/";
-//             }
+            if (s == null) {
+                Symbol overriden = ScalaSearch.overridenBySymbol(sym);
+                if (overriden != Symbol.NONE)
+                    s = "/** (Inherited comment) " + getComment(overriden).rawText + "*/";
+            }
 	    comment = new Comment(sym, s);
 	    comments.put(sym, comment);
 	}

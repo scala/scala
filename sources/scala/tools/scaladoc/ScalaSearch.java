@@ -457,19 +457,12 @@ public class ScalaSearch {
     }
 
     //////////////////////////// OVERRIDEN SYMBOL //////////////////////////////
-    // Does not work.
+
     public static Symbol overridenBySymbol(Symbol sym) {
-        if (!sym.isRoot()) {
-//             System.out.println(sym.owner().moduleClass().thisType());
-//             System.out.println(sym.owner().moduleClass().info());
-            Type tpe = sym.owner().moduleClass().info();
-            Symbol res = tpe.lookup(sym.name);
-            if (res == Symbol.NONE) return Symbol.NONE;
-            Symbol[] alts = res.alternativeSymbols();
-            for(int i = 0; i < alts.length; i++)
-                if (sym.overrides(alts[i])) return alts[i];
-        }
-        return Symbol.NONE;
+        Type base = Type.compoundTypeWithOwner(sym.owner(),
+                                      sym.owner().info().parents(),
+                                      Scope.EMPTY);
+        return sym.overriddenSymbol(base);
     }
 }
 
