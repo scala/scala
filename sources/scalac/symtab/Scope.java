@@ -145,6 +145,7 @@ public class Scope {
     }
 
     public Scope enter(Entry e) {
+        assert this != Scope.EMPTY: Debug.show(e.sym);
 	elems = e;
 	elemsCache = null;
 	if (hashtable != null) {
