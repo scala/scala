@@ -436,7 +436,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
 
   /** Automatically perform the following conversions on expression types:
   *  A method type becomes the corresponding function type.
-  *  A nullary method type becomes its result type.
+  *  A nullary metAhod type becomes its result type.
   */
   private def normalize(tp: Type): Type = tp match {
     case Type$MethodType(params, restype) =>
@@ -450,8 +450,28 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
 
   /** Is normalized type `tp' a subtype of prototype `pt'?
   */
-  def isCompatible(tp: Type, pt: Type): boolean =
-    normalize(tp).isSubType(pt);
+  def isCompatible(tp: Type, pt: Type): boolean = {
+    val tp1 = normalize(tp);
+    if (tp1.isSubType(pt)) true
+    else {
+      val coerceMeth: Symbol = tp1.lookup(Names.coerce);
+      if (coerceMeth.kind == NONE) false
+      else tp1.memberType(coerceMeth) match {
+	case Type$PolyType(tparams, restype) if tparams.length == 0 =>
+	  restype.isSubType(pt)
+	case _ =>
+	  false
+      }
+    }
+  }
+
+  def isCompatible(tps: Array[Type], pts: Array[Type]): boolean = {
+    { var i = 0; while (i < tps.length) {
+      if (!isCompatible(tps(i), pts(i))) return false;
+      i = i + 1
+    }}
+    true
+  }
 
   /** Type arguments mapped to `scala.All' are taken to be uninstantiated.
   *  Map all those type arguments to their corresponding type parameters
@@ -768,7 +788,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
       val formals: Array[Type] = formalTypes(params, argtypes.length);
       isCompatible(restpe, pt) &&
       formals.length == argtypes.length &&
-      Type.isSubType(argtypes, formals);
+      isCompatible(argtypes, formals)
     case Type$PolyType(tparams, Type$MethodType(params, restpe)) =>
       try {
 	val targs: Array[Type] = methTypeArgs(

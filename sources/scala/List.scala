@@ -438,9 +438,7 @@ trait List[+a] extends Seq[a] {
 
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from left to right, and starting with
-   *  the value <code>z</code>. Similar to <code>fold</code> but with
-   *  a different order of the arguments, allowing to use nice constructions like
-   *  <code>(z foldLeft l) { ... }</code>.
+   *  the value <code>z</code>.
    *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
@@ -449,13 +447,27 @@ trait List[+a] extends Seq[a] {
     case x :: xs => xs.foldLeft[b](f(z, x))(f)
   };
 
+  /** Combines the elements of this list together using the binary
+   *  operator <code>op</code>, from rigth to left, and starting with
+   *  the value <code>z</code>.
+   *  @return <code>a0 op (... op (an op z)...)</code> if the list
+   *  is <code>[a0, a1, ..., an]</code>.
+   */
   def foldRight[b](z: b)(f: (a, b) => b): b = match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
   };
 
+  /** Similar to <code>foldLeft</code> but can be used as
+   *  an operator with the order of list and zero arguments reversed.
+   *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
+   */
   def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
-  def :/[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
+
+  /** An alias for <code>foldRight</code>.
+   *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
+   */
+  def :\[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
 
   def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => error("Nil.reduceLeft")

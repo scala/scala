@@ -199,18 +199,10 @@ class Scanner(_unit: Unit) extends TokenData {
 	      return;
 	    case '~' | '!' | '@' | '#' | '%' |
 		 '^' | '*' | '+' | '-' | '<' |
-		 '>' | '?' | ':' |
-		 '=' | '&' | '|' =>
+		 '>' | '?' | ':' | '=' | '&' |
+                 '|' | '\\' =>
 	      nextch();
 	      getOperatorRest(index);
-	      return;
-	    case '\\' =>
-	      nextch();
-	      if (ch == '"') { //"
-		getStringLit();
-		token = IDENTIFIER;
-	      } else
-		syntaxError(pos, "illegal character");
 	      return;
 	    case '/' =>
 	      nextch();
@@ -231,8 +223,12 @@ class Scanner(_unit: Unit) extends TokenData {
 		 '5' | '6' | '7' | '8' | '9' =>
 	      getNumber(index, 10);
 	      return;
+	    case '`' => //"   scala-mode: need to understand literals
+	      getStringLit('`');
+	      token = IDENTIFIER;
+	      return;
 	    case '\"' => //"   scala-mode: need to understand literals
-	      getStringLit();
+	      getStringLit('\"');
 	      return;
 	    case '\'' =>
 	      nextch();
@@ -407,8 +403,9 @@ class Scanner(_unit: Unit) extends TokenData {
     while (true) {
       ch match {
         case '~' | '!' | '@' | '#' | '%' |
-             '^' | '*' | '+' | '-' | '<' |
-             '>' | '?' | ':' | '=' | '&' | '|' =>
+	     '^' | '*' | '+' | '-' | '<' |
+             '>' | '?' | ':' | '=' | '&' |
+             '|' | '\\' =>
 	  nextch();
         case '/' =>
           val lastbp = bp;
@@ -443,20 +440,20 @@ class Scanner(_unit: Unit) extends TokenData {
         getIdentRest(index);
       case '~' | '!' | '@' | '#' | '%' |
            '^' | '*' | '+' | '-' | '<' |
-           '>' | '?' | ':' |
-           '=' | '&' | '|' | '/' =>
+           '>' | '?' | ':' | '=' | '&' |
+           '|' | '\\' | '/' =>
         getOperatorRest(index);
       case _ =>
         treatIdent(index, bp);
     }
   }
 
-  private def getStringLit(): unit = {
+  private def getStringLit(delimiter: char): unit = {
     nextch();
     litlen = 0;
-    while (ch != '\"'/*"*/ && ch != CR && ch != LF && ch != SU)
+    while (ch != delimiter && ch != CR && ch != LF && ch != SU)
       getlitch();
-    if (ch == '\"'/*"*/) {
+    if (ch == delimiter) {
       token = STRINGLIT;
       name = Name.fromSource(lit, 0, litlen);
       nextch();

@@ -438,7 +438,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 
       case Tree$Apply(fun, vargs) =>
 	if (fun.isInstanceOf[Tree$TypeTerm])
-	  print(fun.\"type"/*"*/.resultType().symbol().fullName().toString());
+	  print(fun.`type`.resultType().symbol().fullName().toString());
 	else
 	  print(fun);
 	printArray(vargs, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
@@ -485,7 +485,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 	printType(tree);
 
       case Tree$TypeTerm() =>
-	print(tree.\"type"/*"*/.toString());
+	print(tree.`type`.toString());
 
       case Tree$SingletonType(ref) =>
 	print(ref);
@@ -562,7 +562,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   protected def printType(tree: Tree): unit =
     if (scalac_Global.instance.printtypes) {
       print(TXT_LEFT_BRACE);
-      print(if (tree.\"type"/*"*/ != null) Simple(tree.\"type"/*"*/.toString())
+      print(if (tree.`type` != null) Simple(tree.`type`.toString())
 	    else TXT_NULL);
       print(TXT_RIGHT_BRACE);
     }

@@ -221,21 +221,11 @@ public class Scanner extends TokenData {
                     return;
                 case '~': case '!': case '@': case '#': case '%':
                 case '^': case '*': case '+': case '-': case '<':
-                case '>': case '?': case ':':
+                case '>': case '?': case ':': case '\\':
                 case '=': case '&': case '|':
                     nextch();
                     getOperatorRest(index);
                     return;
-		case '\\':
-	          nextch();
-		  if (ch == '"') {
-		     getStringLit();
-		     token = IDENTIFIER;
-		  } else {
-		      syntaxError(pos, "illegal character");
-		  }
-		  return;
-
                 case '/':
                     nextch();
                     if (!skipComment()) {
@@ -259,8 +249,12 @@ public class Scanner extends TokenData {
                 case '5': case '6': case '7': case '8': case '9':
                     getNumber(index, 10);
                     return;
+                case '`':
+		    getStringLit('`');
+		    token = IDENTIFIER;
+                    return;
                 case '\"':
-		    getStringLit();
+		    getStringLit('\"');
                     return;
                 case '\'':
                     nextch();
@@ -438,7 +432,7 @@ public class Scanner extends TokenData {
             switch (ch) {
             case '~': case '!': case '@': case '#': case '%':
             case '^': case '*': case '+': case '-': case '<':
-            case '>': case '?': case ':':
+            case '>': case '?': case ':': case '\\':
             case '=': case '&': case '|':
                 nextch();
                 break;
@@ -482,7 +476,7 @@ public class Scanner extends TokenData {
             return;
         case '~': case '!': case '@': case '#': case '%':
         case '^': case '*': case '+': case '-': case '<':
-        case '>': case '?': case ':':
+        case '>': case '?': case ':': case '\\':
         case '=': case '&': case '|':
         case '/':
             getOperatorRest(index);
@@ -497,12 +491,12 @@ public class Scanner extends TokenData {
         }
     }
 
-    private void getStringLit() {
+    private void getStringLit(char delimiter) {
 	nextch();
 	litlen = 0;
-	while (ch != '\"' && ch != CR && ch != LF && ch != SU)
+	while (ch != delimiter && ch != CR && ch != LF && ch != SU)
 	    getlitch();
-	if (ch == '\"') {
+	if (ch == delimiter) {
 	    token = STRINGLIT;
 	    name = Name.fromSource(lit, 0, litlen);
 	    nextch();

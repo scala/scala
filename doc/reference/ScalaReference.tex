@@ -123,7 +123,7 @@ constructed from symbols in the following character sets:
 upper case letters ~\lstinline@`A' | $\ldots$ | `Z' | `$\Dollar$' | `_'@.
 \item Digits ~\lstinline@`0' | $\ldots$ | `9'@.
 \item Parentheses ~\lstinline@`(' | `)' | `[' | `]' | `{' | `}'@.
-\item Delimiter characters ~\lstinline@`\' | `'' | `"' | `.' | `;' | `,'@.
+\item Delimiter characters ~\lstinline@``' | `'' | `"' | `.' | `;' | `,'@.
 \item Operator characters. These include all printable ASCII characters
 which are in none of the sets above.
 \end{enumerate}
@@ -139,7 +139,7 @@ varid     ::=  lower {letter $|$ digit} [`_' [id]]
 id        ::=  upper {letter $|$ digit} [`_' [id]]
             |  varid
             |  op
-	    |  `\' stringLit
+	    |  ``'string chars``'
 \end{lstlisting}
 
 There are three ways to form an identifier. First, an identifier can
@@ -149,11 +149,10 @@ character followed by an arbitrary sequence of special characters.  In
 the first case, the identifier prefix may be immediately followed by
 an underscore `\lstinline@_@' character and another string of
 characters that by themselves make up an identifier.  Finally, an
-identifier may also start with an escape character \lstinline@`\'@
-which is followed by an arbitrary string in apostrophes (host systems
-may impose some restrictions on which strings are legal for
-identifiers).  As usual, a longest match rule applies. For instance,
-the string
+identifier may also be formed by an arbitrary string between
+backquotes (host systems may impose some restrictions on which strings
+are legal for identifiers).  As usual, a longest match rule
+applies. For instance, the string
 
 \begin{lstlisting}
 big_bob++=z3

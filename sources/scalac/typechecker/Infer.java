@@ -579,7 +579,22 @@ public class Infer implements Modifiers, Kinds {
     /** Is normalized type `tp' a subtype of prototype `pt'?
      */
     public boolean isCompatible(Type tp, Type pt) {
-	return normalize(tp).isSubType(pt);
+	Type tp1 = normalize(tp);
+	if (tp1.isSubType(pt)) return true;
+	Symbol coerceMeth = tp1.lookup(Names.coerce);
+	if (coerceMeth.kind == NONE) return false;
+	switch (tp1.memberType(coerceMeth)) {
+	case PolyType(Symbol[] tparams, Type restype):
+	    if (tparams.length == 0)
+		return restype.isSubType(pt);
+	}
+	return false;
+    }
+
+    public boolean isCompatible(Type[] tps, Type[] pts) {
+	for (int i = 0; i < tps.length; i++)
+	    if (!isCompatible(tps[i], pts[i])) return false;
+	return true;
     }
 
     /** Type arguments mapped to `scala.All' are taken to be uninstantiated.
@@ -886,7 +901,7 @@ public class Infer implements Modifiers, Kinds {
 	    return
 		isCompatible(restpe, pt) &&
 		formals.length == argtypes.length &&
-		Type.isSubType(argtypes, formals);
+		isCompatible(argtypes, formals);
 	case PolyType(Symbol[] tparams, MethodType(Symbol[] params, Type restpe)):
 	    try {
 		Type[] targs = methTypeArgs(
