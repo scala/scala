@@ -1092,8 +1092,20 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     }
   }
 
-  override def transform(templ: Tree$Template): Tree$Template =
-    super.transform(templ);
+  override def transform(trees: Array[Tree]): Array[Tree] =
+    super.transform(trees);
+
+  override def transform(trees: Array[Tree$CaseDef]): Array[Tree$CaseDef] =
+    super.transform(trees);
+
+  override def transform(trees: Array[Tree$AbsTypeDef]): Array[Tree$AbsTypeDef] =
+    super.transform(trees);
+
+  override def transform(trees: Array[Tree$ValDef]): Array[Tree$ValDef] =
+    super.transform(trees);
+
+  override def transform(trees: Array[Array[Tree$ValDef]]): Array[Array[Tree$ValDef]] =
+    super.transform(trees);
 
 }}
 
