@@ -1,0 +1,33 @@
+// [#do-not-edit#]
+
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+package scala;
+
+/** @meta class [#type-params#] extends scala.Object;
+ */
+public interface Function[#n#] extends Object {
+    /** @meta method [#scala-params#];
+     */
+    public java.lang.Object apply([#java-params#]);
+}
+
+/** @meta class [#type-params#] extends scala.Object$class with scala.Function[#n#][#type-params#];
+ */
+public abstract class Function[#n#]$class extends Object$class implements Function[#n#] {
+    /** @meta constr();
+     */
+    public Function[#n#]$class() {}
+
+    /** @meta method [#scala-params#];
+     */
+    public abstract java.lang.Object apply([#java-params#]);
+}
