@@ -178,7 +178,6 @@ public class Scope {
     /** enter a symbol
      */
     public Scope enter(Symbol sym) {
-        assert lookupEntry(sym.name).owner != this : Debug.show(sym);
 	return enter(new Entry(sym, this));
     }
 
