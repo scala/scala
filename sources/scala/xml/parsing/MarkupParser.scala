@@ -52,9 +52,6 @@ abstract class MarkupParser[MarkupType] {
   /** this method assign the next character to ch and advances in input */
   def nextch: Unit;
 
-  /** this method should assign the first character of the input to ch */
-  def init: Unit;
-
   //final val enableEmbeddedExpressions: Boolean = false;
 
   /** report a syntax error */
