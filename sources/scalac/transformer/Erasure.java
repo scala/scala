@@ -199,9 +199,10 @@ public class Erasure extends GenTransformer implements Modifiers {
             return genApply(tree.pos, fun, vargs);
 
 	case Select(Tree qualifier, _):
+            Type prefix = qualifier.getType();
             Symbol symbol = tree.symbol();
             qualifier = transform(qualifier);
-            qualifier = coerce(qualifier, symbol.owner().type().erasure());
+            qualifier = coerce(qualifier, prefix.erasure());
             // Might end up with "box(unbox(...))". That's needed by backend.
             if (isUnboxedType(qualifier.getType())) qualifier = box(qualifier);
 	    return gen.Select(tree.pos, qualifier, symbol);
@@ -295,12 +296,23 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Coerces the given tree to the given type. */
     private Tree coerce(Tree tree, Type pt) {
-        if (isSubType(tree.getType(), pt)) return tree;
+        if (isSubType(tree.getType(), pt)) {
+            if (tree.getType().symbol() == definitions.ARRAY_CLASS) {
+                if (pt.symbol() != definitions.ARRAY_CLASS) {
+                    Symbol symbol = primitives.AS__ARRAY;
+                    return coerce(gen.mkApply__(gen.Select(tree, symbol)), pt);
+                }
+            }
+            return tree;
+        }
         if (isUnboxedType(tree.getType())) {
             if (!isUnboxedType(pt)) return coerce(box(tree), pt);
         } else if (isUnboxedType(pt)) {
             if (tree.type.symbol() == definitions.ARRAY_CLASS
                 || isUnboxedSimpleType(pt)) return unbox(tree, pt);
+        } else if (pt.symbol() == definitions.ARRAY_CLASS) {
+            Tree boxtree = gen.mkRef(tree.pos, primitives.BOX__ARRAY);
+            return gen.mkApply_V(boxtree, new Tree[]{tree});
         }
         return gen.mkAsInstanceOf(tree, pt);
     }
