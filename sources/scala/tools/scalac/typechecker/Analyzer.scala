@@ -1968,7 +1968,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   // extracted from transform to avoid overflows in GenJVM
-  def transform0(tree: Tree, sym: Symbol): Tree = {
+  private def transform0(tree: Tree, sym: Symbol): Tree = {
       tree match {
 	case Tree$Bad() =>
 	  tree.setSymbol(Symbol.ERROR).setType(Type.ErrorType)
@@ -2099,7 +2099,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   // extracted from transform0 to avoid overflows in GenJVM
-  def transform1(tree: Tree, sym: Symbol): Tree = {
+  private def transform1(tree: Tree, sym: Symbol): Tree = {
 
     def qualifyingClass(tree: Tree, name: Name): Symbol = {
       if (name == TypeNames.EMPTY) {
