@@ -39,6 +39,25 @@ public class Statistics {
 
     private static HashMap instances = new HashMap();
 
+    static {
+        assert addWriteFileHook();
+    }
+
+    public static boolean addWriteFileHook() {
+        Thread writeFileHook = new Thread() {
+                public void run() {
+                    try {
+                        writeToFile();
+                    } catch (Throwable t) {
+                        throw new Error(t);
+                    }
+                }
+            };
+
+        Runtime.getRuntime().addShutdownHook(writeFileHook);
+        return true;
+    }
+
     public static synchronized boolean incInstantiations(boolean unique) {
         ++instantiationsCount;
         if (unique) ++uniqueInstantiationsCount;
@@ -81,35 +100,36 @@ public class Statistics {
      */
     public static boolean writeToFile() throws java.io.FileNotFoundException {
         String fileName = System.getProperty("scala.runtime.types.statfile");
-        if (fileName != null) {
-            PrintStream stream =
-                new PrintStream(new FileOutputStream(fileName));
-            stream.println("(");
-            stream.println("(instantiations . "
-                           + instantiationsCount + ")");
-            stream.println("(unique-instantiations . "
-                           + uniqueInstantiationsCount + ")");
-            stream.println("(instance-of . "
-                           + instanceOfCount + ")");
-            stream.println("(type-cast . "
-                           + typeCastCount + ")");
-            if (ancestorSearches > 0) {
-                stream.println("(ancestor-searches . "
-                               + ancestorSearches + ")");
-                stream.println("(ancestor-search-iterations . "
-                               + ancestorSearchIterations + ")");
-            }
-            stream.println("(instances . (");
-            Iterator instIt = instances.entrySet().iterator();
-            while (instIt.hasNext()) {
-                Map.Entry entry = (Map.Entry)instIt.next();
-                stream.println("(\"" + entry.getKey() + "\" . "
-                               + entry.getValue() + ")");
-            }
-            stream.print("))");
-            stream.println(")");
-            stream.close();
+        assert fileName != null;
+
+        System.out.println("Writing RTT statistics to file " + fileName);
+
+        PrintStream stream = new PrintStream(new FileOutputStream(fileName));
+        stream.println("(");
+        stream.println("(instantiations . "
+                       + instantiationsCount + ")");
+        stream.println("(unique-instantiations . "
+                       + uniqueInstantiationsCount + ")");
+        stream.println("(instance-of . "
+                       + instanceOfCount + ")");
+        stream.println("(type-cast . "
+                       + typeCastCount + ")");
+        if (ancestorSearches > 0) {
+            stream.println("(ancestor-searches . "
+                           + ancestorSearches + ")");
+            stream.println("(ancestor-search-iterations . "
+                           + ancestorSearchIterations + ")");
         }
+        stream.println("(instances . (");
+        Iterator instIt = instances.entrySet().iterator();
+        while (instIt.hasNext()) {
+            Map.Entry entry = (Map.Entry)instIt.next();
+            stream.println("(\"" + entry.getKey() + "\" . "
+                           + entry.getValue() + ")");
+        }
+        stream.print("))");
+        stream.println(")");
+        stream.close();
         return true;
     }
 }
