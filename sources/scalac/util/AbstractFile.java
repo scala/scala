@@ -39,6 +39,10 @@ public abstract class AbstractFile {
      */
     public abstract boolean isDirectory();
 
+    /** date file was last modified
+     */
+    public abstract long lastModified();
+
     /** read content of the file into a byte[] buffer
      */
     public abstract byte[] read() throws IOException;
@@ -129,6 +133,10 @@ class PlainFile extends AbstractFile {
         return f.isDirectory();
     }
 
+    public long lastModified() {
+	return f.lastModified();
+    }
+
     public byte[] read() throws IOException {
         FileInputStream in = new FileInputStream(f);
         int rest = (int)f.length();
@@ -196,6 +204,10 @@ class ZippedFile extends AbstractFile {
         return zipEntry.isDirectory();
     }
 
+    public long lastModified() {
+	return zipEntry.getTime();
+    }
+
     public byte[] read() throws IOException {
         InputStream in = dir.zipFile.getInputStream(zipEntry);
         int rest = (int)zipEntry.getSize();
@@ -252,6 +264,10 @@ class ZipDir extends AbstractFile {
 
     public boolean isDirectory() {
         return (zipFile != null);
+    }
+
+    public long lastModified() {
+	return -1;
     }
 
     public byte[] read() throws IOException {
@@ -320,6 +336,10 @@ final class JarArchive extends AbstractFile {
 
     public boolean isDirectory() {
         return jarFile != null;
+    }
+
+    public long lastModified() {
+	return -1;
     }
 
     public byte[] read() throws IOException {
@@ -443,6 +463,10 @@ final class JarArchive extends AbstractFile {
             return true;
         }
 
+	public long lastModified() {
+	    return -1;
+	}
+
         public String[] list() throws IOException {
             throw new IOException("not a directory");
         }
@@ -510,6 +534,10 @@ final class JarArchive extends AbstractFile {
             return false;
         }
 
+	public long lastModified() {
+	    return -1;
+	}
+
         public String[] list() throws IOException {
             throw new IOException("not a directory");
         }
@@ -536,6 +564,10 @@ final class JarArchive extends AbstractFile {
         public boolean exists() {
             return true;
         }
+
+	public long lastModified() {
+	    return jarFile.getJarEntry(name).getTime();
+	}
 
         public byte[] read() throws IOException {
             JarEntry jarEntry = jarFile.getJarEntry(name);

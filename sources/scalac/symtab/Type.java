@@ -53,7 +53,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public case TypeRef(Type pre, Symbol sym, Type[] args) {
 	assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
-	assert sym.kind == ERROR || sym.isType() : pre + "#" + sym;
+	assert sym.kind == ERROR || sym.isType() : pre + " # " + sym;
     }
 
     /** parts_1 with ... with parts_n { members }

@@ -8,10 +8,12 @@
 
 package scalac.symtab.classfile;
 
+import ch.epfl.lamp.util.*;
 import scalac.*;
 import scalac.symtab.*;
 import scalac.util.*;
 import java.io.*;
+import java.util.HashMap;
 
 public class PackageParser extends Type.LazyType {
 
@@ -39,18 +41,19 @@ public class PackageParser extends Type.LazyType {
         Scope members = new Scope();
         String dirname = null;
         Name name = p.fullName();
+	HashMap/*<Symbol, AbstractFile>*/ symFile = new HashMap();
         if (name.length() == 0) {
             // includeMembers(AbstractFile.open(null, "."), p, members, false);
         } else {
             dirname = SourceRepresentation.externalizeFileName(name);
-	    assert !dirname.startsWith("com") : p;//debug
             if (!dirname.endsWith("/"))
                 dirname += "/";
         }
         String[] base = global.classPath.components();
         for (int i = 0; i < base.length; i++) {
             includeMembers(
-		AbstractFile.open(base[i], dirname), p, members, dirname != null);
+		AbstractFile.open(base[i], dirname),
+		p, members, dirname != null, symFile);
 	}
         p.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, p));
         if (dirname == null)
@@ -59,11 +62,24 @@ public class PackageParser extends Type.LazyType {
                     (System.currentTimeMillis() - msec) + "ms");
     }
 
+    private boolean isMostRecent(AbstractFile f, Symbol previous, HashMap symFile) {
+	if (previous == Symbol.NONE || previous.isPackage()) return true;
+	if (previous.pos != Position.NOPOS) return false;
+	AbstractFile pf = (AbstractFile) symFile.get(previous);
+	if (!global.separate) {
+	    if (f.getName().endsWith(".scala") &&
+		pf.getName().endsWith(".class")) return true;
+	    if (f.getName().endsWith(".class") &&
+		pf.getName().endsWith(".scala")) return false;
+	}
+	return f.lastModified() > pf.lastModified();
+    }
+
     /** read directory of a classpath directory and include members
      *  in package/module scope
      */
     protected void includeMembers(AbstractFile dir, Symbol p, Scope locals,
-				  boolean inclClasses) {
+				  boolean inclClasses, HashMap symFile) {
         if (dir == null)
             return;
         String[] filenames = null;
@@ -72,13 +88,16 @@ public class PackageParser extends Type.LazyType {
                 return;
             for (int j = 0; j < filenames.length; j++) {
                 String fname = filenames[j];
+		AbstractFile f = dir.open(fname);
                 if (inclClasses && fname.endsWith(".class")) {
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
 			.toTypeName();
-                    if (locals.lookup(n) == Symbol.NONE) {
+		    if (isMostRecent(f, locals.lookup(n), symFile)) {
 		        ClassSymbol clazz = new ClassSymbol(n, p, classCompletion);
 			// todo: needed?
 		        clazz.allConstructors().setInfo(
+			    classCompletion.staticsParser(clazz));
+			clazz.module().setInfo(
 			    classCompletion.staticsParser(clazz));
 		        // enter class
 		        locals.enter(clazz);
@@ -93,14 +112,18 @@ public class PackageParser extends Type.LazyType {
 			    }
 			    locals.enter(clazz.module());
 		        }
+			symFile.put(clazz, f);
                     }
                 } else if (fname.endsWith("/") && !fname.equals("META-INF/")) {
                     Name n = Name.fromString(fname.substring(0, fname.length() - 1));
                     if (locals.lookup(n) == Symbol.NONE) {
                         TermSymbol module = TermSymbol.newJavaPackageModule(n, p, this);
                         locals.enter(module);
+			//todo: moduleClass needs to be entered?
 			locals.enter(module.moduleClass());
-                    }
+		    }
+
+/*
 		} else if (inclClasses && fname.endsWith(".symbl")) {
 		    //todo: compare dates between symbl and scala.
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
@@ -117,14 +140,11 @@ public class PackageParser extends Type.LazyType {
 			locals.enter(clazz);
 			locals.enter(clazz.module());
 		    }
+*/
                 } else if (inclClasses && fname.endsWith(".scala")) {
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
 			.toTypeName();
-		    Symbol sym = locals.lookup(n);
-		    if (sym == Symbol.NONE ||
-			sym.isPackage() ||
-			sym.rawInfoAt(Symbol.FIRST_ID) instanceof ClassParser &&
-			!(sym.rawInfoAt(Symbol.FIRST_ID) instanceof SymblParser)) {
+		    if (isMostRecent(f, locals.lookup(n), symFile)) {
                         SourceCompleter completer = new SourceCompleter(global);
                         ClassSymbol clazz = new ClassSymbol(n, p, completer);
 			//todo: needed?
@@ -133,6 +153,7 @@ public class PackageParser extends Type.LazyType {
                         // enter class
                         locals.enter(clazz);
 			locals.enter(clazz.module());
+			symFile.put(clazz, f);
                     }
                 }
             }

@@ -21,11 +21,16 @@ public class AbstractFileReader {
      */
     public int bp;
 
+    /** the file path name
+     */
+    public final String path;
+
     /** constructor
      */
     public AbstractFileReader(AbstractFile f) throws IOException {
         buf = f.read();
         bp = 0;
+	path = f.getPath();
     }
 
     /** return byte at offset 'pos'

@@ -148,15 +148,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    || info instanceof Type.PolyType &&
    	       ((Type.PolyType)info).result instanceof Type.MethodType
 	    : "illegal type for " + this + ": " + info;
-	//if ((flags & (INITIALIZED | LOCKED)) != (INITIALIZED | LOCKED)) {
-	    if (infos == TypeIntervalList.EMPTY) {
-		infos = new TypeIntervalList(TypeIntervalList.EMPTY);
-	    }
-	    infos.limit = limit;
-	    infos.info = info;
-	    if (info instanceof Type.LazyType) flags &= ~INITIALIZED;
-	    else flags |= INITIALIZED;
-	    //}
+	if (infos == TypeIntervalList.EMPTY) {
+	    infos = new TypeIntervalList(TypeIntervalList.EMPTY);
+	}
+	infos.limit = limit;
+	infos.info = info;
+	if (info instanceof Type.LazyType) flags &= ~INITIALIZED;
+	else flags |= INITIALIZED;
         return this;
     }
 
@@ -205,6 +203,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a value? */
     public final boolean isValue() {
+	preInitialize();
         return kind == VAL && !(isModule() && isJava()) && !isPackage();
     }
 
@@ -615,7 +614,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final void preInitialize() {
 	//todo: clean up
 	if (infos.info instanceof ClassParser ||
-	    infos.info instanceof SourceCompleter)
+	    infos.info instanceof SourceCompleter ||
+	    infos.info instanceof ClassParser.StaticsParser)
 	    infos.info.complete(this);
     }
 
@@ -627,6 +627,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  its baseclasses and members.
      */
     public Type info() {
+	//if (isModule()) moduleClass().initialize();
 	int id = currentPhaseId();
 	if ((flags & INITIALIZED) == 0) {
 	    Type info = rawInfoAt(FIRST_ID);

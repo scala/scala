@@ -164,7 +164,6 @@ public class  Global {
         this.start(); // timestamp to compute the total time
         this.noimports = args.noimports.value;
         this.nopredefs = args.nopredefs.value;
-        this.separate = args.separate.value;
         //this.optimize = args.optimize.optimize;
         this.debug = args.debug.value;
         this.uniqid = args.uniqid.value;
@@ -174,6 +173,8 @@ public class  Global {
         this.classPath = args.classpath();
         this.outpath = args.outpath();
         this.target = interpret ? TARGET_INT : args.target.value.intern();
+        this.separate = args.separate.value.equals("yes") ||
+	    args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
         this.uniqueID = new UniqueID();
         String printFile = args.printfile.value;
         try {

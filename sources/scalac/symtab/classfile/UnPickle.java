@@ -35,7 +35,6 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
     Global global;
 
     UnPickle(Symbol root, byte[] data, Name sourceName) {
-	assert !root.isInitialized();
 	global = Global.instance;
 	if (root.isConstructor()) {
 	    this.classroot = root.primaryConstructorClass();
@@ -70,6 +69,8 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	if (global.debug) global.log("unpickled " + root + ":" + root.rawInfo());//debug
 	if (!root.isInitialized())
 	    throw new BadSignature(this, "it does not define " + root);
+	if (moduleroot.isModule() && !moduleroot.moduleClass().isInitialized())
+	    moduleroot.setInfo(Type.NoType);
     }
 
     Type setOwner(Type tp, Symbol owner) {

@@ -97,11 +97,12 @@ public class ClassfileParser implements ClassfileConstants {
             c.setInfo(classType, Symbol.FIRST_ID);
             // set type of statics
 	    Symbol staticsClass = c.module().moduleClass();
-	    Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
-            staticsClass.setInfo(staticsInfo, Symbol.FIRST_ID);
-	    c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
+	    if (staticsClass.isModuleClass()) {
+		Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
+		staticsClass.setInfo(staticsInfo, Symbol.FIRST_ID);
+		c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
 					    staticsClass, Type.EMPTY_ARRAY));
-
+	    }
             basetpes[0] = supertpe;
             for (int i = 1; i < basetpes.length; i++)
                 basetpes[i] = readClassType(in.nextChar());

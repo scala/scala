@@ -28,6 +28,7 @@ public class ClassParser extends Type.LazyType {
     /** complete class symbol c by loading the class
      */
     public void complete(Symbol c) {
+	c.owner().initialize();
 	//System.out.println("loading " + c);//DEBUG
 	try {
 	    long msec = System.currentTimeMillis();
@@ -59,7 +60,7 @@ public class ClassParser extends Type.LazyType {
         return new AliasParser(alias);
     }
 
-    class StaticsParser extends Type.LazyType {
+    public class StaticsParser extends Type.LazyType {
         Symbol clazz;
 
         StaticsParser(Symbol clazz) {

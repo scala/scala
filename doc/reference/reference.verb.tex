@@ -993,13 +993,6 @@ parameters (\sref{sec:parameters}) of type $[]T$, because its result
 would violate the well-formedness rules for anonymous functions
 (\sref{sec:closures}). Hence, methods with call-by-name
 parameters always need to be applied to arguments immediately.
-\item
-If $p$ is a path (\sref{sec:paths}), then $p$ is implicitly converted to a
-value of type \verb@p.type@ if the context requires it.
-\item If an integer literal appears in a context which requires
-one of the types \ver@byte@, \verb@short@, or \verb@char@, it 
-is implicity converted to that type, provided the value of the literal fits in
-the numeric range described by the type.
 \end{itemize}
 
 \chapter{Basic Declarations and Definitions}
@@ -1178,9 +1171,6 @@ inference (\sref{sec:local-type-inf}).
   VarDef          \>::=\> Id [`:' Type] `=' Expr
                   \>  |\> Id `:' Type `=' `_'
 \end{verbatim}
-\ifundefvar{
-  PureDef \>::= \> $\VAR$ ValDcl {`,' ValDcl}
-}
 
 A variable declaration \verb@var x: T@ is equivalent to declarations
 of a {\em getter function} \verb@x@ and a {\em setter function}
@@ -1213,11 +1203,11 @@ The default value depends on the type \verb@T@ as follows:
 \verb@null@ & for all other types $T$.
 \end{tabular}\end{quote}
 
-Both forms of variable defintion also introduce a getter function
-\verb@x@ which returns the value currently assigned to the variable,
-as well as a setter function \verb@x_=@ which changes the value
-currently assigned to the variable.  The functions have the same
-signatures as for a variable declaration.
+When they occur as members of a template, both forms of variable
+defintion also introduce a getter function \verb@x@ which returns the
+value currently assigned to the variable, as well as a setter function
+\verb@x_=@ which changes the value currently assigned to the variable.
+The functions have the same signatures as for a variable declaration.
 
 \example The following example shows how {\em properties} can be
 simulated in Scala. It defines a class \verb@TimeOfDayVar@ of time
@@ -1227,7 +1217,7 @@ values to be assigned to these fields. The user code, on the other
 hand, accesses these fields just like normal variables.
 
 \begin{verbatim}
-class TimeOfDayVar with {
+class TimeOfDayVar {
   private var h: int = 0, m: int = 0, s: int = 0;
   def hours                   \==  h;
   def hours_= (h: int) \>=  \=if (0 <= h && h < 24) this.h = h
@@ -1520,9 +1510,10 @@ definition. A constructor invocation is a function application
 \sref{sec:stable-ids}), \verb@c@ is a type name which either
 designates a class or defines an alias type for one, and \verb@(args)@
 is an argument list, which matches one of the constructors of that
-class. The prefix \verb@x.@ can be omitted. The argument list
-\verb@(args)@ can also be omitted, in which case an empty argument
-list \verb@()@ is implicitly added.
+class. The prefix \verb@x.@ can be omitted. The class \verb@c@ must
+conform to \verb@scala.AnyRef@, i.e.\ it may not be a value type.  The
+argument list \verb@(args)@ can also be omitted, in which case an
+empty argument list \verb@()@ is implicitly added.
 
 \subsection{Base Classes}
 \label{sec:base-classes}
@@ -2216,24 +2207,49 @@ module FileSystem with {
 		  \>  |\> Id `#' Id 
 		  \>  |\> SimpleExpr TypeArgs
 		  \>  |\> SimpleExpr ArgumentExpr
+  ArgumentExpr    \>::=\> `(' Expr ')'
+                  \>  |\> BlockExpr
+  BlockExpr       \>::=\> `{' CaseClause {CaseClause} `}'
+		  \>  |\> `{' Block `}'
+  Block           \>::=\> {BlockStat `;'} [Expr]
   Exprs           \>::= \> Expr {`,' Expr}
 \end{verbatim}
 
 Expressions are composed of operators and operands. Expression forms are
-discussed subsequently in decreasing order of precedence.
+discussed subsequently in decreasing order of precedence. 
 
 \section{Literals}
 
 \syntax\begin{verbatim}
   SimpleExpr    \=::= \= literal
+  literal         \>::= \> intLit
+                  \>  |\> floatLit
+                  \>  |\> charLit
+                  \>  |\> stringLit
+		  \>  |\> symbolLit
 \end{verbatim}
 
-Typing and evaluation of literals are analogous to Java.
+Typing and evaluation of literals are generally as in Java.
+An integer literal denotes an integer number. Its type is normally
+\verb@int@. However, if the expected type \verb@pt@ of the expression
+is either \verb@byte@, \verb@short@, or \verb@char@ and the integer
+number fits in the numeric range defined by the type, then the number
+is converted to \verb@pt@ and the expression's type is \verb@pt@.  A
+floating point literal denotes a single-precision or double precision
+IEEE floating point number. A character literal denotes a Unicode
+character. A string literal denotes a member of
+\verb@java.lang.String@. 
+
+A symbol literal \verb@'id@ is a shorthand for the expression
+\verb@scala.Symbol("id")@. If the symbol literal is followed by an
+actual parameters, as in \verb@'id(args)@, then the whole expression
+is taken to be a shorthand for
+\verb@scala.Labelled(scala.Symbol("id"), args)@.
 
 \section{Boolean constants}
 
 \begin{verbatim}
-  SimpleExpr    \=::= \= true  |  false
+  SimpleExpr \=::= \= true | false
 \end{verbatim}
 
 The boolean truth values are denoted by the reserved words \verb@true@
@@ -2279,6 +2295,12 @@ it was $(\VAL;y=e\semi y.x)$ for some fresh name $y$. The typing rules
 for blocks implies that in that case $x$'s type may not refer to any
 abstract type member of \verb@e@.
 
+The type of a designator is normally the type of the entity it refers
+to. However, if the designator is a path \sref{sec:paths} \verb@p@
+it's type is \verb@p.type@, provided the expression's expected type is
+a singleton type, or \verb@p@ occurs as the prefix of a selection,
+type selection, or mixin super expression.
+
 The selection $e.x$ is evaluated by first evaluating the qualifier
 expression $e$. The selection's result is then the value to which the
 selector identifier is bound in the selected object designated by $e$.
@@ -2292,27 +2314,28 @@ selector identifier is bound in the selected object designated by $e$.
 \end{verbatim}
 
 The expression \verb@this@ can appear in the statement part of a
-template or compound typw. It stands for the object being defined by
+template or compound type. It stands for the object being defined by
 the innermost template or compound type enclosing the reference. If
-this is a template forming part of a module or class definition, the
-type of \verb@this@ is the self type of the definition; otherwise the
-type of \verb@this@ is the type of the innermost enclosing template or
-compund type itself.
+this is a compound type, the type of \verb@this@ is the compount type.
+If it is a template of an instance creation expression, the type of
+\verb@this@ is the type of that template. If it is a template of a
+class or object definition with simple name \verb@C@, the type of this
+is the same as the type of \verb@C.this@.
 
 The expression \verb@C.this@ is legal in the statement part of an
 enclosing class or object definition with simple name \verb@C@. It
 stands for the object being defined by the innermost such definition.
-Its type is the self type of that definition. 
+Its type is the self type of that definition if one is given;
+otherwise its type is \verb@C.this.type@.
 
 A reference \verb@super.$m$@ in a template refers to the definition of
 \verb@m@ in the actual superclass (\sref{sec:base-classes}) of the
 template.  A reference \verb@C.super.m@ refers to the definition of
 \verb@m@ in the actual superclass of the innermost enclosing class or
-object definition enclosing the reference. The referred-to definition
-of \verb@m@ must be concrete, or the template containing the reference
-must contain a definition which has an \verb@override@ modifier and
-which overrides \verb@m@.
-
+object definition enclosing the reference. The definition referred to
+by \verb@super@ or \verb@C.super@ must be concrete, or the template
+containing the reference must contain a definition which has an
+\verb@override@ modifier and which overrides \verb@m@.
 
 \example\label{ex:super}
 Consider the following class definitions
@@ -2344,8 +2367,8 @@ depending on whether \verb@B@ is used as defining class or as a mixin class.
 \end{verbatim}
 
 In the statement part of a template
-the reference \verb@M # m@ refers to the definition of the member \verb@m@ in
-the mixin parent class of the template with simple name \verb@@M.
+the reference \verb@M#m@ refers to the definition of the member \verb@m@ in
+the mixin parent class of the template with simple name \verb@M@.
 
 \example Consider the following class definitions:
 \begin{verbatim}
@@ -2371,7 +2394,8 @@ trait Colored extends Shape {
 }
 \end{verbatim}
 
-All three definitions of \verb@equals@ are combined in the class below, which makes use of \verb@super@ as well as mixin
+All three definitions of \verb@equals@ are combined in the class
+below, which makes use of \verb@super@ as well as mixin
 super references.
 \begin{verbatim}
 class BorderedColoredShape extends Shape with Bordered with Colored {
@@ -2411,7 +2435,7 @@ of evaluating the rewritten right-hand side is finally converted to
 the function's declared result type, if one is given.
 
 The case where of a formal \verb@def@-parameter with a parameterless
-method type \verb@[\,]T@ is treated specially. In this case, the
+method type \verb@[]T@ is treated specially. In this case, the
 corresponding actual argument expression is not evaluated before the
 application. Instead, every use of the formal parameter on the
 right-hand side of the rewrite rule entails a re-evaluation of the
@@ -2433,7 +2457,33 @@ will never produce a division-by-zero error at run-time, since the
 expression \verb@(y = 1/x)@ will be evaluated in the body of
 \verb@while@ only if the condition parameter is false.
 
-\subsection{References to Overloaded Bindings}
+\section{Type Applications}
+\label{sec:type-app}
+\syntax\begin{verbatim}
+  SimpleExpr    \=::= \= SimpleExpr `[' Types `]'
+\end{verbatim}
+
+A type application \verb@f[T$_1$, ..., T$_n$]@ instantiates a
+polymorphic value \verb@f@ of type
+\verb@[a$_1$ >: L$_1$ <: U$_1$, ..., a$_n$ >: L$_n$ <: U$_n$]S@ with
+argument types \verb@T$_1$, ..., T$_n$@.  Every argument type
+\verb@T$_i$@ must obey corresponding bounds \verb@L$_i$@ and
+\verb@U$_i$@.  That is, for each \verb@i = 1 \commadots n@, we must
+have \verb@L$_i \sigma$ <: T$_i$ <: U$_i \sigma$@, where $\sigma$ is the
+substitution \verb@[a$_1$ := T$_1$, ..., a$_n$ := T$_n$]@.  The type
+of the application is \verb@S$\sigma$@.  
+
+The function part \verb@f@ may also have some value type. In this case
+the type application is taken to be equivalent to
+\verb@f.apply[\verb@T$_1$, ..., T$_n$]@, i.e.\ the
+application of an \verb@apply@ function defined by \verb@f@.
+
+Type applications can be omitted if local type inference
+(\sref{sec:local-type-inf}) can infer best type parameters for a
+polymorphic functions from the types of the actual function arguments
+and the expected result type.
+
+\section{References to Overloaded Bindings}
 \label{sec:overloaded-refs}
 
 If a name \verb@f@ referenced in an identifier or selection is
@@ -2443,137 +2493,89 @@ way this is done depends on whether or not \verb@f@ is used as a
 function.  Let $\AA$ be the set of all type alternatives of
 \verb@f@.
 
-Assume first that \verb@f@ is used as a function, as in
-\verb@f(args)@.  If there is precisely one alternative in \verb@\AA@
-which is a (possibly polymorphic) method type whose arity matches the
-number of arguments given, that alternative is chosen.
+Assume first that \verb@f@ appears as a function in an application, as
+in \verb@f(args)@.  If there is precisely one alternative in
+\verb@\AA@ which is a (possibly polymorphic) method type whose arity
+matches the number of arguments given, that alternative is chosen.
 
 Otherwise, let \verb@argtypes@ be the vector of types obtained by
 typing each argument with an undefined prototype. One determines first
-the set of applicable alternatives. A method type alternative is
-applicable if each type in \verb@argtypes@ conforms to the
+the set of applicable alternatives. A method type alternative is {\em
+applicable} if each type in \verb@argtypes@ is compatible with the
 corresponding formal parameter type in the alternative, and, if a
-prototype is given, the method's result type conforms to it.  A
+prototype is given, the method's result type is compatible to it.  A
 polymorphic method type is applicable if local type inference can
 determine type arguments so that the instantiated method type is
-applicable. 
+applicable.
 
-Let $\BB$ be the set of applicable alternatives. It is an error of
-$\BB$ is empty. Otherwise, one chooses the most specific alternative
+Here, a type \verb@T@ is {\em compatible} to a type \verb@U@ if one of the
+following three clauses applies:
+\begin{enumerate}
+\item
+\verb@T@ conforms to \verb@U@.
+\item
+\verb@T@ is a parameterless method type \verb@[]T'@ and \verb@T'@
+conforms to \verb@U@.
+\item 
+\verb@T@ is a monomorphic method type \verb@(ps$_1$) ... (ps$_n$)S@ which
+can be converted to a function type \verb@T'@ by using the rules for
+implicit conversions \sref{sec:impl-conv} and \verb@T'@ conforms to
+\verb@U@.
+\end{enumerate}
 
- 
+Let $\BB$ be the set of applicable alternatives. It is an error if
+$\BB$ is empty. Otherwise, one chooses the {\em most specific}
+alternative among the alternatives in $\BB$, according to the
+following definition of being ``more specific''.
+\begin{itemize} 
+\item
+A method type \verb@(ps)T@ is more specific than some other
+type \verb@S@ if \verb@S@ is applicable to arguments \verb@(ps)@.
+\item
+A polymorphic method type
+\verb@[a$_1$ >: L$_1$ <: U$_1$, ..., a$_n$ >: L$_n$ <: U$_n$](ps)T@ is
+more specific than some other type \verb@S@ if \verb@(ps)T@ is more
+specific than \verb@S@ under the assumption that for
+\verb@i = 1 \commadots n@ each \verb@a$_i$@ is an abstract type name
+bounded from below by \verb@L$_i$@ and from above by \verb@U$_i$@.
+\item
+Any other type is always more specific than a parameterized method
+type or a polymorphic type.
+\end{itemize}
+It is an error if there is no unique alternative in $\BB$ which is
+more specific than all other alternatives in $\BB$.
 
+Assume next that \verb@f@ appears as a function in a type
+application, as in \verb@f[targs]@. Then we choose an alternative in
+$\AA$ which takes the same number of type parameters as there are
+type arguments in \verb@targs@. It is an error if no such alternative
+exists, or if it is not unique.
 
-
-
-
-
-
-and let \veeb@pt@ be the expected (result-) type of the expression.
-
-
-
-
-
-Let \verb@n $\geq$ 0@ be maximal such that there is a method
-type of arity \verb@\geq n@ in \verb@\AA@, and \verb@f@ is a applied
-to at least \verb@n@ argument lists, e.g.\ it is used as in
-\verb@f;(args$_1$) \ldots (args$_n$)@.  Let \verb@T$_p$@ be the
-expected type of \verb@f;(args$_1$) \ldots (args$_n$)@ (which may be
-partially undefined).  For \verb@i \in 1 \commadots n@ let
-\verb@{ts$_i$}@ be the list of types of \verb@{args$_i$}@ which are
-obtained by typing each argument in \verb@{args$_i$}@ with a
-completely undefined prototype.
-
-Among all {\em applicable} alternative types in \verb@\AA@ the compiler
-selects one which {\em specializes} all others.
-
-A method type alternative of arity \verb@m \geq n@ is {\em applicable} if a
-non-overloaded function of that type could legally be applied to
-stable identifier lists \verb@{xs$_1$} \commadots xs$_n$@ of the argument types
-\verb@{ts$_1$}
-\commadots {ts$_n$}@, and the application's result type would match
-\verb@T$_p$@.
-
-\comment{
-Method types which do not have a class constructor
-\verb@class T@ as their result type always specialize
-method types which do. For other pairs of method types, the
-following applies: }
-A parameterized method type \verb@(ps$_1$)
-\ldots (ps$_m$) T@ where \verb@m > 0@ {\em specializes} some other
-type \verb@U@ if \verb@U@ is applicable to arguments \verb@(ps$_1$)@ \ldots \verb@(ps$_m$)@.
-A polymorphic method type \verb@[a$_1$
-\extends S$_1$
-\commadots a$_k$ \extends S$_k$] (ps$_1$) \ldots (ps$_m$) T@ specializes
-a type \verb@U@ if \verb@(ps$_1$) \ldots (ps$_m$) T@ is more
-specific than \verb@U@ under the assumption that for \verb@i = 1 \commadots k@
-each \verb@a$_i$@ is an abstract type name bounded by \verb@S$_i$@.
-
-If there is no applicable signature which specializes all other
-applicable signatures, or if there is more than one, the application
-is rejected for being ambiguous.
+Assume finally that \verb@f@ does not appear as a function in either
+an application or a type application. If an expected type is given,
+let \verb@BB@ be the set of those alternatives in \verb@AA@ which are
+compatible to it. Otherwise, let \verb@BB@ be the same as \verb@AA@.
+We choose in this case the most specific alternative among all
+alternatives in \verb@BB@. It is an error if there is no unique
+alternative in $\BB$ which is more specific than all other
+alternatives in $\BB$.
 
 \example Consider the following definitions:
 
 \begin{verbatim}
-  class S extends B with {}
-  def f(x: S)(y: B) = ...
-  def f(x: B)(y: B) = ...
-  val s: S, b: B
+  class A extends B {}
+  def f(x: B, y: B) = ...
+  def f(x: A, y: B) = ...
+  val a: A, b: B
 \end{verbatim}
-Then the application \verb@f(s)(s)@ refers to the first
-definition of \verb@f@ whereas the application \verb@f(b)(b)@
+Then the application \verb@f(b, b)@ refers to the first
+definition of \verb@f@ whereas the application \verb@f(a, a)@
 refers to the second.  Assume now we add a third overloaded definition
 \begin{verbatim}
-  def f(x: B)(y: S) = ...
+  def f(x: B, y: A) = ...
 \end{verbatim}
-Then the application \verb@f(s)(s)@ is rejected for being ambiguous, since
- no most specific applicable signature exists.
-
-\comment{
-\example Consider the following definitions
-
-\begin{verbatim}
-  class Point() with { ... }
-  module Point with { val origin = 0.0 }
-\end{verbatim}
-
-Then the term namespace contains the overloaded binding
-\verb@Point: ()constr Point \verb@\overload@ Point\verb@\Dollar@class@
-where \verb@C_{Point}@  stands for the (invisible) type of the module
-\verb@Point@.  Therefore the name \verb@Point@ identifies the
-\verb@Point@ module, the expression \verb@Point.origin@ selects its \verb@origin@
-field, but \verb@Point()@ is an invocation of the \verb@Point@
-constructor.
-}
-
-\section{Type Applications}
-\label{sec:type-app}
-\syntax\begin{verbatim}
-  SimpleExpr    \=::= \= SimpleExpr `[' Types `]'
-\end{verbatim}
-
-A type application \verb@f[T$_1$\commadots T$_n$]@ instantiates a polymorphic
-value \verb@f@ of type \verb@[a$_1$ \extends B$_1$ \commadots a$_n$ \extends B$_n$] U@ with
-argument types \verb@T$_1$ \commadots T$_n$@.  Every argument type \verb@T$_i$@ must
-conform to the corresponding bound type \verb@B$_i$@. That is, for each \verb@i = 1
-\commadots n@, we must have \verb@T$_i$ \conforms B$_i$\sigma@, where \verb@\sigma@ is
-the substitution \verb@[a$_1$ := T$_1$, ..., a$_n$ := T$_n$]@.  The type of the
-application is \verb@U\sigma@.  If the function part \verb@f@ has an overloaded
-type \verb@T$_1$ \overload \ldots \overload T$_n$@ then excatly one alternative
-\verb@T$_i$@ must have an \verb@n@-ary type parameter list, and this alternative
-will be instantiated.
-
-The function part \verb@f@ may also have some value type. In this case the
-type application is taken to be equivalent to
-\verb@\verb@f@.apply[\verb@T$_1$\commadots T$_n$@]@,
-i.e.\ the application of an \verb@apply@ function defined by \verb@f@.
-
-Type applications can be omitted if local type inference
-(\sref{sec:local-type-inf}) can infer best type parameters for a
-polymorphic functions from the types of the actual function arguments
-and the expected result type.
+Then the application \verb@f(a, a)@ is rejected for being ambiguous, since
+no most specific applicable signature exists.
 
 \section{Instance Creation Expressions}
 \label{sec:inst-creation}
@@ -2582,75 +2584,105 @@ and the expected result type.
   Expr4     \=::= \= new Template
 \end{verbatim}
 
-A simple instance creation expression is \verb@\NEW;c@ where \verb@c@ is a
-constructor invocation (\sref{sec:constr-invoke}).  If \verb@c@ has type
-\verb@class T@, then \verb@new c@ has type \verb@T@.
-This type must conform to
-type \verb@scala.AnyRef@.
-The expression
-is evaluated by creating a fresh object of type \verb@T@, which is is
-initialized by evaluating \verb@c@.
+A simple instance creation expression is \verb@new c@ where \verb@c@
+is a constructor invocation (\sref{sec:constr-invoke}).  Let \verb@T@
+be the type of \verb@c@. Then \verb@T@ must denote a (a type instance
+of) a reference class which is non-abstract, and which conforms to its self
+type. The expression is evaluated by creating a fresh object of the
+type \verb@T@, which is is initialized by evaluating \verb@c@. The
+type of the expression is \verb@T@'s self type (which might be less
+specific than \verb@T@).
 
 A general instance creation expression is
-\verb@@\NEW;sc;\WITH;mc$_1$;\WITH;\ldots;\WITH;mc$_n$;\WITH;(stats)\verb@@ where \verb@n \geq
-0@, \verb@sc@ as well as \verb@mc$_1$ \commadots mc$_n$@ are constructor invocations
-(of types \verb@\CLASS;S, \CLASS;T$_1$ \commadots \CLASS;T$_n$@, say) and
+\verb@new sc with mc$_1$ with ... with mc$_n$ {stats}@ where
+\verb@n $\geq$ 0@, \verb@sc@ as well as \verb@mc$_1$, ..., mc$_n$@ are
+constructor invocations (of types \verb@S, T$_1$, ...,T$_n$@, say) and
 \verb@stats@ is a statement sequence containing initializer statements
 and member definitions (\sref{sec:members}). The type of such an
 instance creation expression is then the compound type
-\verb@S;\WITH;T$_1$;\WITH;\ldots;\WITH;T$_n$;\WITH;R@, where \verb@R@ is a
-refinement (\sref{sec:refinements}) which declares exactly those
-members of \verb@stats@ that override a member of \verb@S@ or \verb@T$_1$ \commadots
-T$_n$@. This type must conform to
-type \verb@scala.AnyRef@.
-For this type to be well-formed, \verb@R@ may not reference types
-defined in \verb@stats@ which do not themselves form part of \verb@R@.
+\verb@S with T$_1$ with ... with T$_n$ {R}@, where \verb@{R}@ is a
+refinement (\sref{sec:compound-types}) which declares exactly those
+members of \verb@stats@ that override a member of \verb@S@ or
+\verb@T$_1$, ..., T$_n$@. For this type to be well-formed, \verb@R@
+may not reference types defined in \verb@stats@ which do not
+themselves form part of \verb@R@.
 
 The instance creation expression is evaluated by creating a fresh
 object, which is initialized by evaluating the expression template.
 
 \example Consider the class
 \begin{verbatim}
-abstract class C with {
-  type T
-  val x: T
-  def f(x: T): Object
+abstract class C {
+  type T; val x: T; def f(x: T): Object
 }
 \end{verbatim}
 and the instance creation expression
 \begin{verbatim}
-C with {
-  type T = Int
-  val x: T = 1
-  def f(x: T): T = y
-  val y: T = 2
-}
+C { type T = Int; val x: T = 1; def f(x: T): T = y; val y: T = 2 }
 \end{verbatim}
 Then the created object's type is:
 \begin{verbatim}
-C with {
-  type T = Int
-  val x: T
-  def f(x: T): T
-}
+C { type T = Int; val x: T; def f(x: T): T }
 \end{verbatim}
 The value \verb@y@ is missing from the type, since \verb@y@ does not
 override a member of \verb@C@.
+
+\section{Blocks}
+\label{sec:blocks}
+
+\syntax\begin{verbatim}
+  BlockExpr   \=::= \= `{' Block `}'
+  Block       \>::= \> [{BlockStat `;'} Expr]
+\end{verbatim}
+
+A block expression
+\verb@{s$_1$; ...; s$_n$; e} is constructed from a sequence of block statements \verb@s$_1$
+, ..., s$_n$@ and a final expression \verb@e@. The final expression
+can be omitted, in which case the unit value \verb@()@ is assumed.
+
+%Whether or not the scope includes the statement itself
+%depends on the kind of definition.
+
+The expected type of the final expression \verb@e@ is the expected
+type of the block. The expected type of all preceding statements is
+undefined.
+
+The type of a block \verb@s$_1$; ...; s$_n$; e@ is usually the type of
+\verb@e@.  That type must be equivalent to a type which does not refer
+to an entity defined locally in the block. If this condition is
+violated, but a fully defined expected type is given, the type of the
+block is instead assumed to be the expected type.
+
+Evaluation of the block entails evaluation of its statement sequence,
+followed by an evaluation of the final expression \verb@e@, which
+defines the result of the block.
+
+\example
+Written in isolation, 
+the block \verb@{ class C extends B {...} ; new C }@ is illegal, since its type
+refers to class \verb@C@, which is defined locally in the block.
+
+However, when used in a definition such as 
+\begin{verbatim}
+val x: B = { class C extends B {...} ; new C }
+\end{verbatim}
+the block is well-formed, since the problematic type \verb@C@ can be
+replaced by the expected type \verb@B@.
 
 \section{Prefix, Infix, and Postfix Operations}
 \label{sec:infix-operations}
 
 \syntax\begin{verbatim}
-  Expr2        \=::= \= Expr3 [id]
-  Expr3        \>::= \> Expr4
-	       \>  | \> Expr3 Id Expr3
-  Expr4        \>::= \> SimpleExpr
-	       \>  |\> (`+' | `-' | `!') Expr4
+  PostfixExpr     \>::=\> InfixExpr [Id]
+  InfixExpr       \>::=\> PrefixExpr
+		  \>  |\> InfixExpr Id InfixExpr
+  PrefixExpr      \>::=\> [`-' | `+' | `!' | `~'] SimpleExpr 
 \end{verbatim}
 
 Expressions can be constructed from operands and operators.  A prefix
-operation \verb@op;e@ consists of a prefix operator \verb@op@, which must be one
-of \verb@+@, \verb@-@, \verb@!@, and a simple expression \verb@e@.  The
+operation \verb@op e@ consists of a prefix operator \verb@op@, 
+which must be one of \verb@+@, \verb@-@, \verb@!@, or \verb@~@,
+and a simple expression \verb@e@.  The
 expression is equivalent to the postfix method application \verb@e.op@.
 
 Prefix operators are different from normal function applications in
@@ -2681,10 +2713,9 @@ precedence, with characters on the same line having the same precedence.
 That is, operators starting with a letter have lowest precedence,
 followed by operators starting with `\verb@|@', etc.
 
-The {\em associativity} of an operator
-is also determined by the operator's first character.
- Operators starting with a colon
-`\verb@:@' are right-associative. All other operators are left-associative.
+The {\em associativity} of an operator is determined by the operator's
+last character.  Operators ending with a colon `\verb@:@' are
+right-associative. All other operators are left-associative.
 
 Precedence and associativity of operators determine the grouping of
 parts of an expression as follows.
@@ -2693,40 +2724,42 @@ parts of an expression as follows.
 expression, then operators with higher precedence bind more closely
 than operators with lower precedence.
 \item If there are consecutive infix
-operations \verb@e$_0$;op$_1$;e$_1$;op$_2$\ldots;op$_n$;e$_n$@ with operators \verb@op$_1$
-\commadots op$_n$@ of the same precedence, then all these operators must
+operations \verb@e$_0$ op$_1$ e$_1$ op$_2$ ... op$_n$ e$_n$@ 
+with operators \verb@op$_1$, ..., op$_n$@ of the same precedence, 
+then all these operators must
 have the same associativity. If all operators are left-associative,
-the sequence is interpreted as \verb@(\ldots(e$_0$;op$_1$;e$_1$);op$_2$;\ldots);
-op$_n$;e$_n$@. Otherwise, if all operators are right-associative, the
+the sequence is interpreted as
+\verb@(...(e$_0$ op$_1$ e$_1$) op$_2$...) op$_n$ e$_n$@. 
+Otherwise, if all operators are right-associative, the
 sequence is interpreted as
-\verb@e$_0$;op$_1$;(e$_1$;op$_2$;(\ldots;op$_n$;e$_n$)\ldots)@.
+\verb@e$_0$ op$_1$ (e$_1$ op$_2$ (... op$_n$ e$_n$)...)@.
 \item
 Postfix operators always have lower precedence than infix
-operators. E.g.\ \verb@e$_1$;op$_1$;e$_2$;op$_2$@ is always equivalent to
-\verb@(e$_1$;op$_1$;e$_2$);op$_2$@.
+operators. E.g.\ \verb@e$_1$ op$_1$ e$_2$ op$_2$@ is always equivalent to
+\verb@(e$_1$ op$_1$ e$_2$) op$_2$@.
 \end{itemize}
 A postfix operation \verb@e;op@ is interpreted as \verb@e.op@. A
-left-associative binary operation \verb@e$_1$;op;e$_2$@ is interpreted as
+left-associative binary operation \verb@e$_1$ op e$_2$@ is interpreted as
 \verb@e$_1$.op(e$_2$)@. If \verb@op@ is right-associative, the same operation is
-interpreted as \verb@(\VAL;x=e$_1$
-\semi e$_2$.op(x))@, where \verb@x@ is a fresh name.
+interpreted as \verb@(val x=e$_1$; e$_2$.op(x))@, 
+where \verb@x@ is a fresh name.
 
 \section{Typed Expressions}
 
 \syntax\begin{verbatim}
-  Expr1	       \=::= \= Expr2 [`:' Type]
+  Expr	       \=::= \= PostfixExpr [`:' Type1]
 \end{verbatim}
 
-The typed expression \verb@e: T@ has type \verb@T@. The type of expression \verb@e@
-is required to conform to \verb@T@. The result of the expression is the
-value of \verb@e@ converted to type \verb@T@.
+The typed expression \verb@e: T@ has type \verb@T@. The type of
+expression \verb@e@ is expected to conform to \verb@T@. The result of
+the expression is the value of \verb@e@ converted to type \verb@T@.
 
 \example Here are examples of well-typed and illegal typed expressions.
 
 \begin{verbatim}
-  1: Int                             \=// legal, of type Int
-  1: Long	    	\>// legal, of type Long
-  // 1: String 	\>// illegal
+  1: int                             \=// legal, of type int
+  1: long	    	\>// legal, of type long
+  // 1: string 	\>// illegal
 \end{verbatim}
 
 \section{Assignments}
@@ -2737,14 +2770,82 @@ value of \verb@e@ converted to type \verb@T@.
 \end{verbatim}
 
 An assignment to a simple variable \verb@x = e@ is interpreted as the invocation
-\verb@\verb@x@$_=$(\verb@e@)@ of the setter function for variable
+\verb@x_=(e)@ of the setter function for variable
 \verb@x@ (\sref{sec:vardef}).
-Analogously, an assignment \verb@f.a = e@ to a field \verb@a@ is interpreted
-as the invocation \verb@\verb@f.a@_=(\verb@e@)@.
+Analogously, an assignment \verb@f.x = e@ to a field \verb@x@ is interpreted
+as the invocation \verb@f.x_=(e)@.
 
-An assignment \verb@f(is) = e@ with a function application to the
-left of the ``\verb@=@' operator is interpreted as \verb@\verb@f@.update(\verb@is, e@)@, i.e.\
+An assignment \verb@f(args) = e@ with a function application to the
+left of the ``\verb@=@' operator is interpreted as 
+\verb@f.update(args, e)@, i.e.\
 the invocation of an \verb@update@ function defined by \verb@f@.
+
+\example Here is the usual imperative code for matrix multiplication.
+
+\begin{verbatim}
+def matmul(xs: Array[Array[double]], ys: Array[Array[double]]) = {
+  val zs: Array[Array[double]] = new Array(xs.length, ys.length);
+  var i = 0;
+  while (i < xs.length) {
+    var j = 0;
+    while (j < ys(0).length) {
+      var acc = 0.0;
+      var k = 0;
+      while (k < ys.length) {
+	acc = acc + xs(i)(k) * ys(k)(j);
+	k = k + 1
+      }
+      zs(i)(j) = acc;
+      j = j + 1
+    }
+    i = i + 1
+  }
+  zs
+}
+\end{verbatim}
+Desugaring the array accesses and assignments yields the following
+expanded version:
+\begin{verbatim}
+def matmul(xs: Array[Array[double]], ys: Array[Array[double]]) = {
+  val zs: Array[Array[double]] = new Array(xs.length, ys.length);
+  var i = 0;
+  while (i < xs.length) {
+    var j = 0;
+    while (j < ys(0).length) {
+      var acc = 0.0;
+      var k = 0;
+      while (k < ys.length) {
+	acc = acc + xsa.apply(i).apply(k) * ys.apply(k).apply(j);
+	k = k + 1
+      }
+      zs.apply(i).update(j, acc);
+      j = j + 1
+    }
+    i = i + 1
+  }
+  zs
+}
+\end{verbatim}
+
+\begin{verbatim}
+def matmul(xss: Array[Array[double]], yss: Array[Array[double]]) = {
+  val ysst = transpose(yss);
+  for (val xs <- xs) yield
+    for (val ys <- ysst) yield 
+      scalprod(xs, ys)
+}
+
+def transpose[a](xss: Array[Array[a]]) {
+  for (val i <- Array.range(0, xss(0).length)) yield
+    Array(for (val xs <- xss) yield xs(i))
+
+def scalprod(xs: Array[double], ys: Array[double]) {
+  var acc = 0.0;
+  for (val Pair(x, y) <- xs zip ys) do acc = acc + x * y; 
+  acc
+}
+\end{verbatim}
+
 
 \section{Conditional Expressions}
 
@@ -3049,31 +3150,6 @@ $(T_1 \commadots T_n) U$. The expression is interpreted as
                                    \>// variable count and returns the new value.
 \end{verbatim}
 
-\section{Blocks}
-\label{sec:blocks}
-
-\syntax\begin{verbatim}
-  Block       \=::= \= [{BlockStat `;'} Expr]
-\end{verbatim}
-
-A block $s_1 \semi\ldots\semi s_n \semi e$
-is constructed from a sequence of block statements $s_1 \commadots s_n$
-and a final expression $e$. The final expression can be omitted, in
-which case the unit value $()$ is assumed.
-
-Block statements may be definitions which bind local names in the
-block. No modifiers are allowed in block-local definitions.
-
-%Whether or not the scope includes the statement itself
-%depends on the kind of definition.
-
-The type of a block $s_1 \semi\ldots\semi s_n \semi e$ is the type of $e$.  That
-type must be equivalent to a type which does not refer to an entity
-defined locally in the block.
-Evaluation of the block entails
-evaluation of its statement sequence, followed by an evaluation of the final expression
-$e$, which defines the result of the block.
-
 \section{Statements}
 \label{sec:statements}
 
@@ -3096,6 +3172,9 @@ Statements used in the template of a class definition can also be
 declarations.  An expression that is used as a statement can have an
 arbitrary value type. An expression statement $e$ is evaluated by
 evaluating $e$ and discarding the result of the evaluation.
+
+Block statements may be definitions which bind local names in the
+block. No modifiers are allowed in block-local definitions.
 
 With the exception of overloaded definitions
 (\sref{sec:overloaded-defs}), a statement sequence making up a block

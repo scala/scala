@@ -72,46 +72,6 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	return bp;
     }
 
-    /** Create output file with given extension for given class.
-     */
-    public File outputFile(Name fullname, String extension) {
-	if (Global.instance.outpath != null) {
-	    return new File(
-		Global.instance.outpath,
-		SourceRepresentation.externalizeFileName(fullname) + extension);
-	} else {
-	    String s = fullname.toString();
-	    int i = s.length();
-	    while (i > 0 && s.charAt(i - 1) != '.') i--;
-	    return new File(s.substring(i) + extension);
-	}
-    }
-
-    private void createPath(File f) {
-	try {
-	    f.createNewFile();
-	} catch (IOException ex) {
-	    f.getParentFile().mkdirs();
-	    try {
-		f.createNewFile();
-	    } catch (IOException ex1) {
-	    }
-	}
-    }
-
-    public void writeFile(Name fullname) {
-	File outfile = outputFile(fullname, ".symbl");
-	try {
-	    createPath(outfile);
-	    FileOutputStream out = new FileOutputStream(outfile);
-	    out.write(bytes, 0, bp);
-	    out.close();
-	    Global.instance.operation("wrote " + outfile);
-	} catch (IOException ex) {
-	    System.err.println("error writing " + outfile);
-	}
-    }
-
 /* **************************************************
  * Phase 1: Build entry table
  ************************************************* */

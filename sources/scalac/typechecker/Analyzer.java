@@ -129,7 +129,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    pickle.add(sym.owner().info().lookup(sym.name.toTermName()));
 		    pickle.add(sym.owner().info().lookup(sym.name.toTypeName()));
 		    pickle.pickle();
-		    pickle.writeFile(fullname);
 		    global.symdata.put(fullname, pickle);
 		}
 		break;
@@ -270,12 +269,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *   - symbols with `override' modifier override some other symbol.
      */
     void validate(Symbol sym) {
-	checkNoConflict(sym, DEFERRED, PRIVATE);
-	checkNoConflict(sym, FINAL, SEALED);
-	checkNoConflict(sym, FINAL, PRIVATE);
-	checkNoConflict(sym, PRIVATE, PROTECTED);
-	checkNoConflict(sym, PRIVATE, OVERRIDE);
-	checkNoConflict(sym, DEFERRED, FINAL);
 	if ((sym.flags & ABSTRACTCLASS) != 0 && sym.kind != CLASS) {
 	    error(sym.pos, "`abstract' modifier can be used only for classes; " +
 		  "\nit should be omitted for abstract members");
@@ -317,6 +310,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		sym.flags &= ~OVERRIDE;
 	    }
 	}
+	checkNoConflict(sym, DEFERRED, PRIVATE);
+	checkNoConflict(sym, FINAL, SEALED);
+	checkNoConflict(sym, FINAL, PRIVATE);
+	checkNoConflict(sym, PRIVATE, PROTECTED);
+	checkNoConflict(sym, PRIVATE, OVERRIDE);
+	checkNoConflict(sym, DEFERRED, FINAL);
     }
 
     /** Check that
@@ -712,8 +711,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			tree.pos, name.toTermName(), owner,
 			mods & ACCESSFLAGS | CASE, context.scope);
 		    enterInScope(cf);
-		    if (!cf.isInitialized())
+		    if (!cf.isInitialized() || cf.info().symbol().isModuleClass()) {
 			cf.setInfo(new LazyConstrMethodType(tree));
+		    }
 		}
 	    }
 	    return enterSym(tree, clazz);
