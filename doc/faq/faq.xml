@@ -87,6 +87,44 @@ if you prefer this.
 </answer>
 </entry> </section>
 
+  <section title="Programming">
+    <entry>
+    <question>
+    What is the "standard" way to write a simple loop in
+Scala?
+<code>
+   for (val i &lt;- Iterator.range(1,1000000)
+</code>
+or
+<code>
+   var i = 1;
+   while (i&lt;=1000000){ ...; i=i+1; }
+</code>
+</question>
+<answer>
+Both are fine, but in the current implementation the second one should be more efficient. </answer>
+    </entry>
+
+<entry>
+<question>how can I catch exceptions in Scala?</question> 
+
+<answer> You have to use standard pattern matching here (Java's
+"catch" clauses are really nothing more than a limited form of pattern
+matching).
+
+<code>
+   try { 
+   ... 
+   } catch {
+     case e: Exception  => ... 
+     case e:IOException => ...
+   }
+</code>
+</answer>
+</entry>
+  
+  </section>
+
 
 
   <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
@@ -128,7 +166,14 @@ can access methods, fields (even if they are static), etc.
   <!--                  Less General                                  -->
   <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
 
-  <section title="Less General">
+  <section title="Limitations">
+<entry>
+<question>I want to use the Ord interface to handle Double, Int, and Char. Why doesn't it work ?</question>
+
+<answer>Currently, the class scala.Double (and all other value classes) are
+*not* a subclass of scala.Ord. This is an implementation restriction
+of our compiler.  </answer>
+</entry>
 <!--
     <entry>
       <question>What were the first reactions when you released your language ?</question>
