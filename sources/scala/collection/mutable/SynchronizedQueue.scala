@@ -39,6 +39,14 @@ class SynchronizedQueue[A] extends Queue[A] {
      */
     override def ++=(iter: Iterable[A]): Unit = synchronized { super.++=(iter); }
 
+    /** Adds all elements provided by an iterator
+     *  at the end of the queue. The elements are prepended in the order they
+     *  are given out by the iterator.
+     *
+     *  @param  it        an iterator
+     */
+    override def ++=(it: Iterator[A]): Unit = synchronized { super.++=(it); }
+
     /** Adds all elements to the queue.
      *
      *  @param  elems       the elements to add.

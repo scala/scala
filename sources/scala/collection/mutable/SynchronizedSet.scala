@@ -30,28 +30,40 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] {
         super.contains(elem);
     }
 
+    abstract override def update(elem: A, included: Boolean): Unit = synchronized {
+    	super.update(elem, included);
+    }
+
     abstract override def +=(elem: A): Unit = synchronized {
         super.+=(elem);
     }
 
-    override def incl(elems: A*): Unit = synchronized {
-        super.incl(elems);
+    override def ++=(that: Iterable[A]) = synchronized {
+        super.++=(that);
     }
 
-    override def incl(that: Iterable[A]) = synchronized {
-        super.incl(that);
+    override def ++=(it: Iterator[A]) = synchronized {
+        super.++=(it);
+    }
+
+    override def incl(elems: A*): Unit = synchronized {
+        super.++=(elems);
     }
 
     abstract override def -=(elem: A): Unit = synchronized {
         super.-=(elem);
     }
 
-    override def excl(elems: A*): Unit = synchronized {
-        super.excl(elems);
+    override def --=(that: Iterable[A]) = synchronized {
+        super.--=(that);
     }
 
-    override def excl(that: Iterable[A]) = synchronized {
-        super.excl(that);
+    override def --=(it: Iterator[A]) = synchronized {
+        super.--=(it);
+    }
+
+    override def excl(elems: A*): Unit = synchronized {
+        super.--=(elems);
     }
 
     override def intersect(that: Set[A]) = synchronized {
@@ -80,5 +92,13 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] {
 
     override def toString() = synchronized {
         super.toString();
+    }
+
+    override def <<(cmd: Message[A]): Unit = synchronized {
+    	super.<<(cmd);
+   	}
+
+    override def clone(): Set[A] = synchronized {
+    	super.clone();
     }
 }

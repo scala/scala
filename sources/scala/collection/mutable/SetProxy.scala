@@ -15,26 +15,36 @@ package scala.collection.mutable;
  *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 21/07/2003
+ *  @version 1.1, 09/05/2004
  */
 class SetProxy[A](set: Set[A]) extends Set[A]
                                with scala.collection.SetProxy[A](set) {
 
-    def +=(elem: A): Unit = set.+=(elem);
+    override def update(elem: A, included: Boolean): Unit = set(elem) = included;
 
-    override def incl(elems: A*): Unit = set.incl(elems);
+    def +=(elem: A): Unit = set += elem;
 
-    override def incl(that: Iterable[A]): Unit = set.incl(that);
+    override def ++=(that: Iterable[A]): Unit = set ++= that;
 
-    def -=(elem: A): Unit = set.-=(elem);
+    override def ++=(it: Iterator[A]): Unit = set ++= it;
 
-    override def excl(elems: A*): Unit = set.excl(elems);
+    override def incl(elems: A*): Unit = set ++= elems;
 
-    override def excl(that: Iterable[A]): Unit = set.excl(that);
+    def -=(elem: A): Unit = set -= elem;
+
+    override def --=(that: Iterable[A]): Unit = set --= that;
+
+    override def --=(it: Iterator[A]): Unit = set --= it;
+
+    override def excl(elems: A*): Unit = set --= elems;
 
     override def intersect(that: Set[A]): Unit = set.intersect(that);
 
     def clear: Unit = set.clear;
 
     override def filter(p: A => Boolean): Unit =  set.filter(p);
+
+    override def <<(cmd: Message[A]): Unit = set << cmd;
+
+    override def clone(): Set[A] = new SetProxy(set.clone());
 }

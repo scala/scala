@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-class Queue[A] extends MutableList[A] {
+class Queue[A] extends MutableList[A] with Cloneable {
 
     /** Checks if the queue is empty.
      *
@@ -36,7 +36,15 @@ class Queue[A] extends MutableList[A] {
      *
      *  @param  iter        an iterable object
      */
-    def ++=(iter: Iterable[A]): Unit = iter.elements.foreach(e => appendElem(e));
+    def ++=(iter: Iterable[A]): Unit = this ++= iter.elements;
+
+	/** Adds all elements provided by an iterator
+     *  at the end of the queue. The elements are prepended in the order they
+     *  are given out by the iterator.
+     *
+     *  @param  it        an iterator
+     */
+    def ++=(it: Iterator[A]): Unit = it foreach appendElem;
 
     /** Adds all elements to the queue.
      *
@@ -95,4 +103,14 @@ class Queue[A] extends MutableList[A] {
      *  @return the string representation of this queue.
      */
     override def toString() = toList.mkString("Queue(", ", ", ")");
+
+    /** This method clones the queue.
+     *
+     *  @return  a queue with the same elements.
+     */
+    override def clone(): Queue[A] = {
+    	val res = new Queue[A];
+    	res ++= this;
+    	res
+    }
 }

@@ -24,8 +24,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.1, 02/05/2004
  */
-trait Map[A, +B] with PartialFunction[A, B]
-                 with Iterable[Pair[A, B]] {
+trait Map[A, +B] with PartialFunction[A, B] with Iterable[Pair[A, B]] {
 
     /** Compute the number of key-to-value mappings.
      *
@@ -148,6 +147,12 @@ trait Map[A, +B] with PartialFunction[A, B]
                   case Some(otherval) => value == otherval;
               }
           }};
+
+    /** Returns the mappings of this map as a list.
+     *
+     *  @return    a list containing all mappings
+     */
+    def toList: List[Pair[A, B]] = elements.toList;
 
     /** Creates a string representation for this map.
      *

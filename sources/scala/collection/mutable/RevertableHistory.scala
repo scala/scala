@@ -18,15 +18,13 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class RevertableHistory[A <: Undo, B] extends History[A, B] with Undo {
+class RevertableHistory[A <: Undoable, B] extends History[A, B] with Undoable {
 
     /** Rollback the full history.
      */
     def undo: Unit = {
         val old = log.toList.reverse;
         clear;
-        old.foreach {
-            case Pair(sub, event) => event.undo;
-        }
+        old.foreach { case Pair(sub, event) => event.undo; }
     }
 }

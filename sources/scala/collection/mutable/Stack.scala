@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-class Stack[A] extends MutableList[A] {
+class Stack[A] extends MutableList[A] with Cloneable {
 
     /** Checks if the stack is empty.
      *
@@ -36,7 +36,15 @@ class Stack[A] extends MutableList[A] {
      *
      *  @param  iter        an iterable object
      */
-    def ++=(iter: Iterable[A]): Unit = iter.elements.foreach(e => prependElem(e));
+    def ++=(iter: Iterable[A]): Unit = this ++= iter.elements;
+
+    /** Pushes all elements provided by an iterator
+     *  on top of the stack. The elements are pushed in the order they
+     *  are given out by the iterator.
+     *
+     *  @param  iter        an iterator
+     */
+    def ++=(it: Iterator[A]): Unit = it foreach { e => prependElem(e) };
 
     /** Pushes a sequence of elements on top of the stack. The first element
      *  is pushed first, etc.
@@ -107,5 +115,15 @@ class Stack[A] extends MutableList[A] {
      *
      *  @return the string representation of this stack.
      */
-    override def toString() = toList.mkString("Stack(", ", ", ")");
+    override def toString(): String = toList.mkString("Stack(", ", ", ")");
+
+    /** This method clones the stack.
+     *
+     *  @return  a stack with the same elements.
+     */
+    override def clone(): Stack[A] = {
+    	val res = new Stack[A];
+    	res ++= this;
+    	res
+    }
 }

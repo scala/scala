@@ -308,7 +308,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @return the <code>n</code> first elements of this list.
    *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
-  def take(n: Int): List[a] =
+  override def take(n: Int): List[a] =
     if (n == 0) Nil
     else head :: (tail take (n-1));
 
@@ -318,7 +318,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @return the list without its <code>n</code> first elements.
    *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
-  def drop(n: Int): List[a] =
+  override def drop(n: Int): List[a] =
     if (n == 0) this
     else (tail drop (n-1));
 

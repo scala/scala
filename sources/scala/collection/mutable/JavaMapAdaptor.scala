@@ -57,4 +57,10 @@ class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
     def -=(key: A): Unit = { val x = jmap.remove(key); }
 
     override def clear: Unit = jmap.clear();
+
+    override def clone(): Map[A, B] = {
+    	val res = new HashMap[A, B];
+    	res ++= this;
+    	res
+    }
 }

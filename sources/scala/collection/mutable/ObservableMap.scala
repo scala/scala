@@ -13,36 +13,36 @@ package scala.collection.mutable;
 /** This class is typically used as a mixin. It adds a subscription
  *  mechanism to the <code>Map</code> class into which this abstract
  *  class is mixed in. Class <code>ObservableMap</code> publishes
- *  events of the type <code>ObservableUpdate</code>.
+ *  events of the type <code>Message</code>.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
 abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
                     extends scala.collection.mutable.Map[A, B]
-                    with Publisher[ObservableUpdate[Pair[A, B]] with Undo, This] {
+                    with Publisher[Message[Pair[A, B]] with Undoable, This] {
 
     abstract override def update(key: A, value: B): Unit = get(key) match {
         case None => super.update(key, value);
-                     publish(new Inclusion(Pair(key, value)) with Undo {
+                     publish(new Include(Pair(key, value)) with Undoable {
                                  def undo = -=(key);
                              });
         case Some(old) => super.update(key, value);
-                          publish(new Modification(Pair(key, old), Pair(key, value)) with Undo {
-                                      def undo = update(key, old._2);
+                          publish(new Update(Pair(key, value)) with Undoable {
+                                      def undo = update(key, old);
                                   });
     }
 
     abstract override def -=(key: A): Unit = get(key) match {
         case None =>
         case Some(old) => super.-=(key);
-                          publish(new Removal(Pair(key, old)) with Undo {
+                          publish(new Remove(Pair(key, old)) with Undoable {
                                       def undo = update(key, old);
                                   });
     }
 
     abstract override def clear: Unit = {
         super.clear;
-        publish(new Reset() with Undo { def undo: Unit = error("cannot undo"); });
+        publish(new Reset with Undoable { def undo: Unit = error("cannot undo"); });
     }
 }

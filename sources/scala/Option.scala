@@ -60,7 +60,7 @@ trait Option[+A] extends Iterable[A] {
 		case Some(x) => Iterator.fromValues(x)
 	}
 
-    override def toList: List[A] = match {
+    def toList: List[A] = match {
       case None => List()
       case Some(x) => List(x)
     }

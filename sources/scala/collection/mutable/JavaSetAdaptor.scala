@@ -35,4 +35,10 @@ class JavaSetAdaptor[A](jset: java.util.Set) extends Set[A] {
     def -=(elem: A): Unit = { val x = jset.remove(elem); }
 
     def clear: Unit = jset.clear();
+
+    override def clone(): Set[A] = {
+    	val res = new HashSet[A];
+    	res ++= this;
+    	res;
+    }
 }

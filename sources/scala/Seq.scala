@@ -10,6 +10,24 @@
 package scala;
 
 
+object Seq {
+	def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] = new Ordered[Seq[A]] with Proxy(xs) {
+		def compareTo[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
+			case ys: Seq[A] =>
+				var res = 0;
+				val xsit = xs.elements;
+				val ysit = ys.elements;
+				while (xsit.hasNext && ysit.hasNext && (res == 0)) {
+					res = xsit.next compareTo ysit.next;
+				}
+				if (res != 0) res else if (xsit.hasNext) 1 else -1
+			case _ =>
+			  -(that compareTo xs)
+		}
+	}
+}
+
+
 /** Class <code>Seq[A]</code> represents finite sequences of elements
  *  of type <code>A</code>.
  *
@@ -73,10 +91,19 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
 		if (found) i else -1;
     }
 
+    /** Returns the sub-sequence starting from index <code>n</code>.
+     */
+    def take(n: Int): Seq[A] = subseq(0, n);
+
+    /** Returns a new sub-sequence that drops the first <code>n</code>
+     *  elements of this sequence.
+     */
+    def drop(n: Int): Seq[A] = subseq(n, length - n);
+
     /** Returns a subsequence starting from index <code>from</code>
      *  consisting of <code>len</code> elements.
      */
-    def subSequence(from: Int, len: Int): Seq[A] =
+    def subseq(from: Int, len: Int): Seq[A] =
     	if ((from + len) <= length) new Seq[A] {
             def apply(n: Int): A = Seq.this.apply(n - from);
             def length: Int = len;
@@ -93,8 +120,7 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
     		error("cannot create subsequence");
 
     /** Fills the given array <code>xs</code> with the elements of
-     *  this list starting at position <code>start</code>. Does not
-     *  work with empty lists.
+     *  this sequence starting at position <code>start</code>.
      *
      *  @param  xs the array to fill.
      *  @param  start starting index.
@@ -110,17 +136,18 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
     	xs
     }
 
-    /** Returns true if the elements in this sequence are equal
-     *  to the elements in another sequence
-    def similar(x: Any): Boolean = { // WEG
-        x.match {
-          case that: Seq[A] =>
-            (that.length == this.length) && sameElements(that)
-          case _ =>
-            false
-        }
-    }
+    /** Transform this sequence into a list of all elements.
+     *
+     *  @return  a list which enumerates all elements of this sequence.
      */
+    def toList: List[A] = {
+        val it = elements;
+        var res: List[A] = Nil;
+        while (it.hasNext) {
+            res = it.next :: res;
+        }
+        res.reverse
+    }
 
     /** Customizes the <code>toString</code> method.
      *

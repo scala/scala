@@ -17,7 +17,7 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-class SeqProxy[+A](x: Seq[A]) extends IterableProxy(x) {
+class SeqProxy[+A](x: Seq[A]) extends Seq[A] with IterableProxy(x) {
 
     /** Returns the length of the sequence.
      *
@@ -25,11 +25,17 @@ class SeqProxy[+A](x: Seq[A]) extends IterableProxy(x) {
      */
     def length: Int = x.length;
 
+    /** Access element number <code>n</code>.
+     *
+     *  @return  the element at index <code>n</code>.
+     */
+    def apply(n: Int): A = x.apply(n);
+
     /** Is this partial function defined for the index <code>x</code>?
      *
      *  @return true, iff <code>x</code> is a legal sequence index.
      */
-    def isDefinedAt(y: Int): Boolean = x.isDefinedAt(y);
+    override def isDefinedAt(y: Int): Boolean = x.isDefinedAt(y);
 
     /** Returns the index of the first occurence of the specified
      *  object in this sequence.
@@ -38,7 +44,7 @@ class SeqProxy[+A](x: Seq[A]) extends IterableProxy(x) {
      *  @return the index in this sequence of the first occurence of the specified
      * 	        element, or -1 if the sequence does not contain this element.
      */
-    def indexOf[B >: A](elem: B): Int = x.indexOf(elem);
+    override def indexOf[B >: A](elem: B): Int = x.indexOf(elem);
 
     /** Returns the index of the last occurence of the specified
      *  element in this sequence, or -1 if the sequence does not
@@ -49,20 +55,35 @@ class SeqProxy[+A](x: Seq[A]) extends IterableProxy(x) {
      *          specified  element, or -1 if the sequence does not contain
      *          this element.
      */
-	def lastIndexOf[B >: A](elem: B): Int = x.lastIndexOf(elem);
+	override def lastIndexOf[B >: A](elem: B): Int = x.lastIndexOf(elem);
+
+    /** Returns the sub-sequence starting from index <code>n</code>.
+     */
+    override def take(n: Int): Seq[A] = x.take(n);
+
+    /** Returns a new sub-sequence that drops the first <code>n</code>
+     *  elements of this sequence.
+     */
+    override def drop(n: Int): Seq[A] = x.drop(n);
 
     /** Returns a subsequence starting from index <code>from</code>
      *  consisting of <code>len</code> elements.
      */
-    def subSequence(from: Int, len: Int): Seq[A] = x.subSequence(from, len);
+    override def subseq(from: Int, len: Int): Seq[A] = x.subseq(from, len);
 
     /** Fills the given array <code>xs</code> with the elements of
-     *  this list starting at position <code>start</code>. Does not
-     *  work with empty lists.
+     *  this sequence starting at position <code>start</code>.
      *
      *  @param  xs the array to fill.
      *  @param  start starting index.
-     *  @return the given array <code>xs</code> filled with this list.
+     *  @return the given array <code>xs</code> filled with the elements
+     *          of this sequence.
      */
-    def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = x.copyToArray(xs, start);
+    override def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = x.copyToArray(xs, start);
+
+    /** Transform this sequence into a list of all elements.
+     *
+     *  @return  a list which enumerates all elements of this sequence.
+     */
+    override def toList: List[A] = x.toList;
 }

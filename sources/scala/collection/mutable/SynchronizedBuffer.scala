@@ -166,6 +166,10 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
         super.clear;
     }
 
+    override def <<(cmd: Message[Pair[Location, A]]): Unit = synchronized {
+    	super.<<(cmd);
+    }
+
     /** Return a clone of this buffer.
      *
      *  @return an <code>ArrayBuffer</code> with the same elements.

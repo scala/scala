@@ -62,24 +62,32 @@ trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] {
         super.update(key, value);
     }
 
+    override def ++=(map: Iterable[Pair[A, B]]): Unit = synchronized {
+        super.++=(map);
+    }
+
+    override def ++=(it: Iterator[Pair[A, B]]): Unit = synchronized {
+        super.++=(it);
+    }
+
+    override def incl(mappings: Pair[A, B]*): Unit = synchronized {
+        super.++=(mappings);
+    }
+
     abstract override def -=(key: A): Unit = synchronized {
         super.-=(key);
     }
 
-    override def incl(mappings: Pair[A, B]*): Unit = synchronized {
-        super.incl(mappings);
+    override def --=(keys: Iterable[A]): Unit = synchronized {
+        super.--=(keys);
     }
 
-    override def incl(map: Iterable[Pair[A, B]]): Unit = synchronized {
-        super.incl(map);
+    override def --=(it: Iterator[A]): Unit = synchronized {
+        super.--=(it);
     }
 
     override def excl(keys: A*): Unit = synchronized {
-        super.excl(keys);
-    }
-
-    override def excl(keys: Iterable[A]): Unit = synchronized {
-        super.excl(keys);
+        super.--=(keys);
     }
 
     override def clear: Unit = synchronized {
@@ -96,5 +104,13 @@ trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] {
 
     override def toString() = synchronized {
         super.toString();
+    }
+
+    override def <<(cmd: Message[Pair[A, B]]): Unit = synchronized {
+        super.<<(cmd);
+    }
+
+    override def clone(): Map[A, B] = synchronized {
+    	super.clone();
     }
 }

@@ -17,7 +17,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  */
-class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
+class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with Cloneable {
   	size = size + 1; // we do not use array(0)
 
   	protected def fixUp(as: Array[A], m: Int): Unit = {
@@ -68,7 +68,13 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
      *
      *  @param  iter        an iterable object
      */
-    def ++=(iter: Iterable[A]): Unit = iter.elements.foreach(e => this += e);
+    def ++=(iter: Iterable[A]): Unit = this ++= iter.elements;
+
+    /** Adds all elements provided by an iterator into the priority queue.
+     *
+     *  @param  it        an iterator
+     */
+    def ++=(it: Iterator[A]): Unit = it foreach { e => this += e };
 
     /** Adds all elements to the queue.
      *
@@ -142,9 +148,31 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
      */
     override def hashCode(): Int = error("unsuitable as hash key");
 
+    /** Returns a regular queue containing the same elements.
+     */
+    def toQueue: Queue[A] = {
+    	val res = new Queue[A];
+    	res ++= this;
+    	res
+    }
+
+    /** Returns a list of all elements.
+     */
+    def toList: List[A] = elements.toList;
+
     /** Returns a textual representation of a queue as a string.
      *
      *  @return the string representation of this queue.
      */
     override def toString() = toList.mkString("PriorityQueue(", ", ", ")");
+
+    /** This method clones the priority queue.
+     *
+     *  @return  a priority queue with the same elements.
+     */
+    override def clone(): PriorityQueue[A] = {
+    	val res = new PriorityQueue[A];
+    	res ++= this;
+    	res
+    }
 }

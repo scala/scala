@@ -9,6 +9,7 @@
 
 package scala;
 
+
 object Iterable {
     def view[A <% Ordered[A]](x: Iterable[A]): Ordered[Iterable[A]] = new Ordered[Iterable[A]] {
         def compareTo[B >: Iterable[A] <% Ordered[B]](that: B): Int = that match {
@@ -138,19 +139,6 @@ trait Iterable[+A] {
      *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
      */
     def :\[B](z: B)(f: (A, B) => B): B = foldRight(z)(f);
-
-    /** Transform this iterable object into a list of all elements.
-     *
-     *  @return  a list which enumerates all elements of this set.
-     */
-    def toList: List[A] = {
-        val it = elements;
-        var res: List[A] = Nil;
-        while (it.hasNext) {
-            res = it.next :: res;
-        }
-        res.reverse
-    }
 
     /** Checks if the other iterable object contains the same elements.
      *

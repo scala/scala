@@ -16,9 +16,9 @@ package scala.collection.mutable;
  *  and <code>remove</code>.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @version 1.1, 09/05/2004
  */
-trait Map[A, B] with scala.collection.Map[A, B] {
+trait Map[A, B] with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, B]]] with Cloneable {
 
     /** This method allows one to add a new mapping from <code>key</code>
      *  to <code>value</code> to the map. If the map already contains a
@@ -26,12 +26,6 @@ trait Map[A, B] with scala.collection.Map[A, B] {
      *  function.
      */
     def update(key: A, value: B): Unit;
-
-    /** This method removes a mapping from the given <code>key</code>.
-     *  If the map does not contain a mapping for the given key, the
-     *  method does nothing.
-     */
-    def -=(key: A): Unit;
 
     /** This method defines syntactic sugar for adding or modifying
      *  mappings. It is typically used in the following way:
@@ -41,32 +35,45 @@ trait Map[A, B] with scala.collection.Map[A, B] {
      */
     def +=(key: A): MapTo = new MapTo(key);
 
+    /** This method adds all the mappings provided by an iterator of
+     *  parameter <code>map</code> to the map.
+     */
+    def ++=(map: Iterable[Pair[A, B]]): Unit = ++=(map.elements);
+
+    /** This method adds all the mappings provided by an iterator of
+     *  parameter <code>map</code> to the map.
+     */
+    def ++=(it: Iterator[Pair[A, B]]): Unit = it foreach {
+        case Pair(key, value) => update(key, value);
+    }
+
     /** <code>incl</code> can be used to add many mappings at the same time
      *  to the map. The method assumes that a mapping is represented
      *  by a <code>Pair</code> object who's first component denotes the
      *  key, and who's second component refers to the value.
      */
-    def incl(mappings: Pair[A, B]*): Unit = {
-        val ys = mappings.asInstanceOf[List[Pair[A, B]]];
-        ys foreach { case Pair(key, value) => update(key, value); };
-    }
+    def incl(mappings: Pair[A, B]*): Unit = ++=(mappings.elements);
 
-    /** This method adds all the mappings provided by an iterator of
-     *  parameter <code>map</code> to the map.
+    /** This method removes a mapping from the given <code>key</code>.
+     *  If the map does not contain a mapping for the given key, the
+     *  method does nothing.
      */
-    def incl(map: Iterable[Pair[A, B]]): Unit = map.elements foreach {
-        case Pair(key, value) => update(key, value);
-    }
-
-    /** This method will remove all the mappings for the given sequence
-     *  of keys from the map.
-     */
-    def excl(keys: A*): Unit = excl(keys);
+    def -=(key: A): Unit;
 
     /** This method removes all the mappings for keys provided by an
      *  iterator over the elements of the <code>keys</code> object.
      */
-    def excl(keys: Iterable[A]): Unit = keys.elements foreach -=;
+    def --=(keys: Iterable[A]): Unit = --=(keys.elements);
+
+    /** This method removes all the mappings for keys provided by an
+     *  iterator over the elements of the <code>keys</code> object.
+     */
+    def --=(it: Iterator[A]): Unit = it foreach -=;
+
+    /** This method will remove all the mappings for the given sequence
+     *  of keys from the map.
+     */
+    def excl(keys: A*): Unit = --=(keys.elements);
 
     /** Removes all mappings from the map. After this operation is
      *  completed, the map is empty.
@@ -86,6 +93,25 @@ trait Map[A, B] with scala.collection.Map[A, B] {
     def filter(p: (A, B) => Boolean): Unit = toList foreach {
         case Pair(key, value) => if (!p(key, value)) -=(key);
     }
+
+    /** Send a message to this scriptable object.
+     *
+     *  @param cmd  the message to send.
+     */
+    def <<(cmd: Message[Pair[A, B]]): Unit = cmd match {
+    	case Include(Pair(k, v)) => update(k, v);
+    	case Update(Pair(k, v)) => update(k, v);
+    	case Remove(Pair(k, _)) => this -= k;
+    	case Reset() => clear;
+    	case s: Script[Pair[A, B]] => s.elements foreach <<;
+    	case _ => error("message " + cmd + " not understood");
+    }
+
+    /** Return a clone of this map.
+     *
+     *  @return an map with the same elements.
+     */
+    override def clone(): Map[A, B] = super.clone().asInstanceOf[Map[A, B]];
 
     /** The hashCode method always yields an error, since it is not
      *  safe to use mutable maps as keys in hash tables.

@@ -73,6 +73,12 @@ trait Set[A] with Function1[A, Boolean] with Iterable[A] {
           this.size == other.size &&
           this.elements.forall(other.contains) };
 
+    /** Returns the elements of this set as a list.
+     *
+     *  @return    a list containing all set elements.
+     */
+    def toList: List[A] = elements.toList;
+
     /** Returns a string representation of this set.
      *
      *  @return a string showing all elements of this set.

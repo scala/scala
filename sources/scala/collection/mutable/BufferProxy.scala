@@ -131,9 +131,15 @@ class BufferProxy[A](buf: Buffer[A]) extends Buffer[A] with Proxy(buf) {
      */
     def clear: Unit = buf.clear;
 
+    /** Send a message to this scriptable object.
+     *
+     *  @param cmd  the message to send.
+     */
+    override def <<(cmd: Message[Pair[Location, A]]): Unit = buf << cmd;
+
     /** Return a clone of this buffer.
      *
      *  @return a <code>Buffer</code> with the same elements.
      */
-    override def clone(): Buffer[A] = buf.clone();
+    override def clone(): Buffer[A] = new BufferProxy(buf.clone());
 }

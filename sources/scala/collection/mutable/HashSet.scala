@@ -39,4 +39,10 @@ class HashSet[A] extends scala.collection.mutable.Set[A] with HashTable[A] {
     protected type Entry = A;
 
     protected def entryKey(e: Entry) = e;
+
+    override def clone(): HashSet[A] = {
+    	val res = new HashSet[A];
+    	res ++= this;
+    	res
+    }
 }

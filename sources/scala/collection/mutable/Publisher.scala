@@ -41,5 +41,5 @@ class Publisher[A, This <: Publisher[A, This]]: This {
 
     protected def publish(event: A): Unit =
         filters.keys.foreach(sub =>
-            if (filters.entryExists(sub, (p => p(event)))) sub.update(this, event));
+            if (filters.entryExists(sub, (p => p(event)))) sub.notify(this, event));
 }

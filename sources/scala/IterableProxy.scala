@@ -86,12 +86,6 @@ class IterableProxy[+A](x: Iterable[A]) extends Iterable[A] with Proxy(x) {
      */
     override def :\[B](z: B)(f: (A, B) => B): B = x.:\(z)(f);
 
-    /** Transform this iterable object into a list of all elements.
-     *
-     *  @return  a list which enumerates all elements of this set.
-     */
-    override def toList: List[A] = x.toList;
-
     /** Checks if the other iterable object contains the same elements.
      *
      *  @param that  the other iterable object

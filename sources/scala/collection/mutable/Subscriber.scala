@@ -18,5 +18,5 @@ package scala.collection.mutable;
  *  @version 1.0, 08/07/2003
  */
 trait Subscriber[-A, -B] {
-    def update(pub: B, event: A): Unit;
+    def notify(pub: B, event: A): Unit;
 }

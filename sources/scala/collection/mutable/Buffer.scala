@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 02/03/2004
  */
-trait Buffer[A] with Seq[A] with Cloneable {
+trait Buffer[A] with Seq[A] with Scriptable[Message[Pair[Location, A]]] with Cloneable {
 
     /** Append a single element to this buffer and return
      *  the identity of the buffer.
@@ -39,8 +39,16 @@ trait Buffer[A] with Seq[A] with Cloneable {
      *
      *  @param iter  the iterable object.
      */
-    def ++(iter: Iterable[A]): Buffer[A] = {
-        iter.elements.foreach(e => this += e);
+    def ++(elems: Iterable[A]): Buffer[A] = this ++ elems.elements;
+
+    /** Appends a number of elements provided by an iterable object
+     *  via its <code>elements</code> method. The identity of the
+     *  buffer is returned.
+     *
+     *  @param iter  the iterable object.
+     */
+    def ++(iter: Iterator[A]): Buffer[A] = {
+        iter.foreach(e => this += e);
         this
     }
 
@@ -49,7 +57,14 @@ trait Buffer[A] with Seq[A] with Cloneable {
      *
      *  @param iter  the iterable object.
      */
-    def ++=(iter: Iterable[A]): Unit = this ++ iter;
+    def ++=(elems: Iterable[A]): Unit = this ++ elems.elements;
+
+    /** Appends a number of elements provided by an iterable object
+     *  via its <code>elements</code> method.
+     *
+     *  @param iter  the iterable object.
+     */
+    def ++=(it: Iterator[A]): Unit = this ++ it;
 
     /** Appends a sequence of elements to this buffer.
      *
@@ -78,7 +93,7 @@ trait Buffer[A] with Seq[A] with Cloneable {
      *  @param iter  the iterable object.
      */
     def ++:(iter: Iterable[A]): Buffer[A] = {
-        iter.toList.reverse.foreach(e => e +: this);
+        iter.elements.toList.reverse.foreach(e => e +: this);
         this
     }
 
@@ -128,13 +143,61 @@ trait Buffer[A] with Seq[A] with Cloneable {
      */
     def remove(n: Int): A;
 
+    /** Removes the first <code>n</code> elements.
+     *
+     *  @param n  the number of elements to remove from the beginning
+     *            of this buffer.
+     */
+    def trimStart(n: Int): Unit = {
+        var i = n;
+        while (i > 0) { remove(0); i = i - 1; }
+    }
+
+    /** Removes the last <code>n</code> elements.
+     *
+     *  @param n  the number of elements to remove from the end
+     *            of this buffer.
+     */
+    def trimEnd(n: Int): Unit = {
+        var i = n;
+        while (i > 0) { remove(length - 1); i = i - 1; }
+    }
+
     /** Clears the buffer contents.
      */
     def clear: Unit;
 
+    /** Send a message to this scriptable object.
+     *
+     *  @param cmd  the message to send.
+     */
+    def <<(cmd: Message[Pair[Location, A]]): Unit = cmd match {
+    	case Include(Pair(l, elem)) => l match {
+			case Start => prepend(elem);
+			case End => append(elem);
+			case Index(n) => insert(n, elem);
+			case _ => error("message " + cmd + " not understood");
+    	}
+    	case Update(Pair(l, elem)) => l match {
+    		case Start => update(0, elem);
+			case End => update(length - 1, elem);
+			case Index(n) => update(n, elem);
+			case _ => error("message " + cmd + " not understood");
+    	}
+    	case Remove(Pair(l, _)) => l match {
+    		case Start => remove(0);
+			case End => remove(length - 1);
+			case Index(n) => remove(n);
+			case _ => error("message " + cmd + " not understood");
+    	}
+    	case Reset() => clear;
+    	case s: Script[Pair[Location, A]] => s.elements foreach <<;
+    	case _ => error("message " + cmd + " not understood");
+    }
+
     /** Return a clone of this buffer.
      *
-     *  @return an <code>ArrayBuffer</code> with the same elements.
+     *  @return a buffer with the same elements.
      */
     override def clone(): Buffer[A] = super.clone().asInstanceOf[Buffer[A]];
 

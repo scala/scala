@@ -39,6 +39,14 @@ class SynchronizedStack[A] extends Stack[A] {
      */
     override def ++=(iter: Iterable[A]): Unit = synchronized { super.++=(iter); }
 
+    /** Pushes all elements provided by an iterator
+     *  on top of the stack. The elements are pushed in the order they
+     *  are given out by the iterator.
+     *
+     *  @param  iter        an iterator
+     */
+    override def ++=(it: Iterator[A]): Unit = synchronized { super.++=(it); }
+
     /** Pushes a sequence of elements on top of the stack. The first element
      *  is pushed first, etc.
      *

@@ -64,7 +64,7 @@ class ICode(label: String, global: scalac_Global) {
   def icTraverseFeedBack(f: (IBasicBlock, HashMap[IBasicBlock, boolean])  => unit) = {
     // ?? Define order (actually preorder)
     val visited : HashMap[IBasicBlock, boolean] = new HashMap;
-    visited.incl(blocks.elements.map((x: IBasicBlock) => Pair(x, false)));
+    visited ++= blocks.elements.map(x => Pair(x, false));
 
     var blockToVisit : List[IBasicBlock] = startBlock::Nil;
 

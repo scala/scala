@@ -18,22 +18,24 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class History[A, B] with Subscriber[A, B] {
+class History[A, B] with Subscriber[A, B] with Iterable[Pair[B, A]] {
 
     protected val log: Queue[Pair[B, A]] = new Queue[Pair[B, A]];
 
-    val maxHistory: Int = 32000;
+    val maxHistory: Int = 1000;
 
-    def update(pub: B, event: A): Unit = {
+    def notify(pub: B, event: A): Unit = {
         if (log.length >= maxHistory) {
             val old = log.dequeue;
         }
         log.enqueue(Pair(pub, event));
     }
 
-    def getHistory: Iterator[Pair[B, A]] = log.toList.elements;
+    def elements: Iterator[Pair[B, A]] = log.elements;
 
-    def historySize: Int = log.length;
+    def events: Iterator[A] = log.elements.map { case Pair(_, e) => e }
+
+    def size: Int = log.length;
 
     def clear: Unit = log.clear;
 }
