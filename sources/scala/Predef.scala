@@ -16,7 +16,7 @@ package scala;
  */
 object Predef {
 
-// aliases -------------------------------------------------------
+  // aliases -------------------------------------------------------
 
   type byte = scala.Byte;
   type short = scala.Short;
@@ -44,7 +44,7 @@ object Predef {
 
   type Function[-a,+b] = Function1[a,b];
 
-// arrays -----------------------------------------------------------
+  // arrays -----------------------------------------------------------
 
   /** Create an array with given elements.
    *
@@ -58,7 +58,7 @@ object Predef {
     array;
   }
 
-// errors and asserts -------------------------------------------------
+  // errors and asserts -------------------------------------------------
 
   def error(message: String): All = throw new Error(message);
 
@@ -73,7 +73,7 @@ object Predef {
       throw new Error("assertion failed: " + message);
   }
 
-// views -------------------------------------------------------------
+  // views -------------------------------------------------------------
 
   def view(x: int): Ordered[int] = new Ordered[int] {
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
@@ -84,6 +84,7 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+
   def view(x: char): Ordered[char] = new Ordered[char] {
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
@@ -93,6 +94,7 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+
   def view(x: long): Ordered[long] = new Ordered[long] {
     def compareTo [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
@@ -102,6 +104,7 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+
   def view(x: float): Ordered[float] = new Ordered[float] {
     def compareTo [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
@@ -111,6 +114,7 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+
   def view(x: double): Ordered[double] = new Ordered[double] {
     def compareTo [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
@@ -120,6 +124,7 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+
   def view(x: boolean): Ordered[boolean] = new Ordered[boolean] {
     def compareTo [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
@@ -129,11 +134,18 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+
   def view(x: String): Ordered[String] = new Ordered[String] {
     def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
       case y1: String => x compareTo y1;
       case _ => -(y compareTo x)
     }
   }
-}
 
+  def view[A](xs: Array[A]): Seq[A] = new Seq[A] {
+    def length = xs.length;
+    def elements = Iterator.fromArray(xs);
+    def apply(n: Int) = xs(n);
+    override protected def stringPrefix: String = "Array";
+  }
+}

@@ -3,7 +3,6 @@
 ##############################################################################
 # $Id$
 
-$colon$colon.scala
 AnyVal.java
 Array.java
 Boolean.java
@@ -32,7 +31,6 @@ Iterator.scala
 List.scala
 Long.java
 MatchError.java
-Nil.scala
 None.scala
 Option.scala
 Ord.scala

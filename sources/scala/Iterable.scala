@@ -9,6 +9,24 @@
 
 package scala;
 
+object Iterable {
+    def view[A <% Ordered[A]](x: Iterable[A]): Ordered[Iterable[A]] = new Ordered[Iterable[A]] {
+        def compareTo[B >: Iterable[A] <% Ordered[B]](that: B): Int = that match {
+            case y: Iterable[A] =>
+                val xs = x.elements;
+                val ys = y.elements;
+                var res = 0;
+                while (xs.hasNext && ys.hasNext && (res == 0)) {
+                    res = xs.next compareTo ys.next;
+                }
+                if (xs.hasNext) 1
+                else if (ys.hasNext) -1
+                else res;
+            case _ =>
+                -(that compareTo x)
+        }
+    }
+}
 
 /** Collection classes supporting this trait provide a method
  *  <code>elements</code> which returns an iterator over all the

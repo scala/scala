@@ -9,6 +9,8 @@
 
 package scala;
 
+import java.io.Serializable;
+
 
 /** This object provides methods for creating specialized lists, and for
  *  transforming special kinds of lists (e.g. lists of lists).
@@ -159,7 +161,6 @@ object List {
   }
 
   /** Lists with ordered elements are ordered
-   *  not yet since not compilable with bootstrap
    */
   def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
     def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {
@@ -171,9 +172,9 @@ object List {
       else if (xs.isEmpty) -1
       else if (ys.isEmpty) 1
       else {
-	val s = xs.head compareTo ys.head;
-	if (s != 0) s
-	else compareLists(xs.tail, ys.tail)
+        val s = xs.head compareTo ys.head;
+        if (s != 0) s
+        else compareLists(xs.tail, ys.tail)
       }
     }
   }
@@ -188,10 +189,10 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-trait List[+a] extends Seq[a] {
+sealed trait List[+a] extends Seq[a] {
 
-  /** Tests if this list is empty.
-   *  @return true, iff the list contains no element.
+  /** Returns true if the list does not contain any elements.
+   *  @return true, iff the list is empty.
    */
   def isEmpty: Boolean;
 
@@ -462,8 +463,8 @@ trait List[+a] extends Seq[a] {
     case head :: tail =>
       val tail1 = tail filter p;
       if (p(head))
-	if (tail eq tail1) this
-	else head :: tail1
+        if (tail eq tail1) this
+        else head :: tail1
       else tail1
   };
 
@@ -517,7 +518,7 @@ trait List[+a] extends Seq[a] {
           if (lt(x, y)) x::(y::acc) else y::x::acc
         case List(x, y, z) =>
           if (lt(x, y)) {
-	    if (lt(y, z)) x::y::z::acc
+            if (lt(y, z)) x::y::z::acc
             else if (lt(x, z)) x::z::y::acc
             else z::x::y::acc
           } else if (lt(x, z)) y::x::z::acc
@@ -538,16 +539,16 @@ trait List[+a] extends Seq[a] {
         if (lt(x, y)) this else y::x::Nil
       case List(x, y, z) =>
         if (lt(x, y)) {
-	  if (lt(y, z)) this
+          if (lt(y, z)) this
           else if (lt(x, z)) x::z::y::Nil
           else z::x::y::Nil
         } else if (lt(x, z)) y::x::z::Nil
         else if (lt(z, y)) z::y::x::Nil
         else y::z::x::Nil
       case hd1::hd2::hd3::tail => {
-	val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil);
-	val Pair(small,large) =  tail.partition((e2) => lt(e2, y));
-	sort_1(x::small, y::sort_1(z::large, Nil));
+        val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil);
+        val Pair(small,large) =  tail.partition((e2) => lt(e2, y));
+        sort_1(x::small, y::sort_1(z::large, Nil));
       }
     }
   }
@@ -740,6 +741,28 @@ trait List[+a] extends Seq[a] {
       if (tail contains head) tail.removeDuplicates
       else head :: tail.removeDuplicates
   }
-
 }
 
+/** The empty list.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 15/07/2003
+ */
+case object Nil extends List[All] with Serializable {
+    private val serialVersionUID = 0 - 8256821097970055419L;
+    def isEmpty = true;
+    def head: All = error("head of empty list");
+    def tail: List[All] = error("tail of empty list");
+}
+
+/** A non empty list characterized by a head and a tail.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 15/07/2003
+ */
+final case class ::[b](hd: b, tl: List[b]) extends List[b] with Serializable {
+    private val serialVersionUID = 0 - 8476791151983527571L;
+    def isEmpty: boolean = false;
+    def head: b = hd;
+    def tail: List[b] = tl;
+}
