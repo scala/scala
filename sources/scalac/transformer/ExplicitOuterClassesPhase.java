@@ -78,7 +78,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             }
             // Add outer type links
             if (hasOuterTypeLinks(symbol)) {
-                Symbol[] oldtparams = nextTypeParams(getOuterClass(symbol));
+                Symbol[] oldtparams = getOuterClass(symbol).nextTypeParams();
                 Symbol[] tlinks = Symbol.cloneArray(oldtparams);
                 for (int i = 0; i < tlinks.length; i++) {
                     tlinks[i] = oldtparams[i].cloneSymbol(symbol);
@@ -141,7 +141,7 @@ public class ExplicitOuterClassesPhase extends Phase {
     private Symbol getOuterValueLink(Symbol symbol) {
         if (!hasOuterValueLink(symbol)) return Symbol.NONE;
         if (symbol.isClass()) symbol = symbol.primaryConstructor();
-        return nextValueParams(symbol)[0];
+        return symbol.nextValueParams()[0];
     }
 
     /** Has the given type or constructor outer type links? */
@@ -149,14 +149,14 @@ public class ExplicitOuterClassesPhase extends Phase {
         assert symbol.isType() || symbol.isConstructor(): Debug.show(symbol);
         if (symbol.isJava()) return false;
         Symbol outer = getOuterClass(symbol);
-        return outer.isType() && nextTypeParams(outer).length != 0;
+        return outer.isType() && outer.nextTypeParams().length != 0;
     }
 
     /** Returns the type substitution for the given class or constructor. */
     private Type.Map getOuterTypeSubst(Symbol symbol, boolean update) {
         if (!hasOuterTypeLinks(symbol)) return Type.IdMap;
         Symbol[] oldtparams = getOuterTypeParams(symbol);
-        Symbol[] newtparams = nextTypeParams(symbol);
+        Symbol[] newtparams = symbol.nextTypeParams();
         Symbol[] tlinks = new Symbol[oldtparams.length];
         for (int i = 0; i < tlinks.length; i++) tlinks[i] = newtparams[i];
         return Type.getSubst(oldtparams, tlinks, update);
@@ -165,7 +165,7 @@ public class ExplicitOuterClassesPhase extends Phase {
     /** Returns the outer type parameters of the given class or constructor. */
     private Symbol[] getOuterTypeParams(Symbol symbol) {
         Symbol outer = getOuterClass(symbol);
-        Symbol[] tparams = Symbol.cloneArray(nextTypeParams(outer));
+        Symbol[] tparams = Symbol.cloneArray(outer.nextTypeParams());
         for (int i = tparams.length; i != 0; outer = getOuterClass(outer)) {
             Symbol[] symbols = outer.typeParams();
             for (int j = symbols.length; j != 0; ) tparams[--i] = symbols[--j];
@@ -183,29 +183,10 @@ public class ExplicitOuterClassesPhase extends Phase {
         global.nextPhase();
         Type[] targs = prefix.baseType(outer).widen().typeArgs();
         global.prevPhase();
-        assert targs.length == nextTypeParams(outer).length:
+        assert targs.length == outer.nextTypeParams().length:
             "\nsymbol = " + Debug.show(symbol) +
             "\nprefix = " + prefix;
         return targs;
-    }
-
-    //########################################################################
-    // Private Methods - Helper methods
-
-    /** Returns the given symbol's type parameters in next phase. */
-    private Symbol[] nextTypeParams(Symbol symbol) {
-        global.nextPhase();
-        Symbol[] tparams = symbol.typeParams();
-        global.prevPhase();
-        return tparams;
-    }
-
-    /** Returns the given symbol's value parameters in next phase. */
-    private Symbol[] nextValueParams(Symbol symbol) {
-        global.nextPhase();
-        Symbol[] vparams = symbol.valueParams();
-        global.prevPhase();
-        return vparams;
     }
 
     //########################################################################
@@ -393,8 +374,8 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Symbol method = (Symbol)entry.getKey();
                 Symbol forward = (Symbol)entry.getValue();
                 int pos = forward.pos;
-                Tree[] targs = gen.mkTypeRefs(pos, nextTypeParams(forward));
-                Tree[] vargs = gen.mkRefs(pos, nextValueParams(forward));
+                Tree[] targs = gen.mkTypeRefs(pos, forward.nextTypeParams());
+                Tree[] vargs = gen.mkRefs(pos, forward.nextValueParams());
                 Tree fun = gen.Select(gen.Super(pos, context.clasz), method);
                 trees[i] = gen.DefDef(forward, gen.mkApplyTV(fun,targs,vargs));
             }
