@@ -116,16 +116,32 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         }
     }
 
-    /** Build and attribute type ident node with given symbol.
+    /** Build and attribute ident nodes with given symbols.
+     */
+    public Tree[] mkIdents(int pos, Symbol[] syms) {
+        if (syms.length == 0) return Tree.EMPTY_ARRAY;
+        Tree[] trees = new Tree[syms.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = Ident(pos, syms[i]);
+	return trees;
+    }
+
+    /** Build and attribute type idents with given symbols.
+     */
+    public Tree[] mkTypeIdents(int pos, Symbol[] syms) {
+        if (syms.length == 0) return Tree.EMPTY_ARRAY;
+        Tree[] trees = new Tree[syms.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkTypeIdent(pos, syms[i]);
+	return trees;
+    }
+
+    /** Build and attribute type ident with given symbol.
      */
     public Tree mkTypeIdent(int pos, Symbol sym) {
         assert sym.kind == TYPE: Debug.show(sym);
 	sym.flags |= ACCESSED;
 	return mkType(pos, sym.nextType());
-    }
-
-    public Tree mkTypeIdent(Symbol sym) {
-        return Ident(sym.pos, sym);
     }
 
     /** Build and attribute tree corresponding to given type.
@@ -414,6 +430,27 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      */
     public Tree New(int pos, Type pre, Symbol clazz, Tree[] args) {
 	return New(pos, pre, clazz, Type.EMPTY_ARRAY, args);
+    }
+
+    /** Build application with given function, type args and value
+     * args.
+     */
+    public Tree mkApply(int pos, Tree fn, Type[] targs, Tree[] args) {
+        if (targs.length != 0) fn = TypeApply(pos, fn, mkTypes(pos, targs));
+        return Apply(pos, fn, args);
+    }
+
+    public Tree mkApply(Tree fn, Type[] targs, Tree[] args) {
+        return mkApply(fn.pos, fn, targs, args);
+    }
+
+    public Tree mkApply(int pos, Tree fn, Tree[] targs, Tree[] args) {
+        if (targs.length != 0) fn = TypeApply(pos, fn, targs);
+        return Apply(pos, fn, args);
+    }
+
+    public Tree mkApply(Tree fn, Tree[] targs, Tree[] args) {
+        return mkApply(fn.pos, fn, targs, args);
     }
 
     /** Build and attribute application node with given function
