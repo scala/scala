@@ -34,9 +34,9 @@ abstract class ScalaFactoryAdapter
 
     val f: Map[ String, Seq[Element] => Element ];
 
-    val g: Map[ String, Boolean ] ;
+    val g: Map[ String, boolean ] ;
 
-    def   elementContainsText( name:String ):Boolean =
+    def   elementContainsText( name:java.lang.String ):boolean =
          g.get( name ) ;
 
     def   createElement(elemName:String,
