@@ -162,14 +162,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	else throw new ApplicationError();
     }
 
-    Tree error(Tree tree, String msg) {
-	unit.error(tree.pos, msg);
-	if (tree.hasSymbol()) tree = tree.setSymbol(Symbol.ERROR);
-	return tree.setType(Type.ErrorType);
+    Tree errorTree(int pos) {
+	return make.Bad(pos).setSymbol(Symbol.ERROR).setType(Type.ErrorType);
     }
 
-    void error(int pos, String msg) {
+    Tree error(int pos, String msg) {
 	unit.error(pos, msg);
+	return errorTree(pos);
     }
 
     void typeError(int pos, Type found, Type req) {
@@ -529,7 +528,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (TreeInfo.isPureExpr(tree) || tree.type == Type.ErrorType) return tree;
 	//new TextTreePrinter().print(tree).end();//DEBUG
 	//System.out.println(" " + tree.type);//DEBUG
-	return error(tree, "stable identifier required");
+	return error(tree.pos, "stable identifier required");
     }
 
     /** Check that (abstract) type can be instantiated.
@@ -749,6 +748,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    other.moduleClass());
 			sym.moduleClass().constructor().copyTo(
 			    other.moduleClass().constructor());
+			other.moduleClass().constructor().setInfo(
+			    Type.MethodType(
+				Symbol.EMPTY_ARRAY,
+				other.moduleClass().typeConstructor()));
 		    }
 		    return other;
 		} else if (sym.kind == VAL && other.kind == VAL) {
@@ -1050,7 +1053,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	// evaluate what was found
 	if (sym1.kind == NONE) {
 	    if (sym.kind == NONE) {
-		return error(tree, "not found: " + decode(name));
+		return error(tree.pos, "not found: " + decode(name));
 	    } else {
 		sym.flags |= ACCESSED;
 		if (sym.owner().kind == CLASS)
@@ -1059,7 +1062,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    pre = Type.localThisType;
 	    }
 	} else if (sym.kind != NONE && !sym.isPreloaded()) {
-	    return error(tree,
+	    return error(tree.pos,
 			 "reference to " + name + " is ambiguous;\n" +
 			 "it is both defined in " + sym.owner() +
 			 " and imported subsequently by \n" + nextimports.tree);
@@ -1069,7 +1072,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		   nextimports.enclscope == lastimports.enclscope) {
 		if (!nextimports.sameImport(lastimports) &&
 		    nextimports.importedSymbol(name).kind != NONE) {
-		    return error(tree,
+		    return error(tree.pos,
 				 "reference to " + name + " is ambiguous;\n" +
 				 "it is imported twice in the same scope by\n    " +
 				 lastimports.tree + "\nand " + nextimports.tree);
@@ -1105,10 +1108,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	Symbol sym = qual.type.lookup(name);
 	if (sym.kind == NONE) {
 	    //System.out.println(qual.type + " has members " + qual.type.members());//DEBUG
-	    return error(tree,
-			 decode(name) + " is not a member of " + qual.type);
+	    return error(tree.pos,
+			 decode(name) + " is not a member of " + qual.type.widen());
 	} else if (!isAccessible(sym, qual)) {
-	    return error(tree, sym + " cannot be accessed in " + qual.type);
+	    return error(tree.pos, sym + " cannot be accessed in " + qual.type);
 	} else {
 	    sym.flags |= (ACCESSED | SELECTOR);
 	    Type symtype = qual.type.memberType(sym);
@@ -1212,8 +1215,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    pushContext(constrs[i], context.owner, context.scope);
 	    context.delayArgs = delayArgs;
 	    constrs[i] = transform(constrs[i], CONSTRmode, pt);
-	    Symbol c = TreeInfo.methSymbol(constrs[i]).primaryConstructorClass();
-	    if (c.kind == CLASS) c.initialize();//to detect cycles
+	    Symbol f = TreeInfo.methSymbol(constrs[i]);
+	    if (f != null) {
+		Symbol c = f.primaryConstructorClass();
+		if (c.kind == CLASS) c.initialize();//to detect cycles
+	    }
 	    popContext();
 	}
 	return constrs;
@@ -1301,7 +1307,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (context.delayArgs) {
 	    switch (fn1.type) {
 	    case MethodType(_, Type restp):
-		return tree.setType(restp);
+		return copy.Apply(tree, fn1, args).setType(restp);
 	    }
 	}
 
@@ -1326,7 +1332,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    try {
 		infer.methodAlternative(fn1, alts, alttypes, argtypes, pt);
 	    } catch (Type.Error ex) {
-		error(tree, ex.msg);
+		error(tree.pos, ex.msg);
 	    }
 	}
 
@@ -1337,7 +1343,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    try {
 		fn1 = infer.methodInstance(fn1, tparams, restp, argtypes);
 	    } catch (Type.Error ex) {
-		error(tree, ex.msg);
+		error(tree.pos, ex.msg);
 	    }
 	    switch (fn1.type) {
 	    case MethodType(Symbol[] params, Type restp1):
@@ -1362,7 +1368,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    return tree.setType(Type.ErrorType);
 
 	//new TextTreePrinter().print(tree).println().end();//DEBUG
-	return error(tree,
+	return error(tree.pos,
 	    infer.applyErrorMsg(
 		"", fn1, " cannot be applied to ", argtypes, pt));
 
@@ -1474,7 +1480,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		try {
 		    infer.exprAlternative(tree, alts, alttypes, pt);
 		} catch (Type.Error ex) {
-		    error(tree, ex.msg);
+		    error(tree.pos, ex.msg);
 		}
 		switch (tree.type) {
 		case OverloadedType(_, _):
@@ -1497,7 +1503,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		try {
 		    tree = infer.exprInstance(tree, tparams, restp, pt);
 		} catch (Type.Error ex) {
-		    error(tree, ex.msg);
+		    tree = error(tree.pos, ex.msg);
 		}
 		return adapt(tree, mode, pt);
 	    } else if ((mode & EXPRmode) != 0) {
@@ -1513,7 +1519,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		checkEtaExpandable(tree.pos, tree.type);
 		return transform(desugarize.etaExpand(tree, tree.type), mode, pt);
 	    } else if ((mode & (CONSTRmode | FUNmode)) == CONSTRmode) {
-		return error(tree, "missing arguments for class constructor");
+		return error(tree.pos, "missing arguments for class constructor");
 	    }
 	}
 	if ((mode & FUNmode) != 0) {
@@ -1537,11 +1543,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    if (seqtp != Type.NoType) {
 			tree.type = seqConstructorType(seqtp, pt);
 		    } else {
-			error(tree, "expected pattern type " + pt +
+			error(tree.pos, "expected pattern type " + pt +
 			      " does not conform to sequence " + clazz);
 		    }
 		} else {
-		    error(tree, tree.symbol() +
+		    error(tree.pos, tree.symbol() +
 			  " is neither a case class constructor nor a sequence class constructor");
 		}
 		return tree;
@@ -1610,7 +1616,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	Symbol sym = tree1.symbol();
 	if ((mode & FUNmode) == 0 && sym != null && sym.typeParams().length != 0)
-	    return error(tree, sym + " takes type parameters.");
+	    return error(tree.pos, sym + " takes type parameters.");
 	else
 	    return tree1;
     }
@@ -1632,8 +1638,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    switch (tree) {
 
 	    case Bad():
-		tree.setType(Type.ErrorType);
-		return tree;
+		return tree.setSymbol(Symbol.ERROR).setType(Type.ErrorType);
 
 	    case Empty:
 		tree.type = Type.NoType;
@@ -1764,7 +1769,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    desugarize.partialFunction(
 				tree, pattpe, restpe.dropVariance()));
 		    } else {
-			return error(tree, "expected pattern type of cases could not be determined");
+			return error(tree.pos, "expected pattern type of cases could not be determined");
 		    }
 		} else {
 		    return transform(desugarize.Visitor(tree));
@@ -1779,7 +1784,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (varsym != null && (varsym.flags & ACCESSOR) != 0) {
 		    return transform(desugarize.Assign(tree.pos, lhs, rhs));
 		} else if (varsym == null || (varsym.flags & MUTABLE) == 0) {
-		    return error(tree, "assignment to non-variable");
+		    return error(tree.pos, "assignment to non-variable");
 		} else {
 		    Tree rhs1 = transform(rhs, EXPRmode, lhs1.type);
 		    return copy.Assign(tree, lhs1, rhs1)
@@ -1828,8 +1833,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			enterSym(cd);
 			cd = transform(cd);
 			Symbol clazz = cd.symbol();
-			if (clazz.kind != CLASS)
-			    return Tree.Bad().setType(Type.ErrorType);
+			if (clazz.kind != CLASS) return errorTree(tree.pos);
 
 			// compute template's type with new refinement scope.
 			Type[] parentTypes = clazz.info().parents();
@@ -1896,7 +1900,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    try {
 			infer.polyAlternative(fn1, alts, alttypes, args.length);
 		    } catch (Type.Error ex) {
-			error(tree, ex.msg);
+			error(tree.pos, ex.msg);
 		    }
 		}
 
@@ -1919,7 +1923,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		case ErrorType:
 		    return tree.setType(Type.ErrorType);
 		}
-		return error(tree,
+		return error(tree.pos,
 		    infer.toString(fn1.symbol(), fn1.type) +
 		    " cannot be applied to " +
 		    ArrayApply.toString(argtypes, "[", ",", "]"));
@@ -1959,7 +1963,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			throw new ApplicationError();
 		    }
 		} else {
-		    return error(tree,
+		    return error(tree.pos,
                         "super can be used only in a class, module, or template");
 		}
 
@@ -1975,7 +1979,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    .setSymbol(clazz).setType(clazz.type()));
 		    } else {
 			return error(
-			    tree, tree +
+			    tree.pos, tree +
 			    " can be used only in a class, module, or template");
 		    }
 		} else {
@@ -1986,11 +1990,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			if (clazzContext != Context.NONE) {
 			    tree1 = tree;
 			} else {
-			    return error(
-				qual, clazz.name + " is not an enclosing class");
+			    return error(qual.pos,
+				clazz.name + " is not an enclosing class");
 			}
 		    } else {
-			return error(qual, "class identifier expected");
+			return error(qual.pos, "class identifier expected");
 		    }
 		}
 		return tree1.setType(

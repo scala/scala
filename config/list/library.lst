@@ -6,15 +6,16 @@
 $colon$colon.scala
 BufferedIterator.scala
 Cell.scala
-ConsStreamClass.scala
-EmptyStream.scala
 Iterator.scala
 Labelled.scala
+LinkedList.scala
 List.scala
 Monitor.scala
 Nil.scala
 None.scala
 Option.scala
+Ord.scala
+PartialFunction.scala
 Predef.scala
 Seq.scala
 Some.scala
@@ -29,6 +30,5 @@ Tuple6.scala
 Tuple7.scala
 Tuple8.scala
 Tuple9.scala
-PartialFunction.scala
 
 ##############################################################################

@@ -71,8 +71,6 @@ public class Infer implements Modifiers, Kinds {
 
     /** Is type `tp' a parameterized method type?
      */
-    /** Is type `tp' a parameterized method type?
-     */
     boolean isParameterized(Type tp) {
 	switch (tp) {
 	case MethodType(_, _): return true;
@@ -766,6 +764,15 @@ public class Infer implements Modifiers, Kinds {
     public void exprAlternative(Tree tree, Symbol[] alts,
 				Type[] alttypes, Type pt)
 	                        throws Type.Error {
+	if (alts.length > 0) {
+	    int i = 0;
+	    while (i < alts.length &&
+		   alts[i].isConstructor() &&
+		   alttypes[i] instanceof Type.MethodType)
+		i++;
+	    if (i == alts.length)
+		throw new Type.Error("missing arguments for " + alts[0]);
+	}
 	if (alts.length == 1) {
 	    tree.setSymbol(alts[0]).setType(alttypes[0]);
 	    return;

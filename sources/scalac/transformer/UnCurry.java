@@ -68,6 +68,7 @@ public class UnCurry extends OwnerTransformer
      *       (a_1, ..., a_n) => (Tuple(a_1, ..., a_n))
      */
     public Tree transform(Tree tree) {
+	//new scalac.ast.printer.TextTreePrinter().print("uncurry: ").print(tree).println().end();//DEBUG
 	//uncurry type and symbol
 	if (tree.type != null) tree.type = descr.uncurry(tree.type);
         switch (tree) {
@@ -80,7 +81,6 @@ public class UnCurry extends OwnerTransformer
 
 	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Tree rhs1 = transform(rhs, tree.symbol());
-	    if (global.debug) global.log(name + ":" + rhs1.type);//debug
 	    return copy.DefDef(
 		tree, mods, name, tparams,
 		uncurry(transform(vparams, tree.symbol())),
@@ -141,12 +141,19 @@ public class UnCurry extends OwnerTransformer
 	}
     }
 
+//    java.util.HashSet visited = new java.util.HashSet();//DEBUG
+
     /** Transform arguments `args' to method with type `methtype'.
      */
     private Tree[] transformArgs(int pos, Tree[] args, Type methtype) {
+//	if (args.length != 0 && visited.contains(args)) {
+//	    new scalac.ast.printer.TextTreePrinter().print("dup args: ").print(make.Block(pos, args)).println().end();//DEBUG
+//	    assert false;
+//	}
+//	visited.add(args);//DEBUG
+
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
-	    Tree[] args0 = args;//debug
 	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
 		assert (args.length != 1 || !(args[0] instanceof Tree.Tuple));
 		args = new Tree[]{make.Tuple(pos, args).setType(params[0].type())};
@@ -174,21 +181,23 @@ public class UnCurry extends OwnerTransformer
      *      convert argument `e' to (expansion of) `() => e'
      */
     private Tree transformArg(Tree arg, Symbol formal) {
-	Tree arg1 = transform(arg);
 	if ((formal.flags & DEF) != 0) {
 	    Symbol sym = arg.symbol();
 	    if (sym != null && (sym.flags & DEF) != 0) {
+		Tree arg1 = transform(arg);
 		switch (arg1) {
 		case Apply(Select(Tree qual, Name name), Tree[] args1):
 		    assert name == Names.apply && args1.length == 0;
 		    return qual;
 		default:
-		    global.debugPrinter.print(arg);//debug
+		    global.debugPrinter.print(arg1).flush();//debug
 		    throw new ApplicationError();
 		}
 	    }
-	    return transform(gen.mkUnitFunction(
-				 arg, descr.uncurry(arg1.type), currentOwner));
-	} else return arg1;
+	    return transform(
+		gen.mkUnitFunction(arg, descr.uncurry(arg.type), currentOwner));
+	} else {
+	    return transform(arg);
+	}
     }
 }
