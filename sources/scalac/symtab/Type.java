@@ -724,13 +724,16 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public boolean isFunctionType() {
         switch (this) {
         case TypeRef(Type pre, Symbol sym, Type[] args):
-            return sym.fullName().startsWith(Names.scala_Function) &&
-                args.length > 0;
+            Definitions definitions = Global.instance.definitions;
+            return args.length > 0
+                && args.length <= definitions.FUNCTION_COUNT
+                && sym == definitions.FUNCTION_CLASS[args.length - 1];
         case CompoundType(Type[] parents, Scope members):
+            Definitions definitions = Global.instance.definitions;
             return members.isEmpty() &&
                 parents.length == 2 &&
-                (parents[0].symbol().fullName() == Names.java_lang_Object ||
-		 parents[0].symbol().fullName() == Names.scala_AnyRef) &&
+                (parents[0].symbol() == definitions.JAVA_OBJECT_CLASS ||
+		 parents[0].symbol() == definitions.ANYREF_CLASS) &&
                 parents[1].isFunctionType();
         }
         return false;
@@ -3015,33 +3018,27 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     private static final Type[] unboxedType =
         new Type[LastUnboxedTag + 1 - FirstUnboxedTag];
-    private static final Type[] unboxedArrayType =
-        new Type[LastUnboxedTag + 1 - FirstUnboxedTag];
     private static final Name[] unboxedName =
         new Name[LastUnboxedTag + 1 - FirstUnboxedTag];
-    private static final Name[] boxedName =
-        new Name[LastUnboxedTag + 1 - FirstUnboxedTag];
-    private static final Name[] boxedFullName =
-        new Name[LastUnboxedTag + 1 - FirstUnboxedTag];
+    private static final Symbol[] boxedSymbol =
+        new Symbol[LastUnboxedTag + 1 - FirstUnboxedTag];
 
-    private static void mkStdClassType(int kind, String unboxedstr, String boxedstr) {
+    private static void mkStdClassType(int kind, String unboxedstr, Symbol boxedsym) {
         unboxedType[kind - FirstUnboxedTag] = UnboxedType(kind);
-        unboxedArrayType[kind - FirstUnboxedTag] = UnboxedArrayType(unboxedType(kind));
         unboxedName[kind - FirstUnboxedTag] = Name.fromString(unboxedstr);
-        boxedName[kind - FirstUnboxedTag] = Name.fromString(boxedstr);
-        boxedFullName[kind - FirstUnboxedTag] = Name.fromString("scala." + boxedstr);
+        boxedSymbol[kind - FirstUnboxedTag] = boxedsym;
     }
 
-    static {
-        mkStdClassType(BYTE, "byte", "Byte");
-        mkStdClassType(SHORT, "short", "Short");
-        mkStdClassType(CHAR, "char", "Char");
-        mkStdClassType(INT, "int", "Int");
-        mkStdClassType(LONG, "long", "Long");
-        mkStdClassType(FLOAT, "float", "Float");
-        mkStdClassType(DOUBLE, "double", "Double");
-        mkStdClassType(BOOLEAN, "boolean", "Boolean");
-        mkStdClassType(UNIT, "void", "Unit");
+    static void initializeUnboxedTypes(Definitions definitions) {
+        mkStdClassType(BYTE, "byte", definitions.BYTE_CLASS);
+        mkStdClassType(SHORT, "short", definitions.SHORT_CLASS);
+        mkStdClassType(CHAR, "char", definitions.CHAR_CLASS);
+        mkStdClassType(INT, "int", definitions.INT_CLASS);
+        mkStdClassType(LONG, "long", definitions.LONG_CLASS);
+        mkStdClassType(FLOAT, "float", definitions.FLOAT_CLASS);
+        mkStdClassType(DOUBLE, "double", definitions.DOUBLE_CLASS);
+        mkStdClassType(BOOLEAN, "boolean", definitions.BOOLEAN_CLASS);
+        mkStdClassType(UNIT, "void", definitions.UNIT_CLASS);
     }
 
     /** Return unboxed type of given kind.
@@ -3050,28 +3047,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return unboxedType[kind - FirstUnboxedTag];
     }
 
-    /** Return unboxed array type of given element kind.
-     */
-    public static Type unboxedArrayType(int kind) {
-        return unboxedArrayType[kind - FirstUnboxedTag];
-    }
-
     /** Return the name of unboxed type of given kind.
     */
     public static Name unboxedName(int kind) {
         return unboxedName[kind - FirstUnboxedTag];
-    }
-
-    /** Return the name of boxed type of given kind.
-    */
-    public static Name boxedName(int kind) {
-        return boxedName[kind - FirstUnboxedTag];
-    }
-
-    /** Return the full name of boxed type of given kind.
-    */
-    public static Name boxedFullName(int kind) {
-        return boxedFullName[kind - FirstUnboxedTag];
     }
 
     /** If type is boxed, return its unboxed equivalent; otherwise return the type
@@ -3079,22 +3058,22 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public Type unbox() {
         switch (this) {
-        case TypeRef(Type pre, Symbol sym, Type[] args):
-            if ((sym.flags & MODUL) == 0) {
-                Name fullname = sym.fullName();
-                if (fullname == Names.scala_Array && args.length == 1) {
-                    Type item = args[0].unalias();
+        case TypeRef(_, Symbol clasz, Type[] args):
+            if (args.length == 0) {
+                for (int i = 0; i < boxedSymbol.length; i++)
+                    if (boxedSymbol[i] == clasz) return unboxedType[i];
+            } else if (args.length == 1) {
+                Definitions definitions = Global.instance.definitions;
+                if (clasz == definitions.ARRAY_CLASS) {
+                    Type item = args[0];
                     Type bound = item.upperBound();
                     // todo: check with Philippe if this is what we want.
                     if (item.symbol().isClass() ||
-                        (bound.symbol() != Global.instance.definitions.ANY_CLASS &&
-                            bound.symbol() != Global.instance.definitions.ANYVAL_CLASS))
+                        (bound.symbol() != definitions.ANY_CLASS &&
+                            bound.symbol() != definitions.ANYVAL_CLASS))
                     {
                         return UnboxedArrayType(args[0].erasure());
                     }
-                }
-                for (int i = 0; i < boxedFullName.length; i++) {
-                    if (boxedFullName[i] == fullname) return unboxedType[i];
                 }
             }
         }
@@ -3124,12 +3103,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 return sym.info().asSeenFrom(pre, sym.owner()).erasure();
 
             case CLASS:
-                if (sym == Global.instance.definitions.UNIT_CLASS) return this;
-                Name fullname = sym.fullName();
-                if (fullname == Names.java_lang_Object ||
-                    fullname == Names.scala_All ||
-                    fullname == Names.scala_AllRef)
-                    return Type.typeRef(localThisType, Global.instance.definitions.ANY_CLASS, EMPTY_ARRAY);
+                Definitions definitions = Global.instance.definitions;
+                if (sym == definitions.UNIT_CLASS) return this;
+                if (sym == definitions.JAVA_OBJECT_CLASS ||
+                    sym == definitions.ALL_CLASS ||
+                    sym == definitions.ALLREF_CLASS)
+                    return Type.typeRef(localThisType, definitions.ANY_CLASS, EMPTY_ARRAY);
                 else {
                     Type this1 = unbox();
                     if (this1 != this) return this1;

@@ -610,6 +610,9 @@ public class Definitions {
         PATTERN_WILDCARD = new TermSymbol(
             Position.NOPOS, Names.PATTERN_WILDCARD, Symbol.NONE, 0);
         PATTERN_WILDCARD.setInfo(ALL_TYPE());
+
+        // initialize unboxed types in class Type
+        Type.initializeUnboxedTypes(this);
     }
 
     //########################################################################
