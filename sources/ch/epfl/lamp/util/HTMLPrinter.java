@@ -8,11 +8,15 @@
 
 package ch.epfl.lamp.util;
 
-import java.io.*;
+import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-/** This class provides methods to print HTML document.
+/**
+ * This class provides methods to print HTML document.
+ *
+ *  @author     Stephane Micheloud
+ *  @version    1.1
  */
 public class HTMLPrinter {
 
@@ -402,18 +406,26 @@ public class HTMLPrinter {
         return printCTag("a");
     }
 
-    /** Prints text 'text' in bold. */
+    /**
+     * Prints text <code>text</code> in bold.
+     * @param text
+     */
     public HTMLPrinter printBold(String text) {
         return printTag("b", text);
     }
 
-    /** Prints text 'text' in color 'color'. */
+    /**
+     * Prints text <code>text</code> in color <code>color</code>.
+     * @param color
+     * @param text
+     */
     public HTMLPrinter printFontColor(String color, String text) {
 	return printTag("font", new XMLAttribute[]{ new XMLAttribute("color", color) }, text);
     }
 
-    /** Prints comment with contents 'text'.
-     *  @param text
+    /**
+     * Prints comment with contents <code>text</code>.
+     * @param text
      */
     public HTMLPrinter printComment(String text) {
 	printer.print("<!-- ");
@@ -422,9 +434,10 @@ public class HTMLPrinter {
         return this;
     }
 
-    /** Prints n HTML blank spaces.
-     *  @param n The parameter <code>n</code> gives the number
-     *           of printed blank spaces
+    /**
+     * Prints <code>n</code> HTML blank spaces.
+     * @param n The parameter <code>n</code> gives the number
+     *          of printed blank spaces
      */
     public HTMLPrinter printNbsp(int n) {
 	while (n > 0) {
@@ -434,12 +447,17 @@ public class HTMLPrinter {
         return this;
     }
 
-    /** Prints an horizontal line separator */
+    /**
+     * Prints an horizontal line separator.
+     */
     public HTMLPrinter printHLine() {
         return printOTag("hr");
     }
 
-    /** Prints an horizontal line separator with attributes 'attrs'. */
+    /**
+     * Prints an horizontal line separator with attributes <code>attrs</code>.
+     * @param attrs
+     */
     public HTMLPrinter printHLine(XMLAttribute[] attrs) {
         return printOTag("hr", attrs);
     }
@@ -454,7 +472,8 @@ public class HTMLPrinter {
 
     //########################################################################
 
-    /** Prints HTML preamble.
+    /**
+     * Prints the HTML preamble of the current page.
      */
     protected void printPreamble() {
 	println("<!DOCTYPE html PUBLIC \"-//W3C//DTD " +
@@ -463,6 +482,7 @@ public class HTMLPrinter {
     }
 
     /**
+     * Prints a comment with generator name and generation date.
      */
     protected void printGeneratedBy(String generator) {
         if (generator != null) {
@@ -472,10 +492,12 @@ public class HTMLPrinter {
         }
     }
 
-    /** Prints HTML meta informations.
+    /**
+     * Prints HTML meta informations.
+     * @param metaAttrs
      */
     protected void printMetaInfo(XMLAttribute[] metaAttrs) {
-	printlnMeta(new XMLAttribute[]{
+        printlnMeta(new XMLAttribute[]{
             new XMLAttribute("http-equiv", "content-type"),
             new XMLAttribute("content",
                              "text/html; charset=" + representation.getEncoding())});
@@ -486,7 +508,8 @@ public class HTMLPrinter {
         }
     }
 
-    /** Prints HTML link information for style sheets.
+    /**
+     * Prints HTML link information for style sheets.
      *  @param stylesheets A list of stylesheets to be linked
      *                     to the current HTML document
      */
@@ -499,29 +522,34 @@ public class HTMLPrinter {
         }
     }
 
-    /** Prints HTML header section.
-     * @param metaXMLAttributes
+    /**
+     * Prints HTML header section of the current page.
+     * @param metaAttrs
+     * @param generator
+     * @param stylesheets
      */
     public void printHeader(XMLAttribute[] metaAttrs, String generator, String[] stylesheets) {
-	printPreamble();
-	printlnOTag("head").indent();
+        printPreamble();
+        printlnOTag("head").indent();
         printlnTag("title", title);
         printGeneratedBy(generator);
         printMetaInfo(metaAttrs);
         printStyles(stylesheets);
-	undent().printlnCTag("head").line();
+        undent().printlnCTag("head").line();
     }
 
-    /** Prints HTML header section.
-     *  @param metaXMLAttributes
-     *  @param generator
-     *  @param stylesheet
+    /**
+     * Prints HTML header section.
+     * @param metaXMLAttributes
+     * @param generator
+     * @param stylesheet
      */
     public void printHeader(XMLAttribute[] metaAttrs, String generator, String stylesheet) {
 	printHeader(metaAttrs, generator, new String[]{ stylesheet });
     }
 
-    /** Prints HTML header section.
+    /**
+     * Prints HTML header section.
      * @param metaXMLAttributes
      * @param generator
      */
@@ -529,20 +557,23 @@ public class HTMLPrinter {
 	printHeader(metaAttrs, generator, DEFAULT_STYLESHEET);
     }
 
-    /** Prints HTML header section.
+    /**
+     * Prints the header section of the current page.
      * @param metaXMLAttributes
      */
     public void printHeader(XMLAttribute[] metaAttrs) {
 	printHeader(metaAttrs, null);
     }
 
-    /** Open the body section.
+    /**
+     * Open the body section of the current page.
      */
     public void printOpenBody() {
 	printlnOTag("body").indent();
     }
 
     /**
+     * Prints the HTML footer of the current page.
      */
     public void printFootpage() {
 	undent().printlnCTag("body");
@@ -553,16 +584,25 @@ public class HTMLPrinter {
 }
 
 
-/** Map from Object to String.
+/**
+ * Map from Object to String.
  */
 public abstract class StringOf {
 
-    /** Give the string representation of an object.
+    /**
+     * Give the string representation of an object.
+     * @param o
      */
     public abstract String element(Object o);
 
-    /** Give the string representation of an array of objects. Return delimiters
-     *  for empty arrays depending on "delimWhenEmpty".
+    /**
+     * Give the string representation of an array of objects.
+     * Return delimiters for empty arrays depending on "delimWhenEmpty".
+     * @param objects
+     * @param open
+     * @param sep
+     * @param close
+     * @param delimWhenEmpty
      */
     public String array(Object[] objects, String open, String sep, String close, boolean delimWhenEmpty) {
 	if ((objects.length == 0) && !delimWhenEmpty)
@@ -580,7 +620,12 @@ public abstract class StringOf {
 	}
     }
 
-    /** Return always delimiters.
+    /**
+     * Return always delimiters.
+     * @param objects
+     * @param open
+     * @param sep
+     * @param close
      */
     public String array(Object[] objects, String open, String sep, String close) {
 	return array(objects, open, sep, close, true);
