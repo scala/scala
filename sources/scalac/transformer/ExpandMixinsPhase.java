@@ -146,6 +146,13 @@ public class ExpandMixinsPhase extends Phase {
         public Expander(Global global) {
             super(global);
         }
+        public void apply(Unit unit) {
+            if (unit.mixinOnly) {
+                global.log("removing " + unit + " after mixin expansion");
+                unit.body = Tree.EMPTY_ARRAY;
+            } else
+                super.apply(unit);
+        }
         public Tree transform(Tree tree) {
             switch (tree) {
             case ClassDef(_, _, _, _, _, _):
