@@ -601,13 +601,14 @@ class Parser(unit: Unit) {
     s.nextToken();
     if (isSymLit) {
       val pos = s.pos;
+      /*
       if (s.token == LPAREN || s.token == LBRACE)
         xmlp.mkXML( pos, isPattern, t, argumentExprs() ); // xml shorthand
-      else { // Symbol("name")
+      else { // Symbol("name")        */
         var symT = scalaDot( pos, Names.Symbol );
         if( isPattern ) { symT = convertToTypeId( symT ) };
         make.Apply( pos, symT, Predef.Array[Tree]( t ) )
-      }
+      /*} */
     } else {
       t
     }
