@@ -1,0 +1,39 @@
+(List(),List(1,2,3,4,5,6,7,8))
+(List(1,2,3,4),List(5,6,7,8))
+(List(1,2,3,4,5,6,7,8),List())
+
+(List(),List(8,7,6,5,4,3,2,1))
+(List(4,3,2,1),List(8,7,6,5))
+(List(8,7,6,5,4,3,2,1),List())
+
+(List(),List(7,2,1,5,4,3,8,6))
+(List(2,1,4,3),List(7,5,8,6))
+(List(7,2,1,5,4,3,8,6),List())
+
+List(1,2,3,4,5,6,7,8)
+
+(List(),List(1,2,3,4,5,6,7,8))
+(List(1,2,3,4),List(5,6,7,8))
+(List(1,2,3,4,5,6,7,8),List())
+
+(List(),List(8,7,6,5,4,3,2,1))
+(List(4,3,2,1),List(8,7,6,5))
+(List(8,7,6,5,4,3,2,1),List())
+
+(List(),List(7,2,1,5,4,3,8,6))
+(List(2,1,4,3),List(7,5,8,6))
+(List(7,2,1,5,4,3,8,6),List())
+
+List(1,2,3,4,5,6,7,8)
+
+List(List())
+List(List(),List(1))
+List(List(),List(2),List(1),List(1,2))
+List(List(),List(3),List(2),List(2,3),List(1),List(1,3),List(1,2),List(1,2,3))
+List(List(),List(4),List(3),List(3,4),List(2),List(2,4),List(2,3),List(2,3,4),List(1),List(1,4),List(1,3),List(1,3,4),List(1,2),List(1,2,4),List(1,2,3),List(1,2,3,4))
+
+queens(1) = List(List((1,1)))
+queens(2) = List()
+queens(3) = List()
+queens(4) = List(List((4,3),(3,1),(2,4),(1,2)),List((4,2),(3,4),(2,1),(1,3)))
+
