@@ -75,3 +75,153 @@ public class Transformer {
 
     //########################################################################
 }
+
+
+public class GenTransformer {
+
+    //########################################################################
+    // Public Fields
+
+    /** The global environment */
+    public final Global global;
+
+    /** A tree generator */
+    public final TreeGen gen;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public GenTransformer(Global global) {
+        this.global = global;
+        this.gen = global.treeGen;
+    }
+
+    //########################################################################
+    // Public Methods
+
+    /** Transforms the given units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++) apply(units[i]);
+    }
+
+    /** Transforms the given unit. */
+    public void apply(Unit unit) {
+        unit.global.log("transforming " + unit);
+        unit.body = transform(unit.body);
+    }
+
+    /** Transforms the given tree. */
+    public Tree transform(Tree tree) {
+        switch (tree) {
+
+        // case Bad():
+
+        case Empty:
+            return tree;
+
+        case ClassDef(_, _, _, _, _, Template impl):
+            Symbol clasz = tree.symbol();
+            Tree[] parents = transform(impl.parents);
+            Tree[] body = transform(impl.body);
+            return gen.ClassDef(clasz, parents, impl.symbol(), body);
+
+        case PackageDef(Tree packaged, Template(Tree[] parents, Tree[] body)):
+            assert parents.length == 0: tree;
+            return gen.PackageDef(packaged.symbol(), transform(body));
+
+        // case ModuleDef(_, _, _, Template impl):
+
+        case ValDef(_, _, _, Tree rhs):
+            return gen.ValDef(tree.symbol(), transform(rhs));
+
+        // case PatDef(int mods, Tree pat, Tree rhs):
+
+        case DefDef(_, _, _, _, _, Tree rhs):
+            return gen.DefDef(tree.symbol(), transform(rhs));
+
+        // case AbsTypeDef(_, _, Tree rhs, Tree lobound):
+        // case AliasTypeDef(_, _, AbsTypeDef[] tparams, Tree rhs):
+        // case Import(Tree expr, Name[] selectors):
+        // case CaseDef(Tree pat, Tree guard, Tree body):
+        // case Template(Tree[] parents, Tree[] body):
+
+        case LabelDef(_, Ident[] params, Tree rhs):
+            Symbol label = tree.symbol();
+            return gen.LabelDef(label, Tree.symbolOf(params), transform(rhs));
+
+        case Block(Tree[] stats):
+            return gen.Block(tree.pos, transform(stats));
+
+        // case Sequence(Tree[] trees):
+        // case Alternative(Tree[] trees):
+        // case Bind(Name name, Tree rhs):
+        // case Visitor(CaseDef[] cases):
+        // case Function(ValDef[] vparams, Tree body):
+
+        case Assign(Tree lhs, Tree rhs):
+            return gen.Assign(tree.pos, transform(lhs), transform(rhs));
+
+        case If(Tree cond, Tree thenp, Tree elsep):
+            cond = transform(cond);
+            thenp = transform(thenp);
+            elsep = transform(elsep);
+            return gen.If(tree.pos, cond, thenp, elsep);
+
+        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+            test = transform(test);
+            bodies = transform(bodies);
+            otherwise = transform(otherwise);
+            return gen.Switch(tree.pos, test, tags, bodies, otherwise);
+
+        case Return(Tree expr):
+            return gen.Return(tree.pos, tree.symbol(), expr);
+
+        // case Throw(Tree expr):
+
+        case New(Template(Tree[] base, Tree[] body)):
+            assert base.length == 1 && body.length == 0: tree;
+            return gen.New(tree.pos, transform(base[0]));
+
+        // case Typed(Tree expr, Tree tpe):
+
+        case TypeApply(Tree fun, Tree[] args):
+            return gen.TypeApply(transform(fun), transform(args));
+
+        case Apply(Tree fun, Tree[] args):
+            return gen.Apply(transform(fun), transform(args));
+
+        case Super(_, _):
+            return gen.Super(tree.pos, tree.symbol());
+
+        case This(_):
+            return gen.This(tree.pos, tree.symbol());
+
+        case Select(Tree qualifier, _):
+            return gen.Select(tree.pos, transform(qualifier), tree.symbol());
+
+        case Ident(_):
+            return gen.Ident(tree.pos, tree.symbol());
+
+        case Literal(Object value):
+            return gen.mkLit(tree.pos, value);
+
+        case TypeTerm():
+            return tree;
+
+        // case SingletonType(Tree ref):
+        // case SelectFromType(Tree qualifier, Name selector):
+        // case FunType(Tree[] argtpes, Tree restpe):
+        // case CompoundType(Tree[] parents, Tree[] refinements):
+        // case AppliedType(Tree tpe, Tree[] args):
+        // case Try(Tree block, Tree catcher, Tree finalizer):
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    {#TransformArrays#}
+
+    //########################################################################
+}
