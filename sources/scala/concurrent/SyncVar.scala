@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-class SyncVar[a] with Monitor {
+class SyncVar[a] {
   private var isDefined: Boolean = false;
   private var value: a = _;
   def get = synchronized {

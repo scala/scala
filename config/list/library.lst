@@ -34,7 +34,6 @@ Iterator.scala
 List.scala
 Long.java
 MatchError.java
-Monitor.scala
 Nil.scala
 None.scala
 Option.scala

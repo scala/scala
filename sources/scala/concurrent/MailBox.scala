@@ -1,11 +1,11 @@
 package scala.concurrent;
 
 //class MailBox with Monitor with LinkedListQueueCreator {
-class MailBox with Monitor with ListQueueCreator {
+class MailBox with ListQueueCreator {
 
   type Message = AnyRef;
 
-  private abstract class PreReceiver with Monitor {
+  private abstract class PreReceiver {
     var msg: Message = null;
     def isDefinedAt(msg: Message): boolean;
   }

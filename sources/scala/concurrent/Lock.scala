@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-class Lock with Monitor {
+class Lock {
   var available = true;
   def acquire = synchronized {
     if (!available) wait();

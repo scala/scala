@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-class Channel[a] with Monitor {
+class Channel[a] {
   class LinkedList[a] {
     var elem: a = _;
     var next: LinkedList[a] = null;

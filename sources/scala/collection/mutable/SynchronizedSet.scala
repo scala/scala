@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
+trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] {
 
     abstract override def size: Int = synchronized {
         super.size

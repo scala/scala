@@ -3,7 +3,7 @@ package scala.concurrent;
 /**
 * Library for using Pi-calculus concurrent primitives in Scala.
 */
-object pilib with Monitor {
+object pilib {
 
   /////////////////////////// SPAWN //////////////////////////////
 
@@ -92,7 +92,7 @@ object pilib with Monitor {
 
   //////////////////// SUM OF GUARDED PROCESSES //////////////////////
 
-  case class Sum(gs: List[UGP]) with Monitor {
+  case class Sum(gs: List[UGP]) {
 
     /** Continuation of the sum. */
     var cont: () => Any = _;

@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] with Monitor {
+trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] {
 
     abstract override def size: Int = synchronized {
         super.size;
