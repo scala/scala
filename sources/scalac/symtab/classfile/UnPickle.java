@@ -246,18 +246,17 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			sym.setFirstInfo(getType(inforef));
 			sym.setTypeOfThis(readTypeRef());
 			Symbol constr = readSymbolRef();
-			if (constr != sym.primaryConstructor()) {
-			    assert constr.type() instanceof Type.OverloadedType
-				: sym + " " + constr + ":" + constr.type();
-			    constr.copyTo(sym.allConstructors());
-			}
+			assert constr == sym.allConstructors();
+			Symbol[] alts = constr.alternativeSymbols();
+			for (int i = 0; i < alts.length; i++)
+			    ((TermSymbol)alts[i]).makeConstructor((ClassSymbol)sym);
 			break;
 
 		    case VALsym:
 			if (bp < end) {
 			    Symbol tsym = readSymbolRef();
 			    if (name == Names.CONSTRUCTOR) {
-				entries[n] = sym = tsym.primaryConstructor();
+				entries[n] = sym = tsym.allConstructors();
 				sym.flags = flags;
 			    } else {
 				assert (flags & MODUL) != 0 : name;

@@ -159,6 +159,15 @@ public class Global {
         this(args, false);
     }
 
+    /** hooks for installing printers
+     */
+    protected TreePrinter newTextTreePrinter(OutputStream printStream) {
+	return new TextTreePrinter(printStream);
+    }
+    protected TreePrinter newHTMLTreePrinter(OutputStream printStream) {
+	return new HTMLTreePrinter(printStream);
+    }
+
     /**
      * Creates an instance variable.
      *
@@ -199,9 +208,9 @@ public class Global {
         }
         String printerName = args.printer.value.intern();
         if (printerName == PRINTER_TEXT)
-            this.printer = new TextTreePrinter(printStream);
+            this.printer = newTextTreePrinter(printStream);
         else
-            this.printer = new HTMLTreePrinter(printStream);
+            this.printer = newHTMLTreePrinter(printStream);
         this.debugPrinter = new TextTreePrinter(System.err, true);
         this.freshNameCreator = new FreshNameCreator();
         this.make = new DefaultTreeFactory();

@@ -177,7 +177,7 @@ class ConstantFolder implements /*imports*/ TypeTags {
 	    }
 	    return (value != null) ? Type.constantType(value) : Type.NoType;
         } catch (ArithmeticException e) {
-	    ana.unit.error(pos, e.toString());
+	    ana.unit.warning(pos, e.toString());
 	    return Type.NoType;
 	}
     }
@@ -223,7 +223,7 @@ class ConstantFolder implements /*imports*/ TypeTags {
 	    }
 	    return (value != null) ? Type.constantType(value) : Type.NoType;
         } catch (ArithmeticException e) {
-	    ana.unit.error(pos, e.toString());
+	    ana.unit.warning(pos, e.toString());
 	    return Type.NoType;
 	}
     }
@@ -262,7 +262,7 @@ class ConstantFolder implements /*imports*/ TypeTags {
 	    return (value != null) ? new ConstantType(argtype, value)
 		: Type.NoType;
         } catch (ClassCastException e) {
-	    ana.unit.error(pos, e.toString());
+	    ana.unit.warning(pos, e.toString());
 	    return Type.NoType;
 	}
     }

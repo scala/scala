@@ -2101,7 +2101,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    return copy.Assign(tree, lhs1, rhs1)
 			.setType(definitions.UNIT_TYPE());
 		} else {
-		    return error(tree.pos, "assignment to non-variable");
+		    if (lhs1.type != Type.ErrorType)
+			error(tree.pos, "assignment to non-variable ");
+		    return errorTree(tree.pos);
 		}
 
 	    case If(Tree cond, Tree thenp, Tree elsep):

@@ -46,6 +46,24 @@ public class CompilerPhases {
     /** The list containing the active phases */
     private final List phases;
 
+    /** Phase names, can be overridden to install .
+     */
+    protected Class PARSER_PHASE() { return scalac.ast.parser.ParserPhase.class; }
+    protected Class ANALYZER_PHASE() { return scalac.typechecker.AnalyzerPhase.class; }
+    protected Class REFCHECK_PHASE() { return scalac.typechecker.RefCheckPhase.class; }
+    protected Class UNCURRY_PHASE() { return scalac.transformer.UnCurryPhase.class; }
+    protected Class TRANSMATCH_PHASE() { return scalac.transformer.TransMatchPhase.class; }
+    protected Class LAMBDALIFT_PHASE() { return scalac.transformer.LambdaLiftPhase.class; }
+    protected Class EXPLICITOUTER_PHASE() { return scalac.transformer.ExplicitOuterClassesPhase.class; }
+    protected Class ADDACCESSORS_PHASE() { return scalac.transformer.AddAccessorsPhase.class; }
+    protected Class TAILCALL_PHASE() { return scalac.transformer.TailCallPhase.class; }
+    protected Class ADDINTERFACES_PHASE() { return scalac.transformer.AddInterfacesPhase.class; }
+    protected Class EXPANDMIXIN_PHASE() { return scalac.transformer.ExpandMixinsPhase.class; }
+    protected Class ADDCONSTRUCTORS_PHASE() { return scalac.transformer.AddConstructorsPhase.class; }
+    protected Class ERASURE_PHASE() { return scalac.transformer.ErasurePhase.class; }
+    protected Class GENMSIL_PHASE() { return scalac.backend.msil.GenMSILPhase.class; }
+    protected Class GENJVM_PHASE() { return scalac.backend.jvm.GenJVMPhase.class; }
+
     //########################################################################
     // Public Constructors
 
@@ -57,27 +75,27 @@ public class CompilerPhases {
                 "initial",
                 "initializing compiler",
                 "initializing compiler",
-                scalac.util.EmptyPhase.class),
+		scalac.util.EmptyPhase.class),
             this.PARSER = new PhaseDescriptor(
                 "parse",
                 "parse source files",
                 "parsed",
-                scalac.ast.parser.ParserPhase.class),
+                PARSER_PHASE()),
             this.ANALYZER = new PhaseDescriptor(
                 "analyze",
                 "name and type analysis",
                 "type checking",
-                scalac.typechecker.AnalyzerPhase.class),
+                ANALYZER_PHASE()),
             this.REFCHECK = new PhaseDescriptor(
                 "refcheck",
                 "reference checking",
                 "reference checking",
-                scalac.typechecker.RefCheckPhase.class),
+                REFCHECK_PHASE()),
             this.UNCURRY = new PhaseDescriptor(
                 "uncurry",
                 "uncurry function types and applications",
                 "uncurried",
-                scalac.transformer.UnCurryPhase.class),
+                UNCURRY_PHASE()),
 //             this.OPTIMIZE = new PhaseDescriptor(
 //                 "optimize",
 //                 "tree-optimizer",
@@ -87,57 +105,57 @@ public class CompilerPhases {
                 "transmatch",
                 "translate match expressions",
                 "translated pattern matching",
-                scalac.transformer.TransMatchPhase.class),
+                TRANSMATCH_PHASE()),
             this.LAMBDALIFT = new PhaseDescriptor(
                 "lambdalift",
                 "lambda lifter",
                 "lambda lifting",
-                scalac.transformer.LambdaLiftPhase.class),
+                LAMBDALIFT_PHASE()),
             this.EXPLICITOUTER = new PhaseDescriptor(
                 "explicitouterclasses",
                 "make links from inner classes to enclosing one explicit",
                 "made outer links explicit",
-                scalac.transformer.ExplicitOuterClassesPhase.class),
+                EXPLICITOUTER_PHASE()),
             this.ADDACCESSORS = new PhaseDescriptor(
                 "addaccessors",
                 "add accessors for constructor arguments",
                 "added accessors",
-                scalac.transformer.AddAccessorsPhase.class),
+                ADDACCESSORS_PHASE()),
             this.TAILCALL = new PhaseDescriptor(
                 "tailcall",
                 "add tail-calls",
                 "added tail-calls",
-                scalac.transformer.TailCallPhase.class),
+                TAILCALL_PHASE()),
             this.ADDINTERFACES = new PhaseDescriptor(
                 "addinterfaces",
                 "add one interface per class",
                 "added interfaces",
-                scalac.transformer.AddInterfacesPhase.class),
+                ADDINTERFACES_PHASE()),
             this.EXPANDMIXIN = new PhaseDescriptor(
                 "expandmixins",
                 "expand mixins by code copying",
                 "expanded mixins",
-                scalac.transformer.ExpandMixinsPhase.class),
+                EXPANDMIXIN_PHASE()),
             this.ADDCONSTRUCTORS = new PhaseDescriptor(
                 "addconstructors",
                 "add explicit constructor for each class",
                 "added constructors",
-                scalac.transformer.AddConstructorsPhase.class),
+                ADDCONSTRUCTORS_PHASE()),
             this.ERASURE = new PhaseDescriptor(
                 "erasure",
                 "type eraser",
                 "erased types",
-                scalac.transformer.ErasurePhase.class),
+                ERASURE_PHASE()),
             this.GENMSIL = new PhaseDescriptor(
                 "genmsil",
                 "generate MSIL code",
                 "generated MSIL code",
-                scalac.backend.msil.GenMSILPhase.class),
+                GENMSIL_PHASE()),
             this.GENJVM = new PhaseDescriptor(
                 "genjvm",
                 "generate JVM bytecodes",
                 "generated JVM code",
-                scalac.backend.jvm.GenJVMPhase.class),
+                GENJVM_PHASE()),
             this.TERMINAL = new PhaseDescriptor(
                 "terminal",
                 "compilation terminated",

@@ -1278,6 +1278,11 @@ public class TermSymbol extends Symbol {
         return sym;
     }
 
+    public TermSymbol makeConstructor(ClassSymbol clazz) {
+        this.clazz = clazz;
+        return this;
+    }
+
     public static TermSymbol newJavaConstructor(Symbol clazz) {
         return newConstructor(clazz, clazz.flags & (ACCESSFLAGS | JAVA));
     }
@@ -1840,7 +1845,7 @@ public class ClassSymbol extends TypeSymbol {
 			}
 			for (int i = 0; i < index; i++)
 				sym = it.next();
-			System.out.println("field accessor = " + sym);
+			//System.out.println("field accessor = " + sym);//DEBUG
 		}
 		assert sym != null : this;
 		return sym;
