@@ -17,5 +17,6 @@ Location.java
 Page.java
 SymbolTablePrinter.java
 SymbolTablePrinterFactory.java
+HTTPServer.java
 
 ##############################################################################
