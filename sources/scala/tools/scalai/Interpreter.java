@@ -114,7 +114,8 @@ public class Interpreter {
         if (program.length > 0) load(lfiles = program);
         if (global.reporter.errors() == 0 && main != null) call(main, args);
         // Compute something to start compiler and force loading of Predef
-        // !!! if (interactive && program.length == 0 && main == null) eval("null");
+        if (interactive && program.length == 0 && main == null)
+            load("module $init$ {}");
         if (interactive) while (handle(read()));
         global.stop("total");
         if (!interactive) global.reporter.printSummary();
@@ -231,6 +232,12 @@ public class Interpreter {
         if (files.length == 0) return true;
         global.compile(files, true);
         return interpret(true);
+    }
+
+    public boolean load(String input) {
+        if (input.trim().length() == 0) return true;
+        global.compile(input + ";", false);
+        return interpret(false);
     }
 
     public boolean load(String[] files) {

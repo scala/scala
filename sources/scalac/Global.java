@@ -325,6 +325,8 @@ public class  Global {
     private List imports = new ArrayList();
 
     private void fix1() {
+        // make sure that Interpreter.scala is compiled
+        SHOW_DEFINITION();
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix1(units[i]);
         }
@@ -335,8 +337,6 @@ public class  Global {
     }
 
     private void fix1(Unit unit) {
-        // make sure that Interpreter.scala is compiled
-        SHOW_DEFINITION();
         unit.body = new Tree[] {
             make.ModuleDef(0, 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
                 make.Template(0, new Tree[]{
