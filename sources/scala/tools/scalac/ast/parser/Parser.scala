@@ -1324,6 +1324,7 @@ class Parser(unit: Unit) {
 	    t match {
 	      case Tree$Ident(name) if name == Names.MINUS =>
 		return literal(true, true);
+	      case _ =>
 	    }
 	  case _ =>
 	}
