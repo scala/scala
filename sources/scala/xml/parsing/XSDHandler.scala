@@ -14,7 +14,7 @@ class XSDHandler extends ConstructingHandler {
 
   override def internal_startPrefixMapping:Unit = {
     if( prefixes == null )
-      prefixes = new immutable.TreeMap.Empty[String,String] incl tmpPrefix;
+      prefixes = new immutable.TreeMap[String,String] incl tmpPrefix;
     super.internal_startPrefixMapping
   }
 
