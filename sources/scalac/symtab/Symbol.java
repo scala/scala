@@ -1285,10 +1285,28 @@ public class ClassSymbol extends TypeSymbol {
     public Symbol cloneSymbol(Symbol owner) {
         ClassSymbol other = new ClassSymbol(pos, name, owner, flags, module);
         other.setInfo(info());
-	other.constructor.setInfo(constructor.info());
+	other.constructor.setInfo(
+            fixClonedConstrType(
+                constructor.info().cloneType(constructor, other.constructor),
+                other));
 	other.mangled = mangled;
 	if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
+    }
+    private Type fixClonedConstrType(Type type, Symbol clone) {
+        switch (type) {
+        case MethodType(Symbol[] vparams, Type result):
+            result = fixClonedConstrType(result, clone);
+            return new Type.MethodType(vparams, result);
+        case PolyType(Symbol[] tparams, Type result):
+            result = fixClonedConstrType(result, clone);
+            return new Type.PolyType(tparams, result);
+        case TypeRef(Type pre, Symbol sym, Type[] args):
+            assert sym == this : Debug.show(sym) + " != " + Debug.show(this);
+            return new Type.TypeRef(pre, clone, args);
+        default:
+            throw Debug.abort("unexpected constructor type");
+        }
     }
 
     /** copy all fields to `sym'

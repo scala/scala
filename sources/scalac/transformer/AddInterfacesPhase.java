@@ -232,21 +232,12 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             Type.SubstThisMap thisTypeMap =
                 new Type.SubstThisMap(ifaceSym, classSym);
 
-            // Clone type and value parameters of constructor.
+            // Create class substitution map.
             SymbolSubstTypeMap classSubst = newClassSubst(classSym);
-            Symbol[] tparams = classConstrSym.typeParams();
-            for (int i = 0; i < tparams.length; ++i) {
-                Symbol newParam = tparams[i].cloneSymbol(classConstrSym);
-                classSubst.insertSymbol(tparams[i], newParam);
-            }
-
-            Symbol[] vparams = classConstrSym.valueParams();
-            for (int i = 0; i < vparams.length; ++i) {
-                vparams[i].setOwner(classConstrSym);
-                vparams[i].updateInfo(classSubst.apply(vparams[i].info()));
-            }
-
-
+            classSubst.insertSymbol(
+                ifaceConstrSym.typeParams(), classConstrSym.typeParams());
+            classSubst.insertSymbol(
+                ifaceConstrSym.valueParams(), classConstrSym.valueParams());
 
             // Clone all members, entering them in the class scope.
             Map classMembersMap = newClassMemberMap(classSym);
@@ -316,10 +307,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             classSym.updateInfo(Type.compoundType(newClassParents,
                                                   classMembers,
                                                   classSym));
-            classConstrSym.updateInfo(substResType(substParams(classConstrSym.info(),
-                                                               classSubst),
-                                                   ifaceSym,
-                                                   classSym));
             ifaceToClass.put(ifaceSym, classSym);
             classToIFace.put(classSym, ifaceSym);
         }
@@ -364,65 +351,4 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         return (Map)classMemberMaps.get(classSym);
     }
 
-    /** Substitute type and value arguments in the given type. We
-     * don't use Type.Map here, because it doesn't do what we want, in
-     * particular it doesn't substitute type arguments of PolyTypes */
-    protected Type substParams(Type t, SymbolSubstTypeMap map) {
-        switch (t) {
-        case MethodType(Symbol[] vparams, Type result): {
-            Symbol[] newVParams = new Symbol[vparams.length];
-            for (int i = 0; i < vparams.length; ++i) {
-                newVParams[i] = map.lookupSymbol(vparams[i]);
-                if (newVParams[i] == null) newVParams[i] = vparams[i];
-            }
-            return new Type.MethodType(newVParams, substParams(result, map));
-        }
-
-        case PolyType(Symbol[] tparams, Type result): {
-            Symbol[] newTParams = new Symbol[tparams.length];
-            for (int i = 0; i < tparams.length; ++i) {
-                newTParams[i] = map.lookupSymbol(tparams[i]);
-                if (newTParams[i] == null) newTParams[i] = tparams[i];
-            }
-            return new Type.PolyType(newTParams, substParams(result, map));
-        }
-
-        case TypeRef(Type pre, Symbol sym, Type[] args): {
-            Symbol newSym = map.lookupSymbol(sym);
-            if (newSym == null) newSym = sym;
-            Type[] newArgs = new Type[args.length];
-            for (int i = 0; i < args.length; ++i)
-                newArgs[i] = substParams(args[i], map);
-            return new Type.TypeRef(pre, newSym, newArgs);
-        }
-
-        case SingleType(_, _):
-        case ThisType(_):
-            return t;
-
-        case CompoundType(_,_):
-            // TODO see what to do here.
-            Global.instance.log("WARNING: blindly cloning CompoundType");
-            return t;
-
-        default:
-            throw Debug.abort("unexpected method type", t);
-        }
-    }
-
-    protected Type substResType(Type t, Symbol ifaceSym, Symbol classSym) {
-        switch (t) {
-        case MethodType(Symbol[] vparams, Type result):
-            return new Type.MethodType(vparams,
-                                       substResType(result, ifaceSym, classSym));
-        case PolyType(Symbol[] tparams, Type result):
-            return new Type.PolyType(tparams,
-                                     substResType(result, ifaceSym, classSym));
-        case TypeRef(Type pre, Symbol sym, Type[] args):
-            assert sym == ifaceSym;
-            return new Type.TypeRef(pre, classSym, args);
-        default:
-            throw Debug.abort("unexpected constructor type");
-        }
-    }
 }
