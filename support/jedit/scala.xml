@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE MODE SYSTEM "xmode.dtd">
+
+<MODE>
+	<PROPS>
+		<PROPERTY NAME="indentOpenBrackets" VALUE="{" />
+		<PROPERTY NAME="indentCloseBrackets" VALUE="}" />
+		<PROPERTY NAME="indentPrevLine"
+			VALUE="\s*(((if|while)\s*\(|else\s*(\{|$)|else\s+if\s*\(|case\s+.+:|default:)[^;]*|for\s*\(.*)" />
+		<PROPERTY NAME="indentSize" VALUE="2" />
+		<!-- set this to 'true' if you want to use GNU coding style -->
+		<PROPERTY NAME="doubleBracketIndent" VALUE="false" />
+		<PROPERTY NAME="commentStart" VALUE="/*" />
+		<PROPERTY NAME="commentEnd" VALUE="*/" />
+		<PROPERTY NAME="lineComment" VALUE="//" />
+		<PROPERTY NAME="noTabs" VALUE="true" />
+		<PROPERTY NAME="tabSize" VALUE="2" />
+		<PROPERTY NAME="wordBreakChars" VALUE=",+-=&lt;&gt;/?^&amp;*" />
+	</PROPS>
+	<RULES ESCAPE="\" IGNORE_CASE="FALSE" HIGHLIGHT_DIGITS="TRUE">
+		<!-- whitespace: (space and tab) -->
+		<WHITESPACE> </WHITESPACE>
+		<WHITESPACE>	</WHITESPACE>
+
+		<!-- Silly comment -->
+		<SEQ TYPE="COMMENT1">/**/</SEQ>
+
+		<!-- Scaladoc comment -->
+		<SPAN TYPE="COMMENT2" DELEGATE="SCALADOC">
+			<BEGIN>/**</BEGIN>
+			<END>*/</END>
+		</SPAN>
+
+		<!-- Scala comment (Java style) -->
+		<SPAN TYPE="COMMENT1">
+			<BEGIN>/*</BEGIN>
+			<END>*/</END>
+		</SPAN>
+
+		<SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+			<BEGIN>"</BEGIN>
+			<END>"</END>
+		</SPAN>
+		<SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+			<BEGIN>'</BEGIN>
+			<END>'</END>
+		</SPAN>
+
+		<EOL_SPAN TYPE="COMMENT1">//</EOL_SPAN>
+
+		<SEQ TYPE="NULL">)</SEQ>
+		<SEQ TYPE="OPERATOR">=</SEQ>
+		<SEQ TYPE="OPERATOR">!</SEQ>
+		<SEQ TYPE="OPERATOR">&gt;=</SEQ>
+		<SEQ TYPE="OPERATOR">&gt;:</SEQ>
+		<SEQ TYPE="OPERATOR">&lt;=</SEQ>
+		<SEQ TYPE="OPERATOR">&lt;:</SEQ>
+		<SEQ TYPE="OPERATOR">+</SEQ>
+		<SEQ TYPE="OPERATOR">-</SEQ>
+		<SEQ TYPE="OPERATOR">/</SEQ>
+		<SEQ TYPE="OPERATOR">*</SEQ>
+		<SEQ TYPE="OPERATOR">&gt;</SEQ>
+		<SEQ TYPE="OPERATOR">&lt;</SEQ>
+		<SEQ TYPE="OPERATOR">%</SEQ>
+		<SEQ TYPE="OPERATOR">&amp;</SEQ>
+		<SEQ TYPE="OPERATOR">|</SEQ>
+		<SEQ TYPE="OPERATOR">^</SEQ>
+		<SEQ TYPE="OPERATOR">~</SEQ>
+		<SEQ TYPE="OPERATOR">}</SEQ>
+		<SEQ TYPE="OPERATOR">{</SEQ>
+		<SEQ TYPE="NULL">.</SEQ>
+		<SEQ TYPE="NULL">,</SEQ>
+		<SEQ TYPE="NULL">;</SEQ>
+		<SEQ TYPE="NULL">]</SEQ>
+		<SEQ TYPE="NULL">[</SEQ>
+		<SEQ TYPE="NULL">?</SEQ>
+		<MARK_PREVIOUS TYPE="LABEL" EXCLUDE_MATCH="TRUE"
+			AT_LINE_START="TRUE">:</MARK_PREVIOUS>
+		<SEQ TYPE="NULL">:</SEQ>
+
+		<!-- Function calls -->
+		<MARK_PREVIOUS TYPE="FUNCTION" EXCLUDE_MATCH="TRUE">(</MARK_PREVIOUS>
+
+		<KEYWORDS IGNORE_CASE="FALSE">
+			<KEYWORD1>abstract</KEYWORD1>
+			<KEYWORD1>case</KEYWORD1>
+			<KEYWORD1>class</KEYWORD1>
+			<KEYWORD1>catch</KEYWORD1>
+			<KEYWORD1>def</KEYWORD1>
+			<KEYWORD1>do</KEYWORD1>
+			<KEYWORD1>else</KEYWORD1>
+			<KEYWORD1>extends</KEYWORD1>
+			<KEYWORD1>false</KEYWORD1>
+			<KEYWORD1>final</KEYWORD1>
+			<KEYWORD1>finally</KEYWORD1>
+			<KEYWORD1>for</KEYWORD1>
+			<KEYWORD1>if</KEYWORD1>
+			<KEYWORD1>import</KEYWORD1>
+			<KEYWORD1>new</KEYWORD1>
+			<KEYWORD1>null</KEYWORD1>
+			<KEYWORD1>object</KEYWORD1>
+			<KEYWORD1>override</KEYWORD1>
+			<KEYWORD1>package</KEYWORD1>
+			<KEYWORD1>private</KEYWORD1>
+			<KEYWORD1>protected</KEYWORD1>
+			<KEYWORD1>return</KEYWORD1>
+			<KEYWORD1>sealed</KEYWORD1>
+			<KEYWORD1>static</KEYWORD1>
+			<KEYWORD1>super</KEYWORD1>
+			<KEYWORD1>switch</KEYWORD1>
+			<KEYWORD1>synchronized</KEYWORD1>
+			<KEYWORD1>this</KEYWORD1>
+			<KEYWORD1>throw</KEYWORD1>
+			<KEYWORD1>trait</KEYWORD1>
+			<KEYWORD1>true</KEYWORD1>
+			<KEYWORD1>try</KEYWORD1>
+			<KEYWORD1>type</KEYWORD1>
+			<KEYWORD1>val</KEYWORD1>
+			<KEYWORD1>var</KEYWORD1>
+			<KEYWORD1>with</KEYWORD1>
+			<KEYWORD1>while</KEYWORD1>
+			<KEYWORD1>yield</KEYWORD1>
+			<KEYWORD1>=&gt;</KEYWORD1>
+			
+			<!-- java.lang.* wrapper types -->
+			<KEYWORD2>Character</KEYWORD2>
+			<KEYWORD2>Integer</KEYWORD2>
+
+			<!-- scala.* primitive types -->
+			<KEYWORD3>Boolean</KEYWORD3>
+			<KEYWORD3>boolean</KEYWORD3>
+			<KEYWORD3>Byte</KEYWORD3>
+			<KEYWORD3>byte</KEYWORD3>
+			<KEYWORD3>Char</KEYWORD3>
+			<KEYWORD3>char</KEYWORD3>
+			<KEYWORD3>class</KEYWORD3>
+			<KEYWORD3>Double</KEYWORD3>
+			<KEYWORD3>double</KEYWORD3>
+			<KEYWORD3>Float</KEYWORD3>
+			<KEYWORD3>float</KEYWORD3>
+			<KEYWORD3>Int</KEYWORD3>
+			<KEYWORD3>int</KEYWORD3>
+			<KEYWORD3>Long</KEYWORD3>
+			<KEYWORD3>long</KEYWORD3>
+			<KEYWORD3>Short</KEYWORD3>
+			<KEYWORD3>short</KEYWORD3>
+			<KEYWORD3>trait</KEYWORD3>
+			<KEYWORD3>Unit</KEYWORD3>
+			<KEYWORD3>unit</KEYWORD3>
+		</KEYWORDS>
+	</RULES>
+
+	<RULES SET="SCALADOC" DEFAULT="COMMENT2" IGNORE_CASE="TRUE">
+		<!-- whitespace: (space and tab) -->
+		<WHITESPACE> </WHITESPACE>
+		<WHITESPACE>	</WHITESPACE>
+
+		<!-- so that @link{...} is highlighted -->
+		<SEQ TYPE="COMMENT2">{</SEQ>
+
+		<!-- so that *@param is highlighted -->
+		<SEQ TYPE="COMMENT2">*</SEQ>
+
+		<!-- Javadoc ignores tags inside <pre> -->
+		<SPAN TYPE="MARKUP" DELEGATE="SCALADOC_PRE">
+			<BEGIN>&lt;pre&gt;</BEGIN>
+			<END>&lt;/pre&gt;</END>
+		</SPAN>
+
+		<!-- HTML comments -->
+		<SPAN TYPE="COMMENT1">
+			<BEGIN>&lt;!--</BEGIN>
+			<END>--&gt;</END>
+		</SPAN>
+
+		<!-- Javadoc allows this -->
+		<SEQ TYPE="COMMENT2">&lt;&lt;</SEQ>
+		<SEQ TYPE="COMMENT2">&lt;=</SEQ>
+		<SEQ TYPE="COMMENT2">&lt; </SEQ>
+
+		<!-- HTML tags -->
+		<SPAN TYPE="MARKUP" DELEGATE="xml::TAGS">
+			<BEGIN>&lt;</BEGIN>
+			<END>&gt;</END>
+		</SPAN>
+
+		<KEYWORDS>
+			<LABEL>@author</LABEL>
+			<LABEL>@beaninfo</LABEL>
+			<LABEL>@history</LABEL>
+			<LABEL>@bug</LABEL>
+			<LABEL>@review</LABEL>
+			<LABEL>@todo</LABEL>
+			<LABEL>@idea</LABEL>
+			<LABEL>@pre</LABEL>
+			<LABEL>@requires</LABEL>
+			<LABEL>@post</LABEL>
+			<LABEL>@ensures</LABEL>
+			<LABEL>@generates</LABEL>
+			<LABEL>@modifies</LABEL>
+			<LABEL>@invariant</LABEL>
+			<LABEL>@exception</LABEL>
+			<LABEL>@hides</LABEL>
+			<LABEL>@overrides</LABEL>
+			<LABEL>@equivalent</LABEL>
+			<LABEL>@bon</LABEL>
+			<LABEL>@access</LABEL>
+			<LABEL>@example</LABEL>
+			<LABEL>@design</LABEL>
+			<LABEL>@serial</LABEL>
+			<LABEL>@references</LABEL>
+			<LABEL>@uses</LABEL>
+			<LABEL>@guard</LABEL>
+			<LABEL>@values</LABEL>
+			<LABEL>@complexity</LABEL>
+			<LABEL>@deprecated</LABEL>
+			<LABEL>@docRoot</LABEL>
+			<LABEL>@exception</LABEL>
+			<LABEL>@link</LABEL>
+			<LABEL>@param</LABEL>
+			<LABEL>@return</LABEL>
+			<LABEL>@see</LABEL>
+			<LABEL>@serialData</LABEL>
+			<LABEL>@serialField</LABEL>
+			<LABEL>@since</LABEL>
+			<LABEL>@throws</LABEL>
+			<LABEL>@version</LABEL>
+			<LABEL>@spec</LABEL>
+		</KEYWORDS>
+	</RULES>
+
+	<RULES SET="SCALADOC_PRE" DEFAULT="COMMENT2" />
+</MODE>
