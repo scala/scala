@@ -17,8 +17,14 @@ public class AInvokeStyle {
     // Public Cases
 
     public case New;
-    public case Static;
     public case Dynamic;
+    public case Static(boolean onInstance);
+
+    //########################################################################
+    // Public Constants
+
+    public static final AInvokeStyle StaticClass    = Static(false);
+    public static final AInvokeStyle StaticInstance = Static(true);
 
     //########################################################################
     // Public Methods
@@ -28,10 +34,12 @@ public class AInvokeStyle {
         switch (this) {
         case New:
             return "new";
-        case Static:
-            return "static";
         case Dynamic:
             return "dynamic";
+        case Static(false):
+            return "static-class";
+        case Static(true):
+            return "static-instance";
         default:
             throw Debug.abort("unknown case", this);
         }

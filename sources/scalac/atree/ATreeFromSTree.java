@@ -264,7 +264,7 @@ public class ATreeFromSTree {
 
         case Select(Tree qualifier, _):
             if (symbol.isJava() && symbol.owner().isModuleClass())
-                return AFunction.Method(make.Void, symbol, AInvokeStyle.Static); // !!! qualifier is ignored !
+                return AFunction.Method(make.Void, symbol, AInvokeStyle.StaticClass); // !!! qualifier is ignored !
             ACode object = expression(qualifier);
             return AFunction.Method(object, symbol, invokeStyle(qualifier));
 
@@ -280,7 +280,7 @@ public class ATreeFromSTree {
     private AInvokeStyle invokeStyle(Tree qualifier) {
         switch (qualifier) {
         case Super(_, _):
-            return AInvokeStyle.Static;
+            return AInvokeStyle.StaticInstance;
         default:
             return AInvokeStyle.Dynamic;
         }

@@ -459,10 +459,10 @@ public class ATreePrinter {
         switch (function) {
         case Method(Void, Symbol method, AInvokeStyle.New):
             return print("new").space().printSymbol(method);
-        case Method(Void, Symbol method, AInvokeStyle.Static):
+        case Method(Void, Symbol method, AInvokeStyle.Static(false)):
             return printSymbol(method.owner()).print('.').printSymbol(method);
-        case Method(This(Symbol clasz), Symbol method, AInvokeStyle.Static):
-            printSymbol(clasz).print('.').print("super").print('.');
+        case Method(This(Symbol c), Symbol method, AInvokeStyle.Static(true)):
+            printSymbol(c).print('.').print("super").print('.');
             return printSymbol(method);
         case Method(ACode object, Symbol method, AInvokeStyle style):
             printCode(object).print('.');
