@@ -240,7 +240,7 @@ System.out.println();
     && Foo(3,'a',Bar()).selectElement( 2 ) == Bar()
     && Foo(3,'a',Bar()).selectElement( 3 ) == null
     && Bar().numberOfElements == 0
-    && Foo(3,'a',Bar()).numberOfElements() == 3);
+    && Foo(3,'a',Bar()).numberOfElements == 3);
 
 //############################################################################
 
