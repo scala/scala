@@ -567,7 +567,7 @@ package scala.tools.scaladoc {
       composeMap(ren_found, composeMap(ren_unif, inverseMap(ren_search)));
 
     def mkTypeVar(sym: Symbol): Type =
-      Type.typeRef(Type.localThisType, sym, Type.EMPTY_ARRAY);
+      Type.typeRef(Type.NoPrefix, sym, Type.EMPTY_ARRAY);
 
     def addParamTypes(paramTypes: Array[Type], t: Type): Type = t match {
       case Type$PolyType(tparams, result) => new Type$PolyType(tparams, addParamTypes(paramTypes, result))
