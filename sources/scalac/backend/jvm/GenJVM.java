@@ -44,8 +44,6 @@ import java.io.*;
  *   - initialisation of module instance variable.
  */
 
-// TODO generate line numbers
-
 /**
  * Backend generating JVM byte-codes.
  *
@@ -182,7 +180,7 @@ class GenJVM {
             leaveMethod(ctx1);
         } break;
 
-        case LabelDef(_, _):
+        case LabelDef(Tree.Ident[] params, Tree rhs):
             global.fail("not implemented yet " + tree);
             break;
 
@@ -732,8 +730,9 @@ class GenJVM {
         }
     }
 
-    /** Counter for temporary variables */
-    protected static int tempCounter = 1;
+    /** Variable in which temporary objects are stored by the
+     * implementation of == */
+    protected JLocalVariable eqEqTempVar;
 
     /**
      * Generate code for the given comparison primitive, applied on
@@ -785,17 +784,17 @@ class GenJVM {
             //     if (this == null) other == null else this.equals(other)
             assert prim == Primitive.EQ || prim == Primitive.NE;
 
-            // TODO we should be able to create only one such variable
-            // per method.
-            JLocalVariable var =
-                ctx.method.addNewLocalVariable(JObjectType.JAVA_LANG_OBJECT,
-                                               "temp" + tempCounter++);
-            ctx.code.emitSTORE(var);
+            if (eqEqTempVar == null || eqEqTempVar.getOwner() != ctx.method)
+                eqEqTempVar =
+                    ctx.method.addNewLocalVariable(JObjectType.JAVA_LANG_OBJECT,
+                                                   "eqEqTemp$");
+
+            ctx.code.emitSTORE(eqEqTempVar);
             ctx.code.emitDUP();
             JLabel ifNonNullLabel = new JLabel();
             ctx.code.emitIFNONNULL(ifNonNullLabel);
             ctx.code.emitPOP();
-            ctx.code.emitLOAD(var);
+            ctx.code.emitLOAD(eqEqTempVar);
             if (when ^ (prim != Primitive.EQ))
                 ctx.code.emitIFNULL(target);
             else
@@ -803,7 +802,7 @@ class GenJVM {
             JLabel afterLabel = new JLabel();
             ctx.code.emitGOTO(afterLabel);
             ctx.code.anchorLabelToNext(ifNonNullLabel);
-            ctx.code.emitLOAD(var);
+            ctx.code.emitLOAD(eqEqTempVar);
             JMethodType equalsType =
                 new JMethodType(JType.BOOLEAN,
                                 new JType[] { JObjectType.JAVA_LANG_OBJECT });
@@ -1183,17 +1182,8 @@ class GenJVM {
      * symbol table is saved.
      */
     protected void addScalaAttr(JClass cls) {
-        // TODO
-//         ConstantPoolGen poolGen = classGen.getConstantPool();
-
-//         int scalaNameIndex =
-//             poolGen.addUtf8(ClassfileConstants.SCALA_N.toString());
-//         Unknown scalaAttr = new Unknown(scalaNameIndex,
-//                                         0,
-//                                         null,
-//                                         poolGen.getConstantPool());
-
-//         classGen.addAttribute(scalaAttr);
+//         JOtherAttribute scalaAttr = new JOtherAttribute(...);
+//         cls.addAttribute(scalaAttr);
     }
 
     /// Names
