@@ -166,7 +166,7 @@ public class Evaluator {
 
         case IsScala(Code target, Symbol symbol):
             Object object = evaluate(target);
-            if (object == null) return Boolean.FALSE;
+            if (object == null || !isScalaObject(object)) return Boolean.FALSE;
             Symbol actual = getScalaObject(object).template.getSymbol();
             return new Boolean(actual.isSubClass(symbol));
 
