@@ -34,6 +34,7 @@
 \newcommand{\iffinaltype}[1]{}
 \newcommand{\ifpackaging}[1]{}
 \newcommand{\ifnewfor}[1]{}
+\newcommand{\overload}{\la\mbox{\sf and}\ra}
 \renewcommand{\todo}[1]{{$\clubsuit$\bf todo: #1$\spadesuit$}}
 \newcommand{\notyet}{\footnote{not yet implemented.}}
 
@@ -549,8 +550,6 @@ union : [a >: All <: Comparable[a]] (x: Set[a], xs: Set[a]) Set[a]  .
 \comment{
 \subsection{Overloaded Types}
 \label{sec:overloaded-types}
-\newcommand{\overload}{\la\mbox{\sf and}\ra}
-
 
 More than one values or methods are defined in the same scope with the
 same name, we model
@@ -1958,8 +1957,8 @@ matching for case classes.
 class. 
 \item No type may have two different case classes among its base types. 
 \item A case class may not inherit indirectly from a
-\lstlinline@sealed@ class.  That is, if a base class $b$ of a case class $c$
-is marked \lstineline@sealed@, then $b$ must be a parent class of $c$.
+\lstinline@sealed@ class.  That is, if a base class $b$ of a case class $c$
+is marked \lstinline@sealed@, then $b$ must be a parent class of $c$.
 \end{enumerate}
 
 A case class definition of ~\lstinline@$c$[$\tps\,$]($ps\,$)@~ with type
@@ -2605,8 +2604,9 @@ where $n \geq 0$, $sc$ as well as $mc_1 \commadots mc_n$ are
 constructor invocations (of types $S, T_1 \commadots T_n$, say) and
 $stats$ is a statement sequence containing initializer statements and
 member definitions (\sref{sec:members}). The type of such an instance
-creation expression is then the compound type \lstinline@$S$ with
-$T_1$ with $\ldots$ with $T_n$ {$R\,$}@, where \lstinline@{$R\,$}@ is
+creation expression is then the compound type
+\lstinline@$S$ with $T_1$ with $\ldots$ with $T_n$ {$R\,$}@,
+where \lstinline@{$R\,$}@ is
 a refinement (\sref{sec:compound-types}) which declares exactly those
 members of $stats$ that override a member of $S$ or $T_1 \commadots
 T_n$. \todo{what about methods and overloaded defs?}  For this type to
@@ -3163,12 +3163,14 @@ $x_i$ is $e$.
 If the expected type of the anonymous function is of the form
 ~\lstinline@scala.Function$n$[$S_1 \commadots S_n$, $R\,$]@, the
 expected type of $e$ is $R$ and the type $T_i$ of any of the
-parameters $x_i$ can be omitted, in which case ~\lstinline@$T_i$ =
-$S_i$@~ is assumed. If the expected type of the anonymous function is
+parameters $x_i$ can be omitted, in which
+case~\lstinline@$T_i$ = $S_i$@ is assumed.
+If the expected type of the anonymous function is
 some other type, all formal parameter types must be explicitly given,
 and the expected type of $e$ is missing. The type of the anonymous
-function is ~\lstinline@scala.Function$n$[$S_1 \commadots S_n$,
-$T\,$]@, where $T$ is the type of $e$. $T$ must be equivalent to a
+function
+is~\lstinline@scala.Function$n$[$S_1 \commadots S_n$, $T\,$]@,
+where $T$ is the type of $e$. $T$ must be equivalent to a
 type which does not refer to any of the formal parameters $x_i$.
 
 The anonymous function is evaluated as the instance creation expression
