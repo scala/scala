@@ -21,10 +21,10 @@ public class TypeAllRef extends SpecialType {
     }
 
     public boolean isSubType(Type that) {
-        return true;
+        return !that.isSubType(Type.AnyVal);
     }
 
-    public String toString() { return "scala.All"; }
+    public String toString() { return "scala.AllRef"; }
 
     public int hashCode() { return 0xDDDDDDDD; }
 };
