@@ -50,7 +50,9 @@ public class Erasure extends Transformer implements Modifiers {
     //########################################################################
     // Private Constants
 
+    /** The unboxed types */
     private static final Type
+        UNBOXED_UNIT    = Type.unboxedType(TypeTags.UNIT),
         UNBOXED_BOOLEAN = Type.unboxedType(TypeTags.BOOLEAN),
         UNBOXED_BYTE    = Type.unboxedType(TypeTags.BYTE),
         UNBOXED_SHORT   = Type.unboxedType(TypeTags.SHORT),
@@ -61,7 +63,36 @@ public class Erasure extends Transformer implements Modifiers {
         UNBOXED_DOUBLE  = Type.unboxedType(TypeTags.DOUBLE);
 
     //########################################################################
+    // Private Fields
+
+    /** The global definitions */
+    private final Definitions definitions;
+
+    /** The global primitives */
+    private final Primitives primitives;
+
+    //########################################################################
     // Private Methods - Tree generation
+
+    /** Generates an application with given function and arguments. */
+    private Tree genApply(int pos, Tree fun, Tree[] args) {
+        switch (fun.type()) {
+        case MethodType(Symbol[] params, Type result):
+            Tree[] args1 = args;
+            for (int i = 0; i < args.length; i++) {
+                Tree arg = args[i];
+                Tree arg1 = coerce(arg, params[i].nextType());
+                if (arg1 != arg && args1 == args) {
+                    args1 = new Tree[args.length];
+                    System.arraycopy(args, 0, args1, 0, i - 1);
+                }
+                args1[i] = arg1;
+            }
+            return gen.mkApply_V(pos, fun, args1);
+        default:
+            throw Debug.abort("illegal type " + fun.type() + " for " + fun);
+        }
+    }
 
     /**
      * Generates a new unboxed array of given size and with elements
@@ -76,13 +107,10 @@ public class Erasure extends Transformer implements Modifiers {
             while (!element.symbol().isJava()) element = element.parents()[0];
             global.prevPhase();
         }
-        String classname = primitives.getNameForClassForName(element);
-        return
-            gen.mkAsInstanceOf(
-                gen.mkApply_V(
-                    gen.mkRef(pos, primitives.NEW_OARRAY),
-                    new Tree[] { size, gen.mkStringLit(pos, classname) }),
-                Type.UnboxedArrayType(element));
+        String name = primitives.getNameForClassForName(element);
+        Tree[] args = { coerce(size, UNBOXED_INT), gen.mkStringLit(pos,name) };
+        Tree array = gen.mkApply_V(gen.mkRef(pos,primitives.NEW_OARRAY), args);
+        return gen.mkAsInstanceOf(array, Type.UnboxedArrayType(element));
     }
 
     /**
@@ -90,33 +118,35 @@ public class Erasure extends Transformer implements Modifiers {
      * of given unboxed type kind.
      */
     private Tree genNewUnboxedArray(int pos, int kind, Tree size) {
-        return
-            gen.mkApply_V(
-                gen.mkRef(pos, primitives.getNewArraySymbol(kind)),
-                new Tree[] {size});
+        Symbol symbol = primitives.getNewArraySymbol(kind);
+        Tree[] args = { coerce(size, UNBOXED_INT) };
+        return gen.mkApply_V(gen.mkRef(pos, symbol), args);
     }
 
     /** Generates an unboxed array length operation. */
     private Tree genUnboxedArrayLength(int pos, Tree array) {
+        assert isUnboxedArray(array.type()): array;
         Symbol symbol = primitives.getArrayLengthSymbol(array.type());
-        Tree[] args = new Tree[] { array };
+        Tree[] args = { array };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
     }
 
     /** Generates an unboxed array get operation. */
     private Tree genUnboxedArrayGet(int pos, Tree array, Tree index) {
+        assert isUnboxedArray(array.type()): array;
         Symbol symbol = primitives.getArrayGetSymbol(array.type());
         index = coerce(index, UNBOXED_INT);
-        Tree[] args = new Tree[] { array, index };
+        Tree[] args = { array, index };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
     }
 
     /** Generates an unboxed array set operation. */
     private Tree genUnboxedArraySet(int pos, Tree array,Tree index,Tree value){
+        assert isUnboxedArray(array.type()): array;
         Symbol symbol = primitives.getArraySetSymbol(array.type());
         index = coerce(index, UNBOXED_INT);
-        // !!! value = coerce(value, <element type>);
-        Tree[] args = new Tree[] { array, index, value };
+        value = coerce(value, getArrayElementType(array.type()));
+        Tree[] args = { array, index, value };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
     }
 
@@ -124,9 +154,6 @@ public class Erasure extends Transformer implements Modifiers {
     //########################################################################
     //########################################################################
     //########################################################################
-
-    private final Definitions definitions;
-    private final Primitives primitives;
 
     private Unit unit;
 
@@ -778,4 +805,18 @@ public class Erasure extends Transformer implements Modifiers {
             throw Debug.abort("no qualifier for tree", tree);
         }
     }
+
+
+    private Type getArrayElementType(Type type) {
+        switch (type) {
+        case TypeRef(_, Symbol symbol, Type[] args):
+            if (symbol != definitions.ARRAY_CLASS) break;
+            assert args.length == 1: type;
+            return args[0];
+        case UnboxedArrayType(Type element):
+            return element;
+        }
+        throw Debug.abort("non-array type: " + type);
+    }
+
 }
