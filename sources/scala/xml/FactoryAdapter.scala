@@ -137,6 +137,7 @@ abstract class FactoryAdapter
      */
     //def endDocument():Unit /*throws SAXException*/ = {}
 
+    //var elemCount = 0; //STATISTICS
     //
     // ContentHandler methods
     //
@@ -150,7 +151,7 @@ abstract class FactoryAdapter
      */
     override def startElement( uri:String , localName:String , qname:String ,
                              attributes:Attributes ):Unit /*throws SAXException*/ = {
-
+        //elemCount = elemCount + 1; //STATISTICS
         captureText();
 
         tagStack.push(curTag);
@@ -362,6 +363,7 @@ abstract class FactoryAdapter
 	    }
           }
 	} // catch
+      //System.err.println("[FactoryAdapter: total #elements = "+elemCount+"]");
       rootElem;
 
     } // loadXML

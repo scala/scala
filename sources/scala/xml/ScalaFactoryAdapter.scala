@@ -38,7 +38,7 @@ abstract class ScalaFactoryAdapter
 
     // if compress is set, used for hash-consing
     val cache = new HashMap[int,Element];
-
+    //var cacheCount = 0;
    /** creates an element. uses hash-consing if compress == true
     */
    def   createElement(elemName:String,
@@ -57,6 +57,8 @@ abstract class ScalaFactoryAdapter
         cache.get( h ).match {
 
             case Some(cachedElem) =>
+	      //cacheCount = cacheCount + 1;
+	      //System.err.println("[ScalaFactoryAdapter: cache hit "+cacheCount+"]");
 	      cachedElem
 
             case None =>

@@ -40,7 +40,7 @@ object Element {
   */
 
   def hashValue( name:String, attribs:Map[ String, String ], children:Seq[ Element ] ) = {
-    name.hashCode() + attribs.elements.hashCode() + children.hashCode()
+    name.hashCode() + attribs.toList.hashCode() + children.hashCode()
   }
 
   /** returns a hash value computed from the element name, attributes and hash values of children.
