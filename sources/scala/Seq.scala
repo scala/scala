@@ -14,5 +14,5 @@ trait Seq[+A] with Function1[Int, A] with Iterable[A] {
 
     /** @deprecated
      */
-    def at(index: Int): A;
+    //def at(index: Int): A;
 }
