@@ -78,7 +78,6 @@ symtab/SourceCompleter.java
 symtab/SymSet.java
 symtab/Symbol.java
 symtab/SymbolCloner.java
-symtab/SymbolMapApplier.java
 symtab/SymbolSubstTypeMap.java
 symtab/SymbolTablePrinter.java
 symtab/Type.java
