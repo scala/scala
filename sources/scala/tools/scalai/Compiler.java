@@ -175,9 +175,9 @@ public class Compiler {
         // !!! method java.lang.Object.wait(long)
         // !!! method java.lang.Object.wait(long, int)
 
-        environment.insertFunction(definitions.ANY_EQ, Function.Eq);
-        Override eq_override = Override.empty().insert(definitions.ANY_EQ);
-        environment.insertOverride(definitions.ANY_EQ, eq_override);
+        environment.insertFunction(definitions.OBJECT_EQ, Function.Eq);
+        Override eq_override = Override.empty().insert(definitions.OBJECT_EQ);
+        environment.insertOverride(definitions.OBJECT_EQ, eq_override);
 
         environment.insertFunction(definitions.ANY_EQEQ, Function.EqEq);
         Override eqeq_override = Override.empty().insert(definitions.ANY_EQEQ);

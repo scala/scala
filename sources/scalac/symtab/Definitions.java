@@ -285,7 +285,6 @@ public class Definitions {
     // Public Fields & Methods - Top and bottom class methods
 
     /** Some scala.Any methods */
-    public final Symbol ANY_EQ;
     public final Symbol ANY_EQEQ;
     public final Symbol ANY_BANGEQ;
     public final Symbol ANY_EQUALS;
@@ -300,6 +299,7 @@ public class Definitions {
     // Public Fields & Methods - Java class methods
 
     /** Some java.lang.Object methods */
+    public final Symbol OBJECT_EQ;
     public final Symbol OBJECT_SYNCHRONIZED;
 
     /** Some java.lang.String methods */
@@ -698,7 +698,6 @@ public class Definitions {
         array_TYPE   = newTypeMethod(Names.Array  ,ARRAY_TYPE(ANYREF_TYPE()));
 
         // add members to scala.Any
-        ANY_EQ       = newMethod(ANY_CLASS,Names.eq          , 0);
         ANY_EQEQ     = newMethod(ANY_CLASS,Names.EQEQ        ,Modifiers.FINAL);
         ANY_BANGEQ   = newMethod(ANY_CLASS,Names.BANGEQ      ,Modifiers.FINAL);
         ANY_EQUALS   = newMethod(ANY_CLASS,Names.equals      ,0);
@@ -709,7 +708,6 @@ public class Definitions {
         ANY_AS       = newMethod(ANY_CLASS,Names.asInstanceOf,Modifiers.FINAL);
         ANY_MATCH    = newMethod(ANY_CLASS,Names.match       ,Modifiers.FINAL);
 
-        initMethod(ANY_EQ      , new Type[]{ANY_TYPE()}   , boolean_TYPE());
         initMethod(ANY_EQEQ    , new Type[]{ANY_TYPE()}   , boolean_TYPE());
         initMethod(ANY_BANGEQ  , new Type[]{ANY_TYPE()}   , boolean_TYPE());
         initMethod(ANY_EQUALS  , new Type[]{ANY_TYPE()}   , boolean_TYPE());
@@ -738,9 +736,12 @@ public class Definitions {
                     ANY_MATCH_TPARAMS[1].type())));
 
         // add members to java.lang.Object
+        OBJECT_EQ =
+            newMethod(OBJECT_CLASS, Names.eq, Modifiers.FINAL);
         OBJECT_SYNCHRONIZED =
             newMethod(OBJECT_CLASS, Names.synchronized_, Modifiers.FINAL);
 
+        initMethod(OBJECT_EQ, new Type[]{ANYREF_TYPE()}, boolean_TYPE());
         Symbol OBJECT_SYNCHRONIZED_TPARAM =
             newTParam(OBJECT_SYNCHRONIZED,0,ANY_TYPE());
         Symbol OBJECT_SYNCHRONIZED_VPARAM =

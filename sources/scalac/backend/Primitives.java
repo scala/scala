@@ -467,7 +467,6 @@ public class Primitives {
         Definitions defs = definitions;
 
         // scala.Any
-        addPrimitive(defs.ANY_EQ, Primitive.ID);
         addPrimitive(defs.ANY_IS, Primitive.IS);
         addPrimitive(defs.ANY_AS, Primitive.AS);
         addPrimitive(defs.ANY_EQEQ, Primitive.EQ);
@@ -652,6 +651,7 @@ public class Primitives {
         addAll(defs.DOUBLE_CLASS, Names.GE, Primitive.GE, 1);
 
         // scala.Object
+        addPrimitive(defs.OBJECT_EQ, Primitive.ID);
         addPrimitive(defs.OBJECT_SYNCHRONIZED, Primitive.SYNCHRONIZED);
 
         // scala.String

@@ -474,13 +474,13 @@ public class ATreeFromSTree {
     /** Associates generators to primitive methods of given class. */
     private void addGeneratorsOf(Symbol clasz) {
         if (clasz == definitions.ANY_CLASS) {
-            addGenerator(definitions.ANY_EQ, Generator.ANYID);
             addGenerator(definitions.ANY_EQEQ, Generator.ANYEQ);
             addGenerator(definitions.ANY_BANGEQ, Generator.ANYNE);
             addGenerator(definitions.ANY_IS, Generator.ISAS(false));
             addGenerator(definitions.ANY_AS, Generator.ISAS(true));
         }
         if (clasz == definitions.OBJECT_CLASS) {
+            addGenerator(definitions.OBJECT_EQ, Generator.ANYID);
             addGenerator(definitions.OBJECT_SYNCHRONIZED, Generator.SYNCHRONIZED);
         }
         if (clasz == definitions.STRING_CLASS) {
