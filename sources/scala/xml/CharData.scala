@@ -13,7 +13,7 @@ import scala.collection.immutable ;
 
 /** an XML node for unparsed character data (CDATA).
  * @author Burak Emir
- * @param text text contained in this node, may not contain "]]>"
+ * @param text text contained in this node, may not contain &quot;]]&gt;&quot;
 **/
 
 case class CharData( text:String ) extends Node {
@@ -31,7 +31,7 @@ case class CharData( text:String ) extends Node {
   /** always empty */
   final def child = Nil;
 
-  /** returns  "<![CDATA["+text+"]]>" */
+  /** returns  &quot;&lt;![CDATA[&quot;+text+&quot;]]&gt;&quot; */
   final override def toString() = "<![CDATA["+text+"]]>";
 
 }

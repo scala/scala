@@ -43,7 +43,7 @@ case class ProcInstr( target:String, text:Option[String] ) extends Node {
   /** hashcode for this PI */
   override def hashCode() = target.hashCode() * 7 + text.hashCode();
 
-  /** returns "<?"+target+(" "+text)?+"?>" */
+  /** returns &quot;&lt;?&quot;+target+(&quot; &quot;+text)?+&quot;?&gt;&quot; */
   final override def toString() = {
     val sb = new StringBuffer("<?");
     sb.append(target);
