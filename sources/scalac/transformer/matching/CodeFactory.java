@@ -129,23 +129,21 @@ class CodeFactory extends PatternTool {
 			     new Type[] { elemType });
     }
 
-    /** returns code `<seqObj>.newIterator'
+    /** returns code `<seqObj>.elements'
      *  the parameter needs to have type attribute `Sequence[<elemType>]'
      *  it is not checked whether seqObj really has type `Sequence'
      */
     Tree newIterator( Tree seqObj ) {
-	Type args[] = seqObj.type().typeArgs();
-	assert ( args.length== 1 ) : "seqObj does not have right type";
-	Type elemType = args[ 0 ];
+	Type elemType = getElemType( seqObj.type() );
 	//System.out.println( "elemType:"+elemType );
 
 	//Tree t1 = gen.Select(seqObj, newIterSym);
 
-	Scope scp = defs.getClass( Names.scala_Seq ) /* sequenceSym */
+	Scope scp = defs.getClass( Names.scala_Iterable ) /* sequenceSym */
 	    .members();
 	Symbol newIterSym = scp.lookup/*Term */( Names.elements );
 
-	Tree t1 = make.Select( Position.NOPOS, seqObj, newIterSym.name )
+	Tree t1 = make.Select( Position.NOPOS, seqObj, newIterSym.name ) /*todo: newIterSym() */
 	    .setSymbol( newIterSym )
 	    .setType( Type.MethodType(new Symbol[] {},_seqIterType( elemType )));
 
@@ -268,12 +266,20 @@ class CodeFactory extends PatternTool {
 			new Tree[] { head, tail });
     }
 
-    // todo: more defensive checking
     Type getElemType( Type seqType ) {
-	Type[] args = seqType.typeArgs(); /*use typeArgs instead of args*/
-	assert (args.length==1);
-	return args[ 0 ];
+	System.err.println("getElemType("+seqType+")");
+	Symbol seqClass = defs.getType( Name.fromString("scala.Seq") ).symbol();
+	assert seqClass != Symbol.NONE : "did not find Seq";
 
+	Type seqType1 = seqType.baseType( seqClass );
+
+	switch( seqType1 ) {
+	case TypeRef(_,_,Type[] args):
+	    assert (args.length==1) : "weird type:"+seqType;
+	    return args[ 0 ];
+	default:
+	    return seqType;
+	}
     }
 
     /** `it.next()'
@@ -286,7 +292,7 @@ class CodeFactory extends PatternTool {
 
 	Symbol nextSym = scp.lookup( Names.next );
 
-	return _applyNone( gen.Select( iter, nextSym ))
+	return _applyNone( gen.Select( iter, nextSym )) /* todo: nextSym() */
 	    .setType( iter.type() );
     }
 
@@ -299,7 +305,7 @@ class CodeFactory extends PatternTool {
 
 	Symbol hasNextSym = scp.lookup( Names.hasNext );
 
-	return _applyNone( gen.Select( iter, hasNextSym ))
+	return _applyNone( gen.Select( iter, hasNextSym )) /* todo: hasNextSym() */
 	    .setType( defs.BOOLEAN_TYPE );
     }
 

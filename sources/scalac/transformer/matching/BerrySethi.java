@@ -553,6 +553,8 @@ class BerrySethi {
             */
             //System.out.println( nullableSequence( pat )); // UNIT TEST
             switch( pat ) {
+            case Subsequence( Tree[] subexpr ): // NEW VERSION
+		return automatonFrom( new Tree.Sequence( subexpr ), finalTag ); // NEW VERSION
             case Sequence( Tree[] subexpr ):
                   initialize( subexpr );
 

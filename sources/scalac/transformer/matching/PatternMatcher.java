@@ -329,62 +329,72 @@ public class PatternMatcher extends PatternTool {
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
         switch (tree) {
-			case Apply(Tree fn, Tree[] args):             // pattern with args
-	    		if (args.length == 1 && (tree.type.symbol().flags & Modifiers.CASE) == 0)
-					switch (args[0]) {
-						case Sequence(Tree[] ts):
-		    				return mk.SequencePat(tree.pos, tree.type, ts.length, args[0]);
-					}
-	    		return mk.ConstrPat(tree.pos, getConstrType(tree.type));
-			case Typed(Ident(Name name), Tree tpe):       // variable pattern
-				PatternNode node =
-					(header.type.isSubType(getConstrType(tpe.type))) ?
-						mk.DefaultPat(tree.pos, getConstrType(tpe.type))
-				  	  : mk.ConstrPat(tree.pos, getConstrType(tpe.type));
-				if ((env != null) && (name != WILDCARD_N))
-					switch (node) {
-						case ConstrPat(Symbol casted):
-							env.newBoundVar(
-							tree.pos,
-							((Tree.Typed)tree).expr.symbol(),
-							getConstrType(tpe.type),
-							make.Ident(tree.pos, casted.name).
-							setType(typeOf(casted)).
-							setSymbol(casted));
-							break;
-						default:
-							env.newBoundVar(
-							tree.pos,
-							((Tree.Typed)tree).expr.symbol(),
-							getConstrType(tpe.type),
-							header.selector);
-					}
-				return node;
-			case Ident(Name name):        		// pattern without args or variable
-				if (tree.symbol().isPrimaryConstructor())
-					return mk.ConstrPat(tree.pos, getConstrType(tree.type));
-				else if (name.isVariable()) {
-					if ((env != null) && (name != WILDCARD_N))
-						env.newBoundVar(
-							tree.pos,
-							tree.symbol(),
-							getConstrType(tree.type),
-							header.selector);
-					return mk.DefaultPat(tree.pos, getConstrType(header.type));
-				} else
-					return mk.VariablePat(tree.pos, tree);
-			case Select(_, Name name):                                    // variable
-				if (tree.symbol().isPrimaryConstructor())
-					return mk.ConstrPat(tree.pos, getConstrType(tree.type));
-				else
-					return mk.VariablePat(tree.pos, tree);
-			case Literal(Object value):
-				return mk.ConstantPat(tree.pos, getConstrType(tree.type), value);
-			case Sequence(Tree[] ts):
-				return mk.SequencePat(tree.pos, tree.type, ts.length, tree);
-			default:
-				new scalac.ast.printer.TextTreePrinter().print(tree).flush();
-				throw new ApplicationError(tree);
+	case Apply(Tree fn, Tree[] args):             // pattern with args
+	    if (args.length == 1 && (tree.type.symbol().flags & Modifiers.CASE) == 0)
+		switch (args[0]) {
+		case Sequence(Tree[] ts):
+		    return mk.SequencePat(tree.pos, tree.type, ts.length, args[0]);
+		}
+	    return mk.ConstrPat(tree.pos, getConstrType(tree.type));
+	case Typed(Ident(Name name), Tree tpe):       // variable pattern
+	    PatternNode node =
+		(header.type.isSubType(getConstrType(tpe.type))) ?
+		mk.DefaultPat(tree.pos, getConstrType(tpe.type))
+		: mk.ConstrPat(tree.pos, getConstrType(tpe.type));
+	    if ((env != null) && (name != WILDCARD_N))
+		switch (node) {
+		case ConstrPat(Symbol casted):
+		    env.newBoundVar(
+				    tree.pos,
+				    ((Tree.Typed)tree).expr.symbol(),
+				    getConstrType(tpe.type),
+				    make.Ident(tree.pos, casted.name).
+				    setType(typeOf(casted)).
+				    setSymbol(casted));
+		    break;
+		default:
+		    env.newBoundVar(
+				    tree.pos,
+				    ((Tree.Typed)tree).expr.symbol(),
+				    getConstrType(tpe.type),
+				    header.selector);
+		}
+	    return node;
+	case Ident(Name name):        		// pattern without args or variable
+	    if (tree.symbol().isPrimaryConstructor())
+		return mk.ConstrPat(tree.pos, getConstrType(tree.type));
+	    else if (name.isVariable()) {
+		if ((env != null) && (name != WILDCARD_N))
+		    env.newBoundVar(
+				    tree.pos,
+				    tree.symbol(),
+				    getConstrType(tree.type),
+				    header.selector);
+		return mk.DefaultPat(tree.pos, getConstrType(header.type));
+	    } else
+		return mk.VariablePat(tree.pos, tree);
+	case Select(_, Name name):                                    // variable
+	    if (tree.symbol().isPrimaryConstructor())
+		return mk.ConstrPat(tree.pos, getConstrType(tree.type));
+	    else
+		return mk.VariablePat(tree.pos, tree);
+	case Literal(Object value):
+	    return mk.ConstantPat(tree.pos, getConstrType(tree.type), value);
+	case Sequence(Tree[] ts):
+	    return mk.SequencePat(tree.pos, tree.type, ts.length, tree);
+	case Subsequence(Tree[] ts):
+	    return mk.SequencePat(tree.pos, tree.type, ts.length, tree);
+	case Alternative(Tree[] ts): // CAN THIS WORK ?
+	    assert ts.length > 0;
+	    PatternNode res = patternNode( ts[ 0 ], header, env );
+	    for( int i = 1; i<ts.length; i++ ) {
+		res.or = patternNode( ts[ i ], header, env );
+		res = res.or ;
+	    }
+	    return res;
+	default:
+	    new scalac.ast.printer.TextTreePrinter().print(tree).flush();
+	    throw new ApplicationError(tree);
         }
     }
 
@@ -676,7 +686,13 @@ public class PatternMatcher extends PatternTool {
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
-            case SequencePat(Symbol casted, int len, _):
+            case SequencePat(Symbol casted, int len, Tree tree):
+		if( TestRegTraverser.apply( tree ) )
+		    {
+			//System.err.println("calling sequence matcher");
+			return callSequenceMatcher( node, selector );
+		    }
+
                 Symbol lenSym = casted.type().lookup(LENGTH_N);
                 Tree t = make.Select(selector.pos, cf.As(selector.duplicate(), node.type), LENGTH_N);
                 switch (typeOf(lenSym)) {
@@ -708,6 +724,7 @@ public class PatternMatcher extends PatternTool {
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector.duplicate()))
                             .setType(defs.BOOLEAN_TYPE);
+
             case ConstantPat(Object value):
                 return make.If(
                         selector.pos,
@@ -773,7 +790,7 @@ public class PatternMatcher extends PatternTool {
 
 	Tree defaultCase = toTree( defaultNode, selector );
 
-	// SequenceMatcher wordRec = new SequenceMatcher(unit, infer); FIX ME FOR THE NEW VERSION
+	SequenceMatcher wordRec = new SequenceMatcher(unit, infer);
 
 	Matcher m = new Matcher( _m.owner,
 				 selector,
@@ -791,7 +808,7 @@ public class PatternMatcher extends PatternTool {
 	    j++;
 	}
 
-	// wordRec.construct( m, pats, body, defaultCase /*, doBinding*/ ); FIX ME FOR THE NEW VERSION
+	wordRec.construct( m, pats, body, defaultCase, true /*doBinding*/ );
 
 	return m.tree;
 
