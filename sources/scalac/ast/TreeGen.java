@@ -771,7 +771,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds a ClassDef node for given class with given body. */
     public Tree ClassDef(Symbol clazz, Tree[] body) {
         for (int i = 0; i < body.length; i++) {
-            assert body[i].definesSymbol() && body[i].symbol().owner() ==clazz:
+            assert body[i] == Tree.Empty
+                || body[i].definesSymbol() && body[i].symbol().owner() ==clazz:
                 "\nclass : " + clazz +
                 "\nmember: " + body[i];
         }
