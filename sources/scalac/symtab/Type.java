@@ -756,7 +756,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             default:
                 if (sym1type.compareTo(symtype, relation)) return sym1;
                 else {
-                    if (Global.instance.debug) System.out.println(sym1 + sym1.locationString() + " is not" + relation + "to " + sym + sym.locationString() + " in " + pre + ", since " + sym1type + relation.toString(true) + symtype);//DEBUG
+                    if (Global.instance.debug) System.out.println(sym1 + sym1.locationString() + " is not" + relation + "to " + sym + sym.locationString() + " as seen from " + pre + ", since " + sym1type + relation.toString(true) + symtype);//DEBUG
                     return Symbol.NONE;
                 }
             }
@@ -1603,9 +1603,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
         public String toString(boolean negate) {
             switch (this) {
-            case SubType  : return negate ? " <= " : " !<= ";
-            case SameType : return negate ? " == " : " != ";
-            case SuperType: return negate ? " >= " : " !>= ";
+            case SubType  : return negate ? " !<= " : " <= ";
+            case SameType : return negate ? " !== " : " = ";
+            case SuperType: return negate ? " !>= " : " >= ";
             default       : throw Debug.abort("unknown relation", this);
             }
         }
