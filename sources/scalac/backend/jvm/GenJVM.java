@@ -1393,18 +1393,6 @@ class GenJVM {
         return name;
     }
 
-    /**
-     * Return the name of the file in which to store the given class.
-     */
-    protected String javaFileName(String className) {
-        StringTokenizer tokens = new StringTokenizer(className, ".");
-        File file = new File(global.outpath);
-        while (tokens.hasMoreElements())
-            file = new File(file, tokens.nextToken());
-
-        return file.getPath() + ".class";
-    }
-
     /// Types
     //////////////////////////////////////////////////////////////////////
 
@@ -1712,14 +1700,32 @@ class GenJVM {
 
     /** Writes the given class to a file. */
     protected void writeClassFile(JClass clazz) {
-        String fileName = javaFileName(clazz.getName());
+        File file = getFile(clazz, ".class");
         try {
-            clazz.writeTo(fileName);
-            global.operation("wrote " + fileName);
+            clazz.writeTo(file);
+            global.operation("wrote " + file);
         } catch (IOException exception) {
             if (global.debug) exception.printStackTrace();
-            global.error("could not write file " + fileName);
+            global.error("could not write file " + file);
         }
+    }
+
+    /** Writes the given pickle for given class to a file. */
+    protected void writeSymblFile(JClass clazz, Pickle pickle) {
+        File file = getFile(clazz, ".symbl");
+        try {
+            pickle.writeTo(file);
+            global.operation("wrote " + file);
+        } catch (IOException exception) {
+            if (global.debug) exception.printStackTrace();
+            global.error("could not write file " + file);
+        }
+    }
+
+    /** Returns the file with the given suffix for the given class. */
+    protected File getFile(JClass clazz, String suffix) {
+        String path = clazz.getName().replace('.', File.separatorChar);
+        return new File(global.outpath + File.separatorChar + path + suffix);
     }
 
     /// Misc.
