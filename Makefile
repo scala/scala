@@ -194,6 +194,8 @@ scaladoc	: .latest-scaladoc-rsrc
 dtd2scala	: .latest-dtd2scala
 scalap		: .latest-scalap
 library-doc	: .latest-library-sdc
+scalac4ant	:
+	cd support/ant && ant
 
 .PHONY		: fastclean
 .PHONY		: scripts
