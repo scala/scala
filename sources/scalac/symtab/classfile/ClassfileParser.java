@@ -148,6 +148,8 @@ public class ClassfileParser implements ClassfileConstants {
             res |= Modifiers.FINAL;
         if ((flags & 0x0200) != 0)
             res |= Modifiers.INTERFACE | Modifiers.TRAIT | Modifiers.ABSTRACT;
+        if ((flags & 0x1000) != 0)
+        	res |= Modifiers.SYNTHETIC;
         return res | Modifiers.JAVA;
     }
 
@@ -197,6 +199,9 @@ public class ClassfileParser implements ClassfileConstants {
      */
     protected void parseMethod() {
         int flags = in.nextChar();
+        int sflags = transFlags(flags);
+        if ((flags & 0x0040) != 0)
+        	sflags |= Modifiers.BRIDGE;
         Name name = (Name)pool.readPool(in.nextChar());
         Type type = readType(in.nextChar());
         if (CONSTR_N.equals(name)) {
