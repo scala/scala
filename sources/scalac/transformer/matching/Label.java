@@ -31,7 +31,7 @@ public class Label {
                   return lit.value.hashCode();
             case TreeLabel( Tree pat ):
                 // if pat is an  Apply, than this case can only be correctly
-                // handled if it has no arguments...or there are no collisions
+                // handled there are no other similar Applys (nondeterminism)
                 return pat.type().hashCode();
             case TypeLabel( Type type ):
                   return type.hashCode();

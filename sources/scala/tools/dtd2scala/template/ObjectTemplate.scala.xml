@@ -29,19 +29,6 @@
     import scala.collection.mutable;
 
     type cT = scala.Seq[scala.xml.Node];
-    type aT = Map[String,String];
-
-    def error_FixedAttribute( k:String, value:String ) =
-      error("value of attribute " + k + " FIXED to \""+value+"\"");
-
-    def error_UndefinedAttribute( b:String ) = 
-      error("undefined attribute " + b );
-
-    def error_MissingAttribute( map:aT ) =
-      error("missing value for REQUIRED attribute "
-                 +(map.keys.filter { x => map(x) == "&lt;R" })
-                   .toList.mkString("",",",""));
-
 
     def error_InvalidChildren( elName:String, ch:cT, cM:String ) =
       error("trying to construct invalid "+elName+",\n children labels were: "
@@ -49,8 +36,8 @@
             +"\n content model was "+cM);
 
     abstract class <string ref="objectName"/>Node$ extends scala.xml.Node {
-      /** the namespace code of this node */
-      final val namespaceCode: Int = 0;
+      /** the namespace of this node */
+      final val namespace: String = <qstring ref="namespace"/>;
     }
 
     def tagIterator(ch:Seq[scala.xml.Node]):Iterator[Int] = new Iterator[Int] {
@@ -79,53 +66,34 @@
     </elementBinding>
     <elementBinding>
 
-     def constr_&ccElementName;( attrs:aT, ch:cT ) = &ccElementName;(attrs,ch:_*);
+     def constr_&ccElementName;( attrs:scala.xml.AttributeSeq, ch:cT ) = &ccElementName;(attrs,ch:_*);
 
-     case class &ccElementName;( attrs:Map[String,String], ch:scala.xml.Node* ) extends <string ref="objectName"/>Node$ {
+     private val &ccElementName;AttribValidator = {
+       import scala.xml.dtd._;
+       new AttributeValidator(  
+         <qstring ref="namespace"/>, <attributeDecls/>);
+         }
+     case class &ccElementName;( attrs:scala.xml.AttributeSeq, ch:scala.xml.Node* ) extends <string ref="objectName"/>Node$ {
 
 
     final override def typeTag$ = <refTag/>;
 
-    final def shallowValidate&ccElementName;Children( ch:Seq[scala.xml.Node] ) = 
-      <shallowContentRegExp/>;
-
-    final def validateAttributes( attrs:Map[String,String] ):aT = {
-        var req = 0;
-        var map = scala.xml.Node.NoAttributes;
-        <initAttributes/>
-    
-        for( val b &lt;- attrs.elements ) {
-          val a:Seq[Char] = b._1;
-          a match {
-          <validateAttributes/>
-            case _ => error_UndefinedAttribute( b._1 )
-          }
-        }
-        if( req > 0 ) error_MissingAttribute( map );
-        map
-    }
-
-    if( !shallowValidate&ccElementName;Children( ch ) )
-       error_InvalidChildren( &qElementName;, ch, <qstring ref="elementContentModel"/> );
-
      final def label = &qElementName;;
-     final def child = ch;
+     final def child      = ch;
+     final def attributes = theAttrs; 
 
-      protected var hmap:aT = _;
-      try {
-        hmap = validateAttributes( attrs );
-        } catch {
-        case e:java.lang.Error => 
-          error("invalid attributes for &elementName;\n"+e.getMessage());
-      }
-      final def attribute:aT = hmap;
+     val theAttrs = &ccElementName;AttribValidator.validate( attrs );
 
-      <attributeBinding>
-        final def &cAttributeName; : scala.Option[String] = hmap.get(&qAttributeName;);
-      </attributeBinding>
-      val attribHashCode: int = hmap.toList.hashCode() ;
+     
+     /* attributes
+     <!-- attributeBinding>
+       
+       <string ref="attributeDecl"/>
+        final def &cAttributeName; : String = attribute(&qAttributeName;);
+      </attributeBinding -->
+      */
 
-     /** returns a new &ccElementName; with updated attributes */
+     /** returns a new &ccElementName; with updated attributes 
      final def %(attrs: Seq[Pair[String, String]]) = {
        var newmap = scala.xml.Node.NoAttributes;
        for( val p &lt;- attribute.elements ) { 
@@ -136,8 +104,8 @@
        }
        &ccElementName;( newmap, child:_* ) ;
      }
-  
-     /** returns a new &ccElementName; with updated attribute */
+  */
+     /** returns a new &ccElementName; with updated attribute 
      final def %(attr: Pair[String, String])  = {
        var newmap = scala.xml.Node.NoAttributes;
        for( val p &lt;- attribute.elements ) { 
@@ -146,6 +114,7 @@
        newmap = newmap.update( attr._1, attr._2 );
        &ccElementName;( newmap, child:_* ) ;
      }
+*/
     }
     </elementBinding>
     
@@ -155,7 +124,7 @@
     def load( filename:String, _compress:boolean ):scala.xml.Node = {
       val fAdapter = new scala.xml.BindingFactoryAdapter  {
         val f = { 
-          val res = new mutable.HashMap[String, (aT,cT) => scala.xml.Node]() ;
+          val res = new mutable.HashMap[String, (scala.xml.AttributeSeq,cT) => scala.xml.Node]() ;
           <elementBinding>
           res.update( &qElementName;, constr_&ccElementName;);</elementBinding>
           res;

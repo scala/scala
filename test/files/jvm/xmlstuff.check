@@ -38,3 +38,12 @@ List(<book><title>Blabla</title></book>)
      <phone where="work">+41 21 693 68 67</phone>
      <phone where="mobile">+41 79 602 23 23</phone>
 </result>
+patterns
+passed ok
+passed ok
+passed ok
+namespaces
+passed ok
+passed ok
+passed ok
+passed ok

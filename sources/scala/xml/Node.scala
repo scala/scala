@@ -14,9 +14,8 @@ import scala.collection.immutable ;
 
 object Node {
 
-  /** the constant empty attribute map */
-  val NoAttributes: immutable.TreeMap[String,String] =
-    immutable.TreeMap.Empty[String,String];
+  /** the constant empty attribute sequence */
+  final def NoAttributes: AttributeSeq = AttributeSeq.Empty;
 
   /** the empty namespace */
   val EmptyNamespace = "";
@@ -36,11 +35,26 @@ trait Node {
   /** the namespace of this node */
   def namespace: String;
 
-  /** attribute axis */
-  def attribute: Map[String,String] ;
+  /** attribute map for attributes with the same namespace as this element  */
+  final def attribute: Map[String,String] = new Map[String, String] {
+    def size = attributes.length;
+    def elements =
+      attributes.elements
+      .filter( x => x.namespace == namespace )
+      .map( x => Pair(x.key, x.value) );
+    def get(x:String) = {
+      attributes.lookup( namespace, x ) match {
+        case Some( x ) => Some( x.value );
+        case _         => None
+      }
+    }
+  }
+  /** attribute axis - all attributes of this node, in order defined by attrib
+  */
+  def attributes: AttributeSeq;
 
   /** child axis (all children of this node) */
-  def child: Seq[Node];
+  def child:      Seq[Node];
 
   /** descendant axis (all descendants of this node) */
   def descendant:List[Node] = child.toList.flatMap {

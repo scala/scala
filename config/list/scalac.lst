@@ -14,6 +14,7 @@ ast/parser/Parser.scala
 ast/parser/ParserPhase.scala
 ast/parser/PatternNormalizer.scala
 ast/parser/Scanner.scala
+ast/parser/SymbolicXMLBuilder.scala
 ast/parser/TokenData.scala
 ast/parser/Tokens.scala
 

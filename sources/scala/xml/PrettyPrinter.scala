@@ -31,17 +31,18 @@ class PrettyPrinter( width:Int, step:Int ) {
   case class Box( col:Int, s:String ) extends Item;
   case class Para( s:String ) extends Item;
 
-  var items:List[Item] = Nil;
+  protected var items:List[Item] = Nil;
 
-  var cur = 0;
+  protected var cur = 0;
+  protected var pmap:Map[String,String] = _;
 
-  def reset() = {
+  protected def reset() = {
     cur = 0;
     items = Nil;
   }
 
   /* try to cut at whitespace */
-  def cut( s:String, ind:Int ):List[Item] = {
+  protected def cut( s:String, ind:Int ):List[Item] = {
     val tmp = width - cur;
     if( s.length() < tmp )
       return List(Box(ind,s));
@@ -67,7 +68,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   /** try to make indented box, if possible, else para */
-  def makeBox( ind:Int, s:String )  = {
+  protected def makeBox( ind:Int, s:String )  = {
     if( cur < ind )
       cur == ind;
     if( cur + s.length() > width ) {            // fits in this line
@@ -82,44 +83,48 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   // dont respect indent in para, but afterwards
-  def makePara( ind:Int, s:String ) = {
+  protected def makePara( ind:Int, s:String ) = {
     items = Break::Para( s )::Break::items;
     cur = ind;
   }
 
   // respect indent
-  def makeBreak() = { // using wrapping here...
+  protected def makeBreak() = { // using wrapping here...
     items = Break::items;
     cur = 0;
   }
 
-  def leafTag( n:Node ) = {
+  protected def leafTag( n:Node ) = {
     val sb = new StringBuffer("<");
-    sb.append( n.label );
-    Utility.attr2xml(  n.attribute.elements, sb );
+    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
+    Utility.attr2xml(  n.attributes.elements, pmap, sb );
     sb.append("/>");
     sb.toString();
   }
 
-  def startTag( n:Node ) = {
+  protected def startTag(n: Node) = {
     val sb = new StringBuffer("<");
-    sb.append( n.label );
-    Utility.attr2xml(  n.attribute.elements, sb );
+    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
+    Utility.attr2xml(  n.attributes.elements, pmap, sb );
     sb.append('>');
     sb.toString();
   }
 
-  /* returns a formatted string containing well-formed XML
-  **/
-  def format( n:Node ):String = {
+  /** appends a formatted string containing well-formed XML with
+   * given namespace to prefix mapping to the given stringbuffer
+   * @param n the node to be serialized
+   * @param pmap the namespace to prefix mapping
+   * @param sb the stringbuffer to append to
+   */
+  def format(n: Node, pmap: Map[String,String], sb: StringBuffer ): Unit = {
     reset();
+    this.pmap = pmap;
     traverse( n, 0 );
-    val sb = new StringBuffer();
     var cur = 0;
     //Console.println( items.reverse );
     for( val b <- items.reverse ) b match {
       case Break =>
-        sb.append('\n');  // on windows: \r\n
+        sb.append('\n');  // on windows: \r\n ?
         cur = 0;
       case Box(i, s) =>
         while( cur < i ) {
@@ -130,20 +135,9 @@ class PrettyPrinter( width:Int, step:Int ) {
       case Para( s ) =>
         sb.append( s );
     }
-    sb.toString();
   }
 
-  /* returns a formatted string containing well-formed XML nodes.
-  **/
-  def format( ns:Seq[Node] ):String = {
-    var sb2 = new StringBuffer();
-    for( val n <- ns.elements ) {
-      sb2.append( format( n ))
-    }
-    sb2.toString();
-  }
-
-  def breakable( n:Node ):boolean = {
+  protected def breakable( n:Node ):boolean = {
     val it = n.child.elements;
     while( it.hasNext )
       it.next match {
@@ -153,7 +147,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     return false
   }
     /** @param tail: what we'd like to sqeeze in */
-    def traverse( node:Node, ind:int ):Unit = {
+    protected def traverse( node:Node, ind:int ):Unit = {
       node match {
 
         case _:Text | _:CharData | _:Comment | _:EntityRef | _:ProcInstr =>
@@ -191,11 +185,57 @@ class PrettyPrinter( width:Int, step:Int ) {
         }
     }
 
-  def traverse( it:Iterator[Node], ind:int ):unit = {
+  protected def traverse( it:Iterator[Node], ind:int ):unit = {
     for( val c <- it ) {
       traverse( c, ind );
       makeBreak();
     }
   }
 
+  // public convenience methods
+
+  /** returns a formatted string containing well-formed XML with
+   *  default namespace prefix mapping
+   *  @param n the node to be serialized
+   */
+  def format(n: Node): String = format(n, Utility.defaultPrefixes( n ));
+
+  /** returns a formatted string containing well-formed XML with
+   * given namespace to prefix mapping
+   * @param n the node to be serialized
+   * @param pmap the namespace to prefix mapping
+   */
+  def format(n: Node, pmap: Map[String,String]): String = {
+    val sb = new StringBuffer();
+    format( n, pmap, sb );
+    sb.toString();
+  }
+
+  /* returns a formatted string containing well-formed XML nodes with
+  *  default namespace prefix mapping
+  */
+  def format( nodes:Seq[Node] ):String = {
+    format(nodes, Utility.defaultPrefixes( nodes ))
+  }
+
+  /** returns a formatted string containing well-formed XML
+   * @param nodes the sequence of nodes to be serialized
+   * @param pmap the namespace to prefix mapping
+   */
+  def format( nodes:Seq[Node], pmap:Map[String,String] ):String = {
+    var sb = new StringBuffer();
+    format( nodes, pmap, sb );
+    sb.toString();
+  }
+
+  /** appends a formatted string containing well-formed XML with
+   * the given namespace to prefix mapping to the given stringbuffer
+   * @param n the node to be serialized
+   * @param pmap the namespace to prefix mapping
+   * @param sb the string buffer to which to append to
+   */
+  def format( nodes: Seq[Node], pmap: Map[String,String], sb: StringBuffer ): Unit = {    for( val n <- nodes.elements ) {
+      sb.append(format( n, pmap ))
+    }
+  }
 }

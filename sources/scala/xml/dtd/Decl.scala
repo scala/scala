@@ -36,7 +36,22 @@ case class ElemDecl( name:String ,
 };
 
 /** an attribute declaration */
-case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) extends MarkupDecl;
+case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) extends MarkupDecl {
+  final override def toString() = {
+    val sb = new StringBuffer("AttrDecl(");
+    sb.append('"');
+    sb.append( name );
+    sb.append('"');
+    sb.append(',');
+    sb.append('"');
+    sb.append( tpe );
+    sb.append('"');
+    sb.append(',');
+    sb.append(default.toString());
+    sb.append(')');
+    sb.toString();
+  }
+}
 
 /** an entity declaration */
 case class EntityDecl( name:String, tpe:String ) extends MarkupDecl;
@@ -57,6 +72,19 @@ case class PEReference(ent:String) extends Decl {
 
 class DefaultDecl ;
 
-case object REQUIRED, IMPLIED extends DefaultDecl;
-
-case class DEFAULT(fixed:boolean, attValue:String) extends DefaultDecl;
+case object REQUIRED extends DefaultDecl {
+  final override def toString() = "REQUIRED";
+}
+case object IMPLIED extends DefaultDecl {
+  final override def toString() = "IMPLIED";
+}
+case class DEFAULT(fixed:boolean, attValue:String) extends DefaultDecl {
+  final override def toString() = {
+    val sb = new StringBuffer("DEFAULT(");
+    sb.append( fixed );
+    sb.append(',');
+    Utility.appendEscapedQuoted( attValue, sb );
+    sb.append(')');
+    sb.toString()
+  }
+}

@@ -16,7 +16,7 @@ import scala.collection.immutable ;
  * @param text text contained in this node, may not contain &quot;]]&gt;&quot;
 **/
 
-case class CharData( text:String ) extends Node {
+case class CharData( text:String ) extends SpecialNode {
 
   final override def typeTag$:Int = -4;
 
@@ -26,15 +26,6 @@ case class CharData( text:String ) extends Node {
   /** the constant "#CDATA"
   */
   def label    = "#CDATA";
-
-  /** always Node.EmptyNamespace */
-  final def namespace = Node.EmptyNamespace;
-
-  /** always empty */
-  final def attribute = Node.NoAttributes;
-
-  /** always empty */
-  final def child = Nil;
 
   /** returns  &quot;&lt;![CDATA[&quot;+text+&quot;]]&gt;&quot; */
   final override def toString() = "<![CDATA["+text+"]]>";

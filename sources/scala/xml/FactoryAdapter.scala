@@ -37,7 +37,7 @@ import javax.xml.parsers.SAXParser;
 abstract class FactoryAdapter  extends DefaultHandler() {
 
   val buffer = new StringBuffer();
-  val attribStack = new Stack[HashMap[String,String]];
+  val attribStack = new Stack[HashMap[Pair[String,String],String]];
   val hStack  = new Stack[Node];   // [ element ] contains siblings
   val tagStack  = new Stack[String]; // [String]
 
@@ -59,7 +59,7 @@ abstract class FactoryAdapter  extends DefaultHandler() {
   */
   def createNode(uri:String,
                  elemName:String ,
-                 attribs:HashMap[String,String] ,
+                 attribs:HashMap[Pair[String,String],String] ,
                  chIter:List[Node] ):Node; //abstract
 
   /** creates a Text node.
@@ -127,21 +127,22 @@ abstract class FactoryAdapter  extends DefaultHandler() {
         capture = nodeContainsText(localName) ;
 
         hStack.push( null );
-        var map:HashMap[String,String] = null:HashMap[String,String];
+        var map:HashMap[Pair[String,String],String] = null:HashMap[Pair[String,String],String];
 
         if (attributes == null) {
           // may not happen
         }
         else {
-              map = new HashMap[String,String];
+              map = new HashMap[Pair[String,String],String];
 
 	      for( val i <- List.range( 0, attributes.getLength() )) {
+                val attrNS = attributes.getURI(i);
                 val attrLocalName = attributes.getLocalName(i);
                 val attrType = attributes.getType(i);
                 val attrValue = attributes.getValue(i);
                 // we only handle string attributes
                 if( attrType.equals("CDATA") ) {
-		  map.update( attrLocalName, attrValue );
+		  map.update( Pair(attrNS,attrLocalName), attrValue );
 		}
               }
 	}

@@ -19,12 +19,9 @@ import scala.xml.nobinding.XML ;
 /** transforms a set of DTD declaraion to a scala source file.
  *  2do: parameterize with destination package.
  */
-class DeclToScala(fOut:PrintWriter,
-		  moduleName:String,
-		  elemMap:Map[ String, MyElemDecl ] ) {
+class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elemMap:Map[String, MyElemDecl] ) {
 
-  abstract class ObjectTemplate {
-    val objectName : String = "myXML"; /* DEFAULT MODULE NAME */
+  class ObjectTemplate {
     val package_ : String = "";
     val compress : boolean = true;
     final val tmplFile = "scala/tools/dtd2scala/template/ObjectTemplate.scala.xml";
@@ -60,7 +57,7 @@ class DeclToScala(fOut:PrintWriter,
     }
     /** 1.populate with actual values: throw error if FIXED is wrong
     **  2.throw error if a REQUIRED one is missing*/
-    def validateAttributes( curAttribs:Map[String,AttrDecl] ):String = {
+    def validateAttributes(curAttribs: Map[String,AttrDecl]):String = {
       def appendKey( key:String, sb:StringBuffer ) = {
         val it = Iterator.fromString( key );
         sb.append('\'');
@@ -169,8 +166,17 @@ class DeclToScala(fOut:PrintWriter,
             fOut.print( text );
           case n:Elem =>
             n.label match {
+              case "attributeDecls" =>
+                var sb = new StringBuffer("Nil");
+                for( val aDecl <- curAttribs.values ) {
+                  sb.insert(0, "::");
+                  sb.insert(0, aDecl.toString());
+                }
+                fOut.print(sb.toString());
+
               case "template" => {
                 lookup.update("objectName", objectName);
+                lookup.update("namespace",  namespace);
                 lookup.update("compressDefault", compress.toString());
                 n.child.elements.foreach { n => writeNode(n) }
               }
@@ -212,6 +218,7 @@ class DeclToScala(fOut:PrintWriter,
               case "attributeBinding" => {
                 for( val aDecl <- curAttribs.keys ) {
                   lookup += "attributeName" -> aDecl;
+                  lookup += "attributeDecl" -> curAttribs(aDecl).toString();
                   n.child.elements.foreach{ n => writeNode( n ) }
                 }
                 lookup -= "attributeName";
@@ -240,9 +247,7 @@ class DeclToScala(fOut:PrintWriter,
 
   /** runs translation. */
   def run:Unit = {
-    new ObjectTemplate {
-      override val objectName = moduleName
-    }.write;
+    new ObjectTemplate().write;
     fOut.flush();
     fOut.close();
   }

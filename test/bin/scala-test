@@ -145,6 +145,7 @@ test_xml() {
     output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     dtdfile="`expr "$source" : "\(.*\)\\.scala"`.dtd";
     xmlfile="`expr "$source" : "\(.*\)\\.scala"`.xml";
+    nsfile="`expr "$source" : "\(.*\)\\.scala"`.namespace";
     objfile="$output/dtd.scala";
     classpath="$output";
     if $CYGWIN; then
@@ -155,7 +156,7 @@ test_xml() {
     fi;
     rm -rf "$output";
     mkdir -p "$output" &&
-    $DTD2SCALA -d "$os_output" "$dtdfile" dtd &&
+    $DTD2SCALA -d "$os_output" "$dtdfile" dtd `cat $nsfile` &&
     $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
     $SCALA -classpath "$classpath" Test "$xmlfile" &&
     rm -rf "$output";

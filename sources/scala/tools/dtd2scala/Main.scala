@@ -23,7 +23,7 @@ object Main {
 
 
   def  printUsage:Unit = {
-    Console.println("usage: dtd2scala [ -d <dir> ] <sysID> <object name>");
+    Console.println("usage: dtd2scala [ -d <dir> ] <sysID> <object name> [<namespace>]");
     Console.println("       binds a DTD to class definitions");
     Console.println("       will create a file [<dir>/]<object name>.scala");
     Console.println("<dir> is the output directory [path of <sysID> is default]");
@@ -37,23 +37,27 @@ object Main {
 
     List.fromArray(argv, 0, argv.length) match {
       case Seq( "-d", outdir, sysID, objName ) =>
-        continue( new File( outdir ), sysID, objName );
+        continue( new File( outdir ), sysID, objName, "" );
+      case Seq( "-d", outdir, sysID, objName, namespace ) =>
+        continue( new File( outdir ), sysID, objName, namespace );
       //case Seq( "-sql", sysID ) => dosql( sysID );
       case Seq( sysID, objName ) =>
-        continue( new File( sysID ).getParentFile(), sysID, objName );
+        continue( new File( sysID ).getParentFile(), sysID, objName, "" );
+      case Seq( sysID, objName, namespace ) =>
+        continue( new File( sysID ).getParentFile(), sysID, objName, namespace );
       case _ =>
         { printUsage; System.exit(-1); }
     }
   }
 
-  private def continue( outdir:File, sysID:String, objName:String ) = {
+  private def continue( outdir:File, sysID:String, objName:String, ns:String ) = {
     val myH:MainHandler  = new MainHandler();
     parse( sysID, myH );
     // myH.print(); // DEBUG
 
     val p = new PrintWriter(new FileWriter(new File(outdir,
                                                     objName+".scala" )));
-    new DeclToScala( p, objName, myH.elemMap ).run;
+    new DeclToScala( p, objName, ns, myH.elemMap ).run;
   }
 
   /*

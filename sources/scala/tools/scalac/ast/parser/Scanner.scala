@@ -998,12 +998,12 @@ class Scanner(_unit: Unit) extends TokenData {
    *  @param endch either ' or "
    */
   def xAttributeValue( endch:char ):String = {
-    cbuf.setLength( 0 );
     while ( ch != endch ) {
       putChar( ch );
       xNext;
     };
     val s = cbuf.toString();
+    cbuf.setLength( 0 );
     // @todo: normalize attribute value
     // well-formedness constraint
     if( s.indexOf('<') != -1 ) {

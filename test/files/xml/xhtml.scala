@@ -1,6 +1,6 @@
 // $Id$
 
-import scala.xml.{Node,Text};
+import scala.xml.{Attribute, AttributeSeq, Node, Text};
 import dtd._;
 
 object Test {
@@ -8,8 +8,12 @@ object Test {
   val n = Node.NoAttributes;
 
   def main( argv:Array[String] ) = {
-    val link = A( n + "href" -> "http://lampwww.epfl.ch",
-                 Text("link"));
+    val link = A(
+      new AttributeSeq(
+        Attribute("","href","http://lampwww.epfl.ch")
+      ),
+      Text("link")
+    );
 
     //val m = new scala.collection.mutable.HashMap[String, String];
     //m.put("href","http://lampwww.epfl.ch");
@@ -21,7 +25,10 @@ object Test {
       P(n,Text("another one, with a "),link,Text(" to the LAMP homepage.")));
     val page = Html(n,
                     Head(n,
-                         Base(n+"href" -> "http://here.edu"),
+                         Base(
+                           new AttributeSeq(
+                             Attribute("","href","http://here.edu")
+                           )),
                          Title(n,Text("a basic xhtml page"))),
                     body);
     System.out.println( page ) ;

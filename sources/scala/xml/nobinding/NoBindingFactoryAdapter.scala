@@ -32,19 +32,19 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
   */
   def createNode(uri:String,
                  label: String,
-                 attrs: mutable.HashMap[String,String],
+                 attrs: mutable.HashMap[Pair[String,String],String],
                  children: List[Node] ):Elem = {
 
     val uri$ = uri.intern();
     val elHashCode = Utility.hashCode( uri$, label, attrs, children ) ;
 
-    val attrMap = immutable.TreeMap.Empty[String,String] incl attrs;
+    val attrSeq = AttributeSeq.fromHashMap( attrs );
     cache.get( elHashCode ).match{
       case Some(cachedElem) =>
         //System.err.println("[using cached elem +"+cachedElem.toXML+"!]"); //DEBUG
         cachedElem
       case None =>
-      val el = Elem( uri$, label, attrMap, children:_* );
+      val el = Elem( uri$, label, attrSeq, children:_* );
       cache.update( elHashCode, el );
       el
     }

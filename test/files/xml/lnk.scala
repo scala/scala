@@ -1,6 +1,6 @@
 // $Id$
 
-import scala.xml.Node;
+import scala.xml.{Attribute, AttributeSeq, Node};
 import dtd._;
 
 object Test {
@@ -14,7 +14,12 @@ object Test {
     // !!! System.out.println(b.toXML);
 
     // construct data using constructor
-    val c = Link(n + "target" -> "http://www.scala.org", Name(n, scala.xml.Text("hello-link")));
+    val c = Link(
+      new AttributeSeq(
+        Attribute("","target","http://www.scala.org")
+      ),
+      Name(n, scala.xml.Text("hello-link"))
+    );
     //c.getAttribs.update("target", "http://www.scala.org");
     System.out.println( c );
 

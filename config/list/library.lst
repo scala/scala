@@ -155,6 +155,8 @@ runtime/matching/Rule.scala
 
 testing/UnitTest.scala
 
+xml/Attribute.scala
+xml/AttributeSeq.scala
 xml/BindingFactoryAdapter.scala
 xml/CharData.scala
 xml/Comment.scala
@@ -162,8 +164,6 @@ xml/Elem.scala
 xml/ExternalID.scala
 xml/EntityRef.scala
 xml/FactoryAdapter.scala
-xml/Namespace.scala
-xml/NamespaceRegistry.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeSeq.scala
@@ -180,6 +180,7 @@ xml/dtd/Parser.scala
 xml/dtd/RegExp.scala
 xml/dtd/Scanner.scala
 xml/dtd/Tokens.scala
+xml/dtd/Validation.scala
 
 xml/nobinding/NoBindingFactoryAdapter.scala
 xml/nobinding/XML.scala

@@ -9,7 +9,7 @@
 
 package scala.xml;
 
-import scala.collection.immutable;
+import scala.collection.mutable.ArrayBuffer;
 
 /** The case class <code>Elem</code> implements the Node trait,
  *  providing an immutable data object representing an XML element.
@@ -20,7 +20,7 @@ import scala.collection.immutable;
  *  @param child the children of this node
  *  @author  Burak Emir
  */
-case class Elem( namespace$$:String, label$$: String, attribute:immutable.Map[String,String], child: Node*) extends Node {
+case class Elem( namespace$$:String, label$$: String, attributes: AttributeSeq, child: Node*) extends Node {
 
   final val namespaceIntern     = namespace$$.intern();
   final def namespace  = namespaceIntern;
@@ -41,15 +41,9 @@ case class Elem( namespace$$:String, label$$: String, attribute:immutable.Map[St
    *  @param attrs
    *  @return a new symbol with updated attributes
    */
-  final def %(attrs: Seq[Pair[String, String]]): Elem = {
-    var newmap = new immutable.TreeMap[String, String]();
-    for ( val p <- attribute.elements ) {
-      newmap = newmap.update( p._1, p._2 )
-    }
-    for ( val p <- attrs ) {
-      newmap = newmap.update( p._1, p._2 )
-    }
-    Elem(namespace, label, newmap, child:_*)
+  final def %(attrs: Seq[Attribute]): Elem = {
+    val aseq = new AttributeSeq((attributes.toList ::: attrs.toList):_*);
+    Elem(namespace, label, aseq, child:_*)
   }
 
   /** Return a new symbol with updated attribute
@@ -57,13 +51,9 @@ case class Elem( namespace$$:String, label$$: String, attribute:immutable.Map[St
    *  @param attr
    *  @return a new symbol with updated attribute
    */
-  final def %(attr: Pair[String, String]): Elem = {
-    var newmap = new immutable.TreeMap[String, String]();
-    for ( val p <- attribute.elements ) {
-      newmap = newmap.update( p._1, p._2 )
-    }
-    newmap = newmap.update( attr._1, attr._2 );
-    Elem(namespace,  label, newmap, child:_*)
+  final def %(attr: Attribute): Elem = {
+    val aseq = new AttributeSeq((attributes.toList ::: attr :: Nil):_*);
+    Elem(namespace, label, aseq, child:_*)
   }
 
 }

@@ -6,7 +6,7 @@ import scala.xml.{Node,NodeSeq,Elem,Text};
 
 object Test with Application {
 
-  val e = scala.collection.immutable.TreeMap.Empty[String,String];
+  val e = Node.NoAttributes;
 
 /*
   def eq( a:Seq[Node], b:Seq[Node] ):boolean = {
@@ -30,7 +30,7 @@ object Test with Application {
     def label = "hello";
     def namespace = "";
     def child = List(Elem("","world",e));
-    def attribute = e;
+    def attributes = e;
   };
 
   assertSameElements( List( 3 ), List( 3 ));
@@ -274,5 +274,53 @@ val addrBook =
     </result>
   ));
 
+  /* patterns */
+  Console.println("patterns");
+  assertEquals(<hello/> match { case <hello/> => true; case _ => false; },
+               true);
+
+  assertEquals(
+     <hello foo="bar">
+       <world/>
+     </hello> match { case <hello>
+                               <world/>
+                           </hello> => true;
+                      case _ => false; },
+               true);
+
+  assertEquals(
+     <hello foo="bar">
+       crazy text world
+     </hello> match { case <hello>
+                               crazy   text  world
+                           </hello> => true;
+                      case _ => false; },
+               true);
+
+  /* namespaces */
+  Console.println("namespaces");
+  val cuckoo = <cuckoo xmlns="http://cuckoo.com">
+    <foo/>
+    <bar/>
+  </cuckoo>;
+  assertEquals( cuckoo.namespace, "http://cuckoo.com");
+  for( val n <- cuckoo.child ) {
+    assertEquals( n.namespace, "http://cuckoo.com");
+  }
+
+  /*
+  assertEquals( true, cuckoo match {
+    case <cuckoo xmlns="http://cuckoo.com">
+      <foo/>
+      <bar/>
+      </cuckoo> => true;
+    case _      => false; });
+*/
+  assertEquals( false, cuckoo match {
+    case <cuckoo>
+           <foo/>
+           <bar/>
+         </cuckoo> => true;
+    case _         => false; });
 
 }

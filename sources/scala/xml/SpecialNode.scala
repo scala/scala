@@ -18,7 +18,7 @@ abstract class SpecialNode extends Node {
   final def namespace = Node.EmptyNamespace;
 
  /** always empty */
-  final def attribute = Node.NoAttributes;
+  final def attributes = Node.NoAttributes;
 
   /** always empty */
   final def child = Nil;

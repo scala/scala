@@ -11,7 +11,7 @@ import scala.collection.immutable ;
 
 object Test  {
 
-    val e = immutable.TreeMap.Empty[String,String];
+    val e = Node.NoAttributes;
 
     /* a helper function to compare up to whitespace */
 
@@ -77,9 +77,9 @@ object Test  {
                 Elem("","h1",e,Text("Hello World")),
                 Elem("","p",e,Text("Check the "),
                      Elem("","a", e,Text("scala"))
-                     % Pair("href","scala.epfl.ch"),
+                     % (Attribute("","href","scala.epfl.ch")),
                      Text("page!"))
-              ) % Pair("background","#FFFFFF")
+              ) % Attribute("", "background","#FFFFFF")
          ).toString()
     ));
 
