@@ -86,8 +86,22 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
                 switch (pre) {
                 case ThisType(_):
                     if (sym.kind == CLASS && sym.constructor().isUpdated(nextPhase)) {
-                        Symbol[] tparams =
-                            sym.constructor().infoAt(nextPhase).typeParams();
+                        // !!! For some Java classes,
+                        // Symbol.constructor() returns an Overloaded
+                        // symbol. This is wrong as constructor()
+                        // should return the primary constructor. Once
+                        // this problem is solved, the following
+                        // switch can be removed.
+                        Type constrtype = sym.constructor().infoAt(nextPhase);
+                        Symbol[] tparams;
+                        switch (constrtype) {
+                        case OverloadedType(_, _):
+                            tparams = Symbol.EMPTY_ARRAY;
+                            break;
+                        default:
+                            tparams = constrtype.typeParams();
+                            break;
+                        }
                         int i = tparams.length;
                         while (i > 0 && (tparams[i-1].flags & SYNTHETIC) != 0)
                             i--;
@@ -140,14 +154,16 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
                 global.log("looking in " +  LambdaLift.asFunction(o) + " " +
                     ArrayApply.toString(o.typeParams()));
             Symbol fowner = LambdaLift.asFunction(o);
-            if (fv.owner() == fowner) return fv;
-            Type ft = (fowner.isUpdated(nextPhase)) ? fowner.typeAt(nextPhase)
-                : fowner.type();
-            Symbol[] ownerparams = fv.isType() ? ft.typeParams()
-                : ft.firstParams();
-            for (int i = 0; i < ownerparams.length; i++) {
-                if (ownerparams[i].name == fv.name)
-                    return ownerparams[i];
+            if (fowner.isMethod()) {
+                if (fv.owner() == fowner) return fv;
+                Type ft = (fowner.isUpdated(nextPhase)) ? fowner.typeAt(nextPhase)
+                    : fowner.type();
+                Symbol[] ownerparams = fv.isType() ? ft.typeParams()
+                    : ft.firstParams();
+                for (int i = 0; i < ownerparams.length; i++) {
+                    if (ownerparams[i].name == fv.name)
+                        return ownerparams[i];
+                }
             }
             assert o.owner() != o;
             o = o.owner();

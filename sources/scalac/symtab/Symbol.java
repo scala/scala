@@ -1357,7 +1357,17 @@ public class ClassSymbol extends TypeSymbol {
 
     /** Get type parameters */
     public Symbol[] typeParams() {
-	return constructor.info().typeParams();
+        // !!! For some Java classes, constructor() returns an
+        // Overloaded symbol. This is wrong as constructor() should
+        // return the primary constructor. Once this problem is
+        // solved, the following switch can be removed.
+        Type constrtype = constructor.info();
+        switch (constrtype) {
+        case OverloadedType(_, _):
+            return Symbol.EMPTY_ARRAY;
+        default:
+            return constrtype.typeParams();
+        }
     }
 
     public Symbol[] valueParams() {

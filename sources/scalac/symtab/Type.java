@@ -418,8 +418,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
         switch (this) {
 	case PolyType(Symbol[] tparams, _):
 	    return tparams;
-        default:
+        case MethodType(Symbol[] vparams, _):
             return Symbol.EMPTY_ARRAY;
+        default:
+            throw Debug.abort("illegal case", this);
 	}
     }
 
@@ -427,13 +429,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
      * applicable.
      */
     public Symbol[] valueParams() {
+        return valueParams(false);
+    }
+    private Symbol[] valueParams(boolean ok) {
         switch (this) {
 	case PolyType(_, Type result):
-	    return result.valueParams();
+	    return result.valueParams(true);
         case MethodType(Symbol[] vparams, _):
             return vparams;
         default:
-            return Symbol.EMPTY_ARRAY;
+            if (ok) return Symbol.EMPTY_ARRAY;
+            throw Debug.abort("illegal case", this);
 	}
     }
 
