@@ -27,6 +27,8 @@ public class GenerateAll extends AbstractMain {
     // Public Constants
 
     public static final AbstractFileExpander[] expanders = {
+        new meta.scalac.ast.MetaTreeFactory(),
+        new meta.scalac.ast.MetaDefaultTreeFactory(),
     };
 
     //########################################################################

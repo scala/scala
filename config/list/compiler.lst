@@ -19,7 +19,9 @@ ast/parser/SourceRepresentation.java
 ast/parser/Sourcefile.java
 ast/parser/TokenData.java
 ast/parser/Tokens.java
+
 ast/AbstractTreeCopyFactory.java
+ast/DefaultTreeFactory.java
 ast/LazyTreeFactory.java
 ast/StrictTreeFactory.java
 ast/SubstTransformer.java
@@ -27,7 +29,6 @@ ast/Transformer.java
 ast/Traverser.java
 ast/Tree.java
 ast/TreeCopyFactory.java
-ast/TreeCreator.java
 ast/TreeFactory.java
 ast/TreeGen.java
 ast/TreeInfo.java
