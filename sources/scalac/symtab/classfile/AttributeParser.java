@@ -109,7 +109,7 @@ public class AttributeParser implements ClassfileConstants {
                     UnPickle.parse(parser.global, in.nextBytes(attrLen), sym);
                     return;
                 } catch (UnPickle.BadSignature exception) {
-                    throw new RuntimeException(exception.getMessage());
+                    throw new RuntimeException(exception);
                 }
             case INNERCLASSES_ATTR:
                 int n = in.nextChar();
