@@ -210,6 +210,15 @@ public class ClassExpander {
                     default:
                         throw Debug.abort("illegal case", tree);
                     }
+                case Select(Super(_, _), _):
+                    Symbol sym = tree.symbol();
+                    Symbol newSym = sym.overridingSymbol(parents[0]);
+                    if (newSym != Symbol.NONE)
+                        return gen.Select(tree.pos,
+                                          gen.Super(tree.pos, newSym.owner()),
+                                          newSym);
+                    else
+                        return super.transform(tree);
                 default:
                     return super.transform(tree);
                 }
