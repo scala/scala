@@ -15,6 +15,11 @@ package scala;
  */
 public abstract class Array implements Function1 {
 
+    /** @meta constr (scala.Int);
+     */
+    public Array(int n) {
+    }
+
     public boolean[] asBooleanArray() {
         throw new ClassCastException();
     }

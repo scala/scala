@@ -15,17 +15,6 @@ object Predef {
   def List[a](x: a*): List[a] = x as List[a];
   val List = scala.List;
 
-  def Array[a <: AnyRef](classname: String)(x: a*): Array[a] = {
-    System.out.println("array1");
-    val xs0: Array[java.lang.Object] = runtime.RunTime.oarray(x.length, classname);
-    val xs: Array[a] = xs0 as Array[a];
-    System.out.println("array2");
-    val elems = x.elements;
-    var i = 0;
-    while (elems.hasNext) { xs(i) = elems.next; System.out.println(xs(i)) }
-    xs
-  }
-
   def error(x: String): All = new java.lang.RuntimeException(x).throw;
 
   def try[a](def block: a): Except[a] =

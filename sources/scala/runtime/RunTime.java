@@ -351,7 +351,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final boolean[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public boolean[] asBooleanArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Boolean)x).asBoolean(); }
@@ -361,7 +361,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final byte[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public byte[] asByteArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Byte)x).asByte(); }
@@ -371,7 +371,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final short[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public short[] asShortArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Short)x).asShort(); }
@@ -381,7 +381,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final char[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public char[] asCharArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Char)x).asChar(); }
@@ -391,7 +391,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final int[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public int[] asIntArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Int)x).asInt(); }
@@ -401,7 +401,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final long[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public long[] asLongArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Long)x).asLong(); }
@@ -411,7 +411,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final float[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public float[] asFloatArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Float)x).asFloat(); }
@@ -421,7 +421,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final double[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public double[] asDoubleArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Double)x).asDouble(); }
@@ -431,7 +431,7 @@ public abstract class RunTime {
     }
 
     public static Array box(final Object[] xs) {
-	return new Array() {
+	return new Array(0) {
 	    public Object[] asObjectArray() { return xs; }
 	    public Object apply(int i) { return xs[i]; }
 	    public void update(int i, Object x) { xs[i] = x; }
@@ -472,10 +472,10 @@ public abstract class RunTime {
         return new double[length];
     }
 
-    public static Object[] oarray(int length, String classname) {
+    public static Object oarray(int length, String classname) {
         try {
             Class clasz = Class.forName(classname, false, loader);
-            return (Object[]) java.lang.reflect.Array.newInstance(clasz, length);
+            return java.lang.reflect.Array.newInstance(clasz, length);
         } catch (ClassNotFoundException exception) {
             throw new Error(exception.toString());
         }
