@@ -210,7 +210,7 @@ all		: servletEngine
 all		: scala4ant
 all		: scalatest
 
-force		: fastclean
+force		:
 	@$(make) all
 
 fastclean	:
@@ -218,13 +218,13 @@ fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
 
-clean		: fastclean
+clean		:
 	$(RM) -r $(PROJECT_APIDOCDIR)
 	$(RM) -r $(PROJECT_BOOTTESTDIR)
 	$(RM) -r $(PROJECT_OUTPUTDIR)
 	$(RM) -r $(PROJECT_BOOTSTRAPDIR)
 
-distclean	: clean
+distclean	:
 	$(RM) $(LIBRARY_JAR_ARCHIVE)
 	$(RM) $(TOOLS_JAR_ARCHIVE)
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
@@ -265,7 +265,6 @@ scalatest	: .latest-scalatest-jc
 boottest	: .latest-boottest
 library-doc	: .latest-library-sdc
 
-.PHONY		: fastclean
 .PHONY		: sources
 .PHONY		: system
 .PHONY		: lamplib
