@@ -17,7 +17,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class MapProxy[A, +B](map: Map[A, B]) extends Map[A, B] {
+class MapProxy[A, +B](map: Map[A, B]) extends Map[A, B] with IterableProxy(map) {
 
     def size: Int = map.size;
 
@@ -38,8 +38,4 @@ class MapProxy[A, +B](map: Map[A, B]) extends Map[A, B] {
     override def foreach(f: (A, B) => Unit) = map.foreach(f);
 
     override def toList: List[Pair[A, B]] = map.toList;
-
-    override def toString() = map.toString();
-
-    def elements: Iterator[Pair[A, B]] = map.elements;
 }

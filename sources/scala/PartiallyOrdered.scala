@@ -11,6 +11,9 @@ package scala;
 
 
 /** A trait for partially ordered data.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 23/04/2004
  */
 trait PartiallyOrdered[+a] {
 

@@ -75,7 +75,7 @@ object Predef {
 
   // views -------------------------------------------------------------
 
-  def view(x: int): Ordered[int] = new Ordered[int] {
+  def view(x: int): Ordered[int] = new Ordered[int] with Proxy(x) {
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
         if (x < y1) -1
@@ -85,7 +85,7 @@ object Predef {
     }
   }
 
-  def view(x: char): Ordered[char] = new Ordered[char] {
+  def view(x: char): Ordered[char] = new Ordered[char] with Proxy(x) {
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
         if (x < y1) -1
@@ -95,7 +95,7 @@ object Predef {
     }
   }
 
-  def view(x: long): Ordered[long] = new Ordered[long] {
+  def view(x: long): Ordered[long] = new Ordered[long] with Proxy(x) {
     def compareTo [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
         if (x < y1) -1
@@ -105,7 +105,7 @@ object Predef {
     }
   }
 
-  def view(x: float): Ordered[float] = new Ordered[float] {
+  def view(x: float): Ordered[float] = new Ordered[float] with Proxy(x) {
     def compareTo [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
         if (x < y1) -1
@@ -115,7 +115,7 @@ object Predef {
     }
   }
 
-  def view(x: double): Ordered[double] = new Ordered[double] {
+  def view(x: double): Ordered[double] = new Ordered[double] with Proxy(x) {
     def compareTo [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
         if (x < y1) -1
@@ -125,7 +125,7 @@ object Predef {
     }
   }
 
-  def view(x: boolean): Ordered[boolean] = new Ordered[boolean] {
+  def view(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy(x) {
     def compareTo [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
         if (x == y1) 0
@@ -135,34 +135,35 @@ object Predef {
     }
   }
 
-  def view(x: String): Ordered[String] = new Ordered[String] {
-    def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
-      case y1: String => x compareTo y1;
-      case _ => -(y compareTo x)
-    }
-  }
-  def view[a <% Ordered[a]](x: Array[a]): Ordered[Array[a]] = new Ordered[Array[a]] {
-    def compareTo [b >: Array[a] <% Ordered[b]](y: b): int = y match {
-      case y1: Array[a] => compareArrays(x, y1);
-      case _ => -(y compareTo x)
-    }
-    private def compareArrays(xs: Array[a], ys: Array[a]): int = {
-      var i = 0;
-      while (i < xs.length && i < ys.length) {
-	if (xs(i) < ys(i)) return -1;
-	if (xs(i) > ys(i)) return 1;
-	i = i + 1
-      }
-      if (i < xs.length) return 1
-      else if (i < ys.length) return -1
-      else 0
-    }
-  }
-
   def view[A](xs: Array[A]): Seq[A] = new Seq[A] {
     def length = xs.length;
     def elements = Iterator.fromArray(xs);
     def apply(n: Int) = xs(n);
+    override def hashCode(): Int = xs.hashCode();
+    override def equals(y: Any): Boolean = xs.equals(y);
     override protected def stringPrefix: String = "Array";
+  }
+
+  def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Ordered[Array[A]] with Proxy(xs) {
+	def compareTo[B >: Array[A] <% Ordered[B]](that: B): Int = that match {
+	  case ys: Array[A] =>
+		var i, res = 0;
+		while ((i < xs.length) && (i < ys.length) && (res == 0)) {
+			res = xs(i) compareTo ys(i);
+			i = i + 1;
+		}
+		if (res != 0) res
+		else if (i < xs.length) 1
+		else -1
+	  case _ =>
+		-(that compareTo xs)
+	}
+  }
+
+  def view(x: String): Ordered[String] = new Ordered[String] with Proxy(x) {
+    def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
+      case y1: String => x compareTo y1;
+      case _ => -(y compareTo x)
+    }
   }
 }

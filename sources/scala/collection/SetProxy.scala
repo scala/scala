@@ -17,7 +17,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class SetProxy[A](set: Set[A]) extends Set[A] {
+class SetProxy[A](set: Set[A]) extends Set[A] with IterableProxy(set) {
 
     def size: Int = set.size;
 
@@ -32,8 +32,4 @@ class SetProxy[A](set: Set[A]) extends Set[A] {
     override def exists(p: A => Boolean): Boolean = set.exists(p);
 
     override def toList: List[A] = set.toList;
-
-    override def toString() = set.toString();
-
-    def elements: Iterator[A] = set.elements;
 }

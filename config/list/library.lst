@@ -27,6 +27,7 @@ Function8.java
 Function9.java
 Int.java
 Iterable.scala
+IterableProxy.scala
 Iterator.scala
 List.scala
 Long.java
@@ -38,9 +39,11 @@ Ordered.scala
 PartiallyOrdered.scala
 PartialFunction.scala
 Predef.scala
+Proxy.scala
 Ref.java
 ScalaObject.java
 Seq.scala
+SeqProxy.scala
 Short.java
 Some.scala
 Stream.scala

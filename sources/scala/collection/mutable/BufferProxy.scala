@@ -17,7 +17,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/04/2004
  */
-class BufferProxy[A](buf: Buffer[A]) extends Buffer[A] {
+class BufferProxy[A](buf: Buffer[A]) extends Buffer[A] with Proxy(buf) {
 
     def length: Int = buf.length;
 
@@ -130,11 +130,4 @@ class BufferProxy[A](buf: Buffer[A]) extends Buffer[A] {
     /** Clears the buffer contents.
      */
     def clear: Unit = buf.clear;
-
-    /** The hashCode method always yields an error, since it is not
-     *  safe to use buffers as keys in hash tables.
-     *
-     *  @return never.
-     */
-    override def hashCode(): Int = buf.hashCode();
 }
