@@ -315,7 +315,7 @@ trait List[a] extends Seq[a] {
   * @return this list without the elements of the given list <code>that</code>.
   */
   def diff(that: List[a]): List[a] =
-    if (that.isEmpty) this
+    if (this.isEmpty || that.isEmpty) this
     else {
       val result = this.tail diff that;
       if (that contains this.head) result else this.head :: result;
