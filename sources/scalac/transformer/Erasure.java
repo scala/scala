@@ -493,7 +493,7 @@ public class Erasure extends Transformer implements Modifiers {
             Type info = clasz.nextInfo();
             switch (info) {
             case CompoundType(Type[] parts, Scope members_):
-                members_ = new Scope(members_);
+                members_ = members_.cloneScope();
                 for (int i = 0; i < bridges.length(); i++) {
                     Tree bridge = (Tree)bridges.get(i);
                     members_.enterOrOverload(bridge.symbol());
