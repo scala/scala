@@ -735,10 +735,12 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds a list with given element type, head and tail. */
     public Tree mkNewCons(int pos, Type element, Tree head, Tree tail) {
         // !!! these checks can be removed once they are done in Apply
+        global.nextPhase();
         assert head.type().isSubType(element):
             element + " -- " + head + " : " + head.type;
         assert tail.type().isSubType(definitions.LIST_TYPE(element)):
             element + " -- " + tail + " : " + tail.type;
+        global.prevPhase();
 	return New(
             mkApplyTV(
                 mkPrimaryConstructorGlobalRef(pos, definitions.CONS_CLASS),
