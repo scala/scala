@@ -9,34 +9,37 @@ import javaAdapter.Map;
 
 abstract class Element {
 
-                def getName:     String;                // the real element name
-                def getChildren: List[Element];         // the children
-                def getAttribs:  Map[ String, String ]; // disabled
-		def setAttribs( m:Map[ String, String ] ):Unit ;
+    def getName:     String;                // the real element name
+    def getChildren: Seq[ Element ];         // the children
+    def setChildren( l:Seq[ Element ] ):Unit ;
+    def getAttribs:  Map[ String, String ]; // disabled
+    def setAttribs( m:Map[ String, String ] ):Unit ;
 
-                def toXML: String = {
-                        "<" + getName + toXML_( getAttribs ) + ">" + toXML_( getChildren ) + "</" + getName +">"
+    def toXML: String = {
+        "<" + getName + toXML_( getAttribs ) + ">"
+        + toXML_( getChildren )
+        + "</" + getName +">"
+    }
+
+    def toXML_( elems:Seq[Element] ):String = elems match {
+        case head :: tail  => head.toXML + toXML_( tail );
+        case Nil           => "";
+    }
+
+    def toXML_( attrib:Map[ String, String ] ):String = {
+	def iterate( keys:Iterator[String] ) =
+	    if( keys.hasNext )
+		{
+                        val key = keys.next;
+			" " + key + "=\"" + attrib.get( key ) + "\" ";
+		}
+	    else
+		{
+			""
 		}
 
-	        def toXML_( elems:List[Element] ):String = elems match {
-		    case head :: tail  => head.toXML + toXML_( tail );
-                    case Nil           => "";
-		}
-
-                def toXML_( attrib:Map[ String, String ] ):String = {
-		    def iterate( keys:Iterator[String] ) =
-			if( keys.hasNext )
-			    {
-				val key = keys.next;
-				" " + key + "=\"" + attrib.get( key ) + "\" ";
-			    }
-			else
-			    {
-			      ""
-			    }
-
-		    iterate( attrib.keys.elements );
-		}
+	if( attrib != null ) iterate( attrib.keys.elements ) else "";
+    }
 
   /*
                 def toXML : String = {

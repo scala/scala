@@ -19,20 +19,22 @@ public class DeclToScala {
 
 
       static final String ATTRIBS_VARDEF =
-	  "var _at:Map[String,String] = null;";
+	  "var _at:scala.xml.javaAdapter.Map[String,String] = new HashMap[String,String];";
       //static final String ATTRIB_MAP = "attribs";
       //static final String ATTRIB_T   = "scala.Map[String,String]";
 
       static final String CHILDREN_VALDEF =
-"val _ch:List[Element] = if( children == null ) { scala.Nil } else children ;";
+"var _ch:scala.Seq[scala.xml.Element] = if( children == null ) { scala.Nil } else children ;";
       static final String CHILDREN_SEQ = "children";
-      static final String CHILDREN_T   = "scala.List[Element]";
+    //static final String CHILDREN_T   = "scala.Seq[Element]";
+      static final String CHILDREN_T   = "Element*";
 
       static final String RAW_NAME_DEF     = "def getName:String = ";
 
-      static final String GET_CHILDREN_DEF = "def getChildren:scala.List[Element] = _ch ;";
-      static final String GET_ATTRIBS_DEF =  "def getAttribs:Map[String,String] = _at ;";
-      static final String SET_ATTRIBS_DEF =  "def setAttribs( m:Map[String,String] ):Unit = {_at = m};";
+      static final String GET_CHILDREN_DEF = "def getChildren:scala.Seq[scala.xml.Element] = _ch ;";
+      static final String SET_CHILDREN_DEF = "def setChildren( l:scala.Seq[scala.xml.Element] ):Unit = {_ch = l};";
+      static final String GET_ATTRIBS_DEF =  "def getAttribs:scala.xml.javaAdapter.Map[String,String] = _at ;";
+      static final String SET_ATTRIBS_DEF =  "def setAttribs( m:scala.xml.javaAdapter.Map[String,String] ):Unit = {_at = m};";
 
       static final int IND_STEP = 5;
 
@@ -99,22 +101,23 @@ public class DeclToScala {
             // convenience ! overloaded constructors, have to appear *before*
             // the class def and need the "final" modifier
 
-            fOut.println( "final def "+clazzName+"(ch:List[Element]):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], ch ) ;" );
+            fOut.println( "final def "+clazzName+"(ch:Seq[Element]):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], ch ) ;" );
 
             printIndent();
 
             fOut.println( "final def "+clazzName+"( el:Element ):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], el::Nil[Element] ) ;" );
 
             printIndent();
+
             // might contain text
             if( decl.contentModel.indexOf("#PCDATA") != -1 ) {
 
-	    fOut.println( "final def "+clazzName+"( text:String ):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], PCDATA( text )::Nil[Element] ) ;" );
+	    fOut.println( "final def "+clazzName+"( text:String ):"+clazzName+" = new "+clazzName+"( PCDATA( text ) );" );
 	    printIndent();
 
             }
-
 	    */
+
 
             fOut.print( "case class " );
 
@@ -134,11 +137,12 @@ public class DeclToScala {
             fOut.print('"'); fOut.print( decl.name ); fOut.print('"');
             fOut.println(';');
 
+            printIndent(); fOut.println( CHILDREN_VALDEF );
+            printIndent(); fOut.println( GET_CHILDREN_DEF );
+            printIndent(); fOut.println( SET_CHILDREN_DEF );
             printIndent(); fOut.println( ATTRIBS_VARDEF );
             printIndent(); fOut.println( GET_ATTRIBS_DEF );
             printIndent(); fOut.println( SET_ATTRIBS_DEF );
-            printIndent(); fOut.println( CHILDREN_VALDEF );
-            printIndent(); fOut.println( GET_CHILDREN_DEF );
 
 	    /*
             for( Iterator it = decl.attribs.keySet().iterator(); it.hasNext() ; )
@@ -188,20 +192,20 @@ public class DeclToScala {
 
             printIndent();
             fOut.println(
-"val _factory: Map[String, scala.List[Element] => Element] = {");
+"val _factory: scala.xml.javaAdapter.Map[String, scala.Seq[scala.xml.Element] => scala.xml.Element] = {");
             fIndent += IND_STEP;
             printIndent();
             fOut.println(
-			 //"val res = new scala.HashMap[String,(scala.Map[String,String],scala.List[Element])=>Element] ;");
-"val res = new HashMap[String, scala.List[Element] => Element] ;");
+			 //"val res = new scala.HashMap[String,(scala.Map[String,String],scala.Seq[Element])=>Element] ;");
+"val res = new scala.xml.javaAdapter.HashMap[String, scala.Seq[scala.xml.Element] => scala.xml.Element] ;");
             for(Iterator it = elemMap.keySet().iterator(); it.hasNext(); ) {
                   ElemDecl decl = (ElemDecl) elemMap.get( it.next() );
                   printIndent();
                   fOut.print( "res.put(\"" );
                   fOut.print( decl.name );
-                  fOut.print( "\",");
+                  fOut.print( "\",(x:scala.Seq[scala.xml.Element] => { val res = ");
                   fOut.print( cookedCap( decl.name ));
-                  fOut.println(");");
+                  fOut.println("(); res.setChildren(x); res }));");
             }
             printIndent();
             fOut.println("res");
@@ -213,10 +217,10 @@ public class DeclToScala {
 
       void printContainsTextDef( Map elemMap ) {
             printIndent();
-            fOut.println("val _containsMap: Map[String, Boolean] = {");
+            fOut.println("val _containsMap: scala.xml.javaAdapter.Map[scala.String, scala.Boolean] = {");
             fIndent += IND_STEP;
             printIndent();
-            fOut.println("val res = new HashMap[String, Boolean] ;");
+            fOut.println("val res = new scala.xml.javaAdapter.HashMap[scala.String, scala.Boolean] ;");
 
             for(Iterator it = elemMap.keySet().iterator(); it.hasNext(); ) {
                   ElemDecl decl = (ElemDecl) elemMap.get( it.next() );

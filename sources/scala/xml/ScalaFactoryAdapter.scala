@@ -32,7 +32,7 @@ abstract class ScalaFactoryAdapter
     }
 
 
-    val f: Map[ String, List[Element] => Element ];
+    val f: Map[ String, Seq[Element] => Element ];
 
     val g: Map[ String, Boolean ] ;
 
