@@ -1130,7 +1130,7 @@ class GenJVM {
             case ZNOT : case ZOR : case ZAND :
             case NEW_ZARRAY : case NEW_BARRAY : case NEW_SARRAY :
             case NEW_CARRAY : case NEW_IARRAY : case NEW_LARRAY :
-            case NEW_FARRAY : case NEW_DARRAY :
+            case NEW_FARRAY : case NEW_DARRAY : case NEW_OARRAY :
             case ZARRAY_GET : case BARRAY_GET : case SARRAY_GET :
             case CARRAY_GET : case IARRAY_GET : case LARRAY_GET :
             case FARRAY_GET : case DARRAY_GET : case OARRAY_GET :
@@ -1157,7 +1157,7 @@ class GenJVM {
             case HASHCODE :
             case TOSTRING :
             case BOX :
-            case APPLY : case UPDATE : case LENGTH : case NEW_OARRAY :
+            case APPLY : case UPDATE : case LENGTH :
                 return false;
             default:
                 throw Debug.abort("unknown primitive", sym);
