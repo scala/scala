@@ -186,6 +186,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		}
 		if (name == Names.ROOT && owner == Symbol.NONE) {
 		    sym = Global.instance.definitions.ROOT_CLASS;
+                    if (tag == EXTref) sym = sym.module();
 		} else {
 		    sym = owner.info().lookup(name);
 		    if (tag == EXTMODCLASSref) {
