@@ -50,6 +50,7 @@ public class LambdaLift extends OwnerTransformer
     public void apply(Unit unit) {
 	global.log(unit.source.toString());
 	free.initialize(unit);
+	currentOwner = global.definitions.ROOT_CLASS;
 	unit.body = transformTemplateStats(unit.body, currentOwner);
     }
 
@@ -315,42 +316,49 @@ public class LambdaLift extends OwnerTransformer
 	tree.type = descr.transform(tree.type, currentOwner);
 	//System.out.println(tree.type);//DEBUG
         switch (tree) {
-	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case Block(Tree[] stats):
+	    for (int i = 0; i < stats.length; i++)
+		liftSymbol(stats[i]);
+	    return copy.Block(tree, transform(stats));
+
+	case ClassDef(int mods, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    Symbol sym = tree.symbol();
-	    if (sym.isLocal()) {
-		Symbol[] newtparams = ftvsParams(sym.constructor());
-		Symbol[] newparams = fvsParams(sym.constructor());
-		liftSymbol(sym, newtparams, newparams);
+	    if ((mods & LIFTED) != 0) {
+		((ClassDef) tree).mods &= ~LIFTED;
 		Tree tree1 = copy.ClassDef(
 		    tree, sym,
-		    addTypeParams(transform(tparams, sym), newtparams),
-		    new ValDef[][]{addParams(transform(vparams, sym)[0], newparams)},
+		    addTypeParams(transform(tparams, sym), newtparams(sym.constructor())),
+		    new ValDef[][]{
+			addParams(transform(vparams, sym)[0], newparams(sym.constructor()))},
 		    transform(tpe, sym),
 		    transform(impl, sym));
 		liftedDefs.append(tree1);
 		return Tree.Empty;
 	    } else {
+		assert !sym.isLocal() : sym;
 		return copy.ClassDef(
 		    tree, sym,
-		    transform(tparams, sym), transform(vparams, sym), transform(tpe, sym),
+		    transform(tparams, sym),
+		    transform(vparams, sym),
+		    transform(tpe, sym),
 		    transform(impl, sym));
 	    }
 
-	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(int mods, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
-	    if (sym.isLocal()) {
-		Symbol[] newtparams = ftvsParams(sym);
-		Symbol[] newparams = fvsParams(sym);
-		liftSymbol(sym, newtparams, newparams);
+	    if ((mods & LIFTED) != 0) {
+		((DefDef) tree).mods &= ~LIFTED;
 		Tree tree1 = copy.DefDef(
 		    tree, sym,
-		    addTypeParams(transform(tparams, sym), newtparams),
-		    new ValDef[][]{addParams(transform(vparams, sym)[0], newparams)},
+		    addTypeParams(transform(tparams, sym), newtparams(sym)),
+		    new ValDef[][]{
+			addParams(transform(vparams, sym)[0], newparams(sym))},
 		    transform(tpe, sym),
 		    transform(rhs, sym));
 		liftedDefs.append(tree1);
 		return Tree.Empty;
 	    } else {
+		assert !sym.isLocal() : sym;
 		return copy.DefDef(
 		    tree, sym,
 		    transform(tparams, sym), transform(vparams, sym), transform(tpe, sym),
@@ -400,7 +408,8 @@ public class LambdaLift extends OwnerTransformer
 	    default:
  		Tree[] targs = addFreeArgs(
 		    tree.pos, get(free.ftvs, fsym), Tree.EMPTY_ARRAY);
-		if (targs.length > 0) fn1 = gen.TypeApply(fn1, targs);
+		if (targs.length > 0)
+		    fn1 = gen.TypeApply(fn1, targs);
 	    }
 	    Tree[] args1 = transform(args);
 	    return copy.Apply(
@@ -451,11 +460,47 @@ public class LambdaLift extends OwnerTransformer
 	return params;
     }
 
-    /** change symbol so that
+    Symbol[] newtparams(Symbol owner) {
+	Symbol[] tparams = owner.typeAt(descr.nextPhase).typeParams();
+	int nfree = get(free.ftvs, owner).size();
+	assert nfree == tparams.length - owner.type().typeParams().length
+	    : owner + " " + nfree + " " + tparams.length + " " + owner.type().firstParams().length;
+	Symbol[] newtparams = new Symbol[nfree];
+	System.arraycopy(tparams, tparams.length - nfree, newtparams, 0, nfree);
+	return newtparams;
+    }
+
+    Symbol[] newparams(Symbol owner) {
+	Symbol[] params = owner.typeAt(descr.nextPhase).firstParams();
+	int nfree = get(free.fvs, owner).size();
+	assert nfree == params.length - owner.type().firstParams().length;
+	Symbol[] newparams = new Symbol[nfree];
+	System.arraycopy(params, params.length - nfree, newparams, 0, nfree);
+	return newparams;
+    }
+
+    /** change symbol of tree so that
      *  owner = currentClass
      *  newparams are added
      *  enter symbol in scope of currentClass
      */
+    void liftSymbol(Tree tree) {
+	switch (tree) {
+	case ClassDef(_, _, _, _, _, _):
+	    ((ClassDef) tree).mods |= LIFTED;
+	    Symbol sym = tree.symbol();
+	    assert sym.isLocal() : sym;
+	    liftSymbol(sym, ftvsParams(sym.constructor()), fvsParams(sym.constructor()));
+	    break;
+
+	case DefDef(_, _, _, _, _, _):
+	    ((DefDef) tree).mods |= LIFTED;
+	    Symbol sym = tree.symbol();
+	    assert sym.isLocal() : sym;
+	    liftSymbol(sym, ftvsParams(sym), fvsParams(sym));
+	}
+    }
+
     void liftSymbol(Symbol sym, Symbol[] newtparams, Symbol[] newparams) {
 	Symbol enclClass = sym.owner().enclClass();
 	if (!sym.isPrimaryConstructor()) sym.setOwner(enclClass);
@@ -489,6 +534,10 @@ public class LambdaLift extends OwnerTransformer
 	default:
 	    throw new ApplicationError("illegal type: " + tp);
 	}
+    }
+
+    boolean isLocal() {
+	return currentOwner.kind == VAL && currentOwner.name != Name.EMPTY;
     }
 
     Type addParams(Type tp, Symbol[] newparams) {
