@@ -39,8 +39,12 @@ public class SourceCompleter extends Type.LazyType {
 		    c.fullName()) + ".scala";
 		java.io.File f = global.classPath.openJavaFile(filename);
                 Unit unit = new Unit(global, new SourceFile(f), false);
+                Phase phase = global.currentPhase;
+                global.currentPhase = global.PHASE.PARSER.phase();
                 global.PHASE.PARSER.phase().apply(new Unit[] {unit});
+                global.currentPhase = global.PHASE.ANALYZER.phase();
                 ((AnalyzerPhase)global.PHASE.ANALYZER.phase()).lateEnter(global, unit, c);
+                global.currentPhase = phase;
                 global.operation("added " + filename + " in " +
                         (System.currentTimeMillis() - msec) + "ms");
             } catch (IOException e) {
