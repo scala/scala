@@ -9,9 +9,9 @@ import java.io.OutputStreamWriter ;
 
 import java.io.IOException ;
 
-import java.util.Map ;
-import java.util.Iterator ;
-
+//import java.util.Map ;
+//import java.util.Iterator ;
+import scala.collection.Map ;
 import scalac.util.Name ;
 import scalac.ast.parser.Scanner ;
 
@@ -24,7 +24,7 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
   final val COMPRESS_DEFAULT:String  = "true"; // do hash-consing on load
 
   final val ATTRIBS_VARDEF:String  =
-    "var _at:scala.xml.javaAdapter.Map[String,String] = new HashMap[String,String];";
+    "var _at:Map[String,String] = new HashMap[String,String];";
       //static final String ATTRIB_MAP = "attribs";
       //static final String ATTRIB_T   = "scala.Map[String,String]";
 
@@ -37,8 +37,8 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
   final val RAW_NAME_DEF:String      = "def getName:String = ";
 
   final val GET_CHILDREN_DEF:String  = "def getChildren:scala.Seq[scala.xml.Element] = _ch ;";
-  final val GET_ATTRIBS_DEF:String  =  "def getAttribs:scala.xml.javaAdapter.Map[String,String] = _at ;";
-  final val SET_ATTRIBS_DEF:String  =  "def setAttribs( m:scala.xml.javaAdapter.Map[String,String] ):Unit = {_at = m};";
+  final val GET_ATTRIBS_DEF:String  =  "def getAttribs:Map[String,String] = _at ;";
+  final val SET_ATTRIBS_DEF:String  =  "def setAttribs( m:Map[String,String] ):Unit = {_at = m};";
 
   //static final String HASHCODE_DEF =  "override def hashCode():int = { getChildren.hashCode() + getAttribs.hashCode() + getName.hashCode() }";
 
@@ -60,8 +60,8 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     fIndent = IND_STEP;
     printIndent();
     fOut.println("import scala.xml._ ;");
-    fOut.println("import scala.xml.javaAdapter.Map ;");
-    fOut.println("import scala.xml.javaAdapter.HashMap ;");
+    fOut.println("import scala.collection.Map ;");
+    fOut.println("import scala.collection.mutable.HashMap ;");
   }
 
   def end():Unit = {
@@ -151,7 +151,7 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
 
     fOut.print( "def " );
     fOut.print( cooked( name ));
-    fOut.print( "( arg:String ):Unit = _at.put(\"" );
+    fOut.print( "( arg:String ):Unit = _at.update(\"" );
                fOut.print( name );
                fOut.println( "\", arg ) ;");
   }
@@ -166,30 +166,28 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     fOut.print( cooked( name ));
     fOut.print( ":String = _at.get( ");
     fOut.print( '"' );fOut.print( name );fOut.print( '"' );
-    fOut.println( " ) ;");
+    fOut.println( " ).match { Some(x) => x };");
   }
 
-  def printFactory( elemMap:Map ):Unit = {
+  def printFactory( elemMap:Map[String,ElemDecl] ):Unit = {
 
     printIndent();
     fOut.println(
-      "val _factory: scala.xml.javaAdapter.Map[String, scala.Seq[scala.xml.Element] => scala.xml.Element] = {");
+      "val _factory: Map[String, scala.Seq[scala.xml.Element] => scala.xml.Element] = {");
     fIndent = fIndent + IND_STEP;
     printIndent();
     fOut.println(
       //"val res = new scala.HashMap[String,(scala.Map[String,String],scala.Seq[Element])=>Element] ;");
-      "val res = new scala.xml.javaAdapter.HashMap[String, scala.Seq[scala.xml.Element] => scala.xml.Element] ;");
+      "val res = new HashMap[String, scala.Seq[scala.xml.Element] => scala.xml.Element] ;");
     //JAVA: for(Iterator it = elemMap.keySet().iterator(); it.hasNext(); )
-    val it:Iterator = elemMap.keySet().iterator();
-    while( it.hasNext() ) {
-      val decl:ElemDecl = elemMap.get( it.next() ).asInstanceOf[ ElemDecl ];
-      printIndent();
-      fOut.print( "res.put(\"" );
-      fOut.print( decl.name );
-      fOut.print( "\",(x:scala.Seq[scala.xml.Element] => ");
-      fOut.print( cookedCap( decl.name ));
-      fOut.println("( x:_* ) ));");
-    }
+    elemMap.values.foreach( decl => {
+	printIndent();
+	fOut.print( "res.update(\"" );
+	fOut.print( decl.name );
+        fOut.print( "\",(x:scala.Seq[scala.xml.Element] => ");
+        fOut.print( cookedCap( decl.name ));
+        fOut.println("( x:_* ) ));");
+    });
     printIndent();
     fOut.println("res");
     printIndent();
@@ -198,28 +196,24 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
 
   }
 
-  def printContainsTextDef( elemMap:Map ):Unit = {
+  def printContainsTextDef( elemMap:Map[String,ElemDecl] ):Unit = {
     printIndent();
-    fOut.println("val _containsMap: scala.xml.javaAdapter.Map[scala.String, boolean] = {");
+    fOut.println("val _containsMap: Map[scala.String, boolean] = {");
     fIndent = fIndent + IND_STEP;
     printIndent();
-    fOut.println("val res = new scala.xml.javaAdapter.HashMap[scala.String, boolean] ;");
+    fOut.println("val res = new HashMap[scala.String, boolean] ;");
 
-    val it:Iterator = elemMap.keySet().iterator();
-    while( it.hasNext() ) {
-      val decl:ElemDecl = elemMap.get( it.next() ).asInstanceOf[ ElemDecl ];
-      printIndent();
-      fOut.print( "res.put(\"" );
-                 fOut.print( decl.name );
-                 fOut.print( "\",");
-
-      if( decl.contentModel.indexOf("#PCDATA") != -1 )
-        fOut.print("true");
-      else
-        fOut.print("false");
-
-      fOut.println(");");
-    }
+    elemMap.values.foreach( decl => {
+	printIndent();
+        fOut.print( "res.update(\"" );
+        fOut.print( decl.name );
+        fOut.print( "\",");
+        if( decl.contentModel.indexOf("#PCDATA") != -1 )
+          fOut.print("true")
+        else
+          fOut.print("false");
+        fOut.println(");");
+    });
     printIndent();
     fOut.println("res");
     fIndent = fIndent - IND_STEP;
@@ -248,37 +242,29 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     fOut.println("};");
     fIndent = fIndent - IND_STEP;
     printIndent();
-    fOut.println("val b:scala.Object = fAdapter.loadXML( filename );");
-    printIndent();
-    fOut.println("b.asInstanceOf[Element]");
+    fOut.println("fAdapter.loadXML( filename );");
     printIndent();
     fOut.println("};");
     fIndent = fIndent - IND_STEP;
   };
 
-  def toScala( elemMap:Map ):Unit = {
+  def toScala( elemMap:Map[String,ElemDecl] ):Unit = {
     begin();
 
     fOut.println("/** the following elements are there");
 
-    val it:Iterator = elemMap.keySet().iterator();
-    while( it.hasNext() ) {
-      val decl:ElemDecl =  elemMap.get( it.next() ).asInstanceOf[ ElemDecl ];
-      fOut.print(" * ");
-      fOut.print( decl.name );
-      fOut.print(" : [");
-      fOut.print( decl.contentModel );
-      fOut.println(']');
-      fOut.print(" * ");
-      fOut.println( "attribs: "+decl.attribs.keySet() );
-    }
+    elemMap.values.foreach( decl => {
+	fOut.print(" * ");
+        fOut.print( decl.name );
+        fOut.print(" : [");
+        fOut.print( decl.contentModel );
+        fOut.println(']');
+        fOut.print(" * ");
+        fOut.println( "attribs: "+decl.attribs );
+    } );
     fOut.println("*/");
 
-    val it2:Iterator =  elemMap.keySet().iterator();
-    while( it2.hasNext() ) {
-      val decl:ElemDecl = elemMap.get( it2.next() ).asInstanceOf[ ElemDecl ];
-      toScala( decl );
-    }
+    elemMap.values.foreach( decl => toScala( decl ) );
 
     printContainsTextDef( elemMap );
     printFactory( elemMap );
@@ -287,14 +273,12 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     end();
   }
 
-  def toScala( decl:XMLDecl ):Unit = {
-  decl.match {
-    case ElemDecl( _, _, _) =>
+  def toScala( decl:XMLDecl ):Unit = decl.match {
 
-      printClassDef( decl.asInstanceOf[ ElemDecl ] );
+    case x:ElemDecl =>
+      printClassDef( x );
 
     case AttrDecl( name, attrType ) =>
-
       if( attrType.equals("CDATA") ) {
         //printSetMethod(name);
         printGetMethod(name);
@@ -307,8 +291,7 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
       }
     case _ =>
       System.err.println("unexpected XMLDecl"); System.exit(-1);
-  }
-}
+  } // toScala
 
 
 //

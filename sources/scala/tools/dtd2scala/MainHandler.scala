@@ -7,11 +7,14 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.Attributes;
 import org.xml.sax.ext.DeclHandler;
 
+/*
 import java.util.Map ;
 import java.util.HashMap ;
 import java.util.TreeMap ;
 import java.util.Iterator ;
-
+*/
+//import scala.collection.Map ;
+import scala.collection.mutable.HashMap ;
 /** 2 do :
     - handle modes of attributes (add #REQUIRED ones, fill in default of #IMPLIED)
     - allow package prefix to be given !
@@ -20,71 +23,67 @@ import java.util.Iterator ;
 
 class MainHandler extends DefaultHandler with DeclHandler {
 
-    var elemMap:Map = new HashMap();   // elementName -> elementDecl
+  var elemMap:HashMap[String,ElemDecl] = new HashMap[String,ElemDecl];
 
-    // DTDHandler methods
+  // DTDHandler methods
 
-    /** encountered element declaration
-     */
-    def elementDecl( name:String, contentModel:String ):Unit
-	/* throws SAXException */ ={
+  /** encountered element declaration
+   */
+  def elementDecl( name:String, contentModel:String ):Unit
+  /* throws SAXException */ = {
 
-	val decl:ElemDecl  = elemMap.get( name ).asInstanceOf[ ElemDecl ];
+    elemMap.get( name ).match {
 
-	if( decl == null ) {
-	  val _ = elemMap.put( name, new ElemDecl( name,
-						  contentModel,
-						  new HashMap() ));
-	} else {
-	  val newDecl = ElemDecl( decl.name, contentModel, decl.attribs );
-	  val _ = elemMap.put( name, newDecl );
-	}
+      case Some(decl) => // was added because of ATTLIST decl before
+        elemMap.update( name, ElemDecl( decl.name,
+                                        contentModel,
+                                        decl.attribs ) )
+      case None =>
+        elemMap.update( name, ElemDecl( name,
+                                        contentModel,
+                                        new HashMap[String,AttrDecl]() ));
+    }
+  } // elementDecl(String,String)
 
-    } // elementDecl(String,String)
+  /** encountered attribute declaration.
+   */
+  def attributeDecl(elementName:String,
+                    attributeName:String,
+                    tpe:String,
+                    valueDefault:String,
+                    value:String ) /*throws SAXException*/ = {
 
-    /** encountered attribute declaration.
-     */
-    def attributeDecl(elementName:String,
-		      attributeName:String,
-		      tpe:String,
-		      valueDefault:String,
-		      value:String ) /*throws SAXException*/ = {
-	var attribs:Map = null.asInstanceOf[ Map ];
+     var attribs:HashMap[String,AttrDecl] =
+       elemMap.get( elementName ).match {
+	 case None =>
+           val amap = new HashMap[String,AttrDecl];
+           elemMap.update( elementName,
+                           ElemDecl( elementName,
+                                     null:String,
+                                     amap ));
+           amap;
 
-	val decl:ElemDecl = elemMap.get( elementName ).asInstanceOf[ ElemDecl ];
-
-	if( decl == null )
-	    {
-		attribs = new TreeMap();
-		elemMap.put( elementName,
-			     new ElemDecl( elementName,
-					  null,
-					  attribs ));
-	    }
-	else
-	    attribs = decl.attribs;
-
-
-	val _ = attribs.put( attributeName, new AttrDecl(attributeName,
-							 tpe ));
-
-    } // attributeDecl(String,String,String,String,String)
+	 case Some(decl) =>
+           decl.attribs;
+     };
+     attribs.update( attributeName, AttrDecl(attributeName, tpe ));
+  } // attributeDecl(String,String,String,String,String)
 
 
-    /** Internal entity declaration.
-     */
+  /** Internal entity declaration.
+  */
   def internalEntityDecl( name:String, text:String ):Unit
-	/*throws SAXException*/ = {
-	// ignore
+        /*throws SAXException*/ = {
+        // ignore
     }
 
     /** External entity declaration.
      */
   def externalEntityDecl( name:String,
-			  publicId:String ,
-			  systemId:String ):Unit
-	/*throws SAXException*/ = {
-	// ignore
+                          publicId:String ,
+                          systemId:String ):Unit
+        /*throws SAXException*/ = {
+        // ignore
     }
 
     /*
@@ -98,14 +97,14 @@ class MainHandler extends DefaultHandler with DeclHandler {
     AttrDecl adecl = null;
     System.out.print("{");
     for(Iterator it2 = decl.attribs.keySet().iterator();
-		it2.hasNext(); ) {
-		if(adecl != null)
-		    System.out.print(",");
-		adecl = (AttrDecl) decl.attribs.get( it2.next() );
-		System.out.print(adecl.name+":"+adecl.type);
-	    }
-	    System.out.println("}");
-	}
+                it2.hasNext(); ) {
+                if(adecl != null)
+                    System.out.print(",");
+                adecl = (AttrDecl) decl.attribs.get( it2.next() );
+                System.out.print(adecl.name+":"+adecl.type);
+            }
+            System.out.println("}");
+        }
 
 
     }
