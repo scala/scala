@@ -119,17 +119,17 @@ public abstract class RunTime {
     }
 
     /** @meta method (scala.Array[scala.Boolean]) scala.Array[scala.Boolean];*/
-    public static Array box(final boolean[] xs) {
+    public static Array box(boolean[] xs) {
 	return new ZArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Byte]) scala.Array[scala.Byte]; */
-    public static Array box(final byte[] xs) {
+    public static Array box(byte[] xs) {
 	return new BArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Short]) scala.Array[scala.Short]; */
-    public static Array box(final short[] xs) {
+    public static Array box(short[] xs) {
 	return new SArray(xs);
     }
 
