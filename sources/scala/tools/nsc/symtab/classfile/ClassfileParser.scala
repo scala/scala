@@ -3,6 +3,15 @@
  * @author  Martin Odersky
  */
 // $Id$
+/* Ideas to extend this to an icode reader:
+
+  1. Parse classfile a second time, creating a hashmap `code' that associates method symbols with code.
+  2. For every method symbol `meth' in the new scope:
+
+    new = oldclass.info.decl(meth.name).suchThat(old => old.tpe =:= meth.tpe)
+
+    code(new) = code(meth)
+*/
 package scala.tools.nsc.symtab.classfile;
 
 import scala.tools.util._;

@@ -134,6 +134,18 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
   val picklePhase = new pickler.PicklePhase(typeCheckPhase);
 
+/*
+  object icode extends ICode {
+    val global: Global.this.type = Global.this
+  }
+  val codegenPhase = new icode.CodeGenPhase(erasurePhase)
+
+  abstract class CodeGenPhase(prev: Phase) extends StdPhase(prev) {
+    import global._;
+    ...
+
+  }
+*/
   val terminalPhase = new StdPhase(picklePhase) {
     def name = "terminal";
     val global: Global.this.type = Global.this;
