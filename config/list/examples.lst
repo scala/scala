@@ -10,8 +10,9 @@ fors.scala
 futures.scala
 iterators.scala
 maps.scala
-parsers.scala
+Parsers.scala
 parsers1.scala
+parsers2.scala
 patterns.scala
 sort.scala
 sort1.scala
@@ -22,6 +23,8 @@ expressions/expressions-current.scala
 
 # jolib/Ref.scala
 # jolib/parallelOr.scala
+
+mobile/sort.scala
 
 pilib/elasticBuffer.scala
 pilib/handover.scala
