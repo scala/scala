@@ -1216,10 +1216,24 @@ public class Parser implements Tokens {
 	return p;
     }
 
-    /*   Pattern2  ::=  SimplePattern [ '*' | '?' | '+' ]
-     *               |  SimplePattern {Id SimplePattern}    // op2 must not be empty
+    /*   Pattern2  ::=  varid [ @ Pattern3 ]
+     *                |  Pattern3
      */
     Tree pattern2() {
+	Tree p = pattern3();
+	if (s.token == AT && TreeInfo.isVarPattern(p)) {
+	    if( !TreeInfo.isWildcardPattern(p) )
+		return make.Bind(s.skipToken(), ((Ident)p).name, pattern3());
+	    else
+		return pattern3();
+	}
+	return p;
+    }
+
+    /*   Pattern3  ::=  SimplePattern [ '*' | '?' | '+' ]
+     *               |  SimplePattern {Id SimplePattern}    // op2 must not be empty
+     */
+    Tree pattern3() {
 	int base = sp;
 	Tree top = simplePattern();
 	if (s.token == IDENTIFIER) {
@@ -1273,11 +1287,11 @@ public class Parser implements Tokens {
         return reduceStack(false, base, top, 0, true);
     }
 
-    /** SimplePattern ::= varid [ '@' SimplePattern ]
+    /** SimplePattern ::= varid
      *                 | `_'
      *                 | literal
-     *                 | StableId [ArgumentPatterns]
-     *                 | `(' Patterns `)'
+     *                 | StableId [ `(' [Patterns] `)' ]
+     *                 | `(' [Patterns] `)'
      *                 |                     (empty word - nothing)
      */
     Tree simplePattern() {
@@ -1292,16 +1306,13 @@ public class Parser implements Tokens {
             // else fall through to case THIS
         case THIS:
             Tree t = stableId();
-            switch (t) {
-            case Ident(Name name):
-		if ((name.isVariable()) && (s.token == AT)) {
-                    int pos = s.pos;
-                    s.nextToken();
-                    return make.Bind(pos, name, simplePattern());
-                }
-            }
             while (s.token == LPAREN) {
-                t = make.Apply(s.pos, convertToTypeId(t), argumentPatterns());
+		Tree[] ts = Tree.EMPTY_ARRAY;
+		accept(LPAREN);
+		if (s.token != RPAREN)
+		    ts = patterns();
+		accept(RPAREN);
+                t = make.Apply(s.pos, convertToTypeId(t), ts);
             }
             return t;
         case USCORE:
@@ -1320,8 +1331,10 @@ public class Parser implements Tokens {
         case LPAREN:
             int p = s.pos;
             s.nextToken();
-            Tree[] ts = patterns();
-            Tree   t;
+	    Tree[] ts = Tree.EMPTY_ARRAY;
+	    if( s.token!= RPAREN )
+		ts = patterns();
+            Tree t;
             if (ts.length == 1)
                 t = ts[0];
             else {
@@ -1333,17 +1346,6 @@ public class Parser implements Tokens {
         default:
             return syntaxError("illegal start of pattern", true);
 	}
-    }
-
-    /** ArgumentPatterns ::= `(' [Patterns] `)'
-     */
-    Tree[] argumentPatterns() {
-	Tree[] ts = Tree.EMPTY_ARRAY;
-	accept(LPAREN);
-	if (s.token != RPAREN)
-	    ts = patterns();
-	accept(RPAREN);
-	return ts;
     }
 
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
