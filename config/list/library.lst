@@ -124,7 +124,7 @@ concurrent/NameServer.scala
 
 runtime/InterpreterSupport.java
 runtime/NativeLoop.java
-runtime/NativeMonitor.java
+# runtime/NativeMonitor.java
 runtime/ResultOrException.java
 runtime/RunTime.java
 runtime/ScalaRunTime.scala
