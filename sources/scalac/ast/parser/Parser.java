@@ -1024,6 +1024,7 @@ public class Parser implements Tokens {
 	    {
 		if ( s.name == STAR ) /*         p*  becomes  z@( |(p,z))       */
 		    {
+			s.nextToken();
 			Name zname= fresh();
 			Tree zvar = make.Ident( s.pos, zname );
 
@@ -1037,6 +1038,7 @@ public class Parser implements Tokens {
 		    }
 		else if ( s.name == PLUS ) /*    p+   becomes   z@(p,(z| ))     */
 		    {
+			s.nextToken();
 			Name zname= fresh();
 			Tree zvar = make.Ident( s.pos, zname );
 
@@ -1050,6 +1052,7 @@ public class Parser implements Tokens {
 		    }
 		else if ( s.name == OPT ) /*    p?   becomes   (p| )            */
 		    {
+			s.nextToken();
 			return make.Alternative( s.pos, new Tree[] {
 			    top,
 			    make.Subsequence( s.pos, Tree.EMPTY_ARRAY )});
@@ -1070,17 +1073,19 @@ public class Parser implements Tokens {
      *                 | literal
      *                 | null
      *                 | StableId {ArgumentPatterns}
-     *                 | `(' Pattern `)'
+     *                 | `(' Patterns `)'
      *                 | ((nothing))
      */
     Tree simplePattern() {
 	switch (s.token) {
+	case COMMA:
+	    return make.Subsequence( s.pos, Tree.EMPTY_ARRAY ); // ((nothing))
 	case IDENTIFIER:
 	    if( s.name == BAR )
 		{
 		    return make.Subsequence( s.pos, Tree.EMPTY_ARRAY ); // ((nothing))
 		}
-
+	    // else fall through to case THIS
 	case THIS:
 	    Tree t = stableId();
 	    switch( t ) {
@@ -1110,8 +1115,14 @@ public class Parser implements Tokens {
 	case NULL:
 	    return literal(true);
 	case LPAREN:
+	    int p = s.pos;
 	    s.nextToken();
-	    Tree t = pattern();
+	    Tree[] ts = patterns();
+	    Tree   t;
+	    if( ts.length == 1 )
+		t = ts[ 0 ];
+	    else
+		t = make.Subsequence( s.pos, ts );
 	    accept(RPAREN);
 	    return t;
 	default:
