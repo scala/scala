@@ -9,16 +9,5 @@ Main.scala
 MainHandler.scala
 MyElemDecl.scala
 
-regexp/Tokens.scala
-regexp/Scanner.scala
-regexp/Parser.scala
-regexp/RegExp.scala
-regexp/Node.scala
-regexp/Seq.scala
-regexp/Alt.scala
-regexp/Star.scala
-regexp/Eps.scala
-regexp/PCDATA_.scala
-
 template/ObjectTemplate.scala.xml
 ##############################################################################
