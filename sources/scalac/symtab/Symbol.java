@@ -127,6 +127,45 @@ public abstract class Symbol implements Modifiers, Kinds {
         return peckage;
     }
 
+    /** Creates a new type alias owned by this symbol. */
+    public final AliasTypeSymbol newTypeAlias(int pos, int flags, Name name) {
+        return new AliasTypeSymbol(pos, name, this, flags, 0);
+    }
+
+    /** Creates a new abstract type owned by this symbol. */
+    public final AbsTypeSymbol newAbstractType(int pos, int flags, Name name) {
+        return new AbsTypeSymbol(pos, name, this, flags, 0);
+    }
+
+    /** Creates a new type parameter owned by this symbol. */
+    public final AbsTypeSymbol newTParam(int pos, int flags, Name name) {
+        assert isTerm(): Debug.show(this);
+        return newAbstractType(pos, flags | PARAM, name);
+    }
+
+    /**
+     * Creates a new type parameter owned by this symbol and
+     * initializes it with the type.
+     */
+    public final AbsTypeSymbol newTParam(int pos, int flags, Name name, Type type) {
+        AbsTypeSymbol tparam = newTParam(pos, flags, name);
+        tparam.setInfo(type);
+        return tparam;
+    }
+
+    /**
+     * Creates a new type alias owned by this symbol and initializes
+     * it with the info.
+     */
+    public final AliasTypeSymbol newTypeAlias(int pos, int flags, Name name,
+        Type info)
+    {
+        AliasTypeSymbol alias = newTypeAlias(pos, flags, name);
+        alias.setInfo(info);
+        alias.allConstructors().setInfo(Type.MethodType(EMPTY_ARRAY, info));
+        return alias;
+    }
+
     /** Creates a new class owned by this symbol. */
     public final ClassSymbol newClass(int pos, int flags, Name name) {
         return newClass(pos, flags, name, 0, NONE);
@@ -1641,26 +1680,11 @@ public abstract class TypeSymbol extends Symbol {
     protected abstract TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs);
 }
 
-public class AliasTypeSymbol extends TypeSymbol {
+public final class AliasTypeSymbol extends TypeSymbol {
 
-    /** Constructor */
-    public AliasTypeSymbol(int pos, Name name, Symbol owner, int flags) {
-        this(pos, name, owner, flags, 0);
-    }
-    public AliasTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+    /** Initializes this instance. */
+    AliasTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
         super(ALIAS, pos, name, owner, flags, attrs);
-    }
-
-    public static AliasTypeSymbol define(
-        int pos, Name name, Symbol owner, int flags, Scope scope) {
-        Scope.Entry e = scope.lookupEntry(name);
-        if (e.owner == scope && e.sym.isExternal() && e.sym.kind == ALIAS) {
-            AliasTypeSymbol sym = (AliasTypeSymbol) e.sym;
-            sym.update(pos, flags);
-            return sym;
-        } else {
-            return new AliasTypeSymbol(pos, name, owner, flags);
-        }
     }
 
     protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
@@ -1669,29 +1693,14 @@ public class AliasTypeSymbol extends TypeSymbol {
 
 }
 
-public class AbsTypeSymbol extends TypeSymbol {
+public final class AbsTypeSymbol extends TypeSymbol {
 
     private Type lobound = null;
 
-    /** Constructor */
-    public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags) {
-        this(pos, name, owner, flags, 0);
-    }
-    public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+    /** Initializes this instance. */
+    AbsTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
         super(TYPE, pos, name, owner, flags, attrs);
         allConstructors().setInfo(Type.MethodType(EMPTY_ARRAY, Type.typeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
-    }
-
-    public static AbsTypeSymbol define(
-        int pos, Name name, Symbol owner, int flags, Scope scope) {
-        Scope.Entry e = scope.lookupEntry(name);
-        if (e.owner == scope && e.sym.isExternal() && e.sym.kind == TYPE) {
-            AbsTypeSymbol sym = (AbsTypeSymbol) e.sym;
-            sym.update(pos, flags);
-            return sym;
-        } else {
-            return new AbsTypeSymbol(pos, name, owner, flags);
-        }
     }
 
     public Type loBound() {
@@ -1740,7 +1749,7 @@ public final class ClassSymbol extends TypeSymbol {
     /** Initializes this instance. */
     ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol dual) {
         super(CLASS, pos, name, owner, flags, attrs);
-        this.rebindSym = new AliasTypeSymbol(pos, Names.ALIAS(this), owner, 0);
+        this.rebindSym = owner.newTypeAlias(pos, 0, Names.ALIAS(this));
         Type rebindType = new ClassAliasLazyType();
         this.rebindSym.setInfo(rebindType);
         this.rebindSym.primaryConstructor().setInfo(rebindType);

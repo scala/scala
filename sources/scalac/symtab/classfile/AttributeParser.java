@@ -124,12 +124,9 @@ public class AttributeParser implements ClassfileConstants {
                         !outer.isModule() ||
                         (outer != sym.dualClass().module()))
                     	continue;
-                	AliasTypeSymbol alias =
-						new AliasTypeSymbol(Position.NOPOS, name.toTypeName(), outer, 0);
-					alias.setInfo(parser.make.classType(inner));
-					alias.allConstructors()
-						.setInfo(new Type.MethodType(Symbol.EMPTY_ARRAY, inner.info()));
-	    			parser.statics.enterNoHide(alias);
+                    Symbol alias = outer.newTypeAlias(Position.NOPOS,
+                        0, name.toTypeName(), parser.make.classType(inner));
+                    parser.statics.enterNoHide(alias);
                 }
                 //in.skip(attrLen);
                 return;
@@ -225,12 +222,11 @@ public class AttributeParser implements ClassfileConstants {
                                         if (s != Symbol.NONE)
                                 return s;
                 }
-                s = new AbsTypeSymbol(
+                s = owner.newTParam(
                         Position.NOPOS,
+                        0,
                         Name.fromString(token).toTypeName(),
-                        owner,
-                        Modifiers.PARAM);
-                        s.setInfo(parser.make.anyType());
+                        parser.make.anyType());
                         tvars.enter(s);
                 return s;
             } else
@@ -364,12 +360,11 @@ public class AttributeParser implements ClassfileConstants {
                         if ("]".equals(token))
                             break;
                         assert token.startsWith("?");
-                        Symbol s = new AbsTypeSymbol(
+                        Symbol s = owner.newTParam(
                                         Position.NOPOS,
+                                        0,
                                         Name.fromString(token).toTypeName(),
-                                        owner,
-                                        Modifiers.PARAM);
-                                                s.setInfo(parser.make.anyType());
+                                        parser.make.anyType());
                                         locals.enter(s);
                         nextToken();
                         if (token.equals("<")) {

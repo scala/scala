@@ -18,7 +18,6 @@ import scalac.backend.Primitives;
 import scalac.checkers.Checker;
 import scalac.checkers.CheckSymbols;
 import scalac.checkers.CheckTypes;
-import scalac.symtab.AbsTypeSymbol;
 import scalac.symtab.Definitions;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
@@ -88,8 +87,7 @@ public class ErasurePhase extends Phase {
         if (global.target == global.TARGET_INT && sym ==primitives.NEW_OARRAY){
             // !!! hack for interpreter
             Name name = Name.fromString("element").toTypeName();
-            Symbol tparam = new AbsTypeSymbol(0, name, sym, Modifiers.PARAM);
-            tparam.setType(definitions.ANY_TYPE());
+            Symbol tparam = sym.newTParam(sym.pos, 0, name, definitions.ANY_TYPE());
             return Type.PolyType(new Symbol[]{tparam}, tp);
         }
         switch (primitives.getPrimitive(sym)) {

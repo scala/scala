@@ -2718,7 +2718,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             lubSym = new TermSymbol(syms[0].pos, syms[0].name, owner, 0);
             break;
         case TYPE: case ALIAS: case CLASS:
-            lubSym = new AbsTypeSymbol(syms[0].pos, syms[0].name, owner, 0);
+            lubSym = owner.newAbstractType(syms[0].pos, 0, syms[0].name);
             lubSym.setLoBound(glb(lbs));
             break;
         default:

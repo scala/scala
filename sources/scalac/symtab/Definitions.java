@@ -673,7 +673,7 @@ public class Definitions {
     /** Creates a new type alias */
     private Symbol newAlias(Symbol owner, Name name, int flags) {
         name = name.toTypeName();
-        Symbol alias = new AliasTypeSymbol(Position.NOPOS, name, owner, flags);
+        Symbol alias = owner.newTypeAlias(Position.NOPOS, flags, name);
         owner.members().enter(alias);
         return alias;
     }
@@ -689,8 +689,7 @@ public class Definitions {
     /** Creates a new type parameter */
     private Symbol newTParam(Symbol owner, int index, Type bound) {
         Name name = Name.fromString("T" + index).toTypeName();
-        return new AbsTypeSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
-            .setInfo(bound);
+        return owner.newTParam(Position.NOPOS, 0, name, bound);
     }
 
     /** Creates a new value parameter */

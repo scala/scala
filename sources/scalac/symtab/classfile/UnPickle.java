@@ -225,15 +225,15 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		    int inforef = readNat();
 		    switch (tag) {
 		    case TYPEsym:
-			entries[n] = sym = new AbsTypeSymbol(
-			    Position.NOPOS, name, owner, flags);
+			entries[n] = sym = owner.newAbstractType(
+			    Position.NOPOS, flags, name);
 			sym.setInfo(getType(inforef));
 			sym.setLoBound(readTypeRef());
 			break;
 
 		    case ALIASsym:
-			entries[n] = sym = new AliasTypeSymbol(
-			    Position.NOPOS, name, owner, flags);
+			entries[n] = sym = owner.newTypeAlias(
+			    Position.NOPOS, flags, name);
 			sym.setInfo(getType(inforef));
 			Symbol constr = readSymbolRef();
 			break;

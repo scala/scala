@@ -13,7 +13,6 @@ import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
 import scalac.symtab.TermSymbol;
 import scalac.symtab.ClassSymbol;
-import scalac.symtab.AliasTypeSymbol;
 import scalac.symtab.Scope;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Type.*;
@@ -94,13 +93,8 @@ public class CLRClassParser extends SymbolLoader {
 	    Symbol nclazz = clazz.owner().newLoadedClass(JAVA, classname, this, null);
 	    importer.map(nclazz, ntype);
 	    // create an alias in the module of the outer class
-	    AliasTypeSymbol alias =
-		new AliasTypeSymbol(Position.NOPOS, aliasname, staticsClass,
-				    translateAttributes(ntype));
-	    //
-	    alias.setInfo(make.classType(nclazz));
-	    alias.allConstructors()
-		.setInfo(MethodType(Symbol.EMPTY_ARRAY, alias.info()));
+	    Symbol alias = staticsClass.newTypeAlias(Position.NOPOS,
+                translateAttributes(ntype), aliasname, make.classType(nclazz));
 	    statics.enterNoHide(alias);
 	}
 

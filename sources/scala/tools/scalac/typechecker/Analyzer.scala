@@ -719,15 +719,30 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   def classSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+    val symbol = findTypeSymbol(scope, pos, CLASS, name, flags);
+    if (symbol.isNone()) owner.newClass(pos, flags, name) else symbol
+  }
+
+  def typeAliasSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+    val symbol = findTypeSymbol(scope, pos, ALIAS, name, flags);
+    if (symbol.isNone()) owner.newTypeAlias(pos, flags, name) else symbol
+  }
+
+  def absTypeSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+    val symbol = findTypeSymbol(scope, pos, TYPE, name, flags);
+    if (symbol.isNone()) owner.newAbstractType(pos, flags, name) else symbol
+  }
+
+  def findTypeSymbol(scope: Scope, pos: int, kind: int, name: Name, flags: int): Symbol = {
     val entry = scope.lookupEntry(name);
-    val clazz = entry.sym;
-    if (entry.owner == scope && clazz.isExternal() && clazz.isClassType()) {
-      updateFlags(clazz, flags);
-      clazz.pos = pos;
-      clazz.allConstructors().pos = pos;
-      clazz
+    val symbol = entry.sym;
+    if (entry.owner == scope && symbol.isExternal() && symbol.kind == kind) {
+      updateFlags(symbol, flags);
+      symbol.pos = pos;
+      symbol.allConstructors().pos = pos;
+      symbol
     } else {
-      owner.newClass(pos, flags, name)
+      Symbol.NONE;
     }
   }
 
@@ -928,7 +943,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	enterSym(tree, sym);
 
       case Tree$AliasTypeDef(mods, name, _, _) =>
-	val tsym: Symbol = AliasTypeSymbol.define(tree.pos, name, owner, mods, context.scope);
+	val tsym: Symbol = typeAliasSymbol(tree.pos, name, owner, mods, context.scope);
 	if (!tsym.primaryConstructor().isInitialized())
 	  tsym.primaryConstructor().setInfo(new LazyTreeType(tree));
 	enterSym(tree, tsym)
@@ -936,7 +951,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       case Tree$AbsTypeDef(mods, name, _, _) =>
 	enterSym(
 	  tree,
-	  AbsTypeSymbol.define(tree.pos, name, owner, mods, context.scope))
+	  absTypeSymbol(tree.pos, name, owner, mods, context.scope))
 
       case Tree$Import(expr, selectors) =>
 	enterImport(tree,

@@ -20,7 +20,6 @@ import scalac.ast.GenTransformer;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
-import scalac.symtab.AbsTypeSymbol;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
@@ -150,8 +149,8 @@ public class ExplicitOuterClassesPhase extends Phase {
         for (int i = 0; i < outers.length; i++) {
             if (outers[i].isStable) continue;
             Name tname = Names.OUTER(constructor, outers[i].clasz);
-            tlinks[i] = new AbsTypeSymbol(constructor.pos, tname, constructor, tflags);
-            tlinks[i].setInfo(outers[i].clasz.type());
+            tlinks[i] = constructor.newTParam(
+                constructor.pos, tflags, tname, outers[i].clasz.type());
         }
 
         // create outer value link
