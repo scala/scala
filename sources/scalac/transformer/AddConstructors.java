@@ -158,27 +158,23 @@ public class AddConstructors extends Transformer {
 	    }
 
 	    // inline the call to the super constructor
-            if ( !forINT || !treeSym.parents()[0].symbol().isJava()) {
-		switch (impl.parents[0]) {
-		case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] args):
-                    assert fun.symbol().isConstructor(): impl.parents[0];
-		    int pos = impl.parents[0].pos;
-		    Tree superConstr = gen.Select
-			(gen.Super(pos, treeSym), fun.symbol());
-		    constrBody.add(gen.mkApplyTV(superConstr, targs, args));
-		    break;
-		case Apply(Tree fun, Tree[] args):
-                    assert fun.symbol().isConstructor(): impl.parents[0];
-		    int pos = impl.parents[0].pos;
-		    Tree superConstr = gen.Select
-			(gen.Super(pos, treeSym), fun.symbol());
-		    constrBody.add(gen.mkApply_V(superConstr, args));
-		    break;
-		default:
-                    throw Debug.abort("illegal case", impl.parents[0]);
-		}
-	    } else {
-                constrBody.add(gen.This(tree.pos, treeSym));
+            switch (impl.parents[0]) {
+            case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] args):
+                assert fun.symbol().isConstructor(): impl.parents[0];
+                int pos = impl.parents[0].pos;
+                Tree superConstr = gen.Select
+                    (gen.Super(pos, treeSym), fun.symbol());
+                constrBody.add(gen.mkApplyTV(superConstr, targs, args));
+                break;
+            case Apply(Tree fun, Tree[] args):
+                assert fun.symbol().isConstructor(): impl.parents[0];
+                int pos = impl.parents[0].pos;
+                Tree superConstr = gen.Select
+                    (gen.Super(pos, treeSym), fun.symbol());
+                constrBody.add(gen.mkApply_V(superConstr, args));
+                break;
+            default:
+                throw Debug.abort("illegal case", impl.parents[0]);
             }
 
 	    // inline initialization of module values
