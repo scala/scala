@@ -83,7 +83,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 		case cf.UTF8(str) => str;
 		case cf.StringConst(m) => getName(m);
 		case cf.ClassRef(m) => getName(m);
-		case x => Console.println("* " + x); "<error>"
+		case x => "<error>"
 	}
 
 	def getClassName(n: Int): String = nameToClass(getName(n));
@@ -101,12 +101,12 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 	def isConstr(name: String) = (name == "<init>");
 
 	def printField(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]) = {
-		print(flagsToStr(false, flags))*;
+		print(flagsToStr(false, flags));
 		if ((flags & 0x0010) != 0)
-			print("val " + Names.decode(getName(name)))*;
+			print("val " + Names.decode(getName(name)));
 		else
-			print("final var " + Names.decode(getName(name)))*;
-		print(": " + getType(tpe) + ";").newline*;
+			print("final var " + Names.decode(getName(name)));
+		print(": " + getType(tpe) + ";").newline;
 	}
 
 	def printMethod(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]) = {
@@ -116,7 +116,6 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 			case cf.Attribute(name, _) => getName(name) == "JacoMeta"
 		} match {
 			case Some(cf.Attribute(_, data)) =>
-				Console.println(data.length);
 				val mp = new MetaParser(getName(
 					((data(0) & 0xff) << 8) + (data(1) & 0xff)).trim());
 				mp.parse match {
@@ -135,11 +134,24 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 				}
 			case None =>
 				if (getName(name) == "<init>") {
-					print("def this" + getType(tpe) + ";").newline*;
+					print("def this" + getType(tpe) + ";").newline;
 				} else {
-					print("def " + Names.decode(getName(name)))*;
-					print(getType(tpe) + ";").newline*;
+					print("def " + Names.decode(getName(name)));
+					print(getType(tpe) + ";").newline;
 			}
+		}
+	}
+
+	def printClassHeader = {
+		if (isInterface(cf.flags)) {
+			print("trait " + getSimpleClassName(cf.classname));
+		} else {
+			print("class " + getSimpleClassName(cf.classname));
+			if (cf.pool(cf.superclass) != null)
+				print(" extends " + getClassName(cf.superclass));
+		}
+		cf.interfaces foreach {
+			n => print(" with " + getClassName(n));
 		}
 	}
 
@@ -147,16 +159,23 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 		val pck = getPackage(cf.classname);
 		if (pck.length() > 0)
 			println("package " + pck + ";");
-		print(flagsToStr(true, cf.flags))*;
-		if (isInterface(cf.flags)) {
-			print("trait " + getSimpleClassName(cf.classname))*;
-		} else {
-			print("class " + getSimpleClassName(cf.classname))*;
-			if (cf.pool(cf.superclass) != null)
-				print(" extends " + getClassName(cf.superclass))*;
-		}
-		cf.interfaces foreach {
-			n => print(" with " + getClassName(n))*;
+		print(flagsToStr(true, cf.flags));
+		cf.attribs find {
+			case cf.Attribute(name, _) => getName(name) == "JacoMeta"
+		} match {
+			case None =>
+				printClassHeader;
+			case Some(cf.Attribute(_, data)) =>
+				val mp = new MetaParser(getName(
+					((data(0) & 0xff) << 8) + (data(1) & 0xff)).trim());
+				mp.parse match {
+					case None => printClassHeader;
+					case Some(str) =>
+						if (isInterface(cf.flags))
+							print("trait " + getSimpleClassName(cf.classname) + str);
+						else
+							print("class " + getSimpleClassName(cf.classname) + str);
+				}
 		}
 		var statics: List[cf.Member] = Nil;
 		print(" {").indent.newline;
@@ -174,9 +193,9 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 				else
 					printMethod(flags, name, tpe, attribs)
 		}
-		undent.print("}").newline*;
+		undent.print("}").newline;
 		if (!statics.isEmpty) {
-			print("object " + getSimpleClassName(cf.classname) + " {")*;
+			print("object " + getSimpleClassName(cf.classname) + " {");
 			indent.newline;
 			statics foreach {
 				case cf.Member(true, flags, name, tpe, attribs) =>
@@ -185,7 +204,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 					if (getName(name) != "<clinit>")
 						printMethod(flags, name, tpe, attribs)
 			}
-			undent.print("}").newline*
+			undent.print("}").newline
 		}
 	}
 }

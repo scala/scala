@@ -8,39 +8,104 @@
 
 package scala.tools.scalap;
 
-import java.io._;
-import scala.collection.mutable._;
+import java.io.Writer;
+import scala.collection.mutable.Buffer;
 
 
 class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
 
-    def printFlags(flags: Int): Unit = {
-        val buffer = new StringBuffer();
-        var x: StringBuffer = buffer;
-        if (Flags.isPrivate(flags))
-            x = buffer.append("private ");
-        if (Flags.isProtected(flags))
-            x = buffer.append("protected ");
-        if (Flags.isAbstract(flags) && !Flags.isTrait(flags))
-            x = buffer.append("abstract ");
-        if (Flags.isFinal(flags) && !Flags.isObj(flags))
-            x = buffer.append("final ");
-        if (Flags.isSealed(flags))
-            x = buffer.append("sealed ");
-        if (Flags.isCase(flags))
-            x = buffer.append("case ");
-        if (Flags.isDef(flags))
-            x = buffer.append("def ");
-        if (Flags.isOverride(flags))
-            x = buffer.append("override ");
-        print(buffer.toString())*
+    def printSymbol(sym: Symbol): Unit = sym match {
+        case NoSymbol =>
+            print("<nosymbol>")
+        case s: TypeSymbol =>
+            printFlags(s);
+            print("type ");
+            printTVar(s);
+        case s: AliasSymbol =>
+            printFlags(s);
+            print("type " + s.name + " = ");
+            printType(s.tpe);
+        case s: ClassSymbol =>
+            printFlags(s);
+            if (Flags.is(Flags.DEFERRED, s.flags))
+                print("/*deferred*/ ");
+            if (Flags.is(Flags.OBJECT, s.flags))
+                print("object " + s.name);
+            else if (Flags.is(Flags.TRAIT, s.flags))
+                print("trait " + s.name);
+            else
+                print("class " + s.name);
+            printConstr(s.constr);
+            print(" extends ");
+            printType(s.tpe);
+        case s: ValSymbol =>
+            s.tpe match {
+                case PolyType(tpe, Nil) =>
+                    printFlags(s);
+                    print("def " + s.name + ": ");
+                    printType(tpe);
+                case PolyType(_, _) =>
+                    printFlags(s);
+                    print("def " + s.name);
+                    printType(s.tpe);
+                case MethodType(_, _) =>
+                    printFlags(s);
+                    print("def " + s.name);
+                    printType(s.tpe);
+                case _ =>
+                    printFlags(s);
+                    print("val " + s.name + ": ");
+                    printType(s.tpe);
+            }
+        case s: ExternalSymbol =>
+            print("<externalsymbol: " + s.fullname + ">")
+    }
+
+    def printConstr(sym: Symbol): Unit = sym match {
+        case s: ValSymbol =>
+            s.tpe match {
+                case PolyType(MethodType(argtpes, _), tvars) =>
+                    print("[");
+                    if (!tvars.isEmpty) {
+                        printTVar(tvars.head);
+                        tvars.tail foreach { sym =>
+                        	print(", ");
+                        	printTVar(sym);
+                        }
+                    }
+                    print("]");
+                    printTypes(argtpes, "(", ", ", ")");
+                case MethodType(argtpes, _) =>
+                    printTypes(argtpes, "(", ", ", ")");
+                case _ =>
+            }
+    }
+
+    def printScope(scope: Buffer[Symbol]): Unit = {
+        var first = true;
+        scope.elements foreach (
+            sym => { sym match {
+        		case s: ValSymbol if
+                	(s.tpe.isInstanceOf[OverloadedType] ||
+                    (Flags.is(Flags.CASEACCESSOR, s.flags) &&
+                    !s.tpe.isInstanceOf[PolyType])) =>
+                case _ =>
+              		if (!ignoreDef(sym)) {
+						if (first) print(" {").indent else print(";");
+						first = false;
+						newline;
+						printSymbol(sym);
+					}
+        	}});
+        if (!first)
+            newline.undent.print("}")
     }
 
     def printType(tpe: Type): Unit = {
         printType0(tpe);
         tpe match {
-            case ThisType(_) => print(".type")*
-            case SingletonType(_, _) => print(".type")*
+            case ThisType(_) => print(".type")
+            case SingletonType(_, _) => print(".type")
             case _ =>
         }
     }
@@ -50,28 +115,19 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             printTypes0(tpes, begin, infix, end);
     }
 
-    def printTypes0(tpes: List[Type], begin: String, infix: String, end: String): Unit = {
-        print(begin)*;
-        if (!tpes.isEmpty) {
-            printType(tpes.head);
-            tpes.tail foreach (t => { print(infix)*; printType(t) });
-        }
-        print(end)*;
-    }
-
     def printType0(tpe: Type): Unit = tpe match {
         case NoType =>
         case ThisType(sym) => sym match {
-            case x: ExternalSymbol => print(sym.fullname)*
-            case NoSymbol => print("this")*
-            case _ => print(sym.fullname).print(".this")*
+            case x: ExternalSymbol => print(sym.fullname)
+            case NoSymbol => print("this")
+            case _ => print(sym.fullname).print(".this")
         }
         case SingletonType(tpe, sym) =>
             printPrefix(tpe);
-            print(sym.name)*
+            print(sym.name)
         case TypeRef(tpe, sym, args) =>
             printPrefix(tpe);
-            print(sym.name)*;
+            print(sym.name);
             printTypes(args, "[", ", ", "]");
         case CompoundType(clazz, components) =>
             printTypes(components, "", " with ", "");
@@ -86,15 +142,15 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
                         tpe0 = restpe;
                 }
             }
-            print(":").newspace*;
+            print(":").newspace;
             printType(tpe0);
         case PolyType(tpe, tvars) =>
-            print("[")*;
+            print("[");
             if (!tvars.isEmpty) {
                 printTVar(tvars.head);
-                tvars.tail foreach (sym => {print(", ")*; printTVar(sym);});
+                tvars.tail foreach (sym => {print(", "); printTVar(sym);});
             }
-            print("]")*;
+            print("]");
             printType(tpe);
         case OverloadedType(_, tpes) =>
             printTypes(tpes, "", " <and> ", "");
@@ -102,16 +158,25 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             printType(base);
             print("(" + num + ")");
         case TypeFlag(TypeRef(_, _, List(tpe0)), flags) =>
-            if ((flags & 8) != 0)
-                print("def ")*;
+            if (Flags.is(Flags.TF_DEF, flags))
+                print("def ");
             printType(tpe0);
-            if ((flags & 4) != 0)
-                print("*")*;
+            if (Flags.is(Flags.TF_STAR, flags))
+                print("*");
         case TypeFlag(tpe0, flags) =>
-            if ((flags & 8) != 0)
-                print("def ")*;
+            if (Flags.is(Flags.TF_DEF, flags))
+                print("def ");
             printType(tpe0);
-        case _ => print("<unknown type>")*;
+        case _ => print("<unknown type>");
+    }
+
+    def printTypes0(tpes: List[Type], begin: String, infix: String, end: String): Unit = {
+        print(begin);
+        if (!tpes.isEmpty) {
+            printType(tpes.head);
+            tpes.tail foreach (t => { print(infix); printType(t) });
+        }
+        print(end);
     }
 
     def printPrefix(tpe: Type): Unit = tpe match {
@@ -121,27 +186,37 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             if ((sym.name.length() != 0) &&
                 ("<root>" != sym.name)) {
                 printType0(tpe);
-                print(".")*
+                print(".")
+            }
+     	case SingletonType(_, sym) =>
+     		if ((sym.name.length() != 0) &&
+                ("<root>" != sym.name)) {
+                printType0(tpe);
+                print(".")
             }
         case TypeRef(_, _, _) =>
             printType0(tpe);
-            print("#")*
+            print("#")
         case _ =>
+        	Console.println(tpe.getClass());
             printType0(tpe);
-            print(".")*
+            print(".")
     }
 
     def printTVar(tvar: Symbol): Unit = tvar match {
-        case sym: TypeSymbol => print(sym.name);
-                                if (!isExternalType(sym.tpe, "Any")) {
-                                    print(" <: ")*;
-                                    printType(sym.tpe);
-                                }
-                                if (!isExternalType(sym.lower, "All")) {
-                                    print(" >: ")*;
-                                    printType(sym.lower);
-                                }
+        case sym: TypeSymbol =>
+        	print(sym.name);
+			if (!isExternalType(sym.tpe, "Any")) {
+				print(" <: ")*;
+				printType(sym.tpe);
+			}
+			if (!isExternalType(sym.lower, "All")) {
+				print(" >: ")*;
+				printType(sym.lower);
+			}
     }
+
+    def printFlags(sym: Symbol) = print(Flags.toString(sym.flags));
 
     def isExternalType(tpe: Type, name: String): Boolean = tpe match {
         case TypeRef(SingletonType(ThisType(root), pck), sym, Nil) =>
@@ -151,94 +226,9 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
         case _ => false
     }
 
-    def printSymbol(sym: Symbol): Unit = sym match {
-        case NoSymbol =>
-            print("<nosymbol>")*
-        case s: TypeSymbol =>
-            print(Flags.toString(s.flags))*;
-            print("type ")*;
-            printTVar(s);
-        case s: AliasSymbol =>
-            print(Flags.toString(s.flags))*;
-            print("type " + s.name + " = ")*;
-            printType(s.tpe);
-        case s: ClassSymbol =>
-            print(Flags.toString(s.flags))*;
-            if (Flags.isDeferred(s.flags))
-                print("/*deferred*/ ")*;
-            if (Flags.isObj(s.flags))
-                print("object " + s.name);
-            else if (Flags.isTrait(s.flags))
-                print("trait " + s.name)*;
-            else
-                print("class " + s.name)*;
-            printConstr(s.constr);
-            print(" extends ");
-            printType(s.tpe);
-        case s: ValSymbol =>
-            s.tpe match {
-                case PolyType(tpe, Nil) =>
-                    print(Flags.toString(s.flags))*;
-                    print("def " + s.name + ": ")*;
-                    printType(tpe);
-                case PolyType(_, _) =>
-                    print(Flags.toString(s.flags))*;
-                    print("def " + s.name)*;
-                    printType(s.tpe);
-                case MethodType(_, _) =>
-                    print(Flags.toString(s.flags))*;
-                    print("def " + s.name)*;
-                    printType(s.tpe);
-                case _ =>
-                    print(Flags.toString(s.flags))*;
-                    print("val " + s.name + ": ")*;
-                    printType(s.tpe);
-            }
-        case s: ExternalSymbol =>
-            print("<externalsymbol: " + s.fullname + ">")*
-    }
-
-    def printConstr(sym: Symbol): Unit = sym match {
-        case s: ValSymbol =>
-            s.tpe match {
-                case PolyType(MethodType(argtpes, _), tvars) =>
-                    print("[")*;
-                    if (!tvars.isEmpty) {
-                        printTVar(tvars.head);
-                        tvars.tail foreach (sym => {print(", ")*; printTVar(sym);});
-                    }
-                    print("]")*;
-                    printTypes(argtpes, "(", ", ", ")");
-                case MethodType(argtpes, _) =>
-                    printTypes(argtpes, "(", ", ", ")");
-                case _ =>
-            }
-    }
-
-    def ignoreDef(s: Symbol) = {
-        (Flags.isPrivate(s.flags) &&
+    def ignoreDef(s: Symbol) =
+        (Flags.is(Flags.PRIVATE, s.flags) &&
          !((args != null) && (args contains "-private"))) ||
         (s.name == "<init>") ||
-        Flags.isCaseAccessor(s.flags)
-    }
-
-    def printScope(scope: Buffer[Symbol]): Unit = {
-        var first = true;
-        scope.elements foreach (
-            sym => { sym match {
-                         case s: ValSymbol if
-                            (s.tpe.isInstanceOf[OverloadedType] ||
-                             (Flags.isCaseAccessor(s.flags) &&
-                              !s.tpe.isInstanceOf[PolyType])) =>
-                         case _ =>
-                         	if (!ignoreDef(sym)) {
-								if (first) print(" {").indent* else print(";")*;
-								first = false;
-								newline*;
-								printSymbol(sym);
-							}
-                     }});
-        if (!first)
-            newline.undent.print("}")*
-    }
+        Flags.is(Flags.CASEACCESSOR, s.flags);
 }
