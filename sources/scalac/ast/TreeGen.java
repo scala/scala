@@ -668,13 +668,6 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	return ClassDef(clazz, constrs, localDummy(clazz.pos, clazz), body);
     }
 
-
-    public Tree Select__(Tree qual, Name name) {
-	Symbol sym = qual.type.lookup(name);
-	assert (sym.kind != NONE && sym != Symbol.ERROR) : name + " from " + qual.type;
-	return Select(qual, sym);
-    }
-
     //########################################################################
     // !!! not yet reviewed
 
@@ -801,7 +794,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      */
     public Tree postfixApply(Tree obj, Tree fn, Symbol owner) {
 	if (TreeInfo.isPureExpr(obj) || TreeInfo.isPureExpr(fn)) {
-	    return Apply(Select__(fn, Names.apply), new Tree[]{obj});
+	    return Apply(Select(fn, definitions.FUNCTION_APPLY(1)), new Tree[]{obj});
 	} else {
 	    Name tmpname = global.freshNameCreator.newName("tmp", '$');
 	    Symbol tmp = new TermSymbol(

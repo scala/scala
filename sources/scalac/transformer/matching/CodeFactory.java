@@ -67,7 +67,7 @@ class CodeFactory extends PatternTool {
     }
 
     Symbol seqNilSym() {
-	return defs.getType( Names.scala_Nil ).symbol(); // no need for TypeApply anymore!x
+	return defs.getType( Names.scala_Nil ).symbol().module(); // no need for TypeApply anymore!x
     }
 
     Symbol seqIterSym() {
@@ -281,7 +281,7 @@ class CodeFactory extends PatternTool {
       }
 
     Tree newSeqNil( Type tpe ) {
-	return gen.Select__(gen.Ident(pos, defs.SCALA), Names.Nil/*seqNilSym()*/);
+	return gen.Select(gen.Ident(pos, defs.SCALA), seqNilSym());
     }
 
     // EXPERIMENTAL
@@ -438,10 +438,7 @@ class CodeFactory extends PatternTool {
        case Literal(Object value):
        return gen.mkBooleanLit(tree.pos, !((Boolean)value).booleanValue());
        }
-       return make.Apply(
-       tree.pos,
-       gen.Select__(tree, NOT_N),
-       Tree.EMPTY_ARRAY).setType(defs.BOOLEAN_TYPE);
+       return gen.Apply(tree.pos, gen.Select(tree, notSym));
        }
 
     protected Tree And(Tree left, Tree right) {

@@ -446,7 +446,7 @@ public class LambdaLift extends OwnerTransformer
 		if (tree1 instanceof Ident) ((Ident)tree1).name = sym.name;
 		else ((Select)tree1).selector = sym.name;
 	    }
-	    if ((sym.flags & CAPTURED) != 0) return gen.Select__(tree1, Names.elem);
+	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, definitions.REF_ELEM());
 	    else return tree1;
 
 	default:

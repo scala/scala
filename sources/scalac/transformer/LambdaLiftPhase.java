@@ -154,9 +154,7 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
     /** The type scala.Ref[tp]
      */
     Type refType(Type tp) {
-        Symbol refClass = global.definitions.getClass(Names.scala_Ref);
-        assert refClass.kind == Kinds.CLASS;
-        return Type.TypeRef(global.definitions.SCALA_TYPE, refClass, new Type[]{tp});
+        return Type.appliedType(global.definitions.REF_TYPE, new Type[]{tp});
     }
 
     public Checker[] postCheckers(Global global) {

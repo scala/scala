@@ -147,7 +147,7 @@ public class UnCurry extends OwnerTransformer
 		if (tree1.symbol().isDefParameter()) {
 		    tree1.type = global.definitions.functionType(
 			Type.EMPTY_ARRAY, tree1.type.widen());
-		    return gen.Apply(gen.Select__(tree1, Names.apply), new Tree[0]);
+		    return gen.Apply(gen.Select(tree1, global.definitions.FUNCTION_APPLY(0)));
 		} else {
 		    return tree1;
 		}
