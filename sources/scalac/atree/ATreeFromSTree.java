@@ -243,7 +243,7 @@ public class ATreeFromSTree {
     private ACode apply(Tree tree, Tree fun, Tree[] targs, Tree[] vargs) {
         switch (fun) {
         case Ident(_):
-            if (true) return ACode.Void; // !!!
+            if ("".equals("")) return ACode.Void; // !!!
             Symbol symbol = tree.symbol();
             assert symbol.isLabel() && targs.length == 0: tree; // !!!
             return make.Goto(tree, symbol, expression(vargs));
