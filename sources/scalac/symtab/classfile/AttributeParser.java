@@ -69,6 +69,16 @@ public class AttributeParser implements ClassfileConstants {
         return BAD_ATTR;
     }
 
+    /** skip all attributes.
+     */
+    public void skipAttributes() {
+        char    nattr = in.nextChar();
+        for (int i = 0; i < nattr; i++) {
+            in.skip(2);
+            in.skip(in.nextInt());
+        }
+    }
+
     /** read all attributes associated with symbol 'sym' which are
      *  contained in 'attrs'.
      */
