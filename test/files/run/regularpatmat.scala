@@ -600,7 +600,7 @@ object testMZ {
   }
   case class On();
   case class Tw();
-  def testBar(xs: List[Any]) = xs match {
+  def testBar(xs: List[Any]) = xs match { // bug#180
     case List(((On(), Tw())* | (On(), On())), On()) => "case"
     case _ => "default";
   }
