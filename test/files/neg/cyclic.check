@@ -1,0 +1,4 @@
+cyclic.scala:3: illegal cyclic reference involving type T
+  type T = List[T];
+                ^
+one error found

@@ -44,6 +44,15 @@ public class TextTreePrinter implements TreePrinter {
         this.out = new PrintWriter(stream);
     }
 
+    public TextTreePrinter(Writer stream) {
+        this(stream, false);
+    }
+
+    public TextTreePrinter(Writer stream, boolean autoFlush) {
+        this.autoFlush = autoFlush;
+        this.out = new PrintWriter(stream);
+    }
+
     public TextTreePrinter() {
         this(System.out);
     }
@@ -728,9 +737,9 @@ public class TextTreePrinter implements TreePrinter {
     }
 
     protected void printBounds(Tree lobound, Tree hibound) {
-	if (lobound.toString() != "scala.All")
+	if (!"scala.All".equals(lobound.toString()))
 	    printOpt(TXT_SUPERTYPE, lobound, true);
-	if (hibound.toString() != "scala.Any")
+	if (!"scala.Any".equals(hibound.toString()))
             printOpt(TXT_SUBTYPE, hibound, true);
     }
 

@@ -60,6 +60,7 @@ public class Names {
     public static final Name as = Name.fromString("as");
     public static final Name box = Name.fromString("box");
     public static final Name elem = Name.fromString("elem");
+    public static final Name false_ = Name.fromString("false");
     public static final Name filter = Name.fromString("filter");
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
@@ -114,6 +115,7 @@ public class Names {
     public static final Name that = Name.fromString("that");
     public static final Name this_ = Name.fromString("this");
     public static final Name throw_ = Name.fromString("throw");
+    public static final Name true_ = Name.fromString("true");
     public static final Name update = Name.fromString("update");
 
     public static final Name

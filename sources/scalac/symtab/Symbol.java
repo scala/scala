@@ -496,9 +496,15 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** the current phase id, or the id after analysis, whichever is larger.
      */
-    int currentPhaseId() {
+    static int currentPhaseId() {
 	int id = Global.instance.currentPhase.id;
 	return id < FIRST_ID ? FIRST_ID : id;
+    }
+
+    public int definedPhaseId() {
+	TypeIntervalList i = infos;
+	while (i.prev != TypeIntervalList.EMPTY) i = i.prev;
+	return i.limit;
     }
 
     /** Is this symbol initialized? */
@@ -869,6 +875,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    return Symbol.NONE;
 	} else {
 	    //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + sym1.type() + sym1.locationString()); //DEBUG
+	    //System.out.println(owner.thisType());//DEBUG
 
 	    Type symtype = owner.thisType().memberType(this);
 	    //todo: try whether we can do: this.type(); instead
@@ -1046,7 +1053,7 @@ public class TypeSymbol extends Symbol {
 	if (kind == ALIAS) return info().symbol().closure();
 	int id = currentPhaseId();
 	if (closures.limit < id) {
-	    if (id == FIRST_ID || changes(closureAt(id - 1))) {
+	    if (id <= definedPhaseId() || changes(closureAt(id - 1))) {
 		closures = new ClosureIntervalList(closures);
 		closures.limit = id;
 		computeClosure();
@@ -1090,6 +1097,7 @@ public class TypeSymbol extends Symbol {
 	assert closures.closure != BAD_CLOSURE : this;
 	closures.closure = BAD_CLOSURE; // to catch cycles.
 	// todo: why can't we do: inclClosure(SymSet.EMPTY, this) ?
+	//System.out.println("computing closure of " + this);//DEBUG
 	SymSet closureClassSet = inclClosure(SymSet.EMPTY, type().parents());
 	Symbol[] closureClasses = new Symbol[closureClassSet.size() + 1];
 	closureClasses[0] = this;

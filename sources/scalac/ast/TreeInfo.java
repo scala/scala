@@ -122,10 +122,23 @@ public class TreeInfo {
 	}
     }
 
+    /** Is tree a variable pattern
+     */
     public static boolean isVarPattern(Tree pat) {
 	switch (pat) {
 	case Ident(Name name):
 	    return name.isVariable();
+	default:
+	    return false;
+	}
+    }
+
+    /** Is tree a this node which belongs to `enclClass'?
+     */
+    public static boolean isSelf(Tree tree, Symbol enclClass) {
+	switch (tree) {
+	case This(Tree qual):
+	    return qual.symbol() == enclClass;
 	default:
 	    return false;
 	}

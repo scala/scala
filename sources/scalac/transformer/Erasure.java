@@ -298,7 +298,7 @@ public class Erasure extends Transformer implements Modifiers {
 	if (c.isClass() && !c.isInterface()) {
 	    Type[] basetypes = c.parents();
 
-	    //System.out.println("trying " + c + " <= " + ArrayApply.toString(c.basetypes()));//DEBUG
+	    //System.out.println("trying " + sym + ":" + sym.info() + " in " + c + " <= " + scalac.util.ArrayApply.toString(basetypes));//DEBUG
 
 	    for (int i = 0; i < basetypes.length; i++) {
 		Symbol sym1 = sym.overriddenSymbol(basetypes[i]);

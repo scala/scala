@@ -1,4 +1,4 @@
-constrparams.scala:4: stable identifier required
+constrparams.scala:4: stable identifier required, but x found.
   private val z: x.t = null; //error
                  ^
 one error found

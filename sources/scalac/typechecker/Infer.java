@@ -614,9 +614,11 @@ public class Infer implements Modifiers, Kinds {
 	    if (!isCompatible(argtypes[i].widen().subst(tparams, tvars),
 			      formals[i].subst(tparams, tvars))) {
 		if (needToSucceed) {
-		    if (Type.debugSwitch) {
+		    if (global.explaintypes) {
+			Type.explainSwitch = true;
 			argtypes[i].widen().subst(tparams, tvars).isSubType(
 			    formals[i].subst(tparams, tvars));
+			Type.explainSwitch = false;
 		    }
 		    throw new NoInstance(
 			typeErrorMsg(

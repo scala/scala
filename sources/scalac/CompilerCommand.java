@@ -36,6 +36,7 @@ public class CompilerCommand extends CommandParser {
     public final BooleanOptionParser nowarn;
     public final BooleanOptionParser verbose;
     public final BooleanOptionParser debug;
+    public final BooleanOptionParser explaintypes;
     public final BooleanOptionParser uniqid;
     public final BooleanOptionParser types;
     public final BooleanOptionParser prompt;
@@ -86,6 +87,10 @@ public class CompilerCommand extends CommandParser {
 
         this.debug = new BooleanOptionParser(this,
             "debug", "Output debugging messages",
+            false),
+
+        this.explaintypes = new BooleanOptionParser(this,
+            "explaintypes", "Explain type errors in more detail",
             false),
 
         this.uniqid = new BooleanOptionParser(this,

@@ -36,6 +36,7 @@ public class  Global {
     public final boolean nopredefs;
     //public final boolean optimize;
     public final boolean debug;
+    public final boolean explaintypes;
     public final boolean uniqid;
 
     public final boolean printtypes;
@@ -145,6 +146,7 @@ public class  Global {
         //this.optimize = args.optimize.optimize;
         this.debug = args.debug.value;
         this.uniqid = args.uniqid.value;
+	this.explaintypes = args.explaintypes.value;
         this.printtypes = args.types.value;
         this.printtokens = args.print.tokens;
         this.classPath = args.classpath();

@@ -15,7 +15,7 @@ import scalac.Global;
 
 public class Type implements Modifiers, Kinds, TypeTags {
 
-    public static boolean debugSwitch = false;
+    public static boolean explainSwitch = false;
     private static int indent = 0;
 
     public case ErrorType;  // not used after analysis
@@ -863,12 +863,14 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    for (int i = 0; i < baseparams.length; i++) {
 			if (sym == baseparams[i]) return baseargs[i];
 		    }
+		    //System.out.println(sym + " " + basesym + " " + ArrayApply.toString(baseparams));//DEBUG
 		    break;
 		case ErrorType:
 		    return ErrorType;
 		}
 		throw new ApplicationError(
-		    this + " in " + ownclass + " cannot be instantiated from " + pre.widen());
+		    this + " in " + ownclass + " cannot be instantiated from " + pre.widen()
+		    );
 	    } else {
 		return toInstance(sym, pre.baseType(clazz).prefix(), clazz.owner());
 	    }
@@ -1166,13 +1168,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
     /** Is this type a subtype of that type?
      */
     public boolean isSubType(Type that) {
-	if (debugSwitch) {
+	if (explainSwitch) {
 	    for (int i = 0; i < indent; i++) System.out.print("  ");
 	    System.out.println(this + " < " + that + "?");
 	    indent++;
 	}
 	boolean result = isSubType0(that);
-	if (debugSwitch) {
+	if (explainSwitch) {
 	    indent--;
 	    for (int i = 0; i < indent; i++) System.out.print("  ");
 	    System.out.println(result);
@@ -1393,13 +1395,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
     /** Does this type implement symbol `sym1' with same or stronger type?
      */
     public boolean specializes(Symbol sym1) {
-	if (debugSwitch) {
+	if (explainSwitch) {
 	    for (int i = 0; i < indent; i++) System.out.print("  ");
 	    System.out.println(this + " specializes " + sym1 + "?");
 	    indent++;
 	}
 	boolean result = specializes0(sym1);
-	if (debugSwitch) {
+	if (explainSwitch) {
 	    indent--;
 	    for (int i = 0; i < indent; i++) System.out.print("  ");
 	    System.out.println(result);
@@ -1428,13 +1430,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
     /** Is this type the same as that type?
      */
     public boolean isSameAs(Type that) {
-	if (debugSwitch) {
+	if (explainSwitch) {
 	    for (int i = 0; i < indent; i++) System.out.print("  ");
 	    System.out.println(this + " = " + that + "?");
 	    indent++;
 	}
 	boolean result = isSameAs0(that);
-	if (debugSwitch) {
+	if (explainSwitch) {
 	    indent--;
 	    for (int i = 0; i < indent; i++) System.out.print("  ");
 	    System.out.println(result);

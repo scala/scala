@@ -1,0 +1,7 @@
+stable.scala:10: stable identifier required, but test.y found.
+    type b = y.T;
+             ^
+stable.scala:11: stable identifier required, but test.z found.
+    type c = z.T;
+             ^
+two errors found

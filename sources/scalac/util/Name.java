@@ -338,9 +338,11 @@ public final class Name {
 /** is this name a variable identifier?
  */
     public boolean isVariable() {
-        return ((names[index] >= 'a') && (names[index] <= 'z')) ||
-	    (names[index] == '_') &&
-	    this != Names.null_;
+        return ((names[index] >= 'a' && names[index] <= 'z') ||
+		names[index] == '_') &&
+	    this != Names.null_ &&
+	    this != Names.true_ &&
+	    this != Names.false_;
     }
 
     public static final Name ERROR = Name.fromString("<error>");
