@@ -122,7 +122,7 @@ runtime/ScalaRunTime.scala
 testing/UnitTest.scala
 
 xml/Element.scala
-xml/FactoryAdapter.java
+xml/FactoryAdapter.scala
 xml/Generic.scala
 xml/PCDATA.scala
 xml/ScalaFactoryAdapter.scala
