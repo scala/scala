@@ -518,11 +518,11 @@ include $(PROJECT_SUPPORTDIR)/make/sdc.mk
 
 show-missing		:
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
-	@for filename in $(LIBRARY_SC_FILES:%='%'); do \
+	@for filename in $(TEST_FILES:%='%'); do \
 	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
 	done
 	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
-	@$(FIND) $(LIBRARY_ROOT) -name '*.scala' | $(SORT) > /tmp/check.lst.log
+	@$(FIND) $(TEST_ROOT) -name '*.scala' | $(SORT) > /tmp/check.lst.log
 	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 
