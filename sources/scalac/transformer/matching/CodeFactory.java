@@ -34,7 +34,9 @@ class CodeFactory extends PatternTool {
 
       static final Name ISEMPTY_N        = Name.fromString("isEmpty");
 
-
+    Symbol refSym() { // delete Names.Ref
+	return defs.getType( Names.scala_Ref ).symbol() ;
+    }
 
     Symbol seqListSym() {
 	return defs.getType( Names.scala_List ).symbol() ;
@@ -271,6 +273,19 @@ class CodeFactory extends PatternTool {
 	return gen.Select(gen.Ident(0, defs.SCALA), Names.Nil/*seqNilSym()*/);
     }
 
+    // EXPERIMENTAL
+    Tree newRef( Tree init ) {
+	//System.out.println( "hello:"+refSym().type() );
+	return gen.New( 0, defs.SCALA_TYPE, refSym(),
+			new Type[] { init.type() },
+			new Tree[] { init } );
+	/*
+	return gen.Apply( gen.TypeApply(0, gen.Select(gen.Ident(0, defs.SCALA), Names.Ref),
+					new Tree[] { gen.mkType(0, init.type() ) } ),
+			  new Tree[] { init } );
+	*/
+    }
+
     Tree newSeqCons( Tree head, Tree tail ) {
 	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqConsSym(),
 			new Type[] { head.type() },
@@ -300,7 +315,6 @@ class CodeFactory extends PatternTool {
      */
     public Tree _next( Tree iter ) {
 	Type elemType = getElemType( iter.type() );
-	System.err.println("elemType of next *** "+elemType);
 	Symbol nextSym = seqIterSym_next();
 
 	return _applyNone( gen.Select( iter, nextSym )).setType( elemType );

@@ -190,11 +190,11 @@ public class AlgebraicMatcher extends PatternTool {
 
 
     protected Tree[] patternArgs(Tree tree) {
-	System.err.println("patternArgs("+tree+")");
+	//System.err.println("patternArgs("+tree+")");
         switch (tree) {
             case Apply(_, Tree[] args):
 		if( isSeqApply( (Apply) tree )) {
-		    System.err.println("patternArgs: is seq apply !");
+		    //System.err.println("patternArgs: is seq apply !");
 		    return Tree.EMPTY_ARRAY;// let sequence matcher handle this
 
 		}
@@ -366,7 +366,7 @@ public class AlgebraicMatcher extends PatternTool {
                               Symbol casted,
                               CaseEnv env,
                               int case_index) {
-	System.out.println("enter(" + pat + ", " + /*typeSym*/ index + ", " + target + ", " + casted + ")");
+	//System.out.println("enter(" + pat + ", " + /*typeSym*/ index + ", " + target + ", " + casted + ")");
         // get pattern arguments (if applicable)
         Tree[] patArgs = patternArgs(pat);
         // get case fields

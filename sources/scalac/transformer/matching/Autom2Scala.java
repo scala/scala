@@ -141,7 +141,7 @@ public class Autom2Scala  {
             this.owner = owner;
             this.pos = 0;
             this.cf = cf;
-            this.am = new /*AlgebraicMatcher*/PatternMatcher( cf.unit, cf.infer );
+            this.am = new AlgebraicMatcher( cf.unit, cf.infer );
             this.mdefs = new Vector();
 
             this.freeVars = new Vector();
@@ -253,7 +253,7 @@ public class Autom2Scala  {
             throw new ApplicationError("expected either algebraic or simple label:"+label);
       }
 
-      /*AlgebraicMatcher*/PatternMatcher am;
+      AlgebraicMatcher am;
 
       void handleVars(  ) {
       }

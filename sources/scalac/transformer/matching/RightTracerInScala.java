@@ -120,7 +120,8 @@ public class RightTracerInScala extends Autom2Scala  {
             if( keepType )
                   rhs = cf.ignoreValue( realVar.type() );
             else
-                  rhs = cf.newSeqNil( elementType );
+		rhs = /* cf.newRef( */ cf.newSeqNil( elementType ) /* ) */;
+	    helpVar.flags |= Modifiers.MUTABLE;
             Tree varDef = gen.ValDef(helpVar, rhs);
             //((ValDef) varDef).kind = Kinds.VAR;
             helpVarDefs.add( varDef );
@@ -197,7 +198,7 @@ public class RightTracerInScala extends Autom2Scala  {
       // same as in LeftTracer
       Tree code_fail() {
 
-            return cf.ThrowMatchError( Position.NOPOS, defs.UNIT_TYPE );
+            return cf.ThrowMatchError( _m.pos, defs.UNIT_TYPE );
 
       }
 
@@ -354,10 +355,10 @@ public class RightTracerInScala extends Autom2Scala  {
                         (CaseDef) cf.make.CaseDef( pat.pos,
                                                    cf.make.Ident(pat.pos, WILDCARD_N)
                                                    .setSymbol( Symbol.NONE )
-                                                   .setType(pat.type()),
+                                                   .setType( pat.type() ),
                                                    Tree.Empty,
-                                                   gen.mkBooleanLit( pat.pos, false )) }/*,
-                          true // do binding please */
+                                                   gen.mkBooleanLit( pat.pos, false )) },
+                          true // do binding please
                           );
             Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );
             //System.out.println("freeVars: "+freeVars);

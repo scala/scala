@@ -250,7 +250,7 @@ class BerrySethi {
        *  the way
        */
       TreeSet compFollow1( TreeSet fol, Tree pat ) {
-	  System.out.println("compFollow1("+fol+","+pat+")");
+	  //System.out.println("compFollow1("+fol+","+pat+")");
             switch( pat ) {
             case Sequence( Tree[] trees ):
                   TreeSet first = null;
@@ -280,7 +280,7 @@ class BerrySethi {
                   Integer p = (Integer) this.posMap.get( pat );
 
                   TreeSet first = compFirst( t );
-                  System.out.print("BIND" + first);
+                  //System.out.print("BIND" + first);
                   recVars.put( pat.symbol(), first );
 
                   // if( appearsRightmost( n, t ))
@@ -545,7 +545,7 @@ class BerrySethi {
 
             this.finalTag = finalTag;
 
-            System.out.println( "enter automatonFrom("+pat+","+finalTag+")"); // UNIT TEST
+            //System.out.println( "enter automatonFrom("+pat+","+finalTag+")"); // UNIT TEST
             //System.out.println( TextTreePrinter.toString(pat) );
             /*DEBUG = new TextTreePrinter( System.out );
             DEBUG.begin();
