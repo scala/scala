@@ -726,7 +726,7 @@ public class PatternMatcher extends PatternTool {
         return gen.mkBlock(selector.pos, ts, res);
     }
 
-    protected Tree toTree(PatternNode node) {
+    /*protected*/ public Tree toTree(PatternNode node) {
         Tree res = gen.mkBooleanLit(node.pos, false);
         while (node != null)
             switch (node) {

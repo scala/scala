@@ -52,7 +52,7 @@ public class BindingBerrySethi extends BerrySethi {
             revArrows.add( srcI );
       }
 
-      NondetWordAutom revnfa ;
+      public NondetWordAutom revnfa ;
 
       void seenLabel( Tree pat, Label label ) {
             Integer i = new Integer( ++pos );

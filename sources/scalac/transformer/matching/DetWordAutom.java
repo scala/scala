@@ -20,7 +20,7 @@ public class DetWordAutom  {
     protected HashSet labels;
 
     /** the set of final states, here as a TreeMap */
-    protected TreeMap finals;
+    /*protected*/ public TreeMap finals;
 
     /** dfa: HashMap trans: Object -> Integer
      *  nfa: HashMap trans: Object -> Vector [ Integer ]
@@ -161,7 +161,7 @@ public class DetWordAutom  {
 	return defaultq( i ) != NODEFAULT;
     }
 
-    void determinize( NondetWordAutom nfa ) {
+    public void determinize( NondetWordAutom nfa ) {
 	//System.out.println("DetWordAutom:determinize");
 	//System.out.println("nfa:");nfa.print();
 	TreeSet states;// temp: Set[Set[Integer]]
@@ -344,21 +344,21 @@ public class DetWordAutom  {
 
     /** for a set of nfa states (that must exist), returns its transitions
      */
-    HashMap deltaq( TreeSet nset ) {
+    public HashMap deltaq( TreeSet nset ) {
 	return deltaq( (Integer) indexMap.get( nset ) );
     }
 
 
     /** for a set of nfa states (that must exist), returns its transitions
      */
-    Integer defaultq( TreeSet nset ) {
+    public Integer defaultq( TreeSet nset ) {
 	return defaultq( (Integer) indexMap.get( nset ) );
     }
 
     /** returns target of the transition from state i with label label.
      *  null if no such transition exists.
      */
-    Integer delta( int i, Label label ) {
+    public Integer delta( int i, Label label ) {
 	Integer target;
 	switch( label ) {
 	case DefaultLabel:
@@ -376,7 +376,7 @@ public class DetWordAutom  {
 	}
     }
 
-    Integer delta( Integer i, Label label ) {
+    public Integer delta( Integer i, Label label ) {
 	return delta( i.intValue(), label );
     }
 

@@ -17,25 +17,25 @@ import scalac.symtab.*;
 /** this class takes care of tedious stuff which has nothing to do with
  *  matching
  */
-abstract class PatternTool {
+public abstract class PatternTool {
 
     public static final Name RESULT_N = Name.fromString("$result");
 
     /** the current compilation unit
      */
-    final CompilationUnit unit;
+    public final CompilationUnit unit;
 
     /** the global fresh name creator
      */
-    final FreshNameCreator fresh;
+    public final FreshNameCreator fresh;
 
     /** the global definitions component
      */
-    final Definitions defs;
+    public final Definitions defs;
 
     /** the global tree generation component
      */
-    final TreeGen gen;
+    public final TreeGen gen;
 
     // constructor
     public PatternTool( CompilationUnit unit ) {

@@ -17,7 +17,7 @@ import java.util.* ;
  *  this class plays is the "Builder" for the "Director" class WordRecognizer.
  */
 
-class BerrySethi {
+public class BerrySethi {
 
     CompilationUnit unit;
 

@@ -7,7 +7,7 @@ import scalac.symtab.Symbol ;
 
 import java.util.HashSet;
 
-class CollectVariableTraverser extends VariableTraverser {
+public class CollectVariableTraverser extends VariableTraverser {
 
     protected HashSet nogeneratedVars;
     protected HashSet vars;
@@ -29,7 +29,7 @@ class CollectVariableTraverser extends VariableTraverser {
             this.nogeneratedVars = new HashSet();
       }
 
-      static boolean containsBinding( Tree  pat ) {
+    public boolean containsBinding( Tree  pat ) {
 
             CollectVariableTraverser cvt = new CollectVariableTraverser();
             cvt.traverse( pat );
@@ -37,10 +37,9 @@ class CollectVariableTraverser extends VariableTraverser {
 
       }
 
-    static HashSet collectVars( Tree pat ) {
-	CollectVariableTraverser cvt = new CollectVariableTraverser();
-	cvt.traverse( pat );
-	return cvt.vars;
+    public HashSet collectVars( Tree pat ) {
+	traverse( pat );
+        return vars;
     }
 
 }

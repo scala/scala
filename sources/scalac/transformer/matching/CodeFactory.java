@@ -18,7 +18,7 @@ import scalac.symtab.*;
 import PatternNode.*;
 import Tree.*;
 
-class CodeFactory extends PatternTool {
+public class CodeFactory extends PatternTool {
 
     public int pos = Position.FIRSTPOS ;
 
@@ -46,24 +46,24 @@ class CodeFactory extends PatternTool {
     }
 
     /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
-      Type SeqTraceType( Type elemType ) {
+      public Type SeqTraceType( Type elemType ) {
           return defs.LIST_TYPE(pairType(defs.int_TYPE(), elemType));
       }
 
     /**  returns `Iterator[ elemType ]' */
-    Type _seqIterType( Type elemType ) {
+    public Type _seqIterType( Type elemType ) {
         return defs.ITERATOR_TYPE(elemType);
     }
 
     /**  returns `<seqObj.elements>' */
-    Tree newIterator( Tree seqObj, Type elemType ) {
+    public Tree newIterator( Tree seqObj, Type elemType ) {
 	return gen.mkApply__(gen.Select(seqObj, defs.ITERABLE_ELEMENTS()));
     }
 
     /** returns code `<seqObj>.elements'
      *  the parameter needs to have type attribute `Sequence[<elemType>]'
      */
-    Tree newIterator( Tree seqObj ) {
+    public Tree newIterator( Tree seqObj ) {
 	return newIterator( seqObj, getElemType_Sequence( seqObj.getType() ));
     }
 
@@ -77,7 +77,7 @@ class CodeFactory extends PatternTool {
 
     /** returns A for T <: Sequence[ A ]
      */
-    Type getElemType_Sequence( Type tpe ) {
+    public Type getElemType_Sequence( Type tpe ) {
 	//System.err.println("getElemType_Sequence("+tpe.widen()+")");
 	Type tpe1 = tpe.widen().baseType( defs.SEQ_CLASS );
 
@@ -127,24 +127,24 @@ class CodeFactory extends PatternTool {
           return gen.mkApply__(gen.Select(iter, defs.LIST_ISEMPTY()));
       }
 
-    Tree SeqTrace_headElem( Tree arg ) { // REMOVE SeqTrace
+    public Tree SeqTrace_headElem( Tree arg ) { // REMOVE SeqTrace
 	Tree t = gen.mkApply__(gen.Select(arg, defs.LIST_HEAD()));
 	return gen.mkApply__(gen.Select(t, defs.TUPLE_FIELD(2, 2)));
     }
 
-    Tree SeqTrace_headState( Tree arg ) { // REMOVE SeqTrace
+    public Tree SeqTrace_headState( Tree arg ) { // REMOVE SeqTrace
 	Tree t = gen.mkApply__(gen.Select(arg, defs.LIST_HEAD()));
 	return gen.mkApply__(gen.Select(t, defs.TUPLE_FIELD(2, 1)));
 
     }
 
-    Tree SeqTrace_tail( Tree arg ) { // REMOVE SeqTrace
+    public Tree SeqTrace_tail( Tree arg ) { // REMOVE SeqTrace
 	return gen.mkApply__(gen.Select(arg, defs.LIST_TAIL()));
     }
 
     /** `<seqlist>.head()'
      */
-    Tree SeqList_head( Tree arg ) {
+    public Tree SeqList_head( Tree arg ) {
 	return gen.mkApply__(gen.Select(arg, defs.LIST_HEAD()));
     }
 
@@ -157,7 +157,7 @@ class CodeFactory extends PatternTool {
        return gen.mkApply__(gen.Select(tree, defs.BOOLEAN_NOT()));
        }
 
-    protected Tree And(Tree left, Tree right) {
+    /*protected*/ Tree And(Tree left, Tree right) {
         switch (left) {
 	case Literal(BOOLEAN(boolean value)):
 	    return value ? right : left;
@@ -169,7 +169,7 @@ class CodeFactory extends PatternTool {
         return gen.mkApply_V(gen.Select(left, defs.BOOLEAN_AND()), new Tree[]{right});
     }
 
-    protected Tree Or(Tree left, Tree right) {
+    /*protected*/ Tree Or(Tree left, Tree right) {
         switch (left) {
 	case Literal(BOOLEAN(boolean value)):
 	    return value ? left : right;
@@ -219,7 +219,7 @@ class CodeFactory extends PatternTool {
         return fun;
     }
 
-    protected Tree Equals(Tree left, Tree right) {
+    /*protected*/ public Tree Equals(Tree left, Tree right) {
         Type ltype = left.type.widen(), rtype = right.type.widen();
         if (ltype.isSameAs(rtype)
             && (ltype.isSameAs(defs.CHAR_TYPE())
@@ -233,7 +233,7 @@ class CodeFactory extends PatternTool {
         return gen.mkApply_V(gen.Select(left, eqsym), new Tree[]{right});
     }
 
-    protected Tree ThrowMatchError(int pos, Type type) {
+    /*protected*/ public Tree ThrowMatchError(int pos, Type type) {
         return gen.mkApplyTV(
 			     gen.mkGlobalRef(pos, defs.MATCHERROR_FAIL()),
                              new Tree[]{gen.mkType(pos, type)},
@@ -243,7 +243,7 @@ class CodeFactory extends PatternTool {
                              });
     }
 
-    protected Tree ThrowMatchError(int pos, Type type, Tree tree) {
+    /*protected*/ public Tree ThrowMatchError(int pos, Type type, Tree tree) {
         return gen.mkApplyTV(
 			     gen.mkGlobalRef(pos, defs.MATCHERROR_REPORT()),
                              new Tree[]{gen.mkType(pos, type)},
@@ -254,7 +254,7 @@ class CodeFactory extends PatternTool {
                              });
     }
 
-    protected Tree Error(int pos, Type type) {
+    /*protected*/ public Tree Error(int pos, Type type) {
         return gen.mkApplyTV(
 			     gen.mkGlobalRef(pos, defs.MATCHERROR_FAIL()),
                              new Tree[]{gen.mkType(pos, type)},
@@ -269,7 +269,7 @@ class CodeFactory extends PatternTool {
 	return defs.TUPLE_TYPE(new Type[] { left, right } );
     }
 
-    Tree newPair( Tree left, Tree right ) {
+    public Tree newPair( Tree left, Tree right ) {
  	return gen.New(gen.mkApplyTV( gen.mkPrimaryConstructorGlobalRef( pos, defs.TUPLE_CLASS[2]),
                                                                    new Type[] { left.getType(), right.getType() },
                                                                    new Tree[] { left, right }));
