@@ -2370,7 +2370,7 @@ class EmptySet[a <: Ord[a]] extends Set[a] {
 
 \begin{lstlisting}
 class NonEmptySet[a <: Ord[a]]
-        (elem:int, left: Set[a], right: Set[a]) extends Set[a] {
+        (elem:a, left: Set[a], right: Set[a]) extends Set[a] {
   def contains(x: a): boolean = 
     if (x < elem) left contains x
     else if (x > elem) right contains x
