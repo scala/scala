@@ -21,7 +21,7 @@ public class TestRegTraverser extends Traverser {
     public void traverse(Tree tree) {
     	if (!result)
 			switch (tree) {
-				case Alternative(_):
+				case Alternative(Tree[] ts):
 					result = true;
 					break;
 				case Bind(_, Tree pat):
@@ -32,9 +32,6 @@ public class TestRegTraverser extends Traverser {
 					if (variables.contains(tree.symbol()))
 						result = true;
 					break;
-				 case CaseDef(Tree pat, _, _):
-            		traverse(pat);
-            		break;
 				default:
 					super.traverse( tree );
 			}
