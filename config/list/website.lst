@@ -16,11 +16,11 @@ css/print.css
 css/screen.css
 
 docu/ant.html
-docu/clr.html
 docu/faq.html
 docu/index.html
 docu/rationale.html
 docu/related.html
+docu/clr/index.html
 
 downloads/changes.html
 downloads/index.html
