@@ -31,6 +31,7 @@ package scala;
                    SeqTraceCons[a](state, value, this as SeqTrace[ a ] );
 
       // this is copied verbatim from List... and SeqList
+/*
 	 def mkString2(start: java.lang.String,
 		     sep: java.lang.String,
 		     end: java.lang.String): java.lang.String =
@@ -39,6 +40,7 @@ package scala;
 			 else if (tail.isEmpty) head.toString() + end
 			       else head.toString().concat(sep).concat(
 				             tail.mkString2("", sep, end)));
+*/
 /* BUG
 override def mkString(start: java.lang.String,
 		     sep: java.lang.String,

@@ -13,9 +13,9 @@ package scala;
 
 	  def headElem  = hdb;
 
-	  def tail = tl;
+	  def tail:SeqTrace[ b ] = tl;
 
-	  override def toString(): String = mkString2("[ ", "; ", " ]");
+	  //override def toString(): String = mkString2("[ ", "; ", " ]");
 
     }
 

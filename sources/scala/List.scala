@@ -281,9 +281,13 @@ trait List[+a] extends Seq[a] {
   */
   def mkString(start: String, sep: String, end: String): String =
     start +
-   (if (isEmpty) end
-   else if (tail.isEmpty) head.toString() + end
-   else head.toString().concat(sep).concat(tail.mkString("", sep, end)));
+   (if (isEmpty)
+       { end }
+   else
+       { if (tail.isEmpty)
+	   { head.toString() + end }
+	 else
+	   { head.toString().concat(sep).concat(tail.mkString("", sep, end)) }});
 
   override def toString() = mkString("List(", ",", ")");
 

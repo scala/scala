@@ -16,7 +16,7 @@ package scala ;
 
 	  def tail: SeqTraceNil[c] = error("tail of empty Trace");
 
-	  override def toString(): String = "[]";
+	  //override def toString(): String = "[]";
 
     }
 
