@@ -33,7 +33,7 @@ public class Main {
 
     private final static String PRODUCT   = "scalatest";
     private final static String VERSION   = "1.02";
-    private final static String COPYRIGHT = "(C)2003 LAMP/EPFL";
+    private final static String COPYRIGHT = "(c) 2002-03 LAMP/EPFL";
     private final static String AUTHORS   =
         "Philippe Altherr & Stephane Micheloud";
 
@@ -244,41 +244,89 @@ public class Main {
         }
     }
 
-    private class InterpretationCommand extends Command {
+    private String getDiff(File logFile, String name) {
+        String diff = "";
+        File checkFile =
+            new File(SCALA_TESTPATH, name + SUFFIX_CHECKFILE);
+        if (checkFile.isFile()) {
+            diff = FileUtils.compareFiles(logFile, checkFile);
+        }
+        return diff;
+    }
 
+    private abstract class TestCommand extends Command {
+        private String message;
+        protected boolean success;
+        protected String name;
+        protected File logFile;
+        protected File outDir;
+
+        TestCommand(Console console) { super(console); }
+
+        protected void pre(String arg, boolean create) {
+            int inx = arg.lastIndexOf('.');
+            name = (inx < 0) ? arg : arg.substring(0, inx);
+            if (testAll)
+                name = SCALA_TESTPATH + FileUtils.FILE_SEP + name;
+            if (verbose > 1)
+                console.println(HEADER_VERBOSE + "diff "
+                    + objDir + name + SUFFIX_LOGFILE + " "
+                    + name + SUFFIX_CHECKFILE);
+            message = HEADER_TESTING + arg;
+            outDir = new File(objDir, name + SUFFIX_OBJDIR);
+            FileUtils.createDir(outDir);
+            logFile = new File(objDir, name + SUFFIX_LOGFILE);
+            success = false;
+        }
+
+        protected void printMessage() {
+            assert message != null;
+            printOutline(message);
+        }
+
+        protected void post() {
+            assert message != null;
+            String diff = "";
+            if (success) {
+                diff = getDiff(logFile, name);
+                success = diff.length() == 0;
+            }
+            printStatus(message, success);
+            if (! success) {
+                if (showLog)
+                    printLog(logFile);
+                if (showDiff)
+                    console.println(diff);
+            }
+            if (outDir != null)
+                FileUtils.deleteDir(outDir);
+        }
+    }
+
+    private String makeCmdLine(MessageFormat f, Object[] objs) {
+        String cmdLine = f.format(objs);
+        if (verbose > 0)
+            console.println(HEADER_VERBOSE + cmdLine);
+        return cmdLine;
+    }
+
+    private class InterpretationCommand extends TestCommand {
         InterpretationCommand(Console console) { super(console); }
 
         public boolean run(String arg) {
-            String name = arg.substring(0, arg.lastIndexOf('.'));
+            pre(arg, false);
 
-            String cmdLine = scalarunCmdLine.format(new Object[]{ flags, arg });
-            if (verbose > 0)
-                console.println(HEADER_VERBOSE + cmdLine);
+            String cmdLine =
+                makeCmdLine(scalarunCmdLine, new Object[]{ flags, arg });
 
-            String message = HEADER_TESTING + arg;
-            printOutline(message);
-            boolean success = false;
-            File logFile = null;
+            printMessage();
             try {
-                logFile = new File(objDir, name + SUFFIX_LOGFILE);
-                success = execute(cmdLine, new FileOutputStream(logFile));
-                if (success) {
-                    File checkFile =
-                        new File(SCALA_TESTPATH, name + SUFFIX_CHECKFILE);
-                    success = ! checkFile.isFile() ||
-                        FileUtils.compareFiles(logFile, checkFile, showDiff);
-                }
-                if (success)
-                    logFile.delete();
-            } catch (IOException e) {
-                success = false;
-            }
-            printStatus(message, success);
-            if (logFile != null && showLog)
-                printLog(logFile);
+                success = execute(cmdLine, new FileOutputStream(logFile)) >= 0;
+            } catch (FileNotFoundException e) {}
+
+            post();
             return success;
         }
-
     }
 
     private class InterpretationTest extends Test {
@@ -290,48 +338,29 @@ public class Main {
         }
     }
 
-    private class CompilationCommand extends Command {
-
+    private class CompilationCommand extends TestCommand {
         CompilationCommand(Console console) { super(console); }
 
         public boolean run(String arg) {
-            String name = arg.substring(0, arg.lastIndexOf('.'));
-            File out = new File(objDir, name + SUFFIX_OBJDIR);
-            FileUtils.createDir(out);
+            pre(arg, true);
 
-            String outpath  = objDir + name + SUFFIX_OBJDIR;
-            String cmdLine1 =
-                scalacCmdLine.format(new Object[]{ outpath , flags, "", arg });
-            String cmdLine2 = javaCmdLine.format(new Object[]{ outpath, "" });
-            if (verbose > 0) {
-                console.println(HEADER_VERBOSE + cmdLine1);
-                console.println(HEADER_VERBOSE + cmdLine2);
-            }
+            String outpath = objDir + name + SUFFIX_OBJDIR;
+            String cmdLine1 = makeCmdLine(
+                scalacCmdLine,
+                new Object[]{ outpath , flags, "", name + SUFFIX_SCALAFILE });
+            String cmdLine2 = makeCmdLine(
+                javaCmdLine,
+                new Object[]{ outpath, "" });
 
-            String message = HEADER_TESTING + arg;
-            printOutline(message);
-            boolean success = execute(cmdLine1);
-            if (success) {
-                try {
-                    File logFile = new File(objDir, name + SUFFIX_LOGFILE);
-                    success = execute(cmdLine2, new FileOutputStream(logFile));
-                    if (success) {
-                        File checkFile =
-                            new File(SCALA_TESTPATH, name + SUFFIX_CHECKFILE);
-                        success = ! checkFile.isFile()
-                            || FileUtils.compareFiles(logFile, checkFile, showDiff);
-                    }
-                    if (success)
-                       logFile.delete();
-                } catch (Exception e) {
-                    success = false;
-                }
-            }
-            FileUtils.deleteDir(out);
-            printStatus(message, success);
+            printMessage();
+            try {
+                success = execute(cmdLine1) >= 0 &&
+                    execute(cmdLine2, new FileOutputStream(logFile)) >= 0;
+            } catch (FileNotFoundException e) {}
+
+            post();
             return success;
         }
-
     }
 
     private class CompilationTest extends Test {
@@ -343,56 +372,38 @@ public class Main {
         }
     }
 
-    private class XMLCommand extends Command {
-
+    private class XMLCommand extends TestCommand {
         XMLCommand(Console console) { super(console); }
 
         public boolean run(String arg) {
-            String name = arg.substring(0, arg.lastIndexOf('.'));
-            File out = new File(objDir, name + SUFFIX_OBJDIR);
-            FileUtils.createDir(out);
+            pre(arg, true);
 
             String outpath  = objDir + name + SUFFIX_OBJDIR;
             String dtdFile  = name + SUFFIX_DTDFILE;
-            String objFile  =
-                outpath + FileUtils.FILE_SEP + NAME_DTDFILE + SUFFIX_SCALAFILE;
-            String xmlFile  =
-                SCALA_TESTPATH + FileUtils.FILE_SEP + name + SUFFIX_XMLFILE;
-            String cmdLine1 =
-                dtd2scalaCmdLine.format(new Object[]{ outpath, dtdFile });
-            String cmdLine2 =
-                scalacCmdLine.format(new Object[]{ outpath, flags, objFile, arg });
-            String cmdLine3 = javaCmdLine.format(new Object[]{ outpath, xmlFile });
-            if (verbose > 0) {
-                console.println(HEADER_VERBOSE + cmdLine1);
-                console.println(HEADER_VERBOSE + cmdLine2);
-                console.println(HEADER_VERBOSE + cmdLine3);
-            }
+            String objFile  = outpath + FileUtils.FILE_SEP
+                + NAME_DTDFILE + SUFFIX_SCALAFILE;
+            String xmlFile  = SCALA_TESTPATH + FileUtils.FILE_SEP
+                + name + SUFFIX_XMLFILE;
+            String cmdLine1 = makeCmdLine(
+                dtd2scalaCmdLine,
+                new Object[]{ outpath, dtdFile });
+            String cmdLine2 = makeCmdLine(
+                scalacCmdLine,
+                new Object[]{ outpath, flags, objFile, name + SUFFIX_SCALAFILE });
+            String cmdLine3 = makeCmdLine(
+                javaCmdLine,
+                new Object[]{ outpath, xmlFile });
 
-            String message = HEADER_TESTING + arg;
-            printOutline(message);
-            boolean success = execute(cmdLine1) && execute(cmdLine2);
-            if (success) {
-                try {
-                    File logFile = new File(objDir, name + SUFFIX_LOGFILE);
-                    success = execute(cmdLine3, new FileOutputStream(logFile));
-                    if (success) {
-                        File checkFile =
-                           new File(SCALA_TESTPATH, name + SUFFIX_CHECKFILE);
-                        success = ! checkFile.isFile()
-                            || FileUtils.compareFiles(logFile, checkFile, showDiff);
-                    }
-                    if (success)
-                       logFile.delete();
-                } catch (FileNotFoundException e) {
-                    success = false;
-                }
-            }
-            FileUtils.deleteDir(out);
-            printStatus(message, success);
+            printMessage();
+            try {
+                success = execute(cmdLine1) >= 0
+                    && execute(cmdLine2) >= 0
+                    && execute(cmdLine3, new FileOutputStream(logFile)) >= 0;
+            } catch (FileNotFoundException e) {}
+
+            post();
             return success;
         }
-
     }
 
     private class XMLTest extends Test {
@@ -404,36 +415,25 @@ public class Main {
         }
     }
 
-    private class SuccessCommand extends Command {
-
+    private class SuccessCommand extends TestCommand {
         SuccessCommand(Console console) { super(console); }
 
         public boolean run(String arg) {
-            String name = arg.substring(0, arg.lastIndexOf('.'));
-            File out = new File(objDir, name + SUFFIX_OBJDIR);
-            FileUtils.createDir(out);
+            pre(arg, true);
 
             String outpath  = objDir + name + SUFFIX_OBJDIR;
-            String cmdLine =
-                scalacCmdLine.format(new Object[]{ outpath, flags, "", arg });
-            if (verbose > 0)
-                console.println(HEADER_VERBOSE + cmdLine);
+            String cmdLine = makeCmdLine(
+                scalacCmdLine,
+                new Object[]{ outpath, flags, "", name + SUFFIX_SCALAFILE });
 
-            String message = HEADER_TESTING + arg;
-            printOutline(message);
-            boolean success = false;
+            printMessage();
             try {
-                File logFile = new File(objDir, name + SUFFIX_LOGFILE);
-                success = execute(cmdLine, null, new FileOutputStream(logFile))
-                   && logFile.length() == 0;
-                if (success)
-                   logFile.delete();
+                success = execute(cmdLine, new FileOutputStream(logFile)) >= 0;
             } catch (FileNotFoundException e) {}
-            FileUtils.deleteDir(out);
-            printStatus(message, success);
+
+            post();
             return success;
         }
-
     }
 
     private class SuccessTest extends Test {
@@ -447,36 +447,25 @@ public class Main {
         }
     }
 
-    private class FailureCommand extends Command {
-
+    private class FailureCommand extends TestCommand {
         FailureCommand(Console console) { super(console); }
 
         public boolean run(String arg) {
-            String name = arg.substring(0, arg.lastIndexOf('.'));
-            File out = new File(objDir, name + SUFFIX_OBJDIR);
-            FileUtils.createDir(out);
+            pre(arg, true);
 
             String outpath  = objDir + name + SUFFIX_OBJDIR;
-            String cmdLine =
-                scalacCmdLine.format(new Object[]{ outpath, flags, "", arg });
-            if (verbose > 0)
-                console.println(HEADER_VERBOSE + cmdLine);
+            String cmdLine = makeCmdLine(
+                scalacCmdLine,
+                new Object[]{ outpath, flags, "", name + SUFFIX_SCALAFILE });
 
-            String message = HEADER_TESTING + arg;
-            printOutline(message);
-            boolean success = false;
+            printMessage();
             try {
-                File logFile = new File(objDir, name + SUFFIX_LOGFILE);
-                success = execute(cmdLine, null, new FileOutputStream(logFile))
-                    && logFile.length() > 0;
-                if (success)
-                   logFile.delete();
+                success = execute(cmdLine, new FileOutputStream(logFile)) >= 0;
             } catch (FileNotFoundException e) {}
-            FileUtils.deleteDir(out);
-            printStatus(message, success);
+
+            post();
             return success;
         }
-
     }
 
     private class FailureTest extends Test {
@@ -517,6 +506,9 @@ public class Main {
 
     private void addFile(String name) {
        testAll = false;
+       if (! new File(name).isFile())
+           abort("File \"" + name + "\" doesn't exist");
+
        switch (testType) {
            case AUTO: break;
            case RUN: filesRUN.add(name); break;
@@ -657,17 +649,15 @@ public class Main {
 
         initializeColors();
 
-        scalacCmdLine = /* 0:outpath, 1:flags, 2:objfile 3:arg */
-            new MessageFormat(scalac + " -d {0} {1} {2} "
-                + SCALA_TESTPATH + FileUtils.FILE_SEP + "{3}");
+        scalacCmdLine = /* 0:outpath, 1:flags, 2:objfile, 3:arg */
+            new MessageFormat(scalac + " -Xshortname -d {0} {1} {2} {3}");
 
-        scalarunCmdLine = /* 0:flags, 1: arg */
+        scalarunCmdLine = /* 0:flags, 1:arg */
             new MessageFormat(scalarun + " {0} "
                 + SCALA_TESTPATH + FileUtils.FILE_SEP + "{1} -- Test");
 
         dtd2scalaCmdLine = /* 0:outpath, 1:arg */
-            new MessageFormat(dtd2scala + " -d {0} "
-                + SCALA_TESTPATH + FileUtils.FILE_SEP + "{1} " + NAME_DTDFILE);
+            new MessageFormat(dtd2scala + " -d {0} {1} " + NAME_DTDFILE);
 
         javaCmdLine = /* 0:outpath, 1:arg */
             new MessageFormat("java -cp "
