@@ -20,14 +20,20 @@ import Tree.*;
 
 class CodeFactory extends PatternTool {
 
-    static final Name SEQ_ITER_N   = Name.fromString("scala.SequenceIterator");
-    static final Name HAS_CUR_N    = Name.fromString("hasCur");
-    static final Name CUR_N        = Name.fromString("cur");
-    static final Name NEXT_N       = Name.fromString("next");
+    static final Name SEQ_N        = Name.fromString("scala.Sequence");
+    static final Name SEQ_ITER_N     = Name.fromString("scala.SequenceIterator");
+    static final Name NEW_ITERATOR_N = Name.fromString("newIterator");
+    static final Name HAS_CUR_N      = Name.fromString("hasCur");
+    static final Name CUR_N          = Name.fromString("cur");
+    static final Name NEXT_N         = Name.fromString("next");
 
     /** symbol of `scala.SequenceIterator'
      */
     Symbol seqIterSym;
+
+    /** symbol of `scala.Sequence.newIterator'
+     */
+    Symbol newIterSym;
 
     Symbol curSym;
     Symbol hasCurSym;
@@ -36,8 +42,17 @@ class CodeFactory extends PatternTool {
     public CodeFactory( Unit unit, Infer infer ) {
 	super( unit, infer );
 
+	// get `Sequence:newIterator'
+	Symbol sequenceSym = defs.getClass( SEQ_N );
+
+	Scope scp = sequenceSym.members();
+
+	this.newIterSym = scp.lookup/*Term */( NEW_ITERATOR_N );
+	assert !( newIterSym == Symbol.NONE ) : " did not find newIterator ";
+
 	this.seqIterSym = defs.getType( SEQ_ITER_N ).symbol();
-	Scope scp = seqIterSym.members();
+
+	scp = seqIterSym.members();
 	curSym = scp.lookup/*Term*/ ( CUR_N );
 	assert !( curSym == Symbol.NONE ) : "did not find cur";
     }
@@ -61,12 +76,59 @@ class CodeFactory extends PatternTool {
 			elseBody ).setType( elseBody.type() );
     }
 
+    Tree Switch( Tree selector,
+		 Tree condition[],
+		 Tree body[],
+		 Tree defaultBody ) {
+	assert selector != null:"selector is null";
+	assert condition != null:"cond is null";
+	assert body != null:"body is null";
+	assert defaultBody != null:"defaultBody is null";
+	Tree result = defaultBody;
+
+	for( int i = condition.length-1; i >= 0; i-- )
+	    result = If( condition[ i ],
+			 body[ i ],
+			 result
+			 ).setType( result.type );
+
+	return result ;
+    }
+
     /**                       `SequenceIterator[ elemType ]' // TODO: Move to TypeFactory
      */
     Type _seqIterType( Type elemType ) {
 	return Type.TypeRef( defs.SCALA_TYPE/*PREFIX*/,
 			     seqIterSym,
 			     new Type[] { elemType });
+    }
+
+    /** returns code `<seqObj>.newIterator'
+     *  the parameter needs to have type attribute `Sequence[<elemType>]'
+     *  it is not checked whether seqObj really has type `Sequence'
+     */
+    Tree newIterator( Tree seqObj ) {
+	Type args[] = seqObj.type().typeArgs();
+	assert ( args.length== 1 ) : "seqObj does not have right type";
+	Type elemType = args[ 0 ];
+	//System.out.println( "elemType:"+elemType );
+
+	//Tree t1 = gen.Select(seqObj, newIterSym);
+	Tree t1 = make.Select( Position.NOPOS, seqObj, newIterSym.name )
+	    .setSymbol( newIterSym )
+	    .setType( Type.MethodType(new Symbol[] {},_seqIterType( elemType )));
+
+	//System.out.println( "t1.type:"+t1.type() );
+
+	Tree theIterator = gen.Apply(seqObj.pos,
+				     t1,
+				     Tree.EMPTY_ARRAY)
+	    .setType( _seqIterType( elemType ) );
+
+	//System.out.println( "theit.type:"+theIterator.type() );
+
+	return theIterator;
+
     }
 
     // the caller needs to set the type !
@@ -88,6 +150,15 @@ class CodeFactory extends PatternTool {
 	Type elemType = getElemType( iter.type() );
 	return _applyNone( gen.Select( iter, curSym ).setType( elemType ))
 	    .setType( elemType );
+    }
+
+    /** `it.next()'
+     */
+    public Tree _next( Tree iter ) {
+	Type elemType = getElemType( iter.type() );
+
+	return _applyNone( gen.Select( iter, nextSym ))
+	    .setType( iter.type() );
     }
 
     /** `it.hasCur()'
