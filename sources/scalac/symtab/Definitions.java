@@ -150,25 +150,25 @@ public class Definitions {
     public final Symbol[] TUPLE_CLASS = new Symbol[TUPLE_COUNT];
     public final Type     TUPLE_TYPE(Type[] args) {
         assert 0 < args.length && args.length < TUPLE_COUNT: args.length;
-	return getType(TUPLE_CLASS[args.length], args);
+        return getType(TUPLE_CLASS[args.length], args);
     }
 
     /** The scala.FunctionX classes */
     public final int      FUNCTION_COUNT = 10;
     public final Symbol[] FUNCTION_CLASS = new Symbol[FUNCTION_COUNT];
     public final Type     FUNCTION_TYPE(Type[] args, Type result) {
-	assert 0 <= args.length;
-	if (args.length >= FUNCTION_COUNT)
-	    throw new Type.Error("function has too many arguments; limit = " + (FUNCTION_COUNT-1));
+        assert 0 <= args.length;
+        if (args.length >= FUNCTION_COUNT)
+            throw new Type.Error("function has too many arguments; limit = " + (FUNCTION_COUNT-1));
         args = Type.cloneArray(args, 1);
         args[args.length - 1] = result;
-	return getType(FUNCTION_CLASS[args.length - 1], args);
+        return getType(FUNCTION_CLASS[args.length - 1], args);
     }
 
     /** The scala.PartialFunction class */
     public final Symbol PARTIALFUNCTION_CLASS;
     public final Type   PARTIALFUNCTION_TYPE(Type argument, Type result) {
-	return getType(PARTIALFUNCTION_CLASS, new Type[] { argument, result });
+        return getType(PARTIALFUNCTION_CLASS, new Type[] { argument, result });
     }
 
     /** The scala.Iterable class */
@@ -186,7 +186,7 @@ public class Definitions {
     /** The scala.Seq class */
     public final Symbol SEQ_CLASS;
     public final Type   SEQ_TYPE(Type element) {
-	return getType(SEQ_CLASS, element);
+        return getType(SEQ_CLASS, element);
     }
 
     /** The scala.List class */
@@ -475,8 +475,8 @@ public class Definitions {
 
         // the top and bottom classes
         ANY_CLASS = newClass(SCALA_PACKAGE, Names.Any, 0);
-	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
-	ANYREF_CLASS = newAlias(SCALA_PACKAGE, Names.AnyRef, 0);
+        ANYVAL_CLASS = getClass(Names.scala_AnyVal);
+        ANYREF_CLASS = newAlias(SCALA_PACKAGE, Names.AnyRef, 0);
         ALLREF_CLASS = newClass(SCALA_PACKAGE, Names.AllRef, 0);
         ALL_CLASS = newClass(SCALA_PACKAGE, Names.All, 0);
 
@@ -497,7 +497,7 @@ public class Definitions {
         DOUBLE_CLASS = getClass(Names.scala_Double);
 
         // the scala reference classes
-	OBJECT_CLASS = getClass(Names.scala_ScalaObject);
+        OBJECT_CLASS = getClass(Names.scala_ScalaObject);
         STRING_CLASS = newAlias(SCALA_PACKAGE, Names.String, 0);
         REF_CLASS = getClass(Names.scala_Ref);
         for (int i = 1; i < TUPLE_COUNT; i++) {
@@ -506,17 +506,17 @@ public class Definitions {
         }
         for (int i = 0; i < FUNCTION_COUNT; i++)
             FUNCTION_CLASS[i] = getClass(Names.scala_Function(i));
-	PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
-	ITERABLE_CLASS = getClass(Names.scala_Iterable);
-	ITERATOR_CLASS = getClass(Names.scala_Iterator);
-	SEQ_CLASS = getClass(Names.scala_Seq);
-	LIST_CLASS = getClass(Names.scala_List);
+        PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
+        ITERABLE_CLASS = getClass(Names.scala_Iterable);
+        ITERATOR_CLASS = getClass(Names.scala_Iterator);
+        SEQ_CLASS = getClass(Names.scala_Seq);
+        LIST_CLASS = getClass(Names.scala_List);
         NIL = getModule(Names.scala_Nil);
         CONS_CLASS = getClass(Names.scala_COLONCOLON);
         ARRAY_CLASS = getClass(Names.scala_Array);
         PREDEF = getModule(Names.scala_Predef);
         CONSOLE = getModule(Names.scala_Console);
-	MATCHERROR = getModule(Names.scala_MatchError);
+        MATCHERROR = getModule(Names.scala_MatchError);
 
         // initialize generated classes and aliases
         initClass(ANY_CLASS, Type.EMPTY_ARRAY);
@@ -541,7 +541,7 @@ public class Definitions {
         initAlias(STRING_CLASS, JAVA_STRING_TYPE());
 
         // add members to scala.Any
-	ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
+        ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
         ANY_EQEQ     = newTerm(ANY_CLASS, Names.EQEQ        , Modifiers.FINAL);
         ANY_BANGEQ   = newTerm(ANY_CLASS, Names.BANGEQ      , Modifiers.FINAL);
         ANY_EQUALS   = newTerm(ANY_CLASS, Names.equals      , 0);
@@ -566,17 +566,17 @@ public class Definitions {
         Symbol[] ANY_AS_TPARAMS = {newTParam(ANY_AS, 0, ANY_TYPE())};
         ANY_AS.setInfo(Type.PolyType(ANY_AS_TPARAMS,ANY_AS_TPARAMS[0].type()));
 
-	Symbol[] ANY_MATCH_TPARAMS = {
+        Symbol[] ANY_MATCH_TPARAMS = {
             newTParam(ANY_MATCH, 0, ANY_TYPE()),
             newTParam(ANY_MATCH, 1, ANY_TYPE())};
-	Symbol[] ANY_MATCH_VPARAMS = {
+        Symbol[] ANY_MATCH_VPARAMS = {
             newVParam(ANY_MATCH, 0, FUNCTION_TYPE(
                 new Type[]{ANY_MATCH_TPARAMS[0].type()},
                 ANY_MATCH_TPARAMS[1].type()))};
         ANY_MATCH.setInfo(
-	    Type.PolyType(
-		ANY_MATCH_TPARAMS,
-		Type.MethodType(
+            Type.PolyType(
+                ANY_MATCH_TPARAMS,
+                Type.MethodType(
                     ANY_MATCH_VPARAMS,
                     ANY_MATCH_TPARAMS[1].type())));
 
@@ -584,14 +584,14 @@ public class Definitions {
         ANYREF_SYNCHRONIZED =
             newTerm(ANYREF_CLASS, Names.synchronized_, Modifiers.FINAL);
 
-	Symbol ANYREF_SYNCHRONIZED_TPARAM =
+        Symbol ANYREF_SYNCHRONIZED_TPARAM =
             newTParam(ANYREF_SYNCHRONIZED,0,ANY_TYPE());
-	Symbol ANYREF_SYNCHRONIZED_VPARAM =
+        Symbol ANYREF_SYNCHRONIZED_VPARAM =
             newVParam(ANYREF_SYNCHRONIZED,0,ANYREF_SYNCHRONIZED_TPARAM.type());
         ANYREF_SYNCHRONIZED.setInfo(
-	    Type.PolyType(
-		new Symbol[] {ANYREF_SYNCHRONIZED_TPARAM},
-		Type.MethodType(
+            Type.PolyType(
+                new Symbol[] {ANYREF_SYNCHRONIZED_TPARAM},
+                Type.MethodType(
                     new Symbol[] {ANYREF_SYNCHRONIZED_VPARAM},
                     ANYREF_SYNCHRONIZED_TPARAM.type())));
 
@@ -616,16 +616,16 @@ public class Definitions {
     // Public Methods
 
     /** Returns the symbol of the module with the given fullname. */
-    public Symbol getModule(Name fullname) {
-	Scope scope = ROOT_CLASS.members();
+    public Symbol getModule(Name fullname, boolean fail) {
+        Scope scope = ROOT_CLASS.members();
         int i = 0;
         int j = fullname.pos((byte)'.', i);
-	while (j < fullname.length()) {
-	    scope = scope.lookup(fullname.subName(i, j)).members();
-	    i = j + 1;
-	    j = fullname.pos((byte)'.', i);
-	}
-	Symbol sym = scope.lookup(fullname.subName(i, fullname.length()));
+        while (j < fullname.length()) {
+            scope = scope.lookup(fullname.subName(i, j)).members();
+            i = j + 1;
+            j = fullname.pos((byte)'.', i);
+        }
+        Symbol sym = scope.lookup(fullname.subName(i, fullname.length()));
         if (!sym.isModule()) {
             switch (sym.type()) {
             case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -633,28 +633,34 @@ public class Definitions {
                     if ((sym = alts[k]).isModule()) break;
             }
         }
-        assert sym.isModule() : "no module '" + fullname + "'";
+        if (fail)
+        	assert sym.isModule() : "no module '" + fullname + "'";
         return sym;
+    }
+
+    /** Returns the symbol of the module with the given fullname. */
+    public Symbol getModule(Name fullname) {
+        return getModule(fullname, true);
     }
 
     /** Returns the symbol of the class with the given fullname. */
     public Symbol getClass(Name fullname) {
-	Scope scope = ROOT_CLASS.members();
+        Scope scope = ROOT_CLASS.members();
         int i = 0;
         int j = fullname.pos((byte)'.', i);
-	while (j < fullname.length()) {
-	    scope = scope.lookup(fullname.subName(i, j)).members();
-	    i = j + 1;
-	    j = fullname.pos((byte)'.', i);
-	}
-	Symbol sym = scope.lookup(fullname.subName(i, fullname.length()).toTypeName());
-	assert sym.kind != Kinds.NONE : "no class '" + fullname + "'";
-	return sym;
+        while (j < fullname.length()) {
+            scope = scope.lookup(fullname.subName(i, j)).members();
+            i = j + 1;
+            j = fullname.pos((byte)'.', i);
+        }
+        Symbol sym = scope.lookup(fullname.subName(i, fullname.length()).toTypeName());
+        assert sym.kind != Kinds.NONE : "no class '" + fullname + "'";
+        return sym;
     }
 
     /** Returns the type of the class with the given fullname. */
     public Type getType(Name fullname) {
-	return getClass(fullname).type();
+        return getClass(fullname).type();
     }
 
     //########################################################################
@@ -688,15 +694,15 @@ public class Definitions {
     /** Creates a new type parameter */
     private Symbol newTParam(Symbol owner, int index, Type bound) {
         Name name = Name.fromString("T" + index).toTypeName();
-	return new AbsTypeSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
-	    .setInfo(bound);
+        return new AbsTypeSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
+            .setInfo(bound);
     }
 
     /** Creates a new value parameter */
     private Symbol newVParam(Symbol owner, int index, Type type) {
         Name name = Name.fromString("v" + index);
         return new TermSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
-	    .setInfo(type);
+            .setInfo(type);
     }
 
     /** Creates a new type symbol */
@@ -759,7 +765,7 @@ public class Definitions {
 
     /** Returns the type of given class applied to given type argument. */
     private Type getType(Symbol clasz, Type arg) {
-	return getType(clasz, new Type[] { arg });
+        return getType(clasz, new Type[] { arg });
     }
 
     /** Returns the type of given class applied to given type arguments. */

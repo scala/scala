@@ -98,19 +98,43 @@ public class AttributeParser implements ClassfileConstants {
                 new UnPickle(sym, in.nextBytes(attrLen), Name.fromString(in.path));
                 return;
             case INNERCLASSES_ATTR:
-                /* int n = in.nextChar();
+                int n = in.nextChar();
+                //System.out.println(sym + " has " + n + " innerclass entries");
                 for (int i = 0; i < n; i++) {
-                    Symbol inner = (Symbol)pool.readPool(in.nextChar());
-                    Symbol outer = (Symbol)pool.readPool(in.nextChar());
                     Name name = (Name)pool.readPool(in.nextChar());
-                    int flags = in.nextChar();
-                    if (name != null) {
-                        // inner.owner(outer);
-                        // inner.mangled(name);
-                        // inner.flags = flags;
+                    if (name == null) {
+                    	in.nextChar();
+                    	in.nextChar();
+                    	in.nextChar();
+                    	continue;
                     }
-                } */
-                in.skip(attrLen);
+                    Symbol inner = parser.global.definitions.getClass(name);
+                    name = (Name)pool.readPool(in.nextChar());
+                    if (name == null) {
+                    	in.nextChar();
+                    	in.nextChar();
+                    	continue;
+                    }
+                    Symbol outer = parser.global.definitions.getModule(name, false);
+                    name = (Name)pool.readPool(in.nextChar());
+                    int flags = in.nextChar();
+                    if ((name == null) ||
+                        ((flags & 0x0009) == 0) ||
+                        ((flags & 0x0001) == 0) ||
+                        !outer.isModule() ||
+                        (outer != sym.module()))
+                    	continue;
+                	AliasTypeSymbol alias =
+						new AliasTypeSymbol(Position.NOPOS, name.toTypeName(), outer, 0);
+					alias.setFirstInfo(inner.typeConstructor());
+					alias.allConstructors()
+						.setInfo(new Type.MethodType(Symbol.EMPTY_ARRAY, inner.info()));
+					Scope.Entry e = parser.statics.lookupEntry(alias.name); // Why is this ??????
+ 	    			if (e != Scope.Entry.NONE)
+ 						parser.statics.unlink(e);
+	    			parser.statics.enter(alias);
+                }
+                //in.skip(attrLen);
                 return;
         // method attributes
             case CODE_ATTR:
