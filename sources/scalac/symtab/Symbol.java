@@ -1063,7 +1063,7 @@ public class TypeSymbol extends Symbol {
 	if (kind == ALIAS) return info().symbol().closure();
 	int id = Global.instance.currentPhase.id;
 	if (closures.limit < id) {
-	    if (id == 0 || changes(closureAt(id - 1))) {
+	    if (id == Global.START_PHASE_ID || changes(closureAt(id - 1))) {
 		closures = new ClosureIntervalList(closures);
 		closures.limit = id;
 		computeClosure();
