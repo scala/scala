@@ -25,13 +25,12 @@ class TreeMap[KEY,VALUE](order:Order[KEY]) extends
 	new TreeMap[KEY,VALUE](order){
 	    override def size=sz;
 	    override protected val tree:aNode=t;
-	};
-
+	}
 
     def update(key:KEY, value:VALUE):TreeMap[KEY,VALUE] = {
-	if(contains(key)) mkTreeMap(size,tree.update(key,Pair(key,value)))
+       if(contains(key)) mkTreeMap(size,tree.update(key,Pair(key,value)))
 	else insert(key,value);
-    }
+     }
 
     def insert(key:KEY,value:VALUE) = {
 	val newSize = size+1;

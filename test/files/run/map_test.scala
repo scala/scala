@@ -9,14 +9,13 @@ object Test with Executable {
 
     test1();
     test2();
-
     Console.println("OK");
 
 
 
     def test1() = {
 	val myMap:TreeMap[int,String] = new TreeMap(intOrder);
-	test_map(myMap);
+        test_map(myMap);
     }
 
     def test2() = {
@@ -29,8 +28,7 @@ object Test with Executable {
 	val map2 = map1.update(17,"A small random number");
 	val map3 = map2.update(666,"A bigger random number");
 	val map4 = map3.update(4711,"A big random number");
-	//	val map1 = myMap + 42 -> "The answer";
-	Console.println(map4);
+	map1 == myMap + 42 -> "The answer";
 	var i = 0;
 	var map = map4;
 	while(i < 43) {
