@@ -139,6 +139,11 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return Literal(pos, AConstant.STRING(value));
     }
 
+    /** Builds a symbol name literal. */
+    public Tree mkSymbolNameLit(int pos, Symbol value) {
+        return Literal(pos, AConstant.SYMBOL_NAME(value));
+    }
+
     /** Builds a null literal. */
     public Tree mkNullLit(int pos) {
         return Literal(pos, AConstant.NULL);
@@ -258,7 +263,10 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds a local reference to given symbol. */
     public Tree mkLocalRef(int pos, Symbol symbol) {
         assert symbol.isTerm(): Debug.show(symbol);
-        return mkRef(pos, symbol.owner().thisType(), symbol);
+        Type prefix = symbol.hasStaticAttribute()
+            ? Type.NoPrefix
+            : symbol.owner().thisType();
+        return mkRef(pos, prefix, symbol);
     }
 
     /** Builds a global reference to given symbol. */
