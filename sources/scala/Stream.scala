@@ -35,7 +35,7 @@ object Stream {
       tlVal
     }
     def printElems(buf: StringBuffer, prefix: String): StringBuffer = {
-      val buf1 = buf.append(prefix).append(hd.asInstanceOf[java.lang.Object]);
+      val buf1 = buf.append(prefix).append(hd);
       if (tlDefined) printElems(buf1, ", ") else buf1 append ", ?";
     }
   }
@@ -228,7 +228,7 @@ trait Stream[+a] extends Seq[a] {
   def print: unit =
     if (isEmpty) Console.println("Stream.empty")
     else {
-      Console.print(head.asInstanceOf[java.lang.Object]);
+      Console.print(head);
       Console.print(", ");
       tail.print
     }

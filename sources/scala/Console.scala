@@ -227,7 +227,7 @@ object Console {
     }
 
     private def textParams(s: Seq[Any]): Array[AnyRef] = {
-        val res = new Array[java.lang.Object](s.length);
+        val res = new Array[AnyRef](s.length);
         var i: Int = 0;
         val iter = s.elements;
         while (iter.hasNext) {
