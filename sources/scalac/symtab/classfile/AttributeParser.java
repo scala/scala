@@ -126,7 +126,7 @@ public class AttributeParser implements ClassfileConstants {
                     	continue;
                 	AliasTypeSymbol alias =
 						new AliasTypeSymbol(Position.NOPOS, name.toTypeName(), outer, 0);
-					alias.setInfo(inner.typeConstructor());
+					alias.setInfo(parser.make.classType(inner));
 					alias.allConstructors()
 						.setInfo(new Type.MethodType(Symbol.EMPTY_ARRAY, inner.info()));
 					Scope.Entry e = parser.statics.lookupEntry(alias.name); // Why is this ??????

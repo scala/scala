@@ -36,19 +36,19 @@ public class JavaTypeCreator implements JavaTypeFactory {
 
     public JavaTypeCreator(Definitions definitions) {
         this.definitions = definitions;
-        this.ANY_TYPE = definitions.ANY_CLASS.typeConstructor();
-        this.DOUBLE_TYPE = definitions.DOUBLE_CLASS.typeConstructor();
-        this.FLOAT_TYPE = definitions.FLOAT_CLASS.typeConstructor();
-        this.LONG_TYPE = definitions.LONG_CLASS.typeConstructor();
-        this.INT_TYPE = definitions.INT_CLASS.typeConstructor();
-        this.CHAR_TYPE = definitions.CHAR_CLASS.typeConstructor();
-        this.SHORT_TYPE = definitions.SHORT_CLASS.typeConstructor();
-        this.BYTE_TYPE = definitions.BYTE_CLASS.typeConstructor();
-        this.BOOLEAN_TYPE = definitions.BOOLEAN_CLASS.typeConstructor();
-        this.UNIT_TYPE = definitions.UNIT_CLASS.typeConstructor();
-        this.OBJECT_TYPE = definitions.OBJECT_CLASS.typeConstructor();
-        this.STRING_TYPE = definitions.STRING_CLASS.typeConstructor();
-        this.ARRAY_TYPE = definitions.ARRAY_CLASS.typeConstructor();
+        this.ANY_TYPE = classType(definitions.ANY_CLASS);
+        this.DOUBLE_TYPE = classType(definitions.DOUBLE_CLASS);
+        this.FLOAT_TYPE = classType(definitions.FLOAT_CLASS);
+        this.LONG_TYPE = classType(definitions.LONG_CLASS);
+        this.INT_TYPE = classType(definitions.INT_CLASS);
+        this.CHAR_TYPE = classType(definitions.CHAR_CLASS);
+        this.SHORT_TYPE = classType(definitions.SHORT_CLASS);
+        this.BYTE_TYPE = classType(definitions.BYTE_CLASS);
+        this.BOOLEAN_TYPE = classType(definitions.BOOLEAN_CLASS);
+        this.UNIT_TYPE = classType(definitions.UNIT_CLASS);
+        this.OBJECT_TYPE = classType(definitions.OBJECT_CLASS);
+        this.STRING_TYPE = classType(definitions.STRING_CLASS);
+        this.ARRAY_TYPE = classType(definitions.ARRAY_CLASS);
     }
 
     public Type anyType() {

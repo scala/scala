@@ -79,7 +79,7 @@ public class CLRClassParser extends ClassParser {
 				   (staticsClass.owner().thisType(),
 				    staticsClass, scalac.symtab.Type.EMPTY_ARRAY));
 	}
-        scalac.symtab.Type ctype = clazz.typeConstructor();
+        scalac.symtab.Type ctype = make.classType(clazz);
 
 	// import nested types
 	Type[] nestedTypes = type.getNestedTypes();
@@ -280,7 +280,7 @@ public class CLRClassParser extends ClassParser {
 	    || (type.IsArray() && getCLSType(type.GetElementType()) == null))
 	    return null;
 	//Symbol s = importer.getSymbol(type);
-	//scalac.symtab.Type t = s != null ? s.typeConstructor() : getCLRType(type);
+	//scalac.symtab.Type t = s != null ? make.classType(s) : getCLRType(type);
 	return getCLRType(type);
     }
 
@@ -310,7 +310,7 @@ public class CLRClassParser extends ClassParser {
 	if (type.IsArray())
 	    return make.arrayType(getCLRType(type.GetElementType()));
 	Symbol s = importer.getSymbol(type);
-	return s != null ? s.typeConstructor() : getClassType(type);
+	return s != null ? make.classType(s) : getClassType(type);
     }
 
     protected static int translateAttributes(Type type) {
