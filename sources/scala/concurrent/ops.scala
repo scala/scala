@@ -3,8 +3,8 @@ package scala.concurrent;
 object ops {
 
   def spawn(def p: Unit) = {
-    val t = new Thread { override def run() = p; }
-    t.run()
+    val t = new Thread() { override def run() = p; }
+    t.start()
   }
 
   def future[a](def p: a): () => a = {
@@ -30,10 +30,13 @@ object ops {
     }
   }
 
+/*
   def parMap[a,b](f: a => b, xs: Array[a]): Array[b] = {
     val results = new Array[b](xs.length);
     replicate(0, xs.length) { i => results(i) = f(xs(i)) }
     results
   }
+*/
+
 }
 
