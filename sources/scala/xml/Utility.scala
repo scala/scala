@@ -64,4 +64,9 @@ object Utility {
     label.hashCode() + attribHashCode + children.hashCode()
   }
 
+  /** returns a hashcode for the given constituents of a node */
+  def hashCode( label:String, attribs:scala.collection.mutable.HashMap[String,String], children:Seq[Node] ) = {
+    label.hashCode() + attribs.toList.hashCode() + children.hashCode()
+  }
+
 }
