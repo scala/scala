@@ -1206,8 +1206,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      */
     Tree mkStable(Tree tree, Type pre, int mode, Type pt) {
 	switch (tree.type) {
-	case ConstantType(Type base, Object value):
+	case ConstantType(_, Object value):
 	    return make.Literal(tree.pos, value).setType(tree.type);
+	case PolyType(Symbol[] tparams, Type restp):
+	    if (tparams.length == 0) {
+		switch (restp) {
+		case ConstantType(_, Object value):
+		    return make.Literal(tree.pos, value).setType(tree.type);
+		}
+	    }
 	}
 	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) &&
 	    pre.isStable()) {
@@ -2259,8 +2266,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				}
 			    }
 			}
-			return copy.TypeApply(tree, fn1, args1)
-			    .setType(restp.subst(tparams, argtypes));
+			return constfold.tryToFold(
+			    copy.TypeApply(tree, fn1, args1)
+			    .setType(restp.subst(tparams, argtypes)));
 		    }
 		    break;
 		case ErrorType:
@@ -2436,16 +2444,18 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			for (int i = 0; i < args.length; i++) {
 			    args[i] = adapt(args[i], argMode, formals[i]);
 			}
-			return copy.Apply(tree, fn1, args)
-			    .setType(restp1);
+			return constfold.tryToFold(
+			    copy.Apply(tree, fn1, args)
+			    .setType(restp1));
 		    }
 		    break;
 		case MethodType(Symbol[] params, Type restp):
 		    // if method is monomorphic,
 		    // check that it can be applied to arguments.
 		    if (infer.isApplicable(fn1.type, argtypes, Type.AnyType)) {
-			return copy.Apply(tree, fn1, args)
-			    .setType(restp);
+			return constfold.tryToFold(
+			    copy.Apply(tree, fn1, args)
+			    .setType(restp));
 		    }
 		}
 

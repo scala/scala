@@ -684,7 +684,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public String stringValue() {
 	switch (this) {
 	case ConstantType(_, Object value):
-	    return (String)value;
+	    return value.toString();
 	default:
 	    throw new ApplicationError();
 	}

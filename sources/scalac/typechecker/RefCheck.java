@@ -33,6 +33,7 @@ import Tree.*;
  *     they are defined in the class or a baseclass different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
  *   - Type nodes are replaced by TypeTerm nodes.
+ *   - Eliminate constant definitions
  */
 public class RefCheck extends Transformer implements Modifiers, Kinds {
 
@@ -134,6 +135,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		}
 	    }
 	    if (member != other) {
+		member.flags |= ACCESSED;
 		checkOverride(pos, clazz, member, other);
 	    }
 	}

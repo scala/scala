@@ -13,6 +13,7 @@
 package scalac.typechecker;
 
 import scalac.util.*;
+import scalac.ast.*;
 import scalac.symtab.*;
 import scalac.symtab.Type.*;
 
@@ -26,11 +27,17 @@ class ConstantFolder implements /*imports*/ TypeTags {
 
     /** fold binary operation.
      */
-    Type foldBinary(int pos, ConstantType left, ConstantType right,
-			   Name op, Type restype) {
+    Type foldBinary(int pos, ConstantType left, ConstantType right, Name op) {
 	try {
+	    Type optype = left.deconst();
+	    if (optype.symbol() == ana.definitions.BYTE_CLASS ||
+		optype.symbol() == ana.definitions.CHAR_CLASS ||
+		optype.symbol() == ana.definitions.SHORT_CLASS)
+		optype = ana.definitions.INT_TYPE();
+	    if (optype.isSubType(right.deconst()))
+		optype = right.deconst();
 	    Object value = null;
-	    switch (restype.unbox()) {
+	    switch (optype.unbox()) {
 	    case UnboxedType(INT):
 		if (op == Names.ADD)
 		    value = new Integer(left.intValue() + right.intValue());
@@ -164,12 +171,11 @@ class ConstantFolder implements /*imports*/ TypeTags {
 		    value = new Boolean(left.booleanValue() ^ right.booleanValue());
 		break;
 	    default:
-		if (restype.symbol() == ana.definitions.JAVA_STRING_CLASS &&
+		if (optype.symbol() == ana.definitions.JAVA_STRING_CLASS &&
 		    op == Names.ADD)
 		    value = left.stringValue() + right.stringValue();
 	    }
-	    return (value != null) ? new ConstantType(restype, value)
-		: Type.NoType;
+	    return (value != null) ? Type.constantType(value) : Type.NoType;
         } catch (ArithmeticException e) {
 	    ana.unit.error(pos, e.toString());
 	    return Type.NoType;
@@ -178,10 +184,10 @@ class ConstantFolder implements /*imports*/ TypeTags {
 
     /** fold unary operation.
      */
-    Type foldUnary(int pos, ConstantType od, Name op, Type restype) {
+    Type foldUnary(int pos, ConstantType od, Name op) {
 	try {
 	    Object value = null;
-	    switch (restype.unbox()) {
+	    switch (od.deconst().unbox()) {
 	    case UnboxedType(INT):
 		if (op == Names.ADD)
 		    value = new Integer(od.intValue());
@@ -215,8 +221,7 @@ class ConstantFolder implements /*imports*/ TypeTags {
 		    value = new Boolean(!od.booleanValue());
 		break;
 	    }
-	    return (value != null) ? new ConstantType(restype, value)
-		: Type.NoType;
+	    return (value != null) ? Type.constantType(value) : Type.NoType;
         } catch (ArithmeticException e) {
 	    ana.unit.error(pos, e.toString());
 	    return Type.NoType;
@@ -225,10 +230,10 @@ class ConstantFolder implements /*imports*/ TypeTags {
 
     /** fold cast operation
      */
-    Type foldAsInstanceOf(int pos, ConstantType od, Type restype) {
+    Type foldAsInstanceOf(int pos, ConstantType od, Type argtype) {
 	try {
 	    Object value = null;
-	    switch (restype.unbox()) {
+	    switch (argtype.unbox()) {
 	    case UnboxedType(BYTE):
 		value = new Byte((byte)od.intValue());
 		break;
@@ -254,13 +259,50 @@ class ConstantFolder implements /*imports*/ TypeTags {
 		value = new Boolean(od.booleanValue());
 		break;
 	    }
-	    return (value != null) ? new ConstantType(restype, value)
+	    return (value != null) ? new ConstantType(argtype, value)
 		: Type.NoType;
         } catch (ClassCastException e) {
 	    ana.unit.error(pos, e.toString());
 	    return Type.NoType;
 	}
     }
+
+    /** attempt to constant fold tree.
+     */
+    Tree tryToFold(Tree tree) {
+	Type ctp = Type.NoType;
+	switch (tree) {
+	case Apply(Select(Tree qual, Name op), Tree[] args):
+	    if (qual.type instanceof ConstantType) {
+		if (args.length == 0)
+		    ctp = foldUnary(
+			tree.pos, (ConstantType)qual.type, op);
+		else if (args.length == 1 &&
+			 args[0].type instanceof ConstantType)
+		    ctp = foldBinary(
+			tree.pos,
+			(ConstantType)qual.type,
+			(ConstantType)(args[0].type),
+			op);
+	    }
+	    break;
+	case TypeApply(Select(Tree qual, Name op), Tree[] targs):
+		if (qual.type instanceof Type.ConstantType &&
+		    op == Names.asInstanceOf)
+		    ctp = foldAsInstanceOf(
+			tree.pos,
+			(ConstantType)qual.type,
+			targs[0].type);
+		break;
+	}
+	switch (ctp) {
+	case ConstantType(Type base, Object value):
+	    return ana.make.Literal(tree.pos, value).setType(ctp);
+	default:
+	    return tree;
+	}
+    }
+
 }
 
 

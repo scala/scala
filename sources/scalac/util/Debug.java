@@ -522,6 +522,14 @@ public class DebugType extends DebugAbstractHandler {
             buffer.append(')');
             return;
 
+        case ConstantType(Type prefix, Object value):
+            buffer.append("ConstantType(");
+            Debug.append(buffer, prefix);
+            buffer.append(',');
+            Debug.append(buffer, value);
+            buffer.append(')');
+            return;
+
         case CompoundType(Type[] basetypes, Scope members):
             buffer.append("CompoundType(");
             Debug.append(buffer, basetypes);
