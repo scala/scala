@@ -84,7 +84,7 @@ public class Evaluator {
 
     public Object toString(Object object) {
         try {
-            return object.toString();
+            return String.valueOf(object);
         } catch (Throwable exception) {
             return throw_(exception);
         }
