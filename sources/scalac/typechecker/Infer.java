@@ -866,6 +866,7 @@ public class Infer implements Modifiers, Kinds {
     boolean isApplicable(Type ftpe, Type[] argtypes, Type pt) {
 	switch (ftpe) {
 	case MethodType(Symbol[] params, Type restpe):
+	    // sequences ? List( a* )
 	    Type[] formals = formalTypes(params, argtypes.length);
 	    return
 		isCompatible(restpe, pt) &&

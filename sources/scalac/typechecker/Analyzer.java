@@ -148,7 +148,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     static final int SEQUENCEmode  = 0x1000;  // orthogonal to above. When set
                                               // we turn "x" into "x@_"
-
+                                              // and allow args to be of type Seq[ a ] instead of a
     static final int notSEQUENCEmode  = Integer.MAX_VALUE - SEQUENCEmode;
 
 // Diagnostics ----------------------------------------------------------------
@@ -1194,8 +1194,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    // this works as for superclass constructor calls the expected
 	    // type `pt' is always AnyType (see transformConstrInvocations).
 	}
-	if (!(owntype instanceof Type.PolyType || owntype.isSubType(pt))) {
-	    typeError(tree.pos, owntype, pt);
+	if (!(owntype instanceof Type.PolyType || owntype.isSubType(pt) || ((mode & SEQUENCEmode) != 0 ))) {
+	    typeError(tree.pos, owntype, pt); // SEQUENCEmode !
 	    Type.explainTypes(owntype, pt);
 	    tree.type = Type.ErrorType;
 	}
@@ -1721,7 +1721,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return copy.Block(tree, stats1)
 		    .setType(owntype);
 
-            case Sequence(Tree[] trees):
+            case Sequence( Tree[] trees ):
 		//System.err.println("sequence with pt  "+pt);
 		Symbol seqSym = definitions.getType( Name.fromString("scala.Seq") ).symbol();
 		assert seqSym != Symbol.NONE : "did not find Seq";
@@ -1738,13 +1738,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    elemType = pt;
 		    seqType = new Type.TypeRef(definitions.SCALA_TYPE, seqSym, new Type[] { pt });
 		    break;
-		    /*
-		    System.out.println( pt.isSameAs(definitions.ANY_TYPE ));
-		    System.out.println(pt.getClass());
-		    System.out.println(pt.toString());
-		    System.out.println(seqType.toString());
-		    return error(tree.pos, "not a sequence");
-		    */
                 }
 
 
@@ -1758,34 +1751,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 					    this.mode | SEQUENCEmode,
 					    tpe);
                 }
-                return copy.Sequence( tree, trees ).setType( pt );
-
-		/*
-	    case Subsequence(Tree[] trees):
-		//System.err.println("subsequence with pt  "+pt);
-
-		Type seqType = pt;
-		Type elemType;
-		switch( seqType ) {
-		case TypeRef(_, _, Type[] args):
-		    //assert args.length == 1:"encountered "+seqType.toString();
-		    // HACK
-		    if( args.length == 1 )
-			elemType = args[ 0 ];
-		    else
-			elemType = pt;
-		    break;
-		default:
-		    return error( tree.pos, "not a (sub)sequence" );
-		}
-		for( int i = 0; i < trees.length; i++ ) {
-		    Type tpe = revealSeqOrElemType( trees[ i ], pt, seqType, elemType);
-		    //System.out.println("hello");
-		    trees[ i ] = transform( trees[ i ], this.mode, tpe);
-		}
-		System.err.println("subsequence pattern with type: "+seqType);
-		return copy.Subsequence( tree, trees ).setType( seqType );
-		*/
+                return copy.Sequence( tree, trees ).setType( seqType/* pt */ );
 
 	    case Alternative(Tree[] choices):
 		//System.err.println("alternative with pt  "+pt);
@@ -1982,6 +1948,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    ArrayApply.toString(argtypes, "[", ",", "]"));
 
 	    case Apply(Tree fn, Tree[] args):
+		boolean wasInSequence = ((mode & SEQUENCEmode) != 0 ); // save sequence mode
+		mode &= notSEQUENCEmode;
 		Tree fn1;
 		int argMode;
 		//todo: Should we pass in both cases a methodtype with
@@ -1993,6 +1961,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    assert (mode & PATTERNmode) != 0;
 		    fn1 = transform(fn, mode | FUNmode, pt);
 		    argMode = PATTERNmode;
+		    // contains Sequence ? then set SEQUENCEmode
+		    for( int i = 0; i < args.length ; i++ )
+			switch( args[ i ] ) {
+			case Bind( _, _ ):
+			case Alternative( _ ):
+			case Sequence( _ ):
+			    argMode |= SEQUENCEmode;
+			    break;
+			}
 		}
 
 		// if function is overloaded with one alternative whose arity matches
@@ -2047,6 +2024,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		fn1.type = infer.freshInstance(fn1.type);
 		Type[] argtypes = transformArgs(
 		    tree.pos, fn1.symbol(), Symbol.EMPTY_ARRAY, fn1.type, argMode, args, pt);
+
+		if( wasInSequence )
+		    mode &= SEQUENCEmode;
 
 		// propagate errors in arguments
 		if (argtypes == null) {
