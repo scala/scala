@@ -579,7 +579,7 @@ public class Erasure extends Transformer implements Modifiers {
 
     /** Subtyping relation on erased types.
      */
-    boolean isSubType(Tree tree, Type tp2) {
+    boolean isSubType(Type tp1, Type tp2) {
         global.nextPhase();
         boolean test = tp1.isSubType(tp2);
         global.prevPhase();
@@ -596,17 +596,10 @@ public class Erasure extends Transformer implements Modifiers {
     }
 
     Tree coerce(Tree tree, Type pt) {
-	return isSubType(tree, pt) ? tree : cast(tree, pt);
-    }
-
-    Tree cast(Tree tree, Type pt) {
-	if (global.debug) global.log("cast " + tree + ":" + tree.type + " to " + pt);//debug
-	if (isSameAs(tree.type, pt)) {
-	    return tree;
-        } else if (isSubType(tree, pt)) {
+        if (isSubType(tree.type(), pt)) {
 	    return tree;
 	} else if (isUnboxed(tree.type) && !isUnboxed(pt)) {
-	    return cast(box(tree), pt);
+	    return coerce(box(tree), pt);
 	} else if ((isUnboxedArray(tree.type)
                     || (tree.type.symbol() == definitions.ANY_CLASS))
                    && isUnboxedArray(pt)) {
@@ -619,7 +612,7 @@ public class Erasure extends Transformer implements Modifiers {
 		while (isBoxed(bt.parents()[0])) {
 		    bt = bt.parents()[0];
 		}
-		return cast(coerce(tree, bt), pt);
+		return coerce(coerce(tree, bt), pt);
 	    }
 	} else if (isUnboxed(tree.type) && isUnboxed(pt)) {
 	    return gen.mkApply__(gen.Select(box(tree), unboxSym(pt)));
@@ -627,7 +620,7 @@ public class Erasure extends Transformer implements Modifiers {
 		   isUnboxedArray(tree.type) && isUnboxedArray(pt)) {
 	    return gen.mkAsInstanceOf(tree, pt);
 	} else {
-	    throw Debug.abort("cannot cast " + tree.type + " to " + pt);
+	    throw Debug.abort("cannot coerce " + tree.type + " to " + pt);
 	}
     }
 
