@@ -382,9 +382,12 @@ function website-build() {
     run cp -a "$resourcesdir/doc/test.il.txt" "$websitedir/doc/";
 
     # copy old Scala examples
+    run cp -a "$resourcesdir/examples/addressbook.html" "$websitedir/examples/";
+    run cp -a "$resourcesdir/examples/callccInterpreter.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/fors.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/patterns.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/random.html" "$websitedir/examples/";
+    run cp -a "$resourcesdir/examples/simpleInterpreter.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/sort.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/timeofday.html" "$websitedir/examples/";
 }
