@@ -718,9 +718,22 @@ show-missing-library	:
 	done
 	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
 	@$(FIND) $(LIBRARY_ROOT) -name "tools" -prune -o \( -name '*.java' -o -name '*.scala' \) -print | $(SORT) > /tmp/check.lst.log
+	@$(ECHO) Missing library source files:
 	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log
+	@$(ECHO)
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 
+show-missing-examples	:
+	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
+	@for filename in $(EXAMPLES_FILES:%='%'); do \
+	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
+	done
+	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
+	@$(FIND) $(EXAMPLES_ROOT) -name '*.scala' | $(SORT) >/tmp/check.lst.log
+	@$(ECHO) Missing examples:
+	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log
+	@$(ECHO)
+	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 
 show-missing-test	:
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
@@ -729,9 +742,18 @@ show-missing-test	:
 	done
 	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
 	@$(FIND) $(TEST_ROOT) -name '*.scala' | $(SORT) > /tmp/check.lst.log
+	@$(ECHO) Missing tests:
 	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log
+	@$(ECHO)
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 
+show-missing		: show-missing-library
+show-missing		: show-missing-examples
+show-missing		: show-missing-test
+
+.PHONY			: show-missing-library
+.PHONY			: show-missing-examples
+.PHONY			: show-missing-test
 .PHONY			: show-missing
 
 ##############################################################################
