@@ -44,7 +44,7 @@ collection/mutable/HashTable.scala
 collection/mutable/History.scala
 collection/mutable/Inclusion.scala
 collection/mutable/LinkedList.scala
-collection/mutable/List.scala
+collection/mutable/MutableList.scala
 collection/mutable/Map.scala
 collection/mutable/Modification.scala
 collection/mutable/MultiMap.scala
