@@ -83,6 +83,8 @@ public class Erasure extends GenTransformer implements Modifiers {
     /** The current unit */
     private Unit unit;
 
+    private final boolean forMSIL;
+
     //########################################################################
     // Public Constructors
 
@@ -91,6 +93,7 @@ public class Erasure extends GenTransformer implements Modifiers {
         super(global);
 	this.definitions = global.definitions;
         this.primitives = global.primitives;
+        this.forMSIL = global.target == global.TARGET_MSIL;
     }
 
     //########################################################################
@@ -608,6 +611,29 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     }
 
+    /** Add an "empty bridge" (abstract method declaration) to satisfy
+     *  CLR's requirement that classes should provide declaration
+     *  for all methods of the interfaces they implement
+     */
+    public void addEmptyBridge(Symbol owner, Symbol method) {
+	Type bridgeType = method.nextType();
+	Symbol bridgeSym = method.cloneSymbol(owner);
+	bridgeSym.flags = bridgeSym.flags & ~JAVA | SYNTHETIC | DEFERRED;
+	//bridgeSym.setOwner(owner);
+	switch (bridgeType) {
+	case MethodType(Symbol[] params, Type restp):
+	    // assign to bridge symbol its bridge type
+	    // where owner of all parameters is bridge symbol itself.
+	    Symbol[] params1 = new Symbol[params.length];
+	    for (int i = 0; i < params.length; i++) {
+		params1[i] = params[i].cloneSymbol(bridgeSym);
+	    }
+	    bridgeSym.setType(Type.MethodType(params1, restp));
+	    Tree bridge = gen.DefDef(bridgeSym, Tree.Empty);
+            bridges.append(bridge);
+	}
+    }
+
     private final Map interfaces/*<Symbol,Set<Symbol>>*/ = new HashMap();
 
     private Set getInterfacesOf(Symbol clasz) {
@@ -666,6 +692,9 @@ public class Erasure extends GenTransformer implements Modifiers {
             Symbol overridden = method.overriddenSymbol(owner.thisType().parents()[0], owner);
             if (overridden != Symbol.NONE && !isSameAs(overridden.nextType(), method.nextType()))
                 addBridge(owner, method, overridden);
+	    if (forMSIL && (overridden == Symbol.NONE
+			    || (overridden != Symbol.NONE && overridden.owner() != owner)))
+		    addEmptyBridge(owner, method);
         } else if (overriding != Symbol.NONE && !isSameAs(overriding.nextType(), method.nextType()))
             addBridge(owner, overriding, method);
     }
