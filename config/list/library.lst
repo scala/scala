@@ -170,10 +170,11 @@ text/Document.scala
 
 runtime/types/ClassType.java
 runtime/types/JavaClassType.java
+runtime/types/JavaRefArrayType.java
 runtime/types/ScalaClassType.java
 runtime/types/CompoundType.java
 runtime/types/SingleType.java
-runtime/types/BasicType.java
+runtime/types/ValueType.java
 runtime/types/TypeBoolean.java
 runtime/types/TypeByte.java
 runtime/types/TypeChar.java
@@ -183,8 +184,12 @@ runtime/types/TypeFloat.java
 runtime/types/TypeInt.java
 runtime/types/TypeLong.java
 runtime/types/TypeShort.java
-runtime/types/Refinement.java
-runtime/types/MethodType.java
+runtime/types/TypeUnit.java
+runtime/types/SpecialType.java
+runtime/types/TypeAll.java
+runtime/types/TypeAllRef.java
+runtime/types/TypeAny.java
+runtime/types/TypeAnyVal.java
 
 testing/UnitTest.scala
 testing/SUnit.scala
