@@ -258,6 +258,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
+    /** The upper bound of this type.
+      */
+    public Type bound() {
+	switch (this) {
+	case TypeRef(Type pre, Symbol sym, Type[] args):
+	    if (sym.kind == ALIAS || sym.kind == TYPE)
+                return pre.memberInfo(sym).bound();
+	}
+        return this;
+    }
+
     /** The this is a this-type, named-type, applied type or single-type, its prefix,
      *  otherwise NoType.
      */
@@ -2001,12 +2012,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		Name fullname = sym.fullName();
 		if (fullname == Names.scala_Array && args.length == 1
 		    /*&& args[0].unalias().symbol().kind != TYPE Q: why needed?*/) {
-		    return UnboxedArrayType(args[0].erasure());
-		} else {
-		    for (int i = 0; i < boxedFullName.length; i++) {
-			if (boxedFullName[i] == fullname) return unboxedType[i];
-		    }
-		}
+                    Global global = Global.instance;
+                    Type bound = args[0].bound();
+                    if (bound.symbol() != global.definitions.ANY_CLASS &&
+                        bound.symbol() != global.definitions.ANYVAL_CLASS)
+                    {
+                        return UnboxedArrayType(args[0].erasure());
+                    }
+                }
+                for (int i = 0; i < boxedFullName.length; i++) {
+                    if (boxedFullName[i] == fullname) return unboxedType[i];
+                }
 	    }
 	}
 	return this;
