@@ -7,7 +7,6 @@ $colon$colon.scala
 BufferedIterator.scala
 Cell.scala
 Except.scala
-Interpreter.scala
 Iterator.scala
 Labelled.scala
 LinkedList.scala
