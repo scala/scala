@@ -19,7 +19,7 @@ import scalac.ast.printer.*;
 import scalac.symtab.*;
 import Tree.*;
 import java.util.HashMap;
-import java.util.Vector;
+import java.util.HashSet;
 
 public class Analyzer extends Transformer implements Modifiers, Kinds {
 
@@ -42,9 +42,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private Context context;
     private Type pt;
     private int mode;
+    private HashSet compiledNow = new HashSet();
 
     public void apply() {
-	int errors = global.reporter.errors();
+	compiledNow.clear();
 	for (int i = 0; i < global.units.length; i++) {
             enterUnit(global.units[i]);
         }
@@ -788,6 +789,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	 */
 	private Symbol enterInScope(Symbol sym) {
 	    // handle double and overloaded definitions
+	    Symbol result = sym;
 	    Scope.Entry e = context.scope.lookupEntry(sym.name);
 	    if (e.owner == context.scope) {
 		Symbol other = e.sym;
@@ -806,7 +808,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				Symbol.EMPTY_ARRAY,
 				other.moduleClass().typeConstructor()));
 		    }
-		    return other;
+		    result = other;
+		} else if (sym.owner().isPackage()) {
+		    if (compiledNow.contains(other)) {
+			error(sym.pos, sym + " is compiled twice");
+		    }
+		    context.scope.unlink(e);
+		    context.scope.enter(sym);
 		} else if (sym.kind == VAL && other.kind == VAL) {
 		    // it's an overloaded definition
 		    if (((sym.flags ^ other.flags) & SOURCEFLAGS) != 0) {
@@ -826,7 +834,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    } else {
 		context.scope.enter(sym);
 	    }
-	    return sym;
+	    if (result.owner().isPackage()) compiledNow.add(result);
+	    return result;
 	}
 
     /** Enter all symbols in statement list
