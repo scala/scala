@@ -78,9 +78,9 @@ object Predef {
   def view(x: int): Ordered[int] = new Ordered[int] {
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
-	if (x < y1) -1
-	else if (x > y1) 1
-	else 0
+        if (x < y1) -1
+        else if (x > y1) 1
+        else 0
       case _ => -(y compareTo x)
     }
   }
@@ -88,9 +88,9 @@ object Predef {
   def view(x: char): Ordered[char] = new Ordered[char] {
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
-	if (x < y1) -1
-	else if (x > y1) 1
-	else 0
+        if (x < y1) -1
+        else if (x > y1) 1
+        else 0
       case _ => -(y compareTo x)
     }
   }
@@ -98,9 +98,9 @@ object Predef {
   def view(x: long): Ordered[long] = new Ordered[long] {
     def compareTo [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
-	if (x < y1) -1
-	else if (x > y1) 1
-	else 0
+        if (x < y1) -1
+        else if (x > y1) 1
+        else 0
       case _ => -(y compareTo x)
     }
   }
@@ -108,9 +108,9 @@ object Predef {
   def view(x: float): Ordered[float] = new Ordered[float] {
     def compareTo [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
-	if (x < y1) -1
-	else if (x > y1) 1
-	else 0
+        if (x < y1) -1
+        else if (x > y1) 1
+        else 0
       case _ => -(y compareTo x)
     }
   }
@@ -118,9 +118,9 @@ object Predef {
   def view(x: double): Ordered[double] = new Ordered[double] {
     def compareTo [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
-	if (x < y1) -1
-	else if (x > y1) 1
-	else 0
+        if (x < y1) -1
+        else if (x > y1) 1
+        else 0
       case _ => -(y compareTo x)
     }
   }
@@ -128,9 +128,9 @@ object Predef {
   def view(x: boolean): Ordered[boolean] = new Ordered[boolean] {
     def compareTo [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
-	if (x == y1) 0
-	else if (x) 1
-	else -1
+        if (x == y1) 0
+        else if (x) 1
+        else -1
       case _ => -(y compareTo x)
     }
   }
