@@ -1,0 +1,20 @@
+Contents
+--------
+
+README
+   This file
+
+cut.exe, tail.exe (textutils - Version 2.1, by FSF)
+   See http://unxutils.sourceforge.net/
+
+getenv.bat, setenv.bat, sethelp$
+   Batch files executed from the IA installer
+
+reg.exe (Console Registry Tool for Windows - Version 3.0)
+   See http://www.microsoft.com/
+
+sed.exe (GNU sed - Version 4.0.7, by FSF)
+   See http://unxutils.sourceforge.net
+
+unzip.exe (UnZip 5.50 of 17 February 2002, by Info-ZIP)
+   See http://www.info-zip.org/pub/infozip/
