@@ -1,3 +1,5 @@
+package examples.pilib;
+
 /**
 * Handover example with recursive types for channels.
 */

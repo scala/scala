@@ -1,3 +1,5 @@
+package examples.pilib;
+
 import scala.concurrent.pilib._;
 
 /** Two-place buffer specification and implementation. */

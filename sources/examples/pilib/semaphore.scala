@@ -1,3 +1,5 @@
+package examples.pilib;
+
 /** Solution of exercise session 6 (first question). */
 object semaphore {
 

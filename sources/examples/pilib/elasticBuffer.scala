@@ -1,3 +1,5 @@
+package examples.pilib;
+
 object elasticBuffer {
 
   import scala.concurrent.pilib._;

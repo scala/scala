@@ -1,3 +1,5 @@
+package examples.pilib;
+
 /**
 * Mobile phone protocol.
 * Equivalent to a three-place buffer.
