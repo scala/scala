@@ -1278,7 +1278,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }}
     if (best >= 0) {
       { var i = 0; while (i < alttypes.length) {
-	if (isCompatible(alttypes(i), pt) && best != i && !improves(alttypes(best), alttypes(i))) {
+	if (isCompatible(alttypes(i), pt) && best != i && !improves(alttypes(best), alttypes(i)) && pt != Type.ErrorType) {
 	  throw new Type$Error(
 	    overloadResolveErrorMsg(
 	      alts(best), alttypes(best), alts(i), alttypes(i)) +

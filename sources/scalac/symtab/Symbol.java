@@ -834,10 +834,6 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Symbol names ----------------------------------------------------------------
 
-    /** Get the fully qualified name of this Symbol
-     *  (this is always a normal name, never a type name)
-     */
-
     /** Get the simple name of this Symbol (this is always a term name)
      */
     public Name simpleName() {

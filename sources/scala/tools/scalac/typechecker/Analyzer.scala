@@ -274,7 +274,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
     if ((sym.flags & DEF) != 0 && sym.owner().isPrimaryConstructor() &&
 	(sym.owner().constructorClass().flags & CASE) != 0) {
-      error(sym.pos, "`def' modifier not allowed for case class parameters");
+      error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
     }
     /*!!!
     if ((sym.flags & REPEATED) != 0 && sym.owner().isPrimaryConstructor()) {
@@ -292,7 +292,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
     checkNoConflict(sym, DEFERRED, PRIVATE);
     checkNoConflict(sym, FINAL, SEALED);
-    checkNoConflict(sym, FINAL, PRIVATE);
+    if ((sym.flags & MODUL) == 0) checkNoConflict(sym, FINAL, PRIVATE);
     checkNoConflict(sym, PRIVATE, PROTECTED);
     checkNoConflict(sym, PRIVATE, OVERRIDE);
     checkNoConflict(sym, DEFERRED, FINAL);
@@ -379,7 +379,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     case Type$MethodType(params, restype) =>
       var i = 0; while (i < params.length) {
 	if ((params(i).flags & DEF) != 0)
-	  error(pos, "method with `def' parameters needs to be fully applied");
+	  error(pos, "method with pass-by-name parameters needs to be fully applied");
 	if ((params(i).flags & REPEATED) != 0)
 	  error(pos, "method with `*' parameters needs to be fully applied");
 	i = i + 1
