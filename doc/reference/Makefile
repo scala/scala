@@ -1,12 +1,17 @@
 ############################################################-*-Makefile-*-####
-# Scala reference
+# Scala Reference
 ##############################################################################
 # $Id$
 
 ##############################################################################
-# Variables
+# Configuration
 
-ROOT			 = ../..
+ROOT = ../..
+
+include $(ROOT)/Makefile.config
+
+##############################################################################
+# Variables
 
 # project
 PROJECT_SOURCES		+= $(LATEX_SOURCES)
@@ -37,11 +42,7 @@ VERBFILTER		 = $(ROOT)/support/latex/verbfilterScala
 ##############################################################################
 # Includes
 
-include $(ROOT)/support/make/default.mk
 include $(ROOT)/support/make/verbfilter.mk
 include $(ROOT)/support/make/latex.mk
-include $(ROOT)/support/make/exec.mk
-include $(ROOT)/support/make/grep.mk
-include $(ROOT)/support/make/wc.mk
 
 ##############################################################################
