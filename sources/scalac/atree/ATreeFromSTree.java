@@ -229,14 +229,7 @@ public class ATreeFromSTree {
             return make.Throw(tree, expression(value));
 
         case New(Template(Tree[] bases, _)):
-            switch (bases[0]) {
-            case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
-                return apply(tree, method(fun), targs, vargs);
-            case Apply(Tree fun, Tree[] vargs):
-                return apply(tree, method(fun), Tree.EMPTY_ARRAY, vargs);
-            default:
-                throw Debug.abort("illegal case", bases[0]);
-            }
+            return expression(bases[0]);
 
         case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
             return apply(tree, fun, targs, vargs);
@@ -261,17 +254,11 @@ public class ATreeFromSTree {
 
     /** Translates the application. */
     private ACode apply(Tree tree, Tree fun, Tree[] targs, Tree[] vargs) {
-        switch (fun) {
-        case Ident(_):
-            return make.Goto(tree, fun.symbol(), expression(vargs));
-        default:
-            return apply(tree, method(fun), targs, vargs);
-        }
-    }
-
-    /** Translates the application. */
-    private ACode apply(Tree tree, AFunction function,Tree[]targs,Tree[]vargs){
+        Symbol symbol = fun.symbol();
+        ACode[] codes = expression(vargs);
+        if (symbol.isLabel()) return make.Goto(tree, symbol, codes);
         Type[] types = Tree.typeOf(targs);
+        AFunction function = function(fun);
         switch (function) {
         case Method(ACode object, Symbol method, AInvokeStyle style):
             if (!style.isDynamic()) break;
@@ -283,14 +270,14 @@ public class ATreeFromSTree {
             if (generator == null) break;
             return generate((Generator)generator, tree, object, types, vargs);
         }
-        return make.Apply(tree, function, types, expression(vargs));
+        return make.Apply(tree, function, types, codes);
     }
 
     //########################################################################
     // Private Methods - Translating functions
 
     /** Translates the method. */
-    private AFunction method(Tree tree) {
+    private AFunction function(Tree tree) {
         Symbol symbol = tree.symbol();
         switch (tree) {
 

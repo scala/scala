@@ -268,7 +268,8 @@ public class TreeChecker {
             Tree fun = TreeInfo.methPart(bases[0]);
             assert fun instanceof Tree.Ident: show(tree);
             Symbol symbol = fun.symbol();
-            assert symbol != null && symbol.isInitializer(): show(tree);
+            assert symbol != null && !symbol.isLabel(): show(tree);
+            assert symbol.isInitializer(): show(tree);
             return expression(bases[0], definitions.UNIT_TYPE());
 
         case Apply(Tree vfun, Tree[] vargs):
@@ -342,8 +343,8 @@ public class TreeChecker {
             return selection(tree);
 
         case Ident(_):
-            if (symbol.owner().isStaticOwner()) return true;
-            if (symbol.isInitializer()) return true;
+            if (!symbol.isLabel() && symbol.isInitializer()) return true;
+            if (!symbol.isLabel() && symbol.isStatic()) return true;
             assert labels.contains(symbol): show(tree);
             assert symbol.owner() == currentMember(): show(tree);
             return true;
