@@ -38,6 +38,13 @@ ast/printer/HTMLTreePrinter.java
 ast/printer/TextTreePrinter.java
 ast/printer/TreePrinter.java
 
+atree/AArithmeticOp.java
+atree/AComparisonOp.java
+atree/ALogicalOp.java
+atree/AShiftOp.java
+atree/ATestOp.java
+atree/ATypeKind.java
+
 backend/Primitive.java
 backend/Primitives.java
 backend/jvm/GenJVMPhase.java
