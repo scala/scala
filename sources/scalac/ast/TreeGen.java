@@ -882,14 +882,18 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a ClassDef node for given class with given template. */
     public ClassDef ClassDef(Symbol clazz, Template template) {
+        Tree type = Tree.Empty;
+        if (clazz.thisSym() != clazz) {
+            global.nextPhase();
+            type = mkType(clazz.pos, clazz.typeOfThis());
+            global.prevPhase();
+        }
         ClassDef tree = make.ClassDef(
             clazz.pos,
             clazz,
             mkTypeParamsOf(clazz),
             mkParamsOf(clazz),
-            clazz.thisSym() != clazz
-            ? mkType(clazz.pos, clazz.typeOfThis())
-            : Tree.Empty,
+            type,
             template);
         tree.setType(Type.NoType);
         return tree;
