@@ -471,18 +471,19 @@ public class Erasure extends Transformer implements Modifiers {
 	TreeList body1 = new TreeList(transform(templ.body));
 	body1.append(bridges);
         if (bridges.length() > 0) {
-            switch (clazz.nextInfo()) {
-            case CompoundType(Type[] basetypes, Scope members):
+            Type info = clazz.nextInfo();
+            switch (info) {
+            case CompoundType(Type[] parts, Scope members):
                 members = new Scope(members);
                 for (int i = 0; i < bridges.length(); i++) {
                     Tree bridge = (Tree)bridges.get(i);
                     members.enterOrOverload(bridge.symbol());
                 }
-                clazz.updateInfo(Type.CompoundType(basetypes, members));
+                clazz.updateInfo(Type.compoundType(parts, members, info.symbol()));
                 break;
             default:
                 throw Debug.abort("class = " + Debug.show(clazz) + ", " +
-                    "info = " + Debug.show(clazz.info()));
+                    "info = " + Debug.show(info));
             }
         }
 	bridges = savedBridges;
