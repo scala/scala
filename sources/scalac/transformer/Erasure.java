@@ -745,6 +745,11 @@ public class Erasure extends Transformer implements Modifiers {
     }
 
     private Tree genNewArray(int pos, Tree size, Type elemtp) {
+        if (global.target == global.TARGET_INT) {
+            global.nextPhase();
+            while (!elemtp.symbol().isJava()) elemtp = elemtp.parents()[0];
+            global.prevPhase();
+        }
         Tree classname = make.Literal(pos,
             primitives.getNameForClassForName(elemtp))
             .setType(definitions.JAVA_STRING_TYPE);
