@@ -230,7 +230,6 @@ distrib			: distrib-build-all
 distrib-build-all	: distrib-build-unix
 distrib-build-all	: distrib-build-windows
 distrib-build-all	: distrib-build-ia
-distrib-build-all	: distrib-build-website
 
 distrib-build-unix	: install
 	$(RM) $(DISTRIB_ARCHIVE).tar
@@ -255,11 +254,6 @@ distrib-build-windows	: install-windows
 	fi
 
 distrib-build-ia	: ia-build
-
-distrib-build-website	:
-	$(make) -C $(PROJECT_WEBSITEDIR) all \
-	    INSTALL_VERSION=$(INSTALL_VERSION) \
-	    PROJECT_HTDOCSDIR=$(DISTRIB_ARCHIVE).website
 
 distrib-official	: version-update
 	@$(make) distrib INSTALL_VERSION='$$(PROJECT_VERSION)'
