@@ -420,6 +420,9 @@ main() {
         abort "illegal non-numerical argument for option --errors";
     fi;
 
+    if [ -z "$COLOR" -a -n "$EMACS" ]; then
+        COLOR="none";
+    fi;
     color_initialization "${COLOR:-many}";
     find_program SOCOS socos;
     find_program SURUS surus;
