@@ -35,7 +35,7 @@ class ConstructingHandler extends MarkupHandler[Node,String] {
       }
     }
     val ch: Seq[Node] = nodes;
-    Elem("", label, AttributeSeq.fromAttrs(attrSeq:_*), ch:_*);
+    Elem(uri, label, AttributeSeq.fromAttrs(attrSeq:_*), ch:_*);
   };
 
   def charData(pos: Int, txt: String ) =

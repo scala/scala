@@ -75,7 +75,7 @@ abstract class MarkupHandler[MarkupType, AVType] {
   def internal_startPrefixMapping(pref: Map[String, String]) = {
     if( !pref.isEmpty ) {
       this.prefixStack.push( this.namespace );
-      this.namespace incl pref;
+      this.namespace = this.namespace incl pref;
     }
   }
 
