@@ -1913,7 +1913,7 @@ public abstract class HTMLGenerator {
             return SEARCH_SERVLET_NAME;
         }
 
-        public void apply(Map req, Writer out) {
+        public synchronized void apply(Map req, Writer out) {
             // create page
             String pagename = "search-page";
             URI uri = Location.makeURI(pagename + ".html");
@@ -2081,7 +2081,7 @@ public abstract class HTMLGenerator {
             return PAGE_SERVLET_NAME;
         }
 
-        public void apply(Map req, Writer out) {
+        public synchronized void apply(Map req, Writer out) {
             // analyze the request
             String pageName = (String) req.get("page");
             Promise promise = (Promise) promises.get(pageName);
@@ -2124,6 +2124,9 @@ public abstract class Promise {
         if (cache == null) {
             cache = new StringWriter();
             computeIn(cache);
+            try {
+                cache.close();
+            } catch(IOException e) { e.printStackTrace(); }
         }
         try {
             writer.write(cache.toString());
