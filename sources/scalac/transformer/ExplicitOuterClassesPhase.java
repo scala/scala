@@ -345,6 +345,9 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** The current context */
         private Context context;
 
+        /**  True if currently in a method */
+        public boolean inMethod;
+
         /** Transforms the given tree. */
         public Tree transform(Tree tree) {
             switch (tree) {
@@ -365,9 +368,9 @@ public class ExplicitOuterClassesPhase extends Phase {
                 if (method.isConstructor())
                     context = context.getConstructorContext(method);
                 else
-                    context.inMethod = true;
+                    inMethod = true;
                 rhs = transform(rhs);
-                context.inMethod = false;
+                inMethod = false;
                 context = backup;
                 return gen.DefDef(method, rhs);
 
@@ -424,7 +427,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 }
                 if (owner.isPrimaryConstructor()) {
                     Symbol clasz = owner.constructorClass();
-                    if (clasz != context.clasz || context.inMethod) {
+                    if (clasz != context.clasz || inMethod) {
                         Tree qualifier = genOuterRef(tree.pos, clasz);
                         return gen.Select(qualifier, symbol);
                     }
@@ -531,11 +534,11 @@ public class ExplicitOuterClassesPhase extends Phase {
                     return gen.Ident(pos, clasz.module());
                 }
             } else {
-                assert context.link != null:
+                assert context.context.vlink != null:
                     Debug.show(clasz, " -- ", context.clasz);
-                Tree tree = context.inMethod
-                    ? gen.Select(gen.This(pos, context.clasz), context.link)
-                    : gen.Ident(pos, context.link);
+                Tree tree = inMethod
+                    ? gen.Select(gen.This(pos, context.clasz), context.context.vlink)
+                    : gen.Ident(pos, context.context.vlink);
                 Context context = this.context;
                 while (true) {
                     context = context.outer;
@@ -547,7 +550,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                             Debug.show(clasz, " -- ", this.context.clasz);
                     }
                     if (context.clasz == clasz) return tree;
-                    tree = gen.Select(tree, context.link);
+                    tree = gen.Select(tree, context.context.vlink);
                 }
             }
         }
@@ -565,10 +568,6 @@ public class ExplicitOuterClassesPhase extends Phase {
         public final Symbol clasz;
         /** The super methods (maps invoked to forwarding methods) */
         public final Map/*<Symbol,Symbol>*/ supers;
-        /** The link to the outer class */
-        public final Symbol link;
-        /**  True if in a method of current class */
-        public boolean inMethod;
 
         public final TypeContext context;
 
@@ -578,8 +577,6 @@ public class ExplicitOuterClassesPhase extends Phase {
             this.outer = outer;
             this.clasz = symbol.constructorClass();
             this.supers = supers;
-            this.link = context.vlink;
-            this.inMethod = false;
         }
 
         /** Returns a context for the given constructor. */
