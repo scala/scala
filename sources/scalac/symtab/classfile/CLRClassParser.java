@@ -242,7 +242,7 @@ public class CLRClassParser extends SymbolLoader {
 		constr.flags |= Modifiers.PRIVATE;
 	}
 
-	return "assembly [" + type.Assembly.GetName().Name + "]" + type;
+	return type + " from assembly " + type.Assembly;
     }
 
     /** Return a method type for */
