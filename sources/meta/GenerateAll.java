@@ -86,6 +86,7 @@ public class GenerateAll extends AbstractMain {
                 FileWriter output = new FileWriter(target);
                 output.write(writer.toString());
                 output.close();
+                target.setReadOnly();
             } catch (IOException exception) {
                 throw abort(exception);
             }
