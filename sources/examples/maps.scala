@@ -21,7 +21,7 @@ object maps {
     val empty: AlgMap = Empty();
 
     private case class
-      Empty() extends AlgMap {},
+      Empty(),
       Node(key: kt, value: vt, l: map, r: map) extends AlgMap {}
 
     trait AlgMap extends Map {
@@ -111,7 +111,7 @@ object maps {
     class MutMap(key: kt, value: vt) extends Map {
       val k = key;
       var v = value;
-      var l = empty, r = empty;
+      var l, r = empty;
 
       def apply(key: kt): vt =
 	if (this == empty) null
@@ -152,7 +152,9 @@ object maps {
   }
 
   class Date(y: Int, m: Int, d: Int) with Ord[Date] {
-    def year = y, month = m, day = d;
+    def year = y;
+    def month = m;
+    def day = d;
 
     def <(that: Date): Boolean = {
       (year < that.year) ||

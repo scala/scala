@@ -10,7 +10,8 @@ object sorter {
 
     def sort1(l: Int, r: Int): Unit = {
       val pivot = a((l + r) / 2);
-      var i = l, j = r;
+      var i = l;
+      var j = r;
       while (i <= j) {
         while (a(i) < pivot) { i = i + 1 }
         while (a(j) > pivot) { j = j - 1 }

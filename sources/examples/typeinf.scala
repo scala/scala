@@ -98,7 +98,7 @@ object typeInfer {
 	else mgu(u.newInstance, t, s)
 
       case Lam(x, e1) =>
-	val a = newTyvar(), b = newTyvar();
+	val a, b = newTyvar();
 	val s1 = mgu(t, Arrow(a, b), s);
 	val env1 = Pair(x, TypeScheme(List(), a)) :: env;
 	tp(env1, e1, b, s1)
