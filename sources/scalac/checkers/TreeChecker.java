@@ -342,6 +342,7 @@ public class TreeChecker {
             return selection(tree);
 
         case Ident(_):
+            if (symbol.owner().isStaticOwner()) return true;
             if (symbol.isInitializer()) return true;
             assert labels.contains(symbol): show(tree);
             assert symbol.owner() == currentMember(): show(tree);
@@ -363,7 +364,7 @@ public class TreeChecker {
             return selection(tree);
 
         case Ident(_):
-            if (symbol.isModule()) return true;
+            if (symbol.owner().isStaticOwner()) return true;
             assert vvars.contains(symbol): show(tree);
             assert symbol.owner() == currentMember(): show(tree);
             return true;
@@ -384,7 +385,7 @@ public class TreeChecker {
             Symbol symbol = tree.symbol();
             assert symbol != null && symbol.isTerm(): show(tree);
             Symbol owner = symbol.owner();
-            assert owner.isClassType(): show(tree);
+            assert owner.isClass() && !owner.isStaticOwner(): show(tree);
             assert qualifier.type().baseType(owner) != Type.NoType: show(tree);
             return expression(qualifier, qualifier.type());
 

@@ -397,6 +397,8 @@ public class ExplicitOuterClassesPhase extends Phase {
 
             case Select(Tree qualifier, _):
                 Symbol symbol = tree.symbol();
+                if (symbol.owner().isStaticOwner()) // !!! qualifier ignored
+                    return gen.mkGlobalRef(tree.pos, symbol);
                 switch (qualifier) {
                 case Super(_, _):
                     Symbol clasz = qualifier.symbol();

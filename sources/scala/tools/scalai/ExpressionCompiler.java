@@ -216,10 +216,10 @@ public class ExpressionCompiler {
             return Code.Self;
 
         case Select(Tree expr, _):
-            return tree.symbol().isStatic() ? Code.Null : compute(expr);
+            return compute(expr);
 
         case Ident(_):
-            return Code.Self;
+            return Code.Null;
 
         default:
             throw Debug.abort("illegal tree", tree);

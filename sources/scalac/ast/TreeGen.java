@@ -254,17 +254,15 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	case NoPrefix:
             return Ident(pos, symbol);
 	case ThisType(Symbol clasz):
-            if (clasz.isRoot()) return Ident(pos, symbol); // !!! remove ?
-	    if (clasz.isPackage()) return mkRef(pos, mkGlobalRef(pos, clasz.module()), symbol); // !!!
             return mkRef(pos, This(pos, clasz), symbol);
         case SingleType(Type prefix, Symbol member):
-	    Tree tree = mkRef(pos, prefix, member);
-	    switch (tree.type()) {
+	    Tree qualifier = mkRef(pos, prefix, member);
+	    switch (qualifier.type()) {
 	    case MethodType(Symbol[] params, _):
-		assert params.length == 0: tree.type();
-		tree = Apply(pos, tree);
+		assert params.length == 0: qualifier.type();
+		qualifier = Apply(pos, qualifier);
 	    }
-	    return mkRef(pos, tree, symbol);
+	    return mkRef(pos, qualifier, symbol);
         default:
             throw Debug.abort("illegal case", stable);
         }
@@ -279,10 +277,10 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds a global reference to given symbol. */
     public Tree mkGlobalRef(int pos, Symbol symbol) {
         assert symbol.isTerm(): Debug.show(symbol);
-        Symbol owner = symbol.owner();
-        if (owner.isRoot()) return Ident(pos, symbol);
-        assert owner.isModuleClass(): Debug.show(symbol);
-        return mkRef(pos, mkGlobalRef(pos, owner.module()), symbol);
+        global.nextPhase();
+        Type prefix = symbol.owner().staticPrefix();
+        global.prevPhase();
+        return mkRef(pos, prefix, symbol);
     }
 
     /** Builds a This node corresponding to given class. */

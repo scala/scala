@@ -104,7 +104,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
     }
 
     public Type classType(Symbol clasz) {
-        return clasz.typeConstructor();
+        return clasz.staticType();
     }
 
     public Type arrayType(Type elemtpe) {

@@ -42,38 +42,38 @@ public class Definitions {
 
     /** The scala.Any class */
     public final Symbol ANY_CLASS;
-    public final Type   ANY_TYPE() {return ANY_CLASS.type();}
+    public final Type   ANY_TYPE() {return ANY_CLASS.staticType();}
 
     /** The scala.AnyVal class */
     public final Symbol ANYVAL_CLASS;
-    public final Type   ANYVAL_TYPE() {return ANYVAL_CLASS.type();}
+    public final Type   ANYVAL_TYPE() {return ANYVAL_CLASS.staticType();}
 
     /** The scala.AnyRef class */
     public final Symbol ANYREF_CLASS;
-    public final Type   ANYREF_TYPE() {return ANYREF_CLASS.type();}
+    public final Type   ANYREF_TYPE() {return ANYREF_CLASS.staticType();}
 
     /** The scala.AllRef class */
     public final Symbol ALLREF_CLASS;
-    public final Type   ALLREF_TYPE() {return ALLREF_CLASS.type();}
+    public final Type   ALLREF_TYPE() {return ALLREF_CLASS.staticType();}
 
     /** The scala.All class */
     public final Symbol ALL_CLASS;
-    public final Type   ALL_TYPE() {return ALL_CLASS.type();}
+    public final Type   ALL_TYPE() {return ALL_CLASS.staticType();}
 
     //########################################################################
     // Public Fields & Methods - Java classes
 
     /** The java.lang.Object class */
     public final Symbol OBJECT_CLASS;
-    public final Type   OBJECT_TYPE() {return OBJECT_CLASS.type();}
+    public final Type   OBJECT_TYPE() {return OBJECT_CLASS.staticType();}
 
     /** The java.lang.String class */
     public final Symbol STRING_CLASS;
-    public final Type   STRING_TYPE() {return STRING_CLASS.type();}
+    public final Type   STRING_TYPE() {return STRING_CLASS.staticType();}
 
     /** The java.lang.Throwable class */
     public final Symbol THROWABLE_CLASS;
-    public final Type   THROWABLE_TYPE() {return THROWABLE_CLASS.type();}
+    public final Type   THROWABLE_TYPE() {return THROWABLE_CLASS.staticType();}
 
     //########################################################################
     // Public Fields & Methods - Scala value classes
@@ -137,12 +137,12 @@ public class Definitions {
 
     /** The scala.ScalaObject class */
     public final Symbol SCALAOBJECT_CLASS;
-    public final Type   SCALAOBJECT_TYPE() {return SCALAOBJECT_CLASS.type();}
+    public final Type   SCALAOBJECT_TYPE() {return SCALAOBJECT_CLASS.staticType();}
 
     /** The scala.Ref class */
     public final Symbol REF_CLASS;
     public final Type   REF_TYPE(Type element) {
-        return getType(REF_CLASS, element);
+        return REF_CLASS.staticType(element);
     }
 
     /** The scala.TupleX classes */
@@ -150,7 +150,7 @@ public class Definitions {
     public final Symbol[] TUPLE_CLASS = new Symbol[TUPLE_COUNT];
     public final Type     TUPLE_TYPE(Type[] args) {
         assert 0 < args.length && args.length < TUPLE_COUNT: args.length;
-        return getType(TUPLE_CLASS[args.length], args);
+        return TUPLE_CLASS[args.length].staticType(args);
     }
 
     /** The scala.FunctionX classes */
@@ -162,37 +162,37 @@ public class Definitions {
             throw new Type.Error("function has too many arguments; limit = " + (FUNCTION_COUNT-1));
         args = Type.cloneArray(args, 1);
         args[args.length - 1] = result;
-        return getType(FUNCTION_CLASS[args.length - 1], args);
+        return FUNCTION_CLASS[args.length - 1].staticType(args);
     }
 
     /** The scala.PartialFunction class */
     public final Symbol PARTIALFUNCTION_CLASS;
     public final Type   PARTIALFUNCTION_TYPE(Type argument, Type result) {
-        return getType(PARTIALFUNCTION_CLASS, new Type[] { argument, result });
+        return PARTIALFUNCTION_CLASS.staticType(argument, result);
     }
 
     /** The scala.Iterable class */
     public final Symbol ITERABLE_CLASS;
     public final Type   ITERABLE_TYPE(Type element) {
-        return getType(ITERABLE_CLASS, element);
+        return ITERABLE_CLASS.staticType(element);
     }
 
     /** The scala.Iterator class */
     public final Symbol ITERATOR_CLASS;
     public final Type   ITERATOR_TYPE(Type element) {
-        return getType(ITERATOR_CLASS, element);
+        return ITERATOR_CLASS.staticType(element);
     }
 
     /** The scala.Seq class */
     public final Symbol SEQ_CLASS;
     public final Type   SEQ_TYPE(Type element) {
-        return getType(SEQ_CLASS, element);
+        return SEQ_CLASS.staticType(element);
     }
 
     /** The scala.List class */
     public final Symbol LIST_CLASS;
     public final Type   LIST_TYPE(Type element) {
-        return getType(LIST_CLASS, element);
+        return LIST_CLASS.staticType(element);
     }
 
     /** The scala.Nil module */
@@ -201,7 +201,7 @@ public class Definitions {
     /** The scala.:: class */
     public final Symbol CONS_CLASS;
     public final Type   CONS_TYPE(Type element) {
-        return getType(CONS_CLASS, element);
+        return CONS_CLASS.staticType(element);
     }
 
     /** The scala.Array class */
@@ -521,17 +521,17 @@ public class Definitions {
         initClass(ALL_CLASS, new Type[]{ANY_TYPE()});
 
         // create type symbols
-        UNIT_TYPE    = newTypeSymbol(Names.Unit   , UNIT_CLASS.type   ());
-        BOOLEAN_TYPE = newTypeSymbol(Names.Boolean, BOOLEAN_CLASS.type());
-        BYTE_TYPE    = newTypeSymbol(Names.Byte   , BYTE_CLASS.type   ());
-        SHORT_TYPE   = newTypeSymbol(Names.Short  , SHORT_CLASS.type  ());
-        CHAR_TYPE    = newTypeSymbol(Names.Char   , CHAR_CLASS.type   ());
-        INT_TYPE     = newTypeSymbol(Names.Int    , INT_CLASS.type    ());
-        LONG_TYPE    = newTypeSymbol(Names.Long   , LONG_CLASS.type   ());
-        FLOAT_TYPE   = newTypeSymbol(Names.Float  , FLOAT_CLASS.type  ());
-        DOUBLE_TYPE  = newTypeSymbol(Names.Double , DOUBLE_CLASS.type ());
+        UNIT_TYPE    = newTypeSymbol(Names.Unit   ,UNIT_CLASS   .staticType());
+        BOOLEAN_TYPE = newTypeSymbol(Names.Boolean,BOOLEAN_CLASS.staticType());
+        BYTE_TYPE    = newTypeSymbol(Names.Byte   ,BYTE_CLASS   .staticType());
+        SHORT_TYPE   = newTypeSymbol(Names.Short  ,SHORT_CLASS  .staticType());
+        CHAR_TYPE    = newTypeSymbol(Names.Char   ,CHAR_CLASS   .staticType());
+        INT_TYPE     = newTypeSymbol(Names.Int    ,INT_CLASS    .staticType());
+        LONG_TYPE    = newTypeSymbol(Names.Long   ,LONG_CLASS   .staticType());
+        FLOAT_TYPE   = newTypeSymbol(Names.Float  ,FLOAT_CLASS  .staticType());
+        DOUBLE_TYPE  = newTypeSymbol(Names.Double ,DOUBLE_CLASS .staticType());
         ARRAY_TYPE   = newTypeSymbol(Names.Array  ,
-            Type.appliedType(ARRAY_CLASS.type(), new Type[]{ANYREF_TYPE()}));
+            ARRAY_CLASS.staticType(new Type[]{ANYREF_TYPE()}));
 
         // add members to scala.Any
         ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
@@ -651,11 +651,6 @@ public class Definitions {
         return sym;
     }
 
-    /** Returns the type of the class with the given fullname. */
-    public Type getType(Name fullname) {
-        return getClass(fullname).type();
-    }
-
     //########################################################################
     // Private Methods
 
@@ -752,17 +747,6 @@ public class Definitions {
             }
         }
         throw Debug.abort(Debug.show(clasz,"."+name+" - ",vargs," -> ",alts));
-    }
-
-
-    /** Returns the type of given class applied to given type argument. */
-    private Type getType(Symbol clasz, Type arg) {
-        return getType(clasz, new Type[] { arg });
-    }
-
-    /** Returns the type of given class applied to given type arguments. */
-    private Type getType(Symbol clasz, Type[] args) {
-        return Type.appliedType(clasz.type(), args);
     }
 
     //########################################################################

@@ -162,8 +162,7 @@ public class TailCallPhase extends Phase {
                 if (!isReferenceToThis(qual, method.owner())) return tree;
                 return gen.Apply(tree.pos, gen.Ident(qual.pos, label), vargs);
             case Ident(_):
-                assert fun.symbol().isLabel();
-                return tree;
+                return tree; // !!! or is this a tail call?
             default:
                 throw Debug.abort("illegal case", fun);
             }

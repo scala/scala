@@ -274,7 +274,7 @@ class GenJVM {
         } break;
 
         case Apply(TypeApply(Tree fun, Tree[] args), _): {
-            genLoadQualifier(ctx, fun, true);
+            genLoadQualifier(ctx, fun);
 
             JType type = typeStoJ(args[0].type);
             if (fun.symbol() == defs.ANY_IS) {
@@ -423,7 +423,7 @@ class GenJVM {
 
                 boolean isStatic = isStaticMember(funSym);
                 if (!isStatic)
-                    genLoadQualifier(ctx, fun, !isConstrCall);
+                    genLoadQualifier(ctx, fun);
                 for (int i = 0; i < args.length; ++i)
                     genLoad(ctx, args[i], argTypes[i]);
 
@@ -456,13 +456,19 @@ class GenJVM {
             }
         } break;
 
-        case Ident(Name name): {
+        case Ident(_):
             JType type = typeStoJ(sym.info());
-            if (sym.isModule())
-                generatedType = genLoadModule(ctx, sym);
-            else if (sym.owner().isClass()) {
-                ctx.code.emitALOAD_0();
-                ctx.code.emitGETFIELD(ctx.clazz.getName(), name.toString(), type);
+            if (sym.isModule()) {
+                String javaSymName = javaName(sym.moduleClass());
+                ctx.code.emitGETSTATIC(javaSymName,
+                                       MODULE_INSTANCE_FIELD_NAME,
+                                       type);
+                generatedType = type;
+            } else if (sym.owner().isClass()) {
+                JType fieldType = typeStoJ(sym.info());
+                String className = javaName(sym.owner());
+                String fieldName = sym.name.toString();
+                ctx.code.emitGETSTATIC(className, fieldName, fieldType);
                 generatedType = type;
             } else {
                 assert ctx.locals.containsKey(sym)
@@ -471,25 +477,16 @@ class GenJVM {
                 ctx.code.emitLOAD(index, type);
                 generatedType = type;
             }
-        } break;
+            break;
 
-        case Select(Tree qualifier, Name selector): {
-            sym.info();
-            if (sym.isModule())
-                generatedType = genLoadModule(ctx, sym);
-            else {
-                JType fieldType = typeStoJ(sym.info());
-                String className = javaName(sym.owner());
-                String fieldName = selector.toString();
-                if (isStaticMember(sym))
-                    ctx.code.emitGETSTATIC(className, fieldName, fieldType);
-                else {
-                    genLoadQualifier(ctx, tree, true);
-                    ctx.code.emitGETFIELD(className, fieldName, fieldType);
-                }
-                generatedType = fieldType;
-            }
-        } break;
+        case Select(Tree qualifier, _):
+            JType fieldType = typeStoJ(sym.info());
+            String className = javaName(sym.owner());
+            String fieldName = sym.name.toString();
+            genLoadQualifier(ctx, tree);
+            ctx.code.emitGETFIELD(className, fieldName, fieldType);
+            generatedType = fieldType;
+            break;
 
         case Assign(Tree lhs, Tree rhs): {
             genStorePrologue(ctx, lhs);
@@ -583,32 +580,13 @@ class GenJVM {
     }
 
     /**
-     * Generate code to load the module represented by the given
-     * symbol.
-     */
-    protected JType genLoadModule(Context ctx, Symbol sym) {
-        String javaSymName = javaName(sym.moduleClass());
-        JType type = typeStoJ(sym.info());
-        if (javaSymName.equals(ctx.clazz.getName()))
-            ctx.code.emitALOAD_0();
-        else
-            ctx.code.emitGETSTATIC(javaSymName,
-                                   MODULE_INSTANCE_FIELD_NAME,
-                                   type);
-
-        return type;
-    }
-
-    /**
      * Generate code to load the qualifier of the given tree, which
      * can be implicitely "this".
      */
-    protected void genLoadQualifier(Context ctx, Tree tree, boolean implicitThis)
+    protected void genLoadQualifier(Context ctx, Tree tree)
         throws JCode.OffsetTooBigException {
         switch (tree) {
         case Ident(_):
-            if (implicitThis)
-                ctx.code.emitALOAD_0();
             break;
         case Select(Tree qualifier, _):
             genLoad(ctx, qualifier, JAVA_LANG_OBJECT_T);
@@ -675,19 +653,7 @@ class GenJVM {
      */
     protected void genStorePrologue(Context ctx, Tree tree)
         throws JCode.OffsetTooBigException {
-        Symbol sym = tree.symbol();
-        switch (tree) {
-        case Ident(_):
-            if (sym.owner().isClass())
-                ctx.code.emitALOAD_0();
-            break;
-        case Select(Tree qualifier, _):
-            if (!isStaticMember(sym))
-                genLoadQualifier(ctx, tree, true);
-            break;
-        default:
-            throw global.fail("unexpected left-hand side", tree);
-        }
+        genLoadQualifier(ctx, tree);
     }
 
     /**

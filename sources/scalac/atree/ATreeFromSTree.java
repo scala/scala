@@ -295,13 +295,14 @@ public class ATreeFromSTree {
         switch (tree) {
 
         case Select(Tree qualifier, _):
-            if (symbol.isJava() && symbol.owner().isModuleClass())
-                return AFunction.Method(make.Void, symbol, AInvokeStyle.StaticClass); // !!! qualifier is ignored !
-            ACode object = expression(qualifier);
-            return AFunction.Method(object, symbol, invokeStyle(qualifier));
+            AInvokeStyle style = invokeStyle(qualifier);
+            return AFunction.Method(expression(qualifier), symbol, style);
 
         case Ident(_):
-            return AFunction.Method(make.Void, symbol, AInvokeStyle.New);
+            AInvokeStyle style = symbol.isInitializer()
+                ? AInvokeStyle.New
+                : AInvokeStyle.StaticClass;
+            return AFunction.Method(make.Void, symbol, style);
 
         default:
             throw Debug.abort("illegal case", tree);
@@ -327,15 +328,13 @@ public class ATreeFromSTree {
         switch (tree) {
 
         case Select(Tree qualifier, _):
-            if (symbol.isModule())
-                return ALocation.Module(symbol); // !!! qualifier is ignored !
-            if (symbol.isJava() && symbol.owner().isModuleClass())
-                return ALocation.Field(make.Void, symbol, true); // !!! qualifier is ignored !
             return ALocation.Field(expression(qualifier), symbol, false);
 
         case Ident(_):
             if (symbol.isModule()) return ALocation.Module(symbol);
-            return ALocation.Local(symbol, symbol.isParameter());
+            return symbol.owner().isClass()
+                ? ALocation.Field(make.Void, symbol, true)
+                : ALocation.Local(symbol, symbol.isParameter());
 
         default:
             throw Debug.abort("illegal case", tree);
