@@ -49,20 +49,6 @@ public class CLRClassParser extends SymbolLoader {
 	this.type = type;
     }
 
-//     protected String doComplete(Symbol root) {
-//         assert root.isClassType(): Debug.show(root);
-// 	try { return doComplete0(root); }
-// 	catch (Throwable e) {
-//             // !!! doComplete may throw an IOException which is then
-//             // caught by SymbolLoader and reported to the user as
-//             // normal error message
-// 	    System.err.println("\nWhile processing " + Debug.show(root));
-// 	    e.printStackTrace();
-// 	    System.exit(1);
-//             return null; // !!!
-// 	}
-//     }
-
     private Symbol clazz;
     private Scope members;
     private Symbol staticsClass;
@@ -147,7 +133,8 @@ public class CLRClassParser extends SymbolLoader {
 
 	    MethodInfo getter = props[i].GetGetMethod(true);
 	    MethodInfo setter = props[i].GetSetMethod(true);
-	    if (getter == null)
+	    if (getter == null || getter.IsPrivate() ||
+		getter.IsAssembly() || getter.IsFamilyAndAssembly())
 		continue;
 	    assert props[i].PropertyType == getter.ReturnType;
 	    Name n;
@@ -173,7 +160,8 @@ public class CLRClassParser extends SymbolLoader {
 	    assert methodsSet.contains(getter) : "" + getter;
 	    methodsSet.remove(getter);
 
-	    if (setter == null)
+	    if (setter == null || setter.IsPrivate() ||
+		setter.IsAssembly() || setter.IsFamilyAndAssembly())
 		continue;
 	    ParameterInfo[] sparams = setter.GetParameters();
 	    assert getter.IsStatic() == setter.IsStatic();
@@ -276,28 +264,30 @@ public class CLRClassParser extends SymbolLoader {
 	int mods = translateAttributes(method);
 	Symbol owner = method.IsStatic() ? staticsClass : clazz;
 	Symbol methodSym =
-	    owner.newMethod(Position.NOPOS, mods, getName(method.Name));
+	    owner.newMethod(Position.NOPOS, mods, getName(method));
 	setParamOwners(mtype, methodSym);
 	methodSym.setInfo(mtype);
 	(method.IsStatic() ? statics : members).enterOrOverload(methodSym);
 	clrParser.map(methodSym, method);
     }
 
-    private Name getName(String name) {
-	if (name.equals("GetHashCode")) return Names.hashCode;
-	else if (name.equals("Equals")) return Names.equals;
-	else if (name.equals("ToString")) return Names.toString;
-	else if (name.equals("Finalize")) return Names.finalize;
+    private Name getName(MethodInfo method) {
+        final String name = method.Name;
+        if (method.IsStatic()) return Name.fromString(name);
+        final ParameterInfo[] params = method.GetParameters();
+	if (name.equals("GetHashCode") && params.length == 0)
+            return Names.hashCode;
+	if (name.equals("ToString") && params.length == 0)
+            return Names.toString;
+	if (name.equals("Finalize") && params.length == 0)
+            return Names.finalize;
+	if (name.equals("Equals") && params.length == 1
+            && params[0].ParameterType == clrParser.OBJECT)
+            return Names.equals;
 	return Name.fromString(name);
     }
 
     //##########################################################################
-
-//     private static class Method {
-// 	public final String name;
-// 	public final Type[] argTypes;
-// 	public final Type retType;
-//     }
 
     private String initializeJavaLangObject(Symbol sym) {
 	MethodInfo[] methods = type.getMethods();
@@ -370,6 +360,8 @@ public class CLRClassParser extends SymbolLoader {
     private scalac.symtab.Type getCLSType(Type type) {
 	if (type == clrParser.BYTE || type == clrParser.USHORT
 	    || type == clrParser.UINT || type == clrParser.ULONG
+	    || type.IsNotPublic() || type.IsNestedPrivate()
+	    || type.IsNestedAssembly() || type.IsNestedFamANDAssem()
 	    || type.IsPointer()
 	    || (type.IsArray() && getCLSType(type.GetElementType()) == null))
 	    return null;
