@@ -17,38 +17,28 @@ package scala.xml;
  * @param  intSubset sequence of internal subset declarations
 **/
 
-case class DocType( name:String, extId:Option[ExternalID], intSubset:Seq[dtd.Decl]) extends Node {
+case class DocType( name:String, extID:ExternalID, intSubset:Seq[dtd.Decl]) {
 
   if( !Parsing.isName( name ) )
-    throw new IllegalArgumentException(target+" must be an XML Name");
-
-  /** the constant "#DOCTYPE" */
-  final def label    = "#DOCTYPE";
-
-  /** always empty */
-  final def attribute = Node.NoAttributes;
-
-  /** always empty */
-  final def child = Nil;
+    throw new IllegalArgumentException(name+" must be an XML Name");
 
   /** hashcode for this processing instruction */
-  final override def hashCode() = text.hashCode();
+  final override def hashCode() = name.hashCode() + 7 * extID.hashCode() + 41*intSubset.toList.hashCode();
 
   /** returns "<!DOCTYPE + name + extID? + ("["+intSubSet+"]")? >" */
   final override def toString() = {
     val sb = new StringBuffer("<!DOCTYPE ");
-    sb.append( dt );
-    extID match {
-      case Some(xid) => sb.append(' '), sb.append( xid.toString() )
-      case _         =>
-    }
+    sb.append( name );
+    sb.append(' ');
+    sb.append(extID.toString());
     if( intSubset.length > 0 ) {
       sb.append('[');
-      for( d <- intSubset ) {
+      for( val d <- intSubset ) {
         sb.append( d.toString() );
       }
       sb.append(']');
     }
-    s.append('>');
+    sb.append('>');
+    sb.toString();
   }
 }
