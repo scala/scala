@@ -203,10 +203,9 @@ public class ClassfileParser implements ClassfileConstants {
         Type type = readType(in.nextChar());
         if (CONSTR_N.equals(name)) {
             Symbol s = TermSymbol.newConstructor(c, transFlags(flags));
-            // kick out protected, package visible or
+            // kick out package visible or
             // private constructors
-            if (((flags & 0x0004) != 0) ||
-                ((flags & 0x0002) != 0) ||
+            if (((flags & 0x0002) != 0) ||
                 ((flags & 0x0007) == 0)) {
                 attrib.readAttributes(s, type, METH_ATTR);
                 return;

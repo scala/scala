@@ -12,6 +12,7 @@ import java.io.*;
 import java.util.*;
 import scalac.*;
 import scalac.symtab.*;
+import scalac.typechecker.Infer;
 import scalac.util.*;
 import Tree.*;
 
@@ -38,6 +39,10 @@ public class TreeGen implements Kinds, Modifiers {
      */
     public TreeFactory make;
 
+    /** the type inferencer
+     */
+    Infer infer;
+
     /************************************************************************/
     /************************************************************************/
     /** CONSTRUCTORS **/
@@ -46,6 +51,7 @@ public class TreeGen implements Kinds, Modifiers {
         this.global = global;
 	this.definitions = global.definitions;
         this.make = make;
+	this.infer = new Infer(global, this, make);
     }
 
     public TreeGen(Global global) {
@@ -353,12 +359,19 @@ public class TreeGen implements Kinds, Modifiers {
      *  and argument trees.
      */
     public Tree Apply(int pos, Tree fn, Tree[] args) {
-        switch (fn.type) {
-        case Type.MethodType(Symbol[] vparams, Type restpe):
-	    return make.Apply(pos, fn, args).setType(restpe);
-        default:
-            throw new ApplicationError("method type required", fn.type);
-        }
+ 	try {
+	    switch (fn.type) {
+	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
+		infer.methodAlternative(fn, alts, alttypes,
+					Tree.typeOf(args), Type.AnyType);
+	    }
+	    switch (fn.type) {
+	    case Type.MethodType(Symbol[] vparams, Type restpe):
+		return make.Apply(pos, fn, args).setType(restpe);
+	    }
+	} catch (Type.Error ex) {
+	}
+	throw new ApplicationError("method type required", fn.type);
     }
 
     public Tree Apply(Tree fn, Tree[] args) {
@@ -369,13 +382,19 @@ public class TreeGen implements Kinds, Modifiers {
      *  and argument trees.
      */
     public Tree TypeApply(int pos, Tree fn, Tree[] args) {
-        switch (fn.type) {
-        case Type.PolyType(Symbol[] tparams, Type restpe):
-	    return make.TypeApply(pos, fn, args)
-		.setType(restpe.subst(tparams, Tree.typeOf(args)));
-        default:
-            throw new ApplicationError("poly type required", fn.type);
-        }
+	try {
+	    switch (fn.type) {
+	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
+		infer.polyAlternative(fn, alts, alttypes, args.length);
+	    }
+	    switch (fn.type) {
+	    case Type.PolyType(Symbol[] tparams, Type restpe):
+		return make.TypeApply(pos, fn, args)
+		    .setType(restpe.subst(tparams, Tree.typeOf(args)));
+	    }
+	} catch (Type.Error ex) {
+	}
+	throw new ApplicationError("poly type required", fn.type);
     }
 
     public Tree TypeApply(Tree fn, Tree[] args) {

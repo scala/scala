@@ -23,12 +23,16 @@ public class Infer implements Modifiers, Kinds {
     TreeFactory make;
     Substituter substituter;
 
-    public Infer(Transformer trans) {
-	this.global = trans.global;
+    public Infer(Global global, TreeGen gen, TreeFactory make) {
+	this.global = global;
 	this.definitions = global.definitions;
-	this.gen = trans.gen;
-	this.make = trans.make;
+	this.gen = gen;
+	this.make = make;
 	this.substituter = new Substituter(global, gen);
+    }
+
+    public Infer(Transformer trans) {
+	this(trans.global, trans.gen, trans.make);
     }
 
 // Error messages -------------------------------------------------------------

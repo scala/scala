@@ -47,8 +47,7 @@ public interface Modifiers {
 
     int ACCESSOR      = 0x04000000;   // function is an access function for a
                                       // value or variable
-    int BRIDGE        = 0x0800000;    // function is a bridge method.
-    int SNDTIME       = BRIDGE;       // debug
+    int BRIDGE        = 0x08000000;    // function is a bridge method.
 
     int INTERFACE     = 0x10000000;   // symbol is a Java interface
     int TRAIT         = 0x20000000;   // symbol is a Trait
@@ -58,7 +57,7 @@ public interface Modifiers {
 
     // masks
     int SOURCEFLAGS   = 0x00000077 | DEF | REPEATED | MODUL | MUTABLE | PACKAGE | PARAM | TRAIT | COVARIANT | CONTRAVARIANT;  // these modifiers can be set in source programs.
-    int ACCESSFLAGS = PRIVATE | PROTECTED;
+    int ACCESSFLAGS   = PRIVATE | PROTECTED;
 
     public static class Helper {
 

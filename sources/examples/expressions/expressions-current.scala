@@ -59,5 +59,7 @@ object Main {
     val sref = new Ref("");
     System.out.println("eval: " + { e2.visit(new l2.Eval2(iref)); iref.elem });
     System.out.println("show: " + { e2.visit(new l2.Show2(sref)); sref.elem });
+    e2.visit(new l1.Eval(iref));
+    e1.visit(new l2.Show2(sref));
   }
 }

@@ -317,7 +317,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (!checkClassType(constrs[i].pos, parents[i])) return;
 	    Symbol bsym = parents[i].symbol();
 	    if (i == 0) {
-		if ((bsym.flags & INTERFACE) != 0)
+		if ((bsym.flags & (JAVA | INTERFACE)) == (JAVA | INTERFACE))
 		    error(constrs[0].pos, "superclass may not be a Java interface");
 	    } else {
 		if ((bsym.flags & (JAVA | INTERFACE)) == JAVA)
@@ -1599,10 +1599,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	Type[] argtypes = new Type[args.length];
 	switch (methtype) {
 	case MethodType(Symbol[] params, Type restp):
+	    if (meth.isConstructor() &&
+		params.length == 1 && params[0] == Symbol.NONE) {
+		error(pos, meth + " is inaccessible");
+		return null;
+	    }
 	    Type[] formals = infer.formalTypes(params, args.length);
 	    if (formals.length != args.length) {
-		error(pos, "wrong number of arguments" +
-		      (meth == null ? "" : " for " + meth));
+		error(pos, "wrong number of arguments for " +
+		      (meth == null ? "<function>" : meth) +
+		      ArrayApply.toString(formals, "(", ",", ")"));
 		return null;
 	    }
 	    if (tparams.length == 0) {

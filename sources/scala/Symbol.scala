@@ -1,4 +1,6 @@
 package scala;
 
-case class Symbol(name: String) {}
+case class Symbol(name: String) {
+  override def toString() = "'" + name;
+}
 
