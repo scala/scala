@@ -171,6 +171,17 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
 	    .printSymbolType(symbol, getSymbolInnerString(symbol));
     }
 
+    /** The keyword of a symbol from the user side. */
+    public String getSymbolKeywordForDoc(Symbol symbol) {
+        String keyword = getSymbolKeyword(symbol);
+        // package
+        if (symbol.isPackage()) keyword = "package";
+        // accessor function for a val
+        if (symbol.isInitializedMethod() && (symbol.flags & Modifiers.STABLE) != 0)
+            keyword = "val";
+        return keyword;
+    }
+
     /**
      * Prints the signature of the given symbol.
      *
@@ -178,7 +189,7 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
      * @param addLink
      */
     public SymbolTablePrinter printShortSignature(Symbol symbol, boolean addLink) {
-        String keyword = getSymbolKeyword(symbol);
+        String keyword = getSymbolKeywordForDoc(symbol);
         if (keyword != null) print(keyword).space();
 	printSymbol(symbol, addLink);
         return printType(symbol.loBound(), ">:");
@@ -193,7 +204,7 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
      */
     public SymbolTablePrinter printTemplateSignature(Symbol symbol, boolean addLink) {
         // kind
-	String keyword = getSymbolKeyword(symbol);
+	String keyword = getSymbolKeywordForDoc(symbol);
         if (keyword != null) print(keyword).space();
         String inner = getSymbolInnerString(symbol);
 

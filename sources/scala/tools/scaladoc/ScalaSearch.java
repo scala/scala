@@ -73,7 +73,8 @@ public class ScalaSearch {
      */
     public static boolean isRelevant(Symbol sym) {
 	return !isGenerated(sym) && !isLazy(sym) && !isPrivate(sym) &&
-	    !(sym.isPackage() && sym.isClass());
+	    !(sym.isPackage() && sym.isClass()) && !sym.isConstructor() &&
+            !sym.isCaseFactory();
     }
 
     //////////////////////// SCOPE ITERATOR //////////////////////////////
@@ -146,7 +147,8 @@ public class ScalaSearch {
     public static Symbol[] members(Symbol sym) {
 	if (isContainer(sym) && !isLazy(sym)) {
 	    List memberList = new LinkedList();
-	    SymbolIterator i = new UnloadLazyIterator(sym.members().iterator(false));
+	    SymbolIterator i =
+                new UnloadLazyIterator(sym.members().iterator(false));
 	    while (i.hasNext()) {
 		Symbol member = i.next();
 		if (isRelevant(member))
@@ -161,7 +163,8 @@ public class ScalaSearch {
     /** Apply a given function to all symbols below the given symbol
      * in the symbol table.
      */
-    public static void foreach(Symbol sym, SymFun fun, SymbolBooleanFunction isDocumented) {
+    public static void foreach(Symbol sym, SymFun fun,
+                               SymbolBooleanFunction isDocumented) {
 	if (isDocumented.apply(sym) && isRelevant(sym)) {
 	    fun.apply(sym);
 	    Symbol[] members = members(sym, isDocumented);
@@ -172,10 +175,12 @@ public class ScalaSearch {
 
     /** Return all members of a container symbol.
      */
-    public static Symbol[] members(Symbol sym, SymbolBooleanFunction isDocumented) {
+    public static Symbol[] members(Symbol sym,
+                                   SymbolBooleanFunction isDocumented) {
 	if (isContainer(sym) && !isLazy(sym)) {
 	    List memberList = new LinkedList();
-	    SymbolIterator i = new UnloadLazyIterator(sym.members().iterator(false));
+	    SymbolIterator i =
+                new UnloadLazyIterator(sym.members().iterator(false));
 	    while (i.hasNext()) {
 		Symbol member = i.next();
 		if (isDocumented.apply(member) && isRelevant(sym))
@@ -371,38 +376,38 @@ public class ScalaSearch {
      *
      * @param sym
      */
-    public static Symbol[] findMembers(Symbol sym) {
+    public static Symbol[] collectMembers(Symbol sym) {
 	Type thistype = sym.thisType();
-	Name[] names = potentialMemberNames(thistype); // potentialMembers
-	List/*<Symbol>*/ members = new LinkedList(); // actual members
+	Name[] names = collectNames(thistype);
+	List/*<Symbol>*/ members = new LinkedList();
 	for (int i = 0; i < names.length; i++) {
 	    Symbol member = thistype.lookup(names[i]);
 	    if (member != Symbol.NONE)
-		if (!member.isConstructor())
-		    if (!isGenerated(member))
-			members.add(member);
+                members.add(member);
 	}
 	List unloadedMembers = new LinkedList();
 	Iterator it = members.iterator();
 	while (it.hasNext()) {
 	    Symbol[] alts = ((Symbol) it.next()).alternativeSymbols();
 	    for (int i = 0; i < alts.length; i++)
-		unloadedMembers.add(alts[i]);
+                if (isRelevant(alts[i]))
+                    unloadedMembers.add(alts[i]);
 	}
 	return (Symbol[]) unloadedMembers.toArray(new Symbol[unloadedMembers.size()]);
     }
 
     // where
-    protected static Name[] potentialMemberNames(Type tpe) {
+    protected static Name[] collectNames(Type tpe) {
 	List names = new LinkedList();
-	potentialMemberNames(tpe, names);
+	collectNames(tpe, names);
 	return (Name[]) names.toArray(new Name[names.size()]);
     }
 
     // where
-    protected static void potentialMemberNames(Type tpe, List/*<Name>*/ names) {
+    protected static void collectNames(Type tpe, List/*<Name>*/ names) {
 	// local members
-	Scope.SymbolIterator it = tpe.members().iterator();
+        SymbolIterator it =
+            new UnloadLazyIterator(tpe.members().iterator(false));
 	while (it.hasNext()) {
 	    Name name = ((Symbol) it.next()).name;
 	    if (!names.contains(name))
@@ -411,7 +416,7 @@ public class ScalaSearch {
 	// inherited members
 	Type[] parents = tpe.parents();
 	for (int i = 0; i < parents.length; i++)
-	    potentialMemberNames(parents[i], names);
+	    collectNames(parents[i], names);
     }
 
     /**
@@ -430,17 +435,37 @@ public class ScalaSearch {
 	    }
 	    group.add(syms[i]);
 	}
-	Symbol[] owners = (Symbol[]) groups.keySet().toArray(new Symbol[groups.keySet().size()]);
+	Symbol[] owners =
+            (Symbol[]) groups.keySet().toArray(new Symbol[groups.keySet().size()]);
 	Arrays.sort(owners, symPathOrder);
 	for (int i = 0; i < owners.length; i++) {
 	    List groupList = (List) groups.get(owners[i]);
-	    Symbol[] group = (Symbol[]) groupList.toArray(new Symbol[groupList.size()]);
+	    Symbol[] group =
+                (Symbol[]) groupList.toArray(new Symbol[groupList.size()]);
 	    Arrays.sort(group, symAlphaOrder);
 	    groups.put(owners[i], group);
 	}
 	return new Pair(owners, groups);
     }
+
+    //////////////////////////// OVERRIDEN SYMBOL //////////////////////////////
+    // Does not work.
+    public static Symbol overridenBySymbol(Symbol sym) {
+        if (!sym.isRoot()) {
+//             System.out.println(sym.owner().moduleClass().thisType());
+//             System.out.println(sym.owner().moduleClass().info());
+            Type tpe = sym.owner().moduleClass().info();
+            Symbol res = tpe.lookup(sym.name);
+            if (res == Symbol.NONE) return Symbol.NONE;
+            Symbol[] alts = res.alternativeSymbols();
+            for(int i = 0; i < alts.length; i++)
+                if (sym.overrides(alts[i])) return alts[i];
+        }
+        return Symbol.NONE;
+    }
 }
+
+//////////////////////////// DOCUMENTED SYMBOLS //////////////////////////////
 
 /** Compute documented symbols. */
 public class DocSyms {

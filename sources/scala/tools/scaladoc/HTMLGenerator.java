@@ -382,6 +382,12 @@ public class HTMLGenerator {
 	Comment comment = (Comment) comments.get(sym);
 	if (comment == null) {
 	    String s = (String) global.mapSymbolComment.get(sym);
+            // comment inheritance
+//             if (s == null) {
+//                 Symbol overriden = ScalaSearch.overridenBySymbol(sym);
+//                 if (overriden != Symbol.NONE)
+//                     s = "/** (inherited comment)" + getComment(overriden).rawText + "*/";
+//             }
 	    comment = new Comment(sym, s);
 	    comments.put(sym, comment);
 	}
@@ -389,8 +395,7 @@ public class HTMLGenerator {
     }
 
     /**
-     * Generates a HTML page for a class or object definition as well
-     * as pages for every inner class or object.
+     * Generates a HTML page for a class or object definition.
      */
     protected void createPages(Symbol sym) {
 	String title = Location.getName(sym);
@@ -412,7 +417,8 @@ public class HTMLGenerator {
             "Trait", "Class", "Package" }; // "Constructor"
         String[] inherited = new String[]{ "Fields", "Methods", "Objects",
             "Traits", "Classes", "Packages" };
-	Symbol[][] members = ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
+	Symbol[][] members =
+            ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
 	for (int i = 0; i < members.length; i++) {
 	    addMemberSummary(members[i], titles[i] + " Summary");
 	    if (i == 1) addInheritedMembers(sym, inherited[i]);
@@ -430,15 +436,6 @@ public class HTMLGenerator {
 
 	page.printFootpage();
         closePrinters();
-    }
-
-    /**
-     * Returns the string representation of the kind of a symbol.
-     *
-     * @param sym
-     */
-    protected String kind(Symbol sym) {
-	return symtab.getSymbolKeyword(sym);
     }
 
     /**
@@ -550,10 +547,7 @@ public class HTMLGenerator {
 
             // kind and name
 	    page.printlnOTag("div", ATTRS_ENTITY).indent();
-	    if (sym.isPackage())
-		page.print("package ");
-	    else
-		page.print(kind(sym) + " ");
+            page.print(symtab.getSymbolKeywordForDoc(sym) + " ");
 	    page.printlnTag("span", ATTRS_ENTITY, sym.nameString()).undent();
 	    page.printlnCTag("div");
 	    page.printlnHLine();
@@ -733,7 +727,7 @@ public class HTMLGenerator {
      * @param sym
      */
     protected void addInheritedMembers(Symbol sym, String inheritedMembers) {
-	Symbol[] syms = ScalaSearch.findMembers(sym);
+        Symbol[] syms = ScalaSearch.collectMembers(sym);
 	Pair grouped = ScalaSearch.groupSymbols(syms);
 	Symbol[] owners = (Symbol[]) grouped.fst;
 	Map/*<Symbol, Symbol[]>*/ group = (Map) grouped.snd;
@@ -783,7 +777,7 @@ public class HTMLGenerator {
 	symtab.print(mods).space();
 
         // kind
-	String keyword = symtab.getSymbolKeyword(symbol);
+	String keyword = symtab.getSymbolKeywordForDoc(symbol);
         if (keyword != null) symtab.print(keyword).space();
         String inner = symtab.getSymbolInnerString(symbol);
 
@@ -1207,7 +1201,8 @@ public class HTMLGenerator {
      */
     protected void addIndexEntry(Symbol symbol) {
 	// kind
-	String keyword = symbol.isPackage() ? "package" : symtab.getSymbolKeyword(symbol);
+	String keyword = symtab.getSymbolKeywordForDoc(symbol);
+
         if (keyword != null) page.print(keyword).space();
 	// name
 	symtab.printDefinedSymbolName(symbol, true);
