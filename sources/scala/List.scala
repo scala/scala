@@ -292,7 +292,7 @@ trait List[a] extends Seq[a] {
   * equal (w.r.t. <code>==</code>) to <code>elem</code>.
   */
   def contains(elem: a) = exists(
-     new Function1[a, Boolean] {
+     new Object with Function1[a, Boolean] {
        def apply(x: a): Boolean = x == elem;
      });
 
