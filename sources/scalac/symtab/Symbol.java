@@ -452,6 +452,15 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return rawInfoAt(id);
     }
 
+    /** Get info at next phase
+     */
+    public Type nextInfo() {
+	Global.instance.nextPhase();
+	Type info = info();
+	Global.instance.prevPhase();
+        return info;
+    }
+
     /** get info at phase #id, without forcing lazy types.
      */
     private Type rawInfoAt(int id) {
