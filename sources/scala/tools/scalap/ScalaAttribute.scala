@@ -63,7 +63,7 @@ class ScalaAttribute(in: ByteArrayReader) {
 
     def readTableEntry: AttribEntry = {
         val tag = in.nextByte;
-        Console.println("tag = " + tag);
+        // Console.println("tag = " + tag);
         val len = in.nextNat;
         val end = in.bp + len;
         tag match {
