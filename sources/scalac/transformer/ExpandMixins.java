@@ -98,6 +98,7 @@ public class ClassExpander {
             inlineMixinTParams(type);
             Tree.Apply constr = (Tree.Apply)template.parents[i];
             inlineMixinVParams(mixin.valueParams(), constr.args);
+            handleMixinInterfaceMembers(mixin);
             inlineMixinMembers(mixin.nextInfo().members(), impl);
             parents[i] = Type.TypeRef(prefix, iface, args);
             template.parents[i] = gen.mkPrimaryConstr(constr.pos, parents[i]);
@@ -157,6 +158,34 @@ public class ClassExpander {
             Symbol member = map.lookupSymbol(params[i]);
             member.setType(map.apply(member.type()));
             body.append(gen.ValDef(member, args[i]));
+        }
+    }
+
+    // !!! This is just rapid fix. Needs to be reviewed.
+    private void handleMixinInterfaceMembers(Symbol mixin) {
+        Type[] parents = mixin.info().parents();
+        //assert parents.length == 2: Debug.show(mixin) +" -- "+ mixin.info();
+        for (int i = 1; i < parents.length; i++)
+            handleMixinInterfaceMembersRec(parents[i].symbol());
+    }
+    private void handleMixinInterfaceMembersRec(Symbol interfase) {
+        handleMixinInterfaceMembersAux(interfase.nextInfo().members());
+        Type[] parents = interfase.parents();
+        for (int i = 0; i < parents.length; i++) {
+            Symbol clasz = parents[i].symbol();
+            if (clasz.isInterface()) handleMixinInterfaceMembersRec(clasz);
+        }
+    }
+    private void handleMixinInterfaceMembersAux(Scope symbols) {
+        for (SymbolIterator i = symbols.iterator(true); i.hasNext();) {
+            Symbol member = i.next();
+            if (member.kind != scalac.symtab.Kinds.TYPE) continue;
+            Symbol subst = clasz.thisType().memberType(member).symbol();
+            if (subst == member) continue;
+            Symbol subst1 = map.lookupSymbol(member);
+            assert subst1 == null || subst1 == subst:
+                Debug.show(member," -> ",subst," + ",subst1);
+            if (subst1 == null) map.insertSymbol(member, subst);
         }
     }
 
