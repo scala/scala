@@ -62,6 +62,7 @@ neg/protected.scala
 neg/refine.scala
 neg/seqtest.scala
 neg/stable.scala
+neg/tests.scala
 neg/vincent1.scala
 neg/xmlParsing001.scala
 neg/xmlParsing002.scala
