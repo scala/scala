@@ -137,19 +137,19 @@ object Predef {
   }
 
   def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Ordered[Array[A]] with Proxy(xs) {
-	def compareTo[B >: Array[A] <% Ordered[B]](that: B): Int = that match {
-	  case ys: Array[A] =>
-		var i, res = 0;
-		while ((i < xs.length) && (i < ys.length) && (res == 0)) {
-			res = xs(i) compareTo ys(i);
-			i = i + 1;
-		}
-		if (res != 0) res
-		else if (i < xs.length) 1
-		else -1
-	  case _ =>
-		-(that compareTo xs)
-	}
+    def compareTo[B >: Array[A] <% Ordered[B]](that: B): Int = that match {
+      case ys: Array[A] =>
+        var i, res = 0;
+        while ((i < xs.length) && (i < ys.length) && (res == 0)) {
+            res = xs(i) compareTo ys(i);
+            i = i + 1;
+        }
+        if (res != 0) res
+        else if (i < xs.length) 1
+        else -1
+      case _ =>
+        -(that compareTo xs)
+    }
   }
 
   private def first(xs: Int*): Int = xs.elements.find(x => x != 0) match {
@@ -161,49 +161,49 @@ object Predef {
    * wait for the next release...
    *
   def view[A <% Ordered[A], B <% Ordered[B]](x: Tuple2[A, B]): Ordered[Tuple2[A, B]] =
-  		new Ordered[Tuple2[A, B]] with Proxy(x) {
-    	  def compareTo[T >: Tuple2[A, B] <% Ordered[T]](y: T): Int = y match {
-    		case y1: Tuple2[A, B] => first(x._1.compareTo(y1._1),
-    		                               x._2.compareTo(y1._2));
-    		case _ => -(y compareTo x)
-    	  }
-    	}
+        new Ordered[Tuple2[A, B]] with Proxy(x) {
+          def compareTo[T >: Tuple2[A, B] <% Ordered[T]](y: T): Int = y match {
+            case y1: Tuple2[A, B] => first(x._1.compareTo(y1._1),
+                                           x._2.compareTo(y1._2));
+            case _ => -(y compareTo x)
+          }
+        }
 
   def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C]]
         (x: Tuple3[A, B, C]): Ordered[Tuple3[A, B, C]] =
-  		new Ordered[Tuple3[A, B, C]] with Proxy(x) {
-    	  def compareTo[T >: Tuple3[A, B, C] <% Ordered[T]](y: T): Int = y match {
-    		case y1: Tuple3[A, B, C] => first(x._1.compareTo(y1._1),
-    		                                  x._2.compareTo(y1._2),
-    		                                  x._3.compareTo(y1._3));
-    		case _ => -(y compareTo x)
-    	  }
-    	}
+        new Ordered[Tuple3[A, B, C]] with Proxy(x) {
+          def compareTo[T >: Tuple3[A, B, C] <% Ordered[T]](y: T): Int = y match {
+            case y1: Tuple3[A, B, C] => first(x._1.compareTo(y1._1),
+                                              x._2.compareTo(y1._2),
+                                              x._3.compareTo(y1._3));
+            case _ => -(y compareTo x)
+          }
+        }
 
   def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C], D <% Ordered[D]]
-  		(x: Tuple4[A, B, C, D]): Ordered[Tuple4[A, B, C, D]] =
-  		new Ordered[Tuple4[A, B, C, D]] with Proxy(x) {
-    	  def compareTo[T >: Tuple4[A, B, C, D] <% Ordered[T]](y: T): Int = y match {
-    		case y1: Tuple4[A, B, C, D] => first(x._1.compareTo(y1._1),
-    		                                     x._2.compareTo(y1._2),
-    		                                     x._3.compareTo(y1._3),
-    		                                     x._4.compareTo(y1._4));
-    		case _ => -(y compareTo x)
-    	  }
-    	}
+        (x: Tuple4[A, B, C, D]): Ordered[Tuple4[A, B, C, D]] =
+        new Ordered[Tuple4[A, B, C, D]] with Proxy(x) {
+          def compareTo[T >: Tuple4[A, B, C, D] <% Ordered[T]](y: T): Int = y match {
+            case y1: Tuple4[A, B, C, D] => first(x._1.compareTo(y1._1),
+                                                 x._2.compareTo(y1._2),
+                                                 x._3.compareTo(y1._3),
+                                                 x._4.compareTo(y1._4));
+            case _ => -(y compareTo x)
+          }
+        }
 
   def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C], D <% Ordered[D], E <% Ordered[E]]
-  		(x: Tuple5[A, B, C, D, E]): Ordered[Tuple5[A, B, C, D, E]] =
-  		new Ordered[Tuple5[A, B, C, D, E]] with Proxy(x) {
-    	  def compareTo[T >: Tuple5[A, B, C, D, E] <% Ordered[T]](y: T): Int = y match {
-    		case y1: Tuple5[A, B, C, D, E] => first(x._1.compareTo(y1._1),
-    		                                        x._2.compareTo(y1._2),
-    		                                        x._3.compareTo(y1._3),
-    		                                        x._4.compareTo(y1._4),
-    		                                        x._5.compareTo(y1._5));
-    		case _ => -(y compareTo x)
-    	  }
-    	}
+        (x: Tuple5[A, B, C, D, E]): Ordered[Tuple5[A, B, C, D, E]] =
+        new Ordered[Tuple5[A, B, C, D, E]] with Proxy(x) {
+          def compareTo[T >: Tuple5[A, B, C, D, E] <% Ordered[T]](y: T): Int = y match {
+            case y1: Tuple5[A, B, C, D, E] => first(x._1.compareTo(y1._1),
+                                                    x._2.compareTo(y1._2),
+                                                    x._3.compareTo(y1._3),
+                                                    x._4.compareTo(y1._4),
+                                                    x._5.compareTo(y1._5));
+            case _ => -(y compareTo x)
+          }
+        }
   */
 
   def view(x: String): Ordered[String] = new Ordered[String] with Proxy(x) {

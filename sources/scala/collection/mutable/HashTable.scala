@@ -109,8 +109,8 @@ abstract class HashTable[A] {
     protected def initTable(tb: Array[List[Entry]]): Unit = {
         var i = tb.length - 1;
         while (i >= 0) {
-        	tb(i) = Nil;
-        	i = i - 1;
+            tb(i) = Nil;
+            i = i - 1;
         }
     }
 
@@ -122,11 +122,11 @@ abstract class HashTable[A] {
         initTable(newTable);
         var i = table.length - 1;
         while (i >= 0) {
-        	table(i).foreach { e => {
-        		val idx = improve(elemHashCode(entryKey(e))) & (newSize - 1);
+            table(i).foreach { e => {
+                val idx = improve(elemHashCode(entryKey(e))) & (newSize - 1);
                 newTable(idx) = e :: newTable(idx);
-        	}};
-        	i = i - 1;
+            }};
+            i = i - 1;
         }
         table = newTable;
         threshold = newThreshold(newSize);

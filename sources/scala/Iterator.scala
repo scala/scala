@@ -152,43 +152,43 @@ trait Iterator[+A] {
 
     /** Does this iterator provide another element?
      */
-	def hasNext: Boolean;
+    def hasNext: Boolean;
 
-	/** Returns the next element.
-	 */
-	def next: A;
+    /** Returns the next element.
+     */
+    def next: A;
 
     /** Returns a new iterator that iterates only over the first <code>n</code>
      *  elements.
      */
-	def take(n: Int) = new Iterator[A] {
-		var remaining = n;
-		def hasNext = remaining > 0 && Iterator.this.hasNext;
-		def next: A =
-			if (hasNext) { remaining = remaining - 1; Iterator.this.next }
-			else error("next on empty iterator");
-	}
+    def take(n: Int) = new Iterator[A] {
+        var remaining = n;
+        def hasNext = remaining > 0 && Iterator.this.hasNext;
+        def next: A =
+            if (hasNext) { remaining = remaining - 1; Iterator.this.next }
+            else error("next on empty iterator");
+    }
 
     /** Removes the first <code>n</code> elements from this iterator.
      */
-	def drop(n: Int): Iterator[A] =
-	    if (n > 0) { next; drop(n - 1) } else this;
+    def drop(n: Int): Iterator[A] =
+        if (n > 0) { next; drop(n - 1) } else this;
 
     /** Returns a new iterator that maps all elements of this iterator
      *  to new elements using function <code>f</code>.
      */
-	def map[B](f: A => B): Iterator[B] = new Iterator[B] {
-	    def hasNext = Iterator.this.hasNext;
-	    def next = f(Iterator.this.next)
-	}
+    def map[B](f: A => B): Iterator[B] = new Iterator[B] {
+        def hasNext = Iterator.this.hasNext;
+        def next = f(Iterator.this.next)
+    }
 
     /** Returns a new iterator that first yields the elements of this
      *  iterator followed by the elements provided by iterator <code>that</code>.
      */
-	def append[B >: A](that: Iterator[B]) = new Iterator[B] {
-	    def hasNext = Iterator.this.hasNext || that.hasNext;
-	    def next = if (Iterator.this.hasNext) Iterator.this.next else that.next;
-	}
+    def append[B >: A](that: Iterator[B]) = new Iterator[B] {
+        def hasNext = Iterator.this.hasNext || that.hasNext;
+        def next = if (Iterator.this.hasNext) Iterator.this.next else that.next;
+    }
 
     /** Applies the given function <code>f</code> to each element of
      *  this iterator, then concatenates the results.
@@ -197,37 +197,37 @@ trait Iterator[+A] {
      *  @return an iterator over <code>f(a0), ... , f(an)</code> if this iterator
      *          yields the elements <code>a0, ..., an</code>.
      */
-	def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
-		private var cur: Iterator[B] = Iterator.empty;
-		def hasNext: Boolean =
-			if (cur.hasNext) true
-			else if (Iterator.this.hasNext) {
-			  cur = f(Iterator.this.next);
-			  hasNext
-			} else false;
-		def next: B =
-			if (cur.hasNext) cur.next
-			else if (Iterator.this.hasNext) {
-			    cur = f(Iterator.this.next);
-			    next
-			} else error("next on empty iterator");
-	}
+    def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
+        private var cur: Iterator[B] = Iterator.empty;
+        def hasNext: Boolean =
+            if (cur.hasNext) true
+            else if (Iterator.this.hasNext) {
+              cur = f(Iterator.this.next);
+              hasNext
+            } else false;
+        def next: B =
+            if (cur.hasNext) cur.next
+            else if (Iterator.this.hasNext) {
+                cur = f(Iterator.this.next);
+                next
+            } else error("next on empty iterator");
+    }
 
-	/** Returns an iterator over all the elements of this iterator that
-	 *  satisfy the predicate <code>p</code>. The order of the elements
-	 *  is preserved.
-	 *
-	 *  @param   p the redicate used to filter the iterator.
-	 *  @return  the elements of this iterator satisfying <code>p</code>.
-	 */
-	def filter(p: A => Boolean): Iterator[A] = new BufferedIterator[A] {
-		private val source = Iterator.this.buffered;
-		private def skip: Unit =
-		    while (source.hasNext && !p(source.head)) { source.next; () }
-		def hasNext: Boolean = { skip; source.hasNext }
-		def next: A = { skip; source.next }
-		def head: A = { skip; source.head; }
-	}
+    /** Returns an iterator over all the elements of this iterator that
+     *  satisfy the predicate <code>p</code>. The order of the elements
+     *  is preserved.
+     *
+     *  @param   p the redicate used to filter the iterator.
+     *  @return  the elements of this iterator satisfying <code>p</code>.
+     */
+    def filter(p: A => Boolean): Iterator[A] = new BufferedIterator[A] {
+        private val source = Iterator.this.buffered;
+        private def skip: Unit =
+            while (source.hasNext && !p(source.head)) { source.next; () }
+        def hasNext: Boolean = { skip; source.hasNext }
+        def next: A = { skip; source.next }
+        def head: A = { skip; source.head; }
+    }
 
     /** Return an iterator formed from this iterator and the specified iterator
      *  <code>that</code> by associating each element of the former with
@@ -239,10 +239,10 @@ trait Iterator[+A] {
      *           <code>ai</code> are the elements from this iterator and
      *           <code>bi</code> are the elements from iterator <code>that</code>.
      */
-	def zip[B](that: Iterator[B]) = new Iterator[Pair[A, B]] {
-	    def hasNext = Iterator.this.hasNext && that.hasNext;
-	    def next = Pair(Iterator.this.next, that.next);
-	}
+    def zip[B](that: Iterator[B]) = new Iterator[Pair[A, B]] {
+        def hasNext = Iterator.this.hasNext && that.hasNext;
+        def next = Pair(Iterator.this.next, that.next);
+    }
 
     /** Apply a function <code>f</code> to all elements of this
      *  iterable object.
@@ -330,55 +330,55 @@ trait Iterator[+A] {
 
     /** Returns a buffered iterator from this iterator.
      */
-	def buffered: BufferedIterator[A] = new BufferedIterator[A] {
-		private var hd: A = _;
-		private var ahead: Boolean = false;
-		def head: A = {
-			if (!ahead) {
-			  hd = Iterator.this.next;
-			  ahead = true
-			}
-			hd
-		}
-		def next: A =
-		    if (ahead) { ahead = false; hd } else head;
-		def hasNext: Boolean = ahead || Iterator.this.hasNext;
-		override def buffered: BufferedIterator[A] = this;
-	}
+    def buffered: BufferedIterator[A] = new BufferedIterator[A] {
+        private var hd: A = _;
+        private var ahead: Boolean = false;
+        def head: A = {
+            if (!ahead) {
+              hd = Iterator.this.next;
+              ahead = true
+            }
+            hd
+        }
+        def next: A =
+            if (ahead) { ahead = false; hd } else head;
+        def hasNext: Boolean = ahead || Iterator.this.hasNext;
+        override def buffered: BufferedIterator[A] = this;
+    }
 
-	/** Creates two new iterators that both iterate over the same elements
-	 *  than this iterator (in the same order).
-	 */
-	def duplicate: Pair[Iterator[A], Iterator[A]] = {
-		var xs: List[A] = Nil;
-		var ahead: Iterator[A] = null;
-		class Partner extends Iterator[A] {
-			var ys: List[A] = Nil;
-			def hasNext: Boolean = Iterator.this.synchronized {
-			    ((this == ahead) && Iterator.this.hasNext) ||
-			    ((this != ahead) && (!xs.isEmpty || !ys.isEmpty || Iterator.this.hasNext));
-			}
-			def next: A = Iterator.this.synchronized {
-				if (this == ahead) {
-				    val e = Iterator.this.next;
-				    xs = e :: xs; e
-				} else {
-					if (ys.isEmpty) {
-					  ys = xs.reverse;
-					  xs = Nil;
-					}
-					ys match {
-						case Nil => val e = Iterator.this.next;
-						            ahead = this;
-						            xs = e :: xs; e
-						case z :: zs => ys = zs; z
-					}
-				}
-			}
-		}
-		ahead = new Partner;
-		Pair(ahead, new Partner)
-	}
+    /** Creates two new iterators that both iterate over the same elements
+     *  than this iterator (in the same order).
+     */
+    def duplicate: Pair[Iterator[A], Iterator[A]] = {
+        var xs: List[A] = Nil;
+        var ahead: Iterator[A] = null;
+        class Partner extends Iterator[A] {
+            var ys: List[A] = Nil;
+            def hasNext: Boolean = Iterator.this.synchronized {
+                ((this == ahead) && Iterator.this.hasNext) ||
+                ((this != ahead) && (!xs.isEmpty || !ys.isEmpty || Iterator.this.hasNext));
+            }
+            def next: A = Iterator.this.synchronized {
+                if (this == ahead) {
+                    val e = Iterator.this.next;
+                    xs = e :: xs; e
+                } else {
+                    if (ys.isEmpty) {
+                      ys = xs.reverse;
+                      xs = Nil;
+                    }
+                    ys match {
+                        case Nil => val e = Iterator.this.next;
+                                    ahead = this;
+                                    xs = e :: xs; e
+                        case z :: zs => ys = zs; z
+                    }
+                }
+            }
+        }
+        ahead = new Partner;
+        Pair(ahead, new Partner)
+    }
 
     /** Fills the given array <code>xs</code> with the elements of
      *  this sequence starting at position <code>start</code>.
@@ -388,12 +388,12 @@ trait Iterator[+A] {
      *  @return the given array <code>xs</code> filled with this list.
      */
     def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = {
-    	var i = start;
-    	while (hasNext) {
-    		xs(i) = next;
-    		i = i + 1;
-    	}
-    	xs
+        var i = start;
+        while (hasNext) {
+            xs(i) = next;
+            i = i + 1;
+        }
+        xs
     }
 
     /** Transform this iterator into a list of all elements.

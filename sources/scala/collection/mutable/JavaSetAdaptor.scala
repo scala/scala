@@ -25,9 +25,9 @@ class JavaSetAdaptor[A](jset: java.util.Set) extends Set[A] {
     def contains(elem: A): Boolean = jset.contains(elem);
 
     def elements: Iterator[A] = new Iterator[A] {
-    	val iter = jset.iterator();
-    	def hasNext = iter.hasNext();
-    	def next = iter.next().asInstanceOf[A];
+        val iter = jset.iterator();
+        def hasNext = iter.hasNext();
+        def next = iter.next().asInstanceOf[A];
     }
 
     def +=(elem: A): Unit = { val x = jset.add(elem); }
@@ -37,8 +37,8 @@ class JavaSetAdaptor[A](jset: java.util.Set) extends Set[A] {
     def clear: Unit = jset.clear();
 
     override def clone(): Set[A] = {
-    	val res = new HashSet[A];
-    	res ++= this;
-    	res;
+        val res = new HashSet[A];
+        res ++= this;
+        res;
     }
 }

@@ -64,12 +64,12 @@ class Stack[A] extends MutableList[A] with Cloneable {
     /** Removes the top element from the stack.
      */
     def pop: A =
-    	if (first != null) {
-    		val res = first.elem;
-    		first = first.next;
-    		res
-    	} else
-    		error("stack empty");
+        if (first != null) {
+            val res = first.elem;
+            first = first.next;
+            res
+        } else
+            error("stack empty");
 
     /**
      * Removes all elements from the stack. After this operation completed,
@@ -122,8 +122,8 @@ class Stack[A] extends MutableList[A] with Cloneable {
      *  @return  a stack with the same elements.
      */
     override def clone(): Stack[A] = {
-    	val res = new Stack[A];
-    	res ++= this;
-    	res
+        val res = new Stack[A];
+        res ++= this;
+        res
     }
 }

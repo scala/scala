@@ -31,8 +31,8 @@ abstract class ObservableBuffer[A, This <: ObservableBuffer[A, This]]: This
     }
 
     abstract override def +:(elem: A): Buffer[A] = {
-    	super.+:(elem);
-    	publish(new Include(Pair(Start, elem)) with Undoable {
+        super.+:(elem);
+        publish(new Include(Pair(Start, elem)) with Undoable {
             def undo: Unit = trimStart(1);
         });
         this
@@ -43,25 +43,25 @@ abstract class ObservableBuffer[A, This <: ObservableBuffer[A, This]]: This
         var i = n;
         val it = iter.elements;
         while (it.hasNext) {
-        	publish(new Include(Pair(Index(i), it.next)) with Undoable {
-            	def undo: Unit = remove(i);
-        	});
-        	i = i + 1;
+            publish(new Include(Pair(Index(i), it.next)) with Undoable {
+                def undo: Unit = remove(i);
+            });
+            i = i + 1;
         }
     }
 
     abstract override def update(n: Int, newelem: A): Unit = {
-    	val oldelem = apply(n);
+        val oldelem = apply(n);
         super.update(n, newelem);
-    	publish(new Update(Pair(Index(n), newelem)) with Undoable {
+        publish(new Update(Pair(Index(n), newelem)) with Undoable {
             def undo: Unit = update(n, oldelem);
         });
     }
 
     abstract override def remove(n: Int): A = {
-    	val oldelem = apply(n);
-    	super.remove(n);
-    	publish(new Remove(Pair(Index(n), oldelem)) with Undoable {
+        val oldelem = apply(n);
+        super.remove(n);
+        publish(new Remove(Pair(Index(n), oldelem)) with Undoable {
             def undo: Unit = insert(n, oldelem);
         });
         oldelem

@@ -36,7 +36,7 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
                 printConstr(s.constr);
             } else {
                 print("class " + s.name);
-            	printConstr(s.constr);
+                printConstr(s.constr);
             }
             print(" extends ");
             printType(s.tpe);
@@ -106,21 +106,21 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
     def printParameterType(tpe: Type, basic: Boolean): Unit = tpe match {
         case TypeRef(SingletonType(ThisType(root), top), sym, args) =>
             if ((root.name.equals("<root>") || root.name.equals("")) &&
-            	top.name.equals("scala") &&
-            	sym.name.startsWith("Function")) {
-            	if ((args.length == 2) && !isFunctionType(args.head)) {
-            		printType(args.head);
-            		print(" => ");
-            		printParameterType(args.tail.head, basic);
-            	} else {
-            		printParameterTypes(args.take(args.length - 1), "(", ", ", ")", basic);
-            		print(" => ");
-            		printParameterType(args.last, basic);
-            	}
+                top.name.equals("scala") &&
+                sym.name.startsWith("Function")) {
+                if ((args.length == 2) && !isFunctionType(args.head)) {
+                    printType(args.head);
+                    print(" => ");
+                    printParameterType(args.tail.head, basic);
+                } else {
+                    printParameterTypes(args.take(args.length - 1), "(", ", ", ")", basic);
+                    print(" => ");
+                    printParameterType(args.last, basic);
+                }
             } else if (basic)
-            	printType0(tpe);
+                printType0(tpe);
             else
-            	printType(tpe);
+                printType(tpe);
         case _ => if (basic) printType0(tpe); else printType(tpe);
     }
 
@@ -159,12 +159,12 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             printPrefix(tpe);
             print(sym.name)
         case TypeRef(pre, sym, args) =>
-        	if (isJavaRoot(tpe))
-        		print("scala.AnyRef");
-        	else {
-            	printPrefix(pre);
-            	print(sym.name);
-            	printTypes(args, "[", ", ", "]");
+            if (isJavaRoot(tpe))
+                print("scala.AnyRef");
+            else {
+                printPrefix(pre);
+                print(sym.name);
+                printTypes(args, "[", ", ", "]");
             }
         case CompoundType(clazz, components) =>
             printTypes(components, "", " with ", "");
@@ -243,16 +243,16 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
     def printTVar(tvar: Symbol): Unit = tvar match {
         case sym: TypeSymbol =>
             if (Flags.is(Flags.COVAR, sym.flags))
-            	print("+" + sym.name)
+                print("+" + sym.name)
             else if (Flags.is(Flags.CONTRAVAR, sym.flags))
-            	print("-" + sym.name);
+                print("-" + sym.name);
             else
-            	print(sym.name);
+                print(sym.name);
             if (!isExternalType(sym.tpe, "Any")) {
-            	if (Flags.is(Flags.VIEWBOUND, sym.flags))
-            		print(" <% ");
-            	else
-                	print(" <: ");
+                if (Flags.is(Flags.VIEWBOUND, sym.flags))
+                    print(" <% ");
+                else
+                    print(" <: ");
                 printType(sym.tpe);
             }
             if (!isExternalType(sym.lower, "All")) {
@@ -295,7 +295,7 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
         Flags.is(Flags.CASEACCESSOR, s.flags) ||
         (Flags.is(Flags.CASE, s.flags) &&
          (s match {
-         	case sym: ValSymbol => true
-         	case _ => false
+            case sym: ValSymbol => true
+            case _ => false
          }))
 }

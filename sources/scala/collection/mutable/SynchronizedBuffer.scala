@@ -167,7 +167,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
     }
 
     override def <<(cmd: Message[Pair[Location, A]]): Unit = synchronized {
-    	super.<<(cmd);
+        super.<<(cmd);
     }
 
     /** Return a clone of this buffer.
@@ -175,7 +175,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
      *  @return an <code>ArrayBuffer</code> with the same elements.
      */
     override def clone(): Buffer[A] = synchronized {
-    	super.clone();
+        super.clone();
     }
 
     /** The hashCode method always yields an error, since it is not

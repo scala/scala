@@ -73,5 +73,5 @@ abstract class MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
      */
     override def toList: List[A] = if (first == null) Nil else first.toList;
 
-	override protected def stringPrefix: String = "MutableList";
+    override protected def stringPrefix: String = "MutableList";
 }

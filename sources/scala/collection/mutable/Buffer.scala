@@ -172,27 +172,27 @@ trait Buffer[A] with Seq[A] with Scriptable[Message[Pair[Location, A]]] with Clo
      *  @param cmd  the message to send.
      */
     def <<(cmd: Message[Pair[Location, A]]): Unit = cmd match {
-    	case Include(Pair(l, elem)) => l match {
-			case Start => prepend(elem);
-			case End => append(elem);
-			case Index(n) => insert(n, elem);
-			case _ => error("message " + cmd + " not understood");
-    	}
-    	case Update(Pair(l, elem)) => l match {
-    		case Start => update(0, elem);
-			case End => update(length - 1, elem);
-			case Index(n) => update(n, elem);
-			case _ => error("message " + cmd + " not understood");
-    	}
-    	case Remove(Pair(l, _)) => l match {
-    		case Start => remove(0);
-			case End => remove(length - 1);
-			case Index(n) => remove(n);
-			case _ => error("message " + cmd + " not understood");
-    	}
-    	case Reset() => clear;
-    	case s: Script[Pair[Location, A]] => s.elements foreach <<;
-    	case _ => error("message " + cmd + " not understood");
+        case Include(Pair(l, elem)) => l match {
+            case Start => prepend(elem);
+            case End => append(elem);
+            case Index(n) => insert(n, elem);
+            case _ => error("message " + cmd + " not understood");
+        }
+        case Update(Pair(l, elem)) => l match {
+            case Start => update(0, elem);
+            case End => update(length - 1, elem);
+            case Index(n) => update(n, elem);
+            case _ => error("message " + cmd + " not understood");
+        }
+        case Remove(Pair(l, _)) => l match {
+            case Start => remove(0);
+            case End => remove(length - 1);
+            case Index(n) => remove(n);
+            case _ => error("message " + cmd + " not understood");
+        }
+        case Reset() => clear;
+        case s: Script[Pair[Location, A]] => s.elements foreach <<;
+        case _ => error("message " + cmd + " not understood");
     }
 
     /** Return a clone of this buffer.

@@ -99,12 +99,12 @@ trait Map[A, B] with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, 
      *  @param cmd  the message to send.
      */
     def <<(cmd: Message[Pair[A, B]]): Unit = cmd match {
-    	case Include(Pair(k, v)) => update(k, v);
-    	case Update(Pair(k, v)) => update(k, v);
-    	case Remove(Pair(k, _)) => this -= k;
-    	case Reset() => clear;
-    	case s: Script[Pair[A, B]] => s.elements foreach <<;
-    	case _ => error("message " + cmd + " not understood");
+        case Include(Pair(k, v)) => update(k, v);
+        case Update(Pair(k, v)) => update(k, v);
+        case Remove(Pair(k, _)) => this -= k;
+        case Reset() => clear;
+        case s: Script[Pair[A, B]] => s.elements foreach <<;
+        case _ => error("message " + cmd + " not understood");
     }
 
     /** Return a clone of this map.

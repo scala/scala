@@ -86,14 +86,14 @@ class ByteArrayReader(content: Array[Byte]) {
     /** read the next signed number in big endian format
      */
     def nextNum(n: Int): Long = {
-    	var x: Long = 0;
-    	var i: Int = 0;
-    	while (i < n) {
-    	    x = (x << 8) + (nextByte & 0xff);
-    	    i = i + 1;
-    	}
-    	val leading: Int = 64 - (n * 8);
-	    x << leading >> leading;
+        var x: Long = 0;
+        var i: Int = 0;
+        while (i < n) {
+            x = (x << 8) + (nextByte & 0xff);
+            i = i + 1;
+        }
+        val leading: Int = 64 - (n * 8);
+        x << leading >> leading;
     }
 
     /** read an UTF8 encoded string

@@ -124,9 +124,9 @@ class ScalaAttribute(in: ByteArrayReader) {
                  LONG_LIT |
                  FLOAT_LIT |
                  DOUBLE_LIT =>
-            	Literal(tag, in.nextNum(len))
-           	case _ =>
-           		error("unknown meta data tag: " + tag);
+                Literal(tag, in.nextNum(len))
+            case _ =>
+                error("unknown meta data tag: " + tag);
         }
     }
 

@@ -17,41 +17,41 @@ package scala.collection.mutable;
  *  @version 1.0, 03/05/2004
  */
 abstract class ResizableArray[A] with Iterable[A] {
-	import java.lang.System.arraycopy;
+    import java.lang.System.arraycopy;
 
-   	protected val initialSize: Int = 16;
-	protected var array: Array[A] = new Array[A](initialSize);
-	protected var size: Int = 0;
+    protected val initialSize: Int = 16;
+    protected var array: Array[A] = new Array[A](initialSize);
+    protected var size: Int = 0;
 
-	/** Extends the internal array if more elements are needed.
-	 */
- 	protected def ensureSize(n: Int): Unit = {
-	    if ((size + n) > array.length) {
-	        val newar: Array[A] = new Array(array.length * 2);
-	        arraycopy(array, 0, newar, 0, size);
-	        array = newar;
-	    }
-	}
+    /** Extends the internal array if more elements are needed.
+     */
+    protected def ensureSize(n: Int): Unit = {
+        if ((size + n) > array.length) {
+            val newar: Array[A] = new Array(array.length * 2);
+            arraycopy(array, 0, newar, 0, size);
+            array = newar;
+        }
+    }
 
-	/** Swap two elements of this array.
-	 */
-  	protected def swap(a: Int, b: Int): Unit = {
-    	val h = array(a);
-    	array(a) = array(b);
-    	array(b) = h;
-  	}
+    /** Swap two elements of this array.
+     */
+    protected def swap(a: Int, b: Int): Unit = {
+        val h = array(a);
+        array(a) = array(b);
+        array(b) = h;
+    }
 
-  	/** Move parts of the array.
-  	 */
-  	protected def copy(m: Int, n: Int, len: Int) = {
-  		arraycopy(array, m, array, n, len);
-  	}
+    /** Move parts of the array.
+     */
+    protected def copy(m: Int, n: Int, len: Int) = {
+        arraycopy(array, m, array, n, len);
+    }
 
-	/** Returns the length of this resizable array.
-	 */
-	def length: Int = size;
+    /** Returns the length of this resizable array.
+     */
+    def length: Int = size;
 
-	/** Returns a new iterator over all elements of this resizable array.
+    /** Returns a new iterator over all elements of this resizable array.
      */
     def elements: Iterator[A] = new Iterator[A] {
         var i = 0;

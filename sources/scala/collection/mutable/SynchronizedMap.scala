@@ -111,6 +111,6 @@ trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] {
     }
 
     override def clone(): Map[A, B] = synchronized {
-    	super.clone();
+        super.clone();
     }
 }

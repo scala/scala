@@ -31,7 +31,7 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] {
     }
 
     abstract override def update(elem: A, included: Boolean): Unit = synchronized {
-    	super.update(elem, included);
+        super.update(elem, included);
     }
 
     abstract override def +=(elem: A): Unit = synchronized {
@@ -95,10 +95,10 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] {
     }
 
     override def <<(cmd: Message[A]): Unit = synchronized {
-    	super.<<(cmd);
-   	}
+        super.<<(cmd);
+    }
 
     override def clone(): Set[A] = synchronized {
-    	super.clone();
+        super.clone();
     }
 }

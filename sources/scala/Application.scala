@@ -45,7 +45,7 @@ class Application {
     def main(args: Array[String]) = {
         if (java.lang.System.getProperty("scala.time") != null)
           java.lang.System.out.println("[total " +
-				       (java.lang.System.currentTimeMillis()
-					- executionStart) + "ms]");
+                       (java.lang.System.currentTimeMillis()
+                    - executionStart) + "ms]");
     }
 }

@@ -18,50 +18,50 @@ package scala.collection.mutable;
  *  @version 1.0, 03/05/2004
  */
 class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with Cloneable {
-  	size = size + 1; // we do not use array(0)
+    size = size + 1; // we do not use array(0)
 
-  	protected def fixUp(as: Array[A], m: Int): Unit = {
-  		var k: Int = m;
-  	    while ((k > 1) && (as(k / 2) < as(k))) {
-  	    	swap(k, k / 2);
-  	    	k = k / 2;
-  	    }
-  	}
+    protected def fixUp(as: Array[A], m: Int): Unit = {
+        var k: Int = m;
+        while ((k > 1) && (as(k / 2) < as(k))) {
+            swap(k, k / 2);
+            k = k / 2;
+        }
+    }
 
-  	protected def fixDown(as: Array[A], m: Int, n: Int): Unit = {
-  	    var k: Int = m;
-  	    var loop: Boolean = true;
-  	    while (loop && (n >= 2 * k)) {
-  	    	var j = 2 * k;
-  	    	if ((j < n) && (as(j) < as(j + 1)))
-  	    		j = j + 1;
-  	    	if (!(as(k) < as(j)))
-  	    	    loop = false;
-  	    	else {
-  	    	    val h = as(k);
-  	    	    as(k) = as(j);
-  	    	    as(j) = h;
-  	    		k = j;
-  	    	}
-  	    }
-  	}
+    protected def fixDown(as: Array[A], m: Int, n: Int): Unit = {
+        var k: Int = m;
+        var loop: Boolean = true;
+        while (loop && (n >= 2 * k)) {
+            var j = 2 * k;
+            if ((j < n) && (as(j) < as(j + 1)))
+                j = j + 1;
+            if (!(as(k) < as(j)))
+                loop = false;
+            else {
+                val h = as(k);
+                as(k) = as(j);
+                as(j) = h;
+                k = j;
+            }
+        }
+    }
 
-  	/** Checks if the queue is empty.
+    /** Checks if the queue is empty.
      *
      *  @return true, iff there is no element in the queue.
      */
-  	def isEmpty: Boolean = size < 2;
+    def isEmpty: Boolean = size < 2;
 
-  	/** Inserts a single element into the priority queue.
+    /** Inserts a single element into the priority queue.
      *
      *  @param  elem        the element to insert
      */
-  	def +=(elem: A): Unit = {
-  		ensureSize(1);
-  		array(size) = elem;
-  		fixUp(array, size);
-  		size = size + 1;
-  	}
+    def +=(elem: A): Unit = {
+        ensureSize(1);
+        array(size) = elem;
+        fixUp(array, size);
+        size = size + 1;
+    }
 
     /** Adds all elements provided by an <code>Iterable</code> object
      *  into the priority queue.
@@ -82,27 +82,27 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with Cloneable {
      */
     def enqueue(elems: A*): Unit = (this ++= elems);
 
-  	/** Returns the element with the highest priority in the queue,
-  	 *  and removes this element from the queue.
+    /** Returns the element with the highest priority in the queue,
+     *  and removes this element from the queue.
      *
      *  @return   the element with the highest priority.
      */
-  	def dequeue: A = {
-  		if (size > 1) {
-  		    size = size - 1;
-  			swap(1, size);
-  			fixDown(array, 1, size - 1);
-  			array(size)
-  		} else
-  			error("no element to remove from heap");
-  	}
+    def dequeue: A = {
+        if (size > 1) {
+            size = size - 1;
+            swap(1, size);
+            fixDown(array, 1, size - 1);
+            array(size)
+        } else
+            error("no element to remove from heap");
+    }
 
     /** Returns the element with the highest priority in the queue,
      *  or throws an error if there is no element contained in the queue.
      *
      *  @return   the element with the highest priority.
      */
-  	def max: A = if (size > 1) array(1) else error("queue is empty");
+    def max: A = if (size > 1) array(1) else error("queue is empty");
 
     /** Removes all elements from the queue. After this operation is completed,
      *  the queue will be empty.
@@ -116,19 +116,19 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with Cloneable {
      *
      *  @return  an iterator over all elements sorted in descending order.
      */
-  	override def elements: Iterator[A] = new Iterator[A] {
-  		val as: Array[A] = new Array[A](size);
-  		java.lang.System.arraycopy(array, 0, as, 0, size);
-  		var i = size - 1;
-  		def hasNext: Boolean = i > 0;
+    override def elements: Iterator[A] = new Iterator[A] {
+        val as: Array[A] = new Array[A](size);
+        java.lang.System.arraycopy(array, 0, as, 0, size);
+        var i = size - 1;
+        def hasNext: Boolean = i > 0;
         def next: A = {
             val res = as(1);
             as(1) = as(i);
             i = i - 1;
-  			fixDown(as, 1, i);
-  			res
+            fixDown(as, 1, i);
+            res
         }
-  	}
+    }
 
     /** Checks if two queues are structurally identical.
      *
@@ -151,9 +151,9 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with Cloneable {
     /** Returns a regular queue containing the same elements.
      */
     def toQueue: Queue[A] = {
-    	val res = new Queue[A];
-    	res ++= this;
-    	res
+        val res = new Queue[A];
+        res ++= this;
+        res
     }
 
     /** Returns a list of all elements.
@@ -171,8 +171,8 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with Cloneable {
      *  @return  a priority queue with the same elements.
      */
     override def clone(): PriorityQueue[A] = {
-    	val res = new PriorityQueue[A];
-    	res ++= this;
-    	res
+        val res = new PriorityQueue[A];
+        res ++= this;
+        res
     }
 }

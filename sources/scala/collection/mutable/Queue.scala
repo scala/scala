@@ -38,7 +38,7 @@ class Queue[A] extends MutableList[A] with Cloneable {
      */
     def ++=(iter: Iterable[A]): Unit = this ++= iter.elements;
 
-	/** Adds all elements provided by an iterator
+    /** Adds all elements provided by an iterator
      *  at the end of the queue. The elements are prepended in the order they
      *  are given out by the iterator.
      *
@@ -63,7 +63,7 @@ class Queue[A] extends MutableList[A] with Cloneable {
         else {
             val res = first.elem;
             first = first.next;
-	    len = len - 1;
+        len = len - 1;
             res;
         }
     }
@@ -109,8 +109,8 @@ class Queue[A] extends MutableList[A] with Cloneable {
      *  @return  a queue with the same elements.
      */
     override def clone(): Queue[A] = {
-    	val res = new Queue[A];
-    	res ++= this;
-    	res
+        val res = new Queue[A];
+        res ++= this;
+        res
     }
 }

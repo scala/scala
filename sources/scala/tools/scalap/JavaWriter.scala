@@ -37,8 +37,8 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     }
 
     def nameToClass0(str: String) = {
-    	val res = Names.decode(str.replace('/', '.'));
-    	if (res == "java.lang.Object") "scala.AnyRef" else res
+        val res = Names.decode(str.replace('/', '.'));
+        if (res == "java.lang.Object") "scala.AnyRef" else res
     }
 
     def nameToSimpleClass(str: String) =

@@ -26,7 +26,7 @@ trait Set[A] with scala.collection.Set[A] with Scriptable[Message[A]] with Clone
      *  <pre>set(elem) = true</pre>
      */
     def update(elem: A, included: Boolean): Unit =
-    	if (included) +=(elem) else -=(elem);
+        if (included) +=(elem) else -=(elem);
 
     /** This method adds a new element to the set.
      */
@@ -88,11 +88,11 @@ trait Set[A] with scala.collection.Set[A] with Scriptable[Message[A]] with Clone
      *  @param cmd  the message to send.
      */
     def <<(cmd: Message[A]): Unit = cmd match {
-    	case Include(elem) => this += elem;
-    	case Remove(elem) => this -= elem;
-    	case Reset() => clear;
-    	case s: Script[A] => s.elements foreach <<;
-    	case _ => error("message " + cmd + " not understood");
+        case Include(elem) => this += elem;
+        case Remove(elem) => this -= elem;
+        case Reset() => clear;
+        case s: Script[A] => s.elements foreach <<;
+        case _ => error("message " + cmd + " not understood");
     }
 
     /** Return a clone of this set.

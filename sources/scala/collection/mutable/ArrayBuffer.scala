@@ -18,12 +18,12 @@ package scala.collection.mutable;
  */
 class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
 
-	def apply(n: Int): A = {
-	    if ((n < 0) || (n >= size))
-	    	error("cannot access element " + n + " in ArrayBuffer");
-	    else
-	    	array(n);
-	}
+    def apply(n: Int): A = {
+        if ((n < 0) || (n >= size))
+            error("cannot access element " + n + " in ArrayBuffer");
+        else
+            array(n);
+    }
 
     /** Append a single element to this buffer and return
      *  the identity of the buffer.
@@ -31,10 +31,10 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *  @param elem  the element to append.
      */
     def +(elem: A): Buffer[A] = {
-    	ensureSize(1);
-    	array(size) = elem;
-    	size = size + 1;
-    	this
+        ensureSize(1);
+        array(size) = elem;
+        size = size + 1;
+        this
     }
 
     /** Appends a number of elements provided by an iterable object
@@ -75,13 +75,13 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      */
     def insertAll(n: Int, iter: Iterable[A]): Unit = {
         if ((n < 0) || (n > size))
-        	error("cannot insert element " + n + " in ListBuffer");
-    	val xs = iter.elements.toList;
-    	val len = xs.length;
-    	ensureSize(len);
-    	copy(n, n + len, size - n);
-    	xs.copyToArray(array, n);
-    	size = size + len;
+            error("cannot insert element " + n + " in ListBuffer");
+        val xs = iter.elements.toList;
+        val len = xs.length;
+        ensureSize(len);
+        copy(n, n + len, size - n);
+        xs.copyToArray(array, n);
+        size = size + len;
     }
 
     /** Replace element at index <code>n</code> with the new element
@@ -91,13 +91,13 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *  @param newelem the new element.
      */
     def update(n: Int, newelem: A): Unit = {
-    	if ((n < 0) || (n >= size))
-    		error("cannot update element " + n + " in ArrayBuffer");
-    	else {
-    		val res = array(n);
-    		array(n) = newelem;
-    		res
-    	}
+        if ((n < 0) || (n >= size))
+            error("cannot update element " + n + " in ArrayBuffer");
+        else {
+            val res = array(n);
+            array(n) = newelem;
+            res
+        }
     }
 
     /** Removes the element on a given index position.
@@ -105,8 +105,8 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *  @param n  the index which refers to the element to delete.
      */
     def remove(n: Int): A = {
-    	if ((n < 0) || (n >= size))
-    		error("cannot remove element " + n + " in Buffer");
+        if ((n < 0) || (n >= size))
+            error("cannot remove element " + n + " in Buffer");
         val res = array(n);
         copy(n + 1, n, size - n - 1);
         size = size - 1;
@@ -124,9 +124,9 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *  @return an <code>ArrayBuffer</code> with the same elements.
      */
     override def clone(): Buffer[A] = {
-    	val res = new ArrayBuffer[A];
-    	res ++= this;
-    	res
+        val res = new ArrayBuffer[A];
+        res ++= this;
+        res
     }
 
     /** Checks if two buffers are structurally identical.
@@ -134,14 +134,14 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *  @return true, iff both buffers contain the same sequence of elements.
      */
     override def equals(obj: Any): Boolean = obj match {
-    	case that: ArrayBuffer[A] =>
-    		elements.zip(that.elements).forall {
-    			case Pair(thiselem, thatelem) => thiselem == thatelem;
-    		}
-    	case _ => false
+        case that: ArrayBuffer[A] =>
+            elements.zip(that.elements).forall {
+                case Pair(thiselem, thatelem) => thiselem == thatelem;
+            }
+        case _ => false
     }
 
     /** Defines the prefix of the string representation.
-	 */
-	override protected def stringPrefix: String = "ArrayBuffer";
+     */
+    override protected def stringPrefix: String = "ArrayBuffer";
 }

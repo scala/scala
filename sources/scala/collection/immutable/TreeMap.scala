@@ -97,14 +97,14 @@ object TreeMap {
      *  @return    true, iff both maps contain exactly the same mappings.
      */
     override def equals(obj: Any): Boolean =
-		if (obj.isInstanceOf[scala.collection.Map[A, B]]) {
-			val that = obj.asInstanceOf[scala.collection.Map[A, B]];
-			if (size != that.size) false else elements.forall {
-				case Pair(key, value) => that.get(key) match {
-				  case None => false;
-				  case Some(v) => v == value;
-				}
-			}
-		} else
-		  false;
+        if (obj.isInstanceOf[scala.collection.Map[A, B]]) {
+            val that = obj.asInstanceOf[scala.collection.Map[A, B]];
+            if (size != that.size) false else elements.forall {
+                case Pair(key, value) => that.get(key) match {
+                  case None => false;
+                  case Some(v) => v == value;
+                }
+            }
+        } else
+          false;
 }

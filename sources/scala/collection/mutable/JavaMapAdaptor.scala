@@ -21,7 +21,7 @@ class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
     def size: Int = jmap.size();
 
     def get(key: A): Option[B] =
-    	if (jmap.containsKey(key)) Some(jmap.get(key).asInstanceOf[B]) else None;
+        if (jmap.containsKey(key)) Some(jmap.get(key).asInstanceOf[B]) else None;
 
     override def isEmpty: Boolean = jmap.isEmpty();
 
@@ -32,24 +32,24 @@ class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
     override def isDefinedAt(key: A) = jmap.containsKey(key);
 
     override def keys: Iterator[A] = new Iterator[A] {
-    	val iter = jmap.keySet().iterator();
-    	def hasNext = iter.hasNext();
-    	def next = iter.next().asInstanceOf[A];
+        val iter = jmap.keySet().iterator();
+        def hasNext = iter.hasNext();
+        def next = iter.next().asInstanceOf[A];
     }
 
     override def values: Iterator[B] = new Iterator[B] {
-    	val iter = jmap.values().iterator();
-    	def hasNext = iter.hasNext();
-    	def next = iter.next().asInstanceOf[B];
+        val iter = jmap.values().iterator();
+        def hasNext = iter.hasNext();
+        def next = iter.next().asInstanceOf[B];
     }
 
     def elements: Iterator[Pair[A, B]] = new Iterator[Pair[A, B]] {
-    	val iter = jmap.keySet().iterator();
-    	def hasNext = iter.hasNext();
-    	def next = {
-    		val key = iter.next().asInstanceOf[A];
-    		Pair(key, apply(key))
-    	}
+        val iter = jmap.keySet().iterator();
+        def hasNext = iter.hasNext();
+        def next = {
+            val key = iter.next().asInstanceOf[A];
+            Pair(key, apply(key))
+        }
     }
 
     def update(key: A, value: B): Unit = { val x = jmap.put(key, value); }
@@ -59,8 +59,8 @@ class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
     override def clear: Unit = jmap.clear();
 
     override def clone(): Map[A, B] = {
-    	val res = new HashMap[A, B];
-    	res ++= this;
-    	res
+        val res = new HashMap[A, B];
+        res ++= this;
+        res
     }
 }

@@ -42,7 +42,7 @@ class SeqProxy[+A](x: Seq[A]) extends Seq[A] with IterableProxy(x) {
      *
      *  @param  elem  element to search for.
      *  @return the index in this sequence of the first occurence of the specified
-     * 	        element, or -1 if the sequence does not contain this element.
+     *          element, or -1 if the sequence does not contain this element.
      */
     override def indexOf[B >: A](elem: B): Int = x.indexOf(elem);
 
@@ -55,7 +55,7 @@ class SeqProxy[+A](x: Seq[A]) extends Seq[A] with IterableProxy(x) {
      *          specified  element, or -1 if the sequence does not contain
      *          this element.
      */
-	override def lastIndexOf[B >: A](elem: B): Int = x.lastIndexOf(elem);
+    override def lastIndexOf[B >: A](elem: B): Int = x.lastIndexOf(elem);
 
     /** Returns the sub-sequence starting from index <code>n</code>.
      */

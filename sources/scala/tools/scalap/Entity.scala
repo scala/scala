@@ -36,21 +36,21 @@ class Value extends Entity {
 }
 
 case class SimpleValue(tag: Value.Value) extends Value {
-	import Value._;
-	override def toString(): String = tag match {
-    	case UNIT => "()"
-    	case NULL => "null"
-    	case ZERO => "0"
+    import Value._;
+    override def toString(): String = tag match {
+        case UNIT => "()"
+        case NULL => "null"
+        case ZERO => "0"
     }
 }
 
 case class NumberValue(tag: Value.Value, value: Long) extends Value {
     import Value._;
     override def toString(): String = tag match {
-    	case BOOLEAN => if (value == 0) "false" else "true"
-    	case BYTE | SHORT | CHAR | INT | LONG => value.toString()
-    	case FLOAT => java.lang.Float.intBitsToFloat(value.asInstanceOf[Int]).toString()
-    	case DOUBLE => java.lang.Double.longBitsToDouble(value).toString()
+        case BOOLEAN => if (value == 0) "false" else "true"
+        case BYTE | SHORT | CHAR | INT | LONG => value.toString()
+        case FLOAT => java.lang.Float.intBitsToFloat(value.asInstanceOf[Int]).toString()
+        case DOUBLE => java.lang.Double.longBitsToDouble(value).toString()
     }
 }
 
@@ -59,8 +59,8 @@ case class StringValue(str: String) extends Value {
 }
 
 object Value extends Enumeration {
-	val UNIT, BOOLEAN, BYTE, SHORT, CHAR, INT, LONG, FLOAT, DOUBLE,
-	    NULL, ZERO = Value;
+    val UNIT, BOOLEAN, BYTE, SHORT, CHAR, INT, LONG, FLOAT, DOUBLE,
+        NULL, ZERO = Value;
 }
 
 /** Types

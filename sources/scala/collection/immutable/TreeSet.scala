@@ -60,9 +60,9 @@ class TreeSet[A <% Ordered[A]] extends Tree[A, A] with Set[A] {
      *  Two set are equal iff they contain the same elements.
      */
     override def equals(obj: Any): Boolean =
-		if (obj.isInstanceOf[scala.collection.Set[A]]) {
-		  val that = obj.asInstanceOf[scala.collection.Set[A]];
-		  if (size != that.size) false else toList.forall(that.contains);
-		} else
-		  false;
+        if (obj.isInstanceOf[scala.collection.Set[A]]) {
+          val that = obj.asInstanceOf[scala.collection.Set[A]];
+          if (size != that.size) false else toList.forall(that.contains);
+        } else
+          false;
 }

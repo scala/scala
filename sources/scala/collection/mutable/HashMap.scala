@@ -28,8 +28,8 @@ class HashMap[A, B] extends scala.collection.mutable.Map[A, B]
     }
 
     override def clone(): HashMap[A, B] = {
-    	val res = new HashMap[A, B];
-    	res ++= this;
-    	res
+        val res = new HashMap[A, B];
+        res ++= this;
+        res
     }
 }
