@@ -25,8 +25,9 @@ function version-manager-args() {
 }
 
 function version-manager-compose() {
+    [ $# = 5 ] || abort "internal error";
     local variable="$1"; shift 1;
-    local value="$1.$2.$3-b$4"; shift 4;
+    local value="$1.$2.$3.$4"; shift 4;
     eval "$variable=\"\$value\"";
 }
 
@@ -34,10 +35,10 @@ function version-manager-decompose() {
     [ $# = 2 ] || abort "internal error";
     local array="$1"; shift 1;
     local value="$1"; shift 1;
-    local v0=`expr "$value" : '\([0-9]*\)\.[0-9]*\.[0-9]*-b[0-9]*$'`;
-    local v1=`expr "$value" : '[0-9]*\.\([0-9]*\)\.[0-9]*-b[0-9]*$'`;
-    local v2=`expr "$value" : '[0-9]*\.[0-9]*\.\([0-9]*\)-b[0-9]*$'`;
-    local v3=`expr "$value" : '[0-9]*\.[0-9]*\.[0-9]*-b\([0-9]*\)$'`;
+    local v0=`expr "$value" : '\([0-9]*\)\.[0-9]*\.[0-9]*\.[0-9]*$'`;
+    local v1=`expr "$value" : '[0-9]*\.\([0-9]*\)\.[0-9]*\.[0-9]*$'`;
+    local v2=`expr "$value" : '[0-9]*\.[0-9]*\.\([0-9]*\)\.[0-9]*$'`;
+    local v3=`expr "$value" : '[0-9]*\.[0-9]*\.[0-9]*\.\([0-9]*\)$'`;
     eval "$array[0]=\"\$v0\"";
     eval "$array[1]=\"\$v1\"";
     eval "$array[2]=\"\$v2\"";
@@ -47,7 +48,7 @@ function version-manager-decompose() {
 function version-manager-check-syntax() {
     [ $# = 1 ] || abort "internal error";
     local value="$1"; shift 1;
-    expr "$value" : '[0-9]*\.[0-9]*\.[0-9]*-b[0-9]*$' 1> /dev/null 2>&1;
+    expr "$value" : '[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*$' 1> /dev/null 2>&1;
 }
 
 function version-manager-check-order() {
@@ -107,7 +108,7 @@ function version-manager() {
     if ! $program-check-syntax "$old_value"; then
         local -a error;
         error[0]="version value '$old_value' in file '$file' does not conform";
-        error[1]="to version syntax <int>.<int>.<int>-b<int>";
+        error[1]="to version syntax <int>.<int>.<int>.<int>";
         abort "${error[*]}";
     fi;
 
