@@ -37,12 +37,10 @@ public class Main {
     private final static String AUTHORS   =
         "Philippe Altherr & Stephane Micheloud";
 
-    private static String SCALA_RUNTIME  =
-        System.getProperty("scala.runtime");
-    private static String SCALA_BINPATH  =
-        System.getProperty("scala.binpath");
-    private static String SCALA_TESTPATH =
-        System.getProperty("scala.testpath");
+    private static String SCALA_HOME  =
+        System.getProperty("scala.home");
+    private static String SCALA_BINPATH  = SCALA_HOME + "/bin";
+    private static String SCALA_TESTPATH = SCALA_HOME + "/test";
 
     private final static String NAME_DTDFILE     = "dtd";
 
@@ -129,20 +127,19 @@ public class Main {
     /**
      * Scala tools
      */
+    private String scala     = getExecutable("scala");
     private String scalac    = getExecutable("scalac");
     private String scalarun  = getExecutable("scalarun");
     private String dtd2scala = getExecutable("dtd2scala");
 //  private String scalainfo = getExecutable("scala-info");
 
-    private String scalapath = SCALA_RUNTIME;
-
     /**
      * Command lines executed in the tests
      */
+    private MessageFormat scalaCmdLine;
     private MessageFormat scalacCmdLine;
     private MessageFormat scalarunCmdLine;
     private MessageFormat dtd2scalaCmdLine;
-    private MessageFormat javaCmdLine;
 
     /**
      * Test options
@@ -198,9 +195,6 @@ public class Main {
         console.println("--failed        test only files that failed last time");
         console.println("--verbose=LEVEL display debug information (LEVEL=0|1|2)");
         console.println("--errors=<int>  specify the number of expected errors");
-        console.println("--socos=<path>  specify the socos command");
-        console.println("--surus=<path>  specify the surus command");
-        console.println("--scala=<path>  specify the scala runtime class path");
         console.println("--flags=<flags> specify flags to pass on to the executable");
         console.println("--color=USAGE   control the color usage (USAGE=none|some|many)");
         console.println("--objdir=<dir>  specify where to place generated files");
@@ -349,7 +343,7 @@ public class Main {
                 scalacCmdLine,
                 new Object[]{ outpath , flags, "", name + SUFFIX_SCALAFILE });
             String cmdLine2 = makeCmdLine(
-                javaCmdLine,
+                scalaCmdLine,
                 new Object[]{ outpath, "" });
 
             printMessage();
@@ -391,7 +385,7 @@ public class Main {
                 scalacCmdLine,
                 new Object[]{ outpath, flags, objFile, name + SUFFIX_SCALAFILE });
             String cmdLine3 = makeCmdLine(
-                javaCmdLine,
+                scalaCmdLine,
                 new Object[]{ outpath, xmlFile });
 
             printMessage();
@@ -481,9 +475,9 @@ public class Main {
 
     private void testAll() {
         console.println("Test configuration");
-        console.println("socos executable: " + scalac);
-        console.println("surus executable: " + scalarun);
-        console.println("scala runtime   : " + scalapath);
+        console.println("scalac   executable: " + scalac);
+        console.println("scala    executable: " + scala);
+        console.println("scalarun executable: " + scalarun);
 
         Test.setConsole(console);
 
@@ -623,12 +617,6 @@ public class Main {
                 verbose = Integer.parseInt(getOptionValue(opt, "(0|1|2)"));
             else if (opt.startsWith("errors="))
                 errors = Integer.parseInt(getOptionValue(opt, "[0-9]*"));
-            else if (opt.startsWith("socos="))
-                scalac = getOptionValue(opt, null);
-            else if (opt.startsWith("surus="))
-                scalarun = getOptionValue(opt, null);
-            else if (opt.startsWith("scala="))
-                scalapath = getOptionValue(opt, null);
             else if (opt.startsWith("flags="))
                 flags = getOptionValue(opt, null);
             else if (opt.startsWith("color="))
@@ -659,9 +647,8 @@ public class Main {
         dtd2scalaCmdLine = /* 0:outpath, 1:arg */
             new MessageFormat(dtd2scala + " -d {0} {1} " + NAME_DTDFILE);
 
-        javaCmdLine = /* 0:outpath, 1:arg */
-            new MessageFormat("java -cp "
-                + scalapath + FileUtils.PATH_SEP + "{0} Test {1}");
+        scalaCmdLine = /* 0:outpath, 1:arg */
+            new MessageFormat(scala + " -classpath {0} Test {1}");
 
         if (testAll) {
             if (testType == RUN)
