@@ -294,4 +294,12 @@ public class TreeInfo {
             return false;
       }
 
+    /** @todo replace with cleaner test (e.g. of a symbol flag)
+     */
+    public static boolean isNameOfStarPattern( Name n ) {
+        String s = n.toString();
+        return (s.indexOf("$") != -1)
+            &&(!s.startsWith("nest"));
+    }
+
 }

@@ -2,6 +2,7 @@ package scalac.transformer.matching ;
 
 import scalac.ApplicationError ;
 import scalac.ast.Tree ;
+import scalac.ast.TreeInfo ;
 import scalac.util.Name ;
 import Tree.* ;
 
@@ -17,11 +18,15 @@ import java.util.* ;
 class BerrySethi {
 
       boolean isStar( Name n ) {
+          return TreeInfo.isNameOfStarPattern( n );
+      }
+    /*
+
             String s = n.toString();
             return (s.indexOf("$") != -1)
                   &&(!s.startsWith("nest"));
       }
-
+    */
 
       HashSet labels;
 
