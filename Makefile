@@ -406,7 +406,7 @@ LIBRARY_SDC_FLAGS	+= -windowtitle "Scala Library Documentation"
 LIBRARY_SDC_FLAGS	+= -doctitle "Scala<br/>$(PROJECT_VERSION)"
 LIBRARY_SDC_FILES	+= $(LIBRARY_SC_FILES)
 LIBRARY_SDC_OUTPUTDIR	 = $(PROJECT_APIDOCDIR)
-LIBRARY_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(PROJECT_NAME).jar
+LIBRARY_JAR_ARCHIVE	 = $(LIBRARY_CLASSDIR).jar
 LIBRARY_JAR_INPUTDIR	 = $(LIBRARY_CLASSDIR)
 LIBRARY_JAR_FILES	+= .
 
@@ -431,9 +431,13 @@ $(latest)library-sdc	: $(LIBRARY_SDC_FILES)
 	@$(make) sdc target=LIBRARY
 	$(TOUCH) $@
 
+ifneq ($(LIBRARY_JAR_ARCHIVE),.jar)
+
 $(LIBRARY_JAR_ARCHIVE)	: $(latest)library
 $(LIBRARY_JAR_ARCHIVE)	:
 	@$(make) jar target=LIBRARY
+
+endif
 
 ##############################################################################
 # Targets - scala library
@@ -657,13 +661,9 @@ $(latest)servlet-sc	: $(SERVLET_SC_FILES)
 
 TOOLS_NAME		 = tools
 TOOLS_CLASSDIR		 = $($(prefix)_TOOLS_CLASSDIR)
-TOOLS_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(TOOLS_NAME).jar
+TOOLS_JAR_ARCHIVE	 = $(TOOLS_CLASSDIR).jar
 TOOLS_JAR_INPUTDIR	 = $(TOOLS_CLASSDIR)
 TOOLS_JAR_FILES		+= .
-
-distclean		: distclean.tools
-distclean.tools	:
-	$(RM) $(TOOLS_JAR_ARCHIVE)
 
 $(latest)tools		: $(latest)lamplib
 $(latest)tools		: $(latest)util
@@ -678,9 +678,13 @@ $(latest)tools		: $(latest)servlet
 $(latest)tools		:
 	$(TOUCH) $@
 
+ifneq ($(TOOLS_JAR_ARCHIVE),.jar)
+
 $(TOOLS_JAR_ARCHIVE)	: $(latest)tools
 $(TOOLS_JAR_ARCHIVE)	:
 	@$(make) jar target=TOOLS
+
+endif
 
 ##############################################################################
 # Targets - template expansion
