@@ -998,7 +998,13 @@ class Scanner(_unit: Unit) extends TokenData {
    *  @param endch either ' or "
    */
   def xAttributeValue( endch:char ):String = {
-    val s = xSkipToNext( endch );
+    cbuf.setLength( 0 );
+    while ( ch != endch ) {
+      putChar( ch );
+      xNext;
+    };
+    val s = cbuf.toString();
+    // @todo: normalize attribute value
     // well-formedness constraint
     if( s.indexOf('<') != -1 ) {
       xSyntaxError( "'<' not allowed in attrib value" ); ""
