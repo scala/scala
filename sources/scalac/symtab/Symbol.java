@@ -270,9 +270,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /** Creates a new anonymous class owned by this symbol. */
-    public final ClassSymbol newAnonymousClass(int pos) {
+    public final ClassSymbol newAnonymousClass(int pos, Name name) {
         assert isTerm(): Debug.show(this);
-        Name name = Names.ANON_CLASS_NAME.toTypeName();
         return newClass(pos, 0, name, IS_ANONYMOUS, NONE);
     }
 

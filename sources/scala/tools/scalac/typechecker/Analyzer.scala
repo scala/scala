@@ -849,7 +849,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       case Tree$ClassDef(mods, name, tparams, vparams, _, templ) =>
 	val clazz =
           if (mods == SYNTHETIC && name == Names.ANON_CLASS_NAME.toTypeName())
-            context.owner.newAnonymousClass(templ.pos)
+            context.owner.newAnonymousClass(templ.pos, name)
           else
             classSymbol(tree.pos, name, owner, mods, context.scope);
 	if (!clazz.primaryConstructor().isInitialized())
