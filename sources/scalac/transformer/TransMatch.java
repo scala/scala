@@ -14,7 +14,7 @@ import scalac.*;
 import scalac.ast.*;
 import scalac.symtab.*;
 import scalac.typechecker.*;
-import scalac.util.*;
+import scalac.util.*;       // Names
 import Tree.*;
 
 import scalac.transformer.matching.PatternMatcher ;
@@ -22,12 +22,10 @@ import scalac.transformer.matching.PatternMatcher ;
 /** A transformer for expanding match expressions into
  *  flat sequences of .is and .as method calls
  *
- *  @author     Matthias Zenger
+ *  @author     Matthias Zenger, Burak Emir
  *  @version    1.1
  */
 public class TransMatch extends OwnerTransformer {
-
-    public static final Name MATCH_N = Name.fromString("match");
 
       /** container. classes AlgebraicMatcher and SequenceMatcher get input and store their results in here.
        *  resembles the 'Memento' design pattern, could also be named 'Liaison'
@@ -108,14 +106,14 @@ public class TransMatch extends OwnerTransformer {
         if (tree == null)
             return null;
         switch (tree) {
-            case Apply(Select(Tree receiver, MATCH_N), Tree[] args):
+            case Apply(Select( Tree receiver, Names.match ), Tree[] args):
                 if ((args != null) && (args.length == 1))
                     switch (args[0]) {
                         case Visitor(CaseDef[] cases):
                             return transform(transform(receiver), transform(cases), tree.type);
                     }
                 return tree;
-            case Apply(TypeApply(Select(Tree receiver, MATCH_N), Tree[] targs), Tree[] args):
+            case Apply(TypeApply(Select( Tree receiver, Names.match ), Tree[] targs), Tree[] args):
                 if ((args != null) && (args.length == 1))
                     switch (args[0]) {
                         case Visitor(CaseDef[] cases):
