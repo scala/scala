@@ -134,9 +134,9 @@ public class ExpandMixins extends Transformer {
                    + " = <" + ArrayApply.toString(baseTypes) + ">");
 
         // Then go over the mixins and mix them in.
+        SymbolCloner symbolCloner =
+            new SymbolCloner(global.freshNameCreator);
         for (int bcIndex = tree.parents.length - 1; bcIndex > 0; --bcIndex) {
-            SymbolCloner symbolCloner =
-                new SymbolCloner(global.freshNameCreator);
             SymbolSubstTypeMap typeCloner = new SymbolSubstTypeMap();
             Tree bc = tree.parents[bcIndex];
 
@@ -218,8 +218,8 @@ public class ExpandMixins extends Transformer {
             // Pass 2: copy members
             TreeSymbolCloner treeSymbolCloner =
                 new TreeSymbolCloner(symbolCloner);
-            TreeCloner treeCloner = new MyTreeCloner(
-                global, symbolCloner.clones, typeCloner, owner);
+            TreeCloner treeCloner = new TreeCloner(
+                global, symbolCloner.clones, typeCloner);
             for (int m = 0; m < mixinBody.length; ++m) {
                 Tree member = mixinBody[m];
                 if (symbolCloner.clones.containsKey(member.symbol())) {
@@ -252,6 +252,11 @@ public class ExpandMixins extends Transformer {
 	}
 
         Tree[] fixedBody = (Tree[])newBody.toArray(new Tree[newBody.size()]);
+        SuperFixer superFixer = new SuperFixer(
+            global, owner, symbolCloner.clones);
+        for (int i = 0; i < body.length; ++i) {
+            fixedBody[i] = superFixer.transform(fixedBody[i]);
+        }
         Template newTree = make.Template(tree.pos, newBaseClasses, fixedBody);
         newTree.setSymbol(newTemplSymbol);
 	newTree.setType(Type.compoundType(newBaseTypes, newMembers, owner));
@@ -314,24 +319,27 @@ public class ExpandMixins extends Transformer {
     //########################################################################
     // Private Class - MyTreeCloner
 
-    private static class MyTreeCloner extends TreeCloner {
+    private static class SuperFixer extends Transformer {
 
         private final Symbol clasz;
+        private final Map/*<Symbol,Symbol>*/ symbols;
 
-        public MyTreeCloner(Global global, Map symbols, Type.Map types,
-            Symbol clasz)
-        {
-            super(global, symbols, types);
+        public SuperFixer(Global global, Symbol clasz, Map symbols) {
+            super(global);
             this.clasz = clasz;
+            this.symbols = symbols;
         }
 
         public Tree transform(Tree tree) {
             switch (tree) {
-            case Super(Tree qualifier):
-                return gen.This(tree.pos, clasz);
-            default:
-                return super.transform(tree);
+            case Select(Super(Tree qualifier), _):
+                Symbol symbol = (Symbol)symbols.get(tree.symbol());
+                if (symbol != null) {
+                    Tree self = gen.This(((Select)tree).qualifier.pos, clasz);
+                    return gen.Select(tree.pos, self, symbol);
+                }
             }
+            return super.transform(tree);
         }
     }
 
