@@ -86,6 +86,7 @@ public class Primitive {
     public case AS_FARRAY       { tag = 42; } // x.asFloatArray()
     public case AS_DARRAY       { tag = 43; } // x.asDoubleArray()
     public case AS_OARRAY       { tag = 44; } // x.asObjectArray()
+    public case AS__ARRAY       { tag = 44; } // x.asArray()
 
     // Any operations
     public case IS              { tag = 45; } // x.is[y]

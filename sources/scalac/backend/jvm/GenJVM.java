@@ -1123,6 +1123,7 @@ class GenJVM {
             case AS_ZARRAY : case AS_BARRAY : case AS_SARRAY :
             case AS_CARRAY : case AS_IARRAY : case AS_LARRAY :
             case AS_FARRAY : case AS_DARRAY : case AS_OARRAY :
+            case AS__ARRAY :
             case NEW_OARRAY :
             case EQUALS  :
             case HASHCODE :
