@@ -138,9 +138,9 @@ final class TypeCreator {
 	MONITOR_WAIT = MONITOR.GetMethod("Wait", new Type[] {OBJECT});
 	MONITOR_WAIT_TIMEOUT = MONITOR.GetMethod("Wait", new Type[] {OBJECT, INT});
 
- 	Assembly.LoadFrom("/home/linuxsoft/apps/msil/vjslib.dll").GetModules();
- 	Assembly.LoadFrom("/home/linuxsoft/apps/msil/scala.dll").GetModules();
- 	Assembly.LoadFrom("/home/linuxsoft/apps/msil/scala_sc.dll").GetModules();
+  	Assembly.LoadFrom("/home/linuxsoft/apps/msil/vjslib.dll").GetModules();
+  	Assembly.LoadFrom("/home/linuxsoft/apps/msil/scala.dll").GetModules();
+  	Assembly.LoadFrom("/home/linuxsoft/apps/msil/scala_sc.dll").GetModules();
     }
 
     private boolean initialized = false;
@@ -883,28 +883,24 @@ final class TypeCreator {
 		if (sym != s) {
 		    //log("getModuleField: going through: " + dumpSym(s));
 		    moduleField = getModuleField(s);
-		} else if (sym.isExternal()){
-		    Type t = getType(sym);
-		    assert !(t instanceof TypeBuilder);
-		    moduleField = t.GetField(MODULE_S);
-		    assert moduleField != null;
 		} else {
-		    Type t = getType(sym);
-		    assert t instanceof TypeBuilder :
-			"Type of " + dumpSym(sym) + " is " + t;
-		    TypeBuilder module = (TypeBuilder) t;//getType(sym);
-		    moduleField = module.DefineField
-			(MODULE_S,
-			 module,
-			 (short)(FieldAttributes.Public
-				 | FieldAttributes.InitOnly
-				 | FieldAttributes.Static));
+		    Type type = getType(sym);
+		    if (type instanceof TypeBuilder) {
+			TypeBuilder module = (TypeBuilder) type;
+			moduleField = module.DefineField
+			    (MODULE_S,
+			     module,
+			     (short)(FieldAttributes.Public
+				     | FieldAttributes.InitOnly
+				     | FieldAttributes.Static));
+		    } else {
+			moduleField = type.GetField(MODULE_S);
+			assert moduleField != null;
+		    }
 		}
 		symbols2moduleFields.put(sym, moduleField);
 	    }
-	}
-	else {
-	    return null;
+	} else {
 	    //throw new ApplicationError("getModuleField: not a module: " +
 	    //dumpSym(sym));
 	}
