@@ -13,7 +13,7 @@ import scalac.atree.AConstant;
 import scalac._;
 import scalac.util._;
 import scala.tools.util.Position;
-import java.util.{Map, Stack, ArrayList, LinkedList};
+import java.util.{Map, Stack};
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
@@ -1118,8 +1118,7 @@ class Parser(unit: CompilationUnit) {
           stats.append(caseClause());
         } while (s.token == CASE);
         make.Visitor(pos,
-          stats.copyTo(new Array[Tree.CaseDef](stats.length()))
-          .asInstanceOf[Array[Tree.CaseDef]])
+          stats.copyTo(new Array[Tree.CaseDef](stats.length())))
       } else {
         block(pos);
       }
@@ -1459,11 +1458,10 @@ class Parser(unit: CompilationUnit) {
   /** ParamClauses ::= {ParamClause}
   */
   def paramClauses(): Array[Array[Tree.ValDef]] = {
-    val ts = new ArrayList();
+    val ts = new ListBuffer[Array[Tree.ValDef]]();
     while (s.token == LPAREN)
-      ts.add(paramClause(false));
-    ts.toArray(new Array[Array[Tree.ValDef]](ts.size()).asInstanceOf[Array[java.lang.Object]])
-      .asInstanceOf[Array[Array[Tree.ValDef]]]
+      ts += paramClause(false);
+    ts.copyToArray(new Array[Array[Tree.ValDef]](ts.length), 0)
   }
 
   /** ParamClauseOpt ::= [ParamClause]
@@ -1487,7 +1485,6 @@ class Parser(unit: CompilationUnit) {
     }
     accept(RPAREN);
     params.copyTo(new Array[Tree.ValDef](params.length()))
-      .asInstanceOf[Array[Tree.ValDef]]
   }
 
   /** Param ::= Id `:' ParamType
@@ -1546,7 +1543,6 @@ class Parser(unit: CompilationUnit) {
       accept(RBRACKET);
     }
     params.copyTo(new Array[Tree.AbsTypeDef](params.length()))
-      .asInstanceOf[Array[Tree.AbsTypeDef]];
   }
 
   /** TypeParam   ::= [`+' | `-'] FunTypeParam
@@ -1645,7 +1641,7 @@ class Parser(unit: CompilationUnit) {
   /** ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'
   */
   def importSelectors(): Array[Name] = {
-    val names = new LinkedList();
+    val names = new ListBuffer[Name]();
     accept(LBRACE);
     var isLast = importSelector(names);
     while (!isLast && s.token == COMMA) {
@@ -1653,29 +1649,29 @@ class Parser(unit: CompilationUnit) {
       isLast = importSelector(names);
     }
     accept(RBRACE);
-    names.toArray(new Array[Name](0).asInstanceOf[Array[java.lang.Object]]).asInstanceOf[Array[Name]]
+    names.copyToArray(new Array[Name](names.length), 0)
   }
 
   /** ImportSelector ::= Id [`=>' Id | `=>' `_']
   */
-  def importSelector(names: LinkedList/*<Name>*/): boolean =
+  def importSelector(names: ListBuffer[Name]): boolean =
     if (s.token == USCORE) {
       s.nextToken();
-      names.add(Names.IMPORT_WILDCARD);
+      names += Names.IMPORT_WILDCARD;
       true
     } else {
       val name = ident();
-      names.add(name);
+      names += name;
       if (s.token == ARROW) {
         s.nextToken();
         if (s.token == USCORE) {
           s.nextToken();
-          names.add(Names.IMPORT_WILDCARD);
+          names += Names.IMPORT_WILDCARD;
         } else {
-          names.add(ident());
+          names += ident();
         }
       } else {
-        names.add(name);
+        names += name;
       }
       false
     }
@@ -2107,8 +2103,7 @@ class Parser(unit: CompilationUnit) {
     }
     attrs
   }
-
-  def joinAttributes(attrs: List[Tree], defs: Array[Tree]): Array[Tree] = attrs match {
+ def joinAttributes(attrs: List[Tree], defs: Array[Tree]): Array[Tree] = attrs match {
     case List() =>
       defs
     case attr :: attrs1 =>
