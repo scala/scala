@@ -16,16 +16,16 @@ trait B extends A {
 }
 
 module test {
-  val b: B with { type Y = Int } = new B {
+  val b: B { type Y = Int } = new B {
     type Y = Int;
     val y1 = 1, y2 = 1;
   }
-  val a: A with { type X1 = Int, X2 = Int } = b;
-  val a1 = new A with {
+  val a: A { type X1 = Int, X2 = Int } = b;
+  val a1 = new A {
     type X1 = Int, X2 = String;
     val x1 = 1, x2 = "hello"
   }
-  val b1 = new B with {
+  val b1 = new B {
     type Y = Any;
     val y1 = 1, y2 = "hello";
   }

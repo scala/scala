@@ -1,4 +1,4 @@
-trait A extends scala.Object with {}
+trait A extends scala.Object {}
 
 module test {
 

@@ -10,7 +10,7 @@ module test {
 
 import test._;
 
-trait S extends o.I[D] with {
+trait S extends o.I[D] {
     def bar: E = foo(c,d);
 }
 

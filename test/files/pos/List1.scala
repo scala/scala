@@ -32,7 +32,7 @@ module lists {
   class IntList() extends List[Int] {
     def isEmpty: Boolean = False;
     def head: Int = 1;
-    def foo: List[Int] with { def isEmpty: Boolean; def head: Int; def tail: List[Int] } = Nil[Int];
+    def foo: List[Int] { def isEmpty: Boolean; def head: Int; def tail: List[Int] } = Nil[Int];
     def tail0: List[Int] = foo.prepend(1).prepend(1+1);
     def tail: List[Int] = Nil[Int].prepend(1).prepend(1+1);
   }

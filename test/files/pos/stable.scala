@@ -4,7 +4,7 @@ trait Base {
   var z: Int;
 }
 
-class Sub() extends Base with {
+class Sub() extends Base {
   override val x: Int = 1;
   override val y: Int = 2;
   override var z: Int = 3;

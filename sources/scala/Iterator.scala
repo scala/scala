@@ -37,7 +37,7 @@ trait Iterator[a] {
       { skip; source.head; }
   }
 
-  def zip[b](that: Iterator[b]) = new Iterator[Pair[a, b]] with {
+  def zip[b](that: Iterator[b]) = new Iterator[Pair[a, b]] {
     def hasNext = Iterator.this.hasNext && that.hasNext;
     def next = Pair(Iterator.this.next, that.next);
   }
