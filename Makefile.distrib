@@ -35,8 +35,11 @@ TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/%)
 # beta versions
 ##############################################################################
 
-INSTALL_VERSION		 = install-test
-INSTALL_PREFIX		 = $(PROJECT_ROOT)/distribs/scala-$(INSTALL_VERSION)
+INSTALL_ROOT		 = $(PROJECT_DISTRIBDIR)
+INSTALL_NAME		 = $(PROJECT_NAME)
+INSTALL_VERSION		:= $(shell $(DATE) -u "+%Y%m%d-%H%M%S")
+INSTALL_PACKAGE		 = $(PROJECT_NAME)-$(INSTALL_VERSION)
+INSTALL_PREFIX		 = $(INSTALL_ROOT)/$(INSTALL_PACKAGE)
 INSTALL_BINDIR		 = $(INSTALL_PREFIX)/bin
 INSTALL_DOCDIR		 = $(INSTALL_PREFIX)/doc
 INSTALL_APIDOCDIR	 = $(INSTALL_DOCDIR)/api
@@ -50,9 +53,6 @@ INSTALL_RUNTIME_JARFILE	 = $(INSTALL_LIBDIR)/$(PROJECT_NAME).jar
 INSTALL_TOOLS_JARFILE	 = $(INSTALL_LIBDIR)/$(TOOLS_NAME).jar
 INSTALL_FJBG_JARFILE	 = $(INSTALL_LIBDIR)/fjbg.jar
 INSTALL_MSIL_JARFILE	 = $(INSTALL_LIBDIR)/msil.jar
-
-install-clean		:
-	$(RM) -r $(INSTALL_PREFIX)
 
 install			: $(LIBRARY_JAR_ARCHIVE)
 install			: $(TOOLS_JAR_ARCHIVE)
@@ -123,7 +123,7 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.xml) 2>/dev/null) \
 	    $(INSTALL_TESTDIR))
 
-install-windows		:
+install-windows		: install
 	@if [ ! -d "$(INSTALL_PREFIX)" ]; then \
 	    echo "Could not find UNIX install '$(INSTALL_PREFIX)'"; \
 	    exit 1; \
@@ -211,66 +211,50 @@ ia-build		:
 
 ##############################################################################
 
-DISTRIB_REPOSITORY	?= $(PROJECT_ROOT)/distribs
-DISTRIB_VERSION		:= $(shell $(DATE) -u "+%Y%m%d-%H%M%S")
-DISTRIB_NAME		 = $(PROJECT_NAME)-$(DISTRIB_VERSION)
-DISTRIB_PREFIX		 = $(DISTRIB_REPOSITORY)/$(DISTRIB_NAME)
-DISTRIB_ARCHIVE		 = $(DISTRIB_REPOSITORY)/$(DISTRIB_NAME).tar.gz
+DISTRIB_ROOT		 = $(PROJECT_DISTRIBDIR)
+DISTRIB_PACKAGE		 = $(INSTALL_PACKAGE)
+DISTRIB_ARCHIVE		 = $(DISTRIB_ROOT)/$(DISTRIB_PACKAGE)
 
-distrib-extract		:
-	@if [ ! -f "$(DISTRIB_ARCHIVE)" ]; then \
-	    echo "Could not find source archive '$(DISTRIB_ARCHIVE)'"; \
-	    exit 1; \
+distrib			: distrib-build-all
+	$(RM) -rf $(INSTALL_PREFIX)
+
+distrib-build-all	: distrib-build-unix
+distrib-build-all	: distrib-build-windows
+distrib-build-all	: distrib-build-ia
+
+distrib-build-unix	: install
+	$(RM) $(DISTRIB_ARCHIVE).tar
+	$(RM) $(DISTRIB_ARCHIVE).tar.gz
+	$(RM) $(DISTRIB_ARCHIVE).tar.bz2
+	$(strip $(TAR) cf $(DISTRIB_ARCHIVE).tar -C $(dir $(INSTALL_PREFIX)) \
+	    $(notdir $(INSTALL_PREFIX)))
+	$(BZIP2) --best -c $(DISTRIB_ARCHIVE).tar > $(DISTRIB_ARCHIVE).tar.bz2
+	$(GZIP) --best -c $(DISTRIB_ARCHIVE).tar > $(DISTRIB_ARCHIVE).tar.gz
+	$(RM) $(DISTRIB_ARCHIVE).tar
+
+distrib-build-windows	: install-windows
+	@$(call RUN,cd $(dir $(INSTALL_PREFIX))); \
+	$(call RUN,$(RM) $(DISTRIB_PACKAGE).zip); \
+	$(call RUN,$(ZIP) -q -r $(DISTRIB_PACKAGE).zip \
+	    $(notdir $(INSTALL_PREFIX)))
+	@archive=$(dir $(INSTALL_PREFIX))/$(DISTRIB_PACKAGE).zip; \
+	if [ ! $(DISTRIB_ARCHIVE).zip -ef $$archive ]; then \
+	    $(call RUN,$(RM) $(DISTRIB_ARCHIVE).zip); \
+	    $(call RUN,$(CP) $(dir $(INSTALL_PREFIX))/$(DISTRIB_PACKAGE).zip \
+	        $(DISTRIB_ARCHIVE).zip); \
 	fi
-	@if [ -d "$(DISTRIB_PREFIX)" ]; then \
-	    $(call RUN,$(RM) -rf $(DISTRIB_PREFIX)); \
-	fi
-	tar xvzf $(DISTRIB_ARCHIVE) -C $(DISTRIB_REPOSITORY)
 
-distrib-build-unix	:
-	@$(make) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
-	    INSTALL_VERSION=$(DISTRIB_VERSION) install
-	tar czf $(DISTRIB_ARCHIVE) -C $(DISTRIB_REPOSITORY) $(DISTRIB_NAME)
+distrib-build-ia	: ia-build
 
-distrib-build-windows	:
-	@$(make) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
-	    INSTALL_VERSION=$(DISTRIB_VERSION) install-windows
-	$(RM) -f $(DISTRIB_PREFIX).zip
-	cd $(DISTRIB_REPOSITORY); \
-	    $(ZIP) -q -r $(DISTRIB_NAME).zip $(DISTRIB_NAME)
+distrib-official	: version-update
+	@$(make) distrib INSTALL_VERSION='$$(PROJECT_VERSION)'
+	@$(make) version-increment
 
-distrib-build-ia	:
-	@$(make) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
-	    INSTALL_VERSION=$(DISTRIB_VERSION) ia-build
-
-distrib-clean		:
-	$(RM) -rf $(DISTRIB_PREFIX)
-
-distrib-unix		: distrib-build-unix
-distrib-unix		: distrib-clean
-
-distrib-windows		: DISTRIB_NAME=$(notdir $(ARGS:%.tar.gz=%))
-distrib-windows 	: DISTRIB_VERSION=$(DISTRIB_NAME:scala-%=%)
-distrib-windows 	: distrib-extract
-distrib-windows 	: distrib-build-windows
-distrib-windows 	: distrib-clean
-
-distrib-all-oses	: distrib-build-unix
-distrib-all-oses	: distrib-build-windows
-distrib-all-oses	: distrib-build-ia
-distrib-all-oses	: distrib-clean
-
-distrib			:
-	@$(make) distrib-all-oses DISTRIB_VERSION=$(DISTRIB_VERSION);
-
-
-.PHONY			: distrib-extract
+.PHONY			: distrib
+.PHONY			: distrib-build-all
 .PHONY			: distrib-build-unix
 .PHONY			: distrib-build-windows
-.PHONY			: distrib-clean
-.PHONY			: distrib-unix
-.PHONY			: distrib-windows
-.PHONY			: distrib-all-oses
-.PHONY			: distrib
+.PHONY			: distrib-build-ia
+.PHONY			: distrib-official
 
 ##############################################################################
