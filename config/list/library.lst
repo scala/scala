@@ -110,6 +110,7 @@ collection/immutable/Queue.scala
 collection/immutable/Set.scala
 collection/immutable/Stack.scala
 
+concurrent/LinkedList.scala
 concurrent/Actor.scala
 concurrent/MailBox.scala
 concurrent/Channel.scala

@@ -2,12 +2,13 @@
 # scala examples (paths are relative to ./sources/examples)
 ##############################################################################
 
-ComputeServer.scala
-auction.scala
-boundedbuffer.scala
-buffer1.scala
+concurrent/ComputeServer.scala
+concurrent/auction.scala
+concurrent/boundedbuffer.scala
+concurrent/buffer1.scala
+concurrent/futures.scala
+
 fors.scala
-futures.scala
 iterators.scala
 maps.scala
 parsers.scala

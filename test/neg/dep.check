@@ -1,0 +1,4 @@
+dep.scala:5: type x.type escapes its defining scope as part of x.t
+  def foo(x: C, y: x.t): Object = null;
+                ^
+one error found

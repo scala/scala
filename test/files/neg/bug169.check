@@ -1,0 +1,7 @@
+bug169.scala:8: not found: type TIMEOUT
+        case TIMEOUT() => {
+             ^
+bug169.scala:9: value ! is not a member of java.lang.Process
+	    Child ! 'foo;
+                  ^
+two errors found

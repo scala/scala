@@ -6381,14 +6381,19 @@ class ReadersWriters {
 \section{Asynchronous Channels}
 
 A fundamental way of interprocess communication is the asynchronous
-channel. Its implementation makes use the following class for linked
+channel. Its implementation makes use the following simple class for linked
 lists:
 \begin{lstlisting}
-package scala.collection.mutable;
-class LinkedList[A](head: A, tail: LinkedList[A]) 
-  extends SingleLinkedList[A, LinkedList[A]] {
-    elem = head;
-    next = tail;
+class LinkedList[a] {
+  var elem: a = _;
+  var next: LinkedList[a] = null;
+  def insert(elem: a): LinkedList[a] = {
+    val nx = new LinkedList[a];
+    nx.elem = a;
+    nx.next = next;
+    next = nx;
+    next
+  }
 }
 \end{lstlisting}
 To facilitate insertion and deletion of elements into linked lists,
@@ -6402,14 +6407,15 @@ wish to read from an empty channel, register their presence by
 incrementing the \code{nreaders} field and waiting to be notified.
 \begin{lstlisting}
 package scala.concurrent;
+
 class Channel[a] with Monitor {
-  var dummy: a = _;
-  private var written = new LinkedList[a](dummy, null);
+  private var written = new LinkedList[a];
   private var lastWritten = written;
   private var nreaders = 0;
 
   def write(x: a) = synchronized {
-    lastWritten.next = new LinkedList(x, null);
+    lastWritten.elem = x;
+    lastWritten.next = new LinkedList[a];
     lastWritten = lastWritten.next;
     if (nreaders > 0) notify();
   }
@@ -6565,26 +6571,26 @@ class MailBox {
   def receiveWithin[a](msec: long)(f: PartialFunction[Any, a]): a;
 }
 \end{lstlisting}
-The state of a message space consists of a multi-set of messages.
-Messages are added to the space using the \code{send} method. Messages
+The state of a mailbox consists of a multi-set of messages.
+Messages are added to the mailbox the \code{send} method. Messages
 are removed using the \code{receive} method, which is passed a message
 processor \code{f} as argument, which is a partial function from
 messages to some arbitrary result type. Typically, this function is
 implemented as a pattern matching expression. The \code{receive}
-method blocks until there is a message in the space for which its
+method blocks until there is a message in the mailbox for which its
 message processor is defined.  The matching message is then removed
-from the space and the blocked thread is restarted by applying the
+from the mailbox and the blocked thread is restarted by applying the
 message processor to the message. Both sent messages and receivers are
 ordered in time. A receiver $r$ is applied to a matching message $m$
 only if there is no other (message, receiver) pair which precedes $(m,
 r)$ in the partial ordering on pairs that orders each component in
 time.
 
-As a simple example of how message spaces are used, consider a
+As a simple example of how mailboxes are used, consider a
 one-place buffer:
 \begin{lstlisting}
 class OnePlaceBuffer {
-  private val m = new MessageSpace;       // An internal message space
+  private val m = new MailBox;            // An internal milbox
   private case class Empty, Full(x: int); // Types of messages we deal with
   m send Empty;                           // Initialization
   def write(x: int): unit =
@@ -6593,9 +6599,9 @@ class OnePlaceBuffer {
     m receive { case Full(x) => m send Empty ; x }
 }
 \end{lstlisting}
-Here's how the message space class can be implemented:
+Here's how the mailbox class can be implemented:
 \begin{lstlisting}
-class MessageSpace {
+class MailBox with Monitor {
   private abstract class Receiver extends Signal {
     def isDefined(msg: Any): boolean;
     var msg = null;
@@ -6609,12 +6615,12 @@ receiver thread. When the receiver thread is woken up, the message it
 needs to be applied to is stored in the \code{msg} variable of
 \code{Receiver}.
 \begin{lstlisting}
-  private val sent = new LinkedList[Any](null) ;
+  private val sent = new LinkedList[Any];
   private var lastSent = sent;
-  private var receivers = new LinkedList[Receiver](null);
+  private val receivers = new LinkedList[Receiver];
   private var lastReceiver = receivers;
 \end{lstlisting}
-The message space class maintains two linked lists,
+The mailbox class maintains two linked lists,
 one for sent but unconsumed messages, the other for waiting receivers.
 \begin{lstlisting}
   def send(msg: Any): unit = synchronized {
@@ -6625,30 +6631,28 @@ one for sent but unconsumed messages, the other for waiting receivers.
     if (r1 != null) {
       r.next = r1.next; r1.elem.msg = msg; r1.elem.notify;
     } else {
-      l = new LinkedList(msg); lastSent.next = l; lastSent = l;
+      lastSent = lastSent.insert(msg);
     }
   }
 \end{lstlisting}
 The \code{send} method first checks whether a waiting receiver is
-
 applicable to the sent message. If yes, the receiver is notified.
 Otherwise, the message is appended to the linked list of sent messages.
 \begin{lstlisting}
   def receive[a](f: PartialFunction[Any, a]): a = {
     val msg: Any = synchronized {
       var s = sent, s1 = s.next;
-      while (s1 != null && !f.isDefined(s1.elem)) {
+      while (s1 != null && !f.isDefinedAt(s1.elem)) {
         s = s1; s1 = s1.next
       }
       if (s1 != null) {
         s.next = s1.next; s1.elem
       } else {
-        val r = new LinkedList(
-          new Receiver {
-            def isDefined(msg: Any) = f.isDefined(msg);
-          });
-        lastReceiver.next = r; lastReceiver = r;
-        r.elem.wait;
+	val r = lastReceiver.insert(new Receiver {
+          def isDefined(msg: Any) = f.isDefinedAt(msg);
+        });
+	lastReceiver = r;
+        r.elem.wait();
         r.elem.msg
       }
     }
@@ -6663,7 +6667,7 @@ and linked into the \code{receivers} list, and the thread waits for a
 notification on this receiver. Once the thread is woken up again, it
 continues by applying \code{f} to the message that was stored in the receiver.
 
-The message space class also offers a method \code{receiveWithin}
+The mailbox class also offers a method \code{receiveWithin}
 which blocks for only a specified maximal amount of time.  If no
 message is received within the specified time interval (given in
 milliseconds), the message processor argument $f$ will be unblocked
@@ -6673,18 +6677,16 @@ with the special \code{TIMEOUT} message.  The implementation of
   def receiveWithin[a](msec: long)(f: PartialFunction[Any, a]): a = {
     val msg: Any = synchronized {
       var s = sent, s1 = s.next;
-      while (s1 != null && !f.isDefined(s1.elem)) {
+      while (s1 != null && !f.isDefinedAt(s1.elem)) {
         s = s1; s1 = s1.next ;
       }
       if (s1 != null) {
         s.next = s1.next; s1.elem
       } else {
-        val r = new LinkedList(
-          new Receiver {
-            def isDefined(msg: Any) = f.isDefined(msg);
-          }
-        )
-        lastReceiver.next = r; lastReceiver = r;
+        val r = lastReceiver.insert(new Receiver {
+            def isDefined(msg: Any) = f.isDefinedAt(msg);
+        });
+        lastReceiver = r;
         r.elem.wait(msec);
         if (r.elem.msg == null) r.elem.msg = TIMEOUT;
         r.elem.msg
@@ -6692,7 +6694,7 @@ with the special \code{TIMEOUT} message.  The implementation of
     }
     f(msg)
   }
-} // end MessageSpace
+} // end MailBox
 \end{lstlisting}
 The only differences are the timed call to \code{wait}, and the
 statement following it.
@@ -6704,10 +6706,25 @@ Chapter~\ref{sec:ex-auction} sketched as a program example the
 implementation of an electronic auction service. This service was
 based on high-level actor processes, that work by inspecting messages
 in their mailbox using pattern matching. An actor is simply a thread
-whose communication primitives are those of a message space.
-Actors are therefore defined by a mixin composition of threads and message spaces.
+whose communication primitives are those of a mailbox.  Actors are
+defined as an extension of Java's standard \code{Thread} class which
+forwards all communication calls to an internal mailbox.
 \begin{lstlisting}
-abstract class Actor extends Thread with MessageSpace;
+abstract class Actor extends Thread {
+
+  type Message = Any;
+  
+  private val mb = new MailBox;
+  
+  def send(msg: Message): unit = 
+    mb.send(msg);
+
+  protected def receive[a](f: PartialFunction[Message, a]): a = 
+    mb.receive(f);
+  
+  protected def receiveWithin[a](msec: long)(f: PartialFunction[Message, a]): a = 
+    mb.receiveWithin(msec)(f);
+}
 \end{lstlisting}
 
 \comment{
@@ -7236,8 +7253,7 @@ The function \code{sumLeaves} sums up all the integer values in the
 leaves of a given tree \code{t}. It is is implemented by calling the
 \code{match} method of \code{t} with a {\em choice expression} as
 argument (\code{match} is a predefined method in class \code{Object}).
-The choice expression consists of two cases which both
-relate a pattern with an expression. The pattern of the first case,
+The choice expression consists of two cases which botrelate a pattern with an expression. The pattern of the first case,
 \code{Branch(l, r)} matches all instances of class \code{Branch}
 and binds the {\em pattern variables} \code{l} and \code{r} to the
 constructor arguments, i.e.\ the left and right subtrees of the
