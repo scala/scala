@@ -590,7 +590,7 @@ test_print_help() {
 # Prints the scalatest version.
 test_print_version() {
     [ $# = 0 ] || abort "internal error";
-    echo "$SCRIPT $Revision$";
+    echo "$SCRIPT "'$Revision$';
 }
 
 # Prints the name of the specified test file.
@@ -942,8 +942,8 @@ test_main() {
             --color=     ) abort "illegal empty argument for option --color";;
             --color=*    ) COLOR=`expr "$1" : "--color=\(.*\)"`; shift 1;;
             --objdir=*   ) OBJDIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
-            --help| -?   ) print_help; exit 0;;
-            --version    ) print_version; exit 0;;
+            --help| -?   ) test_print_help; exit 0;;
+            --version    ) test_print_version; exit 0;;
             -*           ) abort "unknown option $1";;
             *            ) test_add_file "$1"; shift 1;;
         esac;
