@@ -22,6 +22,8 @@ class CompilerPhases extends scalac_CompilerPhases {
     Class.forName("scala.tools.scalac.typechecker.AnalyzerPhase$class");
   protected override def REFCHECK_PHASE(): Class =
     Class.forName("scala.tools.scalac.typechecker.RefCheckPhase$class");
+  protected override def UNCURRY_PHASE(): Class =
+    Class.forName("scala.tools.scalac.transformer.UnCurryPhase$class");
   protected override def TRANSMATCH_PHASE(): Class =
     Class.forName("scala.tools.scalac.transformer.TransMatchPhase$class");
   protected override def WHOLEPROG_PHASE(): Class =

@@ -55,8 +55,8 @@ public abstract class CompilerPhases {
     protected abstract Class PARSER_PHASE();
     protected abstract Class ANALYZER_PHASE();
     protected abstract Class REFCHECK_PHASE();
-    protected Class UNCURRY_PHASE() { return scalac.transformer.UnCurryPhase.class; }
-    protected abstract Class TRANSMATCH_PHASE() ;
+    protected abstract Class UNCURRY_PHASE();
+    protected abstract Class TRANSMATCH_PHASE();
     protected Class LAMBDALIFT_PHASE() { return scalac.transformer.LambdaLiftPhase.class; }
     protected Class EXPLICITOUTER_PHASE() { return scalac.transformer.ExplicitOuterClassesPhase.class; }
     protected Class ADDACCESSORS_PHASE() { return scalac.transformer.AddAccessorsPhase.class; }
