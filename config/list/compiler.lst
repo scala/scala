@@ -37,6 +37,9 @@ ast/printer/HTMLTreePrinter.java
 ast/printer/TextTreePrinter.java
 ast/printer/TreePrinter.java
 
+backend/Primitive.java
+# backend/Primitives.java
+
 checkers/CheckOwners.java
 checkers/CheckSymbols.java
 checkers/CheckTypes.java
@@ -67,6 +70,8 @@ transformer/AddAccessors.java
 transformer/AddAccessorsPhase.java
 transformer/AddInterfaces.java
 transformer/AddInterfacesPhase.java
+# transformer/Erasure.java
+# transformer/ErasurePhase.java
 transformer/ExplicitOuterClasses.java
 transformer/ExplicitOuterClassesPhase.java
 transformer/ExpandMixins.java
