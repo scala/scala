@@ -36,14 +36,14 @@ public class MetaTuple extends AbstractScalaExpander {
     public void printTParams() {
         for (int i = 0; i < arity; i++) {
             if (i > 0) writer.print(", ");
-            writer.print("?A").print(i);
+            writer.print("T").print(i);
         }
     }
 
     public void printVParams() {
         for (int i = 0; i < arity; i++) {
             if (i > 0) writer.print(", ");
-            writer.print("_").print(i).print(" ?A").print(i);
+            writer.print("_").print(i).print(": T").print(i);
         }
     }
 
