@@ -10,6 +10,8 @@ abstract class Types: SymbolTable {
 
   val emptyTypeArray = new Array[Type](0);
 
+  val emptySymbolIterator = Iterator.empty[Symbol];
+
   /** The base class for all types */
   trait Type {
 
@@ -91,7 +93,7 @@ abstract class Types: SymbolTable {
     /** An iterator that enumerates all members of this type and its base types
      *  Members of any type precede members of its base types in the ordering
      *  Members of parents of a type are enumerated right to left. */
-    def rawMembersIterator: Iterator[Symbol] = Iterator.empty;
+    def rawMembersIterator: Iterator[Symbol] = emptySymbolIterator;
 
     /** An iterator that enumerates all members of this type
      *  (defined or inherited).
@@ -104,11 +106,22 @@ abstract class Types: SymbolTable {
       yield sym;
 
     /** The member with given name of this type, NoSymbol if none exists */
-    def lookup(name: Name): Symbol = lookupNonPrivate(name);
+    def lookup(name: Name): Symbol = lookupExclude(name, 0);
 
     /** The non-private member with given name of this type,
      *  NoSymbol if none exists. */
-    def lookupNonPrivate(name: Name): Symbol = NoSymbol;
+    def lookupNonPrivate(name: Name): Symbol = lookupExclude(name, PRIVATE);
+
+    protected def lookupExclude(name: Name, excludeFlags: int): Symbol = {
+      val buf = new ListBuffer;
+      appendMembers(name, buf, excludeFlags | DEFERRED);
+      appendMembers(name, buf, excludeFlags);
+      if (buf.length == 0) NoSymbol
+      else if (buf.length == 1) buf(0)
+      else overloadedSymbol(this, buf.elements.toList)
+    }
+
+    protected def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit;
 
     /** The least type instance of given class which is a supertype
      *  of this type */
@@ -197,6 +210,8 @@ abstract class Types: SymbolTable {
      */
     def closure: Array[Type] = Predef.Array(this);
 
+    def baseClasses: List[Symbol] = List();
+
     /** The index of given class symbol in the closure of this type, -1
      *  of no base type with gien class symbol exists */
     def closurePos(sym: Symbol): int = {
@@ -252,31 +267,6 @@ abstract class Types: SymbolTable {
 
 // Subclasses ------------------------------------------------------------
 
-  /** A mixin for types that carry a members scope
-   *  (refinements and class types)
-   */
-  abstract class TypeWithScope(scope: Scope) extends Type {
-
-    override def members: Scope = scope;
-
-    override def rawMembersIterator: Iterator[Symbol] =
-      scope.toList.elements append super.rawMembersIterator;
-
-    override def lookup(name: Name): Symbol = {
-      val sym = scope lookup name;
-      if (sym != NoSymbol) sym else super.lookupNonPrivate(name)
-    }
-
-    override def lookupNonPrivate(name: Name): Symbol = {
-      val sym = scope lookup name;
-      if (sym != NoSymbol && !sym.hasFlag(PRIVATE)) sym
-      else super.lookupNonPrivate(name);
-    }
-
-    override def toString(): String =
-      super.toString() + members.toString();
-  }
-
   /** A base class for types that defer some operations
    *  to their immediate supertype
    */
@@ -284,13 +274,12 @@ abstract class Types: SymbolTable {
     protected def supertype: Type;
     override def parents: List[Type] = supertype.parents;
     override def members: Scope = supertype.members;
-    override def rawMembersIterator: Iterator[Symbol] =
-      supertype.rawMembersIterator;
-    override def lookup(name: Name): Symbol = supertype lookup name;
-    override def lookupNonPrivate(name: Name): Symbol =
-      supertype lookupNonPrivate name;
+    override def rawMembersIterator: Iterator[Symbol] = supertype.rawMembersIterator;
+    override def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit =
+      supertype.appendMembers(name, bug, excludeFlags);
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz);
     override def closure: Array[Type] = supertype.closure;
+    override def baseClasses: List[Symbol] = supertype.baseClasses;
     override def erasure: Type = supertype.erasure;
   }
 
@@ -308,7 +297,8 @@ abstract class Types: SymbolTable {
   /** An object representing an erroneous type */
   case object ErrorType extends Type {
     override def members: Scope = new ErrorScope(NoSymbol);
-    override def lookupNonPrivate(name: Name): Symbol = members lookup name;
+    override def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit =
+      buf += (members lookup name);
     override def baseType(clazz: Symbol): Type = this;
     override def toString(): String = "<error>";
     override def narrow: Type = this;
@@ -372,33 +362,32 @@ abstract class Types: SymbolTable {
 
   /** A common base class for intersection types and class types
    */
-  abstract class TypeIntersection(override val parents: List[Type]) extends Type {
-    override def lookupNonPrivate(name: Name): Symbol = {
-      def lookIn(ps: List[Type]): Symbol = ps match {
-        case List() => NoSymbol
-        case p::ps1 =>
-          val sym = p lookupNonPrivate name;
-          val sym1 = lookIn(ps1);
-          if (sym1 == NoSymbol
-	      ||
-	      !sym.hasFlag(DEFERRED) && sym1.hasFlag(DEFERRED)
-	      ||
-	      sym.hasFlag(DEFERRED) == sym1.hasFlag(DEFERRED) &&
-	      (sym.owner isSubClass sym1.owner)) sym
-          else sym1
+  abstract class CompoundType extends Type {
+    override val parents: List[Type];
+    override val members: Scope;
+
+    override def appendMembers(name: Name, scope: Scope, buf: List[Buffer], excludeFlags: int): unit = {
+      for (val sym <- scope.lookupAll(name, false)) {
+	if ((sym.rawflags & excludeFlags) == 0)
+	  if (buf.length == 0 ||
+	      !buf.elements.exists(m => memberType(m) matches memberType(sym)))
+	    buf += sym
       }
-      lookIn(parents);
+      for (val bc <- baseClasses)
+	baseType(bc).appendMembers(name, buf, excludeFlags | PRIVATE)
     }
 
     private var closureCache: Array[Type] = _;
-    private var valid: Phase = null;
+    private var baseClassCache: List[Symbol] = _;
+    private var validClosure: Phase = null;
+    private var validBaseClasses: Phase = null;
 
     override def closure: Array[Type] = {
-      if (valid != phase) {
-        valid = phase;
+      if (validClosure != phase) {
+        validClosure = phase;
         closureCache = null;
 	try {
-          closureCache = computeClosure;
+          closureCache = addClosure(symbol.tpe, glbArray(parents map (.closure)));
 	} catch {
           case ex: MalformedClosure =>
             throw new MalformedType(
@@ -411,59 +400,69 @@ abstract class Types: SymbolTable {
       closureCache;
     }
 
-    protected def computeClosure: Array[Type];
+    override def baseClasses: List[Symbol] = {
+      def computeBaseClasses: List[Symbol] =
+	if (parents.isEmpty) List()
+	else {
+	  var bcs: List[Symbol] = parents.head.baseClasses;
+	  val mixins = parents.tail map (.symbol);
+	  def isNew(limit: List[Symbol])(clazz: Symbol): boolean = {
+	    var ms = mixins;
+	    while (!(ms eq limit) && !(ms.head.isSubClass clazz)) ms = ms.tail;
+	    ms eq limit
+	  }
+	  var ms = mixins;
+	  while (!ms.isEmpty) {
+	    bcs = ms.head.baseClasses.filter(isNew(ms)) ::: bcs;
+	    ms = ms.tail
+	  }
+	  symbol :: bcs
+	}
+
+      if (validBaseClasses != phase) {
+	validBaseClasses = phase;
+	baseClassCache = null;
+	baseClassCache = computeBaseClasses;
+      }
+      if (baseClassCache = null)
+        throw new TypeError("illegal cyclic reference involving " + symbol);
+      baseClassCache
+    }
 
     override def baseType(sym: Symbol): Type = {
       val index = closurePos(sym);
       if (index >= 0) closure(index) else NoType;
     }
 
-    /*
-    override def baseType(clazz: Symbol): Type =
-      glb(parents map (.baseType(clazz)) filter (.!=(NoType)));
-    */
+    override def narrow: Type = symbol.thisType;
 
     override def rawMembersIterator: Iterator[Symbol] =
-      for (val parent <- parents.reverse.elements;
-	   val sym <- parent.rawMembersIterator) yield sym;
+      scope.toList.elements append
+      (for (val parent <- parents.reverse.elements;
+	   val sym <- parent.rawMembersIterator) yield sym);
 
     override def erasure: Type =
       if (parents.isEmpty) this else parents.head.erasure;
 
     override def toString(): String =
-      parents.mkString("", " with ", "");
+      parents.mkString("", " with ", "") + members.toString()
   }
 
-  /** A class representing intersection types of the form
-   *  <parents_0> with ... with <parents_n>
-   */
-  case class IntersectionType(_parents: List[Type])
-       extends TypeIntersection(_parents) {
-    def computeClosure: Array[Type] = glbArray(parents map (.closure));
-  }
-
-  /** A class representing a refinement
+  /** A class representing intersection types with refinements of the form
+   *    <parents_0> with ... with <parents_n> { members }
    *  Cannot be created directly;
    *  one should always use `refinedType' for creation.
    */
-  abstract case class RefinedType(base: Type, refinement: Scope)
-		extends SubType with TypeWithScope(refinement) {
-    protected def supertype: Type = base;
-    override def narrow: Type = symbol.thisType;
-  }
+  abstract case class RefinedType(override val parents: List[Type],
+				  override val members: Scope) extends CompoundType;
 
   /** A class representing a class info
    */
-  case class ClassInfoType(_parents: List[Type], defs: Scope, clazz: Symbol)
-       extends TypeIntersection(_parents) with TypeWithScope(defs) {
+  case class ClassInfoType(override val parents: List[Type],
+			   override val members: Scope,
+			   override val symbol: Symbol) extends CompoundType;
 
-    override def symbol: Symbol = clazz;
-
-    def computeClosure: Array[Type] =
-      addClosure(clazz.tpe, glbArray(parents map (.closure)));
-  }
-
-  class PackageClassInfoType(defs: Scope, clazz: Symbol) extends ClassInfoType(List(), defs, clazz);
+  class PackageClassInfoType(defs: Members, clazz: Symbol) extends ClassInfoType(List(), defs, clazz);
 
   /** A class representing a constant type */
   case class ConstantType(base: Type, value: Any)
@@ -510,10 +509,8 @@ abstract class Types: SymbolTable {
     override def rawMembersIterator: Iterator[Symbol] =
       sym.info.rawMembersIterator;
 
-    override def lookup(name: Name): Symbol = sym.info.lookup(name);
-
-    override def lookupNonPrivate(name: Name): Symbol =
-      sym.info.lookupNonPrivate(name);
+    override def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit =
+      sym.info.appendMembers(name, buf, excludeFlags);
 
     override def baseType(clazz: Symbol): Type =
       if (sym == clazz) this
@@ -523,6 +520,8 @@ abstract class Types: SymbolTable {
     override def closure: Array[Type] =
       if (sym.isAbstractType) addClosure(this, bounds.hi.closure)
       else transform(sym.info.closure);
+
+    override def baseClasses: List[Symbol] = sym.info.baseClasses;
 
     override def instanceType: Type =
       if (sym.thisSym != sym) transform(sym.typeOfThis)
@@ -568,8 +567,7 @@ abstract class Types: SymbolTable {
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
    */
-  case class PolyType(override val typeParams: List[Symbol],
-                      override val resultType: Type) extends Type {
+  case class PolyType(override val typeParams: List[Symbol], override val resultType: Type) extends Type {
 
     override def paramSectionCount: int = resultType.paramSectionCount;
 
@@ -603,6 +601,10 @@ abstract class Types: SymbolTable {
     override def toString(): String =
       if (constr.inst == NoType) "?" + origin else constr.inst.toString();
   }
+
+  /** A class containing the alternatives and type prefix of an overloaded symbol
+   */
+  case class OverloadedType(pre: Type, val alternatives: List[Symbol]) extends Type;
 
   /** A class representing an as-yet unevaluated type.
    */
@@ -654,25 +656,25 @@ abstract class Types: SymbolTable {
     }
   }
 
-  /** the canonical creator for a refined type with an initially empty scope */
-  def refinedType(base: Type, owner: Symbol): RefinedType =
-    refinedType(base, owner, new Scope);
-
   /** the canonical creator for a refined type with a given scope */
-  def refinedType(base: Type, owner: Symbol, members: Scope): RefinedType = {
+  def refinedType(parents: List[Type], owner: Symbol, members: Scope): RefinedType = {
     val clazz = owner.newRefinementClass(Position.NOPOS);
-    val result = new RefinedType(base, members) {
+    val result = new RefinedType(parents, members) {
       override def symbol: Symbol = clazz
     }
     clazz.setInfo(result);
     result
   }
 
+  /** the canonical creator for a refined type with an initially empty scope */
+  def refinedType(parents: List[Type], owner: Symbol): RefinedType =
+    refinedType(parents, owner, new Scope);
+
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself. */
   def intersectionType(tps: List[Type]): Type = tps match {
     case List(tp) => tp
-    case _ => IntersectionType(tps)
+    case _ => refinedType(tps, commonOnwer(tps))
   }
 
   /** A creator for type applications */
@@ -681,6 +683,12 @@ abstract class Types: SymbolTable {
       if (args eq args1) tycon
       else typeRef(pre, sym, args)
     case ErrorType => tycon
+  }
+
+  def overloadedSymbol(pre: Type, alternatives: List[Symbol]): Symbol = {
+    pre.symbol.newValue(alternatives.head.pos, alternatives.head.name)
+    .setFlag(OVERLOADED)
+    .setInfo(OverloadedType(pre, alternatives))
   }
 
 // Helper Classes ---------------------------------------------------------
@@ -725,12 +733,12 @@ abstract class Types: SymbolTable {
         val hi1 = this(hi);
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
-      case RefinedType(base, refinement) =>
-        val base1 = this(base);
+      case RefinedType(parents, refinement) =>
+        val parents1 = List.transform(parents)(this);
         val refinement1 = mapOver(refinement);
-        if ((base1 eq base) && (refinement1 eq refinement)) tp
+        if ((parents1 eq parents) && (refinement1 eq refinement)) tp
         else {
-          val result = refinedType(base1, tp.symbol.owner);
+          val result = refinedType(parents1, tp.symbol.owner);
           val syms1 = refinement1.toList;
           for (val sym <- syms1)
             result.members.enter(sym.cloneSymbol(result.symbol));
@@ -740,10 +748,6 @@ abstract class Types: SymbolTable {
             sym.setInfo(sym.info.substSym(syms1, syms2).substThis(tp.symbol, resultThis));
           result
         }
-      case IntersectionType(parents) =>
-        val parents1 = List.transform(parents)(this);
-        if (parents1 eq parents) tp
-        else IntersectionType(parents1)
       case MethodType(paramtypes, result) =>
         val paramtypes1 = List.transform(paramtypes)(this);
         val result1 = this(result);
@@ -956,15 +960,13 @@ abstract class Types: SymbolTable {
 	base1 =:= base2 && value1 == value2
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
 	sym1 == sym2 && pre1 =:= pre2 && isSameTypes(args1, args2)
-      case Pair(IntersectionType(parents1), IntersectionType(parents2)) =>
-	isSameTypes(parents1, parents2)
-      case Pair(RefinedType(base1, ref1), RefinedType(base2, ref2)) =>
+      case Pair(RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
 	def isSubScope(s1: Scope, s2: Scope): boolean = s2.toList.forall {
 	  sym2 =>
             val sym1 = s1.lookup(sym2.name);
             sym1.info =:= sym2.info.substThis(sym2.owner, sym1.owner.thisType)
 	}
-	base1 =:= base2 && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
+	isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         pts1.length == pts2.length &&
         isSameTypes(pts1, pts2) &&
@@ -1057,16 +1059,13 @@ abstract class Types: SymbolTable {
       case Pair(TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else { constr1.hibounds = tp2 :: constr1.hibounds; true }
-      case Pair(_, IntersectionType(parents2)) =>
-        parents2 forall (tp1.<:<)
-      case Pair(_, RefinedType(base2, ref2)) =>
-        tp1 <:< base2 && (ref2.toList forall (tp1 specializes))
-      case Pair(IntersectionType(parents1), _) =>
+      case Pair(_, RefinedType(parents2, ref2)) =>
+        parents2 forall (tp1.<:<) && (ref2.toList forall (tp1 specializes))
+      case Pair(RefinedType(parents1, ref1), _) =>
         parents1 exists (.<:<(tp2))
       case Pair(ThisType(_), _)
          | Pair(SingleType(_, _), _)
-         | Pair(ConstantType(_, _), _)
-         | Pair(RefinedType(_, _), _) =>
+         | Pair(ConstantType(_, _), _) =>
         tp1.singleDeref <:< tp2
       case Pair(TypeRef(pre1, sym1, args1), _) =>
         sym1 == AllClass && tp2 <:< AnyClass.tpe
@@ -1219,15 +1218,12 @@ abstract class Types: SymbolTable {
       (sym1, tp2) => if (tp2.symbol isLess sym1) tp2.symbol else sym1
     }
 
-  /** A minimal type which has a given array of types as its closure */
-  private def spanningType(ts: Array[Type]): Type = {
-    def spanningTypes(ts: List[Type]): List[Type] = ts match {
-      case List() => List()
-      case first :: rest =>
-        first :: spanningTypes(
-          rest filter (t => !first.symbol.isSubClass(t.symbol)))
-    }
-    intersectionType(spanningTypes(List.fromArray(ts)))
+  /** A minimal type list which has a given array of types as its closure */
+  def spanningTypes(ts: List[Type]): List[Type] = ts match {
+    case List() => List()
+    case first :: rest =>
+      first :: spanningTypes(
+        rest filter (t => !first.symbol.isSubClass(t.symbol)))
   }
 
   /** Eliminate from list of types all elements which are a supertype
@@ -1255,8 +1251,9 @@ abstract class Types: SymbolTable {
       case ts =>
         val closures: List[Array[Type]] = ts map (.closure);
         val lubBaseTypes: Array[Type] = lubArray(closures);
-        val lubBase = spanningType(lubBaseTypes);
-        val lubType = refinedType(lubBase, commonOwner(ts));
+        val lubParents = spanningTypes(List.fromArray(lubBaseTypes));
+	val lubBase = refinedType(lubParents, commonOwner(ts));
+        val lubType = refinedType(lubParents, lubBase.symbol);
         val lubThisType = lubType.symbol.thisType;
         val narrowts = ts map (.narrow);
         def lubsym(proto: Symbol): Symbol = {
@@ -1309,8 +1306,8 @@ abstract class Types: SymbolTable {
         MethodType(pts, glb0(matchingRestypes(ts, pts)))
       case ts =>
 	try {
-          val glbBase = intersectionType(ts);
-          val glbType = refinedType(glbBase, commonOwner(ts));
+          val glbBase = refinedType(ts, commonOwner(ts));
+          val glbType = refinedType(ts, glbBase.symbol);
           val glbThisType = glbType.symbol.thisType;
           def glbsym(proto: Symbol): Symbol = {
             val prototp = glbThisType.memberInfo(proto);

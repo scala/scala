@@ -181,7 +181,7 @@ abstract class Symbols: SymbolTable {
 	val tp = infos.info;
         if ((rawflags & LOCKED) != 0) {
           setInfo(ErrorType);
-          throw new CyclicReference(this, tp);
+          throw CyclicReference(this, tp);
         }
         rawflags = rawflags | LOCKED;
 	val current = phase;
@@ -359,7 +359,7 @@ abstract class Symbols: SymbolTable {
     /** The primary constructor of a class */
     def primaryConstructor: Symbol = {
       var constr: Symbol = NoSymbol;
-      val syms = info.members.lookupAll(nme.CONSTRUCTOR);
+      val syms = info.members.lookupAll(nme.CONSTRUCTOR, true);
       while (syms.hasNext) constr = syms.next;
       constr
     }
@@ -563,7 +563,7 @@ abstract class Symbols: SymbolTable {
   class TermSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true;
     override def alternatives: Iterator[Symbol] =
-      if (owner.isClass) owner.info.members.lookupAll(name)
+      if (owner.isClass) owner.info.members.lookupAll(name, true)
       else super.alternatives;
     def cloneSymbolImpl(owner: Symbol): Symbol =
       new TermSymbol(owner, pos, name);

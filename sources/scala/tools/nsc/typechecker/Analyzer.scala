@@ -9,5 +9,5 @@ abstract class Analyzer extends Contexts with Namers with Typers with TypeChecke
 
   import global._;
 
-  case class ImportType(expr: Tree, selectors: List[Pair[Name, Name]]) extends Type;
+  case class ImportType(tree: Import) extends Type;
 }

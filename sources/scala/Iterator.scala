@@ -20,8 +20,14 @@ package scala;
 object Iterator {
 
   def empty[a] = new Iterator[a] {
-      def hasNext = false;
+      def hasNext: boolean = false;
       def next: a = error("next on empty iterator");
+  }
+
+  def single[a](x: a) = new Iterator[a] {
+    private var hasnext = false;
+    def hasNext: boolean = hasnext;
+    def next: a = if (hasnext) { hasnext = false; x } else error("next on empty iterator");
   }
 
   def fromValues[a](xs: a*) = xs.elements;

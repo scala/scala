@@ -23,6 +23,23 @@ abstract class Scopes: SymbolTable {
 
   object NoScopeEntry extends ScopeEntry(NoSymbol, null);
 
+  private val emptyIterator: Iterator[ScopeEntry] = Iterator.empty;
+
+  private class EntryIterator(init: ScopeEntry, godeep: boolean) extends Iterator[ScopeEntry] {
+    private var e: ScopeEntry = init;
+    val owner = init.owner;
+    def hasNext: boolean = e != null && (godeep || e.owner == owner)
+    def next: ScopeEntry = {
+      val result = e;
+      if (e != null)
+        if (hashtable != null)
+	  do { e = e.tail } while (e != null && e.sym.name != name)
+	else
+	  do { e = e.next } while (e != null && e.sym.name != name);
+      result
+    }
+  }
+
   class Scope(initElems: ScopeEntry)  {
 
     var elems: ScopeEntry = initElems;
@@ -141,7 +158,7 @@ abstract class Scopes: SymbolTable {
 
     /** remove symbol */
     def unlink(sym: Symbol): unit =
-      for (val e <- lookupAllEntries(sym.name))
+      for (val e <- lookupAllEntries(sym.name, true))
         if (e.sym == sym) unlink(e);
 
     /** lookup a symbol
@@ -168,29 +185,16 @@ abstract class Scopes: SymbolTable {
     /** Iterates through all symbol entries matching given name.
      *  Iteration is from last declared to first declared.
      */
-    def lookupAllEntries(name: Name) = new Iterator[ScopeEntry] {
-      var e: ScopeEntry =
-        if (hashtable != null) hashtable(name.start & HASHMASK)
-        else elems;
-      def hasNext: boolean = {
-        while (e != null && e.sym.name != name)
-          if (hashtable != null) e = e.tail else e = e.next;
-        e != null
-      }
-      def next: ScopeEntry = if (hasNext) {
-        val result = e;
-        if (hashtable != null) e = e.tail else e = e.next;
-        result
-      } else {
-        null
-      }
+    def lookupAllEntries(name: Name, godeep: boolean): Iterator[ScopeEntry] = {
+      val e = lookupEntry(name);
+      if (e == null) emptyIterator else new EntryIterator(e, godeep);
     }
 
     /** Iterates through all symbols matching given name.
      *  Iteration is from last declared to first declared.
      */
-    def lookupAll(name: Name): Iterator[Symbol] =
-      lookupAllEntries(name) map (.sym);
+    def lookupAll(name: Name, godeep: boolean): Iterator[Symbol] =
+      lookupAllEntries(name, godeep) map (.sym);
 
     /** Return all symbols as a list in the order they were entered in this scope.
      */

@@ -103,6 +103,12 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** The first constructor in a list of statements */
+  def firstConstructor(stats: List[Tree]): Tree = stats.head match {
+    case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => stats.head
+    case _ => primaryConstrTree(stats.tail)
+  }
+
   /** Is name a variable name */
   def isVariableName(name: Name): boolean = {
     val first = name(0);
@@ -132,5 +138,29 @@ abstract class TreeInfo {
     case TypeApply(fn, _) => methPart(fn)
     case AppliedTypeTree(fn, _) => methPart(fn)
     case _ => tree
+  }
+
+  /** Is name imported explicitly, not via wildcard? */
+  def isExplicitImport(tree: Import, name: Name): Symbol = {
+    tree.selectors exists (.2.==(name.toTermName))
+  }
+
+  /** The symbol with name `name' imported from import clause `tree'.
+   */
+  def importedSymbol(tree: Import, name: Name): Symbol = {
+    var result: Symbol = NoSymbol;
+    var renamed = false;
+    var selectors = tree.selectors;
+    while (selectors != Nil && result == NoSymbol) {
+      if (selectors.head._2 == name.toTermName)
+	result = tree.expr.tpe.lookupNonPrivate(
+          if (name.isTypeName) selectors.head._1.toTypeName else selectors.head._1);
+      else if (selectors.head._1 == name.toTermName)
+        renamed = true
+      else if (selectors.head._1 == nme.WILDCARD && !renamed)
+        result = tree.expr.tpe.lookupNonPrivate(name)
+      selectors = selectors.tail
+    }
+    result
   }
 }
