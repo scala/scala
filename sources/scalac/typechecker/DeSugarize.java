@@ -176,116 +176,6 @@ public class DeSugarize implements Kinds, Modifiers {
 		vparam.tpe = gen.mkType(vparam.pos, pt);
 	}
 
-    /** (x_1: T_1, ..., x_n: T_N) => e  ==>
-     *  new scala.Object() with scala.Function[T_1, ..., T_N, T]() {
-     *    def apply(x_1: T_1, ..., x_N: T_N): T = e
-     *    def toString(): java.lang.String = "<function>"
-     *  }
-     *  where T = `restpe'
-     *  T_i = `argtpes[i]'
-     *  T_i's might be missing in the original tree.
-     */
-    public Tree Function(Tree tree, Type restype) {
-	switch (tree) {
-	case Function(ValDef[] vparams, Tree body):
-	    int length = vparams.length;
-	    Tree restpe = gen.mkType(tree.pos, meth2fun(restype));
-
-	    Tree[] argtpes = new Tree[length + 1];
-	    for (int i = 0; i < length; i++)
-		argtpes[i] = vparams[i].tpe;
-	    argtpes[vparams.length] = restpe;
-            Tree objConstr = make.Apply(
-		tree.pos,
-		make.Select(
-		    tree.pos,
-		    make.Ident(tree.pos, Names.scala),
-		    Names.Object.toTypeName()),
-		Tree.EMPTY_ARRAY);
-	    Tree constr = make.Apply(
-		tree.pos,
-		make.TypeApply(
-		    tree.pos,
-		    make.Select(
-			tree.pos,
-			make.Ident(tree.pos, Names.scala),
-			Name.fromString("Function" + length).toTypeName()),
-		    argtpes),
-		Tree.EMPTY_ARRAY);
-
-	    Tree applyDef = make.DefDef(
-		tree.pos, 0, Names.apply,
-		Tree.AbsTypeDef_EMPTY_ARRAY, new ValDef[][]{vparams},
-		restpe, body);
-
-	    Tree toStringDef = make.DefDef(
-		tree.pos, Modifiers.OVERRIDE, Names.toString,
-		Tree.AbsTypeDef_EMPTY_ARRAY,
-		new ValDef[][]{Tree.ValDef_EMPTY_ARRAY},
-		gen.mkType(tree.pos, global.definitions.JAVA_STRING_TYPE),
-		make.Literal(tree.pos, "<function>"));
-
-	    Tree result = make.New(tree.pos,
-		make.Template(tree.pos,
-		    new Tree[]{objConstr, constr},
-		    new Tree[]{applyDef, toStringDef}));
-	    print(tree, "mkfun", result);
-	    return result;
-	default:
-	    throw new ApplicationError();
-	}
-    }
-
-    /** Cases, Argtpe, Restpe ==>
-     *     new scala.PartialFunction[Argtpe, Restpe]() {
-     *        def apply(x: Argtpe): Restpe = x match {Cases}
-     *        def isDefinedAt(x: Argtpe): scala.Boolean = x match {Cases'}
-     *     }
-     *  WHERE
-     *    case P1 if G1 => E1, ..., Pn if Gn => En) = Cases
-     *    Cases' = case P1 if G1 => True, ..., Pn if Gn => True, _ => False
-     *    Argtpe = targs[0]
-     *    Restpe = targs[1]
-    public Tree partialFunction(Tree tree, Type pattpe, Type restpe) {
-	Tree constr =
-	    make.Apply(
-		tree.pos,
-		make.TypeApply(
-		    tree.pos,
-		    make.Select(
-			tree.pos,
-			make.Ident(tree.pos, Names.scala),
-			Names.PartialFunction.toConstrName()),
-		    new Tree[]{gen.mkType(tree.pos, pattpe),
-			       gen.mkType(tree.pos, restpe)}),
-		Tree.EMPTY_ARRAY);
-	Name x = getvar();
-	ValDef param = (ValDef) make.ValDef(
-	    tree.pos, PARAM, x, gen.mkType(tree.pos, pattpe), Tree.Empty);
-	ValDef[][] vparams = new ValDef[][]{new ValDef[]{param}};
-	Tree body = make.Apply(tree.pos,
-	    make.Select(tree.pos,
-		make.Ident(tree.pos, x), Names.match), new Tree[]{tree});
-	Tree applyDef = make.DefDef(
-	    tree.pos, 0, Names.apply, Tree.AbsTypeDef_EMPTY_ARRAY, vparams,
-	    gen.mkType(tree.pos, restpe), body);
-	Tree tree1 = isDefinedAtVisitor(tree);
-	Tree body1 = make.Apply(tree.pos,
-	    make.Select(tree.pos,
-		make.Ident(tree.pos, x), Names.match), new Tree[]{tree1});
-	Tree isDefinedAtDef = make.DefDef(
-	    tree.pos, 0, Names.isDefinedAt, Tree.AbsTypeDef_EMPTY_ARRAY,
-	    Tree.duplicator.transform(vparams),
-	    gen.mkType(tree.pos, global.definitions.BOOLEAN_TYPE), body1);
-	Tree result = make.New(tree.pos,
-	    make.Template(
-		tree.pos, new Tree[]{constr}, new Tree[]{applyDef, isDefinedAtDef}));
-
-	print(tree, "partialfun", result);
-	return result;
-    }
-     */
-
     Tree isDefinedAtVisitor(Tree tree) {
 	switch (tree) {
 	case Visitor(CaseDef[] cases):
@@ -540,7 +430,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	    Tree getter = make.DefDef(
 		tree.pos, mods1, name,
 		Tree.AbsTypeDef_EMPTY_ARRAY, Tree.ValDef_EMPTY_ARRAY_ARRAY,
-		tpe,
+		tpe.duplicate(),
 		((mods & DEFERRED) != 0) ? Tree.Empty
 		    : make.Ident(tree.pos, valname));
 	    if ((mods1 & MUTABLE) == 0) {
@@ -552,7 +442,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		    Tree.AbsTypeDef_EMPTY_ARRAY,
 		    new ValDef[][]{{
 			(ValDef) make.ValDef(
-			    tree.pos, SYNTHETIC | PARAM, parameterName(0), tpe, Tree.Empty)}},
+			    tree.pos, SYNTHETIC | PARAM, parameterName(0), tpe.duplicate(), Tree.Empty)}},
 		    gen.mkType(tree.pos, global.definitions.UNIT_TYPE),
 		    ((mods1 & DEFERRED) != 0) ? Tree.Empty
 		        : make.Assign(

@@ -453,6 +453,8 @@ public class SymbolTablePrinter {
             print('(');
             for (int i = 0; i < vparams.length; i++) {
                 if (i > 0) print(",");
+		if ((vparams[i].flags & Modifiers.DEF) != 0)
+		    print("def ");
                 printSymbolType(vparams[i], null);
             }
             print(')');
@@ -522,7 +524,9 @@ public class SymbolTablePrinter {
 	    if (sym.isRoot()) return print("<root>");
             return printPrefix(pre).printSymbolName(sym);
 	case CompoundType(Type[] parts, Scope members):
-            return printTypes(parts," with ").space().printScope(members,true);
+            return printTypes(parts," with ").space()
+		.printScope(members,true)
+		.printSymbolUniqueId(type.symbol());
 	case MethodType(_, _):
 	    return printType0(type, null);
 	case PolyType(_, _):

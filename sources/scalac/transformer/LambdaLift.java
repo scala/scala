@@ -38,6 +38,7 @@ public class LambdaLift extends OwnerTransformer
     final Definitions definitions;
     final FreeVars free;
     final LambdaLiftPhase descr;
+    private Unit unit;
 
     public LambdaLift(Global global, LambdaLiftPhase descr) {
         super(global);
@@ -48,6 +49,7 @@ public class LambdaLift extends OwnerTransformer
     }
 
     public void apply(Unit unit) {
+	this.unit = unit;
 	global.log(unit.source.toString());
 	free.initialize(unit);
 	currentOwner = global.definitions.ROOT_CLASS;
@@ -411,6 +413,12 @@ public class LambdaLift extends OwnerTransformer
 	    Tree tree1 = mkList(tree.pos, tree.type, transform(args));
 	    //new scalac.ast.printer.TextTreePrinter().print("TUPLE: ").print(tree).print("\n ==> \n").print(tree1).println().end();//DEBUG
 	    return tree1;
+
+	case Return(Tree expr):
+	    if (tree.symbol() != currentOwner.enclMethod()) {
+		unit.error(tree.pos, "non-local return not yet implemented");
+	    }
+	    return super.transform(tree);
 
 	case Apply(Tree fn, Tree[] args):
 	    Symbol fsym = TreeInfo.methSymbol(fn);

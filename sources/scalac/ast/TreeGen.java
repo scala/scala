@@ -21,7 +21,7 @@ import Tree.*;
  *  @author     Martin Odersky, Christine Roeckl
  *  @version    1.0
  */
-public class TreeGen implements Kinds, Modifiers {
+public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /********************************************************************************/
     /********************************************************************************/
@@ -183,6 +183,34 @@ public class TreeGen implements Kinds, Modifiers {
      */
     public Tree mkIntLit(int pos, int value) {
         return make.Literal(pos, new Integer(value)).setType(definitions.INT_TYPE);
+    }
+
+    /** Build a default zero value according to type
+     */
+    public Tree mkDefaultValue(int pos, Type tp) {
+	if (tp.isSubType(definitions.ANYREF_TYPE)) {
+	    return Ident(pos, definitions.NULL);
+	} else {
+	    switch (tp.unbox()) {
+	    case UnboxedType(BOOLEAN):
+		return mkBooleanLit(pos, false);
+	    case UnboxedType(BYTE):
+	    case UnboxedType(SHORT):
+	    case UnboxedType(CHAR):
+	    case UnboxedType(INT):
+		return mkIntLit(pos, 0);
+	    case UnboxedType(LONG):
+		return make.Literal(pos, new Long(0)).setType(definitions.LONG_TYPE);
+	    case UnboxedType(FLOAT):
+		return make.Literal(pos, new Float(0)).setType(definitions.FLOAT_TYPE);
+	    case UnboxedType(DOUBLE):
+		return make.Literal(pos, new Double(0)).setType(definitions.DOUBLE_TYPE);
+	    case UnboxedType(UNIT):
+		return Block(pos, Tree.EMPTY_ARRAY);
+	    default:
+		return Ident(pos, definitions.ZERO);
+	    }
+	}
     }
 
     /** Build a tree to be used as a base class constructor for a template.

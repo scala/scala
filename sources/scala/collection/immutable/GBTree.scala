@@ -242,7 +242,7 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
 	    case Nil() =>
 	    ITree(Node(key, value, Nil(), Nil()));
 	    case _ =>
-	    (new KeyExists(key)).throw;
+ 	    throw new KeyExists(key);
 	}
     }
 

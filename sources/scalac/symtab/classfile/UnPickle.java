@@ -46,10 +46,13 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	    this.moduleroot = root;
 	    this.classroot = root.owner().lookup(root.name.toTypeName());
 	}
+	if (root != moduleroot && moduleroot.isModule()) {
+	    moduleroot.moduleClass().setInfo(Type.NoType);
+	}
 	if (global.debug)
 	    global.log(
 		"unpickle " + root + " " + classroot + " " + moduleroot + " " +
-		moduleroot.moduleClass() + moduleroot.moduleClass().primaryConstructor());
+		moduleroot.moduleClass() + " " + moduleroot.moduleClass().primaryConstructor());
 	this.bytes = data;
 	this.bp = 0;
 	this.sourceName = sourceName;
@@ -69,8 +72,9 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	if (global.debug) global.log("unpickled " + root + ":" + root.rawInfo());//debug
 	if (!root.isInitialized())
 	    throw new BadSignature(this, "it does not define " + root);
-	if (moduleroot.isModule() && !moduleroot.moduleClass().isInitialized())
+	if (moduleroot.isModule() && moduleroot.moduleClass().type() == Type.NoType) {
 	    moduleroot.setInfo(Type.NoType);
+	}
     }
 
     Type setOwner(Type tp, Symbol owner) {

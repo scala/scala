@@ -59,7 +59,7 @@ public interface Tokens {
         DO = 49,
         TRAIT = 50,
         SEALED = 51,
-        /* THROW = 54, */
+        THROW = 52,
         TRY = 53,
         CATCH = 54,
         FINALLY = 55,

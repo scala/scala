@@ -24,6 +24,7 @@ public class Names {
     public static final Name COMPOUND_NAME = Name.fromString("<ct>");
     public static final Name ANON_CLASS_NAME = Name.fromString("$anon");
     public static final Name OUTER_PREFIX = Name.fromString("outer");
+    public static final Name ZERO = Name.fromString("<zero>");
 
     public static final Name CONSTRUCTOR = Name.fromString("<init>");
 

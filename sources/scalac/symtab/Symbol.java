@@ -3,7 +3,11 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 **
+<<<<<<< Symbol.java
 ** $Id$
+=======
+** $Id$
+>>>>>>> 1.80
 \*                                                                      */
 
 //todo check significance of JAVA flag.
@@ -508,6 +512,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return owner().enclClass();
     }
 
+    /** The next enclosing method */
+    public Symbol enclMethod() {
+        return isMethod() ? this : owner().enclMethod();
+    }
+
     /** The top-level class enclosing `sym'
      */
     Symbol enclToplevelClass() {
@@ -1008,7 +1017,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Symbol overridingSymbol(Type sub) {
 	assert !isOverloaded() : this;
-	Symbol sym1 = sub.lookupNonPrivate(name);
+	Symbol sym1 = sub.lookup(name);
 	if (sym1.kind == Kinds.NONE || (sym1.flags & STATIC) != 0) {
 	    return Symbol.NONE;
 	} else {
@@ -1711,6 +1720,11 @@ public final class ErrorSymbol extends Symbol {
         return this;
     }
 
+    /** Return the next enclosing method */
+    public Symbol enclMethod() {
+        return this;
+    }
+
     public Type loBound() {
 	return Type.ErrorType;
     }
@@ -1756,6 +1770,11 @@ public final class NoSymbol extends Symbol {
 
     /** Return the next enclosing class */
     public Symbol enclClass() {
+        return this;
+    }
+
+    /** Return the next enclosing method */
+    public Symbol enclMethod() {
         return this;
     }
 

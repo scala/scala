@@ -1834,6 +1834,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    pushContext(tree, sym, context.scope);
 		    rhs1 = transform(rhs, EXPRmode, tpe1.type);
 		    popContext();
+		} else if ((sym.flags & (MUTABLE | DEFERRED)) == MUTABLE) {
+		    rhs1 = gen.mkDefaultValue(tree.pos, sym.type());
 		}
 		sym.flags |= LOCKED;
 		checkNonCyclic(tree.pos, tpe1.type);
@@ -1986,6 +1988,26 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 		return copy.If(tree, cond1, thenp1, elsep1)
 		    .setType(Type.lub(new Type[]{thenp1.type, elsep1.type}));
+
+	    case Throw(Tree expr):
+		Tree expr1 = transform(
+		    expr, EXPRmode, definitions.JAVA_THROWABLE_TYPE);
+		return gen.Select(tree.pos, expr1, definitions.THROW);
+
+	    case Return(Tree expr):
+		if (!context.owner.isInitialized()) {
+		    return error(tree.pos, "method with return needs result type");
+		} else {
+		    Symbol enclFun = context.owner.enclMethod();
+		    if (enclFun.kind == VAL) {
+			Tree expr1 = transform(
+			    expr, EXPRmode, enclFun.type().resultType());
+			return copy.Return(tree, expr1)
+			    .setSymbol(enclFun).setType(definitions.ALL_TYPE);
+		    } else {
+			return error(tree.pos, "return outside method definition");
+		    }
+		}
 
 	    case New(Tree.Template templ):
 		switch (templ) {

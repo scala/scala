@@ -54,6 +54,10 @@ public class Definitions {
      */
     public final Symbol NULL;
 
+    /** the zero value (a default null for type variables with bound Any)
+     */
+    public final Symbol ZERO;
+
     /** the scala.Any class
      */
     public final Symbol ANY_CLASS;
@@ -232,6 +236,7 @@ public class Definitions {
 
         // the scala.ANYVAL class
 	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
+	ANYVAL_CLASS.initialize();
 	ANYVAL_CLASS.flags |= Modifiers.SEALED;
         ANYVAL_TYPE = ANYVAL_CLASS.typeConstructor();
 
@@ -381,6 +386,12 @@ public class Definitions {
 	    Position.NOPOS, Names.null_, ROOT_CLASS, 0);
         NULL.setInfo(ALLREF_TYPE);
         ROOT.members().enter(NULL);
+
+        // add a null value to the root scope
+	ZERO = new TermSymbol(
+	    Position.NOPOS, Names.ZERO, ROOT_CLASS, 0);
+        ZERO.setInfo(ALL_TYPE);
+        ROOT.members().enter(ZERO);
     }
 
     private Symbol newParameter(Symbol owner, Type tp) {

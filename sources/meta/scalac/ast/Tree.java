@@ -91,6 +91,8 @@ public class Tree {
         n_Assign         = node("Assign"        , Term, NoSym),
         n_If             = node("If"            , Term, NoSym),
         n_Switch         = node("Switch"        , Term, NoSym),
+        n_Return         = node("Return"        , Term, HasSym),
+        n_Throw          = node("Throw"         , Term, NoSym),
         n_New            = node("New"           , Term, NoSym),
         n_Typed          = node("Typed"         , Term, NoSym),
         n_TypeApply      = node("TypeApply"     , Term, NoSym),
@@ -273,6 +275,16 @@ public class Tree {
             addField(t_ints, "tags").
             addField(t_TermTrees, "bodies").
             addField(t_TermTree, "otherwise");
+
+        n_Return.
+            setDescription("Return").
+            setRange(Phase.PARSER, Phase.END).
+            addField(t_TermTree, "expr");
+
+        n_Throw.
+            setDescription("Throw").
+            setRange(Phase.PARSER, Phase.ANALYZER).
+            addField(t_TermTree, "expr");
 
         n_New.
             setDescription("Instantiation").

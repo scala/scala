@@ -9,10 +9,10 @@ object ScalaRunTime {
 	else if (/*!(r.exc is NonLocalReturn) && */handler isDefinedAt r.exc)
 	    handler(r.exc)
 	else
-	    r.exc.throw;
+	    throw r.exc;
 
       def Finally(handler: Unit): a =
-	if (r.exc == null) r.result.asInstanceOf[a] else r.exc.throw;
+	if (r.exc == null) r.result.asInstanceOf[a] else throw r.exc;
     }
 
     def Try[a](def block: a): Try[a] =

@@ -129,8 +129,8 @@ do    else    extends    false    final
 finally    for    if    import    new    
 null    object    override    package    private    
 protected    return    sealed    super    this    
-trait    try    true    type    val    
-var    while    with   yield
+throw    trait    try    true    type    
+val    var    while    with   yield
 _    :    =    =>    <-    <:    >:    #    @
 \end{lstlisting}
 
@@ -1767,9 +1767,9 @@ The \code{override} modifier applies to class member definitions.  It
 is mandatory for member definitions that override some other
 non-abstract member definition in a super- or mixin-class. If an
 \code{override} modifier is given, there must be at least one
-overridden member definition.  Furthermore, the overridden definition
-must be concrete (\sref{sec:members}), unless the class containing the
-overriding member is abstract.
+overridden member definition.  Furthermore, at least one overridden
+definition must be concrete (\sref{sec:members}), unless the class
+containing the overriding member is abstract.
 \item
 The \code{abstract} modifier is used in class definitions. It is
 mandatory if the class has abstract members, or if the class has
@@ -1951,9 +1951,16 @@ If a class definition is prefixed with \code{case}, the class is said
 to be a {\em case class}.  The primary constructor of a case class may
 be used in a constructor pattern (\sref{sec:patterns}).  That
 constructor may not have any value parameters which are prefixed by
-\code{def}.  None of the base classes of a case class may be a case
-class. Furthermore, no type may have two different case classes among
-its base types.
+\code{def}.  The following three restrictions ensure efficient pattern
+matching for case classes.
+\begin{enumerate}
+\item None of the base classes of a case class may be a case
+class. 
+\item No type may have two different case classes among its base types. 
+\item A case class may not inherit indirectly from a
+\lstlinline@sealed@ class.  That is, if a base class $b$ of a case class $c$
+is marked \lstineline@sealed@, then $b$ must be a parent class of $c$.
+\end{enumerate}
 
 A case class definition of ~\lstinline@$c$[$\tps\,$]($ps\,$)@~ with type
 parameters $\tps$ and value parameters $ps$ implicitly
@@ -2192,6 +2199,8 @@ module FileSystem with {
                     |  while '(' Expr ')' Expr
                     |  do Expr [`;'] while `(' Expr ')'
                     |  for `(' Enumerators `)' (do | yield) Expr
+		    |  return [Expr]
+		    |  throw Expr
                     |  [SimpleExpr `.'] id `=' Expr
                     |  SimpleExpr ArgumentExpr `=' Expr
                     |  PostfixExpr [`:' Type1]
@@ -3591,11 +3600,8 @@ final class Double extends AnyVal with Ord {
   def / (that: Double): Double // double division
   def % (that: Double): Double // double remainder
 
-  def equals(that: Double): Boolean //double equality
-  def equals(that: Any) = that match {
-    case x: Double => equals(x)
-    case _ => false
-  }
+  def == (that: Double): Boolean // double equality
+  def != (that: Double): Boolean // double inequality
   def < (that: Double): Boolean  // double less
   def > (that: Double): Boolean  // double greater
   def <= (that: Double): Boolean // double less or equals
@@ -3619,12 +3625,10 @@ final class Float extends Double with {
   def asByte: Byte     \>// convert to Byte
 
   def + (that: Double): Double = asDouble + that
-  def + (that: Float): Double // float addition
+  def + (that: Float): Double \>// float addition
   /* analogous for -, *, /, % */
 
-  def equals(that: Double): Boolean = asDouble equals that
-  def equals(that: Float): Boolean  = // float equality
-  def equals(that: Any): Boolean    = super equals that
+  def == (that: Double): Boolean = asDouble == that
   def == (that: Float): Boolean    \>// float equality
   /* analogous for !=, <, >, <=, >= */
 
@@ -3707,7 +3711,7 @@ class Int extends Long with {
 \label{sec:cls-boolean}
 
 \begin{lstlisting}
-abstract final class Boolean extends AnyVal with Ord with {
+abstract sealed class Boolean extends AnyVal with {
   def ifThenElse[a](def t: a)(def e: a): a
 
   def ifThen(def t: Unit): Unit  =  ifThenElse(t)()
@@ -4100,6 +4104,8 @@ grammar.
                     |  try `{' block `}' [catch Expr] [finally Expr]
                     |  do Expr [`;'] while `(' Expr ')'
                     |  for `(' Enumerators `)' (do | yield) Expr
+		    |  return [Expr]
+		    |  throw Expr
                     |  [SimpleExpr `.'] id `=' Expr
                     |  SimpleExpr ArgumentExpr `=' Expr
                     |  PostfixExpr [`:' Type1]

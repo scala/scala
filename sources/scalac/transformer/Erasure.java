@@ -376,10 +376,14 @@ public class Erasure extends Transformer implements Modifiers {
 	    return copy.If(tree, cond1, thenp1, elsep1).setType(owntype);
 
         case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
-	    test = transform(test, Type.unboxedType(TypeTags.INT));
-            bodies = transform(bodies, owntype);
-            otherwise = transform(otherwise, owntype);
-            return copy.Switch(tree, test, tags, bodies, otherwise).setType(owntype);
+	    Tree test1 = transform(test, Type.unboxedType(TypeTags.INT));
+            Tree[] bodies1 = transform(bodies, owntype);
+            Tree otherwise1 = transform(otherwise, owntype);
+            return copy.Switch(tree, test1, tags, bodies1, otherwise1).setType(owntype);
+
+	case Return(Tree expr):
+	    Tree expr1 = transform(expr, tree.symbol().type().resultType());
+	    return copy.Return(tree, expr1).setType(owntype);
 
         case New(Template templ):
             if (tree.type.symbol() == definitions.UNIT_CLASS)
@@ -588,8 +592,9 @@ public class Erasure extends Transformer implements Modifiers {
     Tree transformLhs(Tree tree) {
 	Tree tree1;
 	switch (tree) {
-	case Ident(_):
-	    tree1 = tree;
+	case Ident(Name name):
+	    if (name == Names.ZERO) tree1 = gen.Ident(definitions.NULL);
+	    else tree1 = tree;
 	    break;
 	case Select(Tree qual, _):
             Symbol sym = tree.symbol();

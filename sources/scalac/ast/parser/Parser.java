@@ -159,7 +159,7 @@ public class Parser implements Tokens {
 	case SYMBOLLIT: case TRUE: case FALSE: case NULL: case IDENTIFIER:
 	case THIS: case SUPER: case IF:
 	case FOR: case NEW: case USCORE:
-	case TRY: case WHILE: case DO:
+	case TRY: case WHILE: case DO: case RETURN: case THROW:
 	case LPAREN: case LBRACE:
 	    return true;
 	default:
@@ -812,6 +812,8 @@ public class Parser implements Tokens {
      *             | while `(' Expr `)' Expr
      *             | do Expr [`;'] while `(' Expr `)'
      *             | for `(' Enumerators `)' (do | yield) Expr
+     *             | throw Expr
+     *             | return [Expr]
      *             | [SimpleExpr `.'] Id `=' Expr
      *             | SimpleExpr ArgumentExprs `=' Expr
      *             | PostfixExpr [`:' Type1 | as Type1 | is Type1]
@@ -885,6 +887,14 @@ public class Parser implements Tokens {
 	    } else {
 		return syntaxError("`do' or `yield' expected", true);
 	    }
+	} else if (s.token == RETURN) {
+	    int pos = s.skipToken();
+	    Tree e = (isExprIntro()) ? expr()
+		: make.Block(pos, Tree.EMPTY_ARRAY);
+	    return make.Return(pos, e);
+	} else if (s.token == THROW) {
+	    int pos = s.skipToken();
+	    return make.Throw(pos, expr());
 //	} else if (s.token == ARROW) {
 //	    return make.Function(s.skipToken(), new ValDef[]{}, expr());
 	} else {

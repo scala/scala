@@ -29,7 +29,7 @@ object Predef {
     }
 */
 
-    def error(x: String): All = new java.lang.RuntimeException(x).throw;
+    def error(x: String): All = throw new java.lang.RuntimeException(x);
 
     def exit: scala.Unit = System.exit(0);
 

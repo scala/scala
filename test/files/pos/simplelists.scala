@@ -5,7 +5,7 @@
     }
 
     object Nil extends List[All] {
-      def error(msg: String): All = new java.lang.Error(msg).throw;
+      def error(msg: String): All = throw new java.lang.Error(msg);
       def head: All = error("Nil.head");
       def tail: List[All] = error("Nil.tail");
     }

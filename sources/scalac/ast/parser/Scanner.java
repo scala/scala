@@ -834,6 +834,7 @@ public class Scanner extends TokenData {
         enterKeyword("sealed", SEALED);
         enterKeyword("super", SUPER);
         enterKeyword("this", THIS);
+        enterKeyword("throw", THROW);
         enterKeyword("trait", TRAIT);
 	enterKeyword("true", TRUE);
 	enterKeyword("try", TRY);
