@@ -725,12 +725,16 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	return If(cond.pos, cond, thenpart, elsepart);
     }
 
-    /** Builds a Switch node with given components and type. */
+    /** Builds a Switch node with given components and type.
+     *  @param tags a <b>sorted</b> array of tags
+     */
     public Switch Switch(int pos, Tree test, int[] tags, Tree[] bodies,
         Tree otherwise, Type type)
     {
-        for (int i = 0; i < bodies.length; i++)
+        for (int i = 0; i < bodies.length; i++) {
             assert assertTreeSubTypeOf(bodies[i], type);
+            assert (i==0) || ( tags[i-1] < tags[i] ) : "expecting sorted tags";
+        }
         assert assertTreeSubTypeOf(otherwise, type);
         Switch tree = make.Switch(pos, test, tags, bodies, otherwise);
         tree.setType(type);
@@ -1165,6 +1169,22 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 				   new Type[] { elemtpe },
 				   new Tree[] { hd, tl }));
 
+    }
+
+    // for insert debug printing code
+
+    public Tree Console_print(int pos, String str) {
+        return Console_print( pos, mkStringLit( pos, str ));
+    }
+
+    public Tree Console_print(int pos, Tree arg) {
+        Symbol sym = global.definitions.getModule( Names.scala_Console );
+        return Apply( Select( pos,
+                              mkRef( pos, sym),
+                              global.definitions.CONSOLE_PRINT()),
+                      new Tree[] {
+                          arg
+                      });
     }
 
 }
