@@ -2724,6 +2724,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  matching2 = matching1;
 		  matching1 = i;
 		}
+                i = i + 1;
 	      }}
 	      if (matching1 >= 0 && matching2 < 0)
 		fn1.setSymbol(alts(matching1)).setType(alttypes(matching1));
