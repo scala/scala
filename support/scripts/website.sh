@@ -155,13 +155,14 @@ function website-print-xml-installers-add-installers() {
 }
 
 function website-print-xml-installers-add-archive() {
-    [ $# = 3 ] || abort "internal error";
+    [ $# = 4 ] || abort "internal error";
     local archive="$1"."$2"; shift 1;
     local suffix="$1"; shift 1;
+    local platform="$1"; shift 1;
     local description="$1"; shift 1;
 
     local path="./distrib/files/"`basename $archive`;
-    $program-add-entry "$archive" "" "$description" "$path" "$suffix";
+    $program-add-entry "$archive" "$platform" "$description" "$path" "$suffix";
 }
 
 function website-print-xml-installers-add-archives() {
@@ -169,9 +170,9 @@ function website-print-xml-installers-add-archives() {
     local basepath="$1"; shift 1;
 
     local -a add=($program-add-archive "$basepath");
-    "${add[@]}" "tar.gz"  "Gzip Unix tarball (Unix/Cygwin)";
-    "${add[@]}" "tar.bz2" "Bz2 Unix tarball (Unix/Cygwin)";
-    "${add[@]}" "zip"     "Zip Archive (Windows)";
+    "${add[@]}" "tar.gz"  "tgz" "Gzip Unix tarball (Unix/Cygwin)";
+    "${add[@]}" "tar.bz2" "bz2" "Bz2 Unix tarball (Unix/Cygwin)";
+    "${add[@]}" "zip"     "zip" "Zip Archive (Windows)";
 }
 
 function website-print-xml-installers() {
