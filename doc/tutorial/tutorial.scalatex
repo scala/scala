@@ -1,0 +1,270 @@
+%% This file really contains -*- LaTeX -*- code, to be processed by
+%% the scalatex script.
+
+%% $Id$
+
+\documentclass[a4paper,12pt]{article}
+
+\usepackage{palatino}
+\usepackage{xspace}
+\usepackage{url}
+
+\newcommand{\langname}[1]{\textsf{#1}\xspace}
+
+\newcommand{\Scala}{\langname{Scala}}
+\newcommand{\Java}{\langname{Java}}
+
+\newcommand{\toolname}[1]{\texttt{#1}\xspace}
+
+\newcommand{\socos}{\toolname{socos}}
+\newcommand{\java}{\toolname{java}}
+
+\newcommand{\ident}[1]{\url{#1}\xspace}
+
+\begin{document}
+
+\title{An introduction to \Scala\\[.5em]\normalsize(for \Java programmers)}
+\author{Michel Schinz}
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+This document gives a quick introduction to the \Scala language and
+compiler. It is intended for people who have already some experience
+at programming and want an overview of what they can do with \Scala. A
+basic knowledge of object-oriented programming, especially in \Java,
+is assumed.
+
+\section{A first example}
+\label{sec:first-example}
+
+As a first example, we will use the standard \emph{Hello world}
+program, which is not very fascinating but makes it easy to
+demonstrate the use of the \Scala tools without knowing too much about
+the language. Here is how it looks:
+\begin{scalaprogram}{HelloWorld}
+object HelloWorld {
+  def main(args: Array[String]): unit = {
+    System.out.println("Hello, world!");
+  }
+}
+\end{scalaprogram}
+
+The structure of this program should be familiar to Java programmers:
+it consists of one method called \ident{main} which takes the command
+line arguments, an array of strings, as parameter; the body of this
+method consists of a single call to the \ident{println} method of the
+object representing the standard output, with the friendly greeting as
+argument. The \ident{main} method is declared as returning a value of
+type \ident{unit}, which for now can be seen as similar to \java's
+\ident{void} type.
+
+What should be less familiar to Java programmers is the \ident{object}
+declaration containing the \ident{main} method. Such a declaration
+introduces what is commonly known as a \emph{singleton object}, that
+is a class with a single instance. The declaration above thus declares
+both a class called \ident{HelloWorld} and an instance of that class,
+also called \ident{HelloWorld}. This instance is created lazily, the
+first time it is used.
+
+The astute reader might also have noticed that the \ident{main} method
+is not declared as \ident{static} here. This is because static members
+(methods or fields) do not exist in \Scala. Rather than define static
+members, the \Scala programmer declares these members in singleton
+objects.
+
+\subsection{Compiling the example}
+\label{sec:compiling-example}
+
+To compile the example, we need to use \socos, the \Scala compiler.
+\socos works like most compilers: it takes a source file as argument,
+maybe some options, and produces one or several object files. The
+object files it produces are standard \Java class files.
+
+If we save the above program in a file called
+\ident{HelloWorld.scala}, we can compile it by issuing the following
+command (the greater-than sign `\verb|>|' represents the shell prompt
+and should not be typed):
+\begin{verbatim}
+> socos HelloWorld.scala
+\end{verbatim}
+This will generate a few class files in the current directory, one of
+which called \ident{HelloWorld.class}. This file contains a class
+which can be directly executed using the \java command, as will be
+seen in the following section.
+
+\subsection{Running the example}
+\label{sec:running-example}
+
+Once compiled, a \Scala program can be run like a \Java program, using
+the \java command. However, a compiled \Scala program needs to access
+some support classes at run-time, which should be available through
+\Java's class path. These support classes are distributed in a JAR
+file called \url{scala.jar}, which lives in the directory
+\url{SCALA_HOME/lib}. Here \url{SCALA_HOME} is a placeholder for the
+name of the directory where the \Scala distribution was installed.
+
+The example above can therefore be executed using the command below,
+if we assume that the \Scala distribution was installed in
+\url{/usr/local}:
+\begin{verbatim}
+> java -classpath /usr/local/lib/scala.jar:. HelloWorld
+\end{verbatim}
+\scalaprogramoutput{HelloWorld}
+
+\section{Interaction with Java}
+\label{sec:inter-with-java}
+
+One of the strength of \Scala is that it makes it very easy to
+interact with \Java code. Actually, the example of the previous
+section showed this: to print the message on screen, we simply used a
+call to \Java's \ident{println} method on the (\Java) object
+\ident{System.out}.
+
+All \Java code is accessible as easily from \Scala. Of course, it is
+sometimes necessary to import classes, as one does in \Java, in order
+to be able to use them. All classes in the \ident{java.lang} packages
+are imported by default, others need to be imported explicitely.
+
+Let's look at another example to see this. The aim of this example is
+to compute and print the factorial of 100 using \Java big integers
+(i.e. the class \ident{java.math.BigInteger}), since the result does
+not fit in a \Java integer. This program looks like this:
+\begin{scalaprogram}{BigFactorial}
+object BigFactorial {
+  import java.math.BigInteger, BigInteger._;
+
+  def fact(x: BigInteger): BigInteger =
+    if (x == ZERO) ONE
+    else x multiply fact(x subtract ONE);
+
+  def main(args: Array[String]): unit =
+    System.out.println("fact(100) = "
+                       + fact(new BigInteger("100")));
+}
+\end{scalaprogram}
+
+\Scala's \ident{import} statement looks very similar to \Java's
+equivalent, but an important difference appears here: to import all
+the names of a package or class, one uses the underscore (\verb|_|)
+character instead of the asterisk (\verb|*|). This is due to the fact
+that, as we will see later, the asterisk is actually a valid \Scala
+identifier.
+
+The \ident{import} statement above therefore starts by importing the
+class \ident{java.math.BigInteger}, and then all the names it
+contains. This makes the static fields \ident{ZERO} and \ident{ONE}
+directly visible.
+
+The \ident{fact} method also shows some characteristics of \Scala's
+syntax. The first one is that the method body does not have to be
+surrounded by curly braces if it consists of a single expression.
+The second one is that methods taking one argument can be used with an
+infix syntax. That is, the expression
+\begin{verbatim}
+x subtract ONE
+\end{verbatim}
+is just another, slightly less verbose way of writing the expression
+\begin{verbatim}
+x.subtract(ONE)
+\end{verbatim}
+This might seem like a minor syntactic detail, but it has important
+consequences, one of which will be explored in the next section.
+
+To conclude this section about integration with \Java, it should be
+noted that it is also possible to inherit from \Java classes and
+implement \Java interfaces directly in \Scala.
+
+\section{Everything is an object}
+\label{sec:everything-an-object}
+
+\Scala is a pure object-oriented language in the sense that
+\emph{everything} is an object, including numbers or functions. It
+differs from \Java in that respect, since \Java distinguishes numeric
+types from objects, and does not enable one to manipulate functions as
+values.
+
+\subsection{Numbers are objects}
+\label{sec:numbers-are-objects}
+
+Since numbers are objects, they also have methods. And in fact, an
+arithmetic expression like the following:
+\begin{verbatim}
+1 + 2 * 3 / x
+\end{verbatim}
+consists exclusively of method calls, because it is equivalent to the
+following expression, as we saw in the previous section:
+\begin{verbatim}
+1.+(2.*(3./(x)))
+\end{verbatim}
+This also means that \ident{+}, \ident{*}, etc. are legal identifiers
+in \Scala.
+
+\subsection{Functions are objects}
+\label{sec:funct-are-objects}
+
+Perhaps more surprising for the \Java programmer, functions are also
+objects in \Scala. It is therefore possible to pass functions as
+arguments, to store them in variables, and to return them from other
+functions. This ability to manipulate functions as values is one of
+the cornerstone of a very interesting programming paradigm called
+\emph{functional programming}.
+
+As a very simple example of why it can be useful to use functions as
+values, let's consider a timer function whose aim is to perform some
+action every second. How do we pass it the action to perform? Quite
+logically, as a function. This very simple kind of function passing
+should be familiar to many programmers: it is often used in
+user-interface code, to register call-back functions which get called
+when some event occurs.
+
+In the following program, the timer function is called
+\ident{oncePerSecond}, and it gets a call-back function as argument.
+The type of this function is written \ident{() => unit} and is the
+type of all functions which have no arguments and return a value of
+type \ident{unit}. The main function of this program simply calls this
+timer function with a call-back whose only action is to print a
+sentence on the terminal. In other words, this program endlessly
+prints the sentence \emph{time flies like an arrow} every second.
+
+\begin{scalaprogram}{Timer}
+object Timer {
+  def oncePerSecond(callback: () => unit): unit =
+    while (true) { callback(); Thread sleep 1000 };
+
+  def timeFlies(): unit =
+    System.out.println("time flies like an arrow...");
+
+  def main(args: Array[String]): unit =
+    oncePerSecond(timeFlies);
+}
+\end{scalaprogram}
+
+% TODO fonctions anonymes
+% TODO fonctions avec environnement
+
+\section{Classes}
+\label{sec:classes}
+
+\section{Mixins}
+\label{sec:mixins}
+
+\section{Case classes and pattern matching}
+\label{sec:case-classes-pattern}
+
+
+\section{Genericity}
+\label{sec:genericity}
+
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This document gave a quick overview of the \Scala language and
+presented some basic examples. The interested reader can go on by
+reading the companion document \textit{Scala by example\/} and consult
+the \textit{Scala reference\/} when needed.
+
+\end{document}
