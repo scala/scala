@@ -7,6 +7,7 @@ AntAdaptor.scala
 AntTask.scala
 ScalaRuntime.scala
 ScalaTask.scala
+ScalacTask.scala
 ScalapTask.scala
 
 ##############################################################################
