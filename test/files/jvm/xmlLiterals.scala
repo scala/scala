@@ -160,7 +160,7 @@ object Test03Servlet {
           {headerMsg }
         </p>
         <p>
-          { ns:_* }
+          { ns }
         </p>
         <hr/>
         <p>
@@ -179,10 +179,10 @@ object Test03Servlet {
    */
   def beautify( n:Node ):Node = n match {
     case <td>{xs @ _* }</td> =>
-          <td bgcolor="#AAAAFF" color="#222255">{ xs:_* }</td>
+          <td bgcolor="#AAAAFF" color="#222255">{ xs }</td>
 
     case <table>{ xs @ _* }</table> =>
-          <table align="center">{ beautify( xs ):_*}</table>
+          <table align="center">{ beautify( xs )}</table>
 
     case Elem( label, _, xs @ _* ) =>
           new Elem( label, beautify( xs ):_*)

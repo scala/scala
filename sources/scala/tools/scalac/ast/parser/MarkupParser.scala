@@ -25,6 +25,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
   val  _ArrayBuffer = Name.fromString("ArrayBuffer");
+  val  _NodeBuffer = Name.fromString("NodeBuffer");
   val  _TreeMap = Name.fromString("TreeMap");
   val  _Elem = Name.fromString("Elem");
   val  _Seq = Name.fromString("Seq");
@@ -32,6 +33,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   val  _immutable = Name.fromString("immutable");
   val  _mutable = Name.fromString("mutable");
   val  _append = Name.fromString("append");
+  val  _plus = Name.fromString("$plus");
   val  _collection = Name.fromString("collection");
   val  _xml = Name.fromString("xml");
   val  _Comment = Name.fromString("Comment");
@@ -75,6 +77,8 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   private def _scala_xml_Node( pos: int ) =
     _scala_xml( pos, _Node );
 
+  private def _scala_xml_NodeBuffer( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _NodeBuffer ));
 
   private def _scala_xml_EntityRef( pos: int ) =
     p.convertToConstr( _scala_xml( pos, _EntityRef ));
@@ -89,7 +93,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
     p.convertToConstr( _scala_xml( pos, _ProcInstr ));
 
   private def _scala_xml_Text( pos: int ) =
-    p.convertToConstr( _scala_xml( pos, _Text ));
+    _scala_xml( pos, _Text );
 
 
   private def _scala_collection( pos: int, name: Name ) =
@@ -151,7 +155,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
       val ts = new myTreeList();
       ts.append( t );
       ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) );
-      ts.append( convertToText( args ) );
+      ts.append( convertToText( true, args ) );
       make.Apply(pos,
                  convertToTypeId( _scala_xml_Elem( pos ) ),
                  ts.toArray())
@@ -174,9 +178,33 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
     make.New( pos, constr );
   };
   // create scala.xml.Text here <: scala.xml.Node
-  def makeText( pos: int, txt:String ):Tree = {
-    makeText( pos, gen.mkStringLit( pos, txt ));
+  def makeText( pos: int, isPattern:Boolean, txt:String ):Tree =  {
+    makeText( pos, isPattern, gen.mkStringLit( pos, txt ));
   }
+
+  // create scala.xml.Text here <: scala.xml.Node
+  def makeText( pos: int, isPattern:Boolean, txt:Tree ):Tree = {
+    if( isPattern )
+      makeTextPat( pos, txt );
+    else
+      makeText1( pos, txt );
+  }
+
+  // create scala.xml.Text here <: scala.xml.Node
+  def makeTextPat( pos: int, txt:Tree ):Tree = {
+    return make.Apply(pos,
+                      p.convertToConstr( _scala_xml_Text( pos ) ),
+                      Predef.Array[Tree]( txt ));
+  }
+
+  def makeText1( pos: int, txt:Tree ):Tree = {
+    val constr = make.Apply(pos,
+                            p.convertToConstr( _scala_xml_Text( pos )),
+                            Predef.Array[Tree]( txt ));
+    make.New( pos, constr );
+  }
+
+
   // create
   def makeComment( pos: int, comment:scala.xml.Comment ):Tree =
     makeComment( pos, gen.mkStringLit( pos, comment.text ));
@@ -207,11 +235,10 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
     make.New( pos, constr );
   }
 
-
-  def makeText( pos: int, txt:Tree ):Tree = {
+  def makeNodeBuffer( pos: int ):Tree = {
     val constr = make.Apply( pos,
-                           _scala_xml_Text( pos ),
-                           Predef.Array[Tree] ( txt ));
+                            _scala_xml_NodeBuffer( pos ),
+                            Tree.EMPTY_ARRAY);
     make.New( pos, constr );
   }
 
@@ -243,24 +270,24 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   def makeXML(pos:int, n:Name, args:Array[Tree]):Tree =
     mkXML(pos, false, gen.mkStringLit( pos, n.toString() ), args);
 
-  def convertToText( t:Tree ) = t match {
-    case _:Tree$Literal => makeText( t.pos, t );
+  def convertToText(isPattern:Boolean, t:Tree):Tree = t match {
+    case _:Tree$Literal => makeText(t.pos, isPattern, t);
     case _ => t
   }
 
-  def convertToText( ts:Array[Tree] ) = {
+  def convertToText( isPattern:Boolean, ts:Array[Tree] ):Array[Tree] = {
     var res:Array[Tree] = null;
     var i = 0; while( i < ts.length ) {
-      ts( i ) match {
-        case _:Tree$Literal =>
+        val t1 = ts( i );
+        val t2 = convertToText( isPattern, t1 );
+        if (!t1.eq(t2)) {
           if( null == res ) {  // lazy copy
             res = new Array[Tree]( ts.length );
             System.arraycopy( ts, 0, res, 0, i );
           }
-          res( i ) = makeText( ts( i ).pos, ts( i ) );
-        case _ =>
-      }
-      i = i + 1
+          res( i ) = t2;
+        }
+        i = i + 1;
     }
     if( null == res ) ts else res;
   }
@@ -272,20 +299,22 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   def makeXMLseq( pos:int, args:Array[Tree] ) = {
     val ts = new TreeList();
     //val blocArr = new Array[Tree] ( 1 + args.length );
-    val constr = _scala_collection_mutable_ArrayBuffer( pos );
+    //val constr = _scala_collection_mutable_ArrayBuffer( pos );
+    val _buffer = makeNodeBuffer( pos );
     val n = p.fresh();
     val nIdent = make.Ident(pos, n);
     //blocArr( 0 )
-    ts.append( make.ValDef(pos, Modifiers.MUTABLE, n, Tree.Empty,
-                               make.New( pos, constr )));
+    ts.append( make.ValDef(pos,
+                           0, n, Tree.Empty,
+                           _buffer));
 
     var i = 0; while( i < args.length ) {
       val ipos = args(i).pos;
       if( !isEmptyText( args( i ))) {
         ts.append(
           make.Apply( ipos,
-                     make.Select( ipos, nIdent, _append ),
-                     Predef.Array[Tree]( convertToText( args( i ) )))
+                     make.Select( ipos, nIdent, _plus /*_append*/ ),
+                     Predef.Array[Tree]( convertToText(false, args( i ) )))
         )
       }
       i = i + 1;
@@ -470,7 +499,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
                 var text = s.xText;
                 if( !preserveWS ) text = trimWS( text );
                 str.append( text );
-                ts.append( makeText( s.pos, str.toString() ));
+                ts.append( makeText( s.pos, false, str.toString() ));
               }
             // postcond: s.xScalaBlock == false!
             case '&' => // EntityRef or CharRef
@@ -478,7 +507,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
               s.ch match {
                 case '#' => // CharacterRef
                   s.xNext;
-                  val theChar = makeText( s.pos, s.xCharRef );
+                  val theChar = makeText( s.pos, false, s.xCharRef );
                   s.xToken(';');
                   ts.append( theChar);
                 case _ => // EntityRef
@@ -491,7 +520,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
               var text = s.xText;
               if( !preserveWS ) text = trimWS( text );
               if( text.length() > 0 )
-                ts.append( makeText( s.pos, text ));
+                ts.append( makeText( s.pos, false, text ));
             // here s.xScalaBlock might be true
 
           }
@@ -578,7 +607,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
           var text = s.xText;
           if( !preserveWS ) text = trimWS( text );
           if( text.length() > 0 )
-            ts.append( makeText( pos1, text ));
+            ts.append( makeText( pos1, true, text ));
           // here  s.xScalaBlock might be true;
           //if( s.xScalaBlock ) throw new ApplicationError("after:"+text); // assert
 	}

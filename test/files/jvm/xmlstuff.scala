@@ -226,8 +226,14 @@ object Test with Application {
          r \ "title" == t) yield
           <result>
     { t }
-    { (r \ "remarks"):_* }
+    { r \ "remarks" }
     </result>
   ));
+
+  // example
+  Console.println(
+    for( val t @ <book><title>Blabla</title></book> <- new NodeSeq( books.child ).asList)
+    yield t
+  );
 
 }

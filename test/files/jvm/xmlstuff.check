@@ -30,3 +30,4 @@ passed ok
      <title>Blubabla</title>
      <remarks>rem 2</remarks>
 </result>
+List(<book><title>Blabla</title></book>)

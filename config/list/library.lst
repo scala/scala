@@ -163,6 +163,7 @@ xml/ExternalID.scala
 xml/EntityRef.scala
 xml/FactoryAdapter.scala
 xml/Node.scala
+xml/NodeBuffer.scala
 xml/NodeSeq.scala
 xml/PrettyPrinter.scala
 xml/ProcInstr.scala
