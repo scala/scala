@@ -301,7 +301,8 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public ClassSymbol newErrorClass(Name name) {
         ClassSymbol symbol = newClass(pos, SYNTHETIC, name, IS_ERROR, NONE);
-        symbol.setInfo(Type.ErrorType);
+        Scope scope = new ErrorScope(this);
+        symbol.setInfo(Type.compoundType(Type.EMPTY_ARRAY, scope, this));
         symbol.allConstructors().setInfo(Type.ErrorType);
         return symbol;
     }

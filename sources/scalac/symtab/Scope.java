@@ -330,3 +330,24 @@ public class Scope {
     public static Scope EMPTY = new Scope();
 }
 
+public class ErrorScope extends Scope {
+
+    private final Symbol owner;
+
+    public ErrorScope(Symbol owner) {
+        this.owner = owner;
+    }
+
+    public Entry lookupEntry(Name name) {
+	Entry entry = super.lookupEntry(name);
+        if (entry.sym.isNone()) {
+            Symbol symbol = name.isTermName()
+                ? owner.newErrorValue(name)
+                : owner.newErrorClass(name);
+            enter(symbol);
+            entry = super.lookupEntry(name);
+        }
+        return entry;
+    }
+
+}
