@@ -127,7 +127,7 @@ public class RightTracerInScala extends TracerInScala  {
 
     Tree prependToHelpVar( Symbol realVar, Tree elem ) {
 	Tree hv = refHelpVar( realVar );
-	return gen.Assign( hv, gen.Cons( cf.pos, elem.type(), elem, hv ));
+	return gen.Assign( hv, gen.Cons( cf.pos, elementType, elem, hv ));
 	/*
 	  return cf.Block(pos,
 	  new Tree [] {

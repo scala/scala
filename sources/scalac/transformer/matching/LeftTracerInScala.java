@@ -20,6 +20,8 @@ public class LeftTracerInScala extends TracerInScala {
       /** symbol of the accumulator ( scala.SequenceList )
        */
       Symbol accumSym;
+      Type accumType;
+      Type accumTypeArg;
 
       Type _accumType( Type elemType ) {
             return cf.SeqTraceType( elemType );
@@ -82,14 +84,15 @@ public class LeftTracerInScala extends TracerInScala {
         nestedMap = new HashMap();
 
         super.initializeSyms();
-
+        this.accumType = _accumType( elementType );
+        this.accumTypeArg = accumType.typeArgs()[0];
         this.accumSym = newParam("accum")                    // accumulator
-            .setType( _accumType( elementType ));
+            .setType( accumType );
 
         this.funSym
             .setType( new Type.MethodType( new Symbol[] {
                 accumSym, iterSym, stateSym},
-                                           _accumType( elementType )));
+                                           accumType));
 
         // 2 do: rename switchresultsym to something else...
 
@@ -98,7 +101,7 @@ public class LeftTracerInScala extends TracerInScala {
                                         cf.fresh.newName("trace"),
                                         owner,
                                         0 )
-            .setType( _accumType( elementType ) ) ;
+            .setType( accumType ) ;
     }
 
     // should throw an exception here really, e.g. MatchError
@@ -132,7 +135,7 @@ public class LeftTracerInScala extends TracerInScala {
         */
         Tree hd = cf.newPair( gen.mkIntLit(cf.pos, i), currentElem() );
         Tree newAcc = gen.Cons(cf.pos,
-                               hd.type,
+                               accumTypeArg,
                                hd,
                                gen.Ident( cf.pos, accumSym ));
 
@@ -221,7 +224,7 @@ public class LeftTracerInScala extends TracerInScala {
                                              cf.fresh.newName("acc"),
                                              owner,
                                              0 )
-            .setType( _accumType( elementType ) ) ;
+            .setType( accumType ) ;
 
         // `val acc = SeqNil[ elementType ]'                 init accumulator
         v.add( gen.ValDef( emptyAccSym, emptyAcc) );
@@ -307,7 +310,7 @@ public class LeftTracerInScala extends TracerInScala {
                                                  elementType));
         //System.err.println(hd.type);
         return gen.Cons(  cf.pos,
-                          hd.type(),
+                          accumTypeArg,
                           hd,
                           gen.Ident( cf.pos, accumSym ));
     }
