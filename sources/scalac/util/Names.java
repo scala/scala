@@ -16,16 +16,16 @@ public class Names {
     public static final Name ANON_CLASS_NAME = Name.fromString("$class");
     public static final Name OUTER_PREFIX = Name.fromString("outer");
 
-    public static final Name _EQ = NameTransformer.encode(Name.fromString("_="));
-    public static final Name MINUS = NameTransformer.encode(Name.fromString("-"));
-    public static final Name PLUS = NameTransformer.encode(Name.fromString("+"));
-    public static final Name BANG = NameTransformer.encode(Name.fromString("!"));
-    public static final Name TILDE = NameTransformer.encode(Name.fromString("~"));
-    public static final Name EQEQ = NameTransformer.encode(Name.fromString("=="));
-    public static final Name BANGEQ = NameTransformer.encode(Name.fromString("!="));
-    public static final Name BARBAR = NameTransformer.encode(Name.fromString("||"));
-    public static final Name AMPAMP = NameTransformer.encode(Name.fromString("&&"));
-    public static final Name COLONCOLON = NameTransformer.encode(Name.fromString("::"));
+    public static final Name _EQ = encode("_=");
+    public static final Name MINUS = encode("-");
+    public static final Name PLUS = encode("+");
+    public static final Name BANG = encode("!");
+    public static final Name TILDE = encode("~");
+    public static final Name EQEQ = encode("==");
+    public static final Name BANGEQ = encode("!=");
+    public static final Name BARBAR = encode("||");
+    public static final Name AMPAMP = encode("&&");
+    public static final Name COLONCOLON = encode("::");
 
     public static final Name Any = Name.fromString("Any");
     public static final Name AnyVal = Name.fromString("AnyVal");
