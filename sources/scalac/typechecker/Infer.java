@@ -583,13 +583,21 @@ public class Infer implements Modifiers, Kinds {
 	if (tp1.isSubType(pt)) return true;
 	Symbol coerceMeth = tp1.lookup(Names.coerce);
 	if (coerceMeth.kind == NONE) return false;
-	switch (tp1.memberType(coerceMeth)) {
-	case PolyType(Symbol[] tparams, Type restype):
-	    if (tparams.length == 0)
-		return restype.isSubType(pt);
-	}
-	return false;
+        return canCoerce(tp1.memberType(coerceMeth), pt);
     }
+        // where
+        private boolean canCoerce(Type tp, Type pt) {
+            switch (tp) {
+            case OverloadedType(_, Type[] alttypes):
+                for (int i = 0; i < alttypes.length; i++)
+                    if (canCoerce(alttypes[i], pt)) return true;
+                return false;
+            case PolyType(Symbol[] tparams, Type restype):
+                return tparams.length == 0 && restype.isSubType(pt);
+            default:
+                return false;
+            }
+        }
 
     public boolean isCompatible(Type[] tps, Type[] pts) {
 	for (int i = 0; i < tps.length; i++)
@@ -919,7 +927,7 @@ public class Infer implements Modifiers, Kinds {
 	return false;
     }
 
-    /** Does function type `ftpe1' specialize function type `ftpe2'
+    /** Does type `ftpe1' specialize type `ftpe2'
      *  when both are alternatives in an overloaded function?
      */
     boolean specializes(Type ftpe1, Type ftpe2) {
@@ -955,16 +963,22 @@ public class Infer implements Modifiers, Kinds {
 	}
 	// second, do the normal case.
 	int best = -1;
+        for (int i = 0; i < alttypes.length; i++) {
+            if (isCompatible(alttypes[i], pt) &&
+                (best < 0 || improves(alttypes[i], alttypes[best], pt))) {
+                best = i;
+            }
+        }
 	for (int i = 0; i < alttypes.length; i++) {
 	    if (isCompatible(alttypes[i], pt) &&
-		(best < 0 || improves(alttypes[i], alttypes[best]))) {
+		(best < 0 || improves(alttypes[i], alttypes[best], pt))) {
 		best = i;
 	    }
 	}
 	if (best >= 0) {
 	    for (int i = 0; i < alttypes.length; i++) {
 		if (isCompatible(alttypes[i], pt) &&
-		    best != i && !improves(alttypes[best], alttypes[i])) {
+		    best != i && !improves(alttypes[best], alttypes[i], pt)) {
 		    throw new Type.Error(overloadResolveErrorMsg(
 			alts[best], alttypes[best], alts[i], alttypes[i]) +
 			" expected type " + pt);
@@ -974,8 +988,10 @@ public class Infer implements Modifiers, Kinds {
 	}
     }
     //where
-	private boolean improves(Type tp1, Type tp2) {
-	    return tp2.isParameterized() &&
+	private boolean improves(Type tp1, Type tp2, Type pt) {
+            return
+                !normalize(tp2).isSubType(pt) && normalize(tp1).isSubType(pt) ||
+                tp2.isParameterized() &&
 		(!tp1.isParameterized() || specializes(tp1, tp2));
 	}
 
