@@ -223,8 +223,8 @@ class GenJVM {
 
         switch (tree) {
         case LabelDef(_, Tree.Ident[] params, Tree rhs): {
-            JLabel label = new JLabel();
-            ctx.code.anchorLabelToNext(label);
+            JCode.Label label = ctx.code.newLabel();
+            label.anchorToNext();
             ctx.labels.put(sym, new Pair(label, params));
             generatedType = genLoad(ctx, rhs, expectedType);
             ctx.labels.remove(sym);
@@ -275,12 +275,12 @@ class GenJVM {
             Symbol funSym = fun.symbol();
 
             if (funSym.isLabel()) {
-                Pair/*<JLabel, Tree[]>*/ labelAndIdents =
+                Pair/*<Label, Tree[]>*/ labelAndIdents =
                     (Pair)ctx.labels.get(funSym);
                 assert labelAndIdents != null : Debug.show(funSym);
                 JMethodType funType = (JMethodType)typeStoJ(funSym.info());
 
-                JLabel label = (JLabel)labelAndIdents.fst;
+                JCode.Label label = (JCode.Label)labelAndIdents.fst;
                 Tree[] idents = (Tree[])labelAndIdents.snd;
                 assert idents.length == args.length;
 
@@ -312,14 +312,14 @@ class GenJVM {
                 case ID:
                 case EQ: case NE: case LT: case LE: case GE: case GT:
                 case ZNOT: case ZOR: case ZAND:
-                    JLabel falseLabel = new JLabel();
-                    JLabel afterLabel = new JLabel();
+                    JCode.Label falseLabel = ctx.code.newLabel();
+                    JCode.Label afterLabel = ctx.code.newLabel();
                     genCond(ctx, tree, falseLabel, false);
                     ctx.code.emitICONST_1();
                     ctx.code.emitGOTO(afterLabel);
-                    ctx.code.anchorLabelToNext(falseLabel);
+                    falseLabel.anchorToNext();
                     ctx.code.emitICONST_0();
-                    ctx.code.anchorLabelToNext(afterLabel);
+                    afterLabel.anchorToNext();
                     generatedType = JType.BOOLEAN;
                     break;
 
@@ -469,36 +469,35 @@ class GenJVM {
         case If(Tree cond, Tree thenp, Tree elsep): {
             JType finalType = typeStoJ(tree.type);
 
-            JLabel elseLabel = new JLabel();
+            JCode.Label elseLabel = ctx.code.newLabel();
             genCond(ctx, cond, elseLabel, false);
             genLoad(ctx, thenp, finalType);
-            JLabel afterLabel = new JLabel();
+            JCode.Label afterLabel = ctx.code.newLabel();
             ctx.code.emitGOTO(afterLabel);
-            ctx.code.anchorLabelToNext(elseLabel);
+            elseLabel.anchorToNext();
             if (elsep == Tree.Empty)
                 maybeGenLoadUnit(ctx, finalType);
             else
                 genLoad(ctx, elsep, finalType);
-            ctx.code.anchorLabelToNext(afterLabel);
+            afterLabel.anchorToNext();
             generatedType = finalType;
         } break;
 
         case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise): {
-            JLabel[] labels = new JLabel[bodies.length];
-            for (int i = 0; i < labels.length; ++i) labels[i] = new JLabel();
-            JLabel defaultLabel = new JLabel();
-            JLabel afterLabel = new JLabel();
+            JCode.Label[] labels = ctx.code.newLabels(bodies.length);
+            JCode.Label defaultLabel = ctx.code.newLabel();
+            JCode.Label afterLabel = ctx.code.newLabel();
 
             genLoad(ctx, test, JType.INT);
-            ctx.code.emitSWITCH(tags, labels, defaultLabel, 0.9F);
+            ctx.code.emitSWITCH(tags, labels, defaultLabel, 0.9);
             for (int i = 0; i < bodies.length; ++i) {
-                ctx.code.anchorLabelToNext(labels[i]);
+                labels[i].anchorToNext();
                 genLoad(ctx, bodies[i], expectedType);
                 ctx.code.emitGOTO(afterLabel);
             }
-            ctx.code.anchorLabelToNext(defaultLabel);
+            defaultLabel.anchorToNext();
             genLoad(ctx, otherwise, expectedType);
-            ctx.code.anchorLabelToNext(afterLabel);
+            afterLabel.anchorToNext();
             generatedType = expectedType;
         } break;
 
@@ -669,7 +668,7 @@ class GenJVM {
      */
     protected void genCond(Context ctx,
                            Tree tree,
-                           JLabel target,
+                           JCode.Label target,
                            boolean when) {
         switch (tree) {
         case Apply(Tree fun, Tree[] args):
@@ -690,7 +689,7 @@ class GenJVM {
 
                 case ZOR:
                 case ZAND:
-                    JLabel afterLabel = new JLabel();
+                    JCode.Label afterLabel = ctx.code.newLabel();
                     if (when ^ (prim == Primitive.ZAND)) {
                         // x || y jump if true  -or-  x && y jump if false
                         genCond(ctx, allArgs[0], target, when);
@@ -700,7 +699,7 @@ class GenJVM {
                         genCond(ctx, allArgs[0], afterLabel, !when);
                         genCond(ctx, allArgs[1], target, when);
                     }
-                    ctx.code.anchorLabelToNext(afterLabel);
+                    afterLabel.anchorToNext();
                     return;
                 }
             }
@@ -798,7 +797,7 @@ class GenJVM {
     protected void genCompPrim(Context ctx,
                                Primitive prim,
                                Tree[] args,
-                               JLabel target,
+                               JCode.Label target,
                                boolean when) {
         JType maxType = getMaxType(args);
         int maxTypeIdx = getTypeIndex(maxType);
@@ -851,7 +850,7 @@ class GenJVM {
 
             ctx.code.emitSTORE(eqEqTempVar);
             ctx.code.emitDUP();
-            JLabel ifNonNullLabel = new JLabel();
+            JCode.Label ifNonNullLabel = ctx.code.newLabel();
             ctx.code.emitIFNONNULL(ifNonNullLabel);
             ctx.code.emitPOP();
             ctx.code.emitLOAD(eqEqTempVar);
@@ -859,9 +858,9 @@ class GenJVM {
                 ctx.code.emitIFNULL(target);
             else
                 ctx.code.emitIFNONNULL(target);
-            JLabel afterLabel = new JLabel();
+            JCode.Label afterLabel = ctx.code.newLabel();
             ctx.code.emitGOTO(afterLabel);
-            ctx.code.anchorLabelToNext(ifNonNullLabel);
+            ifNonNullLabel.anchorToNext();
             ctx.code.emitLOAD(eqEqTempVar);
             JMethodType equalsType =
                 new JMethodType(JType.BOOLEAN,
@@ -871,7 +870,7 @@ class GenJVM {
                 ctx.code.emitIFNE(target);
             else
                 ctx.code.emitIFEQ(target);
-            ctx.code.anchorLabelToNext(afterLabel);
+            afterLabel.anchorToNext();
         } else if (maxTypeIdx <= intTypeIdx && !intCompareWithZero) {
             // Comparison between ints, no zeros involved
             switch (maybeNegatedPrim(prim, !when)) {
@@ -1582,7 +1581,7 @@ class Context {
     public final JMethod method;
     public final JExtendedCode code;
     public final Map/*<Symbol,JLocalVariable>*/ locals;
-    public final Map/*<Symbol,Pair<JLabel,Tree[]>>*/ labels;
+    public final Map/*<Symbol,Pair<JCode.Label,Tree[]>>*/ labels;
     public final boolean isModuleClass;
 
     public final static Context EMPTY =
