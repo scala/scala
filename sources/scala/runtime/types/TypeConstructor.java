@@ -55,6 +55,9 @@ public class TypeConstructor {
      */
     public final boolean isTrivial;
 
+    /** True iff this constructor inherits from a Java class */
+    public final boolean inheritsFromJavaClass;
+
     /**
      * "Code" to compute the display for an instance of this
      * constructor, based on the display of its parents. This code is
@@ -70,20 +73,6 @@ public class TypeConstructor {
      */
     public final int[] displayCode;
 
-    /**
-     * "Code" to compute the refinement for an instance of this
-     * constructor, based on the refinement of its parents. This code
-     * is structured as follows:
-     *
-     *   n  p1 i1  p2 i2  ...  pn in
-     *
-     * where n is the total number of refinements, pi is the index of
-     * the parent from which refinement i comes (with -1 indicating
-     * the current class) and ii is the index of this refinement in
-     * the given parent.
-     */
-    public final int[] refinementCode;
-
     private final InstantiationMap instMapModule = new InstantiationMap();
     private final AtomicReference/*<InstantiationMap.T>*/ instances =
         new AtomicReference(IOMap.EMPTY);
@@ -97,8 +86,8 @@ public class TypeConstructor {
                            int zCount,
                            int mCount,
                            int pCount,
-                           int[] displayCode,
-                           int[] refinementCode) {
+                           boolean inheritsFromJavaClass,
+                           int[] displayCode) {
         this.level = level;
         this.fullName = fullName;
         this.outer = outer;
@@ -108,8 +97,8 @@ public class TypeConstructor {
 
         this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
 
+        this.inheritsFromJavaClass = inheritsFromJavaClass;
         this.displayCode = displayCode;
-        this.refinementCode = refinementCode;
 
         try {
             this.clazz = Class.forName(fullName, false, loader);
@@ -128,11 +117,8 @@ public class TypeConstructor {
         return instMapModule.get((InstantiationMap.T)instances.get(), args);
     }
 
-    public ScalaClassType instantiate(Type[] args,
-                                      ScalaClassType[] parents,
-                                      Refinement[] refinement) {
-        ScalaClassType tp =
-            new ScalaClassType(this, args, parents, refinement);
+    public ScalaClassType instantiate(Type[] args) {
+        ScalaClassType tp = new ScalaClassType(this, args);
 
         try {
             InstantiationMap.T oldMap, newMap;
