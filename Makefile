@@ -365,13 +365,14 @@ $(LIBRARY_JAR_ARCHIVE)	: .latest-library-sc
 $(LIBRARY_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=LIBRARY
 
-$(TOOLS_JAR_ARCHIVE)	: .latest-lamplib
-$(TOOLS_JAR_ARCHIVE)	: .latest-compiler
-$(TOOLS_JAR_ARCHIVE)	: .latest-interpreter
+$(TOOLS_JAR_ARCHIVE)	: .latest-lamplib-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-compiler-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-compiler-sc
+$(TOOLS_JAR_ARCHIVE)	: .latest-interpreter-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
-$(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala
-$(TOOLS_JAR_ARCHIVE)	: .latest-scalap
+$(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-sc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalap-sc
 $(TOOLS_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=TOOLS
 
