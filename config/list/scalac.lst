@@ -50,4 +50,16 @@ icode/ICTypeStack.scala
 backend/GenJVMFromICode.scala
 backend/GenJVMFromICodePhase.scala
 
+# Temporary hack - iuli
+MyCompilerPhases.scala
+
+wholeprog/ApplicationBuilder.scala
+wholeprog/ClassHierarchy.scala
+wholeprog/PrintDotFile.scala
+wholeprog/MonomorphicCS.scala
+wholeprog/Inline.scala
+
+# graph library - iuli
+wholeprog/graph/Graph.scala
+
 ##############################################################################
