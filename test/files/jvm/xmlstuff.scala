@@ -29,6 +29,8 @@ object Test with Application {
     def attribute = List();
   };
 
+  assertSimilar( List( 3 ), List( 3 ));
+
   Console.println("equality");
   assertEquals( c, parsedxml11 );
   assertEquals( parsedxml1, parsedxml11 );
@@ -110,7 +112,7 @@ object Test with Application {
 
   assertSimilar( (parsedxml2 \ '_ \ '_ \ 'author), List() );
 
-  Console.println("xpath \\\\");
+  Console.println("xpath \\\\ DESCENDANTS");
 
   assertSimilar(
 

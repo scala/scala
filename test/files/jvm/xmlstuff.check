@@ -1,3 +1,4 @@
+passed ok
 equality
 passed ok
 passed ok
@@ -11,11 +12,9 @@ passed ok
 passed ok
 passed ok
 passed ok
-case _ 
 passed ok
-case _ 
 passed ok
-xpath \\
+xpath \\ DESCENDANTS
 passed ok
 passed ok
 passed ok
