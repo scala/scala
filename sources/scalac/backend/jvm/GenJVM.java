@@ -1636,11 +1636,10 @@ class GenJVM {
                              cSym.isSubClass(JAVA_RMI_REMOTE_CLASS));
     }
 
-    protected HashSet seenClasses = new HashSet();
     protected void leaveClass(Context ctx, Symbol cSym) {
-        if (ctx.isModuleClass && !seenClasses.contains(cSym.fullName()))
+        Symbol iSym = cSym.owner().lookup(cSym.name);
+        if (ctx.isModuleClass && (iSym.isNone() || iSym.isExternal()))
             dumpModuleMirrorClass(ctx, cSym);
-        seenClasses.add(cSym.fullName());
 
         addScalaAttr(ctx.clazz);
         try {
