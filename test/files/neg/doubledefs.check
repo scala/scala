@@ -1,0 +1,70 @@
+doubledefs.scala:13: object tic has the same name as existing package tic
+object     tic { def    fun = 0; }
+           ^
+doubledefs.scala:24: case class tac has the same name as existing package tac
+case class tac { def   fun = 0;  }
+           ^
+doubledefs.scala:45: package mic has the same name as existing object mic
+package    mic { object module;  }
+           ^
+doubledefs.scala:51: package mac has the same name as existing case class mac
+package    mac { object module;  }
+           ^
+doubledefs.scala:64: object bic is compiled twice
+object     bic { def fun2 = 0; }
+           ^
+doubledefs.scala:70: value bac is compiled twice
+case class bac { def fun2 = 0; }
+           ^
+doubledefs.scala:83: object cic is compiled twice
+object     cic { def fun2 = 0; }
+           ^
+doubledefs.scala:89: value cac is compiled twice
+case class cac { def fun2 = 0; }
+           ^
+doubledefs.scala:96: class coc is compiled twice
+class      coc { def fun2 = 0; }
+           ^
+doubledefs.scala:109: class dac is compiled twice
+case class dac { def fun2 = 0; }
+           ^
+doubledefs.scala:115: class doc is compiled twice
+class      doc { def fun2 = 0; }
+           ^
+doubledefs.scala:18: value fun is not a member of tic
+object Testtic { tic.module1; tic.module2; tic.fun; }
+                                              ^
+doubledefs.scala:29: package tac of type tac.type cannot be applied to ()
+object Testtac { tac.module1; tac.module2; tac().fun; (new tac).fun; }
+                                              ^
+doubledefs.scala:47: value module is not a member of mic
+object Testmic { mic.module; mic.fun; }
+                    ^
+doubledefs.scala:53: value module is not a member of () => mac
+object Testmac { mac.module; mac().fun; (new mac).fun; }
+                    ^
+doubledefs.scala:66: value fun1 is not a member of bic
+object Testbic { bic.fun1; bic.fun2; }
+                    ^
+doubledefs.scala:72: value fun1 is not a member of () => bac
+object Testbac { bac.fun1; bac().fun2; (new bac).fun2; }
+                    ^
+doubledefs.scala:85: object cic of type cic.type cannot be applied to ()
+object Testcic { cic().fun1; (new cic).fun1; cic.fun2; }
+                    ^
+doubledefs.scala:92: value fun1 is not a member of cac
+object Testcac { cac().fun1; (new cac).fun1; cac().fun2; (new cac).fun2; }
+                      ^
+doubledefs.scala:92: value fun1 is not a member of cac
+object Testcac { cac().fun1; (new cac).fun1; cac().fun2; (new cac).fun2; }
+                                      ^
+doubledefs.scala:98: value fun1 is not a member of coc
+object Testcoc { coc().fun1; (new coc).fun1; (new coc).fun2; }
+                                      ^
+doubledefs.scala:111: value fun1 is not a member of dac
+object Testdac { (new dac).fun1; dac().fun2; (new dac).fun2; }
+                          ^
+doubledefs.scala:117: value fun1 is not a member of doc
+object Testdoc { (new doc).fun1; (new doc).fun2; }
+                          ^
+23 errors found

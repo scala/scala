@@ -24,6 +24,7 @@ neg/bug74.scala
 neg/bug75.scala
 neg/constrparams.scala
 neg/cyclic.scala
+neg/doubledefs.scala
 neg/imports.scala
 neg/matthias2.scala
 neg/michel2.scala
