@@ -16,6 +16,7 @@ include $(ROOT)/Makefile.import
 # project sources
 PROJECT_SOURCES		+= $(LAMPLIB_SOURCES)
 PROJECT_SOURCES		+= $(META_SOURCES)
+PROJECT_SOURCES		+= $(UTIL_SOURCES)
 PROJECT_SOURCES		+= $(SCALACBOOT_SOURCES)
 PROJECT_SOURCES		+= $(SCALAC_SOURCES)
 PROJECT_SOURCES		+= $(LIBRARY_SOURCES)
@@ -66,6 +67,15 @@ META_ROOT		 = $(PROJECT_SOURCEDIR)/meta
 META_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/meta.lst)
 META_SOURCES		+= $(META_LIST:%=$(META_ROOT)/%)
 META_JC_FILES		+= $(META_SOURCES)
+
+# scala tools util
+UTIL_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/util
+UTIL_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/util.lst)
+UTIL_SOURCES		+= $(UTIL_LIST:%=$(UTIL_ROOT)/%)
+UTIL_JC_FILES		+= $(filter %.java,$(UTIL_SOURCES))
+UTIL_SC_FILES		+= $(filter %.scala,$(UTIL_SOURCES))
+UTIL_SC_BOOTCLASSPATH	 = $(LIBRARY_SC_BOOTCLASSPATH)
+UTIL_SCALAC		 = $(LIBRARY_SCALAC)
 
 # scala boot compiler
 SCALACBOOT_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
@@ -162,6 +172,7 @@ TOOLS_JAR_FILES		+= scala/tools/scaladoc
 TOOLS_JAR_FILES		+= scala/tools/scalai
 TOOLS_JAR_FILES		+= scala/tools/scalap
 TOOLS_JAR_FILES		+= scala/tools/scalatest
+TOOLS_JAR_FILES		+= scala/tools/util
 TOOLS_JAR_FILES		+= scalac
 
 # java compilation
@@ -214,6 +225,7 @@ sources		: generate
 system		: scripts
 system		: lamplib
 system		: library
+system		: util
 system		: scalac
 
 lamplib		: .latest-$(boot)lamplib-jc
@@ -224,6 +236,8 @@ scripts		: $(SCRIPTS_WRAPPER_LINKS)
 library		: .latest-$(boot)library-jc
 library		: .latest-$(boot)library-sc
 library-msil	: .latest-$(boot)library-sc-msil
+util		: .latest-$(boot)util-jc
+util		: .latest-$(boot)util-sc
 scalac		: .latest-$(boot)scalac-jc
 scalac		: .latest-$(boot)scalac-sc
 interpreter	: .latest-interpreter-jc
@@ -246,6 +260,7 @@ library-doc	: .latest-library-sdc
 .PHONY		: generate
 .PHONY		: bootstrap
 .PHONY		: scripts
+.PHONY		: util
 .PHONY		: scalac
 .PHONY		: library
 .PHONY		: interpreter
@@ -335,6 +350,14 @@ cvs-fix-perms		:
 	    PROJECT_OUTPUTDIR=$(PROJECT_BOOTTESTDIR)/classes \
 	    LIBRARY_SCALAC=$(PROJECT_BINARYDIR)/scalac \
 	    boot="boottest-" system;
+	touch $@
+
+.latest%util-jc		: $(UTIL_JC_FILES)
+	@$(make) jc target=UTIL UTIL_JC_FILES='$?'
+	touch $@
+
+.latest%util-sc		: $(UTIL_SC_FILES)
+	@$(make) sc target=UTIL UTIL_SC_FILES='$?'
 	touch $@
 
 .latest%scalac-jc	: $(SCALAC_JC_FILES)
@@ -462,6 +485,8 @@ $(LIBRARY_JAR_ARCHIVE)	:
 	$(MV) $(PROJECT_OUTPUTDIR)/scala.tools $(PROJECT_OUTPUTDIR)/scala/tools
 
 $(TOOLS_JAR_ARCHIVE)	: .latest-lamplib-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-util-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-util-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalac-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalac-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-interpreter-jc
