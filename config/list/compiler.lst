@@ -179,4 +179,6 @@ util/Strings.java
 util/TypeNames.java
 util/UniqueID.java
 
+transformer/ICodePhase.java
+
 ##############################################################################

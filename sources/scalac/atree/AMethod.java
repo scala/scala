@@ -13,6 +13,11 @@ import scalac.symtab.Type;
 
 /** This class represents an attributed method. */
 public class AMethod extends AMember {
+    //########################################################################
+    // Public Fields
+
+    /** Contains the Intermediate code of this Method */
+    public Object icode = null;
 
     //########################################################################
     // Public Constructors

@@ -136,11 +136,13 @@ public class Global {
     public static final String TARGET_INT;
     public static final String TARGET_JVM;
     public static final String TARGET_MSIL;
+    public static final String TARGET_JVMFROMICODE;
 
     public static final String[] TARGETS = new String[] {
-        TARGET_INT      = "int",
-        TARGET_JVM      = "jvm",
-        TARGET_MSIL     = "msil",
+        TARGET_INT          = "int",
+        TARGET_JVM          = "jvm",
+        TARGET_MSIL         = "msil",
+	TARGET_JVMFROMICODE = "jvmfromicode"
     };
 
     /** tree printers
@@ -225,6 +227,12 @@ public class Global {
         // TODO: Enable TailCall for other backends when they handle LabelDefs
         if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
         if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
+	if (target != TARGET_JVMFROMICODE) {
+	    args.phases.ICODE.addSkipFlag();
+	    args.phases.GENJVMFROMICODE.addSkipFlag();
+	} else {
+	    ;//args.phases.ERASURE.addSkipFlag();
+	}
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();
         this.firstPhase = descriptors[0].create(this);
@@ -329,6 +337,15 @@ public class Global {
             boolean html = args.printer.value.equals(PRINTER_HTML);
             if (html) writer.println("<pre>");
             ATreePrinter printer = new ATreePrinter(new CodePrinter(writer));
+            boolean next = currentPhase.next != null;
+            if (next) currentPhase = currentPhase.next;
+            printer.printGlobal(this);
+            if (next) currentPhase = currentPhase.prev;
+            if (html) writer.println("</pre>");
+        } else if (currentPhase.id == PHASE.ICODE.id()) {
+            boolean html = args.printer.value.equals(PRINTER_HTML);
+            if (html) writer.println("<pre>");
+	    ATreePrinter printer = ((scalac.transformer.ICodePhase)currentPhase).getPrinter(new CodePrinter(writer)); // Oh !!
             boolean next = currentPhase.next != null;
             if (next) currentPhase = currentPhase.next;
             printer.printGlobal(this);

@@ -217,6 +217,36 @@ public class ATreeTyper {
     }
 
     //########################################################################
+    // Public Methods - aliases of type() for scala
+    public Type[] computeType(ACode[] codes) {
+	return type(codes);
+    }
+
+    public Type computeType(ACode code) {
+	return type(code);
+    }
+
+    public Type computeType(ALocation location) {
+	return type(location);
+    }
+
+    public Type computeType(AFunction function) {
+	return type(function);
+    }
+
+    public Type computeType(APrimitive primitive) {
+	return type(primitive);
+    }
+
+    public Type computeType(AConstant constant) {
+	return type(constant);
+    }
+
+    public Type computeType(ATypeKind kind) {
+	return type(kind);
+    }
+
+    //########################################################################
     // Private Methods
 
     /** Returns the application of given arguments to given type. */
@@ -231,7 +261,7 @@ public class ATreeTyper {
     }
 
     /** Returns the element type of the given array type. */
-    private Type getArrayElementType(Type type) {
+    public Type getArrayElementType(Type type) { // !!! public / private
         switch (type) {
         case TypeRef(_, Symbol symbol, Type[] args):
             assert symbol == definitions.ARRAY_CLASS && args.length == 1: type;

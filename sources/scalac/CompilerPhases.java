@@ -37,8 +37,10 @@ public class CompilerPhases {
     public final PhaseDescriptor EXPANDMIXIN;
     public final PhaseDescriptor MAKEBOXINGEXPLICIT;
     public final PhaseDescriptor ERASURE;
+    public final PhaseDescriptor ICODE;
     public final PhaseDescriptor GENMSIL;
     public final PhaseDescriptor GENJVM;
+    public final PhaseDescriptor GENJVMFROMICODE;
     public final PhaseDescriptor TERMINAL;
 
     //########################################################################
@@ -62,8 +64,10 @@ public class CompilerPhases {
     protected Class ADDINTERFACES_PHASE() { return scalac.transformer.AddInterfacesPhase.class; }
     protected Class EXPANDMIXIN_PHASE() { return scalac.transformer.ExpandMixinsPhase.class; }
     protected Class ERASURE_PHASE() { return scalac.transformer.ErasurePhase.class; }
+    protected Class ICODE_PHASE() { return scalac.util.EmptyPhase.class; } // No java version
     protected Class GENMSIL_PHASE() { return scalac.backend.msil.GenMSILPhase.class; }
     protected Class GENJVM_PHASE() { return scalac.backend.jvm.GenJVMPhase.class; }
+    protected Class GENJVMFROMICODE_PHASE() { return scalac.util.EmptyPhase.class; } // No java version
 
     //########################################################################
     // Public Constructors
@@ -152,6 +156,11 @@ public class CompilerPhases {
                 "type eraser",
                 "erased types",
                 ERASURE_PHASE()),
+            this.ICODE = new PhaseDescriptor(
+                "icode",
+                "generate icode",
+                "generated icode",
+                ICODE_PHASE()),
             this.GENMSIL = new PhaseDescriptor(
                 "genmsil",
                 "generate MSIL code",
@@ -162,7 +171,12 @@ public class CompilerPhases {
                 "generate JVM bytecodes",
                 "generated JVM code",
                 GENJVM_PHASE()),
-            this.TERMINAL = new PhaseDescriptor(
+            this.GENJVMFROMICODE = new PhaseDescriptor(
+                "genjvmfromicode",
+                "generate JVM bytecodes using ICode",
+                "generated JVM code using ICode",
+                GENJVMFROMICODE_PHASE()),
+	    this.TERMINAL = new PhaseDescriptor(
                 "terminal",
                 "compilation terminated",
                 "compilation terminated",

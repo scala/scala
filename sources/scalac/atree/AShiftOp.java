@@ -16,14 +16,14 @@ public class AShiftOp {
     //########################################################################
     // Public Cases
 
-    /** A logical shift to the left */
-    public case LSL;
-
-    /** A logical shift to the right */
-    public case LSR;
+    /** An arithmetic shift to the left */
+    public case ASL;
 
     /** An arithmetic shift to the right */
     public case ASR;
+
+    /** A logical shift to the right */
+    public case LSR;
 
     //########################################################################
     // Public Methods
@@ -31,9 +31,9 @@ public class AShiftOp {
     /** Returns a string representation of this operation. */
     public String toString() {
         switch (this) {
-        case LSL: return "LSL";
-        case LSR: return "LSR";
+        case ASL: return "ASL";
         case ASR: return "ASR";
+        case LSR: return "LSR";
         default: throw Debug.abort("unknown case", this);
         }
     }

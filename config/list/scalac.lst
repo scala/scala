@@ -32,4 +32,14 @@ typechecker/Substituter.scala
 
 util/NewArray.scala
 
+icode/ICodePhase.scala
+icode/IBasicBlock.scala
+icode/ICInstruction.scala
+icode/ICode.scala
+icode/ICodePrinter.scala
+icode/ICTypeStack.scala
+
+backend/GenJVMFromICode.scala
+backend/GenJVMFromICodePhase.scala
+
 ##############################################################################
