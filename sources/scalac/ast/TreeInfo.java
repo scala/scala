@@ -91,9 +91,9 @@ public class TreeInfo {
 	case Super(_):
 	    return true;
 	case Ident(_):
-	    return tree.type.isStable();
+	    return tree.symbol().isStable();
 	case Select(Tree qual, _):
-	    return tree.type.isStable() && isPureExpr(qual);
+	    return tree.symbol().isStable() && isPureExpr(qual);
 	case Typed(Tree expr, _):
 	    return isPureExpr(expr);
 	case Literal(_):

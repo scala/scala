@@ -99,12 +99,12 @@ public class PatternMatcher {
         this.owner = owner;
         this.selector = selector;
         this.root = makeConstrPat(selector.pos,
-                                  selector.type);
+                                  selector.type.widen());
         this.root.and = makeHeader(selector.pos,
-                                   selector.type,
+                                   selector.type.widen(),
                                    make.Ident(selector.pos,
                                               root.symbol().name)
-                                    .setType(selector.type)
+                                    .setType(selector.type.widen())
                                     .setSymbol(root.symbol()));
         this.resultVar = new TermSymbol(selector.pos,
                                         RESULT_N,

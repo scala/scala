@@ -1672,13 +1672,23 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    .setType(tp);
 
 	    case Visitor(Tree.CaseDef[] cases):
-		if (infer.isFullyDefined(pt)) {
-		    Type pt1 = pt.baseType(definitions.PARTIALFUNCTION_CLASS);
-		    if (pt1.symbol() == definitions.PARTIALFUNCTION_CLASS)
+		if (pt.symbol().isSubClass(definitions.PARTIALFUNCTION_CLASS)) {
+		    Type pft = pt.baseType(definitions.PARTIALFUNCTION_CLASS);
+		    Type[] pftargs = pft.typeArgs();
+		    if (pft.typeArgs().length == 2 && infer.isFullyDefined(pftargs[0])) {
+			Type pattpe = pftargs[0];
+			Type restpe = pftargs[1];
+			Tree tree1 = transformVisitor(tree, pattpe, restpe);
+			if (!infer.isFullyDefined(restpe)) restpe = tree1.type;
 			return transform(
-			    desugarize.partialFunction(tree, pt1.typeArgs()));
+			    desugarize.partialFunction(
+				tree, pattpe, restpe.dropVariance()));
+		    } else {
+			return error(tree, "expected pattern type of cases could not be determined");
+		    }
+		} else {
+		    return transform(desugarize.Visitor(tree));
 		}
-		return transform(desugarize.Visitor(tree));
 
 	    case Assign(Apply(Tree funarray, Tree[] vparam), Tree rhs):
 		return transform(desugarize.Update(tree));
@@ -1905,7 +1915,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 		return tree1.setType(
 		    (pt != null && pt.isStable() || (mode & QUALmode) != 0)
-		    ? clazz.thisType() : clazz.type());
+		    ? clazz.thisType() : clazz.typeOfThis());
 
 	    case Select(Tree qual, Name name):
 		int qualmode = EXPRmode | POLYmode | QUALmode;

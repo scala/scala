@@ -53,7 +53,10 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 		tp1 = transform(tp, sym);
 		break;
 	    default:
-		tp1 = transform(tp, sym.owner());
+		if (sym.kind == CLASS)
+		    tp = transform(tp, sym);
+		else
+		    tp1 = transform(tp, sym.owner());
 	    }
 	}
 	if ((sym.flags & Modifiers.CAPTURED) != 0) return refType(tp1);

@@ -582,6 +582,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		Scope members1 = map(members);
 		if (parts1 == parts && members1 == members) {
 		    return tp;
+		} else if (members1 == members && !tp.symbol().isCompoundSym()) {
+		    return compoundType(parts1, members, tp.symbol());
 		} else {
 		    Scope members2 = new Scope();
 		    //Type tp1 = compoundType(parts1, members2);
@@ -694,17 +696,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
         public Symbol map(Symbol sym) { return sym; }
         public Symbol[] map(Symbol[] syms) { return syms; }
         public Scope map(Scope s) { return s; }
-	public Type map(Type tp) {
-	    switch (tp) {
-	    case CompoundType(Type[] parts, Scope members):
-		if (!tp.symbol().isCompoundSym()) {
-		    Type[] parts1 = map(parts);
-		    if (parts1 == parts) return tp;
-		    else return compoundType(parts1, members, tp.symbol());
-		}
-	    }
-	    return super.map(tp);
-	}
     }
 
 // baseType and asSeenFrom --------------------------------------------------------
@@ -1395,8 +1386,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return
 	    sym == sym1 ||
 	    ((sym.kind == sym1.kind || sym1.kind == TYPE) &&
-	     self.memberInfo(sym).isSubType(
-		 sym1.info().substThis(sym.owner(), self))) ||
+	     self.memberInfo(sym).subst(symbol().typeParams(), typeArgs())
+	         .isSubType(sym1.info().substThis(sym.owner(), self))) ||
 	    (sym.kind == TYPE && sym1.kind == ALIAS &&
 	     sym1.info().unalias().isSameAs(sym.type()));
     }

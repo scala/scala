@@ -237,17 +237,16 @@ public class DeSugarize implements Kinds, Modifiers {
      *    Argtpe = targs[0]
      *    Restpe = targs[1]
      */
-    public Tree partialFunction(Tree tree, Type[] targs) {
-	Type argtpe = targs[0];
-	Type restpe = targs[1].dropVariance();
+    public Tree partialFunction(Tree tree, Type pattpe, Type restpe) {
 	Tree constr = make.TypeApply(tree.pos,
 	    make.Select(tree.pos,
 		make.Ident(tree.pos, Names.scala),
 		Names.PartialFunction.toConstrName()),
-		new Tree[]{gen.mkType(tree.pos, argtpe), gen.mkType(tree.pos, restpe)});
+		new Tree[]{gen.mkType(tree.pos, pattpe),
+			   gen.mkType(tree.pos, restpe)});
 	Name x = getvar();
 	ValDef param = (ValDef) make.ValDef(
-	    tree.pos, PARAM, x, gen.mkType(tree.pos, argtpe), Tree.Empty);
+	    tree.pos, PARAM, x, gen.mkType(tree.pos, pattpe), Tree.Empty);
 	ValDef[][] vparams = new ValDef[][]{new ValDef[]{param}};
 	Tree body = make.Apply(tree.pos,
 	    make.Select(tree.pos,
