@@ -392,7 +392,7 @@ public class Global {
         }
         for (int i = 0; i < imports.size(); i++) {
             Symbol module = (Symbol)imports.get(i);
-            ((scalac.typechecker.AnalyzerPhase)PHASE.ANALYZER.phase()).addConsoleImport(this, module);
+            ((scalac.typechecker.AnalyzerPhase)PHASE.ANALYZER.phase()).addConsoleImport(module);
         }
     }
 

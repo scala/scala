@@ -36,48 +36,12 @@ public class AnalyzerPhase extends Phase {
         this.startContext.enclClass = this.startContext;
 
         if (!global.noimports) {
-            TreeFactory make = global.make;
-            Tree java = make.Ident(Position.NOPOS, Names.java)
-                .setSymbol(definitions.JAVA)
-                .setType(Type.singleType(definitions.ROOT_TYPE, definitions.JAVA));
-            Tree javalang = make.Select(Position.NOPOS, java, Names.lang)
-                .setSymbol(definitions.JAVALANG)
-                .setType(Type.singleType(java.type, definitions.JAVALANG));
-            Tree importjavalang = make.Import(
-                Position.NOPOS, javalang, new Name[]{Names.IMPORT_WILDCARD})
-                .setSymbol(definitions.JAVALANG)
-                .setType(definitions.UNIT_TYPE());
-            startContext.imports = new ImportList(
-                importjavalang, startContext.scope, startContext.imports);
-
-            Tree scala = make.Ident(Position.NOPOS, Names.scala)
-                .setSymbol(definitions.SCALA)
-                .setType(Type.singleType(definitions.ROOT_TYPE, definitions.SCALA));
-            Tree importscala = make.Import(
-                Position.NOPOS, scala, new Name[]{Names.IMPORT_WILDCARD})
-                .setSymbol(definitions.SCALA)
-                .setType(definitions.UNIT_TYPE());
-            startContext.imports = new ImportList(
-                importscala, new Scope(), startContext.imports);
+            addImport(startContext, definitions.getModule(Names.java_lang));
+            addImport(startContext, definitions.getModule(Names.scala));
         }
 
         if (!global.noimports && !global.nopredefs) {
-            TreeFactory make = global.make;
-
-            Tree scala = make.Ident(Position.NOPOS, Names.scala)
-                .setSymbol(definitions.SCALA)
-                .setType(Type.singleType(definitions.ROOT_TYPE, definitions.SCALA));
-            Symbol scalaPredefSym = definitions.getModule(Names.scala_Predef);
-            Tree scalaPredef = make.Select(Position.NOPOS, scala, Names.Predef)
-                .setSymbol(scalaPredefSym)
-                .setType(Type.singleType(scala.type, scalaPredefSym));
-
-            Tree importscalaPredef = make.Import(
-                Position.NOPOS, scalaPredef, new Name[]{Names.IMPORT_WILDCARD})
-                .setSymbol(scalaPredefSym)
-                .setType(definitions.UNIT_TYPE());
-            startContext.imports = new ImportList(
-                importscalaPredef, new Scope(), startContext.imports);
+            addImport(startContext, definitions.getModule(Names.scala_Predef));
         }
 
         this.consoleContext = new Context(
@@ -87,20 +51,15 @@ public class AnalyzerPhase extends Phase {
             startContext);
     }
 
-    public void addConsoleImport(Global global, Symbol module) {
-        Definitions definitions = global.definitions;
-        TreeFactory make = global.make;
+    public void addConsoleImport(Symbol module) {
+        addImport(consoleContext, module);
+    }
 
-        Tree console = make.Ident(Position.NOPOS, module.name)
-            .setSymbol(module)
-            .setType(Type.singleType(definitions.ROOT_TYPE, module));
-
-        Tree importConsole = make.Import(
-            Position.NOPOS, console, new Name[]{Names.IMPORT_WILDCARD})
-            .setSymbol(module)
-            .setType(definitions.UNIT_TYPE());
-        consoleContext.imports = new ImportList(
-            importConsole, new Scope(), consoleContext.imports);
+    private void addImport(Context context, Symbol module) {
+        global.prevPhase();
+        Tree tree = global.treeGen.mkImportAll(Position.NOPOS, module);
+        global.nextPhase();
+        context.imports = new ImportList(tree, new Scope(), context.imports);
     }
 
     public void apply(Unit[] units) {
