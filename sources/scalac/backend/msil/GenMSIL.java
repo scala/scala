@@ -189,6 +189,8 @@ public final class GenMSIL {
      * Generate the code for a class definition
      */
     private void genClass(Symbol clazz, Tree[] body) {
+        //Object o = global.mapSymbolAttr.get(clazz);
+        //System.out.println("[" + o + "]" + Debug.show(clazz));
 	Symbol outerClass = currentClass;
 	currentClass = clazz;
 	if (clazz.isModuleClass()) {
@@ -1116,6 +1118,8 @@ public final class GenMSIL {
 		assert args.length == 1;
 		iLeft = gen(args[0], msilType(args[0]));
 		break;
+            default:
+                iLeft = gen(left, tleft);
 	    }
 	    break;
 	default:
@@ -1302,10 +1306,8 @@ public final class GenMSIL {
      * Returns the MSILType that corresponds to the given scala.symtab.Type
      */
     private MSILType msilType(scalac.symtab.Type type) {
-        if (type.symbol() == defs.ALLREF_CLASS) {
-            return MSILType.NULL;
-        }
-	return msilType(tc.getType(type));
+        return type.symbol() == defs.ALLREF_CLASS ? MSILType.NULL
+            : msilType(tc.getType(type));
     }
 
     /*
@@ -1349,10 +1351,10 @@ public final class GenMSIL {
 	    if (t == tc.SCALA_FLOAT)   return MSILType.R4;
 	    if (t == tc.SCALA_DOUBLE)  return MSILType.R8;
 	    if (t == tc.SCALA_CHAR)    return MSILType.CHAR;
-	    if (t == tc.SCALA_UNIT)    return MSILType.VOID;
+	    //if (t == tc.SCALA_UNIT)    return MSILType.VOID;
 	    if (t == tc.SCALA_BOOLEAN) return MSILType.BOOL;
 	}
-	return null;
+	return type;
     }
 
     /*
@@ -2111,27 +2113,28 @@ final class MSILType {
 
     public static final MSILType OBJECT = REF(pp.OBJECT);
     public static final MSILType STRING = REF(pp.STRING);
+    public static final MSILType UNIT = REF(pp.getType("scala.Unit"));
 
     //##########################################################################
     // factory methods
 
-    public static MSILType fromKind(int kind) {
-	switch (kind) {
-	case TypeTags.BYTE: return I1;
-	case TypeTags.CHAR: return CHAR;
-	case TypeTags.SHORT: return I2;
-	case TypeTags.INT: return I4;
-	case TypeTags.LONG: return I8;
-	case TypeTags.FLOAT: return R4;
-	case TypeTags.DOUBLE: return R8;
-	case TypeTags.BOOLEAN: return BOOL;
-	case TypeTags.UNIT: return VOID;
-	case TypeTags.STRING: return STRING;
-	default:
-	    throw Debug.abort("Unknown kind: " + kind);
+//     public static MSILType fromKind(int kind) {
+// 	switch (kind) {
+// 	case TypeTags.BYTE: return I1;
+// 	case TypeTags.CHAR: return CHAR;
+// 	case TypeTags.SHORT: return I2;
+// 	case TypeTags.INT: return I4;
+// 	case TypeTags.LONG: return I8;
+// 	case TypeTags.FLOAT: return R4;
+// 	case TypeTags.DOUBLE: return R8;
+// 	case TypeTags.BOOLEAN: return BOOL;
+// 	case TypeTags.UNIT: return VOID;
+// 	case TypeTags.STRING: return STRING;
+// 	default:
+// 	    throw Debug.abort("Unknown kind: " + kind);
 
-	}
-    }
+// 	}
+//     }
 
     public static MSILType fromType(Type type) {
 	if (type == pp.BYTE)   return I1;
@@ -2154,7 +2157,7 @@ final class MSILType {
     public static MSILType fromAConstant(AConstant value) {
         switch (value) {
         case UNIT:
-            return VOID; // FIXME
+            return UNIT; // was VOID; // FIXME
         case BOOLEAN(_):
             return BOOL;
         case BYTE(_):
