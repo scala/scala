@@ -295,8 +295,9 @@ public class PatternMatcher extends PatternTool {
             } else if ((fn.symbol() != null) &&
                        fn.symbol().isStable() &&
                        !(fn.symbol().isModule() &&
-                         ((fn.symbol().flags & Modifiers.CASE) != 0)))
+                         ((fn.symbol().flags & Modifiers.CASE) != 0))) {
                 return mk.VariablePat(tree.pos, tree);
+            }
             return mk.ConstrPat(tree.pos, tree.type);
         case Typed(Ident ident, Tree tpe):       // variable pattern
             boolean doTest = header.type.isSubType(tpe.type);

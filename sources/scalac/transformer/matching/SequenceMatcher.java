@@ -27,9 +27,6 @@ public class SequenceMatcher extends PatternTool {
 
     PartialMatcher _m;
 
-    //Tree pat[];
-    //Tree body[];
-
     BindingBerrySethi bbuild = null;
 
     /** translates the det/switching automaton to scala code
@@ -98,8 +95,6 @@ public class SequenceMatcher extends PatternTool {
                            Tree defaultCase,
                            boolean doBinding ) {
         this._m = _m;
-        //this.pat  = pat;
-        //this.body = body;
         assert body.length == pat.length;
         if( defaultCase == null )
             defaultCase = cf.ThrowMatchError( cf.pos, _m.resultType );
@@ -125,11 +120,12 @@ public class SequenceMatcher extends PatternTool {
         DetWordAutom dfa = new DetWordAutom( nfa );
 
         // (c) translate to scala code
-        WordAutomInScala scalaAut = new WordAutomInScala( dfa,
-                                                          elementType,
-                                                          _m.owner,
-                                                          cf,
-                                                          unit.global.target == Global.TARGET_JVM );
+        WordAutomInScala scalaAut =
+            new WordAutomInScala( dfa,
+                                  elementType,
+                                  _m.owner,
+                                  cf,
+                                  unit.global.target == Global.TARGET_JVM );
         scalaAut.translate();
 
         // STEP 3 - binding
