@@ -19,7 +19,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
 
   type Elem = scala.xml.Elem;
 
-  // FactoryAdpater methods
+  // FactoryAdapter methods
 
   /** returns true. Every XML node may contain text that the application needs
   **/
@@ -30,15 +30,19 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
 
   /** creates a node. never creates the same node twice, using hash-consing
   */
-  def createNode(uri:String,
-                 label: String,
-                 attrs: mutable.HashMap[Pair[String,String],String],
-                 children: List[Node] ):Elem = {
+  def createNode(uri:String, label: String, attrs: mutable.HashMap[Pair[String,String],String], children: List[Node] ):Elem = {
 
-    val uri$ = uri.intern();
-    val elHashCode = Utility.hashCode( uri$, label, attrs, children ) ;
-
-    val attrSeq = AttributeSeq.fromHashMap( attrs );
+    // this is a dirty hack to quickly add xmlns.
+    // does SAX handle prefixes, xmlns stuff ?
+    val defNS = getDefaultNamespace( attrs.keys );
+    var uri$:String = if(( defNS.length() > 0 )&&( uri.length == 0 )) {
+      defNS
+    } else {
+      uri.intern();
+    }
+    val attrSeq = AttributeSeq.fromHashMap( uri$, attrs );
+    val elHashCode =
+      Utility.hashCode( uri$, label, attrSeq.hashCode(), children ) ;
     cache.get( elHashCode ).match{
       case Some(cachedElem) =>
         //System.err.println("[using cached elem +"+cachedElem.toXML+"!]"); //DEBUG
@@ -48,7 +52,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
       cache.update( elHashCode, el );
       el
     }
-  }
+                 }
 
   /** creates a text node
   */
@@ -57,5 +61,14 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
   /** loads an XML document, returning a Symbol node.
   */
   override def loadXML( source:InputSource ):Elem =
-    super.loadXML( source ).asInstanceOf[ Elem ]
-}
+    super.loadXML( source ).asInstanceOf[ Elem ];
+
+  def getDefaultNamespace(it:Iterator[Pair[String,String]]):String = {
+    while( it.hasNext ) {
+      val key = it.next;
+      if( key._1 == "xmlns")
+        return key._2
+    }
+    return "";
+  }
+                        }

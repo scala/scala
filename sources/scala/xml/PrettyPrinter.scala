@@ -97,7 +97,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   protected def leafTag( n:Node ) = {
     val sb = new StringBuffer("<");
     Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
-    Utility.attr2xml(  n.attributes.elements, pmap, sb );
+    Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
     sb.append("/>");
     sb.toString();
   }
@@ -105,7 +105,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   protected def startTag(n: Node) = {
     val sb = new StringBuffer("<");
     Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
-    Utility.attr2xml(  n.attributes.elements, pmap, sb );
+    Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
     sb.append('>');
     sb.toString();
   }

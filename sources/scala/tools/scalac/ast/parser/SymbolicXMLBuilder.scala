@@ -383,7 +383,17 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     if( i != -1 ) Some( name.substring(0, i) ) else None
   }
 
-  def qualified( pos:Int, name:String ):Pair[String,String] =
+  protected def qualifiedAttr( pos:Int, namespace:String, name:String ):Pair[String,String] = {
+    getPrefix( name ).match {
+      case Some( pref ) =>
+        val newLabel = name.substring( pref.length()+1, name.length() );
+        // if( newLabel.indexOf(':') != -1 )  syntaxError
+        Pair( "namespace$"+pref, newLabel );
+      case None =>
+        Pair( namespace, name );
+    }
+  }
+  protected def qualified( pos:Int, name:String ):Pair[String,String] =
     getPrefix( name ).match {
       case Some( pref ) =>
         val newLabel = name.substring( pref.length()+1, name.length() );
@@ -421,7 +431,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
         var it = attrMap.elements;
         while( it.hasNext ) {
           val ansk = it.next;
-          val Pair( ns, aname ) = qualified( pos, ansk._1 );
+          val Pair( ns, aname ) = qualifiedAttr( pos, namespace, ansk._1 );
           attrs( k ) = makeAttribute( pos, ns, aname, ansk._2 );
           k = k + 1;
         }

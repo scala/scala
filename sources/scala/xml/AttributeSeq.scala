@@ -18,9 +18,24 @@ object AttributeSeq {
   final def fromHashMap(as:HashMap[Pair[String,String],String]) = {
     new AttributeSeq( {
       for( val a <- as.keys.toList )
-      yield Attribute(a._1,a._2, as(a))
+      yield Attribute(a._1,a._2.intern(), as(a))
     }:_* )
   }
+
+  final def fromHashMap(ns:String, as:HashMap[Pair[String,String],String]) = {
+    new AttributeSeq( {
+      for( val a <- as.keys.toList )
+      yield {
+        val res =
+          if( a._1.length() == 0 )
+            Attribute(ns, a._2.intern(), as( a ))
+          else
+            Attribute(a._1.intern(), a._2.intern(), as(a));
+        res
+      }
+    }:_*)
+  }
+
 }
 
 /** Sorted linear list of XML attributes.
@@ -65,5 +80,7 @@ class AttributeSeq( as:Attribute* ) with Seq[Attribute] {
   final def map(f: Attribute => Attribute): AttributeSeq = {
     new AttributeSeq( elements.map( f ).toList:_* )
   }
+
+  override def hashCode():Int = treeSet.hashCode();
 }
 

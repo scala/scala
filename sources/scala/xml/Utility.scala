@@ -75,14 +75,15 @@ object Utility {
   */
   def defaultPrefixes(rootns:String,nset:mutable.Set[String]):Map[String,String] = {
     val map = new mutable.HashMap[String,String]();
-    map.update( rootns, "" );
+    if( nset.contains("") )
+      map.update( "", "" );
     var i = 0;
     for( val ns <- nset )
       map.get( ns ) match {
-        case None      => map.update( ns, "ns"+i );
+        case None      => map.update( ns, "ns"+i ); i = i + 1;
         case Some( _ ) =>
       }
-
+    // Console.println("defaultPrefixes:"+map); // DEBUG
     return map;
   }
 
@@ -102,7 +103,7 @@ object Utility {
   def toXML(n: Node): String = n match {
     case Text( t ) =>
       escape( t );
-    case _:EntityRef | _:Comment | _:ProcInstr =>
+    case _ if n.typeTag$ < 0 =>
       n.toString();
     case _ =>
       val s = new StringBuffer();
@@ -110,18 +111,19 @@ object Utility {
       s.toString();
   }
 
-  /** serializes a node with given namespace prefix mapping
+  /** serializes a node with given namespace prefix mapping. the prefix
+  *   mapping may not map the empty namespace "" to some non-empty prefix.
   * @arg n the node to serialize
   * @pmap a mapping from namespace URIs to prefixes
   */
-  def toXML(n: Node, pmap:Map[String,String] ):String = n match {
+  def toXML(x: Node, pmap:Map[String,String] ):String = x match {
     case Text( t ) =>
       escape( t );
-    case _:EntityRef | _:Comment | _:ProcInstr =>
-      n.toString();
+    case _ if x.typeTag$ < 0 =>
+      x.toString();
     case _ =>
       val sb = new StringBuffer();
-      toXML( n, pmap, sb );
+      toXML( x, pmap, sb );
       sb.toString();
   }
 
@@ -129,16 +131,16 @@ object Utility {
   **  with the given namespace prefix mapping
   *   @param n the root node
   */
-  def toXML( n:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = n match {
+  def toXML( x:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = x match {
     case Text( t ) =>
       sb.append( escape( t ) );
-    case _:EntityRef | _:Comment | _:ProcInstr =>
-      sb.append( n.toString() );
-    case x:Node =>
+    case _ if x.typeTag$ < 0 =>
+      sb.append( x.toString() );
+    case _ => {
       sb.append('<');
       appendPrefixedName( x.namespace, x.label, pmap, sb );
       if( x.attributes.length != 0 ) {
-        attr2xml( x.attributes.elements, pmap, sb )
+        attr2xml( x.namespace, x.attributes.elements, pmap, sb )
       }
     if( (pmap.size != 1)||pmap.get("").isEmpty) {
       for( val Pair(ns,pref) <- pmap.elements ) {
@@ -159,21 +161,21 @@ object Utility {
       appendPrefixedName( x.namespace, x.label, pmap, sb );
       sb.append('>');
     }
-
+  }
   /** serializes a tree to the given stringbuffer
   **  with the given namespace prefix mapping
   *   @param n the root node
   */
-  def toXML1( n:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = n match {
+  def toXML1( x:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = x match {
     case Text( t ) =>
       sb.append( escape( t ) );
-    case _:EntityRef | _:Comment | _:ProcInstr =>
-      sb.append( n.toString() );
-    case x:Node => {
+    case _ if x.typeTag$ < 0 =>
+      sb.append( x.toString() );
+    case _ => {
       sb.append('<');
       appendPrefixedName( x.namespace, x.label, pmap, sb );
       if( x.attributes.length != 0 ) {
-        attr2xml( x.attributes.elements, pmap, sb )
+        attr2xml( x.namespace, x.attributes.elements, pmap, sb )
       }
       sb.append('>');
       for( val c <- x.child.elements ) {
@@ -191,10 +193,13 @@ object Utility {
   }
 */
   /** for a Node n, returns string representation of n.attributes **/
-  def attr2xml( attrib: Iterator[Attribute], pmap: Map[String, String], sb: StringBuffer ):Unit = {
+  def attr2xml( ns:String, attrib: Iterator[Attribute], pmap: Map[String, String], sb: StringBuffer ):Unit = {
     for( val x <- attrib ) {
       sb.append( " " );
-      appendPrefixedName( x.namespace, x.key, pmap, sb );
+      if( ns == x.namespace )
+          sb.append( x.key );
+        else
+          appendPrefixedName( x.namespace, x.key, pmap, sb );
       sb.append("=");
       appendQuoted(x.value, sb)
     }
@@ -225,10 +230,13 @@ object Utility {
 
 
   def appendPrefixedName( ns: String, name: String, pmap: Map[String, String], sb: StringBuffer ):Unit = {
-    val pref = pmap( ns );
-    if( pref.length() > 0 ) {
-      sb.append( pref );
-      sb.append(':');
+    pmap.get( ns ) match {
+      case Some( pref ) =>
+        if( pref.length() > 0 ) {
+          sb.append( pref );
+          sb.append(':');
+        }
+      case None => error("no prefix found for namespace \""+ns+"\"");
     }
     sb.append( name );
   }
