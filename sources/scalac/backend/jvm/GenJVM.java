@@ -582,11 +582,16 @@ class JVMGenerator {
     }
 
     protected byte genLoadModule(Symbol sym) {
-        int moduleInstIdx =
-            currPool.addFieldref(javaName(sym),
-                                 MODULE_INSTANCE_FIELD_NAME,
-                                 typeStoJ(sym.info()).getSignature());
-        currIL.append(new GETSTATIC(moduleInstIdx));
+        String javaSymName = javaName(sym);
+        if (javaSymName.equals(currClassName))
+            currIL.append(ic.THIS);
+        else {
+            int moduleInstIdx =
+                currPool.addFieldref(javaSymName,
+                                     MODULE_INSTANCE_FIELD_NAME,
+                                     typeStoJ(sym.info()).getSignature());
+            currIL.append(new GETSTATIC(moduleInstIdx));
+        }
         return cst.T_OBJECT;
     }
 
@@ -826,11 +831,20 @@ class JVMGenerator {
         boolean intCompareWithZero = false;
         for (int i = 0; i < args.length; ++i) {
             boolean isIntZero = false;
-            switch (args[i]) {
-            case Literal(Object val):
-                if ((maxTypeIdx <= intTypeIdx) && ((Number)val).intValue() == 0) {
-                    isIntZero = true;
-                    if (i == 0) prim = prim.swap();
+            if (maxTypeIdx <= intTypeIdx) {
+                switch (args[i]) {
+                case Literal(Object val):
+                    int intVal;
+                    if (val instanceof Number)
+                        intVal = ((Number)val).intValue();
+                    else if (val instanceof Character)
+                        intVal = ((Character)val).charValue();
+                    else
+                        throw Debug.abort("unknown literal", val);
+                    if (intVal == 0) {
+                        isIntZero = true;
+                        if (i == 0) prim = prim.swap();
+                    }
                 }
             }
             if (intCompareWithZero || !isIntZero)
@@ -1460,7 +1474,7 @@ class JVMGenerator {
             case cst.T_DOUBLE: inst = new DSTORE(pos); break;
             case cst.T_ARRAY:
             case cst.T_OBJECT: inst = new ASTORE(pos); break;
-            default: throw Debug.abort("unexpected type");
+            default: throw Debug.abort("unexpected type", type);
             }
         }
 
