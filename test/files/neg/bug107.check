@@ -1,4 +1,4 @@
-bug107.scala:4: object class O needs to be abstract, since method fooscala.Int in trait C is not defined
+bug107.scala:4: object class O needs to be abstract, since method foo in trait C is not defined
 object O extends C {
        ^
 one error found
