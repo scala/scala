@@ -216,36 +216,71 @@ public class ExplicitOuterClassesPhase extends Phase {
         return new TypeContext(clasz, outer, tlinks, vlink, context, constructor.typeParams(), tparams);
     }
 
+    //########################################################################
+    // Private Functions
 
-    /** !!! */
-    // !!! prefix is an old type
-    // !!! args are old types
-    // !!! returns old types
-    private Type[] getNewArgsOf(Type prefix, Symbol clasz, Type[] args) {
-        TypeContext context = getTypeContextFor(clasz);
-        int vlinks = context.depth; // !!!
-        Type[] types = new Type[context.transformer.tparams.size() + vlinks];
-        int p = types.length;
-        for (int i = args.length; 0 < i; ) types[--p] = args[--i];
-        for (TypeContext o = context.outer; o != null; o = o.outer) {
-            types[--p] = prefix;
-            Type base = prefix.baseType(o.clasz);
-            assert base.symbol() == o.clasz:
-                prefix + " -- " + Debug.show(clasz) + " -- " + o.clasz + " -- " + base;
-            prefix = base.prefix();
-            args = base.typeArgs();
-            for (int i = args.length; 0 < i; ) types[--p] = args[--i];
+    /**
+     * Returns the depth of the specified class. The depth of a class
+     * is:
+     * - -1 for a package class
+     * - 0 for a top-level class
+     * - the depth of the enclosing class plus 1 for an inner class
+     */
+    private static int getClassDepth(Symbol clasz) {
+        assert clasz.isClass() || clasz.isPackageClass(): Debug.show(clasz);
+        int depth = -1;
+        while (!clasz.isPackageClass()) { clasz = clasz.owner(); depth++; }
+        return depth;
+    }
+
+    /** Tests whether the class is enclosed in the specified class. */
+    private static boolean isEnclosedIn(Symbol clasz, Symbol outer) {
+        for (; !clasz.isRoot(); clasz = clasz.owner())
+            if (clasz == outer) return true;
+        return false;
+    }
+
+    /**
+     * Returns the type arguments of the flattened version of the
+     * specified type reference. This functions takes and returns
+     * non-transformed types.
+     */
+    private static Type[] getFlatArgs(Type prefix, Symbol clasz, Type[] args) {
+        int depth = getClassDepth(clasz);
+        if (depth <= 0) return args;
+        Type[] prefixes = new Type[depth];
+        Type[][] argss = new Type[depth][];
+        int count = collect(prefix, clasz, prefixes, argss);
+        args = Type.cloneArray(count, args);
+        for (int i = 0, o = 0; i < depth; i++) {
+            for (int j = 0; j < argss[i].length; j++)
+                args[o++] = argss[i][j];
+            args[o++] = prefixes[i];
         }
-        // !!! assert p == 0: p;
-        for (int i = 0; i < types.length; i++) { // !!!
-            assert types[i] != null:
-                "\nprefix = " + prefix +
-                "\nclasz  = " + Debug.show(clasz) +
-                "\nargs   = " + Debug.show(args) +
-                "\ntypes  = " + Debug.show(types) +
-                "\ncontext= " + context;
+        return args;
+    }
+    // where
+    private static int collect(Type prefix, Symbol clasz, Type[] prefixes,
+        Type[][] argss)
+    {
+        int count = prefixes.length;
+        for (int i = prefixes.length - 1; i >= 0; i--) {
+            prefixes[i] = prefix;
+            Symbol owner = clasz.owner();
+            Type base = prefix.baseType(owner);
+            switch (base) {
+            case TypeRef(Type type, Symbol symbol, Type[] args):
+                assert symbol == owner: Debug.show(base);
+                count += args.length;
+                argss[i] = args;
+                prefix = type;
+                clasz = owner;
+                continue;
+            default:
+                throw Debug.abortIllegalCase(base);
+            }
         }
-        return types;
+        return count;
     }
 
     //########################################################################
@@ -322,7 +357,7 @@ public class ExplicitOuterClassesPhase extends Phase {
     // Private Class - Type transformer
 
     /** The type transformer */
-    private final class TypeTransformer extends Type.MapOnlyTypes {
+    private static final class TypeTransformer extends Type.MapOnlyTypes {
 
         private final TypeContext context;
         private final Map/*<Symbol,Type>*/ tparams;
@@ -342,7 +377,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                     return value != null ? (Type)value : type;
                 }
                 if (symbol.isClass() && !symbol.isCompoundSym()) {
-                    args = map(getNewArgsOf(prefix, symbol, args));
+                    args = map(getFlatArgs(prefix, symbol, args));
                     prefix = Type.NoPrefix;
                     return Type.typeRef(prefix, symbol, args);
                 }
@@ -372,6 +407,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 return map(type);
             }
         }
+
     }
 
     //########################################################################
@@ -382,6 +418,11 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         /** The current context */
         private Context context;
+
+        /** Transforms the given type. */
+        public Type transform(Type type) {
+            return context.context.transformer.apply(type);
+        }
 
         /** Transforms the given tree. */
         public Tree transform(Tree tree) {
@@ -486,10 +527,6 @@ public class ExplicitOuterClassesPhase extends Phase {
                 }
                 return gen.Ident(tree.pos, symbol);
 
-            case TypeTerm():
-                Type type = context.context.transformer.apply(tree.getType());
-                return gen.TypeTerm(tree.pos, type);
-
             default:
                 return super.transform(tree);
             }
@@ -499,34 +536,26 @@ public class ExplicitOuterClassesPhase extends Phase {
         private Tree transform(Tree vapply, Tree[] vargs, Tree tapply,
             Tree[] targs, Tree tree)
         {
-            Symbol symbol = tree.symbol();
-            vargs = transform(vargs);
-            switch (transform(tree)) {
+            switch (tree) {
             case Select(Tree qualifier, _):
-                if (getTypeContextFor(symbol).vlink != null) {
+                Symbol symbol = tree.symbol();
+                Symbol clasz = symbol.constructorClass();
+                if (getClassDepth(clasz) > 0) {
+                    Type[] types = Tree.typeOf(targs);
+                    types = getFlatArgs(qualifier.type(), clasz, types);
+                    targs = gen.mkTypes(tapply.pos, types);
                     vargs = Tree.cloneArray(1, vargs);
                     vargs[0] = qualifier;
-
-                    Type prefix;
-                    // !!! this is done to avoid types like "vlink.type"
-                    switch (tree) {
-                    case Select(Tree qualifier1, _):
-                        prefix = qualifier1.getType();
-                        break;
-                    default:
-                        throw Debug.abort("illegal case", tree);
-                    }
-                    Type[] newtargs = getNewArgsOf(prefix, symbol, Tree.typeOf(targs));
-                    targs = Tree.cloneArray(newtargs.length - targs.length, targs);
-                    for (int i = 0; i < newtargs.length; i++)
-                        targs[i] = gen.mkType(tapply.pos, newtargs[i]);
-
+                } else {
+                    assert !containsValue(qualifier): tree;
                 }
+                tree = gen.Ident(tree.pos, symbol);
+                if (targs.length != 0)
+                    tree = gen.TypeApply(tapply.pos, tree, transform(targs));
+                return gen.Apply(vapply.pos, tree, transform(vargs));
+            default:
+                throw Debug.abortIllegalCase(tree);
             }
-            targs = transform(targs);
-            tree = gen.Ident(tree.pos, symbol);
-            if (targs.length != 0) tree = gen.TypeApply(tapply.pos,tree,targs);
-            return gen.Apply(vapply.pos, tree, vargs);
         }
 
         /**
@@ -617,6 +646,19 @@ public class ExplicitOuterClassesPhase extends Phase {
                 }
             }
         }
+
+        /** Tests whether the tree contains some value computation. */
+        private boolean containsValue(Tree tree) {
+            switch (tree) {
+            case This(_):
+                return !tree.symbol().isPackageClass();
+            case Select(Tree qualifier, _):
+                return containsValue(qualifier) || tree.symbol().isValue();
+            default:
+                return false;
+            }
+        }
+
     };
 
     //########################################################################
