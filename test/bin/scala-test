@@ -138,7 +138,7 @@ test_compilation_success() {
     output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`.obj;
     rm -rf "$output";
     mkdir -p "$output" &&
-    $SOCOS $FLAGS "$source" &&
+    $SOCOS -d "$output" $FLAGS "$source" &&
     rm -rf "$output";
 }
 
