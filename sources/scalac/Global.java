@@ -30,6 +30,7 @@ public class  Global {
     /** global options
      */
     public final boolean noimports;
+    public final boolean nopredefs;
     //public final boolean optimize;
     public final boolean debug;
     public final boolean uniqid;
@@ -136,6 +137,7 @@ public class  Global {
         this.reporter = args.reporter();
         this.start(); // timestamp to compute the total time
         this.noimports = args.noimports.value;
+        this.nopredefs = args.nopredefs.value;
         //this.optimize = args.optimize.optimize;
         this.debug = args.debug.value;
         this.uniqid = args.uniqid.value;

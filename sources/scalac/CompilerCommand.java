@@ -47,6 +47,7 @@ public class CompilerCommand extends CommandParser {
     public final StringOptionParser outpath;
     public final ChoiceOptionParser target;
     public final BooleanOptionParser noimports;
+    public final BooleanOptionParser nopredefs;
     public final StringOptionParser jaco;
     public final PhaseSetOptionParser skip;
     public final PhaseSetOptionParser check;
@@ -130,6 +131,10 @@ public class CompilerCommand extends CommandParser {
 
         this.noimports = new BooleanOptionParser(this,
             "noimports", "Compile without any implicit imports",
+            false),
+
+        this.nopredefs = new BooleanOptionParser(this,
+            "nopredefs", "Compile without any implicit predefined values",
             false),
 
         this.jaco = new StringOptionParser(this,
