@@ -942,7 +942,7 @@ the type definition
   Dcl          ::=  val ValDcl {`,' ValDcl}
   ValDcl       ::=  id `:' Type
   Def          ::=  val PatDef {`,' PatDef}
-  PatDef       ::=  Pattern `=' Expr
+  PatDef       ::=  Pattern2 [`:' Type] `=' Expr
 \end{lstlisting}
 
 A value declaration ~\lstinline@val $x$: $T$@~ introduces $x$ as a name of a value of
@@ -2915,7 +2915,7 @@ A semicolon preceding the \code{while} symbol of a do loop expression is ignored
   Enumerator     ::=  Generator {`;' Enumerator}
   Enumerator     ::=  Generator
                    |  Expr
-  Generator      ::=  val Pattern `<-' Expr
+  Generator      ::=  val Pattern1 `<-' Expr
 \end{lstlisting}
 
 A comprehension ~\lstinline@for ($\enums\,$) yield $e$@~ evaluates expression $e$ for each
@@ -3241,22 +3241,21 @@ written.
 \label{sec:patterns}
 
 \syntax\begin{lstlisting}
-Pattern        ::=  TreePattern { `|' TreePattern }
-
-TreePattern    ::=  varid `:' Type
+Pattern        ::=  Pattern1 { `|' Pattern1 }
+Pattern1       ::=  varid `:' Type
                  |  `_' `:' Type
-                 |   SimplePattern [ '*'  |'?' | '+' ]
-                 |   SimplePattern { id SimplePattern }
-
+Pattern2       ::=  SimplePattern [ '*'  |'?' | '+' ]
+                 |  SimplePattern { id SimplePattern }
 SimplePattern  ::=  varid [ '@' SimplePattern ]
                  |  `_'
                  |  literal
                  |  StableId [ `(' [Patterns] `)' ]
                  |  `(' Patterns `)'
                  |   
-
  Patterns      ::=  Pattern {`,' Pattern}
 \end{lstlisting}
+
+\todo{Why can patterns be empty?}
 
 A pattern is built from constants, constructors, variables and regular
 operators. Pattern matching tests whether a given value (or sequence
@@ -4172,7 +4171,7 @@ grammar.
   Enumerators     ::=  Generator {`;' Enumerator}
   Enumerator      ::=  Generator
                     |  Expr
-  Generator       ::=  val Pattern `<-' Expr
+  Generator       ::=  val Pattern1 `<-' Expr
   Block           ::=  {BlockStat `;'} [Expr]
   BlockStat       ::=  Import
                     |  Def
@@ -4184,20 +4183,18 @@ grammar.
 
   Constr          ::=  StableId [TypeArgs] [`(' [Exprs] `)']  
 
-  Pattern         ::=  TreePattern { `|' TreePattern }
-
-  TreePattern     ::=  varid `:' Type
+  Pattern         ::=  Pattern1 { `|' Pattern1 }
+  Pattern1        ::=  varid `:' Type
                     |  `_' `:' Type
-                    |  SimplePattern [ '*' | '?' | '+' ]
+		    |  Pattern2
+  Pattern2        ::=  SimplePattern [ '*' | '?' | '+' ]
                     |  SimplePattern { id SimplePattern }
-
   SimplePattern   ::=  varid [ '@' SimplePattern ]
                     |  `_'
                     |  literal
                     |  StableId [ `(' [Patterns] `)' ]
                     |  `(' Patterns `)'
                     |   
-
   Patterns        ::=  Pattern {`,' Pattern}
 
   TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'

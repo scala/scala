@@ -1121,11 +1121,11 @@ public class Parser implements Tokens {
 	return enums.toArray();
     }
 
-    /** Generator ::= val Pattern `<-' Expr
+    /** Generator ::= val Pattern1 `<-' Expr
      */
     Tree generator() {
 	int pos = accept(VAL);
-	Tree pat = validPattern();
+	Tree pat = validPattern1();
 	accept(LARROW);
 	Tree rhs = expr();
 	if (!TreeInfo.isVarPattern(pat))
@@ -1162,6 +1162,22 @@ public class Parser implements Tokens {
 	return make.Bad(pos);
     }
 
+    /**  Pattern1 ( see pattern1() ) which is checked for validity
+     */
+    Tree validPattern1() {
+	int pos = s.pos;
+
+	Tree pat = pattern1();
+
+	if( this.pN.check( pat ) ) { // reports syntax errors as side effect
+	    // normalize
+	    Tree res = pN.wrapAlternative( pN.elimSequence( pN.flattenSequence ( pat )));
+	    return res;
+        }
+	//syntaxError( pos, "invalid pattern", false );
+	return make.Bad(pos);
+    }
+
     /** Patterns ::= Pattern {`,' Pattern}
      */
     Tree[] patterns() {
@@ -1174,18 +1190,17 @@ public class Parser implements Tokens {
         return ts.toArray();
     }
 
-    /**   Pattern  ::=  TreePattern { `|' TreePattern }
+    /**   Pattern  ::=  Pattern1 { `|' Pattern1 }
      */
-
     Tree pattern() {
 	int pos = s.pos;
-	Tree first = treePattern();
+	Tree first = pattern1();
 	if(( s.token == IDENTIFIER )&&( s.name == BAR )) {
 	    TreeList choices = new TreeList();
 	    choices.append( first );
 	    while(( s.token == IDENTIFIER )&&( s.name == BAR )) {
 		s.nextToken();
-		choices.append( treePattern() );
+		choices.append( pattern1() );
 	    }
 	    TreeList ts = pN.flattenAlternativeChildren( choices.toArray() );
 	    return pN.flattenAlternative( make.Alternative( pos, ts.toArray() ) );
@@ -1193,12 +1208,11 @@ public class Parser implements Tokens {
 	return first;
     }
 
-    /**   TreePattern  ::=  varid `:' Type1
-     *                   |  `_' `:' Type1
-     *                   |  SimplePattern [ '*' | '?' | '+' ]
-     *                   |  SimplePattern {Id SimplePattern}    // op2 must not be empty
+    /**   Pattern1  ::=  varid `:' Type1
+     *                |  `_' `:' Type1
+     *                |  Pattern2
      */
-    Tree treePattern() {
+    Tree pattern1() {
         int base = sp;
 	Tree top = simplePattern();
 	if (s.token == COLON) {
@@ -1206,6 +1220,17 @@ public class Parser implements Tokens {
 		return make.Typed(s.skipToken(), top, type1());
 	    }
 	}
+	return pattern1rest(base, top);
+    }
+
+    /*   Pattern2  ::=  SimplePattern [ '*' | '?' | '+' ]
+     *               |  SimplePattern {Id SimplePattern}    // op2 must not be empty
+     */
+    Tree pattern2() {
+	return pattern1rest(sp, simplePattern());
+    }
+
+    Tree pattern1rest(int base, Tree top) {
 	if (s.token == IDENTIFIER) {
             if (s.name == STAR) {    /*         p*  becomes  z@( |(p,z))       */
                 s.nextToken();
@@ -1683,22 +1708,13 @@ public class Parser implements Tokens {
         }
     }
 
-    /** PatDef ::= Pattern `=' Expr
+    /** PatDef ::= Pattern2 [`:' Type] `=' Expr
      *  ValDcl ::= Id `:' Type
      */
     Tree patDefOrDcl(int mods) {
         int pos = s.pos;
-        Tree pat = validPattern();
-	Tree tp;
-        switch (pat) {
-	case Typed(Tree pat1, Tree tp1):
-	    pat = pat1;
-	    tp = tp1;
-	    break;
-	default:
-	    if (s.token == COLON) tp = typedOpt();
-	    else tp = Tree.Empty;
-	}
+        Tree pat = pattern2();
+	Tree tp = (s.token == COLON) ? typedOpt() : Tree.Empty;
 	switch (pat) {
 	case Ident(Name name):
 	    if (tp == Tree.Empty || s.token == EQUALS)

@@ -316,6 +316,17 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
     }
 
+    /** If this type is a parameterless method, its underlying resulttype;
+     *  otherwise the type itself
+     */
+    public Type derefDef() {
+	switch (this) {
+	case PolyType(Symbol[] tparams, Type restp):
+	    if (tparams.length == 0) return restp;
+	}
+	return this;
+    }
+
     /** The lower approximation of this type (which must be a typeref)
      */
     public Type loBound() {
@@ -703,6 +714,32 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return sym;
         default:
 	    return Symbol.NONE;
+	}
+    }
+
+// Set Owner ------------------------------------------------------------------
+
+    public Type setOwner(Symbol owner) {
+	switch (this) {
+	case PolyType(Symbol[] tparams, Type restpe):
+	    Type restpe1 = restpe.setOwner(owner);
+	    if (restpe1 == restpe) return this;
+	    else return Type.PolyType(tparams, restpe1);
+	case MethodType(Symbol[] params, Type restpe):
+	    Symbol[] params1 = params;
+	    if (params.length > 0 &&
+		params[0].owner() != owner && params[0].owner() != Symbol.NONE) {
+		params1 = new Symbol[params.length];
+		for (int i = 0; i < params.length; i++)
+		    params1[i] = params[i].cloneSymbol();
+	    }
+	    for (int i = 0; i < params.length; i++)
+		params1[i].setOwner(owner);
+	    Type restpe1 = restpe.setOwner(owner);
+	    if (params1 == params && restpe1 == restpe) return this;
+	    else return Type.MethodType(params1, restpe1);
+	default:
+	    return this;
 	}
     }
 
@@ -1555,8 +1592,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    Symbol p1 = ps1[i];
 		    Symbol p = ps[i];
 		    if (!p1.type().isSameAs(p.type()) ||
-			(p1.flags & (Modifiers.DEF | Modifiers.REPEATED)) !=
-			(p.flags & (Modifiers.DEF | Modifiers.REPEATED)))
+			(p1.flags & (DEF | REPEATED)) != (p.flags & (DEF | REPEATED)))
 			return false;
 		}
 		return res.isSubType(res1);
@@ -1828,8 +1864,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    Symbol p1 = ps1[i];
 		    Symbol p = ps[i];
 		    if (!p1.type().isSameAs(p.type()) ||
-			(p1.flags & (Modifiers.DEF | Modifiers.REPEATED)) !=
-			(p.flags & (Modifiers.DEF | Modifiers.REPEATED)))
+			(p1.flags & (DEF | REPEATED)) != (p.flags & (DEF | REPEATED)))
 			return false;
 		}
 		return res.isSameAs(res1);
@@ -2147,9 +2182,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	int nredundant = 0;
 	boolean[] redundant = new boolean[tps.length];
 	for (int i = 0; i < tps.length; i++) {
-	    if (tps[i] == ErrorType) {
+	    switch (tps[i]) {
+	    case ErrorType:
 		return new Type[]{ErrorType};
-	    } else {
+	    case MethodType(_, _):
+	    case PolyType(_, _):
+	    case OverloadedType(_, _):
+		return new Type[]{NoType};
+	    default:
 		assert tps[i].isObjectType(): tps[i];
 		for (int j = 0; j < i && !redundant[i]; j++) {
 		    if (!redundant[j]) {
@@ -2186,6 +2226,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
 	//If all types are method types with same parameters,
 	//compute lub of their result types.
+	switch (tps[0]) {
+	case PolyType(Symbol[] tparams, _):
+	    return polyLub(tps, tparams);
+	case MethodType(Symbol[] vparams, _):
+	    return methodLub(tps, vparams);
+	}
 
 	// remove types that are subtypes of some other type.
 	tps = elimRedundant(tps, true);
@@ -2250,6 +2296,66 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return sym.kind == CLASS ? base.memberType(sym) : base.memberInfo(sym);
 	}
 
+    private static Type polyLub(Type[] tps, Symbol[] tparams0) {
+	Type[][] hiboundss = new Type[tparams0.length][tps.length];
+	Type[][] loboundss = new Type[tparams0.length][tps.length];
+	Type[] restps   = new Type[tps.length];
+	for (int i = 0; i < tps.length; i++) {
+	    switch (tps[i]) {
+	    case PolyType(Symbol[] tparams, Type restp):
+		if (tparams.length == tparams0.length) {
+		    for (int j = 0; j < tparams0.length; j++) {
+			hiboundss[j][i] = tparams[j].info()
+			    .subst(tparams, tparams0);
+			loboundss[j][i] = tparams[j].loBound()
+			    .subst(tparams, tparams0);
+		    }
+		    restps[i] = restp.subst(tparams, tparams0);
+		} else {
+		    return Type.NoType;
+		}
+		break;
+	    default:
+		return Type.NoType;
+	    }
+	}
+	Type[] hibounds = new Type[tparams0.length];
+	Type[] lobounds = new Type[tparams0.length];
+	for (int j = 0; j < tparams0.length; j++) {
+	    hibounds[j] = glb(hiboundss[j]);
+	    lobounds[j] = lub(loboundss[j]);
+	}
+	Symbol[] tparams = new Symbol[tparams0.length];
+	for (int j = 0; j < tparams.length; j++) {
+	    tparams[j] = tparams0[j].cloneSymbol(Symbol.NONE)
+		.setInfo(hibounds[j].subst(tparams0, tparams))
+	        .setLoBound(lobounds[j].subst(tparams0, tparams));
+	}
+	return Type.PolyType(tparams, lub(restps).subst(tparams0, tparams));
+    }
+
+    private static Type methodLub(Type[] tps, Symbol[] vparams0) {
+	Type[] restps = new Type[tps.length];
+	for (int i = 0; i < tps.length; i++) {
+	    switch (tps[i]) {
+	    case MethodType(Symbol[] vparams, Type restp):
+		if (vparams.length != vparams0.length)
+		    return Type.NoType;
+		for (int j = 0; j < vparams.length; j++)
+		    if (!vparams[i].type().isSameAs(vparams0[i].type()) ||
+			(vparams[i].flags & (DEF | REPEATED)) !=
+			(vparams0[i].flags & (DEF | REPEATED)))
+			return Type.NoType;
+		restps[i] = restp;
+	    }
+	}
+	Symbol[] vparams = new Symbol[vparams0.length];
+	for (int j = 0; j < vparams.length; j++) {
+	    vparams[j] = vparams0[j].cloneSymbol(Symbol.NONE);
+	}
+	return Type.MethodType(vparams, lub(restps));
+    }
+
     private static Symbol lub(Symbol[] syms, Type[] tps, Type[] lbs, Symbol owner) {
 	//System.out.println("lub" + ArrayApply.toString(syms));//DEBUG
 	int lubKind = syms[0].kind;
@@ -2276,7 +2382,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	default:
 	    throw new ApplicationError();
 	}
-	lubSym.setInfo(lubType);
+	lubSym.setInfo(lubType.setOwner(lubSym));
 	return lubSym;
     }
 
@@ -2426,7 +2532,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		e.sym.setInfo(syminfo);
 	    } else if (sym.kind == VAL && e.sym.kind == VAL ||
 		       sym.kind == TYPE && e.sym.kind == TYPE) {
-		e.sym.setInfo(glb(new Type[]{einfo, syminfo}));
+		e.sym.setInfo(glb(new Type[]{einfo, syminfo}).setOwner(e.sym));
 	    } else {
 		return false;
 	    }
@@ -2442,6 +2548,66 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    }
 	}
 	return true;
+    }
+
+    private static Type polyGlb(Type[] tps, Symbol[] tparams0) {
+	Type[][] hiboundss = new Type[tparams0.length][tps.length];
+	Type[][] loboundss = new Type[tparams0.length][tps.length];
+	Type[] restps   = new Type[tps.length];
+	for (int i = 0; i < tps.length; i++) {
+	    switch (tps[i]) {
+	    case PolyType(Symbol[] tparams, Type restp):
+		if (tparams.length == tparams0.length) {
+		    for (int j = 0; j < tparams0.length; j++) {
+			hiboundss[j][i] = tparams[j].info()
+			    .subst(tparams, tparams0);
+			loboundss[j][i] = tparams[j].loBound()
+			    .subst(tparams, tparams0);
+		    }
+		    restps[i] = restp.subst(tparams, tparams0);
+		} else {
+		    return Type.NoType;
+		}
+		break;
+	    default:
+		return Type.NoType;
+	    }
+	}
+	Type[] hibounds = new Type[tparams0.length];
+	Type[] lobounds = new Type[tparams0.length];
+	for (int j = 0; j < tparams0.length; j++) {
+	    hibounds[j] = lub(hiboundss[j]);
+	    lobounds[j] = glb(loboundss[j]);
+	}
+	Symbol[] tparams = new Symbol[tparams0.length];
+	for (int j = 0; j < tparams.length; j++) {
+	    tparams[j] = tparams0[j].cloneSymbol(Symbol.NONE)
+		.setInfo(hibounds[j].subst(tparams0, tparams))
+	        .setLoBound(lobounds[j].subst(tparams0, tparams));
+	}
+	return Type.PolyType(tparams, glb(restps).subst(tparams0, tparams));
+    }
+
+    private static Type methodGlb(Type[] tps, Symbol[] vparams0) {
+	Type[] restps = new Type[tps.length];
+	for (int i = 0; i < tps.length; i++) {
+	    switch (tps[i]) {
+	    case MethodType(Symbol[] vparams, Type restp):
+		if (vparams.length != vparams0.length)
+		    return Type.NoType;
+		for (int j = 0; j < vparams.length; j++)
+		    if (!vparams[i].type().isSameAs(vparams0[i].type()) ||
+			(vparams[i].flags & (DEF | REPEATED)) !=
+			(vparams0[i].flags & (DEF | REPEATED)))
+			return Type.NoType;
+		restps[i] = restp;
+	    }
+	}
+	Symbol[] vparams = new Symbol[vparams0.length];
+	for (int j = 0; j < vparams.length; j++) {
+	    vparams[j] = vparams0[j].cloneSymbol(Symbol.NONE);
+	}
+	return Type.MethodType(vparams, glb(restps));
     }
 
 // Erasure --------------------------------------------------------------------------

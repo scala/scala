@@ -319,20 +319,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		sym.flags &= ~DEFERRED;
 	    }
 	}
-	if ((sym.flags & OVERRIDE) != 0) {
-	    int i = -1;
-	    if (sym.owner().kind == CLASS) {
-		Type[] parents = sym.owner().info().parents();
-		i = parents.length - 1;
-		while (i >= 0 &&
-		       parents[i].lookupNonPrivate(sym.name).kind == NONE)
-		    i--;
-	    }
-	    if (i < 0) {
-		error(sym.pos, sym + " overrides nothing");
-		sym.flags &= ~OVERRIDE;
-	    }
-	}
 	checkNoConflict(sym, DEFERRED, PRIVATE);
 	checkNoConflict(sym, FINAL, SEALED);
 	checkNoConflict(sym, FINAL, PRIVATE);

@@ -71,6 +71,22 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		checkOverride(pos, clazz, it.next(), overrides);
 	    }
 	}
+
+	Type[] parents = clazz.info().parents();
+	for (Scope.SymbolIterator it = clazz.members().iterator(true);
+	     it.hasNext();) {
+	    Symbol sym = it.next();
+	    if ((sym.flags & OVERRIDE) != 0) {
+		int i = parents.length - 1;
+		while (i >= 0 && sym.overriddenSymbol(parents[i]).kind == NONE)
+		    i--;
+		if (i < 0) {
+		    unit.error(sym.pos, sym + " overrides nothing");
+		    sym.flags &= ~OVERRIDE;
+		}
+	    }
+	}
+
 	for (Iterator/*<Symbol>*/ it = overrides.keySet().iterator();
 	     it.hasNext();) {
 	    Symbol member = (Symbol) it.next();
@@ -89,12 +105,13 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	if ((other.flags & PRIVATE) == 0) {
 	    Symbol member1 = clazz.info().lookup(other.name);
 	    if (member1.kind != NONE && member1.owner() != other.owner()) {
+		Type self = clazz.thisType();
+		Type otherinfo = normalizedInfo(self, other);
+		Type template = resultToAny(otherinfo);
 		switch (member1.info()) {
 		case OverloadedType(Symbol[] alts, _):
-		    Type self = clazz.thisType();
-		    Type otherinfo = normalizedInfo(self, other);
 		    for (int i = 0; i < alts.length; i++) {
-			if (normalizedInfo(self, alts[i]).isSubType(otherinfo)) {
+			if (normalizedInfo(self, alts[i]).isSubType(template)) {
 			    if (member == other)
 				member = alts[i];
 			    else
@@ -109,12 +126,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    }
 		    break;
 		default:
-		    member = member1;
+		    if (normalizedInfo(self, member1).isSubType(template)) {
+			member = member1;
+		    }
 		}
 	    }
-	}
-	if (member != other) {
-	    checkOverride(pos, clazz, member, other);
+	    if (member != other) {
+		checkOverride(pos, clazz, member, other);
+	    }
 	}
 	if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
 	    if ((member.flags & DEFERRED) != 0) {
@@ -123,13 +142,24 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    member + member.locationString() + " is not defined" +
 		    (((member.flags & MUTABLE) == 0) ? ""
 		     : "\n(Note that variables need to be initialized to be defined)"));
-	    } else if ((member.flags & OVERRIDE) != 0 &&
+	    } else if (member != other &&
+		       (member.flags & OVERRIDE) != 0 &&
 		       ((other.flags & DEFERRED) == 0 ||
 			overrides.get(member) == null))
 		overrides.put(member, other);
 	}
     }
     //where
+        private Type resultToAny(Type tp) {
+	    switch (tp) {
+	    case PolyType(Symbol[] tparams, Type restp):
+		return Type.PolyType(tparams, resultToAny(restp));
+	    case MethodType(Symbol[] tparams, Type restp):
+		return Type.MethodType(tparams, Type.AnyType);
+	    default:
+		return defs.ANY_TYPE;
+	    }
+	}
 	private void abstractClassError(Symbol clazz, String msg) {
 	    if (clazz.isAnonymousClass())
 		unit.error(clazz.pos, "object creation impossible, since " + msg);
@@ -227,12 +257,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     Type normalizedInfo(Type site, Symbol sym) {
-	Type tp = site.memberInfo(sym);
-	switch (tp) {
-	case PolyType(Symbol[] tparams, Type restp):
-	    if (tparams.length == 0) return restp;
-	}
-	return tp;
+	return site.memberInfo(sym).derefDef();
     }
 
     String infoString(Symbol sym, Type symtype, boolean lobound) {
@@ -946,7 +971,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    //System.out.println("name: "+name);
 	    Scope.Entry e = scopes[level].lookupEntry(name);
 	    //System.out.println("sym: "+sym);
-	    if (sym.isLocal() && sym == e.sym) {
+	    if (sym != null && sym.isLocal() && sym == e.sym) {
 		int i = level;
 		while (scopes[i] != e.owner) i--;
 		int symindex = ((Integer) symIndex.get(tree.symbol())).intValue();

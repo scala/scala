@@ -77,30 +77,6 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	}
     }
 
-    Type setOwner(Type tp, Symbol owner) {
-	switch (tp) {
-	case PolyType(Symbol[] tparams, Type restpe):
-	    Type restpe1 = setOwner(restpe, owner);
-	    if (restpe1 == restpe) return tp;
-	    else return Type.PolyType(tparams, restpe1);
-	case MethodType(Symbol[] params, Type restpe):
-	    Symbol[] params1 = params;
-	    if (params.length > 0 &&
-		params[0].owner() != owner && params[0].owner() != Symbol.NONE) {
-		params1 = new Symbol[params.length];
-		for (int i = 0; i < params.length; i++)
-		    params1[i] = params[i].cloneSymbol();
-	    }
-	    for (int i = 0; i < params.length; i++)
-		params1[i].setOwner(owner);
-	    Type restpe1 = setOwner(restpe, owner);
-	    if (params1 == params && restpe1 == restpe) return tp;
-	    else return Type.MethodType(params1, restpe1);
-	default:
-	    return tp;
-	}
-    }
-
     int readByte() {
 	return bytes[bp++];
     }
@@ -288,7 +264,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			    entries[n] = sym = moduleroot;
 			}
 			Type tp = getType(inforef);
-			sym.setFirstInfo(setOwner(tp, sym));
+			sym.setFirstInfo(tp.setOwner(sym));
 			break;
 
 		    default:
@@ -387,7 +363,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    : alts.length + "!=" + alttypes.length +
 		    " at " + bp0 + "/" + bp1 + "/" + bp;
 		for (int i = 0; i < alts.length; i++)
-		    alttypes[i] = setOwner(alttypes[i], alts[i]);
+		    alttypes[i] = alttypes[i].setOwner(alts[i]);
 		tpe = Type.OverloadedType(alts, alttypes);
 		break;
 	    case FLAGGEDtpe:

@@ -123,6 +123,24 @@ public class Infer implements Modifiers, Kinds {
 		    }
 		}
 		return tree;
+
+	    case TypeApply(Tree fun, Tree[] targs):
+		boolean proceed = true;
+		switch (fun.type) {
+		case PolyType(Symbol[] tparams1, _):
+		    if (tparams1.length == tparams.length &&
+			tparams1[0] == tparams[0] &&
+			targs.length == tparams.length) {
+			proceed = false;
+			for (int i = 0; i < tparams.length; i++)
+			    if (!typeSubstituter.matches(targs[i].type.symbol(), tparams[i]))
+				proceed = true;
+		    }
+		}
+		Tree fun1 = proceed ? transform(fun) : fun;
+		Tree[] targs1 = transform(targs);
+		return copy.TypeApply(tree, fun1, targs1);
+
 /*
 	    case TypeTerm():
 		Symbol sym = tree.type.symbol();

@@ -1,9 +1,6 @@
-bug44.scala:2: method t overrides nothing
-  var x: Object { def t: Int; } = new Object() {
-                      ^
 bug44.scala:2: type mismatch;
  found   : scala.Object
  required: scala.Object { def t: scala.Int }
   var x: Object { def t: Int; } = new Object() {
                                   ^
-two errors found
+one error found

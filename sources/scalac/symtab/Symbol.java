@@ -1130,16 +1130,15 @@ public abstract class Symbol implements Modifiers, Kinds {
 	if (sym1.kind == Kinds.NONE || (sym1.flags & STATIC) != 0) {
 	    return Symbol.NONE;
 	} else {
-	    //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + sym1.type() + sym1.locationString()); //DEBUG
-	    //System.out.println(owner.thisType());//DEBUG
+	    //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + ":" + owner.thisType().memberType(sym1) + sym1.locationString()); //DEBUG
 
-	    Type symtype = this.type();//owner.thisType().memberType(this);
-	    //todo: try whether we can do: this.type(); instead
-	    Type sym1type = owner.thisType().memberType(sym1);
+	    Type symtype = this.type().derefDef();
+	    Type sym1type = owner.thisType().memberType(sym1).derefDef();
 	    switch (sym1type) {
 	    case OverloadedType(Symbol[] alts, Type[] alttypes):
 		for (int i = 0; i < alts.length; i++) {
-		    if (symtype.isSubType(alttypes[i])) return alts[i];
+		    if (symtype.isSubType(alttypes[i].derefDef()))
+			return alts[i];
 		}
 		return Symbol.NONE;
 	    default:
@@ -1164,12 +1163,12 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + sym1.type() + sym1.locationString()); //DEBUG
 	    //System.out.println(owner.thisType());//DEBUG
 
-	    Type symtype = sub.memberType(this);
-	    Type sym1type = sub.memberType(sym1);
+	    Type symtype = sub.memberType(this).derefDef();
+	    Type sym1type = sub.memberType(sym1).derefDef();
 	    switch (sym1type) {
 	    case OverloadedType(Symbol[] alts, Type[] alttypes):
 		for (int i = 0; i < alts.length; i++) {
-		    if (alttypes[i].isSubType(symtype)) return alts[i];
+		    if (alttypes[i].derefDef().isSubType(symtype)) return alts[i];
 		}
 		return Symbol.NONE;
 	    default:
@@ -1188,8 +1187,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return
 	    ((this.flags | that.flags) & (PRIVATE | STATIC)) == 0 &&
 	    this.name == that.name &&
-	    owner.thisType().memberType(this).isSubType(
-		owner.thisType().memberType(that));
+	    owner.thisType().memberType(this).derefDef().isSubType(
+		owner.thisType().memberType(that).derefDef());
     }
 
     /** Reset symbol to initial state
