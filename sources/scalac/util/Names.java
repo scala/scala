@@ -100,6 +100,7 @@ public class Names {
     public static final Name scala_Function = Name.fromString("scala.Function");
     public static final Name scala_Int = Name.fromString("scala.Int");
 
+    public static final Name scala_Iterable = Name.fromString("scala.Iterable");
     public static final Name scala_Iterator = Name.fromString("scala.Iterator");
     public static final Name scala_Long = Name.fromString("scala.Long");
     public static final Name scala_Nil = Name.fromString("scala.Nil");
