@@ -61,11 +61,11 @@ public abstract class CompilerPhases {
     protected Class ADDCONSTRUCTORS_PHASE() { return scalac.transformer.AddConstructorsPhase.class; }
     protected Class TYPESASVALUES_PHASE() { return scalac.transformer.TypesAsValuesPhase.class; }
     protected Class TAILCALL_PHASE() { return scalac.transformer.TailCallPhase.class; }
-    protected Class WHOLEPROG_PHASE() { return scalac.util.EmptyPhase.class; } // No java version
+    protected abstract Class WHOLEPROG_PHASE();
     protected Class ADDINTERFACES_PHASE() { return scalac.transformer.AddInterfacesPhase.class; }
     protected Class EXPANDMIXIN_PHASE() { return scalac.transformer.ExpandMixinsPhase.class; }
     protected Class ERASURE_PHASE() { return scalac.transformer.ErasurePhase.class; }
-    protected Class ICODE_PHASE() { return scalac.util.EmptyPhase.class; } // No java version
+    protected abstract Class ICODE_PHASE();
 
     //########################################################################
     // Public Constructors
