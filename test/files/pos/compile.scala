@@ -130,3 +130,20 @@ class Test2_3() {
 }
 
 //############################################################################
+// Test 3 - Super Calls with Mixins
+
+class Test3Foo;
+
+trait Test3A[T] {
+  def fun: T = fun;
+}
+
+class Test3B with Test3A[Test3Foo];
+
+trait Test3M extends Test3A[Test3Foo] {
+  override def fun: Test3Foo = super.fun;
+}
+
+class Test3C extends Test3B with Test3M;
+
+//############################################################################

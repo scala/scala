@@ -432,6 +432,23 @@ object Bug396Test extends Bug396B with Bug396C with Application {
 }
 
 //############################################################################
+// Bug 399
+
+object Bug399Test {
+  def f(x: String): String = {
+    trait C { def f: String = x; }
+    class D with C;
+    class F with C;
+    class G extends D with F;
+    (new G).f
+  }
+
+  def main(args: Array[String]): Unit = {
+    System.out.println(f("a"));
+  }
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -478,6 +495,7 @@ object Test  {
     test(316, Bug316Test.main(args));
     test(328, Bug328Test.main(args));
     test(396, Bug396Test.main(args));
+    test(399, Bug399Test.main(args));
 
     if (errors > 0) {
       System.out.println();

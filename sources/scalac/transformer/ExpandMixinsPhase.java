@@ -178,9 +178,9 @@ public class ExpandMixinsPhase extends Phase {
                 assert supertype.symbol().isSubClass(tree.symbol().owner()):
                     tree + " -- " + Debug.show(clasz);
                 global.nextPhase();
-                Symbol symbol = tree.symbol().overridingSymbol(supertype);
+                Symbol symbol = tree.symbol().overriddenSymbol(supertype);
+                assert !symbol.isNone(): Debug.show(tree, clasz, supertype);
                 global.prevPhase();
-                assert !symbol.isNone(): tree + " -- " + Debug.show(clasz);
                 return symbol;
             case Super(_, _):
             case This(_):
@@ -376,16 +376,22 @@ public class ExpandMixinsPhase extends Phase {
             }
         }
 
+        private Symbol getMemberOrigin(Symbol member) {
+            Object origin = origins.get(member);
+            return origin == null ? member : (Symbol)origin;
+        }
+
         private void createMixedInMemberSymbols(Scope symbols) {
             Scope scope = clasz.members();
             for (SymbolIterator i = symbols.iterator(); i.hasNext();) {
                 Symbol member = i.next();
                 boolean shadowed = member.isPrivate() || member.isInitializer()
                     || member.overridingSymbol(clasz.thisType()) != member;
-                Symbol origin = (Symbol)origins.get(member);
-                if (!shadowed) {
-                    if (member.overriddenSymbol(parents[0]) == origin) {
-                        cloner.clones.put(member, origin);
+                Symbol origin = getMemberOrigin(member);
+                if (!shadowed && origin != null) {
+                    Symbol overridden = member.overriddenSymbol(parents[0]);
+                    if (origin == getMemberOrigin(overridden)) {
+                        cloner.clones.put(member, overridden);
                         continue;
                     }
                 }
