@@ -36,6 +36,8 @@ public class CLRClassParser extends SymbolLoader {
     private static Name[] ENUM_CMP_NAMES = new Name[]
 	{ Names.EQ, Names.NE, Names.LT, Names.LE, Names.GT, Names.GE };
 
+    private static Name[] ENUM_BIT_LOG_NAMES = new Name[]
+	{ Names.OR, Names.AND, Names.XOR };
 
     protected String doComplete(Symbol clazz) {
 	try { return doComplete0(clazz); }
@@ -183,9 +185,9 @@ public class CLRClassParser extends SymbolLoader {
 	    importer.map(method, methods[i]);
 	}
 
-	// for enumerations introduce dummy comparison methods;
-	// the backend should recognize and replace them with
-	// comparison operations on the primitive underlying type
+	// for enumerations introduce comparison and bitwise logical operations;
+	// the backend should recognize and replace them with comparison or
+	// bitwise logical operations on the primitive underlying type
 	if (type.IsEnum()) {
 	    scalac.symtab.Type[] argTypes = new scalac.symtab.Type[] {ctype};
 	    int mods = Modifiers.JAVA | Modifiers.FINAL;
@@ -199,6 +201,15 @@ public class CLRClassParser extends SymbolLoader {
 		setParamOwners(enumCmpType, enumCmp);
 		enumCmp.setInfo(enumCmpType);
 		members.enterOrOverload(enumCmp);
+	    }
+	    for (int i = 0; i < ENUM_BIT_LOG_NAMES.length; i++) {
+		scalac.symtab.Type enumBitLogType = make.methodType
+		    (argTypes, ctype, scalac.symtab.Type.EMPTY_ARRAY);
+		Symbol enumBitLog = clazz.newMethod
+		    (Position.NOPOS, mods, ENUM_BIT_LOG_NAMES[i]);
+		setParamOwners(enumBitLogType, enumBitLog);
+		enumBitLog.setInfo(enumBitLogType);
+		members.enterOrOverload(enumBitLog);
 	    }
 	}
 

@@ -866,13 +866,10 @@ public final class GenMSIL {
 				   qualifier, right, resType);
  	    }
 
-	    //Primitive enumCmp = enumCmp(sym);
-
 	    Symbol owner = sym.owner();
 	    Type t = tc.getType(owner);
 	    assert t != null;
 	    if (t.IsEnum()) {
-		System.out.println("Enumeration class: " + t);
 		Primitive enumOp = null;
 		if (sym.name == Names.EQ) enumOp = Primitive.EQ;
 		else if (sym.name == Names.NE) enumOp = Primitive.NE;
@@ -880,6 +877,9 @@ public final class GenMSIL {
 		else if (sym.name == Names.LE) enumOp = Primitive.LE;
 		else if (sym.name == Names.GT) enumOp = Primitive.GT;
 		else if (sym.name == Names.GE) enumOp = Primitive.GE;
+		else if (sym.name == Names.OR) enumOp = Primitive.OR;
+		else if (sym.name == Names.AND) enumOp = Primitive.AND;
+		else if (sym.name == Names.XOR) enumOp = Primitive.XOR;
 		if (enumOp != null) {
 		    assert args.length == 1;
 		    return primitiveOp(enumOp, qualifier, args[0], resType);
