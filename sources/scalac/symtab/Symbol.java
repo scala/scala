@@ -1796,9 +1796,7 @@ public final class ClassSymbol extends TypeSymbol {
 
     public Type thisType() {
         Global global = Global.instance;
-        if (global.currentPhase.id > global.PHASE.ERASURE.id())
-            if (!global.PHASE.ERASURE.hasSkipFlag())
-                return type();
+        if (global.currentPhase.id > global.PHASE.ERASURE.id()) return type();
         return thistp;
     }
 

@@ -54,12 +54,14 @@ public final class PhaseDescriptor {
         // propagate other flags and freeze remaining phases
         PhaseDescriptor last = null;
         for (int i = 0; i < phases.length; i++) {
-            phases[i].id = i;
+            phases[i].id = 2 * i;
             if (phases[i].hasSkipFlag()) continue;
             if (last != null) last.flags |= phases[i].flags >>> 16;
             phases[i].flags &= 0x0000FFFF;
-            last = phases[i];
+            if (i != phases.length - 1) last = phases[i];
         }
+        // place TERMINAL phase just after last active phase
+        phases[phases.length - 1].id = last.id + 1;
     }
 
     //########################################################################
