@@ -180,7 +180,7 @@ public class Tree {
 
         n_AbsTypeDef.
             setDescription("Type declaration").
-            setRange(Phase.PARSER, Phase.ERASURE). // !!! could/should be removed earlier?)
+            setRange(Phase.PARSER, Phase.END). // !!! needed for type params
             addField(t_int, "mods", SymFlags).
             addField(t_TypeName, "name", SymName).
             addField(t_TypeTree, "rhs").
@@ -188,7 +188,7 @@ public class Tree {
 
         n_AliasTypeDef.
             setDescription("Type alias").
-            setRange(Phase.PARSER, Phase.ERASURE). // !!! could/should be removed earlier?)
+            setRange(Phase.PARSER, Phase.EXPLICITOUTER).
             addField(t_int, "mods", SymFlags).
             addField(t_TypeName, "name", SymName).
             addField(n_AbsTypeDef.getType(1), "tparams").
@@ -202,7 +202,7 @@ public class Tree {
 
         n_CaseDef.
             setDescription("Case declaration").
-            setRange(Phase.PARSER, Phase.UNKNOWN).
+            setRange(Phase.PARSER, Phase.TRANSMATCH).
             addField(t_TermTree, "pat").
             addField(t_TermTree, "guard").
             addField(t_TermTree, "body");
@@ -293,7 +293,7 @@ public class Tree {
 
         n_Typed.
             setDescription("Type annotation").
-            setRange(Phase.PARSER, Phase.UNKNOWN). // !!! could be removed by analyzer?
+            setRange(Phase.PARSER, Phase.EXPLICITOUTER).
             addField(t_TermTree, "expr").
             addField(t_TypeTree, "tpe");
 

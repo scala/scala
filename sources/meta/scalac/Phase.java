@@ -15,18 +15,18 @@ public class Phase {
     // Public Constants
 
     public static final Phase
-        START       = new Phase("start", null),
-        PARSER      = new Phase("parser", "PARSER"),
-        ANALYZER    = new Phase("analyzer", "ANALYZER"),
-        DESUGARIZER = new Phase("desugarizer", "ANALYZER"),
-	REFCHECK    = new Phase("refcheck", "REFCHECK"),
-        UNCURRY     = new Phase("uncurry", "UNCURRY"),
-        LAMBDALIFT  = new Phase("lambdalift", "LAMBDALIFT"),
-        TRANSMATCH  = new Phase("transmatch", "TRANSMATCH"),
-        OPTIMIZER   = new Phase("optimizer", null), // !!! "OPTIMIZE"
-        ERASURE     = new Phase("erasure", "ERASURE"),
-        UNKNOWN     = new Phase("? !!!", null),
-        END         = new Phase("-", null);
+        START         = new Phase("start", null),
+        PARSER        = new Phase("parser", "PARSER"),
+        DESUGARIZER   = new Phase("desugarizer", "ANALYZER"),
+        ANALYZER      = new Phase("analyzer", "ANALYZER"),
+	REFCHECK      = new Phase("refcheck", "REFCHECK"),
+        UNCURRY       = new Phase("uncurry", "UNCURRY"),
+        TRANSMATCH    = new Phase("transmatch", "TRANSMATCH"),
+        LAMBDALIFT    = new Phase("lambdalift", "LAMBDALIFT"),
+        EXPLICITOUTER = new Phase("explicitouter", "EXPLICITOUTER"),
+        ERASURE       = new Phase("erasure", "ERASURE"),
+        UNKNOWN       = new Phase("? !!!", null),
+        END           = new Phase("-", null);
 
     //########################################################################
     // Public Fields
