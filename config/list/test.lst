@@ -64,6 +64,7 @@ neg/doubledefs.scala
 neg/imports.scala
 neg/matthias2.scala
 neg/michel2.scala
+neg/negSeq.scala
 neg/overlapping.scala
 neg/overload.scala
 neg/protected.scala
@@ -74,6 +75,7 @@ neg/tests.scala
 neg/vincent1.scala
 neg/xmlParsing001.scala
 neg/xmlParsing002.scala
+neg/xmlstart.scala
 
 pos/304.scala
 pos/A.scala
