@@ -494,19 +494,73 @@ public class Primitives {
         // !!! addAll(defs.BOOLEAN_CLASS, Names.ADD, Primitive.CONCAT, 1);
 
         // scala.Byte
+        addAll(defs.BYTE_CLASS, Names.EQ, Primitive.EQ, 5);
+        addAll(defs.BYTE_CLASS, Names.NE, Primitive.NE, 5);
         //addAll(defs.BYTE_CLASS, Names.equals, Primitive.EQUALS, 1);
-        //addAll(defs.BYTE_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
-        //addAll(defs.BYTE_CLASS, Names.toString, Primitive.TOSTRING, 1);
+        addAll(defs.BYTE_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
+        addAll(defs.BYTE_CLASS, Names.toString, Primitive.TOSTRING, 1);
+        addAll(defs.BYTE_CLASS, Names.NOT, Primitive.NOT, 1);
+        addAdd(defs.BYTE_CLASS, 4);
+        addSub(defs.BYTE_CLASS, 4);
+        addAll(defs.BYTE_CLASS, Names.MUL, Primitive.MUL, 4);
+        addAll(defs.BYTE_CLASS, Names.DIV, Primitive.DIV, 4);
+        addAll(defs.BYTE_CLASS, Names.MOD, Primitive.MOD, 4);
+        addAll(defs.BYTE_CLASS, Names.LT, Primitive.LT, 4);
+        addAll(defs.BYTE_CLASS, Names.LE, Primitive.LE, 4);
+        addAll(defs.BYTE_CLASS, Names.GT, Primitive.GT, 4);
+        addAll(defs.BYTE_CLASS, Names.GE, Primitive.GE, 4);
+        addAll(defs.BYTE_CLASS, Names.OR, Primitive.OR, 2);
+        addAll(defs.BYTE_CLASS, Names.XOR, Primitive.XOR, 2);
+        addAll(defs.BYTE_CLASS, Names.AND, Primitive.AND, 2);
+        addAll(defs.BYTE_CLASS, Names.LSL, Primitive.LSL, 2);
+        addAll(defs.BYTE_CLASS, Names.LSR, Primitive.LSR, 2);
+        addAll(defs.BYTE_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Short
+        addAll(defs.SHORT_CLASS, Names.EQ, Primitive.EQ, 5);
+        addAll(defs.SHORT_CLASS, Names.NE, Primitive.NE, 5);
         //addAll(defs.SHORT_CLASS, Names.equals, Primitive.EQUALS, 1);
-        //addAll(defs.SHORT_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
-        //addAll(defs.SHORT_CLASS, Names.toString, Primitive.TOSTRING, 1);
+        addAll(defs.SHORT_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
+        addAll(defs.SHORT_CLASS, Names.toString, Primitive.TOSTRING, 1);
+        addAll(defs.SHORT_CLASS, Names.NOT, Primitive.NOT, 1);
+        addAdd(defs.SHORT_CLASS, 4);
+        addSub(defs.SHORT_CLASS, 4);
+        addAll(defs.SHORT_CLASS, Names.MUL, Primitive.MUL, 4);
+        addAll(defs.SHORT_CLASS, Names.DIV, Primitive.DIV, 4);
+        addAll(defs.SHORT_CLASS, Names.MOD, Primitive.MOD, 4);
+        addAll(defs.SHORT_CLASS, Names.LT, Primitive.LT, 4);
+        addAll(defs.SHORT_CLASS, Names.LE, Primitive.LE, 4);
+        addAll(defs.SHORT_CLASS, Names.GT, Primitive.GT, 4);
+        addAll(defs.SHORT_CLASS, Names.GE, Primitive.GE, 4);
+        addAll(defs.SHORT_CLASS, Names.OR, Primitive.OR, 2);
+        addAll(defs.SHORT_CLASS, Names.XOR, Primitive.XOR, 2);
+        addAll(defs.SHORT_CLASS, Names.AND, Primitive.AND, 2);
+        addAll(defs.SHORT_CLASS, Names.LSL, Primitive.LSL, 2);
+        addAll(defs.SHORT_CLASS, Names.LSR, Primitive.LSR, 2);
+        addAll(defs.SHORT_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Char
+        addAll(defs.CHAR_CLASS, Names.EQ, Primitive.EQ, 5);
+        addAll(defs.CHAR_CLASS, Names.NE, Primitive.NE, 5);
         //addAll(defs.CHAR_CLASS, Names.equals, Primitive.EQUALS, 1);
-        //addAll(defs.CHAR_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
+        addAll(defs.CHAR_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.CHAR_CLASS, Names.toString, Primitive.TOSTRING, 1);
+        addAll(defs.CHAR_CLASS, Names.NOT, Primitive.NOT, 1);
+        addAdd(defs.CHAR_CLASS, 4);
+        addSub(defs.CHAR_CLASS, 4);
+        addAll(defs.CHAR_CLASS, Names.MUL, Primitive.MUL, 4);
+        addAll(defs.CHAR_CLASS, Names.DIV, Primitive.DIV, 4);
+        addAll(defs.CHAR_CLASS, Names.MOD, Primitive.MOD, 4);
+        addAll(defs.CHAR_CLASS, Names.LT, Primitive.LT, 4);
+        addAll(defs.CHAR_CLASS, Names.LE, Primitive.LE, 4);
+        addAll(defs.CHAR_CLASS, Names.GT, Primitive.GT, 4);
+        addAll(defs.CHAR_CLASS, Names.GE, Primitive.GE, 4);
+        addAll(defs.CHAR_CLASS, Names.OR, Primitive.OR, 2);
+        addAll(defs.CHAR_CLASS, Names.XOR, Primitive.XOR, 2);
+        addAll(defs.CHAR_CLASS, Names.AND, Primitive.AND, 2);
+        addAll(defs.CHAR_CLASS, Names.LSL, Primitive.LSL, 2);
+        addAll(defs.CHAR_CLASS, Names.LSR, Primitive.LSR, 2);
+        addAll(defs.CHAR_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Int
         addAll(defs.INT_CLASS, Names.EQ, Primitive.EQ, 5);
