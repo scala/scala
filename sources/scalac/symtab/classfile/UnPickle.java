@@ -86,7 +86,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	    if (isSymbolEntry(i)) getSymbol(i);
 	}
 	if (global.debug) global.log("unpickled " + root + ":" + root.rawInfo());//debug
-	if (!root.isInitialized())
+	if (!classroot.isInitialized() && !moduleroot.isInitialized())
 	    throw new BadSignature(this, "it does not define " + root);
         // the isModule test is needed because moduleroot may become
         // the case class factory method of classroot
