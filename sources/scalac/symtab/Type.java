@@ -1191,6 +1191,47 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
     }
 
+
+    /** A map for symbol/symbol substitutions which, instead of
+     * cloning parameters, updates their symbol's types.
+     */
+    public static class UpdateSubstSymMap extends SubstSymMap {
+        protected UpdateSubstSymMap(Symbol[] from, Symbol[] to) {
+            super(from, to);
+        }
+        public Type apply(Type t) {
+            switch (t) {
+            case PolyType(Symbol[] params, Type result):
+                // !!! Also update loBounds? How? loBound can only be set!
+                for (int i = 0; i < params.length; i++) {
+                    Type tp = params[i].nextType();
+                    Type tp1 = apply(tp);
+                    if (tp != tp1) params[i].updateInfo(tp1);
+                }
+                Type result1 = apply(result);
+                if (result1 == result) return t;
+                else return Type.PolyType(params, result1);
+            case MethodType(Symbol[] params, Type result):
+                for (int i = 0; i < params.length; i++) {
+                    Type tp = params[i].nextType();
+                    Type tp1 = apply(tp);
+                    if (tp != tp1) params[i].updateInfo(tp1);
+                }
+                Type result1 = apply(result);
+                if (result1 == result) return t;
+                else return Type.MethodType(params, result1);
+            default:
+                return super.apply(t);
+            }
+        }
+    }
+
+    /** Returns an updating substitution map for given arguments. */
+    public static Map getUpdateSubst(Symbol[] from, Symbol[] to) {
+        if (from.length == 0 && to.length == 0) return IdMap;
+        return new UpdateSubstSymMap(from, to);
+    }
+
     /** Substitute symbols `to' for occurrences of symbols `from' in this type.
      */
     public Type subst(Symbol[] from, Symbol[] to) {
