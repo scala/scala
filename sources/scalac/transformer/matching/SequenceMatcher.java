@@ -139,7 +139,7 @@ public class SequenceMatcher extends PatternTool {
             //System.out.println( "vars: "+vars );
             int j;
 
-            RightTracerInScala rtis =
+            final RightTracerInScala rtis =
                   new RightTracerInScala( dRight, left, mL,
                                           cf, pat, elementType );
 
@@ -157,12 +157,26 @@ public class SequenceMatcher extends PatternTool {
             j = stms.length + stms2.length ;
             items[ stms.length + stms2.length ] = body;
 
-	    AttributedTreeCopier treeCopier = new AttributedTreeCopier(unit.global, cf.make) ;
+            Transformer treeCloner = new Transformer(unit.global) {
+                    public Tree transform(Tree tree) {
+                        tree = super.transform(tree);
+                        if (tree.hasSymbol()) {
+                            Object symbol = rtis.helpMap2.get(tree.symbol());
+                            if (symbol != null) tree.setSymbol((Symbol)symbol);
+                        }
+                        return tree;
+                    }
+                };
             //System.out.println("helpmap");
             //System.out.println( rtis.helpMap2 );
-	    treeCopier.pushSymbolSubst( rtis.helpMap2 );
 
-    items[ stms.length + stms2.length ] = treeCopier.copy( body );
+            items[ stms.length + stms2.length ] = treeCloner.transform( body );
+            for( Iterator it = rtis.helpMap2.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry e = (Map.Entry)it.next();
+                Symbol key = (Symbol)e.getKey();
+                Symbol val = (Symbol)e.getValue();
+                val.setInfo( key.type() ); // !!! ?
+            }
 
             return cf.Block( body.pos, items, body.type );
       }
