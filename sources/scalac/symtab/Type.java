@@ -1280,7 +1280,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     Type[] args1 = map(args);
                     if (prefix1 == prefix && args1 == args) return t;
                     Symbol sym1 = prefix1.rebind(sym);
-                    if (local && sym != sym1) {
+                    if (local && sym != sym1 && sym1.isClassType()) {
                         // Here what we should do is remove the outer
                         // type links of sym from args and then add
                         // the outer type links of sym1 to
@@ -1290,6 +1290,22 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         // outer), we can just replace args by the
                         // outer type params of sym1.
                         args1 = asSeenFrom(Symbol.type(sym1.owner().typeParams()), pre, sym1.owner());
+                        {
+                            // we need also to add the type of the outer link
+                            Type p = prefix1;
+                            Symbol s = sym1.owner();
+                            while (true) {
+                                if (s.isPackage()) break;
+                                if (s.isModuleClass()) {
+                                    s = s.owner();
+                                    p = p.prefix().baseType(s);
+                                } else {
+                                    args1 = cloneArray(args1, 1);
+                                    args1[args1.length - 1] = p;
+                                    break;
+                                }
+                            }
+                        }
                         if (sym1.isClassType()) prefix1 = localThisType;
                     }
                     Type t1 = typeRef(prefix1, sym1, args1);
