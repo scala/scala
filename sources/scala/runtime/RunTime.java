@@ -233,6 +233,59 @@ public abstract class RunTime {
     }
 
     //########################################################################
+    // Public Functions - Conversion primitives
+
+    public static byte   b2b(byte   x) { return (byte  )x; }
+    public static short  b2s(byte   x) { return (short )x; }
+    public static char   b2c(byte   x) { return (char  )x; }
+    public static int    b2i(byte   x) { return (int   )x; }
+    public static long   b2l(byte   x) { return (long  )x; }
+    public static float  b2f(byte   x) { return (float )x; }
+    public static double b2d(byte   x) { return (double)x; }
+    public static byte   s2b(short  x) { return (byte  )x; }
+    public static short  s2s(short  x) { return (short )x; }
+    public static char   s2c(short  x) { return (char  )x; }
+    public static int    s2i(short  x) { return (int   )x; }
+    public static long   s2l(short  x) { return (long  )x; }
+    public static float  s2f(short  x) { return (float )x; }
+    public static double s2d(short  x) { return (double)x; }
+    public static byte   c2b(char   x) { return (byte  )x; }
+    public static short  c2s(char   x) { return (short )x; }
+    public static char   c2c(char   x) { return (char  )x; }
+    public static int    c2i(char   x) { return (int   )x; }
+    public static long   c2l(char   x) { return (long  )x; }
+    public static float  c2f(char   x) { return (float )x; }
+    public static double c2d(char   x) { return (double)x; }
+    public static byte   i2b(int    x) { return (byte  )x; }
+    public static short  i2s(int    x) { return (short )x; }
+    public static char   i2c(int    x) { return (char  )x; }
+    public static int    i2i(int    x) { return (int   )x; }
+    public static long   i2l(int    x) { return (long  )x; }
+    public static float  i2f(int    x) { return (float )x; }
+    public static double i2d(int    x) { return (double)x; }
+    public static byte   l2b(long   x) { return (byte  )x; }
+    public static short  l2s(long   x) { return (short )x; }
+    public static char   l2c(long   x) { return (char  )x; }
+    public static int    l2i(long   x) { return (int   )x; }
+    public static long   l2l(long   x) { return (long  )x; }
+    public static float  l2f(long   x) { return (float )x; }
+    public static double l2d(long   x) { return (double)x; }
+    public static byte   f2b(float  x) { return (byte  )x; }
+    public static short  f2s(float  x) { return (short )x; }
+    public static char   f2c(float  x) { return (char  )x; }
+    public static int    f2i(float  x) { return (int   )x; }
+    public static long   f2l(float  x) { return (long  )x; }
+    public static float  f2f(float  x) { return (float )x; }
+    public static double f2d(float  x) { return (double)x; }
+    public static byte   d2b(double x) { return (byte  )x; }
+    public static short  d2s(double x) { return (short )x; }
+    public static char   d2c(double x) { return (char  )x; }
+    public static int    d2i(double x) { return (int   )x; }
+    public static long   d2l(double x) { return (long  )x; }
+    public static float  d2f(double x) { return (float )x; }
+    public static double d2d(double x) { return (double)x; }
+
+    //########################################################################
     // Public Functions - Array primitives
 
     public static boolean[] zarray(int length) { return new boolean[length]; }
