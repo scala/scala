@@ -1123,7 +1123,7 @@ public class Parser implements Tokens {
     /**   TreePattern  ::=  varid `:' Type1
      *                   |  `_' `:' Type1
      *                   |  SimplePattern [ '*' | '?' | '+' ]
-     *                   |  SimplePattern {Id SimplePattern}
+     *                   |  SimplePattern {Id SimplePattern}    // op2 must not be empty
      */
     Tree treePattern() {
         int base = sp;
@@ -1175,6 +1175,9 @@ public class Parser implements Tokens {
             push(top, s.pos, s.name);
             ident();
             top = simplePattern();
+	    if( TreeInfo.isEmptySequence( top ) ) {
+		syntaxError( top.pos, "empty sequence not allowed here", false);
+	    }
         }
         return reduceStack(false, base, top, 0, true);
     }
