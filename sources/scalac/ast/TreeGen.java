@@ -297,19 +297,6 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return tree;
     }
 
-    /** Builds a This node corresponding to given type. */
-    public This This(int pos, Type type) {
-        switch (type) {
-	case ThisType(Symbol clasz):
-            return This(pos, clasz);
-        case SingleType(Type prefix, Symbol member):
-            assert member.isModule(): type;
-            return This(pos, member.moduleClass());
-        default:
-            throw Debug.abort("illegal case", type);
-        }
-    }
-
     /** Builds a Super node corresponding to given class. */
     public Super Super(int pos, Symbol clazz) {
         assert clazz.isClass(): Debug.show(clazz);
