@@ -32,7 +32,7 @@ public class Label {
             case TreeLabel( Tree pat ):
 		switch( pat ) {
 		    case Apply( Tree fun, Tree[] args ):
-			return pat.type().hashCode() + args.hashCode(); // incorrect?
+			return pat.type().hashCode() + args.hashCode();
 		}
 		return pat.hashCode();
             case TypeLabel( Type type ):

@@ -31,6 +31,7 @@ public class TestRegTraverser extends Traverser {
 		    // annoying special case: b@() [or b@(()|()) after normalization]
 		    //System.err.println("bindin empty "+tree.symbol());
 		    nilVariables.add(tree.symbol());
+                    result = true;
 		} else {
 		    variables.add(tree.symbol());
 		}
@@ -49,7 +50,7 @@ public class TestRegTraverser extends Traverser {
 	    case Sequence( Tree[] trees):
 		//result = true;
 		traverse( trees );
-		result = true;
+		//result = true;
 		break;
 
 	    default:

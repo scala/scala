@@ -187,8 +187,9 @@ public class PatternMatcher extends PatternTool {
 					target.and = mk.Body(caseDef.pos, env.boundVars(), guard, body);
 				else if (target.and instanceof Body)
 					updateBody((Body)target.and, env.boundVars(), guard, body);
-				else
+				else {
 					unit.error(pat.pos, "duplicate case");
+                                }
     	}
     }
 
@@ -257,14 +258,16 @@ public class PatternMatcher extends PatternTool {
         	case Bind(_, Tree pat):
         		return patternArgs(pat);
             case Apply(_, Tree[] args):
-                if ( isSeqApply((Apply) tree) )// && !delegateSequenceMatching)
+                if ( isSeqApply((Apply) tree)  && !delegateSequenceMatching)
                     switch (args[0]) {
                         case Sequence(Tree[] ts):
                             return ts;
                     }
                 return args;
             case Sequence(Tree[] ts):
-            	return ts;
+                if (!delegateSequenceMatching)
+                    return ts;
+                return Tree.EMPTY_ARRAY;
             default:
                 return Tree.EMPTY_ARRAY;
         }
@@ -286,17 +289,12 @@ public class PatternMatcher extends PatternTool {
 				return node;
 			case Apply(Tree fn, Tree[] args):             // pattern with args
 			    if( isSeqApply((Apply) tree ) ) {
-				//System.err.println( "isSeqApply!"+tree);
-				//System.err.println( "deleg ?"+delegateSequenceMatching);
-
 				if ( !delegateSequenceMatching ) {
 				    switch (args[0]) {
 				    case Sequence(Tree[] ts):
 					return mk.SequencePat( tree.pos, tree.type, ts.length );
 				    }
 				} else {
-				    //System.err.println( "CONTAIN");
-
 				    PatternNode res = mk.ConstrPat(tree.pos, tree.type);
 				    res.and = mk.Header(tree.pos, header.type, header.selector);
 				    res.and.and = mk.SeqContainerPat( tree.pos, tree.type, args[ 0 ] );
