@@ -461,8 +461,10 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	printType(tree);
 
       case Tree$Select(qualifier, name) =>
-	print(qualifier);
-	print(TXT_DOT);
+        if (scalac_Global.instance.debug || qualifier.symbol() == null || !qualifier.symbol().isRoot()) {
+	  print(qualifier);
+	  print(TXT_DOT);
+        }
 	printSymbolUse(tree.symbol(), name);
 	printType(tree);
 

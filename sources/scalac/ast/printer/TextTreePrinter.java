@@ -548,8 +548,10 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case Select(Tree qualifier, Name name):
-            print(qualifier);
-            print(TXT_DOT);
+            if (Global.instance.debug || qualifier.symbol() == null || !qualifier.symbol().isRoot()) {
+                print(qualifier);
+                print(TXT_DOT);
+            }
             printSymbolUse(tree.symbol(), name);
             printType(tree);
             break;
