@@ -290,6 +290,7 @@ public class SymbolTablePrinter {
             return "type";
         case Kinds.VAL:
             if (symbol.isVariable()) return "var";
+            if (symbol.isPackage()) return "package";
             if (symbol.isModule()) return "object";
             if (symbol.isInitializedMethod()) return "def";
             return "val";

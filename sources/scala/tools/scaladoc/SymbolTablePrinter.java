@@ -137,10 +137,8 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
     /** The keyword of a symbol from the user side. */
     public String getSymbolKeywordForDoc(Symbol symbol) {
         String keyword = getSymbolKeyword(symbol);
-        // package
-        if (symbol.isPackage()) keyword = "package";
         // accessor function for a val
-        if (symbol.isInitializedMethod() && (symbol.flags & Modifiers.STABLE) != 0)
+        if (symbol.isInitializedMethod() && symbol.hasStableFlag())
             keyword = "val";
         return keyword;
     }
