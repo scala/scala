@@ -14,7 +14,6 @@ import scala.Type;
 import scala.Array;
 import scala.runtime.AtomicReference;
 import scala.runtime.IOMap;
-import scala.runtime.FNV_Hash;
 
 /**
  * Class modelling a type constructor (this includes non-polymorphic
@@ -27,9 +26,6 @@ import scala.runtime.FNV_Hash;
 public class TypeConstructor implements java.io.Serializable {
     public final static TypeConstructor[] EMPTY_ARRAY =
         new TypeConstructor[0];
-
-    /** Full (qualified) name for this constructor. */
-    public final String fullName;
 
     /** Java class corresponding to this constructor. */
     public Class clazz;
@@ -86,7 +82,6 @@ public class TypeConstructor implements java.io.Serializable {
                            boolean inheritsFromJavaClass,
                            int[] displayCode) {
         this.level = level;
-        this.fullName = fullName;
         this.outer = outer;
         this.zCount = zCount;
         this.mCount = mCount;
@@ -106,15 +101,15 @@ public class TypeConstructor implements java.io.Serializable {
     }
 
     public String toString() {
-        return fullName;
+        return clazz.getName();
     }
 
     public ScalaClassType getInstantiation(Type[] args) {
         return instMapModule.get((InstantiationMap.T)instances.get(), args);
     }
 
-    public ScalaClassType instantiate(Type[] args) {
-        ScalaClassType tp = new ScalaClassType(this, args);
+    public ScalaClassType instantiate(Type[] args, ScalaClassType[] parents) {
+        ScalaClassType tp = new ScalaClassType(this, args, parents);
 
         try {
             InstantiationMap.T oldMap, newMap;
@@ -131,7 +126,9 @@ public class TypeConstructor implements java.io.Serializable {
 
     //////////////////////////////////////////////////////////////////////
 
-    private static class InstantiationMap extends IOMap {
+    private static class InstantiationMap
+        extends IOMap
+        implements java.io.Serializable {
         public T put(T map, Type[] inst, ScalaClassType value)
             throws ConflictException {
             return super.put(map, Type.hashCode(inst), value);
