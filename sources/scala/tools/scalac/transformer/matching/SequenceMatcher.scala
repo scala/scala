@@ -12,16 +12,13 @@ import scalac.symtab._ ;
 import java.util._ ;
 
 import scala.tools.util.Position;
-import scalac.transformer.matching.PatternTool;
-import scalac.transformer.matching.PartialMatcher;
+//import scalac.transformer.matching.PatternTool;
 
 import scalac.transformer.matching.{BerrySethi, BindingBerrySethi};
-import scalac.transformer.matching.CollectVariableTraverser;
-import scalac.transformer.matching.CodeFactory;
+//import scalac.transformer.matching.CodeFactory;
 import scalac.transformer.matching.DetWordAutom;
 import scalac.transformer.matching.Label;
 import scalac.transformer.matching.NondetWordAutom;
-import scalac.transformer.matching.PartialMatcher;
 
 package scala.tools.scalac.transformer.matching {
 /** constructs a matcher for a sequence pattern. plays two roles in

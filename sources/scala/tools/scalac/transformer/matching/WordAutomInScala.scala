@@ -22,10 +22,9 @@ import Tree._;
 import java.util._;
 import scala.tools.scalac.util.NewArray;
 
-import scalac.transformer.matching.CodeFactory;
+//import scalac.transformer.matching.CodeFactory;
 import scalac.transformer.matching.DetWordAutom;
 import scalac.transformer.matching.Label;
-import scalac.transformer.matching.PartialMatcher;
 import scalac.util.Names;
 
 package scala.tools.scalac.transformer.matching {

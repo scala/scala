@@ -15,10 +15,9 @@ import scalac.util.Names ;
 
 import scala.tools.util.Position;
 
-import scalac.transformer.matching.CodeFactory ;
+//import scalac.transformer.matching.CodeFactory ;
 import scalac.transformer.matching.DetWordAutom ;
 import scalac.transformer.matching.Label ;
-import scalac.transformer.matching.PartialMatcher ;
 
 package scala.tools.scalac.transformer.matching {
 

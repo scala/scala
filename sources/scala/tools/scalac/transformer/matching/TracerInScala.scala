@@ -1,8 +1,7 @@
 import scalac.ast.Tree;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.transformer.matching.CodeFactory ;
-import scalac.transformer.matching.CollectVariableTraverser ;
+//import scalac.transformer.matching.CodeFactory ;
 import scalac.transformer.matching.DetWordAutom ;
 
 package scala.tools.scalac.transformer.matching {
