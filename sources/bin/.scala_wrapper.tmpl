@@ -881,7 +881,6 @@ test_main() {
     if [ "$SCALATEST" = "java" ]; then
         tool_start "" scala.tools.scalatest.Main "$@";
     fi;
-    configure;
 
     NORUN="false";
     SHOWLOG="false";
@@ -987,6 +986,8 @@ test_main() {
                    msil ) FILES_MSIL="$FILES_MSIL $SRCDIR/run";;
         esac;
     fi;
+
+    export SCALA_SCALA_ARGS="-Xmx128M $SCALA_SCALA_ARGS";
 
     if [ -n "$OBJDIR" ]; then
         if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
