@@ -686,7 +686,7 @@ class Parser(unit: Unit) {
         s.nextToken();
         ts.append(simpleType());
       }
-      val rs = if (s.token == LBRACE) refinement() else Tree.EMPTY_ARRAY;
+      val rs = /*if (s.token == LBRACE) refinement() else*/ Tree.EMPTY_ARRAY;
       make.CompoundType(pos, ts.toArray(), rs)
     } else {
       t

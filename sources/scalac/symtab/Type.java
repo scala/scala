@@ -2579,6 +2579,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         // add refinements where necessary
         Scope members = new Scope();
         Type lubType = compoundType(leastBaseTypes, members);
+	/*
         Type lubThisType = lubType.narrow();
         //System.out.println("lubtype = " + lubType);//DEBUG
 
@@ -2606,7 +2607,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         j++;
                     }
                     if (j == tps.length) {
-			if (Global.instance.debug) System.out.println("refinement lub for " + rsyms[0]);//debug
+			if (Global.instance.debug)
+			    System.out.println("refinement lub for " +
+			    ArrayApply.toString(rsyms) + ":" + ArrayApply.toString(rtps));//debug
                         Symbol lubSym = lub(rsyms, rtps, rlbs, lubType.symbol());
                         if (lubSym.kind != NONE &&
                             !(lubSym.kind == sym.kind &&
@@ -2618,6 +2621,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             }
         }
         //System.out.print("lub "); System.out.print(ArrayApply.toString(tps)); System.out.println(" = " + lubType);//DEBUG
+	*/
         if (leastBaseTypes.length == 1 && members.isEmpty())
             return leastBaseTypes[0];
         else return lubType;
@@ -2733,8 +2737,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 treftl = new Type.List(tps[i], treftl);
                 break;
             case CompoundType(Type[] parents, Scope members):
+		/*
                 if (!members.isEmpty())
                     comptl = new Type.List(tps[i], comptl);
+		*/
                 for (int j = 0; j < parents.length; j++)
                     treftl = new Type.List(parents[j], treftl);
                 break;
@@ -2749,7 +2755,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         Type glbThisType = glbType.narrow();
 
         // step 3: compute glb of all refinements.
-        Scope members = Scope.EMPTY;
+	/*
         if (comptl != List.EMPTY) {
             Type[] comptypes = comptl.toArrayReverse();
             Scope[] refinements = new Scope[comptypes.length];
@@ -2763,6 +2769,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     Global.instance.definitions.ALLREF_TYPE(), treftl);
             }
         }
+	*/
 
         // eliminate redudant typerefs
         Type[] treftypes = elimRedundant(treftl.toArrayReverse(), false);

@@ -2279,6 +2279,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  val parentTypes = clazz.info().parents();
 		  val refinement: Scope = new Scope();
 		  val base: Type = Type.compoundType(parentTypes, Scope.EMPTY);
+		  /*
 		  val it: Scope$SymbolIterator = clazz.members().iterator();
 		  while (it.hasNext()) {
 		    val sym1: Symbol = it.next();
@@ -2288,6 +2289,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 			.isSameAs(sym1.getType()))
 		      refinement.enter(sym1);
 		  }
+		  */
 		  val owntype =
 		    if (refinement.isEmpty() && parentTypes.length == 1)
 		      parentTypes(0)

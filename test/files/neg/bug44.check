@@ -1,6 +1,0 @@
-bug44.scala:2: type mismatch;
- found   : scala.Object
- required: scala.Object { def t: scala.Int }
-  var x: Object { def t: Int; } = new Object() {
-                                  ^
-one error found

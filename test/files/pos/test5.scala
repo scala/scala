@@ -14,7 +14,7 @@ object test {
       abstract class I[X]() {
 	  // Methods to check the type X and P as seen from instances of I
 	  def chk_ix(x: X): Unit = ();
-	  def chk_ip(p: P): Unit {}
+	  def chk_ip(p: P): Unit;
 
 	  // Value with type X as seen from instances of I
 	  def val_ix: X = val_ix;
