@@ -342,6 +342,7 @@ function website-build() {
     [ -d "$websitedir" ] && run rm -rf "$websitedir";
     run mkdir "$websitedir";
     run mkdir "$websitedir/doc";
+    run mkdir "$websitedir/examples";
 
     # create website.xml
     runO "$websitedir/website.xml" website-print-xml "$archivedir" "$current";
@@ -366,6 +367,11 @@ function website-build() {
     run cp -a "$resourcesdir/doc/ScalaIntro.ps.gz" "$websitedir/doc/";
     run cp -a "$resourcesdir/doc/ScalaOverview.pdf" "$websitedir/doc/";
     run cp -a "$resourcesdir/doc/ScalaOverview.ps.gz" "$websitedir/doc/";
+
+    # copy old Scala examples
+    run cp -a "$resourcesdir/examples/fors.html" "$websitedir/examples/";
+    run cp -a "$resourcesdir/examples/patterns.html" "$websitedir/examples/";
+    run cp -a "$resourcesdir/examples/sort.html" "$websitedir/examples/";
 }
 
 ##############################################################################
