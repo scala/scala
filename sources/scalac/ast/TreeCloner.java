@@ -18,7 +18,12 @@ import scalac.util.Debug;
 
 /**
  * This class implements a deep tree cloner. It provides support to
- * change tree symbols and tree types on the fly.
+ * change tree symbols and tree types on the fly. This cloner never
+ * clones symbols, but its default implementation of getSymbolFor
+ * requires that all symbols that are defined by the tree to be cloned
+ * are present in the symbol substitution. This implies that if the
+ * tree to clone contains definitions, it must first be traversed to
+ * map all defined symbols. To do this, one can use TreeSymbolCloner.
  */
 public class TreeCloner extends Transformer {
 
