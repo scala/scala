@@ -539,12 +539,12 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Is this symbol static (i.e. with no outer instance)? */
     public final boolean isStatic() {
-        return owner.isStaticOwner();
+        return isRoot() || owner.isStaticOwner();
     }
 
     /** Does this symbol denote a class that defines static symbols? */
     public final boolean isStaticOwner() {
-        return isRoot() || (isStatic() && isModuleClass()
+        return isPackageClass() || (isStatic() && isModuleClass()
             // !!! remove later? translation does not work (yet?)
             && isJava());
     }
