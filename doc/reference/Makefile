@@ -32,8 +32,7 @@ LATEX_SOURCES		+= reference.tex
 LATEX_SOURCES		+= rationale-chapter.tex
 
 # latex
-TEXINPUTS		:= /home/linuxsoft/share/texmf//:$(TEXINPUTS)
-TEXINPUTS		:= .:$(PROJECT_SUPPORTDIR)/latex:$(TEXINPUTS):
+TEXINPUTS		:= $(PROJECT_SUPPORTDIR)/latex:$(TEXINPUTS):
 BIBINPUTS		:= .
 
 # verbfilter
