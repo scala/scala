@@ -277,17 +277,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /**
-     * Creates a new error class owned by this symbol and initializes
-     * it with an error type.
-     */
-    public ClassSymbol newErrorClass(Name name) {
-        ClassSymbol symbol = newClass(pos, SYNTHETIC, name, IS_ERROR, NONE);
-        symbol.setInfo(Type.ErrorType);
-        symbol.allConstructors().setInfo(Type.ErrorType);
-        return symbol;
-    }
-
-    /**
      * Creates a new class with a dual module class, both owned by
      * this symbol, initializes them with the loader and enters the
      * class and the module in the scope if it's non-null.
@@ -305,6 +294,17 @@ public abstract class Symbol implements Modifiers, Kinds {
         if (scope != null) scope.enterNoHide(clasz);
         if (scope != null) scope.enterNoHide(clasz.dualClass().module());
         return clasz;
+    }
+
+    /**
+     * Creates a new error class owned by this symbol and initializes
+     * it with an error type.
+     */
+    public ClassSymbol newErrorClass(Name name) {
+        ClassSymbol symbol = newClass(pos, SYNTHETIC, name, IS_ERROR, NONE);
+        symbol.setInfo(Type.ErrorType);
+        symbol.allConstructors().setInfo(Type.ErrorType);
+        return symbol;
     }
 
     /** Creates a new term owned by this symbol. */
