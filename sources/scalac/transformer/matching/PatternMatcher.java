@@ -274,8 +274,7 @@ public class PatternMatcher extends PatternTool {
             case Bind(Name name, Tree pat):
             	PatternNode node = patternNode(pat, header, env);
             	if ((env != null) && (name != Names.WILDCARD))
-					env.newBoundVar(tree.pos,
-									tree.symbol(),
+					env.newBoundVar(		tree.symbol(),
 									tree.type,
 									header.selector);
 				return node;
@@ -294,7 +293,7 @@ public class PatternMatcher extends PatternTool {
 				if ((env != null) && (name != Names.WILDCARD))
 					switch (node) {
 						case ConstrPat(Symbol casted):
-							env.newBoundVar(tree.pos,
+							env.newBoundVar(
 											((Tree.Typed)tree).expr.symbol(),
 											tpe.type,
 											make.Ident(tree.pos, casted.name).
@@ -302,7 +301,7 @@ public class PatternMatcher extends PatternTool {
 											setSymbol(casted));
 							break;
 						default:
-							env.newBoundVar(tree.pos,
+							env.newBoundVar(
 											((Tree.Typed)tree).expr.symbol(),
 											tpe.type,
 											header.selector);
@@ -315,7 +314,7 @@ public class PatternMatcher extends PatternTool {
 					return mk.ConstrPat(tree.pos, tree.type);
 				else if (name.isVariable()) {
 					if (env != null)
-						env.newBoundVar(tree.pos,
+						env.newBoundVar(
 										tree.symbol(),
 										tree.type,
 										header.selector);

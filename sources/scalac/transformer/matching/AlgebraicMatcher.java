@@ -193,7 +193,7 @@ public class AlgebraicMatcher extends PatternMatcher {
                 theType = getConstrType( tpe.type );
                 assert (env != null ) : "env is null";
                 if (/*(env != null) &&*/ (name != Names.WILDCARD))
-                      env.newBoundVar(tree.pos,
+                      env.newBoundVar(
                                       ((Tree.Typed)tree).expr.symbol(),
                                       theType,
                                       selector);
@@ -204,7 +204,7 @@ public class AlgebraicMatcher extends PatternMatcher {
                       return mk.ConstrPat( tree.pos, theType );
           case Bind(Name name, Ident(Name id)): // x @ _
                 if( id == Names.WILDCARD ) {
-                      env.newBoundVar(tree.pos,
+                      env.newBoundVar(
                                       tree.symbol(),
                                       theType,
                                       selector);
@@ -217,7 +217,7 @@ public class AlgebraicMatcher extends PatternMatcher {
                 else if (name.isVariable()) {
                       assert (env != null ) : "env is null";
                       if (/*(env != null) &&*/ (name != Names.WILDCARD))
-                            env.newBoundVar(tree.pos,
+                            env.newBoundVar(
                                             tree.symbol(),
                                             theType,
                                             selector);

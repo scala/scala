@@ -31,23 +31,18 @@ class CaseEnv {
      */
     TreeGen gen;
 
-    /** the global tree factory
-     */
-    TreeFactory make;
-
     /** constructor
      */
     CaseEnv( Symbol owner, Unit unit ) {
 	this.owner = owner;
 	this.defs = unit.global.definitions;
 	this.gen = unit.global.treeGen;
-	this.make = unit.global.make;
     }
 
     protected ValDef[] boundVars = new ValDef[4];
     protected int numVars = 0;
 
-    public void newBoundVar(int pos, Symbol sym, Type type, Tree init) {
+    public void newBoundVar(Symbol sym, Type type, Tree init) {
 	sym.setOwner( owner ); // FIXME should be corrected earlier
 	if (numVars == boundVars.length) {
 	    ValDef[] newVars = new ValDef[numVars * 2];
@@ -55,11 +50,7 @@ class CaseEnv {
 	    boundVars = newVars;
 	}
 	sym.setType(type);
-	boundVars[numVars++] = (ValDef)make.ValDef(pos,
-						   0,
-						   sym.name,
-						   gen.mkType( pos, type ),
-						   init.duplicate()).setType( defs.UNIT_TYPE ).setSymbol(sym);
+	boundVars[numVars++] = gen.ValDef(sym, init.duplicate());
     }
 
     public ValDef[] boundVars() {
