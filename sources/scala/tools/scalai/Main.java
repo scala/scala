@@ -34,7 +34,7 @@ public class Main {
             interpreter.main(command.files.toArray(),
                 command.program.main, command.program.args);
         }
-        System.exit((reporter.errors() > 0) ? -1 : 0);
+        System.exit((reporter.errors() > 0) ? 1 : 0);
     }
 
     //########################################################################
