@@ -1266,7 +1266,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		constr.lobounds = new List(this, constr.lobounds);
 		return true;
 	    }
-	    break;
 
 	default:
 	    throw new ApplicationError(this + " <: " + that);
