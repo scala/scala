@@ -25,18 +25,23 @@ class SingleType extends Type {
     }
 
     public Object defaultValue() {
-        throw new Error();      // TODO
+        return null;
     }
 
     public boolean isInstance(Object o) {
-        return (o == instance); // TODO inclure null ?
-    }
-
-    public boolean equals(Object that) {
-        return false;           // TODO
+        throw new Error("not implemented yet"); // TODO
     }
 
     public boolean isSubType(Type that) {
-        return false;           // TODO
+        throw new Error("not implemented yet"); // TODO
+    }
+
+    public boolean isSameAs(Type that) {
+        return (that instanceof SingleType)
+            && (this.instance == ((SingleType)that).instance);
+    }
+
+    public int hashCode() {
+        return instance.hashCode();
     }
 }
