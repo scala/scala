@@ -412,6 +412,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == TYPE;
     }
 
+    /** Does this symbol denote a class type? */
+    public final boolean isClassType() {
+        return kind == CLASS;
+    }
+
     /** Does this symbol denote a public symbol? */
     public final boolean isPublic() {
         return !isProtected() && !isPrivate();
