@@ -69,7 +69,7 @@ if [ "$CVSTREE" = "true" ]; then
     BCEL_PATH="${BCEL_PATH:-/home/linuxsoft/apps/BCEL-5/bcel.jar}";
     FJBG_PATH="${FJBG_PATH:-/home/linuxsoft/apps/fjbg/jars/fjbg.jar}";
     MSIL_PATH="${MSIL_PATH:-/home/linuxsoft/apps/java2net/msil.jar}";
-    XERCES_PATH="${XERCES_PATH:-/home/linuxsoft/apps/xerces-j/xercesImpl.jar}";
+    XERCES_PATH="${XERCES_PATH:-/home/linuxsoft/apps/xerces/xercesImpl.jar}";
     SCALA_CLASSES="$PREFIX/classes";
     SCALA_SOURCES="$PREFIX/sources";
 else
@@ -88,6 +88,7 @@ JAVA_CLASSPATH="$SCALA_CLASSES";
 JAVA_CLASSPATH="$JAVA_CLASSPATH:$BCEL_PATH";
 JAVA_CLASSPATH="$JAVA_CLASSPATH:$FJBG_PATH";
 JAVA_CLASSPATH="$JAVA_CLASSPATH:$MSIL_PATH";
+JAVA_CLASSPATH="$JAVA_CLASSPATH:$XERCES_PATH";
 
 SCALA_CLASSPATH="${CLASSPATH:-.}"
 
@@ -139,8 +140,7 @@ case "$SCRIPT" in
         MAIN_ARGS="$MAIN_ARGS -interactive";
         ;;
     dtd2scala* )
-        JAVA_CLASSPATH="$JAVA_CLASSPATH:$XERCES_PATH";
-        JAVA_MAIN="scala.xml.dtd2scala";
+        JAVA_MAIN="dtd2scala.Main";
         ;;
 esac;
 
