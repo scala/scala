@@ -57,7 +57,7 @@ import scalac.util.ScalaProgramArgumentParser;
  * The class <code>HTMLGenerator</code> generates
  * the HTML documentation for a given Scala library.
  */
-public class HTMLGenerator {
+public abstract class HTMLGenerator {
 
     /*
      * Names of predefined page names.
@@ -242,6 +242,10 @@ public class HTMLGenerator {
      */
     protected SymbolBooleanFunction isDocumented;
 
+    /** ML module factory.
+     */
+    public abstract TypeIsomorphism newTypeIso(Global global);
+
     /**
      * Creates a new instance.
      *
@@ -276,9 +280,6 @@ public class HTMLGenerator {
 		public boolean apply(Symbol sym) {
 		    return docSyms.contains(sym) && ScalaSearch.isRelevant(sym)
                         && !getComment(sym).containsTag("@ignore");
-// 			(ScalaSearch.isRelevant(sym) ||
-// 			 ((sym.isModuleClass() && !sym.isPackage()*/)
-// 			  && ScalaSearch.isRelevant(sym.module())));
 		}
 	    };
     }
@@ -368,7 +369,7 @@ public class HTMLGenerator {
     /**
      * Generates the HTML pages.
      */
-    protected void apply() {
+    public void apply() {
 
         if (! checkOutpath())
             return;
@@ -422,15 +423,17 @@ public class HTMLGenerator {
                                    + e.getClass());
                 System.out.println(e);
             }
+            // to prevent going to the next phase (implies checking
+            // errors when parsing a type after RefCheck)
+            try {
+                synchronized(this) { wait(); }
+            }
+            catch(InterruptedException e) {
+                System.err.println("Error while waiting.");
+                System.exit(0);
+            }
         }
 
-    }
-
-    /**
-     * Main function.
-     */
-    public static void apply(Global global) {
-	new HTMLGenerator(global).apply();
     }
 
     /**
@@ -581,7 +584,7 @@ public class HTMLGenerator {
                              new XMLAttribute("name", "searchString"),
                              new XMLAttribute("id", "word"),
                              new XMLAttribute("size", "25"),
-                             new XMLAttribute("maxlength", "30"),
+                             //                             new XMLAttribute("maxlength", "30"),
                              new XMLAttribute("type", "text"),
                          });
         // Button
@@ -1759,9 +1762,23 @@ public class HTMLGenerator {
                 page.undent().printlnCTag("dl");
             }
             else if (searchKind.equals("byType")) {
-                //                page.println("Sorry: search by type not yet implemented !");
                 page.println("You are searching for symbols with type: ");
-                symtab.printType(ScalaSearch.typeOfString(searchString, global));
+                Type t = ScalaSearch.typeOfString(searchString, global);
+                page.println(t.toString());
+                page.printlnSTag("br");
+                //                page.println("ML traduction of this type: ");
+                TypeIsomorphism ml = newTypeIso(global);
+                Iterator it = ml.searchType(t, isDocumented);
+                while (it.hasNext()) {
+                    Pair p = (Pair) it.next();
+                    Symbol sym = (Symbol) p.fst;
+                    Type type = (Type) p.snd;
+                    page.printOTag("dt");
+                    addIndexEntry(sym, page, symtab);
+                    page.printlnCTag("dt");
+                    page.printlnTag("dd", firstSentence(getComment(sym)));
+                }
+                //                page.println(ml.translateAndPrint(t));
             }
 
             // close page

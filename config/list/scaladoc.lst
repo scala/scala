@@ -3,16 +3,17 @@
 ##############################################################################
 # $Id$
 
+TypeIsomorphism.java
 MLType.scala
 Comment.java
-DocModule.java
 HTMLGenerator.java
 HTMLGeneratorCommand.java
-HTMLGeneratorPhase.java
+HTMLGeneratorPhase.scala
 HTMLGeneratorPhases.java
 Main.scala
 ScalaSearch.java
-StandardDocModule.java
+#DocModule.java
+#StandardDocModule.java
 Tag.java
 Location.java
 Page.java

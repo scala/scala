@@ -32,11 +32,16 @@ public class HTMLGeneratorPhases extends CompilerPhases$class {
      * Creates an instance variable.
      */
     public HTMLGeneratorPhases() {
+        Class clazz = null;
+        try {
+            clazz = Class.forName("scala.tools.scaladoc.HTMLGeneratorPhase$class");
+        } catch(Exception e) { System.out.println(e); }
         this.HTMLGENERATOR = new PhaseDescriptor(
             "html generator",
             "generate html documentation",
             "generating html",
-            scala.tools.scaladoc.HTMLGeneratorPhase.class);
+            clazz);
+        //            scala.tools.scaladoc.HTMLGeneratorPhase.class);
 
         int pos = insertAfter(HTMLGENERATOR, ANALYZER);
         PhaseDescriptor[] array = phases();

@@ -1,3 +1,11 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
 import scalac.symtab.Symbol;
 import scalac.symtab._;
 import scalac.symtab.Definitions;
@@ -8,6 +16,10 @@ package scala.tools.scaladoc {
 
   import scala.collection.immutable._;
 
+  /**
+  * @author Vincent Cremet
+  * @author Roland Tchakoute
+  */
   abstract class ML {
 
     ////////////// TYPE CONSTRUCTORS ////////////////
@@ -67,7 +79,7 @@ package scala.tools.scaladoc {
     type Type_coords = Pair[int, List[MLType]];
 
     def rewriteType(t: MLType): Type_coords = {
-      def flatten(t: MLType):Type_coords = t match {
+      def flatten(t: MLType): Type_coords = t match {
         case ProdType(l,r) => {
           val Pair(len1, l1) = flatten(l);
           val Pair(len2, l2) = flatten(r);
@@ -75,7 +87,7 @@ package scala.tools.scaladoc {
         }
         case _ => Pair(1, List(t))
       }
-      flatten(normalForm(t));
+      flatten(normalForm(t))
     }
 
     /////////////////// RENAMINGS ////////////////////////
@@ -107,14 +119,24 @@ package scala.tools.scaladoc {
         }
       }
 
+    def containsProdType(t: MLType): boolean = t match {
+      case ProdType(_, _) => true
+      case TypeVar(_) => false
+      case UnitType => false
+      case AtomicType(_, _) => false
+      case FunType(arg, res) => containsProdType(arg) || containsProdType(res)
+    }
+
     def split_vars(start: int, t: Type_coords): Pair[Pair[int, Renaming], Type_coords] = {
       /**
       * Take a coordinate and return a copy with type variables renamed and
       * keeping track of the renaming.
       */
       def shift_compact_vars(p: Pair[int, Renaming], t: MLType) : Pair[Pair[int, Renaming], MLType] = {
+        if (containsProdType(t))
+          Console.println("SPLIT_VARS: " + t);
         val Pair(start, ren) = p;
-        t match{
+        t match {
           case TypeVar(n) =>
             if (ren.contains(n))
               Pair(Pair(start, ren), TypeVar(ren(n)))
@@ -347,7 +369,7 @@ package scala.tools.scaladoc {
 
   }
 
-  class ScalaML(global: Global) extends ML {
+  class ScalaML(global: Global) extends ML with TypeIsomorphism {
 
     class ScalaTC(sym: Symbol) extends TypeConstructor[ScalaTC] {
       val symbol: Symbol = sym;
@@ -366,39 +388,17 @@ package scala.tools.scaladoc {
 
     ////////////////////// TESTS /////////////////////
 
-    /** Test if this type represent the root prefix. */
-    def is_root_prefix(t: Type): boolean = t match {
-      case Type$ThisType(sym) => sym.isRoot()
-      case _ => false
-    }
-
-    /** Test if this type is the "scala" prefix. */
-    def is_scala_prefix(t: Type): boolean = t.widen() match {
-      case Type$TypeRef(pre, sym, args) =>
-        is_root_prefix(pre) && (sym.name == Names.scala)
-      case _ => false
-    }
-
     /** Test if this type is "scala.Unit". */
-    def is_scala_Unit(t: Type): boolean = t.widen() match {
-      case Type$TypeRef(pre, sym, args) =>
-        is_scala_prefix(pre) && (sym.name == Names.Unit)
-      case _ => false
-    }
+    def is_scala_Unit(t: Type): boolean =
+      t.symbol().fullName() == Names.scala_Unit;
 
     /** Test if this type is "scala.Tuple_n[T_1, ..., T_n]". */
-    def is_scala_Tuple(t: Type): boolean = t.widen() match {
-      case Type$TypeRef(pre, sym, args) =>
-        is_scala_prefix(pre) && (sym.name.startsWith(Names.Tuple))
-      case _ => false
-    }
+    def is_scala_Tuple(t: Type): boolean =
+      t.symbol().fullName().startsWith(Names.scala_Tuple);
 
     /** Test if this type is "scala.Function_n[T_1, ..., T_n, T]". */
-    def is_scala_Function(t: Type): boolean = t.widen() match {
-      case Type$TypeRef(pre, sym, args) =>
-        is_scala_prefix(pre) && (sym.name.startsWith(Names.Function))
-      case _ => false
-    }
+    def is_scala_Function(t: Type): boolean =
+      t.symbol().fullName().startsWith(Names.scala_Function);
 
     /** Test if this type is a local variable */
     def is_localVariable(t: Type): boolean =
@@ -407,7 +407,7 @@ package scala.tools.scaladoc {
     case object TranslateExc extends Exception;
 
     /** Try to translate a Scala type into an ML type. */
-    def translate(t: Type): Option[MLType] = {
+    def translate(t: Type): Option[Pair[MLType, Map[Symbol, int]]] = {
 
       // global renaming
       var renaming: Map[Symbol, int] = ListMap.Empty;
@@ -445,6 +445,9 @@ package scala.tools.scaladoc {
           TypeVar(renamed(t.symbol()))
         else
           t match {
+            // ex: scala.List[int]
+            case Type$TypeRef(_, sym, args) =>
+              AtomicType(new TC(sym), listOfArray(args) map trans_atomic)
             // [a_1, ..., a_n] T
             case Type$PolyType(tparams, result) => trans(result)
             // (T_1, ..., T_n) => T
@@ -452,16 +455,155 @@ package scala.tools.scaladoc {
               FunType(mkProd(listOfArray(vparams) map { x => trans(x.getType()) }), trans(result))
             // Types that do not have ML equivalents.
             case _ => throw TranslateExc
-          };
+          }
+      def trans_atomic(t: Type): MLType =
+        if (is_localVariable(t))
+          TypeVar(renamed(t.symbol()))
+        else
+          t match {
+            // ex: scala.List[int]
+            case Type$TypeRef(_, sym, args) =>
+                AtomicType(new TC(sym), listOfArray(args) map trans_atomic)
+            case _ => throw TranslateExc
+          }
       try {
-        Some(trans(t))
+        val ml_t = trans(t);
+        Some(Pair(ml_t, renaming))
       }
       catch {
-        case _ => None
+        case e => {
+          //          Console.println(e.toString());
+          None
+        }
       }
+    }
+
+    def translateAndPrint(t: Type): String = translate(t).toString();
+
+    def isMLType(t: Type): boolean = translate(t) match {
+      case None => false
+      case _ => true
+    }
+
+    def arrayOfList(l: List[Symbol]): Array[Symbol] = {
+      val a = new Array[Symbol](l.length);
+      (l foldLeft 0) { (i, x) => { a(i) = x; i + 1 } };
+      a
+    }
+
+    def searchIso(search: Type): Option[Type => Option[Type]] =
+      translate(search) match {
+        case None => None
+        case Some(Pair(search_ml, ren_search)) => {
+          val iso_search = iso(search_ml);
+          def comp(found: Type): Option[Type] = translate(found) match {
+            case None => None
+            case Some(Pair(found_ml, ren_found)) =>
+              iso_search(found_ml) match {
+                case Triple(None, _, _) => None
+                case Triple(Some(ren_unif), ren_a, ren_b) => {
+                  val ren_ml = build_renaming(ren_unif, ren_a, ren_b);
+                  val ren = scalaRenaming(ren_ml, ren_search, ren_found);
+                  val Pair(from, to) = List.unzip(ren.toList);
+                  //val from_array = from.copyToArray(new Array[Symbol](from.length), 0); // => verify error
+                  //val to_array = to.copyToArray(new Array[Symbol](to.length), 0);
+                  val from_array = arrayOfList(from);
+                  val to_array = arrayOfList(to);
+                  Some(found.subst(from_array, to_array))
+                }
+              }
+          }
+          Some(comp)
+        }
+      }
+
+    def inverseMap[a,b](map: Map[a,b]): Map[b,a] =
+      (map foldLeft (ListMap.Empty: Map[b,a])) {
+        (map_inv, p) => (map_inv + p._2 -> p._1)
+      }
+
+    def composeMap[a,b,c](map1: Map[a,b], map2: Map[b,c]): Map[a,c] =
+      (map1 foldLeft (ListMap.Empty: Map[a,c])) {
+        (map_inv, p) =>
+          if (map2.contains(p._2))
+            (map_inv + p._1 -> map2(p._2))
+          else
+            map_inv
+      }
+
+    /**
+    * Build the renaming to represent the matching type with same
+    * type variables as in the request type.
+    */
+    def scalaRenaming(ren_unif: Map[int, int], ren_search: Map[Symbol, int], ren_found: Map[Symbol, int]): Map[Symbol, Symbol] =
+      composeMap(ren_found, composeMap(ren_unif, inverseMap(ren_search)));
+
+    def mkTypeVar(sym: Symbol): Type =
+      Type.typeRef(Type.localThisType, sym, Type.EMPTY_ARRAY);
+
+    def addParamTypes(paramTypes: Array[Type], t: Type): Type = t match {
+      case Type$PolyType(tparams, result) => new Type$PolyType(tparams, addParamTypes(paramTypes, result))
+      case Type$MethodType(vparams, result) => new Type$MethodType(vparams, addParamTypes(paramTypes, result))
+      case _ => global.definitions.FUNCTION_TYPE(paramTypes, t)
+    }
+
+    def addClassContext(clazz: Symbol, t: Type): Type = {
+      val class_tparam_symbols: Array[Symbol] = clazz.typeParams();
+      val class_tparams: Array[Type] = new Array[Type](class_tparam_symbols.length);
+      for(val i <- List.range(0, class_tparams.length))
+        class_tparams(i) = mkTypeVar(class_tparam_symbols(i));
+      val class_type = Type.appliedType(clazz.typeConstructor(), class_tparams);
+      val paramTypes = new Array[Type](1);
+      paramTypes(0) = class_type;
+      t match {
+        case Type$PolyType(tparams, result) => {
+          val all_tparams = new Array[Symbol](class_tparam_symbols.length + tparams.length);
+          for(val i <- List.range(0, class_tparam_symbols.length)) all_tparams(i) = class_tparam_symbols(i);
+          for(val i <- List.range(0, tparams.length)) all_tparams(i + class_tparam_symbols.length) = tparams(i);
+          new Type$PolyType(all_tparams, addParamTypes(paramTypes, result))
+        }
+        case _ =>  new Type$PolyType(class_tparam_symbols, addParamTypes(paramTypes, t))
+      }
+    }
+
+    /** Implement type isomorphism. */
+    def searchType(t: Type, isDocumented: SymbolBooleanFunction): java.util.Iterator/*[Pair[Symbol, Type]]*/ = {
+      val found = new java.util.LinkedList;
+      searchIso(t) match {
+        case None => {}
+        case Some(test) => {
+          val rootNode: node.T = node.make(isDocumented)(global.definitions.ROOT).head;
+          def searchInModule(m: node.T): unit = m.members foreach {
+            member =>
+              if (member.symbol.isClass())
+                searchInClass(member)
+              else if (member.symbol.isTerm()) {
+                test(member.symbol.getType()) match {
+                  case None => {}
+                  case Some(u) => found.add(new ch.epfl.lamp.util.Pair(member.symbol, u))
+                }
+                if (member.symbol.isPackage() || member.symbol.isModule())
+                  searchInModule(member)
+              }
+          }
+          def searchInClass(m: node.T): unit =  m.members foreach {
+            member =>
+              if (member.symbol.isTerm()) {
+                val extended_type = addClassContext(m.symbol, member.symbol.getType());
+                test(extended_type) match {
+                  case None => {}
+                  case Some(u) => found.add(new ch.epfl.lamp.util.Pair(member.symbol, u))
+                }
+              }
+          }
+          searchInModule(rootNode);
+        }
+      };
+      found.iterator()
     }
   }
 
+  /*
   object stringML extends ML with Application {
 
     class StringTC(s: String) extends TypeConstructor[StringTC] {
@@ -477,5 +619,29 @@ package scala.tools.scaladoc {
     val u = (x(13) -> x(14)) -> (at(list, x(13)) -> at(list, x(14)));
     printIso(t, u);
   }
+  */
+
+  object node {
+
+    def listOfArray[a](r: Array[a]): List[a] =
+      List.fromArray(r, 0, r.length);
+
+    /** Documentation node. */
+    trait T {
+      val symbol: Symbol;
+      def members: List[T];
+    }
+
+    /** Build a node from a root symbol. */
+    def make(isDocumented: SymbolBooleanFunction)(root: Symbol): List[T] =
+      if (ScalaSearch.isRelevant(root) && isDocumented.apply(root))
+        List(new T {
+          val symbol = root;
+          def members: List[T] = listOfArray(ScalaSearch.members(root, isDocumented)) flatMap make(isDocumented);
+        })
+      else
+        List();
+  }
+
 }
 
