@@ -1,6 +1,6 @@
 package examples;
 
-object sorter {
+object sort {
 
   def sort(a: Array[Int]): Unit = {
 

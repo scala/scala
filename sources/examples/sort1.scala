@@ -1,6 +1,6 @@
 package examples;
 
-object sorter {
+object sort1 {
 
   def sort(a: List[Int]): List[Int] = {
     if (a.length < 2)
