@@ -382,6 +382,7 @@ public class TextTreePrinter implements TreePrinter {
 
         case Block(Tree[] stats):
             printArray(stats, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
+            printType(tree);
             break;
 
         case Sequence(Tree[] trees): // sure ? was Tuple before...
