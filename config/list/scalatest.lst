@@ -3,6 +3,7 @@
 ##############################################################################
 # $Id$
 
+Command.java
 Console.java
 Diff.java
 DiffPrint.java
