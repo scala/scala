@@ -246,7 +246,7 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** !!! */
         public TypeContext(Symbol clasz, TypeContext[] outers, Symbol[] tlinks, Symbol vlink, Symbol[] oldtparams, Map tparams) {
             this.clasz = clasz;
-            this.isStable = clasz.isPackageClass() || (clasz.isModuleClass() && vlink == null);
+            this.isStable = clasz.isPackageClass();
             this.outers = outers;
             this.tlinks = tlinks;
             this.vlink = vlink;
@@ -256,12 +256,9 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         /** !!! */
         public Type getTypeLink(int level) {
-            if (level == outers.length - 1) {
-                assert outers[level].clasz.isRoot(): level + " - " + this; // !!! remove
-                return Type.NoPrefix;
-            }
-            if (tlinks[level] != null) return tlinks[level].type();
-            return Type.singleType(getTypeLink(level + 1), outers[level].clasz.module());
+            if (outers[level].clasz.isPackageClass()) return Type.NoPrefix;
+            assert tlinks[level] != null: level + " - " + Debug.show(clasz);
+            return tlinks[level].type();
         }
 
         public String toString() {
@@ -549,6 +546,8 @@ public class ExplicitOuterClassesPhase extends Phase {
                     tcontext = context.context.outers[i];
             assert tcontext != null: Debug.show(clasz, " -- ", context.clasz);
             if (tcontext.isStable) {
+                throw Debug.abort(Debug.show(clasz, " - ", context.clasz));
+                /*
                 if (!clasz.owner().isPackageClass()) {
                     Tree qualifier = genOuterRef(pos,tcontext.outers[0].clasz);
                     return gen.Select(pos, qualifier, clasz.module());
@@ -556,6 +555,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                     assert clasz.owner().isPackageClass(): Debug.show(clasz);
                     return gen.Ident(pos, clasz.module());
                 }
+                */
             } else {
                 assert context.context.vlink != null:
                     Debug.show(clasz, " -- ", context.clasz);
