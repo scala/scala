@@ -107,8 +107,10 @@ class AddInterfaces extends SubstTransformer {
     protected Name className(Name interfaceName) {
         assert !hasClassSuffix(interfaceName) : interfaceName;
 
+        boolean isType = interfaceName.isTypeName();
         String interfaceStr = interfaceName.toString();
-        return Name.fromString(interfaceStr + CLASS_SUFFIX);
+        Name className = Name.fromString(interfaceStr + CLASS_SUFFIX);
+        return (isType ? className.toTypeName() : className);
     }
 
     // Modifiers for which we do not create interfaces.
