@@ -1,6 +1,8 @@
-class bug361Global with bug361Trees;
+// $Id$
 
-abstract class bug361Trees: bug361Global {
+class Bug361Global with Bug361Trees;
+
+abstract class Bug361Trees: Bug361Global {
 
   abstract class Tree {
     var pos: int = 0;
