@@ -11,20 +11,18 @@ import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.Unit;
 import scalac.checkers._;
-import scalac.transformer.TransMatch ;
 
 package scala.tools.scalac.transformer {
 
 class TransMatchPhase(global:scalac_Global, descriptor:PhaseDescriptor )
   extends Phase(global, descriptor) {
 
-
     /** Applies this phase to the given compilation units. */
-    def apply( units:Array[Unit] ):unit =
+    def apply( units:Array[Unit] ):unit = {
       for(val u <- units) {
-        new TransMatch(global).apply( u );
+        new TransMatch( global ).apply( u );
       }
-
+    }
     override def postCheckers( global:scalac_Global ):Array[Checker] = {
       val a = new Array[Checker](2);
       a.update(0, new CheckSymbols(global) );

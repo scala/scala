@@ -21,14 +21,13 @@ import scalac.transformer.matching.PartialMatcher ;
 import scalac.transformer.matching.PatternMatcher ;
 import scalac.transformer.matching.TestRegTraverser ;
 import scalac.transformer.matching.AlgebraicMatcher ;
-import scalac.transformer.{ TransMatch$Matcher => scalac_transformer_TransMatch_Matcher }
 /** A transformer for expanding match expressions into
  *  flat sequences of .is and .as method calls
  *
  *  @author     Matthias Zenger, Burak Emir
  *  @version    1.1
  */
-package scalac.tools.transformer {
+package scala.tools.scalac.transformer {
 
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
@@ -40,21 +39,24 @@ class TransMatch( global:scalac_Global )
     super.apply( cunit );
   }
 
-  protected def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
+  def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
+    if( global.newMatch ) {
+      throw new ApplicationError("not implemented");
+    };
     var containsReg = false;
     var i = 0;
     while (i < cases.length) {
       containsReg = TestRegTraverser.apply(cases( i )) || containsReg;
       var nilvars:Set  = TestRegTraverser.getNilVariables();
       if( !nilvars.isEmpty() ) {
-        //System.err.println("nilvars present");
         val newBody = new Array[Tree]( nilvars.size() );
         var j=0;
         var it:Iterator = nilvars.iterator();
         while( it.hasNext() ) {
           val v:Symbol = it.next().asInstanceOf[ Symbol ];
           val n = gen.mkNil(cases(i).pos);
-          newBody.update( {j = j + 1; j} , gen.ValDef(v, n));
+          newBody( j ) = gen.ValDef(v, n);
+          j = j + 1;
         }
         cases(i).body = gen.mkBlock( newBody, cases(i).body );
       }
@@ -75,26 +77,47 @@ class TransMatch( global:scalac_Global )
       pm.toTree();
     }
   }
+    /** evil hack. OwnerTransformer should have this function */
+    def transform1(ts:Array[Tree$CaseDef]):Array[Tree$CaseDef] =  {
+      var i = 0;
+      while( i < ts.length ) {
+        val t = transform(ts( i ));
+        if (t != ts( i )) {
+          val res = new Array[Tree$CaseDef](ts.length);
+          System.arraycopy(ts, 0, res, 0, i);
+          res( i ) = t.asInstanceOf[Tree$CaseDef];
+          i = i + 1;
+          while(i < ts.length) {
+            res( i ) = transform(ts( i )).asInstanceOf[Tree$CaseDef];
+            i = i + 1
+          };
+          return res;
+        };
+        i = i + 1;
+      }
+      return ts;
+    }
 
    override def transform( tree:Tree ):Tree = {
      if (tree == null)
-       null;
+       return null;
      else
        tree match {
          case Tree$Apply(Tree$Select( receiver, Names.match ), args) =>
            if ((args != null) && (args.length == 1))
              args( 0 ) match {
                case Tree$Visitor( cases ) =>
-                 transform(transform(receiver), cases, tree.getType());
+                 return transform(transform(receiver), transform1(cases), tree.getType());
              }
-           tree;
+           return tree;
+
          case Tree$Apply(Tree$TypeApply(Tree$Select( receiver, Names.match ), targs), args) =>
            if ((args != null) && (args.length == 1))
              args( 0 ) match {
                case Tree$Visitor( cases ) =>
-                 transform(transform(receiver), cases, tree.getType());
-             };
-           tree;
+                 return transform(transform(receiver), transform1(cases), tree.getType());
+             }
+           return tree;
          case _ =>
            super.transform(tree);
        }
