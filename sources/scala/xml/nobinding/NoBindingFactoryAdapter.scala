@@ -10,13 +10,15 @@ package scala.xml.nobinding;
 
 import scala.collection.mutable.HashMap ;
 import scala.collection.immutable.ListMap ;
-import scala.xml.{Node,Text,FactoryAdapter,Utility} ;
+import scala.xml.{Elem, Node,Text,FactoryAdapter,Utility} ;
 import org.xml.sax.InputSource;
 
 /** nobinding adaptor providing callbacks to parser to create elements.
 *   implements hash-consing
 */
 class NoBindingFactoryAdapter extends FactoryAdapter  {
+
+  type Elem = scala.xml.Elem;
 
   // FactoryAdpater methods
 
@@ -25,11 +27,11 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
   def nodeContainsText( label:java.lang.String ):boolean = true;
 
   /* default behaviour is to use hash-consing */
-  val cache = new HashMap[int,Symbol]();
+  val cache = new HashMap[int,Elem]();
 
   /** creates a node. never creates the same node twice, using hash-consing
   */
-  def createNode( label: String, attrs: HashMap[String,String], children: List[Node] ):Symbol = {
+  def createNode( label: String, attrs: HashMap[String,String], children: List[Node] ):Elem = {
 
     val elHashCode = Utility.hashCode( label, attrs, children ) ;
 
@@ -40,12 +42,12 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
         //System.err.println("[using cached elem +"+cachedElem.toXML+"!]");
       cachedElem
       case None => val el = if( children.isEmpty ) {
-       new Symbol( label ) {
+       new Elem( label ) {
           override def attributes = ListMap.Empty[String,String].incl( attrList );
           override def hashCode() = Utility.hashCode( label, attrList.hashCode(), children );
         };
       } else {
-       new Symbol( label, children:_* ) {
+       new Elem( label, children:_* ) {
           override def attributes = ListMap.Empty[String,String].incl( attrList );
           override def hashCode() = Utility.hashCode( label, attrList.hashCode(), children );
         };
@@ -61,6 +63,6 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
 
   /** loads an XML document, returning a Symbol node.
   */
-  override def loadXML( source:InputSource ):Symbol =
-    super.loadXML( source ).asInstanceOf[ Symbol ]
+  override def loadXML( source:InputSource ):Elem =
+    super.loadXML( source ).asInstanceOf[ Elem ]
 }

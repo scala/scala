@@ -23,11 +23,11 @@ object XML {
   // functions for generic xml loading, saving
 
   /** loads XML from a given file*/
-  def load( source:InputSource ):Symbol =
+  def load( source:InputSource ):scala.xml.Elem =
     new NoBindingFactoryAdapter().loadXML( source );
 
   /** saves XML to filename with encoding ISO-8859-1 */
-  def save( filename:String, doc:Symbol ):Unit = {
+  def save( filename:String, doc:Elem ):Unit = {
     /* using NIO classes of JDK 1.4 */
     import java.io.{FileOutputStream,Writer};
     import java.nio.channels.{Channels,FileChannel};
