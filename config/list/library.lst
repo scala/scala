@@ -142,6 +142,14 @@ runtime/ResultOrException.java
 runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
+runtime/matching/Address.scala
+runtime/matching/Context.scala
+runtime/matching/Grammar.scala
+runtime/matching/Match.scala
+runtime/matching/NonTerm.scala
+runtime/matching/Pebble.scala
+runtime/matching/Rule.scala
+
 testing/UnitTest.scala
 
 xml/BindingFactoryAdapter.scala
