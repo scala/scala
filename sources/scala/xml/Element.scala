@@ -18,7 +18,7 @@ abstract class Element {
     override def hashCode() = Element.hashValue( getName, getAttribs, getChildren );
 
     def toXML: String = {
-        "<" + getName + toXML_( getAttribs ) + ">"
+        "<" + getName + Generic.toXML( getAttribs ) + ">"
         + toXML_( getChildren )
         + "</" + getName +">"
     }
@@ -28,6 +28,7 @@ abstract class Element {
         case Nil           => "";
     }
 
+        /*
     def toXML_( attrib:Map[ String, String ] ):String = {
 	def iterate( keys:Iterator[String] ) =
 	    if( keys.hasNext )
@@ -42,7 +43,7 @@ abstract class Element {
 
 	if( attrib != null ) iterate( attrib.keys.elements ) else "";
     }
-
+*/
     override def toString() = getName.concat("(").concat(getChildren.toString().concat(")"));
 
   /*

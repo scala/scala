@@ -3,45 +3,23 @@ package scala.xml ;
 import scala.xml.javaAdapter.Map ;
 import scala.xml.javaAdapter.HashMap ;
 
-/** a Scala specific dtd2scala.FactoryAdapter, which plays the SAX content handler for the SAX parser
- *  It implements the three callback methods elementContainsText, createElement and createPCDATA.
- *  DTDs imported with the dtd2scala tool all use this class as interface to the SAX XML parser, by
- *  giving concrete values for the factory maps f and g.
- */
+/** a Scala specific dtd2scala.FactoryAdapter, which plays the SAX content
+*   handler for the SAX parser. It implements the three callback methods
+*   elementContainsText, createElement and createPCDATA. DTDs imported with
+*   the dtd2scala tool all use this class as interface to the SAX XML parser,
+*   by giving concrete values for the factory maps f and g.
+*/
 
 abstract class ScalaFactoryAdapter
     extends FactoryAdapter() {
 
-    def iterToList[ a ]( iter:java.util.Iterator ):List[a] =
-        if( !iter.hasNext() )
-            Nil
-        else
-            (iter.next().asInstanceOf[a])::iterToList( iter ) ;
-
-
-    def mapToMap[a,b]( map:java.util.Map ):Map[a,b] = {
-
-         val keys:java.util.Iterator = map.keySet().iterator();
-         val res = new HashMap[a,b] ;
-
-         def iterToMap:Unit =
-         if( keys.hasNext() ) {
-              val key   = keys.next();
-              val value = map.get( key ).asInstanceOf[b] ;
-              res.put( key.asInstanceOf[a] , value.asInstanceOf[b] );
-              iterToMap
-         } else
-              () ;
-
-        iterToMap;
-        res
-    }
-
-    /** a mapping from a element name (string) to an element constructor (constr:Seq[Element] => Element)
-     */
+    /** a mapping from a element name (string) to an element constructor
+      *  (constr:Seq[Element] => Element)
+      */
     val f: Map[ String, Seq[Element] => Element ];
 
-    /** a mapping from an element name (string) to a truth value indicating whether text (PCDATA) may appear as
+    /** a mapping from an element name (string) to a truth value indicating
+      * whether text (PCDATA) may appear as
       */
 
     val g: Map[ String, boolean ] ;
@@ -57,11 +35,11 @@ abstract class ScalaFactoryAdapter
     def   createElement(elemName:String,
                         attribs:java.util.Map,
                         children:java.util.Iterator ):scala.Object = {
-	  val _children = iterToList[Element]( children ); // 2do:optimize
+	  val _children = Generic.iterToList[Element]( children ); // 2do:optimize
 	  if( !compress ) {
             val c = f.get( elemName ); // get constructor
             val el = c( _children );
-            el.setAttribs( mapToMap[String,String]( attribs ) );
+            el.setAttribs( Generic.mapToMap[String,String]( attribs ) );
 	    el
 	  } else { // do hash-consing
 
@@ -72,7 +50,7 @@ abstract class ScalaFactoryAdapter
 	    } else {
 	      val c = f.get( elemName ); // get constructor
               val el = c( _children );
-              el.setAttribs( mapToMap[String,String]( attribs ) );
+              el.setAttribs( Generic.mapToMap[String,String]( attribs ) );
 	      cache.put( h.asInstanceOf[scala.All], el.asInstanceOf[scala.All] );
 	      el
 	    }
