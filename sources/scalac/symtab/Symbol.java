@@ -557,9 +557,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a class that defines static symbols? */
     public final boolean isStaticOwner() {
-        return isPackageClass() || (isStatic() && isModuleClass()
-            // !!! remove later? translation does not work (yet?)
-            && isJava());
+        // !!! remove "isJava()"? translation does not work (yet?)
+        return isPackageClass() || (isJava() && isModuleClass() && isStatic());
     }
 
     /** Is this symbol final?
