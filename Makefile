@@ -711,7 +711,18 @@ include $(PROJECT_SUPPORTDIR)/make/sdc.mk
 ##############################################################################
 # Beta code
 
-show-missing		:
+show-missing-library	:
+	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
+	@for filename in $(LIBRARY_SOURCES:%='%'); do \
+	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
+	done
+	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
+	@$(FIND) $(LIBRARY_ROOT) -name "tools" -prune -o \( -name '*.java' -o -name '*.scala' \) -print | $(SORT) > /tmp/check.lst.log
+	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log
+	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
+
+
+show-missing-test	:
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 	@for filename in $(TEST_FILES:%='%'); do \
 	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
