@@ -267,10 +267,20 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build parameter
      */
     public ValDef Param(int pos, Symbol sym) {
+        global.log("use of obsolete Param method in TreeGen");
 	return (ValDef)ValDef(pos, sym, Tree.Empty);
     }
 
     public ValDef Param(Symbol sym) {
+        global.log("use of obsolete Param method in TreeGen");
+	return Param(sym.pos, sym);
+    }
+
+    public ValDef ValDef(int pos, Symbol sym) {
+	return (ValDef)ValDef(pos, sym, Tree.Empty);
+    }
+
+    public ValDef ValDef(Symbol sym) {
 	return Param(sym.pos, sym);
     }
 
