@@ -14,7 +14,7 @@ public final class Name {
 
 /** address in the name memory
  */
-    public int index;
+    public final int index;
 
     private final String string;
 
@@ -28,7 +28,7 @@ public final class Name {
 /** Constructor
  */
     private Name(String string, Name dual) {
-	this.string = string;
+        this.string = string;
         this.index = dual != null ? dual.index + 1 : 2 * terms.size();
         this.term = dual != null ? dual : this;
         this.type = dual != null ? this : null;
@@ -62,7 +62,7 @@ public final class Name {
 /** return the string representation of this name
  */
     public String toString() {
-	return string;
+        return string;
     }
 
 /** is this name a term name?
@@ -110,19 +110,19 @@ public final class Name {
 /** returns first occurrence of char c in this name, -1 if not found
  */
     public int indexOf(char c) {
-	return indexOf(c, 0);
+        return indexOf(c, 0);
     }
 
 /** returns first occurrence of char c in this name from `start', -1 if not found
  */
     public int indexOf(char c, int start) {
-	return string.indexOf(c, start);
+        return string.indexOf(c, start);
     }
 
 /** returns last occurrence of char c in this name, -1 if not found.
  */
     public int lastIndexOf(char c) {
-	return string.lastIndexOf(c);
+        return string.lastIndexOf(c);
     }
 
 /** does this name start with prefix?
@@ -154,9 +154,9 @@ public final class Name {
     public boolean isVariable() {
         char first = string.charAt(0);
         return ((first >= 'a' && first <= 'z') || first == '_') &&
-	    this != Names.null_ &&
-	    this != Names.true_ &&
-	    this != Names.false_;
+            this != Names.null_ &&
+            this != Names.true_ &&
+            this != Names.false_;
     }
 
     public static final Name ERROR = Name.fromString("<error>");
