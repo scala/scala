@@ -12,10 +12,10 @@ object or extends Join {
 
   rules(
     Pair(List(res, res1), { case List(r @ res.C(), res1.C(b)) =>
-      if (b) r.set(b) else r.set(res1False.send(res1False.C())) }),
+      if (b) r.set(b) else r.set(res1False(res1False.C())) }),
 
     Pair(List(res, res2), { case List(r @ res.C(), res2.C(b)) =>
-      if (b) r.set(b) else r.set(res2False.send(res2False.C())) }),
+      if (b) r.set(b) else r.set(res2False(res2False.C())) }),
 
     Pair(List(res1False, res2),  { case List(r @ res1False.C(), res2.C(b)) =>
       r.set(b) }),
@@ -25,9 +25,9 @@ object or extends Join {
   );
 
   def apply(def b1: boolean, def b2: boolean): boolean = {
-    concurrent.ops.spawn(res1.send(res1.C(b1)));
-    concurrent.ops.spawn(res2.send(res2.C(b2)));
-    res.send(res.C())
+    concurrent.ops.spawn(res1(res1.C(b1)));
+    concurrent.ops.spawn(res2(res2.C(b2)));
+    res(res.C())
   }
 }
 

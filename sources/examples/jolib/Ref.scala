@@ -9,15 +9,15 @@ class Ref[a](init: a) extends Join {
 
   rules (
     Pair(List(get, state), { case List(g @ get.C(), state.C(x) ) =>
-      { g.set(x); state.send(state.C(x)) } }),
+      { g.set(x); state(state.C(x)) } }),
     Pair(List(set, state), { case List(s @ set.C(x), state.C(y) ) =>
-      { s.set(()); state.send(state.C(x)) } })
+      { s.set(()); state(state.C(x)) } })
   );
 
-  state.send(state.C(init));
+  state(state.C(init));
 
-  def Get: a = get.send(get.C());
-  def Set(x: a): unit = set.send(set.C(x));
+  def Get: a = get(get.C());
+  def Set(x: a): unit = set(set.C(x));
 }
 
 object RefTest {
