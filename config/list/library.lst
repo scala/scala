@@ -224,7 +224,7 @@ xml/Elem.scala
 xml/EntityRef.scala
 xml/ExternalID.scala
 xml/FactoryAdapter.scala
-#xml/LoggedNodeFactory.scala
+xml/LoggedNodeFactory.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeFactory.scala
