@@ -53,24 +53,23 @@ public class UnCurryPhase extends PhaseDescriptor implements Modifiers {
     Type uncurry(Type tp) {
 	switch (tp) {
 	case MethodType(Symbol[] params, Type tp1):
-	    Symbol[] uncurriedParams = uncurryParams(params);
-	    Type uncurriedTp1 = uncurry(tp1);
-	    switch (uncurriedTp1) {
+	    Type newtp1 = uncurry(tp1);
+	    switch (newtp1) {
 	    case MethodType(Symbol[] params1, Type tp2):
-		Symbol[] newparams = new Symbol[uncurriedParams.length + params1.length];
-		System.arraycopy(uncurriedParams, 0, newparams, 0, uncurriedParams.length);
-		System.arraycopy(params1, 0, newparams, uncurriedParams.length, params1.length);
+		Symbol[] newparams = new Symbol[params.length + params1.length];
+		System.arraycopy(params, 0, newparams, 0, params.length);
+		System.arraycopy(params1, 0, newparams, params.length, params1.length);
 		return Type.MethodType(newparams, tp2);
 	    default:
-		if (uncurriedParams == params && uncurriedTp1 == tp1) return tp;
-		else return Type.MethodType(uncurriedParams, uncurriedTp1);
+		if (newtp1 == tp1) return tp;
+		else return Type.MethodType(params, newtp1);
 	    }
 	case PolyType(Symbol[] tparams, Type tp1):
 	    switch (tp1) {
 	    case MethodType(_, _):
 		Type newtp1 = uncurry(tp1);
-		if (tp1 != newtp1) return Type.PolyType(tparams, newtp1);
-		else return tp;
+		if (newtp1 == tp1) return tp;
+		else return Type.PolyType(tparams, newtp1);
 	    default:
 		Type newtp1 = Type.MethodType(Symbol.EMPTY_ARRAY, tp1);
 		if (tparams.length == 0) return newtp1;
@@ -83,26 +82,6 @@ public class UnCurryPhase extends PhaseDescriptor implements Modifiers {
 	default:
 	    return tp;
 	}
-    }
-
-    Symbol[] uncurryParams(Symbol[] params) {
-	Symbol[] params1 = params;
-	for (int i = 0; i < params.length; i++) {
-	    Symbol param = params[i];
-	    Symbol param1 = param;
-	    Type tp = param.info();
-	    Type tp1 = transformInfo(param, tp);
-	    if (tp != tp1) {
-		if (params1 == params) {
-		    params1 = new Symbol[params.length];
-		    System.arraycopy(params, 0, params1, 0, i);
-		}
-		param1 = param.cloneSymbol().setType(tp1);
-		param1.flags &= ~DEF;
-	    }
-	    params1[i] = param1;
-	}
-	return params1;
     }
 
     public Checker[] postCheckers(Global global) {

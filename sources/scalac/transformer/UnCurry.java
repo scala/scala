@@ -105,7 +105,6 @@ public class UnCurry extends OwnerTransformer
 	    // argument to parameterless function e => ( => e)
 	    Type ftype = fn.type;
 	    Tree fn1 = transform(fn);
-	    System.out.println("transforming args of " + fn.symbol());//debug
 	    Tree[] args1 = transformArgs(tree.pos, args, ftype);
 	    switch (fn1) {
 	    case Apply(Tree fn2, Tree[] args2):
