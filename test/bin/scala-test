@@ -118,7 +118,7 @@ show_failure() {
 # test functions
 
 test_interpretation() {
-    $SURUS $FLAGS "$source" -- Test;
+    $SURUS $TEST_FLAGS $FLAGS "$source" -- Test;
 }
 
 test_compilation() {
@@ -129,7 +129,7 @@ test_compilation() {
     fi;
     rm -rf "$output";
     mkdir -p "$output" &&
-    $SOCOS -d "$output" $FLAGS "$source" &&
+    $SOCOS -d "$output" $TEST_FLAGS $FLAGS "$source" &&
     java -classpath "$classpath" Test &&
     rm -rf "$output";
 }
@@ -138,7 +138,7 @@ test_compilation_success() {
     output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     rm -rf "$output";
     mkdir -p "$output" &&
-    $SOCOS -d "$output" $FLAGS "$source" &&
+    $SOCOS -d "$output" $TEST_FLAGS $FLAGS "$source" &&
     rm -rf "$output";
 }
 
@@ -167,9 +167,9 @@ test_file() {
     expect="`expr "$source" : "\(.*\)\\.scala"`.check";
     actual="`expr "$source" : "\(.*\)\\.scala"`-$KIND.log";
     if [ -f "$flags" ]; then
-        FLAGS=`cat $flags`;
+        TEST_FLAGS=`cat $flags`;
     else
-        FLAGS="";
+        TEST_FLAGS="";
     fi;
     if [ "$FAILED" = "true" -a ! -f "$actual" ]; then
         continue;
@@ -265,6 +265,7 @@ print_help() {
     echo "--socos=<path>  specify the socos command";
     echo "--surus=<path>  specify the surus command";
     echo "--scala=<path>  specify the scala runtime class path";
+    echo "--flags=<flags> specify flags to pass on to the executable";
     echo "--color=USAGE   control the color usage (USAGE=none|some|many)";
     echo "--objdir=<dir>  specify where to place generated files";
     echo "--help, -?      display this help and exit";
@@ -413,6 +414,8 @@ main() {
             --surus=*    ) SURUS=`expr "$1" : "--surus=\(.*\)"`; shift 1;;
             --scala=     ) abort "illegal empty argument for option --scala";;
             --scala=*    ) SCALA=`expr "$1" : "--scala=\(.*\)"`; shift 1;;
+            --flags=     ) abort "illegal empty argument for option --flags";;
+            --flags=*    ) FLAGS=`expr "$1" : "--flags=\(.*\)"`; shift 1;;
             --color=     ) abort "illegal empty argument for option --color";;
             --color=*    ) COLOR=`expr "$1" : "--color=\(.*\)"`; shift 1;;
             --objdir=    ) abort "illegal empty argument for option --objdir";;
