@@ -45,11 +45,7 @@ object iq {
 
 
 
-    val q5c:Queue[char] = Queue.Empty.enqueue(0: char, 1: char,
-					      2: char, 3: char,
-					      4: char, 5: char,
-					      6: char, 7: char,
-					      8: char, 9: char);
+    val q5c:Queue[int] = Queue.Empty.enqueue(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     /* Testing ==
      *  Expected: q5 == q9: true

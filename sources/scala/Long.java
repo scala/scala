@@ -14,6 +14,10 @@ public abstract class Long   extends AnyVal {
 
 
 
+
+
+
+
     /** @meta method []scala.Float ; */
     public float  coerce() { return asFloat (); }
     /** @meta method []scala.Double; */
@@ -31,7 +35,7 @@ public abstract class Long   extends AnyVal {
         return other instanceof Long   && $eq$eq(((Long  )other).asLong  ());
     }
     public int hashCode() {
-        long bits = asLong();
+        long bits = asLong  ();
         return (int)(bits ^ (bits >>> 32));
     }
     public String toString() {

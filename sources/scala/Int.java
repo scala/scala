@@ -12,6 +12,10 @@ package scala;
 
 public abstract class Int    extends AnyVal {
 
+
+
+
+
     /** @meta method []scala.Long  ; */
     public long   coerce() { return asLong  (); }
     /** @meta method []scala.Float ; */
@@ -31,7 +35,7 @@ public abstract class Int    extends AnyVal {
         return other instanceof Int    && $eq$eq(((Int   )other).asInt   ());
     }
     public int hashCode() {
-        int  bits = asInt ();
+        int  bits = asInt   ();
         return bits;
     }
     public String toString() {

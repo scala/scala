@@ -6,29 +6,135 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $OldId: Char.java,v 1.11 2002/05/15 15:03:38 roeckl Exp $
 // $Id$
 
 package scala;
 
+public abstract class Char   extends AnyVal {
 
-public abstract class Char extends Int {
 
-    public String toString() { return String.valueOf((char)asInt()); }
 
-    /** @meta method scala.Boolean;
-     */
-    public boolean isDigit() { return Character.isDigit((char)asInt()); }
+    /** @meta method []scala.Int   ; */
+    public int    coerce() { return asInt   (); }
+    /** @meta method []scala.Long  ; */
+    public long   coerce() { return asLong  (); }
+    /** @meta method []scala.Float ; */
+    public float  coerce() { return asFloat (); }
+    /** @meta method []scala.Double; */
+    public double coerce() { return asDouble(); }
 
-    /** @meta method scala.Boolean;
-     */
-    public boolean isLetter() { return Character.isLetter((char)asInt()); }
+    public abstract double asDouble();
+    public abstract float  asFloat();
+    public abstract long   asLong();
+    public abstract int    asInt();
+    public abstract char   asChar();
+    public abstract short  asShort();
+    public abstract byte   asByte();
 
-    /** @meta method scala.Boolean;
-     */
-    public boolean isLetterOrDigit() { return Character.isLetterOrDigit((char)asInt()); }
+    public boolean equals(java.lang.Object other) {
+        return other instanceof Char   && $eq$eq(((Char  )other).asChar  ());
+    }
+    public int hashCode() {
+        int  bits = asChar  ();
+        return bits;
+    }
+    public String toString() {
+        return String.valueOf(asChar  ());
+    }
 
-    /** @meta method scala.Boolean;
-     */
-    public boolean isWhitespace() { return Character.isWhitespace((char)asInt()); }
+    /** @meta method (scala.Any)scala.Boolean; */
+    public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
+    /** @meta method (scala.Any)scala.Boolean; */
+    public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
+
+    /** @meta method []scala.Int   ; */
+    public int     $plus      ()            { return +asInt   ()        ; }
+    /** @meta method []scala.Int   ; */
+    public int     $minus     ()            { return -asInt   ()        ; }
+    /** @meta method []scala.Int   ; */
+    public int     $tilde     ()            { return ~asInt   ()        ; }
+
+    public String  $plus      (String that) { return  asInt   () +  that; }
+
+    public double  $plus      (double that) { return  asDouble() +  that; }
+    public double  $minus     (double that) { return  asDouble() -  that; }
+    public double  $times     (double that) { return  asDouble() *  that; }
+    public double  $div       (double that) { return  asDouble() /  that; }
+    public double  $percent   (double that) { return  asDouble() %  that; }
+    public boolean $eq$eq     (double that) { return  asDouble() == that; }
+    public boolean $bang$eq   (double that) { return  asDouble() != that; }
+    public boolean $less      (double that) { return  asDouble() <  that; }
+    public boolean $greater   (double that) { return  asDouble() >  that; }
+    public boolean $less$eq   (double that) { return  asDouble() <= that; }
+    public boolean $greater$eq(double that) { return  asDouble() >= that; }
+
+    public float   $plus      (float  that) { return  asFloat () +  that; }
+    public float   $minus     (float  that) { return  asFloat () -  that; }
+    public float   $times     (float  that) { return  asFloat () *  that; }
+    public float   $div       (float  that) { return  asFloat () /  that; }
+    public float   $percent   (float  that) { return  asFloat () %  that; }
+    public boolean $eq$eq     (float  that) { return  asFloat () == that; }
+    public boolean $bang$eq   (float  that) { return  asFloat () != that; }
+    public boolean $less      (float  that) { return  asFloat () <  that; }
+    public boolean $greater   (float  that) { return  asFloat () >  that; }
+    public boolean $less$eq   (float  that) { return  asFloat () <= that; }
+    public boolean $greater$eq(float  that) { return  asFloat () >= that; }
+
+    public int     $less$less (int    that) { return  asInt   () << that; }
+    public int     $less$less (long   that) { return  asInt   () << that; }
+    public int     $greater$greater(int    that) { return  asInt   () >> that; }
+    public int     $greater$greater(long   that) { return  asInt   () >> that; }
+    public int     $greater$greater$greater(int    that) { return  asInt   () >>>that; }
+    public int     $greater$greater$greater(long   that) { return  asInt   () >>>that; }
+
+    public long    $amp       (long   that) { return  asLong  () &  that; }
+    public long    $bar       (long   that) { return  asLong  () |  that; }
+    public long    $up        (long   that) { return  asLong  () ^  that; }
+    public long    $plus      (long   that) { return  asLong  () +  that; }
+    public long    $minus     (long   that) { return  asLong  () -  that; }
+    public long    $times     (long   that) { return  asLong  () *  that; }
+    public long    $div       (long   that) { return  asLong  () /  that; }
+    public long    $percent   (long   that) { return  asLong  () %  that; }
+    public boolean $eq$eq     (long   that) { return  asLong  () == that; }
+    public boolean $bang$eq   (long   that) { return  asLong  () != that; }
+    public boolean $less      (long   that) { return  asLong  () <  that; }
+    public boolean $greater   (long   that) { return  asLong  () >  that; }
+    public boolean $less$eq   (long   that) { return  asLong  () <= that; }
+    public boolean $greater$eq(long   that) { return  asLong  () >= that; }
+
+    public int     $amp       (int    that) { return  asInt   () &  that; }
+    public int     $bar       (int    that) { return  asInt   () |  that; }
+    public int     $up        (int    that) { return  asInt   () ^  that; }
+    public int     $plus      (int    that) { return  asInt   () +  that; }
+    public int     $minus     (int    that) { return  asInt   () -  that; }
+    public int     $times     (int    that) { return  asInt   () *  that; }
+    public int     $div       (int    that) { return  asInt   () /  that; }
+    public int     $percent   (int    that) { return  asInt   () %  that; }
+    public boolean $eq$eq     (int    that) { return  asInt   () == that; }
+    public boolean $bang$eq   (int    that) { return  asInt   () != that; }
+    public boolean $less      (int    that) { return  asInt   () <  that; }
+    public boolean $greater   (int    that) { return  asInt   () >  that; }
+    public boolean $less$eq   (int    that) { return  asInt   () <= that; }
+    public boolean $greater$eq(int    that) { return  asInt   () >= that; }
+
+    /** @meta method scala.Boolean; */
+    public boolean isDigit() {
+        return Character.isDigit((char)asChar());
+    }
+
+    /** @meta method scala.Boolean; */
+    public boolean isLetter() {
+        return Character.isLetter((char)asChar());
+    }
+
+    /** @meta method scala.Boolean; */
+    public boolean isLetterOrDigit() {
+        return Character.isLetterOrDigit((char)asChar());
+    }
+
+    /** @meta method scala.Boolean; */
+    public boolean isWhitespace() {
+        return Character.isWhitespace((char)asChar());
+    }
+
 }

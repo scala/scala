@@ -16,6 +16,10 @@ public abstract class Float  extends AnyVal {
 
 
 
+
+
+
+
     /** @meta method []scala.Double; */
     public double coerce() { return asDouble(); }
 

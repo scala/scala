@@ -19,6 +19,10 @@ public abstract class Double extends AnyVal {
 
 
 
+
+
+
+
     public abstract double asDouble();
     public abstract float  asFloat();
     public abstract long   asLong();
