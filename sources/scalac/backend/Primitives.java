@@ -342,6 +342,7 @@ public class Primitives {
         Definitions defs = definitions;
 
         // scala.Any
+        addPrimitive(defs.EQ, Primitive.ID);
         addPrimitive(defs.IS, Primitive.IS);
         addPrimitive(defs.AS, Primitive.AS);
         addPrimitive(defs.EQEQ, Primitive.EQ);

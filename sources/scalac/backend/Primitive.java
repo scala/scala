@@ -47,6 +47,7 @@ public class Primitive {
     public case ASR             { tag = 14; } // x >> y
 
     // Comparison operations
+    public case ID              { tag = 90; } // x eq y
     public case EQ              { tag = 15; } // x == y
     public case NE              { tag = 16; } // x != y
     public case LT              { tag = 17; } // x < y
