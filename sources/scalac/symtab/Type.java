@@ -2309,7 +2309,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Type this1 = unbox();
 		    if (this1 != this) return this1;
 		    else if (args.length == 0) return this;
-		    else return typeRef(pre, sym, Type.EMPTY_ARRAY);
+		    else return typeRef(sym.owner().thisType(), sym, Type.EMPTY_ARRAY);
 		}
 
 	    default: throw new ApplicationError();
