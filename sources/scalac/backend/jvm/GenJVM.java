@@ -122,7 +122,7 @@ class GenJVM {
     public void translate(Unit unit) {
         try {
             for (int i = 0; i < unit.body.length; ++i)
-                gen(Context.EMPTY.withSourceFileName(unit.source.getShortName()),
+                gen(Context.EMPTY.withSourceFileName(unit.source.getFile().getName()),
                     unit.body[i]);
         } catch (JCode.OffsetTooBigException e) {
             throw global.fail(e);

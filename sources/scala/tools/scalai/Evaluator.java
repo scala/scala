@@ -139,7 +139,7 @@ public class Evaluator {
             buffer.append('.');
             buffer.append(stack.symbol.nameString());
             buffer.append('(');
-            buffer.append(stack.source.getShortName());
+            buffer.append(stack.source.getFile().getName());
             int line = Position.line(stack.pos);
             if (line != 0) buffer.append(':').append(line);
             buffer.append(")");

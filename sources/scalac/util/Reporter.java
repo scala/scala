@@ -152,12 +152,12 @@ public class Reporter {
     public void printMessage(Position position, String message) {
         if (position != null) {
             message = " " + message;
-            if (position.line() != 0)
-                message = position.line() + ":" + message;
+            if (position.getLineNumber() != 0)
+                message = position.getLineNumber() + ":" + message;
             if (shortname)
-                message = position.file().getShortName() + ":" + message;
+                message = position.getName() + ":" + message;
             else
-                message = position.file().name() + ":" + message;
+                message = position.getPath() + ":" + message;
         }
         printMessage(message);
         printSourceLine(position);
@@ -183,14 +183,15 @@ public class Reporter {
 
     /** Prints the source line of the given position. */
     public void printSourceLine(Position position) {
-        if (position == null || position.line() == 0) return;
-        printMessage(position.file().getLine(position.line()));
+        String line = position == null ? null : position.getLineContent();
+        if (line == null) return;
+        printMessage(line);
         printColumnMarker(position);
     }
 
     /** Prints the column marker of the given position. */
     public void printColumnMarker(Position position) {
-        int column = position == null ? 0 : position.column();
+        int column = position == null ? 0 : position.getColumnNumber();
         StringBuffer buffer = new StringBuffer(column);
         for (int i = 1; i < column; i++) buffer.append(' ');
         if (column > 0) buffer.append('^');
@@ -228,7 +229,7 @@ public class Reporter {
     /** Logs a position and returns true if it was already logged. */
     private boolean testAndLog(Position position) {
         if (position == null) return false;
-        if (position.column() == 0) return false;
+        if (position.getColumnNumber() == 0) return false;
         if (positions.contains(position)) return true;
         positions.add(position);
         return false;

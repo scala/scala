@@ -86,8 +86,8 @@ public class Position {
     //########################################################################
     // Private Fields
 
-    /** The position's file */
-    private final SourceFile file;
+    /** The position's source file */
+    private final SourceFile source;
 
     /** The position's line number */
     private final int line;
@@ -99,26 +99,26 @@ public class Position {
     // Public Constructors
 
     /** Initializes a new instance. */
-    public Position(String source) {
-        this(new SourceFile(source, new byte[0]));
+    public Position(String filename) {
+        this(new SourceFile(new VirtualFile(filename)));
     }
 
     /** Initializes a new instance. */
-    public Position(SourceFile file) {
-        this(file, 0, 0);
+    public Position(SourceFile source) {
+        this(source, 0, 0);
     }
 
     /** Initializes a new instance. */
-    public Position(SourceFile file, int position) {
-        this(file, line(position), column(position));
+    public Position(SourceFile source, int position) {
+        this(source, line(position), column(position));
     }
 
     /** Initializes a new instance. */
-    public Position(SourceFile file, int line, int column) {
-        this.file = file;
+    public Position(SourceFile source, int line, int column) {
+        this.source = source;
         this.line = line;
         this.column = column;
-        assert file != null;
+        assert source != null;
         assert line >= 0 : line;
         assert line == 0 ? column == 0 : column >= 0 : line + "," + column;
     }
@@ -126,29 +126,49 @@ public class Position {
     //########################################################################
     // Public Methods
 
-    /** Returns the file of this position. */
-    public SourceFile file() {
-        return file;
+    /** Returns the underlying abstract file's name. */
+    public String getName() {
+        return source.getFile().getName();
     }
 
-    /** Returns the line number of this position. */
-    public int line() {
+    /** Returns the underlying abstract file's path position. */
+    public String getPath() {
+        return source.getFile().getPath();
+    }
+
+    /** Returns the underlying abstract file. */
+    public AbstractFile getAbstractFile() {
+        return source.getFile();
+    }
+
+    /** Returns the source file. */
+    public SourceFile getSourceFile() {
+        return source;
+    }
+
+    /** Returns the line content or null if it's unavailable. */
+    public String getLineContent() {
+        return line == 0 ? null : source.getLine(line);
+    }
+
+    /** Returns the line number. */
+    public int getLineNumber() {
         return line;
     }
 
-    /** Returns the column number of this position. */
-    public int column() {
+    /** Returns the column number. */
+    public int getColumnNumber() {
         return column;
     }
 
-    /** Returns an int encoding the line and column of this position. */
-    public int encodedLineColumn() {
+    /** Returns the line and column numbers encoded in an int. */
+    public int getLineAndColumnNumber() {
         return encode(line, column);
     }
 
     /** Returns a string representation of this position. */
     public String toString() {
-        StringBuffer buffer = new StringBuffer(file.name());
+        StringBuffer buffer = new StringBuffer(source.getFile().getPath());
         if (line > 0) buffer.append(":").append(line);
         if (line > 0 && column > 0) buffer.append(":").append(column);
         return buffer.toString();
@@ -156,14 +176,16 @@ public class Position {
 
     /** Returns the hash code of this position. */
     public int hashCode() {
-        return file.hashCode() ^ encodedLineColumn();
+        return source.hashCode() ^ getLineAndColumnNumber();
     }
 
     /** Returns true iff the given object represents the same position. */
     public boolean equals(Object object) {
         if (!(object instanceof Position)) return false;
         Position that = (Position)object;
-        return file == that.file && line == that.line && column == that.column;
+        return this.source == that.source
+            && this.line == that.line
+            && this.column == that.column;
     }
 
     //########################################################################

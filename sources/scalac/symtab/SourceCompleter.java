@@ -8,6 +8,7 @@
 
 package scalac.symtab;
 
+import scala.tools.util.AbstractFile;
 import scala.tools.util.SourceFile;
 
 import scalac.*;
@@ -33,8 +34,9 @@ public class SourceCompleter extends SymbolLoader {
     /** complete class symbol c by loading the unit
      */
     public String doComplete(Symbol clasz) throws IOException {
-        File file = global.classPath.openJavaFile(
+        AbstractFile file = global.classPath.openFile(
             SourceRepresentation.externalizeFileName(clasz, ".scala"));
+        if (!file.exists()) throw new FileNotFoundException(file.getPath());
         Unit unit = new Unit(global, new SourceFile(file), false, mixinOnly);
         Phase phase = global.currentPhase;
         global.currentPhase = global.PHASE.PARSER.phase();

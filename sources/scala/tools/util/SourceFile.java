@@ -16,8 +16,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 
-/** This class represents a single source file.
- */
+/** This class represents a single source file. */
 public class SourceFile {
 
     //########################################################################
@@ -32,10 +31,10 @@ public class SourceFile {
     //########################################################################
     // Private Fields
 
-    /** The name of this source file */
-    private final String name;
+    /** The underlying file */
+    private final AbstractFile file;
 
-    /** The content of source this file */
+    /** The content of this source file or null if unavailable */
     private final byte[] bytes;
 
     /** The encoding of this source file or null if unspecified */
@@ -50,49 +49,34 @@ public class SourceFile {
     //########################################################################
     // Public Constructors
 
-    /** Initializes a new instance. */
-    public SourceFile(String name) throws IOException {
-        this(new File(name));
+    /** Initializes this instance with the specified file. */
+    public SourceFile(VirtualFile file) {
+        this.file = file;
+        this.bytes = normalize(file.read());
     }
 
-    /** Initializes a new instance. */
-    public SourceFile(File name) throws IOException {
-        this(name.toString(), read(name));
-    }
-
-    /** Initializes a new instance. */
-    public SourceFile(String name, InputStream input) throws IOException {
-        this(name, read(name, input));
-    }
-
-    /** Initializes a new instance. */
-    public SourceFile(String name, byte[] bytes) {
-        this.name = name;
-        this.bytes = normalize(bytes);
+    /** Initializes this instance with the specified file. */
+    public SourceFile(AbstractFile file) throws IOException {
+        this.file = file;
+        this.bytes = normalize(file.read());
     }
 
     //########################################################################
     // Public Methods
 
-    /** Returns the name of this source file. */
-    public String name() {
-        return name;
+    /** Returns the underlying file. */
+    public AbstractFile getFile() {
+        return file;
     }
 
-    /** Returns the content of this source file. */
-    public byte[] bytes() {
+    /** Returns the content of the file. */
+    public byte[] getContent() {
         return bytes;
     }
 
     /** Sets the encoding of the file. */
     public void setEncoding(String encoding) {
         this.encoding = encoding;
-    }
-
-    /** Returns the short name (name without path) of this source file. */
-    public String getShortName() {
-        int start = name.lastIndexOf(File.separatorChar);
-        return start < 0 ? name : name.substring(start + 1);
     }
 
     /**
@@ -103,7 +87,7 @@ public class SourceFile {
         return new Position(this, line, column);
     }
 
-    /** Returns the content of the given line. */
+    /** Returns the specified line. */
     public String getLine(int line) {
         int index = lineNumber <= line ? nextIndex : (lineNumber = 0);
         for (; index < bytes.length && lineNumber < line; lineNumber++) {
@@ -129,39 +113,13 @@ public class SourceFile {
         }
     }
 
-    /** Returns the name of this source file. */
+    /** Returns the path of the underlying file. */
     public String toString() {
-        return name;
+        return file.getPath();
     }
 
     //########################################################################
-    // Private Methods
-
-    /** Reads the file and returns its content as a byte array.
-     */
-    private static byte[] read(File file) throws IOException {
-        InputStream input = new FileInputStream(file);
-        try {
-            return read(file.toString(), input);
-        } finally {
-            input.close();
-        }
-    }
-
-    /** Reads the InputStream and returns its content as a byte array.
-     */
-    private static byte[] read(String name, InputStream input) throws IOException {
-        try {
-            byte[] bytes = new byte[input.available() + 1];
-            int numread = input.read(bytes);
-            if ((numread >= 0) && (numread != bytes.length - 1))
-                throw new IOException();
-            bytes[bytes.length - 1] = SU;
-            return bytes;
-        } catch (IOException exception) {
-            throw new IOException("cannot read '" + name + "'");
-        }
-    }
+    // Private Functions
 
     /** Ensures that the last byte of the array is SU. */
     private static byte[] normalize(byte[] input) {

@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
+import scala.tools.util.AbstractFile;
+import scala.tools.util.ByteArrayFile;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 
@@ -261,13 +263,17 @@ public abstract class Global {
         // parse files
         List units = new ArrayList(files.length);
         for (int i = 0; i < files.length; i++) {
-            String file = files[i];
-            try {
-                units.add(new Unit(this, new SourceFile(file), console));
-            } catch (FileNotFoundException e) {
-                error("file " + file + " not found");
-            } catch (IOException e) {
-                error(e.getMessage());
+            String filename = files[i];
+            AbstractFile file = AbstractFile.open(null, filename);
+            if (file.exists()) {
+                try {
+                    SourceFile source = new SourceFile(file);
+                    units.add(new Unit(this, source, console));
+                } catch (IOException exception) {
+                    error(exception.getMessage());
+                }
+            } else {
+                error("file '" + filename + "' not found");
             }
         }
         this.units = (Unit[])units.toArray(new Unit[units.size()]);
@@ -283,7 +289,8 @@ public abstract class Global {
      */
     public void compile(String filename, String input, boolean console) {
         reporter.resetCounters();
-        SourceFile source = new SourceFile(filename, input.getBytes());
+        ByteArrayFile file = new ByteArrayFile(filename, input.getBytes());
+        SourceFile source = new SourceFile(file);
         units = new Unit[]{new Unit(this, source, console)};
         compile();
     }

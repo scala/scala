@@ -112,7 +112,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     if (clasz.isExternal()) {
       try {
         val filename = SourceRepresentation.externalizeFileName(clasz, ".scala");
-        val file = global.classPath.openJavaFile(filename);
+        val file = global.classPath.openFile(filename);
+        if (!file.exists()) throw new java.io.FileNotFoundException(file.getPath());
         new SourceCompleter(global).complete(clasz);
       } catch {
         case exception: java.io.IOException =>

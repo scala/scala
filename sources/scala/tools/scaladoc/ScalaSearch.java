@@ -20,6 +20,7 @@ import java.util.HashSet;
 
 import ch.epfl.lamp.util.Pair;
 
+import scala.tools.util.ByteArrayFile;
 import scala.tools.util.SourceFile;
 
 import scalac.Global;
@@ -537,11 +538,9 @@ public class ScalaSearch {
         // Rem: we use a dummy extends clause, otherwise the compiler
         // complains.
         queryCounter = queryCounter + 1;
-        InputStream in = new ByteArrayInputStream(unitString.getBytes());
-        SourceFile sourceFile = null;
-        try {
-            sourceFile = new SourceFile("tmp.scala", in);
-        } catch(IOException e) { }
+        byte[] bytes = unitString.getBytes();
+        ByteArrayFile file = new ByteArrayFile("tmp.scala", bytes);
+        SourceFile sourceFile = new SourceFile(file);
         Unit tmpUnit = new Unit(global, sourceFile, false);
         tmpUnit.body = new Parser$class(tmpUnit).parse();
         //TreePrinter treePrinter = new TextTreePrinter(System.out);

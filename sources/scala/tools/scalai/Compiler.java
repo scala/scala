@@ -21,6 +21,7 @@ import java.util.Iterator;
 
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
+import scala.tools.util.VirtualFile;
 
 import scalac.Unit;
 import scalac.Global;
@@ -63,7 +64,7 @@ public class Compiler {
         this.any_methods = new HashMap();
         this.sources = new HashMap();
 
-        SourceFile compiled = new SourceFile("<<compiled code>>", new byte[0]);
+        SourceFile compiled = new SourceFile(new VirtualFile("<<compiled code>>"));
 
         environment.insertFunction(definitions.STRING_PLUS, Function.StringPlus); // !!!
         // !!! ANY_PLUS_STRING is commented out in definitions
