@@ -117,16 +117,16 @@ public abstract class CompilerPhases {
                 "translate match expressions",
                 "translated pattern matching",
                 TRANSMATCH_PHASE()),
-            this.LAMBDALIFT = new PhaseDescriptor(
-                "lambdalift",
-                "lambda lifter",
-                "lambda lifting",
-                LAMBDALIFT_PHASE()),
             this.TYPESASVALUES = new PhaseDescriptor(
                 "typesasvalues",
                 "represent types as values",
                 "represented types as values",
                 TYPESASVALUES_PHASE()),
+            this.LAMBDALIFT = new PhaseDescriptor(
+                "lambdalift",
+                "lambda lifter",
+                "lambda lifting",
+                LAMBDALIFT_PHASE()),
             this.ADDACCESSORS = new PhaseDescriptor(
                 "addaccessors",
                 "add accessors for constructor arguments",
