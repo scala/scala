@@ -6,7 +6,16 @@
 import java.lang.System; // to avoid name clash with .NET's library
 
 //############################################################################
-// Test 0 - Array Creation
+// serves as an entry point with the MSIL backend
+
+object TestMain {
+  def main(args: Array[String]): Unit = {
+    Test.main(args);
+  }
+}
+
+//############################################################################
+// Test 0 - Array creation
 
 object Test0Test {
   def println[A](xs: Array[A]): Unit = {
@@ -101,6 +110,7 @@ object Test  {
         val name: String = Thread.currentThread().getName();
         System.out.print("Exception in thread \"" + name + "\" ");
         exception.printStackTrace();
+        //Console.println(exception.StackTrace); // with -target:msil
         System.out.println();
         errors = errors + 1;
       }
