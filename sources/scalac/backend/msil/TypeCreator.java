@@ -50,6 +50,10 @@ final class TypeCreator {
 
     private final ArrayList typeBuilders = new ArrayList();
 
+    // for every method of an object give the corresponding static method
+    // of the accompanying class
+    private final Map/*<Symbol, MethodBuilder>*/ syms2staticMethods = new HashMap();
+
     private final Map types2symbols;
     private final Map symbols2types;
     private final Map symbols2fields;
@@ -274,6 +278,7 @@ final class TypeCreator {
 
 	Type scalaSymtab = Type.GetType("scala.support.SymtabAttribute");
 	SCALA_SYMTAB_ATTR_CONSTR = scalaSymtab.GetConstructors()[0];
+
     } // init()
 
     /*
@@ -531,17 +536,19 @@ final class TypeCreator {
     public Type createType0(Symbol clazz) {
 	assert !clazz.isExternal() : "Can not create type " + Debug.show(clazz);
 	Type type = (Type)symbols2types.get(clazz);
+	TypeBuilder staticType = null;
 	assert type == null : "Type " + type +
 	    " already defined for symbol: " + Debug.show(clazz);
 
 	//System.out.println("createType: " + Debug.show(clazz));
 
 	final Symbol owner = clazz.owner();
+	final String staticTypeName = owner.isClass()
+	    ? clazz.nameString()
+	    : global.primitives.getCLRClassName(clazz);
 	final String typeName =
-	    (owner.isClass() ? clazz.nameString() : global.primitives.getCLRClassName(clazz)) +
-	    (clazz.isModuleClass() ? "$" : "");
+	    staticTypeName + (clazz.isModuleClass() ? "$" : "");
 	final ModuleBuilder module = gen.getCurrentModule();
-
 	final scalac.symtab.Type classType = clazz.info();
 	switch (classType) {
 	case CompoundType(scalac.symtab.Type[] baseTypes, _):
@@ -571,10 +578,18 @@ final class TypeCreator {
 	    if (type != null)
 		return type;
 
-	    if (owner.isRoot() || owner.isPackageClass()) {  // i.e. top level class
+	    if (owner.isPackageClass()) {  // i.e. top level class
 		type = module.DefineType
 		    (typeName, translateTypeAttributes(clazz.flags, false),
 		     superType, interfaces);
+		if (clazz.isModuleClass()
+		    && owner.members().lookup(clazz.name).isNone())
+		    {
+			staticType = module.DefineType
+			    (staticTypeName,
+			     translateTypeAttributes(clazz.flags, false),
+			     superType, interfaces);
+		    }
 	    } else {
 		final Type outerType = (Type) getType(owner);
 		// check if the type have not been created by
@@ -598,8 +613,13 @@ final class TypeCreator {
 	     syms.hasNext(); )
 	    {
 		Symbol member = syms.next();
-		if (member.isMethod())
+		if (member.isMethod()) {
 		    createMethod(member);
+		    if (staticType != null) {
+			MethodBase sm = createMethod(staticType, member, true);
+			syms2staticMethods.put(member, sm);
+		    }
+		}
 		else if (!member.isClass() && !member.isModule()
 			 && !member.isType())
 		    createField(member);
@@ -654,10 +674,22 @@ final class TypeCreator {
         return set;
     }
 
+    public MethodBase getMethod(Symbol sym) {
+	MethodBase method = null;
+	try {
+	    method = getMethod0(sym);
+	} catch (RuntimeException e) {
+	    System.err.println("for method " + Debug.show(sym));
+	    System.err.println(symbols2methods);
+	    throw e;
+	}
+	return method;
+    }
+
     /**
      * Returns the MethodBase object corresponding to the symbol.
      */
-    public MethodBase getMethod(Symbol sym) {
+    public MethodBase getMethod0(Symbol sym) {
 	MethodBase method = (MethodBase) symbols2methods.get(sym);
 	if (method != null)
 	    return method;
@@ -701,24 +733,35 @@ final class TypeCreator {
     }
 
 
-    /**
-     * Create the method corresponding to the symbol.
-     */
     private MethodBase createMethod(Symbol sym) {
-	MethodBase method = null;
-	switch (sym.info()) {
-	case MethodType(Symbol[] vparams, scalac.symtab.Type result):
-            TypeBuilder type = (TypeBuilder)getType(sym.owner());
-            method = createMethod
-                (type, sym.name, sym.info(), translateMethodAttributes(sym));
-	    break;
-	default:
-	    assert false : "Symbol doesn't have a method type: " + Debug.show(sym);
-	}
-	assert method != null;
+	MethodBase method =
+	    createMethod((TypeBuilder)getType(sym.owner()), sym, false);
 	symbols2methods.put(sym, method);
 	return method;
     }
+
+
+    /**
+     * Create the method corresponding to the symbol.
+
+     * @param isStatic - forces the created method to be static
+     */
+    private MethodBase createMethod(TypeBuilder type, Symbol sym, boolean isStatic)
+    {
+	MethodBase method = null;
+	switch (sym.info()) {
+	case MethodType(Symbol[] vparams, scalac.symtab.Type result):
+	    short attr = translateMethodAttributes(sym);
+	    if (isStatic)
+		attr = (short)((attr & ~MethodAttributes.Virtual)
+		    | MethodAttributes.Static);
+            return createMethod(type, sym.name, sym.info(), attr);
+	default:
+	    throw Debug.abort("Symbol doesn't have a method type: "
+			      + Debug.show(sym));
+	}
+    }
+
 
     /**
      * Helper method to createMethod(Symbol)
@@ -740,7 +783,7 @@ final class TypeCreator {
 		for (int i = 0; i < vparams.length; i++)
 		    constructor.DefineParameter
 			(i, 0/*ParameterAttributes.In*/, vparams[i].name.toString());
-		method = constructor;
+		return constructor;
 	    } else {
 		String sname;
 		if (name == Names.toString) sname = "ToString";
@@ -754,14 +797,11 @@ final class TypeCreator {
 		for (int i = 0; i < vparams.length; i++)
 		    methodBuilder.DefineParameter
 			(i, 0/*ParameterAttributes.In*/, vparams[i].name.toString());
-		method =  methodBuilder;
+		return methodBuilder;
 	    }
-	    break;
 	default:
-	    assert false : "Method type expected: " + Debug.show(symType);
+	    throw Debug.abort("Method type expected: " + Debug.show(symType));
 	}
-
-	return method;
     }
 
 
@@ -817,6 +857,16 @@ final class TypeCreator {
 	return getModuleField(sym);
     }
 
+    /**
+     *
+     */
+    public MethodBuilder getStaticObjectMethod(Symbol sym) {
+	assert sym.owner().isModuleClass() : Debug.show(sym);
+	MethodBuilder method = (MethodBuilder)syms2staticMethods.get(sym);
+	assert sym != null : Debug.show(sym);
+	return method;
+    }
+
     /*
      *
      */
@@ -834,32 +884,30 @@ final class TypeCreator {
      * @return the field descriptor of the object instance
      */
     public FieldInfo getModuleField(Symbol sym) {
-	FieldInfo moduleField = null;
-	if (sym.isModule() || sym.isModuleClass()) {
-	    moduleField = (FieldInfo) symbols2moduleFields.get(sym);
-	    if (moduleField == null) {
-		Symbol s = getTypeSymbol(sym.type());
-		if (sym != s) {
-		    moduleField = getModuleField(s);
+	assert sym.isModule() || sym.isModuleClass() : Debug.show(sym);
+	FieldInfo moduleField = (FieldInfo) symbols2moduleFields.get(sym);
+	if (moduleField == null) {
+	    Symbol s = getTypeSymbol(sym.type());
+	    if (sym != s) {
+		moduleField = getModuleField(s);
+	    } else {
+		Type type = getType(sym);
+		if (type instanceof TypeBuilder) {
+		    TypeBuilder module = (TypeBuilder) type;
+		    moduleField = module.DefineField
+			(MODULE_S,
+			 module,
+			 (short)(FieldAttributes.Public
+				 | FieldAttributes.InitOnly
+				 | FieldAttributes.Static));
 		} else {
-		    Type type = getType(sym);
-		    if (type instanceof TypeBuilder) {
-			TypeBuilder module = (TypeBuilder) type;
-			moduleField = module.DefineField
-			    (MODULE_S,
-			     module,
-			     (short)(FieldAttributes.Public
-				     | FieldAttributes.InitOnly
-				     | FieldAttributes.Static));
-		    } else {
-			moduleField = type.GetField(MODULE_S);
-			assert moduleField != null;
-		    }
+		    moduleField = type.GetField(MODULE_S);
+		    assert moduleField != null;
 		}
-		symbols2moduleFields.put(sym, moduleField);
 	    }
-	} else {
+	    symbols2moduleFields.put(sym, moduleField);
 	}
+	assert moduleField != null : Debug.show(sym);
 	return moduleField;
     }
 

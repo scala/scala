@@ -252,7 +252,7 @@ public final class GenMSIL {
     private void genClass(Symbol clazz, Tree[] body) {
 	Symbol outerClass = currentClass;
 	currentClass = clazz;
-	if ( clazz.isModule() || clazz.isModuleClass() ) {
+	if (clazz.isModuleClass()) {
 	    tc.getModuleField(clazz);
 	}
 	emitSymtab(clazz);
@@ -273,9 +273,9 @@ public final class GenMSIL {
 		break;
 
 	    case DefDef(_, _, _, ValDef[][] vparams, Tree tpe, Tree rhs):
-		currentMethod = tc.getMethod(sym);
 // 		if (!currentMethod.IsAbstract()) {
 		if (!sym.isDeferred()) {
+		    currentMethod = tc.getMethod(sym);
 		    checkMain(currentMethod);
 		    genDef(sym, vparams[0], rhs, msilType(tpe.type));
 		}
@@ -320,9 +320,8 @@ public final class GenMSIL {
 	if (method.IsConstructor()) {
 	    ConstructorInfo ctor = (ConstructorInfo) method;
 	    code = ((ConstructorBuilder)ctor).GetILGenerator();
-	    FieldInfo moduleField = tc.getModuleField(currentClass);
-	    if (moduleField != null
-		&& moduleField.DeclaringType.DeclaringType == null) {
+	    if (sym.owner().isModuleClass()
+		&& sym.owner().owner().isPackageClass()) {
 		Tree[] cstats = null;
 		switch (rhs) {
 		case Block(Tree[] stats, Tree value):
@@ -362,7 +361,7 @@ public final class GenMSIL {
 		code = cctor.GetILGenerator();
 		// initialize the static module reference
 		code.Emit(OpCodes.Newobj, ctor);
-		code.Emit(OpCodes.Stsfld, moduleField);
+		code.Emit(OpCodes.Stsfld, tc.getModuleField(currentClass));
 		for (int i = 1; i < cstats.length; i++) {
 		    drop(gen(cstats[i], MSILType.VOID));
 		}
@@ -380,6 +379,17 @@ public final class GenMSIL {
 	    else
 		coerce(load(item), toType); // FIXME: coerce???
 	    code.Emit(OpCodes.Ret);
+	    if (currentClass.isModuleClass()) {
+		MethodBuilder staticMethod = tc.getStaticObjectMethod(sym);
+		if (staticMethod != null) {
+		    code = staticMethod.GetILGenerator();
+		    code.Emit(OpCodes.Ldsfld, tc.getModuleField(currentClass));
+		    for (int i = 0; i < parameters.length; i++)
+			emitLdarg(i);
+		    code.Emit(OpCodes.Call, (MethodInfo)method);
+		    code.Emit(OpCodes.Ret);
+		}
+	    }
 	}
 
 	lastExpr = false;
@@ -1408,6 +1418,18 @@ public final class GenMSIL {
 	return item;
     }
 
+    private void emitLdarg(int slot) {
+	assert slot >= 0;
+	switch (slot) {
+	case 0: code.Emit(OpCodes.Ldarg_0); break;
+	case 1: code.Emit(OpCodes.Ldarg_1); break;
+	case 2: code.Emit(OpCodes.Ldarg_2); break;
+	case 3: code.Emit(OpCodes.Ldarg_3); break;
+	default:
+	    code.Emit(slot < 256 ? OpCodes.Ldarg_S : OpCodes.Ldarg, slot);
+	}
+    }
+
     /*
      * Load the value of an item on the stack.
      */
@@ -1427,16 +1449,7 @@ public final class GenMSIL {
 	    return items.StackItem(that.type);
 
 	case ArgItem(int slot):
-	    if (slot > 255)
-		code.Emit(OpCodes.Ldarg, slot);
-	    else if(slot > 3)
-		code.Emit(OpCodes.Ldarg_S, slot);
-	    else switch (slot) {
-	    case 0: code.Emit(OpCodes.Ldarg_0); break;
-	    case 1: code.Emit(OpCodes.Ldarg_1); break;
-	    case 2: code.Emit(OpCodes.Ldarg_2); break;
-	    case 3: code.Emit(OpCodes.Ldarg_3); break;
-	    }
+	    emitLdarg(slot);
 	    return items.StackItem(that.type);
 
 	case LocalItem(LocalBuilder local):
