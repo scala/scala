@@ -186,6 +186,8 @@ public class Definitions {
         return getType(LIST_CLASS, element);
     }
 
+    public final Symbol CONSOLE;
+
     /** The scala.Array class */
     public final Symbol ARRAY_CLASS;
     public final Type   ARRAY_TYPE(Type element) {
@@ -356,6 +358,13 @@ public class Definitions {
         return LIST_TAIL;
     }
 
+    private Symbol CONSOLE_PRINT;
+    public Symbol CONSOLE_PRINT() {
+        if( CONSOLE_PRINT == null )
+            CONSOLE_PRINT = loadTerm( CONSOLE, Names.print );
+        return CONSOLE_PRINT;
+    }
+
     /** Some scala.MatchError methods */
     private Symbol MATCHERROR_FAIL;
 
@@ -447,6 +456,7 @@ public class Definitions {
 	ITERATOR_CLASS = getClass(Names.scala_Iterator);
 	SEQ_CLASS = getClass(Names.scala_Seq);
 	LIST_CLASS = getClass(Names.scala_List);
+        CONSOLE = getModule(Names.scala_Console);
         ARRAY_CLASS = getClass(Names.scala_Array);
 	MATCHERROR = getModule(Names.scala_MatchError);
 
