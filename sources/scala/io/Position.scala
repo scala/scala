@@ -58,8 +58,16 @@ object Position {
     if( column < 0 )
       error(line+","+column+" not allowed");
 
-    if (line >= LINE_MASK) { line1 = LINE_MASK; column1 = 0; }
-    if (column > COLUMN_MASK) column1 = COLUMN_MASK;
+    if (line >= LINE_MASK) {
+      line1 = LINE_MASK;
+      column1 = 0; }
+    else {
+      line1 = line;
+      if (column > COLUMN_MASK)
+        column1 = COLUMN_MASK;
+      else
+        column1 = column
+    }
     (line1 << COLUMN_BITS) | column1;
   }
 
