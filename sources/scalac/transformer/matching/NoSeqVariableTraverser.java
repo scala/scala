@@ -18,7 +18,6 @@ class NoSeqVariableTraverser extends CollectVariableTraverser {
             }
       }
 
-
       public NoSeqVariableTraverser() {
             super();
       }
