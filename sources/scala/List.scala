@@ -190,6 +190,19 @@ trait List[+a] extends Seq[a] {
     case _ :: xs => xs.length + 1
   };
 
+  /** Creates a list with all indices in the list. This is
+   *  equivalent to a call to <code>List.range(0, xs.length)</code>.
+   *
+   *  @return a list of all indices in the list.
+   */
+  def indices: List[Int] = {
+    def loop(i: Int, xs: List[a]): List[Int] = xs match {
+      case Nil => Nil
+      case _ :: ys => i :: loop(i + 1, ys)
+    }
+    loop(0, this)
+  }
+
   /** Returns the elements in the list as an iterator
    */
   def elements: Iterator[a] = new Iterator[a] {
@@ -241,7 +254,7 @@ trait List[+a] extends Seq[a] {
     if (n == 0) this
     else (tail drop (n-1));
 
-  /** Return the rightmost <code>n</code> elements from this list.
+  /** Returns the rightmost <code>n</code> elements from this list.
    *  @param n the number of elements to take
    *  @return the suffix of length <code>n</code> of the list
    *  @throws java.lang.RuntimeException if the list is too short.
@@ -300,7 +313,7 @@ trait List[+a] extends Seq[a] {
     if (isEmpty || !p(head)) this
     else tail dropWhile p;
 
-  /** Return the longest prefix of the list whose elements all satisfy
+  /** Returns the longest prefix of the list whose elements all satisfy
    *  the given predicate, and the rest of the list.
    *  @param p the test predicate
    *  @return a pair consisting of the longest prefix of the list whose
@@ -400,48 +413,54 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Sort the list according to the comparison function
-  *   <(e1:a,e2:a) => Boolean,
-  *   which should be true iff e1 is smaller than e2.
-  *   Note: The current implementation is inefficent for
-  *   already sorted lists.
-  */
-  def sort(< : (a,a) => Boolean):List[a] = {
-    def sort_1(smaller:List[a],acc:List[a]):List[a] =
-      smaller.match{
-      case Nil => acc;
-      case List(x) => x::acc;
-      case List(x,y) => if (<(x,y)) x::(y::acc) else y::x::acc;
-      case List(x,y,z) => {
-        if (<(x,y))
-	  {if (<(y,z)) x::y::z::acc else if (<(x,z)) x::z::y::acc
- 				         else z::x::y::acc}
-	else
-	   if (<(x,z)) y::x::z::acc else if (<(z,y)) z::y::x::acc else y::z::x::acc
-      }
-      case hd1::hd2::hd3::tail => {
-	val List(x,y,z) = sort_1(hd1::hd2::hd3::Nil,Nil);
-	val Pair(small,large) =  tail.partition((e2) => <(e2,y));
-	sort_1(x::small,y::sort_1(z::large,acc));
-      }
+   *  <(e1: a, e2: a) => Boolean,
+   *  which should be true iff e1 is smaller than e2.
+   *  Note: The current implementation is inefficent for
+   *  already sorted lists.
+   */
+  def sort(< : (a,a) => Boolean): List[a] = {
+    def sort_1(smaller: List[a], acc: List[a]): List[a] =
+      smaller.match {
+        case Nil =>
+          acc
+        case List(x) =>
+          x::acc
+        case List(x, y) =>
+          if (<(x, y)) x::(y::acc) else y::x::acc
+        case List(x, y, z) =>
+          if (<(x, y)) {
+	    if (<(y, z)) x::y::z::acc
+            else if (<(x, z)) x::z::y::acc
+            else z::x::y::acc
+          } else if (<(x, z)) y::x::z::acc
+          else if (<(z, y)) z::y::x::acc
+          else y::z::x::acc
+        case hd1::hd2::hd3::tail => {
+          val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil);
+          val Pair(small, large) = tail.partition((e2) => <(e2, y));
+          sort_1(x::small, y::sort_1(z::large, acc))
+        }
       }
 
     match {
-      case Nil => this;
-      case List(x) => this;
-      case List(x,y) => if (<(x,y)) this else y::x::Nil;
-      case List(x,y,z) => {
-        if (<(x,y))
-	  {if (<(y,z)) this else if (<(x,z)) x::z::y::Nil
-			         else z::x::y::Nil;}
-	else
-	  if (<(x,z)) y::x::z::Nil else
-            if (<(z,y)) z::y::x::Nil else
-	      y::z::x::Nil;
-      }
-        case hd1::hd2::hd3::tail => {
-	val List(x,y,z) = sort_1(hd1::hd2::hd3::Nil,Nil);
-	val Pair(small,large) =  tail.partition((e2) => <(e2,y));
-	sort_1(x::small,y::sort_1(z::large,Nil));
+      case Nil =>
+        this
+      case List(x) =>
+        this
+      case List(x, y) =>
+        if (<(x, y)) this else y::x::Nil
+      case List(x, y, z) =>
+        if (<(x, y)) {
+	  if (<(y, z)) this
+          else if (<(x, z)) x::z::y::Nil
+          else z::x::y::Nil
+        } else if (<(x, z)) y::x::z::Nil
+        else if (<(z, y)) z::y::x::Nil
+        else y::z::x::Nil
+      case hd1::hd2::hd3::tail => {
+	val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil);
+	val Pair(small,large) =  tail.partition((e2) => <(e2, y));
+	sort_1(x::small, y::sort_1(z::large, Nil));
       }
     }
   }
