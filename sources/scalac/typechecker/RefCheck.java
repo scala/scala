@@ -614,7 +614,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     private Symbol getMember(Type site, Name name) {
 	Symbol sym = site.lookupNonPrivate(name);
-	assert sym.kind == VAL;
+	assert sym.kind == VAL : Debug.show(sym) + "; " + Debug.show(site) + "::" + name;
 	return sym;
     }
 
@@ -811,7 +811,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    .setInfo(defs.ANY_HASHCODE.type());
 	clazz.info().members().enter(hashCodeSym);
 	Tree[] fields = caseFields(clazz);
-	Symbol getClassMethod = getNullaryMemberMethod(clazz.type(), Names.getClass);
+	Name name = global.target == Global.TARGET_MSIL
+	    ? Names.GetType : Names.getClass;
+	Symbol getClassMethod = getNullaryMemberMethod(clazz.type(), name);
 	Symbol addMethod = getUnaryMemberMethod(
 	    defs.int_TYPE(), Names.ADD, defs.int_TYPE());
 	Symbol mulMethod = getUnaryMemberMethod(
