@@ -12,6 +12,7 @@ import java.util.Map;
 
 import scalac.Global;
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolCloner;
 import scalac.symtab.Type;
 import scalac.symtab.SymbolSubstTypeMap;
 import scalac.util.Debug;
@@ -83,6 +84,48 @@ public class TreeCloner extends Transformer {
         if (tree.hasSymbol()) tree.setSymbol(getSymbolFor(tree));
         tree.setType(getTypeFor(tree));
         return tree;
+    }
+
+    //########################################################################
+}
+
+
+/** !!! */
+public class GenTreeCloner extends GenTransformer {
+
+    //########################################################################
+    // Public Fields
+
+    /** The symbol cloner */
+    public final SymbolCloner cloner;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes a new instance. */
+    public GenTreeCloner(Global global, Type.Map map, SymbolCloner cloner) {
+        super(global, map);
+        this.cloner = cloner;
+    }
+
+    //########################################################################
+    // Public Methods
+
+    public Symbol getSymbolFor(Tree tree) {
+        switch (tree) {
+        case ValDef(_, _, _, _):
+            if (tree.symbol().owner().isClass()) break;
+            Symbol symbol = cloner.cloneSymbol(tree.symbol());
+            symbol.setType(transform(symbol.type()));
+            return symbol;
+        case LabelDef(_, _, _):
+            Symbol symbol = cloner.cloneSymbol(tree.symbol());
+            symbol.setType(transform(symbol.type()));
+            return symbol;
+        }
+        Symbol symbol = (Symbol)cloner.clones.get(tree.symbol());
+        assert !tree.definesSymbol() || symbol != null: tree;
+        return symbol != null ? symbol : tree.symbol();
     }
 
     //########################################################################
