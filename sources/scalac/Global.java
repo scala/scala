@@ -39,6 +39,7 @@ import scalac.symtab.*;
 // !!! >>> Interpreter stuff
 import scalac.symtab.Definitions;
 import scalac.symtab.classfile.PackageParser;
+import scalac.symtab.classfile.CLRPackageParser;
 import scalac.typechecker.AnalyzerPhase;
 import scalac.typechecker.Infer;
 import scalac.util.*;
@@ -335,7 +336,9 @@ public abstract class Global {
 
     /** Returns the root symbol loader. */
     public SymbolLoader getRootLoader() {
-        return new PackageParser(this, classPath.getRoot());
+        return target == TARGET_MSIL
+            ? new CLRPackageParser(this, classPath.getRoot())
+            : new PackageParser(this, classPath.getRoot());
     }
 
     /** the top-level compilation process
