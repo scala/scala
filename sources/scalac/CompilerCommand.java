@@ -85,6 +85,7 @@ public class CompilerCommand extends CommandParser {
     public final BooleanOptionParser Xmarkup;
     public final BooleanOptionParser Xnewmatch;
     public final BooleanOptionParser XpreserveWS;
+    public final BooleanOptionParser XrunTimeTypes;
 
     /*
      * Whole-program optimization options
@@ -278,6 +279,10 @@ public class CompilerCommand extends CommandParser {
 	this.Xinline = new BooleanOptionParser(this,
             "Xinline", "Inline method calls that can be resolved statically",
 	     false),
+
+        this.XrunTimeTypes = new BooleanOptionParser(this,
+            "Xrtt", "Enable run-time types",
+            false),
 
         this.unknown_options = new UnknownOptionParser(this),
 

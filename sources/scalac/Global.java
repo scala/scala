@@ -64,6 +64,7 @@ public abstract class Global {
     public final boolean uniqid;
     public final boolean newMatch;
     public final boolean xmlPreserveWS;
+    public final boolean runTimeTypes;
 
     public final boolean printtypes;
     public final boolean printtokens;
@@ -222,6 +223,7 @@ public abstract class Global {
         this.uniqid = args.uniqid.value;
         this.newMatch = args.Xnewmatch.value;
         this.xmlPreserveWS = args.XpreserveWS.value;
+        this.runTimeTypes = args.XrunTimeTypes.value;
         this.explaintypes = args.explaintypes.value;
         this.printtypes = args.types.value;
         this.printtokens = args.print.tokens;
@@ -271,6 +273,7 @@ public abstract class Global {
         this.PHASE = args.phases;
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
         // TODO: Enable TailCall for other backends when they handle LabelDefs
+        if (!runTimeTypes) args.phases.TYPESASVALUES.addSkipFlag();
         if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
         if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
 	if (target != TARGET_JVMFROMICODE) {
