@@ -1,4 +1,4 @@
-bug72.scala:5: object Set of type scala.collection.mutable.Set.type cannot be applied to (java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String) with expected result type scala.collection.mutable.Set[java.lang.String]
+bug72.scala:5: not found: value Set
         val weekDays : Set[String] = Set("Mon", "Tue", "Wed", "Thu", "Fri");
-                                        ^
+                                     ^
 one error found

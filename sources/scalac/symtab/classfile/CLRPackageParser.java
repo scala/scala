@@ -69,7 +69,8 @@ public final class CLRPackageParser extends PackageParser {
     }
 
     protected void removeHiddenMembers(Symbol clasz) {
-        // Ignore all ".class" files.
+        // Ignore all ".symbl" and ".class" files.
+        symbols.clear();
         classes.clear();
         super.removeHiddenMembers(clasz);
         // Classes/Objects in the root package are hidden.

@@ -10,6 +10,8 @@ package scalac.symtab.classfile;
 
 import java.util.Iterator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map.Entry;
 
 import scala.tools.util.AbstractFile;
 
@@ -36,6 +38,8 @@ public class PackageParser extends SymbolLoader {
 
     /** A table to collect .scala files */
     protected final HashMap/*<String,AbstractFile>*/ sources = new HashMap();
+    /** A table to collect .symbl files */
+    protected final HashMap/*<String,AbstractFile>*/ symbols = new HashMap();
     /** A table to collect .class files */
     protected final HashMap/*<String,AbstractFile>*/ classes = new HashMap();
     /** A table to collect subdirectories */
@@ -77,6 +81,11 @@ public class PackageParser extends SymbolLoader {
                 if (!classes.containsKey(name)) classes.put(name, file);
                 continue;
             }
+            if (filename.endsWith(".symbl")) {
+                String name = filename.substring(0, filename.length() - 6);
+                if (!symbols.containsKey(name)) symbols.put(name, file);
+                continue;
+            }
             if (filename.endsWith(".scala")) {
                 String name = filename.substring(0, filename.length() - 6);
                 if (!sources.containsKey(name)) sources.put(name, file);
@@ -92,7 +101,33 @@ public class PackageParser extends SymbolLoader {
      */
     protected void removeHiddenMembers(Symbol clasz) {
         // Classes/Objects in the root package are hidden.
-        if (clasz.isRoot()) { sources.clear(); classes.clear(); }
+        if (clasz.isRoot()) sources.clear();
+        if (clasz.isRoot()) symbols.clear();
+        if (clasz.isRoot()) classes.clear();
+        // For all files "<N>.class" find the longest M such that
+        // there is a file "<M>.symbl" and M equals N or "<M>$" is a
+        // prefix of N. If the file "<N>.class" is less recent than
+        // the file "<M>.symbl" ignore the ".class" file. Otherwise,
+        // if M equals N, ignore the ".symbl" file.
+        for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
+            Entry entry = (Entry)i.next();
+            String cname = (String)entry.getKey();
+            AbstractFile cfile = (AbstractFile)entry.getValue();
+            for (String zname = cname; true; ) {
+                AbstractFile zfile = (AbstractFile)symbols.get(zname);
+                if (zfile != null) {
+                    if (cfile.lastModified() <= zfile.lastModified()) {
+                        i.remove();
+                    } else if (zname == cname) {
+                        symbols.remove(zname);
+                    }
+                    break;
+                }
+                int index = zname.lastIndexOf('$');
+                if (index < 0) break;
+                zname = zname.substring(0, index);
+            }
+        }
         // Source versions hide compiled versions except if separate
         // compilation is enabled and the compiled version is more
         // recent. In that case the compiled version hides the source
@@ -102,8 +137,14 @@ public class PackageParser extends SymbolLoader {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
             AbstractFile sfile = (AbstractFile)entry.getValue();
+            AbstractFile zfile = (AbstractFile)symbols.get(name);
             AbstractFile cfile = (AbstractFile)classes.get(name);
             boolean hidden = false;
+            if (zfile != null)
+                if (separate && zfile.lastModified() > sfile.lastModified())
+                    hidden = true;
+                else
+                    symbols.remove(name);
             if (cfile != null)
                 if (separate && cfile.lastModified() > sfile.lastModified())
                     hidden = true;
@@ -113,6 +154,7 @@ public class PackageParser extends SymbolLoader {
         }
         // Packages are hidden by classes/objects with the same name.
         packages.keySet().removeAll(sources.keySet());
+        packages.keySet().removeAll(symbols.keySet());
         packages.keySet().removeAll(classes.keySet());
     }
 
@@ -129,6 +171,14 @@ public class PackageParser extends SymbolLoader {
             AbstractFile sfile = (AbstractFile)entry.getValue();
             Name classname = Name.fromString(name).toTypeName();
             SymbolLoader loader = new SourceCompleter(global, sfile);
+            clasz.newLoadedClass(0, classname, loader, members);
+        }
+        for (Iterator i = symbols.entrySet().iterator(); i.hasNext(); ) {
+            HashMap.Entry entry = (HashMap.Entry)i.next();
+            String name = (String)entry.getKey();
+            AbstractFile zfile = (AbstractFile)entry.getValue();
+            Name classname = Name.fromString(name).toTypeName();
+            SymbolLoader loader = new SymblParser(global, zfile);
             clasz.newLoadedClass(0, classname, loader, members);
         }
         for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
