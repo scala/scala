@@ -81,7 +81,7 @@ but customize `scala-default-interpreter' instead.")
       (delete-file scala-tmp-file)
     (setq scala-tmp-file (make-temp-file "scala_tmp")))
   (write-region start end scala-tmp-file nil 'quiet)
-  (scala-send-string ":l %s" scala-tmp-file))
+  (scala-send-string ":use %s" scala-tmp-file))
 
 ;;;###autoload
 (defun scala-eval-buffer ()
@@ -103,13 +103,13 @@ Used for determining the default in the next one.")
   (comint-check-source file-name)
   (setq scala-prev-l/c-dir/file (cons (file-name-directory file-name)
                                       (file-name-nondirectory file-name)))
-  (scala-send-string ":l %s" file-name))
+  (scala-send-string ":load %s" file-name))
 
 ;;;###autoload
 (defun scala-quit-interpreter ()
   "Quit Scala interpreter."
   (interactive)
   (scala-check-interpreter-running)
-  (scala-send-string "\n:q"))
+  (scala-send-string "\n:quit"))
 
 (provide 'inferior-scala-mode)
