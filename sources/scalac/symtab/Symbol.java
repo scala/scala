@@ -557,7 +557,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Is this symbol static (i.e. with no outer instance)? */
     public final boolean isStatic() {
-        return isRoot() || (attrs & IS_STATIC) != 0 || owner.isStaticOwner();
+        return isRoot() || hasStaticAttribute() || owner.isStaticOwner();
+    }
+
+    public final boolean hasStaticAttribute() {
+        return (attrs & IS_STATIC) != 0;
     }
 
     /** Does this symbol denote a class that defines static symbols? */
