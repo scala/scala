@@ -4,8 +4,7 @@ import scala.collection.mutable;
 import scala.runtime.matching._;
 import scalac.symtab._;
 
-import scala.util.alphabet.{ IntLabel, IntAlphabet };
-import scala.util.grammar.{ AnyTreeRHS, LabelledTreeRHS, TreeRHS, ConsRHS, HedgeRHS };
+import scala.util.grammar.{ AnyTreeRHS, LabelledRHS, TreeRHS, ConsRHS, HedgeRHS };
 
 package scala.tools.scalac.transformer.matching {
 
@@ -97,7 +96,7 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
         treeRules.foreach { treeRule => treeRule match {
           case AnyTreeRule( t ) => tmp = add( t.i, AnyTreeRHS, tmp );
           //case AnyNodeRule( t, _ ) => tmp = add( t.i, treeRule, tmp ) // ??!!!!!!!!!!!!!!!!!!!!!!
-          case TreeRule( t, i, h ) => tmp = add( t.i, LabelledTreeRHS(IntLabel(i),h.i), tmp )
+          case TreeRule( t, i, h ) => tmp = add( t.i, LabelledRHS(TestLabel(i),h.i), tmp )
         }};
         tmp
       };
