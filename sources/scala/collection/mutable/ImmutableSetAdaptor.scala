@@ -19,8 +19,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class ImmutableSetAdaptor[A, B <: scala.collection.immutable.Set[A, B]]
-            (s: B) extends Set[A] {
+class ImmutableSetAdaptor[A](s: scala.collection.immutable.Set[A]) extends Set[A] {
 
     protected var set = s;
 
@@ -46,5 +45,5 @@ class ImmutableSetAdaptor[A, B <: scala.collection.immutable.Set[A, B]]
 
     def clear: Unit = { set = empty; }
 
-    protected def empty: B = s;
+    protected def empty: scala.collection.immutable.Set[A] = s;
 }

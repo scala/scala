@@ -22,7 +22,7 @@ object ListSet {
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  */
-class ListSet[A] with Set[A, ListSet[A]] {
+class ListSet[A] with Set[A] {
 
     def size: Int = 0;
 

@@ -19,8 +19,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class ImmutableMapAdaptor[A, B, C <: scala.collection.immutable.Map[A, B, C]]
-        (m: C) extends Map[A, B] {
+class ImmutableMapAdaptor[A, B](m: scala.collection.immutable.Map[A, B]) extends Map[A, B] {
 
     protected var imap = m;
 
@@ -60,5 +59,5 @@ class ImmutableMapAdaptor[A, B, C <: scala.collection.immutable.Map[A, B, C]]
 
     override def mappingToString(p: Pair[A, B]) = imap.mappingToString(p);
 
-    protected def empty: C = m;
+    protected def empty: scala.collection.immutable.Map[A, B] = m;
 }

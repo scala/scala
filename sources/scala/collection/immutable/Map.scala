@@ -10,17 +10,17 @@
 package scala.collection.immutable;
 
 
-trait Map[A, B, +This <: Map[A, B, This]]: This with scala.collection.Map[A, B] {
+trait Map[A, B] with scala.collection.Map[A, B] {
 
-    def update(key: A, value: B): This;
+    def update(key: A, value: B): Map[A, B];
 
-    def -(key: A): This;
+    def -(key: A): Map[A, B];
 
     def +(key: A): MapTo = new MapTo(key);
 
-    def incl(mappings: Pair[A, B]*): This = incl(mappings);
+    def incl(mappings: Pair[A, B]*): Map[A, B] = incl(mappings);
 
-    def incl(map: Iterable[Pair[A, B]]): This = {
+    def incl(map: Iterable[Pair[A, B]]): Map[A, B] = {
         val iter = map.elements;
         var res = this;
         while (iter.hasNext) {
@@ -30,9 +30,9 @@ trait Map[A, B, +This <: Map[A, B, This]]: This with scala.collection.Map[A, B] 
         res;
     }
 
-    def excl(keys: A*): This = excl(keys);
+    def excl(keys: A*): Map[A, B] = excl(keys);
 
-    def excl(keys: Iterable[A]): This = {
+    def excl(keys: Iterable[A]): Map[A, B] = {
         val iter = keys.elements;
         var res = this;
         while (iter.hasNext) {
@@ -41,7 +41,7 @@ trait Map[A, B, +This <: Map[A, B, This]]: This with scala.collection.Map[A, B] 
         res;
     }
 
-    def map(f: (A, B) => B): This = {
+    def map(f: (A, B) => B): Map[A, B] = {
         var res = this;
         elements foreach {
             case Pair(key, value) => res = res.update(key, f(key, value));
@@ -49,7 +49,7 @@ trait Map[A, B, +This <: Map[A, B, This]]: This with scala.collection.Map[A, B] 
         res;
     }
 
-    def filter(p: (A, B) => Boolean): This = {
+    def filter(p: (A, B) => Boolean): Map[A, B] = {
         var res = this;
         toList foreach {
             case Pair(key, value) => if (p(key, value)) { res = res.excl(key); }
@@ -73,6 +73,6 @@ trait Map[A, B, +This <: Map[A, B, This]]: This with scala.collection.Map[A, B] 
     def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2;
 
     class MapTo(key: A) {
-        def ->(value: B): This = update(key, value);
+        def ->(value: B): Map[A, B] = update(key, value);
     }
 }

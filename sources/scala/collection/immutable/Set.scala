@@ -18,31 +18,31 @@ package scala.collection.immutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 19/07/2003
  */
-trait Set[A, +This <: Set[A, This]]: This with scala.collection.Set[A] {
+trait Set[A] with scala.collection.Set[A] {
 
-    def +(elem: A): This;
+    def +(elem: A): Set[A];
 
-    def incl(elems: A*): This = incl(elems);
+    def incl(elems: A*): Set[A] = incl(elems);
 
-    def incl(that: Iterable[A]): This = {
+    def incl(that: Iterable[A]): Set[A] = {
         var res = this;
         that.elements.foreach(elem => res = res + elem);
         res;
     }
 
-    def -(elem: A): This;
+    def -(elem: A): Set[A];
 
-    def excl(elems: A*): This = excl(elems);
+    def excl(elems: A*): Set[A] = excl(elems);
 
-    def excl(that: Iterable[A]): This = {
+    def excl(that: Iterable[A]): Set[A] = {
         var res = this;
         that.elements.foreach(elem => res = res - elem);
         res;
     }
 
-    def intersect(that: scala.collection.Set[A]): This = filter(that.contains);
+    def intersect(that: scala.collection.Set[A]): Set[A] = filter(that.contains);
 
-    def filter(p: A => Boolean): This = {
+    def filter(p: A => Boolean): Set[A] = {
         var res = this;
         toList foreach {
             elem => if (p(elem)) { res = res - elem; }

@@ -14,8 +14,8 @@ package scala.collection.immutable;
  *  @author  Erik Stenman, Matthias Zenger
  *  @version 1.0, 23/07/2003
  */
-class TreeMap[KEY,VALUE](order:Order[KEY]) extends
-    Map[KEY, VALUE, TreeMap[KEY,VALUE]]
+class TreeMap[KEY,VALUE](order:Order[KEY])
+    extends Map[KEY, VALUE]
     with Tree[KEY,Pair[KEY,VALUE]](order,
 	{(entry:Pair[KEY,VALUE]) =>
 	    entry.match {case Pair(key,_value)=> key:KEY}

@@ -29,7 +29,7 @@ object ListMap {
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  */
-class ListMap[A, B] with Map[A, B, ListMap[A, B]] {
+class ListMap[A, B] with Map[A, B] {
 
     def size: Int = 0;
 
