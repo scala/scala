@@ -517,8 +517,7 @@ public class SymbolTablePrinter {
         case SingleType(Type pre, Symbol sym):
             return printPrefix(pre).printSymbolName(sym);
 	case ConstantType(Type base, AConstant value):
-	    return printType(base)
-		.print("(").print(value.toString()).print(")");
+	    return printType(base).printConstantValue(value);
         case CompoundType(Type[] parts, Scope members):
             return printTypes(parts," with ").space()
                 .printScope(members,true)
@@ -581,6 +580,14 @@ public class SymbolTablePrinter {
         default:
             return print("#");
         }
+    }
+
+    //########################################################################
+    // Public Methods - Printing constants
+
+    /** Prints the given constant value. */
+    public SymbolTablePrinter printConstantValue(AConstant value) {
+        return print("(").print(value.toString()).print(")");
     }
 
     //########################################################################

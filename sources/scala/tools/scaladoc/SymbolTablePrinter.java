@@ -58,7 +58,7 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
      *
      * @param symbol
      */
-    public SymbolTablePrinter printUsedSymbolName(Symbol symbol) {
+    public SymbolTablePrinter printSymbolName(Symbol symbol) {
 	printSymbol(symbol, true);
         printSymbolUniqueId(symbol);
         return this;
@@ -199,55 +199,11 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
     }
 
     //########################################################################
-    // Public Methods - Printing types
+    // Public Methods - Printing constants
 
-    /**
-     * Prints the type and prefix common part of the given type.
-     *
-     * @param type
-     */
-    public SymbolTablePrinter printCommonPart(Type type) {
-        switch (type) {
-	case ThisType(Symbol sym):
-            if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
-		return print("this");
-            printUsedSymbolName(sym);
-            print(".this"); // vincent
-            return this;
-
-	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (!global.debug) {
-                if (type.isFunctionType()) {
-                    printFunctionType(args);
-		    return this;
-		}
-		if (sym.isAnonymousClass() || sym.isCompoundSym())
-                    printTemplateType(pre.memberInfo(sym).parents());
-            }
-            printPrefix(pre);
-            printUsedSymbolName(sym);
-	    if (args.length != 0) {
-                print('[');
-                printTypes(args, ",");
-                print(']');
-            }
-            return this;
-
-	case SingleType(Type pre, Symbol sym):
-            printPrefix(pre);
-            printUsedSymbolName(sym);
-            return this;
-
-	case ConstantType(Type base, AConstant value):
-	    printType(base);
-// 	    print("(");
-// 	    print(value.toString());
-// 	    print(")");
-	    return this;
-
-	default:
-            return super.printCommonPart(type);
-        }
+    /** Prints the given constant value. */
+    public SymbolTablePrinter printConstantValue(AConstant value) {
+        return this;
     }
 
     //########################################################################
