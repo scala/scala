@@ -286,7 +286,8 @@ class UnCurry(global: scalac_Global, descr: UnCurryPhase) extends OwnerTransform
       val sym: Symbol = arg.symbol();
       if (sym == null || (sym.flags & DEF) == 0)
         transform(
-	  gen.mkUnitFunction(arg, descr.uncurry(arg.getType().widen()), currentOwner))
+	  gen.mkUnitFunction(arg, descr.uncurry(arg.getType().widen()),
+                             currentOwner, true))
       else {
 	val arg1: Tree = transform(arg);
 	arg1 match {
