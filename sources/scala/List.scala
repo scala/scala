@@ -10,9 +10,11 @@
 package scala;
 
 
-/** This object provides methods for creating specialized lists.
+/**
+ * This object provides methods for creating specialized lists, and for
+ * transforming special kinds of lists (e.g. lists of lists).
  *
- *  @author  Martin Odersky
+ *  @author  Martin Odersky and others
  *  @version 1.0, 15/07/2003
  */
 object List {
@@ -49,11 +51,22 @@ object List {
     loop(0)
   }
 
+  /**
+   * Concatenate all the elements of a given list of lists.
+   * @param l the list of lists that are to be concatenated
+   * @return the concatenation of all the lists
+   */
   def flatten[a](l: List[List[a]]): List[a] = l match {
     case Nil => Nil
     case head :: tail => head ::: flatten(tail)
   }
 
+  /**
+   * Transform a list of pair into a pair of lists.
+   * @param l the list of pairs to unzip
+   * @return a pair of lists: the first list in the pair contains the
+   * list
+   */
   def unzip[a,b](l: List[Pair[a,b]]): Pair[List[a], List[b]] = l match {
     case Nil => Pair(Nil, Nil)
     case Pair(f, s) :: tail =>
@@ -68,7 +81,7 @@ object List {
  *  implement the abstract members <code>isEmpty</code>,
  *  <code>head</code> and <code>tail</code>.
  *
- *  @author  Martin Odersky
+ *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
 trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
@@ -113,6 +126,13 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
     case head :: tail => head :: (tail ::: this);
   };
 
+  /** Reverse the given prefix and append the current list to that.
+   * This function is equivalent to an application of <code>reverse</code>
+   * on the prefix followed by a call to <code>:::</code>, but more
+   * efficient (and tail recursive).
+   * @param prefix the prefix to reverse and then prepend
+   * @return the concatenation of the reversed prefix and the current list.
+   */
   def reverse_:::[b >: a](prefix: List[b]): List[b] = prefix match {
     case Nil => this
     case head :: tail => tail reverse_::: (head :: this)
@@ -177,6 +197,11 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
     if (n == 0) this
     else (tail drop (n-1));
 
+  /** Return the rightmost <code>n</code> elements from this list.
+   * @param n the number of elements to take
+   * @return the suffix of length <code>n</code> of the list
+   * @throws java.lang.RuntimeException if the list is too short.
+   */
   def takeRight(n: Int): List[a] = {
     def loop(lead: List[a], lag: List[a]): List[a] = lead match {
       case Nil => lag
@@ -185,6 +210,11 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
     loop(drop(n), this)
   };
 
+  /** Return the list wihout its rightmost <code>n</code> elements.
+   * @param n the number of elements to take
+   * @return the suffix of length <code>n</code> of the list
+   * @throws java.lang.RuntimeException if the list is too short.
+   */
   def dropRight(n: Int): List[a] = {
     def loop(lead: List[a], lag: List[a]): List[a] = lead match {
       case Nil => Nil
@@ -193,6 +223,12 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
     loop(drop(n), this)
   }
 
+  /** Split the list at a given point and return the two parts thus
+   * created.
+   * @param n the position at which to split
+   * @return a pair of lists composed of the first <code>n</code>
+   * elements, and the other elements.
+   */
   def splitAt(n: Int): Pair[List[a], List[a]] =
     if (n == 0) Pair(Nil, this)
     else {
@@ -220,6 +256,12 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
     if (isEmpty || !p(head)) this
     else tail dropWhile p;
 
+  /** Return the longest prefix of the list whose elements all satisfy
+   * the given predicate, and the rest of the list.
+   * @param p the test predicate
+   * @return a pair consisting of the longest prefix of the list whose
+   * elements all satisfy <code>p</code>, and the rest of the list.
+   */
   def span(p: a => Boolean): Pair[List[a], List[a]] = match {
     case Nil => Pair(Nil, Nil)
     case head :: tail =>
@@ -230,6 +272,8 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
         Pair(Nil, this)
   };
 
+  /** Like <code>span</code> but with the predicate inverted.
+   */
   def break(p: a => Boolean): Pair[List[a], List[a]] = span { x => !p(x) };
 
   /** Returns the <code>n</code>-th element of this list. The first element
@@ -250,6 +294,13 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
     case head :: tail => f(head) :: (tail map f)
   };
 
+  /**
+   * Apply a function to all the elements of the list, and return the
+   * reversed list of results. This is equivalent to a call to <code>map</code>
+   * followed by a call to <code>reverse</code>, but more efficient.
+   * @param f the function to apply to each elements.
+   * @return the reversed list of results.
+   */
   def reverseMap[b](f: a => b): List[b] = {
     def loop(l: List[a], res: List[b]): List[b] = l match {
       case Nil => res
@@ -278,11 +329,26 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
       if (p(head)) head :: (tail filter p) else tail filter p
   };
 
+  /**
+   * Remove all elements of the list which satisfy the predicate
+   * <code>p</code>. This is like <code>filter</code> with the
+   * predicate inversed.
+   * @param p the predicate to use to test elements
+   * @return the list without all elements which satisfy <code>p</code>
+   */
   def remove(p: a => Boolean): List[a] = match {
     case Nil => this
     case head :: tail =>
       if (p(head)) tail remove p else head :: (tail remove p)
   };
+
+  /**
+   * Partition the list in two sub-lists according to a predicate.
+   * @param p the predicate on which to partition
+   * @return a pair of lists: the list of all elements which satisfy
+   * <code>p</code> and the list of all elements which do not. The
+   * relative order of the elements in the sub-lists is the same as in
+   * the original list. */
 
   def partition(p: a => Boolean): Pair[List[a], List[a]] = match {
     case Nil => Pair(Nil, Nil)
@@ -292,6 +358,11 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
       else Pair(taily, head :: tailn)
   };
 
+  /**
+   * Count the number of elements in the list which satisfy a predicate.
+   * @param p the predicate for which to count
+   * @return the number of elements satisfying <code>p</code>.
+   */
   def count(p: a => Boolean): Int = match {
     case Nil => 0
     case head :: tail => if (p(head)) 1 + (tail count p) else (tail count p)
@@ -314,6 +385,13 @@ trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
   def exists(p: a => Boolean): Boolean =
     !isEmpty && (p(head) || (tail exists p));
 
+  /**
+   * Find and return the first element of the list satisfying a
+   * predicate, if any.
+   * @param p the predicate
+   * @return the first element in the list satisfying <code>p</code>,
+   * or <code>None</code> if none exists.
+   */
   def find(p: a => Boolean): Option[a] = match {
     case Nil => None
     case head :: tail => if (p(head)) Some(head) else tail find p
