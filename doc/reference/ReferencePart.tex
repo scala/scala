@@ -760,7 +760,7 @@ transitive relation that satisfies the following conditions.
 \item If $T \conforms U_i$ for $i = 1 \commadots n$ and for every
       binding of a type or value $x$ in $R$ there exists a member
       binding of $x$ in $T$ subsuming it, then $T$ conforms to the
-      compound type ~\lstinline@$T_1$ with $\ldots$ with $T_n$ {$R\,$}@.
+      compound type ~\lstinline@$U_1$ with $\ldots$ with $U_n$ {$R\,$}@.
 \item If
         $T_i \equiv T'_i$ for $i = 1 \commadots n$ and $U$ conforms to $U'$ 
         then the method type $(T_1 \commadots T_n) U$ conforms to
@@ -4297,7 +4297,7 @@ and consecutive occurrences of whitespace are replaced by a single space
 character \U{0020}. This behaviour can be changed to preserve all whitespace
 with a compiler option.
 \syntax\begin{lstlisting}
-Attribute     ::=    Name Eq AttValue	                                 
+Attribute     ::=    Name Eq AttValue                                    
 
 AttValue      ::=    `"' {CharQ | CharRef} `"'
                 |    `'' {CharA | CharRef} `''
