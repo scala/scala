@@ -4,25 +4,28 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scala;
 
 
 class ListMap[A, B] extends MutableMap[A, B] with DefaultMapModel[A, B] {
 
-	var xs: List[Entry] = Nil;
+    var xs: List[Entry] = Nil;
 
     def size: Int = xs.length;
 
     override def clear: Unit = { xs = Nil; }
 
- 	protected def findEntry(key: A) = xs find {e => e.key == key};
+    protected def findEntry(key: A) = xs find {e => e.key == key};
 
-	protected def addEntry(e: Entry) = { xs = e :: xs; }
+    protected def addEntry(e: Entry) = { xs = e :: xs; }
 
     def remove(key: A) = { xs = xs filter {e => e.key != key}; }
 
-	protected def entries = xs.elements;
+    protected def entries = xs.elements;
+
 }

@@ -4,27 +4,31 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scala;
 
 /** I promise, there will be some documentation soon! :-) Matthias
  */
 class ListSet[A] extends MutableSet[A] {
-	protected var elems: List[A] = Nil;
 
-	def size: Int = elems.length;
+    protected var elems: List[A] = Nil;
 
-	def contains(elem: A): Boolean = elems.contains(elem);
+    def size: Int = elems.length;
 
-	def add(elem: A): Unit = if (!elems.contains(elem)) elems = elem :: elems;
+    def contains(elem: A): Boolean = elems.contains(elem);
 
-	def remove(elem: A): Unit = { elems = elems.filter(e => e != elem); }
+    def add(elem: A): Unit = if (!elems.contains(elem)) elems = elem :: elems;
 
-	def clear: Unit = { elems = Nil; }
+    def remove(elem: A): Unit = { elems = elems.filter(e => e != elem); }
 
-	def elements: Iterator[A] = elems.elements;
+    def clear: Unit = { elems = Nil; }
 
-	override def toList: List[A] = elems;
+    def elements: Iterator[A] = elems.elements;
+
+    override def toList: List[A] = elems;
+
 }
