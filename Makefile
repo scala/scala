@@ -294,6 +294,7 @@ $(PROJECT_JAR_ARCHIVE)	:
 
 ##############################################################################
 
+include $(ROOT)/support/make/cygwin.mk
 include $(ROOT)/support/make/jc.mk
 include $(ROOT)/support/make/jar.mk
 include $(ROOT)/support/make/exec.mk
