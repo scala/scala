@@ -436,7 +436,7 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
 
     /* returns statements that do the work of the right-transducer
      */
-    Tree[] getStms( Tree trace ) {
+    Tree[] getStms( Tree trace, Unit unit, Tree body ) {
 
         Vector v = new Vector();
 
@@ -464,6 +464,21 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
             System.out.println( it.next() );
         }
         */
+
+        Transformer treeCloner = new Transformer(unit.global) {
+                public Tree transform(Tree tree) {
+                    tree = super.transform(tree);
+                    if (tree.hasSymbol()) {
+                        Object symbol = helpMap2.get(tree.symbol());
+                        if (symbol != null) tree.setSymbol((Symbol)symbol);
+                    }
+                    return tree;
+                }
+            };
+        //System.out.println("helpmap");
+        //System.out.println( rtis.helpMap2 );
+
+        v.add( treeCloner.transform( body ) );
 
 
         Tree result[] = new Tree[ v.size() ];

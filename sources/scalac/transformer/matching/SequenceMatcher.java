@@ -66,31 +66,15 @@ public class SequenceMatcher extends PatternTool {
             new RightTracerInScala( dRight, seqVars, _m.owner,
                                     cf, pat, elementType );
 
-        Tree stms2[] = rtis.getStms( theTrace );
+        Tree stms2[] = rtis.getStms( theTrace, unit, body );
 
         // paste statements together
 
-        Tree items[] = new Tree[ stms.length + stms2.length + 1 ];
+        Tree items[] = new Tree[ stms.length + stms2.length ];
 
         System.arraycopy( stms, 0, items, 0, stms.length );
         System.arraycopy( stms2, 0, items, stms.length, stms2.length );
 
-        items[ stms.length + stms2.length ] = body;
-
-        Transformer treeCloner = new Transformer(unit.global) {
-                public Tree transform(Tree tree) {
-                    tree = super.transform(tree);
-                    if (tree.hasSymbol()) {
-                        Object symbol = rtis.helpMap2.get(tree.symbol());
-                        if (symbol != null) tree.setSymbol((Symbol)symbol);
-                    }
-                    return tree;
-                }
-            };
-        //System.out.println("helpmap");
-        //System.out.println( rtis.helpMap2 );
-
-        items[ stms.length + stms2.length ] = treeCloner.transform( body );
         return gen.mkBlock( body.pos, items );
     }
 
