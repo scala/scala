@@ -150,7 +150,7 @@ public class Erasure extends Transformer implements Modifiers {
     /** Subtyping relation on erased types.
      */
     boolean isSubType(Type tp1, Type tp2) {
- 	if (tp1.isSameAs(tp2)) return true;
+ 	if (isSameAs(tp1, tp2)) return true;
 	switch (tp2) {
 	case UnboxedType(_):
 	    return tp1.isSubType(tp2);
@@ -164,13 +164,22 @@ public class Erasure extends Transformer implements Modifiers {
 	return isSubClass(tp1, tp2);
     }
 
+    /** Equality relation on erased types.
+     */
+    boolean isSameAs(Type tp1, Type tp2) {
+        global.nextPhase();
+        boolean result = tp1.isSameAs(tp2);
+        global.prevPhase();
+        return result;
+    }
+
     Tree coerce(Tree tree, Type pt) {
 	return isSubType(tree.type, pt) ? tree : cast(tree, pt);
     }
 
     Tree cast(Tree tree, Type pt) {
 	if (global.debug) global.log("cast " + tree + ":" + tree.type + " to " + pt);//debug
-	if (tree.type.isSameAs(pt)) {
+	if (isSameAs(tree.type, pt)) {
 	    return tree;
 	} else if (isSubType(tree.type, pt)) {
 	    return noTyped ? tree : gen.Typed(tree, pt);
@@ -232,7 +241,7 @@ public class Erasure extends Transformer implements Modifiers {
 	if (bridgesOfSym == null) bridgesOfSym = SymSet.EMPTY;
 	Symbol[] brs = bridgesOfSym.toArray();
 	for (int i = 0; i < brs.length; i++) {
-	    if (brs[i].type().isSameAs(bridgeType)) return;
+	    if (isSameAs(brs[i].type(), bridgeType)) return;
 	}
 	Symbol bridgeSym = sym.cloneSymbol();
 	bridgeSym.flags |= (SYNTHETIC | BRIDGE);
@@ -245,7 +254,7 @@ public class Erasure extends Transformer implements Modifiers {
 	switch (overSym.type()) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    for (int i = 0; i < alts.length; i++) {
-		if (sym != alts[i] && bridgeType.isSameAs(alttypes[i].erasure())) {
+		if (sym != alts[i] && isSameAs(bridgeType, alttypes[i].erasure())) {
 		    unit.error(sym.pos, "overlapping overloaded alternatives; " +
 			       "overridden " + sym1 + sym1.locationString() +
 			       " has same erasure as " + alts[i] +
@@ -296,7 +305,7 @@ public class Erasure extends Transformer implements Modifiers {
 		//if (sym1.kind != NONE) System.out.println("overridden: " + sym1 + sym1.locationString() + " by " + sym + sym.locationString());//DEBUG
 
 		if (sym1.kind != Kinds.NONE &&
-		    !sym1.type().erasure().isSameAs(sym.type().erasure())) {
+		    !isSameAs(sym1.type().erasure(), sym.type().erasure())) {
 
 		    //System.out.println("add bridge: " + sym1 + sym1.locationString() + " by " + sym + sym.locationString());//DEBUG
 
