@@ -114,7 +114,7 @@ public class Interpreter {
         if (program.length > 0) load(lfiles = program);
         if (global.reporter.errors() == 0 && main != null) call(main, args);
         // Compute something to start compiler and force loading of Predef
-        if (interactive && program.length == 0 && main == null) eval("null");
+        // !!! if (interactive && program.length == 0 && main == null) eval("null");
         if (interactive) while (handle(read()));
         global.stop("total");
         if (!interactive) global.reporter.printSummary();
@@ -223,7 +223,7 @@ public class Interpreter {
 
     public boolean eval(String input) {
         if (input.trim().length() == 0) return true;
-        global.compile(input, true);
+        global.compile(input + ";", true);
         return interpret(true);
     }
 
@@ -262,12 +262,12 @@ public class Interpreter {
     }
 
     public void show(EvaluatorResult result, boolean interactive) {
+        // !!! remove case Value from EvaluatorResult
         switch (result) {
         case Void:
             return;
         case Value(Object value):
-            // !!! if (value != null)
-            if (interactive && value != null) writer.println(value);
+            // !!! if (interactive && value != null) writer.println(value);
             return;
         case Error(EvaluatorException exception):
             writer.println(exception.mkString(global));
