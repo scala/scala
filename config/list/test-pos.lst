@@ -72,7 +72,6 @@ pos/valdefs.scala
 pos/vincent.scala
 
 cours/constr.scala
-cours/lisp.scala
 cours/sim.scala
 cours/week10.scala
 cours/week10a.scala
