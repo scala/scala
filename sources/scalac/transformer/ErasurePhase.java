@@ -75,12 +75,24 @@ public class ErasurePhase extends Phase {
                 throw Debug.abort("illegal case", tp);
             }
         }
+        if (sym.isTerm() && sym.isParameter()) {
+            if (primitives.getPrimitive(sym.owner()) == Primitive.BOX) {
+                switch (tp) {
+                case TypeRef(Type prefix, Symbol clasz, Type[] args):
+                    if (args.length > 0 && args[0].symbol().isAbstractType())
+                        return definitions.ANYREF_CLASS.nextType();
+                    break;
+                default:
+                    throw Debug.abort("illegal case", tp);
+                }
+            }
+        }
         if (sym.isType()) return tp;
         // if (sym == definitions.NULL) return tp.resultType().erasure();
         switch (primitives.getPrimitive(sym)) {
         case Primitive.IS : return Type.PolyType(tp.typeParams(), Type.MethodType(tp.valueParams(), tp.resultType().erasure()));
         case Primitive.AS : return tp;
-        case Primitive.BOX: return eraseParams(tp);
+        case Primitive.BOX: return eraseBoxMethodType(tp);
         case Primitive.AS__ARRAY:
             return Type.MethodType(Symbol.EMPTY_ARRAY, definitions.ANY_CLASS.nextType());
         default           : return tp.erasure();
@@ -99,16 +111,16 @@ public class ErasurePhase extends Phase {
     //########################################################################
     // Private Methods
 
-    private Type eraseParams(Type tp) {
-        switch (tp) {
+    private Type eraseBoxMethodType(Type type) {
+        switch (type) {
         case PolyType(_, Type result):
-            return eraseParams(result);
+            return eraseBoxMethodType(result);
         case MethodType(Symbol[] params, Type result):
-            Symbol[] params1 = Type.erasureMap.map(params);
-            if (params1 == params) return tp;
-            else return Type.MethodType(params1, result);
+            return Type.MethodType(params, eraseBoxMethodType(result));
+        case TypeRef(Type prefix, Symbol clasz, Type[] args):
+            return Type.TypeRef(prefix, clasz, Type.EMPTY_ARRAY);
         default:
-            return tp;
+            throw Debug.abort("illegal case", type);
         }
     }
 

@@ -21,49 +21,47 @@ import scala.Long;
 import scala.Float;
 import scala.Double;
 import scala.Array;
-import java.lang.Object;
 
-/** @meta class extends java.lang.Object;
- * Run-time support functions for Scala.
- */
 public abstract class RunTime {
 
-    /** @meta method () scala.Unit;
-     */
-    public void test() {}
-
-    public static final Unit UNIT_VAL = new Unit() {};
-
-    private static ClassLoader loader = ClassLoader.getSystemClassLoader();
+    //########################################################################
+    // Private Constants
 
     private static final int BITS       = 8;
     private static final int ARRAY_SIZE = 2 << BITS;
     private static final int INDEX_MASK = ARRAY_SIZE - 1;
     private static final int CHECK_MASK = ~(ARRAY_SIZE / 2 - 1);
 
-    private static final Boolean falseVal =
-        new Boolean() { public boolean asBoolean() { return false; } };
-    private static final Boolean trueVal =
-        new Boolean() { public boolean asBoolean() { return true ; } };
-
-    private static final Byte [] bval = new Byte [256];
-    private static final Short[] sval = new Short[ARRAY_SIZE];
-    private static final Char [] cval = new Char [ARRAY_SIZE / 2];
-    private static final Int  [] ival = new Int  [ARRAY_SIZE];
-    private static final Long [] lval = new Long [ARRAY_SIZE];
+    private static final UValue uvalue   = new UValue();
+    private static final ZValue zvalue_f = new ZValue(false);
+    private static final ZValue zvalue_t = new ZValue(true);
+    private static final BValue bvalue[] = new BValue[256];
+    private static final SValue svalue[] = new SValue[ARRAY_SIZE];
+    private static final CValue cvalue[] = new CValue[ARRAY_SIZE / 2];
+    private static final IValue ivalue[] = new IValue[ARRAY_SIZE];
+    private static final LValue lvalue[] = new LValue[ARRAY_SIZE];
 
     static {
-        for (int i = 0; i < bval.length; i++) bval[i] = box0((byte)i);
+        for (int i = 0; i < bvalue.length; i++)
+            bvalue[i] = new BValue((byte)i);
         for (int i = 0; i < ARRAY_SIZE / 2; i++) {
-            sval[i] = box0((short)i);
-            cval[i] = box0((char )i);
-            ival[i] = box0((int  )i);
-            lval[i] = box0((long )i);
-            sval[i + ARRAY_SIZE / 2] = box0((short)(CHECK_MASK | i));
-            ival[i + ARRAY_SIZE / 2] = box0((int  )(CHECK_MASK | i));
-            lval[i + ARRAY_SIZE / 2] = box0((long )(CHECK_MASK | i));
+            svalue[i] = new SValue((short)i);
+            cvalue[i] = new CValue((char )i);
+            ivalue[i] = new IValue((int  )i);
+            lvalue[i] = new LValue((long )i);
+            svalue[i + ARRAY_SIZE / 2] = new SValue((short)(CHECK_MASK | i));
+            ivalue[i + ARRAY_SIZE / 2] = new IValue((int  )(CHECK_MASK | i));
+            lvalue[i + ARRAY_SIZE / 2] = new LValue((long )(CHECK_MASK | i));
         }
     }
+
+    //########################################################################
+    // Private Variables
+
+    private static ClassLoader loader = ClassLoader.getSystemClassLoader();
+
+    //########################################################################
+    // Public Functions - Getting & setting class loader
 
     public static ClassLoader getClassLoader() {
         return loader;
@@ -73,222 +71,99 @@ public abstract class RunTime {
         RunTime.loader = loader;
     }
 
+    //########################################################################
+    // Public Functions - Boxing primitives
+
     public static Unit box() {
-	return UNIT_VAL;
+	return uvalue;
     }
 
-    public static Boolean box(final boolean x) {
-        return x ? trueVal : falseVal;
+    public static Boolean box(boolean x) {
+        return x ? zvalue_t : zvalue_f;
     }
 
-    public static Byte box(final byte x) {
-        return bval[x & 0x000000FF];
+    public static Byte box(byte x) {
+        return bvalue[x & 0x000000FF];
     }
 
-    private static Byte box0(final byte x) {
-        return new Byte() {
-	    public double asDouble() { return (double)x; }
-	    public float asFloat() { return (float)x; }
-	    public long asLong() { return (long)x; }
-	    public int asInt() { return (int)x; }
-	    public char asChar() { return (char)x; }
-	    public short asShort() { return (short)x; }
-	    public byte asByte() { return (byte)x; }
-
-	};
-    }
-
-    public static Short box(final short x) {
+    public static Short box(short x) {
         int c = x & CHECK_MASK;
-        return c == 0 || c == CHECK_MASK ? sval[x & INDEX_MASK] : box0(x);
+        if (c == 0 || c == CHECK_MASK) return svalue[x & INDEX_MASK];
+        return new SValue(x);
     }
 
-    private static Short box0(final short x) {
-	return new Short() {
-            public double asDouble() { return (double)x; }
-            public float asFloat() { return (float)x; }
-            public long asLong() { return (long)x; }
-            public int asInt() { return (int)x; }
-            public char asChar() { return (char)x; }
-            public short asShort() { return (short)x; }
-            public byte asByte() { return (byte)x; }
-        };
-    }
-
-    public static Char box(final char x) {
+    public static Char box(char x) {
         int c = (int)x & CHECK_MASK;
-        return c == 0 ? cval[(int)x & INDEX_MASK] : box0(x);
+        if (c == 0) return cvalue[(int)x & INDEX_MASK];
+        return new CValue(x);
     }
 
-    private static Char box0(final char x) {
-        return new Char() {
-            public double asDouble() { return (double)x; }
-            public float asFloat() { return (float)x; }
-            public long asLong() { return (long)x; }
-            public int asInt() { return (int)x; }
-            public char asChar() { return (char)x; }
-            public short asShort() { return (short)x; }
-            public byte asByte() { return (byte)x; }
-        };
-    }
-
-    public static Int box(final int x) {
+    public static Int box(int x) {
         int c = x & CHECK_MASK;
-        return c == 0 || c == CHECK_MASK ? ival[x & INDEX_MASK] : box0(x);
+        if (c == 0 || c == CHECK_MASK) return ivalue[x & INDEX_MASK];
+        return new IValue(x);
     }
 
-    private static Int box0(final int x) {
-        return new Int() {
-            public double asDouble() { return (double)x; }
-            public float asFloat() { return (float)x; }
-            public long asLong() { return (long)x; }
-            public int asInt() { return (int)x; }
-            public char asChar() { return (char)x; }
-            public short asShort() { return (short)x; }
-            public byte asByte() { return (byte)x; }
-	};
-    }
-
-    public static Long box(final long x) {
+    public static Long box(long x) {
         long c = x & CHECK_MASK;
-        return c == 0 || c == CHECK_MASK ? lval[(int)x & INDEX_MASK] : box0(x);
+        if (c == 0 || c == CHECK_MASK) return lvalue[(int)x & INDEX_MASK];
+        return new LValue(x);
     }
 
-    private static Long box0(final long x) {
-        return new Long() {
-            public double asDouble() { return (double)x; }
-            public float asFloat() { return (float)x; }
-            public long asLong() { return (long)x; }
-            public int asInt() { return (int)x; }
-            public char asChar() { return (char)x; }
-            public short asShort() { return (short)x; }
-            public byte asByte() { return (byte)x; }
-        };
+    public static Float box(float x) {
+        return new FValue(x);
     }
 
-    public static Float box(final float x) {
-        return new Float() {
-            public double asDouble() { return (double)x; }
-            public float asFloat() { return (float)x; }
-            public long asLong() { return (long)x; }
-            public int asInt() { return (int)x; }
-            public char asChar() { return (char)x; }
-            public short asShort() { return (short)x; }
-            public byte asByte() { return (byte)x; }
-        };
+    public static Double box(double x) {
+        return new DValue(x);
     }
 
-    public static Double box(final double x) {
-        return new Double() {
-            public double asDouble() { return (double)x; }
-            public float asFloat() { return (float)x; }
-            public long asLong() { return (long)x; }
-            public int asInt() { return (int)x; }
-            public char asChar() { return (char)x; }
-            public short asShort() { return (short)x; }
-            public byte asByte() { return (byte)x; }
-        };
-    }
-
+    /** @meta method (scala.Array[scala.Boolean]) scala.Array[scala.Boolean];*/
     public static Array box(final boolean[] xs) {
-	return new Array(0) {
-	    public boolean[] asBooleanArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Boolean)x).asBoolean(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+	return new ZArray(xs);
     }
 
+    /** @meta method (scala.Array[scala.Byte]) scala.Array[scala.Byte]; */
     public static Array box(final byte[] xs) {
-	return new Array(0) {
-	    public byte[] asByteArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Byte)x).asByte(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+	return new BArray(xs);
     }
 
+    /** @meta method (scala.Array[scala.Short]) scala.Array[scala.Short]; */
     public static Array box(final short[] xs) {
-	return new Array(0) {
-	    public short[] asShortArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Short)x).asShort(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+	return new SArray(xs);
     }
 
-    public static Array box(final char[] xs) {
-	return new Array(0) {
-	    public char[] asCharArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Char)x).asChar(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf((Object)xs); }
-	};
+    /** @meta method (scala.Array[scala.Char]) scala.Array[scala.Char]; */
+    public static Array box(char[] xs) {
+	return new CArray(xs);
     }
 
-    public static Array box(final int[] xs) {
-	return new Array(0) {
-	    public int[] asIntArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Int)x).asInt(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+    /** @meta method (scala.Array[scala.Int]) scala.Array[scala.Int]; */
+    public static Array box(int[] xs) {
+	return new IArray(xs);
     }
 
-    public static Array box(final long[] xs) {
-	return new Array(0) {
-	    public long[] asLongArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Long)x).asLong(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+    /** @meta method (scala.Array[scala.Long]) scala.Array[scala.Long]; */
+    public static Array box(long[] xs) {
+	return new LArray(xs);
     }
 
-    public static Array box(final float[] xs) {
-	return new Array(0) {
-	    public float[] asFloatArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Float)x).asFloat(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+    /** @meta method (scala.Array[scala.Float]) scala.Array[scala.Float]; */
+    public static Array box(float[] xs) {
+	return new FArray(xs);
     }
 
-    public static Array box(final double[] xs) {
-	return new Array(0) {
-	    public double[] asDoubleArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return box(xs[i]); }
-	    public void update(int i, Object x) { xs[i] = ((Double)x).asDouble(); }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+    /** @meta method (scala.Array[scala.Double]) scala.Array[scala.Double]; */
+    public static Array box(double[] xs) {
+	return new DArray(xs);
     }
 
-    public static Array box(final Object[] xs) {
-	return new Array(0) {
-	    public Object[] asObjectArray() { return xs; }
-	    public Object asArray() { return xs; }
-	    public Object apply(int i) { return xs[i]; }
-	    public void update(int i, Object x) { xs[i] = x; }
-	    public int length() { return xs.length; }
-            public String toString() { return String.valueOf(xs); }
-	};
+    /** @meta method [?T < scala.AnyRef](scala.Array[?T]) scala.Array[?T]; */
+    public static Array box(Object[] xs) {
+	return new OArray(xs);
     }
 
+    /** @meta method [?T](scala.Array[?T]) scala.Array[?T]; */
     public static Array box(Object xs) {
         if (xs == null) return box((Object[])xs);
         if (xs instanceof Object[]) return box((Object[])xs);
@@ -303,39 +178,18 @@ public abstract class RunTime {
         throw new ClassCastException(xs.getClass() + " is not an array class");
     }
 
-    public static boolean[] zarray(int length) {
-        return new boolean[length];
-    }
+    //########################################################################
+    // Public Functions - Array primitives
 
-    public static byte[] barray(int length) {
-        return new byte[length];
-    }
-
-    public static short[] sarray(int length) {
-        return new short[length];
-    }
-
-    public static char[] carray(int length) {
-        return new char[length];
-    }
-
-    public static int[] iarray(int length) {
-        return new int[length];
-    }
-
-    public static long[] larray(int length) {
-        return new long[length];
-    }
-
-    public static float[] farray(int length) {
-        return new float[length];
-    }
-
-    public static double[] darray(int length) {
-        return new double[length];
-    }
-
-    public static Object oarray(int length, String classname) {
+    public static boolean[] zarray(int length) { return new boolean[length]; }
+    public static byte   [] barray(int length) { return new byte   [length]; }
+    public static short  [] sarray(int length) { return new short  [length]; }
+    public static char   [] carray(int length) { return new char   [length]; }
+    public static int    [] iarray(int length) { return new int    [length]; }
+    public static long   [] larray(int length) { return new long   [length]; }
+    public static float  [] farray(int length) { return new float  [length]; }
+    public static double [] darray(int length) { return new double [length]; }
+    public static Object    oarray(int length, String classname) {
         try {
             Class clasz = Class.forName(classname, false, loader);
             return java.lang.reflect.Array.newInstance(clasz, length);
@@ -344,115 +198,231 @@ public abstract class RunTime {
         }
     }
 
-    public static int zarray_length(boolean[] array) {
-        return array.length;
-    }
+    public static int zarray_length(boolean[] xs) { return xs.length; }
+    public static int barray_length(byte   [] xs) { return xs.length; }
+    public static int sarray_length(short  [] xs) { return xs.length; }
+    public static int carray_length(char   [] xs) { return xs.length; }
+    public static int iarray_length(int    [] xs) { return xs.length; }
+    public static int larray_length(long   [] xs) { return xs.length; }
+    public static int farray_length(float  [] xs) { return xs.length; }
+    public static int darray_length(double [] xs) { return xs.length; }
+    public static int oarray_length(Object [] xs) { return xs.length; }
 
-    public static int barray_length(byte[] array) {
-        return array.length;
-    }
+    public static boolean zarray_get(boolean[] xs, int i) { return xs[i]; }
+    public static byte    barray_get(byte   [] xs, int i) { return xs[i]; }
+    public static short   sarray_get(short  [] xs, int i) { return xs[i]; }
+    public static char    carray_get(char   [] xs, int i) { return xs[i]; }
+    public static int     iarray_get(int    [] xs, int i) { return xs[i]; }
+    public static long    larray_get(long   [] xs, int i) { return xs[i]; }
+    public static float   farray_get(float  [] xs, int i) { return xs[i]; }
+    public static double  darray_get(double [] xs, int i) { return xs[i]; }
+    public static Object  oarray_get(Object [] xs, int i) { return xs[i]; }
 
-    public static int sarray_length(short[] array) {
-        return array.length;
-    }
+    public static void zarray_set(boolean[] xs, int i, boolean x) { xs[i] = x;}
+    public static void barray_set(byte   [] xs, int i, byte    x) { xs[i] = x;}
+    public static void sarray_set(short  [] xs, int i, short   x) { xs[i] = x;}
+    public static void carray_set(char   [] xs, int i, char    x) { xs[i] = x;}
+    public static void iarray_set(int    [] xs, int i, int     x) { xs[i] = x;}
+    public static void larray_set(long   [] xs, int i, long    x) { xs[i] = x;}
+    public static void farray_set(float  [] xs, int i, float   x) { xs[i] = x;}
+    public static void darray_set(double [] xs, int i, double  x) { xs[i] = x;}
+    public static void oarray_set(Object [] xs, int i, Object  x) { xs[i] = x;}
 
-    public static int carray_length(char[] array) {
-        return array.length;
-    }
-
-    public static int iarray_length(int[] array) {
-        return array.length;
-    }
-
-    public static int larray_length(long[] array) {
-        return array.length;
-    }
-
-    public static int farray_length(float[] array) {
-        return array.length;
-    }
-
-    public static int darray_length(double[] array) {
-        return array.length;
-    }
-
-    public static int oarray_length(Object[] array) {
-        return array.length;
-    }
-
-    public static boolean zarray_get(boolean[] array, int index) {
-        return array[index];
-    }
-
-    public static byte barray_get(byte[] array, int index) {
-        return array[index];
-    }
-
-    public static short sarray_get(short[] array, int index) {
-        return array[index];
-    }
-
-    public static char carray_get(char[] array, int index) {
-        return array[index];
-    }
-
-    public static int iarray_get(int[] array, int index) {
-        return array[index];
-    }
-
-    public static long larray_get(long[] array, int index) {
-        return array[index];
-    }
-
-    public static float farray_get(float[] array, int index) {
-        return array[index];
-    }
-
-    public static double darray_get(double[] array, int index) {
-        return array[index];
-    }
-
-    public static Object oarray_get(Object[] array, int index) {
-        return array[index];
-    }
-
-    public static void zarray_set(boolean[] array, int index, boolean value) {
-        array[index] = value;
-    }
-
-    public static void barray_set(byte[] array, int index, byte value) {
-        array[index] = value;
-    }
-
-    public static void sarray_set(short[] array, int index, short value) {
-        array[index] = value;
-    }
-
-    public static void carray_set(char[] array, int index, char value) {
-        array[index] = value;
-    }
-
-    public static void iarray_set(int[] array, int index, int value) {
-        array[index] = value;
-    }
-
-    public static void larray_set(long[] array, int index, long value) {
-        array[index] = value;
-    }
-
-    public static void farray_set(float[] array, int index, float value) {
-        array[index] = value;
-    }
-
-    public static void darray_set(double[] array, int index, double value) {
-        array[index] = value;
-    }
-
-    public static void oarray_set(Object[] array, int index, Object value) {
-        array[index] = value;
-    }
+    //########################################################################
 }
 
+// These classes may not be defined in class RunTime because inner
+// classes confuse pico which then attributes the metadata to the
+// wrong members.
 
+class UValue extends Unit {
+}
 
+class ZValue extends Boolean {
+    private final boolean x;
+    public ZValue(boolean x) { this.x = x; }
+    public boolean asBoolean() { return x; }
+}
 
+class BValue extends Byte {
+    private final byte x;
+    public BValue(byte x) { this.x = x; }
+    public double asDouble() { return (double)x; }
+    public float asFloat() { return (float)x; }
+    public long asLong() { return (long)x; }
+    public int asInt() { return (int)x; }
+    public char asChar() { return (char)x; }
+    public short asShort() { return (short)x; }
+    public byte asByte() { return (byte)x; }
+}
+
+class SValue extends Short {
+    private final short x;
+    public SValue(short x) { this.x = x; }
+    public double asDouble() { return (double)x; }
+    public float asFloat() { return (float)x; }
+    public long asLong() { return (long)x; }
+    public int asInt() { return (int)x; }
+    public char asChar() { return (char)x; }
+    public short asShort() { return (short)x; }
+    public byte asByte() { return (byte)x; }
+}
+
+class CValue extends Char {
+    private final char x;
+    public CValue(char x) { this.x = x; }
+    public double asDouble() { return (double)x; }
+    public float asFloat() { return (float)x; }
+    public long asLong() { return (long)x; }
+    public int asInt() { return (int)x; }
+    public char asChar() { return (char)x; }
+    public short asShort() { return (short)x; }
+    public byte asByte() { return (byte)x; }
+}
+
+class IValue extends Int {
+    private final int x;
+    public IValue(int x) { this.x = x; }
+    public double asDouble() { return (double)x; }
+    public float asFloat() { return (float)x; }
+    public long asLong() { return (long)x; }
+    public int asInt() { return (int)x; }
+    public char asChar() { return (char)x; }
+    public short asShort() { return (short)x; }
+    public byte asByte() { return (byte)x; }
+}
+
+class LValue extends Long {
+    private final long x;
+    public LValue(long x) { this.x = x; }
+    public double asDouble() { return (double)x; }
+    public float asFloat() { return (float)x; }
+    public long asLong() { return (long)x; }
+    public int asInt() { return (int)x; }
+    public char asChar() { return (char)x; }
+    public short asShort() { return (short)x; }
+    public byte asByte() { return (byte)x; }
+}
+
+class FValue extends Float {
+    private final float x;
+    public FValue(float x) { this.x = x; }
+    public double asDouble() { return (double)x; }
+    public float asFloat() { return (float)x; }
+    public long asLong() { return (long)x; }
+    public int asInt() { return (int)x; }
+    public char asChar() { return (char)x; }
+    public short asShort() { return (short)x; }
+    public byte asByte() { return (byte)x; }
+}
+
+class DValue extends Double {
+    private final double x;
+    public DValue(double x) { this.x = x; }
+    public double asDouble() { return (double)x; }
+    public float asFloat() { return (float)x; }
+    public long asLong() { return (long)x; }
+    public int asInt() { return (int)x; }
+    public char asChar() { return (char)x; }
+    public short asShort() { return (short)x; }
+    public byte asByte() { return (byte)x; }
+}
+
+class ZArray extends Array {
+    private final boolean[] xs;
+    public ZArray(boolean[] xs) { this.xs = xs; }
+    public boolean[] asBooleanArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Boolean)x).asBoolean(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}
+
+class BArray extends Array {
+    private final byte[] xs;
+    public BArray(byte[] xs) { this.xs = xs; }
+    public byte[] asByteArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Byte)x).asByte(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}
+
+class SArray extends Array {
+    private final short[] xs;
+    public SArray(short[] xs) { this.xs = xs; }
+    public short[] asShortArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Short)x).asShort(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}
+
+class CArray extends Array {
+    private final char[] xs;
+    public CArray(char[] xs) { this.xs = xs; }
+    public char[] asCharArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Char)x).asChar(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf((Object)xs); }
+}
+
+class IArray extends Array {
+    private final int[] xs;
+    public IArray(int[] xs) { this.xs = xs; }
+    public int[] asIntArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Int)x).asInt(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}
+
+class LArray extends Array {
+    private final long[] xs;
+    public LArray(long[] xs) { this.xs = xs; }
+    public long[] asLongArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Long)x).asLong(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}
+
+class FArray extends Array {
+    private final float[] xs;
+    public FArray(float[] xs) { this.xs = xs; }
+    public float[] asFloatArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Float)x).asFloat(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}
+
+class DArray extends Array {
+    private final double[] xs;
+    public DArray(double[] xs) { this.xs = xs; }
+    public double[] asDoubleArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return RunTime.box(xs[i]); }
+    public void update(int i, Object x) { xs[i] = ((Double)x).asDouble(); }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}
+
+class OArray extends Array {
+    private final Object[] xs;
+    public OArray(Object[] xs) { this.xs = xs; }
+    public Object[] asObjectArray() { return xs; }
+    public Object asArray() { return xs; }
+    public Object apply(int i) { return xs[i]; }
+    public void update(int i, Object x) { xs[i] = x; }
+    public int length() { return xs.length; }
+    public String toString() { return String.valueOf(xs); }
+}

@@ -19,7 +19,7 @@ public abstract class Array
 
     /** @meta constr (scala.Int);
      */
-    public Array(int n) {
+    public Array() {
     }
 
     public boolean[] asBooleanArray() {

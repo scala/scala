@@ -268,7 +268,7 @@ public class Primitives {
         this.BOX_FARRAY = getBoxArray(boxes, definitions.FLOAT_TYPE());
         this.BOX_DARRAY = getBoxArray(boxes, definitions.DOUBLE_TYPE());
         this.BOX_OARRAY = getBoxArray(boxes, definitions.JAVA_OBJECT_TYPE());
-        this.BOX__ARRAY = getBoxValue(boxes, definitions.ANY_TYPE());
+        this.BOX__ARRAY = getBoxArray(boxes, definitions.ANY_TYPE());
         this.AS_UVALUE = getUniqueTerm(definitions.UNIT_CLASS, AS_UVALUE_N);
         this.AS_ZVALUE = getUniqueTerm(definitions.BOOLEAN_CLASS, AS_ZVALUE_N);
         this.AS_BVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_BVALUE_N);
@@ -314,13 +314,14 @@ public class Primitives {
 
     private Symbol getBoxValue(Symbol[] alts, Type type) {
         for (int i = 0; i < alts.length; i++) {
+            Type result = alts[i].type().resultType();
             switch (alts[i].type()) {
-            case MethodType(Symbol[] vparams, _):
-                if (vparams.length == 1 && vparams[0].type().equals(type))
-                    return alts[i];
+            case PolyType(Symbol[] tparams, _):
+                result = result.subst(tparams, Symbol.info(tparams));
             }
+            if (result.equals(type)) return alts[i];
         }
-        throw Debug.abort("not found:" + BOX_N + "(" + Debug.show(type) + ")");
+        throw Debug.abort("not found: def " +BOX_N+ "(" +type+ "): " +type);
     }
 
     private Symbol getBoxArray(Symbol[] alts, Type type) {
