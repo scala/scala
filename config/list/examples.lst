@@ -5,7 +5,7 @@
 ComputeServer.scala
 auction.scala
 boundedbuffer.scala
-buffer1.scala
+oneplacebuffer.scala
 fors.scala
 futures.scala
 iterators.scala
