@@ -1,5 +1,3 @@
-// DO NOT EDIT. Automatically generated file!
-
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
@@ -8,8 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala {
-  class PartialFunction[A, B] {
+  abstract class PartialFunction[A, B]() {
 
     def apply(x: A): B;
 
