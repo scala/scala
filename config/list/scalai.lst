@@ -1,5 +1,5 @@
 ############################################################-*-Makefile-*-####
-# scala interpreter source files (paths are relative to ./sources/scala/tools/scalai)
+# scalai source files (paths are relative to ./sources/scala/tools/scalai)
 ##############################################################################
 # $Id$
 
