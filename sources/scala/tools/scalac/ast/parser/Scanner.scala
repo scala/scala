@@ -422,8 +422,18 @@ class Scanner(_unit: Unit) extends TokenData {
 	        syntaxError("illegal character");
 	      return;
 	    case _ =>
-	      nextch();
-	      syntaxError("illegal character");
+
+              if( java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
+                case java.lang.Character.MATH_SYMBOL => true;
+                case java.lang.Character.OTHER_SYMBOL => true;
+                case _ => false;}) {
+                  putChar( ch );
+                  treatIdent;
+	          nextch();
+                } else {
+	          nextch();
+	          syntaxError("illegal character");
+                };
 	      return;
 	  }
       }
