@@ -794,13 +794,25 @@ public class Parser implements Tokens {
 
     /** Exprs ::= Expr {`,' Expr}
      *          | Expr `:' `_' `*'
-     */
     Tree[] exprs() {
         TreeList ts = new TreeList();
         ts.append(expr(true));
         while (s.token == COMMA) {
             s.nextToken();
             ts.append(expr());
+        }
+        return ts.toArray();
+    }
+     */
+
+    /** Exprs ::= Expr {`,' Expr}
+     */
+    Tree[] exprs() {
+        TreeList ts = new TreeList();
+        ts.append(expr(true));
+        while (s.token == COMMA) {
+            s.nextToken();
+            ts.append(expr(true));
         }
         return ts.toArray();
     }
@@ -912,6 +924,11 @@ public class Parser implements Tokens {
                     int pos1 = s.skipToken();
                     if (s.token == IDENTIFIER && s.name == Names.STAR) {
                         s.nextToken();
+                        /* this hack new */
+                        if( s.token != RPAREN ) {
+                            syntaxError(s.pos, " escaping sequences only allowed for last argument", true);
+                        }
+                        /* end hack      */
                         t = make.Typed(
                             pos, t, make.Ident(pos1, TypeNames.WILDCARD_STAR));
                     } else {

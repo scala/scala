@@ -741,12 +741,24 @@ class Parser(unit: Unit) {
 
   /** Exprs ::= Expr {`,' Expr}
   *          | Expr `:' `_' `*'
-  */
   def exprs(): Array[Tree] = {    val ts = new myTreeList();
     ts.append(expr(true, false));
     while (s.token == COMMA) {
       s.nextToken();
       ts.append(expr());
+    }
+    ts.toArray()
+  }
+  */
+
+  /** Exprs ::= Expr {`,' Expr} [ `:' `_' `*' ]
+  */
+  def exprs(): Array[Tree] = {
+    val ts = new myTreeList();
+    ts.append(expr(true, false));
+    while (s.token == COMMA) {
+      s.nextToken();
+      ts.append(expr(true, false));
     }
     ts.toArray()
   }
@@ -850,6 +862,8 @@ class Parser(unit: Unit) {
           val pos1 = s.skipToken();
           if (s.token == IDENTIFIER && s.name == Names.STAR) {
             s.nextToken();
+            if( s.token != RPAREN )
+              syntaxError(s.pos, " escaping sequences only allowed for last argument", true);
             t = make.Typed(
               pos, t, make.Ident(pos1, TypeNames.WILDCARD_STAR));
           } else {
