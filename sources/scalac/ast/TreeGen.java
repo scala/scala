@@ -250,22 +250,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      * Builds a reference to given symbol with given stable prefix.
      */
     public Tree mkRef(int pos, Type stable, Symbol symbol) {
-        switch (stable) {
-	case NoPrefix:
-            return Ident(pos, symbol);
-	case ThisType(Symbol clasz):
-            return mkRef(pos, This(pos, clasz), symbol);
-        case SingleType(Type prefix, Symbol member):
-	    Tree qualifier = mkRef(pos, prefix, member);
-	    switch (qualifier.type()) {
-	    case MethodType(Symbol[] params, _):
-		assert params.length == 0: qualifier.type();
-		qualifier = Apply(pos, qualifier);
-	    }
-	    return mkRef(pos, qualifier, symbol);
-        default:
-            throw Debug.abort("illegal case", stable);
-        }
+        Tree qualifier = mkQualifier(pos, stable);
+        if (qualifier == Tree.Empty) return Ident(pos, symbol);
+        return mkRef(pos, qualifier, symbol);
     }
 
     /** Builds a local reference to given symbol. */
@@ -281,6 +268,27 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         Type prefix = symbol.owner().staticPrefix();
         global.prevPhase();
         return mkRef(pos, prefix, symbol);
+    }
+
+    /** Builds a qualifier corresponding to given stable prefix. */
+    public Tree mkQualifier(int pos, Type stable) {
+        switch (stable) {
+	case NoPrefix:
+            return Tree.Empty;
+	case ThisType(Symbol clasz):
+            return This(pos, clasz);
+        case SingleType(Type prefix, Symbol member):
+	    Tree qualifier = mkRef(pos, prefix, member);
+	    switch (qualifier.type()) {
+	    case MethodType(Symbol[] params, _):
+		assert params.length == 0: qualifier.type();
+		return Apply(pos, qualifier);
+            default:
+                return qualifier;
+	    }
+        default:
+            throw Debug.abort("illegal case", stable);
+        }
     }
 
     /** Builds a This node corresponding to given class. */
