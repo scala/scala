@@ -344,9 +344,11 @@ public class  Global {
         unit.body = new Tree[] {
             make.ModuleDef(0, 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
                 make.Template(0, new Tree[]{
-                    make.Select(0,
-                        make.Ident(0, Names.scala),
-                        Names.Object.toConstrName())},
+                    make.Apply(0,
+                        make.Select(0,
+                            make.Ident(0, Names.scala),
+                            Names.Object.toConstrName()),
+                        new Tree[0])},
                     unit.body))};
         module++;
     }
