@@ -102,6 +102,67 @@ abort() {
 }
 
 ##############################################################################
+# Printing functions
+
+# Initializes the printf functions
+printf_initialization() {
+    case "$1" in
+        many )
+            printf_font_outline="printf \\033[1;39m";
+            printf_font_success="printf \\033[1;32m";
+            printf_font_failure="printf \\033[1;31m";
+            printf_font_warning="printf \\033[1;33m";
+            printf_font_default="printf \\033[0;39m";
+            ;;
+        some )
+            printf_font_outline="printf \\033[1m";
+            printf_font_success="printf \\033[0m";
+            printf_font_failure="printf \\033[1m";
+            printf_font_warning="printf \\033[1m";
+            printf_font_default="printf \\033[0m";
+            ;;
+        none )
+            printf_font_outline="";
+            printf_font_success="";
+            printf_font_failure="";
+            printf_font_warning="";
+            printf_font_default="";
+            ;;
+        * )
+            abort "unknown color mode \`$1'";
+            ;;
+    esac;
+}
+
+# Prints formated text in outline font.
+printf_outline() {
+    $printf_font_outline;
+    printf "$@";
+    $printf_font_default;
+}
+
+# Prints formated text in success font.
+printf_success() {
+    $printf_font_success;
+    printf "$@";
+    $printf_font_default;
+}
+
+# Prints formated text in failure font.
+printf_failure() {
+    $printf_font_failure;
+    printf "$@";
+    $printf_font_default;
+}
+
+# Prints formated text in warning font.
+printf_warning() {
+    $printf_font_warning;
+    printf "$@";
+    $printf_font_default;
+}
+
+##############################################################################
 # File name and path list conversion functions
 
 # Prints the OS-specific form of the specified Unix form file name.
@@ -292,8 +353,8 @@ scala_has_bootclasspath() {
     return 1;
 }
 
-# Implements the command "scala".
-scala() {
+# Implements "scala [<option>...] <class> [<args>...]".
+scala_main() {
     if scala_has_bootclasspath "$@"; then
         vm_start_java "$@";
     else
@@ -475,8 +536,8 @@ info_option_help() {
     echo "  EXEC              Command to start subprocesses";
 }
 
-# Entry point of scala-info.
-info() {
+# Implements "scala-info <option>".
+info_main() {
     [ $# = 0 ] && abort "missing option";
 
     case "$1" in
@@ -488,6 +549,447 @@ info() {
         -*          ) abort "unrecognised option \`$1'";;
         *           ) abort "illegal argument \`$1'";;
     esac;
+}
+
+##############################################################################
+# Implementation of scalatest
+
+# Prints the scalatest usage.
+test_print_usage() {
+    [ $# = 0 ] || abort "internal error";
+    echo "Usage: $0 [OPTION]..."
+}
+
+# Prints the scalatest help.
+test_print_help() {
+    [ $# = 0 ] || abort "internal error";
+    test_print_usage;
+    echo "";
+    echo "--auto          use filenames to select the test to run";
+    echo "--run           next files test the interpreter and all backends";
+    echo "--jvm           next files test the jvm backend";
+    echo "--int           next files test the interpreter";
+    echo "--shl           next files test the interpreter shell";
+    echo "--xml           next files test the dtd2scala tool";
+    echo "--dis           next files test the disassembler";
+    echo "--pos           next files test a compilation success";
+    echo "--neg           next files test a compilation failure";
+    echo "--msil          next files test the .NET backend";
+    echo "--no-run        run no test, use results of last run";
+    echo "--show-log      show output of failed tests";
+    echo "--show-diff     show differences between actual and expected output";
+    echo "--failed        test only files that failed last time";
+    echo "--errors=<int>  specify the number of expected errors";
+    echo "--flags=<flags> specify flags to pass on to the executable";
+    echo "--color=USAGE   control the color usage (USAGE=none|some|many)";
+    echo "--objdir=<dir>  specify where to place generated files";
+    echo "--help, -?      display this help and exit";
+    echo "--version       output version information and exit";
+}
+
+# Prints the scalatest version.
+test_print_version() {
+    [ $# = 0 ] || abort "internal error";
+    echo "$SCRIPT $Revision$";
+}
+
+# Prints the name of the specified test file.
+test_print_testing() {
+    [ $# = 1 ] || abort "internal error";
+    printf_outline "testing: ";
+    if [ -n "$BASH" ]; then
+        case "$1" in
+            "$TESTROOT"* )
+                printf "%-60s " "[...]${1#$TESTROOT}";
+                return 0;
+                ;;
+        esac;
+    fi;
+    printf "%-60s " "$1";
+}
+
+# Prints a test success notification.
+test_print_success() {
+    [ $# = 0 ] || abort "internal error";
+    printf "[";
+    printf_success "  OK  ";
+    printf "]\\n";
+}
+
+# Prints a test failure notification.
+test_print_failure() {
+    [ $# = 0 ] || abort "internal error";
+    printf "[";
+    printf_failure "FAILED";
+    printf "]\\n";
+}
+
+
+
+
+test_check_interpretation() {
+    $SURUS $TEST_FLAGS $FLAGS "$source" -- Test "int";
+}
+
+test_check_shell() {
+    cat "$source" | $SURUS -interactive -nologo $TEST_FLAGS $FLAGS;
+}
+
+test_check_compilation() {
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    classpath=`get_os_pathlist "$output"`;
+    os_output=`get_os_filename "$output"`;
+    rm -rf "$output";
+    mkdir -p "$output" &&
+    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
+    $SCALA -classpath "$classpath" Test "jvm" &&
+    rm -rf "$output";
+}
+
+test_check_xml() {
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    dtdfile="`expr "$source" : "\(.*\)\\.scala"`.dtd";
+    xmlfile="`expr "$source" : "\(.*\)\\.scala"`.xml";
+    nsfile="`expr "$source" : "\(.*\)\\.scala"`.namespace";
+    objfile="$output/dtd.scala";
+    classpath=`get_os_pathlist "$output"`;
+    os_output=`get_os_filename "$output"`;
+    rm -rf "$output";
+    mkdir -p "$output" &&
+    $DTD2SCALA -d "$os_output" "$dtdfile" dtd `cat $nsfile` &&
+    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
+    $SCALA -classpath "$classpath" Test "$xmlfile" &&
+    rm -rf "$output";
+}
+
+test_check_disassembler() {
+    scalapargs="`expr "$source" : "\(.*\)\\.scala"`.args";
+    if [ -f "$scalapargs" ]; then
+        SCALAP_ARGS=`cat "$scalapargs"`;
+    else
+        SCALAP_ARGS="";
+    fi;
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    classpath=`get_os_pathlist "$output"`;
+    os_output=`get_os_filename "$output"`;
+    rm -rf "$output";
+    mkdir -p "$output" &&
+    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
+    $SCALAP -classpath "$classpath" $SCALAP_ARGS &&
+    rm -rf "$output";
+}
+
+test_check_compilation_success() {
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    os_output=`get_os_filename "$output"`;
+    rm -rf "$output";
+    mkdir -p "$output" &&
+    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
+    rm -rf "$output";
+}
+
+test_check_compilation_failure() {
+    (
+        OBJDIR="$OBJDIR"`dirname "$source"`;
+        cd `dirname "$source"`;
+        source=`basename "$source"`;
+        if test_check_compilation_success "$@"; then false; else
+            rm -rf "$output";
+        fi;
+    )
+}
+
+test_check_msil() {
+    ASSEM="Test"
+    IL_FILE=${ASSEM}".il"
+    PE_FILE=${ASSEM}".EXE"
+
+    ILASM=ilasm
+    ILASM_ARGS="/qui /nol /out=${PE_FILE}"
+
+    PEVERIFY=peverify
+    PEVERIFY_ARGS="/il"
+
+    rm -f $IL_FILE
+    rm -f $PE_FILE
+
+    $SOCOS -nowarn -target:msil -o ${ASSEM} $FLAGS "$source" &&
+
+    ${ILASM} ${ILASM_ARGS} ${IL_FILE} > /dev/null &&
+    if [ ! $? ] ; then
+	echo "'$ILASM' failed!"
+	return 1
+    fi
+
+#    $PEVERIFY $PEVERIFY_ARGS $PE_FILE > /dev/null
+#    if [ ! $? ] ; then
+#	echo "'$PEVERIFY' failed!"
+#	rm -rf $PE_FILE
+#	return 1
+#    fi
+
+    eval ./$PE_FILE "msil"
+}
+
+test_check_output() {
+    if [ -f "$expect" ]; then
+        $DIFF "$actual" "$expect";
+    else
+        cat /dev/null | $DIFF "$actual" -;
+    fi;
+}
+
+test_check_file() {
+    source="$FILE";
+    flags="`expr "$source" : "\(.*\)\\.scala"`.flags";
+    expect="`expr "$source" : "\(.*\)\\.scala"`-$KIND.check";
+    if [ ! -f $expect ]; then
+	expect="`expr "$source" : "\(.*\)\\.scala"`.check";
+    fi;
+    actual="$OBJDIR""`expr "$source" : "\(.*\)\\.scala"`-$KIND.log";
+    if [ -f "$flags" ]; then
+        TEST_FLAGS=`cat $flags`;
+    else
+        TEST_FLAGS="";
+    fi;
+    if [ "$FAILED" = "true" -a ! -f "$actual" ]; then
+        continue;
+    fi;
+    if [ "$HEAD" != "true" ]; then
+        printf_outline "$TEXT\\n";
+        HEAD="true";
+    fi;
+    test_print_testing "$FILE";
+    if [ "$NORUN" != "true" ]; then
+        rm -f "$actual";
+        "$TEST" 1> "$actual" 2>&1 && test_check_output 1> /dev/null 2>&1;
+    else
+        test ! -f "$actual";
+    fi;
+    if [ "$?" = 0 ]; then
+        SUCCESS_COUNT=`echo "$SUCCESS_COUNT+1" | bc`;
+        test_print_success;
+        rm -f "$actual";
+    else
+        FAILURE_COUNT=`echo "$FAILURE_COUNT+1" | bc`;
+        test_print_failure;
+    fi;
+    if [ -f "$actual" ]; then
+        if [ "$SHOWLOG" = "true" ]; then
+            cat "$actual";
+        fi;
+        if [ "$SHOWDIFF" = "true" ]; then
+            test_check_output;
+        fi;
+    fi;
+}
+
+test_check_one() {
+    HEAD="false";
+    TEXT="$1"; shift 1;
+    TEST="$1"; shift 1;
+    KIND="$1"; shift 1;
+
+    for FROM do
+        if [ -d "$FROM" -o -f "$FROM" ]; then
+            for FILE in . `find "$FROM" -name "*.obj" -prune -o -name "*.scala" -print`; do
+                if [ "$FILE" = "." ]; then continue; fi;
+                test_check_file;
+            done;
+        fi;
+    done
+
+    if [ "$HEAD" = "true" ]; then
+        echo "";
+    fi;
+}
+
+test_check_all() {
+    test_check_one "Testing jvm backend" \
+        test_check_compilation "jvm" $FILES_RUN $FILES_JVM;
+    test_check_one "Testing interpreter shell" \
+        test_check_shell "shl" $FILES_SHL;
+    test_check_one "Testing disassembler" \
+        test_check_disassembler "dis" $FILES_DIS;
+    test_check_one "Testing dtd2scala tool" \
+        test_check_xml "xml" $FILES_XML;
+    test_check_one "Testing compiler (on files whose compilation should succeed)" \
+        test_check_compilation_success "pos" $FILES_POS;
+    test_check_one "Testing compiler (on files whose compilation should fail)" \
+        test_check_compilation_failure "neg" $FILES_NEG;
+    test_check_one "Testing msil backend" \
+	test_check_msil "msil" $FILES_MSIL;
+    test_check_one "Testing interpreter" \
+        test_check_interpretation "int" $FILES_RUN $FILES_INT;
+}
+
+
+
+test_add_file() {
+    TEST_ALL="false";
+    case "$TEST_TYPE" in
+        auto ) ;;
+        run  ) FILES_RUN="$FILES_RUN $1"; return;;
+        jvm  ) FILES_JVM="$FILES_JVM $1"; return;;
+        int  ) FILES_INT="$FILES_INT $1"; return;;
+        shl  ) FILES_SHL="$FILES_SHL $1"; return;;
+        xml  ) FILES_XML="$FILES_XML $1"; return;;
+        dis  ) FILES_DIS="$FILES_DIS $1"; return;;
+        pos  ) FILES_POS="$FILES_POS $1"; return;;
+        neg  ) FILES_NEG="$FILES_NEG $1"; return;;
+	msil ) FILES_MSIL="$FILES_MSIL $1"; return;;
+        *    ) abort "unknown test type \`$TEST_TYPE'";;
+    esac;
+    case "$1" in
+        run  | */run  | */run/*  | run/*  ) FILES_RUN="$FILES_RUN $1";;
+        jvm  | */jvm  | */jvm/*  | jvm/*  ) FILES_JVM="$FILES_JVM $1";;
+        int  | */int  | */int/*  | int/*  ) FILES_INT="$FILES_INT $1";;
+        shl  | */shl  | */shl/*  | shl/*  ) FILES_SHL="$FILES_SHL $1";;
+        xml  | */xml  | */xml/*  | xml/*  ) FILES_XML="$FILES_XML $1";;
+        dis  | */dis  | */dis/*  | dis/*  ) FILES_DIS="$FILES_DIS $1";;
+        pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
+        neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
+        msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
+        * ) abort "don't known what to do with \`$1'";;
+    esac;
+}
+
+# Implements "scalatest ...".
+test_main() {
+    if [ "$SCALATEST" = "java" ]; then
+        tool_start "" scala.tools.scalatest.Main "$@";
+    fi;
+    configure;
+
+    NORUN="false";
+    SHOWLOG="false";
+    SHOWDIFF="false";
+    FAILED="false";
+    ERRORS=0;
+    SUCCESS_COUNT=0;
+    FAILURE_COUNT=0;
+    TESTROOT=`dirname "$default_LIBRARY_SOURCES"`;
+    SRCDIR={#TEST_SRCDIR#}/files;
+    OBJDIR={#TEST_OBJDIR#};
+
+    TEST_ALL="true";
+    TEST_TYPE="auto";
+    FILES_RUN="";
+    FILES_JVM="";
+    FILES_INT="";
+    FILES_SHL="";
+    FILES_XML="";
+    FILES_DIS="";
+    FILES_POS="";
+    FILES_NEG="";
+    FILES_MSIL="";
+
+    SCALA="$PREFIX/bin/scala";
+    SOCOS="$PREFIX/bin/scalac";
+    SURUS="$PREFIX/bin/scalarun";
+    SCALAP="$PREFIX/bin/scalap";
+    DTD2SCALA="$PREFIX/bin/dtd2scala";
+    DIFF="diff";
+
+    case `uname` in
+        CYGWIN* )
+            DIFF="diff --text --strip-trailing-cr";
+            ;;
+    esac;
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --auto       ) TEST_TYPE="auto"; shift 1;;
+            --run        ) TEST_TYPE="run"; shift 1;;
+            --jvm        ) TEST_TYPE="jvm"; shift 1;;
+            --int        ) TEST_TYPE="int"; shift 1;;
+            --shl        ) TEST_TYPE="shl"; shift 1;;
+            --xml        ) TEST_TYPE="xml"; shift 1;;
+            --dis        ) TEST_TYPE="dis"; shift 1;;
+            --pos        ) TEST_TYPE="pos"; shift 1;;
+            --neg        ) TEST_TYPE="neg"; shift 1;;
+            --msil       ) TEST_TYPE="msil"; shift 1;;
+            --no-run     ) NORUN="true"; shift 1;;
+            --show-log   ) SHOWLOG="true"; shift 1;;
+            --show-diff  ) SHOWDIFF="true"; shift 1;;
+            --failed     ) FAILED="true"; shift 1;;
+            --errors=    ) abort "illegal empty argument for option --errors";;
+            --errors=*   )ERRORS=`expr "$1" : "--errors=\([0-9]*\)$"`;shift 1;;
+            --flags=     ) abort "illegal empty argument for option --flags";;
+            --flags=*    ) FLAGS=`expr "$1" : "--flags=\(.*\)"`; shift 1;;
+            --color=     ) abort "illegal empty argument for option --color";;
+            --color=*    ) COLOR=`expr "$1" : "--color=\(.*\)"`; shift 1;;
+            --objdir=    ) abort "illegal empty argument for option --objdir";;
+            --objdir=*   ) OBJDIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
+            --help| -?   ) print_help; exit 0;;
+            --version    ) print_version; exit 0;;
+            -*           ) abort "unknown option $1";;
+            *            ) add_file "$1"; shift 1;;
+        esac;
+    done;
+
+    if [ -z "$ERRORS" ]; then
+        abort "illegal non-numerical argument for option --errors";
+    fi;
+
+    if [ -z "$COLOR" -a -n "$EMACS" ]; then
+        COLOR="none";
+    fi;
+    printf_initialization "${COLOR:-many}";
+
+    if [ "$TEST_ALL" = "true" ]; then
+        case "$TEST_TYPE" in
+                   run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | int ) FILES_INT="$FILES_INT $SRCDIR/run";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | shl ) FILES_SHL="$FILES_SHL $SRCDIR/shl";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | xml ) FILES_XML="$FILES_XML $SRCDIR/xml";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | dis ) FILES_DIS="$FILES_DIS $SRCDIR/dis";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | pos ) FILES_POS="$FILES_POS $SRCDIR/pos";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | neg ) FILES_NEG="$FILES_NEG $SRCDIR/neg";;
+        esac;
+        case "$TEST_TYPE" in
+                   msil ) FILES_MSIL="$FILES_MSIL $SRCDIR/run";;
+        esac;
+    fi;
+
+    if [ -n "$OBJDIR" ]; then
+        if [ -d "$OBJDIR" ]; then
+            OBJDIR=`cd "$OBJDIR"; pwd`/;
+        else
+            abort "could not access directory '$OBJDIR'";
+        fi
+    fi
+
+    test_check_all;
+
+    if [ $FAILURE_COUNT -eq 0 ]; then
+        printf_success "All tests were successful\\n";
+    elif [ $FAILURE_COUNT -eq 1 ]; then
+        printf_failure "There was 1 test that failed\\n";
+    else
+        printf_failure "There were $FAILURE_COUNT tests that failed\\n";
+    fi;
+
+    if [ $FAILURE_COUNT -eq "$ERRORS" ]; then
+        exit 0;
+    else
+        exit 1;
+    fi;
 }
 
 ##############################################################################
@@ -508,6 +1010,7 @@ while [ -h "$SOURCE" ]; do
     fi;
 done;
 PREFIX=`dirname "$SOURCE"`/..;
+prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
 VERSION={#VERSION#};
@@ -526,16 +1029,16 @@ fi;
 configure;
 
 case "$SCRIPT" in
-    scala-info ) info "$@";;
-    scala      ) scala "$@";;
-    scala-*    ) scala "$@";;
+    scala-info ) info_main "$@";;
+    scala      ) scala_main "$@";;
+    scala-*    ) scala_main "$@";;
     scalac*    ) compiler_start "" scala.tools.scalac.Main "$@";;
     scalarun*  ) compiler_start "" scala.tools.scalai.Main "$@";;
     scalaint*  ) compiler_start "" scala.tools.scalai.Main -interactive "$@";;
     scaladoc*  ) tool_start "" scala.tools.scaladoc.Main "$@";;
     scalap*    ) tool_start "" scala.tools.scalap.Main "$@";;
     dtd2scala* ) tool_start "" scala.tools.dtd2scala.Main "$@";;
-    scalatest* ) tool_start "" scala.tools.scalatest.Main "$@";;
+    scalatest* ) test_main "$@";;
     *          ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 
