@@ -702,10 +702,19 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   }
 
   protected def printBounds(lobound: Tree, hibound: Tree): unit = {
-    if (!"scala.All".equals(lobound.toString()))
-      printOpt(TXT_SUPERTYPE, lobound, true);
-    if (!"scala.Any".equals(hibound.toString()))
-      printOpt(TXT_SUBTYPE, hibound, true);
+    val definitions: Definitions = scalac_Global.instance.definitions;
+    val printLoBound: Boolean =
+      if (lobound.getType() != null)
+        lobound.getType().symbol() != definitions.ALL_CLASS
+      else
+        !"scala.All".equals(lobound.toString());
+    if (printLoBound) printOpt(TXT_SUPERTYPE, lobound, true);
+    val printHiBound: Boolean =
+      if (hibound.getType() != null)
+        hibound.getType().symbol() != definitions.ANY_CLASS
+      else
+        !"scala.Any".equals(hibound.toString());
+    if (printHiBound) printOpt(TXT_SUBTYPE, hibound, true);
   }
 }
 }

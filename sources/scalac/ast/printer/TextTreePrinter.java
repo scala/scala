@@ -808,10 +808,15 @@ public class TextTreePrinter implements TreePrinter {
     }
 
     protected void printBounds(Tree lobound, Tree hibound) {
-        if (!"scala.All".equals(lobound.toString()))
-            printOpt(TXT_SUPERTYPE, lobound, true);
-        if (!"scala.Any".equals(hibound.toString()))
-            printOpt(TXT_SUBTYPE, hibound, true);
+        Definitions definitions = Global.instance.definitions;
+        boolean printLoBound = lobound.type != null
+            ? lobound.type().symbol() != definitions.ALL_CLASS
+            : !"scala.All".equals(lobound.toString());
+        if (printLoBound) printOpt(TXT_SUPERTYPE, lobound, true);
+        boolean printHiBound = hibound.type != null
+            ? hibound.type().symbol() != definitions.ANY_CLASS
+            : !"scala.Any".equals(hibound.toString());
+        if (printHiBound) printOpt(TXT_SUBTYPE, hibound, true);
     }
 
 }
