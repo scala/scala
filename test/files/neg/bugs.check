@@ -1,0 +1,6 @@
+bugs.scala:11: overlapping overloaded alternatives; the two following alternatives of method p have the same erasure: ((Tuple2[Boolean,Boolean]) => Boolean)int
+ alternative 1: def p((scala.Tuple2[scala.Boolean,scala.Boolean]) => scala.Boolean): scala.Int(1)
+ alternative 2: def p((scala.List[scala.Any]) => scala.Boolean): scala.Int(2)
+  def p(f:List[Any] => Boolean) = 2;
+      ^
+one error found

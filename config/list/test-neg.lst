@@ -22,6 +22,7 @@ neg/bug67.scala
 neg/bug72.scala
 neg/bug74.scala
 neg/bug75.scala
+neg/bugs.scala
 neg/constrparams.scala
 neg/cyclic.scala
 neg/doubledefs.scala
