@@ -4208,14 +4208,13 @@ grammar.
   Pattern1        ::=  varid `:' Type
                     |  `_' `:' Type
 		    |  Pattern2
-  Pattern2        ::=  SimplePattern [ '*' | '?' | '+' ]
+  Pattern2        ::=  [varid `@'] Pattern3
+  Pattern3        ::=  SimplePattern [ '*' | '?' | '+' ]
                     |  SimplePattern { id SimplePattern }
-  SimplePattern   ::=  varid [ '@' SimplePattern ]
-                    |  `_'
+  SimplePattern   ::=  `_'
                     |  literal
                     |  StableId [ `(' [Patterns] `)' ]
-                    |  `(' Patterns `)'
-                    |   
+                    |  `(' [Patterns] `)'
   Patterns        ::=  Pattern {`,' Pattern}
 
   TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
