@@ -137,4 +137,6 @@ xml/Generic.scala
 xml/PCDATA.scala
 xml/ScalaFactoryAdapter.scala
 
+xml/path/Expression.scala
+
 ##############################################################################
