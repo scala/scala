@@ -1,0 +1,4 @@
+matthias2.scala:7: illegal cyclic reference involving value y
+    override val y: T;
+                 ^
+one error found

@@ -1,0 +1,4 @@
+S4.scala:5: stable identifier required
+    def foo(x: a.Inner) = x;
+               ^
+one error found

@@ -1,0 +1,172 @@
+altherr3.scala:26: polymorphic expression of type [a <: scala.Any]bug.Foo[a] cannot be instantiated from expected type scala.Int
+  bar0[Int](foo0());                             // error  1
+                ^
+altherr3.scala:27: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar0[Int](foo0(foo0()));                       // error  2
+                ^
+altherr3.scala:28: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[scala.Any]]]
+ required: scala.Int
+  bar0[Int](foo0(foo0(foo0())));                 // error  3
+                ^
+altherr3.scala:29: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[bug.Foo[scala.Any]]]]
+ required: scala.Int
+  bar0[Int](foo0(foo0(foo0(foo0()))));           // error  4
+                ^
+altherr3.scala:32: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar0[Foo[Int]](foo0(foo0()));                  // error  5
+                     ^
+altherr3.scala:33: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar0[Foo[Int]](foo0(foo0(foo0())));            // error  6
+                          ^
+altherr3.scala:34: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[scala.Any]]]
+ required: scala.Int
+  bar0[Foo[Int]](foo0(foo0(foo0(foo0()))));      // error  7
+                          ^
+altherr3.scala:38: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar0[Foo[Foo[Int]]](foo0(foo0(foo0())));       // error  8
+                               ^
+altherr3.scala:39: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar0[Foo[Foo[Int]]](foo0(foo0(foo0(foo0())))); // error  9
+                                    ^
+altherr3.scala:49: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar1[Int](foo0(foo0()));                       // error 10
+                ^
+altherr3.scala:50: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar1[Int](foo0(foo0(foo0())));                 // error 11
+                     ^
+altherr3.scala:51: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[scala.Any]]]
+ required: scala.Int
+  bar1[Int](foo0(foo0(foo0(foo0()))));           // error 12
+                     ^
+altherr3.scala:55: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar1[Foo[Int]](foo0(foo0(foo0())));            // error 13
+                          ^
+altherr3.scala:56: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar1[Foo[Int]](foo0(foo0(foo0(foo0()))));      // error 14
+                               ^
+altherr3.scala:61: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar1[Foo[Foo[Int]]](foo0(foo0(foo0(foo0())))); // error 15
+                                    ^
+altherr3.scala:72: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar2[Int](foo0(foo0(foo0())));                 // error 16
+                     ^
+altherr3.scala:73: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar2[Int](foo0(foo0(foo0(foo0()))));           // error 17
+                          ^
+altherr3.scala:78: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar2[Foo[Int]](foo0(foo0(foo0(foo0()))));      // error 18
+                               ^
+altherr3.scala:88: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: bug.Foo[bug.Foo[bug.Foo[<any type>]]]
+  bar3(foo0(foo0()));                            // error 19 (inference fails)
+           ^
+altherr3.scala:95: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar3[Int](foo0(foo0(foo0(foo0()))));           // error 20
+                          ^
+altherr3.scala:116: polymorphic expression of type [a <: scala.Any]bug.Foo[a] cannot be instantiated from expected type scala.Int
+  bar0[Int](foo1());                             // error 21
+                ^
+altherr3.scala:117: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar0[Int](foo1(foo1()));                       // error 22
+                ^
+altherr3.scala:118: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[scala.Any]]]
+ required: scala.Int
+  bar0[Int](foo1(foo1(foo1())));                 // error 23
+                ^
+altherr3.scala:119: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[bug.Foo[scala.Any]]]]
+ required: scala.Int
+  bar0[Int](foo1(foo1(foo1(foo1()))));           // error 24
+                ^
+altherr3.scala:122: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar0[Foo[Int]](foo1(foo1()));                  // error 25
+                     ^
+altherr3.scala:123: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar0[Foo[Int]](foo1(foo1(foo1())));            // error 26
+                          ^
+altherr3.scala:124: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[scala.Any]]]
+ required: scala.Int
+  bar0[Foo[Int]](foo0(foo1(foo1(foo1()))));      // error 27
+                          ^
+altherr3.scala:128: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar0[Foo[Foo[Int]]](foo1(foo1(foo1())));       // error 28
+                               ^
+altherr3.scala:129: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar0[Foo[Foo[Int]]](foo1(foo0(foo1(foo1())))); // error 29
+                                    ^
+altherr3.scala:139: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar1[Int](foo1(foo1()));                       // error 30
+                ^
+altherr3.scala:140: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar1[Int](foo1(foo1(foo1())));                 // error 31
+                     ^
+altherr3.scala:141: type mismatch;
+ found   : bug.Foo[bug.Foo[bug.Foo[scala.Any]]]
+ required: scala.Int
+  bar1[Int](foo1(foo1(foo1(foo1()))));           // error 32
+                     ^
+altherr3.scala:145: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar1[Foo[Int]](foo1(foo1(foo1())));            // error 33
+                          ^
+altherr3.scala:146: type mismatch;
+ found   : bug.Foo[bug.Foo[scala.Any]]
+ required: scala.Int
+  bar1[Foo[Int]](foo1(foo1(foo1(foo1()))));      // error 34
+                               ^
+altherr3.scala:151: polymorphic argument cannot be instantiated to formal parameter type;
+ found   : [a <: scala.Any]bug.Foo[a]
+ required: scala.Int
+  bar1[Foo[Foo[Int]]](foo1(foo1(foo1(foo1())))); // error 35
+                                    ^
+35 errors found

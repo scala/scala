@@ -1,0 +1,4 @@
+S7.scala:6: illegal cyclic reference involving class S7.A
+    class C() extends a.A() {}
+          ^
+one error found

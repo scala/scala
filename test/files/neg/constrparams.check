@@ -1,0 +1,4 @@
+constrparams.scala:4: stable identifier required
+  private val z: x.t = null; //error
+                 ^
+one error found
