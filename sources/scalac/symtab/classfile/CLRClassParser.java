@@ -39,8 +39,7 @@ public class CLRClassParser extends SymbolLoader {
 
     private static JavaTypeFactory make;
 
-    private static final CLRPackageParser clrParser =
-	CLRPackageParser.instance();
+    private static final CLRTypes clrTypes = CLRTypes.instance();
 
     private final Type type;
 
@@ -55,6 +54,8 @@ public class CLRClassParser extends SymbolLoader {
     private Scope statics;
     scalac.symtab.Type clazzType;
 
+    private final Scope tvars = new Scope();
+
     protected String doComplete(Symbol root) {
 	clazz = root;
 	clazz.owner().initialize(); //???
@@ -65,13 +66,15 @@ public class CLRClassParser extends SymbolLoader {
 	clazz.flags = translateAttributes(type);
 	Type[] ifaces = type.getInterfaces();
 	scalac.symtab.Type[] baseTypes = new scalac.symtab.Type[ifaces.length+1];
-	baseTypes[0] = type.BaseType == null ? make.anyType()
-	    : getCLRType(type.BaseType);
+	baseTypes[0] = type.BaseType() == null ? make.anyType()
+	    : getCLRType(type.BaseType());
 	for (int i = 0; i < ifaces.length; i++)
 	    baseTypes[i + 1] = getCLRType(ifaces[i]);
 	members = new Scope();
 	statics = new Scope();
-	clazz.setInfo(scalac.symtab.Type.compoundType(baseTypes, members, clazz));
+        scalac.symtab.Type clazzInfo =
+            scalac.symtab.Type.compoundType(baseTypes, members, clazz);
+	clazz.setInfo(clazzInfo);
         Symbol staticsModule = clazz.linkedModule();
 	staticsClass = staticsModule.moduleClass();
         assert staticsClass.isModuleClass(): Debug.show(staticsClass);
@@ -98,7 +101,7 @@ public class CLRClassParser extends SymbolLoader {
 	    CLRClassParser loader = new CLRClassParser(global, ntype);
 	    Symbol nclazz =
 		clazz.owner().newLoadedClass(JAVA, classname, loader, null);
-	    clrParser.map(nclazz, ntype);
+	    clrTypes.map(nclazz, ntype);
 	    // create an alias in the module of the outer class
 	    Symbol alias = staticsClass.newTypeAlias(Position.NOPOS,
                 translateAttributes(ntype), aliasname, make.classType(nclazz));
@@ -118,9 +121,9 @@ public class CLRClassParser extends SymbolLoader {
                     getConstant(fieldType.symbol(), fields[i].getValue()));
 	    Symbol owner = fields[i].IsStatic() ? staticsClass : clazz;
 	    Symbol field = owner.newField(Position.NOPOS, mods, name);
-	    field.setInfo(fieldType);
+            parseMeta(field, fields[i], fieldType);
 	    (fields[i].IsStatic() ? statics : members).enterOrOverload(field);
-	    clrParser.map(field, fields[i]);
+	    clrTypes.map(field, fields[i]);
 	}
 
 	Set methodsSet = new HashSet(Arrays.asList(type.getMethods()));
@@ -156,7 +159,7 @@ public class CLRClassParser extends SymbolLoader {
 	    setParamOwners(mtype, method);
 	    method.setInfo(mtype);
 	    (getter.IsStatic() ? statics : members).enterOrOverload(method);
-	    clrParser.map(method, getter);
+	    clrTypes.map(method, getter);
 	    assert methodsSet.contains(getter) : "" + getter;
 	    methodsSet.remove(getter);
 
@@ -165,7 +168,7 @@ public class CLRClassParser extends SymbolLoader {
 		continue;
 	    ParameterInfo[] sparams = setter.GetParameters();
 	    assert getter.IsStatic() == setter.IsStatic();
-	    assert setter.ReturnType == clrParser.VOID;
+	    assert setter.ReturnType == clrTypes.VOID;
 	    assert sparams.length == gparams.length + 1 : "" + getter + "; " + setter;
 
 	    if (gparams.length == 0)
@@ -178,14 +181,14 @@ public class CLRClassParser extends SymbolLoader {
 	    setParamOwners(mtype, method);
 	    method.setInfo(mtype);
 	    (setter.IsStatic() ? statics : members).enterOrOverload(method);
-	    clrParser.map(method, setter);
+	    clrTypes.map(method, setter);
 	    assert methodsSet.contains(setter) : "" + setter;
 	    methodsSet.remove(setter);
 	}
 
 	for (Iterator i = methodsSet.iterator(); i.hasNext(); ) {
 	    MethodInfo method = (MethodInfo)i.next();
-	    if ((clrParser.getSymbol(method) != null) || method.IsPrivate()
+	    if ((clrTypes.getSymbol(method) != null) || method.IsPrivate()
 		|| method.IsAssembly() || method.IsFamilyAndAssembly())
 		continue;
 	    createMethod(method);
@@ -235,25 +238,46 @@ public class CLRClassParser extends SymbolLoader {
 		constr.flags |= Modifiers.PRIVATE;
 	}
 
-	return type + " from assembly " + type.Assembly;
+        parseMeta(clazz, type, clazzInfo);
+
+	return type + " from assembly " + type.Assembly();
     }
 
+    private scalac.symtab.Type parseMeta(Symbol sym,
+                                         ICustomAttributeProvider member,
+                                         scalac.symtab.Type defaultType)
+    {
+        scalac.symtab.Type symbolType = null;
+        if (!member.IsDefined(clrTypes.PICO_META_ATTR, false)) {
+            symbolType = defaultType;
+        } else {
+            Object[] attrs =
+                member.GetCustomAttributes(clrTypes.PICO_META_ATTR, false);
+            assert attrs.length == 1 : "attrs.length = " + attrs.length;
+            String meta =
+                (String)((Attribute)attrs[0]).getConstructorArguments()[0];
+            symbolType = new MetaParser
+                (meta, tvars, sym, defaultType, clazz, clazzType, make).parse();
+        }
+        sym.setInfo(symbolType);
+        return symbolType;
+    }
 
-    private void createConstructor(ConstructorInfo constructor) {
-	scalac.symtab.Type mtype = methodType(constructor, clazzType);
+    private void createConstructor(ConstructorInfo constr) {
+	scalac.symtab.Type mtype = methodType(constr, clazzType);
 	if (mtype == null)
 	    return;
-	Symbol constr = clazz.primaryConstructor();
-	int mods = translateAttributes(constructor);
-	if (constr.isInitialized()) {
-	    constr = clazz.newConstructor(Position.NOPOS, mods);
-	    clazz.addConstructor(constr);
+	Symbol constrSym = clazz.primaryConstructor();
+	int mods = translateAttributes(constr);
+	if (constrSym.isInitialized()) {
+	    constrSym = clazz.newConstructor(Position.NOPOS, mods);
+	    clazz.addConstructor(constrSym);
 	} else {
-	    constr.flags = mods;
+	    constrSym.flags = mods;
 	}
-	setParamOwners(mtype, constr);
-	constr.setInfo(mtype);
-	clrParser.map(constr, constructor);
+	setParamOwners(mtype, constrSym);
+        parseMeta(constrSym, constr, mtype);
+	clrTypes.map(constrSym, constr);
     }
 
     private void createMethod(MethodInfo method) {
@@ -266,9 +290,9 @@ public class CLRClassParser extends SymbolLoader {
 	Symbol methodSym =
 	    owner.newMethod(Position.NOPOS, mods, getName(method));
 	setParamOwners(mtype, methodSym);
-	methodSym.setInfo(mtype);
+        parseMeta(methodSym, method, mtype);
 	(method.IsStatic() ? statics : members).enterOrOverload(methodSym);
-	clrParser.map(methodSym, method);
+	clrTypes.map(methodSym, method);
     }
 
     private Name getName(MethodInfo method) {
@@ -282,20 +306,9 @@ public class CLRClassParser extends SymbolLoader {
 	if (name.equals("Finalize") && params.length == 0)
             return Names.finalize;
 	if (name.equals("Equals") && params.length == 1
-            && params[0].ParameterType == clrParser.OBJECT)
+            && params[0].ParameterType == clrTypes.OBJECT)
             return Names.equals;
 	return Name.fromString(name);
-    }
-
-    //##########################################################################
-
-    private String initializeJavaLangObject(Symbol sym) {
-	MethodInfo[] methods = type.getMethods();
-	return "java.lang.Object from internal data";
-    }
-
-    private String initializeJavaLangString(Symbol sym) {
-	return "java.lang.String from internal data";
     }
 
     //##########################################################################
@@ -358,44 +371,44 @@ public class CLRClassParser extends SymbolLoader {
     }
 
     private scalac.symtab.Type getCLSType(Type type) {
-	if (type == clrParser.BYTE || type == clrParser.USHORT
-	    || type == clrParser.UINT || type == clrParser.ULONG
+	if (/*type == clrTypes.BYTE ||*/ type == clrTypes.USHORT
+	    || type == clrTypes.UINT || type == clrTypes.ULONG
 	    || type.IsNotPublic() || type.IsNestedPrivate()
 	    || type.IsNestedAssembly() || type.IsNestedFamANDAssem()
 	    || type.IsPointer()
 	    || (type.IsArray() && getCLSType(type.GetElementType()) == null))
 	    return null;
-	//Symbol s = clrParser.getSymbol(type);
+	//Symbol s = clrTypes.getSymbol(type);
 	//scalac.symtab.Type t = s != null ? make.classType(s) : getCLRType(type);
 	return getCLRType(type);
     }
 
     private scalac.symtab.Type getCLRType(Type type) {
-	if (type == clrParser.OBJECT)
+	if (type == clrTypes.OBJECT)
 	    return make.objectType();
-	if (type == clrParser.STRING)
+	if (type == clrTypes.STRING)
 	    return make.stringType();
-	if (type == clrParser.VOID)
+	if (type == clrTypes.VOID)
 	    return make.voidType();
-	if (type == clrParser.BOOLEAN)
+	if (type == clrTypes.BOOLEAN)
 	    return make.booleanType();
-	if (type == clrParser.CHAR)
+	if (type == clrTypes.CHAR)
 	    return make.charType();
-	if (type == clrParser.BYTE || type == clrParser.UBYTE)
+	if (type == clrTypes.BYTE || type == clrTypes.UBYTE)
 	    return make.byteType();
-	if (type == clrParser.SHORT || type == clrParser.USHORT)
+	if (type == clrTypes.SHORT || type == clrTypes.USHORT)
 	    return make.shortType();
-	if (type == clrParser.INT || type == clrParser.UINT)
+	if (type == clrTypes.INT || type == clrTypes.UINT)
 	    return make.intType();
-	if (type == clrParser.LONG || type == clrParser.ULONG)
+	if (type == clrTypes.LONG || type == clrTypes.ULONG)
 	    return make.longType();
-	if (type == clrParser.FLOAT)
+	if (type == clrTypes.FLOAT)
 	    return make.floatType();
-	if (type == clrParser.DOUBLE)
+	if (type == clrTypes.DOUBLE)
 	    return make.doubleType();
 	if (type.IsArray())
 	    return make.arrayType(getCLRType(type.GetElementType()));
-	Symbol s = clrParser.getSymbol(type);
+	Symbol s = clrTypes.getSymbol(type);
 	return s != null ? make.classType(s) : getClassType(type);
     }
 
