@@ -27,6 +27,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     private Symbol[] refsym = new Symbol[4];
     private int level;
     private HashMap symIndex = new HashMap();
+    private Definitions definitions = global.definitions;
 
     void pushLevel() {
 	level++;
@@ -118,7 +119,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     public Tree nullTree(int pos, Type tp) {
 	return gen.TypeApply(
-	    gen.Ident(pos, global.definitions.NULL),
+	    gen.Ident(pos, definitions.NULL),
 	    new Tree[]{gen.mkType(pos, tp)});
     }
 
@@ -128,7 +129,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    (sym.owner().isPackage() || isGlobalModule(sym.owner().module()));
     }
 
-    private Tree[] transformModule(Tree tree) {
+    private Tree[] transformModule(Tree tree, int mods, Name name, Tree tpe, Tree.Template templ) {
 	Symbol sym = tree.symbol();
 	Tree cdef = make.ClassDef(
 	    tree.pos,
@@ -159,7 +160,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Tree body = gen.Block(new Tree[]{
 		gen.If(
 		    gen.Apply(
-			gen.Select(gen.mkRef(tree.pos, mvar), global.definitions.EQEQ),
+			gen.Select(gen.mkRef(tree.pos, mvar), definitions.EQEQ),
 			new Tree[]{nullTree(tree.pos, sym.type())}),
 		    gen.Assign(gen.mkRef(tree.pos, mvar), alloc),
 		    gen.Block(tree.pos, Tree.EMPTY_ARRAY)),
@@ -174,33 +175,82 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     private boolean hasImplementation(Symbol clazz, Name name) {
-	Symbol sym = clazz.lookupNonPrivate(name);
+	Symbol sym = clazz.info().lookupNonPrivate(name);
 	return sym.kind == VAL &&
-	    sym.owner() != Definitions.ANY_CLASS &&
-	    (sym.flags & DEFERRED) == 0;
+	    (sym.owner() == clazz ||
+	     !definitions.JAVA_OBJECT_CLASS.isSubClass(sym.owner()) &&
+	     (sym.flags & DEFERRED) == 0);
     }
 
-    private Tree toStringMethod(Symbol clazz) {
+    private Tree[] caseFields(ClassSymbol clazz) {
+	Symbol[] tparams = clazz.typeParams();
+	Tree[] fields = new Tree[clazz.constructor().type().firstParams().length];
+	for (int i = 0; i < fields.length; i++) {
+	    fields[i] = gen.mkRef(
+		clazz.pos, clazz.thisType(), clazz.caseFieldAccessor(i));
+	}
+	return fields;
+    }
 
-
-
-    private Tree[] addCaseMethods(Tree[] stats, Symbol clazz) {
-	if ((clazz.flags & CASE) != 0) {
-	    TreeList ts = new TreeList();
-	    if (!hasImplementation(clazz, Names.toString))
-		ts.append(toStringMethod(clazz))
-	    if (!hasImplementation(clazz, Names.EQEQ))
-		ts.append(equalsMethod(clazz));
-	    if (!hasImplementation(clazz, Names.hashCode))
-		ts.append(hashCodeMethod(clazz));
-	    if (ts.length() > 0) {
-		Tree[] stats1 = new Tree[stats.length + ts.length());
-		System.arraycopy(stats, 0, stats1, 0, stats.length);
-		ts.copyTo(stats1, stats.length);
-		return stats1;
+    private Tree toStringMethod(ClassSymbol clazz) {
+	Tree[] fields = caseFields(clazz);
+	Tree body;
+	if (fields.length == 0) {
+	    body = gen.mkStringLit(
+		clazz.pos, NameTransformer.decode(clazz.name).toString());
+	} else {
+	    body = gen.mkStringLit(
+		clazz.pos, NameTransformer.decode(clazz.name).toString() + "(");
+	    for (int i = 0; i < fields.length; i++) {
+		body = gen.Apply(
+		    gen.Select(body, definitions.STRING_PLUS_ANY),
+		    new Tree[]{fields[i]});
+		body = gen.Apply(
+		    gen.Select(body, definitions.STRING_PLUS_ANY),
+		    new Tree[]{gen.mkStringLit(clazz.pos, (i == fields.length - 1) ? ")" : ",")});
 	    }
 	}
-	return stats;
+	Symbol toStringSym = new TermSymbol(
+	    clazz.pos, Names.toString, clazz, OVERRIDE)
+	    .setInfo(definitions.TOSTRING.type());
+	clazz.info().members().enter(toStringSym);
+	return gen.DefDef(clazz.pos, toStringSym, body);
+    }
+
+    private Tree equalsMethod(ClassSymbol clazz) {
+	return Tree.Empty;
+    }
+
+    private Tree hashCodeMethod(ClassSymbol clazz) {
+	return Tree.Empty;
+    }
+
+    private Template addCaseMethods(Template templ, Symbol sym) {
+	if (sym.kind == CLASS && (sym.flags & CASE) != 0) {
+	    Tree[] body1 = addCaseMethods(templ.body, (ClassSymbol) sym);
+	    return copy.Template(templ, templ.parents, body1);
+	}
+	return templ;
+    }
+
+    private Tree[] addCaseMethods(Tree[] stats, ClassSymbol clazz) {
+	TreeList ts = new TreeList();
+	if (!hasImplementation(clazz, Names.toString))
+	    ts.append(toStringMethod(clazz));
+/*
+	if (!hasImplementation(clazz, Names.EQEQ))
+	    ts.append(equalsMethod(clazz));
+	if (!hasImplementation(clazz, Names.hashCode))
+	    ts.append(hashCodeMethod(clazz));
+*/
+	if (ts.length() > 0) {
+	    Tree[] stats1 = new Tree[stats.length + ts.length()];
+	    System.arraycopy(stats, 0, stats1, 0, stats.length);
+	    ts.copyTo(stats1, stats.length);
+	    return stats1;
+	} else {
+	    return stats;
+	}
     }
 
 
@@ -210,7 +260,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Tree resultTree;
 	switch (tree) {
 	case ModuleDef(int mods, Name name, Tree tpe, Tree.Template templ):
-	    return transform(transformModule(tree));
+	    return transform(transformModule(tree, mods, name, tpe, templ));
 
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
@@ -235,10 +285,13 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     public Tree transform(Tree tree) {
 	Tree tree1;
 	switch (tree) {
+	case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
+	    return super.transform(
+		copy.ClassDef(tree, mods, name, tparams, vparams, tpe, addCaseMethods(templ, tree.symbol())));
+
 	case Template(Tree[] bases, Tree[] body):
 	    Tree[] bases1 = transform(bases);
-	    Tree[] body1 = addCaseMethods(
-		transformStats(body), tree.symbol().owner());
+	    Tree[] body1 = transformStats(body);
 	    return copy.Template(tree, bases1, body1);
 	case Block(Tree[] stats):
 	    Tree[] stats1 = transformStats(stats);
