@@ -298,7 +298,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	sym.flags |= ACCESSED;
 	Ident tree = make.Ident(pos, sym);
         global.nextPhase();
-	if (sym.isStable())
+	if (sym.isStable() && global.currentPhase.id <= global.PHASE.UNCURRY.id()) // !!! tmp hack
             tree.setType(Type.singleType(sym.owner().thisType(), sym));
         else
             tree.setType(sym.type());
@@ -315,7 +315,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	sym.flags |= ACCESSED | SELECTOR;
 	Select tree = make.Select(pos, sym, qual);
         global.nextPhase();
-	if (sym.isStable() && qual.type.isStable())
+	if (sym.isStable() && qual.type.isStable() && global.currentPhase.id <= global.PHASE.UNCURRY.id()) // !!! tmp hack
             tree.setType(Type.singleType(qual.type, sym));
         else
             tree.setType(qual.type.memberType(sym));
