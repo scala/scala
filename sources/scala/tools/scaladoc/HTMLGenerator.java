@@ -224,6 +224,7 @@ public class HTMLGenerator {
     protected final Symbol helpPage  = new NoSymbol();
 
     private final Symbol JAVALANG; // !!! remove ?
+    private final Type ROOT_TYPE; // !!! remove ?
 
     /**
      * Creates a new instance.
@@ -238,6 +239,7 @@ public class HTMLGenerator {
 	this.anchors = Anchors.apply(tree);
 
         this.JAVALANG = global.definitions.getClass(Names.java_lang);
+        this.ROOT_TYPE = global.definitions.ROOT.thisType();
         assert global.args instanceof HTMLGeneratorCommand;
         HTMLGeneratorCommand args = (HTMLGeneratorCommand) global.args;
         this.representation = new HTMLRepresentation(
@@ -1045,7 +1047,7 @@ public class HTMLGenerator {
 	    if (pre1 == null && args.length == 0 && isReferenced(sym))
 		return null;
 	    else {
-		pre1 = pre1 == null ? global.definitions.ROOT_TYPE : pre1;
+		pre1 = pre1 == null ? ROOT_TYPE : pre1;
 		return Type.typeRef(pre1, sym, args);
 	    }
 	case SingleType(Type pre, Symbol sym):
@@ -1056,9 +1058,9 @@ public class HTMLGenerator {
 			return null;
 		    }
 		    else
-			return Type.singleType(global.definitions.ROOT_TYPE, sym);
+			return Type.singleType(ROOT_TYPE, sym);
 		else
-		    return Type.singleType(global.definitions.ROOT_TYPE, sym);
+		    return Type.singleType(ROOT_TYPE, sym);
 	    }
 	    else
 		return Type.singleType(pre1, sym);
