@@ -165,7 +165,6 @@ final class TypeCreator {
     public void init() {
 	if (initialized)
 	    return;
-
 	final Symbol JOBJECT = defs.OBJECT_CLASS;
 	final Symbol JSTRING = defs.STRING_CLASS;
 
@@ -347,7 +346,8 @@ final class TypeCreator {
     private void mapMethod(Symbol sym, Type newClazz, String name, Type[] params) {
 	MethodInfo method = newClazz.GetMethod(name, params);
 	assert method != null : "Cannot find translation for: "
-	    + methodSignature(sym);
+	    + methodSignature(sym) + "->" + newClazz
+	    + "::" + name + methodSignature(params);
 	symbols2methods.put(sym, method);
     }
 
@@ -440,48 +440,40 @@ final class TypeCreator {
      */
     public Type getType(Symbol sym) {
 	if (sym == null) return null; // FIXME: assert sym != null ?
+	if (sym == defs.ANY_CLASS || sym == defs.ANYREF_CLASS || sym == defs.OBJECT_CLASS)
+	    return OBJECT;
+	if (sym == defs.STRING_CLASS)
+	    return STRING;
+
 	Type type = (Type) symbols2types.get(sym);
-	if (type != null)
+	if (type != null && (sym.isExternal() || type instanceof TypeBuilder))
 	    return type;
+	final Symbol owner = sym.owner();
 	MemberInfo m = ti.getMember(sym);
-	if (m != null && m instanceof Type)
+	if (m != null && m instanceof Type &&
+	    (sym.isExternal() || m instanceof TypeBuilder))
 	    type = (Type)m;
- 	else if (sym.isJava()) {
-// 	if (sym.isExternal()) {
-	    type = getType(global.primitives.getCLRClassName(sym));
+ 	else if (sym.isExternal()) {
+	    if (sym.isClass()) {
+		if (owner.isClass()) {
+		    Type ownerType = getType(owner);
+		    assert ownerType != null : Debug.show(owner);
+		    type = ownerType.GetNestedType(sym.name.toString());
+		} else {
+		    String name = global.primitives.getCLRClassName(sym);
+		    type = getType(sym.isModuleClass() && !sym.isJava()
+				   ? name + "$" : name);
+		}
+	    } else {
+		type = getType(sym.info());
+	    }
 	    if (type == null)
-		System.out.println("getType: resolution failed for "
-				   + global.primitives.getCLRClassName(sym));
+		throw Debug.abort("Type resolution failed for "+Debug.show(sym));
 	}
 	if (type == null) {
-	    final Symbol owner = sym.owner();
 	    switch (sym.info()) {
 	    case CompoundType(_, _):
-		if (sym.owner().isClass()) {
-		    Type outer = getType(sym.owner());
-		    if (outer == null)
-			throw new ApplicationError("Cannot find type: "
-						   + Debug.show(owner));
-		    type = (Type) symbols2types.get(sym);
-		    if (type != null)
-			return type;
-		    if (outer instanceof TypeBuilder)
-			return createType(sym);
-		    String name = sym.nameString()
-			+ (sym.isModuleClass() ? "$" : "");
-		    type = outer.GetNestedType(name);
-		} else {
-		    String fullname = global.primitives.getCLRClassName(sym.type().symbol()) +
-			(sym.isModuleClass() ? "$" : "");
-		    type = getType(fullname);
-		}
-		if (type == null) {
-		    if (!sym.isExternal())
-			type = createType(sym);
-		    else
-			global.fail("Cannot find type " + Debug.show(sym) +
-			    "; use the '-r' option to specify its assembly");
-		}
+		type = createType(sym);
 		break;
 
  	    case UnboxedArrayType(scalac.symtab.Type elemtp):
@@ -492,7 +484,9 @@ final class TypeCreator {
 		type = getType(sym.info());
 	    }
 	}
-	assert type != null : "Unable to find type: " + Debug.show(sym);
+	if (type == null)
+	    global.error("Cannot find class " + Debug.show(sym) +
+			 "; use the '-r' option to specify its assembly");
 	map(sym, type);
 	return type;
     }
@@ -515,17 +509,14 @@ final class TypeCreator {
 	case NoType:
 	    return VOID;
 	default:
-	    global.fail("getType: " + Debug.show(type));
+	    throw Debug.abort(Debug.show(type));
 	}
-	return null;
     }
 
     public Type createType(Symbol clazz) {
 	try { return createType0(clazz); }
 	catch (Error e) {
-	    System.err.println("while creating type for " + Debug.show(clazz));
-	    System.err.println("" + clazz.members());
-	    throw e;
+	    throw Debug.abort(Debug.show(clazz), e);
 	}
     }
 
@@ -535,19 +526,17 @@ final class TypeCreator {
     public Type createType0(Symbol clazz) {
 	assert !clazz.isExternal() : "Can not create type " + Debug.show(clazz);
 	Type type = (Type)symbols2types.get(clazz);
-	TypeBuilder staticType = null;
 	assert type == null : "Type " + type +
 	    " already defined for symbol: " + Debug.show(clazz);
 
-	//System.out.println("createType: " + Debug.show(clazz));
-
+	TypeBuilder staticType = null;
 	final Symbol owner = clazz.owner();
 	final String staticTypeName = owner.isClass()
 	    ? clazz.nameString()
 	    : global.primitives.getCLRClassName(clazz);
 	final String typeName =
 	    staticTypeName + (clazz.isModuleClass() ? "$" : "");
-	final ModuleBuilder module = gen.getCurrentModule();
+	final ModuleBuilder moduleBuilder = gen.getCurrentModule();
 	final scalac.symtab.Type classType = clazz.info();
 	switch (classType) {
 	case CompoundType(scalac.symtab.Type[] baseTypes, _):
@@ -573,31 +562,39 @@ final class TypeCreator {
 		    interfaces[i - 1] = getType(baseTypes[i].symbol());
 	    }
 
-	    type = (Type) symbols2types.get(clazz);
+	    type = (TypeBuilder) symbols2types.get(clazz);
 	    if (type != null)
 		return type;
 
 	    if (owner.isPackageClass()) {  // i.e. top level class
-		type = module.DefineType
+		type = moduleBuilder.DefineType
 		    (typeName, translateTypeAttributes(clazz.flags, false),
 		     superType, interfaces);
-		if (clazz.isModuleClass()
-		    && owner.members().lookup(clazz.name).isNone())
-		    {
-			staticType = module.DefineType
-			    (staticTypeName,
-			     translateTypeAttributes(clazz.flags, false),
-			     superType, interfaces);
-		    }
+		//System.out.println("Created type " + type);
+		if (clazz.isModuleClass()) {
+		    Symbol module = owner.members().lookup(clazz.name.toTermName());
+		    Symbol linkedClass = module.linkedClass();
+
+ 		    if (linkedClass == null || linkedClass.info().isError()) {
+			staticType = moduleBuilder.DefineType
+ 			    (staticTypeName,
+ 			     translateTypeAttributes(clazz.flags, false),
+ 			     superType, interfaces);
+ 		    }
+		}
 	    } else {
 		final Type outerType = (Type) getType(owner);
 		// check if the type have not been created by
 		// the (possible) creation of the outer type
-		if (outerType instanceof TypeBuilder)
-		    type = ((TypeBuilder)outerType).DefineNestedType
-			(typeName, translateTypeAttributes(clazz.flags, true),
-			 superType, interfaces);
-		else return outerType.GetNestedType(typeName);
+		type = (TypeBuilder) symbols2types.get(clazz);
+		if (type != null)
+		    return type;
+
+		assert outerType instanceof TypeBuilder : Debug.show(clazz);
+		type = ((TypeBuilder)outerType).DefineNestedType
+		    (typeName, translateTypeAttributes(clazz.flags, true),
+		     superType, interfaces);
+		//System.out.println("Created nested type " + type);
 	    }
 	    break;
 
@@ -680,12 +677,32 @@ final class TypeCreator {
 	MethodBase method = null;
 	try {
 	    method = getMethod0(sym);
-	} catch (RuntimeException e) {
-	    System.err.println("for method " + Debug.show(sym));
-	    System.err.println(symbols2methods);
-	    throw e;
+	} catch (Throwable e) {
+	    printMapping(sym, symbols2methods);
+	    throw Debug.abort(e);
 	}
 	return method;
+    }
+
+    private static String dumpSymbol(Symbol sym) {
+	return Debug.show(sym) + " : " + Integer.toHexString(sym.flags);
+    }
+    private void printMapping(Symbol sym, Map map) {
+	System.out.println("For symbol " + dumpSymbol(sym));
+	for (Iterator entries = map.entrySet().iterator();
+	     entries.hasNext(); )
+	    {
+		Map.Entry entry = (Map.Entry)entries.next();
+		Symbol sentry = (Symbol)entry.getKey();
+		if (sentry.owner() == sym.owner()
+		    && sentry.name == sym.name)
+		    {
+			System.out.println("Existing mapping "
+					   + dumpSymbol(sentry) + " => "
+					   + entry.getValue());
+		    }
+	    }
+	System.out.println("Scope of owner: " + sym.owner().members());
     }
 
     /**
@@ -721,18 +738,33 @@ final class TypeCreator {
 		    if (sym.name == Names.toString) name = "ToString";
 		    else if (sym.name == Names.hashCode) name = "GetHashCode";
 		    else if (sym.name == Names.equals) name = "Equals";
-		    method = owner.GetMethod(name, params);
+		    else if (sym.name == Name.fromString("clone")) name = "MemberwiseClone";
+		    method = owner instanceof TypeBuilder
+			? findMethod(sym.owner(), sym)
+			: owner.GetMethod(name, params);
 		}
 		break;
 	    default:
 		global.fail("Symbol doesn't have a method type: " + Debug.show(sym));
 	    }
+	    assert method != null
+		: Debug.show(owner) + " => Cannot find method: " + methodSignature(sym);
 	}
-	assert method != null : "Cannot find method: " + methodSignature(sym);
 	symbols2methods.put(sym, method);
 	return method;
     }
 
+    private MethodBase findMethod(Symbol owner, Symbol member) {
+	Symbol[] ms = owner.lookup(member.name).alternativeSymbols();
+	for (int i = 0; i < ms.length; i++)
+	    if (member.info().isSameAs(ms[i].info())) {
+		MethodBase m = getMethod(ms[i]);
+		if (m != null)
+		    return m;
+	    }
+	System.out.println("Couldn't find mapping for " + Debug.show(member));
+	return null;
+    }
 
     private MethodBase createMethod(Symbol sym) {
 	MethodBase method =
@@ -872,8 +904,10 @@ final class TypeCreator {
     private Map syms2staticTypes = new HashMap();
 
     public TypeBuilder getStaticType(Symbol moduleClass) {
+	getType(moduleClass); // force the creation of the Type
 	TypeBuilder staticType = (TypeBuilder)syms2staticTypes.get(moduleClass);
-	assert staticType != null : Debug.show(moduleClass);
+// 	assert staticType != null : Debug.show(moduleClass)
+// 	    + " : " + syms2staticTypes;
 	return staticType;
     }
     /*
@@ -993,8 +1027,8 @@ final class TypeCreator {
 
 	if (Modifiers.Helper.isPrivate(mods))
 	    attr |= MethodAttributes.Private;
-	//else if (Modifiers.Helper.isProtected(mods))
-	//  attr |= MethodAttributes.FamORAssem;
+	else if (Modifiers.Helper.isProtected(mods))
+	    attr |= MethodAttributes.Family;
 	else
 	    attr |= MethodAttributes.Public;
 
