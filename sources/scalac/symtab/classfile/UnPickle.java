@@ -593,8 +593,8 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	    switch (tag) {
 	    case TERMname:
 	    case TYPEname:
-		out.print(" " +
-		    SourceRepresentation.ascii2string(bytes, bp, len));
+		String name = SourceRepresentation.ascii2string(bytes, bp, len);
+		out.print(" " + SourceRepresentation.escape(name));
 		bp = end;
 		break;
 	    case NONEsym:
