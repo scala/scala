@@ -191,9 +191,14 @@ public class ExpandMixinsPhase extends Phase {
         }
         public Tree transform(Tree tree) {
             switch (tree) {
+            case ValDef(_, _, _, _):
+                if (tree.symbol().hasStaticAttribute())
+                    return Tree.Empty;
+                break;
             case DefDef(_, _, _, _, _, _):
                 Symbol symbol = getSymbolFor(tree);
-                if (symbol.owner() != clasz) return Tree.Empty;
+                if (symbol.owner() != clasz || symbol.hasStaticAttribute())
+                    return Tree.Empty;
                 if (symbol.isInitializer()) initializer = true;
                 tree = super.transform(tree);
                 initializer = false;
