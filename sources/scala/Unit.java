@@ -10,31 +10,28 @@
 
 package scala;
 
-/**
- * Scala's Unit class.
- */
+public abstract class Unit    extends AnyVal {
 
-public abstract class Unit extends AnyVal {
-    public void asUnit() {
+    public final void    value() {}
+
+    public Unit   (             ) {
+
     }
 
-    public boolean equals(java.lang.Object obj) {
-        return obj instanceof Unit;
+    public boolean equals(java.lang.Object other) {
+        return other instanceof Unit;
     }
-
     public int hashCode() {
-        return 4041;
+        int  bits = 4041;
+        return bits;
     }
-
     public String toString() {
         return "()";
     }
 
-    /** @meta method (scala.Any)scala.Boolean;
-     */
-    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+    /** @meta method (scala.Any)scala.Boolean; */
+    public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
+    /** @meta method (scala.Any)scala.Boolean; */
+    public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
 
-    /** @meta method (scala.Any)scala.Boolean;
-     */
-    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
 }

@@ -10,36 +10,23 @@
 
 package scala;
 
-public abstract class Float  extends AnyVal {
+public abstract class Float   extends AnyVal {
 
+    public final float   value;
 
-
-
-
-
-
-
-
-    /** @meta method []scala.Double; */
-    public double coerce() { return asDouble(); }
-
-    public abstract double asDouble();
-    public abstract float  asFloat();
-    public abstract long   asLong();
-    public abstract int    asInt();
-    public abstract char   asChar();
-    public abstract short  asShort();
-    public abstract byte   asByte();
+    public Float  (float   value) {
+        this.value = value;
+    }
 
     public boolean equals(java.lang.Object other) {
-        return other instanceof Float  && $eq$eq(((Float )other).asFloat ());
+        return other instanceof Float   && value == ((Float  )other).value;
     }
     public int hashCode() {
-        int  bits = java.lang.Float.floatToIntBits(asFloat());
+        int  bits = java.lang.Float.floatToIntBits(value);
         return bits;
     }
     public String toString() {
-        return String.valueOf(asFloat ());
+        return String.valueOf(value);
     }
 
     /** @meta method (scala.Any)scala.Boolean; */
@@ -47,37 +34,38 @@ public abstract class Float  extends AnyVal {
     /** @meta method (scala.Any)scala.Boolean; */
     public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
 
-    /** @meta method []scala.Float ; */
-    public float   $plus      ()            { return +asFloat ()        ; }
-    /** @meta method []scala.Float ; */
-    public float   $minus     ()            { return -asFloat ()        ; }
+    /** @meta method []scala.Float  ; */
+    public float   $plus      (            ) { return +value        ; }
+    /** @meta method []scala.Float  ; */
+    public float   $minus     (            ) { return -value        ; }
 
+    public String  $plus      (String  that) { return  value +  that; }
 
+    public boolean $eq$eq     (double  that) { return  value == that; }
+    public boolean $bang$eq   (double  that) { return  value != that; }
+    public boolean $less      (double  that) { return  value <  that; }
+    public boolean $greater   (double  that) { return  value >  that; }
+    public boolean $less$eq   (double  that) { return  value <= that; }
+    public boolean $greater$eq(double  that) { return  value >= that; }
+    public double  $plus      (double  that) { return  value +  that; }
+    public double  $minus     (double  that) { return  value -  that; }
+    public double  $times     (double  that) { return  value *  that; }
+    public double  $div       (double  that) { return  value /  that; }
+    public double  $percent   (double  that) { return  value %  that; }
 
-    public String  $plus      (String that) { return  asFloat () +  that; }
+    /** @meta method []scala.Double ; */
+    public double  coerce     (            ) { return  value        ; }
 
-    public double  $plus      (double that) { return  asDouble() +  that; }
-    public double  $minus     (double that) { return  asDouble() -  that; }
-    public double  $times     (double that) { return  asDouble() *  that; }
-    public double  $div       (double that) { return  asDouble() /  that; }
-    public double  $percent   (double that) { return  asDouble() %  that; }
-    public boolean $eq$eq     (double that) { return  asDouble() == that; }
-    public boolean $bang$eq   (double that) { return  asDouble() != that; }
-    public boolean $less      (double that) { return  asDouble() <  that; }
-    public boolean $greater   (double that) { return  asDouble() >  that; }
-    public boolean $less$eq   (double that) { return  asDouble() <= that; }
-    public boolean $greater$eq(double that) { return  asDouble() >= that; }
-
-    public float   $plus      (float  that) { return  asFloat () +  that; }
-    public float   $minus     (float  that) { return  asFloat () -  that; }
-    public float   $times     (float  that) { return  asFloat () *  that; }
-    public float   $div       (float  that) { return  asFloat () /  that; }
-    public float   $percent   (float  that) { return  asFloat () %  that; }
-    public boolean $eq$eq     (float  that) { return  asFloat () == that; }
-    public boolean $bang$eq   (float  that) { return  asFloat () != that; }
-    public boolean $less      (float  that) { return  asFloat () <  that; }
-    public boolean $greater   (float  that) { return  asFloat () >  that; }
-    public boolean $less$eq   (float  that) { return  asFloat () <= that; }
-    public boolean $greater$eq(float  that) { return  asFloat () >= that; }
+    public boolean $eq$eq     (float   that) { return  value == that; }
+    public boolean $bang$eq   (float   that) { return  value != that; }
+    public boolean $less      (float   that) { return  value <  that; }
+    public boolean $greater   (float   that) { return  value >  that; }
+    public boolean $less$eq   (float   that) { return  value <= that; }
+    public boolean $greater$eq(float   that) { return  value >= that; }
+    public float   $plus      (float   that) { return  value +  that; }
+    public float   $minus     (float   that) { return  value -  that; }
+    public float   $times     (float   that) { return  value *  that; }
+    public float   $div       (float   that) { return  value /  that; }
+    public float   $percent   (float   that) { return  value %  that; }
 
 }

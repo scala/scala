@@ -27,10 +27,10 @@ public abstract class RunTime {
     //########################################################################
     // Private Constants
 
-    private static final int BITS       = 8;
-    private static final int ARRAY_SIZE = 2 << BITS;
-    private static final int INDEX_MASK = ARRAY_SIZE - 1;
-    private static final int CHECK_MASK = ~(ARRAY_SIZE / 2 - 1);
+    private static final int BITS        = 8;
+    private static final int ARRAY_SIZE  = 2 << BITS;
+    private static final int INDEX_MASK  = ARRAY_SIZE - 1;
+    private static final int CHECK_MASK  = ~(ARRAY_SIZE / 2 - 1);
 
     private static final UValue uvalue   = new UValue();
     private static final ZValue zvalue_f = new ZValue(false);
@@ -181,15 +181,15 @@ public abstract class RunTime {
     //########################################################################
     // Public Functions - Unboxing primitives
 
-    public static void      unbox_uvalue(Unit    x) {        x.asUnit   (); }
-    public static boolean   unbox_zvalue(Boolean x) { return x.asBoolean(); }
-    public static byte      unbox_bvalue(Byte    x) { return x.asByte   (); }
-    public static short     unbox_svalue(Short   x) { return x.asShort  (); }
-    public static char      unbox_cvalue(Char    x) { return x.asChar   (); }
-    public static int       unbox_ivalue(Int     x) { return x.asInt    (); }
-    public static long      unbox_lvalue(Long    x) { return x.asLong   (); }
-    public static float     unbox_fvalue(Float   x) { return x.asFloat  (); }
-    public static double    unbox_dvalue(Double  x) { return x.asDouble (); }
+    public static void      unbox_uvalue(Unit    x) {        x.value(); }
+    public static boolean   unbox_zvalue(Boolean x) { return x.value  ; }
+    public static byte      unbox_bvalue(Byte    x) { return x.value  ; }
+    public static short     unbox_svalue(Short   x) { return x.value  ; }
+    public static char      unbox_cvalue(Char    x) { return x.value  ; }
+    public static int       unbox_ivalue(Int     x) { return x.value  ; }
+    public static long      unbox_lvalue(Long    x) { return x.value  ; }
+    public static float     unbox_fvalue(Float   x) { return x.value  ; }
+    public static double    unbox_dvalue(Double  x) { return x.value  ; }
 
     /** @meta method (scala.Array[scala.Boolean]) scala.Array[scala.Boolean];*/
     public static boolean[] unbox_zarray(Array xs) {
@@ -342,98 +342,15 @@ public abstract class RunTime {
 // classes confuse pico which then attributes the metadata to the
 // wrong members.
 
-class UValue extends Unit {
-}
-
-class ZValue extends Boolean {
-    private final boolean x;
-    public ZValue(boolean x) { this.x = x; }
-    public boolean asBoolean() { return x; }
-}
-
-class BValue extends Byte {
-    private final byte x;
-    public BValue(byte x) { this.x = x; }
-    public double asDouble() { return (double)x; }
-    public float asFloat() { return (float)x; }
-    public long asLong() { return (long)x; }
-    public int asInt() { return (int)x; }
-    public char asChar() { return (char)x; }
-    public short asShort() { return (short)x; }
-    public byte asByte() { return (byte)x; }
-}
-
-class SValue extends Short {
-    private final short x;
-    public SValue(short x) { this.x = x; }
-    public double asDouble() { return (double)x; }
-    public float asFloat() { return (float)x; }
-    public long asLong() { return (long)x; }
-    public int asInt() { return (int)x; }
-    public char asChar() { return (char)x; }
-    public short asShort() { return (short)x; }
-    public byte asByte() { return (byte)x; }
-}
-
-class CValue extends Char {
-    private final char x;
-    public CValue(char x) { this.x = x; }
-    public double asDouble() { return (double)x; }
-    public float asFloat() { return (float)x; }
-    public long asLong() { return (long)x; }
-    public int asInt() { return (int)x; }
-    public char asChar() { return (char)x; }
-    public short asShort() { return (short)x; }
-    public byte asByte() { return (byte)x; }
-}
-
-class IValue extends Int {
-    private final int x;
-    public IValue(int x) { this.x = x; }
-    public double asDouble() { return (double)x; }
-    public float asFloat() { return (float)x; }
-    public long asLong() { return (long)x; }
-    public int asInt() { return (int)x; }
-    public char asChar() { return (char)x; }
-    public short asShort() { return (short)x; }
-    public byte asByte() { return (byte)x; }
-}
-
-class LValue extends Long {
-    private final long x;
-    public LValue(long x) { this.x = x; }
-    public double asDouble() { return (double)x; }
-    public float asFloat() { return (float)x; }
-    public long asLong() { return (long)x; }
-    public int asInt() { return (int)x; }
-    public char asChar() { return (char)x; }
-    public short asShort() { return (short)x; }
-    public byte asByte() { return (byte)x; }
-}
-
-class FValue extends Float {
-    private final float x;
-    public FValue(float x) { this.x = x; }
-    public double asDouble() { return (double)x; }
-    public float asFloat() { return (float)x; }
-    public long asLong() { return (long)x; }
-    public int asInt() { return (int)x; }
-    public char asChar() { return (char)x; }
-    public short asShort() { return (short)x; }
-    public byte asByte() { return (byte)x; }
-}
-
-class DValue extends Double {
-    private final double x;
-    public DValue(double x) { this.x = x; }
-    public double asDouble() { return (double)x; }
-    public float asFloat() { return (float)x; }
-    public long asLong() { return (long)x; }
-    public int asInt() { return (int)x; }
-    public char asChar() { return (char)x; }
-    public short asShort() { return (short)x; }
-    public byte asByte() { return (byte)x; }
-}
+class UValue extends Unit    { public UValue(         ) { super( ); } }
+class ZValue extends Boolean { public ZValue(boolean x) { super(x); } }
+class BValue extends Byte    { public BValue(byte    x) { super(x); } }
+class SValue extends Short   { public SValue(short   x) { super(x); } }
+class CValue extends Char    { public CValue(char    x) { super(x); } }
+class IValue extends Int     { public IValue(int     x) { super(x); } }
+class LValue extends Long    { public LValue(long    x) { super(x); } }
+class FValue extends Float   { public FValue(float   x) { super(x); } }
+class DValue extends Double  { public DValue(double  x) { super(x); } }
 
 class ZArray extends Array {
     private final boolean[] xs;
@@ -441,7 +358,7 @@ class ZArray extends Array {
     public boolean[] asBooleanArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_zvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Boolean)x).asBoolean(); }
+    public void update(int i, Object x) { xs[i] = ((Boolean)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf(xs); }
 }
@@ -452,7 +369,7 @@ class BArray extends Array {
     public byte[] asByteArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_bvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Byte)x).asByte(); }
+    public void update(int i, Object x) { xs[i] = ((Byte)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf(xs); }
 }
@@ -463,7 +380,7 @@ class SArray extends Array {
     public short[] asShortArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_svalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Short)x).asShort(); }
+    public void update(int i, Object x) { xs[i] = ((Short)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf(xs); }
 }
@@ -474,7 +391,7 @@ class CArray extends Array {
     public char[] asCharArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_cvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Char)x).asChar(); }
+    public void update(int i, Object x) { xs[i] = ((Char)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf((Object)xs); }
 }
@@ -485,7 +402,7 @@ class IArray extends Array {
     public int[] asIntArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_ivalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Int)x).asInt(); }
+    public void update(int i, Object x) { xs[i] = ((Int)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf(xs); }
 }
@@ -496,7 +413,7 @@ class LArray extends Array {
     public long[] asLongArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_lvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Long)x).asLong(); }
+    public void update(int i, Object x) { xs[i] = ((Long)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf(xs); }
 }
@@ -507,7 +424,7 @@ class FArray extends Array {
     public float[] asFloatArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_fvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Float)x).asFloat(); }
+    public void update(int i, Object x) { xs[i] = ((Float)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf(xs); }
 }
@@ -518,7 +435,7 @@ class DArray extends Array {
     public double[] asDoubleArray() { return xs; }
     public Object asArray() { return xs; }
     public Object apply(int i) { return RunTime.box_dvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Double)x).asDouble(); }
+    public void update(int i, Object x) { xs[i] = ((Double)x).value; }
     public int length() { return xs.length; }
     public String toString() { return String.valueOf(xs); }
 }

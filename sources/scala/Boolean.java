@@ -6,68 +6,47 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $OldId: Boolean.java,v 1.19 2002/09/12 21:23:08 paltherr Exp $
 // $Id$
 
 package scala;
 
-/** @meta class extends scala.AnyVal;
- */
 public abstract class Boolean extends AnyVal {
 
-    public abstract boolean asBoolean();
+    public final boolean value;
 
-    public boolean $amp$amp(boolean that) {
-        return asBoolean() && that;
+    public Boolean(boolean value) {
+        this.value = value;
     }
 
-    public boolean $bar$bar(boolean that) {
-        return asBoolean() || that;
+    public boolean equals(java.lang.Object other) {
+        return other instanceof Boolean && value == ((Boolean)other).value;
     }
-
-    public boolean $amp(boolean that) {
-        return asBoolean() & that;
-    }
-
-    public boolean $bar(boolean that) {
-        return asBoolean() | that;
-    }
-
-    public boolean $up(boolean that) {
-        return asBoolean() ^ that;
-    }
-
-    /** @meta method []scala.Boolean;
-     */
-    public boolean $bang() {
-         return !asBoolean();
-    }
-
-    public boolean $eq$eq(boolean that) {
-        return asBoolean() == that;
-    }
-
-    public boolean $bang$eq(boolean that) {
-        return asBoolean() != that;
-    }
-
-    public String toString() {
-        return String.valueOf(asBoolean());
-    }
-
     public int hashCode() {
-        return asBoolean() ? 1231 : 1237;
+        int  bits = value ? 1231 : 1237;
+        return bits;
+    }
+    public String toString() {
+        return String.valueOf(value);
     }
 
-    public boolean equals(java.lang.Object obj) {
-        return obj instanceof Boolean && $eq$eq(((Boolean)obj).asBoolean());
-    }
+    /** @meta method (scala.Any)scala.Boolean; */
+    public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
+    /** @meta method (scala.Any)scala.Boolean; */
+    public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
 
-    /** @meta method (scala.Any)scala.Boolean;
-     */
-    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+    /** @meta method []scala.Boolean; */
+    public boolean $bang      (            ) { return !value        ; }
 
-    /** @meta method (scala.Any)scala.Boolean;
-     */
-    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
+
+
+
+
+    public boolean $eq$eq     (boolean that) { return  value == that; }
+    public boolean $bang$eq   (boolean that) { return  value != that; }
+    public boolean $bar$bar   (boolean that) { return  value || that; }
+    public boolean $amp$amp   (boolean that) { return  value && that; }
+    public boolean $bar       (boolean that) { return  value |  that; }
+    public boolean $amp       (boolean that) { return  value &  that; }
+    public boolean $up        (boolean that) { return  value ^  that; }
+
 }

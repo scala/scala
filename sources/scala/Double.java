@@ -10,36 +10,23 @@
 
 package scala;
 
-public abstract class Double extends AnyVal {
+public abstract class Double  extends AnyVal {
 
+    public final double  value;
 
-
-
-
-
-
-
-
-
-
-
-    public abstract double asDouble();
-    public abstract float  asFloat();
-    public abstract long   asLong();
-    public abstract int    asInt();
-    public abstract char   asChar();
-    public abstract short  asShort();
-    public abstract byte   asByte();
+    public Double (double  value) {
+        this.value = value;
+    }
 
     public boolean equals(java.lang.Object other) {
-        return other instanceof Double && $eq$eq(((Double)other).asDouble());
+        return other instanceof Double  && value == ((Double )other).value;
     }
     public int hashCode() {
-        long bits = java.lang.Double.doubleToLongBits(asDouble());
+        long bits = java.lang.Double.doubleToLongBits(value);
         return (int)(bits ^ (bits >>> 32));
     }
     public String toString() {
-        return String.valueOf(asDouble());
+        return String.valueOf(value);
     }
 
     /** @meta method (scala.Any)scala.Boolean; */
@@ -47,25 +34,23 @@ public abstract class Double extends AnyVal {
     /** @meta method (scala.Any)scala.Boolean; */
     public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
 
-    /** @meta method []scala.Double; */
-    public double  $plus      ()            { return +asDouble()        ; }
-    /** @meta method []scala.Double; */
-    public double  $minus     ()            { return -asDouble()        ; }
+    /** @meta method []scala.Double ; */
+    public double  $plus      (            ) { return +value        ; }
+    /** @meta method []scala.Double ; */
+    public double  $minus     (            ) { return -value        ; }
 
+    public String  $plus      (String  that) { return  value +  that; }
 
-
-    public String  $plus      (String that) { return  asDouble() +  that; }
-
-    public double  $plus      (double that) { return  asDouble() +  that; }
-    public double  $minus     (double that) { return  asDouble() -  that; }
-    public double  $times     (double that) { return  asDouble() *  that; }
-    public double  $div       (double that) { return  asDouble() /  that; }
-    public double  $percent   (double that) { return  asDouble() %  that; }
-    public boolean $eq$eq     (double that) { return  asDouble() == that; }
-    public boolean $bang$eq   (double that) { return  asDouble() != that; }
-    public boolean $less      (double that) { return  asDouble() <  that; }
-    public boolean $greater   (double that) { return  asDouble() >  that; }
-    public boolean $less$eq   (double that) { return  asDouble() <= that; }
-    public boolean $greater$eq(double that) { return  asDouble() >= that; }
+    public boolean $eq$eq     (double  that) { return  value == that; }
+    public boolean $bang$eq   (double  that) { return  value != that; }
+    public boolean $less      (double  that) { return  value <  that; }
+    public boolean $greater   (double  that) { return  value >  that; }
+    public boolean $less$eq   (double  that) { return  value <= that; }
+    public boolean $greater$eq(double  that) { return  value >= that; }
+    public double  $plus      (double  that) { return  value +  that; }
+    public double  $minus     (double  that) { return  value -  that; }
+    public double  $times     (double  that) { return  value *  that; }
+    public double  $div       (double  that) { return  value /  that; }
+    public double  $percent   (double  that) { return  value %  that; }
 
 }

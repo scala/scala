@@ -201,14 +201,14 @@ public class Evaluator {
         case Or(Code lf, Code rg):
             Object object = evaluate(lf);
             assert object instanceof scala.Boolean : object.getClass();
-            boolean value = ((scala.Boolean)object).asBoolean();
+            boolean value = ((scala.Boolean)object).value;
             if (value) return new Boolean(value);
             return evaluate(rg);
 
         case And(Code lf, Code rg):
             Object object = evaluate(lf);
             assert object instanceof scala.Boolean : object.getClass();
-            boolean value = ((scala.Boolean)object).asBoolean();
+            boolean value = ((scala.Boolean)object).value;
             if (!value) return new Boolean(value);
             return evaluate(rg);
 
@@ -246,31 +246,31 @@ public class Evaluator {
 
         case Pos:
             if (object instanceof scala.Int) {
-                int value = ((scala.Int)object).asInt();
+                int value = ((scala.Int)object).value;
                 return new Integer(value);
             } else if (object instanceof scala.Long) {
-                long value = ((scala.Long)object).asLong();
+                long value = ((scala.Long)object).value;
                 return new Long(value);
             } else if (object instanceof scala.Float) {
-                float value = ((scala.Float)object).asFloat();
+                float value = ((scala.Float)object).value;
                 return new Float(value);
             } else {
-                double value = ((scala.Double)object).asDouble();
+                double value = ((scala.Double)object).value;
                 return new Double(value);
             }
 
         case Neg:
             if (object instanceof scala.Int) {
-                int value = ((scala.Int)object).asInt();
+                int value = ((scala.Int)object).value;
                 return new Integer(-value);
             } else if (object instanceof scala.Long) {
-                long value = ((scala.Long)object).asLong();
+                long value = ((scala.Long)object).value;
                 return new Long(-value);
             } else if (object instanceof scala.Float) {
-                float value = ((scala.Float)object).asFloat();
+                float value = ((scala.Float)object).value;
                 return new Float(-value);
             } else {
-                double value = ((scala.Double)object).asDouble();
+                double value = ((scala.Double)object).value;
                 return new Double(-value);
             }
 
