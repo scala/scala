@@ -15,7 +15,6 @@ import scalac.CompilationUnit;
 import scalac.symtab.Definitions;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
-import scalac.symtab.SymbolNameWriter;
 import scalac.symtab.Type;
 import scalac.symtab.Modifiers;
 import scalac.atree.AConstant;
@@ -131,11 +130,11 @@ public class TypesAsValuesPhase extends Phase {
         paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
 
         ancestorCache.put(defs.OBJECT_CLASS,
-                         new Ancestor[][] {
-                             new Ancestor[] {
-                                 new Ancestor(defs.OBJECT_CLASS, -1, -1)
-                             }
-                         });
+                          new Ancestor[][] {
+                              new Ancestor[] {
+                                  new Ancestor(defs.OBJECT_CLASS, -1, -1)
+                              }
+                          });
     }
 
     /**
@@ -165,7 +164,7 @@ public class TypesAsValuesPhase extends Phase {
 
             imSym = isStatic
                 ? classSym.newStaticMethod(pos, 0, imName)
-                : classSym.owner().newMethod(pos, flags, imName);
+                : classSym.owner().newMethodOrFunction(pos, flags, imName);
 
             // TODO special case for monomorphic instantiations
             Symbol[] argTypes;
@@ -196,7 +195,7 @@ public class TypesAsValuesPhase extends Phase {
 
             tcSym = isStatic
                 ? classSym.newStaticField(pos, 0, tcName)
-                : classSym.owner().newField(pos, 0, tcName);
+                : classSym.owner().newFieldOrVariable(pos, 0, tcName);
             tcSym.setInfo(defs.TYPECONSTRUCTOR_TYPE());
 
             tConstructor.put(classSym, tcSym);
@@ -341,40 +340,22 @@ public class TypesAsValuesPhase extends Phase {
 
         public Tree transform(Tree tree) {
             switch (tree) {
-            case ClassDef(int mods, //:
-                          Name name,
-                          Tree.AbsTypeDef[] tparams,
-                          Tree.ValDef[][] vparams,
-                          Tree tpe,
-                          Tree.Template impl):
-                Symbol sym = tree.symbol();
+            case ClassDef(_, _, _, _, _, Tree.Template impl):
+                Symbol clsSym = tree.symbol();
 
                 TreeList newBody = new TreeList();
-                // Add members (accessors and instantiators)
-                NewMember[] toAdd = membersToAdd(sym);
-                for (int i = 0; i < toAdd.length; ++i) {
-                    switch (toAdd[i]) {
-                    case TypeAccessor(Symbol memSym, Symbol accSym):
-                        newBody.append(typeAccessorBody(memSym, accSym));
-                        break;
-                    case TypeConstructor(Symbol memSym, Symbol tcSym):
-                        newBody.append(tConstructorVal(memSym, tcSym));
-                        break;
-                    case Instantiator(Symbol memSym, Symbol insSym):
-                        newBody.append(instantiatorBody(memSym, insSym));
-                        break;
-                    case ClassInitialiser(Symbol memSym,
-                                          Symbol ciSym,
-                                          Symbol tcSym):
-                        newBody.append(classInitialiser(memSym, ciSym, tcSym));
-                        break;
-                    }
+                if (!isNestedClass(clsSym)) {
+                    Symbol tcSym = getTConstructorSym(clsSym);
+                    newBody.append(tConstructorVal(clsSym, tcSym));
+                    Symbol ciSym = getClassInitSym(clsSym);
+                    newBody.append(classInitialiser(clsSym, ciSym, tcSym));
+                    Symbol imSym = getInstMethSym(clsSym);
+                    newBody.append(instantiatorBody(clsSym, imSym));
                 }
-                newBody.append(transform(impl.body, impl.symbol()));
+                newBody.append(transformStatements(impl.body, impl.symbol()));
 
-                Symbol pConst = sym.primaryConstructor();
-
-                return gen.ClassDef(sym,
+                Symbol pConst = clsSym.primaryConstructor();
+                return gen.ClassDef(clsSym,
                                     transform(impl.parents, pConst),
                                     impl.symbol(),
                                     newBody.toArray());
@@ -382,19 +363,22 @@ public class TypesAsValuesPhase extends Phase {
             case DefDef(_, _, _, _, _, Tree rhs):
                 Symbol symbol = getSymbolFor(tree);
 
-                // TODO maybe use "overrides" method instead of name
-                // to identify the "getType" method.
-                if (symbol.name == Names.getType) {
+                if (symbol.name == Names.getType && symbol.isSynthetic()) {
                     // Correct the body of the getType method which,
                     // until now, was a placeholder (introduced by
                     // RefCheck).
-                    rhs = scalaClassType(symbol.pos,
-                                         symbol.owner().type(),
-                                         symbol,
-                                         EENV);
-                }
+                    return gen.DefDef(symbol,
+                                      scalaClassType(symbol.pos,
+                                                     symbol.owner().type(),
+                                                     symbol,
+                                                     EENV));
+                } else
+                    return gen.DefDef(symbol, transform(rhs, symbol));
 
-                return gen.DefDef(symbol, transform(rhs, symbol));
+            case Block(Tree[] stats, Tree value):
+                return gen.Block(tree.pos,
+                                 transformStatements(stats),
+                                 transform(value));
 
             case ValDef(_, _, Tree tpe, Literal(AConstant.ZERO)):
                 // transform default values:
@@ -417,6 +401,7 @@ public class TypesAsValuesPhase extends Phase {
                 return gen.ValDef(symbol, transform(rhs, symbol));
 
             case New(Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs)):
+                // TODO still needed?
                 if (fun.symbol() == ARRAY_CONSTRUCTOR && false) {
                     // Transform array creations:
                     //   new Array[T](size)
@@ -484,6 +469,40 @@ public class TypesAsValuesPhase extends Phase {
             default:
                 return super.transform(tree);
             }
+        }
+
+        private Tree[] transformStatements(Tree[] stats) {
+            ArrayList newStats = new ArrayList();
+            int beginIdx = 0;
+            for (int i = 0; i < stats.length; ++i) {
+                Tree stat = stats[i];
+                switch (stat) {
+                case ClassDef(_, _, _, _, _, Tree.Template impl):
+                    Symbol clsSym = stat.symbol();
+                    Symbol tcSym = getTConstructorSym(clsSym);
+                    newStats.add(beginIdx++, tConstructorVal(clsSym, tcSym));
+                    Symbol insSym = getInstMethSym(clsSym);
+                    newStats.add(instantiatorBody(clsSym, insSym));
+                    break;
+
+                case AbsTypeDef(_, _, _, _):
+                case AliasTypeDef(_, _, _, _):
+                    Symbol tpSym = stat.symbol();
+                    Symbol insSym = getInstMethSym(tpSym);
+                    newStats.add(typeAccessorBody(tpSym, insSym));
+                    break;
+                }
+                newStats.add(transform(stat));
+            }
+            return (Tree[])newStats.toArray(new Tree[newStats.size()]);
+        }
+
+        private Tree[] transformStatements(Tree[] stats, Symbol currentOwner) {
+            Symbol bkpOwner = this.currentOwner;
+            this.currentOwner = currentOwner;
+            Tree[] newStats = transformStatements(stats);
+            this.currentOwner = bkpOwner;
+            return newStats;
         }
 
         private Tree transform(Tree tree, Symbol currentOwner) {
@@ -583,16 +602,20 @@ public class TypesAsValuesPhase extends Phase {
             Ancestor[][] disp = computeAncestors(clsSym);
             int[] ancestorCode = getAncestorCode(computeAncestors(clsSym));
 
+            Tree outer = isNestedClass(clsSym)
+                ? (clsSym.owner().isClass()
+                   ? gen.This(pos, clsSym.owner())
+                   : gen.New(gen.mkApply__(gen.mkPrimaryConstructorGlobalRef(pos,
+                                                                             defs.OBJECT_CLASS))))
+                : gen.mkNullLit(pos);
+
             Tree[] tcArgs = new Tree[] {
                 gen.mkIntLit(pos, level(clsSym)),
-                gen.mkStringLit(pos, prims.getJREClassName(clsSym)),
-                isNestedClass(clsSym)
-                ? gen.This(pos, clsSym.owner())
-                : gen.mkNullLit(pos),
+                gen.mkSymbolNameLit(pos, clsSym),
+                outer,
                 gen.mkIntLit(pos, zCount),
                 gen.mkIntLit(pos, mCount),
                 gen.mkIntLit(pos, pCount),
-                gen.mkBooleanLit(pos, clsSym.parents()[0].symbol().isJava()),
                 mkNewIntLitArray(pos, ancestorCode, owner)
             };
 
@@ -747,11 +770,6 @@ public class TypesAsValuesPhase extends Phase {
             }
         }
 
-        private boolean isArrayClass(Symbol sym) {
-            return sym == defs.ARRAY_CLASS;
-        }
-
-        /** Return true iff type tp refers to class symbol classSym. */
         /**
          * Transform a type into a tree representing it.
          */
@@ -764,7 +782,7 @@ public class TypesAsValuesPhase extends Phase {
                 if (env.definesVar(sym)) {
                     assert args.length == 0;
                     return env.treeForVar(sym);
-                } else if (isArrayClass(sym)) {
+                } else if (sym == defs.ARRAY_CLASS) {
                     assert args.length == 1;
                     return arrayType(pos, sym, args[0], owner, env);
                 } else if (predefTypes.containsKey(sym)) {
@@ -773,7 +791,7 @@ public class TypesAsValuesPhase extends Phase {
                     assert args.length <= 1
                         : Debug.show(sym) + " " + args.length;
                     return javaType(pos, sym);
-                } else if (!sym.owner().isMethod()) {
+                } else if (!sym.isParameter()) {
                     // Reference to a "global" type.
                     if (owner == null)
                         throw new Error("null owner for " + Debug.show(tp));
@@ -813,7 +831,7 @@ public class TypesAsValuesPhase extends Phase {
             Tree constr =
                 gen.mkPrimaryConstructorGlobalRef(pos,
                                                   defs.JAVACLASSTYPE_CLASS);
-            Tree nameLit = gen.mkStringLit(pos, prims.getJREClassName(sym));
+            Tree nameLit = gen.mkSymbolNameLit(pos, sym);
             Tree[] args = new Tree[] { nameLit };
             return gen.New(pos, gen.mkApply_V(constr, args));
         }
@@ -855,7 +873,7 @@ public class TypesAsValuesPhase extends Phase {
             switch (tp) {
             case TypeRef(Type pre, Symbol sym, Type[] args):
                 Symbol insSym = getInstMethSym(sym);
-                Tree preFun = isNestedClass(sym)
+                Tree preFun = (isNestedClass(sym) && sym.owner().isClass())
                     ? gen.Select(pos, gen.mkQualifier(pos, pre), insSym)
                     : gen.Ident(pos, insSym);
 
