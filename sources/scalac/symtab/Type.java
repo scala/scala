@@ -920,11 +920,27 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         if (sym == sym1) return true;
         if (sym1.isPrivate() || sym1.isStatic() || sym1.isInitializer())
             return false;
-        //System.out.println(sym1 + ":" + sym1.type() + sym1.locationString() + " is" + relation + " to " + sym + ":" + sym.type() + sym.locationString() + " in " + pre + " ?"); //DEBUG
+//         System.out.println("Is 'sym1' " + relation + " 'sym' in 'pre' ?"
+//             + "\n  sym      : " + Debug.show(sym)
+//             + "\n  sym1     : " + Debug.show(sym1)
+//             + "\n  sym .type: " + sym.type()
+//             + "\n  sym1.type: " + sym1.type()
+//             + "\n  pre      : " + pre
+//         );//DEBUG
         Type sym1type = pre.memberType(sym1).derefDef();
         if (sym1.isJava()) symtype = symtype.objParamToAny();
         if (sym1type.compareTo(symtype, relation)) return true;
-        if (warn && Global.instance.debug) System.out.println(sym1 + sym1.locationString() + " is not" + relation + "to " + sym + sym.locationString() + " as seen from " + pre + ", since " + sym1type + relation.toString(true) + symtype);//DEBUG
+        if (warn && Global.instance.debug) System.out.println(
+            "'sym1' is not " + relation + " 'sym' in 'pre'"
+            + "\n  sym      : " + Debug.show(sym)
+            + "\n  sym1     : " + Debug.show(sym1)
+            + "\n  sym .type: " + sym.type()
+            + "\n  sym1.type: " + sym1.type()
+            + "\n  pre      : " + pre
+            + "\nsince 'sym1type' " + relation.toString(true) + " 'symtype'"
+            + "\n  symtype  : " + symtype
+            + "\n  sym1type : " + sym1type
+        );//DEBUG
         return false;
     }
     private Symbol[] classes() {
@@ -1836,9 +1852,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
         public String toString(boolean negate) {
             switch (this) {
-            case SubType  : return negate ? " !<= " : " <= ";
-            case SameType : return negate ? " !== " : " = ";
-            case SuperType: return negate ? " !>= " : " >= ";
+            case SubType  : return negate ? "!<=" : "<=";
+            case SameType : return negate ? "!==" : "=";
+            case SuperType: return negate ? "!>=" : ">=";
             default       : throw Debug.abort("unknown relation", this);
             }
         }
