@@ -554,7 +554,12 @@ public class LambdaLift extends OwnerTransformer
 
     void liftSymbol(Symbol sym, Symbol[] oldtparams,
 		    Symbol[] newtparams, Symbol[] newparams) {
-	Symbol enclClass = sym.owner().enclClass();
+	Symbol enclClass = sym.owner();
+        while (!enclClass.isClassType()) {
+            enclClass = enclClass.isConstructor() && !enclClass.isPrimaryConstructor()
+                ? enclClass.constructorClass()
+                : enclClass.owner();
+        }
 	if (!sym.isPrimaryConstructor() && !sym.isModuleClass()) sym.setOwner(enclClass);
 	if (!sym.isConstructor()) enclClass.members().enter(sym);
 	if (sym.isMethod()) {
