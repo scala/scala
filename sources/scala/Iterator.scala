@@ -110,7 +110,7 @@ object Iterator {
    *  @return the iterator starting at value <code>lo</code>.
    */
   def from(lo: Int, step: Int) = new Iterator[Int] {
-    private var i = 0;
+    private var i = lo;
     def hasNext: Boolean = true;
     def next: Int = { val j = i; i = i + step; j }
   }
@@ -124,7 +124,7 @@ object Iterator {
    *  @return the iterator starting at value <code>lo</code>.
    */
   def from(lo: Int, step: Int => Int) = new Iterator[Int] {
-    private var i = 0;
+    private var i = lo;
     def hasNext: Boolean = true;
     def next: Int = { val j = i; i = step(i); j }
   }
