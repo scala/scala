@@ -145,8 +145,7 @@ test_xml() {
     fi;
     rm -rf "$output";
     mkdir -p "$output" &&
-    cp "$dtdfile" "$output/dtd.dtd" &&
-    ( cd "$output"; $DTD2SCALA dtd.dtd dtd ) &&
+    $DTD2SCALA -d "$output" "$dtdfile" dtd &&
     $SOCOS -d "$output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
     java -classpath "$classpath" Test "$xmlfile" &&
     rm -rf "$output";
