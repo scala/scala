@@ -109,6 +109,7 @@ public class Tag {
      * Kind of a reference tag.
      */
     public static class RefKind {
+
 	/** Bad reference. */
 	public case Bad(String ref);
 

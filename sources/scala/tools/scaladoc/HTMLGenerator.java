@@ -395,6 +395,29 @@ public class HTMLGenerator {
     }
 
     /**
+     * Filters modifiers so that modifiers added by the analyzer are
+     * not printed.
+     */
+    protected String filterModifiers(Symbol sym) {
+        int flags = sym.flags;
+        if (sym.isPackage()) {
+            if ((flags & Modifiers.FINAL) != 0)
+                flags = flags - Modifiers.FINAL;
+        }
+        if (sym.isModule()) {
+            if ((flags & Modifiers.FINAL) != 0)
+                flags = flags - Modifiers.FINAL;
+        }
+        if (sym.isTrait()) {
+            if ((flags & Modifiers.ABSTRACT) != 0)
+                flags = flags - Modifiers.ABSTRACT;
+            if ((flags & Modifiers.INTERFACE) != 0)
+                flags = flags - Modifiers.INTERFACE;
+        }
+        return Modifiers.Helper.toString(flags);
+    }
+
+    /**
      * Generates a HTML page for a class or object definition.
      */
     protected void createPages(Symbol sym) {
@@ -647,7 +670,8 @@ public class HTMLGenerator {
 	page.printlnOTag("tr").indent();
 
 	// modifiers
-	String mods = Modifiers.Helper.toString(sym.flags);
+        String mods = filterModifiers(sym);
+        //	String mods = Modifiers.Helper.toString(sym.flags);
 	page.printlnOTag("td", ATTRS_MODIFIERS).indent();
 	if (mods.length() > 0)
 	    page.printlnTag("code", mods);
@@ -711,7 +735,8 @@ public class HTMLGenerator {
 
 	// signature
 	page.printlnOTag("pre");
-	String mods = Modifiers.Helper.toString(sym.flags);
+        String mods = filterModifiers(sym);
+        //	String mods = Modifiers.Helper.toString(sym.flags);
 	if (mods.length() > 0) page.print(mods + " ");
 	symtab.printSignature(sym, false /*addLink*/);
 	page.printlnCTag("pre");
@@ -771,7 +796,8 @@ public class HTMLGenerator {
      */
     public void printTemplateHtmlSignature(Symbol symbol, boolean addLink) {
 	// modifiers
-        String mods = Modifiers.Helper.toString(symbol.flags);
+        String mods = filterModifiers(symbol);
+        //        String mods = Modifiers.Helper.toString(symbol.flags);
 	page.printlnOTag("dl");
 	page.printlnOTag("dt");
 	symtab.print(mods).space();
@@ -1274,11 +1300,11 @@ public class HTMLGenerator {
 	case Scala(String container, String member, String label):
 	    Symbol sym = findSymbolFromString(tag.holder, container, member);
 	    if (sym == Symbol.NONE) {
-		System.err.println("Warning: Scaladoc: not found: " + tag);
+		System.err.println("Warning: not found " + tag);
 		return tag.text;
 	    }
 	    else if (!isDocumented.apply(sym)) {
-		System.err.println("Warning: Scaladoc: not referenced: " + tag);
+		System.err.println("Warning: not referenced " + tag);
 		return tag.text;
 	    }
 	    else {
