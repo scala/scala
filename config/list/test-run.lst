@@ -29,6 +29,7 @@ run/misc.scala
 run/overloads.scala
 run/regularpatmat.scala
 run/runtime.scala
+run/tailcalls.scala
 
 shl/basic.scala
 
