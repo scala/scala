@@ -271,6 +271,24 @@ its incoming messages which is represented as a queue. It can work
 sequentially through the messages in its mailbox, or search for
 messages matching some pattern.
 
+\begin{lstlisting}[style=floating,label=fig:simple-auction-msgs,caption=Implementation of an Auction Service]
+trait AuctionMessage;
+
+/** make a bid */
+case class Offer(bid: int, client: Actor)  extends AuctionMessage;
+
+/** inquire status */
+case class Inquire(client: Actor) extends AuctionMessage;       
+
+trait AuctionReply;
+case class  Status(asked: int, expiration: Date) extends AuctionReply;
+case object BestOffer extends AuctionReply;
+case class  BeatenOffer(maxBid: int) extends AuctionReply;
+case class  AuctionConcluded(seller: Actor, client: Actor) extends AuctionReply;
+case object AuctionFailed extends AuctionReply;
+case object AuctionOver extends AuctionReply;               
+\end{lstlisting}
+
 For every traded item there is an auctioneer process that publishes
 information about the traded item, that accepts offers from clients
 and that communicates with the seller and winning bidder to close the
@@ -281,22 +299,8 @@ As a first step, we define the messages that are exchanged during an
 auction. There are two abstract base classes (called {\em traits}):
 \code{AuctionMessage} for messages from clients to the auction
 service, and \code{AuctionReply} for replies from the service to the
-clients.  These are defined as follows.
-\begin{lstlisting}
-trait AuctionMessage;
-case class 
-  Offer(bid: int, client: Actor),                      //     make a bid
-  Inquire(client: Actor) extends AuctionMessage;       // inquire status
-
-trait AuctionReply;
-case class
-  Status(asked: int, expiration: Date),    // asked sum, expiration date
-  BestOffer,                               //    yours is the best offer
-  BeatenOffer(maxBid: int),                //     offer beaten by maxBid
-  AuctionConcluded(seller: Actor, client: Actor), //   auction concluded
-  AuctionFailed,                                  // failed with no bids
-  AuctionOver extends AuctionReply;               //   bidding is closed
-\end{lstlisting}
+clients.  For both base classes there exists a number of cases, which
+are defined in Figure~\ref{fig:simple-auction-msgs}.
 
 \begin{lstlisting}[style=floating,label=fig:simple-auction,caption=Implementation of an Auction Service]
 class Auction(seller: Actor, minBid: int, closing: Date) extends Actor {

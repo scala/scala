@@ -821,6 +821,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  inherited members of this type; return Symbol.NONE if not found.
      */
     public Symbol lookupNonPrivate(Name name) {
+        return lookupNonPrivate(name, 0);
+    }
+
+    /** Same as before, but with additional parameter `start'.
+     *  If start == 0, lookup in all basetypes of a compound type.
+     *  If start == 1, lookup only in mixin classes.
+     */
+    private Symbol lookupNonPrivate(Name name, int start) {
         switch (this) {
         case ErrorType:
             return Symbol.ERROR;
@@ -829,26 +837,25 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case ConstantType(_, _):
             return singleDeref().lookupNonPrivate(name);
         case TypeRef(_, Symbol sym, _):
-            return sym.info().lookupNonPrivate(name);
+            return sym.info().lookupNonPrivate(name, start);
         case CompoundType(Type[] parts, Scope members):
             Symbol sym = members.lookup(name);
             if (sym.kind != NONE && (sym.flags & PRIVATE) == 0)
                 return sym;
-            // search base types in closure; non-abstract members
-            // take precedence over abstract ones.
-	    Type[] cls = closure();
-	    int i = 1;
-	    while (i < cls.length &&
-		   (sym.kind == NONE || (sym.flags & DEFERRED) != 0)) {
-		Symbol sym1 = cls[i].members().lookup(name);
-		if (sym1.kind != NONE &&
-		    (sym1.flags & PRIVATE) == 0 &&
-		    (sym.kind == NONE || (sym1.flags & DEFERRED) == 0))
-		    sym = sym1;
-		i++;
-	    }
-	    return sym;
 
+            // search base types in reverse; non-abstract members
+            // take precedence over abstract ones.
+            int i = parts.length;
+            sym = Symbol.NONE;
+            while (i > start && (sym.kind == NONE || (sym.flags & DEFERRED) != 0)) {
+                i--;
+                Symbol sym1 = parts[i].lookupNonPrivate(name, i == 0 ? 0 : 1);
+                if (sym1.kind != NONE &&
+                    (sym1.flags & PRIVATE) == 0 &&
+                    (sym.kind == NONE || (sym1.flags & DEFERRED) == 0))
+                    sym = sym1;
+            }
+            return sym;
         default:
             return Symbol.NONE;
         }

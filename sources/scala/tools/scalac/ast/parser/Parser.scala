@@ -576,7 +576,7 @@ class Parser(unit: Unit) {
         make.Literal(s.pos, new Float(s.floatVal.asInstanceOf[float]))
       case DOUBLELIT =>
         make.Literal(s.pos, new Double(s.floatVal))
-      case STRINGLIT =>
+      case STRINGLIT | SYMBOLLIT =>
         make.Literal(s.pos, s.name.toString())
       case TRUE =>
         make.Literal(s.pos, java.lang.Boolean.TRUE)
@@ -584,11 +584,6 @@ class Parser(unit: Unit) {
         make.Literal(s.pos, java.lang.Boolean.FALSE)
       case NULL =>
         make.Ident(s.pos, Names.null_)
-      case SYMBOLLIT =>
-        var symt = scalaDot(s.pos, Names.Symbol);
-	if (isPattern) symt = convertToTypeId(symt);
-	make.Apply(
-	  s.pos, symt, NewArray.Tree(make.Literal(s.pos, s.name.toString())));
       case _ =>
         syntaxError("illegal literal", true)
     }
@@ -596,15 +591,18 @@ class Parser(unit: Unit) {
     val isSymLit = s.token == SYMBOLLIT;
     val t = litToTree();
     s.nextToken();
-    if (isSymLit && (s.token == LPAREN || s.token == LBRACE)) {
-      var labt = scalaDot(s.pos, Names.Labelled);
-      if (isPattern) labt = convertToTypeId(labt);
-      val listt = if (isPattern) scalaDot(s.pos, Names.List.toTypeName())
-		  else make.Select(s.pos, scalaDot(s.pos, Names.Predef), Names.List);
-      make.Apply(
-	s.pos, labt, NewArray.Tree(t, make.Apply(s.pos, listt, argumentExprs())));
+    if (isSymLit) {
+      val pos = s.pos;
+      var symt = scalaDot(s.pos, Names.Symbol);
+      if (isPattern) symt = convertToTypeId(symt);
+      val ts = new myTreeList();
+      ts.append(t);
+      if (s.token == LPAREN || s.token == LBRACE)
+	ts.append(argumentExprs());
+      make.Apply(pos, symt, ts.toArray());
+    } else {
+      t
     }
-    t
   }
 
 //////// TYPES ///////////////////////////////////////////////////////////////

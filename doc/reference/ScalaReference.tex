@@ -1577,7 +1577,7 @@ are the base classes of $T$.
 The notions of mixin base classes and base classes are extended from
 classes to arbitrary types following the definitions of
 \sref{sec:base-classes}.
- 
+
 If two types in the base class sequence of a template refer to the
 same class definition, then that definition must define a trait
 (\sref{sec:traits}), and the type that comes later in the sequence must
@@ -1626,32 +1626,33 @@ represented by the constructor invocation.
 
 The object resulting from evaluation of a template has directly bound
 members and inherited members. Members can be abstract or concrete.
-These are defined as follows.
+For a template $T$ these categories are defined as follows. 
 \begin{enumerate}
 \item
-A {\em directly bound} member is an entity introduced by a member
-definition or declaration in the template's statement sequence. The
+A {\em directly bound} member of $T$ is an entity introduced by a member
+definition or declaration in the $T$'s statement sequence. The
 member is called {\em abstract} if it is introduced by a declaration,
 {\em concrete} otherwise.
 \item
-A {\em concrete inherited} member is a non-private, concrete member of
-one of the template's base classes $B$, except if a member with the
-same \ifqualified{qualified} name is already directly bound in the template, or is
-directly bound in a base class of the template which is a subclass of
-$B$, or is a directly bound, non-private, concrete member of a base
-class which succeeds $B$ in the base class sequence of the template.
+A {\em concrete inherited} member of $T$ is a non-private, concrete member of
+one of $T$'s parent classes, except if a member with the same name is
+already directly bound in $T$ or the member is mixin-overridden in
+$T$. A member $m$ of $T$'s superclass is {\em mixin-overridden} in $T$
+if there is a concrete member of a mixin base class of $T$ which
+either overrides $m$ itself or overrides a member named $m$ of a base
+class of $T$'s superclass.
 \item
-An {\em abstract inherited} member is a non-private, abstract member
-of one of the template's base classes $B$, except if a member with the
-same \ifqualified{qualified} name is already directly bound in the template, or is a
-concrete inherited member, or is a directly bound, non-private member
-of a base class which succeeds $B$ in the base class sequence of the
-template.
+An {\em abstract inherited} member of $T$ is a non-private, abstract member
+of one of $T$'s parent classes $P$, except if the template has a
+directly bound or concrete inherited member with the same name, or the
+template has an abstract member inherited from a parent class which
+precedes $P$, and which has the same modifiers and type as the member
+inherited from $P$ would have in $T$.
 \end{enumerate}
+It is an error if a template has more than one member with
+the same name. 
 
-If two mixin classes of a template each have a concrete member
-with the same name, then the template itself must also declare or
-define a member with the same name.
+
 
 \comment{
 The type of a member $m$ is determined as follows: If $m$ is defined
@@ -1951,9 +1952,9 @@ $t$.
 \subsection{Constructor Definitions}
 
 \syntax\begin{lstlisting}
-  FunDef          ::=  this ParamClause `=' ConstrExpr
-  ConstrExpr      ::=  this ArgumentExpr
-                    |  `{' this ArgumentExpr {`;' BlockStat} `}'
+  FunDef          ::=  this ParamClause`=' ConstrExpr
+  ConstrExpr      ::=  this ArgumentExprs
+                    |  `{' this ArgumentExprs {`;' BlockStat} `}'
 \end{lstlisting}
 
 A class may have additional constructors besides the primary
@@ -2267,11 +2268,11 @@ module FileSystem with {
 		    |  return [Expr]
 		    |  throw Expr
                     |  [SimpleExpr `.'] id `=' Expr
-                    |  SimpleExpr ArgumentExpr `=' Expr
+                    |  SimpleExpr ArgumentExprs `=' Expr
                     |  PostfixExpr [`:' Type1]
   PostfixExpr     ::=  InfixExpr [id]
   InfixExpr       ::=  PrefixExpr
-                    |  InfixExpr id InfixExpr
+                    |  InfixExpr id PrefixExpr
   PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
   SimpleExpr      ::=  Literal
                     |  Path
@@ -2280,8 +2281,8 @@ module FileSystem with {
                     |  new Template 
                     |  SimpleExpr `.' id 
                     |  SimpleExpr TypeArgs
-                    |  SimpleExpr ArgumentExpr
-  ArgumentExpr    ::=  `(' Expr ')'
+                    |  SimpleExpr ArgumentExprs
+  ArgumentExprs   ::=  `(' [Exprs] ')'
                     |  BlockExpr
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
                     |  `{' Block `}'
@@ -2326,10 +2327,10 @@ character literal denotes a Unicode character. A string literal
 denotes a member of \lstinline@scala.Predef.String@.
 
 A symbol literal ~\lstinline@'$x$@~ is a shorthand for the expression
-~\lstinline@scala.Symbol("$x$")@. If the symbol literal is followed by an
-actual parameters, as in ~\lstinline@'$x$($\args\,$)@, then the whole expression
-is taken to be a shorthand for
-~\lstinline@scala.Labelled(scala.Symbol("$x$"), $\args\,$)@.
+~\lstinline@scala.Symbol("$x$")@. If the symbol literal is followed by
+actual parameters, as in ~\lstinline@'$x$($\args\,$)@, then the whole
+expression is taken to be a shorthand for
+~\lstinline@scala.Symbol("$x$", $\args\,$)@.
 
 \subsection{Boolean constants}
 
@@ -2499,7 +2500,7 @@ trait BorderedColoredShape extends Shape with Bordered with Colored {
 \label{sec:apply}
 
 \syntax\begin{lstlisting}
-  SimpleExpr    ::=  SimpleExpr ArgumentExpr
+  SimpleExpr    ::=  SimpleExpr ArgumentExprs
 \end{lstlisting}
 
 An application \lstinline@$f$($e_1 \commadots e_n$)@ applies the function $f$ to the
@@ -2757,7 +2758,7 @@ replaced by the expected type $B$.
 \syntax\begin{lstlisting}
   PostfixExpr     ::=  InfixExpr [id]
   InfixExpr       ::=  PrefixExpr
-                    |  InfixExpr id InfixExpr
+                    |  InfixExpr id PrefixExpr
   PrefixExpr      ::=  [`-' | `+' | `!' | `~'] SimpleExpr 
 \end{lstlisting}
 
@@ -2848,7 +2849,7 @@ the expression is the value of $e$ converted to type $T$.
 
 \syntax\begin{lstlisting}
   Expr1        ::=  Designator `=' Expr
-                 |  SimpleExpr ArgumentExpr `=' Expr
+                 |  SimpleExpr ArgumentExprs `=' Expr
 \end{lstlisting}
 
 The interpretation of assignment to a simple variable ~\lstinline@$x$ = $e$@~
@@ -4233,11 +4234,11 @@ grammar.
 		    |  return [Expr]
 		    |  throw Expr
                     |  [SimpleExpr `.'] id `=' Expr
-                    |  SimpleExpr ArgumentExpr `=' Expr
+                    |  SimpleExpr ArgumentExprs `=' Expr
                     |  PostfixExpr [`:' Type1]
   PostfixExpr     ::=  InfixExpr [id]
   InfixExpr       ::=  PrefixExpr
-                    |  InfixExpr id InfixExpr
+                    |  InfixExpr id PrefixExpr
   PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
   SimpleExpr      ::=  Literal
                     |  Path
@@ -4245,10 +4246,9 @@ grammar.
                     |  BlockExpr
                     |  new Template 
                     |  SimpleExpr `.' id 
-                    |  id `#' id 
                     |  SimpleExpr TypeArgs
-                    |  SimpleExpr ArgumentExpr
-  ArgumentExpr    ::=  `(' Expr ')'
+                    |  SimpleExpr ArgumentExprs
+  ArgumentExprs    ::=  `(' [Exprs] ')'
                     |  BlockExpr
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
                     |  `{' Block `}'
@@ -4344,8 +4344,8 @@ grammar.
   ClassTemplate   ::=  extends Template
                     |  TemplateBody
                     |
-  ConstrExpr      ::=  this ArgumentExpr
-                    |  `{' this ArgumentExpr {`;' BlockStat} `}'
+  ConstrExpr      ::=  this ArgumentExprs
+                    |  `{' this ArgumentExprs {`;' BlockStat} `}'
 
   CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
   TopStat         ::=  {Modifier} ClsDef
@@ -5030,6 +5030,16 @@ package scala.List[a extends Comparable[a]] with Comparable[List[a]] with {
   }
 }
 \end{lstlisting}
+}
+
+
+
+}
+\end{lstlisting}
+}
+
+
+nd{lstlisting}
 }
 
 

@@ -110,8 +110,8 @@ public class AlgebraicMatcher extends PatternMatcher {
 	//System.err.println( tree.fun.type.resultType().symbol() );
 	return  (tree.args.length == 1)
 	    && (tree.type.symbol().flags & Modifiers.CASE) != 0
-	    && params.length == 1
-	    && (params[ 0 ].flags & Modifiers.REPEATED) != 0;
+	    && params.length > 0
+	    && (params[params.length-1].flags & Modifiers.REPEATED) != 0;
     }
 
 //////////// generator methods

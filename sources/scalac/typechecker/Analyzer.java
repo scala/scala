@@ -917,9 +917,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    enterSym(params[i]);
 	    switch (params[i]) {
 	    case ValDef(int mods, _, _, _):
-		if ((mods & REPEATED) != 0 && params.length > 1)
+		if ((mods & REPEATED) != 0 && i != params.length - 1)
 		    error(params[i].pos,
-			  "`*' parameter must be the only parameter of a `('...`)' section");
+			  "`*' parameter must be the last parameter of a `('...`)' section");
 	    }
 	}
 	return Tree.symbolOf(params);
@@ -1782,11 +1782,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 	    }
 	    //   desugarizing ident patterns
-	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
+	    if (params.length > 0 &&
+		(params[params.length - 1].flags & REPEATED) != 0) {
 		if (( mode & PATTERNmode ) != 0 ) {
 		    desug_allIdentPatterns( args, context.owner );
 		} else {
-		    assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
+		    assert (args.length != params.length ||
+			    !(args[params.length-1] instanceof Tree.Sequence));
 		}
 	    }
 	    return argtypes;
@@ -2392,7 +2394,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			switch (alttp) {
 			case MethodType(Symbol[] params, _):
 			    if (params.length == args.length ||
-				params.length == 1 && (params[0].flags & REPEATED) != 0) {
+				params.length > 0 &&
+				args.length >= params.length - 1 &&
+				(params[params.length-1].flags & REPEATED) != 0) {
 				matching2 = matching1;
 				matching1 = i;
 			    }

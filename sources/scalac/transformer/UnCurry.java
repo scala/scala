@@ -213,7 +213,8 @@ public class UnCurry extends OwnerTransformer
 
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
-	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
+	    if (params.length > 0 &&
+		(params[params.length-1].flags & REPEATED) != 0) {
 		args = toSequence(pos, params, args);
 	    }
 	    Tree[] args1 = args;
@@ -240,16 +241,27 @@ public class UnCurry extends OwnerTransformer
      *  escaping
      */
     private Tree[] toSequence(int pos, Symbol[] params, Tree[] args) {
-	assert (args.length != 1
-		|| !(args[0] instanceof Tree.Sequence)
-		|| TreeInfo.isSequenceValued( args[0]));
- 	if (args.length == 1) {
-            switch (args[0]) {
+	Tree[] result = new Tree[params.length];
+	for (int i = 0; i < params.length - 1; i++)
+	    result[i] = args[i];
+	assert (args.length != params.length
+		|| !(args[params.length-1] instanceof Tree.Sequence)
+		|| TreeInfo.isSequenceValued(args[params.length-1]));
+ 	if (args.length == params.length) {
+            switch (args[params.length-1]) {
             case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
-                return new Tree[]{arg};
+		result[params.length-1] = arg;
+		return result;
             }
         }
-	return new Tree[]{make.Sequence( pos, args ).setType(params[0].type())};
+	Tree[] args1 = args;
+	if (params.length != 1) {
+	    args1 = new Tree[args.length - (params.length - 1)];
+	    System.arraycopy(args, params.length - 1, args1, 0, args1.length);
+	}
+	result[params.length-1] =
+	    make.Sequence(pos, args1).setType(params[params.length-1].type());
+	return result;
     }
 
     /** for every argument to a def parameter `def x: T':

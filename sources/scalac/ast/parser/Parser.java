@@ -642,22 +642,15 @@ public class Parser implements Tokens {
             t = make.Ident(s.pos, Names.null_);
             break;
         case SYMBOLLIT:
+	    int pos = s.pos;
             Tree symt = scalaDot(s.pos, Names.Symbol);
             if (isPattern) symt = convertToTypeId(symt);
-            t = make.Apply(s.pos,
-                symt,
-                new Tree[]{make.Literal(s.pos, s.name.toString())});
-            s.nextToken();
-            if (s.token == LPAREN || s.token == LBRACE) {
-                Tree labt = scalaXmlNoBindingDot(s.pos, Names.Element);
-                if (isPattern) labt = convertToTypeId(labt);
-                Tree listt = isPattern ? scalaDot(s.pos, Names.List.toTypeName())
-                    : make.Select(s.pos, scalaDot(s.pos, Names.Predef), Names.List);
-                t = make.Apply(s.pos,
-                    labt,
-                    new Tree[]{t, make.Apply(s.pos, listt, argumentExprs())});
-            }
-            return t;
+	    TreeList ts = new TreeList();
+	    ts.append(make.Literal(s.pos, s.name.toString()));
+	    s.nextToken();
+            if (s.token == LPAREN || s.token == LBRACE)
+                ts.append(argumentExprs());
+	    return make.Apply(pos, symt, ts.toArray());
         default:
             return syntaxError("illegal literal", true);
         }
@@ -2087,4 +2080,3 @@ public class Parser implements Tokens {
         }
     }
 }
-

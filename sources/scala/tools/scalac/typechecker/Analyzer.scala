@@ -885,9 +885,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       enterSym(params(i));
       (params(i) : Tree) match {
 	case Tree$ValDef(mods, _, _, _) =>
-	  if ((mods & REPEATED) != 0 && params.length > 1)
+	  if ((mods & REPEATED) != 0 && i != params.length - 1)
 	    error(params(i).pos,
-		  "`*' parameter must be the only parameter of a `('...`)' section");
+		  "`*' parameter must be the last parameter of a `('...`)' section");
 	case _ =>
       }
       i = i + 1
@@ -1767,7 +1767,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  }}
 	}
 	//   desugarizing ident patterns
-	if (params.length == 1 && (params(0).flags & REPEATED) != 0) {
+	if (params.length > 0 && (params(params.length-1).flags & REPEATED) != 0) {
 	  if ((mode & PATTERNmode) != 0) {
 	    def desug_allIdentPatterns(trees: Array[Tree], currentOwner: Symbol): unit = {
 	      var i = 0; while (i < trees.length) {
@@ -1787,7 +1787,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    }
     	    desug_allIdentPatterns(args, context.owner);
 	  } else {
-	    assert(args.length != 1 || !(args(0).isInstanceOf[Tree$Sequence]));
+	    assert(args.length != params.length ||
+		   !(args(params.length-1).isInstanceOf[Tree$Sequence]));
 	  }
 	}
 	argtypes;
@@ -2450,7 +2451,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		alttp match {
 		  case Type$MethodType(params, _) =>
 		    if (params.length == args.length ||
-			params.length == 1 && (params(0).flags & REPEATED) != 0) {
+			params.length > 0 &&
+			args.length > params.length - 1 &&
+			(params(params.length-1).flags & REPEATED) != 0) {
 		      matching2 = matching1;
 		      matching1 = i;
 		    }

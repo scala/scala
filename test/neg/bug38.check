@@ -1,7 +1,4 @@
-bug38.scala:3: * is not a member of scala.xml
-  import scala.xml.* ; // does not work
-         ^
-bug38.scala:7: not found: type Element
-      val foo = new Element { def getName = "hallo"; def getChildren = Nil; def getAttribs = new HashMap[String,String] };
-                    ^
-two errors found
+bug236.scala:4: constructor A of type ()A cannot be applied to (scala.Int)
+  class B extends A(1) {
+                   ^
+one error found

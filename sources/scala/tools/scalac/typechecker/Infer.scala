@@ -206,20 +206,24 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
   }
 
   /** The formal parameter types corresponding to `params'.
-  *  If `params' is a repeated parameter, a list of `length' copies
-  *  of its type is returned.
+  *  If `params' has a repeated last parameter, a list of
+  *  (nargs - params.length + 1) copies of its type is returned.
   */
-  def formalTypes(params: Array[Symbol], length: int): Array[Type] = {
-    if (params.length == 1 && (params(0).flags & REPEATED) != 0) {
-      val formals: Array[Type] = new Array[Type](length);
-      val args: Array[Type] = params(0).getType().typeArgs();
+  def formalTypes(params: Array[Symbol], nargs: int): Array[Type] = {
+    if (params.length > 0 && (params(params.length-1).flags & REPEATED) != 0) {
+      val args: Array[Type] = params(params.length-1).getType().typeArgs();
       if (args.length == 1) {
-	val ft: Type = args(0);
-	// params(0) has type Seq[T], we need T here
-	{ var i = 0; while (i < length) {
+	val ft: Type = args(0); // last param has type Seq[T], we need T here
+	val formals: Array[Type] = new Array[Type](nargs);
+	var i = 0;
+	while (i < params.length-1) {
+	  formals(i) = params(i).getType();
+	  i = i + 1;
+	}
+	while (i < nargs) {
 	  formals(i) = ft;
 	  i = i + 1;
-	}}
+        }
 	return formals;
       }
     }
