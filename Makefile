@@ -21,6 +21,7 @@ PROJECT_SOURCES		+= $(META_SOURCES)
 PROJECT_SOURCES		+= $(RUNTIME_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
 PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
+PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 PROJECT_OUTPUTDIR	 = $(PROJECT_ROOT)/classes
 PROJECT_CLASSPATH	 = $(PROJECT_OUTPUTDIR)
@@ -91,7 +92,13 @@ INTERPRETER_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/interpreter.lst)
 INTERPRETER_SOURCES	+= $(INTERPRETER_LIST:%=$(INTERPRETER_ROOT)/%)
 INTERPRETER_JC_FILES	 = $(INTERPRETER_SOURCES)
 
-# scala dtd2scala
+# scaladoc
+SCALADOC_ROOT		 = $(PROJECT_SOURCEDIR)/scaladoc
+SCALADOC_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scaladoc.lst)
+SCALADOC_SOURCES	+= $(SCALADOC_LIST:%=$(SCALADOC_ROOT)/%)
+SCALADOC_JC_FILES	 = $(SCALADOC_SOURCES)
+
+# dtd2scala
 DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/dtd2scala
 DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
 DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
@@ -198,6 +205,7 @@ all		: generate
 all		: runtime
 all		: compiler
 all		: interpreter
+all		: scaladoc
 all		: dtd2scala
 all		: library
 
@@ -211,6 +219,7 @@ fastclean	:
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
+	$(RM) .latest-scaladoc
 	$(RM) .latest-generate
 	$(RM) .latest-meta
 	$(RM) .latest-lamplib
@@ -239,6 +248,7 @@ generate	: .latest-generate
 runtime		: .latest-runtime
 compiler	: .latest-compiler
 interpreter	: .latest-interpreter
+scaladoc	: .latest-scaladoc
 dtd2scala	: .latest-dtd2scala
 library		: .latest-library
 
@@ -255,6 +265,7 @@ library		: .latest-library
 .PHONY		: runtime
 .PHONY		: compiler
 .PHONY		: interpreter
+.PHONY		: scaladoc
 .PHONY		: dtd2scala
 .PHONY		: library
 
@@ -287,6 +298,10 @@ library		: .latest-library
 
 .latest-interpreter	: $(INTERPRETER_JC_FILES)
 	@$(make) jc target=INTERPRETER INTERPRETER_JC_FILES='$?'
+	touch $@
+
+.latest-scaladoc	: $(SCALADOC_JC_FILES)
+	@$(make) jc target=SCALADOC SCALADOC_JC_FILES='$?'
 	touch $@
 
 .latest-dtd2scala	: $(DTD2SCALA_JC_FILES)
@@ -357,6 +372,7 @@ $(PROJECT_JAR_ARCHIVE)	: .latest-lamplib
 $(PROJECT_JAR_ARCHIVE)	: .latest-runtime
 $(PROJECT_JAR_ARCHIVE)	: .latest-compiler
 $(PROJECT_JAR_ARCHIVE)	: .latest-interpreter
+$(PROJECT_JAR_ARCHIVE)	: .latest-scaladoc
 $(PROJECT_JAR_ARCHIVE)	: .latest-dtd2scala
 $(PROJECT_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=PROJECT
