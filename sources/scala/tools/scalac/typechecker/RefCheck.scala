@@ -612,10 +612,42 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     getMethod(site, name,
               tp => tp.paramSectionCount() == 1 && tp.firstParams().length == 0);
 
+/*
   private def getUnaryMemberMethod(site: Type, name: Name, paramtype: Type): Symbol =
     getMethod(site, name,
               tp => { val params = tp.firstParams();
                       params.length == 1 && paramtype.isSubType(params(0).getType()) });
+*/
+
+  private def getUnaryMemberMethod(site: Type, name: Name, paramtype: Type): Symbol = {
+    val sym = getMember(site, name);
+    sym.getType() match {
+      case Type$OverloadedType(alts, alttypes) => {
+	var member: Symbol = null;
+	var memberparamtype: Type = null;
+	var i = 0; while (i < alts.length) {
+	  val params = alttypes(i).firstParams();
+	  if (params.length == 1) {
+	    val altparamtype = params(0).getType();
+	    if (paramtype.isSubType(altparamtype)) {
+	      if (member == null || altparamtype.isSubType(memberparamtype)) {
+		member = alts(i);
+		memberparamtype = altparamtype;
+	      }
+	    }
+	  }
+          i = i + 1
+	}
+	if (member != null) return member;
+      }
+      case _ =>
+	val params = sym.getType().firstParams();
+	if (params.length == 1 && paramtype.isSubType(params(0).getType())) return sym;
+    }
+    throw new ApplicationError(
+      " no method " + name + " of required kind among " + sym.getType() + " at " + site);
+  }
+
 
   private def caseFields(clazz: ClassSymbol): Array[Tree] = {
     var ct = clazz.primaryConstructor().getType();
