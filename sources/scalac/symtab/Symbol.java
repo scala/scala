@@ -296,6 +296,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & STABLE) != 0;
     }
 
+    /** Is this symbol static (i.e. with no outer instance)? */
+    public final boolean isStatic() {
+        return owner.isPackage() || (owner.isJava() && owner.isModuleClass());
+    }
+
     /** Is this symbol final?
      */
     public final boolean isFinal() {
