@@ -239,9 +239,9 @@ superFixer.transform(template.body))));
             this.parent = clasz.parents()[0];
         }
         public Tree transform(Tree tree) {
-            if (tree.definesSymbol() && tree.symbol().owner().isClass())
-                return tree;
             switch (tree) {
+            case ClassDef(_, _, _, _, _, _):
+                return tree;
             case Select(Super(_, _), _):
                 Tree qualifier = ((Tree.Select)tree).qualifier;
                 qualifier = gen.Super(qualifier.pos, clasz);
