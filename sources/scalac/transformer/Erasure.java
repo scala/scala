@@ -571,6 +571,7 @@ public class Erasure extends GenTransformer implements Modifiers {
      * overlapping erased signatures.
      */
     private void checkOverloadedTermsOf(Symbol clasz) {
+        // !!! we might also accidentally override an inherited method !
         for (SymbolIterator si = clasz.members().iterator(); si.hasNext(); ) {
             Symbol symbol = si.next();
             if (!symbol.isTerm()) continue;
