@@ -306,7 +306,9 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
                             Symbol clasz = readSymbolRef();
                             assert clasz == sym.moduleClass(): Debug.show(sym);
                         }
-			sym.setInfo(getType(inforef, sym));
+			Type owntype = getType(inforef, sym);
+			sym.addInheritedOverloaded(owntype);
+			sym.setInfo(owntype);
 			break;
 
 		    default:

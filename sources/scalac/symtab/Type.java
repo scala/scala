@@ -197,7 +197,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     public static Type typeRef(Type pre, Symbol sym, Type[] args) {
-        if (!pre.isLegalPrefix() && !pre.isError())
+        if (sym.kind == TYPE && !pre.isLegalPrefix() && !pre.isError())
             throw new Type.Malformed(pre, sym.nameString());
         rebind:
         if (sym.isAbstractType()) {
@@ -225,7 +225,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return new ExtTypeRef(pre, sym, args);
     }
     private static boolean isLegalTypeRef(Type pre, Symbol sym, Type[] args) {
-        if (!pre.isLegalPrefix() && !pre.isError()) return false;
+        if (sym.kind == TYPE && !pre.isLegalPrefix() && !pre.isError()) return false;
         if (!sym.isType() && !sym.isError()) return false;
         // !!! return args.length == 0 || args.length == sym.typeParams().length;
         return true;
@@ -687,9 +687,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return true;
         case TypeRef(_, Symbol sym, _):
             if (sym.isParameter() && sym.isSynthetic()) return true;
+	    return false;
+	    /*
             return sym.kind == CLASS &&
                 ((sym.flags & JAVA) != 0 ||
                  (sym.flags & (TRAIT | ABSTRACT)) == 0);
+	    */
         default:
             return false;
         }
@@ -806,31 +809,32 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return sym.info().lookupNonPrivate(name);
         case CompoundType(Type[] parts, Scope members):
             Symbol sym = members.lookup(name);
-            if (sym.kind != NONE && (sym.flags & PRIVATE) == 0)
-                return sym;
-
-            // search base types in reverse; non-abstract members
-            // take precedence over abstract ones.
-            int i = parts.length;
-            sym = Symbol.NONE;
-            while (i > 0) {
-                i--;
-                Symbol sym1 = parts[i].lookupNonPrivate(name);
-                if (sym1.kind != NONE &&
-                    (sym1.flags & PRIVATE) == 0 &&
-                    (sym.kind == NONE
-		     ||
-		     (sym.flags & DEFERRED) != 0 &&
-		     (sym1.flags & DEFERRED) == 0
-		     ||
-		     (sym.flags & DEFERRED) == (sym1.flags & DEFERRED) &&
-		     sym1.owner().isSubClass(sym.owner())))
-                    sym = sym1;
-            }
-            return sym;
+            if (sym.kind != NONE && (sym.flags & PRIVATE) == 0) return sym;
+	    else return lookupNonPrivate(parts, name);
         default:
             return Symbol.NONE;
         }
+    }
+
+    public static Symbol lookupNonPrivate(Type[] parts, Name name) {
+	// search base types in reverse; non-abstract members
+	// take precedence over abstract ones.
+	int i = parts.length;
+	Symbol sym = Symbol.NONE;
+	while (i > 0) {
+	    i--;
+	    Symbol sym1 = parts[i].lookupNonPrivate(name);
+	    if (sym1.kind != NONE &&
+		(sym.kind == NONE
+		 ||
+		 (sym.flags & DEFERRED) != 0 &&
+		 (sym1.flags & DEFERRED) == 0
+		 ||
+		 (sym.flags & DEFERRED) == (sym1.flags & DEFERRED) &&
+		 sym1.owner().isSubClass(sym.owner())))
+		sym = sym1;
+	}
+	return sym;
     }
 
     /**
@@ -2340,6 +2344,55 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         default:
             return any2typevarMap.map(this);
         }
+    }
+
+    /** Does this type match type `tp', so that corresponding symbols with
+     *  the two types would be taken to override each other?
+     */
+    public boolean overrides(Type tp) {
+	switch (this) {
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    for (int i = 0; i < alttypes.length; i++) {
+		if (alttypes[i].overrides(tp)) return true;
+	    }
+	    return false;
+	default:
+	    switch (tp) {
+	    case MethodType(Symbol[] ps1, Type res1):
+		switch (this) {
+		case MethodType(Symbol[] ps, Type res):
+		    if (ps.length != ps1.length) return false;
+		    for (int i = 0; i < ps.length; i++) {
+			Symbol p1 = ps1[i];
+			Symbol p = ps[i];
+			if (!p1.type().isSameAs(p.type()) ||
+			    (p1.flags & (DEF | REPEATED)) != (p.flags & (DEF | REPEATED)))
+			    return false;
+		    }
+		    return res.overrides(res1);
+		}
+		return false;
+
+	    case PolyType(Symbol[] ps1, Type res1):
+		switch (this) {
+		case PolyType(Symbol[] ps, Type res):
+		    if (ps.length != ps1.length) return false;
+		    for (int i = 0; i < ps.length; i++)
+			if (!ps1[i].info().subst(ps1, ps).isSameAs(ps[i].info()) ||
+			    !ps[i].loBound().isSameAs(ps1[i].loBound().subst(ps1, ps)) ||
+			    !ps[i].vuBound().isSameAs(ps1[i].vuBound().subst(ps1, ps)))
+			    return false;
+		    return res.overrides(res1.subst(ps1, ps));
+		}
+		return false;
+
+	    case OverloadedType(_, _):
+		throw new ApplicationError("overrides inapplicable for " + tp);
+
+	    default:
+		return true;
+	    }
+	}
     }
 
 // Closures and Least Upper Bounds ---------------------------------------------------

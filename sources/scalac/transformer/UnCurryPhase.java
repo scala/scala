@@ -30,7 +30,7 @@ public class UnCurryPhase extends Phase implements Modifiers {
      *  - if symbol is a def parameter with transformed type T, return () => T
      */
     public Type transformInfo(Symbol sym, Type tp0) {
-	Type tp1 = uncurry(tp0);
+	Type tp1 = uncurry(sym.removeInheritedOverloaded(tp0));
 	if (sym.isDefParameter()) return global.definitions.FUNCTION_TYPE(Type.EMPTY_ARRAY, tp1);
 	else return tp1;
     }

@@ -762,12 +762,12 @@ transitive relation that satisfies the following conditions.
       binding of $x$ in $T$ subsuming it, then $T$ conforms to the
       compound type ~\lstinline@$T_1$ with $\ldots$ with $T_n$ {$R\,$}@.
 \item If
-        $T'_i$ conforms to $T_i$ for $i = 1 \commadots n$ and $U$ conforms to $U'$ 
+        $T_i \equiv T'_i$ for $i = 1 \commadots n$ and $U$ conforms to $U'$ 
         then the method type $(T_1 \commadots T_n) U$ conforms to
         $(T'_1 \commadots T'_n) U'$.
 \item If, assuming 
 $L'_1 \conforms a_1 \conforms U'_1 \commadots L'_n \conforms a_n \conforms U'_n$ 
-one has $L_i \conforms L'_i$ and $U'_i \conforms U_i$
+one has $L'_i \equiv L'_i$ and $U_i \equiv U'_i$
 for $i = 1 \commadots n$, as well as $T \conforms T'$ then the polymorphic type
 $[a_1 >: L_1 <: U_1 \commadots a_n >: L_n <: U_n] T$ conforms to the polymorphic type
 $[a_1 >: L'_1 <: U'_1 \commadots a_n >: L'_n <: U'_n] T'$.
@@ -3776,16 +3776,15 @@ inserted by the compiler.
 A view definition is a normal function definition with one value
 parameter where the name of the defined function is \code{view}.
 
-\example
+\example 
+The following defines an implicit coercion function from strings to lists of
+characters.
 
 \begin{lstlisting}
 def view(xs: String): List[char] = 
   if (xs.length() == 0) List()
   else xs.charAt(0) :: xs.substring(1);
 \end{lstlisting}
-
-This defines an implicit coercion function from strings to lists of
-characters.
 
 \section{View Application}
 
@@ -3814,7 +3813,7 @@ Searching a view which is applicable to an expression $e$ of type $T$
 is a three-step process.
 \begin{enumerate}
 \item
-First, the set $\VV$ of available views is determined. $\VV$ is the
+First, the set $\AA$ of available views is determined. $\AA$ is the
 smallest set such that:
 \begin{enumerate}
 \item
@@ -3849,7 +3848,7 @@ further view conversion of $e$ to the view's formal parameter type.
 Likewise, a view's result type must conform to a given prototype
 directly, no second view conversion is allowed.
 \item
-It is an error is the set of applicable views $\BB$ is empty.  For
+It is an error if the set of applicable views $\BB$ is empty.  For
 non-empty $\BB$, the view method which is most specific
 (\sref{sec:overloaded-refs}) in $\BB$ is selected.  It is an error if
 no most specific view exists, or if it is not unique.
@@ -3920,16 +3919,16 @@ Implicit view parameters of a method or class are then taken as
 available view methods in its body.
 
 \example Consider the following definition of a trait
-\code{Comparable} and a view from strings to that trait..
+\code{Comparable} and a view from strings to that trait.
 
 \begin{lstlisting}
 trait Comparable[a] {
-  def less (x: a): boolean
+  def less(x: a): boolean
 }
 
 object StringsAreComparable {
   def view(x: String): Comparable[String] = new Comparable[String] {
-    def less (y: String) = x.compareTo(y) < 0
+    def less(y: String) = x.compareTo(y) < 0
   }
 }
 \end{lstlisting}
@@ -4039,7 +4038,7 @@ allows the definition of conditional views.
 list element type is also comparable.
 
 \begin{lstlisting}
-def view[a <% Comparable[a]](x: List[a]): Comparable[List[a]] = 
+def view[a <% Comparable[a]](xs: List[a]): Comparable[List[a]] = 
   new Comparable[List[a]] {
     def less (ys: List[a]): boolean = 
       !ys.isEmpty 
@@ -4057,6 +4056,7 @@ type parameters are translated to implicit \code{view} arguments. In
 this case, the \code{view} method over lists would receive the
 \code{view} method over list elements as implicit parameter.
 
+\comment{
 This opens up the risk of infinite instantiations because view methods
 are be passed to themselves as parameters. For instance, one might try
 to define the following ``magic'' universal converter:
@@ -4086,6 +4086,7 @@ argument, either directly or indirectly.  On the other hand,
 contractive view methods may be passed to themselves as arguments. In the
 examples above this case arises if a list of lists of strings is seen
 as a \code{Comparable}.
+}
 
 \chapter{Top-Level Definitions}
 \label{sec:topdefs}

@@ -113,7 +113,14 @@ public class UnCurry extends OwnerTransformer
         System.out.flush();
 	//uncurry type and symbol
 	Type prevtype = tree.type;
-	if (prevtype != null) tree.type = descr.uncurry(prevtype);
+	if (prevtype != null) {
+	    switch (prevtype) {
+	    case OverloadedType(_, _):
+		assert tree.symbol() != null;
+		prevtype = tree.symbol().removeInheritedOverloaded(prevtype);
+	    }
+	    tree.type = descr.uncurry(prevtype);
+	}
         switch (tree) {
 	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(

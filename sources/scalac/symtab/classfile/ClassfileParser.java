@@ -226,6 +226,7 @@ public class ClassfileParser implements ClassfileConstants {
                 symbol = owner.newTerm(Position.NOPOS, sflags, name);
             }
             setParamOwners(type, symbol);
+	    symbol.addInheritedOverloaded(type);
             symbol.setInfo(type);
             attrib.readAttributes(symbol, type, METH_ATTR);
             if (name != CONSTR_N) {

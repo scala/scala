@@ -222,15 +222,21 @@ public class AddInterfaces extends GenTransformer {
     /**
      * Returns the tree of the given class whose body is built by
      * adding to the given body the class members. Non-abstract
-     * methods are removed from the given method map. All other
+     * methods are removed from the ngiven method map. All other
      * members are generated from their symbol.
      */
     private Tree getClassTree(Symbol clasz, TreeList body, Map methods) {
         Scope members = clasz.nextInfo().members();
+	/*
+        for (Scope.SymbolIterator i = members.iterator(false); i.hasNext(); ) {
+	    Symbol sym = i.next();
+	    System.out.println(clasz + " defines " + sym + ":" + sym.getType());
+	}
+	*/
         for (Scope.SymbolIterator i = members.iterator(true); i.hasNext(); ) {
             Symbol member = i.next();
             if (!member.isTerm()) continue;
-            body.append(getMemberTree(member, methods));
+            body.append(getMemberTree(clasz, member, methods));
         }
         return gen.ClassDef(clasz, body.toArray());
     }
@@ -240,11 +246,11 @@ public class AddInterfaces extends GenTransformer {
      * removed from the given method map. All other members are
      * generated from their symbol.
      */
-    private Tree getMemberTree(Symbol member, Map methods) {
+    private Tree getMemberTree(Symbol clasz, Symbol member, Map methods) {
         if (!member.isMethod()) return gen.ValDef(member, Tree.Empty);
         if (member.isDeferred()) return gen.DefDef(member, Tree.Empty);
         Tree method = (Tree)methods.remove(member);
-        assert method != null: Debug.show(member);
+        assert method != null: Debug.show(clasz + "." + member + ":" + member.info() + member.locationString());
         return method;
     }
 

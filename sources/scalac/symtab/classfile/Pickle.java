@@ -138,7 +138,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 			putSymbol(it.next());
 		    break;
 		case VAL:
-		    putType(sym.info());
+		    putType(sym.removeInheritedOverloaded(sym.info()));
 		    if (sym.isConstructor() &&
 			sym == sym.constructorClass().allConstructors())
 			putSymbol(sym.constructorClass());
@@ -358,7 +358,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		writeRef(sym.allConstructors());
 		break;
 	    case VAL:
-		writeRef(sym.info());
+		writeRef(sym.removeInheritedOverloaded(sym.info()));
 		if (sym.isConstructor() &&
 		    sym == sym.constructorClass().allConstructors())
 		    writeRef(sym.constructorClass());

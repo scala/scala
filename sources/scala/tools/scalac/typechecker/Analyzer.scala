@@ -942,18 +942,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           val info = new LazyTreeType(tree);
 	  clazz.setInfo(info);
           modul.setInfo(info);
-          // !!! Unfortunately, this breaks separate compilation
-// 	  val lclass = modul.linkedClass();
-// 	  // Taken from SymbolLoader.initializeRoot()
-// 	  if (lclass != null) {
-// 	    if (lclass.rawInfo().isInstanceOf[SymbolLoader] &&
-// 		!lclass.rawInfo().isInstanceOf[SourceCompleter]) {
-// 		lclass.setInfo(Type.ErrorType);
-// 		//val allConstr = lclass.allConstructors();
-// 		//allConstr.setInfo(Type.ErrorType);
-// 		//allConstr.flags = allConstr.flags | Modifiers.PRIVATE;
-// 	    }
-// 	  }
         }
 	enterSym(tree, modul)
 
@@ -1077,6 +1065,22 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
   }
 
+/*
+  def addOverloaded(tp: Type, sym: Symbol): Type = {
+    if (!sym.isPrivate()) {
+      val owner = sym.owner();
+      if (owner.kind == CLASS) {
+	for (p <- sym.owner().info.parents()) {
+	  val sym1 = p.lookupNonPrivate(sym.name);
+	  if (sym1.kind != NONE) {
+
+	  }
+	}
+      }
+    }
+  }
+*/
+
 // Definining Symbols -------------------------------------------------------
 
   /** Define symbol associated with `tree' using given `unit' and `context'.
@@ -1176,6 +1180,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	  owntype = makeMethodType(tparamSyms, vparamSyms, restype);
 	  //System.out.println("methtype " + name + ":" + owntype);//DEBUG
+	  sym.addInheritedOverloaded(owntype);
 
 	case Tree$ValDef(mods, name, _tpe, _rhs) =>
 	  var tpe = _tpe;
@@ -1207,6 +1212,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		owntype = owntype.deconst();
 	    }
 	    popContext();
+	    sym.addInheritedOverloaded(owntype);
 	  }
 
 	case Tree$AliasTypeDef(mods, name, tparams, _rhs) =>
@@ -1931,6 +1937,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     popContext();
     val templ1: Tree$Template = copy.Template(templ, parents, body1);
     templ1.setType(owner.getType());
+    // initialize all members; necessary to initialize overloaded symbols
+    val members = owner.members().iterator(false);
+    while (members.hasNext()) {
+      val sym = members.next();
+      sym.initialize();
+      //System.out.println(owner.toString() + " defines " + sym + ":" + sym.getType());//DEBUG
+    }
     templ1
   }
 
@@ -2199,7 +2212,22 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  val templ1: Tree$Template = transformTemplate(templ, sym.moduleClass());
 	  if (tpe1 != Tree.Empty && !templ1.getType().isSubType(tpe1.getType()))
 	    error(tree.pos, "" + sym + " does not implement " + tpe1.getType());
-	  copy.ModuleDef(tree, sym, tpe1, templ1)
+
+	/*
+          // !!! Unfortunately, this breaks separate compilation
+ 	  val lclass = sym.linkedClass();
+ 	  // Taken from SymbolLoader.initializeRoot()
+ 	  if (lclass != null) {
+ 	    if (lclass.rawInfo().isInstanceOf[SymbolLoader]) {
+ 		lclass.setInfo(Type.ErrorType);
+ 		val allConstr = lclass.allConstructors();
+ 		allConstr.setInfo(Type.ErrorType);
+ 		allConstr.flags = allConstr.flags | Modifiers.PRIVATE;
+ 	    }
+ 	  }
+	*/
+
+	  copy.ModuleDef(tree, sym, tpe, templ1)
 	    .setType(Type.NoType);
 
 	case Tree$DefDef(_, name, tparams, vparams, tpe, rhs) =>

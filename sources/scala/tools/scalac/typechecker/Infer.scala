@@ -391,7 +391,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       gen.mkNullLit(pos)
     } else {
       val v = bestView(vargs(0), vargs(1), Names.EMPTY);
-      if (v != null) {
+      if (v != null && !v.locked) {
 	if (v.locked) {
 	  error(pos, "recursive view instantiation of non-contractive " +
 		     v.sym + v.sym.locationString() + " with type " +
@@ -802,7 +802,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       while (!viewMeths.isEmpty &&
 	     !isApplicable(viewMeths.head.symtype, argtypes, pt, Names.EMPTY, false))
 	viewMeths = viewMeths.tail;
-      if (!viewMeths.isEmpty) true
+      if (!viewMeths.isEmpty) {
+	true
+      }
       // todo: remove
       else {
 	val coerceMeth: Symbol = tp1.lookup(Names.coerce);

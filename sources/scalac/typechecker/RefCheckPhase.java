@@ -27,9 +27,8 @@ public class RefCheckPhase extends Phase {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-	if (sym.isModule() && !sym.isStatic()) {
+	if (sym.isModule() && !sym.isStatic())
 	    return Type.PolyType(Symbol.EMPTY_ARRAY, tp);
-	}
 	else
 	    return tp;
     }

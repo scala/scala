@@ -1067,7 +1067,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         String name1 = name.toString();
         if (name1.endsWith(Names._EQ.toString()))
             name1 = name1.substring(0, name1.length() - Names._EQ.length());
-        return owner.info().lookup(Name.fromString(name1 + "$"));
+        return owner.lookup(Name.fromString(name1 + "$"));
     }
 
     /** The members of this class or module symbol
@@ -1503,10 +1503,15 @@ public abstract class Symbol implements Modifiers, Kinds {
     public Symbol overloadWith(Symbol that) {
         assert isTerm() : Debug.show(this);
         assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
-        assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
+        //assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
         assert this.isConstructor() == that.isConstructor();
-        int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS | DEFERRED | PARAM | SYNTHETIC)) |
-            ((this.flags | that.flags) & ACCESSOR);
+        int overflags;
+	//if (this.owner == that.owner)
+	    overflags = (this.flags & that.flags &
+			 (JAVA | ACCESSFLAGS | DEFERRED | PARAM | SYNTHETIC)) |
+		((this.flags | that.flags) & ACCESSOR);
+	// else // it's an inherited overloaded alternative
+	//    overflags = this.flags & SOURCEFLAGS;
         Symbol overloaded = (this.isConstructor())
             ? this.constructorClass().newConstructor(this.constructorClass().pos, overflags)
             : owner.newTerm(pos, overflags, name, 0);
@@ -1637,6 +1642,62 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public int tag() {
         return name.toString().hashCode();
+    }
+
+    public void addInheritedOverloaded(Type owntype) {
+	if (false && owner().kind == CLASS && !isConstructor() && owner().lookup(name) == this) {
+	    // it's a class member which is not an overloaded alternative
+	    Symbol sym = Type.lookupNonPrivate(owner().parents(), name);
+	    if (sym.kind == VAL) {
+		Type symtype = owner.thisType().memberType(sym);
+		switch (symtype) {
+		case OverloadedType(Symbol[] alts, Type[] alttypes):
+		    for (int i = 0; i < alts.length; i++)
+			addInheritedOverloaded(owntype, alts[i], alttypes[i]);
+		    break;
+		default:
+		    addInheritedOverloaded(owntype, sym, symtype);
+		}
+	    }
+	}
+    }
+
+    private void addInheritedOverloaded(Type owntype, Symbol sym, Type symtype) {
+	if (!owntype.overrides(symtype)) {
+	    System.out.println(owner() + " inherits overloaded: " + sym + ":" + symtype + sym.locationString());//debug
+	    owner().members().lookupEntry(name).setSymbol(overloadWith(sym));
+	    //System.out.println("type is now: " + owner().members().lookup(name).type());
+	}
+    }
+
+    public Type removeInheritedOverloaded(Type owntype) {
+	//assert name != Names.toString ||
+	//    Global.instance.currentPhase.id != Global.instance.PHASE.UNCURRY.id();
+	switch (owntype) {
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    int n = 0;
+	    for (int i = 0; i < alts.length; i++)
+		if (alts[i].owner() == owner()) n++;
+	    if (n < alts.length) {
+		Symbol[] alts1 = new Symbol[n];
+		Type[] alttypes1 = new Type[n];
+		int j = 0;
+		for (int i = 0; i < alts.length; i++) {
+		    if (alts[i].owner() == owner()) {
+			alts1[j] = alts[i];
+			alttypes1[j] = alttypes[i];
+			j++;
+		    } else {
+			System.out.println("removing inherited alternatve " + alts[i] + ":" + alttypes[i]);//debug
+		    }
+		}
+		return Type.OverloadedType(alts1, alttypes1);
+	    } else {
+		return owntype;
+	    }
+	default:
+	    return owntype;
+	}
     }
 }
 

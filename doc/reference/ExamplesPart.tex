@@ -201,20 +201,19 @@ Of course, a compiler is free (if it is moderately smart, even expected)
 to recognize the special case of calling the \code{+} method over
 integer arguments and to generate efficient inline code for it.
 
-Control constructs such as \code{while} are also not primitive but are
-predefined functions in the standard Scala library. Here is the
-definition of \code{while} in Scala.
+For efficiency and better error diagnostics the \code{while} loop is a
+primitive construct in Scala. But in principle, it could have just as
+well been a predefined function. Here is a possible implementation of it:
 \begin{lstlisting}
-def while (def p: boolean) (def s: unit): unit =
-      if (p) { s ; while(p)(s) }
+def While (def p: boolean) (def s: unit): unit =
+      if (p) { s ; While(p)(s) }
 \end{lstlisting}
-The \code{while} function takes as first parameter a test function,
+The \code{While} function takes as first parameter a test function,
 which takes no parameters and yields a boolean value. As second
 parameter it takes a command function which also takes no parameters
-and yields a trivial result. \code{while} invokes the command function
-as long as the test function yields true. Again, compilers are free to
-pick specialized implementations of \code{while} that have the same
-behavior as the invocation of the function given above.
+and yields a trivial result. \code{While} invokes the command function
+as long as the test function yields true. 
+
 
 \chapter{Programming with Actors and Messages}
 \label{chap:example-auction}
@@ -260,7 +259,7 @@ are defined in Figure~\ref{fig:simple-auction-msgs}.
 class Auction(seller: Actor, minBid: int, closing: Date) extends Actor {
   val timeToShutdown = 36000000; // msec
   val bidIncrement = 10;
-  def run() = {
+  override def run() = {
     var maxBid = minBid - bidIncrement;
     var maxBidder: Actor = _;
     var running = true;
@@ -6546,7 +6545,7 @@ messages. A {\em message} in this context is an arbitrary object.
 There is a special message \code{TIMEOUT} which is used to signal a
 time-out.
 \begin{lstlisting}
-case class TIMEOUT;
+case object TIMEOUT;
 \end{lstlisting}
 Mailboxes implement the following signature.
 \begin{lstlisting}
@@ -6737,7 +6736,7 @@ class Auction(seller: Process, minBid: int, closing: Date)
   val delta = 10                // bid increment
 \end{lstlisting}
 \begin{lstlisting}
-  def run = {
+  override def run = {
     var askedBid = minBid
     var maxBidder: Process = null
     while (true) {
@@ -6850,7 +6849,7 @@ class Bidder (auction: Process, minBid: int, maxBid: int)
   }
 \end{lstlisting}
 \begin{lstlisting}
-  def run = {
+  override def run = {
     getAuctionStatus
     if (nextBid != Unknown) bid
   }

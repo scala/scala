@@ -41,7 +41,7 @@ public interface Modifiers {
 
     int PACKAGE       = 0x00100000;   // symbol is a java package.
     int STABLE        = 0x00800000;   // functions that are assumed to be stable
-                                    // (typically, access methods for valdefs)
+                                      // (typically, access methods for valdefs)
 
     int CAPTURED      = 0x01000000;   // variables is accessed from
                                       // nested function. Set by LambdaLift

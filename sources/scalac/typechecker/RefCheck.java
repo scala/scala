@@ -76,9 +76,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     void checkAllOverrides(int pos, Symbol clazz) {
 	Type[] closure = clazz.closure();
 	for (int i = 0; i < closure.length; i++) {
-	    for (Scope.SymbolIterator it = closure[i].members().iterator(true);
+	    Type basetype = closure[i];
+	    Symbol baseclazz = basetype.symbol();
+	    for (Scope.SymbolIterator it = basetype.members().iterator(true);
 		 it.hasNext();) {
-		checkOverride(pos, clazz, it.next());
+		Symbol sym = it.next();
+		if (sym.owner() == baseclazz) checkOverride(pos, clazz, sym);
 	    }
 	}
 
@@ -86,12 +89,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	for (Scope.SymbolIterator it = clazz.members().iterator(true);
 	     it.hasNext();) {
 	    Symbol sym = it.next();
-	    if ((sym.flags & OVERRIDE) != 0) {
+	    if ((sym.flags & OVERRIDE) != 0 && sym.owner() == clazz) {
 		int i = parents.length - 1;
 		while (i >= 0 && sym.overriddenSymbol(parents[i]).kind == NONE)
 		    i--;
 		if (i < 0) {
-		    unit.error(sym.pos, sym + " overrides nothing");
+		    unit.error(sym.pos, sym + ":" + sym.type() + sym.locationString() + " overrides nothing");//debug
 		    sym.flags &= ~OVERRIDE;
 		} else if (sym.isAbstractOverride() &&
 			   sym.overriddenSymbol(parents[0]).kind == NONE) {
@@ -117,7 +120,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    switch (member1.info()) {
 		    case OverloadedType(Symbol[] alts, _):
 			for (int i = 0; i < alts.length; i++) {
-			    if (normalizedInfo(self, alts[i]).isSubType(template)) {
+			    if (normalizedInfo(self, alts[i]).isSubType(template) &&
+				alts[i].owner() == clazz) {
 				if (member == other)
 				    member = alts[i];
 				else
