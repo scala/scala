@@ -24,7 +24,7 @@ import scalac.symtab.Symbol;
 import scalac.symtab.Scope;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Definitions;
-import scalac.symtab.classfile.CLRPackageParser;
+import scalac.symtab.classfile.CLRTypes;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 
@@ -118,7 +118,7 @@ final class TypeCreator {
 
     private scalac.symtab.Type MAIN_METHOD_TYPE;
 
-    private final CLRPackageParser ti;
+    private final CLRTypes ti;
 
     private final Phase backPhase;
 
@@ -129,7 +129,7 @@ final class TypeCreator {
 	this.defs = global.definitions;
         this.backPhase = global.PHASE.ADDINTERFACES.phase();
 
-	ti = CLRPackageParser.instance();
+	ti = CLRTypes.instance();
 
 	types2symbols = phase.types2symbols;
 	symbols2types = phase.symbols2types;
@@ -266,18 +266,18 @@ final class TypeCreator {
 	translateMethod(JSTRING, "replace",     jChar2, STRING, "Replace");
 	translateMethod(JSTRING, "toCharArray", STRING, "ToCharArray");
 
-	translateMethod(defs.getModule("java.lang.Byte").moduleClass()
-			, "parseByte", jString1, BYTE, "Parse");
-	translateMethod(defs.getModule("java.lang.Short").moduleClass()
-			, "parseShort", jString1, SHORT, "Parse");
-	translateMethod(defs.getModule("java.lang.Integer").moduleClass()
-			, "parseInt", jString1, INT, "Parse");
-	translateMethod(defs.getModule("java.lang.Long").moduleClass()
-			, "parseLong", jString1, LONG, "Parse");
-	translateMethod(defs.getModule("java.lang.Float").moduleClass()
-			, "parseFloat", jString1, FLOAT, "Parse");
-	translateMethod(defs.getModule("java.lang.Double").moduleClass()
-			, "parseDouble", jString1, DOUBLE, "Parse");
+// 	translateMethod(defs.getModule("java.lang.Byte").moduleClass()
+// 			, "parseByte", jString1, BYTE, "Parse");
+// 	translateMethod(defs.getModule("java.lang.Short").moduleClass()
+// 			, "parseShort", jString1, SHORT, "Parse");
+// 	translateMethod(defs.getModule("java.lang.Integer").moduleClass()
+// 			, "parseInt", jString1, INT, "Parse");
+// 	translateMethod(defs.getModule("java.lang.Long").moduleClass()
+// 			, "parseLong", jString1, LONG, "Parse");
+// 	translateMethod(defs.getModule("java.lang.Float").moduleClass()
+// 			, "parseFloat", jString1, FLOAT, "Parse");
+// 	translateMethod(defs.getModule("java.lang.Double").moduleClass()
+// 			, "parseDouble", jString1, DOUBLE, "Parse");
 
 	SYM_SUBSTRING_INT_INT = lookupMethod(JSTRING, "substring", jInt2);
 	SUBSTRING_INT_INT =
@@ -766,7 +766,7 @@ final class TypeCreator {
 			staticType = msilModule.DefineType
  			    (staticTypeName,
  			     translateTypeAttributes(clazz.flags, false),
- 			     superType, Type.EmptyTypes);
+ 			     OBJECT, Type.EmptyTypes);
  		    }
 		}
 	    } else {
@@ -799,7 +799,7 @@ final class TypeCreator {
 		Symbol member = syms.next();
 		if (member.isMethod()) {
 		    MethodBase m = createMethod(member);
-		    if (staticType != null && !m.IsConstructor()) {
+		    if (staticType != null && m.IsPublic() && !m.IsConstructor()) {
 			MethodBase sm = createMethod(staticType, member, true);
 			syms2staticMethods.put(member, sm);
 		    }

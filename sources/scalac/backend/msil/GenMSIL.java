@@ -26,7 +26,7 @@ import scalac.symtab.TypeTags;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Definitions;
 import scalac.symtab.classfile.Pickle;
-import scalac.symtab.classfile.CLRPackageParser;
+import scalac.symtab.classfile.CLRTypes;
 
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
@@ -138,7 +138,7 @@ public final class GenMSIL {
 	    case ClassDef(_, _, _, _, _, Template(_, Tree[] classBody)):
 		Type type = tc.getType(sym);
 		assert type instanceof TypeBuilder
-		    : Debug.show(sym) + " => [" + type.Assembly + "]" + type;
+		    : Debug.show(sym) + " => [" + type.Assembly() + "]" + type;
 		if (type instanceof TypeBuilder)
 		    genClass(sym, classBody);
 		break;
@@ -574,7 +574,8 @@ public final class GenMSIL {
 	    return coerce(items.LiteralItem(value), toType);
 
         case Return(Tree expr):
-            genLoad(expr, toType);
+            //System.out.println(Debug.show(expr) + "; toType = " + toType);
+            genLoad(expr, msilType(expr));
             //code.Emit(OpCodes.Ret);
             code.Emit(OpCodes.Br, methodEnd);
             return items.VoidItem();
@@ -928,8 +929,8 @@ public final class GenMSIL {
 			load(items.SelfItem(tc.getType(currentClass)));
 			break;
 		    default:
-			genLoad(qualifier, msilType(qualifier));
-			virtualCall = true;
+			genAddr(qualifier, msilType(qualifier));
+			virtualCall = !msilType(qualifier).isValueType();
 		    }
 		}
 		lastExpr = tmpLastExpr;
@@ -966,15 +967,15 @@ public final class GenMSIL {
 	Label l1 = code.DefineLabel(), l2 = code.DefineLabel();
 	genLoad(left, MSILType.OBJECT);
 	genLoad(right, MSILType.OBJECT);
-	code.Emit(OpCodes.Stloc, tmpLocal);
+        emitStloc(tmpLocal);
 	code.Emit(OpCodes.Dup);
 	code.Emit(OpCodes.Ldnull);
 	code.Emit(OpCodes.Bne_Un, l1);
-	code.Emit(OpCodes.Ldloc, tmpLocal);
+        emitLdloc(tmpLocal);
 	code.Emit(OpCodes.Ceq);
 	code.Emit(OpCodes.Br, l2);
 	code.MarkLabel(l1);
-	code.Emit(OpCodes.Ldloc, tmpLocal);
+        emitLdloc(tmpLocal);
 	code.Emit(OpCodes.Callvirt, tc.OBJECT_EQUALS);
 	code.MarkLabel(l2);
 	return items.StackItem(MSILType.BOOL);
@@ -1102,11 +1103,11 @@ public final class GenMSIL {
 	    // TODO: reuse temporary local variable whenever possible
 	    LocalBuilder tmp = code.DeclareLocal(tc.OBJECT);
 	    genLoad(left, MSILType.OBJECT);
-	    code.Emit(OpCodes.Stloc, tmp);
-	    code.Emit(OpCodes.Ldloc, tmp);
+            emitStloc(tmp);
+            emitLdloc(tmp);
 	    code.Emit(OpCodes.Call, tc.MONITOR_ENTER);
 	    genLoad(right, MSILType.OBJECT);
-	    code.Emit(OpCodes.Ldloc, tmp);
+            emitLdloc(tmp);
 	    code.Emit(OpCodes.Call, tc.MONITOR_EXIT);
 	    return items.StackItem(MSILType.OBJECT);
 	}
@@ -1146,10 +1147,14 @@ public final class GenMSIL {
 	    code.Emit(OpCodes.Not);
 	    return iLeft;
 	case ZNOT:
-	    return negate(mkCond(iLeft));
+            Item i1 = mkCond(iLeft);
+            Item i2 = negate(i1);
+            //System.out.println("!" + i1 + " -> " + i2);
+	    return i2;
 	case ZOR:
 	    Item.CondItem lcond = mkCond(iLeft), rcond = null;
 	    Chain success = lcond.success, failure = lcond.failure;
+            //System.out.println("ZOR: lcond = " + lcond);
 	    switch (lcond.test) {
 	    case True:
 		return lcond;
@@ -1466,6 +1471,36 @@ public final class GenMSIL {
 	}
     }
 
+    private void emitLdarga(int slot) {
+        code.Emit(slot < 256 ? OpCodes.Ldarga_S : OpCodes.Ldarga, slot);
+    }
+
+    private void emitLdloc(LocalBuilder loc) {
+        switch (loc.slot) {
+	case 0: code.Emit(OpCodes.Ldloc_0); break;
+	case 1: code.Emit(OpCodes.Ldloc_1); break;
+	case 2: code.Emit(OpCodes.Ldloc_2); break;
+	case 3: code.Emit(OpCodes.Ldloc_3); break;
+	default:
+	    code.Emit(loc.slot < 256 ? OpCodes.Ldloc_S : OpCodes.Ldloc, loc);
+        }
+    }
+
+    private void emitLdloca(LocalBuilder loc) {
+        code.Emit(loc.slot < 256 ? OpCodes.Ldloca_S : OpCodes.Ldloca, loc);
+    }
+
+    private void emitStloc(LocalBuilder loc) {
+        switch (loc.slot) {
+	case 0: code.Emit(OpCodes.Stloc_0); break;
+	case 1: code.Emit(OpCodes.Stloc_1); break;
+	case 2: code.Emit(OpCodes.Stloc_2); break;
+	case 3: code.Emit(OpCodes.Stloc_3); break;
+	default:
+	    code.Emit(loc.slot < 256 ? OpCodes.Stloc_S : OpCodes.Stloc, loc);
+        }
+    }
+
     /*
      * Load the value of an item on the stack.
      */
@@ -1489,7 +1524,7 @@ public final class GenMSIL {
 	    return items.StackItem(that.type);
 
 	case LocalItem(LocalBuilder local):
-	    code.Emit(OpCodes.Ldloc, local);
+            emitLdloc(local);
 	    return items.StackItem(that.type);
 
 	case StaticItem(FieldInfo field):
@@ -1730,7 +1765,7 @@ public final class GenMSIL {
 	    break;
 
 	case LocalItem(LocalBuilder local):
-	    code.Emit(OpCodes.Stloc, local);
+            emitStloc(local);
 	    break;
 
 	case StaticItem(FieldInfo field):
@@ -1806,13 +1841,63 @@ public final class GenMSIL {
 	}
     }
 
+    // load the address of a value type item;
+    // for reference types load a reference
+    private Item genAddr(Tree tree, MSILType toType) {
+        Item item = gen(tree, toType);
+        if (!item.type.isValueType())
+            return load(item);
+        switch (item) {
+        case ArgItem(int slot):
+            emitLdarga(slot);
+            break;
+        case LocalItem(LocalBuilder local):
+            emitLdloca(local);
+            break;
+        case StaticItem(FieldInfo field):
+            if (field.IsInitOnly()) {
+                load(item);
+                genLocalAddr(field.FieldType);
+            } else
+                code.Emit(OpCodes.Ldsflda, field);
+            break;
+        case SelectItem(Item qual, FieldInfo field):
+            if (field.IsInitOnly()) {
+                load(item);
+                genLocalAddr(field.FieldType);
+            } else {
+                load(qual);
+                code.Emit(OpCodes.Ldflda, field);
+            }
+            break;
+        case StackItem():
+            genLocalAddr(item.type.toType());
+            break;
+        default:
+            throw Debug.abort(item.toString());
+        }
+        return items.StackItem(toType);
+    }
+
+    private void genLocalAddr(Type localType) {
+        assert localType.IsValueType() : localType.toString();
+        LocalBuilder tmpLocal = (LocalBuilder)locals.get(localType);
+        if (tmpLocal == null) {
+            tmpLocal = code.DeclareLocal(localType);
+            locals.put(localType, tmpLocal);
+        }
+        emitStloc(tmpLocal);
+        emitLdloca(tmpLocal);
+    }
+
     /*
      * Negate a condition.
      */
     private Item.CondItem negate(Item item) {
 	Item.CondItem cond = mkCond(item);
 	// swap the failure and success chains
-	return items.CondItem(negate(cond.test), cond.success, cond.failure);
+	//return items.CondItem(negate(cond.test), cond.success, cond.failure);
+	return items.CondItem(negate(cond.test), cond.failure, cond.success);
     }
 
     /*
@@ -2036,7 +2121,7 @@ final class MSILType {
     public case REF(Type t) { assert t != null && !t.IsArray(); }
     public case ARRAY(MSILType t) { assert t != null; }
 
-    private final static CLRPackageParser pp = CLRPackageParser.instance();
+    private final static CLRTypes pp = CLRTypes.instance();
 
     public static final MSILType OBJECT = REF(pp.OBJECT);
     public static final MSILType STRING = REF(pp.STRING);
@@ -2109,6 +2194,26 @@ final class MSILType {
         default:
             throw Debug.abort("unknown case", value);
         }
+    }
+
+    public Type toType() {
+        switch (this) {
+        case I1: return pp.BYTE;
+        case I2: return pp.SHORT;
+            //case U2: return ;
+        case I4: return pp.INT;
+        case I8: return pp.LONG;
+        case R4: return pp.FLOAT;
+        case R8: return pp.DOUBLE;
+        case BOOL: return pp.BOOLEAN;
+	case CHAR: return pp.CHAR;
+        case REF(Type t): return t;
+	case ARRAY(MSILType t): return pp.mkArrayType(t.toType());
+        case VOID: return pp.VOID;
+            //case NULL: return "NULL";
+        default: throw Debug.abort(getClass().toString());
+        }
+
     }
 
     //##########################################################################
