@@ -235,6 +235,9 @@ public class Definitions {
     public final Symbol ANY_AS;
     public final Symbol ANY_MATCH;
 
+    /** Some scala.AnyRef methods */
+    public final Symbol ANYREF_SYNCHRONIZED;
+
     //########################################################################
     // Public Fields & Methods - Java class methods
 
@@ -572,6 +575,21 @@ public class Definitions {
                     ANY_MATCH_VPARAMS,
                     ANY_MATCH_TPARAMS[1].type())));
 
+        // add members to scala.AnyREF
+        ANYREF_SYNCHRONIZED =
+            newTerm(ANYREF_CLASS, Names.synchronized_, Modifiers.FINAL);
+
+	Symbol ANYREF_SYNCHRONIZED_TPARAM =
+            newTParam(ANYREF_SYNCHRONIZED,0,ANY_TYPE());
+	Symbol ANYREF_SYNCHRONIZED_VPARAM =
+            newVParam(ANYREF_SYNCHRONIZED,0,ANYREF_SYNCHRONIZED_TPARAM.type());
+        ANYREF_SYNCHRONIZED.setInfo(
+	    Type.PolyType(
+		new Symbol[] {ANYREF_SYNCHRONIZED_TPARAM},
+		Type.MethodType(
+                    new Symbol[] {ANYREF_SYNCHRONIZED_VPARAM},
+                    ANYREF_SYNCHRONIZED_TPARAM.type())));
+
         // add members to java.lang.String
         JAVA_STRING_PLUS =
             newTerm(JAVA_STRING_CLASS, Names.PLUS, Modifiers.FINAL);
@@ -656,6 +674,8 @@ public class Definitions {
 
     /** Creates a new term */
     private Symbol newTerm(Symbol owner, Name name, int flags) {
+        if (owner.isTypeAlias()) owner = owner.type().unalias().symbol();
+        assert owner.isClassType(): Debug.show(owner) + " -- " + name;
         Symbol method = new TermSymbol(Position.NOPOS, name, owner, flags);
         if (owner != Symbol.NONE) owner.members().enterOrOverload(method);
         return method;
