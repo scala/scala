@@ -4,9 +4,9 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id: Attribute.scala
+** $Id$
 */
+
 package scala;
 
 class Serializable extends Attribute {}
-
