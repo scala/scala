@@ -50,6 +50,8 @@ public class Evaluator {
         public final Object[] args;
         public final Object[] vars;
 
+        public int pos;
+
         public EvaluationStack(EvaluationStack stack, CodeContainer code,
             Object self, Object[] args)
         {
@@ -113,12 +115,17 @@ public class Evaluator {
 
     private Object trace(CodeContainer code, Object object, Object[] args) {
         try {
-            stack = new EvaluationStack(stack, code, object, args);
-            return evaluate(code.code);
+            try {
+                stack = new EvaluationStack(stack, code, object, args);
+                return evaluate(code.code);
+            } catch (EvaluatorException exception) {
+                throw exception;
+            } catch (Throwable exception) {
+                return throw_(exception, "trace");
+            }
         } catch (EvaluatorException exception) {
+            exception.addScalaCall(stack.symbol, stack.source, stack.pos);
             throw exception;
-        } catch (Throwable exception) {
-            return throw_(exception, "trace");
         } finally {
             stack = stack.stack;
         }
@@ -166,17 +173,8 @@ public class Evaluator {
             Object[] args = new Object[arguments.length];
             for (int i = 0; i < args.length; i++)
                 args[i] = evaluate(arguments[i]);
-            try {
-                return invoke(object, function, args);
-            } catch (StackOverflowError exception) {
-                return throw_(exception);
-            } catch (EvaluatorException exception) {
-                if (stack != null)
-                    exception.addScalaCall(stack.symbol, stack.source, pos);
-                throw exception;
-//             } catch (Throwable exception) {
-//                 return abort(exception);
-            }
+            stack.pos = pos;
+            return invoke(object, function, args);
 
         case Create(ScalaTemplate template):
             return invoke(null, template.getConstructor(),
@@ -412,7 +410,7 @@ public class Evaluator {
         case Module(CodePromise body, Object value):
             if (value != null) return value;
             ((Variable.Module)variable).body = null;
-            evaluate(body.force().code);
+            evaluate(body, null, new Object[0]);
             return load(object, variable);
 
         case Member(int index):
