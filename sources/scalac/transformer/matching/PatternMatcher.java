@@ -441,7 +441,16 @@ public class PatternMatcher extends PatternTool {
         if (curHeader == null) {
             assert index >= 0 : casted;
             if (casted.pos == Position.FIRSTPOS) {
-                Symbol atSym = casted.type().lookup(APPLY_N);
+                //Symbol atSym = casted.type().lookup(APPLY_N);
+		Tree t =
+		    gen.Apply(
+			gen.Select(
+			    gen.Ident(pat.pos, casted),
+			    casted.lookup(APPLY_N)),
+			new Tree[]{gen.mkIntLit(pat.pos, index)});
+		Type seqType = t.type;
+/*
+		    atSym);
                 Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0];
                 Tree t = make.Select(
                             pat.pos,
@@ -468,6 +477,7 @@ public class PatternMatcher extends PatternTool {
                                         .setType(defs.INT_TYPE)
                                 }).setType(seqType);
                 }
+*/
                 target.and = curHeader = mk.Header(pat.pos, seqType, t);
             } else {
                 Symbol ts = ((ClassSymbol) casted.type().symbol())

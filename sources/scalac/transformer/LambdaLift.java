@@ -63,7 +63,30 @@ public class LambdaLift extends OwnerTransformer
 	return sym.kind == CLASS ? sym.primaryConstructor() : sym;
     }
 
-    /** `asFunction' applied to the next enclosing function or class owner.
+    /** Is symbol local relative to owner?
+     *  Primary constructor parameters are local iff owner (contained in)
+     *  the primary constructor.
+     */
+    static boolean isLocal(Symbol sym, Symbol owner) {
+	if ((sym.flags & PARAM) != 0 &&
+	    sym.owner().isPrimaryConstructor() &&
+	    sym.owner().constructorClass().kind == CLASS &&
+	    !((owner.flags & PARAM) != 0 && owner.owner() == sym)) {
+	    Symbol encl = sym.owner().owner();
+	    Symbol clazz = sym.owner().constructorClass();
+	    //System.out.println("isLocal " + sym + " " + encl + " " + clazz + " " + owner);//DEBUG
+	    while (owner != encl &&
+		   owner.kind != NONE &&
+		   owner != clazz) {
+		owner = owner.owner();
+		//System.out.println(":" + owner);//DEBUG
+	    }
+	    return owner != clazz;
+	}
+	return sym.isLocal();
+    }
+
+    /** Propagate free fariables from all called functions.    /** `asFunction' applied to the next enclosing function or class owner.
      */
     static Symbol enclFun(Symbol owner) {
 	Symbol sym = owner;
@@ -178,9 +201,12 @@ public class LambdaLift extends OwnerTransformer
 
 	private Type.Map traverseTypeMap = new Type.Map() {
 	    public Type apply(Type tp) {
+		if (global.debug) global.log("traverse " + tp);//debug
 	        switch (tp) {
 		case TypeRef(ThisType(_), Symbol sym, Type[] targs):
-		    if (sym.isLocal() && sym.kind == TYPE && !excluded.contains(sym))
+		    if (isLocal(sym, currentOwner) &&
+			sym.kind == TYPE &&
+			!excluded.contains(sym))
 			markFree(sym, currentOwner);
 		    break;
 		case PolyType(Symbol[] tparams, Type restp):
@@ -196,7 +222,7 @@ public class LambdaLift extends OwnerTransformer
         };
 
 	public Tree transform(Tree tree) {
-	    //if (global.debug) global.debugPrinter.print("free ").print(tree).println().end();//DEBUG
+	    if (global.debug) global.log("free " + tree);//debug
 	    assert tree.type != null : tree;
 	    traverseTypeMap.apply(tree.type.widen());
 	    Symbol sym = tree.symbol();
@@ -227,7 +253,7 @@ public class LambdaLift extends OwnerTransformer
 		    transform(rhs, currentOwner));
 
 	    case Ident(_):
-		if (sym.isLocal()) {
+		if (isLocal(sym, currentOwner)) {
 		    if (sym.isMethod()) {
 			Symbol f = enclFun(currentOwner);
 			if (f.name.length() > 0) // it is not a template function {
@@ -435,7 +461,7 @@ public class LambdaLift extends OwnerTransformer
 
 	case Ident(Name name):
 	    Symbol sym = tree.symbol();
-	    if (sym.isLocal() &&
+	    if (isLocal(sym, currentOwner) &&
 		(sym.kind == TYPE || (sym.kind == VAL && !sym.isMethod()))) {
 		sym = descr.proxy(sym, currentOwner);
 	    }

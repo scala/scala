@@ -11,7 +11,9 @@ package scalac.ast;
 import scalac.Global;
 import scalac.ast.Tree.*;
 import scalac.symtab.*;
+import scalac.typechecker.Infer;
 import scalac.util.*;
+import scalac.ApplicationError;
 
 /**
  * This class provides method to build attributed trees.
@@ -33,8 +35,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** The tree factory */
     private final TreeFactory make;
 
-    //########################################################################
-    // Public Constructors
+    /** the type inferencer
+     */
+    final Infer infer;
 
     /** Initializes this instance. */
     public TreeGen(Global global) {
@@ -46,6 +49,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         this.global = global;
 	this.definitions = global.definitions;
         this.make = make;
+	this.infer = new Infer(global, this, make);
     }
 
     //########################################################################
@@ -398,17 +402,23 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a TypeApply node with given function and arguments. */
     public TypeApply TypeApply(int pos, Tree fn, Tree[] targs) {
-        switch (fn.type) {
-        case PolyType(Symbol[] tparams, Type result):
-            TypeApply tree = make.TypeApply(pos, fn, targs);
-            assert tparams.length == targs.length: tree;
-            global.nextPhase();
-            tree.setType(result.subst(tparams, Tree.typeOf(targs)));
-            global.prevPhase();
-            return tree;
-        default:
-            throw Debug.abort("illegal case", fn.type);
-        }
+	try {
+	    switch (fn.type) {
+	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
+                global.nextPhase();
+		infer.polyAlternative(fn, alts, alttypes, targs.length);
+                global.prevPhase();
+	    }
+	    switch (fn.type) {
+	    case Type.PolyType(Symbol[] tparams, Type restpe):
+                global.nextPhase();
+                restpe = restpe.subst(tparams, Tree.typeOf(targs));
+                global.prevPhase();
+		return (TypeApply)make.TypeApply(pos, fn, targs).setType(restpe);
+	    }
+	} catch (Type.Error ex) {
+	}
+	throw new ApplicationError("poly type required", fn.type);
     }
     public TypeApply TypeApply(Tree fn, Tree[] targs) {
       return TypeApply(fn.pos, fn, targs);
@@ -416,15 +426,21 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an Apply node with given function and arguments. */
     public Apply Apply(int pos, Tree fn, Tree[] vargs) {
-        switch (fn.type) {
-        case Type.MethodType(Symbol[] vparams, Type result):
-            Apply tree = make.Apply(pos, fn, vargs);
-            // !!! assert vparams.length == vargs.length: tree + " --- " + Debug.show(vparams) + " --- " + Debug.show(vargs);
-            tree.setType(result);
-            return tree;
-        default:
-            throw Debug.abort("illegal case", fn);
-        }
+ 	try {
+	    switch (fn.type) {
+	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
+                global.nextPhase();
+		infer.methodAlternative(fn, alts, alttypes,
+					Tree.typeOf(vargs), Type.AnyType);
+                global.prevPhase();
+	    }
+	    switch (fn.type) {
+	    case Type.MethodType(Symbol[] vparams, Type restpe):
+		return (Apply)make.Apply(pos, fn, vargs).setType(restpe);
+	    }
+	} catch (Type.Error ex) {
+	}
+	throw new ApplicationError("method type required", fn.type);
     }
     public Apply Apply(Tree fn, Tree[] vargs) {
         return Apply(fn.pos, fn, vargs);

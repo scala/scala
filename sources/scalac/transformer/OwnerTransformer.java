@@ -101,14 +101,14 @@ public class OwnerTransformer extends Transformer {
 		tree, symbol,
 		transform(tparams, symbol.primaryConstructor()),
 		transform(vparams, symbol.primaryConstructor()),
-		transform(tpe),
+		transform(tpe, symbol),
 		transform(impl, symbol));
 
 	case ModuleDef(_, _, Tree tpe, Template impl):
             Symbol symbol = tree.symbol();
 	    return copy.ModuleDef(
 		tree, symbol,
-                transform(tpe),
+                transform(tpe, symbol),
 		transform(impl, symbol.moduleClass()));
 
 	case DefDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):

@@ -96,7 +96,7 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
                             }
                             return Type.TypeRef(pre, sym, targs1);
                         }
-                    } else if (sym.isLocal()) {
+                    } else if (LambdaLift.isLocal(sym, owner)) {
                         assert targs.length == 0;
                         return proxy(sym, owner).type();
                     }

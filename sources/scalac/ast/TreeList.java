@@ -28,7 +28,7 @@ public final class TreeList {
 
     public void append(Tree tree) {
         if (len == trees.length) {
-            Tree[] ts = new Tree[len * 2];
+            Tree[] ts = new Tree[len == 0 ? 4 : len * 2];
             System.arraycopy(trees, 0, ts, 0, len);
             trees = ts;
         }
