@@ -317,7 +317,7 @@ public class ExpandMixinsPhase extends Phase {
         assert clasz.isClass() && !clasz.isInterface(): Debug.show(clasz);
         TypeTransformer transformer =(TypeTransformer)transformers.get(clasz);
         if (transformer == null) {
-            transformer = new TypeTransformer(global, clasz);
+            transformer = new TypeTransformer(clasz);
             transformers.put(clasz, transformer);
         }
         return transformer;
@@ -357,9 +357,9 @@ public class ExpandMixinsPhase extends Phase {
         public final SymbolCloner cloner;
         public final Map/*<Symbol,Type>*/ inlines;
 
-        public TypeTransformer(Global global, Symbol clasz) {
+        public TypeTransformer(Symbol clasz) {
             this.clasz = clasz;
-            this.cloner = new SymbolCloner(global.freshNameCreator);
+            this.cloner = new SymbolCloner();
             this.inlines = new HashMap();
             initialize();
         }
