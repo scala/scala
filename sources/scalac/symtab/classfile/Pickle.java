@@ -117,7 +117,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    if (debug) System.out.println("put " + sym);
 	    if (isLocal(sym)) {
 		putEntry(sym.name);
-		putSymbol(sym.owner());
+		putSymbol(sym.isConstructor() ? sym.constructorClass() : sym.owner());
 		putType(sym.info());
 		switch (sym.kind) {
 		case TYPE:
@@ -330,7 +330,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    }
 	    writeByte(0); // space for length
 	    writeRef(sym.name);
-	    writeRef(sym.owner());
+	    writeRef(sym.isConstructor() ? sym.constructorClass() : sym.owner());
 	    writeNat(sym.flags);
 	    writeRef(sym.info());
 	    switch (sym.kind) {

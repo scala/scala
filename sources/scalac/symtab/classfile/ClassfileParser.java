@@ -208,7 +208,7 @@ public class ClassfileParser implements ClassfileConstants {
         Name name = (Name)pool.readPool(in.nextChar());
         Type type = readType(in.nextChar());
         if (CONSTR_N.equals(name)) {
-            Symbol s = TermSymbol.newConstructor(c, sflags);
+            Symbol s = c.newConstructor(Position.NOPOS, sflags);
             // kick out package visible or private constructors
             if (((flags & JAVA_ACC_PRIVATE) != 0) ||
                 ((flags & (JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)) {
@@ -223,9 +223,11 @@ public class ClassfileParser implements ClassfileConstants {
                     throw new ApplicationError();
             }
             Symbol constr = c.primaryConstructor();
-            if (constr.isInitialized())
-                constr = c.addConstructor();
-            s.copyTo(constr);
+            if (constr.isInitialized()) {
+                c.addConstructor(constr = s);
+            } else {
+                constr.flags = sflags;
+            }
             setParamOwners(type, constr);
             constr.setInfo(type);
             attrib.readAttributes(constr, type, METH_ATTR);

@@ -253,9 +253,6 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			sym.setTypeOfThis(readTypeRef());
 			Symbol constr = readSymbolRef();
 			assert constr == sym.allConstructors();
-			Symbol[] alts = constr.alternativeSymbols();
-			for (int i = 0; i < alts.length; i++)
-			    ((TermSymbol)alts[i]).makeConstructor((ClassSymbol)sym);
 			break;
 
 		    case VALsym:
@@ -266,8 +263,13 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			    entries[n] = sym = moduleroot;
                             sym.flags = flags;
 			} else if (tsym == null) {
-			    entries[n] = sym = new TermSymbol(
-				Position.NOPOS, name, owner, flags);
+                            if (name == Names.CONSTRUCTOR) {
+                                entries[n] = sym = owner.newConstructor(
+                                    Position.NOPOS, flags);
+                            } else {
+                                entries[n] = sym = new TermSymbol(
+                                    Position.NOPOS, name, owner, flags);
+                            }
                         } else {
                             if (name == Names.CONSTRUCTOR) {
                                 entries[n] = sym = tsym.allConstructors();

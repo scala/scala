@@ -886,7 +886,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		clazz.isPackageClass()) {
 	       error(tree.pos, "constructor definition not allowed here");
 	    }
-	    sym = context.enclClass.owner.addConstructor();
+            sym = clazz.newConstructor(tree.pos, clazz.flags & CONSTRFLAGS);
+	    clazz.addConstructor(sym);
 	    sym.flags = sym.flags | mods;
 	} else {
 	  sym = TermSymbol.define(tree.pos, name, owner, mods, context.scope);

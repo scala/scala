@@ -199,9 +199,13 @@ public class CLRClassParser extends SymbolLoader {
 	    if (mtype == null)
 		continue;
 	    Symbol constr = clazz.primaryConstructor();
-	    if (constr.isInitialized()) constr = clazz.addConstructor();
 	    int mods = translateAttributes(constrs[i]);
-	    TermSymbol.newConstructor(clazz, mods).copyTo(constr);
+	    if (constr.isInitialized()) {
+                clazz.addConstructor(
+                    constr = clazz.newConstructor(Position.NOPOS, mods));
+            } else {
+                constr.flags = mods;
+            }
 	    setParamOwners(mtype, constr);
 	    constr.setInfo(mtype);
 //  	    System.out.println(clazz.allConstructors() + ": "

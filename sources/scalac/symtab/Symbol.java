@@ -87,6 +87,12 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Factories --------------------------------------------------------------
 
+    /** Creates a new constructor of this symbol. */
+    public final TermSymbol newConstructor(int pos, int flags) {
+        assert isType(): Debug.show(this);
+        return new TermSymbol(pos, Names.CONSTRUCTOR, owner(), flags, 0, this);
+    }
+
     /** Creates a new module owned by this symbol. */
     public final TermSymbol newModule(int pos, int flags, Name name) {
         ClassSymbol clasz = newModuleClass(pos, flags, name.toTypeName());
@@ -353,9 +359,9 @@ public abstract class Symbol implements Modifiers, Kinds {
         throw new ApplicationError("setLoBound inapplicable for " + this);
     }
 
-    /** Add an auxiliary constructor to class; return created symbol.
+    /** Add an auxiliary constructor to class.
      */
-    public Symbol addConstructor() {
+    public void addConstructor(Symbol constr) {
         throw new ApplicationError("addConstructor inapplicable for " + this);
     }
 
@@ -1266,7 +1272,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS | DEFERRED)) |
             ((this.flags | that.flags) & ACCESSOR);
         TermSymbol overloaded = (this.isConstructor())
-            ? TermSymbol.newConstructor(this.constructorClass(), overflags)
+            ? this.constructorClass().newConstructor(this.constructorClass().pos, overflags)
             : new TermSymbol(pos, name, owner, overflags);
         overloaded.setInfo(new LazyOverloadedType(this, that));
         return overloaded;
@@ -1451,22 +1457,6 @@ public class TermSymbol extends Symbol {
         }
     }
 
-    public static TermSymbol newConstructor(Symbol clazz, int flags) {
-        TermSymbol sym = new TermSymbol(
-            clazz.pos, Names.CONSTRUCTOR, clazz.owner(), flags);
-        sym.clazz = clazz;
-        return sym;
-    }
-
-    public TermSymbol makeConstructor(ClassSymbol clazz) {
-        this.clazz = clazz;
-        return this;
-    }
-
-    public static TermSymbol newJavaConstructor(Symbol clazz) {
-        return newConstructor(clazz, clazz.flags & (ACCESSFLAGS | JAVA));
-    }
-
     /** Dummy symbol for template of given class
      */
     public static Symbol newLocalDummy(Symbol clazz) {
@@ -1530,7 +1520,7 @@ public abstract class TypeSymbol extends Symbol {
         super(kind, pos, name, owner, flags, attrs);
         this.closures = new ClosureHistory();
         assert name.isTypeName() : this;
-        this.constructor = TermSymbol.newConstructor(this, flags & CONSTRFLAGS);
+        this.constructor = newConstructor(pos, flags & CONSTRFLAGS);
     }
 
     protected void update(int pos, int flags) {
@@ -1557,8 +1547,8 @@ public abstract class TypeSymbol extends Symbol {
         }
         Symbol[] alts = allConstructors().alternativeSymbols();
         for (int i = 1; i < alts.length; i++) {
-            Symbol constr = other.addConstructor();
-	    constr.flags = other.flags;
+            Symbol constr = other.newConstructor(alts[i].pos, alts[i].flags);
+            other.addConstructor(constr);
             Type info = alts[i].info().cloneType(alts[i], constr);
             if (!isTypeAlias()) info = fixConstrType(info, other);
             constr.setInfo(info);
@@ -1587,10 +1577,9 @@ public abstract class TypeSymbol extends Symbol {
 
     /** add a constructor
      */
-    public final Symbol addConstructor() {
-        Symbol constr = TermSymbol.newConstructor(this, flags & CONSTRFLAGS);
+    public final void addConstructor(Symbol constr) {
+        assert constr.isConstructor(): Debug.show(constr);
         constructor = constructor.overloadWith(constr);
-        return constr;
     }
 
     /** Get primary constructor */
@@ -1958,7 +1947,7 @@ public final class ErrorSymbol extends Symbol {
 
     /** Get primary constructor */
     public Symbol primaryConstructor() {
-        return TermSymbol.newConstructor(this, 0).setInfo(Type.ErrorType);
+        return newConstructor(pos, 0).setInfo(Type.ErrorType);
     }
 
     /** Return the next enclosing class */
