@@ -21,6 +21,12 @@ scalac/ast/AbstractTreeExpander.java
 scalac/ast/AbstractTreeMethodExpander.java
 
 scalac/ast/MetaDefaultTreeFactory.java
+scalac/ast/MetaLazyTreeCopier.java
+scalac/ast/MetaStrictTreeCopier.java
+scalac/ast/MetaTransformer.java
+scalac/ast/MetaTraverser.java
+scalac/ast/MetaTree.java
+scalac/ast/MetaTreeCopier.java
 scalac/ast/MetaTreeFactory.java
 
 scalac/ast/Tree.java
