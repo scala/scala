@@ -987,7 +987,8 @@ test_main() {
         esac;
     fi;
 
-    export SCALA_SCALA_ARGS="-Xmx128M $SCALA_SCALA_ARGS";
+    SCALA_SCALA_ARGS="-Xmx128M $SCALA_SCALA_ARGS";
+    export SCALA_SCALA_ARGS;
 
     if [ -n "$OBJDIR" ]; then
         if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
