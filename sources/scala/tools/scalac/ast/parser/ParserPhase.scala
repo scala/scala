@@ -16,7 +16,7 @@ import scalac.Unit;
 class ParserPhase(global: Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
 
   def apply(units: Array[Unit]): unit = {
-    for (val i <- Iterator.range(0, units.length)) do {
+    for (val i <- Iterator.range(0, units.length)) {
       global.start();
       units(i).body = new Parser(units(i)).parse();
       global.stop("parsed " + units(i).source);

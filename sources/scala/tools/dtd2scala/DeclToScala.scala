@@ -36,7 +36,7 @@ class DeclToScala(fOut:PrintWriter,
             n.children.elements.foreach { n => writeNode(n) }
           }
           case "elementBinding" => {
-            for( val decl <- elemMap.values.elements ) do {
+            for( val decl <- elemMap.values.elements ) {
               fOut.println();
               printIndent();
               lookup += "elementName" -> decl.name;
@@ -51,7 +51,7 @@ class DeclToScala(fOut:PrintWriter,
           }
 
           case "attributeAssign" => {
-            for( val aDecl <- curAttribs.keys.elements ) do {
+            for( val aDecl <- curAttribs.keys.elements ) {
               lookup += "attributeName" -> aDecl;
               n.children.elements.foreach{ n => writeNode( n ) }
             }
@@ -59,7 +59,7 @@ class DeclToScala(fOut:PrintWriter,
           }
 
           case "attributeBinding" => {
-            for( val aDecl <- curAttribs.keys.elements ) do {
+            for( val aDecl <- curAttribs.keys.elements ) {
               lookup += "attributeName" -> aDecl;
               //Console.println("attributeName is "+aDecl+" = "+lookup("attributeName"));
               n.children.elements.foreach{ n => writeNode( n ) }
@@ -125,7 +125,7 @@ class DeclToScala(fOut:PrintWriter,
 
   /** Prints the indent. */
   def printIndent():Unit = {
-    for (val i<-List.range(0, fIndent)) do {
+    for (val i<-List.range(0, fIndent)) {
       fOut.print(' ');
     }
   }
@@ -153,7 +153,7 @@ class DeclToScala(fOut:PrintWriter,
 //
 /* replace dash, colons with underscore, keywords with appended $ */
 private def cooked( ckd:StringBuffer, raw:String, off:int ):String = {
-  for( val i <- List.range( off, raw.length()) ) do {
+  for( val i <- List.range( off, raw.length()) ) {
     val _ = raw.charAt( i ).match {
       case '-' =>
         ckd.append( '_' )

@@ -96,7 +96,7 @@ class HTMLTreePrinter(stream: OutputStream) extends TextTreePrinter(stream) {
   }
 
   override protected def printString(str: String): unit = {
-    for (val i <- Iterator.range(0, str.length())) do {
+    for (val i <- Iterator.range(0, str.length())) {
       val c = str.charAt(i);
       val entity: String = c match {
         case '<' => "lt";

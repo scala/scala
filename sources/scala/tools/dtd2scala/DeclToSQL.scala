@@ -50,7 +50,7 @@ class DeclToSQL(fOut:PrintWriter,mName:String,elemMap:Map[String,ElemDecl ] ) {
       case _            => ;
     }
     val m = new HashMap[String, Rhs];
-    for( val decl <- elemMap.values ) do {
+    for( val decl <- elemMap.values ) {
       //System.err.print("[processing element "+decl.name
 	//		 +" "+decl.contentModel+"]");
       val orig = RegExp.parse( decl.contentModel );
@@ -59,7 +59,7 @@ class DeclToSQL(fOut:PrintWriter,mName:String,elemMap:Map[String,ElemDecl ] ) {
       rhs = new Rhs( decl.name );
       singles( orig );
       rhs.containsText = decl.containsText;
-      for( val aname <- decl.attribs.keys ) do rhs.addSingle( Attr( aname ));
+      for( val aname <- decl.attribs.keys ) rhs.addSingle( Attr( aname ));
       m.update( decl.name, rhs );
     }
     m

@@ -1454,14 +1454,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public static class SubstTypeMap extends SubstMap {
         Type[] to;
-        protected SubstTypeMap(Symbol[] from, Type[] to) {
+        public SubstTypeMap(Symbol[] from, Type[] to) {
             super(from);
             this.to = to;
         }
-        protected Type replacement(int i, Type fromtp) {
+        public Type replacement(int i, Type fromtp) {
             return to[i];
         }
-        protected SubstMap exclude(Symbol[] newfrom, Symbol[] excluded) {
+        public SubstMap exclude(Symbol[] newfrom, Symbol[] excluded) {
             return new SubstTypeMap(newfrom, excludeTypes(from, excluded, to));
         }
     }

@@ -122,7 +122,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   }
 
   protected def print(texts: List[Text]): unit =
-    for (val text <- texts) do print(text);
+    for (val text <- texts) print(text);
 
   protected final val KW_ABSTRACT  = Keyword("abstract");
   protected final val KW_CASE      = Keyword("case");
@@ -199,7 +199,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   def print(unit: Unit): unit = {
     printUnitHeader(unit);
     if (unit.body != null) {
-      for (val i <- Iterator.range(0, unit.body.length)) do {
+      for (val i <- Iterator.range(0, unit.body.length)) {
         print(unit.body(i));
         print(TXT_BLOCK_SEP);
       }
@@ -389,7 +389,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 	indent();
 	print(TXT_BLOCK_BEGIN);
 
-	for (val i <- Iterator.range(0, tags.length)) do {
+	for (val i <- Iterator.range(0, tags.length)) {
 	  print(KW_CASE);
 	  print(Space);
 	  print("" + tags(i));
@@ -501,7 +501,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 	print(tpe);
 	indent();
 	print(TXT_LEFT_BRACKET);
-	for (val i <- Iterator.range(0, args.length)) do {
+	for (val i <- Iterator.range(0, args.length)) {
 	  if (i > 0) print(TXT_COMMA_SP);
 	  print(args(i));
 	}
@@ -524,7 +524,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   protected def printArray(trees: Array[Tree], open: Text, close: Text, sep: Text): unit = {
     indent();
     print(open);
-    for (val i <- Iterator.range(0, trees.length)) do {
+    for (val i <- Iterator.range(0, trees.length)) {
       if (i > 0) print(sep);
       print(trees(i));
     }
@@ -623,7 +623,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   protected def printParams(tparams: Array[Tree$AbsTypeDef]): unit =
     if (tparams.length > 0) {
       print(TXT_LEFT_BRACKET);
-      for (val i <- Iterator.range(0, tparams.length)) do {
+      for (val i <- Iterator.range(0, tparams.length)) {
         if (i > 0) print(TXT_COMMA_SP);
         printParam(tparams(i));
       }
@@ -631,12 +631,12 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     }
 
   protected def printParams(vparamss: Array[Array[Tree$ValDef]]): unit =
-    for (val i <- Iterator.range(0, vparamss.length)) do
+    for (val i <- Iterator.range(0, vparamss.length))
       printParams(vparamss(i));
 
   protected def printParams(vparams: Array[Tree$ValDef]): unit = {
     print(TXT_LEFT_PAREN);
-    for (val i <- Iterator.range(0, vparams.length)) do {
+    for (val i <- Iterator.range(0, vparams.length)) {
       if (i > 0) print(TXT_COMMA_SP);
       printParam(vparams(i));
     }

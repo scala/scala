@@ -865,14 +865,11 @@ public class Parser implements Tokens {
             accept(LPAREN);
             enums = enumerators();
             accept(RPAREN);
-            if (s.token == DO) {
-                return makeFor(s.skipToken(), enums, Names.foreach, Names.foreach, expr());
-            } else if (s.token == YIELD) {
+            if (s.token == YIELD)
                 return makeFor(s.skipToken(), enums, Names.map, Names.flatmap, expr());
-            } else {
-                return syntaxError("`do' or `yield' expected", true);
-            }
-        } else if (s.token == RETURN) {
+            else
+                return makeFor(s.pos, enums, Names.foreach, Names.foreach, expr());
+	} else if (s.token == RETURN) {
             int pos = s.skipToken();
             Tree e = (isExprIntro()) ? expr()
                 : make.Block(pos, Tree.EMPTY_ARRAY);

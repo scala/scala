@@ -356,7 +356,7 @@ class Parser(unit: Unit) {
   */
   def convertToParams(ts: Array[Tree]): Array[Tree$ValDef] = {
     val res = new Array[Tree$ValDef](ts.length);
-    for (val i <- Iterator.range(0, res.length)) do
+    for (val i <- Iterator.range(0, res.length))
       res(i) = convertToParam(ts(i));
     res;
   }
@@ -811,13 +811,10 @@ class Parser(unit: Unit) {
       accept(LPAREN);
       val enums = enumerators();
       accept(RPAREN);
-      if (s.token == DO) {
-        makeFor(s.skipToken(), enums, Names.foreach, Names.foreach, expr())
-      } else if (s.token == YIELD) {
+      if (s.token == YIELD)
         makeFor(s.skipToken(), enums, Names.map, Names.flatmap, expr())
-      } else {
-        syntaxError("`do' or `yield' expected", true)
-      }
+      else
+        makeFor(s.pos, enums, Names.foreach, Names.foreach, expr())
     } else if (s.token == RETURN) {
       val pos = s.skipToken();
       val e =

@@ -160,7 +160,7 @@ abstract class FactoryAdapter
         else {
               map = new HashMap[String,String];
 
-	      for( val i <- List.range( 0, attributes.getLength() )) do {
+	      for( val i <- List.range( 0, attributes.getLength() )) {
                 val attrLocalName = attributes.getLocalName(i);
                 //String attrQName = attributes.getQName(i);
                 //String attrURI = attributes.getURI(i);

@@ -25,6 +25,7 @@ object Main {
     System.getProperty("scala.version", "unknown version");
 
   def main(args: Array[String]): unit = {
+    System.out.println("new scalac");
     val reporter = new Reporter();
     val command = new CompilerCommand(
       PRODUCT, VERSION, reporter, new CompilerPhases());

@@ -749,9 +749,9 @@ class Scanner(_unit: Unit) extends TokenData {
   protected def init() = {
     initKeywords();
     key = new Array[byte](maxKey+1);
-    for (val i <- Iterator.range(0, maxKey)) do
+    for (val i <- Iterator.range(0, maxKey))
       key(i) = IDENTIFIER;
-    for (val j <- Iterator.range(0, numToken)) do
+    for (val j <- Iterator.range(0, numToken))
       if (tokenName(j) != null) key(tokenName(j).index) = j.asInstanceOf[byte];
   }
 

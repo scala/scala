@@ -2951,7 +2951,7 @@ A semicolon preceding the \code{while} symbol of a do loop expression is ignored
 \section{Comprehensions}
 
 \syntax\begin{lstlisting}
-  Expr           ::=  for `(' Enumerators `)' (do | yield) Expr
+  Expr           ::=  for `(' Enumerators `)' [yield] Expr
   Enumerator     ::=  Generator {`;' Enumerator}
   Enumerator     ::=  Generator
                    |  Expr
@@ -2992,7 +2992,7 @@ is translated to
 
 \item
 A for-comprehension
-~\lstinline@for (val $p$ <- $e\,$) do $e'$@~ 
+~\lstinline@for (val $p$ <- $e\,$) $e'$@~ 
 is translated to
 ~\lstinline@$e$.foreach { case $p$ => $e'$ }@.
 
@@ -3010,13 +3010,13 @@ $e$.flatmap { case $p$ => for (val $p'$ <- $e'; \ldots$) yield $e''$ } .
 \item
 A for-comprehension
 \begin{lstlisting}
-for (val $p$ <- $e$; val $p'$ <- $e'; \ldots$) do $e''$ .
+for (val $p$ <- $e$; val $p'$ <- $e'; \ldots$) $e''$ .
 \end{lstlisting}
 where \lstinline@$\ldots$@ is a (possibly empty)
 sequence of generators or filters,
 is translated to
 \begin{lstlisting}
-$e$.foreach { case $p$ => for (val $p'$ <- $e'; \ldots$) do $e''$ } .
+$e$.foreach { case $p$ => for (val $p'$ <- $e'; \ldots$) $e''$ } .
 \end{lstlisting}
 \end{itemize}
 
@@ -3094,7 +3094,7 @@ Here is a function to compute the scalar product of two vectors:
 \begin{lstlisting}
 def scalprod(xs: Array[double], ys: Array[double]) {
   var acc = 0.0;
-  for (val Pair(x, y) <- xs zip ys) do acc = acc + x * y; 
+  for (val Pair(x, y) <- xs zip ys) acc = acc + x * y; 
   acc
 }
 \end{lstlisting}

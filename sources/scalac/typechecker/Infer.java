@@ -630,8 +630,8 @@ public class Infer implements Modifiers, Kinds {
 		    targs[i] = instantiateToBound(
 			tvars[i], variance(tparams[i], params));
 		}
-		return targs;
 	    } catch (NoInstance ex) {
+		for (int i = 0; i < tvars.length; i++) targs[i] = Type.AnyType;
 	    }
 	}
 	return targs;

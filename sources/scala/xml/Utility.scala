@@ -13,7 +13,7 @@ object Utility {
   */
   def escape( text:String ) = {
     val s = new StringBuffer();
-    for( val c <- new IterableString(text).elements ) do c match {
+    for( val c <- new IterableString(text).elements ) c match {
       case '<' => val _ = s.append("&lt;");
       case '>' => val _ = s.append("&gt;");
       case '&' => val _ = s.append("&amp;");
