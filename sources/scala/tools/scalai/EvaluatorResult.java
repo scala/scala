@@ -13,9 +13,9 @@ public class EvaluatorResult {
     //########################################################################
     // Public Cases
 
-    case Void;
-    case Value(Object value, String type);
-    case Error(EvaluatorException exception);
+    public case Void;
+    public case Value(Object value, String type);
+    public case Error(EvaluatorException exception);
 
     //########################################################################
 }
