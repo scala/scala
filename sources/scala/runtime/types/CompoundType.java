@@ -24,12 +24,13 @@ import scala.runtime.RunTime;
 
 public class CompoundType extends Type {
     public final ClassType[] components;
-    public final Refinement[] refinements;
 
-    public CompoundType(ClassType[] components,
-                        Refinement[] refinements) {
+    public CompoundType(ClassType[] components, boolean emptyRefinement) {
         this.components = components;
-        this.refinements = refinements;
+
+        if (!emptyRefinement)
+            throw new Error("attempt to build a compound type with "
+                            + "non-empty refinement");
     }
 
     public Array newArray(int size) {
@@ -46,26 +47,31 @@ public class CompoundType extends Type {
                 return false;
         }
 
-        return (refinements.length == 0)
-            || (o instanceof ScalaObject
-                && hasCoarserRefinements((((ScalaObject)o).getType())
-                                         .refinements));
-    }
-
-    private boolean hasCoarserRefinements(Refinement[] thatRefinements) {
-        return Refinement.isFiner(thatRefinements, this.refinements);
+        return true;
     }
 
     public boolean isSubType(Type that) {
-        throw new Error();      // TODO
+        if (that instanceof CompoundType) {
+            ClassType[] thatComponents = ((CompoundType)that).components;
+            for (int i = 0; i < thatComponents.length; ++i) {
+                if (!this.isSubType(thatComponents[i]))
+                    return false;
+            }
+            return true;
+        } else {
+            for (int i = 0; i < components.length; ++i) {
+                if (components[i].isSubType(that))
+                    return true;
+            }
+            return false;
+        }
     }
 
     public boolean isSameAs(Type that) {
         if (that instanceof CompoundType) {
             CompoundType thatCT = (CompoundType)that;
 
-            if ((components.length != thatCT.components.length)
-                || (refinements.length != thatCT.refinements.length))
+            if (components.length != thatCT.components.length)
                 return false;
 
             for (int i = 0; i < components.length; ++i) {
@@ -73,13 +79,21 @@ public class CompoundType extends Type {
                     return false;
             }
 
-            for (int i = 0; i < refinements.length; ++i) {
-                if (!refinements[i].isSameAs(thatCT.refinements[i]))
-                    return false;
-            }
-
             return true;
         } else
             return false;
+    }
+
+    public int hashCode() {
+        return Type.hashCode(components);
+    }
+
+    public String toString() {
+        StringBuffer buf = new StringBuffer();
+        for (int i = 0; i < components.length; ++i) {
+            if (i > 0) buf.append(" with ");
+            buf.append(components[i]);
+        }
+        return buf.toString();
     }
 }
