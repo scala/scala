@@ -11,7 +11,6 @@ package scalac.transformer;
 import scalac.*;
 import scalac.parser.*;
 import scalac.symtab.*;
-import scalac.typechecker.Infer;
 import scalac.checkers.*;
 
 public class UnCurryPhase extends Phase implements Modifiers {

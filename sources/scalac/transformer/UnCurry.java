@@ -15,7 +15,6 @@ import scalac.util.*;
 import scalac.ast.*;
 import scalac.symtab.*;
 import Tree.*;
-import scalac.typechecker.DeSugarize ;
 
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)

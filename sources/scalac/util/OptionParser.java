@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.StringTokenizer;
 
-import scalac.Main;
 import scalac.PhaseDescriptor;
 //import scalac.optimizer.OptimizePhase;
 
