@@ -7,7 +7,15 @@
 \*                                                                      */
 package scalac.util;
 
+import scalac.symtab.Symbol;
+
 public class Names {
+
+    private static final Name LOCAL_PREFIX = Name.fromString("local$");
+
+    public static Name LOCAL(Symbol clasz) {
+        return LOCAL_PREFIX.append(clasz.name);
+    }
 
     public static final Name ERROR = Name.ERROR;
     public static final Name NOSYMBOL = Name.fromString("<none>");

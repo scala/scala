@@ -73,7 +73,7 @@ public class TreeGen implements Kinds, Modifiers {
     /** Create a dummy symbol to be used for templates.
      */
     public Symbol localDummy(int pos, Symbol owner) {
-	return new TermSymbol(pos, Names.EMPTY, owner, 0)
+	return new TermSymbol(pos, Names.LOCAL(owner), owner, 0)
 	    .setInfo(Type.NoType);
     }
 
