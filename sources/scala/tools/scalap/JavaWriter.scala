@@ -44,8 +44,11 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     def nameToSimpleClass(str: String) =
         Names.decode(str.substring(str.lastIndexOf('/') + 1));
 
-    def nameToPackage(str: String) =
-        Names.decode(str.substring(0, str.lastIndexOf('/')).replace('/', '.'));
+    def nameToPackage(str: String) = {
+        val inx = str.lastIndexOf('/');
+        val name = if (inx == -1) str else str.substring(0, inx).replace('/', '.');
+        Names.decode(name)
+    }
 
     def sigToType(str: String): String =
         sigToType(str, 0)._1;
