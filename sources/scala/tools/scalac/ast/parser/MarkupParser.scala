@@ -235,11 +235,12 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     while( s.xIsNameStart ) {
       val key = s.xName; s.xEQ;
       val delim = s.ch;
-      val value = delim match {
+      val value:Tree = delim match {
         case '"' | '\'' =>
           val pos = s.pos;
-          s.xNext; val tmp = s.xAttributeValue( delim );
-          s.xNext; s.xSpaceOpt;
+          s.xNext;
+          val tmp = s.xAttributeValue( delim );
+          s.xNext;
           gen.mkStringLit( pos, tmp )
         case '{' =>
           s.xNext;
@@ -257,6 +258,8 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
       if( aMap.contains( key ))
         s.xSyntaxError( "attribute "+key+" may only be defined once" );
       aMap = aMap.update( key, value );
+      if(( s.ch != '/' )&&( s.ch != '>' ))
+        s.xSpace;
     };
    aMap
   }
