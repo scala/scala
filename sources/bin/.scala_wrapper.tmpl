@@ -472,7 +472,7 @@ configure;
 case "$SCRIPT" in
     scala-info ) scala_info "$@";;
     scalac*    ) exec_compile scalac.Main "$@";;
-    scaladoc*  ) exec_compile scalac.Main -doc "$@";;
+    scaladoc*  ) exec_compile scaladoc.Main "$@";;
     scalarun*  ) exec_interpret scalai.Main "$@";;
     scalaint*  ) exec_interpret scalai.Main -interactive "$@";;
     dtd2scala* ) exec_dtd2scala dtd2scala.Main "$@";;
