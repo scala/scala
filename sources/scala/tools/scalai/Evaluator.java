@@ -26,6 +26,7 @@ import ch.epfl.lamp.util.SourceFile;
 import scala.runtime.RunTime;
 
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolNameWriter;
 import scalac.symtab.Type;
 import scalac.util.Debug;
 
@@ -522,16 +523,17 @@ public class Evaluator {
         }
     }
 
-    private String getSignature(Object object) {
+    private String getClassNameOf(Object object) {
         Symbol symbol = getScalaSymbol(object);
-        if (symbol != null) return symbol.toString();
+        if (symbol != null) getClassName(symbol);
         Class clasz = object.getClass();
-        if (!clasz.isArray()) return clasz.toString();
-        return "class " + getClassName(clasz);
+        if (!clasz.isArray()) return clasz.getName();
+        return getClassName(clasz);
     }
 
-    private String getSignature(Type type) {
-        return "class " + getTypeName(type);
+    private String getClassName(Symbol clasz) {
+        SymbolNameWriter writer = new SymbolNameWriter().setNameDecoding(true);
+        return writer.appendSymbol(clasz).toString();
     }
 
     private String getClassName(Class clasz) {
@@ -551,12 +553,12 @@ public class Evaluator {
         return buffer.toString();
     }
 
-    private String getTypeName(Type type) {
+    private String getClassName(Type type) {
         switch (type) {
         case TypeRef(_, Symbol symbol, _):
             return symbol.fullNameString();
         case UnboxedArrayType(Type element):
-            return getTypeName(element) + "[]";
+            return getClassName(element) + "[]";
         case UnboxedType(_):
             return type.toString();
         default:
@@ -565,8 +567,8 @@ public class Evaluator {
     }
 
     private ClassCastException getCastException(Object object, Type type) {
-        String from = getSignature(object);
-        String to = getSignature(type);
+        String from = "class " + getClassNameOf(object);
+        String to = "class " + getClassName(type);
         return new ClassCastException(from + " is not an instance of " + to);
     }
 
