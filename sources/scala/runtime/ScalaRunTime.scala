@@ -5,14 +5,14 @@ object ScalaRunTime {
     class Try[a](r: scala.runtime.ResultOrException[a]) {
       def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
 	if (r.exc == null)
-	    r.result as b
+	    r.result.asInstanceOf[b]
 	else if (/*!(r.exc is NonLocalReturn) && */handler isDefinedAt r.exc)
 	    handler(r.exc)
 	else
 	    r.exc.throw;
 
       def Finally(handler: Unit): a =
-	if (r.exc == null) r.result as a else r.exc.throw;
+	if (r.exc == null) r.result.asInstanceOf[a] else r.exc.throw;
     }
 
     def Try[a](def block: a): Try[a] =

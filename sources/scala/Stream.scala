@@ -113,7 +113,7 @@ trait Stream[+a] extends Seq[a] {
   def print: unit =
     if (isEmpty) System.out.println("Stream.empty")
     else {
-      System.out.print(head as java.lang.Object);
+      System.out.print(head.asInstanceOf[java.lang.Object]);
       System.out.print(", ");
       tail.print
     }
@@ -143,7 +143,7 @@ object Stream {
       tlVal
     }
     def printElems(buf: StringBuffer, prefix: String): StringBuffer = {
-      val buf1 = buf.append(prefix).append(hd as java.lang.Object);
+      val buf1 = buf.append(prefix).append(hd.asInstanceOf[java.lang.Object]);
       if (tlDefined) printElems(buf1, ", ") else buf1 append ", ?";
     }
   }

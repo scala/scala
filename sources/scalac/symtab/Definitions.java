@@ -318,13 +318,13 @@ public class Definitions {
         ANY_CLASS.members().enter(MATCH);
 
         AS = new TermSymbol(
-	    Position.NOPOS, Names.as, ANY_CLASS, Modifiers.FINAL);
+	    Position.NOPOS, Names.asInstanceOf, ANY_CLASS, Modifiers.FINAL);
         Symbol tvar = newTypeParameter(AS, ANY_TYPE);
         AS.setInfo(Type.PolyType(new Symbol[]{tvar}, tvar.type()));
         ANY_CLASS.members().enter(AS);
 
         IS = new TermSymbol(
-	    Position.NOPOS, Names.is, ANY_CLASS, Modifiers.FINAL);
+	    Position.NOPOS, Names.isInstanceOf, ANY_CLASS, Modifiers.FINAL);
         IS.setInfo(Type.PolyType(new Symbol[]{newTypeParameter(IS, ANY_TYPE)},
 				 BOOLEAN_TYPE));
         ANY_CLASS.members().enter(IS);

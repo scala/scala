@@ -129,7 +129,7 @@ public class Scanner extends TokenData {
 	    case COMMA:  case SEMI:     case DOT:
 	    case COLON:  case EQUALS:   case ARROW:
             case LARROW: case SUBTYPE:  case SUPERTYPE:
-            case HASH:   case AT:       case AS:    case IS:
+            case HASH:   case AT:
 	    case RPAREN: case RBRACKET: case RBRACE:
 		break;
 	    default:
@@ -810,7 +810,6 @@ public class Scanner extends TokenData {
 
     protected void initKeywords() {
         enterKeyword("abstract", ABSTRACT);
-	enterKeyword("as", AS);
         enterKeyword("case", CASE);
         enterKeyword("class", CLASS);
         enterKeyword("catch", CATCH);
@@ -824,7 +823,6 @@ public class Scanner extends TokenData {
         enterKeyword("for", FOR);
         enterKeyword("if", IF);
         enterKeyword("import", IMPORT);
-	enterKeyword("is", IS);
         enterKeyword("new", NEW);
         enterKeyword("null", NULL);
         enterKeyword("object", OBJECT);

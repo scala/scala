@@ -867,10 +867,6 @@ public class Parser implements Tokens {
 		int pos = s.skipToken();
 		Tree tp = type1();
 		t = make.Typed(pos, t, tp);
-	    } else if (s.token == AS || s.token == IS) {
-		Name op = (s.token == AS) ? Names.as : Names.is;
-		int pos = s.skipToken();
-		t = make.TypeApply(pos, make.Select(pos, t, op), new Tree[]{type1()});
 	    }
 	    if (s.token == ARROW) {
 		t = make.Function(s.skipToken(), convertToParams(t), expr());

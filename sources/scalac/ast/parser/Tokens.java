@@ -55,18 +55,16 @@ public interface Tokens {
 
         IMPORT = 46,
         PACKAGE = 47,
-        AS = 48,
-        IS = 49,
-        YIELD = 50,
-        DO = 51,
-        TRAIT = 52,
-        SEALED = 53,
+        YIELD = 48,
+        DO = 49,
+        TRAIT = 50,
+        SEALED = 51,
         /* THROW = 54, */
-        TRY = 55,
-        CATCH = 56,
-        FINALLY = 57,
-        WHILE = 58,
-        RETURN = 59,
+        TRY = 53,
+        CATCH = 54,
+        FINALLY = 55,
+        WHILE = 56,
+        RETURN = 57,
 
         /* special symbols */
         COMMA = 61,

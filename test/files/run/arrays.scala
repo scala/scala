@@ -96,8 +96,8 @@ object arrays {
     System.out.println();
 
     zarray(0) = false;
-    barray(0) = 1 as Byte;
-    sarray(0) = 2 as Short;
+    barray(0) = 1.asInstanceOf[Byte];
+    sarray(0) = 2.asInstanceOf[Short];
     carray(0) ='3';
     iarray(0) = 4;
     larray(0) = 5;
@@ -106,8 +106,8 @@ object arrays {
     rarray(0) ="8";
 
     zarray(1) = true;
-    barray(1) = 2 as Byte;
-    sarray(1) = 3 as Short;
+    barray(1) = 2.asInstanceOf[Byte];
+    sarray(1) = 3.asInstanceOf[Short];
     carray(1) ='4';
     iarray(1) = 5;
     larray(1) = 6;

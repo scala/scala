@@ -72,7 +72,7 @@ public class Names {
     public static final Name Unit = Name.fromString("Unit");
     public static final Name While = Name.fromString("While");
     public static final Name apply = Name.fromString("apply");
-    public static final Name as = Name.fromString("as");
+    public static final Name asInstanceOf = Name.fromString("asInstanceOf");
     public static final Name box = Name.fromString("box");
     public static final Name elem = Name.fromString("elem");
     public static final Name elements = Name.fromString("elements");
@@ -83,7 +83,7 @@ public class Names {
     public static final Name getClass = Name.fromString("getClass");
     public static final Name hashCode = Name.fromString("hashCode");
     public static final Name hasNext = Name.fromString("hasNext");
-    public static final Name is = Name.fromString("is");
+    public static final Name isInstanceOf = Name.fromString("isInstanceOf");
     public static final Name isDefinedAt = Name.fromString("isDefinedAt");
     public static final Name java = Name.fromString("java");
     public static final Name java_lang = Name.fromString("java.lang");

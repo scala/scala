@@ -37,7 +37,7 @@ abstract class SeqTrace[A] extends List[Pair[Int,A]] {
     // why the f&&k do I need the .as cast ?
 
     def add[A](state: Int, value: A): SeqTraceCons[A] =
-        SeqTraceCons[A](state, value, this as SeqTrace[A]);
+        SeqTraceCons[A](state, value, this.asInstanceOf[SeqTrace[A]]);
 
     // this is copied verbatim from List... and SeqList
 /*

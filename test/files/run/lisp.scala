@@ -288,18 +288,23 @@ object LispAny with Lisp {
     def lookup(n: String): Data = lispError("undefined: " + n);
   }
 
-  def asList(x: Data): List[Data] =
-    if (x is List[Data]) x as List[Data]
-    else lispError("malformed list: " + x);
+  def asList(x: Data): List[Data] = x match {
+    case y: List[Data] => y
+    case _ => lispError("malformed list: " + x)
+  }
+
+  def asInt(x: Data): int = x match {
+    case y: int => y
+    case _ => lispError("not an integer: " + x)
+  }
+
+  def asString(x: Data): String = x match {
+    case y: java.lang.String => y
+    case _ => lispError("not a string: " + x)
+  }
 
   def asBoolean(x: Data): boolean =
     if (x == 0) false else true;
-
-  def asInt(x: Data): int =
-    if (x is int) x as int else lispError("not an integer: " + x);
-
-  def asString(x: Data): String =
-    if (x is java.lang.String) x as java.lang.String else lispError("not a string: " + x);
 
   def normalize(x: Data): Data = x match {
     case 'and :: x :: y :: Nil =>
@@ -368,7 +373,7 @@ object LispAny with Lisp {
         case y :: ys => " " + lisp2string(y) + list2string(ys)
       }
       "(" + lisp2string(y) + list2string(ys) + ")"
-    case _ => if (x is String) "\"" + x + "\""; else x.toString()
+    case _ => if (x.isInstanceOf[String]) "\"" + x + "\""; else x.toString()
   }
 
   def apply(fn: Data, args: List[Data]): Data = fn match {
@@ -452,7 +457,7 @@ class LispUser(lisp: Lisp) {
 
   def run = {
 
-    System.out.println(string2lisp("(lambda (x) (+ (* x x) 1))") as Object);
+    System.out.println(string2lisp("(lambda (x) (+ (* x x) 1))").asInstanceOf[Object]);
     System.out.println(lisp2string(string2lisp("(lambda (x) (+ (* x x) 1))")));
     System.out.println();
 

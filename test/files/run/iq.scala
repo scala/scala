@@ -43,11 +43,11 @@ object iq {
      */
     java.lang.System.out.println("q5[5]: " + q5(5));
 
-    val q5c:Queue[char] = Queue.Empty.enqueue(0 as char, 1 as char,
-					     2 as char, 3 as char,
-					     4 as char, 5 as char,
-					     6 as char, 7 as char,
-					     8 as char, 9 as char);
+    val q5c:Queue[char] = Queue.Empty.enqueue(0: char, 1: char,
+					      2: char, 3: char,
+					      4: char, 5: char,
+					      6: char, 7: char,
+					      8: char, 9: char);
     /* Testing ==
      *  Expected: q5 == q9: true
      *            q9 == q5: true

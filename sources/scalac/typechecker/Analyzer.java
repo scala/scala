@@ -1269,7 +1269,22 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    // this works as for superclass constructor calls the expected
 	    // type `pt' is always AnyType (see transformConstrInvocations).
 	}
-	if (!(owntype instanceof Type.PolyType || owntype.isSubType(pt))) {
+	if (!(owntype instanceof Type.PolyType ||
+	      owntype.isSubType(pt))) {
+	    switch (tree) {
+	    case Literal(Object value):
+		if (value instanceof Integer) {
+		    int n = ((Integer) value).intValue();
+		    if (pt.symbol() == definitions.BYTE_CLASS &&
+			-128 <= n && n <= 127 ||
+			pt.symbol() == definitions.SHORT_CLASS &&
+			-32768 <= n && n <= 32767 ||
+			pt.symbol() == definitions.CHAR_CLASS &&
+			0 <= n && n <= 65535) {
+			return tree.setType(pt);
+		    }
+		}
+	    }
 	    typeError(tree.pos, owntype, pt);
 	    Type.explainTypes(owntype, pt);
 	    tree.type = Type.ErrorType;

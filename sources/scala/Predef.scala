@@ -12,7 +12,7 @@ object Predef {
     type boolean = scala.Boolean;
     type unit = scala.Unit;
 
-    def List[A](x: A*): List[A] = x as List[A];
+    def List[A](x: A*): List[A] = x.asInstanceOf[List[A]];
     val List = scala.List;
 
 /*

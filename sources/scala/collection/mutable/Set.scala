@@ -23,7 +23,7 @@ trait Set[A] with scala.collection.Set[A] {
     def +=(elem: A): Unit;
 
     def incl(elems: A*): Unit = {
-        val ys = elems as List[A];
+        val ys = elems.asInstanceOf[List[A]];
         ys foreach { y => +=(y); };
     }
 

@@ -263,7 +263,7 @@ trait List[+a] extends Seq[a] {
   def print: Unit =
     if (isEmpty) java.lang.System.out.println("Nil")
     else {
-      java.lang.System.out.print(head as java.lang.Object);
+      java.lang.System.out.print(head.asInstanceOf[java.lang.Object]);
       java.lang.System.out.print(" :: ");
       tail.print
     }
