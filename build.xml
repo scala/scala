@@ -1,7 +1,9 @@
 <project name="scala" default="scala.xml" basedir=".">
 
   <!-- the bootstrap compiler jar archive -->
-  <property name="bootstrap.jar" value="lib/jaco.jar"/>
+  <property name="bootstrap.jar" value="/home/linuxsoft/apps/jaco/lib/jaco.jar"/>
+  <property name="pizza.jar" value="/home/linuxsoft/apps/pizza/lib/pizza.jar" />
+  <property name="doc.scalac.dir" value="/tmp/doc_scalac" />
 
   <!-- task definitions for pico -->
   <taskdef name="pico"
@@ -16,6 +18,19 @@
       <pico srcdir="${sources}" destdir="${classes}" source="1.4" classpath="${classes}">
          <include name="scala/xml/*.java"/>
       </pico>
+  </target>
+
+  <target name="doc">
+
+      <java classpath="${pizza.jar}" classname="net.sf.pizzacompiler.compiler.Main">
+      <arg value="-pizzadoc"/>
+      <arg value="-verbose"/>
+      <arg value="-d"/><arg value="${doc.scalac.dir}"/>
+      <arg value="-source"/><arg value="1.4"/>
+      <arg value="-classpath"/> <arg value="classes"/>
+      <arg value="sources/scalac/Main.java"/>
+      <arg value="sources/scalac/util/*.java"/>
+      </java>
   </target>
 
 </project>
