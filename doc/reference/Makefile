@@ -21,6 +21,7 @@ LATEX_TARGETS		+= $(LATEX_FORMATS:%=reference.%)
 LATEX_TARGETS		+= $(LATEX_FORMATS:%=examples.%)
 
 LATEX_SOURCES		+= examples.tex
+LATEX_SOURCES		+= examples.bib
 LATEX_SOURCES		+= rationale.tex
 LATEX_SOURCES		+= reference.tex
 LATEX_SOURCES		+= rationale-chapter.tex
