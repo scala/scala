@@ -325,9 +325,11 @@ public class PatternMatcher extends PatternTool {
 			case Ident(Name name):                  // pattern without args or variable
 				if (tree.symbol() == defs.PATTERN_WILDCARD)
 					return mk.DefaultPat(tree.pos, header.type);
-				else if (tree.symbol().isPrimaryConstructor())
-					return mk.ConstrPat(tree.pos, tree.type);
-				else if (name.isVariable()) {
+				else if (tree.symbol().isPrimaryConstructor()) {
+                                    assert false; // this may not happen ??  ----------------- Burak
+                                    return mk.ConstrPat(tree.pos, tree.type);
+				} else if (name.isVariable()) {// should be Bind  ------------ Burak
+                                    assert false;
 					if (env != null)
 						env.newBoundVar(
 										tree.symbol(),
@@ -359,7 +361,7 @@ public class PatternMatcher extends PatternTool {
 				return res;
 			default:
 				new scalac.ast.printer.TextTreePrinter().print(tree).flush();
-				throw new ApplicationError(tree);
+				throw new ApplicationError("unit "+unit+" tree"+tree);
         }
     }
 
