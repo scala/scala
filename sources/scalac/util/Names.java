@@ -8,9 +8,11 @@
 package scalac.util;
 
 import scalac.symtab.Symbol;
+import scalac.symtab.ClassSymbol;
 
 public class Names {
 
+    private static final String ALIAS_PREFIX = "alias$";
     private static final String LOCAL_PREFIX = "local$";
     private static final String MIXIN_PREFIX = "mixin$";
     private static final String OUTER_PREFIX = "outer$";
@@ -18,6 +20,10 @@ public class Names {
     private static final String TUPLE_FIELD_PREFIX = "_";
     private static final String scala_Tuple_PREFIX = "scala.Tuple";
     private static final String scala_Function_PREFIX = "scala.Function";
+
+    public static Name ALIAS(ClassSymbol clasz) {
+        return Name.fromString(ALIAS_PREFIX + clasz.name).toTypeName();
+    }
 
     public static Name LOCAL(Symbol clasz) {
         return Name.fromString(LOCAL_PREFIX + clasz.name);
