@@ -1743,38 +1743,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     /**
      * Clones a type i.e. returns a new type where all symbols in
-     * MethodTypes and PolyTypes have been cloned.
+     * MethodTypes and PolyTypes and CompoundTypes have been cloned.
      */
     public Type cloneType(Symbol oldOwner, Symbol newOwner) {
-        switch (this) {
-
-        case MethodType(Symbol[] vparams, Type result):
-            Symbol[] clones = new Symbol[vparams.length];
-            for (int i = 0; i < clones.length; i++) {
-                assert vparams[i].owner() == oldOwner : Debug.show(vparams[i]);
-                clones[i] = vparams[i].cloneSymbol(newOwner);
-            }
-            result = result.cloneType(oldOwner, newOwner);
-            Type clone = Type.MethodType(clones, result);
-            if (vparams.length != 0)
-                clone = new SubstSymMap(vparams, clones).applyParams(clone);
-            return clone;
-
-        case PolyType(Symbol[] tparams, Type result):
-            Symbol[] clones = new Symbol[tparams.length];
-            for (int i = 0; i < clones.length; i++) {
-                assert tparams[i].owner() == oldOwner : Debug.show(tparams[i]);
-                clones[i] = tparams[i].cloneSymbol(newOwner);
-            }
-            result = result.cloneType(oldOwner, newOwner);
-            Type clone = Type.PolyType(clones, result);
-            if (tparams.length != 0)
-                clone = new SubstSymMap(tparams, clones).applyParams(clone);
-            return clone;
-
-        default:
-            return this;
-        }
+        SymbolCloner cloner = new SymbolCloner();
+        cloner.owners.put(oldOwner, newOwner);
+        return cloner.cloneType(this);
     }
 
     /**
