@@ -21,7 +21,6 @@ public class LeftTracerInScala extends TracerInScala {
        */
       Symbol accumSym;
 
-
       Type _accumType( Type elemType ) {
             return cf.SeqTraceType( elemType );
       }
@@ -40,9 +39,6 @@ public class LeftTracerInScala extends TracerInScala {
 	  helpVarDefs = new Vector();
 
       }
-
-
-    // move WordAutom down.
 
     Vector  helpVarDefs;
 
@@ -77,33 +73,6 @@ public class LeftTracerInScala extends TracerInScala {
 	return helpVar;
     }
 
-    void handleVars( Vector freeVars ) {
-	for(Iterator it = freeVars.iterator(); it.hasNext(); ) {
-	    makeHelpVar( (Symbol) it.next() );
-	}
-    }
-
-    /** returns a Tree whose type is boolean.
-     *  now we care about free vars
-     */
-    /*
-      Tree handleBody( HashMap helpMap ) {
-      Tree res[] = new Tree[ helpMap.keySet().size() + 1 ];
-      int j = 0;
-      for( Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
-      Symbol vsym = (Symbol) it.next();
-      Symbol hv   = (Symbol) helpMap.get( vsym );
-      hv.type( cf.SeqListType( elementType ) ) ;
-      Tree refv   = gen.Ident(Position.FIRSTPOS, vsym);
-      Tree refhv  = gen.Ident(Position.FIRSTPOS, hv);
-      res[ j++ ] = gen.Assign( refhv, refv );
-      }
-
-      res[ j ] = super.handleBody( freeVars ); // just `true'
-
-      return cf.Block(Position.FIRSTPOS, res, res[j].type() );
-      }
-    */
     protected void initializeSyms() {
 	funSymName = "leftTracer";
 
@@ -127,7 +96,6 @@ public class LeftTracerInScala extends TracerInScala {
 					owner,
 					0 )
 	    .setType( _accumType( elementType ) ) ;
-
     }
 
     // should throw an exception here really, e.g. MatchError
@@ -135,8 +103,6 @@ public class LeftTracerInScala extends TracerInScala {
 	return gen.Ident( accumSym.pos, accumSym );
 
     }
-
-
 
     /** returns translation of transition with label from i.
      *  returns null if there is no such transition(no translation needed)
@@ -162,6 +128,21 @@ public class LeftTracerInScala extends TracerInScala {
 	return callFun( new Tree[] { newAcc , _iter(), cf.Int( target )} );
     }
 
+
+    public Tree code_body() {
+
+	Tree body = code_fail(); // never reached at runtime.
+
+	// state [ nstates-1 ] is the dead state, so we skip it
+
+	//`if( state == q ) <code_state> else {...}'
+	for( int i = dfa.nstates-2; i >= 0; i-- ) {
+	    body = code_state( i, body );
+	}
+
+	return loadCurrentElem( body );
+
+    }
 
     /** return code for state i of the dfa SAME AS IN SUPER, ONLY SINK IS GONE
      */
@@ -189,22 +170,20 @@ public class LeftTracerInScala extends TracerInScala {
 	    Object label = labs.next();
 	    Integer next = (Integer) trans.get( label );
 
-
 	    Tree action = code_delta( i, (Label) label );
 
 	    if( action != null ) {
-
 		stateBody = cf.If( _cur_eq( _iter(), (Label) label ),
 				   action,
 				   stateBody);
 	    }
 	}
-
-	return wrapStateBody( stateBody,
-			      elseBody,
-			      runFinished,
-			      i );
-
+	stateBody = cf.If( cf.Negate( _ref( hasnSym )),
+			   runFinished,
+			   stateBody );
+	return cf.If( cf.Equals( _state(), gen.mkIntLit(cf.pos, i )),
+		      stateBody ,
+		      elseBody );
     }
 
     Tree[] getTrace() {
@@ -302,18 +281,16 @@ public class LeftTracerInScala extends TracerInScala {
 	    (CaseDef) cf.make.CaseDef( pat.pos,
 				       pat,
 				       Tree.Empty,
-				       handleBody( helpMap )),
+				       gen.mkBooleanLit( cf.pos, true )),
 	    (CaseDef) cf.make.CaseDef( pat.pos,
 				       cf.make.Ident(pat.pos, Names.WILDCARD)
 				       //DON'T .setSymbol( Symbol.NONE ) !
 				       .setType(pat.type()),
 				       Tree.Empty,
-				       gen.mkBooleanLit(Position.FIRSTPOS, false)) },
+				       gen.mkBooleanLit( cf.pos, false)) },
 		      false
 		      );
 	Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );
-	//System.out.println("freeVars: "+freeVars);
-
 	return res;
     }
 

@@ -20,7 +20,7 @@ import Tree.*;
 
 class CodeFactory extends PatternTool {
 
-    private int pos = Position.FIRSTPOS ;
+    public int pos = Position.FIRSTPOS ;
 
       static final Name TUPLE2_N       = Name.fromString("scala.Tuple2");
 

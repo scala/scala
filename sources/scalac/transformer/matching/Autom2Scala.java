@@ -19,6 +19,8 @@ import ch.epfl.lamp.util.Position;
 
 public class Autom2Scala  {
 
+    protected boolean optimize = true;
+
       static final Name HASNEXT = Name.fromString("hasnext");
       static final Name CURRENT_ELEM = Name.fromString("cur");
 
@@ -27,32 +29,25 @@ public class Autom2Scala  {
       DetWordAutom dfa;
       protected CodeFactory cf;
 
-      Vector freeVars;
-      Vector mdefs;
-      //Tree   matcherDef;
-      //Tree   matcherSwitch;
+    //Vector freeVars;
+    //Vector mdefs;
 
       Definitions defs;
       TreeGen     gen;
 
-      /** owner of the pattern matching expression
-       */
+      /** owner of the pattern matching expression */
       protected Symbol owner;
 
-      /** symbol of the matcher fun
-       */
+      /** symbol of the matcher fun */
       Symbol funSym;
 
-      /** symbol of the iterator ( scala.SequenceIterator )
-       */
+      /** symbol of the iterator ( scala.SequenceIterator ) */
       Symbol iterSym;
 
-      /** symbol of the switching result ( scala.Int )
-       */
+      /** symbol of the switching result ( scala.Int ) */
       Symbol resultSym;
 
-      /** symbol of the state variable ( scala.Int )
-       */
+      /** symbol of the state variable ( scala.Int ) */
       Symbol stateSym;
 
       protected Type elementType;
@@ -62,11 +57,10 @@ public class Autom2Scala  {
       String funSymName;
 
       Symbol newFunSym( String prefix ) {
-	  return new TermSymbol( /*Kinds.FUN, */
-                                   pos,
-                                   cf.fresh.newName( prefix ),
-                                   owner,
-                                   0);
+	  return new TermSymbol( pos,
+				 cf.fresh.newName( prefix ),
+				 owner,
+				 0);
       }
 
       Symbol newParam( String prefix ) {
@@ -110,29 +104,26 @@ public class Autom2Scala  {
             this.stateSym = newParam("q")
                   .setType( defs.INT_TYPE ) ;
 
-            this.resultSym = new TermSymbol( /*Kinds.VAR,*/
-                                                   pos,
-                                                   cf.fresh.newName("swRes"),
-                                                   owner,
-                                                   0 )
+            this.resultSym = new TermSymbol( pos,
+					     cf.fresh.newName("swRes"),
+					     owner,
+					     0 )
                   .setType( defs.INT_TYPE ) ;
 
             this.funSym
                   .setType( new Type.MethodType( new Symbol[] {
                         iterSym, stateSym },  defs.INT_TYPE ));
 
-            this.curSym = new TermSymbol( /*Kinds.VAL, */
-                                          pos,
+            this.curSym = new TermSymbol( pos,
                                           CURRENT_ELEM,
-                                          funSym,//clazzOwner,
+                                          funSym,
                                           0)
                   .setType( elementType );
 
-            this.hasnSym = new TermSymbol( /*Kinds.VAL, */
-                                          pos,
-                                          HASNEXT,
-                                          funSym,//clazzOwner,
-                                          0)
+            this.hasnSym = new TermSymbol( pos,
+					   HASNEXT,
+					   funSym,
+					   0)
                   .setType( defs.BOOLEAN_TYPE );
 
       }
@@ -150,9 +141,9 @@ public class Autom2Scala  {
             this.pos = Position.FIRSTPOS;
             this.cf = cf;
             this.am = new AlgebraicMatcher( cf.unit, cf.infer );
-            this.mdefs = new Vector();
+            //this.mdefs = new Vector();
 
-            this.freeVars = new Vector();
+            //this.freeVars = new Vector();
       }
 
       public Tree theDefDef;
@@ -161,23 +152,23 @@ public class Autom2Scala  {
       Symbol hasnSym;
 
     // overridden in TracerInScala
-      Tree loadCurrentElem( Tree body ) {
-	  return cf.Block( Position.FIRSTPOS, new Tree[] {
-	      cf.gen.ValDef( Position.FIRSTPOS,
-			     this.hasnSym,
-			     cf._hasNext( _iter() ) ),
-	      cf.gen.ValDef( Position.FIRSTPOS,
-			     this.curSym,
-			     cf.If( _ref( hasnSym ),//cf._hasNext( _iter() ),
-				    cf._next( _iter() ),
-				    cf.ignoreValue( curSym.type() ))),
-	      body },
-	      body.type() );
-      }
+    Tree loadCurrentElem( Tree body ) {
+	return cf.Block( Position.FIRSTPOS, new Tree[] {
+	    cf.gen.ValDef( Position.FIRSTPOS,
+			   this.hasnSym,
+			   cf._hasNext( _iter() ) ),
+	    cf.gen.ValDef( Position.FIRSTPOS,
+			   this.curSym,
+			   cf.If( _ref( hasnSym ),//cf._hasNext( _iter() ),
+				  cf._next( _iter() ),
+				  cf.ignoreValue( curSym.type() ))),
+	    body },
+			 body.type() );
+    }
 
-      Tree currentElem() {
-            return gen.Ident(Position.FIRSTPOS, curSym);
-      }
+    Tree currentElem() {
+	return gen.Ident(Position.FIRSTPOS, curSym);
+    }
 
       Tree currentMatches( Label label ) {
             return _cur_eq( _iter(), label );
@@ -191,45 +182,17 @@ public class Autom2Scala  {
       /** creates an int variable
        */
       Tree _intvar( Symbol sym, Tree init ) {
-            return gen.ValDef( pos, sym, init );
-            /*
-                                Kinds.VAR,
-                                0,
-                                sym.name,
-                                gen.mkType(pos, defs.INT_TYPE),
-                                init)
-                  .setType( defs.UNIT_TYPE )
-                  .symbol( sym );*/
+	  return gen.ValDef( pos, sym, init );
       }
-
-      /** `<sym> = val'
-      Tree code_assignInt( Symbol sym, Integer val ){
-            return make.Assign(pos,
-                               code_ref( sym ),
-                               gen.mkIntLit(Position.FIRSTPOS, val ))
-                  .setType( defs.UNIT_TYPE );
-      }
-       */
-
-
 
       // the caller needs to set the type !
       Tree  _applyNone( Tree arg ) {
 	  return cf.make.Apply(pos, arg, Tree.EMPTY_ARRAY/*None*/ );
       }
 
-
-
-
-
-
-
-      Tree _scala() {
-            // return gen.mkId( defs.SCALA ) // try this
-            return gen.Ident(pos, defs.SCALA ); /*make.Ident( pos,
-                               SCALA_N )
-                               .setType( defs.SCALA.type() ).symbol( defs.SCALA );*/
-      }
+    Tree _scala() {
+	return gen.Ident(pos, defs.SCALA );
+    }
 
 
       /** `<switchResult>'
@@ -246,21 +209,34 @@ public class Autom2Scala  {
 
       /** body of the matcherDefFun
        */
-      public Tree code_body() {
 
-            Tree body = code_fail(); // never reached at runtime.
+    public Tree code_body_NEW() {
+	int[] tags = new int[dfa.nstates];
+	Tree[] bodies = new Tree[dfa.nstates];
+	for( int i = 0; i<dfa.nstates; i++ ) {
+	    tags[ i ]   = i;
+	    if( dfa.isSink( i ))
+		bodies[ i ] = run_finished( i ); // state won't change!
+	    else
+		bodies[ i ] = cf.If( cf.Negate( _ref( hasnSym )),//cf._not_hasNext( _iter() ),
+				     run_finished( i ),
+				     code_state_NEW( i ));
+	}
+	if( optimize )
+	    return loadCurrentElem( cf.Switch( _state(),
+					       tags,
+					       bodies,
+					       cf.Int( -1 )).setType( funRetType() ) );
 
-            // state [ nstates-1 ] is the dead state, so we skip it
+	Tree res = code_fail();
+	for( int i = dfa.nstates-2; i>= 0; i-- )
+	    res = cf.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )),
+			 bodies[ i ] ,
+			 res );
 
-            //`if( state == q ) <code_state> else {...}'
-            for( int i = dfa.nstates-2; i >= 0; i-- ) {
-                  body = code_state( i, body );
-            }
+	return loadCurrentElem( res );
 
-
-            return loadCurrentElem( body );
-
-      }
+    }
 
       Tree _cur_eq( Tree iter, Label label ) {
             switch( label ) {
@@ -274,15 +250,10 @@ public class Autom2Scala  {
 
       AlgebraicMatcher am;
 
+    /*
       void handleVars(  ) {
       }
-
-      // returns a Tree whose type is boolean.
-      Tree handleBody( Object help ) {
-            // don't care about free vars
-            return gen.mkBooleanLit( Position.FIRSTPOS, true );
-      }
-
+    */
       // calling the /*AlgebraicMatcher*/PatternMatcher here
       Tree _cur_match( Tree pat ) {
             //System.out.println("calling algebraic matcher on type:"+pat.type);
@@ -295,7 +266,7 @@ public class Autom2Scala  {
                   (CaseDef) cf.make.CaseDef( pat.pos,
                                              pat,
                                              Tree.Empty,
-                                             handleBody( freeVars )),
+                                             gen.mkBooleanLit( Position.FIRSTPOS, true )),
                         (CaseDef) cf.make.CaseDef( pat.pos,
                                                    cf.make.Ident(pat.pos, Names.WILDCARD)
                                                    //.setSymbol( Symbol.NONE )
@@ -336,60 +307,8 @@ public class Autom2Scala  {
     }
     */
 
-      Tree wrapStateBody0( Tree stateBody,
-                           Tree elseBody,
-                           int i ) {
-            return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.FIRSTPOS, i )),
-                          stateBody ,
-                          elseBody );
-      }
-
-      // `val cur := iter.next()'
-
-    Tree wrapStateBody( Tree stateBody,
-			Tree elseBody,
-			Tree runFinished, int i ) {
-	stateBody = cf.If( cf.Negate( _ref( hasnSym )),//cf._not_hasNext( _iter() ),
-			   runFinished,
-			   stateBody);/*
-			   cf.Block( stateBody.pos,
-				     new Tree[] {
-					 loadCurrentElem(),
-					 stateBody},
-					 stateBody.type()) );*/
-
-	return wrapStateBody0( stateBody , elseBody, i );
-    }
-
-    /** return code for state i of the dfa
-     */
-    Tree code_state( int i, Tree elseBody ) {
-
-	Tree runFinished; // holds result of the run
-	int  finalSwRes;
-
-	runFinished = run_finished( i );
-
-
-	if( dfa.isSink( i ) )  // state won't change anymore (binding?)
-	    return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.FIRSTPOS, i )),
-			  runFinished,
-			  elseBody );
-
-
-	Tree stateBody ; // action(delta) for one particular label/test
-
-	// default action (fail if there is none)
-
-	stateBody = code_delta( i, Label.DefaultLabel);
-
-	/*
-	  if( stateBody == null )
-	  stateBody = code_fail();
-	*/
-
-	// transitions of state i
-
+    Tree code_state_NEW( int i ) {
+	Tree stateBody = code_delta(i, Label.DefaultLabel );
 	HashMap trans = ((HashMap[])dfa.deltaq)[ i ];
 
 	for( Iterator labs = dfa.labels.iterator(); labs.hasNext() ; ) {
@@ -406,10 +325,7 @@ public class Autom2Scala  {
 				   stateBody);
 	    }
 	}
-	return wrapStateBody( stateBody,
-			      elseBody,
-			       runFinished,
-			      i );
+	return stateBody;
     }
 
     /** code to reference a variable

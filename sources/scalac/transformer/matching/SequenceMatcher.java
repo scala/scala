@@ -256,7 +256,8 @@ public class SequenceMatcher extends PatternTool {
             WordAutomInScala scalaAut = new WordAutomInScala( dfa,
                                                               elementType,
                                                               _m.owner,
-                                                              cf);
+                                                              cf,
+							      unit.global.target == Global.TARGET_JVM );
             scalaAut.translate();
 
             if( defaultCase == null )

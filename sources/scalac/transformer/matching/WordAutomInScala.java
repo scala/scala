@@ -59,7 +59,7 @@ public class WordAutomInScala extends Autom2Scala {
      */
     public void translate() {
         initializeSyms();
-        Tree tb = code_body();
+        Tree tb = code_body_NEW();
         theDefDef = gen.DefDef(this.funSym, tb);
     }
 
@@ -95,8 +95,12 @@ public class WordAutomInScala extends Autom2Scala {
     public WordAutomInScala(DetWordAutom dfa,
                             Type elementType,
                             Symbol owner,
-                            CodeFactory cf) {
+                            CodeFactory cf,
+			    boolean optim) {
         super(dfa, elementType, owner, cf);
+
+        this.optimize &= optim;
+
     }
 
 }
