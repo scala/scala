@@ -245,8 +245,10 @@ public final class GenMSIL {
 
     private Label methodEnd = null;
 
+    // set by backward jumps to show that the code ofter them is unreachable
     private boolean unreachable = false;
 
+    // used to push down the exit label of conditional expressions
     private Label exitLabel;
 
     /*
@@ -479,7 +481,6 @@ public final class GenMSIL {
 
 	case ValDef(_, Name name, Tree tpe, Tree rhs):
 	    LocalBuilder local = code.DeclareLocal(tc.getType(sym));
-	    //local.SetLocalSymInfo(name.toString());
 	    local.SetLocalSymInfo(tree.symbol().name.toString());
 	    locals.put(sym, local);
 	    if (rhs == Tree.Empty)
@@ -504,7 +505,6 @@ public final class GenMSIL {
 			item = items.LocalItem(local);
 		    else {
 			assert sym.isStatic() : Debug.show(sym);
-			//global.fail("Ident = " + Debug.show(sym));
 			FieldInfo field = tc.getField(sym);
 			assert field != null : Debug.show(sym);
 			if (field.IsLiteral()) {
@@ -525,8 +525,6 @@ public final class GenMSIL {
 	    if (sym.isModule()) {
 		assert !sym.isJava() : "Cannot treat Java class '" +
 		    Debug.show(sym) + "' as value.";
-		//System.out.println("gen2.Select: object " + Debug.show(qualifier)
-		//		   + " . " + Debug.show(sym));
 		return coerce(load(items.StaticItem(tc.getModuleField(sym))), toType);
 	    }
 	    assert !sym.isStatic() :Debug.show(sym);
@@ -536,8 +534,6 @@ public final class GenMSIL {
 
 	case Apply(Tree fun, Tree[] args):
             Item i = check(genApply(fun, args, msilType(tree.type)));
-// 	    System.out.println("gen.Apply: " + Debug.show(fun.symbol()) + " toType = " + toType +
-//                                "; tree.type = " + msilType(tree.type) + "; result = " + i);
  	    return coerce(i, toType);
 
 	case Assign(Tree lhs, Tree rhs):
@@ -565,12 +561,9 @@ public final class GenMSIL {
 	    }
 
 	case This(_):
-	    //return items.SelfItem(tc.getType(currentClass));
 	    return coerce(items.SelfItem(tc.getType(sym)), toType);
 
 	case Super(_, _):
-// 	    Item retItem = items.SelfItem(tc.getType(currentClass));
-// 	    return retItem;
 	    return coerce(items.SelfItem(tc.getType(sym)), toType);
 
 	case Literal(AConstant value):
@@ -579,7 +572,6 @@ public final class GenMSIL {
 	    return coerce(items.LiteralItem(value), toType);
 
         case Return(Tree expr):
-            //System.out.println(Debug.show(expr) + "; toType = " + toType);
             genLoad(expr, msilType(expr));
             code.Emit(OpCodes.Ret);
             //code.Emit(OpCodes.Br, methodEnd);
@@ -590,15 +582,8 @@ public final class GenMSIL {
 	    return check(item);
 
 	case LabelDef(_, Ident[] params, Tree rhs):
-//             System.out.print("LabelDef: " + sym + "(");
-//             for (int i = 0; i < params.length; i++) {
-//                 if (i > 0) System.out.print(", ");
-//                 System.out.print(params[i].symbol());
-//             }
-//             System.out.println(")");
 	    Label l = code.DefineLabel();
 	    code.MarkLabel(l);
-	    //sym2label.put(sym, l);
 	    sym2label.put(sym, new LabelDescr(l, params));
 	    return gen(rhs, toType);
 
@@ -690,7 +675,6 @@ public final class GenMSIL {
     /* Coerce the item to the specified type. */
     private Item coerce(Item item, MSILType toType) {
 	assert item != null && toType != null : "" + item + " => " + toType;
-	//System.out.println("coerce: " + item + " => " + toType);
 	if (item.type.equals(toType))
 	    return item;
 	if (toType == MSILType.VOID)
@@ -726,9 +710,6 @@ public final class GenMSIL {
 	    return item;
 	case ArgItem(_):
 	case LocalItem(_):
-// 	    System.out.println("coerce: " + item + " => " + toType);
-// 	    System.out.println("\t" + item.type + ".isSubtypeOf(" + toType
-// 			       + ") = " + item.type.isSubtypeOf(toType));
 	    if (item.type.isSubtypeOf(toType)) {
 		item.type = toType;
 		return item;
@@ -744,7 +725,6 @@ public final class GenMSIL {
 
     /***/
     private void emitConvert(MSILType fromType, MSILType toType) {
-	//System.out.println("emitConvert: " + fromType + " => " + toType);
 	switch (fromType) {
 	case REF(Type t):
 	    if (t.IsValueType() && toType.isType(tc.OBJECT)) {
@@ -968,7 +948,6 @@ public final class GenMSIL {
 
  	case TypeApply(Tree tfun, Tree[] targs):
 	    final Symbol tsym = tfun.symbol();
-	    //System.out.println("gen.TypeApply: " + Debug.show(tsym) + " toType " + resType);
 	    if (primitives.isPrimitive(tsym)) {
 		return primitiveOp(primitives.getPrimitive(tsym),
 				   ((Select)tfun).qualifier,
@@ -1083,7 +1062,6 @@ public final class GenMSIL {
 	case ADD:
 	    if (tc.getType(right.type) == tc.STRING) {
                 // TODO: check why this never gets printed
-		//System.out.println("primaryOp().ADD: string concat!");
 		genLoad(left, MSILType.OBJECT);
 		genLoad(right, MSILType.OBJECT);
 		code.Emit(OpCodes.Call, tc.CONCAT_OBJECT_OBJECT);
@@ -1098,7 +1076,6 @@ public final class GenMSIL {
 	    return mkCond(items.StackItem(msilType(type)));
 
 	case AS:
-// 	    Item item = genLoad(left, MSILType.OBJECT);
 	    MSILType mltype = msilType(left);
 	    Item item = genLoad(left, mltype);
 	    final Type rtype = tc.getType(right.type);
@@ -1107,7 +1084,6 @@ public final class GenMSIL {
 		MSILType ptype = unboxValueType(mrtype);
 		if (ptype != null) {
 		    MSILType uetype = msilType(mltype.getUnderlyingType());
-		    //System.out.println("convert " + uetype + " -> " + ptype);
 		    emitConvert(uetype, ptype);
 		    return items.StackItem(ptype);
 		}
@@ -1172,14 +1148,10 @@ public final class GenMSIL {
 	    code.Emit(OpCodes.Not);
 	    return iLeft;
 	case ZNOT:
-            Item i1 = mkCond(iLeft);
-            Item i2 = negate(i1);
-            //System.out.println("!" + i1 + " -> " + i2);
-	    return i2;
+	    return negate(mkCond(iLeft));
 	case ZOR:
 	    Item.CondItem lcond = mkCond(iLeft), rcond = null;
 	    Chain success = lcond.success, failure = lcond.failure;
-            //System.out.println("ZOR: lcond = " + lcond);
 	    switch (lcond.test) {
 	    case True:
 		return lcond;
@@ -1338,7 +1310,6 @@ public final class GenMSIL {
      */
     private MSILType msilType(scalac.symtab.Type type) {
         if (type.symbol() == defs.ALLREF_CLASS) {
-            //System.out.println("Ouch! " + Debug.show(defs.ALLREF_CLASS));
             return MSILType.NULL;
         }
 	return msilType(tc.getType(type));
@@ -1676,7 +1647,6 @@ public final class GenMSIL {
 	case R4: loadR4(constant.floatValue()); return items.StackItem(ofType);
 	case R8: loadR8(constant.doubleValue()); return items.StackItem(ofType);
 	case REF(Type t):
-	    //System.out.println(constant + " => " + ofType);
 	    //assert t == tc.STRING || ofType.isValueType() : "" + ofType;
 	    return coerce(loadLiteral(constant), ofType);
 	default:
