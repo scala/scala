@@ -51,51 +51,6 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
     public abstract void printSymbol(Symbol sym, boolean addLink);
 
     //########################################################################
-    // Public Methods - Printing scopes
-
-    /**
-     * Prints the members of the given scope.
-     *
-     * @param scope
-     */
-    public SymbolTablePrinter printScope(Scope scope) {
-        return printScope(scope, false);
-    }
-
-    /**
-     * Prints the members of the given scope.
-     *
-     * @param scope
-     * @param lazy
-     */
-    public SymbolTablePrinter printScope(Scope scope, boolean lazy) {
-        boolean first = true;
-        for (SymbolIterator i = scope.iterator(); i.hasNext(); ) {
-            Symbol member = i.next();
-            if (!mustShowMember(member)) continue;
-            if (first) print("{").indent(); else print(", ");
-            first = false;
-            line();
-            printSignature(member, false);
-        }
-        if (!first)
-            line().undent().print("}");
-        else if (!lazy)
-            print("{}");
-        return this;
-    }
-
-    /**
-     * Returns <code>true</code> iff the given member must be printed.
-     * The default implementation always returns <code>true</code>.
-     *
-     * @param member
-     */
-    public boolean mustShowMember(Symbol member) {
-        return true;
-    }
-
-    //########################################################################
     // Public Methods - Printing symbols
 
     /**
@@ -152,6 +107,10 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
 	    printShortSignature(sym, addLink);
 	else
 	    printSignature(sym, addLink);
+    }
+
+    public SymbolTablePrinter printSignature(Symbol symbol) {
+        return printSignature(symbol, false);
     }
 
     /**
@@ -226,23 +185,10 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
 	if (symbol.isClass()) {
 	    // type parameters
 	    Symbol[] tparams = symbol.typeParams();
-	    if (tparams.length != 0 || global.debug) {
-		print('[');
-		for (int i = 0; i < tparams.length; i++) {
-		    if (i > 0) print(",");
-		    printSignature(tparams[i], false);
-		}
-		print(']');
-	    }
+	    if (tparams.length != 0 || global.debug) printTypeParams(tparams);
 	    // value parameters
 	    Symbol[] vparams = symbol.valueParams();
-	    print('(');
-	    for (int i = 0; i < vparams.length; i++) {
-		if (i > 0) print(", "); // vincent
-		if (vparams[i].isDefParameter()) print("def ");
-		defString(vparams[i], false);
-	    }
-	    print(')');
+            printValueParams(vparams);
 	}
 
 	// parents
