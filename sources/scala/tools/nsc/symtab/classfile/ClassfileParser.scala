@@ -57,7 +57,7 @@ abstract class ClassfileParser {
     } catch {
       case e: RuntimeException =>
         if (settings.debug.value) e.printStackTrace();
-        throw new IOException("class file '" + in.path + "' is broken")
+        throw new IOException("class file '" + in.file + "' is broken")
     }
     busy = false
   }
@@ -65,7 +65,7 @@ abstract class ClassfileParser {
   private def parseHeader: unit = {
     val magic = in.nextInt();
     if (magic != JAVA_MAGIC)
-      throw new IOException("class file '" + in.path + "' "
+      throw new IOException("class file '" + in.file + "' "
                             + "has wrong magic number 0x" + Integer.toHexString(magic)
                             + ", should be 0x" + Integer.toHexString(JAVA_MAGIC));
     val minorVersion = in.nextChar();
@@ -73,7 +73,7 @@ abstract class ClassfileParser {
     if ((majorVersion < JAVA_MAJOR_VERSION) ||
         ((majorVersion == JAVA_MAJOR_VERSION) &&
          (minorVersion < JAVA_MINOR_VERSION)))
-      throw new IOException("class file '" + in.path + "' "
+      throw new IOException("class file '" + in.file + "' "
                             + "has unknown version "
                             + majorVersion + "." + minorVersion
                             + ", should be at least "
@@ -221,7 +221,7 @@ abstract class ClassfileParser {
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT;
     val c = pool.getClassSymbol(in.nextChar());
     if (c != clazz)
-      throw new IOException("class file '" + in.path + "' contains wrong " + clazz);
+      throw new IOException("class file '" + in.file + "' contains wrong " + clazz);
     val superType = pool.getSuperClass(in.nextChar()).tpe;
     val ifaceCount = in.nextChar();
     val parents = superType ::
