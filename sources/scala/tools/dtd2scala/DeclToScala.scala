@@ -61,21 +61,25 @@ class DeclToScala(fOut:PrintWriter,
           case "attributeBinding" => {
             for( val aDecl <- curAttribs.keys.elements ) do {
               lookup += "attributeName" -> aDecl;
-              Console.println("attributeName is "+aDecl+" = "+lookup("attributeName"));
+              //Console.println("attributeName is "+aDecl+" = "+lookup("attributeName"));
               n.children.elements.foreach{ n => writeNode( n ) }
             }
             lookup -= "attributeName";
           }
           case "ccstring" => {
-              Console.println("ccstring ref=\""+n.attributes("ref")+"\"");
+              //Console.println("ccstring ref=\""+n.attributes("ref")+"\"");
             fOut.print( cookedCap( lookup( n.attributes("ref") ) ));
           }
+          case "cstring" => {
+              //Console.println("ccstring ref=\""+n.attributes("ref")+"\"");
+            fOut.print( cooked( lookup( n.attributes("ref") ) ));
+          }
           case "string" => {
-              Console.println("string ref=\""+n.attributes("ref")+"\"");
+              //Console.println("string ref=\""+n.attributes("ref")+"\"");
             fOut.print( lookup( n.attributes("ref") ) );
           }
           case "qstring" =>  {
-              Console.println("qstring ref=\""+n.attributes("ref")+"\"");
+              //Console.println("qstring ref=\""+n.attributes("ref")+"\"");
 
             fOut.print("\"");
             fOut.print( lookup( n.attributes("ref") ) );
@@ -92,34 +96,12 @@ class DeclToScala(fOut:PrintWriter,
     }
   }
 
-  final val COMPRESS_DEFAULT:String  = "true"; // do hash-consing on load
-
-  final val ATTRIBS_VARDEF:String  =
-    "var _at:Map[String,String] = new HashMap[String,String];";
-      //static final String ATTRIB_MAP = "attribs";
-      //static final String ATTRIB_T   = "scala.Map[String,String]";
-
-  final val CHILDREN_VALDEF:String  =
-    "var _ch:scala.Seq[scala.xml.Element] = if( children == null ) { scala.Nil } else children ;";
-  final val CHILDREN_SEQ:String  = "ch";
-  //static final String CHILDREN_T   = "scala.Seq[Element]";
- final val CHILDREN_T:String    = "Element*";
-
-  final val RAW_NAME_DEF:String      = "def label:String = ";
-
-  final val GET_CHILDREN_DEF:String  = "def children:scala.Seq[scala.xml.Element] = ch ;";
-  //final val GET_ATTRIBS_DEF:String  =  "def getAttribs:Map[String,String] = _at ;";
-  //final val SET_ATTRIBS_DEF:String  =  "def setAttribs( m:Map[String,String] ):Unit = {_at = m};";
-
-  //static final String HASHCODE_DEF =  "override def hashCode():int = { getChildren.hashCode() + getAttribs.hashCode() + getName.hashCode() }";
-
   final val IND_STEP:int  = 5;
 
   var fIndent:int = 0;
 
   /*
-
-    // convenience ! overloaded constructors, have to appear *before*
+                    // convenience ! overloaded constructors, have to appear *before*
     // the class def and need the "final" modifier
 
     fOut.println( "final def "+clazzName+"(ch:Seq[Element]):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], ch ) ;" );
@@ -192,9 +174,8 @@ private def cooked( ckd:StringBuffer, raw:String, off:int ):String = {
 // type       -> type$
 // http-equiv -> http_equiv
 
-private def cooked( raw:String ):String  = {
-  return cooked(new StringBuffer(), raw, 0);
-}
+private def cooked( raw:String ):String  = cooked(new StringBuffer(), raw, 0);
+
 
 // type       -> Type$
 // http-equiv -> Http_equiv
@@ -202,9 +183,9 @@ private def cooked( raw:String ):String  = {
 private def cookedCap( raw:String ):String = {
   val ckd:StringBuffer = new StringBuffer();
   ckd.append( Character.toUpperCase( raw.charAt( 0 ) ));
-  return cooked( ckd, raw, 1);
+  cooked( ckd, raw, 1);
 }
 
-  private val toy:Scanner = new Scanner()
+  private val toy:Scanner = new Scanner();
 
 }
