@@ -495,6 +495,12 @@ class GenJVM {
             if (value instanceof Integer) {
                 generatedType = JType.INT;
                 ctx.code.emitPUSH((Integer)value);
+            } else if (value instanceof Short) {
+                generatedType = JType.SHORT;
+                ctx.code.emitPUSH((Short)value);
+            } else if (value instanceof Byte) {
+                generatedType = JType.BYTE;
+                ctx.code.emitPUSH((Byte)value);
             } else if (value instanceof Long) {
                 generatedType = JType.LONG;
                 ctx.code.emitPUSH((Long)value);
