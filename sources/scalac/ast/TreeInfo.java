@@ -224,8 +224,10 @@ public class TreeInfo {
                   return false;
             case Ident(Name n): // if Ident is a recursive var, then true
                   return recVars.contains( tree.symbol() );
+	    case Select(_,_):
+		return false;
             default:
-                  throw new scalac.ApplicationError("Unexpected pattern "+tree);
+                  throw new scalac.ApplicationError("Unexpected pattern "+tree.getClass());
             }
       }
 
