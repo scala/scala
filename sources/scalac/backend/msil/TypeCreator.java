@@ -28,10 +28,11 @@ import ch.epfl.lamp.compiler.msil.*;
 import ch.epfl.lamp.compiler.msil.emit.*;
 
 import java.util.Map;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 
 /**
  * Creates System.Reflection objects corresponding to
@@ -517,7 +518,7 @@ final class TypeCreator {
 
     public Type createType(Symbol clazz) {
 	try { return createType0(clazz); }
-	catch (RuntimeException e) {
+	catch (Error e) {
 	    System.err.println("while creating type for " + Debug.show(clazz));
 	    System.err.println("" + clazz.members());
 	    throw e;
@@ -593,30 +594,65 @@ final class TypeCreator {
 	typeBuilders.add(type);
 	map(clazz, type);
 
-	// create the members of the class but not nested classes
-	// they will be created when the tree is being traversed (at latest)
-	for (Scope.SymbolIterator syms = clazz.members().iterator();
+	for (Scope.SymbolIterator syms = clazz.members().iterator(true);
 	     syms.hasNext(); )
 	    {
-		Symbol[] members = syms.next().alternativeSymbols();
-		for (int i = 0; i < members.length; i++) {
-		    if (members[i].isMethod() /*&& !members[i].isModule()*/) {
-			createMethod(members[i]);
-		    }
-		    else if (!members[i].isClass()
-			     && !members[i].isModule()
-			     && !members[i].isType())
-			{
-			    createField(members[i]);
-			}
-		}
+		Symbol member = syms.next();
+		if (member.isMethod())
+		    createMethod(member);
+		else if (!member.isClass() && !member.isModule()
+			 && !member.isType())
+		    createField(member);
 	    }
 
-	//System.out.println("created type: " + Debug.show(clazz));
+	// adapted from Erasure; creates abstract method declarations
+	// for the interface methods for which the class doesn't provide
+	// implementation (requirement of the CLR)
+	if (clazz.isClass() && !clazz.isInterface()) {
+	    Set ifaces = new HashSet(getInterfacesOf(clazz));
+	    Symbol svper = clazz.parents()[0].symbol();
+	    ifaces.removeAll(getInterfacesOf(svper));
+	    for (Iterator i = ifaces.iterator(); i.hasNext(); ) {
+		Symbol iface = (Symbol)i.next();
+		for (Scope.SymbolIterator members = iface.members().iterator(true);
+		     members.hasNext(); )
+		    {
+			Symbol method = members.next();
+			if (!method.isTerm() || !method.isDeferred()) continue;
+			Symbol overriding =
+			    method.overridingSymbol(clazz.info(), true);
+			if (overriding != method) continue;
+			Symbol overridden = method
+			    .overriddenSymbol(clazz.parents()[0], clazz, true);
+			if (overridden.isNone()) {
+			    Symbol newMethod = method.cloneSymbol(clazz);
+			    newMethod.flags = (newMethod.flags & ~Modifiers.JAVA)
+				| Modifiers.SYNTHETIC | Modifiers.DEFERRED;
+			    createMethod(newMethod);
+			}
+		    }
+	    }
+	}
 
 	return type;
     } // createType()
 
+
+    private final Map interfaces/*<Symbol,Set<Symbol>>*/ = new HashMap();
+
+    private Set getInterfacesOf(Symbol clasz) {
+        assert clasz.isClass(): Debug.show(clasz);
+        Set set = (Set)interfaces.get(clasz);
+        if (set == null) {
+            set = new HashSet();
+            interfaces.put(clasz, set);
+            scalac.symtab.Type parents[] = clasz.parents();
+            for (int i = 0; i < parents.length; i++)
+                set.addAll(getInterfacesOf(parents[i].symbol()));
+            if (clasz.isInterface()) set.add(clasz);
+        }
+        return set;
+    }
 
     /**
      * Returns the MethodBase object corresponding to the symbol.

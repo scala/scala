@@ -671,6 +671,7 @@ public class Erasure extends GenTransformer implements Modifiers {
      *  CLR's requirement that classes should provide declaration
      *  for all methods of the interfaces they implement
      */
+    /*
     public void addEmptyBridge(Symbol owner, Symbol method) {
 	Type bridgeType = method.nextType();
 	Symbol bridgeSym = method.cloneSymbol(owner);
@@ -689,6 +690,7 @@ public class Erasure extends GenTransformer implements Modifiers {
             bridges.append(bridge);
 	}
     }
+    */
 
     private final Map interfaces/*<Symbol,Set<Symbol>>*/ = new HashMap();
 
@@ -748,8 +750,9 @@ public class Erasure extends GenTransformer implements Modifiers {
             Symbol overridden = method.overriddenSymbol(owner.thisType().parents()[0], owner);
             if (!overridden.isNone() && !isSameAs(overridden.nextType(), method.nextType()))
                 addBridge(owner, method, overridden);
-	    if (forMSIL && (overridden.isNone() || overridden.owner() != owner))
-		    addEmptyBridge(owner, method);
+	    // moved this into the TypeCreator class of the MSIL backend
+  	    //if (forMSIL && (overridden.isNone() || overridden.owner() != owner))
+  	    //	    addEmptyBridge(owner, method);
         } else if (!overriding.isNone() && !isSameAs(overriding.nextType(), method.nextType()))
             addBridge(owner, overriding, method);
     }
