@@ -34,6 +34,49 @@
 \mainmatter
 \sloppy
 
+\chapter{\label{chap:intro}Introduction}
+
+Scala smoothly integrates object-oriented and functional
+programming. It is designed to express common programming patterns in
+a consise, elegant, and type-safe way.  Scala introduces several
+innovative language constructs. For instance:
+\begin{itemize}
+\item
+Abstract types and mixin composition unify concepts from object and
+  module systems.
+\item
+Pattern matching over class hierarchies unifies functional and
+  object-oriented data access. It greatly simplifies the processing of
+  XML trees.
+\item
+A flexible syntax and type system enables the construction of advanced
+  libraries and new domain specific languages.
+\end{itemize}
+At the same time, Scala is compatible with Java.  Java libraries and
+frameworks can be used without glue code or additional declarations.
+
+This document introduces Scala in an informal way, through a sequence
+of examples.
+
+Chapters~\ref{chap:example-one} and \ref{chap:example-auction}
+highlight some of the features that make Scala interesting. The
+following chapters introduce the language constructs of Scala in a
+more thorough way, starting with simple expressions and functions, and
+working up through objects and classes, lists and streams, mutable
+state, pattern matching to more complete examples that show
+interesting programming techniques. The present informal exposition is
+meant to be complemented by the Scala Language Reference Manual which
+specifies Scala in a more detailed and precise way.
+
+\paragraph{Acknowledgment}
+We owe a great debt to Abelson's and Sussman's wonderful book
+``Structure and Interpretation of Computer
+Programs''\cite{abelson-sussman:structure}. Many of their examples and
+exercises are also present here. Of course, the working language has
+in each case been changed from Scheme to Scala. Furthermore, the
+examples make use of Scala's object-oriented constructs where
+appropriate.
+
 \input{ExamplesPart}
 \bibliographystyle{alpha}
 \bibliography{Scala}

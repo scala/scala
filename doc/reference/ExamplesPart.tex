@@ -7,31 +7,6 @@
  
 \newcommand{\rewriteby}[1]{\mbox{\tab\tab\rm(#1)}}
 
-\chapter{\label{chap:intro}Introduction}
-
-Scala is a programming language that fuses elements from
-object-oriented and functional programming. We introduce here Scala in
-an informal way, through a sequence of examples.
-
-Chapters~\ref{chap:example-one} and \ref{chap:example-auction}
-highlight some of the features that make Scala interesting. The
-following chapters introduce the language constructs of Scala in a
-more thorough way, starting with simple expressions and functions, and
-working up through objects and classes, lists and streams, mutable
-state, pattern matching to more complete examples that show
-interesting programming techniques. The present informal exposition is
-meant to be complemented by the Java Language Reference Manual which
-specifies Scala in a more detailed and precise way.
-
-\paragraph{Acknowledgment}
-We owe a great debt to Abelson's and Sussman's wonderful book
-``Structure and Interpretation of Computer
-Programs''\cite{abelson-sussman:structure}. Many of their examples and
-exercises are also present here. Of course, the working language has
-in each case been changed from Scheme to Scala. Furthermore, the
-examples make use of Scala's object-oriented constructs where
-appropriate.
-
 \chapter{\label{chap:example-one}A First Example}
 
 As a first example, here is an implementation of Quicksort in Scala.
@@ -419,14 +394,14 @@ def scale: int
 35: scala.Int
 \end{lstlisting}
 \begin{lstlisting}
-> def pi = 3.14159
+> def pi = 3.141592653589793
 def pi: scala.Double
 
 > def radius = 10
 def radius: scala.Int
 
 > 2 * pi * radius
-62.8318: scala.Double
+62.83185307179586: scala.Double
 \end{lstlisting}
 Definitions start with the reserved word \code{def}; they introduce a
 name which stands for the expression following the \code{=} sign.  The
@@ -459,10 +434,10 @@ or a list.
 Here is an evaluation of an arithmetic expression.
 \begin{lstlisting}
 $\,\,\,$   (2 * pi) * radius
-$\rightarrow$  (2 * 3.14159) * radius
-$\rightarrow$  6.28318 * radius
-$\rightarrow$  6.28318 * 10
-$\rightarrow$  62.8318
+$\rightarrow$  (2 * 3.141592653589793) * radius
+$\rightarrow$  6.283185307179586 * radius
+$\rightarrow$  6.283185307179586 * 10
+$\rightarrow$  62.83185307179586
 \end{lstlisting}
 The process of stepwise simplification of expressions to values is
 called {\em reduction}.
@@ -472,19 +447,22 @@ called {\em reduction}.
 Using \code{def}, one can also define functions with parameters. Example:
 \begin{lstlisting}
 > def square(x: double) = x * x
-def square(x: double): scala.Double
+def (x: double): scala.Double
 
 > square(2)
 4.0: scala.Double
 
-> square(5 + 4)
-81.0: scala.Double
+> square(5 + 3)
+64.0: scala.Double
 
 > square(square(4))
 256.0: scala.Double
 
 > def sumOfSquares(x: double, y: double) = square(x) + square(y)
-def sumOfSquares(x: scala.Double, y: scala.Double): scala.Double
+def sumOfSquares(scala.Double,scala.Double): scala.Double
+
+> sumOfSquares(3, 2 + 2)
+25.0: scala.Double
 \end{lstlisting}
 
 Function parameters follow the function name and are always enclosed
@@ -834,92 +812,90 @@ As a motivating example, consider the following three related tasks:
 \item
 Write a function to sum all integers between two given numbers \code{a} and \code{b}:
 \begin{lstlisting}
-def sumInts(a: int, b: int): double =
+def sumInts(a: int, b: int): int =
   if (a > b) 0 else a + sumInts(a + 1, b)
 \end{lstlisting}
 \item 
-Write a function to sum the cubes of all integers between two given numbers 
+Write a function to sum the squares of all integers between two given numbers 
 \code{a} and \code{b}:
 \begin{lstlisting}
-def cube(x: int): double = x * x * x
-def sumCubes(a: int, b: int): double =
-  if (a > b) 0 else cube(a) + sumSqrts(a + 1, b)
+def square(x: int): int = x * x;
+def sumSquares(a: int, b: int): int =
+  if (a > b) 0 else square(a) + sumSquares(a + 1, b)
 \end{lstlisting}
 \item
-Write a function to sum the reciprocals of all integers between two given numbers 
-\code{a} and \code{b}:
+Write a function to sum the powers $2^n$ of all integers $n$ between
+two given numbers \code{a} and \code{b}:
 \begin{lstlisting}
-def sumReciprocals(a: int, b: int): double =
-  if (a > b) 0 else 1.0 / a + sumReciprocals(a + 1, b)
+def powerOfTwo(x: int): int = if (x == 0) 1 else x * powerOfTwo(x - 1);
+def sumPowersOfTwo(a: int, b: int): int =
+  if (a > b) 0 else powerOfTwo(x) + sumPowersOfTwo(a + 1, b)
 \end{lstlisting}
 \end{enumerate}
 These functions are all instances of
 \(\sum^b_a f(n)\) for different values of $f$. 
 We can factor out the common pattern by defining a function \code{sum}:
 \begin{lstlisting}
-def sum(f: int => double, a: int, b: int): double =
+def sum(f: int => int, a: int, b: int): double =
   if (a > b) 0 else f(a) + sum(f, a + 1, b)
 \end{lstlisting}
-The type \code{int => double} is the type of functions that
+The type \code{int => int} is the type of functions that
 take arguments of type \code{int} and return results of type
-\code{double}. So \code{sum} is a function which takes another function as 
+\code{int}. So \code{sum} is a function which takes another function as 
 a parameter. In other words, \code{sum} is a {\em higher-order}
 function.
 
 Using \code{sum}, we can formulate the three summing functions as
 follows.
 \begin{lstlisting}
-def sumInts(a: int, b: int): double = sum(id, a, b);
-def sumCubes(a: int, b: int): double = sum(cube, a, b);
-def sumReciprocals(a: int, b: int): double = sum(reciprocal, a, b);
+def sumInts(a: int, b: int): int = sum(id, a, b);
+def sumSquares(a: int, b: int): int = sum(square, a, b);
+def sumPowersOfTwo(a: int, b: int): int = sum(powerOfTwo, a, b);
 \end{lstlisting}
 where
 \begin{lstlisting}
-def id(x: int): double = x;
-def cube(x: int): double = x * x * x;
-def reciprocal(x: int): double = 1.0/x;
+def id(x: int): int = x;
+def square(x: int): int = x * x;
+def powerOfTwo(x: int): int = if (x == 0) 1 else x * powerOfTwo(x - 1);
 \end{lstlisting}
 
 \section{Anonymous Functions}
 
 Parameterization by functions tends to create many small functions. In
-the previous example, we defined \code{id}, \code{cube} and
-\code{reciprocal} as separate functions, so that they could be 
+the previous example, we defined \code{id}, \code{square} and
+\code{power} as separate functions, so that they could be 
 passed as arguments to \code{sum}.
 
 Instead of using named function definitions for these small argument
 functions, we can formulate them in a shorter way as {\em anonymous
 functions}. An anonymous function is an expression that evaluates to a
 function; the function is defined without giving it a name. As an
-example consider the anonymous reciprocal function:
+example consider the anonymous square function:
 \begin{lstlisting}
-  x: int => 1.0/x
+  x: int => x * x
 \end{lstlisting}
 The part before the arrow `\code{=>}' is the parameter of the function,
 whereas the part following the `\code{=>}' is its body. If there are
 several parameters, we need to enclose them in parentheses. For
 instance, here is an anonymous function which multiples its two arguments.
 \begin{lstlisting}
-  (x: double, y: double) => x * y
+  (x: int, y: int) => x * y
 \end{lstlisting}
-Using anonymous functions, we can reformulate the three summation
+Using anonymous functions, we can reformulate the first two summation
 functions without named auxiliary functions:
 \begin{lstlisting}
-def sumInts(a: int, b: int): double = sum(x: int => x, a, b);
-def sumCubes(a: int, b: int): double = sum(x: int => x * x * x, a, b);
-def sumReciprocals(a: int, b: int): double = sum(x: int => 1.0/x, a, b);
+def sumInts(a: int, b: int): int = sum(x: int => x, a, b);
+def sumSquares(a: int, b: int): int = sum(x: int => x * x, a, b);
 \end{lstlisting}
 Often, the Scala compiler can deduce the parameter type(s) from the
 context of the anonymous function in which case they can be omitted.
-For instance, in the case of \code{sumInts}, \code{sumCubes} and
-\code{sumReciprocals}, one knows from the type of
-\code{sum} that the first parameter must be a function of type
-\code{int => double}.  Hence, the parameter type \code{int} is
-redundant and may be omitted:
+For instance, in the case of \code{sumInts} or \code{sumSquares}, one
+knows from the type of \code{sum} that the first parameter must be a
+function of type \code{int => int}.  Hence, the parameter type
+\code{int} is redundant and may be omitted:
 \begin{lstlisting}
-def sumInts(a: int, b: int): double = sum(x => x, a, b);
-def sumCubes(a: int, b: int): double = sum(x => x * x * x, a, b);
-def sumReciprocals(a: int, b: int): double = sum(x => 1.0/x, a, b);
+def sumInts(a: int, b: int): int = sum(x => x, a, b);
+def sumSquares(a: int, b: int): int = sum(x => x * x, a, b);
 \end{lstlisting}
 
 Generally, the Scala term
@@ -942,7 +918,7 @@ We also say, anonymous functions are ``syntactic sugar''.
 
 \section{Currying}
 
-The latest formulation of the three summing function is already quite
+The latest formulation of the summing functions is already quite
 compact. But we can do even better. Note that
 \code{a} and \code{b} appear as parameters and arguments of every function
 but they do not seem to take part in interesting combinations. Is
@@ -951,8 +927,8 @@ there a way to get rid of them?
 Let's try to rewrite \code{sum} so that it does not take the bounds
 \code{a} and \code{b} as parameters:
 \begin{lstlisting}
-def sum(f: int => double) = {
-  def sumF(a: int, b: int): double = 
+def sum(f: int => int) = {
+  def sumF(a: int, b: int): int = 
     if (a > b) 0 else f(a) + sumF(a + 1, b);
   sumF
 }
@@ -966,26 +942,26 @@ integers between them, and sums up the results.
 Using this new formulation of \code{sum}, we can now define:
 \begin{lstlisting}
 def sumInts = sum(x => x);
-def sumCubes = sum(x => x * x * x);
-def sumReciprocals = sum(x => 1.0/x);
+def sumSquares = sum(x => x * x);
+def sumPowersOfTwo = sum(powerOfTwo);
 \end{lstlisting}
 Or, equivalently, with value definitions:
 \begin{lstlisting}
 val sumInts = sum(x => x);
-val sumCubes = sum(x => x * x * x);
-val sumReciprocals = sum(x => 1.0/x);
+val sumSquares = sum(x => x * x);
+val sumPowersOfTwo = sum(powerOfTwo);
 \end{lstlisting}
 These functions can be applied like other functions. For instance,
 \begin{lstlisting}
-> sumCubes(1, 10) + sumReciprocals(10, 20)
-3025.7687714031754: scala.Double
+> sumSquares(1, 10) + sumPowersOfTwo(10, 20)
+267632001: scala.Int
 \end{lstlisting}
 How are function-returning functions applied? As an example, in the expression
 \begin{lstlisting}
-sum(x => x * x * x)(1, 10) ,
+sum(x => x * x)(1, 10) ,
 \end{lstlisting}
-the function \code{sum} is applied to the cubing function 
-\code{(x => x * x * x)}. The resulting function is then 
+the function \code{sum} is applied to the squaring function 
+\code{(x => x * x)}. The resulting function is then 
 applied to the second argument list, \code{(1, 10)}.
 
 This notation is possible because function application associates to the left.
@@ -993,15 +969,15 @@ That is, if $\mbox{args}_1$ and $\mbox{args}_2$ are argument lists, then
 \bda{lcl}
 f(\mbox{args}_1)(\mbox{args}_2) & \ \ \mbox{is equivalent to}\ \ & (f(\mbox{args}_1))(\mbox{args}_2)
 \eda
-In our example, \code{sum(x => x * x * x)(1, 10)} is equivalent to the
+In our example, \code{sum(x => x * x)(1, 10)} is equivalent to the
 following expression:
-\code{(sum(x => x * x * x))(1, 10)}.
+\code{(sum(x => x * x))(1, 10)}.
 
 The style of function-returning functions is so useful that Scala has
 special syntax for it. For instance, the next definition of \code{sum}
 is equivalent to the previous one, but is shorter:
 \begin{lstlisting}
-def sum(f: int => double)(a: int, b: int): double =
+def sum(f: int => int)(a: int, b: int): int =
   if (a > b) 0 else f(a) + sum(f)(a + 1, b)
 \end{lstlisting}
 Generally, a curried function definition 
@@ -1035,7 +1011,7 @@ Sch\"onfinkel and Gottlob Frege.
 
 The type of a function-returning function is expressed analogously to
 its parameter list. Taking the last formulation of \code{sum} as an example,
-the type of \code{sum} is \code{(int => double) => (int, int) => double}.
+the type of \code{sum} is \code{(int => int) => (int, int) => int}.
 This is possible because function types associate to the right. I.e.
 \begin{lstlisting}
 T$_1$ => T$_2$ => T$_3$       $\mbox{is equivalent to}$     T$_1$ => (T$_2$ => T$_3$)
@@ -1109,9 +1085,9 @@ This suggests that \code{sqrt(x)} can be computed by fixed point iteration:
 \begin{lstlisting}
 def sqrt(x: double) = fixedPoint(y => x / y)(1.0)
 \end{lstlisting}
-Unfortunately, this does not converge. Let's instrument the fixed point
-function with a print statement which keeps track of the current
-\code{guess} value:
+But if we try this, we find that the computation does not
+converge. Let's instrument the fixed point function with a print
+statement which keeps track of the current \code{guess} value:
 \begin{lstlisting}
 def fixedPoint(f: double => double)(firstGuess: double) = {
   def iterate(guess: double): double = {
@@ -1155,7 +1131,7 @@ very useful.
 Consider again fixed point iterations. We started with the observation
 that $\sqrt(x)$ is a fixed point of the function \code{y => x / y}.
 Then we made the iteration converge by averaging successive values.
-This technique of {\em average dampening} is so general that it
+This technique of {\em average damping} is so general that it
 can be wrapped in another function.
 \begin{lstlisting}
 def averageDamp(f: double => double)(x: double) = (x + f(x)) / 2
@@ -6104,38 +6080,31 @@ how they can be implemented in Scala.
 
 \example
 The {\em monitor} provides the basic means for mutual exclusion
-of processes in Scala. It is defined as follows.
+of processes in Scala. Every instance of class \code{AnyRef} can be
+used as a monitor by calling one or more of the methods below.
 \begin{lstlisting}
-trait Monitor {
-  def synchronized [a] (def e: a): a;
-  def await(def cond: boolean) = while (false == cond) { wait() }
-}
-\end{lstlisting}
-The \code{synchronized} method in class \code{Monitor} executes its
-argument computation \code{e} in mutual exclusive mode -- at any one
-time, only one thread can execute a \code{synchronized} argument of a
-given monitor.
-
-Threads can suspend inside a monitor by waiting on a signal.  The
-standard \code{java.lang.Object} class offers for this purpose methods
-\code{send} and \code{notify}.  Threads that call the \code{wait}
-method wait until a \code{notify} method of the same object is called
-subsequently by some other thread. Calls to \code{notify} with no
-threads waiting for the signal are ignored. 
-Here are the signatures of these methods in class
-\code{java.lang.Object}.
-\begin{lstlisting}
+  def synchronized[a] (def e: a): a;
   def wait(): unit;
   def wait(msec: long): unit;
   def notify(): unit;
   def notifyAll(): unit;
 \end{lstlisting}
+\begin{lstlisting}
+The \code{synchronized} method executes its argument computation
+\code{e} in mutual exclusive mode -- at any one time, only one thread
+can execute a \code{synchronized} argument of a given monitor.
+
+Threads can suspend inside a monitor by waiting on a signal.  Threads
+that call the \code{wait} method wait until a \code{notify} method of
+the same object is called subsequently by some other thread. Calls to
+\code{notify} with no threads waiting for the signal are ignored.
+
 There is also a timed form of \code{wait}, which blocks only as long
 as no signal was received or the specified amount of time (given in
 milliseconds) has elapsed. Furthermore, there is a \code{notifyAll}
-method which unblocks all threads which wait for the signal. 
-These methods, as well as class \code{Monitor} are primitive in
-Scala; they are implemented in terms of the underlying runtime system.
+method which unblocks all threads which wait for the signal.  These
+methods, as well as class \code{Monitor} are primitive in Scala; they
+are implemented in terms of the underlying runtime system.
 
 Typically, a thread waits for some condition to be established. If the
 condition does not hold at the time of the wait call, the thread
@@ -6149,8 +6118,6 @@ correct form of waiting for a condition $C$ uses a while loop:
 \begin{lstlisting}
 while (!$C$) wait();
 \end{lstlisting}
-The monitor class contains a method \code{await} which does the same 
-thing; using it, the above loop can be expressed as \lstinline@await($C$)@.
 
 As an example of how monitors are used, here is is an implementation
 of a bounded buffer class.
@@ -6160,13 +6127,13 @@ class BoundedBuffer[a](N: Int) extends Monitor() {
   val elems = new Array[a](N);
 
   def put(x: a) = synchronized {
-    await (n < N);
+    while (n >= N) wait();
     elems(in) = x ; in = (in + 1) % N ; n = n + 1;
     if (n == 1) notifyAll();
   }
 
   def get: a = synchronized {
-    await (n != 0);
+    while (n == 0) wait();
     val x = elems(out) ; out = (out + 1) % N ; n = n - 1;
     if (n == N - 1) notifyAll();
     x
@@ -6459,17 +6426,17 @@ class SyncChannel[a] with Monitor {
   private var writing = false;
 
   def write(x: a) = synchronized {
-    await(!writing);
+    while (writing) wait();
     data = x;
     writing = true;
     if (reading) notifyAll();
-    else await(reading)
+    else while (!reading) wait();
   }
 
   def read: a = synchronized {
-    await(!reading);
+    while (reading) wait();
     reading = true;
-    await(writing);
+    while (!writing) wait();
     val x = data;
     writing = false;
     reading = false;
@@ -6615,7 +6582,7 @@ class OnePlaceBuffer {
 \end{lstlisting}
 Here's how the mailbox class can be implemented:
 \begin{lstlisting}
-class MailBox with Monitor {
+class MailBox {
   private abstract class Receiver extends Signal {
     def isDefined(msg: Any): boolean;
     var msg = null;
