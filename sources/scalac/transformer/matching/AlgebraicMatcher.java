@@ -31,12 +31,12 @@ public class AlgebraicMatcher extends PatternMatcher {
 
       Matcher _m;
 
-      boolean doBinding;
-
       /** constructor
        */
       public AlgebraicMatcher( Unit unit ) {
             super( unit );
+	    this.delegateSequenceMatching = true;
+	    this.optimize = false;
       }
 
       /** constructs an algebraic pattern matcher from cases
@@ -48,10 +48,8 @@ public class AlgebraicMatcher extends PatternMatcher {
       /** constructs an algebraic pattern matcher from cases
        */
       public void construct( Matcher m, Tree[] cases, boolean doBinding) {
-            this.doBinding = doBinding;
             this._m = m;
-	    super.initialize( _m.selector, _m.owner, _m.resultType );
-
+	    super.initialize( _m.selector, _m.owner, _m.resultType, doBinding );
             for( int i = 0; i < cases.length; i++ ) {
                   addCase( (CaseDef) cases[i], i);
             }
@@ -68,32 +66,6 @@ public class AlgebraicMatcher extends PatternMatcher {
      */
     public Type typeOf(Symbol sym) {
         return sym.type();
-    }
-
-    /** factories
-     */
-
-    public void updateBody(Body tree, ValDef[] bound, Tree guard, Tree body) {
-        if (tree.guard[tree.guard.length - 1] == Tree.Empty)
-            unit.error(body.pos, "unreachable code");
-        // BINDING BELOW SEQUENCE
-        //System.out.println("AlgebraicMatcher::updateBody ... , freeVars"+_m.freeVars);
-        /*
-        for( int i=0; i < bound.length; i++ )
-              _m.freeVars.add( bound[ i ].symbol() );
-        */
-        ValDef[][] bd = new ValDef[tree.bound.length + 1][];
-        Tree[] ng = new Tree[tree.guard.length + 1];
-        Tree[] nb = new Tree[tree.body.length + 1];
-        System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length);
-        System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length);
-        System.arraycopy(tree.body, 0, nb, 0, tree.body.length);
-        bd[bd.length - 1] = bound;
-        ng[ng.length - 1] = guard;
-        nb[nb.length - 1] = body;
-        tree.bound = bd;
-        tree.guard = ng;
-        tree.body = nb;
     }
 
       /*
@@ -171,7 +143,7 @@ public class AlgebraicMatcher extends PatternMatcher {
        *  @param env    an environment
        */
 
-      protected PatternNode patternNode(Tree tree,
+      protected PatternNode patternNode__(Tree tree,
                                       Type castType,
                                       Tree selector,
                                       CaseEnv env) {
@@ -284,13 +256,12 @@ public class AlgebraicMatcher extends PatternMatcher {
        */
 
 
-    public PatternNode enter1(Tree pat,
+    public PatternNode enter1__(Tree pat,
                               int index,
                               PatternNode target,
                               Symbol casted,
                               CaseEnv env ) {
-	//System.out.println("enter(" + pat + ", " + //typeSym
-	//index + ", " + target + ", " + casted + ")");
+	//System.out.println("enter("+pat+", "+index+", "+target+", "+casted+")");
         // get pattern arguments (if applicable)
         Tree[] patArgs = patternArgs(pat);
         // get case fields
@@ -314,8 +285,8 @@ public class AlgebraicMatcher extends PatternMatcher {
                               gen.mkApply__(gen.Select(gen.Ident(pat.pos, casted), typeSym)));
               // translate the root of `pat'
               curHeader.or = patternNode(pat,
-                                         curHeader.type,
-                                         curHeader.selector,
+                                         curHeader,/*.type,
+						    curHeader.selector, */
                                          env);
               // translate the args of `pat'
               return enter(patArgs, curHeader.or, casted, env);
@@ -325,8 +296,8 @@ public class AlgebraicMatcher extends PatternMatcher {
             curHeader = curHeader.next;
          // translate the root of `pat'
         PatternNode patNode = patternNode(pat,
-                                          curHeader.type,
-                                          curHeader.selector,
+                                          curHeader,/*.type,
+						     curHeader.selector, */
                                           env);
         PatternNode next = curHeader;
         // enter node
@@ -357,11 +328,12 @@ public class AlgebraicMatcher extends PatternMatcher {
     }
 
 
+    /*
     boolean isSeqApply( Tree.Apply tree ) {
 	return (tree.args.length == 1  &&
 		(tree.type.symbol().flags & Modifiers.CASE) == 0);
     }
-
+    */
     boolean isStarApply( Tree.Apply tree ) {
 	Symbol params[] = tree.fun.type.valueParams();
 	//System.err.println( tree.fun.type.resultType().symbol() );
@@ -390,8 +362,8 @@ public class AlgebraicMatcher extends PatternMatcher {
         */
         return gen.mkBlock(_m.pos, ts.toArray());
     }
-
-    protected Tree toTree(PatternNode node) {
+    /*
+    protected Tree toTree__(PatternNode node) {
         Tree res = gen.mkBooleanLit( node.pos, false );
         while (node != null)
             switch (node) {
@@ -425,8 +397,9 @@ public class AlgebraicMatcher extends PatternMatcher {
             }
         return res;
     }
-
+    */
     protected Tree toTree(PatternNode node, Tree selector) {
+	//System.err.println("AM.toTree called"+node);
         if (node == null)
             return gen.mkBooleanLit(_m.pos, false);
         switch (node) {
