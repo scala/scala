@@ -31,19 +31,25 @@ public final class PhaseDescriptor {
 
     /** Freezes the given phases (patches flags and assigns ids). */
     public static void freeze(PhaseDescriptor[] phases) {
+        // there are at least two phases: INITIAL and TERMINAL
+        assert phases.length >= 2;
         if (phases.length == 0) return;
         // propagate STOP and SKIP
         for (int i = 0; i < phases.length - 1; i++) {
             phases[i].flags |= (phases[i + 1].flags >>> 16) & (STOP | SKIP);
             phases[i+1].flags &= ~((STOP | SKIP) << 16);
         }
-        // add SKIP flags implied by STOP flag
+        // transform STOP flags into SKIP flags
         boolean stop = false;
         for (int i = 0; i < phases.length; i++) {
             stop |= phases[i].hasStopFlag();
             if (stop) phases[i].flags |= SKIP;
+            if (stop) phases[i].flags &= ~STOP;
         }
-        // propagate other flags and freeze remaing phases
+        // remove SKIP flag on INITIAL and TERMINAL phases
+        phases[0].flags &= ~SKIP;
+        phases[phases.length - 1].flags &= ~SKIP;
+        // propagate other flags and freeze remaining phases
         PhaseDescriptor last = null;
         for (int i = 0; i < phases.length; i++) {
             if (phases[i].hasSkipFlag()) continue;
