@@ -192,6 +192,7 @@ testing/Benchmark.scala
 
 util/automata/BaseBerrySethi.scala
 util/automata/DetWordAutom.scala
+util/automata/Inclusion.scala
 util/automata/NondetWordAutom.scala
 util/automata/WordBerrySethi.scala
 util/grammar/HedgeRHS.scala
@@ -251,5 +252,9 @@ xml/parsing/MarkupHandler.scala
 xml/parsing/MarkupParser.scala
 xml/parsing/XSDHandler.scala
 xml/path/Expression.scala
+
+xml/transform/BasicTransformer.scala
+xml/transform/RewriteRule.scala
+xml/transform/RuleTransformer.scala
 
 ##############################################################################

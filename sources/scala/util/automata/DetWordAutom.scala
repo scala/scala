@@ -9,14 +9,21 @@ import scala.collection.{ Set, Map };
  *  All states are reachable. Accepting states are those for which
  *  the partial function 'finals' is defined.
  */
-abstract class DetWordAutom {
-
-  type T_label;
+abstract class DetWordAutom[A] {
 
   val nstates:  Int;
   val finals:   Array[Int] ;
-  val delta:    Array[Map[T_label,Int]];
+  val delta:    Array[Map[A,Int]];
   val default:  Array[Int] ;
+
+  def isFinal(q:Int) = finals(q) != 0;
+
+  def next(q:Int, label:A) = {
+    delta(q).get(label) match {
+      case Some(p) => p
+      case _       => default(q)
+    }
+  }
 
   override def toString() = {
     "DetWordAutom"
