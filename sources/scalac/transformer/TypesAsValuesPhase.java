@@ -95,8 +95,7 @@ public class TypesAsValuesPhase extends Phase {
     private final Definitions defs = global.definitions;
     private final Primitives prims = global.primitives;
 
-    private final Type.MethodType typeAccessorType =
-        new Type.MethodType(new Symbol[]{}, defs.TYPE_TYPE());
+    private final Type.MethodType typeAccessorType;
 
     private final Symbol ARRAY_CONSTRUCTOR =
         defs.ARRAY_CLASS.primaryConstructor();
@@ -111,31 +110,34 @@ public class TypesAsValuesPhase extends Phase {
         super(global, descriptor);
         // If RTT are disabled, use a minimal transformer which simply
         // replaces [ia]sInstanceOf with their erased counterpart.
-        if (global.runTimeTypes)
+        if (global.runTimeTypes && global.target != Global.TARGET_MSIL) {
             transformer = new TV_Transformer(global);
-        else
+            typeAccessorType = new Type.MethodType(new Symbol[]{}, defs.TYPE_TYPE());
+            predefTypes = new HashMap();
+            predefTypes.put(defs.DOUBLE_CLASS,  defs.RTT_DOUBLE());
+            predefTypes.put(defs.FLOAT_CLASS,   defs.RTT_FLOAT());
+            predefTypes.put(defs.LONG_CLASS,    defs.RTT_LONG());
+            predefTypes.put(defs.INT_CLASS,     defs.RTT_INT());
+            predefTypes.put(defs.SHORT_CLASS,   defs.RTT_SHORT());
+            predefTypes.put(defs.CHAR_CLASS,    defs.RTT_CHAR());
+            predefTypes.put(defs.BYTE_CLASS,    defs.RTT_BYTE());
+            predefTypes.put(defs.BOOLEAN_CLASS, defs.RTT_BOOLEAN());
+            predefTypes.put(defs.UNIT_CLASS,    defs.RTT_UNIT());
+
+            predefTypes.put(defs.ANY_CLASS,     defs.RTT_ANY());
+            predefTypes.put(defs.ANYVAL_CLASS,  defs.RTT_ANYVAL());
+            predefTypes.put(defs.ALLREF_CLASS,  defs.RTT_ALLREF());
+            predefTypes.put(defs.ALL_CLASS,     defs.RTT_ALL());
+
+            membersToAdd.put(defs.ARRAY_CLASS, new Symbol[0]);
+            paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
+
+            ancestorCache.put(defs.OBJECT_CLASS, new Ancestor[0][]);
+        } else {
             transformer = new TV_MiniTransformer(global);
-
-        predefTypes = new HashMap();
-        predefTypes.put(defs.DOUBLE_CLASS,  defs.RTT_DOUBLE());
-        predefTypes.put(defs.FLOAT_CLASS,   defs.RTT_FLOAT());
-        predefTypes.put(defs.LONG_CLASS,    defs.RTT_LONG());
-        predefTypes.put(defs.INT_CLASS,     defs.RTT_INT());
-        predefTypes.put(defs.SHORT_CLASS,   defs.RTT_SHORT());
-        predefTypes.put(defs.CHAR_CLASS,    defs.RTT_CHAR());
-        predefTypes.put(defs.BYTE_CLASS,    defs.RTT_BYTE());
-        predefTypes.put(defs.BOOLEAN_CLASS, defs.RTT_BOOLEAN());
-        predefTypes.put(defs.UNIT_CLASS,    defs.RTT_UNIT());
-
-        predefTypes.put(defs.ANY_CLASS,     defs.RTT_ANY());
-        predefTypes.put(defs.ANYVAL_CLASS,  defs.RTT_ANYVAL());
-        predefTypes.put(defs.ALLREF_CLASS,  defs.RTT_ALLREF());
-        predefTypes.put(defs.ALL_CLASS,     defs.RTT_ALL());
-
-        membersToAdd.put(defs.ARRAY_CLASS, new Symbol[0]);
-        paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
-
-        ancestorCache.put(defs.OBJECT_CLASS, new Ancestor[0][]);
+            typeAccessorType = null;
+            predefTypes = null;
+        }
     }
 
     /**
