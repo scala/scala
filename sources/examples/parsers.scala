@@ -89,7 +89,7 @@ object TestList {
 	case None =>
 	  System.out.println("nothing parsed");
       }
-    } else System.out.println("usage: java examples.Test <expr-string>");
+    } else System.out.println("usage: java examples.TestList <expr-string>");
 }
 
 object TestExpr {
@@ -103,11 +103,10 @@ object TestExpr {
 	case None =>
 	  System.out.println("nothing parsed");
       }
-    } else System.out.println("usage: java examples.Test <expr-string>");
+    } else System.out.println("usage: java examples.TestExpr <expr-string>");
 }
 
 object parsers with Application {
-  val args = Array("a(2)");
-  TestList.main(args);
-  TestExpr.main(args)
+  TestList.main(Array("(a,b,(1,2))"));
+  TestExpr.main(Array("2+3+(4+1)"))
 }
