@@ -411,8 +411,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
         }
     }
 
-    /** Get type parameters of polymorphic method or EMPTY_ARRAY if
-     * not applicable.
+    /** Get type parameters of method type (a PolyType or MethodType)
+     * or EMPTY_ARRAY if method type is not polymorphic.
      */
     public Symbol[] typeParams() {
         switch (this) {
@@ -425,8 +425,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
-    /** Get value parameters of method or EMPTY_ARRAY if not
-     * applicable.
+    /** Get value parameters of method type (a PolyType or MethodType)
+     * or EMPTY_ARRAY if method type has no value parameter section.
      */
     public Symbol[] valueParams() {
         return valueParams(false);
