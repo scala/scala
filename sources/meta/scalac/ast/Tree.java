@@ -205,7 +205,7 @@ public class Tree {
 
         n_Import.
             setDescription("Import declaration").
-            setRange(Phase.START, Phase.ANALYZER).
+            setRange(Phase.PARSER, Phase.ANALYZER).
             addField(t_TermTree, "expr").
             addField(t_Names, "selectors");
 
@@ -333,13 +333,13 @@ public class Tree {
 
         n_Select.
             setDescription("Designator").
-            setRange(Phase.START, Phase.END).
+            setRange(Phase.PARSER, Phase.END).
             addField(t_TermTree, "qualifier").
             addField(t_TestName, "selector", SymName);
 
         n_Ident.
             setDescription("Identifier").
-            setRange(Phase.START, Phase.END).
+            setRange(Phase.PARSER, Phase.END).
             addField(t_TestName, "name", SymName);
 
         n_Literal.
