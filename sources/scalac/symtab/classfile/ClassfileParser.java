@@ -211,11 +211,12 @@ public class ClassfileParser implements ClassfileConstants {
             default:
                 throw new ApplicationError();
             }
-            s.setFirstInfo(type);
-            attrib.readAttributes(s, type, METH_ATTR);
             Symbol constr = c.primaryConstructor();
             if (constr.isInitialized()) constr = c.addConstructor();
             s.copyTo(constr);
+            setParamOwners(type, constr);
+            constr.setFirstInfo(type);
+            attrib.readAttributes(constr, type, METH_ATTR);
             //System.out.println(c + " " + c.allConstructors() + ":" + c.allConstructors().info());//debug
             //System.out.println("-- enter " + s);
         } else {
@@ -223,9 +224,23 @@ public class ClassfileParser implements ClassfileConstants {
                 Position.NOPOS, name,
                 ((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
                 transFlags(flags));
+            setParamOwners(type, s);
             s.setFirstInfo(type);
             attrib.readAttributes(s, type, METH_ATTR);
             ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+        }
+    }
+
+    private void setParamOwners(Type type, Symbol owner) {
+        switch (type) {
+        case PolyType(Symbol[] params, Type result):
+            for (int i = 0; i < params.length; i++) params[i].setOwner(owner);
+            setParamOwners(result, owner);
+            return;
+        case MethodType(Symbol[] params, Type result):
+            for (int i = 0; i < params.length; i++) params[i].setOwner(owner);
+            setParamOwners(result, owner);
+            return;
         }
     }
 }
