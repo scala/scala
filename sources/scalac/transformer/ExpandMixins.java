@@ -77,9 +77,8 @@ public class ClassExpander {
         this.clasz = clasz;
         this.parents = Type.cloneArray(clasz.parents());
         this.members = clasz.members().cloneScope();
-        this.template = gen.make.Template(template.pos, template.symbol(),
+        this.template = gen.Template(template.pos, template.symbol(),
             Tree.cloneArray(template.parents), template.body);
-        this.template.setType(Type.compoundType(parents, members, clasz));
         this.body = new TreeList();
         this.map = new SymbolSubstTypeMap();
         this.cloner = new SymbolCloner(

@@ -8,10 +8,10 @@
 
 package scalac.ast;
 
-import scalac.*;
+import scalac.Global;
+import scalac.ast.Tree.*;
 import scalac.symtab.*;
 import scalac.util.*;
-import Tree.*;
 
 /**
  * This class provides method to build attributed trees.
@@ -31,7 +31,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     private final Definitions definitions;
 
     /** The tree factory */
-    public final TreeFactory make;
+    private final TreeFactory make;
 
     //########################################################################
     // Public Constructors
@@ -449,6 +449,13 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return mkAsInstanceOf(value.pos, value, type);
     }
 
+    /** Builds a Template node with given symbol, parents and body. */
+    public Template Template(int pos, Symbol local, Tree[]parents, Tree[]body){
+        Template tree = make.Template(pos, local, parents, body);
+        tree.setType(Type.NoType);
+        return tree;
+    }
+
     /** Builds a Block node with given statements. */
     public Tree Block(int pos, Tree[] stats) {
         Block tree = make.Block(pos, stats);
@@ -490,10 +497,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a New node corresponding to "new <constr>". */
     public Tree New(int pos, Tree constr) {
-        Symbol local = localDummy(pos, Symbol.NONE); // !!!
-	Template templ = make.Template(
-            pos, local, new Tree[]{constr}, Tree.EMPTY_ARRAY); // !!!
-	templ.setType(constr.type);
+        Tree[] constrs = { constr };
+	Template templ = Template(pos, Symbol.NONE, constrs, Tree.EMPTY_ARRAY);
 	New tree = make.New(pos, templ);
         tree.setType(constr.type);
         return tree;
@@ -569,7 +574,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         assert clazz.isInterface(): Debug.show(clazz);
 	Type[] parents = clazz.parents();
 	Global.instance.prevPhase();
-        return ClassDef_(clazz, mkPrimaryConstrs(clazz.pos, parents), body);
+        Tree[] constrs = mkPrimaryConstrs(clazz.pos, parents);
+        return ClassDef(clazz, constrs, Symbol.NONE, body);
     }
 
     /** Builds a ClassDef node for given class with given template. */
@@ -592,9 +598,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public ClassDef ClassDef(Symbol clazz, Tree[] constrs, Symbol local,
         Tree[] body)
     {
-        Template templ = make.Template(local.pos, local, constrs, body);
-        templ.setType(clazz.nextInfo()); // !!!
-        return ClassDef(clazz, templ);
+        return ClassDef(clazz, Template(clazz.pos, local, constrs, body));
     }
 
     /** Builds a ValDef node for given symbol and with given rhs. */
@@ -648,35 +652,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     //########################################################################
 
     //########################################################################
-    // !!! to add
-
-    /** Builds a Template node with given symbol, parents and body. */
-    public Template Template(int pos, Symbol local, Tree[]parents, Tree[]body){
-        Template tree = make.Template(pos, local, parents, body);
-        tree.setType(Type.NoType);
-        return tree;
-    }
-    public Template Template(Symbol local, Tree[] parents, Tree[] body) {
-        return Template(local.pos, local, parents, body);
-    }
-
-
-    //########################################################################
-    // !!! to remove
-
-    public ClassDef ClassDef_(Symbol clazz, Tree[] constrs, Tree[] body) {
-	return ClassDef(clazz, constrs, localDummy(clazz.pos, clazz), body);
-    }
-
-    //########################################################################
     // !!! not yet reviewed
-
-    /** Create a dummy symbol to be used for templates.
-     */
-    public Symbol localDummy(int pos, Symbol owner) {
-	return new TermSymbol(pos, Names.LOCAL(owner), owner, 0)
-	    .setInfo(Type.NoType);
-    }
 
     /** Build the expansion of (() => expr)
      */
@@ -727,7 +703,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	changeOwner(body, owner, applyMeth);
         Tree[] parentTrees = mkPrimaryConstrs(pos, parentTypes);
         Tree[] memberTrees = { DefDef(applyMeth, body) };
-        Tree classDef = ClassDef_(clazz, parentTrees, memberTrees);
+        Symbol local = TermSymbol.newLocalDummy(clazz);
+        Tree classDef = ClassDef(clazz, parentTrees, local, memberTrees);
 	Tree alloc = New(pos, mkPrimaryConstr(pos, clazz))
             .setType(parentTypes[1]); // !!!
 	return Block(new Tree[]{classDef, alloc});
@@ -750,7 +727,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
                               pattype, restype, clazz, owner),
             makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
                               pattype, definitions.BOOLEAN_TYPE, clazz, owner)};
-        Tree classDef = ClassDef_(clazz, parentTrees, memberTrees);
+        Symbol local = TermSymbol.newLocalDummy(clazz);
+        Tree classDef = ClassDef(clazz, parentTrees, local, memberTrees);
 	Tree alloc = New(pos, mkPrimaryConstr(pos, clazz))
 	    .setType(parentTypes[1]); // !!!
 	return Block(new Tree[]{classDef, alloc});
