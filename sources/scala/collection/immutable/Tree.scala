@@ -9,7 +9,7 @@
 /* General Balanced Trees - highly efficient functional dictionaries.
 **
 ** This is a scala version of gb_trees.erl which is
-** copyrighted (C) 1999-2001 by Sven-Olof Nyström, and Richard Carlsson
+** copyrighted (C) 1999-2001 by Sven-Olof Nystrom, and Richard Carlsson
 **
 ** An efficient implementation of Prof. Arne Andersson's General
 ** Balanced Trees. These have no storage overhead compared to plain
