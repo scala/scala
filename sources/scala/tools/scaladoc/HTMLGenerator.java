@@ -1,10 +1,10 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-04, LAMP/EPFL           **
 ** /_____/\____/\___/\____/____/                                        **
+**                                                                      **
+** $Id$
 \*                                                                      */
-
-// $Id$
 
 package scala.tools.scaladoc;
 
@@ -260,9 +260,9 @@ public class HTMLGenerator {
         this.stylesheet = args.stylesheet.value;
         this.noindex = args.noindex.value;
         this.validate = args.validate.value;
-	Symbol[] packages = getPackages(args.packages);
-	final DocSyms docSyms = new DocSyms(global, packages);
-	this.isDocumented = new SymbolBooleanFunction() {
+        Symbol[] packages = getPackages(args.packages);
+        final DocSyms docSyms = new DocSyms(global, packages);
+        this.isDocumented = new SymbolBooleanFunction() {
 		public boolean apply(Symbol sym) {
 		    return docSyms.contains(sym) && ScalaSearch.isRelevant(sym)
                         && !getComment(sym).containsTag("@ignore");
@@ -276,7 +276,7 @@ public class HTMLGenerator {
     /** Relative URL of the definition of the given symbol.
      */
     protected String definitionURL(Symbol sym) {
-	return page.rel(Location.get(sym));
+        return page.rel(Location.get(sym));
     }
 
     /** Get the list pf packages to be documented.
@@ -296,11 +296,11 @@ public class HTMLGenerator {
     /** Get a file writer to a page.
      */
     protected static Writer fileWriter(File rootDirectory, URI uri) {
-	try {
-	    File f = new File(rootDirectory, uri.toString());
-	    f.getParentFile().mkdirs();
-	    return new BufferedWriter(new FileWriter(f));
-	} catch(IOException e) { throw Debug.abort(e); }
+        try {
+            File f = new File(rootDirectory, uri.toString());
+            f.getParentFile().mkdirs();
+            return new BufferedWriter(new FileWriter(f));
+        } catch(IOException e) { throw Debug.abort(e); }
     }
 
     /**
@@ -324,9 +324,9 @@ public class HTMLGenerator {
      * Close the current page.
      */
     protected void closePrinters() {
-	page.close();
-	symtab = (SymbolTablePrinter) stack.pop();
-	page = (Page) stack.pop();
+        page.close();
+        symtab = (SymbolTablePrinter) stack.pop();
+        page = (Page) stack.pop();
     }
 
     /**
@@ -369,10 +369,10 @@ public class HTMLGenerator {
         this.xhtml = new HTMLValidator(getResourceURL(HTML_DTD[0]));
 
         // page with list of packages
-	createPackageIndexPage();
+        createPackageIndexPage();
 
-	// class and object pages
-	ScalaSearch.foreach(root,
+        // class and object pages
+        ScalaSearch.foreach(root,
 			    new ScalaSearch.SymFun() {
 				public void apply(Symbol sym) {
 				    if (ScalaSearch.isContainer(sym) &&
@@ -596,8 +596,8 @@ public class HTMLGenerator {
      * @param sym
      */
     protected void addTitle(Symbol sym) {
-	if (sym.isRoot()) {
-	    page.printlnOTag("div", ATTRS_PAGE_TITLE).indent();
+        if (sym.isRoot()) {
+            page.printlnOTag("div", ATTRS_PAGE_TITLE).indent();
             page.println(doctitle.replaceAll("<.*>", " "));
             page.printlnSTag("br");
             page.println("API Specification").undent();
