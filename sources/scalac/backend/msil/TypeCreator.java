@@ -33,6 +33,7 @@ import Tree.*;
 import ch.epfl.lamp.compiler.msil.*;
 import ch.epfl.lamp.compiler.msil.emit.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
@@ -439,6 +440,8 @@ final class TypeCreator {
 
     private String assemName;
 
+    private File outDir;
+
     private Symbol entryPoint;
 
     private boolean moreThanOneEntryPoint;
@@ -460,23 +463,26 @@ final class TypeCreator {
 	new CollectSymbols().traverse(units);
 
 	// the assembly name supplied with the -o option (or null)
-	String aname = global.args.assemname.value;
+	assemName = global.args.assemname.value;
 
-	if (entryPoint == null) {
-	    // if no entry point is found assume the name of the first
-	    // source file if not supplied with the -o option
-	    assemName = aname;
-	    if (assemName == null) {
-		assemName = entryPointUnit.source.getFile().getName();
-		assert assemName.endsWith(".scala") : assemName;
-		assemName = assemName.substring(0, assemName.length() - 6);
-	    }
-	} else {
-	    // assume the name of the object defining the first entry point
-	    // if not supplied with the -o option
-	    assemName = aname != null ? aname
-		: entryPoint.owner().name.toString();
-	}
+        if (assemName == null) {
+            // assembly name not supplied with the -o option
+            if (entryPoint != null) {
+                // assume the name of the object defining the first entry point
+                assemName = entryPoint.owner().name.toString();
+            } else {
+                // assume the name of the first source file
+                assemName = entryPointUnit.source.getFile().getName();
+                assert assemName.endsWith(".scala") : assemName;
+                assemName = assemName.substring(0, assemName.length() - 6);
+            }
+        } else {
+            File f = new File(assemName);
+            outDir = f.getParentFile();
+            assemName = f.getName();
+        }
+        if (outDir == null)
+            outDir = new File(".");
     }
 
     /** Determines if the given symbol is an entry point:
@@ -577,7 +583,8 @@ final class TypeCreator {
 	    code.Emit(OpCodes.Ret);
 	}
 	createTypes();
-	String assemblyFilename = msilAssembly.GetName().Name + ".il";
+        File fassem = new File(outDir, assemName + ".il");
+        String assemblyFilename = fassem.getPath();
 	try {
 	    msilAssembly.Save(assemblyFilename);
 	    if (moreThanOneEntryPoint())
