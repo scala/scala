@@ -24,22 +24,23 @@ object Utility {
   }
 
   /** serializes an instance of Node to a string that contains well-formed XML **/
-  def toXML( n:Node ):String = n match {
-    case Text( t ) => escape( t );
+  def toXML( n:Node ):String = { n match {
+    case Text( t ) =>
+      escape( t );
     case x:AttributedNode =>
-    val s = new StringBuffer();
-    s.append("<");
-    s.append( x.label );
-    if( null != x.attributes ) {
-      s.append( attr2xml( x.attributes.elements ) );{}
-    }
-    s.append(">");
-    s.append( toXML( x.children.elements ) );
-    s.append("</");
-    s.append( x.label );
-    s.append(">");
-    s.toString()
-  }
+      val s = new StringBuffer();
+      s.append("<");
+      s.append( x.label );
+      if( null != x.attributes ) {
+        s.append( attr2xml( x.attributes.elements ) );{}
+      }
+      s.append(">");
+      s.append( toXML( x.children.elements ) );
+      s.append("</");
+      s.append( x.label );
+      s.append(">");
+      s.toString()
+  }}
 
   def toXML( ch:Iterator[Node] ):String = {
     ch.foldLeft ("") { (s:String,n:Node) => { val t:String = toXML( n ); s + t }}
