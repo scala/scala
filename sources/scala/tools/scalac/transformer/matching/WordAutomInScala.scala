@@ -16,15 +16,11 @@ import scalac.ast.TreeGen;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.Modifiers; // test
-//import scalac.typechecker.*;
 import Tree._;
 
 import java.util._;
 import scala.tools.scalac.util.NewArray;
 
-//import scalac.transformer.matching.CodeFactory;
-import scalac.transformer.matching.DetWordAutom;
-import scalac.transformer.matching.Label;
 import scalac.util.Names;
 
 package scala.tools.scalac.transformer.matching {
@@ -160,7 +156,7 @@ package scala.tools.scalac.transformer.matching {
 
       if (target == null)
         label.match  {
-          case Label.DefaultLabel =>
+          case DefaultLabel() =>
             code_error(); // this may not happen !
           case _ =>
             null; // not good

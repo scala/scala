@@ -114,17 +114,17 @@
 
 #../../../scalac/transformer/matching/AlgebraicMatcher.java
 #../../../scalac/transformer/matching/Autom2Scala.java
-../../../scalac/transformer/matching/BindingBerrySethi.java
-../../../scalac/transformer/matching/BerrySethi.java
+#../../../scalac/transformer/matching/BindingBerrySethi.java
+#../../../scalac/transformer/matching/BerrySethi.java
 #../../../scalac/transformer/matching/CaseEnv.java
 #../../../scalac/transformer/matching/CodeFactory.java
 #../../../scalac/transformer/matching/CollectVariableTraverser.java
-../../../scalac/transformer/matching/DetWordAutom.java
+#../../../scalac/transformer/matching/DetWordAutom.java
 #../../../scalac/transformer/matching/FreshVariableTraverser.java
-../../../scalac/transformer/matching/Label.java
+#../../../scalac/transformer/matching/Label.java
 #../../../scalac/transformer/matching/TracerInScala.java
 #../../../scalac/transformer/matching/LeftTracerInScala.java
-../../../scalac/transformer/matching/NondetWordAutom.java
+#../../../scalac/transformer/matching/NondetWordAutom.java
 #../../../scalac/transformer/matching/NoSeqVariableTraverser.java
 #../../../scalac/transformer/matching/PartialMatcher.java
 #../../../scalac/transformer/matching/PatternMatcher.java
@@ -133,7 +133,7 @@
 #../../../scalac/transformer/matching/PatternTool.java
 #../../../scalac/transformer/matching/RightTracerInScala.java
 #../../../scalac/transformer/matching/SequenceMatcher.java
-../../../scalac/transformer/matching/StateSetComparator.java
+#../../../scalac/transformer/matching/StateSetComparator.java
 #../../../scalac/transformer/matching/VariableTraverser.java
 #../../../scalac/transformer/matching/WordAutomInScala.java
 
@@ -184,11 +184,16 @@ transformer/UnCurry.scala
 transformer/UnCurryPhase.scala
 transformer/matching/AlgebraicMatcher.scala
 transformer/matching/Autom2Scala.scala
+transformer/matching/BindingBerrySethi.scala
+transformer/matching/BerrySethi.scala
 transformer/matching/CaseEnv.scala
 transformer/matching/CodeFactory.scala
 transformer/matching/CollectVariableTraverser.scala
+transformer/matching/DetWordAutom.scala
 transformer/matching/FreshVariableTraverser.scala
+transformer/matching/Label.scala
 transformer/matching/LeftTracerInScala.scala
+transformer/matching/NondetWordAutom.scala
 transformer/matching/PartialMatcher.scala
 transformer/matching/NoSeqVariableTraverser.scala
 transformer/matching/PatternMatcher.scala
@@ -197,6 +202,8 @@ transformer/matching/PatternNodeCreator.scala
 transformer/matching/PatternTool.scala
 transformer/matching/RightTracerInScala.scala
 transformer/matching/TracerInScala.scala
+transformer/matching/StateSetComparator.scala
+transformer/matching/Npair.scala
 transformer/matching/VariableTraverser.scala
 transformer/matching/WordAutomInScala.scala
 transformer/matching/SequenceMatcher.scala

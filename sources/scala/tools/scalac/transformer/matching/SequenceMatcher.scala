@@ -12,13 +12,6 @@ import scalac.symtab._ ;
 import java.util._ ;
 
 import scala.tools.util.Position;
-//import scalac.transformer.matching.PatternTool;
-
-import scalac.transformer.matching.{BerrySethi, BindingBerrySethi};
-//import scalac.transformer.matching.CodeFactory;
-import scalac.transformer.matching.DetWordAutom;
-import scalac.transformer.matching.Label;
-import scalac.transformer.matching.NondetWordAutom;
 
 package scala.tools.scalac.transformer.matching {
 /** constructs a matcher for a sequence pattern. plays two roles in
@@ -29,6 +22,7 @@ package scala.tools.scalac.transformer.matching {
 
 class SequenceMatcher(unit: CompilationUnit) extends PatternTool(unit) {
 
+//  Console.println("CONSTR SEQUENCEMATCHER");
     final val IGNORED = new Integer(42);
 
     var cf: CodeFactory = _;
@@ -42,7 +36,7 @@ class SequenceMatcher(unit: CompilationUnit) extends PatternTool(unit) {
     def collectNfaVariables(nfa: NondetWordAutom): Set = {
       val seqVars = new HashSet();
       var j = 0;
-      while(j < nfa.nstates()) {
+      while(j < nfa.nstates) {
         if( nfa.qbinders( j ) != null )
           seqVars.addAll( nfa.qbinders( j ) );
         j = j + 1

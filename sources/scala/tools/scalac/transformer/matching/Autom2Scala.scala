@@ -12,18 +12,8 @@ import scalac.ast._;
 import scalac.symtab._;
 import scalac.util._;       // Names
 
-import scala.tools.scalac.util.NewArray;
-import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
-
-//import scalac.transformer.matching.CodeFactory ;
-import scalac.transformer.matching.DetWordAutom ;
-//import scalac.transformer.matching.PatternNode ;
-import scalac.transformer.matching.Label ;
-
-//import PatternNode._ ;
-import Label._ ;
-
-
+import scalac.transformer.{ OwnerTransformer
+                           => scalac_transformer_OwnerTransformer };
 
 import Tree._;
 
@@ -78,7 +68,7 @@ package scala.tools.scalac.transformer.matching {
 
     // overridden in RightTracerInScala
     def loadCurrentElem(body: Tree): Tree = {
-      gen.mkBlock( NewArray.Tree (
+      gen.mkBlock( Predef.Array[Tree] (
         cf.gen.ValDef(this.hasnSym,
                       cf._hasNext( _iter() ) ),
         cf.gen.ValDef(this.curSym,
@@ -195,10 +185,10 @@ package scala.tools.scalac.transformer.matching {
     }
 
     def code_state_NEW(i: Int): Tree = {
-      var stateBody = code_delta( i, Label.DefaultLabel );
+      var stateBody = code_delta( i, DefaultLabel() );
       if( stateBody == null )
         stateBody = code_fail();
-      val trans = dfa.deltaq.asInstanceOf[Array[HashMap]]( i );
+      val trans = dfa.deltaq( i );
 
       val  labs = dfa.labels().iterator();
       while(labs.hasNext()) {

@@ -15,10 +15,6 @@ import scalac.util.Names ;
 
 import scala.tools.util.Position;
 
-//import scalac.transformer.matching.CodeFactory ;
-import scalac.transformer.matching.DetWordAutom ;
-import scalac.transformer.matching.Label ;
-
 package scala.tools.scalac.transformer.matching {
 
   /** translate right tracer to code
@@ -170,7 +166,7 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
      */
   def code_state0_NEW(): Tree =  { // careful, map Int to Int
 
-    val hmap = dfa.deltaq( 0 ).asInstanceOf[HashMap]; // all the initial states
+    val hmap = dfa.deltaq( 0 ); // all the initial states
 
     var i = 0;
     val n = hmap.keySet().size(); // all transitions defined
@@ -209,7 +205,7 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
 
   override def currentMatches(label: Label): Tree = {
     label.match {
-      case Label.Pair( target, theLab ) =>
+      case LPair( target, theLab ) =>
         cf.Equals( gen.mkIntLit( cf.pos, target.intValue() ),
                          current() );
       case _ => throw new ApplicationError("expected Pair label");
@@ -218,11 +214,11 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
 
 
   override def code_state_NEW(i: Int): Tree = { // precondition i != 0
-    var stateBody = code_delta( i, Label.DefaultLabel );
+    var stateBody = code_delta( i, DefaultLabel() );
     if( stateBody == null ) {
       stateBody = code_error();
     }
-    val trans = dfa.deltaq.asInstanceOf[Array[HashMap]]( i );
+    val trans = dfa.deltaq( i );
     val tmapTag = new TreeMap();
     val tmapBody = new TreeMap();
     var  j = 0;
@@ -234,7 +230,7 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
 
       if( action != null ) {
         val J = new Integer( j );
-        tmapTag.put( label.asInstanceOf[Label.Pair].state, J );
+        tmapTag.put( label.asInstanceOf[LPair].state, J );
         tmapBody.put( J, action );
 
         stateBody = gen.If( currentMatches( label.asInstanceOf[Label] ),
@@ -363,7 +359,7 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
    *  returns null if there is no such transition(no translation needed)
    */
   override def code_delta(i: Int , label: Label  ): Tree = {
-    val hmap    = dfa.deltaq( i ).asInstanceOf[HashMap];
+    val hmap    = dfa.deltaq( i );
     val ntarget =  hmap.get( label ).asInstanceOf[Integer];
     var algMatchTree: Tree = null;
     if( ntarget == null )
@@ -372,15 +368,15 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
     //System.out.println("delta("+i+","+label+")" );
     var  theLab: Label = null;
     label.match {
-      case Label.Pair( state, lab2 )=>
+      case LPair ( state, lab2 )=>
         //assert ntarget == state;
         theLab = lab2;
       lab2.match {
-        case Label.TreeLabel( pat ) =>
+        case TreeLabel( pat ) =>
           algMatchTree = _cur_match( pat );
         case _ =>
       }
-      case Label.DefaultLabel =>
+      case DefaultLabel() =>
         throw new ApplicationError(); // should not happen
     }
     //assert dfa.qbinders != null : "qbinders ?";
