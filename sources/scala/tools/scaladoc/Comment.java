@@ -64,31 +64,26 @@ public class Comment {
      *
      * @param comment
      */
-    protected String cleanComment(String comment) {
-	if (comment == null)
+    public static String cleanComment(String s) {
+	if (s == null)
 	    return "";
-	else {
-	    comment = comment.substring(3, comment.length() - 2);
-	    StringBuffer buff = new StringBuffer();
-	    boolean startLine = true;
-	    int i = 0;
-	    while (i < comment.length()) {
-                char ch = comment.charAt(i);
-		if (startLine && ((ch == '\t') ||
-				  (ch == ' ') ||
-				  (ch == '*')))
-		    i++;
-		else if (startLine)
-		    startLine = false;
-		else {
-		    if ((ch == '\n') || (ch == '\r'))
-			startLine = true;
-		    buff.append(ch);
-		    i++;
-		}
-	    }
-	    return buff.toString();
-	}
+        s = s.substring(3, s.length() - 2);
+        StringBuffer buf = new StringBuffer();
+        String regexp = "^([ \\t]*)([\\*]*)(.*)$";
+        Pattern p = Pattern.compile(regexp,
+                                    Pattern.MULTILINE);
+        Matcher m = p.matcher(s);
+
+        while (m.find()) {
+            if (m.group(2).length() == 0)
+                buf.append(m.group(1) +
+                           m.group(2) +
+                           m.group(3));
+            else
+                buf.append(m.group(3));
+            buf.append("\n");
+        }
+        return buf.toString();
     }
 
     /**
@@ -96,7 +91,8 @@ public class Comment {
      * text from tags.
      */
     protected void parseComment() {
-	String[] parts = rawText.split("\n@|\\A@");
+        String regexp = "\n[ ]*@|\\A[ ]*@";
+        String[] parts = rawText.split(regexp);
 	if (parts.length == 0) {
 	    text = "";
 	    tags = new Tag[0];
