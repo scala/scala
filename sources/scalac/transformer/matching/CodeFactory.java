@@ -172,13 +172,13 @@ class CodeFactory extends PatternTool {
 
       Tree ignoreValue( Type asType ) {
             if( asType.isSameAs(defs.BYTE_TYPE ))
-                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                  return make.Literal(Position.NOPOS, new Integer( 0 ))
                         .setType( defs.INT_TYPE );
             else if( asType.isSameAs( defs.CHAR_TYPE ))
-                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                  return make.Literal(Position.NOPOS, new Character( 'a' ))
                         .setType( defs.CHAR_TYPE );
             else if( asType.isSameAs(defs.SHORT_TYPE ))
-                  return make.Literal(Position.NOPOS, new Long( 0 ))
+		return make.Literal(Position.NOPOS, new Integer/*Short?*/( 0 ))
                         .setType( defs.SHORT_TYPE );
             else if( asType.isSameAs(defs.INT_TYPE ))
                   return Int( 0 );
@@ -186,10 +186,10 @@ class CodeFactory extends PatternTool {
                   return make.Literal(Position.NOPOS, new Long( 0 ))
                         .setType( defs.LONG_TYPE );
             else if( asType.isSameAs(defs.FLOAT_TYPE ))
-                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                  return make.Literal(Position.NOPOS, new Float( 0 ))
                         .setType( defs.FLOAT_TYPE );
             else if( asType.isSameAs(defs.DOUBLE_TYPE ))
-                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                  return make.Literal(Position.NOPOS, new Double( 0 ))
                         .setType( defs.DOUBLE_TYPE );
             else if( asType.isSameAs(defs.BOOLEAN_TYPE ))
                   return gen.mkBooleanLit(Position.NOPOS, false);
@@ -230,12 +230,13 @@ class CodeFactory extends PatternTool {
       /** creates an scala.Int constant
        */
       Tree Int( int val ) {
-            return make.Literal(Position.NOPOS, new Long((long)val))
-                  .setType( defs.INT_TYPE );
+            return Int( new Integer( val ));
       }
 
       Tree Int( Integer valI ) {
-            return Int( valI.intValue() );
+            return make.Literal( Position.NOPOS, valI )
+                  .setType( defs.INT_TYPE );
+
       }
 
       /** code `new SeqTraceCons[ elemType ]( state, head, tail )'

@@ -34,7 +34,7 @@ abstract class PatternTool {
     public static final Name FAIL_N = Name.fromString("fail");
     public static final Name WILDCARD_N = Name.fromString("_");
     public static final Name LENGTH_N = Name.fromString("length");
-    public static final Name AT_N = Name.fromString("at");
+    public static final Name APPLY_N = Name.fromString("apply");
 
     /** the current compilation unit
      */

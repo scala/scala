@@ -484,7 +484,7 @@ public class PatternMatcher extends PatternTool {
         if (curHeader == null) {
             assert index >= 0 : casted;
             if (casted.pos == Position.NOPOS) {
-                Symbol atSym = casted.type().lookup(AT_N);
+                Symbol atSym = casted.type().lookup(APPLY_N);
                 //System.out.println("casted type = " + typeOf(casted));
                 Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0];
                 Tree t = make.Select(
@@ -492,7 +492,7 @@ public class PatternMatcher extends PatternTool {
                             make.Ident(pat.pos, casted.name)
                                 .setType(typeOf(casted))
                                 .setSymbol(casted),
-                            AT_N);
+                            APPLY_N);
                 switch (typeOf(atSym)) {
                     case OverloadedType(Symbol[] alts, Type[] alttypes):
                         infer.methodAlternative(t, alts, alttypes,
