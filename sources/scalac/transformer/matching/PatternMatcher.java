@@ -52,13 +52,13 @@ public class PatternMatcher extends PatternTool {
     public PatternMatcher(Unit unit, Tree selector,
                           Symbol owner, Type resultType) {
         super(unit);
-		initialize(selector, owner, resultType, true);
+        initialize(selector, owner, resultType, true);
     }
 
     /** constructor, used in subclass ALgebraicMatcher
      */
     protected PatternMatcher(Unit unit) {
-		super(unit);
+        super(unit);
     }
 
     /** init method, also needed in subclass AlgebraicMatcher
@@ -75,10 +75,10 @@ public class PatternMatcher extends PatternTool {
                                         owner,
                                         Modifiers.MUTABLE);
         this.resultVar.setType(resultType);
-		this.owner = owner;
+        this.owner = owner;
         this.selector = selector;
         this.optimize &= (unit.global.target == Global.TARGET_JVM);
-		this.doBinding = doBinding;
+        this.doBinding = doBinding;
     }
 
     /** pretty printer
@@ -92,87 +92,87 @@ public class PatternMatcher extends PatternTool {
             System.out.println(indent + "NULL");
         else
             switch (patNode) {
-                case Header(Tree selector, Header next):
-                    System.out.println(indent + "HEADER(" + patNode.type +
-                                                ", " + selector + ")");
-                    print(patNode.or, indent + "|");
-                    if (next != null)
-                        print(next, indent);
-                    break;
-                case ConstrPat(Symbol casted):
-                    String s = "-- " + patNode.type.symbol().name +
-                               "(" + patNode.type + ", " + casted + ") -> ";
-                    String ind = indent;
-                    indent = (patNode.or != null) ?
-                                    indent :
-                                    indent.substring(0, indent.length() - 1) + " ";
-                    for (int i = 0; i < s.length(); i++)
-                        indent += " ";
-                    System.out.println(ind + s);
-                    print(patNode.and, indent);
-                    if (patNode.or != null)
-                        print(patNode.or, ind);
-                    break;
-                case SequencePat( Symbol casted, int plen ):
-                    String s = "-- " + patNode.type.symbol().name + "(" + patNode.type +
-                               ", " + casted + ", " + plen + ") -> ";
-                    String ind = indent;
-                    indent = (patNode.or != null) ?
-                                    indent :
-                                    indent.substring(0, indent.length() - 1) + " ";
-                    for (int i = 0; i < s.length(); i++)
-                        indent += " ";
-                    System.out.println(ind + s);
-                    print(patNode.and, indent);
-                    if (patNode.or != null)
-                        print(patNode.or, ind);
-                    break;
-                case DefaultPat():
-                    System.out.println(indent + "-- _ -> ");
-                    print(patNode.and, indent.substring(0, indent.length() - 1) +
-                                        "         ");
-                    if (patNode.or != null)
-                        print(patNode.or, indent);
-                    break;
-                case ConstantPat(Object value):
-                    String  s = "-- CONST(" + value + ") -> ";
-                    String  ind = indent;
-                    indent = (patNode.or != null) ?
-                                    indent :
-                                    indent.substring(0, indent.length() - 1) + " ";
-                    for (int i = 0; i < s.length(); i++)
-                        indent += " ";
-                    System.out.println(ind + s);
-                    print(patNode.and, indent);
-                    if (patNode.or != null)
-                        print(patNode.or, ind);
-                    break;
-                case VariablePat(Tree tree):
-                    String  s = "-- STABLEID(" + tree + ": " + patNode.type + ") -> ";
-                    String  ind = indent;
-                    indent = (patNode.or != null) ?
-                                    indent :
-                                    indent.substring(0, indent.length() - 1) + " ";
-                    for (int i = 0; i < s.length(); i++)
-                        indent += " ";
-                    System.out.println(ind + s);
-                    print(patNode.and, indent);
-                    if (patNode.or != null)
-                        print(patNode.or, ind);
-                    break;
-                case AltPat(Header header):
-                    System.out.println(indent + "-- ALTERNATIVES:");
-                    print(header, indent + "   * ");
-                    print(patNode.and, indent + "   * -> ");
-                    if (patNode.or != null)
-                        print(patNode.or, indent);
-                    break;
-                case Body(_, Tree[] guards, Tree[] stats):
-                	if ((guards.length == 0) && (stats.length == 0))
-                		System.out.println(indent + "true");
-                	else
-                    	System.out.println(indent + "BODY(" + stats.length + ")");
-                    break;
+            case Header(Tree selector, Header next):
+                System.out.println(indent + "HEADER(" + patNode.type +
+                                   ", " + selector + ")");
+                print(patNode.or, indent + "|");
+                if (next != null)
+                    print(next, indent);
+                break;
+            case ConstrPat(Symbol casted):
+                String s = "-- " + patNode.type.symbol().name +
+                    "(" + patNode.type + ", " + casted + ") -> ";
+                String ind = indent;
+                indent = (patNode.or != null) ?
+                    indent :
+                    indent.substring(0, indent.length() - 1) + " ";
+                for (int i = 0; i < s.length(); i++)
+                    indent += " ";
+                System.out.println(ind + s);
+                print(patNode.and, indent);
+                if (patNode.or != null)
+                    print(patNode.or, ind);
+                break;
+            case SequencePat( Symbol casted, int plen ):
+                String s = "-- " + patNode.type.symbol().name + "(" + patNode.type +
+                    ", " + casted + ", " + plen + ") -> ";
+                String ind = indent;
+                indent = (patNode.or != null) ?
+                    indent :
+                    indent.substring(0, indent.length() - 1) + " ";
+                for (int i = 0; i < s.length(); i++)
+                    indent += " ";
+                System.out.println(ind + s);
+                print(patNode.and, indent);
+                if (patNode.or != null)
+                    print(patNode.or, ind);
+                break;
+            case DefaultPat():
+                System.out.println(indent + "-- _ -> ");
+                print(patNode.and, indent.substring(0, indent.length() - 1) +
+                      "         ");
+                if (patNode.or != null)
+                    print(patNode.or, indent);
+                break;
+            case ConstantPat(Object value):
+                String  s = "-- CONST(" + value + ") -> ";
+                String  ind = indent;
+                indent = (patNode.or != null) ?
+                    indent :
+                    indent.substring(0, indent.length() - 1) + " ";
+                for (int i = 0; i < s.length(); i++)
+                    indent += " ";
+                System.out.println(ind + s);
+                print(patNode.and, indent);
+                if (patNode.or != null)
+                    print(patNode.or, ind);
+                break;
+            case VariablePat(Tree tree):
+                String  s = "-- STABLEID(" + tree + ": " + patNode.type + ") -> ";
+                String  ind = indent;
+                indent = (patNode.or != null) ?
+                    indent :
+                    indent.substring(0, indent.length() - 1) + " ";
+                for (int i = 0; i < s.length(); i++)
+                    indent += " ";
+                System.out.println(ind + s);
+                print(patNode.and, indent);
+                if (patNode.or != null)
+                    print(patNode.or, ind);
+                break;
+            case AltPat(Header header):
+                System.out.println(indent + "-- ALTERNATIVES:");
+                print(header, indent + "   * ");
+                print(patNode.and, indent + "   * -> ");
+                if (patNode.or != null)
+                    print(patNode.or, indent);
+                break;
+            case Body(_, Tree[] guards, Tree[] stats):
+                if ((guards.length == 0) && (stats.length == 0))
+                    System.out.println(indent + "true");
+                else
+                    System.out.println(indent + "BODY(" + stats.length + ")");
+                break;
             }
     }
 
@@ -186,39 +186,39 @@ public class PatternMatcher extends PatternTool {
     /** enter a single case into the pattern matcher
      */
     public void enter(Tree caseDef) {
-    	switch (caseDef) {
-    		case CaseDef(Tree pat, Tree guard, Tree body):
-    			CaseEnv env = new CaseEnv(owner, unit);
-				// PatternNode matched = match(pat, root);
-				PatternNode target = enter1(pat, -1, root, root.symbol(), env);
-				// if (target.and != null)
-				//     unit.error(pat.pos, "duplicate case");
-				if (target.and == null)
-					target.and = mk.Body(caseDef.pos, env.boundVars(), guard, body);
-				else if (target.and instanceof Body)
-					updateBody((Body)target.and, env.boundVars(), guard, body);
-				else
-					unit.error(pat.pos, "duplicate case");
-    	}
+        switch (caseDef) {
+        case CaseDef(Tree pat, Tree guard, Tree body):
+            CaseEnv env = new CaseEnv(owner, unit);
+            // PatternNode matched = match(pat, root);
+            PatternNode target = enter1(pat, -1, root, root.symbol(), env);
+            // if (target.and != null)
+            //     unit.error(pat.pos, "duplicate case");
+            if (target.and == null)
+                target.and = mk.Body(caseDef.pos, env.boundVars(), guard, body);
+            else if (target.and instanceof Body)
+                updateBody((Body)target.and, env.boundVars(), guard, body);
+            else
+                unit.error(pat.pos, "duplicate case");
+        }
     }
 
     protected void updateBody(Body tree, ValDef[] bound, Tree guard, Tree body) {
         if (tree.guard[tree.guard.length - 1] == Tree.Empty) {
             //unit.error(body.pos, "unreachable code");
         } else {
-			ValDef[][] bd = new ValDef[tree.bound.length + 1][];
-			Tree[] ng = new Tree[tree.guard.length + 1];
-			Tree[] nb = new Tree[tree.body.length + 1];
-			System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length);
-			System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length);
-			System.arraycopy(tree.body, 0, nb, 0, tree.body.length);
-			bd[bd.length - 1] = bound;
-			ng[ng.length - 1] = guard;
-			nb[nb.length - 1] = body;
-			tree.bound = bd;
-			tree.guard = ng;
-			tree.body = nb;
-		}
+            ValDef[][] bd = new ValDef[tree.bound.length + 1][];
+            Tree[] ng = new Tree[tree.guard.length + 1];
+            Tree[] nb = new Tree[tree.body.length + 1];
+            System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length);
+            System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length);
+            System.arraycopy(tree.body, 0, nb, 0, tree.body.length);
+            bd[bd.length - 1] = bound;
+            ng[ng.length - 1] = guard;
+            nb[nb.length - 1] = body;
+            tree.bound = bd;
+            tree.guard = ng;
+            tree.body = nb;
+        }
     }
 
     /*
@@ -226,67 +226,67 @@ public class PatternMatcher extends PatternTool {
     // unused, thus commented out !
 
     public PatternNode match(Tree pat, PatternNode target) {
-        // advance one step in pattern
-        PatternNode next = target.and;
-        // we are done (no match yet)
-        if (next == null)
-            return null;
-        // check if matched
-        switch (next) {
-            case Body(_, _, _):
-                return next;
-            case Header(_, _):
-                Header header = (Header)next;
-                // get pattern arguments
-                Tree[] patArgs = patternArgs(pat);
-                // get next pattern node
-                PatternNode patNode = patternNode(pat, header, null);
-                do {
-                    next = header;
-                    while ((next = next.or) != null)
-                        if (superPat(next, patNode) &&
-                            ((target = match(patArgs, next)) != null))
-                            return target;
-                        else if (isDefaultPat(next))
-                            return next.and;
-                } while ((header = header.next) != null);
-                return null;
-            default:
-                throw new ApplicationError();
-        }
+    // advance one step in pattern
+    PatternNode next = target.and;
+    // we are done (no match yet)
+    if (next == null)
+    return null;
+    // check if matched
+    switch (next) {
+    case Body(_, _, _):
+    return next;
+    case Header(_, _):
+    Header header = (Header)next;
+    // get pattern arguments
+    Tree[] patArgs = patternArgs(pat);
+    // get next pattern node
+    PatternNode patNode = patternNode(pat, header, null);
+    do {
+    next = header;
+    while ((next = next.or) != null)
+    if (next.subsumes( patNode ) &&
+    ((target = match(patArgs, next)) != null))
+    return target;
+    else if (next.isDefaultPat())
+    return next.and;
+    } while ((header = header.next) != null);
+    return null;
+    default:
+    throw new ApplicationError();
+    }
     }
 
     public PatternNode match(Tree[] pats, PatternNode target) {
-        for (int i = 0; i < pats.length; i++)
-            if ((target = match(pats[i], target)) == null)
-                return null;
-        return target;
+    for (int i = 0; i < pats.length; i++)
+    if ((target = match(pats[i], target)) == null)
+    return null;
+    return target;
     }
     */
 
     protected Tree[] patternArgs(Tree tree) {
         switch (tree) {
-        	case Bind(_, Tree pat):
-        		return patternArgs(pat);
-            case Apply(_, Tree[] args):
-                if ( isSeqApply((Apply) tree)  && !delegateSequenceMatching)
-                    switch (args[0]) {
-                        case Sequence(Tree[] ts):
-                            return ts;
-                    }
-                return args;
-            case Sequence(Tree[] ts):
-                if (!delegateSequenceMatching)
+        case Bind(_, Tree pat):
+            return patternArgs(pat);
+        case Apply(_, Tree[] args):
+            if ( isSeqApply((Apply) tree)  && !delegateSequenceMatching)
+                switch (args[0]) {
+                case Sequence(Tree[] ts):
                     return ts;
-                return Tree.EMPTY_ARRAY;
-            default:
-                return Tree.EMPTY_ARRAY;
+                }
+            return args;
+        case Sequence(Tree[] ts):
+            if (!delegateSequenceMatching)
+                return ts;
+            return Tree.EMPTY_ARRAY;
+        default:
+            return Tree.EMPTY_ARRAY;
         }
     }
 
     protected boolean isSeqApply( Tree.Apply tree ) {
-		return (tree.args.length == 1  &&
-			(tree.type.symbol().flags & Modifiers.CASE) == 0);
+        return (tree.args.length == 1  &&
+                (tree.type.symbol().flags & Modifiers.CASE) == 0);
     }
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
@@ -395,180 +395,106 @@ public class PatternMatcher extends PatternTool {
         }
     }
 
-    protected boolean superPat(PatternNode p, PatternNode q) {
-        switch (p) {
-            case DefaultPat():
-                switch (q) {
-                    case DefaultPat():
-                        return true;
-                }
-                return false;
-            case ConstrPat(_):
-                switch (q) {
-                    case ConstrPat(_):
-                        return q.type.isSubType(p.type);
-                }
-                return false;
-            case SequencePat(_, int plen):
-                switch (q) {
-                    case SequencePat(_, int qlen):
-                        return (plen == qlen) && q.type.isSubType(p.type);
-                }
-                return false;
-            case ConstantPat(Object pval):
-                switch (q) {
-                    case ConstantPat(Object qval):
-                        return pval.equals(qval);
-                }
-                return false;
-           	case VariablePat(Tree tree):
-           		switch (q) {
-           			case VariablePat(Tree other):
-           				return (tree.symbol() != null) &&
-           					   (tree.symbol().kind != Kinds.NONE) &&
-           					   (tree.symbol().kind != Kinds.ERROR) &&
-           				       (tree.symbol() == other.symbol());
-           		}
-           		return false;
-        }
-        return false;
-    }
-
-    protected boolean samePat(PatternNode p, PatternNode q) {
-        switch (p) {
-            case ConstrPat(_):
-                switch (q) {
-                    case ConstrPat(_):
-                        return q.type.isSameAs(p.type);
-                }
-                return false;
-            case SequencePat(_, int plen):
-                switch (q) {
-                    case SequencePat(_, int qlen):
-                        return (plen == qlen) && q.type.isSameAs(p.type);
-                }
-                return false;
-            default:
-            	return superPat(p, q);
-        }
-    }
-
-    protected boolean isDefaultPat(PatternNode p) {
-        switch (p) {
-            case DefaultPat():
-                return true;
-            default:
-                return false;
-        }
-    }
-
     public PatternNode enter(Tree pat,
                              int index,
                              PatternNode target,
                              Symbol casted,
                              CaseEnv env) {
         switch (target) {
-            case ConstrPat(Symbol newCasted):
-                return enter1(pat, index, target, newCasted, env);
-            case SequencePat(Symbol newCasted, int len):
-                return enter1(pat, index, target, newCasted, env);
-            default:
-                return enter1(pat, index, target, casted, env);
+        case ConstrPat(Symbol newCasted):
+            return enter1(pat, index, target, newCasted, env);
+        case SequencePat(Symbol newCasted, int len):
+            return enter1(pat, index, target, newCasted, env);
+        default:
+            return enter1(pat, index, target, casted, env);
         }
     }
 
-    public PatternNode enter1(Tree pat,
-                             int index,
-                             PatternNode target,
-                             Symbol casted,
-                             CaseEnv env) {
-        //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
-        // get pattern arguments
-        Tree[] patArgs = patternArgs(pat);
-        //System.err.println("patArgs.length = " +patArgs.length);
-        // advance one step in pattern
-        Header curHeader = (Header)target.and;
-        // check if we have to add a new header
-        if (curHeader == null) {
-            assert index >= 0 : casted;
-            if (casted.pos == Position.FIRSTPOS) {
-                //Symbol atSym = casted.type().lookup(APPLY_N);
-		Tree t =
-		    gen.mkApply_V(
-			gen.Select(
-			    gen.Ident(pat.pos, casted),
-			    defs.FUNCTION_APPLY(1)),
-			new Tree[]{gen.mkIntLit(pat.pos, index)});
-		Type seqType = t.type;
-/*
-		    atSym);
-                Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0];
-                Tree t = gen.Select(gen.Ident(pat.pos, casted), atSym);
-                switch (t.type()) {
-                    case OverloadedType(Symbol[] alts, Type[] alttypes):
-                        infer.methodAlternative(t, alts, alttypes,
-                            new Type[]{defs.INT_TYPE()}, seqType);
-                }
-                t = gen.mkApply_V(t, new Tree[]{gen.mkIntLit(pat.pos, index)});
-*/
-                target.and = curHeader = mk.Header(pat.pos, seqType, t);
-            } else {
-                Symbol ts = ((ClassSymbol) casted.getType().symbol())
-                    .caseFieldAccessor(index);
-				Type accType = casted.getType().memberType(ts);
-				Tree accTree = gen.Select(gen.Ident(pat.pos, casted), ts);
-               	switch (accType) {
-               		// scala case accessor
-               		case MethodType(_, _):
-						target.and = curHeader = mk.Header(
-							pat.pos,
-							accType.resultType(),
-							gen.mkApply__(accTree));
-						break;
-					// jaco case accessor
-					default:
-						target.and = curHeader = mk.Header(pat.pos, accType, accTree);
-				}
+    private Header newHeader( int pos, Symbol casted, int index ) {
+        Tree ident = gen.Ident( pos, casted );
+        if (casted.pos == Position.FIRSTPOS) {
+            Tree t =
+                gen.mkApply_V(
+                              gen.Select( ident, defs.FUNCTION_APPLY( 1 )),
+                              new Tree[]{ gen.mkIntLit( pos, index ) });
+            Type seqType = t.type;
+            return mk.Header( pos, seqType, t );
+        } else {
+            Symbol ts = ((ClassSymbol) casted.getType().symbol())
+                .caseFieldAccessor(index);
+            Type accType = casted.getType().memberType(ts);
+            Tree accTree = gen.Select( ident, ts);
+            switch (accType) {
+                // scala case accessor
+            case MethodType(_, _):
+                return mk.Header(
+                                 pos,
+                                 accType.resultType(),
+                                 gen.mkApply__(accTree));
+                // jaco case accessor
+            default:
+                return mk.Header(pos, accType, accTree);
             }
-            curHeader.or = patternNode(pat, curHeader, env);
-            return enter(patArgs, curHeader.or, casted, env);
         }
+    }
+
+    /** main enter function
+     *
+     *  invariant: ( curHeader == (Header)target.and ) holds
+     */
+    public PatternNode enter1(Tree pat,
+                              int index,
+                              PatternNode target,
+                              Symbol casted,
+                              CaseEnv env) {
+        //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
+
+        Tree[] patArgs = patternArgs(pat);        // get pattern arguments
+        Header curHeader = (Header)target.and;    // advance one step in intermediate representation
+        if (curHeader == null) {                  // check if we have to add a new header
+            assert index >= 0 : casted;
+            target.and = curHeader = newHeader( pat.pos, casted, index );
+            curHeader.or = patternNode( pat, curHeader, env );
+            return enter( patArgs, curHeader.or, casted, env );
+        }
+
         // find most recent header
         while (curHeader.next != null)
             curHeader = curHeader.next;
-         // create node
+        // create node
         PatternNode patNode = patternNode(pat, curHeader, env);
         PatternNode next = curHeader;
-        // enter node
+
+        // add branch to curHeader, but reuse tests if possible
         while (true)
-            if (samePat(next, patNode))
+            if ( next.isSameAs( patNode ) )            // test for patNode already present --> reuse
                 return enter(patArgs, next, casted, env);
-            else if (isDefaultPat(next) ||
-                     ((next.or == null) &&
-                     	(isDefaultPat(patNode) || superPat(next, patNode))))
-                return enter(
-                    patArgs,
-                    (curHeader = (curHeader.next =
-                        mk.Header(patNode.pos, curHeader.type, curHeader.selector))).or
-                            = patNode,
-                    casted,
-                    env);
+            else if ( next.isDefaultPat() ||         // default case reached, or
+                      ((next.or == null) &&          //  no more alternatives and
+                       ( patNode.isDefaultPat() || next.subsumes( patNode )))) // new node is default or subsumed
+                return enter(                        // create independent new header , because cannot use this one
+                             patArgs,
+                             (curHeader = (curHeader.next =
+                                           mk.Header(patNode.pos, curHeader.type, curHeader.selector))).or
+                             = patNode,
+                             casted,
+                             env);
             else if (next.or == null)
-                return enter(patArgs, next.or = patNode, casted, env);
+                return enter(patArgs, next.or = patNode, casted, env); // add new branch
             else
                 next = next.or;
     }
 
-	/** calls enter for an array of patterns, see enter
-	 */
+    /** calls enter for an array of patterns, see enter
+     */
     public PatternNode enter(Tree[] pats, PatternNode target, Symbol casted, CaseEnv env) {
         switch (target) {
-            case ConstrPat(Symbol newCasted):
-                casted = newCasted;
-                break;
-            case SequencePat(Symbol newCasted, int len):
-                casted = newCasted;
-                break;
+        case ConstrPat(Symbol newCasted):
+            casted = newCasted;
+            break;
+        case SequencePat(Symbol newCasted, int len):
+            casted = newCasted;
+            break;
         }
         for (int i = 0; i < pats.length; i++)
             target = enter1(pats[i], i, target, casted, env);
@@ -577,248 +503,249 @@ public class PatternMatcher extends PatternTool {
 
     protected int nCaseComponents(Tree tree) {
         switch (tree) {
-            case Apply(Tree fn, _):
-                Type tpe = tree.type.symbol().primaryConstructor().type();
-                //System.out.println("~~~ " + tree.type() + ", " + tree.type().symbol().primaryConstructor());
-                switch (tpe) {
-                    // I'm not sure if this is a good idea, but obviously, currently all case classes
-                    // without constructor arguments have type NoType
-                    case NoType:
-                        return 0;
-                    case MethodType(Symbol[] args, _):
-                        return args.length;
-                    case PolyType(Symbol[] tvars, MethodType(Symbol[] args, _)):
-                        return args.length;
-                    case PolyType(Symbol[] tvars, _):
-                        return 0;
-                    default:
-                        throw new ApplicationError("not yet implemented;" +
-                            "pattern matching for " + tree + ": " + tpe);
-                }
+        case Apply(Tree fn, _):
+            Type tpe = tree.type.symbol().primaryConstructor().type();
+            //System.out.println("~~~ " + tree.type() + ", " + tree.type().symbol().primaryConstructor());
+            switch (tpe) {
+                // I'm not sure if this is a good idea, but obviously, currently all case classes
+                // without constructor arguments have type NoType
+            case NoType:
+                assert false;
+                return 0;
+            case MethodType(Symbol[] args, _):
+                return args.length;
+            case PolyType(Symbol[] tvars, MethodType(Symbol[] args, _)):
+                return args.length;
+            case PolyType(Symbol[] tvars, _):
+                return 0;
+            default:
+                throw new ApplicationError("not yet implemented;" +
+                                           "pattern matching for " + tree + ": " + tpe);
+            }
         }
         return 0;
     }
 
 
-//////////// generator methods
+    //////////// generator methods
 
     public Tree toTree() {
-    	if (optimize && isSimpleIntSwitch())
-    		return intSwitchToTree();
-    	else if (false && optimize && isSimpleSwitch())
-    		return switchToTree();
-    	else
-    		return generalSwitchToTree();
+        if (optimize && isSimpleIntSwitch())
+            return intSwitchToTree();
+        else if (false && optimize && isSimpleSwitch())
+            return switchToTree();
+        else
+            return generalSwitchToTree();
     }
 
     protected boolean isSimpleIntSwitch() {
-    	if (selector.type.widen().isSameAs(defs.INT_TYPE())) {
-    		PatternNode patNode = root.and;
-    		while (patNode != null) {
-   				PatternNode node = patNode;
-  				while ((node = node.or) != null) {
-  					switch (node) {
-  						case ConstantPat(_):
-  							break;
-  						default:
-  							return false;
-  					}
-     				switch (node.and) {
-     					case Body(ValDef[][] bound, Tree[] guard, _):
-     						if ((guard.length > 1) ||
-     						    (guard[0] != Tree.Empty) ||
-     						    (bound[0].length > 0))
-     							return false;
-     						break;
-     					default:
-     						return false;
-     				}
-     			}
-         		patNode = patNode.next();
-      		}
-      		return true;
-    	} else
-    		return false;
+        if (selector.type.widen().isSameAs(defs.INT_TYPE())) {
+            PatternNode patNode = root.and;
+            while (patNode != null) {
+                PatternNode node = patNode;
+                while ((node = node.or) != null) {
+                    switch (node) {
+                    case ConstantPat(_):
+                        break;
+                    default:
+                        return false;
+                    }
+                    switch (node.and) {
+                    case Body(ValDef[][] bound, Tree[] guard, _):
+                        if ((guard.length > 1) ||
+                            (guard[0] != Tree.Empty) ||
+                            (bound[0].length > 0))
+                            return false;
+                        break;
+                    default:
+                        return false;
+                    }
+                }
+                patNode = patNode.next();
+            }
+            return true;
+        } else
+            return false;
     }
 
     protected boolean isSimpleSwitch() {
-    	print();
-    	PatternNode patNode = root.and;
-    	while (patNode != null) {
-   			PatternNode node = patNode;
-  			while ((node = node.or) != null) {
-  				boolean isCase = false;
-  				switch (node) {
-  					case VariablePat(Tree tree):
-  						System.out.println(((tree.symbol().flags & Modifiers.CASE) != 0));
-  						break;
-  					case ConstrPat(_):
-  						System.out.println(node.type + " / " + ((node.type.symbol().flags & Modifiers.CASE) != 0));
-  						PatternNode inner = node.and;
-						outer: while (true) {
-							switch (inner) {
-								case Header(_, Header next):
-									if (next != null)
-										return false;
-									inner = inner.or;
-									break;
-								case DefaultPat():
-									inner = inner.and;
-									break;
-								case Body(ValDef[][] bound, Tree[] guard, _):
-									if ((guard.length > 1) ||
-										(guard[0] != Tree.Empty))
-										return false;
-									break outer;
-								default:
-									System.out.println(inner);
-									return false;
-							}
-						}
-						break;
-  					default:
-  						return false;
-  				}
-     		}
-         	patNode = patNode.next();
-      	}
-      	return true;
+        print();
+        PatternNode patNode = root.and;
+        while (patNode != null) {
+            PatternNode node = patNode;
+            while ((node = node.or) != null) {
+                boolean isCase = false;
+                switch (node) {
+                case VariablePat(Tree tree):
+                    System.out.println(((tree.symbol().flags & Modifiers.CASE) != 0));
+                    break;
+                case ConstrPat(_):
+                    System.out.println(node.type + " / " + ((node.type.symbol().flags & Modifiers.CASE) != 0));
+                    PatternNode inner = node.and;
+                    outer: while (true) {
+                        switch (inner) {
+                        case Header(_, Header next):
+                            if (next != null)
+                                return false;
+                            inner = inner.or;
+                            break;
+                        case DefaultPat():
+                            inner = inner.and;
+                            break;
+                        case Body(ValDef[][] bound, Tree[] guard, _):
+                            if ((guard.length > 1) ||
+                                (guard[0] != Tree.Empty))
+                                return false;
+                            break outer;
+                        default:
+                            System.out.println(inner);
+                            return false;
+                        }
+                    }
+                    break;
+                default:
+                    return false;
+                }
+            }
+            patNode = patNode.next();
+        }
+        return true;
     }
 
     static class TagBodyPair {
-    	int tag;
-    	Tree body;
-    	TagBodyPair next;
+        int tag;
+        Tree body;
+        TagBodyPair next;
 
-    	TagBodyPair(int tag, Tree body, TagBodyPair next) {
-    		this.tag = tag;
-    		this.body = body;
-    		this.next = next;
-    	}
+        TagBodyPair(int tag, Tree body, TagBodyPair next) {
+            this.tag = tag;
+            this.body = body;
+            this.next = next;
+        }
 
-    	int length() {
-    		return (next == null) ? 1 : (next.length() + 1);
-    	}
+        int length() {
+            return (next == null) ? 1 : (next.length() + 1);
+        }
     }
 
     static TagBodyPair insert(int tag, Tree body, TagBodyPair current) {
-    	if (current == null)
-    		return new TagBodyPair(tag, body, null);
-    	else if (tag > current.tag)
-    		return new TagBodyPair(current.tag, current.body, insert(tag, body, current.next));
-    	else
-    		return new TagBodyPair(tag, body, current);
+        if (current == null)
+            return new TagBodyPair(tag, body, null);
+        else if (tag > current.tag)
+            return new TagBodyPair(current.tag, current.body, insert(tag, body, current.next));
+        else
+            return new TagBodyPair(tag, body, current);
     }
 
     protected int numCases(PatternNode patNode) {
-    	int n = 0;
-  		while ((patNode = patNode.or) != null)
-     		switch (patNode) {
- 				case DefaultPat():
-        			break;
-          		default:
-          			n++;
-         	}
-      	return n;
+        int n = 0;
+        while ((patNode = patNode.or) != null)
+            switch (patNode) {
+            case DefaultPat():
+                break;
+            default:
+                n++;
+            }
+        return n;
     }
 
-  	protected Tree defaultBody(PatternNode patNode, Tree otherwise) {
-   		while (patNode != null) {
-   			PatternNode node = patNode;
-  			while ((node = node.or) != null)
-     			switch (node) {
- 					case DefaultPat():
-        				return bodyToTree(node.and);
-         		}
-         	patNode = patNode.next();
-      	}
-      	return otherwise;
+    protected Tree defaultBody(PatternNode patNode, Tree otherwise) {
+        while (patNode != null) {
+            PatternNode node = patNode;
+            while ((node = node.or) != null)
+                switch (node) {
+                case DefaultPat():
+                    return bodyToTree(node.and);
+                }
+            patNode = patNode.next();
+        }
+        return otherwise;
     }
 
     /** This method translates pattern matching expressions that match
      *  on integers on the top level.
      */
     public Tree intSwitchToTree() {
-    	//print();
-    	int ncases = numCases(root.and);
-    	Tree matchError = cf.ThrowMatchError(selector.pos, resultVar.getType());
-    	// without a case, we return a match error if there is no default case
-    	if (ncases == 0)
-    		return defaultBody(root.and, matchError);
-    	// for one case we use a normal if-then-else instruction
-    	else if (ncases == 1) {
-    		switch (root.and.or) {
-    			case ConstantPat(Object value):
-    				return gen.If(
-    					cf.Equals(selector,
-    						gen.mkLit(root.and.or.pos, value)),
-    					bodyToTree(root.and.or.and),
-    					defaultBody(root.and, matchError));
-    			default:
-    				return generalSwitchToTree();
-    		}
-		}
-    	// if we have more than 2 cases than use a switch statement
-    	switch (root.and) {
-    		case Header(_, Header next):
-    			TagBodyPair mappings = null;
-    			Tree defaultBody = null;
-    			PatternNode patNode = root.and;
-    			while (patNode != null) {
-    				PatternNode node = patNode.or;
-    				while (node != null) {
-    					switch (node) {
-    						case DefaultPat():
-    							if (defaultBody != null)
-    								throw new ApplicationError();
-    							defaultBody = bodyToTree(node.and);
-                				node = node.or;
-                				break;
-               				case ConstantPat(Object value):
-               					mappings = insert(
-               						((Integer)value).intValue(),
-               						bodyToTree(node.and),
-               						mappings);
-								node = node.or;
-								break;
-            				default:
-            					throw new ApplicationError(node.toString());
-    					}
-    				}
-    				patNode = patNode.next();
-    			}
-    			if (defaultBody == null)
-    				defaultBody = cf.ThrowMatchError(selector.pos, resultVar.getType());
-    			if (mappings == null) {
-    				return gen.Switch(selector, new int[0], new Tree[0], defaultBody, resultVar.getType());
-    			} else {
-    				int n = mappings.length();
-    				int[] tags = new int[n];
-    				Tree[] bodies = new Tree[n];
-    				n = 0;
-    				while (mappings != null) {
-    					tags[n] = mappings.tag;
-    					bodies[n++] = mappings.body;
-    					mappings = mappings.next;
-    				}
-    				return gen.Switch(selector, tags, bodies, defaultBody, resultVar.getType());
-    			}
+        //print();
+        int ncases = numCases(root.and);
+        Tree matchError = cf.ThrowMatchError(selector.pos, resultVar.getType());
+        // without a case, we return a match error if there is no default case
+        if (ncases == 0)
+            return defaultBody(root.and, matchError);
+        // for one case we use a normal if-then-else instruction
+        else if (ncases == 1) {
+            switch (root.and.or) {
+            case ConstantPat(Object value):
+                return gen.If(
+                              cf.Equals(selector,
+                                        gen.mkLit(root.and.or.pos, value)),
+                              bodyToTree(root.and.or.and),
+                              defaultBody(root.and, matchError));
             default:
-            	throw new ApplicationError();
-    	}
+                return generalSwitchToTree();
+            }
+        }
+        // if we have more than 2 cases than use a switch statement
+        switch (root.and) {
+        case Header(_, Header next):
+            TagBodyPair mappings = null;
+            Tree defaultBody = null;
+            PatternNode patNode = root.and;
+            while (patNode != null) {
+                PatternNode node = patNode.or;
+                while (node != null) {
+                    switch (node) {
+                    case DefaultPat():
+                        if (defaultBody != null)
+                            throw new ApplicationError();
+                        defaultBody = bodyToTree(node.and);
+                        node = node.or;
+                        break;
+                    case ConstantPat(Object value):
+                        mappings = insert(
+                                          ((Integer)value).intValue(),
+                                          bodyToTree(node.and),
+                                          mappings);
+                        node = node.or;
+                        break;
+                    default:
+                        throw new ApplicationError(node.toString());
+                    }
+                }
+                patNode = patNode.next();
+            }
+            if (defaultBody == null)
+                defaultBody = cf.ThrowMatchError(selector.pos, resultVar.getType());
+            if (mappings == null) {
+                return gen.Switch(selector, new int[0], new Tree[0], defaultBody, resultVar.getType());
+            } else {
+                int n = mappings.length();
+                int[] tags = new int[n];
+                Tree[] bodies = new Tree[n];
+                n = 0;
+                while (mappings != null) {
+                    tags[n] = mappings.tag;
+                    bodies[n++] = mappings.body;
+                    mappings = mappings.next;
+                }
+                return gen.Switch(selector, tags, bodies, defaultBody, resultVar.getType());
+            }
+        default:
+            throw new ApplicationError();
+        }
     }
 
     protected Tree bodyToTree(PatternNode node) {
-       switch (node) {
-       		case Body(_, _, Tree[] body):
-       			return body[0];
-       		default:
-   				throw new ApplicationError();
-		}
+        switch (node) {
+        case Body(_, _, Tree[] body):
+            return body[0];
+        default:
+            throw new ApplicationError();
+        }
     }
 
     public Tree switchToTree() {
-    	throw new Error();
+        throw new Error();
     }
 
     public Tree generalSwitchToTree() {
@@ -826,11 +753,11 @@ public class PatternMatcher extends PatternTool {
         ts.append(gen.ValDef(root.symbol(), selector));
         ts.append(gen.ValDef(resultVar, gen.mkDefaultValue(selector.pos, resultVar.getType())));
         ts.append(
-            gen.If(
-                selector.pos,
-                toTree(root.and),
-                gen.Ident(selector.pos, resultVar),
-                cf.ThrowMatchError(selector.pos, resultVar.getType())));
+                  gen.If(
+                         selector.pos,
+                         toTree(root.and),
+                         gen.Ident(selector.pos, resultVar),
+                         cf.ThrowMatchError(selector.pos, resultVar.getType())));
         return gen.mkBlock(selector.pos, ts.toArray());
     }
 
@@ -838,186 +765,186 @@ public class PatternMatcher extends PatternTool {
         Tree res = gen.mkBooleanLit(node.pos, false);
         while (node != null)
             switch (node) {
-                case Header(Tree selector, Header next):
-                    //res = cf.And(mkNegate(res), toTree(node.or, selector));
-                    //System.out.println("HEADER TYPE = " + selector.type);
-                    if (optimize(node.type, node.or))
-                    	res = cf.Or(res, toOptTree(node.or, selector));
-                    else
-                    	res = cf.Or(res, toTree(node.or, selector));
-                    node = next;
-                    break;
-                case Body(ValDef[][] bound, Tree[] guard, Tree[] body):
-                	if ((bound.length == 0) &&
-                	    (guard.length == 0) &&
-                	    (body.length == 0)) {
-                		return gen.mkBooleanLit(node.pos, true); // cf.Or(res, gen.mkBooleanLit(node.pos, true));
-                	} else if (!doBinding)
-		    			bound = new ValDef[][]{new ValDef[]{}};
-                    for (int i = guard.length - 1; i >= 0; i--) {
-                        Tree[] ts = new Tree[bound[i].length + 1];
-                        System.arraycopy(bound[i], 0, ts, 0, bound[i].length);
-                        ts[bound[i].length] = gen.mkBlock(
-                            new Tree[]{
-                                gen.Assign(
-                                    gen.Ident(body[i].pos, resultVar),
-                                    body[i]),
-                                gen.mkBooleanLit(body[i].pos, true)
-                            });
-                        if (guard[i] != Tree.Empty)
-                            ts[bound[i].length] = cf.And(guard[i], ts[bound[i].length]);
-                        res = cf.Or(gen.mkBlock(body[i].pos, ts), res);
-                    }
-                    return res;
-                default:
-                    throw new ApplicationError();
+            case Header(Tree selector, Header next):
+                //res = cf.And(mkNegate(res), toTree(node.or, selector));
+                //System.out.println("HEADER TYPE = " + selector.type);
+                if (optimize(node.type, node.or))
+                    res = cf.Or(res, toOptTree(node.or, selector));
+                else
+                    res = cf.Or(res, toTree(node.or, selector));
+                node = next;
+                break;
+            case Body(ValDef[][] bound, Tree[] guard, Tree[] body):
+                if ((bound.length == 0) &&
+                    (guard.length == 0) &&
+                    (body.length == 0)) {
+                    return gen.mkBooleanLit(node.pos, true); // cf.Or(res, gen.mkBooleanLit(node.pos, true));
+                } else if (!doBinding)
+                    bound = new ValDef[][]{new ValDef[]{}};
+                for (int i = guard.length - 1; i >= 0; i--) {
+                    Tree[] ts = new Tree[bound[i].length + 1];
+                    System.arraycopy(bound[i], 0, ts, 0, bound[i].length);
+                    ts[bound[i].length] = gen.mkBlock(
+                                                      new Tree[]{
+                                                          gen.Assign(
+                                                                     gen.Ident(body[i].pos, resultVar),
+                                                                     body[i]),
+                                                          gen.mkBooleanLit(body[i].pos, true)
+                                                      });
+                    if (guard[i] != Tree.Empty)
+                        ts[bound[i].length] = cf.And(guard[i], ts[bound[i].length]);
+                    res = cf.Or(gen.mkBlock(body[i].pos, ts), res);
+                }
+                return res;
+            default:
+                throw new ApplicationError();
             }
         return res;
     }
 
     protected boolean optimize(Type selType, PatternNode alternatives) {
-    	if (!optimize || !selType.isSubType(defs.OBJECT_TYPE()))
-    		return false;
-    	int cases = 0;
-    	while (alternatives != null) {
-    		switch (alternatives) {
-    			case ConstrPat(_):
-    				if (alternatives.type.symbol().isCaseClass())
-    					cases++;
-    				else
-    					return false;
-    				break;
-    			case DefaultPat():
-    				break;
-    			default:
-    				return false;
-    		}
-    		alternatives = alternatives.or;
-    	}
-    	return cases > 2;
+        if (!optimize || !selType.isSubType(defs.OBJECT_TYPE()))
+            return false;
+        int cases = 0;
+        while (alternatives != null) {
+            switch (alternatives) {
+            case ConstrPat(_):
+                if (alternatives.type.symbol().isCaseClass())
+                    cases++;
+                else
+                    return false;
+                break;
+            case DefaultPat():
+                break;
+            default:
+                return false;
+            }
+            alternatives = alternatives.or;
+        }
+        return cases > 2;
     }
 
     static class TagNodePair {
-    	int tag;
-    	PatternNode node;
-    	TagNodePair next;
+        int tag;
+        PatternNode node;
+        TagNodePair next;
 
-    	TagNodePair(int tag, PatternNode node, TagNodePair next) {
-    		this.tag = tag;
-    		this.node = node;
-    		this.next = next;
-    	}
+        TagNodePair(int tag, PatternNode node, TagNodePair next) {
+            this.tag = tag;
+            this.node = node;
+            this.next = next;
+        }
 
-    	int length() {
-    		return (next == null) ? 1 : (next.length() + 1);
-    	}
+        int length() {
+            return (next == null) ? 1 : (next.length() + 1);
+        }
     }
 
     static TagNodePair insert(int tag, PatternNode node, TagNodePair current) {
-    	if (current == null)
-    		return new TagNodePair(tag, node, null);
-    	else if (tag > current.tag)
-    		return new TagNodePair(current.tag, current.node, insert(tag, node, current.next));
-    	else if (tag == current.tag) {
-    		PatternNode old = current.node;
-    		(current.node = node).or = old;
-    		return current;
-    	} else
-    		return new TagNodePair(tag, node, current);
+        if (current == null)
+            return new TagNodePair(tag, node, null);
+        else if (tag > current.tag)
+            return new TagNodePair(current.tag, current.node, insert(tag, node, current.next));
+        else if (tag == current.tag) {
+            PatternNode old = current.node;
+            (current.node = node).or = old;
+            return current;
+        } else
+            return new TagNodePair(tag, node, current);
     }
 
     static TagNodePair insertNode(int tag, PatternNode node, TagNodePair current) {
-    	PatternNode newnode = node.dup();
-    	newnode.or = null;
-    	return insert(tag, newnode, current);
+        PatternNode newnode = node.dup();
+        newnode.or = null;
+        return insert(tag, newnode, current);
     }
 
     protected Tree toOptTree(PatternNode node, Tree selector) {
-	//System.err.println("pm.toOptTree called"+node);
-    	TagNodePair cases = null;
-    	PatternNode defaultCase = null;
-    	while (node != null)
-    		switch (node) {
-    			case ConstrPat(Symbol casted):
-    				cases = insertNode(node.type.symbol().tag(), node, cases);
-    				node = node.or;
-    				break;
-    			case DefaultPat():
-    				defaultCase = node;
-    				node = node.or;
-    				break;
-    			default:
-    				throw new ApplicationError();
-    		}
-    	int n = cases.length();
-		int[] tags = new int[n];
-		Tree[] bodies = new Tree[n];
-		n = 0;
-		while (cases != null) {
-			tags[n] = cases.tag;
-			bodies[n++] = toTree(cases.node, selector);
-			cases = cases.next;
-		}
-		return gen.Switch(
-			gen.mkApply__(gen.Select(selector.duplicate(), defs.OBJECT_TAG())),
-			tags,
-			bodies,
-			(defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)
-			                      : toTree(defaultCase.and),
-                        defs.BOOLEAN_TYPE());
+        //System.err.println("pm.toOptTree called"+node);
+        TagNodePair cases = null;
+        PatternNode defaultCase = null;
+        while (node != null)
+            switch (node) {
+            case ConstrPat(Symbol casted):
+                cases = insertNode(node.type.symbol().tag(), node, cases);
+                node = node.or;
+                break;
+            case DefaultPat():
+                defaultCase = node;
+                node = node.or;
+                break;
+            default:
+                throw new ApplicationError();
+            }
+        int n = cases.length();
+        int[] tags = new int[n];
+        Tree[] bodies = new Tree[n];
+        n = 0;
+        while (cases != null) {
+            tags[n] = cases.tag;
+            bodies[n++] = toTree(cases.node, selector);
+            cases = cases.next;
+        }
+        return gen.Switch(
+                          gen.mkApply__(gen.Select(selector.duplicate(), defs.OBJECT_TAG())),
+                          tags,
+                          bodies,
+                          (defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)
+                          : toTree(defaultCase.and),
+                          defs.BOOLEAN_TYPE());
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {
-	//System.err.println("pm.toTree called"+node);
+        //System.err.println("pm.toTree called"+node);
         if (node == null)
             return gen.mkBooleanLit(selector.pos, false);
         switch (node) {
-            case DefaultPat():
-                return toTree(node.and);
-            case ConstrPat(Symbol casted):
-                return gen.If(
-                        gen.mkIsInstanceOf(selector.duplicate(), node.type),
-                        gen.mkBlock(
-                            new Tree[]{
-                                gen.ValDef(casted,
-                                           gen.mkAsInstanceOf(selector.duplicate(), node.type)),
-                                toTree(node.and)}),
-                        toTree(node.or, selector.duplicate()));
-            case SequencePat(Symbol casted, int len):
-                return gen.If(
-                        cf.And(
-                            gen.mkIsInstanceOf(selector.duplicate(), node.type),
-                            cf.Equals(
-                                gen.mkApply__(
-                                    gen.Select(
-                                        gen.mkAsInstanceOf(
-                                            selector.duplicate(), node.type),
-                                        defs.SEQ_LENGTH())),
-                                gen.mkIntLit(selector.pos, len))),
-                        gen.mkBlock(
-                            new Tree[]{
-                                gen.ValDef(casted,
-                                           gen.mkAsInstanceOf(selector.duplicate(), node.type)),
-                                toTree(node.and)}),
-                        toTree(node.or, selector.duplicate()));
-            case ConstantPat(Object value):
-                return gen.If(
-                        cf.Equals(selector.duplicate(),
-                            gen.mkLit(selector.pos, value)),
-                        toTree(node.and),
-                        toTree(node.or, selector.duplicate()));
-            case VariablePat(Tree tree):
-                return gen.If(
-                        cf.Equals(selector.duplicate(), tree),
-                        toTree(node.and),
-                        toTree(node.or, selector.duplicate()));
-          	case AltPat(Header header):
-          		return gen.If(
-                        toTree(header),
-                        toTree(node.and),
-                        toTree(node.or, selector.duplicate()));
-            default:
-                throw new ApplicationError();
+        case DefaultPat():
+            return toTree(node.and);
+        case ConstrPat(Symbol casted):
+            return gen.If(
+                          gen.mkIsInstanceOf(selector.duplicate(), node.type),
+                          gen.mkBlock(
+                                      new Tree[]{
+                                          gen.ValDef(casted,
+                                                     gen.mkAsInstanceOf(selector.duplicate(), node.type)),
+                                          toTree(node.and)}),
+                          toTree(node.or, selector.duplicate()));
+        case SequencePat(Symbol casted, int len):
+            return gen.If(
+                          cf.And(
+                                 gen.mkIsInstanceOf(selector.duplicate(), node.type),
+                                 cf.Equals(
+                                           gen.mkApply__(
+                                                         gen.Select(
+                                                                    gen.mkAsInstanceOf(
+                                                                                       selector.duplicate(), node.type),
+                                                                    defs.SEQ_LENGTH())),
+                                           gen.mkIntLit(selector.pos, len))),
+                          gen.mkBlock(
+                                      new Tree[]{
+                                          gen.ValDef(casted,
+                                                     gen.mkAsInstanceOf(selector.duplicate(), node.type)),
+                                          toTree(node.and)}),
+                          toTree(node.or, selector.duplicate()));
+        case ConstantPat(Object value):
+            return gen.If(
+                          cf.Equals(selector.duplicate(),
+                                    gen.mkLit(selector.pos, value)),
+                          toTree(node.and),
+                          toTree(node.or, selector.duplicate()));
+        case VariablePat(Tree tree):
+            return gen.If(
+                          cf.Equals(selector.duplicate(), tree),
+                          toTree(node.and),
+                          toTree(node.or, selector.duplicate()));
+        case AltPat(Header header):
+            return gen.If(
+                          toTree(header),
+                          toTree(node.and),
+                          toTree(node.or, selector.duplicate()));
+        default:
+            throw new ApplicationError();
         }
     }
 }
