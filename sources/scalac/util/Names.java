@@ -12,9 +12,31 @@ import scalac.symtab.Symbol;
 public class Names {
 
     private static final Name LOCAL_PREFIX = Name.fromString("local$");
+    private static final Name OUTER_PREFIX = Name.fromString("outer$");
+    private static final Name SUPER_PREFIX = Name.fromString("super$");
 
     public static Name LOCAL(Symbol clasz) {
         return LOCAL_PREFIX.append(clasz.name);
+    }
+
+    public static Name OUTER(Symbol constructor) {
+        assert constructor.isConstructor() : Debug.show(constructor);
+        Symbol clasz = constructor.constructorClass();
+        Symbol[] constructors = clasz.allConstructors().alternativeSymbols();
+        int index = 0;
+        while (constructors[index] != constructor) index++;
+        String name = OUTER_PREFIX.toString() + index +"$"+ clasz.owner().name;
+        return Name.fromString(name);
+    }
+
+    public static Name OUTER(Symbol constructor, Symbol member) {
+        Name name = Name.fromString(OUTER(constructor) + "$" + member.name);
+        if (member.name.isTypeName()) name = name.toTypeName();
+        return name;
+    }
+
+    public static Name SUPER(Symbol method) {
+        return SUPER_PREFIX.append(method.name);
     }
 
     public static final Name ERROR = Name.ERROR;
@@ -23,7 +45,6 @@ public class Names {
     public static final Name WILDCARD = Name.fromString("_");
     public static final Name COMPOUND_NAME = Name.fromString("<ct>");
     public static final Name ANON_CLASS_NAME = Name.fromString("$anon");
-    public static final Name OUTER_PREFIX = Name.fromString("outer");
     public static final Name ZERO = Name.fromString("<zero>");
 
     public static final Name CONSTRUCTOR = Name.fromString("<init>");
