@@ -153,6 +153,10 @@ class GenJVM {
             if (ctx1.isModuleClass)
                 addModuleInstanceField(ctx1);
 
+            JMethod clinit = getClassConstructorMethod(ctx1, false);
+            if (clinit != null)
+                clinit.getCode().emitRETURN();
+
             gen(ctx1, impl);
             leaveClass(ctx1, sym);
         } break;
@@ -1270,13 +1274,7 @@ class GenJVM {
                               MODULE_INSTANCE_FIELD_NAME,
                               ctx.clazz.getType());
 
-        JMethod initMethod =
-            ctx.clazz.addNewMethod(JAccessFlags.ACC_PUBLIC
-                                   | JAccessFlags.ACC_STATIC,
-                                   "<clinit>",
-                                   JType.VOID,
-                                   JType.EMPTY_ARRAY,
-                                   Strings.EMPTY_ARRAY);
+        JMethod initMethod = getClassConstructorMethod(ctx, true);
         JExtendedCode code = (JExtendedCode)initMethod.getCode();
 
         code.emitNEW(ctx.clazz.getName());
@@ -1285,7 +1283,6 @@ class GenJVM {
                                JMethodType.ARGLESS_VOID_FUNCTION);
         // The field is initialised by the constructor, so we don't
         // need to do it here, creating the instance is sufficient.
-        code.emitRETURN();
     }
 
     protected JMethod addNewScalaMethod(JClass clazz,
@@ -1679,6 +1676,29 @@ class GenJVM {
     //////////////////////////////////////////////////////////////////////
 
     /**
+     * Return the class constructor method of the given class.
+     */
+    private JMethod getClassConstructorMethod(Context ctx, boolean create) {
+        JMethod[] methods = ctx.clazz.getMethods();
+        JMethod clinit = null;
+        for (int i = 0; i < methods.length; ++i) {
+            if (methods[i].getName().equals("<clinit>")) {
+                clinit = methods[i];
+                break;
+            }
+        }
+        if (clinit == null && create) {
+            clinit = ctx.clazz.addNewMethod(JAccessFlags.ACC_PUBLIC
+                                            | JAccessFlags.ACC_STATIC,
+                                            "<clinit>",
+                                            JType.VOID,
+                                            JType.EMPTY_ARRAY,
+                                            Strings.EMPTY_ARRAY);
+        }
+        return clinit;
+    }
+
+    /**
      * Add value members (i.e. fields) to current class.
      */
     protected void addValueClassMembers(Context ctx, Tree.ClassDef cDef) {
@@ -1698,7 +1718,8 @@ class GenJVM {
     protected void addStaticClassMembers(Context ctx, Tree.ClassDef cDef) {
         Symbol cSym = cDef.symbol();
         HashMap/*<Symbol, AConstant>*/ staticMembers = new HashMap();
-        Symbol iSym = addInterfacesPhase.getInterfaceSymbol(cSym);
+        Symbol iSym = ctx.isModuleClass
+            ? cSym : addInterfacesPhase.getInterfaceSymbol(cSym);
         if (iSym != null) {
             // Compute the list of static members to add.
             Phase bkpCurrent = global.currentPhase;
@@ -1716,12 +1737,7 @@ class GenJVM {
             global.currentPhase = bkpCurrent;
 
             // Add them and initialize them.
-            JMethod classInitMeth =
-                ctx.clazz.addNewMethod(JAccessFlags.ACC_STATIC,
-                                       "<clinit>",
-                                       JType.VOID,
-                                       JType.EMPTY_ARRAY,
-                                       new String[0]);
+            JMethod classInitMeth = getClassConstructorMethod(ctx, true);
             Context ctx1 =
                 ctx.withMethod(classInitMeth, Collections.EMPTY_MAP, false);
 
@@ -1743,7 +1759,6 @@ class GenJVM {
                                         field.getName(),
                                         tp);
             }
-            ctx1.code.emitRETURN();
         }
     }
 
