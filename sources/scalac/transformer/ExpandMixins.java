@@ -179,17 +179,23 @@ public class ClassExpander {
     private void handleMixinInterfaceMembersAux(Scope symbols) {
         for (SymbolIterator i = symbols.iterator(true); i.hasNext();) {
             Symbol member = i.next();
-            if (member.kind != scalac.symtab.Kinds.TYPE) continue;
+            if (!member.isAbstractType()) continue;
             // !!! use same trick as in erasure?
             //Symbol clone = member.cloneSymbol(clasz);
             //clone.setInfo(clasz.thisType().memberInfo(member));
             //Symbol subst = clasz.thisType().memberType(clone).symbol();
             Symbol subst = clasz.thisType().memberType(member).symbol();
             if (subst == member) continue;
-            Symbol subst1 = map.lookupSymbol(member);
-            assert subst1 == null || subst1 == subst:
+            Type subst1 = map.lookupType(member);
+            assert subst1 == null || subst1.symbol() == subst:
                 Debug.show(member," -> ",subst," + ",subst1);
-            if (subst1 == null) map.insertSymbol(member, subst);
+            if (subst1 == null) {
+                Type prefix = Type.localThisType;
+                // compute outer type links of subst
+                Type[] args = Symbol.type(subst.owner().typeParams());
+                args = Type.asSeenFrom(args, clasz.thisType(), subst.owner());
+                map.insertType(member, Type.TypeRef(prefix, subst, args));
+            }
         }
     }
 
