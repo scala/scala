@@ -25,37 +25,42 @@ trait Option[+A] extends Iterable[A] {
 		case _ => false
 	}
 
-    def get: A = this match {
+    def get: A = match {
       case None => error("None.get")
       case Some(x) => x
     }
 
-    def map[B](f: A => B): Option[B] = this match {
+	def get[B >: A](default: B): B = match {
+	  case None => default
+	  case Some(x) => x
+	}
+
+    def map[B](f: A => B): Option[B] = match {
       case None => None
       case Some(x) => Some(f(x))
     }
 
-    def flatMap[B](f: A => Option[B]): Option[B] = this match {
+    def flatMap[B](f: A => Option[B]): Option[B] = match {
       case None => None
       case Some(x) => f(x)
     }
 
-    def filter(p: A => Boolean): Option[A] = this match {
+    def filter(p: A => Boolean): Option[A] = match {
       case None => None
       case Some(x) => if (p(x)) Some(x) else None
     }
 
-    def foreach(f: A => Unit): Unit = this match {
+    def foreach(f: A => Unit): Unit = match {
       case None => ()
       case Some(x) => f(x)
     }
 
-	def elements: Iterator[A] = this match {
+	def elements: Iterator[A] = match {
 		case None => Iterator.empty
 		case Some(x) => Iterator.fromSeq(x)
 	}
 
-    def toList: List[A] = this match {
+    def toList: List[A] = match {
       case None => Predef.List()
       case Some(x) => Predef.List(x)
     }
