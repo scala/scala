@@ -203,8 +203,8 @@ util/regexp/PointedHedgeExp.scala
 util/regexp/SyntaxError.scala
 util/regexp/WildcardBase.scala
 util/regexp/WordExp.scala
-#util/logging/Logged.scala
-#util/logging/ConsoleLogger.scala
+util/logging/Logged.scala
+util/logging/ConsoleLogger.scala
 
 xml/Attribute.scala
 xml/AttributeSeq.scala
