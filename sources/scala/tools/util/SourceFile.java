@@ -8,10 +8,6 @@
 
 package scala.tools.util;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
@@ -34,8 +30,8 @@ public class SourceFile {
     /** The underlying file */
     private final AbstractFile file;
 
-    /** The content of this source file or null if unavailable */
-    private final byte[] bytes;
+    /** The content of this source file */
+    private final byte[] content;
 
     /** The encoding of this source file or null if unspecified */
     private String encoding;
@@ -49,16 +45,15 @@ public class SourceFile {
     //########################################################################
     // Public Constructors
 
-    /** Initializes this instance with the specified file. */
-    public SourceFile(VirtualFile file) {
-        this.file = file;
-        this.bytes = normalize(file.read());
+    /** Initializes this instance with given name and content. */
+    public SourceFile(String sourcename, byte[] content) {
+        this(new ByteArrayFile(sourcename, content), content);
     }
 
-    /** Initializes this instance with the specified file. */
-    public SourceFile(AbstractFile file) throws IOException {
+    /** Initializes this instance with given file and content. */
+    public SourceFile(AbstractFile file, byte[] content) {
         this.file = file;
-        this.bytes = normalize(file.read());
+        this.content = normalize(content);
     }
 
     //########################################################################
@@ -69,9 +64,9 @@ public class SourceFile {
         return file;
     }
 
-    /** Returns the content of the file. */
+    /** Returns the content of this source file. */
     public byte[] getContent() {
-        return bytes;
+        return content;
     }
 
     /** Sets the encoding of the file. */
@@ -90,24 +85,24 @@ public class SourceFile {
     /** Returns the specified line. */
     public String getLine(int line) {
         int index = lineNumber <= line ? nextIndex : (lineNumber = 0);
-        for (; index < bytes.length && lineNumber < line; lineNumber++) {
+        for (; index < content.length && lineNumber < line; lineNumber++) {
             lineStart = index;
-            for (; index < bytes.length; index++) {
-                if (bytes[index] == CR) break;
-                if (bytes[index] == LF) break;
-                if (bytes[index] == FF) break;
+            for (; index < content.length; index++) {
+                if (content[index] == CR) break;
+                if (content[index] == LF) break;
+                if (content[index] == FF) break;
             }
             lineLength = index - lineStart;
-            if (index < bytes.length)
+            if (index < content.length)
                 index++;
-            if (index < bytes.length)
-                if (bytes[index - 1] == CR && bytes[index] == LF) index++;
+            if (index < content.length)
+                if (content[index - 1] == CR && content[index] == LF) index++;
         }
         nextIndex = index;
         try {
             return encoding != null ?
-                new String(bytes, lineStart, lineLength, encoding) :
-                new String(bytes, lineStart, lineLength);
+                new String(content, lineStart, lineLength, encoding) :
+                new String(content, lineStart, lineLength);
         } catch (UnsupportedEncodingException exception) {
             throw new Error(exception); // !!! use ApplicationError
         }
@@ -125,10 +120,10 @@ public class SourceFile {
     private static byte[] normalize(byte[] input) {
         if (input.length > 0 && input[input.length - 1] == SU)
                 return input;
-        byte[] bytes = new byte[input.length + 1];
-        System.arraycopy(input, 0, bytes, 0, input.length);
-        bytes[input.length] = SU;
-        return bytes;
+        byte[] content = new byte[input.length + 1];
+        System.arraycopy(input, 0, content, 0, input.length);
+        content[input.length] = SU;
+        return content;
     }
 
     //########################################################################

@@ -99,8 +99,8 @@ public class Position {
     // Public Constructors
 
     /** Initializes a new instance. */
-    public Position(String filename) {
-        this(new SourceFile(new VirtualFile(filename)));
+    public Position(String sourcename) {
+        this(new SourceFile(sourcename, new byte[0]));
     }
 
     /** Initializes a new instance. */

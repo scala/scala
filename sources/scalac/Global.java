@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.util.*;
 
 import scala.tools.util.AbstractFile;
-import scala.tools.util.ByteArrayFile;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 
@@ -256,6 +255,32 @@ public abstract class Global {
         currentPhase = currentPhase.prev;
     }
 
+    /** Creates a virtual source file with given name and content. */
+    public SourceFile getSourceFile(String sourcename, String content) {
+        return new SourceFile(sourcename, content.getBytes());
+    }
+
+    /** Reads and returns the source file in file with given name. */
+    public SourceFile getSourceFile(String filename) throws IOException {
+        return getSourceFile(AbstractFile.open(null, filename));
+    }
+
+    /** Reads and returns the source file in given abstract file. */
+    public SourceFile getSourceFile(AbstractFile file) throws IOException {
+        if (!file.exists()) throw new FileNotFoundException(
+            "source file '" + file.getPath() + "' could not be found");
+        byte[] content = file.read();
+        return new SourceFile(file, content);
+    }
+
+    /** Reads and returns the source file of given clasz. */
+    public SourceFile getSourceFile(Symbol clasz) throws IOException {
+        assert clasz.isClass() && clasz.isStatic(): Debug.show(clasz);
+        AbstractFile file = classPath.openFile(
+            SourceRepresentation.externalizeFileName(clasz, ".scala"));
+        return getSourceFile(file);
+    }
+
     /** the top-level compilation process
      */
     public void compile(String[] files, boolean console) {
@@ -263,17 +288,10 @@ public abstract class Global {
         // parse files
         List units = new ArrayList(files.length);
         for (int i = 0; i < files.length; i++) {
-            String filename = files[i];
-            AbstractFile file = AbstractFile.open(null, filename);
-            if (file.exists()) {
-                try {
-                    SourceFile source = new SourceFile(file);
-                    units.add(new Unit(this, source, console));
-                } catch (IOException exception) {
-                    error(exception.getMessage());
-                }
-            } else {
-                error("file '" + filename + "' not found");
+            try {
+                units.add(new Unit(this, getSourceFile(files[i]), console));
+            } catch (IOException exception) {
+                error(exception.getMessage());
             }
         }
         this.units = (Unit[])units.toArray(new Unit[units.size()]);
@@ -289,8 +307,7 @@ public abstract class Global {
      */
     public void compile(String filename, String input, boolean console) {
         reporter.resetCounters();
-        ByteArrayFile file = new ByteArrayFile(filename, input.getBytes());
-        SourceFile source = new SourceFile(file);
+        SourceFile source = getSourceFile(filename, input);
         units = new Unit[]{new Unit(this, source, console)};
         compile();
     }

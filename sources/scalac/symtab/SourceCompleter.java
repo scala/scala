@@ -34,17 +34,15 @@ public class SourceCompleter extends SymbolLoader {
     /** complete class symbol c by loading the unit
      */
     public String doComplete(Symbol clasz) throws IOException {
-        AbstractFile file = global.classPath.openFile(
-            SourceRepresentation.externalizeFileName(clasz, ".scala"));
-        if (!file.exists()) throw new FileNotFoundException(file.getPath());
-        Unit unit = new Unit(global, new SourceFile(file), false, mixinOnly);
+        SourceFile source = global.getSourceFile(clasz);
+        Unit unit = new Unit(global, source, false, mixinOnly);
         Phase phase = global.currentPhase;
         global.currentPhase = global.PHASE.PARSER.phase();
         global.PHASE.PARSER.phase().apply(new Unit[] {unit});
         global.currentPhase = global.PHASE.ANALYZER.phase();
         ((AnalyzerPhase)global.PHASE.ANALYZER.phase()).lateEnter(global, unit, clasz);
         global.currentPhase = phase;
-        return "source file '" + file + "'";
+        return "source file '" + source.getFile() + "'";
     }
 
 }
