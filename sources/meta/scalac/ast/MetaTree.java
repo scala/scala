@@ -114,8 +114,17 @@ public class MetaTree extends AbstractTreeExpander {
             }
             writer.println("):");
             writer.indent().print("return ");
-            if (kind != TreeKind.Type) writer.print("!");
-            writer.println("name.isTypeName();").undent();
+            switch (kind) {
+            case TreeKind.Type:
+                writer.print("name.isTypeName() || name == Name.ERROR");
+                break;
+            case TreeKind.Term:
+                writer.print("!name.isTypeName()");
+                break;
+            default:
+                throw new Error("unexpected kind " + kind);
+            }
+            writer.println(";").undent();
         }
 
 	writer.println("default:");
@@ -167,6 +176,16 @@ public class MetaTree extends AbstractTreeExpander {
         writer.print("public Tree setSymbol(").print(tree.t_Symbol).print(" symbol)");
         writer.lbrace();
         writer.println("this.symbol = symbol;");
+        if (node.hasLinkedFields()) {
+            writer.print("if (symbol != null)").lbrace();
+            for (int i = 0; i < node.fields.length; i++) {
+                TreeField field = node.fields[i];
+                TreeFieldLink link = field.link;
+                if (link == null) continue;
+                writer.println("this."+field+" = symbol."+link.getLink()+";");
+            }
+            writer.rbrace();
+        }
         writer.println("return this;");
         writer.rbrace();
         writer.println();
