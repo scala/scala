@@ -481,6 +481,42 @@ public abstract class RunTime {
         }
     }
 
+    public static int zarray_length(boolean[] array) {
+        return array.length;
+    }
+
+    public static int barray_length(byte[] array) {
+        return array.length;
+    }
+
+    public static int sarray_length(short[] array) {
+        return array.length;
+    }
+
+    public static int carray_length(char[] array) {
+        return array.length;
+    }
+
+    public static int iarray_length(int[] array) {
+        return array.length;
+    }
+
+    public static int larray_length(long[] array) {
+        return array.length;
+    }
+
+    public static int farray_length(float[] array) {
+        return array.length;
+    }
+
+    public static int darray_length(double[] array) {
+        return array.length;
+    }
+
+    public static int oarray_length(Object[] array) {
+        return array.length;
+    }
+
     public static boolean zarray_get(boolean[] array, int index) {
         return array[index];
     }

@@ -45,6 +45,16 @@ public class Primitives {
     private static final Name DARRAY_N    = Name.fromString("darray");
     private static final Name OARRAY_N    = Name.fromString("oarray");
 
+    private static final Name ZARRAY_LENGTH_N=Name.fromString("zarray_length");
+    private static final Name BARRAY_LENGTH_N=Name.fromString("barray_length");
+    private static final Name SARRAY_LENGTH_N=Name.fromString("sarray_length");
+    private static final Name CARRAY_LENGTH_N=Name.fromString("carray_length");
+    private static final Name IARRAY_LENGTH_N=Name.fromString("iarray_length");
+    private static final Name LARRAY_LENGTH_N=Name.fromString("larray_length");
+    private static final Name FARRAY_LENGTH_N=Name.fromString("farray_length");
+    private static final Name DARRAY_LENGTH_N=Name.fromString("darray_length");
+    private static final Name OARRAY_LENGTH_N=Name.fromString("oarray_length");
+
     private static final Name ZARRAY_GET_N = Name.fromString("zarray_get");
     private static final Name BARRAY_GET_N = Name.fromString("barray_get");
     private static final Name SARRAY_GET_N = Name.fromString("sarray_get");
@@ -114,6 +124,16 @@ public class Primitives {
     public final Symbol NEW_FARRAY;
     public final Symbol NEW_DARRAY;
     public final Symbol NEW_OARRAY;
+
+    public final Symbol ZARRAY_LENGTH;
+    public final Symbol BARRAY_LENGTH;
+    public final Symbol SARRAY_LENGTH;
+    public final Symbol CARRAY_LENGTH;
+    public final Symbol IARRAY_LENGTH;
+    public final Symbol LARRAY_LENGTH;
+    public final Symbol FARRAY_LENGTH;
+    public final Symbol DARRAY_LENGTH;
+    public final Symbol OARRAY_LENGTH;
 
     public final Symbol ZARRAY_GET;
     public final Symbol BARRAY_GET;
@@ -202,6 +222,15 @@ public class Primitives {
         this.NEW_FARRAY = getUniqueTerm(RUNTIME, FARRAY_N);
         this.NEW_DARRAY = getUniqueTerm(RUNTIME, DARRAY_N);
         this.NEW_OARRAY = getUniqueTerm(RUNTIME, OARRAY_N);
+        this.ZARRAY_LENGTH = getUniqueTerm(RUNTIME, ZARRAY_LENGTH_N);
+        this.BARRAY_LENGTH = getUniqueTerm(RUNTIME, BARRAY_LENGTH_N);
+        this.SARRAY_LENGTH = getUniqueTerm(RUNTIME, SARRAY_LENGTH_N);
+        this.CARRAY_LENGTH = getUniqueTerm(RUNTIME, CARRAY_LENGTH_N);
+        this.IARRAY_LENGTH = getUniqueTerm(RUNTIME, IARRAY_LENGTH_N);
+        this.LARRAY_LENGTH = getUniqueTerm(RUNTIME, LARRAY_LENGTH_N);
+        this.FARRAY_LENGTH = getUniqueTerm(RUNTIME, FARRAY_LENGTH_N);
+        this.DARRAY_LENGTH = getUniqueTerm(RUNTIME, DARRAY_LENGTH_N);
+        this.OARRAY_LENGTH = getUniqueTerm(RUNTIME, OARRAY_LENGTH_N);
         this.ZARRAY_GET = getUniqueTerm(RUNTIME, ZARRAY_GET_N);
         this.BARRAY_GET = getUniqueTerm(RUNTIME, BARRAY_GET_N);
         this.SARRAY_GET = getUniqueTerm(RUNTIME, SARRAY_GET_N);
@@ -498,6 +527,15 @@ public class Primitives {
         addPrimitive(NEW_FARRAY, Primitive.NEW_FARRAY);
         addPrimitive(NEW_DARRAY, Primitive.NEW_DARRAY);
         addPrimitive(NEW_OARRAY, Primitive.NEW_OARRAY);
+        addPrimitive(ZARRAY_LENGTH, Primitive.ZARRAY_LENGTH);
+        addPrimitive(BARRAY_LENGTH, Primitive.BARRAY_LENGTH);
+        addPrimitive(SARRAY_LENGTH, Primitive.SARRAY_LENGTH);
+        addPrimitive(CARRAY_LENGTH, Primitive.CARRAY_LENGTH);
+        addPrimitive(IARRAY_LENGTH, Primitive.IARRAY_LENGTH);
+        addPrimitive(LARRAY_LENGTH, Primitive.LARRAY_LENGTH);
+        addPrimitive(FARRAY_LENGTH, Primitive.FARRAY_LENGTH);
+        addPrimitive(DARRAY_LENGTH, Primitive.DARRAY_LENGTH);
+        addPrimitive(OARRAY_LENGTH, Primitive.OARRAY_LENGTH);
         addPrimitive(ZARRAY_GET, Primitive.ZARRAY_GET);
         addPrimitive(BARRAY_GET, Primitive.BARRAY_GET);
         addPrimitive(SARRAY_GET, Primitive.SARRAY_GET);
@@ -772,6 +810,33 @@ public class Primitives {
 
     //########################################################################
     // Primitives interface - array get and set primitives
+
+    /** Return length method for arrays of the given type. */
+    public Symbol getArrayLengthSymbol(Type type) {
+        switch (type) {
+        case UnboxedArrayType(UnboxedType(int kind)):
+            return getArrayLengthSymbol(kind);
+        case UnboxedArrayType(_):
+            return OARRAY_LENGTH;
+        default:
+            throw Debug.abort("illegal case", type);
+        }
+    }
+
+    /** Return length method for arrays of elements of the given kind. */
+    public Symbol getArrayLengthSymbol(int kind) {
+        switch (kind) {
+        case TypeTags.BOOLEAN: return ZARRAY_LENGTH;
+        case TypeTags.BYTE   : return BARRAY_LENGTH;
+        case TypeTags.SHORT  : return SARRAY_LENGTH;
+        case TypeTags.CHAR   : return CARRAY_LENGTH;
+        case TypeTags.INT    : return IARRAY_LENGTH;
+        case TypeTags.LONG   : return LARRAY_LENGTH;
+        case TypeTags.FLOAT  : return FARRAY_LENGTH;
+        case TypeTags.DOUBLE : return DARRAY_LENGTH;
+        default              : throw Debug.abort("illegal kind " + kind);
+        }
+    }
 
     /** Return get method for arrays of the given type. */
     public Symbol getArrayGetSymbol(Type type) {
