@@ -178,6 +178,37 @@ object Bug213Test {
 }
 
 //############################################################################
+// Bug 225
+
+case class Bug225C();
+
+object Bug225Test {
+
+  def main(args: Array[String]): Unit = {
+    val a = new Array[Array[Bug225C]](2);
+    a(0) = new Array[Bug225C](2);
+    a(0)(0) = new Bug225C();
+  }
+}
+
+//############################################################################
+// Bug 226
+
+object Bug226Test {
+
+  def id[a](xs: Array[a]): Array[a] = xs;
+
+  def main(args: Array[String]): Unit = {
+    var xs = new Array[Int](1);
+    class X { xs };
+    xs = id(xs);
+    id(xs);
+    ()
+  }
+
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -209,6 +240,8 @@ object Test  {
     test(174, Bug174Test.main(args));
     test(176, Bug176Test.main(args));
     test(213, Bug213Test.main(args));
+    test(225, Bug225Test.main(args));
+    test(226, Bug226Test.main(args));
 
     if (errors > 0) {
       System.out.println();
