@@ -2186,27 +2186,31 @@ public class ClassSymbol extends TypeSymbol {
             Symbol clone = symbol.owner();
             Type.Map map =
                 Type.getSubst(clasz.typeParams(), clone.typeParams());
+            Type self = clasz.type();
             Type type = clasz.typeOfThis();
-            Type self = clone.type();
             switch (type) {
             case CompoundType(Type[] parents1, Scope members):
                 assert members.isEmpty(): Debug.show(clasz, type);
                 int length = parents1.length;
                 Type[] parents2 = new Type[parents1.length];
+                boolean has_self = false;
                 for (int i = 0; i < parents2.length; i++) {
-                    parents2[i] = fix(parents1[i], clasz, clone, map);
-                    if (i != parents2.length - 1)
-                        assert  !self.isSubType(parents2[i]):
-                            Debug.show(clasz, clone, type, ""+i, parents2[i]);
+                    if (self.isSameAs(parents1[i])) {
+                        assert !has_self: Debug.show(clasz, clone, type,""+i);
+                        parents2[i] = clone.type();
+                        has_self = true;
+                    } else {
+                        parents2[i] = fix(parents1[i], clasz, clone, map);
+                    }
                 }
-                if (!self.isSubType(parents2[parents2.length - 1]))
+                if (!has_self) {
                     parents2 = Type.cloneArray(parents2, 1);
-                parents2[parents2.length - 1] = self;
+                    parents2[parents2.length - 1] = clone.type();
+                }
                 return Type.compoundTypeWithOwner(clone, parents2, members);
             default:
-                type = fix(type, clasz, clone, map);
-                if (self.isSubType(type)) return self;
-                Type[] parents = new Type[]{type, self};
+                if (self.isSameAs(type)) return clone.type();
+                Type[] parents = {fix(type, clasz, clone, map), clone.type()};
                 return Type.compoundTypeWithOwner(clone, parents, new Scope());
             }
         }
