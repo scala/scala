@@ -47,11 +47,25 @@ public class PatternMatcher extends PatternTool {
      */
     protected PatternNodeCreator mk;
 
+    /** constructor
+     */
+    public PatternMatcher(Unit unit, Infer infer, Tree selector,
+                          Symbol owner, Type resultType) {
+        super(unit, infer);
+		initialize(selector, owner, resultType);
+    }
+
+    /** constructor, used in subclass ALgebraicMatcher
+     */
+    protected PatternMatcher(Unit unit, Infer infer) {
+		super(unit, infer);
+    }
+
     /** init method, also needed in subclass AlgebraicMatcher
      */
-    protected void initialize( Tree selector, Symbol owner, Type resultType) {
-        this.mk = new PatternNodeCreator( unit, infer, owner );
-        this.cf = new CodeFactory( unit, infer, selector.pos );
+    protected void initialize(Tree selector, Symbol owner, Type resultType) {
+        this.mk = new PatternNodeCreator(unit, infer, owner);
+        this.cf = new CodeFactory(unit, infer, selector.pos);
         this.root = mk.ConstrPat(selector.pos, selector.type.widen());
         this.root.and = mk.Header(selector.pos,
                                   selector.type.widen(),
@@ -62,19 +76,7 @@ public class PatternMatcher extends PatternTool {
                                         owner,
                                         Modifiers.MUTABLE);
         this.resultVar.setType(resultType);
-
-    }
-    /** constructor, used in subclass ALgebraicMatcher
-     */
-    protected PatternMatcher( Unit unit, Infer infer ) {
-	super( unit, infer );
-    }
-    /** constructor
-     */
-    public PatternMatcher(Unit unit, Infer infer, Tree selector, Symbol owner, Type resultType) {
-        super(unit, infer);
-	initialize( selector, owner, resultType );
-        this.owner = owner;
+		this.owner = owner;
         this.selector = selector;
         this.optimize &= (unit.global.target == Global.TARGET_JVM);
     }
@@ -542,13 +544,15 @@ public class PatternMatcher extends PatternTool {
 //////////// generator methods
 
     public Tree toTree() {
-    	if (optimize && isTopLevelIntSwitch())
+    	if (optimize && isSimpleIntSwitch())
     		return intSwitchToTree();
+    	else if (false && optimize && isSimpleSwitch())
+    		return switchToTree();
     	else
     		return generalSwitchToTree();
     }
 
-    protected boolean isTopLevelIntSwitch() {
+    protected boolean isSimpleIntSwitch() {
     	if (selector.type.widen().isSameAs(defs.INT_TYPE)) {
     		PatternNode patNode = root.and;
     		while (patNode != null) {
@@ -569,6 +573,50 @@ public class PatternMatcher extends PatternTool {
       		return true;
     	} else
     		return false;
+    }
+
+    protected boolean isSimpleSwitch() {
+    	print();
+    	PatternNode patNode = root.and;
+    	while (patNode != null) {
+   			PatternNode node = patNode;
+  			while ((node = node.or) != null) {
+  				boolean isCase = false;
+  				switch (node) {
+  					case VariablePat(Tree tree):
+  						System.out.println(((tree.symbol().flags & Modifiers.CASE) != 0));
+  						break;
+  					case ConstrPat(_):
+  						System.out.println(node.type + " / " + ((node.type.symbol().flags & Modifiers.CASE) != 0));
+  						PatternNode inner = node.and;
+						outer: while (true) {
+							switch (inner) {
+								case Header(_, Header next):
+									if (next != null)
+										return false;
+									inner = inner.or;
+									break;
+								case DefaultPat():
+									inner = inner.and;
+									break;
+								case Body(ValDef[][] bound, Tree[] guard, _):
+									if ((guard.length > 1) ||
+										(guard[0] != Tree.Empty))
+										return false;
+									break outer;
+								default:
+									System.out.println(inner);
+									return false;
+							}
+						}
+						break;
+  					default:
+  						return false;
+  				}
+     		}
+         	patNode = patNode.next();
+      	}
+      	return true;
     }
 
     static class TagBodyPair {
@@ -614,7 +662,7 @@ public class PatternMatcher extends PatternTool {
   			while ((node = node.or) != null)
      			switch (node) {
  					case DefaultPat():
-        				return bodyToTree(patNode.and);
+        				return bodyToTree(node.and);
          		}
          	patNode = patNode.next();
       	}
@@ -702,6 +750,10 @@ public class PatternMatcher extends PatternTool {
        		default:
    				throw new ApplicationError();
 		}
+    }
+
+    public Tree switchToTree() {
+    	throw new Error();
     }
 
     public Tree generalSwitchToTree() {
