@@ -173,10 +173,6 @@ public class HTMLGenerator {
      */
     protected File directory;
 
-    /** HTML anchors for defined symbols.
-     */
-    protected final Map/*<Symbol, String>*/ anchors;
-
     /** Comments associated with symbols.
      */
     protected Map/*<Symbol, Comment>*/ comments = new HashMap();
@@ -184,6 +180,10 @@ public class HTMLGenerator {
     /** The underlying HTML printer.
      */
     public HTMLPrinter page;
+
+    /** Symbols defined in the syntactic tree.
+     */
+    protected TreeSymbols treeSymbols;
 
     /** The current URI.
      */
@@ -241,7 +241,7 @@ public class HTMLGenerator {
 	this.tree = tree;
 	this.global = global;
 	this.subs = ScalaSearch.subTemplates(tree);
-	this.anchors = Anchors.apply(tree);
+	this.treeSymbols = new TreeSymbols(tree);
 	try {  this.uri = new URI("."); } catch(Exception e) {}
 
         this.JAVALANG = global.definitions.getClass(Names.java_lang);
@@ -366,16 +366,6 @@ public class HTMLGenerator {
      */
     public static void apply(Tree tree, Global global) {
 	new HTMLGenerator(tree, global).apply();
-    }
-
-    /**
-     * Tests if the definition of this symbol appears in the
-     * documentation.
-     *
-     * @param sym
-     */
-    protected boolean isReferenced(Symbol sym) {
-	return anchors.containsKey(OneTree.symbol(sym));
     }
 
     /**
@@ -704,38 +694,35 @@ public class HTMLGenerator {
      * @param sym
      */
     protected void addMemberSummary(Symbol sym) {
-	if (isReferenced(sym)) {
-	    String anchor = (String) anchors.get(sym);
-	    if (anchor != null) {
-		page.printlnOTag("tr").indent();
+	if (treeSymbols.contains(sym)) {
+	    page.printlnOTag("tr").indent();
 
-		// modifiers
-		String mods = Modifiers.Helper.toString(sym.flags);
-                page.printlnOTag("td", ATTRS_MODIFIERS).indent();
-                if (mods.length() > 0)
-		    page.printlnTag("code", mods);
-                else
-                    page.printlnNbsp(1);
-                page.undent();
-                page.printlnCTag("td");
+	    // modifiers
+	    String mods = Modifiers.Helper.toString(sym.flags);
+	    page.printlnOTag("td", ATTRS_MODIFIERS).indent();
+	    if (mods.length() > 0)
+		page.printlnTag("code", mods);
+	    else
+		page.printlnNbsp(1);
+	    page.undent();
+	    page.printlnCTag("td");
 
-		// signature
-		page.printlnOTag("td", ATTRS_SIGNATURE).indent();
-		page.printOTag("code");
-                defString(sym, true /*addLink*/);
-                page.printlnCTag("code");
+	    // signature
+	    page.printlnOTag("td", ATTRS_SIGNATURE).indent();
+	    page.printOTag("code");
+	    defString(sym, true /*addLink*/);
+	    page.printlnCTag("code");
 
-                // short description
-		String firstSentence = firstSentence(getComment(sym));
-		if (! firstSentence.equals("")) {
-		    page.printlnSTag("br");
-		    page.printNbsp(4);
-                    page.println(firstSentence);
-		}
-		page.undent();
-                page.printlnCTag("td").undent();
-		page.printlnCTag("tr");
+	    // short description
+	    String firstSentence = firstSentence(getComment(sym));
+	    if (! firstSentence.equals("")) {
+		page.printlnSTag("br");
+		page.printNbsp(4);
+		page.println(firstSentence);
 	    }
+	    page.undent();
+	    page.printlnCTag("td").undent();
+	    page.printlnCTag("tr");
 	}
     }
 
@@ -775,7 +762,7 @@ public class HTMLGenerator {
      * @param sym
      */
     protected void addMemberDetail(Symbol sym) {
-	if (isReferenced(sym)) {
+	if (treeSymbols.contains(sym)) {
 	    // title with label
 	    page.printlnAname(Location.asSeenFrom(Location.getURI(sym), uri).getFragment(), "");
             page.printTag("h3", sym.nameString());
@@ -872,15 +859,15 @@ public class HTMLGenerator {
 
 	switch(prefix) {
 	case ThisType(Symbol sym):
-	    if (sym.isPackage() && isReferenced(sym.module()))
+	    if (sym.isPackage() && treeSymbols.contains(sym.module()))
 		return null;
-	    else if (isReferenced(sym))
+	    else if (treeSymbols.contains(sym))
 		return null;
 	    else
 		return prefix;
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    Type pre1 = cleanPrefix(pre);
-	    if (pre1 == null && args.length == 0 && isReferenced(sym))
+	    if (pre1 == null && args.length == 0 && treeSymbols.contains(sym))
 		return null;
 	    else {
 		pre1 = pre1 == null ? ROOT_TYPE : pre1;
@@ -890,7 +877,7 @@ public class HTMLGenerator {
 	    Type pre1 = cleanPrefix(pre);
 	    if (pre1 == null) {
 		if (sym.isClass() || sym.isModule())
-		    if (isReferenced(sym)) {
+		    if (treeSymbols.contains(sym)) {
 			return null;
 		    }
 		    else
@@ -1288,7 +1275,7 @@ public class HTMLGenerator {
      */
     protected void printPath(Symbol sym) {
 	String name = removeHtmlSuffix(Location.getURI(sym).toString());
-	if (isReferenced(sym)) {
+	if (treeSymbols.contains(sym)) {
 	    String target = definitionURL(sym);
 	    page.printlnAhref(target, ROOT_FRAME, name);
 	}
@@ -1303,7 +1290,7 @@ public class HTMLGenerator {
     protected void printSymbol(Symbol sym, boolean addLink) {
 	String name = sym.nameString();
 	if (global.debug) name = sym.name.toString();
-	if (isReferenced(sym))
+	if (treeSymbols.contains(sym))
 	    if (addLink)
 		page.printAhref(definitionURL(sym), ROOT_FRAME, name);
 	    else {
@@ -1397,7 +1384,7 @@ public class HTMLGenerator {
 		System.err.println("Warning: Scaladoc: not found: " + tag);
 		return tag.text;
 	    }
-	    else if (!isReferenced(sym)) {
+	    else if (!treeSymbols.contains(sym)) {
 		System.err.println("Warning: Scaladoc: not referenced: " + tag);
 		return tag.text;
 	    }

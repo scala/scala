@@ -3,7 +3,6 @@
 ##############################################################################
 # $Id$
 
-Anchors.java
 Comment.java
 DocModule.java
 HTMLGenerator.java
@@ -17,5 +16,6 @@ StandardDocModule.java
 SymbolTablePrinter.java
 Tag.java
 Location.java
+TreeSymbols.java
 
 ##############################################################################
