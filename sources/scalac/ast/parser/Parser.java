@@ -930,7 +930,7 @@ public class Parser implements Tokens {
      */
     Tree caseClause() {
 	int pos = accept(CASE);
-	Tree pat = pattern();
+	Tree pat = pattern_valid();
 	Tree guard = Tree.Empty;
 	if (s.token == IF) {
 	    s.nextToken();
@@ -961,7 +961,7 @@ public class Parser implements Tokens {
      */
     Tree generator() {
 	int pos = accept(VAL);
-	Tree pat = pattern();
+	Tree pat = pattern_valid();
 	accept(LARROW);
 	Tree rhs = expr();
 	if (!TreeInfo.isVarPattern(pat))
@@ -982,6 +982,23 @@ public class Parser implements Tokens {
     }
 
 //////// PATTERNS ////////////////////////////////////////////////////////////
+
+    /**  Pattern ( see pattern() ) which is checked for validity
+     */
+
+    Tree pattern_valid() {
+	int pos = s.pos;
+
+	Tree pat = pattern();
+
+	if( this.pN.check( pat ) ) { // reports syntax errors as side effect
+	    // normalize
+	    Tree res = pN.wrapAlternative( pN.elimSubsequence( pN.flattenSubsequence ( pat )));
+	    return res;
+        }
+	//syntaxError( pos, "invalid pattern", false );
+	return make.Bad(pos);
+    }
 
     /** Patterns ::= Pattern {`,' Pattern}
      */
@@ -1008,7 +1025,8 @@ public class Parser implements Tokens {
 		s.nextToken();
 		choices.append( treePattern() );
 	    }
-	    return make.Alternative( pos, choices.toArray() );
+	    TreeList ts = pN.flattenAlternativeChildren( choices.toArray() );
+	    return pN.flattenAlternative( make.Alternative( pos, ts.toArray() ) );
 	}
 	return first;
     }
@@ -1034,12 +1052,12 @@ public class Parser implements Tokens {
 			Tree zvar = make.Ident( s.pos, zname );
 
 			return make.Bind( s.pos, zname,
-					  make.Alternative( s.pos, new Tree[] {
+					  pN.flattenAlternative( make.Alternative( s.pos, new Tree[] {
 					      make.Subsequence( s.pos, Tree.EMPTY_ARRAY ),
-					      make.Subsequence( s.pos, new Tree[] {
+					      pN.flattenSubsequence( make.Subsequence( s.pos, new Tree[] {
 						  top,
-						  zvar })
-					  }));
+						  zvar }))
+					  })));
 		    }
 		else if ( s.name == PLUS ) /*    p+   becomes   z@(p,(z| ))     */
 		    {
@@ -1048,19 +1066,19 @@ public class Parser implements Tokens {
 			Tree zvar = make.Ident( s.pos, zname );
 
 			return make.Bind( s.pos, zname,
-					  make.Subsequence( s.pos, new Tree[] {
+					  pN.flattenSubsequence( make.Subsequence( s.pos, new Tree[] {
 					      top,
-					      make.Alternative( s.pos, new Tree[] {
+					      pN.flattenAlternative( make.Alternative( s.pos, new Tree[] {
 						  zvar,
-			 			  make.Subsequence( s.pos, Tree.EMPTY_ARRAY ) })
-					  }));
+			 			  make.Subsequence( s.pos, Tree.EMPTY_ARRAY ) }))
+					  })));
 		    }
 		else if ( s.name == OPT ) /*    p?   becomes   (p| )            */
 		    {
 			s.nextToken();
-			return make.Alternative( s.pos, new Tree[] {
+			return pN.flattenAlternative( make.Alternative( s.pos, new Tree[] {
 			    top,
-			    make.Subsequence( s.pos, Tree.EMPTY_ARRAY )});
+			    make.Subsequence( s.pos, Tree.EMPTY_ARRAY )}));
 		    }
 	    }
 	while ((s.token == IDENTIFIER)&&( s.name != BAR )) {
