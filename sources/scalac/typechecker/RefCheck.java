@@ -88,17 +88,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (i < 0) {
 		    unit.error(sym.pos, sym + " overrides nothing");
 		    sym.flags &= ~OVERRIDE;
-		} else if (sym.isAbstractOverride()) {
-		    Symbol sup = sym.overriddenSymbol(parents[0]);
-		    if (sup.kind == NONE) {
-			unit.error(sym.pos, sym + " does not override a superclass member");
-		    } else if (clazz.kind == CLASS &&
-			       (clazz.flags & ABSTRACT) == 0 &&
-			       isIncomplete(sup)) {
-			abstractClassError(
-			    clazz, sym + sym.locationString() +
-			    " is marked `abstract' and `override' and overrides an incomplete superclass member in " + parents[0]);
-		    }
 		}
 	    }
 	}
@@ -150,6 +139,17 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    member + member.locationString() + " is not defined" +
 		    (((member.flags & MUTABLE) == 0) ? ""
 		     : "\n(Note that variables need to be initialized to be defined)"));
+	    } else if (member.isAbstractOverride()) {
+		Type superclazz = clazz.parents()[0];
+		Symbol sup = member.overriddenSymbol(superclazz);
+		if (sup.kind == NONE) {
+		    unit.error(member.pos, member + " does not override a superclass member");
+		} else if (clazz.kind == CLASS && (clazz.flags & ABSTRACT) == 0 &&
+			   isIncomplete(sup)) {
+		    abstractClassError(
+			clazz, member + member.locationString() +
+			" is marked `abstract' and `override' and overrides an incomplete superclass member in " + superclazz);
+		}
 	    }
 	}
     }
