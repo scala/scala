@@ -100,14 +100,11 @@ public class ExpandMixinsPhase extends Phase {
 
     /** Applies this phase to the given type for the given symbol. */
     public Type transformInfo(Symbol symbol, Type type) {
-        Symbol s = symbol;
         while (true) {
             if (symbol.isJava()) return type;
-            if (symbol.isPackage()) return type;
             if (symbol.isInterface()) return type;
             if (symbol.isCompoundSym()) return type; // !!! check
             if (symbol.isClass()) {
-                // !!! System.out.println(Debug.show("!!! ", s, " -> ", symbol, " - ", getTypeExpander(symbol).clasz, " : " + type));
                 return getTypeExpander(symbol).apply(type);
             }
             symbol = symbol.isConstructor()

@@ -540,7 +540,7 @@ final class TypeCreator {
 		for (int i = 1; i < inum; i++)
 		    interfaces[i - 1] = getType(baseTypes[i].symbol());
 	    }
-	    if (owner.isRoot() || owner.isPackage()) {  // i.e. top level class
+	    if (owner.isRoot() || owner.isPackageClass()) {  // i.e. top level class
 		type = module.DefineType
 		    (typeName, translateTypeAttributes(clazz.flags, false),
 		     superType, interfaces);

@@ -735,7 +735,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       if (global.debug) global.log("redefined: " + sym + ":" + sym.rawInfo());
     } else if (e.owner == context.scope) {
       assert(!other.isExternal(), other);
-      if (sym.owner().isPackage()) {
+      if (sym.owner().isPackageClass()) {
 	if (global.compiledNow.get(other) != null) {
 	  error(sym.pos, "" + sym + " is compiled twice");
 	}
@@ -756,7 +756,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     } else {
       context.scope.enter(sym);
     }
-    if (sym.owner().isPackage())
+    if (sym.owner().isPackageClass())
       global.compiledNow.put(sym, unit.source);
   }
 
@@ -868,7 +868,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		clazz.isModuleClass() ||
 		clazz.isAnonymousClass() ||
 		clazz.isCompoundSym() ||
-		clazz.isPackage()) {
+		clazz.isPackageClass()) {
 	       error(tree.pos, "constructor definition not allowed here");
 	    }
 	    sym = context.enclClass.owner.addConstructor();
@@ -1511,7 +1511,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       } else {
 	if (sym.owner().kind == CLASS) {
 	  pre = nextcontext.enclClass.owner.thisType();
-	  if (!sym.owner().isPackage()) {
+	  if (!sym.owner().isPackageClass()) {
 	    val qual1: Tree = gen.This(tree.pos, nextcontext.enclClass.owner);
 	    tree = make.Select(tree.pos, qual1, name);
 	    //System.out.println(name + " :::> " + tree + " " + qual1.symbol());//DEBUG
@@ -1548,7 +1548,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       .asSeenFrom(pre, sym.owner());
     if (qual != Tree.Empty)
       symtype = checkAccessible(tree.pos, sym, symtype, qual, qual.getType());
-    else if (sym.owner().isPackage())
+    else if (sym.owner().isPackageClass())
       symtype = checkAccessible(tree.pos, sym, symtype, qual, sym.owner().getType());
     if (symtype == Type.NoType)
       return error(tree.pos, "not found: " + decode(name));
@@ -2475,7 +2475,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    val fn0: Tree = fn1;
 		    fn1 = gen.mkRef(fn1.pos, pre, constr);
 		    var enclClassOrConstructorContext = Context.NONE;
-		    if (constr.owner().isPackage()) {
+		    if (constr.owner().isPackageClass()) {
 		      var c = context;
 		      while (c != Context.NONE &&
 			     !c.tree.isInstanceOf[Tree$ClassDef] &&
@@ -2489,7 +2489,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 			  fn1.setType(checkAccessible(
 			    fn1.pos, constr, fn1.getType(), fn1qual, fn1qual.getType()));
 			case _ =>
-			  if (constr.owner().isPackage())
+			  if (constr.owner().isPackageClass())
 			    fn1.setType(checkAccessible(
 			      fn1.pos, constr, fn1.getType(), Tree.Empty, constr.owner().getType()));
 		      }

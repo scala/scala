@@ -434,7 +434,12 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a Java package? */
     public final boolean isPackage() {
-        return (flags & PACKAGE) != 0;
+        return kind == VAL && (flags & PACKAGE) != 0;
+    }
+
+    /** Does this symbol denote a Java package class? */
+    public final boolean isPackageClass() {
+        return kind == CLASS && (flags & PACKAGE) != 0;
     }
 
     /** Does this symbol denote a module? */
@@ -714,17 +719,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The next enclosing method */
     public Symbol enclMethod() {
         return isMethod() ? this : owner().enclMethod();
-    }
-
-    /** The top-level class enclosing `sym'
-     */
-    Symbol enclToplevelClass() {
-        Symbol sym = this;
-        while (sym.kind == VAL ||
-               (sym.kind == CLASS && !sym.owner().isPackage())) {
-            sym = sym.owner();
-        }
-        return sym;
     }
 
     /** If this is a constructor, return the class it constructs.

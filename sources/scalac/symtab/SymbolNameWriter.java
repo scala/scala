@@ -223,7 +223,7 @@ public class SymbolNameWriter {
         if (owner.isRoot()) return root;
         if (owner.isNone()) return none;
         if (owner.isError()) return error;
-        if (owner.isPackage()) return peckage;
+        if (owner.isPackageClass()) return peckage;
         if (owner.isClass()) return symbol.isClass() ? clasz : member;
         return other;
     }

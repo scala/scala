@@ -75,9 +75,9 @@ public class ExplicitOuterClassesPhase extends Phase {
 
     /** Applies this phase to the given type for the given symbol. */
     public Type transformInfo(Symbol symbol, Type type) {
-        if (show && !symbol.isPackage()) System.out.println("!!! <<< transformInfo - symbol: " + Debug.show(symbol));
-        if (show && !symbol.isPackage()) System.out.println("!!! <<< transformInfo - type  : " + Debug.show(type));
-        if (symbol.isPackage()) return type; // !!!
+        if (show && !symbol.isPackageClass()) System.out.println("!!! <<< transformInfo - symbol: " + Debug.show(symbol));
+        if (show && !symbol.isPackageClass()) System.out.println("!!! <<< transformInfo - type  : " + Debug.show(type));
+        if (symbol.isPackageClass()) return type; // !!!
         TypeContext context = getTypeContextFor(symbol);
         if (symbol.isConstructor() && symbol.constructorClass().isClassType()) { // !!! isClassType -> isClass ?
             Symbol clasz = symbol.constructorClass();
@@ -106,8 +106,8 @@ public class ExplicitOuterClassesPhase extends Phase {
             type = context.transformer.apply(type);
             assert type != null: Debug.show(symbol) + " -- " + t;
         }
-        if (show && !symbol.isPackage()) System.out.println("!!! >>> transformInfo - symbol: " + Debug.show(symbol));
-        if (show && !symbol.isPackage()) System.out.println("!!! >>> transformInfo - type  : " + Debug.show(type));
+        if (show && !symbol.isPackageClass()) System.out.println("!!! >>> transformInfo - symbol: " + Debug.show(symbol));
+        if (show && !symbol.isPackageClass()) System.out.println("!!! >>> transformInfo - type  : " + Debug.show(type));
         return type;
     }
 
@@ -204,7 +204,7 @@ public class ExplicitOuterClassesPhase extends Phase {
         for (int o = 0; o < context.outers.length - 1; o++) {
             if (!context.outers[o].isStable)
                 types[--p] = prefix;
-            else if (context.outers[o].clasz.isPackage()) break;
+            else if (context.outers[o].clasz.isPackageClass()) break;
             Type base = prefix.baseType(context.outers[o].clasz);
             assert base.symbol() == context.outers[o].clasz:
                 prefix + " -- " + Debug.show(clasz) + " -- " + context.outers[o].clasz + " -- " + base;
@@ -248,7 +248,7 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** !!! */
         public TypeContext(Symbol clasz, TypeContext[] outers, Symbol[] tlinks, Symbol vlink, Symbol[] oldtparams, Map tparams) {
             this.clasz = clasz;
-            this.isStable = clasz.isPackage() || (clasz.isModuleClass() && vlink == null);
+            this.isStable = clasz.isPackageClass() || (clasz.isModuleClass() && vlink == null);
             this.outers = outers;
             this.tlinks = tlinks;
             this.vlink = vlink;
@@ -309,7 +309,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                     prefix = Type.NoPrefix;
                     return Type.typeRef(prefix, symbol, args);
                 }
-                if (symbol.isPackage()) {
+                if (symbol.isPackageClass()) {
                     args = Type.EMPTY_ARRAY;
                     prefix = Type.NoPrefix;
                     return Type.typeRef(prefix, symbol, args);
@@ -525,11 +525,11 @@ public class ExplicitOuterClassesPhase extends Phase {
                     tcontext = context.context.outers[i];
             assert tcontext != null: Debug.show(clasz, " -- ", context.clasz);
             if (tcontext.isStable) {
-                if (!clasz.owner().isPackage()) {
+                if (!clasz.owner().isPackageClass()) {
                     Tree qualifier = genOuterRef(pos,tcontext.outers[0].clasz);
                     return gen.Select(pos, qualifier, clasz.module());
                 } else {
-                    assert clasz.owner().isPackage(): Debug.show(clasz);
+                    assert clasz.owner().isPackageClass(): Debug.show(clasz);
                     return gen.Ident(pos, clasz.module());
                 }
             } else {

@@ -98,7 +98,7 @@ class SymbolTablePrinterFactory {
 
 	switch(prefix) {
 	case ThisType(Symbol sym):
-	    if (sym.isPackage() && isDocumented.apply(sym.module()))
+	    if (sym.isPackageClass() && isDocumented.apply(sym.module()))
 		return null;
 	    else if (isDocumented.apply(sym))
 		return null;

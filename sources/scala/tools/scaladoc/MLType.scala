@@ -618,7 +618,7 @@ package scala.tools.scaladoc {
                     found.add(result)
                   }
                 }
-                if (member.symbol.isPackage() || member.symbol.isModule())
+                if (member.symbol.isPackage() || member.symbol.isPackageClass() || member.symbol.isModule())
                   searchInModule(member)
               }
           }

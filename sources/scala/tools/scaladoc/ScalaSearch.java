@@ -47,7 +47,7 @@ public class ScalaSearch {
     /** Test if the given symbol is a class, a package, or an object.
      */
     static boolean isContainer(Symbol sym) {
-	return sym.isClass() || sym.isModule() || sym.isPackage();
+	return sym.isClass() || sym.isModule() || sym.isPackage() || sym.isPackageClass();
     }
 
     /** Test if the given symbol has a lazy type.
@@ -79,7 +79,7 @@ public class ScalaSearch {
      * contain static fields and methods of a java class.
      */
     public static boolean isEmptyJavaModule(Symbol sym) {
-        return sym.isModule() && sym.isJava() && !sym.isPackage() && (members(sym).length == 0);
+        return sym.isModule() && sym.isJava() && !(sym.isPackage() || sym.isPackageClass()) && (members(sym).length == 0);
     }
 
     /** Test if the given symbol is access method for a val.
@@ -92,7 +92,7 @@ public class ScalaSearch {
      */
     public static boolean isRelevant(Symbol sym) {
 	return !isGenerated(sym) && !isLazy(sym) && !isPrivate(sym) &&
-	    !(sym.isPackage() && sym.isClass()) && !sym.isConstructor() &&
+	    !sym.isConstructor() &&
             !sym.isCaseFactory() && !isEmptyJavaModule(sym);
     }
 
@@ -275,7 +275,7 @@ public class ScalaSearch {
 	foreach(root,
 		new SymFun() {
 		    public void apply(Symbol sym) {
-			if (sym.isPackage())
+			if (sym.isPackage() || sym.isPackageClass())
 			    packagesAcc.add(sym);
 		    }
 		}, isDocumented);
@@ -295,7 +295,7 @@ public class ScalaSearch {
 			    traitsAcc.add(sym);
 			else if (sym.isClass() && !sym.isModuleClass())
 			    classesAcc.add(sym);
-			else if (sym.isModule() && !sym.isPackage())
+			else if (sym.isModule() && !(sym.isPackage() || sym.isPackageClass()))
 			    objectsAcc.add(sym);
 		    }
 		}, isDocumented
@@ -320,7 +320,7 @@ public class ScalaSearch {
 	    Symbol sym = syms[i];
 	    if (sym.isTrait()) traits.add(sym);
 	    else if (sym.isClass()) classes.add(sym);
-	    else if (sym.isPackage()) packages.add(sym);
+	    else if (sym.isPackage() || sym.isPackageClass()) packages.add(sym);
 	    else if (sym.isModule()) objects.add(sym);
 	    else if (sym.isMethod() && !isValMethod(sym)) methods.add(sym);
 	    else fields.add(sym);
@@ -339,7 +339,7 @@ public class ScalaSearch {
         Iterator i = symbols.iterator();
         while (i.hasNext()) {
             Symbol sym = (Symbol) i.next();
-            if (sym.isPackage() || sym.isModule())
+            if (sym.isPackage() || sym.isPackageClass() || sym.isModule())
                 modules.add(sym);
             else if (sym.isTerm())
                 fields.add(sym);
