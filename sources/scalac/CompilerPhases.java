@@ -41,6 +41,7 @@ public abstract class CompilerPhases {
     public final PhaseDescriptor MAKEBOXINGEXPLICIT;
     public final PhaseDescriptor ERASURE;
     public final PhaseDescriptor ICODE;
+    public final PhaseDescriptor CODEGEN;
     public final PhaseDescriptor TERMINAL;
 
     //########################################################################
@@ -176,6 +177,11 @@ public abstract class CompilerPhases {
                 "generate icode",
                 "generated icode",
                 ICODE_PHASE()),
+            this.CODEGEN = new PhaseDescriptor(
+                "codegen",
+                "enable code generation",
+                "code generation enabled",
+                scalac.util.EmptyPhase.class),
 	    this.TERMINAL = new PhaseDescriptor(
                 "terminal",
                 "compilation terminated",

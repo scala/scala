@@ -43,7 +43,8 @@ object Main {
       if (ok) {
 	val global = new Global(command);
 	val units = global.compile(command.files.toArray(), false);
-	if (reporter.errors() == 0) global.dump(units);
+	if (reporter.errors() == 0)
+          if (!global.PHASE.CODEGEN.hasSkipFlag()) global.dump(units);
 	global.stop("total");
 	global.reporter.printSummary();
       }
