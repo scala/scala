@@ -553,7 +553,7 @@ public class DocSyms {
 				);
 	    // add all super packages.
 	    Symbol owner = pack.owner();
-	    while (owner != Symbol.NONE) {
+	    while (!owner.isRoot()) {
 		syms.add(owner.module());
 		owner = owner.owner();
 	    }
@@ -565,7 +565,7 @@ public class DocSyms {
 	if (sym.isParameter())
 	    res = contains(sym.classOwner());
 	else
-	    res = (syms.contains(sym) || syms.contains(sym.module()));
+	    res = (syms.contains(sym) || (sym.isModuleClass() && syms.contains(sym.module())));
 	return res;
     }
 }
