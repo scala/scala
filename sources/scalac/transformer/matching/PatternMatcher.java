@@ -24,7 +24,7 @@ import java.util.Iterator ;
 
 public class PatternMatcher extends PatternTool {
 
-    private static boolean OPTIMIZE = false;
+    private static boolean OPTIMIZE = true;
 
     /** the owner of the pattern matching expression
      */
