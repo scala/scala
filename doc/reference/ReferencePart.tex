@@ -2011,16 +2011,67 @@ object; it is not possible for clients to create objects of class
   m.C(0) {} // **** error: illegal inheritance from sealed class.
 \end{lstlisting}
 
+\subsection{Attributes}
+
+\syntax\begin{lstlisting}
+  AttributeClause ::=  `[' Attribute {`,' Attribute} `]'
+  Attribute       ::=  Constr
+\end{lstlisting}
+
+Attributes associate meta-information with definitions.  A simple
+attribute clause has the form $[C]$ or $[C(a_1 \commadots a_n)]$.
+Here, $c$ is a constructor of a class $C$, which must comform to the
+class \lstinline@scala. Attribute@. All given constructor arguments
+$a_1 \commadots a_n$ must be constant expressions. An attribute clause
+applies to the first definition or declaration following it. More than
+one attribute clause may precede a definition and declaration. The
+order in which these clauses are given does not matter.  It is also
+possible to combine several attributres separated by commas in one
+clause. Such a combined clause $[A_1 \commadots A_n]$ is equivalent to
+a set of clauses $[A_1] \ldots [A_n]$.
+
+The meaning of attribute clauses is implementation-dependent. On the
+Java platform, the following attributes have a standard meaning.\bigskip
+
+\lstinline@transient@
+\begin{quote}
+Marks a field to be non-persistent; this is
+equivalent to the \lstinline@transient@
+modifier in Java.
+\end{quote}
+
+\lstinline@volatile@
+\begin{quote}Marks a field which can change its value
+outside the control of the program; this
+is equivalent to the \lstinline@volatile@
+modifier in Java.
+\end{quote}
+
+\lstinline@Serializable@
+\begin{quote}Marks a class to be serializable; this is
+equivalent to inheritingfrom the 
+\lstinline@java.io.Serializable@ interface
+in Java.
+\end{quote}
+
+\lstinline@SerialVersionUID(<longlit>)@
+\begin{quote}Attaches a serial version identifier (a
+\lstinline@long@ constant) to a class.
+This is equivalent to a the following field
+definition in Java:
+\begin{lstlisting}[language=ScalaJava]
+  private final static SerialVersionUID = <longlit>;
+\end{lstlisting}
+\end{quote}
+
+
 \section{Class Definitions}
 \label{sec:classes}
 
-\syntax\begin{lstlisting}
-  TmplDef        ::=  class ClassDef
-  ClassDef       ::=  ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate
-  ClassSig       ::= id [TypeParamClause] [ParamClause] 
-  ClassTemplate  ::=  extends Template
-                   |  TemplateBody
-                   |
+\syntax\begin{lstlisting} TmplDef ::= class ClassDef ClassDef ::=
+  ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate ClassSig ::=
+  id [TypeParamClause] [ParamClause] ClassTemplate ::= extends
+  Template | TemplateBody |
 \end{lstlisting}
 
 The most general form of class definition is 
@@ -3421,8 +3472,8 @@ can be abbreviated to ~\lstinline@$x$: $T$ => e@, and ~\lstinline@$x$ => $e$@, r
                  |  Expr
                  | 
   TemplateStat ::=  Import
-                    |  {Modifier} Def
-                 |  {Modifier} Dcl
+                 |  {AttributeClause} {Modifier} Def
+                 |  {AttributeClause} {Modifier} Dcl
                  |  Expr
                  | 
 \end{lstlisting}
@@ -4094,7 +4145,7 @@ as a \code{Comparable}.
 
 \syntax\begin{lstlisting}
   CompilationUnit  ::=  [package QualId `;'] {TopStat `;'} TopStat
-  TopStat          ::=  {Modifier} TmplDef
+  TopStat          ::=  {AttributeClause} {Modifier} TmplDef
                      |  Import
                      |  Packaging
                      |

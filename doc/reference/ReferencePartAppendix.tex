@@ -145,11 +145,14 @@ grammar.
                     |  final
                     |  sealed
 
+  AttributeClause ::=  `[' Attribute {`,' Attribute} `]'
+  Attribute       ::=  Constr
+
   Template        ::=  Constr {`with' Constr} [TemplateBody]
   TemplateBody    ::=  `{' [TemplateStat {`;' TemplateStat}] `}'
   TemplateStat    ::=   Import
-                    |  {Modifier} Def
-                    |  {Modifier} Dcl
+                    |  {AttributeClause} {Modifier} Def
+                    |  {AttributeClause} {Modifier} Dcl
                     |  Expr
                     |
 
@@ -195,7 +198,7 @@ grammar.
                     |  `{' this ArgumentExprs {`;' BlockStat} `}'
 
   CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
-  TopStat         ::=  {Modifier} TmplDef
+  TopStat         ::=  {AttributeClause} {Modifier} TmplDef
                     |  Import
                     |  Packaging
                     |

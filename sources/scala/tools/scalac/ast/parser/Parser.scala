@@ -1989,7 +1989,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** TopStatSeq ::= [TopStat {`;' TopStat}]
-  *  TopStat ::= Modifiers ClsDef
+  *  TopStat ::= AttributeClauses Modifiers ClsDef
   *            | Packaging
   *            | Import
   *            |
@@ -2010,7 +2010,7 @@ class Parser(unit: CompilationUnit) {
                  isModifier()) {
         stats.append(
             joinAttributes(
-              attributes(),
+              attributeClauses(),
               joinComment(clsDef(modifiers()))));
       } else if (s.token != SEMI) {
         syntaxError("illegal start of class or object definition", true);
@@ -2022,8 +2022,8 @@ class Parser(unit: CompilationUnit) {
 
   /** TemplateStatSeq  ::= TemplateStat {`;' TemplateStat}
    *  TemplateStat     ::= Import
-   *                     | Modifiers Def
-   *                     | Modifiers Dcl
+   *                     | AttributeClauses Modifiers Def
+   *                     | AttributeClauses Modifiers Dcl
    *                     | Expr
    *                     |
    */
@@ -2037,7 +2037,7 @@ class Parser(unit: CompilationUnit) {
       } else if (isDefIntro() || isModifier() || s.token == LBRACKET) {
         stats.append(
           joinAttributes(
-            attributes(),
+            attributeClauses(),
             joinComment(defOrDcl(modifiers()))))
       } else if (s.token != SEMI) {
         syntaxError("illegal start of definition", true);
@@ -2047,7 +2047,11 @@ class Parser(unit: CompilationUnit) {
     stats.toArray()
   }
 
-  def attributes(): List[Tree] = {
+  /** AttributeClauses   ::= {AttributeClause}
+   *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]'
+   *  Attribute          ::= Constr
+   */
+  def attributeClauses(): List[Tree] = {
     var attrs: List[Tree] = List();
     while (s.token == LBRACKET) {
       s.nextToken();
@@ -2149,3 +2153,5 @@ class Parser(unit: CompilationUnit) {
   }
 }
 }
+
+//  LocalWords:  SOcos
