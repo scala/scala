@@ -16,8 +16,8 @@ object pilib with Monitor {
     def |(def p: unit): Spawn;
     def > : unit;
   }
-  //val spawn = new Spawn {
-  object spawn extends Spawn { // BUG !
+  val spawn = new Spawn {
+  //object spawn extends Spawn { // BUG !
     def <(def p: unit): Spawn = { ops.spawn(p); this }
     def |(def p: unit): Spawn = { ops.spawn(p); this }
     def > : unit = ()
