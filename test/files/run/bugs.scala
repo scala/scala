@@ -127,6 +127,34 @@ object Bug174Test {
   }
 }
 
+
+//############################################################################
+// Bug 176
+
+trait Bug176A {
+  type T;
+  def foo(x: T): Int;
+  def bar: T;
+  def test = foo(bar);
+}
+trait Bug176B {
+  type S <: Object;
+  type T = S;
+  def foo(x: S): Int;
+  def bar: S;
+}
+class Bug176C with Bug176A with Bug176B {
+  class S;
+  def foo(x: S) = 1;
+  def bar = new S;
+}
+object Bug176Test {
+  def main(args: Array[String]): Unit = {
+    val x: Bug176A = new Bug176C;
+    System.out.println(x.test);
+  }
+}
+
 //############################################################################
 // Main
 
@@ -157,6 +185,7 @@ object Test  {
     test(167, Bug167Test.main(args));
     test(168, Bug168Test.main(args));
     test(174, Bug174Test.main(args));
+    test(176, Bug176Test.main(args));
 
     if (errors > 0) {
       System.out.println();
