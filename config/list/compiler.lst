@@ -73,6 +73,7 @@ checkers/CheckSymbols.java
 checkers/CheckTreeNodes.java
 checkers/CheckTypes.java
 checkers/Checker.java
+checkers/TreeChecker.java
 
 symtab/classfile/AttributeParser.java
 symtab/classfile/CLRPackageParser.java
