@@ -137,8 +137,8 @@ BCEL_JARFILE		?= $(BCEL_HOME)/bcel.jar
 BCEL_LICENSE		 = $(BCEL_HOME)/LICENSE
 
 # FJBG
-FJBG_HOME		?= /home/linuxsoft/apps/fjbg/
-FJBG_JARFILE             = $(FJBG_HOME)/jars/fjbg.jar
+FJBG_HOME		?= /home/linuxsoft/apps/fjbg/jars
+FJBG_JARFILE             = $(FJBG_HOME)/fjbg.jar
 
 # XERCES
 XERCES_HOME		?= /home/linuxsoft/apps/xerces/
