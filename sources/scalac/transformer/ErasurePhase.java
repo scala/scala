@@ -133,7 +133,7 @@ public class ErasurePhase extends Phase {
                     if (element.info().symbol() == definitions.ANY_CLASS)
                         return definitions.ANYREF_CLASS.nextType();
             }
-            return type.erasure();
+            return type.fullErasure();
         default:
             throw Debug.abort("illegal case", type);
         }
