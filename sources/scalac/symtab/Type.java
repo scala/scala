@@ -2196,6 +2196,23 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	else return str;
     }
 
+    // used by Symbol.defString
+    String defString() {
+        StringBuffer buffer = new StringBuffer();
+        switch (this) {
+        case MethodType(Symbol[] vparams, Type result):
+            buffer.append(
+                ArrayApply.toString(paramTypeString(vparams), "(", ",", ")"));
+            return buffer.append(result.defString()).toString();
+        case PolyType(Symbol[] tparams, Type result):
+            if (tparams.length != 0) buffer.append(
+                ArrayApply.toString(Symbol.defString(tparams), "[", ",", "]"));
+            return buffer.append(result.defString()).toString();
+        default:
+            return buffer.append(": ").append(this).toString();
+        }
+    }
+
     private String prefixString() {
 	if ((symbol().kind == NONE || symbol().isRoot()) && !Global.instance.debug) {
 	    return "";

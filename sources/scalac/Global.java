@@ -431,130 +431,21 @@ public class  Global {
     }
 
     private String show(Symbol symbol) {
-        return appendMember(new StringBuffer(), symbol).toString();
-    }
-
-    private StringBuffer appendMember(StringBuffer buffer, Symbol symbol) {
-        buffer.append(symbol.defKeyword()).append(' ');
-        String name = symbol.nameString();
-        int index = name.indexOf('$');
-        if (index > 0) name = name.substring(0, index);
-        buffer.append(name).append(inner(symbol));
-        if (symbol.isInitializedMethod())
-            appendDefInfo(buffer, symbol.info());
-        else
-            append(buffer, symbol.info());
-        return buffer;
+        return symbol.defString();
     }
 
     private String show(Type type) {
-        return append(new StringBuffer(), type).toString();
+        return type.toString();
     }
 
-    private String inner(Symbol symbol) {
-        switch (symbol.kind) {
-        case Kinds.CLASS: return " extends ";
-        case Kinds.ALIAS: return " = ";
-        case Kinds.TYPE : return " <: ";
-        case Kinds.VAL  : return symbol.isModule() ? "extends" :
-            symbol.isInitializedMethod() ? "" : ": ";
-        default   : throw Debug.abort("illegal case: " + symbol.kind);
-        }
-    }
-
-    private StringBuffer appendDefInfo(StringBuffer buffer, Type type) {
-        switch (type) {
-        case MethodType(Symbol[] vparams, Type result):
-            append(buffer, Symbol.type(vparams), "(", ",", ")");
-            return appendDefInfo(buffer, result);
-        case PolyType(Symbol[] tparams, Type result):
-            if (tparams.length == 0) return appendDefInfo(buffer, result);
-            append(buffer, Symbol.type(tparams), "[", ",", "]");
-            return appendDefInfo(buffer, result);
-        default:
-            buffer.append(": ");
-            return append(buffer, type);
-        }
-    }
-
+    /*
     private StringBuffer appendPrefix(StringBuffer buffer, Type prefix) {
         if (prefix.isSameAs(definitions.ROOT_TYPE)) return buffer;
         if (prefix.isSameAs(definitions.SCALA_TYPE)) return buffer;
         if (prefix.symbol().name.startsWith(CONSOLE_N)) return buffer;
         return append(buffer, prefix).append('.');
     }
-
-    private StringBuffer appendSymbol(StringBuffer buffer, Symbol symbol) {
-        return buffer.append(symbol.nameString());
-    }
-
-    private StringBuffer append(StringBuffer buffer, Type type) {
-        return buffer.append(type);
-        /*
-        switch (type) {
-        case ErrorType:
-            return buffer.append("<error>");
-        case AnyType:
-            return buffer.append("<any type>");
-        case NoType:
-            return buffer.append("<notype>");
-        case ThisType(Symbol sym):
-            appendSymbol(buffer, sym);
-            return buffer;
-        case TypeRef(Type pre, Symbol sym, Type[] args):
-            appendPrefix(buffer, pre);
-            appendSymbol(buffer, sym);
-            if (args.length > 0) append(buffer, args, "[", ",", "]");
-            return buffer;
-        case SingleType(Type pre, Symbol sym):
-            appendPrefix(buffer, pre);
-            appendSymbol(buffer, sym);
-            return buffer;
-        case CompoundType(Type[] parts, Scope members):
-            append(buffer, parts, "", " with ", "");
-            append(buffer, members.elements(), " {", ", ", "}");
-            return buffer;
-        case MethodType(Symbol[] vparams, Type result):
-            append(buffer, Symbol.type(vparams), "(", ",", ")");
-            return append(buffer, result);
-        case PolyType(Symbol[] tparams, Type result):
-            if (tparams.length == 0) return append(buffer, result);
-            append(buffer, Symbol.type(tparams), "[", ",", "]");
-            return append(buffer, result);
-        case OverloadedType(_, Type[] alttypes):
-            return append(buffer, alttypes, "", " & ", "");
-        case CovarType(Type tp):
-            return append(buffer.append('+'), tp);
-        case LazyType():
-        case TypeVar(_, _):
-        case UnboxedType(_):
-        case UnboxedArrayType(_):
-            throw Debug.abort("illegal case", type);
-        default:
-            throw Debug.abort("illegal case", type);
-        }
-        */
-    }
-
-    private StringBuffer append(StringBuffer buffer, Type[] types,
-        String prefix, String infix, String suffix)
-    {
-        buffer.append(prefix);
-        for (int i = 0; i < types.length; i++)
-            append(i > 0 ? buffer.append(infix) : buffer, types[i]);
-        buffer.append(suffix);
-        return buffer;
-    }
-
-    private StringBuffer append(StringBuffer buffer, Symbol[] types,
-        String prefix, String infix, String suffix)
-    {
-        buffer.append(prefix);
-        for (int i = 0; i < types.length; i++)
-            appendMember(i > 0 ? buffer.append(infix) : buffer, types[i]);
-        buffer.append(suffix);
-        return buffer;
-    }
+    */
 
     // !!! >>> Interpreter stuff
 

@@ -735,16 +735,22 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** String representation of definition.
      */
     public String defString() {
-	String inner;
-	if (kind == CLASS) inner = " extends ";
-	else if (kind == TYPE) inner = " <: ";
-	else if (kind == ALIAS) inner = " = ";
-	else inner = " : ";
-	return
-	    (isParameter() ? "" : defKeyword() + " ") +
-	    nameString() + idString() + inner +
-            (rawInfoAt(Global.instance.POST_ANALYZER_PHASE_ID)
-	       instanceof Type.LazyType ? "?" : info());
+        StringBuffer buffer = new StringBuffer();
+        if (!isParameter()) buffer.append(defKeyword()).append(' ');
+        String name = nameString();
+        if (!Global.instance.debug) {
+            int index = name.indexOf('$');
+            if (index > 0) name = name.substring(0, index);
+        }
+        buffer.append(name).append(idString()).append(innerString());
+        if (rawInfoAt(Global.instance.POST_ANALYZER_PHASE_ID)
+            instanceof Type.LazyType)
+            buffer.append("?");
+        else if (isInitializedMethod())
+            buffer.append(info().defString());
+        else
+            buffer.append(info());
+        return buffer.toString();
     }
 
     public static String[] defString(Symbol[] defs) {
@@ -752,6 +758,19 @@ public abstract class Symbol implements Modifiers, Kinds {
 	for (int i = 0; i < defs.length; i++)
 	    strs[i] = defs[i].defString();
 	return strs;
+    }
+
+    private String innerString() {
+        switch (kind) {
+        case Kinds.ERROR: return ": ";
+        case Kinds.NONE : return ": ";
+        case Kinds.ALIAS: return " = ";
+        case Kinds.CLASS: return " extends ";
+        case Kinds.TYPE : return " <: ";
+        case Kinds.VAL  : return isModule() ? "extends" :
+            isInitializedMethod() ? "" : ": ";
+        default         : throw Debug.abort("illegal case: " + kind);
+        }
     }
 
     /** String representation of kind */
