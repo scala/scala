@@ -25,7 +25,7 @@ object Main {
     System.getProperty("scala.version", "unknown version");
 
   def main(args: Array[String]): unit = {
-*c    val reporter = new Reporter();
+    val reporter = new Reporter();
     val command = new CompilerCommand(
       PRODUCT, VERSION, reporter, new CompilerPhases());
     if (command.parse(args) && command.files.list.size() > 0) {
