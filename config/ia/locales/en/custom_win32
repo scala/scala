@@ -1,0 +1,237 @@
+# InstallAnywhere Localization File
+#
+# External strings for locale: English (en)
+# See the 'ProjectLocalizationInfo.txt' file in this same directory for information 
+#     regarding mappings between the properties shown below and your InstallAnywhere
+#     project.
+#
+# External/Locale property names can take one of three forms:
+#     <ActionName>.<ReferenceID>.<ActionProperty>          (e.g., Installer.858175031081.productName)
+#     <ActionName>.<ReferenceID>.<ActionProperty>.<Index>  (e.g., Installer.858175031081.installLabels.01)
+#         - where the <ActionProperty> is a Vector and the <Index> represents the place within the
+#           Vector where the value of the property should be inserted
+#     _ia.<SomeProperty>                                   (e.g., _ia.MyCustomCodePanelProperty)
+#         - where <SomeProperty> is used as an identifier for a localized value by custom code
+#
+# External/Locale property values should be plain text strings.  Special or i18n characters
+#     that cannot be represented by ASCII characters should be written using escaped unicode.
+#     - see the utility 'native2ascii' distributed with your JDK
+#
+# Product Name: Scala
+# Project File: /home/michelou/projects/scala/config/ia/scala_win32.iap_xml
+# Generated:    Tue Jul 27 15:08:07 CEST 2004
+
+
+# Billboard.3c471b21a52c.imageName=billboard_default.png
+Billboard.3c471b21a52c.imageName=billboard_default.png
+
+# Billboard.3c471b21a52c.imagePath=com/zerog/ia/installer/images/
+Billboard.3c471b21a52c.imagePath=com/zerog/ia/installer/images/
+
+# CreateShortcut.ceb023208130.args=
+CreateShortcut.ceb023208130.args=
+
+# CreateShortcut.ceb023208130.destinationName=Scala API Documentation
+CreateShortcut.ceb023208130.destinationName=Scala API Documentation
+
+# CreateShortcut.ceb023208130.workingDir=
+CreateShortcut.ceb023208130.workingDir=
+
+# CreateShortcut.cf116791816c.args=
+CreateShortcut.cf116791816c.args=
+
+# CreateShortcut.cf116791816c.destinationName=Uninstall $PRODUCT_NAME$
+CreateShortcut.cf116791816c.destinationName=Uninstall $PRODUCT_NAME$
+
+# CreateShortcut.cf116791816c.workingDir=
+CreateShortcut.cf116791816c.workingDir=
+
+# CreateShortcut.cf13ae0381ad.args=
+CreateShortcut.cf13ae0381ad.args=
+
+# CreateShortcut.cf13ae0381ad.destinationName=Scala Reference
+CreateShortcut.cf13ae0381ad.destinationName=Scala Reference
+
+# CreateShortcut.cf13ae0381ad.workingDir=
+CreateShortcut.cf13ae0381ad.workingDir=
+
+# CreateShortcut.cf1433cf81ad.args=
+CreateShortcut.cf1433cf81ad.args=
+
+# CreateShortcut.cf1433cf81ad.destinationName=Scala Tutorial
+CreateShortcut.cf1433cf81ad.destinationName=Scala Tutorial
+
+# CreateShortcut.cf1433cf81ad.workingDir=
+CreateShortcut.cf1433cf81ad.workingDir=
+
+# CreateShortcut.cf1c65588134.args=
+CreateShortcut.cf1c65588134.args=
+
+# CreateShortcut.cf1c65588134.destinationName=Scala by Example
+CreateShortcut.cf1c65588134.destinationName=Scala by Example
+
+# CreateShortcut.cf1c65588134.workingDir=
+CreateShortcut.cf1c65588134.workingDir=
+
+# CreateShortcut.d39fab9b812e.args=
+CreateShortcut.d39fab9b812e.args=
+
+# CreateShortcut.d39fab9b812e.destinationName=$PRODUCT_NAME$ Interpreter
+CreateShortcut.d39fab9b812e.destinationName=$PRODUCT_NAME$ Interpreter
+
+# CreateShortcut.d39fab9b812e.workingDir=
+CreateShortcut.d39fab9b812e.workingDir=
+
+# ExecuteScript.e78acd58b1b0.dialogLabel=Extracting files from archive ...
+ExecuteScript.e78acd58b1b0.dialogLabel=Extracting files from archive ...
+
+# InstallBundle.3c471b25a52d.bundleName=Binaries
+InstallBundle.3c471b25a52d.bundleName=Binaries
+
+# InstallBundle.3c471b25a52d.description=This installs the application feature.
+InstallBundle.3c471b25a52d.description=This installs the application feature.
+
+# InstallDirAction.3c471b29a52f.additionalText=
+InstallDirAction.3c471b29a52f.additionalText=
+
+# InstallDirAction.3c471b29a52f.prompt=Where Would You Like to Install?
+InstallDirAction.3c471b29a52f.prompt=Where Would You Like to Install?
+
+# InstallDirAction.3c471b29a52f.stepTitle=Choose Install Folder
+InstallDirAction.3c471b29a52f.stepTitle=Choose Install Folder
+
+# Installer.3c471adea52a.installLabels.00=Introduction
+Installer.3c471adea52a.installLabels.00=Introduction
+
+# Installer.3c471adea52a.installLabels.01=License Agreement
+Installer.3c471adea52a.installLabels.01=License Agreement
+
+# Installer.3c471adea52a.installLabels.02=Choose Install Folder
+Installer.3c471adea52a.installLabels.02=Choose Install Folder
+
+# Installer.3c471adea52a.installLabels.03=Pre-Installation Summary
+Installer.3c471adea52a.installLabels.03=Pre-Installation Summary
+
+# Installer.3c471adea52a.installLabels.04=Installing...
+Installer.3c471adea52a.installLabels.04=Installing...
+
+# Installer.3c471adea52a.installLabels.05=Install Complete
+Installer.3c471adea52a.installLabels.05=Install Complete
+
+# Installer.3c471adea52a.rulesFailedMessage=The installer cannot run on your configuration. It will now quit.
+Installer.3c471adea52a.rulesFailedMessage=The installer cannot run on your configuration. It will now quit.
+
+# InstallerInfoData.3c471ae5a52b.email=scala@listes.epfl.ch
+InstallerInfoData.3c471ae5a52b.email=scala@listes.epfl.ch
+
+# InstallerInfoData.3c471ae5a52b.installerName=install
+InstallerInfoData.3c471ae5a52b.installerName=install
+
+# InstallerInfoData.3c471ae5a52b.installerTitle=Scala Installer
+InstallerInfoData.3c471ae5a52b.installerTitle=Scala Installer
+
+# InstallerInfoData.3c471ae5a52b.productDescription=Scala is a general purpose programming language with a special focus on web services. It combines object-oriented, functional and concurrent elements.
+InstallerInfoData.3c471ae5a52b.productDescription=Scala is a general purpose programming language with a special focus on web services. It combines object-oriented, functional and concurrent elements.
+
+# InstallerInfoData.3c471ae5a52b.productName=Scala
+InstallerInfoData.3c471ae5a52b.productName=Scala
+
+# InstallerInfoData.3c471ae5a52b.productURL=http://scala.epfl.ch/
+InstallerInfoData.3c471ae5a52b.productURL=http://scala.epfl.ch/
+
+# InstallerInfoData.3c471ae5a52b.supportURL=http://scala.epfl.ch/
+InstallerInfoData.3c471ae5a52b.supportURL=http://scala.epfl.ch/
+
+# InstallerInfoData.3c471ae5a52b.vendorName=LAMP - EPFL
+InstallerInfoData.3c471ae5a52b.vendorName=LAMP - EPFL
+
+# InstallerInfoData.3c471ae5a52b.vendorURL=http://lampwww.epfl.ch/
+InstallerInfoData.3c471ae5a52b.vendorURL=http://lampwww.epfl.ch/
+
+# InstallFinishAction.3c471b2ba531.installErrorMessage=The installation of $PRODUCT_NAME$ is finished, but some errors occurred during the install.  Please see the installation log for details.
+InstallFinishAction.3c471b2ba531.installErrorMessage=The installation of $PRODUCT_NAME$ is finished, but some errors occurred during the install.  Please see the installation log for details.
+
+# InstallFinishAction.3c471b2ba531.installFatalMessage=The installation of $PRODUCT_NAME$ is finished, but some serious errors occurred during the install.  Please see the installation log for details.
+InstallFinishAction.3c471b2ba531.installFatalMessage=The installation of $PRODUCT_NAME$ is finished, but some serious errors occurred during the install.  Please see the installation log for details.
+
+# InstallFinishAction.3c471b2ba531.installSuccessMessage=Congratulations! $PRODUCT_NAME$ $PRODUCT_VERSION_NUMBER$ has been successfully installed to:\u000A\u000A     $USER_INSTALL_DIR$\u000A\u000APress \u0022Done\u0022 to quit the installer.
+InstallFinishAction.3c471b2ba531.installSuccessMessage=Congratulations! $PRODUCT_NAME$ $PRODUCT_VERSION_NUMBER$ has been successfully installed to:\u000A\u000A     $USER_INSTALL_DIR$\u000A\u000AThe $PRODUCT_NAME$ tools rely on the variable PATH to find a Java VM.\u000A\u000APress \u0022Done\u0022 to quit the installer.
+
+# InstallFinishAction.3c471b2ba531.installWarningMessage=The installation of $PRODUCT_NAME$ is finished, but some warnings occurred during the install.  Please see the installation log for details.
+InstallFinishAction.3c471b2ba531.installWarningMessage=The installation of $PRODUCT_NAME$ is finished, but some warnings occurred during the install.  Please see the installation log for details.
+
+# InstallFinishAction.3c471b2ba531.rebootNotNeededMessage=
+InstallFinishAction.3c471b2ba531.rebootNotNeededMessage=
+
+# InstallFinishAction.3c471b2ba531.rebootRecommendedMessage=You should restart the system to complete the installation.
+InstallFinishAction.3c471b2ba531.rebootRecommendedMessage=You should restart the system to complete the installation.
+
+# InstallFinishAction.3c471b2ba531.rebootRequiredMessage=You need to restart the system to complete the installation.
+InstallFinishAction.3c471b2ba531.rebootRequiredMessage=You need to restart the system to complete the installation.
+
+# InstallFinishAction.3c471b2ba531.windowTitle=Install Complete
+InstallFinishAction.3c471b2ba531.windowTitle=Install Complete
+
+# InstallFrameConfigurator.3c471af3a52c.uninstallerTitle=Uninstall $PRODUCT_NAME$
+InstallFrameConfigurator.3c471af3a52c.uninstallerTitle=Uninstall $PRODUCT_NAME$
+
+# InstallSet.3c471b26a52c.description=This will install the binary files for the $PRODUCT_NAME$ software.
+InstallSet.3c471b26a52c.description=This will install the binary files for the $PRODUCT_NAME$ software.
+
+# InstallSet.3c471b26a52c.imageName=typical.png
+InstallSet.3c471b26a52c.imageName=typical.png
+
+# InstallSet.3c471b26a52c.imagePath=com/zerog/ia/installer/images/
+InstallSet.3c471b26a52c.imagePath=com/zerog/ia/installer/images/
+
+# InstallSet.3c471b26a52c.installSetName=Binary Distribution
+InstallSet.3c471b26a52c.installSetName=Binary Distribution
+
+# InstallSet.3c490688a568.description=Choose this option to customize the features to be installed.
+InstallSet.3c490688a568.description=Choose this option to customize the features to be installed.
+
+# InstallSet.3c490688a568.imageName=customIcon.png
+InstallSet.3c490688a568.imageName=customIcon.png
+
+# InstallSet.3c490688a568.imagePath=com/zerog/ia/installer/images/
+InstallSet.3c490688a568.imagePath=com/zerog/ia/installer/images/
+
+# InstallSet.3c490688a568.installSetName=Custom
+InstallSet.3c490688a568.installSetName=Custom
+
+# InstallSummary.3c471b2ba530.stepPrompt=Please Review the Following Before Continuing:
+InstallSummary.3c471b2ba530.stepPrompt=Please Review the Following Before Continuing:
+
+# InstallSummary.3c471b2ba530.title=Pre-Installation Summary
+InstallSummary.3c471b2ba530.title=Pre-Installation Summary
+
+# InstallUninstaller.3c471b2da533.destinationName=Uninstall scala
+InstallUninstaller.3c471b2da533.destinationName=Uninstall scala
+
+# IntroAction.3c471b27a52f.message=InstallAnywhere will guide you through the installation of $PRODUCT_NAME$ $PRODUCT_VERSION_NUMBER$.\u000A\u000A$PRODUCT_NAME$ requires Sun JDK/JRE version 1.4 or newer.\u000A\u000AClick the \u0027Next\u0027 button to proceed to the next screen. If you want to change something on a previous screen, click the \u0027Previous\u0027 button.\u000A\u000AYou may cancel this installation at any time by clicking the \u0027Cancel\u0027 button.
+IntroAction.3c471b27a52f.message=InstallAnywhere will guide you through the installation of $PRODUCT_NAME$ $PRODUCT_VERSION_NUMBER$.\u000A\u000A$PRODUCT_NAME$ requires Sun JDK/JRE version 1.4 or newer.\u000A\u000AClick the \u0027Next\u0027 button to proceed to the next screen. If you want to change something on a previous screen, click the \u0027Previous\u0027 button.\u000A\u000AYou may cancel this installation at any time by clicking the \u0027Cancel\u0027 button.
+
+# IntroAction.3c471b27a52f.stepTitle=Introduction
+IntroAction.3c471b27a52f.stepTitle=Introduction
+
+# LicenseAgrAction.71a1c92bbcfa.resourceName=LICENSE_en.html
+LicenseAgrAction.71a1c92bbcfa.resourceName=LICENSE_en.html
+
+# LicenseAgrAction.71a1c92bbcfa.resourcePath=/tmp/IA_Build_scala
+LicenseAgrAction.71a1c92bbcfa.resourcePath=/tmp/IA_Build_scala
+
+# LicenseAgrAction.71a1c92bbcfa.stepPrompt=Installation and Use of $PRODUCT_NAME$ Requires Acceptance of the Following License Agreement:
+LicenseAgrAction.71a1c92bbcfa.stepPrompt=Installation and Use of $PRODUCT_NAME$ Requires Acceptance of the Following License Agreement:
+
+# LicenseAgrAction.71a1c92bbcfa.title=License Agreement
+LicenseAgrAction.71a1c92bbcfa.title=License Agreement
+
+# MakeRegEntry.d9860f888134.key=HKEY_CURRENT_USER\u005CEnvironment
+MakeRegEntry.d9860f888134.key=HKEY_CURRENT_USER\u005CEnvironment
+
+# MakeRegEntry.d9860f888134.value=$USER_INSTALL_DIR$
+MakeRegEntry.d9860f888134.value=$USER_INSTALL_DIR$
+
+# MakeRegEntry.d9860f888134.valueName=SCALA_HOME
+MakeRegEntry.d9860f888134.valueName=SCALA_HOME
+
