@@ -197,8 +197,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     public static Type typeRef(Type pre, Symbol sym, Type[] args) {
-        if (sym.kind == TYPE && !pre.isLegalPrefix() && !pre.isError())
-            throw new Type.Malformed(pre, sym.nameString());
         rebind:
         if (sym.isAbstractType()) {
             Symbol owner = sym.owner();
@@ -213,6 +211,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 "illegal cyclic reference involving " + rebind);
             sym = rebind.rebindSym();
         }
+        if (sym.isAbstractType() && !pre.isLegalPrefix() && !pre.isError())
+            throw new Type.Malformed(pre, sym.nameString());
         if (sym.isTypeAlias()) {
             Symbol[] params = sym.typeParams();
             if (args.length == params.length)

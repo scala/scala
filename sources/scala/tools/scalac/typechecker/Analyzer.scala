@@ -1974,7 +1974,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   *  @return         The vector of instantiated argument types, or null if error.
   */
   def transformArgs(pos: int, meth: Symbol, tparams: Array[Symbol], methtype: Type, argMode: int, args: Array[Tree], pt: Type): Array[Type] = {
-    //System.out.println("trans args " + meth + ArrayApply.toString(tparams) + ":" + methtype + "," + pt);//DEBUG
+    //System.out.println("trans args " + meth + ArrayApply.toString(tparams.asInstanceOf[Array[Object]]) + ":" + methtype + "," + pt);//DEBUG
     val argtypes = new Array[Type](args.length);
     methtype match {
       case Type$MethodType(params, restp) =>
@@ -2075,6 +2075,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  i = i + 1
 	}
 	argtypes
+
+      case Type.OverloadedType(alts, alttypes) if (alts.length == 1) =>
+        transformArgs(pos, alts(0), tparams, alttypes(0), argMode, args, pt)
 
       case _ =>
 	var i = 0; while (i < args.length) {

@@ -62,14 +62,14 @@ id        ::=  upper idrest
             |  varid
             |  op
             |  ```string chars`''
-idrest    ::= {letter $|$ digit} {'_' (op | idrest)}
+idrest    ::= {letter $|$ digit} [`_' op | `_' idrest]
 \end{lstlisting}
 
 There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
 letters and digits. This may be followed by underscore `\lstinline@_@'
 characters and other string composed of either letters and digits or
-of special characeters.  Second, an identifier can start with a
+of special characters.  Second, an identifier can start with a
 special character followed by an arbitrary sequence of special
 characters.  Finally, an identifier may also be formed by an arbitrary
 string between back-quotes (host systems may impose some restrictions
@@ -77,11 +77,11 @@ on which strings are legal for identifiers).  As usual, a longest
 match rule applies. For instance, the string
 
 \begin{lstlisting}
-big_bob++=z3
+big_bob++=`def`
 \end{lstlisting}
 
 decomposes into the three identifiers \lstinline@big_bob@, \lstinline@++=@, and
-\code{z3}.  The rules for pattern matching further distinguish between
+\code{def}.  The rules for pattern matching further distinguish between
 {\em variable identifiers}, which start with a lower case letter, and
 {\em constant identifiers}, which do not.
 
