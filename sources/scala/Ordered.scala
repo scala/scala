@@ -30,3 +30,4 @@ trait Ordered[+a] {
 
   def >= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >= 0;
 }
+

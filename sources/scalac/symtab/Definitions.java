@@ -197,13 +197,21 @@ public class Definitions {
         return LIST_CLASS.staticType(element);
     }
 
-    /** The scala.Nil module */
-    public final Symbol NIL;
+    /** The scala.Nil module
+     *  evaluated on demand to make bootstrap possible.
+     */
+    public final Symbol NIL() {
+	return getModule("scala.Nil");
+    }
 
-    /** The scala.:: class */
-    public final Symbol CONS_CLASS;
+    /** The scala.:: class
+     *  evaluated on demand to make bootstrap possible.
+     */
+    public final Symbol CONS_CLASS() {
+	return getClass("scala.$colon$colon");
+    }
     public final Type   CONS_TYPE(Type element) {
-        return CONS_CLASS.staticType(element);
+        return CONS_CLASS().staticType(element);
     }
 
     /** The scala.Array class */
@@ -628,8 +636,6 @@ public class Definitions {
         ITERATOR_CLASS = getClass("scala.Iterator");
         SEQ_CLASS = getClass("scala.Seq");
         LIST_CLASS = getClass("scala.List");
-        NIL = getModule("scala.Nil");
-        CONS_CLASS = getClass("scala.$colon$colon");
         ARRAY_CLASS = getClass("scala.Array");
         TYPE_CLASS = getClass("scala.Type");
         CONSTRUCTEDTYPE_CLASS = getClass("scala.ConstructedType");

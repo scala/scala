@@ -141,6 +141,23 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+  def view[a <% Ordered[a]](x: Array[a]): Ordered[Array[a]] = new Ordered[Array[a]] {
+    def compareTo [b >: Array[a] <% Ordered[b]](y: b): int = y match {
+      case y1: Array[a] => compareArrays(x, y1);
+      case _ => -(y compareTo x)
+    }
+    private def compareArrays(xs: Array[a], ys: Array[a]): int = {
+      var i = 0;
+      while (i < xs.length && i < ys.length) {
+	if (xs(i) < ys(i)) return -1;
+	if (xs(i) > ys(i)) return 1;
+	i = i + 1
+      }
+      if (i < xs.length) return 1
+      else if (i < ys.length) return -1
+      else 0
+    }
+  }
 
   def view[A](xs: Array[A]): Seq[A] = new Seq[A] {
     def length = xs.length;

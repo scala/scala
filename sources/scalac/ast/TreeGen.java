@@ -838,7 +838,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an empty list. */
     public Tree mkNil(int pos) {
-	return mkGlobalRef(pos, definitions.NIL);
+	return mkGlobalRef(pos, definitions.NIL());
     }
 
     /** Builds a list with given element type, head and tail. */
@@ -852,7 +852,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         global.prevPhase();
 	return New(
             mkApplyTV(
-                mkPrimaryConstructorGlobalRef(pos, definitions.CONS_CLASS),
+                mkPrimaryConstructorGlobalRef(pos, definitions.CONS_CLASS()),
                 new Type[]{element},
                 new Tree[]{head, tail}));
     }
