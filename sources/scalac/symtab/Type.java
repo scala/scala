@@ -136,12 +136,26 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	ExtSingleType(Type pre, Symbol sym) {
 	    super(pre, sym);
 	}
-	public Type widen() {
+	private Type type() {
 	    if (definedId != Global.instance.currentPhase.id) {
 		definedId = Global.instance.currentPhase.id;
-		tp = pre.memberType(sym).resultType().widen();
+		tp = pre.memberType(sym).resultType();
 	    }
 	    return tp;
+	}
+	/** If this type is a thistype or singleton type, its underlying object type,
+	 *  otherwise the type itself.
+	 */
+	public Type widen() {
+	    return type().widen();
+	}
+	/** If this type is a singleton type whose type is another, the end of the chain,
+	 *  otherwise the type itself.
+	 */
+	public Type aliasedType() {
+	    Type tp = type();
+	    if (tp.isStable()) return tp.aliasedType();
+	    else return this;
 	}
     }
 
@@ -220,6 +234,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    assert !(tps1[i] instanceof SingleType) : tps[i];//debug
 	}
 	return tps1;
+    }
+
+    /** If this type is a singleton type whose type is another, the end of the chain,
+     *  otherwise the type itself.
+     */
+    public Type aliasedType() {
+	return this;
     }
 
     /** The thistype or singleton type corresponding to values of this type.
@@ -1197,25 +1218,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case NoType:
 	    return false;
 
-	case ThisType(Symbol sym1):
+	case ThisType(_):
+	case SingleType(_, _):
 	    switch (this) {
-	    case ThisType(Symbol sym):
-		return sym == sym1;
-	    case SingleType(Type pre, Symbol sym):
-		return sym.isModule()
-		    && sym.moduleClass() == sym1
-		    && pre.isSameAs(sym1.owner().thisType());
-	    }
-	    break;
-
-	case SingleType(Type pre1, Symbol sym1):
-	    switch (this) {
-	    case SingleType(Type pre, Symbol sym):
-		return sym == sym1 && pre.isSameAs(pre1);
-	    case ThisType(Symbol sym):
-		return sym1.isModule()
-		    && sym == sym1.moduleClass()
-		    && sym.owner().thisType().isSameAs(pre1);
+	    case ThisType(_):
+	    case SingleType(_, _):
+		return this.isSameAs(that);
 	    }
 	    break;
 
@@ -1445,20 +1453,27 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    case SingleType(Type pre1, Symbol sym1):
 		return sym1.isModule()
 		    && sym == sym1.moduleClass()
-		    && sym.owner().thisType().isSameAs(pre1);
+		    && sym.owner().thisType().isSameAs(pre1)
+		    ||
+		    that != that.aliasedType() &&
+		    this.isSameAs(that.aliasedType());
 	    }
 	    break;
 
 	case SingleType(Type pre, Symbol sym):
 	    switch (that) {
 	    case SingleType(Type pre1, Symbol sym1):
-		return sym == sym1 && pre.isSameAs(pre1);
-		//|| sym.type.isStable() && sym.type.isSameAs(that)
-		//|| sym1.type.isStable() && this.isSameAs(sym1.type);
+		return sym == sym1 && pre.isSameAs(pre1)
+		    ||
+		    (this != this.aliasedType() || that != that.aliasedType()) &&
+		    this.aliasedType().isSameAs(that.aliasedType());
 	    case ThisType(Symbol sym1):
 		return sym.isModule()
 		    && sym.moduleClass() == sym1
-		    && pre.isSameAs(sym1.owner().thisType());
+		    && pre.isSameAs(sym1.owner().thisType())
+		    ||
+		    this != this.aliasedType() &&
+		    this.aliasedType().isSameAs(that);
 	    }
 	    break;
 

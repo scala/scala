@@ -527,8 +527,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      */
     Tree checkStable(Tree tree) {
 	if (TreeInfo.isPureExpr(tree) || tree.type == Type.ErrorType) return tree;
-	new TextTreePrinter().print(tree).end();//debug
-	System.out.println(" " + tree.type);//debug
+	//new TextTreePrinter().print(tree).end();//DEBUG
+	//System.out.println(" " + tree.type);//DEBUG
 	return error(tree, "stable identifier required");
     }
 
@@ -822,8 +822,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		sym.constructor().flags |= INITIALIZED;
 
 		if (tpe != Tree.Empty)
-		    sym.setTypeOfThis(
-			checkNoEscape(tpe.pos, transform(tpe, TYPEmode).type));
+		    sym.setTypeOfThis(transform(tpe, TYPEmode).type);
 
 		defineTemplate(templ, sym);
 		owntype = templ.type;
@@ -1664,8 +1663,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree.ValDef[][] vparams1 = transform(vparams);
 		Tree tpe1 = transform(tpe);
 		Tree.Template templ1 = transformTemplate(templ, sym);
-		for (int i = 0; i < templ1.parents.length; i++)
-		    checkNoEscape(templ1.parents[i].pos, templ1.parents[i].type);
 
 		if ((sym.flags & ABSTRACTCLASS) == 0 &&
 		    !sym.type().isSubType(sym.typeOfThis()))
@@ -2025,7 +2022,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return tree;
 
 	    case SingletonType(Tree ref):
-		Tree ref1 = transform(ref, EXPRmode, Type.AnyType);
+		Tree ref1 = transform(ref, EXPRmode | QUALmode, Type.AnyType);
 		return make.TypeTerm(tree.pos)
 		    .setType(checkObjectType(tree.pos, ref1.type.resultType()));
 

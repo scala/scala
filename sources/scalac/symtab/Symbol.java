@@ -156,7 +156,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final boolean isStable() {
 	return kind == VAL &&
 	    ((flags & STABLE) != 0 ||
-	     (flags & MUTABLE) == 0 && type().isObjectType());
+	     (flags & MUTABLE) == 0 && type().isObjectType()) &&
+	    !owner.isPrimaryConstructor();
     }
 
     /** Does this symbol denote a variable? */
