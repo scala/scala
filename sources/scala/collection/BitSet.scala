@@ -67,13 +67,9 @@ abstract class BitSet with Function1[Int,Boolean] {
   override def toString() =
     toSet(true).toString();
 
-  /**
-   * Returns the number of <code>Int</code> cells needed to store
-   * <code>n</code> bits.
-   *
-   * @param n
-   */
-  protected def memsize(n: Int) =
-    (size >>> 5) + { if (size < 32) 1 else 0 };
+  /** returns number of Int cells needed to store n bits */
+  protected def memsize(n:Int) = (n >>> 5) + {
+    if((n & 0x1F) != 0) 1 else 0
+  };
 
 }

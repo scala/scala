@@ -57,7 +57,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with Cloneable {
      *  @param  elem        the element to insert
      */
     def +=(elem: A): Unit = {
-        ensureSize(1);
+        ensureSize(size+1);
         array(size) = elem;
         fixUp(array, size);
         size = size + 1;

@@ -16,16 +16,14 @@ package scala.collection.mutable ;
  */
 class BitSet(initSize: Int) extends scala.collection.BitSet {
 
-  /** default constructor, initial size of 32 bits */
-  def this() = this( 32 );
+  /** default constructor, initial size of 512 bits */
+  def this() = this( 512 );  // ResizableArray.initialSize << 5
 
   class ByteArray with ResizableArray[Int] {
-    override protected val initialSize: Int = memsize( initSize );
-    override protected var array: Array[Int] = new Array[Int](initialSize);
 
-    /** size of this bitset in nbits */
-    def ensureBits(nbits: Int): Unit = ensureSize(memsize( nbits ));
-
+    final def ensureBits(nbits: Int): Unit = {
+      super[ResizableArray].ensureSize(memsize( nbits ));
+    }
     final def and(j: Int, mask:Int): Unit = {
       array.update( j, array(j) & mask );
     }
@@ -35,7 +33,6 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
     def get(j:Int, mask:Int):Boolean = {
       (array(j) & mask) != 0;
     }
-
     def freeze: Array[Int] = {
       val arr = new Array[Int]( array.length );
       java.lang.System.arraycopy(array, 0, arr, 0, arr.length);
@@ -43,15 +40,15 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
     }
   }
 
-  protected val internal = new ByteArray();
-
   /** size of this bitset in nbytes */
   var size: Int = initSize;
+  protected val internal = new ByteArray();
+  internal.ensureBits( size );
 
-  /** size of this bitset in nbits */
-  def ensureSize(nbits: Int): Unit = {
-    internal.ensureBits( nbits );
-    if( size < nbits ) size = nbits;
+  /** ensure that this bitset can store at least nbits bits */
+  def ensureSize(n: Int): Unit = {
+    internal.ensureBits( n );
+    if( size < n ) size = n;
   }
 
   /** calls set or clear for i-th bit */

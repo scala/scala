@@ -31,7 +31,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *  @param elem  the element to append.
      */
     def +(elem: A): Buffer[A] = {
-        ensureSize(1);
+        ensureSize(size+1);
         array(size) = elem;
         size = size + 1;
         this
@@ -51,7 +51,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *  @param elem  the element to append.
      */
     def +:(elem: A): Buffer[A] = {
-        ensureSize(1);
+        ensureSize(size+1);
         copy(0, 1, size);
         array(0) = elem;
         size = size + 1;
@@ -78,7 +78,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
             error("cannot insert element " + n + " in ListBuffer");
         val xs = iter.elements.toList;
         val len = xs.length;
-        ensureSize(len);
+        ensureSize(size+len);
         copy(n, n + len, size - n);
         xs.copyToArray(array, n);
         size = size + len;

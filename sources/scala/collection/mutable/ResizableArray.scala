@@ -13,7 +13,7 @@ package scala.collection.mutable;
 /** This class is used internally to implement data structures that
  *  are based on resizable arrays.
  *
- *  @author  Matthias Zenger
+ *  @author  Matthias Zenger, Burak Emir
  *  @version 1.0, 03/05/2004
  */
 abstract class ResizableArray[A] with Iterable[A] with java.io.Serializable {
@@ -23,14 +23,13 @@ abstract class ResizableArray[A] with Iterable[A] with java.io.Serializable {
     protected var array: Array[A] = new Array[A](initialSize);
     protected var size: Int = 0;
 
-    /** Extends the internal array if more elements are needed.
-     */
+    /** ensure that the internal array has at n cells */
     protected def ensureSize(n: Int): Unit = {
-        if ((size + n) > array.length) {
-          var nsize = array.length;
-          while( nsize < size + n )
-            nsize = nsize * 2;
-          val newar: Array[A] = new Array(nsize);
+        if (n > array.length) {
+          var newsize = array.length * 2;
+          while( n > newsize )
+            newsize = newsize * 2;
+          val newar: Array[A] = new Array(newsize);
           arraycopy(array, 0, newar, 0, size);
           array = newar;
         }
