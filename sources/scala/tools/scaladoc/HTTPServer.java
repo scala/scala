@@ -48,6 +48,11 @@ public class EchoServlet extends Servlet {
     }
 }
 
+/**
+ * HTTP server. It is in fact an extension of an example found in the
+ * book "Java Network Programming" by Elliotte Rusty Harold that can
+ * handle servlet invokations.
+ */
 public class HTTPServer extends Thread {
 
     private File documentRootDirectory;
@@ -79,6 +84,9 @@ public class HTTPServer extends Thread {
         this(documentRootDirectory, 80, "index.html");
     }
 
+    /**
+     * Launch the server with a specified list of servlets.
+     */
     public HTTPServer(File documentRootDirectory,
                       int port,
                       Servlet[] servlets) throws IOException {
