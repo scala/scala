@@ -158,6 +158,7 @@ class GenJVM {
                     ctx1.withMethod(clinit, Collections.EMPTY_MAP, false);
                 completeClassConstructor(ctx2, sym);
                 ctx2.code.emitRETURN();
+                genLocalVariableTable(ctx2);
             }
 
             leaveClass(ctx1, sym);
@@ -1567,6 +1568,37 @@ class GenJVM {
                                         Position.line(tree.pos));
     }
 
+    protected void genLocalVariableTable(Context ctx) {
+        JLocalVariable[] vars = ctx.method.getLocalVariables();
+
+        if (!global.debuginfo || vars.length == 0)
+            return;
+
+        JConstantPool pool = ctx.clazz.getConstantPool();
+        int pc = ctx.code.getPC();
+        int anonCounter = 1;
+
+        ByteBuffer lvTab = ByteBuffer.allocate(2 + 10 * vars.length);
+        lvTab.putShort((short)vars.length);
+        for (int i = 0; i < vars.length; i++) {
+            JLocalVariable lv = vars[i];
+            String name = (lv.getName() == null)
+                ? "<anon" + (anonCounter++) + ">" : lv.getName();
+            lvTab.putShort((short)0);
+            lvTab.putShort((short)pc);
+            lvTab.putShort((short)pool.addUtf8(name));
+            lvTab.putShort((short)pool.addUtf8(lv.getType().getSignature()));
+            lvTab.putShort((short)lv.getIndex());
+        }
+        JAttribute attr =
+            fjbgContext.JOtherAttribute(ctx.clazz,
+                                        ctx.method,
+                                        "LocalVariableTable",
+                                        lvTab.array());
+        ctx.code.addAttribute(attr);
+    }
+
+
     /// Context
     //////////////////////////////////////////////////////////////////////
 
@@ -1668,8 +1700,8 @@ class GenJVM {
             JConstantPool cp = ctx.clazz.getConstantPool();
             int reInx = cp.addClass(JAVA_RMI_REMOTEEXCEPTION);
             ByteBuffer contents = ByteBuffer.allocate(4); // u2 + u2[1]
-            contents.putShort((short) 1);
-            contents.putShort((short) reInx);
+            contents.putShort((short)1);
+            contents.putShort((short)reInx);
             global.log("adding 'Exceptions_attribute' " + contents.toString()
                        + " for remote method " + mSym.name.toString());
             method.addAttribute(fjbgContext.JOtherAttribute(ctx.clazz,
@@ -1682,6 +1714,7 @@ class GenJVM {
     }
 
     protected void leaveMethod(Context ctx) {
+        genLocalVariableTable(ctx);
         global.log("leaving method");
     }
 
