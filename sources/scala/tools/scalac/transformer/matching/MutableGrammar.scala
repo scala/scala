@@ -4,6 +4,9 @@ import scala.collection.mutable;
 import scala.runtime.matching._;
 import scalac.symtab._;
 
+import scala.util.alphabet.{ IntLabel, IntAlphabet };
+import scala.util.grammar.{ AnyTreeRHS, LabelledTreeRHS, TreeRHS, ConsRHS, HedgeRHS };
+
 package scala.tools.scalac.transformer.matching {
 
 
@@ -83,44 +86,92 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
       case None => immutable.ListSet.Empty[A] + r;
     });
 
-
-
-  /** converts this grammar in a immutable grammar
+  /** converts this grammar in a pattern grammar (an ImmutableTreeHedgeGrammar with variable info)
   */
-  def toGrammar:Grammar = {
-    val treeTransitions:immutable.TreeMap[Int,immutable.Set[TRule]] = {
-      var tmp =
-        immutable.TreeMap.Empty[Int,immutable.Set[TRule]];
-      treeRules.foreach { treeRule => treeRule match {
-        case AnyTreeRule( t ) => tmp = add( t.i, treeRule, tmp );
-        case AnyNodeRule( t, _ ) => tmp = add( t.i, treeRule, tmp )
-        case TreeRule( t, _, _ ) => tmp = add( t.i, treeRule, tmp )
-      }};
-      tmp
-    };
-    val hedgeTransitions:immutable.TreeMap[Int,immutable.Set[HRule]] = {
-      var tmp =
-        immutable.TreeMap.Empty[Int,immutable.Set[HRule]];
-      hedgeRules.foreach { hedgeRule => hedgeRule match {
-        case HedgeRule( h, _, _ ) => tmp = add( h.i, hedgeRule, tmp );
-        case HedgeChainRule( h, _ ) => tmp = add( h.i, hedgeRule, tmp );
-      }};
-      // to maintain assumption that every hedge nt is present
-      tmp.update( 0, immutable.ListSet.Empty[HRule] );
-    };
-    val theCaseVars = new Array[Int]( caseVars.size );
-    var i = 0;
-    for( val k <- caseVars.keys ) {
-      theCaseVars( i ) = caseVars( k );
-      i = i + 1
-    }
-    new Grammar( treeTransitions, hedgeTransitions, theCaseVars ) {
-      val treeInitials = make.treeInitials;
-      val hedgeInitials = make.hedgeInitials;
-      // @todo
-      def test( test:int, inp:Any ):boolean = {
-        false;
+  def toGrammar:PatternGrammar = {
+    val rbsNullable = new mutable.ResizableBitSet();
+    val _treeTransitions:Array[immutable.Set[TreeRHS]] = {
+      val theTreeTransitionsMap: immutable.TreeMap[Int,immutable.Set[TreeRHS]] = {
+        var tmp =
+          immutable.TreeMap.Empty[Int,immutable.Set[TreeRHS]];
+        treeRules.foreach { treeRule => treeRule match {
+          case AnyTreeRule( t ) => tmp = add( t.i, AnyTreeRHS, tmp );
+          //case AnyNodeRule( t, _ ) => tmp = add( t.i, treeRule, tmp ) // ??!!!!!!!!!!!!!!!!!!!!!!
+          case TreeRule( t, i, h ) => tmp = add( t.i, LabelledTreeRHS(IntLabel(i),h.i), tmp )
+        }};
+        tmp
       };
+      val arr = new Array[immutable.Set[TreeRHS]]( theTreeTransitionsMap.size );
+      val it = theTreeTransitionsMap.keys;
+      while( it.hasNext ) {
+        val k = it.next;
+        arr.update( k, theTreeTransitionsMap( k ));
+      }
+      arr
+    }
+    val _nTreeNT        = _treeTransitions.length;
+
+    val _hedgeTransitions: Array[immutable.Set[HedgeRHS]] = {
+      val theHedgeTransitionsMap: immutable.TreeMap[Int,immutable.Set[HedgeRHS]] = {
+        var tmp =
+          immutable.TreeMap.Empty[Int,immutable.Set[HedgeRHS]];
+        hedgeRules.foreach { hedgeRule => hedgeRule match {
+          case HedgeRule( h, t, h2 ) =>
+            rbsNullable.ensureSize( h2.i );
+            rbsNullable.set( h2.i, h2.nullable );
+            tmp = add( h.i, ConsRHS(t.i,h2.i), tmp );
+          case HedgeChainRule( h, _ ) => throw new RuntimeException();
+          //tmp = add( h.i, hedgeRule, tmp );
+        }};
+        // to maintain assumption that every hedge nt is present
+        tmp.update( 0, immutable.ListSet.Empty[HedgeRHS] );
+      };
+      val arr = new Array[immutable.Set[HedgeRHS]]( theHedgeTransitionsMap.size );
+      val it = theHedgeTransitionsMap.keys;
+      while( it.hasNext ) {
+        val k = it.next;
+        arr.update( k, theHedgeTransitionsMap( k ));
+      }
+      arr
+    }
+    val _nHedgeNT       = _hedgeTransitions.length ;
+
+    val _vars = new Array[Int]( caseVars.size );
+    val it = caseVars.keys;
+    while( it.hasNext ) {
+      val k = it.next;
+      _vars.update( k, caseVars( k ));
+    }
+
+    val _treeInitials = {
+      val rbs = new mutable.ResizableBitSet( _nTreeNT );
+      for( val k <- make.treeInitials ) {
+        rbs.set( k.i )
+      }
+      new immutable.BitSet(rbs)
+    }
+
+    val _hedgeInitials = {
+      val rbs = new mutable.ResizableBitSet( _nHedgeNT );
+      for( val k <- make.hedgeInitials ) {
+        rbsNullable.ensureSize( k.i );
+        rbsNullable.set( k.i, k.nullable );
+        rbs.set( k.i )
+      }
+      new immutable.BitSet(rbs)
+    }
+    val _isNullable = new immutable.BitSet( rbsNullable );
+    new PatternGrammar {
+      val nTreeNT          = _nTreeNT;
+      val nHedgeNT         = _nHedgeNT;
+      val treeTransitions  = _treeTransitions;
+      val hedgeTransitions = _hedgeTransitions;
+      val vars             = _vars;
+      val treeInitials     = _treeInitials;
+      val hedgeInitials    = _hedgeInitials;
+      val isNullable       = _isNullable;
+      // @todo
+      def test( test:int, inp:Any ):boolean = { false; };
     }
   }
 

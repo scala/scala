@@ -1,4 +1,3 @@
-
 import scala.runtime.matching._ ;
 
 import scala.collection.Set;
@@ -11,13 +10,7 @@ import scalac.{Global => scalac_Global}
 import scalac.symtab._;
 import scalac.util.Names ;
 
-
-
 package scala.tools.scalac.transformer.matching {
-
-
-  import PatternInfo.minimalWidth;
-  import TreeInfo.isSequenceValued;
 
 /** generates from a pattern (with variable names v_1,..,v_k)
  *  a set of regular hedge grammar rules,
@@ -25,6 +18,9 @@ package scala.tools.scalac.transformer.matching {
  *  @todo: handle x @ z @ p correctly
  */
 class FullRegularTranslator(global: scalac_Global) {
+
+  val pe  = new matching.PatternExp( global.definitions );
+  import pe._ ;
 
   /* --- real variables --- */
 
@@ -71,10 +67,10 @@ class FullRegularTranslator(global: scalac_Global) {
       }
 
   /** returns a test index for this variable
-  */
     def newTest( test:Tree ):Int = {
       0 // bogus
     }
+  */
 
 
 
@@ -85,20 +81,19 @@ class FullRegularTranslator(global: scalac_Global) {
     var k = 0;
     cur = InitialGrammar.make;
     while( it.hasNext )
-      translate( it.next.pat, { k = k + 1; k } );
+      translate( pe.fromTree(it.next.pat), { k = k + 1; k } );
     cur.toGrammar;
   }
 
   /** p must be a pattern
   */
-  protected def translate( p:Tree, k:Int ):unit = {
+  protected def translate( p:RegExp, k:Int ):unit = {
 
     this.varCounter = 0;
-    if( isSequenceValued( p ) ) {
-      this.isSequenceType = true;
+    this.isSequenceType = isSequenceValued( p );
+    if( this.isSequenceType ) {
       MakeHedgeRule( cur.make.initialHedgeNT, EMPTYHEDGE, emptyVars, p );
     } else {
-      this.isSequenceType = false;
       val in = cur.make.initialTreeNT;
       try {
         MakeTreeRule( in, emptyVars, p );
@@ -203,14 +198,14 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
     }
       */
 
-    def sortByWidth( xs:Iterator[Tree] ):List[Tree] = {
+    def sortByWidth( xs:Iterator[RegExp] ):List[RegExp] = {
 
 
-      def view( x:Pair[Tree,int] ):Ordered[Pair[Tree,int]] =
-        new Ordered[Pair[Tree,int]] with Proxy( x ) {
-          def compareTo [b >: Pair[Tree,int] <% Ordered[b]](that: b): int =
+      def view( x:Pair[RegExp,int] ):Ordered[Pair[RegExp,int]] =
+        new Ordered[Pair[RegExp,int]] with Proxy( x ) {
+          def compareTo [b >: Pair[RegExp,int] <% Ordered[b]](that: b): int =
             that match {
-            case Pair(p:Tree,i:int) =>
+            case Pair(p:RegExp,i:int) =>
               if( minimalWidth( x._1 ) == minimalWidth( p ) ) {
                 if( x._2 < i ) -1 else
                   if( x._2 == i ) 0 else 1
@@ -223,7 +218,7 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
           }
         };
 
-      var mySet = new immutable.TreeSet[Pair[Tree,int]]();
+      var mySet = new immutable.TreeSet[Pair[RegExp,int]]();
       var j = 1;
       for( val p <- xs ) {
         mySet = mySet + Pair(p,j);
@@ -238,7 +233,7 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
     def MakeHedgeRule( in:HedgeNT,
                        out:HedgeNT,
                        vset: immutable.Set[Int],
-                       it:Iterator[Tree] ):unit = {
+                       it:Iterator[RegExp] ):unit = {
       DEBUGPRINT("MakeHedgeRule("+in+","+out+","+vset+","+it+")");
       var i = in;
       if( !it.hasNext ) {
@@ -255,23 +250,23 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
 
   /*
   */
-  def MakeHedgeRule( in:HedgeNT, nt:HedgeNT, vset:immutable.Set[Int], pat:Tree):unit =
+  def MakeHedgeRule( in:HedgeNT, nt:HedgeNT, vset:immutable.Set[Int], pat:RegExp):unit =
     pat match {
       /*
       case Point() =>
 	cur.hedgeRules += new HedgeChainRule(in, iteration);
       cur.hedgeRules += new HedgeChainRule(in, iterationEnd);
       */
-      case Tree$Sequence( xs ) =>
-	MakeHedgeRule( in, nt, vset, Iterator.fromArray( xs ) );
+      case x:Sequ =>
+	MakeHedgeRule( in, nt, vset, x.rs.elements );
 
-      case Tree$Alternative( xs  ) =>
-	for( val z <- sortByWidth( Iterator.fromArray( xs ) ) ) {
+      case x:Alt =>
+	for( val z <- sortByWidth( x.rs.elements ) ) {
 	  MakeHedgeRule( in, nt, vset, z );
 	}
 
-      // Star( p )
-      case Tree$Bind(n, p) if TreeInfo.isNameOfStarPattern( n ) =>
+      case Star( p ) =>
+      //case Tree$Bind(n, p) if TreeInfo.isNameOfStarPattern( n ) =>
 	MakeHedgeRule( in, in, vset, p );
       cur.hedgeRules += new HedgeChainRule( in, nt );
 
@@ -301,9 +296,10 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
       iteration = null;
       iterationEnd = null;
       */
-      case Tree$Bind( vble, p:Tree ) =>
-        if( isSequenceValued( p ) ) {
-	  MakeHedgeRule( in, nt, vset + newVar( pat.symbol() ), p );
+      case Binding( vble, p ) =>
+      //case Tree$Bind( vble, p:Tree ) =>
+        if (isSequenceValued( p )) {
+	  MakeHedgeRule( in, nt, vset + newVar( vble ), p );
         } else {
           try {
  	    val trNT = cur.make.TreeNT( vset );
@@ -327,35 +323,38 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
     }
 
 
-  def MakeTreeRule( in:TreeNT, vset: immutable.Set[Int], pat:Tree):unit = {
+  def MakeTreeRule( in:TreeNT, vset: immutable.Set[Int], pat:RegExp):unit = {
     DEBUGPRINT("MakeTreeRule("+in+","+vset+","+pat+")");
     pat match {
+      case Wildcard =>
       // WildcardTree()
-      case Tree$Ident( Names.PATTERN_WILDCARD ) =>
+      // case Tree$Ident( Names.PATTERN_WILDCARD ) =>
         if( vset.isEmpty )
           throw new WildcardException(); // OPTIMIZATION to collapse _ rules
         else
           cur.treeRules += new AnyTreeRule( in );
       // WildcardNode( x @ _* )
-      case Tree$Apply( Tree$Ident( Names.PATTERN_WILDCARD ), xs ) =>
+      case Node(WildcardTest, sequ) =>
+      //case Tree$Apply( Tree$Ident( Names.PATTERN_WILDCARD ), xs ) =>
 	{
 	  val Children = cur.make.HedgeNT;
           cur.treeRules += new AnyNodeRule( in, Children );
-	  MakeHedgeRule( Children, EMPTYHEDGE, emptyVars, Iterator.fromArray( xs ));
+	  MakeHedgeRule( Children, EMPTYHEDGE, emptyVars, sequ);
 	}
       // Node( label:String, x @ _* ) => //p.type
-      case Tree$Apply( theTest, xs ) =>
+      case Node( theTest, sequ ) =>
+      //case Tree$Apply( theTest, xs ) =>
         val test = newTest( theTest ); //p.type
         val childrenNT = cur.make.HedgeNT; // make a new NT
         cur.treeRules += new TreeRule(in, test, childrenNT );
-        MakeHedgeRule( childrenNT, EMPTYHEDGE, emptyVars, Iterator.fromArray( xs ));
+        MakeHedgeRule( childrenNT, EMPTYHEDGE, emptyVars, sequ);
 
-      case Tree$Alternative( xs ) => // is tree valued
-        for(val pat<-Iterator.fromArray( xs ))
+      case x:Alt => // is tree valued
+        for(val pat <- x.rs.elements )
           MakeTreeRule( in, vset, pat );
 
-      case Tree$Bind( _, p:Tree ) =>
-        in.vset = in.vset + newVar( pat.symbol() );
+      case Binding( vble, p ) =>
+        in.vset = in.vset + newVar( vble );
         MakeTreeRule( in, in.vset, p );
 
       case _ => //DEBUGPRINT("error, we found "+p.getClass());

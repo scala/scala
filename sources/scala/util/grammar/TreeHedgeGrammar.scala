@@ -11,11 +11,6 @@ import scala.collection.{ BitSet, Set, mutable } ;
  */
 abstract class TreeHedgeGrammar[ A <: Alphabet ] {
 
-  /** right hand side of a tree production */
-  case class TreeRHS(label: A, hnt: Int);
-  /** right hand side of a hedge production */
-  case class HedgeRHS(tnt: Int, hnt: Int);
-
   /** number of tree nonterminals*/
   def nTreeNT: Int;
   /** number of hedge nonterminals*/

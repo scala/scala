@@ -151,10 +151,10 @@ runtime/matching/Address.scala
 #runtime/matching/Grammar.scala
 #runtime/matching/Match.scala
 #runtime/matching/Matcher.scala 
-#runtime/matching/NonTerm.scala
+runtime/matching/NonTerm.scala
 runtime/matching/PatternGrammar.scala
 #runtime/matching/Pebble.scala
-#runtime/matching/Rule.scala
+runtime/matching/Rule.scala
 
 testing/UnitTest.scala
 
@@ -166,6 +166,8 @@ util/alphabet/WildcardLabel.scala
 util/automata/NondetWordAutom.scala
 util/automata/BaseBerrySethi.scala
 util/automata/WordBerrySethi.scala
+util/grammar/TreeRHS.scala
+util/grammar/HedgeRHS.scala
 util/grammar/TreeHedgeGrammar.scala
 util/grammar/ImmutableTreeHedgeGrammar.scala
 util/grammar/MutableTreeHedgeGrammar.scala

@@ -9,7 +9,7 @@ abstract class NondetWordAutom[ A <: Alphabet ] {
   val nstates: Int;
   val labels:   Set[A] ;
   val finals:   Map[Int,Int] ;
-  val delta:    Map[Int,Map[A,List[Int]]];
+  val delta:    Function1[Int,Map[A,List[Int]]];
   val default:  Array[List[Int]];
 
   /** returns true if the state is final */

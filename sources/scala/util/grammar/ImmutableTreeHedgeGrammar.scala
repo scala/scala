@@ -21,7 +21,7 @@ abstract class ImmutableTreeHedgeGrammar[ A <: Alphabet ] extends TreeHedgeGramm
   val hedgeInitials: immutable.BitSet;
   /** inv: isNullable.length == nHedgeNT */
   val isNullable: immutable.BitSet;
-  var treeTransitions:  Array[immutable.Set[TreeRHS]];
-  var hedgeTransitions: Array[immutable.Set[HedgeRHS]];
+  val treeTransitions:  Array[immutable.Set[TreeRHS]];
+  val hedgeTransitions: Array[immutable.Set[HedgeRHS]];
 
 }
