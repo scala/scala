@@ -614,6 +614,23 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
     }
 
+    /**  x  => x @ _
+     *   only within sequence patterns, for now. BE
+     *   precondition: name != '_'
+     */
+
+      public Tree IdentPattern( Tree tree ) {
+            switch( tree ) {
+            case Ident( Name name ):
+		if( name == Names.WILDCARD ) throw new ApplicationError("nothing to desugarize");
+		return make.Bind( tree.pos,
+				  name,
+				  make.Ident( tree.pos, Name.fromString("_") )).setType( tree.type );
+            default:
+		throw new ApplicationError("ident expected");
+            }
+      }
+
     /** f, (syms_1)...(syms_n)T    ==>    f(ps_1)...(ps_n)
      */
     Tree toApply(Tree tree, Type type) {

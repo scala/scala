@@ -1204,8 +1204,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    // this works as for superclass constructor calls the expected
 	    // type `pt' is always AnyType (see transformConstrInvocations).
 	}
-	if (!(owntype instanceof Type.PolyType || owntype.isSubType(pt) || ((mode & SEQUENCEmode) != 0 ))) {
-	    typeError(tree.pos, owntype, pt); // SEQUENCEmode !
+	if (!(owntype instanceof Type.PolyType || owntype.isSubType(pt))) {
+	    typeError(tree.pos, owntype, pt);
 	    Type.explainTypes(owntype, pt);
 	    tree.type = Type.ErrorType;
 	}
@@ -1733,6 +1733,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
             case Sequence( Tree[] trees ):
 		//System.err.println("sequence with pt  "+pt);
+                /*
 		Symbol seqSym = definitions.getType( Name.fromString("scala.Seq") ).symbol();
 		assert seqSym != Symbol.NONE : "did not find Seq";
 
@@ -1749,19 +1750,21 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    seqType = new Type.TypeRef(definitions.SCALA_TYPE, seqSym, new Type[] { pt });
 		    break;
                 }
-
+		*/
 
                 for( int i = 0; i < trees.length; i++ ) {
+                    /*
 		    Type tpe = revealSeqOrElemType( trees[ i ],
 						    pt,
 						    pt,
 						    elemType);
+                    */
 		    //System.err.println("subtree ["+i+"] has tpe "+tpe);
 		    trees[ i ] = transform( trees[ i ],
 					    this.mode | SEQUENCEmode,
-					    tpe);
+					    pt/*tpe*/);
                 }
-                return copy.Sequence( tree, trees ).setType( seqType/* pt */ );
+                return copy.Sequence( tree, trees ).setType( pt );
 
 	    case Alternative(Tree[] choices):
 		//System.err.println("alternative with pt  "+pt);
@@ -1772,12 +1775,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		for (int i = 0; i < choices.length; i++ )
 		    newts[ i ] = transform( choices[ i ], this.mode, pt );
 
-		Type tpe = Type.lub( Tree.typeOf( newts ));
+		//Type tpe = Type.lub( Tree.typeOf( newts ));
 
 		this.inAlternative = save;
 
 		return copy.Alternative( tree, newts )
-		    .setType( tpe );
+		    .setType( pt /*tpe*/ );
 
 	    case Bind( Name name, Tree body ):
 		Symbol vble = new TermSymbol(tree.pos,
@@ -1792,7 +1795,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 		body = transform( body );
 		//assert body.type != null;
-		vble.setType( body.type );
+		if( TreeInfo.isSequenceValued( body ) ) {
+                    Symbol listSym = definitions.getType( Name.fromString("scala.List") ).symbol();
+                    assert listSym != Symbol.NONE : "did not find Seq";
+
+                    vble.setType( new Type.TypeRef(definitions.SCALA_TYPE, listSym, new Type[] { pt }) );
+                } else {
+                    vble.setType( body.type );
+                }
+
 		return copy.Bind( tree, name, body )
 		    .setSymbol( vble ).setType( body.type );
 
@@ -1958,8 +1969,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    ArrayApply.toString(argtypes, "[", ",", "]"));
 
 	    case Apply(Tree fn, Tree[] args):
-		boolean wasInSequence = ((mode & SEQUENCEmode) != 0 ); // save sequence mode
-		mode &= notSEQUENCEmode;
+		mode = mode & notSEQUENCEmode;
 		Tree fn1;
 		int argMode;
 		//todo: Should we pass in both cases a methodtype with
@@ -1971,15 +1981,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    assert (mode & PATTERNmode) != 0;
 		    fn1 = transform(fn, mode | FUNmode, pt);
 		    argMode = PATTERNmode;
-		    // contains Sequence ? then set SEQUENCEmode
-		    for( int i = 0; i < args.length ; i++ )
-			switch( args[ i ] ) {
-			case Bind( _, _ ):
-			case Alternative( _ ):
-			case Sequence( _ ):
-			    argMode |= SEQUENCEmode;
-			    break;
-			}
 		}
 
 		// if function is overloaded with one alternative whose arity matches
@@ -2034,9 +2035,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		fn1.type = infer.freshInstance(fn1.type);
 		Type[] argtypes = transformArgs(
 		    tree.pos, fn1.symbol(), Symbol.EMPTY_ARRAY, fn1.type, argMode, args, pt);
-
-		if( wasInSequence )
-		    mode &= SEQUENCEmode;
 
 		// propagate errors in arguments
 		if (argtypes == null) {
@@ -2164,22 +2162,29 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case Ident(Name name):
 		if (((mode & (PATTERNmode | FUNmode)) == PATTERNmode) && name.isVariable()) {
-                      //System.out.println("pat var " + name + ":" + pt);//DEBUG
 
                       Symbol vble, vble2 = null;
-                      if( name != Names.WILDCARD )
-                            vble2 = context.scope.lookup(/*false,*/ name );
-                      //System.out.println("looked up \""+name+"\", found symbol "+vble2.fullNameString());
-                      //System.out.println("patternVars.containsKey?"+patternVars.containsKey( vble2 ) );
+
+		      // if vble is bound with @, there is already a symbol
+                      if( name != Names.WILDCARD ) {
+                            vble2 = context.scope.lookup( name );
+		      }
                       if ( patternVars.containsKey( vble2 ) )
                             vble = vble2;
-                      else
+                      else {
+
                             vble = new TermSymbol(tree.pos,
                                                   name,
                                                   context.owner,
-                                                  0).setType(pt);
-		    if (name != Names.WILDCARD) enterInScope(vble);
-		    return tree.setSymbol(vble).setType(pt);
+                                                  0).setType( pt );
+
+			    if((( mode & SEQUENCEmode) != 0)&&( name != Names.WILDCARD )) {// x => x @ _ in sequence patterns
+				tree = desugarize.IdentPattern( tree );
+			    }
+
+		      }
+		      if (name != Names.WILDCARD) enterInScope(vble);
+		      return tree.setSymbol(vble).setType(pt);
 		} else {
 		    return transformIdent(tree, name);
 		}
