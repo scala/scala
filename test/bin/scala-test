@@ -144,9 +144,12 @@ test_compilation_success() {
 
 test_compilation_failure() {
     (
+        OBJDIR="$OBJDIR/"`dirname "$source"`;
         cd `dirname "$source"`;
         source=`basename "$source"`;
-        if test_compilation_success "$@"; then false; else true; fi;
+        if test_compilation_success "$@"; then false; else
+            rm -rf "$output";
+        fi;
     )
 }
 
