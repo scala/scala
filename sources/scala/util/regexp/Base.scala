@@ -40,6 +40,7 @@ trait Base {
   case class  Star(r: regexp)   extends RegExp {
     final val isNullable = true;
   }
+
   case object Eps               extends RegExp {
     final val isNullable = true;
     override def toString() = "Eps";
