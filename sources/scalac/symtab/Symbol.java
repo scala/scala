@@ -250,9 +250,13 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == VAL && (flags & MUTABLE) != 0;
     }
 
-    /** Does this symbol denote a final symbol? */
-    public final boolean isFinal() {
-        return (flags & FINAL) != 0;
+    /**
+     * Does this symbol denote a final method? A final method is one
+     * that can't be overridden in a subclass. This method assumes
+     * that this symbol denotes a method. It doesn't test it.
+     */
+    public final boolean isMethodFinal() {
+        return (flags & FINAL) != 0 || isPrivate() || isLifted();
     }
 
     /** Does this symbol denote a sealed class symbol? */

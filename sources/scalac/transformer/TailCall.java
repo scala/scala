@@ -152,10 +152,7 @@ public class TailCall extends Transformer {
 			    (qual instanceof This && qual.symbol() == state.currentClass)){
 
 			    // We can only rewrite final functions in a safe way.
-			    if(state.currentFunction.isFinal() ||
-			       state.currentFunction.isPrivate() ||
-			       state.currentFunction.isLifted()
-			       ) { // It would be nice if we had a cant-be-overridden function in symbol...
+			    if(state.currentFunction.isMethodFinal()) {
 
 				Tree[] newArgs = tail_transform(args,false);
 				// Redirect the call to the LabelDef.
