@@ -42,9 +42,6 @@ object Predef {
 
     def exit: scala.Unit = java.lang.System.exit(0);
 
-    def synchronized[A](obj: AnyRef)(def body: A): A =
-      scala.runtime.NativeMonitor.synchronised(obj, body);
-
     def assert(assertion: Boolean): Unit = {
     	if (!assertion)
     		throw new Error("assertion failed");
