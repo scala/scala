@@ -480,19 +480,13 @@ public class LambdaLift extends OwnerTransformer
 	    return copy.Apply(
 		tree, fn1, addFreeArgs(tree.pos, get(free.fvs, fsym), args1, false));
 
-	case Ident(Name name):
+	case Ident(_):
 	    Symbol sym = tree.symbol();
 	    if (isLocal(sym, currentOwner) &&
 		(sym.kind == TYPE || (sym.kind == VAL && !sym.isMethod()))) {
 		sym = descr.proxy(sym, currentOwner);
 	    }
-	    Tree tree1 = (sym.owner().kind == CLASS)
-		? gen.mkLocalRef(tree.pos, sym)
-		: copy.Ident(tree, sym).setType(sym.nextType());
-	    if (name != sym.name) {
-		if (tree1 instanceof Ident) ((Ident)tree1).name = sym.name;
-		else ((Select)tree1).selector = sym.name;
-	    }
+	    Tree tree1 = gen.mkLocalRef(tree.pos, sym);
 	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, definitions.REF_ELEM());
 	    else return tree1;
 
