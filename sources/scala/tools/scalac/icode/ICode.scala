@@ -4,7 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id:
+// $Id$
 
 import scalac.{Global => scalac_Global}
 
