@@ -258,7 +258,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    if (caseSeen.isCaseClass())
 			unit.error(
 			    clazz.pos, "illegal combination of case " +
-			    caseSeen + "and case " + baseclazz + " in one object");
+			    caseSeen + " and case " + baseclazz + " in one object");
 		    else
 			caseSeen = baseclazz;
 
