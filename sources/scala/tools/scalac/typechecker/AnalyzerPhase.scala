@@ -39,7 +39,7 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
     startContext = addImport(startContext, global.definitions.PREDEF);
   }
 
-  startContext = new Context(Tree.Empty, startContext.owner, new Scope(), startContext);
+  startContext = new Context(Tree.Empty, startContext.owner, global.definitions.ROOT_CLASS.members(), startContext);
 
   var consoleContext = new Context(
     Tree.Empty,
