@@ -60,6 +60,12 @@ public abstract class Array
         throw new ClassCastException();
     }
 
+    /** @meta method () scala.Array[?T];
+     */
+    public java.lang.Object asArray() {
+        throw new ClassCastException();
+    }
+
     public java.lang.Object apply(java.lang.Object i) {
 	return apply(((Number) i).intValue());
     }
