@@ -197,7 +197,7 @@ public class Environment {
         for (int i = 0; i < bases.length; i++) {
             Symbol overridden = symbol.overriddenSymbol(bases[i]);
             if (overridden == Symbol.NONE) continue;
-            assert Debug.log("update override: ", overridden, " -> ", symbol);
+            assert Debug.log("update override: ", symbol, " <- ", overridden);
             override.insert(lookupOverride(overridden));
         }
         insertOverride(symbol, override);
