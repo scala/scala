@@ -8,6 +8,7 @@
 
 package scalac.symtab.classfile;
 
+import scalac.atree.AConstant;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Name;
@@ -30,6 +31,5 @@ public interface JavaTypeFactory {
     Type arrayType(Type elemtpe);
     Type methodType(Type[] argtpes, Type restpe, Type[] thrown);
     Type packageType(Name packagename);
-    Type constantType(Type base, Object value);
-    Type typeOfValue(Object value); // not in use, shall we remove it?
+    Type constantType(AConstant value);
 }

@@ -2,121 +2,162 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.symtab.classfile;
 
-import scalac.*;
-import scalac.symtab.*;
-import scalac.util.*;
-import java.util.*;
-import Type.*;
+import ch.epfl.lamp.util.Position;
+import scalac.Global;
+import scalac.symtab.Symbol;
+import scalac.symtab.Type;
+import scalac.util.AbstractFileReader;
+import scalac.util.Name;
+import scalac.util.SourceRepresentation;
 
+/** This class implements the parsing of class file signatures. */
 public class Signatures {
 
-    /** signature constants
-     */
-    Name BYTE_SIG = Name.fromString("B");
-    Name SHORT_SIG = Name.fromString("S");
-    Name CHAR_SIG = Name.fromString("C");
-    Name INT_SIG = Name.fromString("I");
-    Name LONG_SIG = Name.fromString("J");
-    Name FLOAT_SIG = Name.fromString("F");
-    Name DOUBLE_SIG = Name.fromString("D");
-    Name BOOLEAN_SIG = Name.fromString("Z");
-    Name VOID_SIG = Name.fromString("V");
-    Name CLASS_SIG = Name.fromString("L");
-    Name ARRAY_SIG = Name.fromString("[");
-    Name ARGBEGIN_SIG = Name.fromString("(");
-    Name ARGEND_SIG = Name.fromString(")");
+    //########################################################################
+    // Private Fields
 
-    Global global;
-    JavaTypeFactory make;
+    /** The global environment */
+    private final Global global;
 
+    /** The Java type factory */
+    private final JavaTypeFactory make;
 
-    public Signatures(Global global, JavaTypeFactory make) {
-        this.make = make;
+    /** The input file */
+    private final AbstractFileReader in;
+
+    /** The address of the first byte of the current signature */
+    private int first;
+
+    /** The address of the last byte of the current signature */
+    private int last;
+
+    /** The current address (first <= current <= last) */
+    private int current;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public Signatures(Global global, JavaTypeFactory make,
+        AbstractFileReader in)
+    {
         this.global = global;
+        this.make = make;
+        this.in = in;
     }
 
-    /** the type represented by signature[offset..].
+    //########################################################################
+    // Public Methods
+
+    /**
+     * Sets the address of the next signature to read. The address
+     * must point to the first byte of a CONSTANT_Utf8_info.
      */
-    protected byte[] signature;
-    protected int sigp;
-    protected int limit;
-
-    public Type sigToType(byte[] sig, int offset, int len) {
-        signature = sig;
-        sigp = offset;
-        limit = offset + len;
-        return sigToType();
+    public Signatures at(int address) {
+        first = address + 3;
+        last = first + in.getChar(address + 1) - 1;
+        current = first;
+        return this;
     }
 
-    protected Type sigToType() {
-        switch (signature[sigp]) {
-            case 'B':
-                sigp++;
-                return make.byteType();
-            case 'C':
-                sigp++;
-                return make.charType();
-            case 'D':
-                sigp++;
-                return make.doubleType();
-            case 'F':
-                sigp++;
-                return make.floatType();
-            case 'I':
-                sigp++;
-                return make.intType();
-            case 'J':
-                sigp++;
-                return make.longType();
-            case 'L':
-                sigp++;
-                int start = sigp;
-                while (signature[sigp] != ';')
-                    sigp++;
-                return make.classType(Name.fromAscii(signature, start, (sigp++) - start));
-            case 'S':
-                sigp++;
-                return make.shortType();
-            case 'V':
-                sigp++;
-                return make.voidType();
-            case 'Z':
-                sigp++;
-                return make.booleanType();
-            case '[':
-                sigp++;
-                while (('0' <= signature[sigp]) && (signature[sigp] <= '9'))
-                    sigp++;
-                return make.arrayType(sigToType());
-            case '(':
-                return make.methodType(sigToTypes(')'), sigToType(), Type.EMPTY_ARRAY);
-            default:
-                global.error("bad signature: " +
-                    SourceRepresentation.ascii2string(signature, sigp, 1));
-                return Type.ErrorType;
+    /** Returns the current signature. */
+    public String getSignature() {
+        return SourceRepresentation.ascii2string(in.buf, first, last-first+1);
+    }
+
+    /** Reads the class signature at current address. */
+    public Symbol readClassName() {
+        Symbol owner = global.definitions.ROOT_CLASS;
+        int start = current;
+        for (; current <= last; current++) {
+            int b = in.byteAt(current);
+            if (b == ';') break;
+            if (b != '/') continue;
+            Name name = Name.fromAscii(in.buf, start, current - start);
+            Symbol module = owner.members().lookup(name);
+            if (!module.isModule()) {
+                Symbol symbol = owner.newModule(Position.NOPOS, 0, name);
+                symbol.moduleClass().setInfo(Type.ErrorType);
+                error("could not find module " + symbol.staticType());
+                if (module.isNone()) owner.members().enterNoHide(symbol);
+                module = symbol;
+            }
+            owner = module.moduleClass();
+            start = current + 1;
+        }
+        Name name = Name.fromAscii(in.buf, start, current-start).toTypeName();
+        Symbol clasz = owner.members().lookup(name);
+        if (!clasz.isClass()) {
+            Symbol symbol = owner.newClass(Position.NOPOS, 0, name);
+            symbol.setInfo(Type.ErrorType);
+            symbol.allConstructors().setInfo(Type.ErrorType);
+            error("could not find class " + symbol.staticType());
+            if (clasz.isNone()) owner.members().enterNoHide(symbol);
+            clasz = symbol;
+        }
+        current++;
+        return clasz;
+    }
+
+    /** Reads the value type signature at current address. */
+    public Type readValueType() {
+        switch (in.byteAt(current++)) {
+        case 'V': return make.voidType();
+        case 'Z': return make.booleanType();
+        case 'B': return make.byteType();
+        case 'S': return make.shortType();
+        case 'C': return make.charType();
+        case 'I': return make.intType();
+        case 'J': return make.longType();
+        case 'F': return make.floatType();
+        case 'D': return make.doubleType();
+        case 'L': return make.classType(readClassName());
+        case '[': return make.arrayType(readValueType());
+        default : return errorBadTypeTag(current - 1);
         }
     }
 
-    protected Type[] sigToTypes(char terminator) {
-        sigp++;
-        return sigToTypes(terminator, 0);
+    /** Reads the method type signature at current address. */
+    public Type readMethodType() {
+        if (in.byteAt(current++) != '(') return errorBadTypeTag(current - 1);
+        Type[] parameters = readParamterTypes(0);
+        Type result = readValueType();
+        return make.methodType(parameters, result, Type.EMPTY_ARRAY);
     }
 
-    protected Type[] sigToTypes(char terminator, int i) {
-        if (signature[sigp] == terminator) {
-            sigp++;
+    //########################################################################
+    // Private Methods
+
+    /** Reads the parameter types at current address. */
+    private Type[] readParamterTypes(int i) {
+        if (in.byteAt(current) == ')') {
+            current++;
             return new Type[i];
         } else {
-            Type    t = sigToType();
-            Type[]  vec = sigToTypes(terminator, i+1);
-            vec[i] = t;
-            return vec;
+            Type type = readValueType();
+            Type[] types = readParamterTypes(i + 1);
+            types[i] = type;
+            return types;
         }
     }
+
+    /** Signals a bad tag at given address. Return ErrorType. */
+    private Type errorBadTypeTag(int address) {
+        char tag = (char)in.byteAt(address);
+        error("bad tag '" + tag + "' in signature '" + getSignature() + "'");
+        return Type.ErrorType;
+    }
+
+    /** Signals the given error. */
+    private void error(String error) {
+        global.error("class file '" + in.path + "': " + error);
+    }
+
+    //########################################################################
 }

@@ -75,7 +75,7 @@ public class AttributeParser implements ClassfileConstants {
     public Symbol readAttributes(Symbol def, Type type, int attrs) {
         char    nattr = in.nextChar();
         for (int i = 0; i < nattr; i++) {
-            Name attrName = (Name)pool.readPool(in.nextChar());
+            Name attrName = pool.getName(in.nextChar());
             int attr = nameToId(attrName);
             int attrLen = in.nextInt();
             if ((attrs & attr) == 0) {
@@ -101,31 +101,21 @@ public class AttributeParser implements ClassfileConstants {
                 int n = in.nextChar();
                 //System.out.println(sym + " has " + n + " innerclass entries");
                 for (int i = 0; i < n; i++) {
-                    Name name = (Name)pool.readPool(in.nextChar());
-                    if (name == null) {
-                    	in.nextChar();
-                    	in.nextChar();
-                    	in.nextChar();
-                    	continue;
-                    }
-                    Symbol inner = parser.global.definitions.getClass(name);
-                    name = (Name)pool.readPool(in.nextChar());
-                    if (name == null) {
-                    	in.nextChar();
-                    	in.nextChar();
-                    	continue;
-                    }
-                    Symbol outer = parser.global.definitions.getModule(name, false);
-                    name = (Name)pool.readPool(in.nextChar());
+                    int inner = in.nextChar();
+                    if (inner == 0) { in.skip(6); return; }
+                    int outer = in.nextChar();
+                    if (outer == 0) { in.skip(4); return; }
+                    int name = in.nextChar();
+                    if (name == 0) { in.skip(2); return; }
                     int flags = in.nextChar();
-                    if ((name == null) ||
-                        ((flags & 0x0009) == 0) ||
-                        ((flags & 0x0001) == 0) ||
-                        !outer.isModule() ||
-                        (outer != sym.dualClass().module()))
-                    	continue;
-                    Symbol alias = outer.newTypeAlias(Position.NOPOS,
-                        0, name.toTypeName(), parser.make.classType(inner));
+                    if ((flags & JAVA_ACC_STATIC) == 0) return;
+                    if ((flags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) == 0) return;
+                    if (pool.getClass(outer) != sym) return;
+                    Symbol alias = sym.dualClass().newTypeAlias(
+                        Position.NOPOS,
+                        0,
+                        pool.getName(name).toTypeName(),
+                        parser.make.classType(pool.getClass(inner)));
                     parser.statics.enterNoHide(alias);
                 }
                 //in.skip(attrLen);
@@ -159,13 +149,26 @@ public class AttributeParser implements ClassfileConstants {
                 sym.flags |= Modifiers.DEPRECATED;
                 return;
             case CONSTANT_VALUE_ATTR:
-            	Object constVal = pool.readPool(in.nextChar());
-            	//System.out.println(sym.owner() + "." + sym + ": " + constVal + " of type " + constantType(type, constVal));
-            	sym.setInfo(parser.make.constantType(type, constVal));
+            	AConstant constant = pool.getConstantValue(in.nextChar());
+                switch (constant) {
+                case INT(int value):
+                    Definitions definitions = parser.global.definitions;
+                    Symbol base = sym.getType().symbol();
+                    if (base == definitions.INT_CLASS) break;
+                    if (base == definitions.CHAR_CLASS)
+                        constant = AConstant.CHAR((char)value);
+                    else if (base == definitions.SHORT_CLASS)
+                        constant = AConstant.SHORT((short)value);
+                    else if (base == definitions.BYTE_CLASS)
+                        constant = AConstant.BYTE((byte)value);
+                    else
+                        constant = AConstant.BOOLEAN(value != 0);
+                }
+            	sym.setInfo(parser.make.constantType(constant));
                 return;
             case META_ATTR:
                 //System.out.println("parsing meta data for " + sym);
-                String meta = pool.readPool(in.nextChar()).toString().trim();
+                String meta = pool.getString(in.nextChar()).trim();
                 sym.setInfo(
                     new MetaParser(meta, tvars, sym, type).parse());
                 return;

@@ -9,6 +9,7 @@
 package scalac.symtab.classfile;
 
 import scalac.Global;
+import scalac.atree.AConstant;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
 import scalac.symtab.TermSymbol;
@@ -108,7 +109,8 @@ public class CLRClassParser extends SymbolLoader {
 	    Name name = Name.fromString(fields[i].Name);
 	    scalac.symtab.Type fieldType = getCLRType(fields[i].FieldType);
 	    if (fields[i].IsLiteral())
-		fieldType = make.constantType(fieldType, fields[i].getValue());
+		fieldType = make.constantType(
+                    getConstant(fieldType.symbol(), fields[i].getValue()));
 	    Symbol owner = fields[i].IsStatic() ? staticsClass : clazz;
 	    Symbol field = new TermSymbol(Position.NOPOS, name, owner, mods);
 	    field.setInfo(fieldType);
@@ -291,6 +293,28 @@ public class CLRClassParser extends SymbolLoader {
 	    return make.arrayType(getCLRType(type.GetElementType()));
 	Symbol s = importer.getSymbol(type);
 	return s != null ? make.classType(s) : getClassType(type);
+    }
+
+    public AConstant getConstant(Symbol base, Object value) {
+        if (base == global.definitions.BOOLEAN_CLASS)
+            return AConstant.BOOLEAN(((Number)value).intValue() != 0);
+        if (base == global.definitions.BYTE_CLASS)
+            return AConstant.BYTE(((Number)value).byteValue());
+        if (base == global.definitions.SHORT_CLASS)
+            return AConstant.SHORT(((Number)value).shortValue());
+        if (base == global.definitions.CHAR_CLASS)
+            return AConstant.CHAR((char)((Number)value).intValue());
+        if (base == global.definitions.INT_CLASS)
+            return AConstant.INT(((Number)value).intValue());
+        if (base == global.definitions.LONG_CLASS)
+            return AConstant.LONG(((Number)value).longValue());
+        if (base == global.definitions.FLOAT_CLASS)
+            return AConstant.FLOAT(((Number)value).floatValue());
+        if (base == global.definitions.DOUBLE_CLASS)
+            return AConstant.DOUBLE(((Number)value).doubleValue());
+        if (base == global.definitions.STRING_CLASS)
+            return AConstant.STRING((String)value);
+    	throw Debug.abort("illegal value", Debug.show(value, " - ", base));
     }
 
     protected static int translateAttributes(Type type) {

@@ -23,7 +23,7 @@ public class ClassParser extends SymbolLoader {
     protected String doComplete(Symbol clasz) throws IOException {
         AbstractFile file = global.classPath.openFile(
             SourceRepresentation.externalizeFileName(clasz, ".class"));
-        new ClassfileParser(global,new AbstractFileReader(file),clasz).parse();
+        ClassfileParser.parse(global, new AbstractFileReader(file), clasz);
         return "class file '" + file.getPath() + "'";
     }
 

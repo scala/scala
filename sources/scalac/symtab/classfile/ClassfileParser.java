@@ -40,34 +40,34 @@ public class ClassfileParser implements ClassfileConstants {
                                  | META_ATTR
                                  | SIG_ATTR;
 
-    protected Global global;
-    protected AbstractFileReader in;
-    protected Symbol c;
-    protected Type ctype;
-    protected Scope locals;
-    protected Scope statics;
-    protected JavaTypeFactory make;
-    protected Signatures sigs;
-    protected ConstantPool pool;
-    protected AttributeParser attrib;
+    protected final Global global;
+    protected final AbstractFileReader in;
+    protected final Symbol c;
+    protected final Type ctype;
+    protected final JavaTypeFactory make;
+    protected final ConstantPool pool;
+    protected final AttributeParser attrib;
+    protected final Scope locals;
+    protected final Scope statics;
 
 
-    public ClassfileParser(Global global, AbstractFileReader in, Symbol c) {
+    private ClassfileParser(Global global, AbstractFileReader in, Symbol c, JavaTypeFactory make, ConstantPool pool) {
         this.global = global;
         this.in = in;
         this.c = c;
-        this.make = new JavaTypeCreator(global.definitions);
         this.ctype = make.classType(c);
-        this.sigs = new Signatures(global, make);
-        this.pool = new ConstantPool(in, sigs);
+        this.make = make;
+        this.pool = pool;
         this.attrib = new AttributeParser(in, pool, this);
+        this.locals = new Scope();
+        this.statics = new Scope();
     }
 
 
     /** parse the classfile and throw IO exception if there is an
      *  error in the classfile structure
      */
-    public void parse() throws IOException {
+    public static void parse(Global global, AbstractFileReader in, Symbol c) throws IOException {
         try {
             int magic = in.nextInt();
             if (magic != JAVA_MAGIC)
@@ -84,20 +84,29 @@ public class ClassfileParser implements ClassfileConstants {
                     + majorVersion + "." + minorVersion
                     + ", should be less than "
                     + JAVA_MAJOR_VERSION + "." + JAVA_MINOR_VERSION);
-            pool.indexPool();
+            JavaTypeFactory make = new JavaTypeCreator(global.definitions);
+            Signatures sigs = new Signatures(global, make, in);
+            ConstantPool pool = new ConstantPool(in, sigs);
             int flags = in.nextChar();
-            Name name = readClassName(in.nextChar());
-            if (c != global.definitions.getClass(name))
+            Symbol clasz = pool.getClass(in.nextChar());
+            if (c != clasz)
                 throw new IOException("class file '" + in.path + "' "
-                    + "contains wrong class " + name);
+                    + "contains wrong class " + clasz.staticType());
+            new ClassfileParser(global, in, c, make, pool).parse(flags);
+        } catch (RuntimeException e) {
+            if (global.debug) e.printStackTrace();
+            throw new IOException("class file '" + in.path + "' is broken");
+        }
+    }
+
+    protected void parse(int flags) {
+        {
             // todo: correct flag transition
             c.flags = transFlags(flags);
             if ((c.flags & Modifiers.DEFERRED) != 0)
                 c.flags = c.flags & ~Modifiers.DEFERRED | Modifiers.ABSTRACT;
             Type supertpe = readClassType(in.nextChar());
             Type[] basetpes = new Type[in.nextChar() + 1];
-            this.locals = new Scope();
-            this.statics = new Scope();
             // set info of class
             Type classInfo = Type.compoundType(basetpes, locals, c);
             c.setInfo(classInfo);
@@ -129,9 +138,6 @@ public class ClassfileParser implements ClassfileConstants {
             //System.out.println("statics class: " + staticsClass);
             //System.out.println("module: " + c.module());
             //System.out.println("modules class: " + c.module().type().symbol());
-        } catch (RuntimeException e) {
-            if (global.debug) e.printStackTrace();
-            throw new IOException("class file '" + in.path + "' is broken");
         }
     }
 
@@ -156,37 +162,18 @@ public class ClassfileParser implements ClassfileConstants {
         return res | Modifiers.JAVA;
     }
 
-    /** read a class name
-     */
-    protected Name readClassName(int i) {
-        return (Name)pool.readPool(i);
-    }
-
     /** read a class name and return the corresponding class type
      */
     protected Type readClassType(int i) {
-        if (i == 0)
-            return make.anyType();
-        Type res = make.classType((Name)pool.readPool(i));
-        if (res == Type.ErrorType)
-            global.error("unknown class reference " + pool.readPool(i));
-        return res;
-    }
-
-    /** read a signature and return it as a type
-     */
-    protected Type readType(int i) {
-        Name sig = pool.readExternal(i);
-        byte[] ascii = SourceRepresentation.string2ascii(sig.toString());
-        return sigs.sigToType(ascii, 0, ascii.length);
+        return i == 0 ? make.anyType() : make.classType(pool.getClass(i));
     }
 
     /** read a field
      */
     protected void parseField() {
         int flags = in.nextChar();
-        Name name = (Name)pool.readPool(in.nextChar());
-        Type type = readType(in.nextChar());
+        Name name = pool.getName(in.nextChar());
+        Type type = pool.getFieldType(in.nextChar());
         int mods = transFlags(flags);
         if ((flags & JAVA_ACC_FINAL) == 0)
             mods |= Modifiers.MUTABLE;
@@ -206,8 +193,8 @@ public class ClassfileParser implements ClassfileConstants {
         int sflags = transFlags(flags);
         if ((flags & JAVA_ACC_BRIDGE) != 0)
                 sflags |= Modifiers.BRIDGE;
-        Name name = (Name)pool.readPool(in.nextChar());
-        Type type = readType(in.nextChar());
+        Name name = pool.getName(in.nextChar());
+        Type type = pool.getMethodType(in.nextChar());
         if (CONSTR_N.equals(name)) {
             Symbol s = c.newConstructor(Position.NOPOS, sflags);
             // kick out package visible or private constructors
@@ -232,6 +219,7 @@ public class ClassfileParser implements ClassfileConstants {
             setParamOwners(type, constr);
             constr.setInfo(type);
             attrib.readAttributes(constr, type, METH_ATTR);
+
             //System.out.println(c + " " + c.allConstructors() + ":" + c.allConstructors().info());//debug
             //System.out.println("-- enter " + s);
         } else {
