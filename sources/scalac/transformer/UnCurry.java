@@ -146,10 +146,10 @@ public class UnCurry extends OwnerTransformer
     private Tree[] transformArgs(int pos, Tree[] args, Type methtype) {
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
+	    Tree[] args0 = args;//debug
 	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
 		assert (args.length != 1 || !(args[0] instanceof Tree.Tuple));
-		args = new Tree[]{
-		    make.Tuple(pos, args).setType(params[0].type())};
+		args = new Tree[]{make.Tuple(pos, args).setType(params[0].type())};
 	    }
 	    Tree[] args1 = args;
 	    for (int i = 0; i < args.length; i++) {

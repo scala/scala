@@ -380,6 +380,11 @@ public class LambdaLift extends OwnerTransformer
 	    }
 	    return copy.ValDef(tree, mods, name1, tpe1, rhs1);
 
+	case Tuple(Tree[] args):
+	    Tree tree1 = mkList(tree.pos, tree.type, transform(args));
+	    //new scalac.ast.printer.TextTreePrinter().print("TUPLE: ").print(tree).print("\n ==> \n").print(tree1).println().end();//DEBUG
+	    return tree1;
+
 	case Apply(Tree fn, Tree[] args):
 	    Symbol fsym = TreeInfo.methSymbol(fn);
 	    Tree fn1 = transform(fn);
@@ -534,5 +539,37 @@ public class LambdaLift extends OwnerTransformer
 	} else {
 	    return args;
 	}
+    }
+
+    Tree mkList(int pos, Type tpe, Tree[] args) {
+	return mkList(pos, tpe.typeArgs()[0], args, 0);
+    }
+
+    Tree mkList(int pos, Type elemtpe, Tree[] args, int start) {
+	if (start == args.length) return mkNil(pos, elemtpe);
+	else return mkCons(pos, elemtpe, args[start],
+			   mkList(pos, elemtpe, args, start + 1));
+    }
+
+    Tree mkNil(int pos, Type elemtpe) {
+	return gen.New(
+	    gen.Apply(
+		gen.TypeApply(
+		    gen.mkRef(
+			pos,
+			global.definitions.getClass(Names.scala_Nil).constructor()),
+		    new Tree[]{gen.mkType(pos, elemtpe)}),
+		new Tree[]{}));
+    }
+
+    Tree mkCons(int pos, Type elemtpe, Tree hd, Tree tl) {
+	return gen.New(
+	    gen.Apply(
+		gen.TypeApply(
+		    gen.mkRef(
+			pos,
+			global.definitions.getClass(Names.scala_COLONCOLON).constructor()),
+		    new Tree[]{gen.mkType(pos, elemtpe)}),
+		new Tree[]{hd, tl}));
     }
 }

@@ -80,7 +80,11 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public static final Type[] NO_ARRAY  = new Type[0];
 
     public static SingleType singleType(Type pre, Symbol sym) {
-	return new ExtSingleType(pre, sym);
+	if (pre.isStable() || pre == ErrorType)
+	    return new ExtSingleType(pre, sym);
+	else
+	    throw new Type.Error(
+		"malformed type: " + pre + "." + sym.nameString() + ".type");
     }
 
     public static TypeRef appliedType(Type tycon, Type[] args) {
@@ -114,6 +118,16 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	res.tsym.constructor().setInfo(
 	    Type.PolyType(Symbol.EMPTY_ARRAY, Type.NoType));
 	return res;
+    }
+
+    public static Type typeRef(Type pre, Symbol sym, Type[] args) {
+	if (pre.isStable() || pre == ErrorType)
+	    return TypeRef(pre, sym, args);
+	else if (sym.kind == ALIAS)
+	    return pre.memberInfo(sym);
+	else // todo: handle Java-style inner classes
+	    throw new Type.Error(
+		"malformed type: " + pre + "." + sym.nameString());
     }
 
     static class ExtSingleType extends SingleType {
@@ -569,12 +583,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    case ThisType(_):
 		return tp;
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		Type pre1 = map(pre);
+		Type pre1 = apply(pre);
 		Type[] args1 = map(args);
 		if (pre1 == pre && args1 == args) return tp;
 		else return TypeRef(pre1, sym, args1);
 	    case SingleType(Type pre, Symbol sym):
-		Type pre1 = map(pre);
+		Type pre1 = apply(pre);
 		if (pre1 == pre) return tp;
 		else return singleType(pre1, sym);
 	    case CompoundType(Type[] parts, Scope members):
@@ -720,10 +734,11 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		return pre.memberInfo(sym).baseType(clazz);
 	    else if (clazz.isCompoundSym())
 		return NoType;
-	    else
+	    else {
 		return sym.baseType(clazz)
 		    .asSeenFrom(pre, clazz.owner())
 		    .subst(sym.typeParams(), args);
+	    }
 
 	case CompoundType(Type[] parts, _):
 	    for (int i = parts.length - 1; i >= 0; i--) {
@@ -764,7 +779,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    this.pre = pre; this.clazz = clazz;
 	}
 
+	public Type apply0(Type t) {
+	    Type t1 = apply0(t);
+	    System.out.println(t + " as seen from (" + pre + "," + clazz + ") = " + t1);//debug
+	    return t1;
+	}
+
 	public Type apply(Type t) {
+	    if (pre == NoType || clazz.kind != CLASS)
+		return t;
 	    switch (t) {
 	    case ThisType(Symbol sym):
 		return t.toPrefix(pre, clazz);
@@ -786,7 +809,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    }
 		    return t1;
 		} else {
-		    Type prefix1 = prefix.toPrefix(pre, clazz);
+		    //Type prefix1 = prefix.toPrefix(pre, clazz);
+		    Type prefix1 = apply(prefix);
 		    Symbol sym1 = (prefix1 == prefix || (sym.flags & MODUL) != 0)
 			? sym : prefix1.rebind(sym);
 		    boolean prevTypeArg = typeArg;
@@ -799,7 +823,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	    case SingleType(Type prefix, Symbol sym):
 		try {
-		    Type prefix1 = prefix.toPrefix(pre, clazz);
+		    //Type prefix1 = prefix.toPrefix(pre, clazz);
+		    Type prefix1 = apply(prefix);
 		    if (prefix1 == prefix) return t;
 		    else return singleType(prefix1, prefix1.rebind(sym));
 		} catch (Type.Error ex) {
@@ -849,17 +874,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	Type toPrefix(Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    if (symbol().isSubClass(clazz) &&
-		pre.symbol().isSubClass(symbol())) {
-		if (!pre.isStable() && pre != ErrorType) {
-		    throw new Type.Error (
-			"malformed type: " + pre + "." + symbol().nameString());
-		}
+	    else if (symbol().isSubClass(clazz) && pre.symbol().isSubClass(symbol()))
 		return pre;
-	    } else {
-		return toPrefix(
-		    pre.baseType(clazz).prefix(), clazz.owner());
-	    }
+	    else
+		return toPrefix(pre.baseType(clazz).prefix(), clazz.owner());
 	}
 
     /** This type Types as seen from prefix `pre' and class `clazz'. This means:
@@ -897,10 +915,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     private Type memberTransform(Symbol sym, Type tp) {
-	Type tp1 = tp.asSeenFrom(narrow(), sym.owner());
-	Type tp2 = tp1.asSeenFrom(this, widen().symbol());
-	//if (Global.instance.debug) System.out.println(this + "/" + widen() + ".memberType(" + sym + ":" + tp + ") = " + tp1 + "/" + tp2);//DEBUG
-	return tp2;
+	Type tp1 = tp.asSeenFrom(this, sym.owner());
+	//if (Global.instance.debug) System.out.println(this + ".memberType(" + sym + ":" + tp + ") = " + tp1);//debug
+	return tp1;
     }
 
 // Substitutions ---------------------------------------------------------------

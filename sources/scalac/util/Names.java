@@ -75,6 +75,7 @@ public class Names {
     public static final Name predef = Name.fromString("predef");
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
+    public static final Name scala_COLONCOLON = Name.fromString("scala." + COLONCOLON);
     public static final Name scala_Algebraic = Name.fromString("scala.Algebraic");
     public static final Name scala_Any = Name.fromString("scala.Any");
     public static final Name scala_AnyRef = Name.fromString("scala.AnyRef");
