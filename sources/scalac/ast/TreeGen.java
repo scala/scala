@@ -1104,8 +1104,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         Type[] parentTypes = {
             definitions.ANYREF_TYPE(),
             definitions.FUNCTION_TYPE(argtypes, restype) };
-	ClassSymbol clazz = new ClassSymbol(
-	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
+	Symbol clazz = owner.newClass(
+            pos, 0, Names.ANON_CLASS_NAME.toTypeName());
         clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
@@ -1128,8 +1128,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     public Tree mkPartialFunction(int pos, Tree applyVisitor, Tree isDefinedAtVisitor,
 				  Type pattype, Type restype, Symbol owner) {
-	ClassSymbol clazz = new ClassSymbol(
-	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
+	Symbol clazz = owner.newClass(
+	    pos, 0, Names.ANON_CLASS_NAME.toTypeName());
         Type[] parentTypes = {
             definitions.ANYREF_TYPE(),
             definitions.PARTIALFUNCTION_TYPE(pattype, restype)};
