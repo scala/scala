@@ -51,7 +51,7 @@ module M0 {
 
 module M1 {
   def partition[a](xs: List[a], pred: a => boolean): Pair[List[a], List[a]] = {
-    xs.foldr[Pair[List[a], List[a]]](Pair(List(), List())) {
+    xs.foldRight[Pair[List[a], List[a]]](Pair(List(), List())) {
       (x, p) => if (pred (x)) Pair(x :: p._1, p._2) else Pair(p._1, x :: p._2)
     }
   }
