@@ -157,35 +157,27 @@ class Parser(unit: Unit) {
 
 /////// COMMENT COLLECTION ///////////////////////////////////////////////////
 
-  /** stack of comments
+  /** Stack of comments
   */
   protected val commentStack = new Stack();
 
-  /** positive if we are inside a block
+  /** Join the comment associated with a definition
   */
-  protected var local = 0;
-
-  /** push last encountered comment and reset the buffer
-  */
-  protected def pushComment(): unit = {
-    if (local == 0) {
-      commentStack.push(if (s.docBuffer == null) null else s.docBuffer.toString());
-      s.docBuffer = null;
-    }
+  def joinComment(def trees: Array[Tree]): Array[Tree] = {
+    // push comment
+    commentStack.push(if (s.docBuffer == null) null else s.docBuffer.toString());
+    s.docBuffer = null;
+    // parse
+    val ts = trees;
+    // pop comment
+    val comment = commentStack.pop().asInstanceOf[String];
+    if (comment != null)
+      for (val i <- Iterator.range(0, ts.length)) {
+        val t = ts(i);
+        ts(i) = make.DocDef(t.pos, comment, t)
+      }
+    ts
   }
-
-  /** pop a comment from the stack and associate it with the given tree
-  */
-  protected def popComment(tree: Tree): Tree =
-    if ((local == 0) && !commentStack.empty()) {
-      val comment = commentStack.pop().asInstanceOf[String];
-      if (comment != null)
-        make.DocDef(tree.pos, comment, tree)
-      else
-        tree
-    }
-    else
-      tree;
 
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
 
@@ -1028,7 +1020,6 @@ class Parser(unit: Unit) {
    *              | `{' Block `}'
    */
   def blockExpr(): Tree = {
-    local = local + 1;
     val pos = accept(LBRACE);
     val res =
       if (s.token == CASE) {
@@ -1043,7 +1034,6 @@ class Parser(unit: Unit) {
         block(pos);
       }
     accept(RBRACE);
-    local = local - 1;
     res
   }
 
@@ -1310,7 +1300,7 @@ class Parser(unit: Unit) {
   *              | abstract
   */
   def modifiers(): int = {
-    pushComment();
+//    pushComment();
     var mods = 0;
     while (true) {
       var mod = 0;
@@ -1576,7 +1566,7 @@ class Parser(unit: Unit) {
   def defOrDcl(mods: int): Array[Tree] = {
     s.token match {
       case VAL =>
-		patDefOrDcl(mods);
+	patDefOrDcl(mods);
       case VAR =>
         varDefOrDcl(mods);
       case DEF =>
@@ -1584,7 +1574,7 @@ class Parser(unit: Unit) {
       case TYPE =>
         s.nextToken();
         val ts = new myTreeList();
-        ts.append(popComment(typeDefOrDcl(mods)));
+        ts.append(typeDefOrDcl(mods));
         ts.toArray()
       case _ =>
         clsDef(mods)
@@ -1629,8 +1619,8 @@ class Parser(unit: Unit) {
 	  while (i < ls.length) {
 		ls(i) match {
 		  case Tree$Ident(name) =>
-			ts.append(popComment(
-				make.ValDef(ls(i).pos, mods | Modifiers.DEFERRED, name, tp.duplicate(), Tree.Empty)));
+		    ts.append(
+		      make.ValDef(ls(i).pos, mods | Modifiers.DEFERRED, name, tp.duplicate(), Tree.Empty));
 		  case t =>
 			syntaxError(t.pos, "cannot defer pattern definition", false);
 		}
@@ -1640,11 +1630,11 @@ class Parser(unit: Unit) {
 	  while (i < ls.length) {
 		ls(i) match {
 		  case Tree$Ident(name) =>
-			ts.append(popComment(
-				make.ValDef(ls(i).pos, mods, name, tp.duplicate(), rhs.duplicate())));
+			ts.append(
+			  make.ValDef(ls(i).pos, mods, name, tp.duplicate(), rhs.duplicate()));
 		  case t =>
-			ts.append(popComment(
-				make.PatDef(t.pos, mods, t, rhs.duplicate())));
+		        ts.append(
+		          make.PatDef(t.pos, mods, t, rhs.duplicate()));
 		}
 		i = i + 1;
 	  }
@@ -1677,8 +1667,8 @@ class Parser(unit: Unit) {
 	}
 	val ts = new myTreeList();
 	names foreach { case Pair(p, n) =>
-		ts.append(popComment(
-			make.ValDef(p, newmods, n, tp.duplicate(), rhs.duplicate())));
+		ts.append(
+			make.ValDef(p, newmods, n, tp.duplicate(), rhs.duplicate()));
 	}
 	ts.toArray()
   }
@@ -1695,11 +1685,11 @@ class Parser(unit: Unit) {
       s.nextToken();
       val vparams = NewArray.ValDefArray(paramClause());
       accept(EQUALS);
-      ts.append(popComment(
+      ts.append(
       	make.DefDef(
         	pos, mods, Names.CONSTRUCTOR,
         	Tree.AbsTypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
-        	constrExpr())));
+        	constrExpr()));
     } else {
 	  var newmods = mods;
 	  val lhs = new Buffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
@@ -1721,9 +1711,9 @@ class Parser(unit: Unit) {
 		Tree.Empty;
 	  }
 	  lhs foreach { case Tuple4(p, n, tp, vp) =>
-		  ts.append(popComment(
+		  ts.append(
 			  make.DefDef(p, newmods, n, tp, vp, restype.duplicate(),
-			              rhs.duplicate())));
+			              rhs.duplicate()));
 	  }
 	}
 	ts.toArray()
@@ -1792,10 +1782,10 @@ class Parser(unit: Unit) {
     val template = classTemplate();
     val ts = new myTreeList();
 	lhs foreach { case Tuple4(p, n, tp, vp) =>
-		ts.append(popComment(
+		ts.append(
 			make.ClassDef(p, mods, n, tp, vp,
                           thistpe.duplicate(),
-                          template.duplicate().asInstanceOf[Tree$Template])));
+                          template.duplicate().asInstanceOf[Tree$Template]));
 	}
 	ts.toArray()
   }
@@ -1812,10 +1802,10 @@ class Parser(unit: Unit) {
     val template = classTemplate();
     val ts = new myTreeList();
 	lhs foreach { case Pair(p, n) =>
-		ts.append(popComment(
+		ts.append(
 			make.ModuleDef(
       			p, mods, n, thistpe.duplicate(),
-      			template.duplicate().asInstanceOf[Tree$Template])));
+      			template.duplicate().asInstanceOf[Tree$Template]));
 	}
 	ts.toArray()
   }
@@ -1927,7 +1917,7 @@ class Parser(unit: Unit) {
                  s.token == OBJECT ||
                  s.token == CASEOBJECT ||
                  isModifier()) {
-        stats.append(clsDef(modifiers()));
+        stats.append(joinComment(clsDef(modifiers())));
       } else if (s.token != SEMI) {
         syntaxError("illegal start of class or object definition", true);
       }
@@ -1951,7 +1941,7 @@ class Parser(unit: Unit) {
       } else if (isExprIntro()) {
         stats.append(expr());
       } else if (isDefIntro() || isModifier()) {
-        stats.append(defOrDcl(modifiers()));
+        stats.append(joinComment(defOrDcl(modifiers())));
       } else if (s.token != SEMI) {
         syntaxError("illegal start of definition", true);
       }
@@ -1969,7 +1959,7 @@ class Parser(unit: Unit) {
     val stats = new myTreeList();
     while (s.token != RBRACE && s.token != EOF) {
       if (isDclIntro()) {
-        stats.append(defOrDcl(0));
+        stats.append(joinComment(defOrDcl(0)));
       } else if (s.token != SEMI) {
         syntaxError("illegal start of declaration", true);
       }
@@ -1994,13 +1984,13 @@ class Parser(unit: Unit) {
         stats.append(expr(false, true));
         if (s.token != RBRACE && s.token != CASE) accept(SEMI);
       } else if (isDefIntro()) {
-        stats.append(defOrDcl(0));
+        stats.append(joinComment(defOrDcl(0)));
         accept(SEMI);
         if (s.token == RBRACE || s.token == CASE) {
           stats.append(gen.mkUnitLit(s.pos));
         }
       } else if (isLocalModifier()) {
-        stats.append(clsDef(localClassModifiers()));
+        stats.append(joinComment(clsDef(localClassModifiers())));
         accept(SEMI);
         if (s.token == RBRACE || s.token == CASE) {
           stats.append(gen.mkUnitLit(s.pos));
