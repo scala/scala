@@ -17,7 +17,8 @@
   <xsl:template match="object">
     <xsl:text disable-output-escaping="yes"><![CDATA[<object]]></xsl:text>
     <xsl:for-each select="@*">
-      <![CDATA[ ]]><xsl:value-of select="name()"/>
+      <xsl:text disable-output-escaping="yes"><![CDATA[ ]]></xsl:text>
+      <xsl:value-of select="name()"/>
       <xsl:text disable-output-escaping="yes"><![CDATA[="]]></xsl:text><xsl:value-of select="."/><xsl:text disable-output-escaping="yes"><![CDATA["]]></xsl:text>
     </xsl:for-each>
     <xsl:choose>
@@ -72,7 +73,8 @@
   <xsl:template match="restorationObjects">
     <xsl:text disable-output-escaping="yes"><![CDATA[<restorationObjects]]></xsl:text>
     <xsl:for-each select="@*">
-      <![CDATA[ ]]><xsl:value-of select="name()"/>
+      <xsl:text disable-output-escaping="yes"><![CDATA[ ]]></xsl:text>
+      <xsl:value-of select="name()"/>
       <xsl:text disable-output-escaping="yes"><![CDATA[="]]></xsl:text><xsl:value-of select="."/><xsl:text disable-output-escaping="yes"><![CDATA["]]></xsl:text>
     </xsl:for-each>
     <xsl:choose>
@@ -100,7 +102,8 @@
   <xsl:template match="versionID">
     <xsl:text disable-output-escaping="yes"><![CDATA[<versionID]]></xsl:text>
     <xsl:for-each select="@*">
-      <![CDATA[ ]]><xsl:value-of select="name()"/>
+      <xsl:text disable-output-escaping="yes"><![CDATA[ ]]></xsl:text>
+      <xsl:value-of select="name()"/>
       <xsl:text disable-output-escaping="yes"><![CDATA[="]]></xsl:text><xsl:value-of select="."/><xsl:text disable-output-escaping="yes"><![CDATA["]]></xsl:text>
     </xsl:for-each>
     <xsl:choose>
