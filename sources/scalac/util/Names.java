@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2004, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **
 ** $Id$
@@ -116,6 +116,7 @@ public class Names {
     public static final Name Finally = Name.fromString("Finally");
     public static final Name Float = Name.fromString("Float");
     public static final Name Function = Name.fromString("Function");
+    public static final Name GetType = Name.fromString("GetType");
     public static final Name Int = Name.fromString("Int");
     public static final Name Labelled = Name.fromString("Labelled");
     public static final Name List = Name.fromString("List");
@@ -142,15 +143,19 @@ public class Names {
     public static final Name array = Name.fromString("array");
     public static final Name asInstanceOf = Name.fromString("asInstanceOf");
     public static final Name box = Name.fromString("box");
+    public static final Name caseArity = Name.fromString("caseArity");
+    public static final Name caseElement = Name.fromString("caseElement");
     public static final Name checkCastability = Name.fromString("checkCastability");
     public static final Name coerce = Name.fromString("coerce");
     public static final Name defaultValue = Name.fromString("defaultValue");
     public static final Name elem = Name.fromString("elem");
     public static final Name elements = Name.fromString("elements");
+    public static final Name eq = Name.fromString("eq");
+    public static final Name equals = Name.fromString("equals");
     public static final Name fail = Name.fromString("fail");
-    public static final Name report = Name.fromString("report");
     public static final Name false_ = Name.fromString("false");
     public static final Name filter = Name.fromString("filter");
+    public static final Name finalize = Name.fromString("finalize");
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
     public static final Name getClass = Name.fromString("getClass");
@@ -170,17 +175,17 @@ public class Names {
     public static final Name nobinding = Name.fromString("nobinding");
     public static final Name next = Name.fromString("next");
     public static final Name newArray = Name.fromString("newArray");
+    public static final Name notify = Name.fromString("notify");
+    public static final Name notifyAll = Name.fromString("notifyAll");
     public static final Name null_ = Name.fromString("null");
     public static final Name predef = Name.fromString("predef");
     public static final Name print = Name.fromString("print");
+    public static final Name readResolve = Name.fromString("readResolve");
+    public static final Name report = Name.fromString("report");
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
-    public static final Name xml = Name.fromString("xml");
     public static final Name synchronized_ = Name.fromString("synchronized");
-    public static final Name caseArity = Name.fromString("caseArity");
-    public static final Name caseElement = Name.fromString("caseElement");
-    public static final Name eq = Name.fromString("eq");
-    public static final Name equals = Name.fromString("equals");
+    public static final Name tag = Name.fromString("$tag");
     public static final Name tail = Name.fromString("tail");
     public static final Name toString = Name.fromString("toString");
     public static final Name that = Name.fromString("that");
@@ -190,12 +195,8 @@ public class Names {
     public static final Name true_ = Name.fromString("true");
     public static final Name update = Name.fromString("update");
     public static final Name view = Name.fromString("view");
-    public static final Name tag = Name.fromString("$tag");
-    public static final Name finalize = Name.fromString("finalize");
     public static final Name wait = Name.fromString("wait");
-    public static final Name notify = Name.fromString("notify");
-    public static final Name notifyAll = Name.fromString("notifyAll");
-    public static final Name GetType = Name.fromString("GetType");
+    public static final Name xml = Name.fromString("xml");
 
     public static final Name
         ZNOT = encode("!"),
