@@ -942,6 +942,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           val info = new LazyTreeType(tree);
 	  clazz.setInfo(info);
           modul.setInfo(info);
+	  if (modul.linkedClass() != null) {
+	    modul.linkedClass().setInfo(Type.ErrorType);
+	  }
         }
 	enterSym(tree, modul)
 
