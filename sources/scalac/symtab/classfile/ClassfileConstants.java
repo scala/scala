@@ -16,6 +16,22 @@ public interface ClassfileConstants {
     int JAVA_MAJOR_VERSION = 45;
     int JAVA_MINOR_VERSION = 3;
 
+    int JAVA_ACC_PUBLIC       = 0x0001;
+    int JAVA_ACC_PRIVATE      = 0x0002;
+    int JAVA_ACC_PROTECTED    = 0x0004;
+    int JAVA_ACC_STATIC       = 0x0008;
+    int JAVA_ACC_FINAL        = 0x0010;
+    int JAVA_ACC_SUPER        = 0x0020;
+    int JAVA_ACC_SYNCHRONIZED = 0x0020;
+    int JAVA_ACC_VOLATILE     = 0x0040;
+    int JAVA_ACC_BRIDGE       = 0x0040;
+    int JAVA_ACC_TRANSIENT    = 0x0080;
+    int JAVA_ACC_NATIVE       = 0x0100;
+    int JAVA_ACC_INTERFACE    = 0x0200;
+    int JAVA_ACC_ABSTRACT     = 0x0400;
+    int JAVA_ACC_STRICT       = 0x0800;
+    int JAVA_ACC_SYNTHETIC    = 0x1000;
+
     int CONSTANT_UTF8 = 1;
     int CONSTANT_UNICODE = 2;
     int CONSTANT_INTEGER = 3;

@@ -137,19 +137,20 @@ public class ClassfileParser implements ClassfileConstants {
      */
     public int transFlags(int flags) {
         int res = 0;
-        if (((flags & 0x0007) == 0) ||
-            ((flags & 0x0002) != 0))
+        if ((flags & JAVA_ACC_PRIVATE) != 0)
             res |= Modifiers.PRIVATE;
-        else if ((flags & 0x0004) != 0)
+        else if ((flags & JAVA_ACC_PROTECTED) != 0)
             res |= Modifiers.PROTECTED;
-        if ((flags & 0x0400) != 0)
+        else if ((flags & JAVA_ACC_PUBLIC) == 0)
+            res |= Modifiers.PRIVATE;
+        if ((flags & JAVA_ACC_ABSTRACT) != 0)
             res |= Modifiers.DEFERRED;
-        if ((flags & 0x0010) != 0)
+        if ((flags & JAVA_ACC_FINAL) != 0)
             res |= Modifiers.FINAL;
-        if ((flags & 0x0200) != 0)
+        if ((flags & JAVA_ACC_INTERFACE) != 0)
             res |= Modifiers.INTERFACE | Modifiers.TRAIT | Modifiers.ABSTRACT;
-        if ((flags & 0x1000) != 0)
-        	res |= Modifiers.SYNTHETIC;
+        if ((flags & JAVA_ACC_SYNTHETIC) != 0)
+            res |= Modifiers.SYNTHETIC;
         return res | Modifiers.JAVA;
     }
 
@@ -184,15 +185,15 @@ public class ClassfileParser implements ClassfileConstants {
         Name name = (Name)pool.readPool(in.nextChar());
         Type type = readType(in.nextChar());
         int mods = transFlags(flags);
-        if ((flags & 0x0010) == 0)
+        if ((flags & JAVA_ACC_FINAL) == 0)
             mods |= Modifiers.MUTABLE;
         Symbol owner = c;
-        if ((flags & 0x0008) != 0)
+        if ((flags & JAVA_ACC_STATIC) != 0)
             owner = c.module().moduleClass();
         Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
         s.setInfo(type);
         attrib.readAttributes(s, type, FIELD_ATTR);
-        ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+        ((flags & JAVA_ACC_STATIC) != 0 ? statics : locals).enterOrOverload(s);
     }
 
     /** read a method
@@ -200,15 +201,15 @@ public class ClassfileParser implements ClassfileConstants {
     protected void parseMethod() {
         int flags = in.nextChar();
         int sflags = transFlags(flags);
-        if ((flags & 0x0040) != 0)
+        if ((flags & JAVA_ACC_BRIDGE) != 0)
                 sflags |= Modifiers.BRIDGE;
         Name name = (Name)pool.readPool(in.nextChar());
         Type type = readType(in.nextChar());
         if (CONSTR_N.equals(name)) {
             Symbol s = TermSymbol.newConstructor(c, sflags);
             // kick out package visible or private constructors
-            if (((flags & 0x0002) != 0) ||
-                ((flags & 0x0007) == 0)) {
+            if (((flags & JAVA_ACC_PRIVATE) != 0) ||
+                ((flags & (JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)) {
                 attrib.readAttributes(s, type, METH_ATTR);
                 return;
             }
@@ -231,13 +232,13 @@ public class ClassfileParser implements ClassfileConstants {
         } else {
             Symbol s = new TermSymbol(
                 Position.NOPOS, name,
-                ((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
+                ((flags & JAVA_ACC_STATIC) != 0) ? c.module().moduleClass() : c,
                 sflags);
             setParamOwners(type, s);
             s.setInfo(type);
             attrib.readAttributes(s, type, METH_ATTR);
             if ((s.flags & Modifiers.BRIDGE) == 0)
-                ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+                ((flags & JAVA_ACC_STATIC) != 0 ? statics : locals).enterOrOverload(s);
         }
     }
 
