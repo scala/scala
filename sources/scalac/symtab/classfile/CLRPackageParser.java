@@ -130,7 +130,6 @@ public class CLRPackageParser extends SymbolLoader {
     public void map(Symbol sym, MemberInfo m) {
 	syms2members.put(sym, m);
 	members2syms.put(m, sym);
-	//System.out.println("" + sym + " => " + m);
     }
 
     public MemberInfo getMember(Symbol sym) {
@@ -154,8 +153,10 @@ public class CLRPackageParser extends SymbolLoader {
     //##########################################################################
     // assembly loading methods
 
+    // a list of all loaded assemblies
     protected final java.util.List assemblies = new LinkedList();
 
+    // a set of all directories and assembly files
     protected final java.util.Set/*<File>*/ assemrefs = new LinkedHashSet();
 
     /** Load the assembly with the given name
@@ -204,14 +205,12 @@ public class CLRPackageParser extends SymbolLoader {
     /** Load the rest of the assemblies specified with the '-r' option
      */
     private void findAllAssemblies() {
-	//System.out.println("assembly references left: " + assemrefs);
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
 	    File f = (File)assems.next();
 	    if (f.isFile()) {
 		Assembly assem = Assembly.LoadFrom(f.getPath());
 		if (assem != null) {
 		    assemblies.add(assem);
-		    //System.out.println("Loaded assembly " + assem);
 		}
 	    }
 	    assems.remove();
@@ -223,7 +222,11 @@ public class CLRPackageParser extends SymbolLoader {
     // main functionality
 
     protected String doComplete(Symbol p) {
-        return "!!! CLRPackageParser";
+	Scope members = new Scope();
+	importCLRTypes(p, members);
+        p.setInfo(scalac.symtab.Type.compoundType
+		  (scalac.symtab.Type.EMPTY_ARRAY, members, p));
+        return "namespace " + Debug.show(p);
     }
 
     /**
@@ -249,7 +252,6 @@ public class CLRPackageParser extends SymbolLoader {
 	    String fullname = types[i].FullName;
 	    if (!fullname.startsWith(n1))
 		continue;
-	    //System.out.println("importing type: " + fullname);
 	    int j = n1.length();
 	    int k = fullname.indexOf('.', j);
 	    String name = fullname.substring(j, k < 0 ? fullname.length() : k);
@@ -271,7 +273,6 @@ public class CLRPackageParser extends SymbolLoader {
     {
 	Name n = Name.fromString(namespace);
 	if (members.lookup(n) == Symbol.NONE) {
-	    //System.out.println("importing namespace " + namespace);
 	    p.newLoadedPackage(n, this, members);
 	}
     }
