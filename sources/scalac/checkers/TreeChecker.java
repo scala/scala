@@ -213,6 +213,57 @@ public class TreeChecker {
         return true;
     }
 
+    /** Checks the type application. Returns true. */
+    private boolean tapply(Tree tree, Type function, Tree[] args) {
+        Symbol[] params = function.typeParams();
+        assert params.length == args.length: show(tree)
+            + format("params", Debug.show(params));
+        Type.Map subst = Type.getSubst(params, Tree.typeOf(args));
+        for (int i = 0; i < args.length; i++) {
+            Type expected = subst.apply(params[i].info());
+            Type loBound = subst.apply(params[i].loBound());
+            type(args[i], expected, loBound);
+        }
+        type(tree, subst.apply(function.resultType()));
+        return true;
+    }
+
+    /** Checks the value application. Returns true. */
+    private boolean vapply(Tree tree, Type function, Tree[] args) {
+        Symbol[] params = function.valueParams();
+        assert params.length == args.length: show(tree)
+            + format("params", Debug.show(params));
+        for (int i = 0; i < args.length; i++)
+            expression(args[i], params[i].type());
+        type(tree, function.resultType());
+        return true;
+    }
+
+    //########################################################################
+    // Private Methods - Checking functions
+
+    /** Checks the function. Returns true. */
+    private boolean function(Tree tree) {
+        Symbol symbol = tree.symbol();
+        assert symbol != null && symbol.isTerm(): show(tree);
+        assert symbol.isMethod(): show(tree);
+        switch (tree) {
+
+        case Select(Tree qualifier, _):
+            return selection(tree);
+
+        case Ident(_):
+            if (symbol.isInitializer()) return true;
+            assert labels.contains(symbol): show(tree);
+            assert symbol.owner() == currentMember(): show(tree);
+            return true;
+
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
     //########################################################################
     // Private Methods - Checking locations
 
