@@ -22,41 +22,9 @@ class CodeFactory extends PatternTool {
 
     public int pos = Position.FIRSTPOS ;
 
-    private final Symbol CHAR_EQEQ_INT;
-    private Symbol CHAR_COERCE_INT;
-
     public CodeFactory( CompilationUnit unit, int pos ) {
 	super( unit );
 	this.pos = pos;
-        CHAR_EQEQ_INT = getFun(defs.CHAR_CLASS.lookup(Names.EQEQ), defs.INT_TYPE());
-
-        Symbol[] ss = defs.CHAR_CLASS.lookup(Names.coerce).alternativeSymbols();
-        for (int i = 0; i < ss.length && CHAR_COERCE_INT == null; i++) {
-            switch (ss[i].info()) {
-            case MethodType(_, Type restpe):
-                if (restpe.isSameAs(defs.INT_TYPE()))
-                    CHAR_COERCE_INT = ss[i];
-            }
-        }
-        assert CHAR_COERCE_INT != null;
-    }
-
-    private Symbol getFun(Symbol sym, Type paramType) {
-        Symbol fun = null;
-        Type ftype = defs.ANY_TYPE();
-        Symbol[] syms = sym.alternativeSymbols();
-        for (int i = 0; i < syms.length; i++) {
-            Symbol[] vparams = syms[i].valueParams();
-            if (vparams.length == 1) {
-                Type vptype = vparams[0].info();
-                if (paramType.isSubType(vptype) && vptype.isSubType(ftype)) {
-                    fun = syms[i];
-                    ftype = vptype;
-                }
-            }
-        }
-        assert fun != null : Debug.show(sym.info());
-        return fun;
     }
 
     // --------- these are new
@@ -213,14 +181,55 @@ class CodeFactory extends PatternTool {
         return gen.mkApply_V(gen.Select(left, defs.BOOLEAN_OR()), new Tree[]{right});
     }
 
+    // used by Equals
+    private Symbol getCoerceToInt(Type left) {
+        Symbol sym = left.lookupNonPrivate(Names.coerce);
+        assert sym != Symbol.NONE : Debug.show(left);
+        Symbol[] syms = sym.alternativeSymbols();
+        for (int i = 0; i < syms.length; i++) {
+            switch (syms[i].info()) {
+            case MethodType(Symbol[] vparams, Type restpe):
+                if (vparams.length == 0 && restpe.isSameAs(defs.INT_TYPE()))
+                    return syms[i];
+            }
+        }
+        assert false : Debug.show(left);
+        return null;
+    }
+
+    // used by Equals
+    private Symbol getEqEq(Type left, Type right) {
+        Symbol sym = left.lookupNonPrivate(Names.EQEQ);
+        assert sym != Symbol.NONE
+            : Debug.show(left) + "::" + Debug.show(left.members());
+        Symbol fun = null;
+        Type ftype = defs.ANY_TYPE();
+        Symbol[] syms = sym.alternativeSymbols();
+        for (int i = 0; i < syms.length; i++) {
+            Symbol[] vparams = syms[i].valueParams();
+            if (vparams.length == 1) {
+                Type vptype = vparams[0].info();
+                if (right.isSubType(vptype) && vptype.isSubType(ftype)) {
+                    fun = syms[i];
+                    ftype = vptype;
+                }
+            }
+        }
+        assert fun != null : Debug.show(sym.info());
+        return fun;
+    }
+
     protected Tree Equals(Tree left, Tree right) {
         Type ltype = left.type.widen(), rtype = right.type.widen();
-        Symbol eqsym = null;
-        if (ltype.isSameAs(defs.CHAR_TYPE()) && rtype.isSameAs(defs.CHAR_TYPE())) {
-            right = gen.mkApply__(gen.Select(right, CHAR_COERCE_INT));
-            eqsym = CHAR_EQEQ_INT;
-        } else
-            eqsym = getFun(ltype.lookupNonPrivate(Names.EQEQ), rtype);
+        if (ltype.isSameAs(rtype)
+            && (ltype.isSameAs(defs.CHAR_TYPE())
+                || ltype.isSameAs(defs.BYTE_TYPE())
+                || ltype.isSameAs(defs.SHORT_TYPE())))
+            {
+                right = gen.mkApply__(gen.Select(right, getCoerceToInt(rtype)));
+                rtype = defs.INT_TYPE();
+            }
+        Symbol eqsym = getEqEq(ltype, rtype);
         return gen.mkApply_V(gen.Select(left, eqsym), new Tree[]{right});
     }
 
