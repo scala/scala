@@ -250,7 +250,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  if (isAccessible(sym, site, sitetype)) {
 	    symtype
 	  } else {
-	    System.out.println(sym.flags & (PRIVATE | PROTECTED));//debug
 	    error(pos, "" + sym + " cannot be accessed in " + sitetype.widen());
 	    Type.ErrorType
 	  }
