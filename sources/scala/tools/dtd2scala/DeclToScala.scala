@@ -40,7 +40,7 @@ class DeclToScala(fOut:PrintWriter,
               case "template" => {
                 lookup.update("objectName", objectName);
                 lookup.update("compressDefault", compress.toString());
-                n.children.elements.foreach { n => writeNode(n) }
+                n.child.elements.foreach { n => writeNode(n) }
               }
               case "elementBinding" => {
                 for( val decl <- elemMap.values.elements ) {
@@ -48,7 +48,7 @@ class DeclToScala(fOut:PrintWriter,
                   lookup += "elementContainsText" -> decl.containsText.toString();
                   lookup += "elementContentModel" -> decl.contentModel;
                   curAttribs = decl.attribs;
-                  n.children.elements.foreach{ n => writeNode( n ) }
+                  n.child.elements.foreach{ n => writeNode( n ) }
                 }
                 curAttribs = null;
                 lookup -= "elementName";
@@ -58,7 +58,7 @@ class DeclToScala(fOut:PrintWriter,
               case "attributeAssign" => {
                 for( val aDecl <- curAttribs.keys.elements ) {
                   lookup += "attributeName" -> aDecl;
-                  n.children.elements.foreach{ n => writeNode( n ) }
+                  n.child.elements.foreach{ n => writeNode( n ) }
                 }
                 lookup -= "attributeName";
               }
@@ -66,7 +66,7 @@ class DeclToScala(fOut:PrintWriter,
               case "attributeBinding" => {
                 for( val aDecl <- curAttribs.keys.elements ) {
                   lookup += "attributeName" -> aDecl;
-                  n.children.elements.foreach{ n => writeNode( n ) }
+                  n.child.elements.foreach{ n => writeNode( n ) }
                 }
                 lookup -= "attributeName";
               }

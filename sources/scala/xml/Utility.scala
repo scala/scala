@@ -37,15 +37,15 @@ object Utility {
   def toXML( n:Node ):String = n match {
     case Text( t ) =>
       escape( t );
-    case x:AttributedNode => {
+    case x:Node => {
       val s = new StringBuffer();
       s.append('<');
       s.append( x.label );
-      if( null != x.attributes ) {
-        s.append( attr2xml( x.attributes.elements ) );{}
+      if( x.attribute.length != 0 ) {
+        s.append( attr2xml( x.attribute.elements ) );{}
       }
       s.append('>');
-      s.append( toXML( x.children.elements )  );
+      s.append( toXML( x.child.elements )  );
       s.append("</");
       s.append( x.label );
       s.append('>');

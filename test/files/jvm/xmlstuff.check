@@ -1,11 +1,21 @@
+equality
+passed ok
+passed ok
+passed ok
+passed ok
+passed ok
+xpath \
 passed ok
 passed ok
 passed ok
 passed ok
 passed ok
 passed ok
+case _ 
 passed ok
+case _ 
 passed ok
+xpath \\
 passed ok
 passed ok
 passed ok

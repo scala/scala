@@ -9,108 +9,90 @@
 
 package scala.xml ;
 
+import scala.collection.mutable.AppendBuffer ;
 
-/** Trait for representation of XML elements. These are created by
- *  a dtd2scala binding tool
+/** Trait for representing XML using nodes of a labelled tree.
+ *  This trait contains an implementation of a subset of XPath for navigation.
  */
 trait Node {
-  /** the label of this XML node */
-    def label: String;
-  /** the children of this XML node */
-    def children: Seq[Node];
-  /** the string representation of this XML node */
-    def toXML: String;
 
-  /** projection function. Similar to XPath, use this./'foo to get a list
+  /** QName (the label of this node). I.e. "foo" for &lt;foo/&gt;) */
+  def label: String;
+
+  /** attribute axis */
+  def attribute: Seq[ Pair[String,String] ];
+
+  final def apply(key: String): Option[String] = {
+    val it = attribute.elements.filter { x => key == x._1  };
+    if( it.hasNext ) Some( it.next._2 ) else None
+  }
+
+  /** child axis (all children of this node) */
+  def child: Seq[Node];
+
+  /** descendant axis (all descendants of this node) */
+  def descendant:Seq[Node] = child.toList.flatMap {
+    x => x::x.descendant.asInstanceOf[List[Node]]
+  } ;
+
+  /** descendant axis (all descendants of this node) */
+  def descendant_or_self:Seq[Node] = this::child.toList.flatMap {
+    x => x::x.descendant.asInstanceOf[List[Node]]
+  } ;
+
+  override def equals( x:Any ):boolean = x match {
+    case that:Node =>
+      //Console.print("(Node)");
+      that.label == this.label &&
+        that.attribute.similar( this.attribute ) &&
+          that.child.similar( this.child )
+    case _ => false
+  }
+
+ /** projection function. Similar to XPath, use this \ 'foo to get a list
    *  of all children of this node that are labelled with "foo".
    *  The document order is preserved.
    */
-    def |(that:Symbol): NodeSeq = new NodeSeq({
-      val iter = children.elements;
-      if( "_" == that.name ) {
-        List.fromIterator( iter );
-      } else {
-        var res:List[Node] = Nil;
-        for( val x <- iter; x.label == that.name ) {
-          res = x::res;
-        }
-        res.reverse
+    def \(that:Symbol): NodeSeq = {
+      new NodeSeq({
+      val iter = child.elements;
+      that.name match {
+
+        case "_" => iter.toList;
+        case _ =>
+          var res:List[Node] = Nil;
+          for( val x <- child.elements; x.label == that.name ) {
+            res = x::res;
+          }
+          res.reverse
       }
     });
+    }
 
-  /** projection function. Similar to XPath, use this./#'foo to get a list
-   *  of all descendants of this node that are labelled with "foo".
-   *  Use /'_ as a wildcard.
+ /** projection function. Similar to XPath, use this \\ 'foo to filter
+   *  all nodes labelled with "foo" from the descendant_or_self axis.
    *  The document order is preserved.
    */
-    def ||(that:Symbol): NodeSeq = new NodeSeq({
-      var res:List[Node] = Nil;
-      var tmp:List[Node] = Nil;
-      for( val x <- children.elements ) {
-        if ( x.label == that.name || "_" == that.name )
-          tmp = x::tmp;
-        tmp = tmp:::(x||(that)).toList;
-        res = res:::tmp;
-        tmp = Nil
-      }
-      res;
-    });
-
-}
-
-/* a wrapper that adds a filter method */
-class NodeSeq(theList:List[Node]) extends Seq[Node] {
-  val res = theList.flatMap ( x => List.fromIterator( x.children.elements ));
-
-  /** projection function. Similar to XPath, use this./'foo to get a list
-   *  of all elements of this sequence that are labelled with "foo".
-   *  Use /'_ as a wildcard. The document order is preserved.
-   */
-  def |(that: Symbol) = if( "_" == that.name ) {
-    new NodeSeq( res )
-  } else {
-    new NodeSeq( res.filter( y => y.label == that.name ))
+  def \\(that:Symbol): NodeSeq = {
+    new NodeSeq(
+      that.name match {
+        case "_" => this.descendant_or_self;
+        case _ => this.descendant_or_self.asInstanceOf[List[Node]].
+        filter( x => x.label == that.name );
+        /*
+          val res = new AppendBuffer[Node]();
+          if( this.label == that.name )
+            res.append( this );
+          res.append( this.child.elements.flatMap {
+            x => //x.\\(that).elements
+          }.toSeq);
+        res.toList
+        */
+      })
   }
 
+  override def hashCode() = Utility.hashCode(label, attribute.toList.hashCode(), child);
+  /** string representation of this node */
+  override def toString() = Utility.toXML(this);
 
-  /** projection function. Similar to XPath, use this./'foo to get a list
-   *  of all children of this node that are labelled with "foo"
-   *  Use ||'_ as a wildcard. The document order is preserved.
-   */
-    def ||(that: Symbol): NodeSeq = new NodeSeq(
-      if ( "_" == that.name ) {
-        theList.flatMap ( x => (x||'_).toList )
-      } else {
-        theList.flatMap ( x => {
-          if( x.label == that.name )
-            x::(x||(that)).toList;
-          else
-            (x||(that)).toList;
-        })
-      });
-
-  override def toList:List[Node] = theList;
-
-  /* Seq methods */
-  def length = theList.length;
-  def elements = theList.elements ;
-  def apply( i:int ) = theList.apply( i );
-  /* forwarding list methods
-  def isEmpty: boolean = theList.isEmpty;
-  def head: Node = theList.head;
-  def tail: List[Node] = theList.tail;
-
-  override def toString():String = "Node"+theList.toString();
-
-  override def filter(p: Node => Boolean): NodeList =
-    new NodeList( theList.filter( p ) );
-
-  override def foreach(f: Node => Unit): Unit = theList.foreach( f );
-
-  override def flatMap[b](f: Node => List[b]): List[b] = theList.flatMap( f );
-
-  override def :::[b >: Node](prefix: List[b]): List[b] = theList.:::( prefix );
-  */
-
-  //the  == method cannot be forwarded :-(
 }

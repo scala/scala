@@ -12,6 +12,7 @@ package scala.xml;
 import scala.collection.Map ;
 
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML representations
+ * @author Burak Emir
  * @param text the text contained in this node
 **/
 
@@ -21,19 +22,15 @@ case class Text( text:String ) extends Node {
   */
   def label    = "#PCDATA";
 
-  /** always returns an empty list
-  */
-  final def children = Nil;
+  /** always empty */
+  final def attribute = Nil;
 
+  /** always empty */
+  final def child = Nil;
 
   override def hashCode() = text.hashCode();
 
-  /** returns "Text("+raw text+")"
-  */
+  /** returns text, with some characters escaped according to XML spec */
   override def toString() = Utility.escape( text );
-
-  /** returns PCDATA text, with some characters escaped according to XML spec
-  */
-  override def toXML = Utility.escape( text );
 
 }

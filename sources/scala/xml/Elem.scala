@@ -1,39 +1,42 @@
 package scala.xml ;
 
-import scala.collection.immutable.{Map,ListMap} ;
+import scala.collection.mutable.HashMap ;
 
-case class Elem( name:String, children:Node* ) extends AttributedNode {
+case class Elem( label:String, child:Node* ) extends Node with Similarity {
 
-  /** Returns the symbol name as a string.
+  def similar( x:Any ) = {
+    x match {
+      case that:Node => (label == that.label) && child.similar( that.child )
+      case _ => false;
+    }
+  }
+
+  private val hmap = new HashMap[String,String]();
+
+  /** the attributes axis - default is Nil
   */
-  def label:String = name;
+  def attribute: Seq[Pair[String, String]] = hmap.elements.toSeq( hmap.size );
 
-  /** Returns the list of children of this symbol.
-  def children: NodeSeq = new NodeSeq( List.fromIterator(
-      elems.elements map ( x => x match {
-        case n:Node => n;
-        case _      => Text(x.toString());
-      })));
+  /** returns a new element with updated attributes
   */
-
-  /** Returns a map representing the attributes of this node.
-  */
-  def attributes: Map[String, String] = ListMap.Empty;
-
-  /** returns a new symbol with updated attributes
-  */
-  final def %(attrs: List[Pair[String, String]]) =
-    new Elem( name, children:_* ) {
-      val themap = Elem.this.attributes.incl( attrs );
-      override def attributes = themap;
+  final def %(attrs: Seq[Pair[String, String]]) = {
+    val newmap = new HashMap[String,String]();
+    for( val p <- hmap.elements ) { newmap += p._1 -> p._2 };
+    for( val p <- attrs )         { newmap += p._1 -> p._2 };
+    new Elem( label, child:_* ) {
+      private val hmap = newmap;
+      //override def attribute = newmap.elements.toSeq( newmap.size );
     };
-
+  }
   /** returns a new symbol with updated attribute
   */
-  final def %(attr: Pair[String, String])  =
-    new Elem( name, children:_* ) {
-      val themap = Elem.this.attributes.incl( attr );
-      override def attributes = themap;
+  final def %(attr: Pair[String, String]) = {
+    val newmap = new HashMap[String,String]();
+    for( val p <- hmap.elements ) { newmap += p._1 -> p._2 };
+    newmap += attr._1 -> attr._2;
+    new Elem( label, child:_* ) {
+      private val hmap = newmap;
+      //override def attribute = newmap.elements.toSeq( newmap.size );
     };
-
+  }
 }
