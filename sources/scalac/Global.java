@@ -61,6 +61,7 @@ public abstract class Global {
     public final boolean explaintypes;
     public final boolean uniqid;
     public final boolean xmlMarkup;
+    public final boolean newMatch;
 
     public final boolean printtypes;
     public final boolean printtokens;
@@ -215,6 +216,7 @@ public abstract class Global {
         this.debug = args.debug.value;
         this.uniqid = args.uniqid.value;
         this.xmlMarkup = args.Xmarkup.value;
+        this.newMatch = args.Xnewmatch.value;
         this.explaintypes = args.explaintypes.value;
         this.printtypes = args.types.value;
         this.printtokens = args.print.tokens;

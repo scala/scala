@@ -83,6 +83,7 @@ public class CompilerCommand extends CommandParser {
      */
     public final BooleanOptionParser Xshortname;
     public final BooleanOptionParser Xmarkup;
+    public final BooleanOptionParser Xnewmatch;
 
     //########################################################################
     // Public Constructors
@@ -238,6 +239,10 @@ public class CompilerCommand extends CommandParser {
 
         this.Xmarkup = new BooleanOptionParser(this,
             "Xmarkup", "Allow XML markup in expressions and patterns",
+            false),
+
+        this.Xnewmatch = new BooleanOptionParser(this,
+            "Xnewmatch", "new pattern matching",
             false),
 
         this.unknown_options = new UnknownOptionParser(this),
