@@ -4,8 +4,9 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala.collection.mutable;
 
@@ -88,4 +89,7 @@ class Stack[A] with MutableList[A] with StructuralEquality[Stack[A]] {
           elements.zip(other.elements).forall {
             case Pair(thiselem, thatelem) => thiselem == thatelem;
         }};
+
+    override def toString() = toList.mkString("Stack(", ", ", ")");
+
 }
