@@ -598,15 +598,27 @@ object testMZ {
     case List(x@(OneN()*), y@(OneN())) => "case";
     case _ => "default";
   }
+  case class On();
+  case class Tw();
+  def testBar(xs: List[Any]) = xs match {
+    case List(((On(), Tw())* | (On(), On())), On()) => "case"
+    case _ => "default";
+  }
 
   def main:Unit = {
-                System.out.println("testMZ - bug#132 bug#133b");
+                System.out.println("testMZ - bugs #132 #133b #180");
     test[List[Expr],String](testFoo, List(Two(),Two(),Two(),Two()), "b = Two");
     test[List[Expr],String](testFoo, List(Two(),Two(),Two()), "a = Two");
     test[List[Expr],String](testFoo, List(Two(),Two()), "a = Two");
     test[List[Expr],String](testFoo, List(Two()), "a = Two");
     test[List[Expr],String](testFoo, List(), "no match");
     test[List[Any],String](bind, List(OneN(),OneN()), "case");
+    test[List[Any],String](testBar, List(), "default");
+    test[List[Any],String](testBar, List(On()), "case");
+    test[List[Any],String](testBar, List(On(), On()), "default");
+    test[List[Any],String](testBar, List(On(), On(), On()), "case");
+    test[List[Any],String](testBar, List(On(), On(), On(), On()), "default");
+    test[List[Any],String](testBar, List(On(), On(), On(), On(), On()), "default");
 
     ()
   }
