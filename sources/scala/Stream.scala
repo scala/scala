@@ -14,7 +14,7 @@ trait Stream[+a] {
 
   def init: Stream[a] =
     if (isEmpty) error("Stream.empty.init")
-    else if (tail.isEmpty) Stream.empty[a]
+    else if (tail.isEmpty) Stream.empty
     else Stream.cons(head, tail.init);
 
   def last: a =
@@ -23,7 +23,7 @@ trait Stream[+a] {
     else tail.last;
 
   def takeWhile(p: a => Boolean): Stream[a] =
-    if (isEmpty || !p(head)) Stream.empty[a]
+    if (isEmpty || !p(head)) Stream.empty
     else Stream.cons(head, tail.takeWhile(p));
 
   def dropWhile(p: a => Boolean): Stream[a] =
@@ -31,7 +31,7 @@ trait Stream[+a] {
     else tail.dropWhile(p);
 
   def take(n: Int): Stream[a] =
-    if (n == 0) Stream.empty[a]
+    if (n == 0) Stream.empty
     else Stream.cons(head, tail.take(n-1));
 
   def drop(n: Int): Stream[a] =
@@ -41,7 +41,7 @@ trait Stream[+a] {
   def at(n: Int) = drop(n).head;
 
   def map[b](f: a => b): Stream[b] =
-    if (isEmpty) Stream.empty[b]
+    if (isEmpty) Stream.empty
     else Stream.cons(f(head), tail.map(f));
 
   def foreach(f: a => Unit): Unit =
@@ -80,12 +80,12 @@ trait Stream[+a] {
     else f(head, tail.reduceRight(f));
 
   def flatMap[b](f: a => Stream[b]): Stream[b] =
-    if (isEmpty) Stream.empty[b]
+    if (isEmpty) Stream.empty
     else f(head).append(tail.flatMap(f));
 
   def reverse: Stream[a] = {
     def snoc(xs: Stream[a], x: a): Stream[a] = Stream.cons(x, xs);
-    foldLeft(Stream.empty[a])(snoc)
+    foldLeft(Stream.empty: Stream[a])(snoc)
   }
 
   // The following method is not compilable without run-time type
@@ -103,7 +103,7 @@ trait Stream[+a] {
   }
 
   def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
-    if (this.isEmpty || that.isEmpty) Stream.empty[Tuple2[a, b]]
+    if (this.isEmpty || that.isEmpty) Stream.empty
     else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail));
 
   def print: Unit =
@@ -117,10 +117,10 @@ trait Stream[+a] {
 
 object Stream {
 
-  def empty[c]: Stream[c] = new Stream[c] {
+  val empty: Stream[All] = new Stream[All] {
     def isEmpty = true;
-    def head: c = error("head of empty stream");
-    def tail: Stream[c] = error("tail of empty stream");
+    def head: All = error("head of empty stream");
+    def tail: Stream[All] = error("tail of empty stream");
     override def toString(): String = "Stream.empty";
   }
 
