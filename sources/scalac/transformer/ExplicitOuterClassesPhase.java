@@ -8,6 +8,7 @@
 
 package scalac.transformer;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -156,7 +157,7 @@ public class ExplicitOuterClassesPhase extends Phase {
 //             symbol = symbol.owner();
         if (symbol.isClassType())
             symbol = symbol.primaryConstructor();
-        if (symbol.constructorClass().isPackageClass()) return new TypeContext(null, null, null, null, null, null, null); // !!!
+        if (symbol.constructorClass().isPackageClass()) return new TypeContext(null, null, null, null, null, null, Collections.EMPTY_MAP); // !!!
         TypeContext context = (TypeContext)contexts.get(symbol);
         if (context == null) {
             context = createTypeContext(symbol);
@@ -168,6 +169,9 @@ public class ExplicitOuterClassesPhase extends Phase {
     /** Creates the context for the given constructor. */
     private TypeContext createTypeContext(Symbol constructor) {
         Symbol clasz = constructor.constructorClass();
+
+        Map/*<Symbol,Type>*/ tparams = new HashMap();
+        tparams.put(clasz, Type.ThisType(clasz));
 
         // get outer contexts
         TypeContext outer = clasz.owner().isPackageClass()
@@ -181,6 +185,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             Name tname = Names.OUTER(constructor, o.clasz);
             tlinks[o.depth] = constructor.newTParam(
                 constructor.pos, tflags, tname, o.clasz.typeOfThis());
+            tparams.put(o.clasz, tlinks[o.depth].type());
         }
 
         // create outer value link
@@ -195,7 +200,6 @@ public class ExplicitOuterClassesPhase extends Phase {
         }
 
         // create new type parameters
-        Map tparams = new HashMap();
         for (TypeContext o = outer; o != null; o = o.outer) {
             Symbol[] oldtparams = o.oldtparams;
             for (int i = 0; i < oldtparams.length; i++) {
@@ -332,7 +336,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             this.context = context;
             this.depth = outer == null ? 0 : outer.depth + 1;
             this.oldtparams = oldtparams;
-            this.transformer = new TypeTransformer(this, tparams);
+            this.transformer = new TypeTransformer(tparams);
         }
 
         /** !!! */
@@ -359,11 +363,9 @@ public class ExplicitOuterClassesPhase extends Phase {
     /** The type transformer */
     private static final class TypeTransformer extends Type.MapOnlyTypes {
 
-        private final TypeContext context;
         private final Map/*<Symbol,Type>*/ tparams;
 
-        public TypeTransformer(TypeContext context, Map tparams) {
-            this.context = context;
+        public TypeTransformer(Map tparams) {
             this.tparams = tparams;
         }
 
@@ -392,14 +394,11 @@ public class ExplicitOuterClassesPhase extends Phase {
                     return Type.singleType(Type.NoPrefix, symbol);
                 return Type.singleType(apply(prefix), symbol);
             case ThisType(Symbol clasz):
-                if (context != null) {
-                    // !!! || clasz.isCompoundSym()
-                    if (clasz == context.clasz || clasz.isCompoundSym()) return type;
-                    for (TypeContext o = context; o != null; o = o.outer)
-                        if (clasz == o.clasz)
-                            return context.getTypeLink(o.depth);
-                }
-                throw Debug.abort("illegal ThisType", clasz);
+                Object value = tparams.get(clasz);
+                if (value != null) return (Type)value;
+                assert clasz.isCompoundSym() || clasz.isPackageClass():
+                    Debug.show(clasz);
+                return type;
             case CompoundType(Type[] parents, Scope members):
                 // !!! this case should not be needed
                 return Type.compoundType(map(parents), members, type.symbol());
