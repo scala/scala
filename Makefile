@@ -16,6 +16,7 @@ ROOT			 = .
 # project
 PROJECT_NAME		 = scala
 PROJECT_ROOT		 = $(ROOT)
+PROJECT_SOURCES		+= $(LAMPLIB_SOURCES)
 PROJECT_SOURCES		+= $(META_SOURCES)
 PROJECT_SOURCES		+= $(RUNTIME_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
@@ -26,10 +27,10 @@ PROJECT_LISTDIR		 = $(PROJECT_ROOT)/config/list
 PROJECT_SOURCEDIR	 = $(PROJECT_ROOT)/sources
 
 # project java archive
-
 PROJECT_JAR_ARCHIVE	 = $(ROOT)/lib/$(PROJECT_NAME).jar
 PROJECT_JAR_MANIFEST	 = $(PROJECT_SOURCEDIR)/MANIFEST
 PROJECT_JAR_INPUTDIR	 = $(PROJECT_OUTPUTDIR)
+PROJECT_JAR_FILES	+= ch
 PROJECT_JAR_FILES	+= scala
 PROJECT_JAR_FILES	+= scalac
 PROJECT_JAR_FILES	+= scalai
@@ -55,6 +56,12 @@ FUNCTION_TEMPLATE	 = $(FUNCTION_PREFIX)/Function.java.tmpl
 TUPLE_PREFIX		 = $(LIBRARY_ROOT)
 TUPLE_FILES		+= $(filter $(TUPLE_PREFIX)/Tuple%.scala,$(LIBRARY_FILES))
 TUPLE_TEMPLATE		 = $(TUPLE_PREFIX)/Tuple.scala.tmpl
+
+# lamp library
+LAMPLIB_ROOT		 = $(PROJECT_SOURCEDIR)/ch/epfl/lamp
+LAMPLIB_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/lamplib.lst)
+LAMPLIB_SOURCES		+= $(LAMP_LIST:%=$(LAMP_ROOT)/%)
+LAMPLIB_JC_FILES	+= $(LAMP_SOURCES)
 
 # meta programming
 META_ROOT		 = $(PROJECT_SOURCEDIR)/meta
@@ -82,31 +89,26 @@ INTERPRETER_SOURCES	+= $(INTERPRETER_LIST:%=$(INTERPRETER_ROOT)/%)
 INTERPRETER_JC_FILES	 = $(INTERPRETER_SOURCES)
 
 # scala library
-
 LIBRARY_ROOT		 = $(RUNTIME_ROOT)
 LIBRARY_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
 LIBRARY_FILES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 
 # scala documents
-
 DOCUMENTS_ROOT		 = $(PROJECT_ROOT)/doc
 DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/reference/reference.pdf
 DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/reference/examples.pdf
 
 # scala examples
-
 EXAMPLES_ROOT		 = $(PROJECT_SOURCEDIR)/examples
 EXAMPLES_LIST		+= $(call READLIST, $(PROJECT_LISTDIR)/examples.lst)
 EXAMPLES_FILES		 = $(EXAMPLES_LIST:%=$(EXAMPLES_ROOT)/%)
 
 # emacs scala-mode
-
 EMACS_ROOT		 = $(PROJECT_ROOT)/support/emacs
 EMACS_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/emacs.lst)
 EMACS_FILES		 = $(EMACS_LIST:%=$(EMACS_ROOT)/%)
 
 # scala test
-
 TEST_ROOT		 = $(PROJECT_ROOT)/test
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-pos.lst)
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-neg.lst)
@@ -114,7 +116,6 @@ TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-run.lst)
 TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/%)
 
 # java compilation
-
 JC_COMPILER		 = PICO
 JC_OUTPUTDIR		 = $(PROJECT_OUTPUTDIR)
 JC_CLASSPATH		 = $(PROJECT_CLASSPATH)
@@ -123,13 +124,11 @@ JC_CLASSPATH		 = $(PROJECT_CLASSPATH)
 # Variables - libraries
 
 # BCEL (see http://jakarta.apache.org/bcel/)
-
 BCEL_HOME		?= /home/linuxsoft/apps/BCEL-5
 BCEL_JARFILE		?= $(BCEL_HOME)/bcel.jar
 BCEL_LICENSE		 = $(BCEL_HOME)/LICENSE
 
 # needed for the .NET backend
-
 MSIL_HOME		?= /home/linuxsoft/apps/java2net
 MSIL_JARFILE		?= $(MSIL_HOME)/msil.jar
 
@@ -175,6 +174,7 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 
 all		: $(PROJECT_OUTPUTDIR)
 all		: scripts
+all		: lamplib
 all		: meta
 all		: generate
 all		: runtime
@@ -193,6 +193,7 @@ fastclean	:
 	$(RM) .latest-runtime
 	$(RM) .latest-generate
 	$(RM) .latest-meta
+	$(RM) .latest-lamplib
 
 clean		: fastclean
 	$(RM) -r $(PROJECT_OUTPUTDIR)/*
@@ -211,6 +212,7 @@ fixcvs		:
 	    $(XARGS) -r $(CHMOD) a-x)
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
+lamplib		: .latest-lamplib
 meta		: .latest-meta
 generate	: .latest-generate
 runtime		: .latest-runtime
@@ -225,6 +227,7 @@ library		: .latest-library
 .PHONY		: distclean
 .PHONY		: fixcvs
 .PHONY		: scripts
+.PHONY		: lamplib
 .PHONY		: meta
 .PHONY		: generate
 .PHONY		: runtime
@@ -234,6 +237,10 @@ library		: .latest-library
 
 ##############################################################################
 # Targets
+
+.latest-lamplib		: $(LAMPLIB_JC_FILES)
+	@$(make) jc target=LAMPLIB LAMPLIB_JC_FILES='$?'
+	touch $@
 
 .latest-meta		: $(META_JC_FILES)
 	@$(make) jc target=META META_JC_FILES='$?'
@@ -286,6 +293,7 @@ $(TUPLE_FILES)		: .latest-meta $(TUPLE_TEMPLATE)
 	$(RM) .latest-generate
 	@$(make) generate
 
+$(PROJECT_JAR_ARCHIVE)	: .latest-lamplib
 $(PROJECT_JAR_ARCHIVE)	: .latest-runtime
 $(PROJECT_JAR_ARCHIVE)	: .latest-compiler
 $(PROJECT_JAR_ARCHIVE)	: .latest-interpreter
