@@ -2574,6 +2574,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         j++;
                     }
                     if (j == tps.length) {
+			if (Global.instance.debug) System.out.println("refinement lub for " + rsyms[0]);//debug
                         Symbol lubSym = lub(rsyms, rtps, rlbs, lubType.symbol());
                         if (lubSym.kind != NONE &&
                             !(lubSym.kind == sym.kind &&

@@ -150,7 +150,9 @@ public class Definitions {
     public final int      FUNCTION_COUNT = 10;
     public final Symbol[] FUNCTION_CLASS = new Symbol[FUNCTION_COUNT];
     public final Type     FUNCTION_TYPE(Type[] args, Type result) {
-        assert 0 <= args.length && args.length < FUNCTION_COUNT: args.length;
+	assert 0 <= args.length;
+	if (args.length >= FUNCTION_COUNT)
+	    throw new Type.Error("function has too many arguments; limit = " + (FUNCTION_COUNT-1));
         args = Type.cloneArray(args, 1);
         args[args.length - 1] = result;
 	return getType(FUNCTION_CLASS[args.length - 1], args);

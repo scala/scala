@@ -696,10 +696,24 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   *  Handle overloading.
   */
   def enterInScope(sym: Symbol): unit = {
+
+    def covers(presym: Symbol, newsym: Symbol) = {
+      if (presym == newsym) true
+      else if (!presym.isInitialized()) false
+      else presym.getType() match {
+	case Type$OverloadedType(alts, _) =>
+	  var i = 0;
+	  while (i < alts.length && alts(i) != newsym) i = i + 1;
+	  i < alts.length
+	case _ =>
+	  false
+      }
+    }
+
     // handle double and overloaded definitions
     val e: Scope$Entry = context.scope.lookupEntry(sym.name);
     val other: Symbol = e.sym;
-    if (sym == other) {
+    if (covers(other, sym)) {
       if (global.debug) global.log("redefined: " + sym + ":" + sym.rawInfo());
     } else if (e.owner == context.scope) {
       assert(!other.isExternal(), other);
@@ -738,7 +752,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     def enterSym(tree: Tree, sym: Symbol): Symbol = {
       //if (global.debug) System.out.println("entering " + sym);//DEBUG
       if (!sym.isInitialized()) {
-	//System.err.println("undefined: " + sym + ":" + sym.rawInfo());//DEBUG
 	sym.setInfo(new LazyTreeType(tree));
       }
       if (!sym.isConstructor()) {
@@ -2032,6 +2045,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    .setType(Type.NoType);
 
 	case Tree$ValDef(_, _, tpe, rhs) =>
+	  assert(sym != null, tree);
 	  val tpe1: Tree =
 	    if (tpe == Tree.Empty) gen.mkType(tree.pos, sym.getType())
 	    else transform(tpe, TYPEmode);

@@ -1300,7 +1300,23 @@ public class TermSymbol extends Symbol {
         Scope.Entry e = scope.lookupEntry(name);
         if (e.owner == scope && e.sym.isExternal() && e.sym.kind == VAL) {
             TermSymbol sym = (TermSymbol) e.sym;
-            sym.update(pos, flags);
+	    if (sym.isInitialized()) {
+		switch (sym.type()) {
+		case OverloadedType(Symbol[] alts, Type[] alttypes):
+		    int i = 0;
+		    while (i < alts.length && !alts[i].isExternal())
+			i++;
+		    if (i < alts.length) {
+			//System.out.println("PATCH: " + alts[i] + ":" + alttypes[i]);//DEBUG
+			alts[i].update(pos, flags);
+			if (i == alts.length - 1)
+			    sym.update(pos, sym.flags);
+			return (TermSymbol) alts[i];
+		    }
+		    throw new ApplicationError("TermSymbol.define " + sym);
+		}
+	    }
+	    sym.update(pos, flags);
             return sym;
         } else {
             return new TermSymbol(pos, name, owner, flags);
