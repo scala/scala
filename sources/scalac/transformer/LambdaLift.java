@@ -436,10 +436,9 @@ public class LambdaLift extends OwnerTransformer
 	Symbol[] freevars = get(free.ftvs, owner).toArray();
 	Symbol[] params = new Symbol[freevars.length];
 	for (int i = 0; i < params.length; i++) {
-	    params[i] = freevars[i].cloneSymbol();
+	    params[i] = freevars[i].cloneSymbol(owner);
 	    params[i].pos = owner.pos;
 	    params[i].flags = PARAM | SYNTHETIC;
-	    params[i].setOwner(owner);
 	}
 	for (int i = 0; i < params.length; i++)
 	    params[i].setInfo(freevars[i].info().subst(freevars, params));
@@ -450,11 +449,10 @@ public class LambdaLift extends OwnerTransformer
 	Symbol[] freevars = get(free.fvs, owner).toArray();
 	Symbol[] params = new Symbol[freevars.length];
 	for (int i = 0; i < params.length; i++) {
-	    params[i] = freevars[i].cloneSymbol();
+	    params[i] = freevars[i].cloneSymbol(owner);
 	    params[i].pos = owner.pos;
 	    params[i].flags &= CAPTURED;
 	    params[i].flags |= PARAM | SYNTHETIC;
-	    params[i].setOwner(owner);
 	    params[i].setInfo(freevars[i].type());
 	}
 	return params;

@@ -271,8 +271,7 @@ public class Erasure extends Transformer implements Modifiers {
 	    // where owner of all parameters is bridge symbol itself.
 	    Symbol[] params1 = new Symbol[params.length];
 	    for (int i = 0; i < params.length; i++) {
-		params1[i] = params[i].cloneSymbol();
-		params1[i].setOwner(bridgeSym);
+		params1[i] = params[i].cloneSymbol(bridgeSym);
 	    }
 	    bridgeSym.setType(Type.MethodType(params1, restp));
 

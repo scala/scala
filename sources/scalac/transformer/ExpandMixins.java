@@ -122,11 +122,11 @@ public class ExpandMixins extends Transformer {
         return (Tree[][])s.toArray(new Tree[s.size()][]);
     }
 
-    protected Symbol renameSymbol(Map symbolMap, Symbol oldSymbol) {
+    protected Symbol renameSymbol(Map symbolMap, Symbol oldSymbol, Symbol newOwner) {
         Name newName = freshNameCreator.newName(oldSymbol.name);
         if (oldSymbol.name.isTypeName()) newName = newName.toTypeName();
         else if (oldSymbol.name.isConstrName()) newName = newName.toConstrName();
-        Symbol newSymbol = oldSymbol.cloneSymbol();
+        Symbol newSymbol = oldSymbol.cloneSymbol(newOwner);
         newSymbol.name = newName;
         symbolMap.put(oldSymbol, newSymbol);
 
@@ -212,8 +212,7 @@ public class ExpandMixins extends Transformer {
                     Tree actual = sectionA[p];
 
                     Symbol memberSymbol =
-                        renameSymbol(symbolMap, formal.symbol());
-                    memberSymbol.setOwner(owner);
+                        renameSymbol(symbolMap, formal.symbol(), owner);
                     Type memberType = typeMap.apply(formal.tpe.type());
                     memberSymbol.updateInfo(memberType);
 
@@ -248,8 +247,11 @@ public class ExpandMixins extends Transformer {
                 if (memSymT != memSymM) {
                     if ((memSym.flags & Modifiers.DEFERRED) != 0)
                         leftOutMembers.add(member);
-                    else
-                        renameSymbol(symbolMap, memSym);
+                    else {
+                        Symbol newMemSym = renameSymbol(symbolMap, memSym, owner);
+                        newMembers.enterOrOverload(newMemSym);
+                        mixedInSymbols.put(memSym, newMemSym);
+                    }
                 }
             }
 
@@ -267,15 +269,6 @@ public class ExpandMixins extends Transformer {
                 treeCopier.popSymbolSubst();
 
                 newBody.add(newMember);
-
-                if (newMember.definesSymbol()) {
-		    Symbol sym = newMember.symbol();
-
-                    sym.setOwner(owner);
-                    newMembers.enterOrOverload(sym);
-
-                    mixedInSymbols.put(member.symbol(), newMember.symbol());
-		}
             }
         }
 

@@ -75,6 +75,13 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public abstract Symbol cloneSymbol();
 
+    /** Return a fresh symbol with the same fields as this one and the
+     * given owner.
+     */
+    public Symbol cloneSymbol(Symbol owner) {
+        return cloneSymbol().setOwner(owner);
+    }
+
     /** copy all fields to `sym'
      */
     public void copyTo(Symbol sym) {

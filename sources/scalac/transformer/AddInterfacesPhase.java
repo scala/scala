@@ -200,13 +200,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         else return className;
     }
 
-    /** Clone symbol and set its owner immediately. */
-    protected Symbol cloneSymbol(Symbol original, Symbol newOwner) {
-        Symbol clone = original.cloneSymbol();
-        clone.setOwner(newOwner);
-        return clone;
-    }
-
     /** Clone the symbol itself, and if it represents a method, clone
      * its type and value arguments too, then update the symbol's type
      * to use these new symbols. Also applies the given substitution
@@ -216,20 +209,20 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                                      Symbol newOwner,
                                      SymbolSubstTypeMap map) {
         SymbolSubstTypeMap symMap;
-        Symbol clone = cloneSymbol(original, newOwner);
+        Symbol clone = original.cloneSymbol(newOwner);
         if (clone.isMethod()) {
             Symbol[] tparams = clone.typeParams();
             Symbol[] newTParams = new Symbol[tparams.length];
             symMap = new SymbolSubstTypeMap(map);
             for (int i = 0; i < tparams.length; ++i) {
-                newTParams[i] = cloneSymbol(tparams[i], clone);
+                newTParams[i] = tparams[i].cloneSymbol(clone);
                 symMap.insertSymbol(tparams[i], newTParams[i]);
             }
 
             Symbol[] vparams = clone.valueParams();
             Symbol[] newVParams = new Symbol[vparams.length];
             for (int i = 0; i < vparams.length; ++i) {
-                newVParams[i] = cloneSymbol(vparams[i], clone);
+                newVParams[i] = vparams[i].cloneSymbol(clone);
                 newVParams[i].updateInfo(symMap.apply(newVParams[i].info()));
                 symMap.insertSymbol(vparams[i], newVParams[i]);
             }
@@ -266,7 +259,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
 
         Symbol classSym = (Symbol)ifaceToClass.get(ifaceSym);
         if (classSym == null) {
-            classSym = cloneSymbol(ifaceSym, ifaceSym.owner());
+            classSym = ifaceSym.cloneSymbol(ifaceSym.owner());
             classSym.name = className(ifaceSym.name);
             classSym.flags &= ~Modifiers.INTERFACE;
 
@@ -282,7 +275,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             Map classSubst = newClassSubst(classSym);
             Symbol[] tparams = classConstrSym.typeParams();
             for (int i = 0; i < tparams.length; ++i) {
-                Symbol newParam = cloneSymbol(tparams[i], classConstrSym);
+                Symbol newParam = tparams[i].cloneSymbol(classConstrSym);
                 classSubst.put(tparams[i], newParam);
             }
 

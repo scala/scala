@@ -697,7 +697,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Symbol[] syms1 = members1.elements();
 		    Symbol[] syms2 = new Symbol[syms1.length];
 		    for (int i = 0; i < syms2.length; i++) {
-			syms2[i] = syms1[i].cloneSymbol().setOwner(tp1.symbol());
+			syms2[i] = syms1[i].cloneSymbol(tp1.symbol());
 		    }
 		    for (int i = 0; i < syms2.length; i++) {
 			syms2[i].setInfo(syms1[i].info().subst(syms1, syms2));
@@ -2159,8 +2159,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	Type symlb = sym.loBound().substThis(sym.owner(), glbThisType);
 	Scope.Entry e = s.lookupEntry(sym.name);
 	if (e == Scope.Entry.NONE) {
-	    Symbol sym1 = sym.cloneSymbol();
-	    sym1.setOwner(glbThisType.symbol());
+	    Symbol sym1 = sym.cloneSymbol(glbThisType.symbol());
 	    sym1.setInfo(syminfo);
 	    if (sym1.kind == TYPE) sym1.setLoBound(symlb);
 	    s.enter(sym1);

@@ -279,11 +279,10 @@ public class AttributedTreeCopier extends SubstTransformer {
                         if (sym != Symbol.NONE
                             && mustCopySymbol(tree)
                             && !symbolMap.containsKey(sym)) {
-                            Symbol newSym = sym.cloneSymbol();
-
-                            if (symbolMap.containsKey(newSym.owner()))
-                                newSym.setOwner((Symbol)symbolMap.get(newSym.owner()));
-
+                            Symbol oldOwner = sym.owner();
+                            Symbol newOwner = (Symbol)symbolMap.get(oldOwner);
+                            if (newOwner == null) newOwner = oldOwner;
+                            Symbol newSym = sym.cloneSymbol(newOwner);
                             symbolMap.put(sym, newSym);
                         }
                     }
