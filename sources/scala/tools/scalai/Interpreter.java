@@ -18,6 +18,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 
+import scala.runtime.InterpreterSupport;
+import scala.runtime.InterpreterSupport.DefinitionPrinter;
+import scala.runtime.InterpreterSupport.EvaluationResult;
+
 import scalac.Global;
 import scalac.ast.parser.Sourcefile;
 import scalac.util.PrefixMatcher;
@@ -113,9 +117,10 @@ public class Interpreter {
         if (interactive) showBanner();
         if (program.length > 0) load(lfiles = program);
         if (global.reporter.errors() == 0 && main != null) call(main, args);
+        // !!! can we remove that ?
         // Compute something to force loading of Predef & Interpreter
-        if (interactive && program.length == 0 && main == null)
-            load("module $init$ { Interpreter.initialize }");
+        //if (interactive && program.length == 0 && main == null)
+        //load("module $init$ {}");
         if (interactive) while (handle(read()));
         global.stop("total");
         if (!interactive) global.reporter.printSummary();
@@ -254,27 +259,32 @@ public class Interpreter {
     }
 
     public boolean interpret(boolean interactive) {
-        if (global.reporter.errors() == 0) {
-            CodeContainer code = compiler.compile(global.units, interactive);
-            EvaluatorResult result;
-            try {
-                result = EvaluatorResult.Value(evaluator.evaluate(code));
-            } catch (EvaluatorException exception) {
-                result = EvaluatorResult.Error(exception);
-            }
-            show(result, interactive);
-        }
+        if (global.reporter.errors() == 0)
+            show(interpret(new DefaultDefinitionPrinter()), interactive);
         Sourcefile.flushSources();
         return true;
     }
 
+    public EvaluatorResult interpret(DefinitionPrinter printer) {
+        try {
+            CodeContainer code = compiler.compile(global.units, interactive);
+            InterpreterSupport.setDefinitionPrinter(printer);
+            evaluator.evaluate(code);
+            EvaluationResult result =
+                InterpreterSupport.getAndResetEvaluationResult();
+            if (result == null) return EvaluatorResult.Void;
+            return EvaluatorResult.Value(result.value, result.type);
+        } catch (EvaluatorException exception) {
+            return EvaluatorResult.Error(exception);
+        }
+    }
+
     public void show(EvaluatorResult result, boolean interactive) {
-        // !!! remove case Value from EvaluatorResult
         switch (result) {
         case Void:
             return;
-        case Value(Object value):
-            // !!! if (interactive && value != null) writer.println(value);
+        case Value(Object value, String type):
+            if (interactive) writer.println(value + ": " + type);
             return;
         case Error(EvaluatorException exception):
             writer.println(exception.mkString(global));
@@ -447,6 +457,20 @@ public class Interpreter {
 
     private void error(String message) {
         writer.println("Error: " + message);
+    }
+
+    //########################################################################
+    // Private Classes
+
+    private class DefaultDefinitionPrinter implements DefinitionPrinter {
+
+        public void showDefinition(String signature) {
+            writer.println(signature);
+        }
+
+        public void showValueDefinition(String signature, Object value) {
+            writer.println(signature + " = " + value);
+        }
     }
 
     //########################################################################
