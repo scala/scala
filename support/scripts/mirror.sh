@@ -39,6 +39,7 @@ function mirror-files() {
 }
 
 function mirror() {
+    local program="$FUNCNAME";
     local version='$Revision$';
     local prefix=".";
     local owner="";
@@ -47,15 +48,15 @@ function mirror() {
     local preserve="false";
     local -a files;
 
-    args-loop "$FUNCNAME" "$@";
+    args-loop "$@";
 
     if [ ! -d "$prefix" ]; then
-        abort "$FUNCNAME: could not find directory \`$prefix'";
+        abort "could not find directory '$prefix'";
     fi;
 
     local count="${#files[@]}";
     if [ $count -lt 1 ]; then
-        abort "$FUNCNAME: missing target directory";
+        abort "missing target directory";
     fi;
 
     local -a instargs;

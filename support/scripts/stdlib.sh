@@ -11,39 +11,46 @@ function print() {
 }
 
 function abort() {
-    print "$@" 1>&2;
+    print "${program:-error}: ""$@" 1>&2;
     exit 1;
+}
+
+function run_() {
+    "$@" || exit $?;
 }
 
 function run() {
     [ "$verbose" = "true" ] && echo "$@";
-    "$@" || exit $?;
+    run_ "$@";
+}
+
+function runO() {
+    local stdout="$1"; shift 1;
+    [ "$verbose" = "true" ] && echo "$@" "1>" "$stdout";
+    run_ "$@" 1> "$stdout";
 }
 
 ##############################################################################
 
-# usage: args-abort <error>
-# abort argument processing with message <error>
-function args-abort() {
-    local error="$1";
-    shift 1;
-    abort "$args_script: $error" "$@";
-}
-
 # usage: args-loop <script> "$@"
 # process all arguments
 function args-loop() {
-    local args_script="$1"; shift 1;
     while [ $# -gt 0 ]; do
-        $args_script-args "$@";
+        $program-args "$@";
         shift $?;
     done;
 }
 
 # usage: args-option-unknown "$@"
-# <option> ... => abort "unknown <option>";
+# <option> ... => abort "unknown option <option>";
 function args-option-unknown() {
-    args-abort "unknown option $1";
+    abort "unknown option $1";
+}
+
+# usage: args-unknown "$@"
+# <argument> ... => abort "don't know what to do with argument <argument>";
+function args-unknown() {
+    abort "don't know what to do with argument '$1'";
 }
 
 # usage: args-append-array <array> "$@"
@@ -59,7 +66,7 @@ function args-append-array() {
 function args-option-value() {
     local value="$1"; shift 1;
     if [ $# -lt 2 ]; then
-        args-abort "missing argument for option $1";
+        abort "missing argument for option $1";
     fi;
     eval "$value=\"\$2\"";
     return 2;

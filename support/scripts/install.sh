@@ -86,6 +86,7 @@ function install-files() {
 }
 
 function install() {
+    local program="$FUNCNAME";
     local version='$Revision$';
     local directory="false";
     local leading="false";
@@ -95,14 +96,14 @@ function install() {
     local preserve="false";
     local -a files;
 
-    args-loop "$FUNCNAME" "$@";
+    args-loop "$@";
 
     local count="${#files[@]}";
     if [ $count -lt 1 ]; then
         if [ "$directory" == "true" ]; then
-            abort "$FUNCNAME: missing target directory";
+            abort "missing target directory";
         else
-            abort "$FUNCNAME: missing source file";
+            abort "missing source file";
         fi;
     fi;
 
@@ -110,7 +111,7 @@ function install() {
         install-dirs "${files[@]}";
     else
         if [ $count -lt 2 ]; then
-            abort "$FUNCNAME: missing destination";
+            abort "missing destination";
         fi;
 
         local last="${files[$(($count-1))]}";
@@ -120,8 +121,8 @@ function install() {
         elif [ $count -eq 2 ]; then
             install-file "${files[@]}";
         else
-            local text1="$FUNCNAME: installing multiple files, but last";
-            local text2="argument, \`$last' is not a directory";
+            local text1="installing multiple files, but last";
+            local text2="argument, '$last' is not a directory";
             abort "$text1 $text2";
         fi;
     fi;
