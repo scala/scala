@@ -22,51 +22,45 @@ abstract class NodeFactory[A <: Node] {
 
   protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): A;
 
-  def makeNode(uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
-    val hash    = Utility.hashCode( uname, attrSeq.hashCode(), children ) ;
+  protected def construct(hash:Int, old:List[A], uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
+    val el = create(uname, attrSeq, children);
+    cache.update( hash, el::old );
+    el
+  }
 
-    def construct: A = {
-        val el = create( uname, attrSeq, children );
-        cache.update( hash, List(el));
-        el
-    }
-
-    /** faster equality, because */
-    def eqElements(ch1:Seq[Node], ch2:Seq[Node]): Boolean = {
-      (ch1.length == ch2.length) && {
-        val it1 = ch1.elements;
-        val it2 = ch2.elements;
-        var res = true;
-        while(res && it1.hasNext) {
-          res = it1.next.eq(it2.next);
-        }
-        res
+  /** faster equality, because */
+  def eqElements(ch1:Seq[Node], ch2:Seq[Node]): Boolean = {
+    (ch1.length == ch2.length) && {
+      val it1 = ch1.elements;
+      val it2 = ch2.elements;
+      var res = true;
+      while(res && it1.hasNext) {
+        res = it1.next.eq(it2.next);
       }
+      res
     }
+  }
 
-    def nodeEquals(n: Node) =
-      (n.namespace == uname.uri)
-      &&(n.label == uname.label)
-      &&(n.attributes == attrSeq)
-      &&(eqElements(n.child,children));
+  def nodeEquals(n: Node, uname: UName, attrSeq:AttributeSeq, children:Seq[Node]) =
+    (n.namespace == uname.uri)
+    &&(n.label == uname.label)
+    &&(n.attributes == attrSeq)
+    &&(eqElements(n.child,children));
 
-    /*
-    Console.println("[makeNode called, hash: ]"+hash);
-    Console.println("[elem name: ]"+uname+" hash "+(41 * uname.uri.hashCode() % 7 + uname.label.hashCode());
-    Console.println("[attrs : ]"+attrSeq+" hash "+attrSeq.hashCode());
-    Console.println("[children name: ]"+children+" hash "+children.hashCode());
-    */
-    cache.get( hash ) match {
+  def makeNode(uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
+    Console.println("wrong makeNode");
+    val hash    = Utility.hashCode( uname, attrSeq.hashCode(), children ) ;
+   cache.get( hash ) match {
       case Some(list) => // find structurally equal
         val it     = list.elements;
-        val lookup = it.find { x => nodeEquals(x) };
+        val lookup = it.find { x => nodeEquals(x,uname,attrSeq,children) };
         lookup match {
           case Some(x) =>
             //Console.println("[cache hit !]"+x);
             x; // return cached elem
-          case _       => construct;
+          case _       => construct(hash, list, uname, attrSeq, children);
         }
-      case _          => construct
+      case _          => construct(hash, Nil, uname, attrSeq, children)
     }
   }
 
@@ -79,8 +73,9 @@ abstract class NodeFactory[A <: Node] {
   def makeProcInstr(t: String, s: String): Seq[ProcInstr] =
     if(ignoreProcInstr) Nil else List(ProcInstr(t, s));
 
+  /*
   def makeCharData(s: String) =
     CharData( s );
-
+  */
 
 }

@@ -34,7 +34,7 @@ import javax.xml.parsers.SAXParser;
 
 /** SAX adapter class, for use with Java SAX parser
 **/
-abstract class FactoryAdapter  extends DefaultHandler() {
+abstract class FactoryAdapter extends DefaultHandler() {
 
   val buffer = new StringBuffer();
   val attribStack = new Stack[HashMap[Pair[String,String],String]];
