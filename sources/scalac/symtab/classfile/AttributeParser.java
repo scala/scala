@@ -327,9 +327,9 @@ public class AttributeParser implements ClassfileConstants {
                 nextToken();
 		Type[] args = new Type[types.size()];
 		types.toArray(args);
-		return Type.TypeRef(clazz.owner().thisType(), clazz, args);
+		return Type.TypeRef(clazz.owner().thisType(), clazz, args).unalias();
 	    } else {
-		return clazz.typeConstructor();
+		return clazz.typeConstructor().unalias();
 	    }
 	}
 
