@@ -33,7 +33,7 @@
     <elementBinding>
     def constr_&ccElementName;( ch:childrenT, attrs:attribMapT ) = new &ccElementName;(ch:_*) { 
       private val hmap = attrs;
-      override def attribute = attrs.elements.toSeq( hmap.size );
+      override def attribute = attrs.toList;
 
     };
     
@@ -56,7 +56,7 @@
        for( val p &lt;- attrs )         { newmap += p._1 -&gt; p._2 };
        new &ccElementName;( child:_* ) {
          private val hmap = newmap;
-         override def attribute = newmap.elements.toSeq( newmap.size );
+         override def attribute = newmap.toList;
        }
      }
   
@@ -67,7 +67,7 @@
        newmap += attr._1 -&gt; attr._2;
        new &ccElementName;( child:_* ) {
          private val hmap = newmap;
-         override def attribute = newmap.elements.toSeq( newmap.size );
+         override def attribute = newmap.toList;
        }
      }
     }
