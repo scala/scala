@@ -9,6 +9,9 @@
 
 package scala.collection.immutable;
 
+object TreeMap {
+    def Empty[A <% Ordered[A], B] = new TreeMap[A, B];
+}
 
 /** This class implements immutable maps using a tree.
  *
