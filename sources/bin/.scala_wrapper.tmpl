@@ -259,7 +259,7 @@ exec_java() {
 
     # append script-suffix-specific arguments
     case "$SCRIPT" in
-        *-debug* ) JAVA_ARGS="$JAVA_ARGS -Djava.compiler=NONE";;
+        *-debug* ) JAVA_ARGS="$JAVA_ARGS -Djava.compiler=NONE -ea";;
     esac;
 
     # invoke Java
