@@ -39,6 +39,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
  *                  | METHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | POLYTtpe len_Nat tpe_Ref {sym_Ref}
  *                  | OVERLOADEDtpe len_Nat {sym_Ref} {tpe_Ref}
+ *                  | FLAGGEDtype len_Nat flags_Nat tpe_Ref
  *   SymbolInfo     = name_Ref owner_Ref flags_Nat info_Ref
  *   NameInfo       = <character sequence of length len_Nat in Utf8 format>
  *   Ref            = Nat
@@ -54,6 +55,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
     Name sourceName;
     int[] index;
     Object[] entries;
+    int paramFlags;
 
     UnPickle(Symbol root, byte[] data, Name sourceName) {
 	assert root.rawInfoAt(Symbol.FIRST_ID) instanceof LazyType;
@@ -318,12 +320,16 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		break;
 	    case METHODtpe:
 		Type restype = readTypeRef();
+		int bp1 = bp;
 		Type[] argtypes = readTypeRefs(end);
+		int[] flags = new int[argtypes.length];
+		bp = bp1;
+		readFlags(flags);
 		Symbol[] params = new Symbol[argtypes.length];
 		for (int i = 0; i < argtypes.length; i++) {
 		    params[i] = new TermSymbol(
 			Position.NOPOS, Name.fromString("$" + i),
-			Symbol.NONE, PARAM);
+			Symbol.NONE, PARAM | flags[i]);
 		    params[i].setInfo(argtypes[i]);
 		}
 		tpe = Type.MethodType(params, restype);
@@ -339,6 +345,9 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    alttypes[i] = setOwner(alttypes[i], alts[i]);
 		tpe = Type.OverloadedType(alts, alttypes);
 		break;
+	    case FLAGGEDtpe:
+		paramFlags = getFlags(readNat());
+		return readTypeRef();
 	    default:
 		throw new BadSignature(this);
 	    }
@@ -371,6 +380,30 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		return new Type[nread];
 	    }
 	}
+    }
+
+    void readFlags(int[] flags) {
+	for (int i = 0; i < flags.length; i++)
+	    flags[i] = getFlags(readNat());
+    }
+
+    int getFlags(int n) {
+	int savedBp = bp;
+	bp = index[n];
+	int tag = bytes[bp++];
+	int end = readNat() + bp;
+	int flags = (tag == FLAGGEDtpe) ? decodeFlags(readNat()) : 0;
+	bp = savedBp;
+	return flags;
+    }
+
+    private static int decodeFlags(int n) {
+	int flags = 0;
+	if ((n & COVARflag) != 0) flags |= COVARIANT;
+	if ((n & CONTRAVARflag) != 0) flags |= CONTRAVARIANT;
+	if ((n & REPEATEDflag) != 0) flags |= REPEATED;
+	if ((n & DEFflag) != 0) flags |= DEF;
+	return flags;
     }
 
     public static class BadSignature extends java.lang.Error {

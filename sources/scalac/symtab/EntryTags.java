@@ -30,8 +30,16 @@ public interface EntryTags {
 	OVERLOADEDtpe = 18,
 	UNBOXEDtpe = 19,
         UNBOXEDARRAYtpe = 20,
-	ERRORtpe = 21;
+	FLAGGEDtpe = 21,
+	ERRORtpe = 22;
 
     int firstSymTag = NONEsym, lastSymTag = VALsym;
-    int firstTypeTag = NOtpe, lastTypeTag = UNBOXEDARRAYtpe;
+    int firstTypeTag = NOtpe, lastTypeTag = FLAGGEDtpe;
+
+// flag encodings
+
+    int COVARflag = 1,
+	CONTRAVARflag = 2,
+	REPEATEDflag = 4,
+	DEFflag = 8;
 }
