@@ -127,7 +127,9 @@ public class AddAccessors extends Transformer {
 
         case Ident(Name name): {
             Symbol sym = tree.symbol();
-            if (inClassContext && sym.owner().isPrimaryConstructor())
+            if (inClassContext
+                && name.isTermName()
+                && sym.owner().isPrimaryConstructor())
                 return gen.Apply(gen.Ident(accessor(sym)), Tree.EMPTY_ARRAY);
             else
                 return copy.Ident(tree, name);
