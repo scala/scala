@@ -8,17 +8,9 @@
 
 package scalac;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
-
 import scalac.util.Debug;
 
 public class ApplicationError extends Error {
-
-    //########################################################################
-    // Private state
-
-    private final Throwable cause; // !!! remove and use API 1.4
 
     //########################################################################
     // Private interface
@@ -52,8 +44,7 @@ public class ApplicationError extends Error {
     }
 
     public ApplicationError(String message, Throwable cause) {
-        super(message);
-        this.cause = cause;
+        super(message, cause);
     }
 
     public ApplicationError(Object object, Throwable cause) {
@@ -62,25 +53,6 @@ public class ApplicationError extends Error {
 
     public ApplicationError(String message, Object object, Throwable cause) {
         this(combine(message, object), cause);
-    }
-
-    //########################################################################
-    // Throwable interface
-
-    public void printStackTrace(PrintStream printer) {
-        super.printStackTrace(printer);
-        if (cause != null) {
-            printer.print("Caused by: ");
-            cause.printStackTrace(printer);
-        }
-    }
-
-    public void printStackTrace(PrintWriter printer) {
-        super.printStackTrace(printer);
-        if (cause != null) {
-            printer.print("Caused by: ");
-            cause.printStackTrace(printer);
-        }
     }
 
     //########################################################################
