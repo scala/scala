@@ -514,7 +514,7 @@ class AddInterfaces extends SubstTransformer {
 
             case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs): {
                 Tree tFun = ((Tree.Apply)newTree).fun;
-                if (fun.symbol().isPrimaryConstructor())
+                if (fun.hasSymbol() && fun.symbol().isPrimaryConstructor())
                     return copy.Apply(newTree, tFun, vargs)
                         .setType(fixClassSymbols(newTree.type));
                 else
@@ -522,10 +522,8 @@ class AddInterfaces extends SubstTransformer {
             }
 
             case Apply(Tree fun, Tree[] args): {
-                Symbol sym = fun.symbol();
-
-                if (sym.isPrimaryConstructor()) {
-                    fun.setSymbol(getClassSym(sym));
+                if (fun.hasSymbol() && fun.symbol().isPrimaryConstructor()) {
+                    fun.setSymbol(getClassSym(fun.symbol()));
                     fun.setType(fixClassSymbols(fun.type));
                     return (copy.Apply(newTree, super.syncTree(fun), args))
                         .setType(fixClassSymbols(newTree.type));
@@ -534,7 +532,7 @@ class AddInterfaces extends SubstTransformer {
             }
 
             case TypeApply(Tree fun, Tree[] args): {
-                if (fun.symbol().isPrimaryConstructor()) {
+                if (fun.hasSymbol() && fun.symbol().isPrimaryConstructor()) {
                     fun.setSymbol(getClassSym(fun.symbol()));
                     fun.setType(fixClassSymbols(fun.type));
                     return (copy.TypeApply(newTree, super.syncTree(fun), args))
