@@ -16,6 +16,9 @@ import scalac.ast.parser.*;
 import scalac.symtab.Definitions;
 import scalac.ast.printer.*;
 import scalac.backend.Primitives;
+// !!! <<< Interpreter stuff
+import scalac.symtab.Symbol;
+// !!! >>> Interpreter stuff
 
 
 /** The global environment of a compiler run
@@ -205,6 +208,7 @@ public class  Global {
             assert phase.id == i;
         }
 	assert PHASE.ANALYZER.id + 1 == POST_ANALYZER_PHASE_ID;
+        if (interpret) fixInit();
     }
 
     /** Move to next phase
@@ -272,7 +276,9 @@ public class  Global {
                 break;
             }
             if (currentPhase == PHASE.PARSER) fix1();
+            if (currentPhase == PHASE.ANALYZER) fix2();
         }
+        if (reporter.errors() != 0) imports.clear();
 
         printer.end();
     }
@@ -280,15 +286,24 @@ public class  Global {
     public static final String CONSOLE_S = "$console$";
     private static final Name
         INTERPRETER_N           = Name.fromString("Interpreter"),
+        SCALA_INTERPRETER_N     = Name.fromString("scala.Interpreter"),
         SHOW_DEFINITION_N       = Name.fromString("showDefinition"),
         SHOW_VALUE_DEFINITION_N = Name.fromString("showValueDefinition"),
         SHOW_VALUE_N            = Name.fromString("showValue");
+    private Symbol INTERPRETER;
+    private Symbol SHOW_DEFINITION;
+    private Symbol SHOW_VALUE_DEFINITION;
 
     private int module = 0;
+    private List imports = new ArrayList();
 
     private void fix1() {
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix1(units[i]);
+        }
+        for (int i = 0; i < imports.size(); i++) {
+            Symbol module = (Symbol)imports.get(i);
+            PHASE.ANALYZER.addConsoleImport(this, module);
         }
     }
 
@@ -312,6 +327,71 @@ public class  Global {
                         Names.Object.toConstrName())},
                     unit.body))};
         module++;
+    }
+
+    private void fix2() {
+        for (int i = 0; i < units.length; i++) {
+            if (units[i].console) fix2(units[i]);
+        }
+    }
+
+    private void fix2(Unit unit) {
+        imports.clear();
+        for (int i = 0; i < unit.body.length; i++) {
+            switch (unit.body[i]) {
+            case ModuleDef(_, Name name, _, Tree.Template impl):
+                if (!name.toString().startsWith(CONSOLE_S)) break;
+                imports.add(unit.body[i].symbol());
+                TreeList body = new TreeList();
+                for (int j = 0; j < impl.body.length; j++)
+                    fix2(body, impl.body[j]);
+                impl.body = body.toArray();
+                break;
+            }
+        }
+    }
+
+    private void fix2(TreeList body, Tree tree) {
+        body.append(tree);
+        switch (tree) {
+        case PatDef(_, _, _): // !!! impossible (removed by analyzer)
+            assert false : Debug.show(tree);
+            return;
+        case ClassDef(_, _, _, _, _, _):
+        case PackageDef(_, _):
+        case ModuleDef(_, _, _, _):
+        case DefDef(_, _, _, _, _, _):
+        case TypeDef(_, _,_ ):
+            body.append(
+                treeGen.Apply(
+                    treeGen.Select(
+                        treeGen.mkRef(0, INTERPRETER),
+                        SHOW_DEFINITION),
+                    new Tree[] {
+                        make.Literal(0, tree.symbol().defString()).setType(
+                            definitions.JAVA_STRING_TYPE)}));
+            return;
+        case ValDef(_, _, _, _):
+            body.append(
+                treeGen.Apply(
+                    treeGen.Select(
+                        treeGen.mkRef(0, INTERPRETER),
+                        SHOW_VALUE_DEFINITION),
+                    new Tree[] {
+                        make.Literal(0, tree.symbol().defString()).setType(
+                            definitions.JAVA_STRING_TYPE),
+                        treeGen.Ident(tree.symbol())}));
+            return;
+        default:
+            return;
+        }
+    }
+
+
+    private void fixInit() {
+        INTERPRETER = definitions.getModule(SCALA_INTERPRETER_N);
+        SHOW_DEFINITION = INTERPRETER.lookup(SHOW_DEFINITION_N);
+        SHOW_VALUE_DEFINITION = INTERPRETER.lookup(SHOW_VALUE_DEFINITION_N);
     }
     // !!! >>> Interpreter stuff
 
