@@ -110,10 +110,12 @@ public class UnCurry extends OwnerTransformer
      *       (a_1, ..., a_n) => (Sequence(a_1, ..., a_n))
      */
     public Tree transform(Tree tree) {
-	//new scalac.ast.printer.TextTreePrinter().print("uncurry: ").print(tree).println().end();//DEBUG
+          //System.out.println("A uncurry: "+tree+" CLASS:"+tree.getClass());//DEBUG
+        System.out.flush();
 	//uncurry type and symbol
 	Type prevtype = tree.type;
 	if (prevtype != null) tree.type = descr.uncurry(prevtype);
+	//System.out.println("B uncurry (after descr.): "+tree);//DEBUG
         switch (tree) {
 	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(
@@ -146,12 +148,22 @@ public class UnCurry extends OwnerTransformer
 	    Tree tree1 = asMethod(super.transform(tree));
 	    return gen.Apply(tree1, new Tree[0]);
 
+
 	case Apply(Tree fn, Tree[] args):
 	    // f(x)(y) ==> f(x, y)
 	    // argument to parameterless function e => ( => e)
 	    Type ftype = fn.type;
 	    Tree fn1 = transform(fn);
+            boolean myInArray = TreeInfo.methSymbol(fn1) == global.definitions.PREDEF_ARRAY();
+            inArray = myInArray;
 	    Tree[] args1 = transformArgs(tree.pos, args, ftype);
+            if( myInArray )
+                  switch( fn1 ) {
+                  case Apply( TypeApply( Select(Tree fn2, _), Tree[] targs), _ ):
+                        return gen.mkBlock(args1[0].pos, fn2, args1[0]);
+                  default:
+                        assert false : "dead";
+                  }
 	    if (TreeInfo.methSymbol(fn1) == global.definitions.ANY_MATCH &&
 		!(args1[0] instanceof Tree.Visitor)) {
 		switch (TreeInfo.methPart(fn1)) {
@@ -187,11 +199,21 @@ public class UnCurry extends OwnerTransformer
 		return applyDef(super.transform(tree));
 	    }
 
+        case CaseDef(Tree pat, Tree guard, Tree body):
+              inPattern = true;
+              Tree pat1 = transform( pat );
+              inPattern = false;
+              Tree guard1 = transform( guard );
+              Tree body1 = transform( body );
+              return copy.CaseDef( tree, pat1, guard1, body1 );
+
 	default:
 	    return super.transform(tree);
 	}
     }
 
+      boolean inPattern = false;
+      boolean inArray = false;
 //    java.util.HashSet visited = new java.util.HashSet();//DEBUG
 
     /** Transform arguments `args' to method with type `methtype'.
@@ -235,14 +257,17 @@ public class UnCurry extends OwnerTransformer
      */
     private Tree[] toSequence( int pos, Symbol[] params, Tree[] args ) {
 	Tree[] result = new Tree[params.length];
+        System.arraycopy(args, 0, result, 0, params.length - 1);
+        /*
 	for (int i = 0; i < params.length - 1; i++)
 	    result[i] = args[i];
+        */
 	assert (args.length != params.length
 		|| !(args[params.length-1] instanceof Tree.Sequence)
 		|| TreeInfo.isSequenceValued(args[params.length-1]));
  	if (args.length == params.length) {
             switch (args[params.length-1]) {
-            case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
+            case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)): // seq:_* escape
 		result[params.length-1] = arg;
 		return result;
             }
@@ -252,8 +277,21 @@ public class UnCurry extends OwnerTransformer
 	    args1 = new Tree[args.length - (params.length - 1)];
 	    System.arraycopy(args, params.length - 1, args1, 0, args1.length);
 	}
-	result[params.length-1] =
-	    make.Sequence(pos, args1).setType(params[params.length-1].type());
+        Type theType = params[params.length-1].type();
+        if( inPattern )
+              result[params.length-1] =
+                    make.Sequence(pos, args1).setType( theType );
+        else if( inArray ) {
+              result[params.length-1] = gen.mkNewArray(pos,
+                                                       theType.typeArgs()[0],
+                                                       args1,
+                                                       currentOwner);
+
+        } else
+              result[params.length-1] =
+                    gen.mkNewList(pos,
+                                  theType.typeArgs()[0],
+                                  args1);
 	return result;
     }
 

@@ -434,22 +434,26 @@ public class LambdaLift extends OwnerTransformer
 	    return gen.ValDef(sym, rhs);
 
 	case Sequence(Tree[] args):
+              throw new ApplicationError("this should not happen");
+              /* // moved this to Uncurry
 	    Tree tree1 = gen.mkNewList(tree.pos, tree.type.typeArgs()[0], transform(args));
 	    //new scalac.ast.printer.TextTreePrinter().print("TUPLE: ").print(tree).print("\n ==> \n").print(tree1).println().end();//DEBUG
 	    return tree1;
+              */
 
 	case Return(Tree expr):
 	    if (tree.symbol() != currentOwner.enclMethod()) {
 		unit.error(tree.pos, "non-local return not yet implemented");
 	    }
 	    return super.transform(tree);
-
 	case Apply(Tree fn, Tree[] args):
 	    Symbol fsym = TreeInfo.methSymbol(fn);
 	    Tree fn1 = transform(fn);
 	    switch (fn1) {
 	    case TypeApply(Tree fn2, Tree[] targs):
                 if (args.length == 1 && fn2.symbol() == definitions.PREDEF_ARRAY()) {
+                      throw new ApplicationError("this should not happen");
+                      /* // this moved to UnCurry
                     switch (args[0]) {
                     case Sequence(Tree[] items):
                         assert targs.length == 1: tree;
@@ -466,6 +470,7 @@ public class LambdaLift extends OwnerTransformer
                             throw Debug.abort("illegal case", fn2);
                         }
                     }
+                      */
                 }
 		fn1 = copy.TypeApply(
 		    fn1, fn2, addFreeArgs(tree.pos, get(free.ftvs, fsym), targs, true));
