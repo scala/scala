@@ -20,7 +20,6 @@ public class Definitions {
      */
     public final Symbol ROOT;
     public final Symbol ROOT_CLASS;
-    public final Type   ROOT_TYPE;
 
     /** the null value
      */
@@ -337,8 +336,6 @@ public class Definitions {
         ROOT = TermSymbol.newJavaPackageModule(
             Names.ROOT, Symbol.NONE, pparser);
         ROOT_CLASS = ROOT.moduleClass();
-        // this is a prefix for all types inside of the anonymous package
-        ROOT_TYPE = ROOT_CLASS.thisType();
 
         // the scala class
         Symbol SCALA_CLASS = getClass(Names.scala);
