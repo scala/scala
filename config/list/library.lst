@@ -90,10 +90,12 @@ collection/mutable/MutableList.scala
 collection/mutable/ObservableMap.scala
 collection/mutable/ObservableSet.scala
 collection/mutable/ObservableUpdate.scala
+collection/mutable/PriorityQueue.scala
 collection/mutable/Publisher.scala
 collection/mutable/Queue.scala
 collection/mutable/Removal.scala
 collection/mutable/Reset.scala
+collection/mutable/ResizableArray.scala
 collection/mutable/RevertableHistory.scala
 collection/mutable/Set.scala
 collection/mutable/SetProxy.scala
@@ -102,7 +104,10 @@ collection/mutable/Stack.scala
 collection/mutable/Subscriber.scala
 collection/mutable/SynchronizedBuffer.scala
 collection/mutable/SynchronizedMap.scala
+collection/mutable/SynchronizedPriorityQueue.scala
+collection/mutable/SynchronizedQueue.scala
 collection/mutable/SynchronizedSet.scala
+collection/mutable/SynchronizedStack.scala
 collection/mutable/Undo.scala
 
 collection/immutable/ListMap.scala
@@ -111,7 +116,6 @@ collection/immutable/Map.scala
 collection/immutable/Tree.scala
 collection/immutable/TreeMap.scala
 collection/immutable/TreeSet.scala
-collection/immutable/Order.scala
 collection/immutable/Queue.scala
 collection/immutable/Set.scala
 collection/immutable/Stack.scala
