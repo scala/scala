@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 import scalac.Unit;
 import scalac.ast.Tree;
+import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
@@ -159,7 +160,131 @@ public class ATreeFromSTree {
 
     /** Translates the expression. */
     private ACode expression(Tree tree) {
-        return ACode.Void;
+        switch (tree) {
+
+        case LabelDef(_, Ident[] idents, Tree rhs):
+            Symbol[] locals = Tree.symbolOf(idents);
+            return make.Label(tree, tree.symbol(), locals, expression(rhs));
+
+        case Block(Tree[] statements):
+            if (statements.length == 0) return make.Void;
+            int statement_count = statements.length - 1;
+            List locals = new ArrayList();
+            ACode[] codes = statement(locals,statements,0, statement_count);
+            ACode value = expression(statements[statement_count]);
+            if (locals.size() == 0 && codes.length == 0) return value;
+            Symbol[] symbols =
+                (Symbol[])locals.toArray(new Symbol[locals.size()]);
+            return make.Block(tree, symbols, codes, value);
+
+        case Assign(Tree lhs, Tree rhs):
+            return make.Block(tree, Symbol.EMPTY_ARRAY, new ACode[] {
+                make.Store(tree, location(lhs), expression(rhs))},
+                make.Void);
+
+        case If(Tree cond, Tree thenp, Tree elsep):
+            ACode test = expression(cond);
+            return make.If(tree, test, expression(thenp), expression(elsep));
+
+        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+            int[][] tagss = new int[tags.length][];
+            for (int i = 0; i < tagss.length; i++)
+                tagss[i] = new int[] {tags[i]};
+            ACode[] codes = new ACode[bodies.length + 1];
+            for (int i = 0; i < bodies.length; i++)
+                codes[i] = expression(bodies[i]);
+            codes[tags.length] = expression(otherwise);
+            return make.Switch(tree, expression(test), tagss, codes);
+
+        case Return(Tree value):
+            return make.Return(tree, tree.symbol(), expression(value));
+
+        case Throw(Tree value):
+            return make.Throw(tree, expression(value));
+
+        case New(Template(Tree[] bases, _)):
+            switch (bases[0]) {
+            case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
+                return apply(tree, method(fun), targs, vargs);
+            case Apply(Tree fun, Tree[] vargs):
+                return apply(tree, method(fun), Tree.EMPTY_ARRAY, vargs);
+            default:
+                throw Debug.abort("illegal case", bases[0]);
+            }
+
+        case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
+            return apply(tree, fun, targs, vargs);
+        case Apply(Tree fun, Tree[] vargs):
+            return apply(tree, fun, Tree.EMPTY_ARRAY, vargs);
+
+        case Super(_, _):
+        case This(_):
+            return make.This(tree, tree.symbol());
+
+        case Select(_, _):
+            return make.Load(tree, location(tree));
+
+        case Ident(_):
+            if (tree.symbol() == definitions.NULL)
+                return make.Constant(tree, make.NULL);
+            if (tree.symbol() == definitions.ZERO)
+                return make.Constant(tree, make.ZERO);
+            return make.Load(tree, location(tree));
+
+        case Literal(Object value):
+            return make.Constant(tree, constant(value));
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    /** Translates the application. */
+    private ACode apply(Tree tree, Tree fun, Tree[] targs, Tree[] vargs) {
+        switch (fun) {
+        case Ident(_):
+            if (true) return ACode.Void; // !!!
+            Symbol symbol = tree.symbol();
+            assert symbol.isLabel() && targs.length == 0: tree; // !!!
+            return make.Goto(tree, symbol, expression(vargs));
+        }
+        return apply(tree, method(fun), targs, vargs);
+    }
+
+    /** Translates the application. */
+    private ACode apply(Tree tree, AFunction function,Tree[]targs,Tree[]vargs){
+        return make.Apply(tree, function,Tree.typeOf(targs),expression(vargs));
+    }
+
+    //########################################################################
+    // Private Methods - Translating functions
+
+    /** Translates the method. */
+    private AFunction method(Tree tree) {
+        switch (tree) {
+        case Select(Tree qualifier, _):
+            Symbol symbol = tree.symbol();
+            if (symbol.isJava() && symbol.owner().isModuleClass())
+                return AFunction.Method(make.Void, symbol, AInvokeStyle.Static); // !!! qualifier is ignored !
+            ACode object = expression(qualifier);
+            return AFunction.Method(object, symbol, invokeStyle(qualifier));
+        case Ident(_):
+            Symbol symbol = tree.symbol();
+            assert symbol.isInitializer(); // !!!
+            return AFunction.Method(make.Void, symbol, AInvokeStyle.New);
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    /** Returns the InvokeStyle to use for the qualifier. */
+    private AInvokeStyle invokeStyle(Tree qualifier) {
+        switch (qualifier) {
+        case Super(_, _):
+            return AInvokeStyle.Static;
+        default:
+            return AInvokeStyle.Dynamic;
+        }
     }
 
     //########################################################################
