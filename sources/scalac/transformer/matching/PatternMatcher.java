@@ -47,14 +47,11 @@ public class PatternMatcher extends PatternTool {
      */
     protected PatternNodeCreator mk;
 
-    /** constructor
+    /** init method, also needed in subclass AlgebraicMatcher
      */
-    public PatternMatcher(Unit unit, Infer infer, Tree selector, Symbol owner, Type resultType) {
-        super(unit, infer);
-        this.mk = new PatternNodeCreator(unit, infer, owner);
-        this.cf = new CodeFactory(unit, infer);
-        this.owner = owner;
-        this.selector = selector;
+    protected void initialize( Tree selector, Symbol owner, Type resultType) {
+        this.mk = new PatternNodeCreator( unit, infer, owner );
+        this.cf = new CodeFactory( unit, infer, selector.pos );
         this.root = mk.ConstrPat(selector.pos, selector.type.widen());
         this.root.and = mk.Header(selector.pos,
                                   selector.type.widen(),
@@ -65,6 +62,20 @@ public class PatternMatcher extends PatternTool {
                                         owner,
                                         Modifiers.MUTABLE);
         this.resultVar.setType(resultType);
+
+    }
+    /** constructor, used in subclass ALgebraicMatcher
+     */
+    protected PatternMatcher( Unit unit, Infer infer ) {
+	super( unit, infer );
+    }
+    /** constructor
+     */
+    public PatternMatcher(Unit unit, Infer infer, Tree selector, Symbol owner, Type resultType) {
+        super(unit, infer);
+	initialize( selector, owner, resultType );
+        this.owner = owner;
+        this.selector = selector;
         this.optimize &= (unit.global.target == Global.TARGET_JVM);
     }
 
@@ -487,6 +498,8 @@ public class PatternMatcher extends PatternTool {
                 next = next.or;
     }
 
+      /** calls enter for an array of patterns, see enter
+       */
     public PatternNode enter(Tree[] pats, PatternNode target, Symbol casted, CaseEnv env) {
         switch (target) {
             case ConstrPat(Symbol newCasted):
