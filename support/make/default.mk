@@ -27,7 +27,7 @@ default.fastclean	:
 default.clean		: fastclean
 
 default.distclean	: clean
-	$(FIND) '(' -name '*~' -o -name core ')' -exec $(RM) '{}' ';'
+	$(FIND) . '(' -name '*~' -o -name core ')' -exec $(RM) '{}' ';'
 
 .PHONY			: all
 .PHONY			: force
