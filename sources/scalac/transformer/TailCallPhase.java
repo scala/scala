@@ -154,14 +154,11 @@ public class TailCallPhase extends Phase {
 
         /** Transforms the given function call. */
         private Tree transform(Tree tree, Tree fun, Tree[] vargs) {
-            Symbol symbol = fun.symbol();
-            if (symbol != method) return tree;
+            if (fun.symbol() != method) return tree;
             switch (fun) {
             case Select(Tree qual, _):
                 if (!isReferenceToThis(qual, method.owner())) return tree;
                 return gen.Apply(tree.pos, gen.Ident(qual.pos, label), vargs);
-            case Ident(_):
-                return tree; // !!! or is this a tail call?
             default:
                 throw Debug.abort("illegal case", fun);
             }
@@ -175,14 +172,6 @@ public class TailCallPhase extends Phase {
             switch (tree) {
             case This(_):
                 assert tree.symbol() == clasz: tree +" -- "+ Debug.show(clasz);
-                return true;
-            case Select(Tree qual, _):
-                if (!clasz.isModuleClass()) return false;
-                if (tree.symbol() != clasz.module()) return false;
-                return isReferenceToThis(qual, clasz.owner());
-            case Ident(_):
-                if (!clasz.isModuleClass()) return false;
-                if (tree.symbol() != clasz.module()) return false;
                 return true;
             default:
                 return false;

@@ -64,7 +64,6 @@ public class TypesAsValuesPhase extends Phase {
     private final Definitions defs = global.definitions;
     private final Primitives prims = global.primitives;
 
-    private final Symbol typeClass = defs.TYPE_CLASS;
     private final Type typeType = defs.TYPE_TYPE();
     private final Type.MethodType typeAccessorType =
         new Type.MethodType(new Symbol[]{}, typeType);
@@ -391,9 +390,7 @@ public class TypesAsValuesPhase extends Phase {
                 Symbol symOwner = sym.owner();
 
                 if (basicTypes.containsKey(sym)) {
-                    return gen.mkRef(pos,
-                                     gen.mkGlobalRef(pos, typeClass.module()),
-                                     (Symbol)basicTypes.get(sym));
+                    return gen.mkGlobalRef(pos, (Symbol)basicTypes.get(sym));
                 } else if (symOwner.isClass() || symOwner.isMethod()) {
                     // Reference to a "local" type.
                     Symbol accessor = getAccessorSymbol(sym);
