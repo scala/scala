@@ -13,7 +13,7 @@ public class Names {
     public static final Name EMPTY = Name.EMPTY;
     public static final Name WILDCARD = Name.fromString("_");
     public static final Name COMPOUND_NAME = Name.fromString("<ct>");
-    public static final Name ANON_CLASS_NAME = Name.fromString("$class");
+    public static final Name ANON_CLASS_NAME = Name.fromString("$anon");
     public static final Name OUTER_PREFIX = Name.fromString("outer");
 
     public static final Name _EQ = encode("_=");
