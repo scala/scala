@@ -443,7 +443,8 @@ class GenJVM {
             if (sym.isModule())
                 generatedType = genLoadModule(ctx, sym);
             else if (sym == defs.NULL) {
-                ctx.code.emitACONST_NULL();
+                if (expectedType != JType.VOID)
+                    ctx.code.emitACONST_NULL();
                 generatedType = expectedType;
             } else if (sym.owner().isClass()) {
                 ctx.code.emitALOAD_0();
