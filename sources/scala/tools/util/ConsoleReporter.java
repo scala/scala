@@ -13,8 +13,6 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import scala.tools.util.debug.Debug;
-
 /**
  * This class implements a Reporter that displays messages on a text
  * console.
@@ -161,7 +159,7 @@ public class ConsoleReporter extends AbstractReporter {
                 if ("resume".startsWith(line)) return;
             }
         } catch (IOException e) {
-            Debug.abort("input read error");
+            throw new Error("input read error");
         }
     }
 
