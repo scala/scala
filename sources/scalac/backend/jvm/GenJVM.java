@@ -1188,9 +1188,13 @@ class JVMGenerator {
         updateClassContext();
     }
 
+    protected HashSet seenClasses = new HashSet();
     protected void leaveClass(Symbol cSym) {
-        if (Modifiers.Helper.isModClass(cSym.flags))
-            dumpModuleMainClass(currClass);
+        if (Modifiers.Helper.isModClass(cSym.flags)) {
+            if (!seenClasses.contains(cSym.fullName()))
+                dumpModuleMainClass(currClass);
+        } else
+            seenClasses.add(cSym.fullName());
 
         addScalaAttr(currClass);
         JavaClass cls = currClass.getJavaClass();
