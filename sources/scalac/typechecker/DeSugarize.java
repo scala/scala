@@ -299,7 +299,7 @@ public class DeSugarize implements Kinds, Modifiers {
 			    make.CaseDef(lastCase.pos,
 				lastCase.pat.duplicate(),
 				Tree.Empty,
-				gen.mkBoolean(lastCase.body.pos, true))});
+				gen.mkBooleanLit(lastCase.body.pos, true))});
 	    }
 	    CaseDef[] cases1 = new CaseDef[cases.length + 1];
 	    for (int i = 0; i < cases.length; i++) {
@@ -309,14 +309,14 @@ public class DeSugarize implements Kinds, Modifiers {
 			cases[i].pos,
 			pat.duplicate(),
 			guard.duplicate(),
-			gen.mkBoolean(tree.pos, true));
+			gen.mkBooleanLit(tree.pos, true));
 		}
 	    }
 	    cases1[cases.length] = (CaseDef) make.CaseDef(
 		tree.pos,
 		make.Ident(tree.pos, Names.WILDCARD),
 		Tree.Empty,
-		gen.mkBoolean(tree.pos, false));
+		gen.mkBooleanLit(tree.pos, false));
 	    return make.Visitor(tree.pos, cases1);
 	default:
 	    throw new ApplicationError("visitor expected", tree);

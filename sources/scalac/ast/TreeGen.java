@@ -56,7 +56,7 @@ public class TreeGen implements Kinds, Modifiers {
     /*************************************************************************/
     /** METHODS **/
 
-    private Type deref(Type tp) {
+    public Type deref(Type tp) {
 	switch (tp) {
 	case PolyType(Symbol[] tparams, Type restp):
 	    if (tparams.length == 0) return restp;
@@ -160,7 +160,7 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build a boolean constant tree.
      */
-    public Tree mkBoolean(int pos, boolean bool) {
+    public Tree mkBooleanLit(int pos, boolean bool) {
         return make.Literal(pos, bool ? Boolean.TRUE : Boolean.FALSE).
             setType(definitions.BOOLEAN_TYPE);
     }
@@ -169,6 +169,12 @@ public class TreeGen implements Kinds, Modifiers {
      */
     public Tree mkStringLit(int pos, String str) {
         return make.Literal(pos, str).setType(definitions.JAVA_STRING_TYPE);
+    }
+
+    /** Build an integer literal
+     */
+    public Tree mkIntLit(int pos, int value) {
+        return make.Literal(pos, new Integer(value)).setType(definitions.INT_TYPE);
     }
 
     /** Build a tree to be used as a base class constructor for a template.

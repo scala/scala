@@ -59,6 +59,7 @@ public class Names {
     public static final Name filter = Name.fromString("filter");
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
+    public static final Name getClass = Name.fromString("getClass");
     public static final Name hashCode = Name.fromString("hashCode");
     public static final Name is = Name.fromString("is");
     public static final Name isDefinedAt = Name.fromString("isDefinedAt");
@@ -68,6 +69,7 @@ public class Names {
     public static final Name java_lang_String = Name.fromString("java.lang.String");
     public static final Name java_lang_Throwable = Name.fromString("java.lang.Throwable");
     public static final Name lang = Name.fromString("lang");
+    public static final Name length = Name.fromString("length");
     public static final Name match = Name.fromString("match");
     public static final Name map = Name.fromString("map");
     public static final Name null_ = Name.fromString("null");
@@ -103,10 +105,10 @@ public class Names {
     public static final Name scala_runtime_RunTime = Name.fromString("scala.runtime.RunTime");
     public static final Name equals = Name.fromString("equals");
     public static final Name toString = Name.fromString("toString");
+    public static final Name that = Name.fromString("that");
     public static final Name this_ = Name.fromString("this");
     public static final Name throw_ = Name.fromString("throw");
     public static final Name update = Name.fromString("update");
-    public static final Name length = Name.fromString("length");
 
     public static final Name
         ZNOT = encode("!"),

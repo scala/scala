@@ -187,6 +187,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return isInitializedMethod();
     }
 
+    public final boolean isAbstractClass() {
+	return (flags & ABSTRACTCLASS) != 0 &&
+	    this != Global.instance.definitions.ARRAY_CLASS;
+    }
+
     /* Does this symbol denote an anonymous class? */
     public final boolean isAnonymousClass() {
 	return kind == CLASS &&

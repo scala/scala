@@ -9,6 +9,7 @@ import java.util.HashMap;
 import scalac.*;
 import scalac.util.*;
 import scalac.ast.*;
+import scalac.ast.printer.*;
 import scalac.symtab.*;
 import Tree.*;
 
@@ -183,8 +184,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     private Tree[] caseFields(ClassSymbol clazz) {
-	Symbol[] tparams = clazz.typeParams();
-	Tree[] fields = new Tree[clazz.constructor().type().firstParams().length];
+	Symbol[] vparams = clazz.constructor().type().firstParams();
+	Tree[] fields = new Tree[vparams.length];
 	for (int i = 0; i < fields.length; i++) {
 	    fields[i] = gen.mkRef(
 		clazz.pos, clazz.thisType(), clazz.caseFieldAccessor(i));
@@ -193,6 +194,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     private Tree toStringMethod(ClassSymbol clazz) {
+	Symbol toStringSym = new TermSymbol(
+	    clazz.pos, Names.toString, clazz, OVERRIDE)
+	    .setInfo(definitions.TOSTRING.type());
+	clazz.info().members().enter(toStringSym);
 	Tree[] fields = caseFields(clazz);
 	Tree body;
 	if (fields.length == 0) {
@@ -210,20 +215,137 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    new Tree[]{gen.mkStringLit(clazz.pos, (i == fields.length - 1) ? ")" : ",")});
 	    }
 	}
-	Symbol toStringSym = new TermSymbol(
-	    clazz.pos, Names.toString, clazz, OVERRIDE)
-	    .setInfo(definitions.TOSTRING.type());
-	clazz.info().members().enter(toStringSym);
 	return gen.DefDef(clazz.pos, toStringSym, body);
     }
 
     private Tree equalsMethod(ClassSymbol clazz) {
-	return Tree.Empty;
+	Symbol equalsSym = new TermSymbol(clazz.pos, Names.EQEQ, clazz, OVERRIDE);
+	Symbol equalsParam =
+	    new TermSymbol(clazz.pos, Names.that, equalsSym, PARAM)
+	    .setInfo(definitions.ANY_TYPE);
+	equalsSym.setInfo(
+	    Type.MethodType(new Symbol[]{equalsParam}, definitions.BOOLEAN_TYPE));
+	clazz.info().members().enter(equalsSym);
+	Tree[] fields = caseFields(clazz);
+	Tree[] patargs = patternVars(clazz, equalsSym);
+	Type constrtype = clazz.constructor().type();
+	switch (constrtype) {
+	case PolyType(Symbol[] tparams, Type restp):
+	    Type[] targs = new Type[tparams.length];
+	    for (int i = 0; i < targs.length; i++)
+		targs[i] = definitions.ANY_TYPE;
+	    constrtype = restp.subst(tparams, targs);
+	}
+	Tree pattern = make.Apply(
+	    clazz.pos, gen.mkType(clazz.pos, constrtype), patargs)
+	    .setType(clazz.type());
+	Tree rhs;
+	if (fields.length == 0) {
+	    rhs = gen.mkBooleanLit(clazz.pos, true);
+	} else {
+	    rhs = eqOp(fields[0], patargs[0]);
+	    for (int i = 1; i < fields.length; i++) {
+		rhs = gen.Apply(
+		    gen.Select(rhs, definitions.AMPAMP()),
+		    new Tree[]{eqOp(fields[i], patargs[i])});
+	    }
+	}
+	CaseDef case1 = (Tree.CaseDef) make.CaseDef(
+	    clazz.pos, pattern, Tree.Empty, rhs)
+	    .setType(definitions.BOOLEAN_TYPE);
+	CaseDef case2 = (Tree.CaseDef) make.CaseDef(clazz.pos,
+	    patternVar(clazz.pos, Names.WILDCARD, equalsSym),
+            Tree.Empty,
+	    gen.mkBooleanLit(clazz.pos, false))
+	    .setType(definitions.BOOLEAN_TYPE);
+	Tree body = make.Apply(clazz.pos,
+	    gen.Select(
+		gen.mkRef(clazz.pos, Type.localThisType, equalsParam),
+		definitions.MATCH),
+	    new Tree[]{make.Visitor(clazz.pos, new CaseDef[]{case1, case2})
+		       .setType(definitions.BOOLEAN_TYPE)})
+	    .setType(definitions.BOOLEAN_TYPE);
+	return gen.DefDef(clazz.pos, equalsSym, body);
     }
+    //where
+	private Tree patternVar(int pos, Name name, Symbol owner) {
+	    return make.Ident(pos, name)
+		.setSymbol(new TermSymbol(pos, name, owner, 0)
+			   .setType(definitions.ANY_TYPE))
+		.setType(definitions.ANY_TYPE);
+	}
+
+	private Tree[] patternVars(ClassSymbol clazz, Symbol owner) {
+	    Symbol[] vparams = clazz.constructor().type().firstParams();
+	    Tree[] pats = new Tree[vparams.length];
+	    for (int i = 0; i < pats.length; i++) {
+		pats[i] = patternVar(clazz.pos, vparams[i].name, owner);
+	    }
+	    return pats;
+	}
+
+	private Tree eqOp(Tree l, Tree r) {
+	    return gen.Apply(gen.Select(l, definitions.EQEQ), new Tree[]{r});
+	}
 
     private Tree hashCodeMethod(ClassSymbol clazz) {
-	return Tree.Empty;
+	Symbol hashCodeSym = new TermSymbol(
+	    clazz.pos, Names.hashCode, clazz, OVERRIDE)
+	    .setInfo(definitions.HASHCODE.type());
+	clazz.info().members().enter(hashCodeSym);
+	Tree[] fields = caseFields(clazz);
+	Symbol getClassSym = getMember(clazz.type(), Names.getClass);
+	Symbol addSym = intMethod(Names.ADD);
+	Symbol mulSym = intMethod(Names.MUL);
+	Tree body =
+	    gen.Apply(
+		gen.Select(
+		    gen.Apply(
+			gen.mkRef(clazz.pos, clazz.thisType(), getClassSym),
+			Tree.EMPTY_ARRAY),
+		    getMember(getClassSym.type().resultType(), Names.hashCode)),
+		Tree.EMPTY_ARRAY);
+	for (int i = 0; i < fields.length; i++) {
+	    Tree operand = gen.Apply(
+		gen.Select(
+		    fields[i],
+		    getMember(fields[i].type, Names.hashCode)),
+		Tree.EMPTY_ARRAY);
+	    body =
+		gen.Apply(
+		    gen.Select(
+			gen.Apply(
+			    gen.Select(body, mulSym),
+			    new Tree[]{gen.mkIntLit(clazz.pos, 41)}),
+			addSym),
+		    new Tree[]{operand});
+	}
+	return gen.DefDef(clazz.pos, hashCodeSym, body);
     }
+    // where
+	private Symbol getMember(Type site, Name name) {
+	    Symbol sym = site.lookupNonPrivate(name);
+	    assert sym.kind == VAL;
+	    return sym;
+	}
+
+	private Symbol intMethod(Name name) {
+	    Symbol sym = getMember(definitions.INT_TYPE, name);
+	    switch (sym.type()) {
+	    case OverloadedType(Symbol[] alts, Type[] alttypes):
+		for (int i = 0; i < alts.length; i++) {
+		    if (hasIntParam(alttypes[i])) return alts[i];
+		}
+	    }
+	    assert hasIntParam(sym.type()) : "no int method among " + sym.type();
+	    return sym;
+	}
+
+	private boolean hasIntParam(Type tp) {
+	    Symbol[] params = tp.firstParams();
+	    return params.length == 1 &&
+		params[0].type().isSameAs(definitions.INT_TYPE);
+	}
 
     private Template addCaseMethods(Template templ, Symbol sym) {
 	if (sym.kind == CLASS && (sym.flags & CASE) != 0) {
@@ -237,12 +359,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	TreeList ts = new TreeList();
 	if (!hasImplementation(clazz, Names.toString))
 	    ts.append(toStringMethod(clazz));
-/*
 	if (!hasImplementation(clazz, Names.EQEQ))
 	    ts.append(equalsMethod(clazz));
 	if (!hasImplementation(clazz, Names.hashCode))
 	    ts.append(hashCodeMethod(clazz));
-*/
 	if (ts.length() > 0) {
 	    Tree[] stats1 = new Tree[stats.length + ts.length()];
 	    System.arraycopy(stats, 0, stats1, 0, stats.length);
@@ -253,6 +373,67 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
     }
 
+    public Tree convertCaseFactoryCall(Tree tree) {
+	Symbol fsym = TreeInfo.methSymbol(tree);
+	if (fsym != null && fsym.isMethod() && !fsym.isConstructor() &&
+	    (fsym.flags & CASE) != 0) {
+	    // convert case methods to new's
+	    Symbol constr = fsym.owner().info()
+		.lookup(fsym.name.toTypeName()).constructor();
+	    return gen.New(toConstructor(tree, constr));
+	} else {
+	    return tree;
+	}
+    }
+    //where
+	/** Tree represents an application of a constructor method of a case class
+	 *  (whose name is a term name). Convert this tree to application of
+	 *  the case classe's primary constructor `constr'.
+	 */
+	private Tree toConstructor(Tree tree, Symbol constr) {
+	    switch (tree) {
+	    case Apply(Tree fn, Tree[] args):
+		return copy.Apply(tree, toConstructor1(fn, constr), args);
+	    default:
+		return gen.Apply(
+		    tree.pos, toConstructor1(tree, constr), Tree.EMPTY_ARRAY);
+	    }
+	}
+
+	private Tree toConstructor1(Tree tree, Symbol constr) {
+	    switch (tree) {
+	    case TypeApply(Tree fn, Tree[] args):
+		return toMethodType(
+		    copy.TypeApply(tree, toConstructor1(fn, constr), args));
+	    case Ident(Name name):
+		return toMethodType(
+		    copy.Ident(tree, constr.name).setSymbol(constr));
+	    case Select(Tree qual, Name name):
+		return toMethodType(
+		    copy.Select(tree, qual, constr.name).setSymbol(constr));
+	    default:
+		throw new ApplicationError();
+	    }
+	}
+
+	private Tree toMethodType(Tree tree) {
+	    Type tp = toMethodType(tree.type);
+	    if (tp == tree.type) return tree;
+	    else return tree.duplicate().setType(tp);
+	}
+
+	private Type toMethodType(Type tp) {
+	    switch (tp) {
+	    case MethodType(_, _):
+		return tp;
+	    case PolyType(Symbol[] tparams, Type restp):
+		Type restp1 = toMethodType(restp);
+		if (restp == restp) return tp;
+		else return Type.PolyType(tparams, restp1);
+	    default:
+		return Type.MethodType(Symbol.EMPTY_ARRAY, tp);
+	    }
+	}
 
     /** The main checking functions
      */
@@ -314,10 +495,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    maxindex[i] = symindex;
 		}
 	    }
-	    tree1 = tree;
+	    tree1 = convertCaseFactoryCall(tree);
 	    break;
 	default:
-	    tree1 = super.transform(tree);
+	    tree1 = super.transform(convertCaseFactoryCall(tree));
 	}
 	if (tree1.isType() && !tree1.isMissing())
 	    tree1 = gen.mkType(tree1.pos, tree1.type);

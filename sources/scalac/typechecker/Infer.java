@@ -693,10 +693,12 @@ public class Infer implements Modifiers, Kinds {
 	    for (int i = 0; i < tvars.length; i++) {
 		try {
 		    targs[i] = instantiateUpper(tvars[i], true);
+		    if (targs[i] == Type.AnyType)
+			targs[i] = definitions.ANY_TYPE;
 		} catch (NoInstance ex) {
 		    throw new Type.Error(
 			"constructor of type " + ctpe1 +
-			" can be instantiated in mode than one way to expected type " +
+			" can be instantiated in more than one way to expected type " +
 			pt +
 			"\n --- because ---\n" + ex.getMessage());
 		}

@@ -427,7 +427,10 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case Apply(Tree fun, Tree[] vargs):
-            print(fun);
+	    if (fun instanceof Tree.TypeTerm)
+		print(fun.type.resultType().symbol().fullName().toString());
+	    else
+		print(fun);
             printArray(vargs, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
             printType(tree);
             break;

@@ -661,7 +661,7 @@ public class PatternMatcher {
     }
 
     protected Tree toTree(PatternNode node) {
-        Tree res = mkBoolean(node.pos, false);
+        Tree res = gen.mkBooleanLit(node.pos, false);
         while (node != null)
             switch (node) {
                 case Header(Tree selector, Header next):
@@ -681,7 +681,7 @@ public class PatternMatcher {
                                     make.Ident(body[i].pos, resultVar.name)
                                         .setType(typeOf(resultVar)).setSymbol(resultVar),
                                     body[i]).setType(defs.UNIT_TYPE),
-                                mkBoolean(body[i].pos, true)
+                                gen.mkBooleanLit(body[i].pos, true)
                             }, defs.BOOLEAN_TYPE);
                         if (guard[i] != Tree.Empty)
                             ts[bound[i].length] = mkAnd(guard[i], ts[bound[i].length]);
@@ -696,7 +696,7 @@ public class PatternMatcher {
 
     protected Tree toTree(PatternNode node, Tree selector) {
         if (node == null)
-            return mkBoolean(selector.pos, false);
+            return gen.mkBooleanLit(selector.pos, false);
         switch (node) {
             case DefaultPat():
                 return toTree(node.and);
@@ -779,15 +779,10 @@ public class PatternMatcher {
         return make.Block(pos, ts).setType(tpe);
     }
 
-    protected Tree mkBoolean(int pos, boolean bool) {
-        Boolean val = bool ? Boolean.TRUE : Boolean.FALSE;
-        return make.Literal(pos, val).setType(defs.BOOLEAN_TYPE);
-    }
-
     protected Tree mkNegate(Tree tree) {
         switch (tree) {
             case Literal(Object value):
-                return mkBoolean(tree.pos, !((Boolean)value).booleanValue());
+                return gen.mkBooleanLit(tree.pos, !((Boolean)value).booleanValue());
         }
         return make.Apply(
                 tree.pos,

@@ -537,6 +537,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (TreeInfo.isPureExpr(tree) || tree.type == Type.ErrorType) return tree;
 	//new TextTreePrinter().print(tree).end();//DEBUG
 	//System.out.println(" " + tree.symbol() + ":" + tree.type);//DEBUG
+
+	//Symbol sym = tree.symbol();
+	//if (sym != null) {
+	//    System.out.println(sym.kind == VAL);
+	//    System.out.println(sym.type().unalias());
+	//    System.out.println(sym.type().isObjectType());
+	//    System.out.println(sym.owner().isPrimaryConstructor());
+	//}
+
 	return error(tree.pos, "stable identifier required");
     }
 
@@ -545,7 +554,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     void checkInstantiatable(int pos, Type tp) {
 	Symbol clazz = tp.symbol();
 	if (clazz.kind == CLASS) {
-	    if ((clazz.flags & ABSTRACTCLASS) != 0)
+	    if (clazz.isAbstractClass())
 		error(pos, clazz + " is abstract, so it cannot be instantiated");
 	    else if (!tp.isSubType(tp.instanceType()))
 		error(pos, tp + " does not conform to its self-type " +
@@ -1566,6 +1575,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	this.pt = pt;
 	Tree tree1 = adapt(transform(tree), mode, pt);
 
+	//new TextTreePrinter().print(tree1).print(": " + tree1.type).println().end();//DEBUG
+
 	this.mode = savedMode;
 	this.pt = savedPt;
 	return tree1;
@@ -1697,25 +1708,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			return adapt(tree, mode, pt);
 		    }
 		}
-	    } else {
-		Symbol fsym = TreeInfo.methSymbol(tree);
-		if (fsym != null && fsym.isMethod() && (fsym.flags & CASE) != 0) {
-		    // convert case methods to new's
-		    Symbol constr = fsym.owner().info()
-			.lookup(fsym.name.toTypeName()).constructor();
-		    Template templ = make.Template(
-			tree.pos,
-			new Tree[]{desugarize.toConstructor(tree, constr)},
-			Tree.EMPTY_ARRAY);
-		    return transform(make.New(tree.pos, templ), mode, pt);
-		} else if ((mode & QUALmode) == 0) {
-		    // check that packages and static modules are not used as values
-		    Symbol sym = tree.symbol();
-		    if (sym != null && sym.kind != ERROR && !sym.isValue() &&
-			tree.isTerm()) {
-			new TextTreePrinter().print(tree).println().end();//debug
-			error(tree.pos, tree.symbol() + " is not a value");
-		    }
+	    } else if ((mode & QUALmode) == 0) {
+		// check that packages and static modules are not used as values
+		Symbol sym = tree.symbol();
+		if (sym != null && sym.kind != ERROR && !sym.isValue() &&
+		    tree.isTerm()) {
+		    error(tree.pos, tree.symbol() + " is not a value");
 		}
 	    }
 	}
