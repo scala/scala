@@ -13,7 +13,7 @@ package scala;
 
 /** @meta class [?T] extends scala.Function1[scala.Int, ?T];
  */
-public abstract class Array extends Function1 {
+public abstract class Array implements Function1 {
 
     /** @meta constr (scala.Int);
      */
