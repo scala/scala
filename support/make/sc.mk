@@ -102,7 +102,6 @@ SC_LOOKUP		 = $(if $($(target)_$(1)),$($(target)_$(1)),$($(1)))
 # Rules
 
 sc		:
-	echo $(LIBRARY_SC_FILES)
 	@[ -d "$(sc_OUTPUTDIR)" ] || $(MKDIR) -p "$(sc_OUTPUTDIR)"
 	$(strip $(sc))
 
