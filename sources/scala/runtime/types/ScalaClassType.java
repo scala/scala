@@ -46,8 +46,8 @@ public class ScalaClassType extends ClassType {
         this.hashCode = hash;
     }
 
-    public boolean isInstance0(Object o) {
-        return super.isInstance0(o)
+    public boolean isInstance(Object o) {
+        return super.isInstance(o)
             && ((ScalaObject)o).getType().weakIsSubScalaClassType(this);
     }
 
