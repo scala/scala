@@ -56,7 +56,10 @@ public class SourceCompleter extends Type.LazyType {
                         (System.currentTimeMillis() - msec) + "ms");
             } catch (IOException e) {
                 if (global.debug) e.printStackTrace();
-                global.error("i/o error while loading " + c);
+		if (mixinOnly)
+		    global.error("source file for " + c + " not found; it is needed because class is used as a mixin");
+		else
+		    global.error("i/o error while loading " + c + ": " + e);
                 c.setInfo(Type.ErrorType);
             }
             completed = true;

@@ -827,14 +827,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  inherited members of this type; return Symbol.NONE if not found.
      */
     public Symbol lookupNonPrivate(Name name) {
-        return lookupNonPrivate(name, 0);
-    }
-
-    /** Same as before, but with additional parameter `start'.
-     *  If start == 0, lookup in all basetypes of a compound type.
-     *  If start == 1, lookup only in mixin classes.
-     */
-    private Symbol lookupNonPrivate(Name name, int start) {
         switch (this) {
         case ErrorType:
             return Symbol.ERROR;
@@ -843,7 +835,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case ConstantType(_, _):
             return singleDeref().lookupNonPrivate(name);
         case TypeRef(_, Symbol sym, _):
-            return sym.info().lookupNonPrivate(name, start);
+            return sym.info().lookupNonPrivate(name);
         case CompoundType(Type[] parts, Scope members):
             Symbol sym = members.lookup(name);
             if (sym.kind != NONE && (sym.flags & PRIVATE) == 0)
@@ -853,12 +845,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             // take precedence over abstract ones.
             int i = parts.length;
             sym = Symbol.NONE;
-            while (i > start && (sym.kind == NONE || (sym.flags & DEFERRED) != 0)) {
+            while (i > 0 && (sym.kind == NONE || (sym.flags & DEFERRED) != 0)) {
                 i--;
-                Symbol sym1 = parts[i].lookupNonPrivate(name, i == 0 ? 0 : 1);
+                Symbol sym1 = parts[i].lookupNonPrivate(name);
                 if (sym1.kind != NONE &&
                     (sym1.flags & PRIVATE) == 0 &&
-                    (sym.kind == NONE || (sym1.flags & DEFERRED) == 0))
+                    (sym.kind == NONE ||
+		     (sym1.flags & DEFERRED) == 0 ||
+		     sym1.owner().isSubClass(sym.owner())))
                     sym = sym1;
             }
             return sym;
@@ -1198,7 +1192,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  or `sym' itself if none exists.
      */
     public Symbol rebind(Symbol sym) {
-        if ((sym.flags & (PRIVATE | MODUL)) == 0) {
+        if (sym.kind != CLASS && (sym.flags & (PRIVATE | MODUL)) == 0) {
             Symbol sym1 = lookupNonPrivate(sym.name);
             if (sym1.kind != NONE) {
                 if ((sym1.flags & LOCKED) != 0)

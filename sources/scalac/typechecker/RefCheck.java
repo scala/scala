@@ -100,6 +100,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     void checkOverride(int pos, Symbol clazz, Symbol other) {
+	if (other.kind == CLASS)
+	    return; // todo: see if we can sustain this
 	Symbol member = other;
 	if ((other.flags & PRIVATE) == 0) {
 	    Symbol member1 = clazz.info().lookup(other.name);
@@ -222,8 +224,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    overrideError(pos, member, other, "has weaker access privileges; it should not be protected");
 	} else if ((other.flags & FINAL) != 0) {
 	    overrideError(pos, member, other, "cannot override final member");
+/*
 	} else if (other.kind == CLASS) {
 	    overrideError(pos, member, other, "cannot override a class");
+*/
 	} else if ((other.flags & DEFERRED) == 0 && ((member.flags & OVERRIDE) == 0)) {
 	    overrideError(pos, member, other, "needs `override' modifier");
 	} else if (other.isAbstractOverride() &&

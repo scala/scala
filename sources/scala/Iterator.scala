@@ -34,7 +34,7 @@ object Iterator {
       else error("next on empty iterator");
   }
 
-  def range(lo: Int, end: Int) = new BufferedIterator[Int] {
+  def range(lo: Int, end: Int) = new Iterator[Int] {
     private var i = lo;
     def hasNext: Boolean =
       i < end;

@@ -36,7 +36,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   import Kinds._;
 
   val definitions = global.definitions;
-  val infer = new Infer(this);
+  val infer = new scala.tools.scalac.typechecker.Infer(this);
   val desugarize = new DeSugarize(make, copy, gen, infer, global);
   val constfold = new ConstantFolder(this);
 
@@ -370,7 +370,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		 bsym.isSubClass(definitions.ARRAY_CLASS)) {
 	// are we in same scope as base type definition?
 	val e: Scope$Entry = context.scope.lookupEntry(bsym.name);
-	if (e.sym != bsym || e.owner != context.scope) {
+	if (e.sym != bsym) {
 	  // we are not within same statement sequence
 	  var c: Context = context;
 	  while (c != Context.NONE && c.owner !=  bsym)
@@ -1172,18 +1172,25 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     this.context = curcontext;
 
     val selftype: Type = transform(tree, TYPEmode).getType();
-    selftype match {
-      case Type$CompoundType(parts, members) =>
-	val parts1 = new Array[Type](parts.length + 1);
-	System.arraycopy(parts, 0, parts1, 0, parts.length);
-	parts1(parts.length) = clazz.getType();
-	sym.setInfo(Type.compoundType(parts1, members));
+    //todo: can we really make a compound type with class
+    val selftype1: Type =
+      if (clazz.getType().isSubType(selftype))
+	clazz.getType()
+      else if (selftype.isSubType(clazz.getType()))
+	selftype
+      else
+	selftype match {
+	  case Type$CompoundType(parts, members) =>
+	    val parts1 = new Array[Type](parts.length + 1);
+	    System.arraycopy(parts, 0, parts1, 0, parts.length);
+	    parts1(parts.length) = clazz.getType();
+	    Type.compoundType(parts1, members);
 
-      case _ =>
-	sym.setInfo(
-	  Type.compoundType(
-	    NewArray.Type(selftype, clazz.getType()), Scope.EMPTY));
-    }
+	  case _ =>
+	    Type.compoundType(
+	      NewArray.Type(selftype, clazz.getType()), Scope.EMPTY);
+	}
+    sym.setInfo(selftype1);
 
     this.unit = savedUnit;
     this.context= savedContext;
@@ -1272,7 +1279,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
       case Type$MethodType(_, _) =>
 	// convert unapplied methods to functions.
-	if ((mode & (EXPRmode | FUNmode)) == EXPRmode && infer.isCompatible(tree.getType(), pt)) {
+	if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
+	    (infer.isCompatible(tree.getType(), pt) ||
+	     pt.symbol() == definitions.UNIT_CLASS)) {
 	  checkEtaExpandable(tree.pos, tree.getType());
 	  return transform(desugarize.etaExpand(tree, tree.getType()), mode, pt);
 	} else if ((mode & (CONSTRmode | FUNmode)) == CONSTRmode) {
@@ -1396,16 +1405,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       if ((mode & EXPRmode) != 0) {
 	if (pt.symbol() == definitions.UNIT_CLASS) {
 	  return gen.Block(NewArray.Tree(tree, gen.mkUnitLit(tree.pos)));
-	} else {
+	} else if (infer.isCompatible(tree.getType(), pt)) {
 	  val coerceMeth: Symbol = tree.getType().lookup(Names.coerce);
 	  if (coerceMeth != Symbol.NONE) {
 	    val coerceType: Type = checkAccessible(
 	      tree.pos, coerceMeth, tree.getType().memberType(coerceMeth),
 	      tree, tree.getType());
 	    val tree1 = make.Select(tree.pos, tree, Names.coerce)
-	      .setSymbol(coerceMeth)
-	      .setType(coerceType);
-	      return adapt(tree1, mode, pt);
+	    .setSymbol(coerceMeth)
+	    .setType(coerceType);
+	    return adapt(tree1, mode, pt);
 	  }
 	}
       }
@@ -1539,13 +1548,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       error(tree.pos,
 	    decode(name) + " is not a member of " + qual.getType().widen());
     } else {
+      val qualtype =
+	if (qual.isInstanceOf[Tree$Super]) context.enclClass.owner.thisType()
+	else qual.getType();
       var symtype: Type =
 	(if (sym.isType()) sym.typeConstructor() else sym.getType())
-	.asSeenFrom(qual.getType(), sym.owner());
+	.asSeenFrom(qualtype, sym.owner());
       if (symtype == Type.NoType)
 	return error(tree.pos, "not found: " + decode(name));
       else
-	symtype = checkAccessible(tree.pos, sym, symtype, qual, qual.getType());
+	symtype = checkAccessible(tree.pos, sym, symtype, qual, qualtype);
       //System.out.println(sym.name + ":" + symtype);//DEBUG
       if (uninst.length != 0) {
 	symtype match {
@@ -1562,7 +1574,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$SelectFromType(_, _) =>
 	  copy.SelectFromType(tree, sym, qual)
       }
-      mkStable(tree1.setType(symtype), qual.getType(), mode, pt)
+      mkStable(tree1.setType(symtype), qualtype, mode, pt)
     }
   }
 
@@ -1679,8 +1691,30 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       validateParentClasses(parents, owner.info().parents(), owner.typeOfThis());
     }
     pushContext(templ, owner, owner.members());
+    /*
+    val params: Scope = new Scope();
+    def computeParams(t: Type): unit = t match {
+      case Type$PolyType(tparams, t1) =>
+	var i = 0; while (i < tparams.length) {
+	  params.enter(tparams(i));
+	  i = i + 1;
+	}
+	computeParams(t1);
+      case Type$MethodType(vparams, _) =>
+	var i = 0; while (i < vparams.length) {
+	  params.enter(vparams(i));
+	  i = i + 1;
+	}
+      case _ =>
+    }
+    computeParams(owner.primaryConstructor().getType());
+    pushContext(templ, owner.primaryConstructor(), params);
+    */
     templ.setSymbol(TermSymbol.newLocalDummy(owner));
     val body1 = transformStatSeq(templ.body, templ.symbol());
+    /*
+    popContext();
+    */
     popContext();
     if (owner.isTrait()) {
       var i = 0; while (i < parents.length) {
@@ -2059,7 +2093,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      if (stats1.length > 0) {
 		stats1(stats1.length - 1) =
 		  transform(stats1(stats1.length - 1), curmode & ~FUNmode, pt);
-		checkNoEscape(tree.pos, stats1(stats1.length - 1).getType())
+		checkNoEscape(tree.pos, stats1(stats1.length - 1).getType().deconst())
 	      } else {
 		definitions.UNIT_TYPE()
 	      }

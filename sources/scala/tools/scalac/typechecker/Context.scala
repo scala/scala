@@ -32,8 +32,9 @@ class Context {
     this.owner = owner;
     this.scope = scope;
     this.imports = outer.imports;
-    this.enclClass = if (tree.isInstanceOf[Tree$Template] ||
-			 tree.isInstanceOf[Tree$CompoundType]) this
+    this.enclClass = if ((tree.isInstanceOf[Tree$Template] ||
+			  tree.isInstanceOf[Tree$CompoundType]) &&
+		         tree != outer.tree) this
 		     else outer.enclClass;
     this.variance = outer.variance;
     this.constructorClass = outer.constructorClass;

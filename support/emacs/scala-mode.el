@@ -70,7 +70,7 @@ reserved keywords when used alone.")
   (regexp-opt '("abstract" "case" "class" "catch" "def" "do" "else"
                 "extends" "final" "finally" "for" "if" "import" "new" "object"
                 "override" "package" "private" "protected" "return"
-                "sealed" "super" "this" "throw" "trait" "try" "val" "var"
+                "sealed" "super" "this" "throw" "trait" "try" "type" "val" "var"
                 "with" "while" "yield")
 	      'words))
 

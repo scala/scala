@@ -282,6 +282,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol denote a stable value? */
     public final boolean isStable() {
         return kind == VAL &&
+	    ((flags & DEF) == 0) &&
             ((flags & STABLE) != 0 ||
              (flags & MUTABLE) == 0 && type().isObjectType());
     }
@@ -1595,8 +1596,6 @@ public abstract class TypeSymbol extends Symbol {
         //System.out.println(ArrayApply.toString(closureClasses));//DEBUG
         closures = new ClosureIntervalList(closures, Symbol.type(closureClasses), phase.prev == null ? phase : phase.prev);
         //System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
-
-
 
         adjustType(type());
         //System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG

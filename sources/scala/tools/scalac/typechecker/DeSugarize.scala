@@ -27,7 +27,7 @@ package scala.tools.scalac.typechecker {
  *  @author     Martin Odersky
  *  @version    2.0
  */
-class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer, global: scalac_Global) {
+class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala.tools.scalac.typechecker.Infer, global: scalac_Global) {
 
   import Kinds._, Modifiers._;
 

@@ -1,4 +1,5 @@
 % $Id$
+
 \documentclass[a4paper,12pt,twoside,titlepage]{book}
 
 \usepackage{scaladoc}
@@ -2005,7 +2006,8 @@ of an abstract base class was used and, second, what were the
 constructor arguments. Since this situation is quite common, Scala has
 a way to automate it with case classes. 
 
-\paragraph{Case Classes and Case Objects}
+\section{Case Classes and Case Objects}
+
 {\em Case classes} and {\em case objects} are defined like a normal
 classes or objects, except that the definition is prefixed with the modifier
 \code{case}.  For instance, the definitions
@@ -2080,7 +2082,7 @@ Case classes allow the constructions of {\em patterns} which refer to
 the case class constructor.
 \end{enumerate}
 
-\paragraph{Pattern Matching}
+\section{Pattern Matching}
 
 Pattern matching is a generalization of C or Java's \code{switch}
 statement to class hierarchies. Instead of a \code{switch} statement,
@@ -2210,6 +2212,25 @@ def insert(t: IntTree, v: int): IntTree = t match { ...
   ...
 }
 \end{lstlisting}
+
+\paragraph{Pattern Matching Anonymous Functions}
+
+So far, case-expressions always appeared in conjunction with a
+\verb@match@ operation. But it is also possible to use
+case-expressions by themselves. A block of case-expressions such as
+\begin{lstlisting}
+{ case $P_1$ => $E_1$ ... case $P_n$ => $E_n$ }
+\end{lstlisting}
+is seen by itself as a function which matches its arguments
+against the patterns $P_1 \commadots P_n$, and produces the result of
+one of $E_1 \commadots E_n$. (If no pattern matches, the function
+would throw a \code{MatchError} exception instead).
+In other words, the expression above is seen as a shorthand for the anonymous function
+\begin{lstlisting}
+(x => x match { case $P_1$ => $E_1$ ... case $P_n$ => $E_n$ })
+\end{lstlisting}
+where \code{x} is a fresh variable which is not used 
+otherwise in the expression.
 
 \chapter{Generic Types and Methods}
 
@@ -2739,8 +2760,20 @@ val plus1: Function1[int, int] = new Function1[int, int] {
 plus1.apply(2)
 \end{lstlisting}
 Here, the object creation \lstinline@new Function1[int, int]{ ... }@
-represents an instance of an {\em anonymous class}. 
-
+represents an instance of an {\em anonymous class}. It combines the
+creation of a new \code{Function1} object with an implementation of 
+the \code{apply} method (which is abstract in \code{Function1}).
+Equivalently, but more verbosely, one could have used a local class:
+\begin{lstlisting}
+val plus1: Function1[int, int] = {
+  class Local extends Function1[int, int] {
+    def apply(x: int): int = x + 1
+  }
+  new Local: Function1[int, int]
+}
+plus1.apply(2)
+\end{lstlisting}
+ 
 \chapter{Lists}
 
 Lists are an important data structure in many Scala programs.  
@@ -2942,8 +2975,13 @@ consisting of the lists resulting from \code{xs take n} and
 The next function returns an element at a given index in a list.
 It is thus analogous to array subscripting. Indices start at 0.
 \begin{lstlisting}   
-def at(n: int): a = drop(n).head;
+def apply(n: int): a = drop(n).head;
 \end{lstlisting}
+The \code{apply} method has a special meaning in Scala. An object with
+an \code{apply} method can be applied to arguments as if it was a
+function. For instance, to pick the 3'rd element of a list \code{xs},
+one can write either \code{xs.apply(3)} or \code{xs(3)} -- the latter
+expression expands into the first.
 
 With \code{take} and \code{drop}, we can extract sublists consisting
 of consecutive elements of the original list.  To extract the sublist
@@ -3144,6 +3182,30 @@ def scaleList(xs: List[double], factor: double) =
   xs map (x => x * factor)
 \end{lstlisting}
 
+As another example, consider the problem of returning a given column
+of a matrix which is represented as a list of rows, where each row is
+again a list. This is done by the following function \code{column}.
+
+\begin{lstlisting}
+def column[a](xs: List[List[a[]], index: int): List[a] = 
+  xs map (row => row at index)
+\end{lstlisting}
+
+Closely related to \code{map} is the \code{foreach} method, which
+applies a given function to all elements of a list, but does not
+construct a list of results. The function is thus applied only for its
+side effect. \code{foreach} is defined as follows.
+\begin{lstlisting}
+  def foreach(f: a => unit): unit = this match {
+    case Nil => ()
+    case x :: xs => f(x) ; xs.foreach(f)
+  }
+\end{lstlisting}
+This function can be used for printing all elements of a list, for instance:
+\begin{lstlisting}
+  xs foreach (x => System.out.println(x))
+\end{lstlisting} 
+
 \exercise Consider a function which squares all elements of a list and
 returns a list with the results. Complete the following two equivalent
 definitions of \code{squareList}.
@@ -3303,17 +3365,19 @@ Class \code{List} defines also two symbolic abbreviations for
 \code{foldLeft} and \code{foldRight}:
 \begin{lstlisting}
   def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
-  def :/[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
+  def :\[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
 \end{lstlisting}
-The \code{:} part of the method name points in each case to the list
-argument whereas the slash points to the accumulator (or: zero)
-argument \code{z}.  That is,
+The method names picture the left/right leaning trees of the fold
+operations by forward or backward slashes. The \code{:} points in each
+case to the list argument whereas the end of the slash points to the
+accumulator (or: zero) argument \code{z}. 
+That is, 
 \begin{lstlisting}
 (z /: List(x$_1$, ..., x$_n$))(op) = (...(z op x$_1$) op ... ) op x$_n$ 
-(List(x$_1$, ..., x$_n$) :/ z)(op) = x$_1$ op ( ... (x$_n$ op acc)...)
+(List(x$_1$, ..., x$_n$) :\ z)(op) = x$_1$ op ( ... (x$_n$ op acc)...)
 \end{lstlisting}
 For associative and commutative operators, \code{/:} and
-\code{:/} are equivalent (even though there may be a difference
+\code{:\\} are equivalent (even though there may be a difference
 in efficiency).  But sometimes, only one of the two operators is
 appropriate or has the right type:
 
@@ -3321,13 +3385,13 @@ appropriate or has the right type:
 which takes a list of element lists as arguments. The result of
 \code{flatten} should be the concatenation of all element lists into a
 single list. Here is the an implementation of this method in terms of 
-\code{:/}.
+\code{:\\}.
 \begin{lstlisting}
 def flatten[a](xs: List[List[a]]): List[a] = 
-  (xs :/ Nil) {(x, xs) => x ::: xs}
+  (xs :\ Nil) {(x, xs) => x ::: xs}
 \end{lstlisting} 
 In this case it is not possible to replace the application of
-\code{:/} with \code{/:}. Explain why.
+\code{:\\} with \code{/:}. Explain why.
 
 In fact \code{flatten} is predefined together with a set of other
 userful function in an object called \code{List} in the standatd Scala
@@ -3380,7 +3444,7 @@ definitions of some basic list-manipulation operations as fold
 operations.
 \begin{lstlisting}
 def mapFun[a, b](xs: List[a], f: a => b): List[b] = 
-  (xs :/ List[b]()){ ?? }
+  (xs :\ List[b]()){ ?? }
 
 def lengthFun[a](xs: List[a]): int =
   (0 /: xs){ ?? }
@@ -3447,6 +3511,8 @@ List.range(1, n)
   .filter(pair => isPrime(pair._1 + pair._2))
 \end{lstlisting}
 
+
+
 \section{Summary}
 
 This chapter has ingtroduced lists as a fundamental data structure in
@@ -3455,7 +3521,7 @@ functional programming languages. They play there a role comparable to
 arrays in imperative languages. However, the access patterns between
 arrays and lists are quite different. Where array accessing is always
 done by indexing, this is much less common for lists.  We have seen
-that \code{scala.List} defines method called \code{at} for indexing;
+that \code{scala.List} defines a method called \code{apply} for indexing;
 however this operation is much more costly than in the case of arrays
 (linear as opposed to constant time). Instead of indexing, lists are
 usually traversed recursively, where recursion steps are usually based
@@ -3483,25 +3549,25 @@ empty list \code{List()} as left and right identity:
    (xs ::: ys) ::: zs &=& xs ::: (ys ::: zs) \\
    xs ::: List()          &=& xs \gap =\ List() ::: xs
 \eda
-\redtext{Q}: How can we prove statements like the one above?
+\emph{Q}: How can we prove statements like the one above?
 
-\redtext{A}: By \redtext{structural induction} over lists.
+\emph{A}: By \emph{structural induction} over lists.
 \es
 \bsh{Reminder: Natural Induction}
 
-Recall the proof principle of \redtext{natural induction}:
+Recall the proof principle of \emph{natural induction}:
 
 To show a property \mathtext{P(n)} for all numbers \mathtext{n \geq b}:
 \be
-\item Show that \mathtext{P(b)} holds (\redtext{base case}).
+\item Show that \mathtext{P(b)} holds (\emph{base case}).
 \item For arbitrary \mathtext{n \geq b} show:
 \begin{quote}
      if \mathtext{P(n)} holds, then \mathtext{P(n+1)} holds as well
 \end{quote}
-(\redtext{induction step}).
+(\emph{induction step}).
 \ee
 %\es\bs
-\redtext{Example}: Given
+\emph{Example}: Given
 \begin{lstlisting}
 def factorial(n: int): int = 
   if (n == 0) 1
@@ -3533,7 +3599,7 @@ anywhere in a term.
 This works because purely functional programs do not have side
 effects; so a term is equivalent to the term it reduces to.
 
-The principle is called {\em\redtext{referential transparency}}.
+The principle is called {\em\emph{referential transparency}}.
 \es
 \bsh{Structural Induction}
 
@@ -3543,13 +3609,13 @@ In the case of lists, it is as follows:
 
 To prove a property \mathtext{P(xs)} for all lists \mathtext{xs},
 \be
-\item Show that \code{P(List())} holds (\redtext{base case}).
+\item Show that \code{P(List())} holds (\emph{base case}).
 \item For arbitrary lists \mathtext{xs} and elements \mathtext{x} 
       show:
 \begin{quote}
      if \mathtext{P(xs)} holds, then \mathtext{P(x :: xs)} holds as well
 \end{quote}
-(\redtext{induction step}).
+(\emph{induction step}).
 \ee
 
 \es
@@ -3664,11 +3730,11 @@ trees.
 The general induction principle is as follows.
 
 To show that property \code{P(t)} holds for all trees of a certain type,
-\bi
+\begin{itemize}
 \item Show \code{P(l)} for all leaf trees \code{$l$}.
 \item For every interior node \code{t} with subtrees \code{s$_1$, ..., s$_n$}, 
       show that \code{P(s$_1$) $\wedge$ ... $\wedge$ P(s$_n$) => P(t)}.
-\ei 
+\end{itemize} 
 
 \example Recall our definition of \code{IntSet} with 
 operations \code{contains} and \code{incl}:
@@ -3720,13 +3786,13 @@ type completely).
 
 How can we establish that these laws hold?
 
-\redtext{Proposition 1}: \code{Empty contains x =  false}.
+\emph{Proposition 1}: \code{Empty contains x =  false}.
 
-\redtext{Proof}: By the definition of \code{contains} in \code{Empty}.
+\emph{Proof}: By the definition of \code{contains} in \code{Empty}.
 \es\bs
-\redtext{Proposition 2}: \code{(xs incl x) contains x = true}
+\emph{Proposition 2}: \code{(xs incl x) contains x = true}
 
-\redtext{Proof:}
+\emph{Proof:}
 
 \Case{\code{Empty}}
 \begin{lstlisting}
@@ -3761,10 +3827,10 @@ How can we establish that these laws hold?
 
 \bigskip
 
-\redtext{Proposition 3}: If \code{x $\neq$ y} then
+\emph{Proposition 3}: If \code{x $\neq$ y} then
 \code{xs incl y contains x  =  xs contains x}.
 
-\redtext{Proof:} See blackboard.
+\emph{Proof:} See blackboard.
 \es
 \bsh{Exercise}
 
@@ -3785,7 +3851,7 @@ class NonEmpty(x: int, l: IntSet, r: IntSet) extends IntSet { ...
 The correctness of \code{union} can be subsumed with the following
 law:
 
-\redtext{Proposition 4}: 
+\emph{Proposition 4}: 
 \code{(xs union ys) contains x  =  xs contains x || ys contains x}.
 Is that true ? What hypothesis is missing ? Show a counterexample.
 
@@ -3793,7 +3859,7 @@ Show Proposition 4 using structural induction on \code{xs}.
 \es
 \comment{
 
-\redtext{Proof:} By induction on \code{xs}.
+\emph{Proof:} By induction on \code{xs}.
 
 \Case{\code{Empty}}
 
@@ -3840,6 +3906,896 @@ Show Proposition 4 using structural induction on \code{xs}.
 
 \es
 }}
+\chapter{\label{sec:for-notation}For-Comprehensions}
+
+The last chapter demonstrated that higher-order functions such as
+\verb@map@, \verb@flatMap@, \verb@filter@ provide powerful
+constructions for dealing with lists.  But sometimes the level of
+abstraction required by these functions makes a program hard to
+understand.
+
+To help understandbility, Scala has a special notation which
+simplifies common patterns of applications of higher-order functions.
+This notation builds a bridge between set-comprehensions in
+mathematics and for-loops in imperative languages such as C or
+Java. It also closely resembles the query notation of relational
+databases.
+
+As a first example, say we are given a list \code{persons} of persons
+with \code{name} and \code{age} fields.  To print the names of all
+persons in the sequence which are aged over 20, one can write:
+\begin{lstlisting}
+for (val p <- persons; p.age > 20) yield p.name
+\end{lstlisting}
+This is equivalent to the following expression , which uses
+higher-order functions \code{filter} and \code{map}:
+\begin{lstlisting}
+persons filter (p => p.age > 20) map (p => p.name)
+\end{lstlisting}
+The for-comprehension looks a bit like a for-loop in imperative languages,
+except that it constructs a list of the results of all iterations.
+
+Generally, a for-comprehension is of the form
+\begin{lstlisting}
+for ( $s$ ) yield $e$
+\end{lstlisting}
+Here, $s$ is a sequence of {\em generators} and {\em filters}.  A {\em
+generator} is of the form \code{val x <- e}, where \code{e} is a
+list-valued expression. It binds \code{x} to successive values in the
+list.  A {\em filter} is an expression \code{f} of type
+\code{boolean}.  It omits from consideration all bindings for which
+\code{f} is \code{false}.  The sequence $s$ starts in each case with a
+generator.  If there are several generators in a sequence, later
+generators vary more rapidly than earlier ones.
+
+Here are two examples that show how for-comprehensions are used.
+First, let's redo an example of the previous chapter: Given a positive
+integer $n$, find all pairs of positive integers $i$ and $j$, where $1
+\leq j < i < n$ such that $i + j$ is prime. With a for-comprehension
+this problem is solved as follows:
+\begin{lstlisting}
+for (val i <- List.range(1, n);
+     val j <- List.range(1, i);
+     isPrime(i+j)) yield Pair(i, j)
+\end{lstlisting}
+This is arguably much clearer than the solution using \code{map},
+\code{flatMap} and \code{filter} that we have developed previously.
+
+As a second example, consider computing the scalar product of two
+vectors \code{xs} and \code{ys}. Using a for-comprehension, this can
+be written as follows.
+\begin{lstlisting}
+  sum (for(val (x, y) <- xs zip ys) yield x * y)
+\end{lstlisting}
+
+\section{The N-Queens Problem}
+
+For-comprehensions are especially useful for solving combinatorial
+puzzles. An example of such a puzzle is the 8-queens problem: Given a
+standard chessboard, place 8 queens such that no queen is in check from any
+other (a queen can check another piece if they are on the same
+column, row, or diagional). We will now develop a solution to this
+problem, generalizing it to chessboards of arbitrary size. Hence, the
+problem is to place $n$ queens on a chessboard of size $n \times n$.
+
+To solve this problem, note that we need to place a queen in each row.
+So we could place queens in successive rows, each time checking that a
+newly placed queen is not in queck from any other queens that have
+already been placed. In the course of this search, it might arrive
+that a queen to be placed in row $k$ would be in check in all fields
+of that row from queens in row $1$ to $k-1$. In that case, we need to
+abort that part of the search in order to continue with a different
+configuration of queens in columns $1$ to $k-1$.
+
+This suggests a recursive algorithm.  Assume that we have already
+generated all solutions of placing $k-1$ queens on a board of size $n
+\times n$. We can represent each such solution by a list of length
+$k-1$ of column numbers (which can range from $1$ to $n$).  We treat
+these partial solution lists as stacks, where the column number of the
+queen in row $k-1$ comes first in the list, followed by the column
+number of the queen in row $k-2$, etc. The bottom of the stack is the
+column number of the queen placed in the first row of the board.  All
+solutions together are then represented as a list of lists, with one
+element for each solution.
+
+Now, to place the $k$'the queen, we generate all possible extensions
+of each previous solution by one more queen. This yields another list
+of solution lists, this time of length $k$. We continue the process
+until we have reached solutions of the size of the chessboard $n$.
+This algorithmic idea is embodied in function \code{placeQueens} below:
+\begin{lstlisting}
+def queens(n: int): List[List[int]] = {
+  def placeQueens(k: int): List[List[int]] =
+    if (k == 0) List(List())
+    else for (val queens <- placeQueens(k - 1);
+              val column <- List.range(1, n + 1);
+              isSafe(column, queens, 1)) yield col :: queens;
+  placeQueens(n);
+}
+\end{lstlisting}
+
+\exercise Write the function
+\begin{lstlisting}
+  def isSafe(col: int, queens: List[int], delta: int): boolean
+\end{lstlisting}
+which tests whether a queen in the given column \verb@col@ is safe with 
+respect to the \verb@queens@ already placed. Here, \verb@delta@ is the difference between the row of the queen to be
+placed and the row of the first queen in the list.
+
+\section{Querying with For-Comprehensions}
+
+The for-notation is essentially equivalent to common operations of
+database query languages.  For instance, say we are given a 
+database \code{books}, represented as a list of books, where
+\code{Book} is defined as follows.
+\begin{lstlisting}
+case class Book(title: String, authors: List[String]);
+\end{lstlisting}
+Here is a small example database:
+\begin{lstlisting}
+val books: List[Book] = List(
+  Book("Structure and Interpretation of Computer Programs",
+       List("Abelson, Harald", "Sussman, Gerald J.")),
+  Book("Principles of Compiler Design",
+       List("Aho, Alfred", "Ullman, Jeffrey")),
+  Book("Programming in Modula-2",
+       List("Wirth, Niklaus")),
+  Book("Introduction to Functional Programming"),
+       List("Bird, Richard")),
+  Book("The Java Language Specification",
+       List("Gosling, James", "Joy, Bill", "Steele, Guy", "Bracha, Gilad")));
+\end{lstlisting}
+Then, to find the titles of all books whose author's last name is ``Ullman'':
+\begin{lstlisting}
+for (val b <- books; val a <- b.authors; a startsWith "Ullman")
+yield b.title
+\end{lstlisting}
+(Here, \code{startsWith} is a method in \code{java.lang.String}).  Or,
+to find the titles of all books that have the string ``Program'' in
+their title:
+\begin{lstlisting}
+for (val b <- books; (b.title indexOf "Program") >= 0)
+yield b.title
+\end{lstlisting}
+Or, to find the names of all authors that have written at least two
+books in the database.
+\begin{lstlisting}
+for (val b1 <- books; val b2 <- books; b1 != b2;
+     val a1 <- b1.authors; val a2 <- b2.authors; a1 == a2)
+yield a1
+\end{lstlisting}
+The last solution is not yet perfect, because authors will appear
+several times in the list of results.  We still need to remove
+duplicate authors from result lists.  This can be achieved with the
+following function.
+\begin{lstlisting}
+def removeDuplicates[a](xs: List[a]): List[a] =
+  if (xs.isEmpty) xs
+  else xs.head :: removeDuplicates(xs.tail filter (x => x != xs.head));
+\end{lstlisting}
+Note that the last expression in method \code{removeDuplicates}
+can be equivalently expressed using a for-comprehension.
+\begin{lstlisting}
+xs.head :: removeDuplicates(for (val x <- xs.tail; x != xs.head) yield x)
+\end{lstlisting}
+
+\section{Translation of For-Comprehensions}
+
+Every for-comprehension can be expressed in terms of the three
+higher-order functions \code{map}, \code{flatMap} and \code{filter}.
+Here is the translation scheme, which is also used by the Scala compiler.
+\begin{itemize}
+\item
+A simple for-comprehension
+\begin{lstlisting}
+for (val x <- e) yield e'
+\end{lstlisting}
+is translated to
+\begin{lstlisting}
+e.map(x => e')
+\end{lstlisting}
+\item
+A for-comprehension
+\begin{lstlisting}
+for (val x <- e; f; s) yield e'
+\end{lstlisting}
+where \code{f} is a filter and \code{s} is a (possibly empty)
+sequence of generators or filters
+is translated to
+\begin{lstlisting}
+for (val x <- e.filter(x => f); s) yield e'
+\end{lstlisting}
+and then translation continues with the latter expression.
+\item
+A for-comprehension
+\begin{lstlisting}
+for (val x <- e; y <- e'; s) yield e''
+\end{lstlisting}
+where \code{s} is a (possibly empty)
+sequence of generators or filters
+is translated to
+\begin{lstlisting}
+e.flatMap(x => for (y <- e'; s) yield e'')
+\end{lstlisting}
+and then translation continues with the latter expression.
+\end{itemize}
+For instance, taking our "pairs of integers whose sum is prime" example:
+\begin{lstlisting}
+for { val i <- range(1, n);
+      val j <- range(1, i);
+      isPrime(i+j)
+} yield (i, j)
+\end{lstlisting}
+Here is what we get when we translate this expression:
+\begin{lstlisting}
+range(1, n)
+  .flatMap(i =>
+    range(1, i)
+      .filter(j => isPrime(i+j))
+      .map(j => (i, j)))
+\end{lstlisting}
+
+Conversely, it would also be possible to express functions \code{map},
+\code{flatMap}{ and \code{filter} using for-comprehensions. Here are the
+three functions again, this time implemented using for-comprehensions.
+\begin{lstlisting}
+object Demo {
+  def map[a, b](xs: List[a], f: a => b): List[b] = 
+    for (val x <- cs) yield f(x);
+
+  def flatMap[a, b](xs: List[a], f: a => List[b]): List[b] = 
+    for (val x <- xs; val y <- f(x)) yield y;
+
+  def filter[a](xs: List[a], p: a => boolean): List[a] = 
+    for (val x <- xs; p(x)) yield x;
+}
+\end{lstlisting}
+Not surprisingly, the translation of the for-comprehension in the body of
+\code{Demo.map} will produce a call to \code{map} in class \code{List}.
+Similarly, \code{Demo.flatMap} and \code{Demo.filter} translate to
+\code{flatMap} and \code{filter} in class \code{List}.
+
+\exercise
+Define the following function in terms of \code{for}.
+\begin{lstlisting}
+def flatten(xss: List[List[a]]): List[a] =
+  (xss :\ List()) ((xs, ys) => xs ::: ys)
+\end{lstlisting}
+
+\exercise
+Translate
+\begin{lstlisting}
+for { val b <- books; val a <- b.authors; a startsWith "Bird" } yield b.title
+for { val b <- books; (b.title indexOf "Program") >= 0 } yield b.title
+\end{lstlisting}
+to higher-order functions.
+
+\section{For-Loops}\label{sec:for-loops}
+
+For-comprehensions resemble for-loops in imperative languages, except
+that they produce a list of results. Sometimes, a list of results is
+not needed but we would still like the flexibility of generators and
+filters in iterations over lists. This is made possible by a variant
+of the for-comprehension syntax, which excpresses for-loops:
+\begin{lstlisting}
+for ( $s$ ) $e$
+\end{lstlisting}
+This construct is the same as the standard for-comprehension syntax
+except that the keyword \code{yield} is missing. The for-loop is
+executed by executing the expression $e$ for each element generated
+from the sequence of generators and filters $s$.
+
+As an example, the following expression prints out all elements of a
+matrix represented as a list of lists:
+ \begin{lstlisting}
+for (xs <- xss) {
+  for (x <- xs) System.out.print(x + "\t")
+  System.out.println()
+}
+\end{lstlisting}
+The translation of for-loops to higher-order methods of class
+\code{List} is similar to the translation of for-comprehensions, but
+is simpler. Where for-comprehensions translate to \code{map} and
+\code{flatMap}, for-loops translate in each case to \code{foreach}.
+
+\section{Generalizing For}
+
+We have seen that the translation of for-comprehensions only relies on
+the presence of methods \code{map}, \code{flatMap}, and
+\code{filter}. Therefore it is possible to apply the same notation to
+generators that produce objects other than lists; these objects only
+have to support the three key functions \code{map}, \code{flatMap},
+and \code{filter}.
+
+The standard Scala library has several other abstractions that support
+these three methods and with them support for-comprehensions. We will
+encounter some of them in the following chapters. As a programmer you
+can also use this principle to enable for-comprehensions for types you
+define -- these types just need to support methods \code{map},
+\code{flatMap}, and \code{filter}.
+
+There are many examples where this is useful: Examples are database
+interfaces, XML trees, or optional values. We will see in
+Chapter~\ref{sec:parsers-results} how for-comprehensions can be used
+in the definition of parsers for context-free grammars that construct
+abstract syntax trees.
+
+One caveat: It is not assured automatically that the result
+translating a for-comprehension is well-typed. To ensure this, the
+types of \code{map}, \code{flatMap} and \code{filter} have to be
+essentially similar to the types of these methods in class \code{List}.
+
+To make this precise, assume you have a parameterized class
+ \code{C[a]} for which you want to enable for-comprehensions. Then
+ \code{C} should define \code{map}, \code{flatMap} and \code{filter}
+ with the following types:
+\begin{lstlisting}
+def map[b](f: a => b): C[b]
+def flatMap[b](f: a => C[b]): C[b]
+def filter(p: a => boolean): C[a]
+\end{lstlisting}
+It would be attractive to enforce these types statically in the Scala
+compiler, for instance by requiring that any type supporting
+for-comprehensions implements a standard trait with these methods
+\footnote{In the programming language Haskell, which has similar
+constructs, this abstraction is called a ``monad with zero''}.  The
+problem is that such a standard trait would have to abstract over the
+identity of the class \code{C}, for instance by taking \code{C} as a
+type parameter.  Note that this parameter would be a type constructor,
+which gets applied to {\em several different} types in the signatures of
+methods \code{map} and \code{flatMap}. Unfortunately, the Scala type
+system is too weak to express this construct, since it can handle only
+type parameters which are fully applied types.
+
+\chapter{Mutable State}
+
+Most programs we have presented so for did not have side-effects
+\footnote{We ignore here the fact that some of our program printed to
+standard output, which technically is a side effect.}.  Therefore, the
+notion of {\em time} did not matter.  For a program that terminates,
+any sequence of actions would have led to the same result!  This is
+also reflected by the substitution model of computation, where a
+rewrite step can be applied anywhere in a term, and all rewritings
+that terminate lead to the same solution.  In fact, this {\em
+confluence} property is a deep result in $\lambda$-calculus, the
+theory underlying functional programming. 
+
+In this chapter, we introduce functions with side effects and study
+their behavior. We will see that as a consequence we have to
+fundamenatlly modify up the substitution model of computation which we
+employed so far.
+
+\section{Stateful Objects}
+
+We normally view the world as a set of objects, some of which have
+state that {\em changes} over time.  Normally, state is associated
+with a set of variables that can be changed in the course of a
+computation.  There is also a more abstract notion of state, which
+does not refer to particular constructs of a programming language: An
+object {\em has state} (or: {\em is stateful}) if its behavior is
+influenced by its history.
+
+For instance, a bank account object has state, because the question
+``can I withdraw 100 CHF?''
+might have different answers during the lifetime of the account.
+
+In Scala, all mutable state is ultimately built from variables.  A
+variable definition is written like a value definition, but starts
+with \verb@var@ instead of \verb@val@. For instance, the following two
+definitions introduce and initialize two variables \code{x} and
+\code{count}.
+\begin{lstlisting}
+var x: String = "abc";
+var count = 111;
+\end{lstlisting}
+Like a value definition, a variable definition associates a name with
+a value. But in the case of a variable definition, this association
+may be changed later by an assignment.  Such assignments are written
+as in C or Java. Examples:
+\begin{lstlisting}
+x = "hello";
+count = count + 1;
+\end{lstlisting}
+In Scala, every defined variable has to be initialized at the point of
+its definition. For instance, the statement ~\code{var x: int;}~ is
+{\em not} regarded as a variable definition, because the initializer
+is missing\footnote{If a statement like this appears in a class, it is
+instead regarded as a variable declaration, which introcuces
+abstract access methods for the variable, but does not associate these
+methods with a piece of state.}. If one does not know, or does not
+care about, the appropriate initializer, one can use a wildcard
+instead. I.e.
+\begin{lstlisting}
+val x: T = _;
+\end{lstlisting}
+will initialize \code{x} to some default value (\code{null} for
+reference types, \code{false} for booleans, and the appropriate
+version of \code{0} for numeric value types).
+
+Real-world objects with state are represented in Scala by objects that
+have variables as members. For instance, here is a class that
+represents bank accounts.
+\begin{lstlisting}
+class BankAccount {
+  private var balance = 0;
+  def deposit(amount: int): unit =
+    if (amount > 0) balance = balance + amount;
+
+  def withdraw(amount: int): int =
+    if (0 < amount && amount <= balance) {
+      balance = balance - amount;
+      balance
+    } else error("insufficient funds");
+}
+\end{lstlisting}
+The class defines a variable \code{balance} which contains the current
+balance of an account. Methods \code{deposit} and \code{withdraw}
+change the value of this variable through assignments.  Note that
+\code{balance} is \code{private} in class \code{BankAccount} -- hence
+it can not be accessed directly outside the class.
+
+To create bank-accounts, we use the usual object creation notation:
+\begin{lstlisting}
+val myAccount = new BankAccount
+\end{lstlisting}
+
+\example Here is a \code{scalaint} session that deals with bank
+accounts.
+
+\begin{lstlisting}
+> :l bankaccount.scala
+loading file 'bankaccount.scala'
+> val account = new BankAccount
+val account : BankAccount = BankAccount$\Dollar$class@1797795
+> account deposit 50
+(): scala.Unit
+> account withdraw 20
+30: scala.Int
+> account withdraw 20
+10: scala.Int
+> account withdraw 15
+java.lang.RuntimeException: insufficient funds
+        at error(Predef.scala:3)
+        at BankAccount$\Dollar$class.withdraw(bankaccount.scala:13)
+        at <top-level>(console:1)
+> 
+\end{lstlisting}
+The example shows that applying the same operation (\code{withdraw
+20}) twice to an account yields different results. So, clearly,
+accounts are stateful objects.  
+
+\paragraph{Sameness and Change}
+Assignments pose new problems in deciding when two expressions are
+``the same''.
+If assignments are excluded, and one writes
+\begin{lstlisting}
+val x = E; val y = E;
+\end{lstlisting}
+where \code{E} is some arbitrary expression,
+then \code{x} and \code{y} can reasonably be assumed to be the same.
+I.e. one could have equivalently written
+\begin{lstlisting}
+val x = E; val y = x;
+\end{lstlisting}
+(This property is usually called {\em referential transparency}). But
+once we admit assignments, the two definition sequences are different.
+Consider:
+\begin{lstlisting}
+val x = new BankAccount; val y = new BankAccount;
+\end{lstlisting}
+To answer the question whether \code{x} and \code{y} are the same, we
+need to be more precise what ``sameness'' means. This meaning is
+captured in the notion of {\em operational equivalence}, which,
+somewhat informally, is stated as follows.
+
+Suppose we have two definitions of \code{x} and \code{y}.
+To test whether \code{x} and \code{y} define the same value, proceed
+as follows.
+\begin{itemize}
+\item
+Execute the definitions followed by an
+arbitrary sequence \code{S} of operations that involve \code{x} and
+\code{y}. Observe the results (if any).
+\item
+Then, execute the definitions with another sequence \code{S'} which
+results from \code{S} by renaming all occurrences of \code{y} in
+\code{S} to \code{x}.
+\item
+If the results of running \code{S'} are different, then surely
+\code{x} and \code{y} are different.
+\item
+On the other hand, if all possible pairs of sequences \code{(S, S')}
+yield the same results, then \code{x} and \code{y} are the same.
+\end{itemize}
+In other words, operational equivalence regards two definitions
+\code{x} and \code{y} as defining the same value, if no possible
+experiment can distinguish between \code{x} and \code{y}. An
+experiment in this context are two version of an arbitrary program which use either
+\code{x} or \code{y}.
+ 
+Given this definition, let's test whether
+\begin{lstlisting}
+val x = new BankAccount; val y = new BankAccount;
+\end{lstlisting}
+defines values \code{x} and \code{y} which are the same.
+Here are the definitions again, followed by a test sequence:
+
+\begin{lstlisting}
+> val x = new BankAccount
+> val y = new BankAccount
+> x deposit 30
+30
+> y withdraw 20
+java.lang.RuntimeException: insufficient funds
+\end{lstlisting}
+
+Now, rename all occurrences of \code{y} in that sequence to
+\code{x}. We get:
+\begin{lstlisting}
+> val x = new BankAccount
+> val y = new BankAccount
+> x deposit 30
+30
+> x withdraw 20
+10
+\end{lstlisting}
+Since the final results are different, we have established that
+\code{x} and \code{y} are not the same.
+On the other hand, if we define
+\begin{lstlisting}
+val x = new BankAccount; val y = x
+\end{lstlisting}
+then no sequence of operations can distinguish between \code{x} and
+\code{y}, so \code{x} and \code{y} are the same in this case.
+
+\paragraph{Assignment and the Substitution Model}
+These examples show that our previous substitution model of
+computation cannot be used anymore.  After all, under this
+model we could always replace a value name by its
+defining expression.
+For instance in
+\begin{lstlisting}
+val x = new BankAccount; val y = x
+\end{lstlisting}
+the \code{x} in the definition of \code{y} could
+be replaced by \code{new BankAccount}.
+But we have seen that this change leads to a different program.
+So the substitution model must be invalid, once we add assignments. 
+
+\section{Imperative Control Structures}
+
+Scala has the \code{while} and \code{do-while} loop constructs known
+from the C and Java languages. There is also a single branch \code{if}
+which leaves out the else-part as well as a \code{return} statement which
+aborts a function prematurely. This makes it possible to program in a
+conventional imperative style. For instance, the following function,
+which computes the \code{n}'th power of a given parameter \code{x}, is
+implemented using \code{while} and single-branch \code{if}.
+\begin{lstlisting}
+def power (x: double, n: int): double = {
+  var r = 1.0;
+  var i = n;
+  while (i > 0) { 
+    if ((i & 1) == 1) { r = r * x }
+    if (i > 1) r = r * r;
+    i = i >> 1;
+  }
+  r
+}
+\end{lstlisting}
+These imperative control constructs are in the language for
+convenience. They could have been left out, as the same constructs can
+be implemented using just functions. As an example, let's develop a
+functional implementation of the while loop. \code{whileLoop} should
+be a function that takes two parameters: a condition, of type
+\code{boolean}, and a command, of type \code{unit}. Both condition and
+command need to be passed by-name, so that they are evaluated
+repeatedly for each loop iteration.  This leads to the following
+definition of \code{whileLoop}.
+\begin{lstlisting}
+def whileLoop(def condition: boolean)(def command: unit): unit = 
+  if (condition) {
+    command; whileLoop(condition)(command)
+  } else {}
+\end{lstlisting}
+Note that \code{whileLoop} is tail recursive, so it operates in
+constant stack space.
+
+\exercise Write a function \code{repeatLoop}, which should be 
+applied as follows:
+\begin{lstlisting}
+repeatLoop { command } ( condition )
+\end{lstlisting}
+Is there also a way to obtain a loop syntax like the following?
+\begin{lstlisting}
+repeatLoop { command } until ( condition )
+\end{lstlisting}
+Some other control constructs known from C and Java are missing in
+Scala: There are no \code{break} and \code{continue} jumps for loops.
+There are also no for-loops in the Java sense -- these have been
+replaced by the more general for-loop construct discussed in
+Section~\ref{sec:for-loops}.
+
+\section{Extended Example: Discrete Event Simulation}
+
+We now discuss an example that demonstrates how assignments and
+higher-order functions can be combined in interesting ways.  
+We will build a simulator for digital circuits.
+
+The example is taken from Abelson and Sussman's book
+\cite{abelson-sussman:structure}. We augment their basic (Scheme-)
+code by an object-oriented structure which allows code-reuse through
+inheritance. The example also shows how discrete event simulation programs
+in general are structured and built.
+
+We start with a little language to describe digital circuits.
+A digital circuit is built from {\em wires} and {\em function boxes}.
+Wires carry signals which are transformed by function boxes.
+We will represent signals by the booleans \code{true} and
+\code{false}.
+
+Basic function boxes (or: {\em gates}) are:
+\begin{itemize}
+\item An \emph{inverter}, which negates its signal
+\item An \emph{and-gate}, which sets its output to the conjunction of its input.
+\item An \emph{or-gate}, which sets its output to the disjunction of its
+input.
+\end{itemize}
+Other function boxes can be built by combining basic ones.
+
+Gates have {\em delays}, so an output of a gate will change only some
+time after its inputs change.
+
+\paragraph{A Language for Digital Circuits}
+
+We describe the elements of a digital circuit by the following set of
+Scala classes and functions.
+
+First, there is a class \code{Wire} for wires.
+We can construct wires as follows.
+\begin{lstlisting}
+val a = new Wire;
+val b = new Wire;
+val c = new Wire;
+\end{lstlisting}
+Second, there are functions
+\begin{lstlisting}
+def inverter(input: Wire, output: Wire): unit
+def andGate(a1: Wire, a2: Wire, output: Wire): unit
+def orGate(o1: Wire, o2: Wire, output: Wire): unit
+\end{lstlisting}
+which ``make'' the basic gates we need (as side-effects).
+More complicated function boxes can now be built from these.
+For instance, to construct a half-adder, we can define:
+
+\begin{lstlisting}
+  def halfAdder(a: Wire, b: Wire, s: Wire, c: Wire): unit = {
+    val d = new Wire;
+    val e = new Wire;
+    orGate(a, b, d);
+    andGate(a, b, c);
+    inverter(c, e);
+    andGate(d, e, s);
+  }
+\end{lstlisting}
+This abstraction can itself be used, for instance in defining a full
+adder:
+\begin{lstlisting}
+  def fullAdder(a: Wire, b: Wire, cin: Wire, sum: Wire, cout: Wire) = {
+    val s = new Wire;
+    val c1 = new Wire;
+    val c2 = new Wire;
+    halfAdder(a, cin, s, c1);
+    halfAdder(b, s, sum, c2);
+    orGate(c1, c2, cout);
+  }
+\end{lstlisting}
+Class \code{Wire} and functions \code{inverter}, \code{andGate}, and
+\code{orGate} represent thus a little language in which users can
+define digital circuits.  We now give implementations of this class
+and these functions, which allow one to simulate circuits.
+These implementations are based on a simple and general API for
+discrete event simulation.
+
+\paragraph{The Simulation API}
+
+Discrete event simulation performs user-defined \emph{actions} at
+specified \emph{times}.  
+An {\em action} is represented as a function which takes no parameters and
+returns a \code{unit} result:
+\begin{lstlisting}
+type Action = () => unit;
+\end{lstlisting}
+The \emph{time} is simulated; it is not the actual ``wall-clock'' time.
+
+A concrete simulation will be done inside an object which inherits
+from the abstract \code{Simulation} class. This class has the following
+signature:
+
+\begin{lstlisting}
+abstract class Simulation {
+  def currentTime: int;
+  def afterDelay(delay: int, def action: Action): unit;
+  def run: unit;
+}
+\end{lstlisting}
+Here,
+\code{currentTime} returns the current simulated time as an integer
+number,
+\code{afterDelay} schedules an action to be performed at a specified
+delay after \code{currentTime}, and
+\code{run} runs the simulation until there are no further actions to be 
+performed.
+
+\paragraph{The Wire Class}
+A wire needs to support three basic actions.
+\begin{itemize}
+\item[]
+\code{getSignal: boolean}~~ returns the current signal on the wire.
+\item[]
+\code{setSignal(sig: boolean): unit}~~ sets the wire's signal to \code{sig}.
+\item[]
+\code{addAction(p: Action): unit}~~ attaches the specified procedure
+\code{p} to the {\em actions} of the wire. All attached action
+procedures will be executed every time the signal of a wire changes.
+\end{itemize}
+Here is an implementation of the \code{Wire} class:
+\begin{lstlisting}
+class Wire {
+  private var sigVal = false;
+  private var actions: List[Action] = List();
+  def getSignal = sigVal;
+  def setSignal(s: boolean) = 
+    if (s != sigVal) {
+      sigVal = s;
+      actions.foreach(action => action()); 
+    }
+  def addAction(a: Action) = {
+    actions = a :: actions; a()
+  }
+}
+\end{lstlisting}
+Two private variables make up the state of a wire.  The variable
+\code{sigVal} represents the current signal, and the variable
+\code{actions} represents the action procedures currently attached to
+the wire.
+
+\paragraph{The Inverter Class}
+We implement an inverter by installing an action on its input wire,
+namely the action which puts the negated input signal onto the output
+signal.  The action needs to take effect at \code{InverterDelay}
+simulated time units after the input changes. This suggests the 
+following implementation:
+\begin{lstlisting}
+def inverter(input: Wire, output: Wire) = {
+  def invertAction() = {
+    val inputSig = input.getSignal;
+    afterDelay(InverterDelay, () => output.setSignal(!inputSig))
+  }
+  input addAction invertAction
+}
+\end{lstlisting}
+
+\paragraph{The And-Gate Class}
+And-gates are implemented analogously to inverters.  The action of an
+\code{andGate} is to output the conjunction of its input signals.
+This should happen at \code{AndGateDelay} simulated time units after
+any one of its two inputs changes. Hence, the following implementation:
+\begin{lstlisting}
+def andGate(a1: Wire, a2: Wire, output: Wire) = {
+  def andAction() = {
+    val a1Sig = a1.getSignal;
+    val a2Sig = a2.getSignal;
+    afterDelay(AndGateDelay, () => output.setSignal(a1Sig & a2Sig));
+  }
+  a1 addAction andAction;
+  a2 addAction andAction;
+}
+\end{lstlisting}
+
+\exercise Write the implementation of \code{orGate}.
+
+\exercise Another way is to define an or-gate by a combination of
+inverters and and gates. Define a function \code{orGate} in terms of
+\code{andGate} and \code{inverter}. What is the delay time of this function?
+
+\paragraph{The Simulation Class}
+
+Now, we just need to implement class \code{Simulation}, and we are
+done.  The idea is that we maintain inside a \code{Simulation} object
+an \emph{agenda} of actions to perform.  The agenda is represented as
+a list of pairs of actions and the times they need to be run.  The
+agenda list is sorted, so that earlier actions come before later ones.
+\begin{lstlisting} 
+class Simulation {
+  private type Agenda = List[Pair[int, Action]];
+  private var agenda: Agenda = List();
+\end{lstlisting}
+There is also a private variable \code{curtime} to keep track of the
+current simulated time.
+\begin{lstlisting}
+  private var curtime = 0;
+\end{lstlisting}
+An application of the method \code{afterDelay(delay, action)} 
+inserts the pair \code{(curtime + delay, action)} into the
+\code{agenda} list at the appropriate place.
+\begin{lstlisting}
+  def afterDelay(int delay)(def action: Action): unit = {
+    val actiontime = curtime + delay;
+    def insertAction(ag: Agenda): Agenda = ag match {
+      case List() => 
+        Pair(actiontime, action) :: ag
+      case (first @ Pair(time, act)) :: ag1 =>
+        if (actiontime < time) Pair(actiontime, action) :: ag
+	else first :: insert(ag1)
+    }
+    agenda = insert(agenda)
+  }
+\end{lstlisting}
+An application of the \code{run} method removes successive elements
+from the \code{agenda} and performs their actions.
+It continues until the agenda is empty:
+\begin{lstlisting}
+def run = {
+  afterDelay(0, () => System.out.println("*** simulation started ***"));
+  agenda match {
+    case List() =>
+    case Pair(_, action) :: agenda1 =>
+      agenda = agenda1; action(); run
+  }
+}
+\end{lstlisting}
+
+
+\paragraph{Running the Simulator}
+To run the simulator, we still need a way to inspect changes of
+signals on wires. To this purpose, we write a function \code{probe}.
+\begin{lstlisting}
+def probe(name: String, wire: Wire): unit = {
+  wire addAction (() =>
+    System.out.println(
+      name + " " + currentTime + " new_value = " + wire.getSignal);
+  )
+}
+\end{lstlisting}
+Now, to see the simulator in action, let's define four wires, and place
+probes on two of them: 
+\begin{lstlisting}
+> val input1 = new Wire
+> val input2 = new Wire
+> val sum = new Wire
+> val carry = new Wire
+
+> probe("sum", sum)
+sum 0 new_value = false
+> probe("carry", carry)
+carry 0 new_value = false
+\end{lstlisting}
+Now let's define a half-adder connecting the wires:
+\begin{lstlisting}
+> halfAdder(input1, input2, sum, carry);
+\end{lstlisting}
+Finally, set one after another the signals on the two input wires to
+\code{true} and run the simulation.
+\begin{lstlisting}
+> input1 setSignal true; run
+*** simulation started ***
+sum 8 new_value = true
+> input2 setSignal true; run
+carry 11 new_value = true
+sum 15 new_value = false
+\end{lstlisting}
+
+\section{Summary}
+
+We have seen in this chapter the constructs that let us model state in
+Scala -- these are variables, assignments, abd imperative control
+structures.  State and Assignment complicate our mental model of
+computation.  In particular, referential transparency is lost.  On the
+other hand, assignment gives us new ways to formulate programs
+elegantly. As always, it depends on the situation whether purely
+functional programming or programming with assignments works best.
+
 \chapter{Computing with Streams}
 
 The previous chapters have introduced variables, assignment and
@@ -3858,14 +4814,14 @@ answer is clearly yes: A time-changing quantity is simply modelled by
 a function \code{f(t)} with a time parameter \code{t}. The same can be
 done in computation. Instead of overwriting a variable with successive
 values, we represent all these values as successive elements in a
-list. So, a mutabel variable \code{var x: T} gets replaced by an
+list. So, a mutable variable \code{var x: T} gets replaced by an
 immutable value \code{val x: List[T]}. In a sense, we trade space for
 time -- the different values of the variable now all exit concurrently
 as different elements of the list.  One advantage of the list-based
 view is that we can ``time-travel'', i.e. view several successive
 values of the variable at the same time. Another advantage is that we
 can make use of the powerful library of list processing functions,
-which often simplifies computation. For instance, consider the way
+which often simplifies computation. For instance, consider the
 imperative way to compute the sum of all prime numbers in an interval:
 \begin{lstlisting}
 def sumPrimes(start: int, end: int): int = {
@@ -3941,7 +4897,7 @@ def print(xs: Stream[a]): unit =
 Streams also support almost all other methods defined on lists (see
 below for where their methods sets differ). For instance, we can find
 the second prime number between \code{1000} and \code{10000} by applying methods
-\code{filter} and \code{at} on an interval stream:
+\code{filter} and \code{apply} on an interval stream:
 \begin{lstlisting}
   Stream.range(1000, 10000) filter isPrime at 1
 \end{lstlisting}
@@ -3965,715 +4921,180 @@ constructing a stream with first element \code{x} and (unevaluated)
 rest \code{xs}.  Instead of \code{xs ::: ys}, one uses the operation
 \code{xs append ys}.  
 
-%\redtext
-{Is there another way?}
-
-\chapter{\label{sec:for-notation}For-Comprehensions}
-
-The last chapter has demonstrated that the use of higher-order
-functions over lists can lead to very concise programs. But sometimes
-the level of abstraction required by these functions makes a program
-hard to understand.
-
-To help understandbility, Scala has a special notation which
-simplifies common patterns of applications of higher-order functions.
-This notation is builds a bridge between set comprehensions in
-mathematics and \code{for} loops in imperative languages such as C or
-Java. It also closely resembles the query notation of relational
-databases.
-
-As a first example, say we are given a list \code{persons} of persons
-with \code{name} and \code{age} fields.  To print the names of all
-persons in the sequence which are aged over 20, one can write:
-\begin{lstlisting}
-for { val p <- persons; p.age > 20 } yield p.name
-\end{lstlisting}
-This is equivalent to the following expression , which uses
-higher-order functions \code{filter} and \code{map}:
-\begin{lstlisting}
-persons filter (p => p.age > 20) map (p => p.name)
-\end{lstlisting}
-The for-expression looks a bit like a for-loop in imperative languages,
-except that it constructs a list of the results of all iterations.
-
-Generally, a for-comprehension is of the form
-\begin{lstlisting}
-for ( $s$ ) yield $e$
-\end{lstlisting}
-Here, $s$ is a sequence of {\em generators} and {\em filters}.  A {\em
-generator} is of the form \code{val x <- e}, where \code{e} is a
-list-valued expression. It binds \code{x} to successive values in the
-list.  A {\em filter} is an expression \code{f} of type
-\code{boolean}.  It omits from consideration all bindings for which
-\code{f} is \code{false}.  The sequence $s$ starts in each case with a
-generator.  If there are several generators in a sequence, later
-generators vary more rapidly than earlier ones.
-
-Here are two examples that show how for-comprehensions are used.
-First, let's redo an example of the previous chapter: Given a positive
-integer $n$, find all pairs of positive integers $i$ and $j$, where $1
-\leq j < i < n$ such that $i + j$ is prime. Using the \code{for}
-notation, this problem is solved as follows:
-\begin{lstlisting}
-for (val i <- List.range(1, n);
-     val j <- List.range(1, i);
-     isPrime(i+j)) yield Pair(i, j)
-\end{lstlisting}
-This is arguably much clearer than the solution using \code{map},
-\code{flatMap} and \code{filter} that we have developed previously.
-
-As a second example, consider computing the scalar product of two
-vectors \code{xs} and \code{ys}. using \code{for}, this can be written
-as follows.
-\begin{lstlisting}
-  sum (for { val (x, y) <- xs zip ys } yield x * y)
-\end{lstlisting}
-
-The for-notation is essentially equivalent to common operations of
-database query languages.  For instance, say we are given a book
-database \code{books}, represented as a list of books, where
-\code{Book} is defined as follows.
-\begin{lstlisting}
-case class Book(title: String, uthors: List[String]);
-\end{lstlisting}
-Here is a small example database:
-\begin{lstlisting}
-val books: List[Book] = List(
-  Book {
-    val title = "Structure and Interpretation of Computer Programs";
-    val authors = ["Abelson, Harald", "Sussman, Gerald J."];
-  },
-  Book {
-    val title = "Principles of Compiler Design";
-    val authors = ["Aho, Alfred", "Ullman, Jeffrey"];
-  },
-  Book {
-    val title = "Programming in Modula-2";
-    val authors = ["Wirth, Niklaus"];
-  }
-];
-\end{lstlisting}
-Then, to find the titles of all books whose author's last name is ``Ullman'':
-\begin{lstlisting}
-for { val b <- books; val a <- b.authors; a startsWith "Ullman"
-} yield b.title
-\end{lstlisting}
-(Here, \code{startsWith} is a method in \code{java.lang.String}).  Or,
-to find the titles of all books that have the string ``Program'' in
-their title:
-\begin{lstlisting}
-for { val b <- books; (b.title indexOf "Program") >= 0
-} yield b.title
-\end{lstlisting}
-Or, to find the names of all authors that have written at least two
-books in the database.
-\begin{lstlisting}
-for { val b1 <- books;
-      val b2 <- books;
-      b1 != b2;
-      val a1 <- b1.authors;
-      val a2 <- b2.authors;
-      a1 == a2 } yield a1
-\end{lstlisting}
-The last solution is not yet perfect, because authors will appear
-several times in the list of results.  We still need to remove
-duplicate authors from result lists.  This can be achieved with the
-following function.
-\begin{lstlisting}
-def removeDuplicates[a](xs: List[a]): List[a] =
-  if (xs.isEmpty) xs
-  else xs.head :: removeDuplicates(xs.tail filter (x => x != xs.head));
-\end{lstlisting}
-The last expression can be equivalently expressed as follows.
-\begin{lstlisting}
-xs.head :: removeDuplicates(for (val x <- xs.tail; x != xs.head) yield x)
-\end{lstlisting}
-
-\subsection*{Translation of \prog{for}}
-
-Every for-comprehensions can be expressed in terms of the three
-higher-order functions \code{map}, \code{flatMap} and \code{filter}.
-Here is the translation scheme, which is also used by the Scala compiler.
-\begin{itemize}
-\item
-A simple for-comprehension
-\begin{lstlisting}
-for (val x <- e) yield e'
-\end{lstlisting}
-is translated to
-\begin{lstlisting}
-e.map(x => e')
-\end{lstlisting}
-\item
-A for-comprehension
-\begin{lstlisting}
-for (val x <- e; f; s) yield e'
-\end{lstlisting}
-where \code{f} is a filter and \code{s} is a (possibly empty)
-sequence of generators or filters
-is translated to
-\begin{lstlisting}
-for (val x <- e.filter(x => f); s) yield e'
-\end{lstlisting}
-and then translation continues with the latter expression.
-\item
-A for-comprehension
-\begin{lstlisting}
-for (val x <- e; y <- e'; s) yield e''
-\end{lstlisting}
-where \code{s} is a (possibly empty)
-sequence of generators or filters
-is translated to
-\begin{lstlisting}
-e.flatMap(x => for (y <- e'; s) yield e'')
-\end{lstlisting}
-and then translation continues with the latter expression.
-\end{itemize}
-For instance, taking our "pairs of integers whose sum is prime" example:
-\begin{lstlisting}
-for { val i <- range(1, n);
-      val j <- range(1, i-1);
-      isPrime(i+j)
-} yield (i, j)
-\end{lstlisting}
-Here is what we get when we translate this expression:
-\begin{lstlisting}
-range(1, n)
-  .flatMap(i =>
-    range(1, i-1)
-      .filter(j => isPrime(i+j))
-      .map(j => (i, j)))
-\end{lstlisting}
-
-\exercise
-Define the following function in terms of \code{for}.
-\begin{lstlisting}
-def concat(xss: List[List[a]]): List[a] =
-  (xss foldr []) { xs, ys => xs ::: ys }
-\end{lstlisting}
-\exercise
-Translate
-\begin{lstlisting}
-for { val b <- books; val a <- b.authors; a startsWith "Bird" } yield b.title
-for { val b <- books; (b.title indexOf "Program") >= 0 } yield b.title
-\end{lstlisting}
-to higher-order functions.
-
-We have seen that the for-translation only relies on the presence of
-methods \code{map},
-\code{flatMap}, and \code{filter}.
-This gives programmers the possibility to have for-syntax for
-other types as well -- one only needs to define \code{map},
-\code{flatMap}, and \code{filter} for these types.
-That's also why we were able to define \code{for} at the same time for
-arrays, iterators, and lists -- all these types have the required
-three methods \code{map},\code{flatMap}, and \code{filter} as members.
-Of course, it is also possible for users and library designers to
-define other types with these methods. There are many examples where
-this is useful: Databases, XML trees, optional values. We will see in
-Chapter~\ref{sec:parsers-results} how for-comprehensions can be used in the
-definition of parsers for context-free grammars that construct
-abstract syntax trees.
-
-\bibliographystyle{alpha}
-\bibliography{Scala}
-
-\end{document}
-
- 
 \chapter{Iterators}
 
-Classes in Scala can have type parameters. We demonstrate the use of
-type parameters with iterators as an example. An iterator is an object
-which traverses a sequence of values, using two abstract methods.
+Iterators are the imperative version of streams. Like streams,
+iterators describe potentially infinite lists. However, there is no
+data-structure which contains the elements of an iterator. Instead, 
+iterators aloow one to step through the sequence, using two abstract methods \code{next} and \code{hasNext}.
 \begin{lstlisting}
-abstract class Iterator[a] {
+trait Iterator[+a] {
   def hasNext: boolean;
   def next: a;
 \end{lstlisting}
 Method \code{next} returns successive elements.  Method \code{hasNext}
 indicates whether there are still more elements to be returned by
-\code{next}. The type of the elements returned by an iterator is
-arbitrary. We express this by giving the class \code{Iterator} the
-type parameter \code{a}. Type parameters are written in square
-brackets, in contrast to normal value parameters, which are written in
-parentheses.  Iterators also support other methods, which are
+\code{next}. Iterators also support some other methods, which are
 explained later.
 
-Here's an iterator which traverses an interval of integer values.
+As an example, here is an application which prints the squares of all
+numbers from 1 to 100.
 \begin{lstlisting}
-class RangeIterator(start: int, end: int) extends Iterator[int] {
-  private var current = 0;
-  def hasNext = current < end;
-  def next = {
-    val r = current;
-    if (current < end) current = current + 1
-    else throw new Error("end of iterator");
-    r
-  }
+var it: Iterator[int] = Iterator.range(1, 100);
+while (it.hasNext) {
+  val x = it.next;
+  System.out.println(x * x)
 }
 \end{lstlisting}
-The superclass of \code{RangeIterator} is \code{Iterator[int]},
-i.e. an iterator returning integer numbers. 
 
-Note that, unlike the classes we have seen so far,
-\code{RangeIterator} has internal state
+\section{Iterator Methods}
 
+Iterators support a rich set of methods besides \code{next} and
+\code{hasNext}, which is described in the following. Many of these
+methods mimic a corresponding functionality in lists.
 
-Here is a function that takes an iterator of arbitrary element type
-\code{a} and a procedure that maps \code{a}-values to the trivial type \code{unit}.
-It applies the given function to every value returned by the iterator.
-\begin{lstlisting}
-  def forall[a](i: Iterator[a])(f: a => boolean): boolean =
-    !hasNext || { val x = next; f(x) && forall(i, f) }
-\end{lstlisting}
-\code{forEach} can work with any type of iterator, 
-since the iterator's element type is passed as a type parameter \code{a}.
-Functions that take type parameters are called {\em polymorphic}. The term
-comes from Greek, where it means ``having many forms''.
-
-Finally, here is an application which uses \code{RangeIterator} and
-\code{foreach} to test whether a given number is prime, i.e. whether it can be 
-divided only by 1 and itself.
-\begin{lstlisting}
-def isPrime(x: int) =
-  forall[int](new RangeIterator(2, n)) { x => x % n != 0 }
-\end{lstlisting}
-As always, the actual parameters of \code{forEach} correspond to its
-formal parameters.  First comes the type parameter \code{int}, which
-determines the element type of the iterator which is passed next.
-
-\paragraph{Local Type Inference}
-Passing type parameters such as \code{[int]} all the time can become
-tedious in applications where polymorphic functions are used a
-lot. Quite often, the information in a type parameter is redundant,
-because the correct parameter type can also be determined by
-inspecting the function's value parameters or expected result type.
-Taking the \code{isPrime} function as an example, we know that its
-first value parameter is of type \code{Iterator[int]}, so we can
-determine the type parameter \code{int} from it. Scala contains a
-fairly powerful local type inferencer which allows one to omit type
-parameters to polymorphic functions and constructors in situations
-like these.  In the example above, the \code{int} type parameter would
-have been inferred  if it was not given explicitly.
-
-Here is another
-application which prints all prime numbers between 1 and 10000. 
-\begin{lstlisting}
-forall(new RangeIterator(1, 10001)){ x => if (isPrime(x)) System.out.println(x) }
-\end{lstlisting}
-This time, the type parameter for \code{forEach} was omitted (and was
-inferred to be \code{int}).
-
+\paragraph{Append}
 Method \code{append} constructs an iterator which resumes with the
 given iterator \code{it} after the current iterator has finished.
 \begin{lstlisting}
-  def append(that: Iterator[a]): Iterator[a] = new Iterator[a] {
-    def hasNext = outer.hasNext || that.hasNext;
-    def next = if (outer.hasNext) outer.next else that.next;
-  }
+  def append[b >: a](that: Iterator[b]): Iterator[b] = new Iterator[b] {
+    def hasNext = Iterator.this.hasNext || that.hasNext;
+    def next = if (Iterator.this.hasNext) Iterator.this.next else that.next;
+  }    
 \end{lstlisting}
-The terms \code{outer.next} and \code{outer.hasNext} in the definition
-of \code{append} call the corresponding methods as they are defined in
-the enclosing \code{Iterator} class. Generally, an
-\code{outer} prefix in a selection indicates an identifier that is
-visible immediately outside the current class or template. If the
-\code{outer} prefix would have been missing,
-\code{hasNext} and \code{next} would have
-called recursively the methods being defined in the iterator
-constructed by \code{append}, which is not what we want.
+The terms \code{Iterator.this.next} and \code{Iterator.this.hasNext}
+in the definition of \code{append} call the corresponding methods as
+they are defined in the enclosing \code{Iterator} class.  If the
+\code{Iterator} prefix to \code{this} would have been missing,
+\code{hasNext} and \code{next} would have called recursively the
+methods being defined in the result of \code{append}, which is not
+what we want.
 
-Method \code{filter} constructs an iterator which returns all elements
-of the original iterator that satisfy a criterion \code{p}.
+\paragraph{Map, FlatMap, Foreach} Method \code{map} 
+constructs an iterator which returns all elements of the original
+iterator transformed by a given function \code{f}.
 \begin{lstlisting}
-  def filter(p: a => boolean) = new Iterator[a] {
-    private class Cell[T](elem_: T) { def elem = elem_; }
-    private var head: Cell[a] = null;
-    private var isAhead = false;
-    def hasNext: boolean =
-      if (isAhead) true
-      else if (outer.hasNext) {
-        head = Cell(outer.next); isAhead = p(head.elem); hasNext }
-      else false;
-    def next: a =
-      if (hasNext) { isAhead = false; head.elem }
-      else throw new Error("next on empty iterator");
+  def map[b](f: a => b): Iterator[b] = new Iterator[b] {
+    def hasNext = Iterator.this.hasNext;
+    def next = f(Iterator.this.next)
   }
 \end{lstlisting}
-Method \code{map} constructs an iterator which returns all elements of
-the original iterator transformed by a given function \code{f}.
-\begin{lstlisting}
-  def map[b](f: a => b) = new Iterator[b] {
-    def hasNext: boolean = outer.hasNext;
-    def next: b = f(outer.next);
-  }
-\end{lstlisting}
-The return type of the transformation function \code{f} is
-arbitrary. This is expressed by a type parameter \code{b} in the
-signature of method \code{map}, which represents the return type.
-We also say, \code{map} is a {\em polymorphic} function.
-
 Method \code{flatMap} is like method \code{map}, except that the
 transformation function \code{f} now returns an iterator.
 The result of \code{flatMap} is the iterator resulting from appending
 together all iterators returned from successive calls of \code{f}.
 \begin{lstlisting}
-    private var cur: Iterator[b] = new EmptyIterator[b];
-    def hasNext: boolean =
+  def flatMap[b](f: a => Iterator[b]): Iterator[b] = new Iterator[b] {
+    private var cur: Iterator[b] = Iterator.empty;
+    def hasNext: Boolean = 
       if (cur.hasNext) true
-      else if (outer.hasNext) { cur = f(outer.next); hasNext }
+      else if (Iterator.this.hasNext) { cur = f(Iterator.this.next); hasNext }
       else false;
-    def next: b =
+    def next: b = 
       if (cur.hasNext) cur.next
-      else if (outer.hasNext) { cur = f(outer.next); next }
-      else throw new Error("next on empty iterator");
+      else if (Iterator.this.hasNext) { cur = f(Iterator.this.next); next }
+      else error("next on empty iterator");
   }
 \end{lstlisting}
-Finally, method \code{zip} takes another iterator and
-returns an iterator consisting of pairs of corresponding elements
-returned by the two iterators.
+Closely related to \code{map} is the \code{foreach} method, which
+applies a given function to all elements of an iterator, but does not
+construct a list of results
 \begin{lstlisting}
-  def zip[b](that: Iterator[b]) = new Iterator[(a, b)] {
-    def hasNext = outer.hasNext && that.hasNext;
-    def next = (outer.next, that.next);
-  }
-} //end iterator;
-\end{lstlisting}
-Concrete iterators need to provide implementations for the two
-abstract methods \code{next} and \code{hasNext} in class
-\code{Iterator}. The simplest iterator is \code{EmptyIterator}
-which always returns an empty sequence:
-\begin{lstlisting}
-class EmptyIterator[a] extends Iterator[a] {
-  def hasNext = false;
-  def next: a = throw new Error("next on empty iterator");
-}
-\end{lstlisting}
-A more interesting iterator enumerates all elements of an array.
-This iterator is formulated here as a polymorphic function. It could
-have also been written as a class, like \code{EmptyIterator}. The
-difference between the two formulation is that classes also define new
-types, whereas functions do not.
-\begin{lstlisting}
-def arrayIterator[a](xs: Array[a]) = new Iterator[a] {
-  private var i = 0;
-  def hasNext: boolean =
-    i < xs.length;
-  def next: a =
-    if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
-    else throw new Error("next on empty iterator");
-}
-\end{lstlisting}
-Another iterator enumerates an integer interval:
-\begin{lstlisting}
-def range(lo: int, hi: int) = new Iterator[int] {
-  private var i = lo;
-  def hasNext: boolean =
-    i <= hi;
-  def next: int =
-    if (i <= hi) { i = i + 1 ; i - 1 }
-    else throw new Error("next on empty iterator");
-}
-\end{lstlisting}
-%In fact, enumerating integer intervals is so common that it is
-%supported by a method
-%\begin{lstlisting}
-%def to(hi: int): Iterator[int]
-%\end{lstlisting}
-%in class \code{int}. Hence, one could also write \code{l to h} instead of
-%\code{range(l, h)}.
-All iterators seen so far terminate eventually. It is also possible to
-define iterators that go on forever. For instance, the following
-iterator returns successive integers from some start
-value\footnote{Due to the finite representation of type \prog{int},
-numbers will wrap around at $2^31$.}.
-\begin{lstlisting}
-def from(start: int) = new Iterator[int] {
-  private var last = start - 1;
-  def hasNext = true;
-  def next = { last = last + 1; last }
-}
-\end{lstlisting}
-Here are two examples how iterators are used. First, to print all
-elements of an array \code{xs: Array[int]}, one can write:
-\begin{lstlisting}
-  arrayIterator[int](xs) foreach (x => System.out.println(x))
-\end{lstlisting}
-Here, \code{[int]} is a type argument clause, which matches the type
-parameter clause \code{[a]} of function \code{arrayIterator}. It
-substitutes the formal argument \code{int} for the formal argument
-\code{a} in the type of the method that follows. Hence,
-\code{arrayIterator[a]} is a function that takes an \code{Array[int]}
-and that returns an \code{Iterator[int]}.
-
-In this example, the formal type argument \code{int} is redundant
-since it could also have been inferred from the value \code{xs}, which
-is, after all, an array of \code{int}. The Scala compiler contains a
-fairly powerful type inferencer which infers type arguments for
-methods and constructors from the types of value arguments and the
-expected return type. In our example, the \code{[int]} clause can be
-inferred, so that one can abbreviate to:
-\begin{lstlisting}
-  arrayIterator(xs) foreach (x => System.out.println(x))
-\end{lstlisting}
-%As a second example, consider the problem of finding the indices of
-%all the elements in an array of \code{double}s greater than some
-%\code{limit}. The indices should be returned as an iterator.
-%This is achieved by the following expression.
-%\begin{lstlisting}
-%arrayIterator(xs)
-%  .zip(from(0))
-%  .filter(x, i => x > limit)
-%  .map(x, i => i)
-%\end{lstlisting}
-%The first line in this expression iterates through all array elements,
-%the second lines pairs elements with their indices, the third line
-%selects all value/index pairs where the value is greater than
-%\code{limit}, and the fourth line returns the index part of all
-%selected pairs.
-
-%Note that we have omitted the type arguments for the calls of
-%\code{arrayIterator}, \code{zip} and \code{map}. These are all
-%implicitly inserted by the type inferencer.
-
-
-
-\es
-\paragraph{Abstract Methods}
-Classes can also omit some of the definitions of their members.  As an
-example, consider the following class \code{Ord} which provides the
-comparison operators \code{<, >, <=, >=}.
-%\begin{lstlisting}
-%abstract class Ord {
-%  abstract def <(that: this);
-%  def <=(that: this)  =  this < that || this == that;
-%  def >(that: this)  =  that < this;
-%  def >=(that: this)  =  that <= this;
-%}
-%\end{lstlisting}
-\begin{lstlisting}
-abstract class Ord {
-  def <(that: this): boolean;
-  def <=(that: this)  =  this < that || this == that;
-  def >(that: this)  =  that < this;
-  def >=(that: this)  =  that <= this;
-}
-\end{lstlisting}
-Since we want to leave open which objects are compared, we are unable
-to give an implementation for the \code{<} method. However, once
-\code{<} is given, we can define the other three comparison operators
-in terms of \code{<} and the equality test \code{==} (which is defined
-in class \code{Object}).  This is expressed by having in \code{Ord} an
-{\em abstract} method \code{<} to which the implementations of the
-other methods refer.
-
-\paragraph{Self References} The name \code{this} refers in this class
-to the current object. The type of \code{this} is also called
-\code{this} (generally, every name in Scala can have a definition as a
-term and another one as a type).  When used as a type, \code{this}
-refers to the type of the current object. This type is always
-compatible with the class being defined (\code{Ord} in this case).
-
-\paragraph{Mixin Composition}
-We can now define a class of \code{Rational} numbers that
-support comparison operators.
-\begin{lstlisting}
-final class OrderedRational(n: int, d: int)
- extends Rational(n, d) with Ord {
-  override def ==(that: OrderedRational) =
-    numer == that.numer && denom == that.denom;
-  def <(that: OrderedRational): boolean =
-    numer * that.denom < that.numer * denom;
-}
-\end{lstlisting}
-Class \code{OrderedRational} redefines method \code{==}, which is
-defined as reference equality in class \code{Object}. It also
-implements the abstract method \code{<} from class \code{Ord}.  In
-addition, it inherits all members of class \code{Rational} and all
-non-abstract members of class \code{Ord}. The implementations of
-\code{==} and \code{<} replace the definition of \code{==} in class
-\code{Object} and the abstract declaration of \code{<} in class
-\code{Ord}. The other inherited comparison methods then refer to this
-implementation in their body.
-
-The clause ``\code{Rational(d, d) with Ord}'' is an instance of {\em
-mixin composition}. It describes a template for an object that is
-compatible with both \code{Rational} and \code{Ord} and that contains
-all members of either class. \code{Rational} is called the {\em
-superclass} of \code{OrderedRational} while \code{Ord} is called a
-{\em mixin class}. The type of this template is the {\em compound
-type} ``\code{Rational with Ord}''.
-
-On the surface, mixin composition looks much like multiple
-inheritance. The difference between the two becomes apparent if we
-look at superclasses of inherited classes. With multiple inheritance,
-both \code{Rational} and \code{Ord} would contribute a superclass
-\code{Object} to the template. We therefore have to answer some
-tricky questions, such as whether members of \code{Object} are present
-once or twice and whether the initializer of \code{Object} is called
-once or twice. Mixin composition avoids these complications.  In the
-mixin composition \code{Rational with Ord}, class
-\code{Rational} is treated as actual superclass of class \code{Ord}.
-A mixin composition \code{C with M} is well-formed as long as the
-first operand \code{C} conforms to the declared superclass of the
-second operand \code{M}. This holds in our example, because
-\code{Rational} conforms to \code{Object}. In a sense, mixin composition
-amounts to overriding the superclass of a class.
-
-\paragraph{Final Classes}
-Note that class \code{OrderedRational} was defined
-\code{final}. This means that no classes extending \code{OrderedRational}
-may be defined in other parts of the program.
-%Within final classes the
-%type \code{this} is an alias of the defined class itself. Therefore,
-%we could define our \code{<} method with an argument of type
-%\code{OrderedRational} as a well-formed implementation of the abstract class
-%\code{less(that: this)} in class \code{Ord}.
-
-
-\chapter{Generic Types and Methods}
-
-Classes in Scala can have type parameters. We demonstrate the use of
-type parameters with iterators as an example. An iterator is an object
-which traverses a sequence of values, using two abstract methods.
-\begin{lstlisting}
-abstract class Iterator[a] {
-  def hasNext: boolean;
-  def next: a;
-\end{lstlisting}
-Method \code{next} returns successive elements.  Method \code{hasNext}
-indicates whether there are still more elements to be returned by
-\code{next}. The type of elements returned by an iterator is
-arbitrary. We express that by giving the class \code{Iterator} the
-type parameter \code{a}. Type parameters are written in square
-brackets, in contrast to normal value parameters, which are written in
-parentheses.  Iterators also support other methods, which are
-explained in the following.
-
-Method \code{foreach} applies a procedure (i.e. a function
-returning \code{unit} to each element returned by the iterator:
-\begin{lstlisting}
-  def foreach(f: a => unit): unit =
+  def foreach(f: a => Unit): Unit = 
     while (hasNext) { f(next) }
 \end{lstlisting}
 
-Method \code{append} constructs an iterator which resumes with the
-given iterator \code{it} after the current iterator has finished.
+\paragraph{Filter} Method \code{filter} constructs an iterator which
+returns all elements of the original iterator that satisfy a criterion
+\code{p}.
 \begin{lstlisting}
-  def append(that: Iterator[a]): Iterator[a] = new Iterator[a] {
-    def hasNext = outer.hasNext || that.hasNext;
-    def next = if (outer.hasNext) outer.next else that.next;
+  def filter(p: a => Boolean) = new BufferedIterator[a] {
+    private val source = 
+      Iterator.this.buffered;
+    private def skip: Unit = 
+      while (source.hasNext && !p(source.head)) { source.next; () }
+    def hasNext: Boolean = 
+      { skip; source.hasNext }
+    def next: a = 
+      { skip; source.next }
+    def head: a = 
+      { skip; source.head; }
   }
 \end{lstlisting}
-The terms \code{outer.next} and \code{outer.hasNext} in the definition
-of \code{append} call the corresponding methods as they are defined in
-the enclosing \code{Iterator} class. Generally, an
-\code{outer} prefix in a selection indicates an identifier that is
-visible immediately outside the current class or template. If the
-\code{outer} prefix would have been missing,
-\code{hasNext} and \code{next} would have
-called recursively the methods being defined in the iterator
-constructed by \code{append}, which is not what we want.
+In fact, \code{filter} returns instances of a subclass of iterators
+which are ``buffered''.  A \code{BufferedIterator} object is an
+interator which has in addition a method \code{head}. This method
+returns the element which would otherwise have been returned by
+\code{head}, but does not advance beyond that element. Hence, the
+element returned by \code{head} is returned again by the next call to
+\code{head} or \code{next}. Here is the definition of the
+\code{BufferedIterator} trait.
+\begin{lstlisting}
+trait BufferedIterator[+a] extends Iterator[a] {
+  def head: a
+}
+\end{lstlisting}
+Since \code{map}, \code{flatMap}, \code{filter}, and \code{foreach}
+exist for iterators, it follows that for-comprehensions and for-loops
+can also be used on iterators. For instance, the application which prints the squares of numbers between 1 and 100 could have equivalently been expressed as follows.
+\begin{lstlisting}
+for (val i <- Iterator.range(1, 100))
+  System.out.println(i * i);
+\end{lstlisting}
 
-Method \code{filter} constructs an iterator which returns all elements
-of the original iterator that satisfy a criterion \code{p}.
-\begin{lstlisting}
-  def filter(p: a => boolean) = new Iterator[a] {
-    private class Cell[T](elem_: T) { def elem = elem_; }
-    private var head: Cell[a] = null;
-    private var isAhead = false;
-    def hasNext: boolean =
-      if (isAhead) true
-      else if (outer.hasNext) {
-        head = Cell(outer.next); isAhead = p(head.elem); hasNext }
-      else false;
-    def next: a =
-      if (hasNext) { isAhead = false; head.elem }
-      else throw new Error("next on empty iterator");
-  }
-\end{lstlisting}
-Method \code{map} constructs an iterator which returns all elements of
-the original iterator transformed by a given function \code{f}.
-\begin{lstlisting}
-  def map[b](f: a => b) = new Iterator[b] {
-    def hasNext: boolean = outer.hasNext;
-    def next: b = f(outer.next);
-  }
-\end{lstlisting}
-The return type of the transformation function \code{f} is
-arbitrary. This is expressed by a type parameter \code{b} in the
-signature of method \code{map}, which represents the return type.
-We also say, \code{map} is a {\em polymorphic} function.
-
-Method \code{flatMap} is like method \code{map}, except that the
-transformation function \code{f} now returns an iterator.
-The result of \code{flatMap} is the iterator resulting from appending
-together all iterators returned from successive calls of \code{f}.
-\begin{lstlisting}
-    private var cur: Iterator[b] = new EmptyIterator[b];
-    def hasNext: boolean =
-      if (cur.hasNext) true
-      else if (outer.hasNext) { cur = f(outer.next); hasNext }
-      else false;
-    def next: b =
-      if (cur.hasNext) cur.next
-      else if (outer.hasNext) { cur = f(outer.next); next }
-      else throw new Error("next on empty iterator");
-  }
-\end{lstlisting}
-Finally, method \code{zip} takes another iterator and
+\paragraph{Zip}. Method \code{zip} takes another iterator and
 returns an iterator consisting of pairs of corresponding elements
 returned by the two iterators.
 \begin{lstlisting}
-  def zip[b](that: Iterator[b]) = new Iterator[(a, b)] {
-    def hasNext = outer.hasNext && that.hasNext;
-    def next = (outer.next, that.next);
+  def zip[b](that: Iterator[b]) = new Iterator[Pair[a, b]] {
+    def hasNext = Iterator.this.hasNext && that.hasNext;
+    def next = Pair(Iterator.this.next, that.next);
   }
-} //end iterator;
+}
 \end{lstlisting}
+
+\section{Constructing Iterators}
+
 Concrete iterators need to provide implementations for the two
 abstract methods \code{next} and \code{hasNext} in class
-\code{Iterator}. The simplest iterator is \code{EmptyIterator}
-which always returns an empty sequence:
+\code{Iterator}. The simplest iterator is \code{Iterator.empty} which
+always returns an empty sequence:
 \begin{lstlisting}
-class EmptyIterator[a] extends Iterator[a] {
-  def hasNext = false;
-  def next: a = throw new Error("next on empty iterator");
+object Iterator {
+  object empty extends Iterator[All] {
+    def hasNext = false;
+    def next: a = error("next on empty iterator");
+  }
+\end{lstlisting}
+A more interesting iterator enumerates all elements of an array. This
+iterator is constructed by the \code{fromArray} method, which is also defined in the object \code{Iterator}
+\begin{lstlisting}
+  def fromArray[a](xs: Array[a]) = new Iterator[a] {
+    private var i = 0;
+    def hasNext: Boolean = 
+      i < xs.length;
+    def next: a = 
+      if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
+      else error("next on empty iterator");
+  }
+\end{lstlisting}
+Another iterator enumerates an integer interval.  The
+\code{Iterator.range} function returns an iterator which traverses a
+given interval of integer values. It is defined as follows.
+\begin{lstlisting}
+object Iterator {
+  def range(start: int, end: int) = new Iterator[int] {
+    private var current = start;
+    def hasNext = current < end;
+    def next = {
+      val r = current;
+      if (current < end) current = current + 1
+      else throw new Error("end of iterator");
+      r
+    }
+  }
 }
 \end{lstlisting}
-A more interesting iterator enumerates all elements of an array.
-This iterator is formulated here as a polymorphic function. It could
-have also been written as a class, like \code{EmptyIterator}. The
-difference between the two formulation is that classes also define new
-types, whereas functions do not.
-\begin{lstlisting}
-def arrayIterator[a](xs: Array[a]) = new Iterator[a] {
-  private var i = 0;
-  def hasNext: boolean =
-    i < xs.length;
-  def next: a =
-    if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
-    else throw new Error("next on empty iterator");
-}
-\end{lstlisting}
-Another iterator enumerates an integer interval:
-\begin{lstlisting}
-def range(lo: int, hi: int) = new Iterator[int] {
-  private var i = lo;
-  def hasNext: boolean =
-    i <= hi;
-  def next: int =
-    if (i <= hi) { i = i + 1 ; i - 1 }
-    else throw new Error("next on empty iterator");
-}
-\end{lstlisting}
-%In fact, enumerating integer intervals is so common that it is
-%supported by a method
-%\begin{lstlisting}
-%def to(hi: int): Iterator[int]
-%\end{lstlisting}
-%in class \code{int}. Hence, one could also write \code{l to h} instead of
-%\code{range(l, h)}.
 All iterators seen so far terminate eventually. It is also possible to
 define iterators that go on forever. For instance, the following
 iterator returns successive integers from some start
@@ -4686,444 +5107,63 @@ def from(start: int) = new Iterator[int] {
   def next = { last = last + 1; last }
 }
 \end{lstlisting}
-Here are two examples how iterators are used. First, to print all
+
+\section{Using Iterators}
+
+Here are two more examples how iterators are used. First, to print all
 elements of an array \code{xs: Array[int]}, one can write:
 \begin{lstlisting}
-  arrayIterator[int](xs) foreach (x => System.out.println(x))
+  Iterator.fromArray(xs) foreach (x => 
+    System.out.println(x))
 \end{lstlisting}
-Here, \code{[int]} is a type argument clause, which matches the type
-parameter clause \code{[a]} of function \code{arrayIterator}. It
-substitutes the formal argument \code{int} for the formal argument
-\code{a} in the type of the method that follows. Hence,
-\code{arrayIterator[a]} is a function that takes an \code{Array[int]}
-and that returns an \code{Iterator[int]}.
-
-In this example, the formal type argument \code{int} is redundant
-since it could also have been inferred from the value \code{xs}, which
-is, after all, an array of \code{int}. The Scala compiler contains a
-fairly powerful type inferencer which infers type arguments for
-methods and constructors from the types of value arguments and the
-expected return type. In our example, the \code{[int]} clause can be
-inferred, so that one can abbreviate to:
+Or, using a for-comprehension:
 \begin{lstlisting}
-  arrayIterator(xs) foreach (x => System.out.println(x))
+  for (val x <- Iterator.fromArray(xs)) 
+    System.out.println(x)
 \end{lstlisting}
-%As a second example, consider the problem of finding the indices of
-%all the elements in an array of \code{double}s greater than some
-%\code{limit}. The indices should be returned as an iterator.
-%This is achieved by the following expression.
-%\begin{lstlisting}
-%arrayIterator(xs)
-%  .zip(from(0))
-%  .filter(x, i => x > limit)
-%  .map(x, i => i)
-%\end{lstlisting}
-%The first line in this expression iterates through all array elements,
-%the second lines pairs elements with their indices, the third line
-%selects all value/index pairs where the value is greater than
-%\code{limit}, and the fourth line returns the index part of all
-%selected pairs.
-
-%Note that we have omitted the type arguments for the calls of
-%\code{arrayIterator}, \code{zip} and \code{map}. These are all
-%implicitly inserted by the type inferencer.
-
-\chapter{\label{sec:simple-examples}Pattern Matching}
-
-\todo{Complete}
-
-Consider binary trees whose leafs contain integer arguments. This can
-be described by a class for trees, with subclasses for leafs and
-branch nodes:
+As a second example, consider the problem of finding the indices of
+all the elements in an array of \code{double}s greater than some
+\code{limit}. The indices should be returned as an iterator.
+This is achieved by the following expression.
 \begin{lstlisting}
-abstract class Tree;
-case class Branch(left: Tree, right: Tree) extends Tree;
-case class Leaf(x: int) extends Tree;
+import Iterator._;
+fromArray(xs)
+.zip(from(0))
+.filter(case Pair(x, i) => x > limit)
+.map(case Pair(x, i) => i)
 \end{lstlisting}
-Note that the class \code{Tree} is not followed by an extends
-clause or a body. This defines \code{Tree} to be an empty
-subclass of \code{Object}, as if we had written
+Or, using a for-comprehension:
 \begin{lstlisting}
-class Tree extends Object {}
-\end{lstlisting}
-Note also that the two subclasses of \code{Tree} have a \code{case}
-modifier.  That modifier has two effects. First, it lets us construct
-values of a case class by simply calling the constructor, without
-needing a preceding \code{new}. Example:
-\begin{lstlisting}
-val tree1 = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)))
-\end{lstlisting}
-Second, it lets us use constructors for these classes in patterns, as
-is illustrated in the following example.
-\begin{lstlisting}
-def sumLeaves(t: Tree): int = t match {
-  case Branch(l, r) => sumLeaves(l) + sumLeaves(r)
-  case Leaf(x) => x
-}
-\end{lstlisting}
-The function \code{sumLeaves} sums up all the integer values in the
-leaves of a given tree \code{t}. It is is implemented by calling the
-\code{match} method of \code{t} with a {\em choice expression} as
-argument (\code{match} is a predefined method in class \code{Object}).
-The choice expression consists of two cases which both
-relate a pattern with an expression. The pattern of the first case,
-\code{Branch(l, r)} matches all instances of class \code{Branch}
-and binds the {\em pattern variables} \code{l} and \code{r} to the
-constructor arguments, i.e.\ the left and right subtrees of the
-branch.  Pattern variables always start with a lower case letter; to
-avoid ambiguities, constructors in patterns should start with an upper
-case letter.
-
-The effect of the choice expression is to select the first alternative
-whose pattern matches the given select value, and to evaluate the body
-of this alternative in a context where pattern variables are bound to
-corresponding parts of the selector. For instance, the application
-\code{sumLeaves(tree1)} would select the first alternative with the
-\code{Branch(l,r)} pattern, and would evaluate the expression
-\code{sumLeaves(l) + sumLeaves(r)} with bindings
-\begin{lstlisting}
-l = Branch(Leaf(1), Leaf(2)), r = Branch(Leaf(3), Leaf(4)).
-\end{lstlisting}
-As another example, consider the following class
-\begin{lstlisting}
-abstract final class Option[+a];
-case object None extends Option[All];
-case class Some[a](item: a) extends Option[a];
-\end{lstlisting}
-...
-
-%\todo{Several simple and intermediate examples needed}.
-
-\begin{lstlisting}
-def find[a,b](it: Iterator[(a, b)], x: a): Option[b] = {
-  var result: Option[b] = None;
-  while (it.hasNext && result == None) {
-    val (x1, y) = it.next;
-    if (x == x1) result = Some(y)
-  }
-  result
-}
-find(xs, x) match {
-  case Some(y) => System.out.println(y)
-  case None => System.out.println("no match")
-}
+import Iterator._;
+for (val Pair(x, i) <- fromArray(xs) zip from(0); x > limit)
+yield i
 \end{lstlisting}
 
-\comment{
 
 
-class MaxCounter {
-  var maxVal: Option[int] = None;
-  def set(x: int) = maxVal match {
-    case None => maxVal = Some(x)
-    case Some(y) => maxVal = Some(Math.max(x, y))
-  }
-}
-\end{lstlisting}
-}
-\comment{
-\begin{lstlisting}
-class Stream[a] = List[a]
+      
 
-module Stream {
-  def concat(xss: Stream[Stream[a]]): Stream[a] = {
-    let result: Stream[a] = xss match {
-      case [] => []
-      case [] :: xss1 => concat(xss1)
-      case (x :: xs) :: xss1 => x :: concat(xs :: xss1)
-    }
-    result
-  }
-}
-\end{lstlisting}
-}
-\comment{
-\chapter{Implementing Abstract Types: Search Trees}
 
-This chapter presents unbalanced binary search trees, implemented in
-three different styles: algebraic, object-oriented, and imperative.
-In each case, a search tree package is seen as an implementation
-of a class {\em MapStruct}.
-\begin{lstlisting}
-abstract class MapStruct[kt, vt] {
-  abstract type Map extends kt => vt {
-    def apply(key: kt): vt;
-    def extend(key: kt, value: vt): Map;
-    def remove(key: kt): Map;
-    def domain: Stream[kt];
-    def range: Stream[vt];
-  }
-  def empty: Map;
-}
-\end{lstlisting}
-The \code{MapStruct} class is parameterized with a type of keys
-\code{kt} and a type of values \code{vt}. It
-specifies an abstract type \code{Map} and an abstract value
-\code{empty}, which represents empty maps.  Every implementation
-\code{Map} needs to conform to that abstract type, which
-extends the function type \code{kt => vt}
-with four new
-methods. The method \code{domain} yields a stream that enumerates the
-map's domain, i.e. the set of keys that are mapped to non-null values.
-The method \code{range} yields a stream that enumerates the function's
-range, i.e.\ the values obtained by applying the function to arguments
-in its domain.  The method
-\code{extend} extends the map with a given key/value binding, whereas
-\code{remove} removes a given key from the map's domain. Both
-methods yield a new map value as result, which has the same
-representation as the receiver object.
 
-\begin{figure}[t]
-\begin{lstlisting}
-class AlgBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] {
-  private case
-    Empty extends Map,
-    Node(key: kt, value: vt, l: Map, r: Map) extends Map
-
-  final class Map extends kt => vt {
-    def apply(key: kt): vt = this match {
-      case Empty => null
-      case Node(k, v, l, r) =>
-        if (key < k) l.apply(key)
-        else if (key > k) r.apply(key)
-        else v
-    }
-
-    def extend(key: kt, value: vt): Map = this match {
-      case Empty => Node(k, v, Empty, Empty)
-      case Node(k, v, l, r) =>
-        if (key < k) Node(k, v, l.extend(key, value), r)
-        else if (key > k) Node(k, v, l, r.extend(key, value))
-        else Node(k, value, l, r)
-    }
-
-    def remove(key: kt): Map = this match {
-      case Empty => Empty
-      case Node(k, v, l, r) =>
-        if (key < k) Node(k, v, l.remove(key), r)
-        else if (key > k) Node(k, v, l, r.remove(key))
-        else if (l == Empty) r
-        else if (r == Empty) l
-        else {
-          val midKey = r.domain.head
-          Node(midKey, r.apply(midKey), l, r.remove(midKey))
-        }
-    }
-
-    def domain: Stream[kt] = this match {
-      case Empty => []
-      case Node(k, v, l, r) => Stream.concat([l.domain, [k], r.domain])
-    }
-    def range: Stream[vt] = this match {
-      case Empty => []
-      case Node(k, v, l, r) => Stream.concat([l.range, [v], r.range])
-    }
-  }
-  def empty: Map = Empty
-}
-\end{lstlisting}
-\caption{\label{fig:algbintree}Algebraic implementation of binary
-search trees}
-\end{figure}
-We now present three implementations of \code{Map}, which are all
-based on binary search trees. The \code{apply} method of a map is
-implemented in each case by the usual search function over binary
-trees, which compares a given key with the key stored in the topmost
-tree node, and depending on the result of the comparison, searches the
-left or the right hand sub-tree. The type of keys must implement the
-\code{Ord} class, which contains comparison methods
-(see Chapter~\ref{chap:classes} for a definition of class \code{Ord}).
-
-The first implementation, \code{AlgBinTree}, is given in
-Figure~\ref{fig:algbintree}. It represents a map with a
-data type \code{Map} with two cases, \code{Empty} and \code{Node}.
-
-Every method of \code{AlgBinTree[kt, vt].Map} performs a pattern
-match on the value of
-\code{this} using the \code{match} method which is defined as postfix
-function application in class \code{Object} (\sref{sec:class-object}).
-
-The functions \code{domain} and \code{range} return their results as
-lazily constructed lists. The \code{Stream} class is an alias of
-\code{List} which should be used to indicate the fact that its values
-are constructed lazily.
-
-\begin{figure}[thb]
-\begin{lstlisting}
-class OOBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] {
-  abstract class Map extends kt => vt {
-    def apply(key: kt): v
-    def extend(key: kt, value: vt): Map
-    def remove(key: kt): Map
-    def domain: Stream[kt]
-    def range: Stream[vt]
-  }
-  module empty extends Map {
-    def apply(key: kt) = null
-    def extend(key: kt, value: vt) = Node(key, value, empty, empty)
-    def remove(key: kt) = empty
-    def domain = []
-    def range = []
-  }
-  private class Node(k: kt, v: vt, l: Map, r: Map) extends Map {
-    def apply(key: kt): vt =
-      if (key < k) l.apply(key)
-      else if (key > k) r.apply(key)
-      else v
-    def extend(key: kt, value: vt): Map =
-      if (key < k) Node(k, v, l.extend(key, value), r)
-      else if (key > k) Node(k, v, l, r.extend(key, value))
-      else Node(k, value, l, r)
-    def remove(key: kt): Map =
-      if (key < k) Node(k, v, l.remove(key), r)
-      else if (key > k) Node(k, v, l, r.remove(key))
-      else if (l == empty) r
-      else if (r == empty) l
-      else {
-        val midKey = r.domain.head
-        Node(midKey, r(midKey), l, r.remove(midKey))
-      }
-    def domain: Stream[kt] = Stream.concat([l.domain, [k], r.domain]	)
-    def range: Stream[vt] = Stream.concat([l.range, [v], r.range])
-  }
-}
-\end{lstlisting}
-\caption{\label{fig:oobintree}Object-oriented implementation of binary
-search trees}
-\end{figure}
-
-The second implementation of maps is given in
-Figure~\ref{fig:oobintree}.  Class \code{OOBinTree} implements the
-type \code{Map} with a module \code{empty} and a class
-\code{Node}, which define the behavior of empty and non-empty trees,
-respectively.
-
-Note the different nesting structure of \code{AlgBinTree} and
-\code{OOBinTree}. In the former, all methods form part of the base
-class \code{Map}. The different behavior of empty and non-empty trees
-is expressed using a pattern match on the tree itself. In the
-latter, each subclass of \code{Map} defines its own set of
-methods, which override the methods in the base class. The pattern
-matches of the algebraic implementation have been replaced by the
-dynamic binding that comes with method overriding.
-
-Which of the two schemes is preferable depends to a large degree on
-which extensions of the type are anticipated. If the type is later
-extended with a new alternative, it is best to keep methods in each
-alternative, the way it was done in \code{OOBinTree}.  On the other
-hand, if the type is extended with additional methods, then it is
-preferable to keep only one implementation of methods and to rely on
-pattern matching, since this way existing subclasses need not be
-modified.
-
-\begin{figure}
-\begin{lstlisting}
-class MutBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] {
-  class Map(key: kt, value: vt) extends kt => vt {
-    val k = key
-    var v = value
-    var l = empty, r = empty
-
-    def apply(key: kt): vt =
-      if (this eq empty) null
-      else if (key < k) l.apply(key)
-      else if (key > k) r.apply(key)
-      else v
-
-    def extend(key: kt, value: vt): Map =
-      if (this eq empty) Map(key, value)
-      else {
-        if (key < k) l = l.extend(key, value)
-        else if (key > k) r = r.extend(key, value)
-        else v = value
-        this
-      }
-
-    def remove(key: kt): Map =
-      if (this eq empty) this
-      else if (key < k) { l = l.remove(key) ; this }
-      else if (key > k) { r = r.remove(key) ; this }
-      else if (l eq empty) r
-      else if (r eq empty) l
-      else {
-        var mid = r
-        while (!(mid.l eq empty)) { mid = mid.l }
-        mid.r = r.remove(mid.k)
-        mid.l = l
-        mid
-      }
-
-    def domain: Stream[kt] = Stream.concat([l.domain, [k], r.domain])
-    def range: Stream[vt] = Stream.concat([l.range, [v], r.range])
-  }
-  let empty = new Map(null, null)
-}
-\end{lstlisting}
-\caption{\label{fig:impbintree}Side-effecting implementation of binary
-search trees}
-\end{figure}
-
-The two versions of binary trees presented so far are {\em
-persistent}, in the sense that maps are values that cannot be changed
-by side effects. By contrast, in the next implementation of binary
-trees, the implementations of \code{extend} and
-\code{remove} do have an effect on the state of their receiver
-object. This corresponds to the way binary trees are usually
-implemented in imperative languages. The new implementation can lead
-to some savings in computing time and memory allocation, but care is
-required not to use the original tree after it has been modified by a
-side-effecting operation.
-
-In this implementation, \code{value}, \code{l} and \code{r} are
-variables that can be affected by method calls.  The
-class \code{MutBinTree[kt, vt].Map} takes two instance parameters
-which define the \code{key} value and the initial value of the
-\code{value} variable. Empty trees are represented by a
-value \code{empty}, which has \code{null} (signifying undefined) in
-both its key and value fields. Note that this value needs to be
-defined lazily using \code{let} since its definition involves the
-creation of a
-\code{Map} object,
-which accesses \code{empty} recursively as part of its initialization.
-All methods test first whether the current tree is empty using the
-reference equality operator \code{eq} (\sref{sec:class-object}).
-
-As a program using the \code{MapStruct} abstraction, consider a function
-which creates a map from strings to integers and then applies it to a
-key string:
-\begin{lstlisting}
-def mapTest(def mapImpl: MapStruct[String, int]): int = {
-  val map: mapImpl.Map = mapImpl.empty.extend("ab", 1).extend("bx", 3)
-  val x = map("ab")             // returns 1
-}
-\end{lstlisting}
-The function is parameterized with the particular implementation of
-\code{MapStruct}. It can be applied to any one of the three implementations
-described above. E.g.:
-\begin{lstlisting}
-mapTest(AlgBinTree[String, int])
-mapTest(OOBinTree[String, int])
-mapTest(MutBinTree[String, int])
-\end{lstlisting}
-}
-\chapter{Programming with Higher-Order Functions: Combinator Parsing}
+\chapter{Combinator Parsing}\label{sec:combinator-parsing}
 
 In this chapter we describe how to write combinator parsers in
 Scala. Such parsers are constructed from predefined higher-order
-functions, so called parser combinators, that closely model the
+functions, so called {\em parser combinators}, that closely model the
 constructions of an EBNF grammar \cite{ebnf}.
 
-As running example, we consider parsers for arithmetic expressions
-described by the following context-free grammar.
+As running example, we consider parsers for possibly nested
+lists of identifiers and numbers, which
+are described by the following context-free grammar.
 \bda{p{3cm}cp{10cm}}
 letter &::=& /* all letters */ \\
 digit  &::=& /* all digits */ \\[0.5em]
 ident  &::=& letter \{letter $|$ digit \}\\
 number &::=& digit \{digit\}\\[0.5em]
+list   &::=& `(' [listElems] `)' \\
+listElems &::=& expr [`,' listElems] \\
+expr   &::=& ident | number | list
 
-expr &::=& expr1 \{`+' expr1 $|$ `$-$' expr1\}\\
-expr1 &::=& expr2 \{`*' expr2 $|$ `/' expr2\}\\
-expr2 &::=& ident $|$ number $|$ `(' expr `)'
 \eda
 
 \section{Simple Combinator Parsing}
@@ -5137,21 +5177,19 @@ another, while \code{|||} expresses an alternative. These operations
 will both be defined as methods of a \code{Parser} class.  We will
 also define constructors for the following primitive parsers:
 
-\begin{quote}\begin{tabular}{ll}
+\begin{tabular}{ll}
 \code{empty}	& The parser that accepts the empty string
 \\
 \code{fail}     & The parser that accepts no string
 \\
-\code{chr}      & The parser that accepts any character.
-\\
 \code{chr(c: char)}
 		& The parser that accepts the single-character string ``$c$''.
 \\
-\code{chrWith(p: char => boolean)}
+\code{chr(p: char => boolean)}
 		& The parser that accepts single-character strings
                   ``$c$'' \\
 	        & for which $p(c)$ is true.
-\end{tabular}\end{quote}
+\end{tabular}
 
 There are also the two higher-order parser combinators \code{opt},
 expressing optionality and \code{rep}, expressing repetition.
@@ -5166,107 +5204,176 @@ by a straightforward rewrite of the grammar, replacing \code{::=} with
 \code{=}, sequencing with
 \code{&&&}, choice
 \code{|} with \code{|||}, repetition \code{\{...\}} with
-\code{rep(...)} and optional occurrence with \code{[...]}.
-Applying this process to the grammar of arithmetic
-expressions yields:
+\code{rep(...)} and optional occurrence \code{[...]} with \code{opt(...)}.
+Applying this process to the grammar of lists
+yields the following class.
 \begin{lstlisting}
-module ExprParser {
-  import Parse;
+abstract class ListParsers extends Parsers {
+  def chr(p: char => boolean): Parser;
+  def chr(c: char): Parser = chr(d: char => d == c);
 
-  def letter      =  chrWith(c => c.isLetter);
-  def digit       =  chrWith(c => c.isDigit);
+  def letter    : Parser = chr(Character.isLetter);
+  def digit     : Parser = chr(Character.isDigit);
 
-  def ident       =  letter &&& rep(letter ||| digit);
-  def number      =  digit &&& rep(digit);
-
-  def expr:Parser =  expr1 &&& rep((chr('+') &&& expr1) ||| (chr('-') &&& expr1));
-  def expr1       =  expr2 &&& rep((chr('*') &&& expr2) ||| (chr('/') &&& expr2));
-  def expr2       =  ident ||| number ||| (chr('(') &&& expr &&& chr(')'));
+  def ident     : Parser = letter &&& rep(letter ||| digit);
+  def number    : Parser = digit &&& rep(digit);
+  def list      : Parser = chr('(') &&& opt(listElems) &&& chr(')');
+  def listElems : Parser = expr &&& (chr(',') &&& listElems ||| empty);
+  def expr      : Parser = ident ||| number ||| list;
 }
 \end{lstlisting}
+This class isolates the grammar from other aspects of parsing. It
+abstracts over the type of input 
+and over the method used to parse a single character
+(represented by the abstract method \code{chr(p: char =>
+boolean))}. The missing bits of information need to be supplied by code
+applying the parser class.
+
 It remains to explain how to implement a library with the combinators
 described above. We will pack combinators and their underlying
-implementation in a module \code{Parse}.  The first question to decide
-is which underlying representation type to use for a parser. We treat
-parsers here as functions that take a list of characters as input
-parameter and that yield a parse result.
+implementation in a base class \code{Parsers}, which is inherited by
+\code{ListParsers}.  The first question to decide is which underlying
+representation type to use for a parser. We treat parsers here
+essentially as functions that take a datum of the input type
+\code{intype} and that yield a parse result of type
+\code{Option[intype]}.  The \code{Option} type is predefined as
+follows.
 \begin{lstlisting}
-module Parse {
-  type Result = Option[List[char]];
-  abstract class Parser extends Function1[List[char],Result] {
-\end{lstlisting}
-\comment{
-The \code{Option} type is predefined as follows.
-\begin{lstlisting}
-abstract final class Option[a];
-case class None[a] extends Option[a];
+trait Option[+a];
+case object None extends Option[All];
 case class Some[a](x: a) extends Option[a];
 \end{lstlisting}
-}
-A parser returns either the constant \code{None}, which
-signifies that the parser did not recognize a legal input string, or
-it returns a value \code{Some(in1)} where \code{in1} represents that
-part of the input list that the parser did not consume.
-
-Parsers are instances of functions from \code{List[char]} to
-\code{Parse.Result}, which also implement the combinators
-for sequence and alternative. This is modeled by
-defining \code{Parser} as a class that extends type
-\code{Function1[List[char],Result]} and that defines an \code{apply}
-method, as well as methods \code{&&&} and \code{|||}.
+A parser applied to some input either succeeds or fails. If it fails,
+it returns the constant \code{None}. If it succeeds, it returns a
+value of the form \code{Some(in1)} where \code{in1} represents the
+input that remains to be parsed.
 \begin{lstlisting}
-    abstract def apply(in: List[char]): Result;
+abstract class Parsers {
+  type intype;
+  abstract class Parser {
+    type Result = Option[intype];  
+    def apply(in: intype): Result;
 \end{lstlisting}
+A parser also implements the combinators
+for sequence and alternative:
 \begin{lstlisting}
-    def &&& (def p: Parser) = new Parser {
-      def apply(in: List[char]) = outer.apply(in) match {
-        case Some(in1) => p(in1)
-        case n => n
-      }
-    }
-    def ||| (def p: Parser) = new Parser {
-      def apply(in: List[char]) = outer.apply(in) match {
-        case None => p(in)
-        case s => s
-      }
-    }
-  }
-\end{lstlisting}
-The implementations of the primitive parsers \code{empty}, \code{fail},
-\code{chrWith} and \code{chr} are as follows.
-\begin{lstlisting}
-  def empty = new Parser { def apply(in: List[char]) = Some(in) }
-
-  def fail = new Parser { def apply(in: List[char]) = None[List[char]] }
-
-  def chrWith(p: char => boolean) = new Parser {
-    def apply(in: List[char]) = in match {
-      case [] => None[List[char]]
-      case (c :: in1) => if (p(c)) Some(in1) else None[List[char]]
+  /*** p &&& q applies first p, and if that succeeds, then q
+   */
+  def &&& (def q: Parser) = new Parser {
+    def apply(in: intype): Result = Parser.this.apply(in) match {
+      case None => None
+      case Some(in1)  => q(in1)
     }
   }
 
-  def chr(c: char): Parser = chrWith(d => d == c);
+  /*** p ||| q applies first p, and, if that fails, then q.
+   */
+  def ||| (def q: Parser) = new Parser {
+    def apply(in: intype): Result = Parser.this.apply(in) match {
+      case None => q(in)
+      case s => s
+    }
+  }
+\end{lstlisting}
+The implementations of the primitive parsers \code{empty} and \code{fail}
+are trivial:
+\begin{lstlisting}
+  val empty = new Parser { def apply(in: intype): Result = Some(in) }
+  val fail  = new Parser { def apply(in: intype): Result = None }
 \end{lstlisting}
 The higher-order parser combinators \code{opt} and \code{rep} can be
 defined in terms of the combinators for sequence and alternative:
 \begin{lstlisting}
-  def opt(p: Parser): Parser  = p ||| empty;
-  def rep(p: Parser): Parser  = opt(rep1(p));
-  def rep1(p: Parser): Parser = p &&& rep(p);
+  def opt(p: Parser): Parser = p ||| empty;    // p? = (p | <empty>)
+  def rep(p: Parser): Parser = opt(rep1(p));   // p* = [p+]
+  def rep1(p: Parser): Parser = p &&& rep(p);  // p+ = p p*
 } // end Parser
 \end{lstlisting}
-This is all that's needed. Parsers such as the one for arithmetic
-expressions given above can now be composed from these building
-blocks.  These parsers need not refer to the underlying implementation of
-parsers as functions from input lists to parse results.
+To run combinator parsers, we still need to decide on a way to handle
+parser input. Several possibilities exist: The input could be
+represented as a list, as an array, or as a random access file.  Note
+that the presented combinator parsers use backtracking to change from
+one alternative to another.  Therefore, it must be possible to reset
+input to a point that was previously parsed. If one restricted the
+focus to LL(1) grammars, a non-backtracking implementation of the
+parser combinators in class \code{Parsers} would also be possible. In
+that case sequential input methods based on (say) iterators or
+sequential files would also be possible.
 
-The presented combinator parsers use backtracking to change from one
-alternative to another.  If one restricts the focus to LL(1) grammars,
-a non-backtracking implementation of parsers is also possible. This
-implementation can then be based on iterators instead of lists.
+In our example, we represent the input by a pair of a string, which
+contains the input phrase as a whole, and an index, which represents
+the portion of the input which has not yet been parsed. Since the
+input string does not change, just the index needs to be passed around
+as a result of individual parse steps.  This leads to the following
+class of parsers that read strings:
+\begin{lstlisting}
+class ParseString(s: String) extends Parsers {
+  type intype = int;
+  def chr(p: char => boolean) = new Parser {
+    def apply(in: int): Parser#Result = 
+      if (in < s.length() && p(s charAt in)) Some(in + 1);
+      else None;
+  }
+  val input = 0;
+}
+\end{lstlisting}
+This class implements a method \code{chr(p: char => boolean)} and a
+value \code{input}. The \code{chr} method builds a parser that either
+reads a single character satisfying the given predicate \code{p} or
+fails.  All other parsers over strings are ultimately implemented in
+terms of that method. The \code{input} value represents the input as a
+whole. In out case, it is simply value \code{0}, the start index of
+the string to be read.
 
-\section{\label{sec:parsers-results}Parsers that Return Results}
+Note \code{apply}'s result type, \code{Parser#Result}. This syntax
+selects the type element \code{Result} of the type \code{Parser}. It
+thus corresponds roughly to selecting a static inner class from some
+outer class in Java. Note that we could {\em not} have written
+\code{Parser.Result}, as the latter would express selection of the
+\code{Result} element from a {\em value} named \code{Parser}.
+
+We have now extended the root class \code{Parsers} in two different
+directions: Class \code{ListParsers} defines a grammar of phrases to
+be parsed, whereas class \code{ParseString} defines a method by which
+such phrases are input. To write a concrete parsing application, we
+need to define both grammar and input method. We do this by combining
+two extensions of \code{Parsers} using a {\em mixin composition}.
+Here is the start of a sample application:
+\begin{lstlisting}
+object Test {
+  def main(args: Array[String]): unit = {
+    val ps = new ListParsers with ParseString(args(0));
+\end{lstlisting}
+The last line above creates a new family of parsers by composing class
+\code{ListParsers} with class \code{ParseString}. The two classes
+share the common superclass \code{Parsers}. The abstract method
+\code{chr} in \code{ListParsers} is implemented by class \code{ParseString}.
+
+To run the parser, we apply the start symbol of the grammar
+\code{expr} the argument code{input} and observe the result:
+\begin{lstlisting}
+    ps.expr(input) match { 
+      case Some(n) => 
+        System.out.println("parsed: " + args(0).substring(0, n)); 
+      case None =>
+        System.out.println("nothing parsed"); 
+    }
+  }
+}// end Test
+\end{lstlisting}
+Note the syntax ~\code{ps.expr(input)}, which treats the \code{expr}
+parser as if it was a function. In Scala, objects with \code{apply}
+methods can be applied directly to arguments as if they were functions.
+
+Here is an example run of the program above:
+\begin{lstlisting}
+> java examples.Test "(x,1,(y,z))"
+parsed: (x,1,(y,z))
+> java examples.Test "(x,,1,(y,z))"
+nothing parsed
+\end{lstlisting}
+
+\section{\label{sec:parsers-results}Parsers that Produce Results}
 
 The combinator library of the previous section does not support the
 generation of output from parsing. But usually one does not just want
@@ -5277,10 +5384,10 @@ representation such as an abstract syntax tree.
 In this section, we modify our parser library to build parsers that
 produce results. We will make use of the for-comprehensions introduced
 in Chapter~\ref{sec:for-notation}.  The basic combinator of sequential
-composition, formerly \code{p &&& q}, now becomes
+composition, formerly ~\code{p &&& q}, now becomes
 \begin{lstlisting}
-for (val x <- p; val y <- q) yield e
-\end{lstlisting}.
+for (val x <- p; val y <- q) yield e .
+\end{lstlisting}
 Here, the names \code{x} and \code{y} are bound to the results of
 executing the parsers \code{p} and \code{q}. \code{e} is an expression
 that uses these results to build the tree returned by the composed
@@ -5288,508 +5395,689 @@ parser.
 
 Before describing the implementation of the new parser combinators, we
 explain how the new building blocks are used. Say we want to modify
-our arithmetic expression parser so that it returns an abstract syntax
-tree of the parsed expression. The class of syntax trees is given by:
+our list parser so that it returns an abstract syntax tree of the
+parsed expression. Syntax trees are given by the following class hierarchy:
 \begin{lstlisting}
-abstract class Tree;
-case class Var(n: String) extends Tree;
-case class Num(n: int) extends Tree;
-case class Binop(op: char, l: Tree, r: Tree) extends Tree;
+abstract class Tree{}
+case class Id (s: String)         extends Tree {}
+case class Num(n: int)            extends Tree {}
+case class Lst(elems: List[Tree]) extends Tree {}
 \end{lstlisting}
-That is, a syntax tree is a named variable, an integer number, or a
-binary operation with two operand trees and a character indicating the
-operation.
+That is, a syntax tree is an identifier, an integer number, or a
+\code{Lst} node with a list of trees as descendants.
 
-As a first step towards parsers that produce syntax trees, we need to
-modify the ``micro-syntax'' parsers \code{letter}, \code{digit},
-\code{ident} and \code{number} so that they return representations of
-the parsed input:
+As a first step towards parsers that produce results we define three
+little parsers that return a single read character as result.
 \begin{lstlisting}
-def letter: Parser[char] = chrWith(c => c.isLetter);
-def digit : Parser[char] = chrWith(c => c.isDigit);
-
-def ident: Parser[String] =
-  for (val c <- letter; val cs <- rep(letter ||| digit))
-  yield ((c :: cs) foldr "") {c, s => c+ s};
-
-def number: Parser[int] =
-  for (val d <- digit; val ds <- rep(digit))
-  yield ((d - '0') :_foldl ds) {x, y => x * 10 + (y - '0')};
-\end{lstlisting}
-The \code{letter} and \code{digit} parsers simply return the letter
-that was parsed. The \code{ident} and \code{number} parsers return the
-string, respectively integer number that was parsed.  In both cases,
-sub-parsers are applied in a for-comprehension and their results are
-embedded in the result of the calling parser.  The remainder of the
-parser for arithmetic expressions follows the same scheme.
-\begin{lstlisting}
-def expr: Parser[Tree] =
-  for {
-    val e1 <- expr1;
-    val es <- rep (
-      for {
-        val op <- chr('+') ||| chr('-');
-        val e <- expr1
-      } yield (x => Binop(op, x, e)) : Tree => Tree
-    )
-  } yield applyAll(es, e1);
-\end{lstlisting}
-\begin{lstlisting}
-def expr1: Parser[Tree] =
-  for {
-    val e1 <- expr2;
-    val es <- rep (
-      for {
-        val op <- chr('*') ||| chr('/');
-        val e <- expr2
-      } yield (x => Binop(op, x, e)) : Tree => Tree
-    )
-  } yield applyAll(es, e1);
-\end{lstlisting}
-\begin{lstlisting}
-def expr2: Parser[Tree] = {
-      ( for { val n <- ident } yield Var(n) : Tree )
-  ||| ( for { val n <- number } yield Num(n) : Tree )
-  ||| ( for { val _ <- chr('('); val e <- expr; val _ <- chr(')') } yield e );
+abstract class CharParsers extends Parsers {
+  def any: Parser[char];
+  def chr(ch: char): Parser[char] = 
+    for (val c <- any; c == ch) yield c;
+  def chr(p: char => boolean): Parser[char] = 
+    for (val c <- any; p(c)) yield c;
 }
 \end{lstlisting}
-Note the treatment of the repetitions in \code{expr} and
-\code{expr1}. The parser for an expression suffix $op;e$ consisting of an
-operator $op$ and an expression $e$ returns a function, which, given a
-left operand expression $d$, constructs a \code{Binop} node that
-represents $d;op;e$. The \code{rep} parser combinator forms a list of
-all these functions. The final \code{yield} part applies all functions
-to the first operand in the sequence, which is represented by
-\code{e1}. Here \code{applyAll} applies the list of functions passed as its first
-argument to its second argument. It is defined as follows.
+The \code{any} parser succeeds with the first character of remaining
+input as long as input is nonempty. It is abstract in class
+\code{ListParsers} since we want to abstract in this class from the
+concrete input method used.  The two \code{chr} parsers return as before
+the first input character if it equals a given character or matches a
+given predicate. They are now implemented in terms of \code{any}.
+
+The next level is represented by parsers reading identifiers, numbers
+and lists. Here is a parser for identifiers.
 \begin{lstlisting}
-def applyAll[a](fs: List[a => a], e: a): a =
-  (e :_foldl fs) { x, f => f(x) }
+class ListParsers extends CharParsers {
+  def ident: Parser[Tree] = 
+    for (
+      val c: char <- chr(Character.isLetter); 
+      val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
+    ) yield Id((c :: cs).mkString("", "", ""));
+\end{lstlisting}
+Remark: Because \code{chr(...)} returns a single character, its
+repetition \code{rep(chr(...))} returns a list of characters. The
+\code{yield} part of the for-comprehension converts all intermediate
+results into an \code{Id} node with a string as element.  To convert
+the read characters into a string, it conses them into a single list,
+and invokes the \code{mkString} method on the result.
+
+Here is a parser for numbers:
+\begin{lstlisting}
+  def number: Parser[Tree] =
+    for (
+      val d: char <- chr(Character.isDigit);
+      val ds: List[char] <- rep(chr(Character.isDigit))
+    ) yield Num(((d - '0') /: ds) ((x, digit) => x * 10 + digit - '0'));
+\end{lstlisting}
+Intermediate results are in this case the leading digit of
+the read number, followed by a list of remaining digits.  The
+\code{yield} part of the for-comprehension reduces these to a number
+by a fold-left operation.
+
+Here is a parser for lists:
+\begin{lstlisting}
+  def list: Parser[Tree] = 
+    for (
+      val _ <- chr('(');
+      val es <- listElems ||| succeed(List());
+      val _ <- chr(')')
+    ) yield Lst(es);
+
+  def listElems: Parser[List[Tree]] = 
+    for (
+      val x <- expr;
+      val xs <- chr(',') &&& listElems ||| succeed(List())
+    ) yield x :: xs;
+\end{lstlisting}
+The \code{list} parser returns a \code{Lst} node with a list of trees
+as elements.  That list is either the result of \code{listElems}, or,
+if that fails, the empty list (expressed here as: the result of a
+parser which always succeeds with the empty list as result).
+
+The highest level of our grammar is represented by function
+\code{expr}:
+\begin{lstlisting}
+  def expr: Parser[Tree] = 
+    ident ||| number ||| list
+}// end ListParsers.
 \end{lstlisting}
 We now present the parser combinators that support the new
 scheme. Parsers that succeed now return a parse result besides the
 un-consumed input.
 \begin{lstlisting}
-module Parse {
-  type Result[a] = Option[(a, List[char])]
+abstract class Parsers {
+  type intype;
+  trait Parser[a] {
+    type Result = Option[Pair[a, intype]];
+    def apply(in: intype): Result;
 \end{lstlisting}
 Parsers are parameterized with the type of their result. The class
 \code{Parser[a]} now defines new methods \code{map}, \code{flatMap}
 and \code{filter}. The \code{for} expressions are mapped by the
 compiler to calls of these functions using the scheme described in
-Chapter~\ref{sec:for-notation}.
-
-Here is the complete definition of the new \code{Parser} class.
+Chapter~\ref{sec:for-notation}. For parsers, these methods are
+implemented as follows.
 \begin{lstlisting}
-  abstract class Parser[a] extends Function1[List[char],Result[a]] {
-
-    def apply(in: List[char]): Result[a];
-
-    def filter(p: a => boolean) = new Parser[a] {
-      def apply(in: List[char]): Result[a] = outer.apply(in) match {
-        case Some((x, in1)) => if (p(x)) Some((x, in1)) else None
+    def filter(pred: a => boolean) = new Parser[a] {
+      def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => None
+        case Some(Pair(x, in1)) => if (pred(x)) Some(Pair(x, in1)) else None
       }
     }
-
     def map[b](f: a => b) = new Parser[b] {
-      def apply(in: List[char]): Result[b] = outer.apply(in) match {
-        case Some((x, in1)) => Some((f(x), in1))
+      def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => None
+        case Some(Pair(x, in1)) => Some(Pair(f(x), in1))
       }
     }
-
     def flatMap[b](f: a => Parser[b]) = new Parser[b] {
-      def apply(in: List[char]): Result[b] = outer.apply(in) match {
-        case Some((x, in1)) => f(x)(in1)
+      def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => None
+        case Some(Pair(x, in1)) => f(x).apply(in1)
       }
     }
-
-    def ||| (def p: Parser[a]) = new Parser[a] {
-      def apply(in: List[char]): Result[a] = outer.apply(in) match {
-        case None => p(in)
-        case s => s
-      }
-    }
-
-    def &&& [b](def p: Parser[b]): Parser[b] =
-      for (val _ <- this; val result <- p) yield result;
-  }
 \end{lstlisting}
-
 The \code{filter} method takes as parameter a predicate $p$ which it
 applies to the results of the current parser. If the predicate is
 false, the parser fails by returning \code{None}; otherwise it returns
 the result of the current parser.  The \code{map} method takes as
 parameter a function $f$ which it applies to the results of the
-current parser. The \code{flatMap} tales as parameter a function
+current parser. The \code{flatMap} takes as parameter a function
 \code{f} which returns a parser.  It applies \code{f} to the result of
 the current parser and then continues with the resulting parser.  The
 \code{|||} method is essentially defined as before.  The
 \code{&&&} method can now be defined in terms of \code{for}.
+\begin{lstlisting}
+    def ||| (def p: Parser[a]) = new Parser[a] {
+      def apply(in: intype): Result = Parser.this.apply(in) match {
+        case None => p(in)
+        case s => s
+      }
+    }
 
-% Here is the code for fail, chrWith and chr
-%
-%\begin{lstlisting}
-%  def fail[a] = new Parser[a] { def apply(in: List[char]) = None[(a,List[char])] }
-%
-%  def chrWith(p: char => boolean) = new Parser[char] {
-%    def apply(in: List[char]) = in match {
-%      case [] => None[(char,List[char])]
-%      case (c :: in1) => if (p(c)) Some((c,in1)) else None[(char,List[char])]
-%    }
-%  }
-%
-%  def chr(c: char): Parser[char] = chrWith(d => d == c);
-%\end{lstlisting}
+    def &&& [b](def p: Parser[b]): Parser[b] = 
+      for (val _ <- this; val x <- p) yield x;
+  }// end Parser
+\end{lstlisting}
+
 The primitive parser \code{succeed} replaces \code{empty}. It consumes
 no input and returns its parameter as result.
 \begin{lstlisting}
   def succeed[a](x: a) = new Parser[a] {
-    def apply(in: List[char]) = Some((x, in))
+    def apply(in: intype) = Some(Pair(x, in))
   }
 \end{lstlisting}
-The \code{fail} parser is as before.  The parser combinators
-\code{rep} and \code{opt} now also return results. \code{rep} returns
-a list which contains as elements the results of each iteration of its
-sub-parser. \code{opt} returns an
-\code{Option} type which indicates whether something was recognized by
-its sub-parser.
+
+The parser combinators \code{rep} and \code{opt} now also return
+results. \code{rep} returns a list which contains as elements the
+results of each iteration of its sub-parser. \code{opt} returns a list
+which is either empty or returns as single element the result of the
+optional parser.
 \begin{lstlisting}
   def rep[a](p: Parser[a]): Parser[List[a]] =
-    rep1(p) ||| succeed([]);
+    rep1(p) ||| succeed(List());
 
   def rep1[a](p: Parser[a]): Parser[List[a]] =
     for (val x <- p; val xs <- rep(p)) yield x :: xs;
 
-  def opt[a](p: Parser[a]): Parser[Option [a]] =
-    { for (val x <- p) yield (Some(x): Option[a]) } ||| succeed((None: Option[a]));
-} // end Parse
+  def opt[a](p: Parser[a]): Parser[List[a]] =
+    (for (val x <- p) yield List(x)) ||| succeed(List());
+} // end Parsers
+\end{lstlisting}
+The root class \code{Parsers} abstracts over which kind of
+input is parsed.  As before, we determine the input method by a separate class.
+Here is \code{ParseString}, this time adapted to parsers that return results.
+It defines now the method \code{any}, which returns the first input character.
+\begin{lstlisting}
+class ParseString(s: String) extends Parsers {
+  type intype = int;
+  val input = 0;
+  def any = new Parser[char] {
+    def apply(in: int): Parser[char]#Result =
+      if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None;
+  }
+}
+\end{lstlisting}
+The rest of the application is as before. Here is a test program which
+constructs a list parser over strings and prints out the result of
+applying it to the command line argument.
+\begin{lstlisting}
+object Test {
+  def main(args: Array[String]): unit = {
+    val ps = new ListParsers with ParseString(args(0));
+    ps.expr(input) match {
+      case Some(Pair(list, _)) => System.out.println("parsed: " + list);
+      case None => "nothing parsed"
+    }
+  }
+}
 \end{lstlisting}
 
-\chapter{\label{sec:hm}Programming with Patterns: Hindley/Milner Type Inference}
+\exercise\label{exercise:end-marker} The parsers we have defined so
+far can succeed even if there is some input beyond the parsed text. To
+prevent this, one needs a parser which recognizes the end of input.
+Redesign the parser library so that such a parser can be introduced.
+Which classes need to be modified?
+
+\chapter{\label{sec:hm}Hindley/Milner Type Inference}
 
 This chapter demonstrates Scala's data types and pattern matching by
 developing a type inference system in the Hindley/Milner style. The
 source language for the type inferencer is lambda calculus with a let
-construct. Abstract syntax trees for the source language are
+construct called Mini-ML. Abstract syntax trees for the Mini-ML are
 represented by the following data type of \code{Terms}.
 \begin{lstlisting}
-abstract class Term;
-case class Var(x: String) extends Term;
-case class Lam(x: String, e: Term) extends Term;
-case class App(f: Term, e: Term) extends Term;
-case class Let(x: String, e: Term, f: Term) extends Term;
+trait Term {}
+case class Var(x: String) extends Term {
+  override def toString() = x
+}
+case class Lam(x: String, e: Term) extends Term {
+  override def toString() = "(\\" + x + "." + e + ")"
+}
+case class App(f: Term, e: Term) extends Term {
+  override def toString() = "(" + f + " " + e + ")"
+}
+case class Let(x: String, e: Term, f: Term) extends Term {
+  override def toString() = "let " + x + " = " + e + " in " + f;
+}
 \end{lstlisting}
 There are four tree constructors: \code{Var} for variables, \code{Lam}
 for function abstractions, \code{App} for function applications, and
-\code{Let} for let expressions. Note that these tree constructors are
-defined outside the \code{Term} class. It would also be possible
-to define further constructors for this type in other parts of the
-program.
+\code{Let} for let expressions. Each case class overrides the
+\code{toString()} method of class \code{Any}, so that terms can be
+printed in legible form.
 
-The next data type describes the form of types that are
+We next define the types that are
 computed by the inference system.
 \begin{lstlisting}
-module Types {
-  abstract final class Type;
-  case class Tyvar(a: String) extends Type;
-  case class Arrow(t1: Type, t2: Type) extends Type;
-  case class Tycon(k: String, ts: List[Type]) extends Type;
-  private var n: int = 0;
-  def newTyvar: Type = { n = n + 1 ; Tyvar("a" + n) }
+sealed trait Type {}
+case class Tyvar(a: String) extends Type {
+  override def toString() = a
 }
-import Types;
+case class Arrow(t1: Type, t2: Type) extends Type {
+  override def toString() = "(" + t1 + "->" + t2 + ")"
+}
+case class Tycon(k: String, ts: List[Type]) extends Type {
+  override def toString() = 
+    k + (if (ts.isEmpty) "" else ts.mkString("[", ",", "]"))
+}
 \end{lstlisting}
 There are three type constructors: \code{Tyvar} for type variables,
-\code{Arrow} for function types and \code{Tycon} for type
-constructors such as \code{boolean} or \code{List}. Type constructors
-have as component a list of their type parameters. This list is empty
-for type constants such as \code{boolean}. The data type is packaged
-in a module \code{Types}. Also contained in that module is a function
-\code{newTyvar} which creates a fresh type variable each time it is
-called. The module definition is followed by an import clause
-\code{import Types}, which makes the non-private members of
-this module available without qualification in the code that follows.
+\code{Arrow} for function types and \code{Tycon} for type constructors
+such as \code{boolean} or \code{List}. Type constructors have as
+component a list of their type parameters. This list is empty for type
+constants such as \code{boolean}. Again, the type constructors
+implement the \code{toString} method in order to display types legibly.
 
-Note that \code{Type} is a \code{final} class. This means that no
+Note that \code{Type} is a \code{sealed} class. This means that no
 subclasses or data constructors that extend \code{Type} can be formed
-except for the three constructors that follow the class.  This makes
-\code{Type} into a {\em closed} algebraic data type with a fixed
-number of alternatives. By contrast, type \code{Term} is an {\em open}
+outside the sequence of definitions in which \code{Type} is defined.
+This makes \code{Type} a {\em closed} algebraic data type with exactly
+three alternatives. By contrast, type \code{Term} is an {\em open}
 algebraic type for which further alternatives can be defined.
+
+The main parts of the type inferencer are contained in object
+\code{typeInfer}. We start with a utility function which creates
+fresh type variables:
+\begin{lstlisting}
+object typeInfer {
+  private var n: Int = 0;
+  def newTyvar(): Type = { n = n + 1 ; Tyvar("a" + n) }
+\end{lstlisting}
+We next define a class for substitutions. A substitution is an
+idempotent function from type variables to types. It maps a finite
+number of type variables to some types, and leaves all other type
+variables unchanged. The meaning of a substitution is extended
+point-wise to a mapping from types to types.
+\begin{lstlisting}
+  trait Subst extends Any with Function1[Type,Type] {
+
+    def lookup(x: Tyvar): Type;
+
+    def apply(t: Type): Type = t match {
+      case tv @ Tyvar(a) => val u = lookup(tv); if (t == u) t else apply(u); 
+      case Arrow(t1, t2) => Arrow(apply(t1), apply(t2))
+      case Tycon(k, ts) => Tycon(k, ts map apply)
+    }
+
+    def extend(x: Tyvar, t: Type) = new Subst {
+      def lookup(y: Tyvar): Type = if (x == y) t else Subst.this.lookup(y);
+    }
+  }
+  val emptySubst = new Subst { def lookup(t: Tyvar): Type = t }
+\end{lstlisting}
+We represent substitutions as functions, of type \code{Type =>
+Type}. This is achieved by making class \code{Subst} inherit from the
+unary function type \code{Function1[Type, Type]}\footnote{
+The class inherits the function type as a mixin rather than as a direct 
+superclass. This is because in the current Scala implementation, the
+\code{Function1} type is a Java interface, which cannot be used as a direct
+superclass of some other class.}.
+To be an instance
+of this type, a substitution \code{s} has to implement an \code{apply}
+method that takes a \code{Type} as argument and yields another
+\code{Type} as result. A function application \code{s(t)} is then
+interpreted as \code{s.apply(t)}.
+
+The \code{lookup} method is abstract in class \code{Subst}.  There are
+two concrete forms of substitutions which differ in how they
+implement this method.  One form is defined by the \code{emptySubst} value,
+the other is defined by the \code{extend} method in class
+\code{Subst}.
 
 The next data type describes type schemes, which consist of a type and
 a list of names of type variables which appear universally quantified
-in the type scheme. For instance, the type scheme $\forall a\forall
-b.a \arrow b$ would be represented in the type checker as:
+in the type scheme. 
+For instance, the type scheme $\forall a\forall b.a \!\arrow\! b$ would be represented in the type checker as:
 \begin{lstlisting}
-TypeScheme(["a", "b"], Arrow(Tyvar("a"), Tyvar("b"))) .
+TypeScheme(List(TyVar("a"), TyVar("b")), Arrow(Tyvar("a"), Tyvar("b"))) .
 \end{lstlisting}
-The data type definition of type schemes does not carry an extends
+The class definition of type schemes does not carry an extends
 clause; this means that type schemes extend directly class
-\code{Object}.
-Even though there is only one possible way to construct a type scheme,
-a \code{case class} representation was chosen since it offers a convenient
-way to decompose a type scheme into its parts using pattern matching.
+\code{Object}.  Even though there is only one possible way to
+construct a type scheme, a case class representation was chosen
+since it offers convenient ways to decompose an instance of this type into its
+parts.
 \begin{lstlisting}
-case class TypeScheme(ls: List[String], t: Type) {
+case class TypeScheme(tyvars: List[String], tpe: Type) {
   def newInstance: Type = {
-    val instSubst =
-      ((EmptySubst: Subst) :_foldl ls) { s, a => s.extend(Tyvar(a), newTyvar) }
-    instSubst(t)
+    (emptySubst /: tyvars) ((s, tv) => s.extend(tv, newTyvar())) (tpe);
   }
 }
 \end{lstlisting}
 Type scheme objects come with a method \code{newInstance}, which
 returns the type contained in the scheme after all universally type
-variables have been renamed to fresh variables.
+variables have been renamed to fresh variables. The implementation of
+this method folds (with \code{/:}) the type scheme's type variables
+with an operation which extends a given substitution \code{s} by
+renaming a given type variable \code{tv} to a fresh type
+variable. The resulting substitution renames all type variables of the
+scheme to fresh ones. This substitution is then applied to the type
+part of the type scheme.
 
-The next class describes substitutions. A substitution is an
-idempotent function from type variables to types. It maps a finite
-number of given type variables to given types, and leaves all other
-type variables unchanged. The meaning of a substitution is extended
-point-wise to a mapping from types to types.
-
+The last type we need in the type inferencer is
+\code{Env}, a type for environments, which associate variable names
+with type schemes. They are represented by a type alias \code{Env} in
+module \code{typeInfer}:
 \begin{lstlisting}
-abstract class Subst extends Function1[Type,Type] {
-  def lookup(x: Tyvar): Type;
-  def apply(t: Type): Type = t match {
-    case Tyvar(a) => val u = lookup(Tyvar(a)); if (t == u) t else apply(u);
-    case Arrow(t1, t2) => Arrow(apply(t1), apply(t2))
-    case Tycon(k, ts) => Tycon(k, ts map apply)
-  }
-  def extend(x: Tyvar, t: Type) = new Subst {
-    def lookup(y: Tyvar): Type = if (x == y) t else outer.lookup(y);
-  }
-}
-case class EmptySubst extends Subst { def lookup(t: Tyvar): Type = t }
+type Env = List[Pair[String, TypeScheme]];
 \end{lstlisting}
-We represent substitutions as functions, of type
-\code{Type => Type}. To be an instance of this type, a
-substitution \code{s} has to implement an \code{apply} method that takes a
-\code{Type} as argument and yields another \code{Type} as result. A function
-application \code{s(t)} is then interpreted as \code{s.apply(t)}.
-
-The \code{lookup} method is abstract in class \code{Subst}.  Concrete
-substitutions are defined by the case class \code{EmptySubst} and the
-method \code{extend} in class \code{Subst}.
-
-The next class gives a naive implementation of sets using lists as the
-implementation type. It implements methods \code{contains} for
-membership tests as well as \code{union} and \code{diff} for set union
-and difference. Alternatively, one could have used a more efficient
-implementation of sets in some standard library.
-\begin{lstlisting}
-class ListSet[a](xs: List[a]) {
-  val elems: List[a] = xs;
-
-  def contains(y: a): boolean = xs match {
-    case [] => false
-    case x :: xs1 => (x == y) || (xs1 contains y)
-  }
-
-  def union(ys: ListSet[a]): ListSet[a] = xs match {
-    case [] => ys
-    case x :: xs1 =>
-      if (ys contains x) ListSet(xs1) union ys
-      else ListSet(x :: (ListSet(xs1) union ys).elems)
-  }
-
-  def diff(ys: ListSet[a]): ListSet[a] = xs match {
-    case [] => ListSet([])
-    case x :: xs1 =>
-      if (ys contains x) ListSet(xs1) diff ys
-      else ListSet(x :: (ListSet(xs1) diff ys).elems)
-  }
-}
-\end{lstlisting}
-
-We now present the type checker module. The type checker
-computes a type for a given term in a given environment. Environments
-associate variable names with type schemes. They are represented by a
-type alias \code{Env} in module \code{TypeChecker}:
-\begin{lstlisting}
-module TypeChecker {
-
-  /** Type environments are lists of bindings that associate a
-   * name with a type scheme.
-   */
-  type Env = List[(String, TypeScheme)];
-\end{lstlisting}
-There is also an exception \code{TypeError}, which is thrown when type
-checking fails. Exceptions are modeled as case classes that inherit
-from the predefined \code{Exception} class.
-\begin{lstlisting}
-  case class TypeError(msg: String) extends Exception(msg);
-\end{lstlisting}
-The \code{Exception} class defines a \code{throw} method which causes
-the exception to be thrown.
-
-The \code{TypeChecker} module contains several utility
-functions. Function
-\code{tyvars} yields the set of free type variables of a type,
-of a type scheme, of a list of types, or of an environment. Its
-implementation is as four overloaded functions, one for each type of
-argument.
-\begin{lstlisting}
-  def tyvars(t: Type): ListSet[String] = t match {
-    case Tyvar(a) => new ListSet([a])
-    case Arrow(t1, t2) => tyvars(t1) union tyvars(t2)
-    case Tycon(k, ts) => tyvars(ts)
-  }
-  def tyvars(ts: TypeScheme): ListSet[String] = ts match {
-    case TypeScheme(as, t) => tyvars(t) diff new ListSet(as)
-  }
-  def tyvars(ts: List[Type]): ListSet[String] = ts match {
-    case [] => new ListSet[String]([])
-    case t :: ts1 => tyvars(t) union tyvars(ts1)
-  }
-  def tyvars(env: Env): ListSet[String] = env match {
-    case [] => new ListSet[String]([])
-    case (x, t) :: env1 => tyvars(t) union tyvars(env1)
-  }
-\end{lstlisting}
-The next utility function, \code{lookup}, returns the type scheme
-associated with a given variable name in the given environment, or
-returns \code{null} if no binding for the variable exists in the environment.
+There are two operations on environments. The \code{lookup} function
+returns the type scheme associated with a given name, or \code{null}
+if the name is not recorded in the environment.
 \begin{lstlisting}
   def lookup(env: Env, x: String): TypeScheme = env match {
-    case [] => null
-    case (y, t) :: env1 => if (x == y) t else lookup(env1, x)
+    case List() => null
+    case Pair(y, t) :: env1 => if (x == y) t else lookup(env1, x)
   }
 \end{lstlisting}
-The next utility function, \code{gen}, returns the type scheme that
-results from generalizing a given type in a given environment. This
-means that all type variables that occur in the type but not in the
-environment are universally quantified.
+The \code{gen} function turns a given type into a type scheme,
+quantifying over all type variables that are free in the type, but
+not in the environment.
 \begin{lstlisting}
-  def gen(env: Env, t: Type): TypeScheme =
-    TypeScheme((tyvars(t) diff tyvars(env)).elems, t);
+  def gen(env: Env, t: Type): TypeScheme = 
+    TypeScheme(tyvars(t) diff tyvars(env), t);
 \end{lstlisting}
-The next utility function, \code{mgu}, computes the most general
-unifier of two given types $t$ and $u$ under a pre-existing
-substitution $s$.  That is, it returns the most general
+The set of free type variables of a type is simply the set of all type
+variables which occur in the type. It is represented here as a list of
+type variables, which is constructed as follows.
+\begin{lstlisting}
+  def tyvars(t: Type): List[Tyvar] = t match {
+    case tv @ Tyvar(a) => 
+      List(tv)
+    case Arrow(t1, t2) => 
+      tyvars(t1) union tyvars(t2)
+    case Tycon(k, ts) => 
+      (List[Tyvar]() /: ts) ((tvs, t) => tvs union tyvars(t));
+  }
+\end{lstlisting}
+Note that the syntax \code{tv @ ...} in the first pattern introduces a variable
+which is bound to the pattern that follows. Note also that the explicit type parameter \code{[Tyvar]} in the expression of the third
+clause is needed to make local type inference work.
+
+The set of free type variables of a type scheme is the set of free
+type variables of its type component, excluding any quantified type variables:
+\begin{lstlisting}
+  def tyvars(ts: TypeScheme): List[Tyvar] = 
+    tyvars(ts.tpe) diff ts.tyvars;
+\end{lstlisting}
+Finally, the set of free type variables of an environment is the union
+of the free type variables of all type schemes recorded in it.
+\begin{lstlisting}
+  def tyvars(env: Env): List[Tyvar] =
+    (List[Tyvar]() /: env) ((tvs, nt) => tvs union tyvars(nt._2));
+\end{lstlisting}
+A central operation of Hindley/Milner type checking is unification,
+which computes a substitution to make two given types equal (such a
+substitution is called a {\em unifier}).  Function \code{mgu} computes
+the most general unifier of two given types $t$ and $u$ under a
+pre-existing substitution $s$.  That is, it returns the most general
 substitution $s'$ which extends $s$, and which makes $s'(t)$ and
-$s'(u)$ equal types. The function throws a \code{TypeError} exception
-if no such substitution exists. This can happen because the two types
-have different type constructors at corresponding places, or because
-a type variable is unified with a type that contains the type variable
-itself.
+$s'(u)$ equal types. 
 \begin{lstlisting}
-  def mgu(t: Type, u: Type)(s: Subst): Subst = (s(t), s(u)) match {
-    case (Tyvar( a), Tyvar(b)) if a == b =>
+  def mgu(t: Type, u: Type, s: Subst): Subst = Pair(s(t), s(u)) match {
+    case Pair(Tyvar(a), Tyvar(b)) if (a == b) => 
       s
-    case (Tyvar(a), _) =>
-      if (tyvars(u) contains a)
-         TypeError("unification failure: occurs check").throw
-      else s.extend(Tyvar(a), u)
-    case (_, Tyvar(a)) =>
-      mgu(u, t)(s)
-    case (Arrow(t1, t2), Arrow(u1, u2)) =>
-      mgu(t1, u1)(mgu(t2, u2)(s))
-    case (Tycon(k1, ts), Tycon(k2, us)) if k1 == k2 =>
-      (s :_foldl ((ts zip us) map (case (t,u) => mgu(t,u)))) { s, f => f(s) }
-    case _ => TypeError("unification failure").throw
+    case Pair(Tyvar(a), _) if !(tyvars(u) contains a) =>
+      s.extend(Tyvar(a), u)
+    case Pair(_, Tyvar(a)) =>
+      mgu(u, t, s)
+    case Pair(Arrow(t1, t2), Arrow(u1, u2)) =>
+      mgu(t1, u1, mgu(t2, u2, s))
+    case Pair(Tycon(k1, ts), Tycon(k2, us)) if (k1 == k2) =>
+      (s /: (ts zip us)) ((s, tu) => mgu(tu._1, tu._2, s))
+    case _ => 
+      throw new TypeError("cannot unify " + s(t) + " with " + s(u))
   }
+\end{lstlisting}
+The \code{mgu} function throws a \code{TypeError} exception if no
+unifier substitution exists. This can happen because the two types
+have different type constructors at corresponding places, or because a
+type variable is unified with a type that contains the type variable
+itself. Such exceptions are modeled here as instances of case classes
+that inherit from the predefined \code{Exception} class.
+\begin{lstlisting}
+  case class TypeError(s: String) extends Exception(s) {}
 \end{lstlisting}
 The main task of the type checker is implemented by function
-\code{tp}. This function takes as first parameters an environment $env$, a
-term $e$ and a proto-type $t$. As a second parameter it takes a
+\code{tp}. This function takes as parameters an environment $env$, a
+term $e$, a proto-type $t$, and a
 pre-existing substitution $s$.  The function yields a substitution
 $s'$ that extends $s$ and that
 turns $s'(env) \ts e: s'(t)$ into a derivable type judgment according
 to the derivation rules of the Hindley/Milner type system \cite{hindley-milner}.  A
 \code{TypeError} exception is thrown if no such substitution exists.
 \begin{lstlisting}
-  def tp(env: Env, e: Term, t: Type)(s: Subst): Subst = e match {
-    case Var(x) => {
-      val u = lookup(env, x);
-      if (u == null) TypeError("undefined: x").throw
-      else mgu(u.newInstance, t)(s)
+  def tp(env: Env, e: Term, t: Type, s: Subst): Subst = {
+    current = e;
+    e match {
+      case Var(x) =>
+        val u = lookup(env, x);
+        if (u == null) throw new TypeError("undefined: " + x);
+        else mgu(u.newInstance, t, s)
+
+      case Lam(x, e1) =>
+        val a = newTyvar(), b = newTyvar();
+        val s1 = mgu(t, Arrow(a, b), s);
+        val env1 = Pair(x, TypeScheme(List(), a)) :: env;
+        tp(env1, e1, b, s1)
+
+      case App(e1, e2) =>
+        val a = newTyvar();
+        val s1 = tp(env, e1, Arrow(a, t), s);
+        tp(env, e2, a, s1)
+
+      case Let(x, e1, e2) =>
+        val a = newTyvar();
+        val s1 = tp(env, e1, a, s);
+        tp(Pair(x, gen(env, s1(a))) :: env, e2, t, s1)
     }
-    case Lam(x, e1) => {
-      val a = newTyvar, b = newTyvar;
-      val s1 = mgu(t, Arrow(a, b))(s);
-      val env1 = (x, TypeScheme([], a)) :: env;
-      tp(env1, e1, b)(s1)
-    }
-    case App(e1, e2) => {
-      val a = newTyvar;
-      val s1 = tp(env, e1, Arrow(a, t))(s);
-      tp(env, e2, a)(s1)
-    }
-    case Let(x, e1, e2) => {
-      val a = newTyvar;
-      val s1 = tp(env, e1, a)(s);
-      tp((x, gen(env, s1(a))) :: env, e2, t)(s1)
-    }
-  }
+  } 
+  var current: Term = null;
 \end{lstlisting}
-The next function, \code{typeOf} is a simplified facade for
-\code{tp}. It computes the type of a given term $e$ in a given
-environment $env$. It does so by creating a fresh type variable \code{$a$},
-computing a typing substitution that makes \code{env $\ts$ e: a} into
-a derivable type judgment, and finally by returning the result of
-applying the substitution to $a$.
+To aid error diagnostics, the \code{tp} function stores the currently
+analyzed sub-term in variable \code{current}. Thus, if type checking
+is aborted with a \code{TypeError} exception, this variable will
+contain the subterm that caused the problem.
+
+The last function of the type inference module, \code{typeOf}, is a
+simplified facade for \code{tp}. It computes the type of a given term
+$e$ in a given environment $env$. It does so by creating a fresh type
+variable $a$, computing a typing substitution that makes $env \ts e: a$
+into a derivable type judgment, and returning
+the result of applying the substitution to $a$.
 \begin{lstlisting}
   def typeOf(env: Env, e: Term): Type = {
-    val a = newTyvar;
-    tp(env, e, a)(EmptySubst)(a)
+    val a = newTyvar();
+    tp(env, e, a, emptySubst)(a)
   }
-}
+}// end typeInfer
 \end{lstlisting}
-This concludes the presentation of the type inference system.
-To apply the system, it is convenient to have a predefined environment
-that contains bindings for commonly used constants. The module
-\code{Predefined} defines an environment \code{env} that contains
-bindings for booleans, numbers and lists together with some primitive
-operations over these types. It also defines a fixed point operator
-\code{fix}, which can be used to represent recursion.
+To apply the type inferencer, it is convenient to have a predefined
+environment that contains bindings for commonly used constants. The
+module \code{predefined} defines an environment \code{env} that
+contains bindings for the types of booleans, numbers and lists
+together with some primitive operations over them. It also
+defines a fixed point operator \code{fix}, which can be used to
+represent recursion.
 \begin{lstlisting}
-module Predefined {
-  val booleanType = Tycon("Boolean", []);
-  val intType = Tycon("Int", []);
-  def listType(t: Type) = Tycon("List", [t]);
+object predefined {
+  val booleanType = Tycon("Boolean", List());
+  val intType = Tycon("Int", List());
+  def listType(t: Type) = Tycon("List", List(t));
 
-  private def gen(t: Type): TypeScheme = TypeChecker.gen([], t);
-  private val a = newTyvar;
-  val env = [
-    ("true", gen(booleanType)),
-    ("false", gen(booleanType)),
-    ("$\mbox{\prog{if}}$", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
-    ("zero", gen(intType)),
-    ("succ", gen(Arrow(intType, intType))),
-    ("$\mbox{\prog{nil}}$", gen(listType(a))),
-    ("cons", gen(Arrow(a, Arrow(listType(a), listType(a))))),
-    ("isEmpty", gen(Arrow(listType(a), booleanType))),
-    ("head", gen(Arrow(listType(a), a))),
-    ("tail", gen(Arrow(listType(a), listType(a)))),
-    ("fix", gen(Arrow(Arrow(a, a), a)))
-  ];
+  private def gen(t: Type): typeInfer.TypeScheme = typeInfer.gen(List(), t);
+  private val a = typeInfer.newTyvar();
+  val env = List(
+    Pair("true", gen(booleanType)),
+    Pair("false", gen(booleanType)),
+    Pair("if", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
+    Pair("zero", gen(intType)),
+    Pair("succ", gen(Arrow(intType, intType))),
+    Pair("nil", gen(listType(a))),
+    Pair("cons", gen(Arrow(a, Arrow(listType(a), listType(a))))),
+    Pair("isEmpty", gen(Arrow(listType(a), booleanType))),
+    Pair("head", gen(Arrow(listType(a), a))),
+    Pair("tail", gen(Arrow(listType(a), listType(a)))),
+    Pair("fix", gen(Arrow(Arrow(a, a), a)))
+  )
 }
 \end{lstlisting}
-Here's an example how the type inferencer is used.
+Here's an example how the type inferencer can be used.
 Let's define a function \code{showType} which returns the type of
 a given term computed in the predefined environment
 \code{Predefined.env}:
 \begin{lstlisting}
-> def showType(e: Term) = TypeChecker.typeOf(Predefined.env, e);
+object testInfer {
+  def showType(e: Term): String =
+    try {
+      typeInfer.typeOf(predefined.env, e).toString();
+    } catch {
+      case typeInfer.TypeError(msg) => 
+        "\n cannot type: " + typeInfer.current +
+        "\n reason: " + msg;
+    }
 \end{lstlisting}
 Then the application
 \begin{lstlisting}
-> showType(Lam("x", App(App(Var("cons"), Var("x")), Var("$\mbox{\prog{nil}}$"))));
+> testInfer.showType(Lam("x", App(App(Var("cons"), Var("x")), Var("nil"))));
 \end{lstlisting}
 would give the response
 \begin{lstlisting}
-> TypeScheme([a0], Arrow(Tyvar(a0), Tycon("List", [Tyvar(a0)])));
+> (a6->List[a6])
+\end{lstlisting}
+To make the type inferencer more useful, we complete it with a
+parser. 
+Function \code{main} of module \code{testInfer}
+parses and typechecks a Mini-ML expression which is given as the first
+command line argument.
+\begin{lstlisting}
+  def main(args: Array[String]): unit = {
+    val ps = new MiniMLParsers with ParseString(args(0));
+    ps.all(ps.input) match {
+      case Some(Pair(term, _)) => 
+        System.out.println("" + term + ": " + showType(term));
+      case None =>
+        System.out.println("syntax error");
+    }
+  }
+}// typeInf
+\end{lstlisting}
+To do the parsing, method \code{main} uses the combinator parser
+scheme of Chapter~\ref{sec:combinator-parsing}. It creates a parser
+family \code{ps} as a mixin composition of parsers
+that understand MiniML (but do not know where input comes from) and
+parsers that read input from a given string.  The \code{MiniMLParsers}
+object implements parsers for the following grammar.
+\begin{lstlisting}
+term  ::= "\" ident "." term
+       |  term1 {term1}
+       |  "let" ident "=" term "in" term
+term1 ::= ident
+       |  "(" term ")"
+all   ::= term ";"
+\end{lstlisting}
+Input as a whole is described by the production \code{all}; it
+consists of a term followed by a semicolon. We allow ``whitespace''
+consisting of one or more space, tabulator or newline characters
+between any two lexemes (this is not reflected in the grammar
+above). Identifiers are defined as in
+Chapter~\ref{sec:combinator-parsing} except that an identifier cannot
+be one of the two reserved words "let" and "in".
+\begin{lstlisting}
+abstract class MiniMLParsers[intype] extends CharParsers[intype] {
+
+  /** whitespace */
+  def whitespace = rep{chr(' ') ||| chr('\t') ||| chr('\n')};
+
+  /** A given character, possible preceded by whitespace */
+  def wschr(ch: char) = whitespace &&& chr(ch);
+
+  /** identifiers or keywords */
+  def id: Parser[String] = 
+    for (
+      val c: char <- whitespace &&& chr(Character.isLetter); 
+      val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
+    ) yield (c :: cs).mkString("", "", "");
+
+  /** Non-keyword identifiers */
+  def ident: Parser[String] =
+    for (val s <- id; s != "let" && s != "in") yield s;
+
+  /** term = '\' ident '.' term | term1 {term1} | let ident "=" term in term */
+  def term: Parser[Term] =
+    ( for (
+        val _ <- wschr('\\');
+        val x <- ident;
+        val _ <- wschr('.');
+        val t <- term)
+      yield Lam(x, t): Term )
+    |||
+    ( for (
+        val letid <- id; letid == "let"; 
+        val x <- ident; 
+        val _ <- wschr('='); 
+        val t <- term; 
+        val inid <- id; inid == "in"; 
+        val c <- term)
+      yield Let(x, t, c) )
+    |||
+    ( for (
+        val t <- term1;
+        val ts <- rep(term1))
+      yield (t /: ts)((f, arg) => App(f, arg)) );
+
+  /** term1 = ident | '(' term ')' */
+  def term1: Parser[Term] = 
+    ( for (val s <- ident)
+      yield Var(s): Term )
+    |||
+    ( for (
+        val _ <- wschr('(');
+        val t <- term;
+        val _ <- wschr(')'))
+      yield t );
+
+  /** all = term ';' */
+  def all: Parser[Term] = 
+    for (
+      val t <- term;
+      val _ <- wschr(';'))
+    yield t;
+}
+\end{lstlisting}
+Here are some sample MiniML programs and the output the type inferencer gives for each of them:
+\begin{lstlisting}
+> java testInfer
+| "\x.\f.f(f x);"
+(\x.(\f.(f (f x)))): (a8->((a8->a8)->a8))
+
+> java testInfer 
+| "let id = \x.x  
+|  in if (id true) (id nil) (id (cons zero nil));"
+let id = (\x.x) in (((if (id true)) (id nil)) (id ((cons zero) nil))): List[Int]
+
+> java testInfer
+| "let id = \x.x 
+|  in if (id true) (id nil);"
+let id = (\x.x) in ((if (id true)) (id nil)): (List[a13]->List[a13])
+
+> java testInfer
+| "let length = fix (\len.\xs.
+|    if (isEmpty xs) 
+|      zero 
+|      (succ (len (tail xs))))
+|  in (length nil);"
+let length = (fix (\len.(\xs.(((if (isEmpty xs)) zero) 
+(succ (len (tail xs))))))) in (length nil): Int
+
+> java testInfer 
+| "let id = \x.x 
+|  in if (id true) (id nil) zero;"
+let id = (\x.x) in (((if (id true)) (id nil)) zero): 
+ cannot type: zero
+ reason: cannot unify Int with List[a14]
 \end{lstlisting}
 
-\exercise
-Add \code{toString} methods to the data constructors of class
-\code{Type} and \code{TypeScheme} which represent types in a more
-natural way.
+\exercise\label{exercise:hm-parse} Using the parser library constructed in
+Exercise~\ref{exercise:end-marker}, modify the MiniML parser library
+so that no marker ``;'' is necessary for indicating the end of input.
+
+\exercise\label{execcise:hm-extend} Extend the Mini-ML parser and type
+inferencer with a \code{letrec} construct which allows the definition of
+recursive functions. Syntax:
+\begin{lstlisting}
+letrec ident "=" term in term .
+\end{lstlisting}
+The typing of \code{letrec} is as for {let}, 
+except that the defined identifier is visible in the defining expression. Using \code{letrec}, the \code{length} function for lists can now be defined as follows.
+\begin{lstlisting}
+letrec length = \xs.
+  if (isEmpty xs)
+    zero
+    (succ (length (tail xs)))
+in ...
+\end{lstlisting}
 
 \chapter{Abstractions for Concurrency}\label{sec:ex-concurrency}
 
@@ -5802,8 +6090,9 @@ how they can be implemented in Scala.
 The {\em monitor} provides the basic means for mutual exclusion
 of processes in Scala. It is defined as follows.
 \begin{lstlisting}
-class Monitor {
+trait Monitor {
   def synchronized [a] (def e: a): a;
+  def await(def cond: boolean) = while (false == cond) { wait() }
 }
 \end{lstlisting}
 The \code{synchronized} method in class \code{Monitor} executes its
@@ -5812,48 +6101,58 @@ time, only one thread can execute a \code{synchronized} argument of a
 given monitor.
 
 Threads can suspend inside a monitor by waiting on a signal.  The
-\code{Signal} class offers two methods \code{send} and
-\code{wait}.  Threads that call the \code{wait} method wait until a
-\code{send} method of the same signal is called subsequently by some
-other thread. Calls to \code{send} with no threads waiting for the
-signal are ignored. Here is the specification of the \code{Signal}
-class.
+standard \code{java.lang.Object} class offers for this prupose methods
+\code{send} and \code{notify}.  Threads that call the \code{wait}
+method wait until a \code{notify} method of the same object is called
+subsequently by some other thread. Calls to \code{notify} with no
+threads waiting for the signal are ignored. 
+Here are the signatures of these methods in class
+\code{java.lang.Object}.
 \begin{lstlisting}
-class Signal {
-  def wait: unit;
+  def wait(): unit;
   def wait(msec: long): unit;
-  def notify: unit;
-  def notifyAll: unit;
-}
+  def notify(): unit;
+  def notifyAll(): unit;
 \end{lstlisting}
-A signal also implements a timed form of \code{wait}, which blocks
-only as long as no signal was received or the specified amount of time
-(given in milliseconds) has elapsed. Furthermore, there is a
-\code{notifyAll} method which unblocks all threads which wait for the
-signal. \code{Signal} and \code{Monitor} are primitive classes in
-Scala which are implemented in terms of the underlying runtime system.
+There is also a timed form of \code{wait}, which blocks only as long
+as no signal was received or the specified amount of time (given in
+milliseconds) has elapsed. Furthermore, there is a \code{notifyAll}
+method which unblocks all threads which wait for the signal. 
+These methods, as well as class \code{Monitor} are primitive in
+Scala; they are implemented in terms of the underlying runtime system.
 
-As an example of how monitors and signals are used, here is is an
-implementation of a bounded buffer class.
+Typically, a thread waits for some condition to be established. If the
+condition does not hold at the time of the wait call, the thread
+blocks until some other thread has established the condition. It is
+the responsibility of this other thread to wake up waiting processes
+by issuing a \code{notify} or \code{notifyAll}. Note however, that
+there is no guarantee that a waiting process gets to run immediately
+when the call to notify is issued. It could be that other processes
+get to run first which invalidate the condition again. Therefore, the
+correct form of waiting for a condition $C$ uses a while loop:
 \begin{lstlisting}
-class BoundedBuffer[a](N: int) extends Monitor {
+while (!$C$) wait();
+\end{lstlisting}
+The monitor class contains a method \code{await} which does the same 
+thing; using it, the above loop can be expressed as \lstinline@await($C$)@.
+
+As an example of how monitors are used, here is is an implementation
+of a bounded buffer class.
+\begin{lstlisting}
+class BoundedBuffer[a](N: Int) extends Monitor() {
   var in = 0, out = 0, n = 0;
   val elems = new Array[a](N);
-  val nonEmpty = new Signal;
-  val nonFull = new Signal;
-\end{lstlisting}
-\begin{lstlisting}
+
   def put(x: a) = synchronized {
-    if (n == N) nonFull.wait;
+    await (n < N);
     elems(in) = x ; in = (in + 1) % N ; n = n + 1;
-    if (n == 1) nonEmpty.send;
+    if (n == 1) notifyAll();
   }
-\end{lstlisting}
-\begin{lstlisting}
+
   def get: a = synchronized {
-    if (n == 0) nonEmpty.wait
+    await (n != 0);
     val x = elems(out) ; out = (out + 1) % N ; n = n - 1;
-    if (n == N - 1) nonFull.send;
+    if (n == N - 1) notifyAll();
     x
   }
 }
@@ -5861,16 +6160,20 @@ class BoundedBuffer[a](N: int) extends Monitor {
 And here is a program using a bounded buffer to communicate between a
 producer and a consumer process.
 \begin{lstlisting}
-val buf = new BoundedBuffer[String](10)
-fork { while (true) { val s = produceString ; buf.put(s) } }
-fork { while (true) { val s = buf.get ; consumeString(s) } }
+import concurrent.ops._;
+object testBoundedBuffer {
+  val buf = new BoundedBuffer[String](10)
+  spawn { while (true) { val s = produceString ; buf.put(s) } }
+  spawn { while (true) { val s = buf.get ; consumeString(s) } }
+}
 \end{lstlisting}
-The \code{fork} method spawns a new thread which executes the
-expression given in the parameter. It can be defined as follows.
+The \code{spawn} method spawns a new thread which executes the
+expression given in the parameter. It is defined in object \code{concurrent.ops}
+as follows.
 \begin{lstlisting}
-def fork(def e: unit) = {
-  val p = new Thread { def run = e; }
-  p.run
+def spawn(def p: unit) = {
+  val t = new Thread() { override def run() = p; }
+  t.start()
 }
 \end{lstlisting}
 
@@ -6527,6 +6830,453 @@ class Bidder (auction: Process, minBid: int, maxBid: int)
   def transferPayment(seller: Process, amount: int)
 }
 \end{lstlisting}
+
+\bibliographystyle{alpha}
+\bibliography{Scala}
+
+\end{document}
+
+
+
+\chapter{Implementing Abstract Types: Search Trees}
+
+This chapter presents unbalanced binary search trees, implemented in
+three different styles: algebraic, object-oriented, and imperative.
+In each case, a search tree package is seen as an implementation
+of a class {\em MapStruct}.
+\begin{lstlisting}
+  trait MapStruct[kt, vt] {
+    trait Map with Function1[kt, vt] {
+      def extend(key: kt, value: vt): Map;
+      def remove(key: kt): Map;
+      def domain: Stream[kt];
+      def range: Stream[vt];
+    }
+    type map <: Map;
+    val empty: map;
+  }
+\end{lstlisting}
+The \code{MapStruct} class is parameterized with a type of keys
+\code{kt} and a type of values \code{vt}. It
+specifies an abstract type \code{Map} and an abstract value
+\code{empty}, which represents empty maps.  Every implementation
+\code{Map} needs to conform to that abstract type, which
+extends the function type \code{kt => vt}
+with four new
+methods. The method \code{domain} yields a stream that enumerates the
+map's domain, i.e. the set of keys that are mapped to non-null values.
+The method \code{range} yields a stream that enumerates the function's
+range, i.e.\ the values obtained by applying the function to arguments
+in its domain.  The method
+\code{extend} extends the map with a given key/value binding, whereas
+\code{remove} removes a given key from the map's domain. Both
+methods yield a new map value as result, which has the same
+representation as the receiver object.
+
+\begin{figure}[t]
+\begin{lstlisting}
+class AlgBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] {
+  private case
+    Empty extends Map,
+    Node(key: kt, value: vt, l: Map, r: Map) extends Map
+
+  final class Map extends kt => vt {
+    def apply(key: kt): vt = this match {
+      case Empty => null
+      case Node(k, v, l, r) =>
+        if (key < k) l.apply(key)
+        else if (key > k) r.apply(key)
+        else v
+    }
+
+    def extend(key: kt, value: vt): Map = this match {
+      case Empty => Node(k, v, Empty, Empty)
+      case Node(k, v, l, r) =>
+        if (key < k) Node(k, v, l.extend(key, value), r)
+        else if (key > k) Node(k, v, l, r.extend(key, value))
+        else Node(k, value, l, r)
+    }
+
+    def remove(key: kt): Map = this match {
+      case Empty => Empty
+      case Node(k, v, l, r) =>
+        if (key < k) Node(k, v, l.remove(key), r)
+        else if (key > k) Node(k, v, l, r.remove(key))
+        else if (l == Empty) r
+        else if (r == Empty) l
+        else {
+          val midKey = r.domain.head
+          Node(midKey, r.apply(midKey), l, r.remove(midKey))
+        }
+    }
+
+    def domain: Stream[kt] = this match {
+      case Empty => []
+      case Node(k, v, l, r) => Stream.concat([l.domain, [k], r.domain])
+    }
+    def range: Stream[vt] = this match {
+      case Empty => []
+      case Node(k, v, l, r) => Stream.concat([l.range, [v], r.range])
+    }
+  }
+  def empty: Map = Empty
+}
+\end{lstlisting}
+\caption{\label{fig:algbintree}Algebraic implementation of binary
+search trees}
+\end{figure}
+We now present three implementations of \code{Map}, which are all
+based on binary search trees. The \code{apply} method of a map is
+implemented in each case by the usual search function over binary
+trees, which compares a given key with the key stored in the topmost
+tree node, and depending on the result of the comparison, searches the
+left or the right hand sub-tree. The type of keys must implement the
+\code{Ord} class, which contains comparison methods
+(see Chapter~\ref{chap:classes} for a definition of class \code{Ord}).
+
+The first implementation, \code{AlgBinTree}, is given in
+Figure~\ref{fig:algbintree}. It represents a map with a
+data type \code{Map} with two cases, \code{Empty} and \code{Node}.
+
+Every method of \code{AlgBinTree[kt, vt].Map} performs a pattern
+match on the value of
+\code{this} using the \code{match} method which is defined as postfix
+function application in class \code{Object} (\sref{sec:class-object}).
+
+The functions \code{domain} and \code{range} return their results as
+lazily constructed lists. The \code{Stream} class is an alias of
+\code{List} which should be used to indicate the fact that its values
+are constructed lazily.
+
+\begin{figure}[thb]
+\begin{lstlisting}
+class OOBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] {
+  abstract class Map extends kt => vt {
+    def apply(key: kt): v
+    def extend(key: kt, value: vt): Map
+    def remove(key: kt): Map
+    def domain: Stream[kt]
+    def range: Stream[vt]
+  }
+  module empty extends Map {
+    def apply(key: kt) = null
+    def extend(key: kt, value: vt) = Node(key, value, empty, empty)
+    def remove(key: kt) = empty
+    def domain = []
+    def range = []
+  }
+  private class Node(k: kt, v: vt, l: Map, r: Map) extends Map {
+    def apply(key: kt): vt =
+      if (key < k) l.apply(key)
+      else if (key > k) r.apply(key)
+      else v
+    def extend(key: kt, value: vt): Map =
+      if (key < k) Node(k, v, l.extend(key, value), r)
+      else if (key > k) Node(k, v, l, r.extend(key, value))
+      else Node(k, value, l, r)
+    def remove(key: kt): Map =
+      if (key < k) Node(k, v, l.remove(key), r)
+      else if (key > k) Node(k, v, l, r.remove(key))
+      else if (l == empty) r
+      else if (r == empty) l
+      else {
+        val midKey = r.domain.head
+        Node(midKey, r(midKey), l, r.remove(midKey))
+      }
+    def domain: Stream[kt] = Stream.concat([l.domain, [k], r.domain])
+    def range: Stream[vt] = Stream.concat([l.range, [v], r.range])
+  }
+}
+\end{lstlisting}
+\caption{\label{fig:oobintree}Object-oriented implementation of binary
+search trees}
+\end{figure}
+
+The second implementation of maps is given in
+Figure~\ref{fig:oobintree}.  Class \code{OOBinTree} implements the
+type \code{Map} with a module \code{empty} and a class
+\code{Node}, which define the behavior of empty and non-empty trees,
+respectively.
+
+Note the different nesting structure of \code{AlgBinTree} and
+\code{OOBinTree}. In the former, all methods form part of the base
+class \code{Map}. The different behavior of empty and non-empty trees
+is expressed using a pattern match on the tree itself. In the
+latter, each subclass of \code{Map} defines its own set of
+methods, which override the methods in the base class. The pattern
+matches of the algebraic implementation have been replaced by the
+dynamic binding that comes with method overriding.
+
+Which of the two schemes is preferable depends to a large degree on
+which extensions of the type are anticipated. If the type is later
+extended with a new alternative, it is best to keep methods in each
+alternative, the way it was done in \code{OOBinTree}.  On the other
+hand, if the type is extended with additional methods, then it is
+preferable to keep only one implementation of methods and to rely on
+pattern matching, since this way existing subclasses need not be
+modified.
+
+\begin{figure}
+\begin{lstlisting}
+class MutBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] {
+  class Map(key: kt, value: vt) extends kt => vt {
+    val k = key
+    var v = value
+    var l = empty, r = empty
+
+    def apply(key: kt): vt =
+      if (this eq empty) null
+      else if (key < k) l.apply(key)
+      else if (key > k) r.apply(key)
+      else v
+
+    def extend(key: kt, value: vt): Map =
+      if (this eq empty) Map(key, value)
+      else {
+        if (key < k) l = l.extend(key, value)
+        else if (key > k) r = r.extend(key, value)
+        else v = value
+        this
+      }
+
+    def remove(key: kt): Map =
+      if (this eq empty) this
+      else if (key < k) { l = l.remove(key) ; this }
+      else if (key > k) { r = r.remove(key) ; this }
+      else if (l eq empty) r
+      else if (r eq empty) l
+      else {
+        var mid = r
+        while (!(mid.l eq empty)) { mid = mid.l }
+        mid.r = r.remove(mid.k)
+        mid.l = l
+        mid
+      }
+
+    def domain: Stream[kt] = Stream.concat([l.domain, [k], r.domain])
+    def range: Stream[vt] = Stream.concat([l.range, [v], r.range])
+  }
+  let empty = new Map(null, null)
+}
+\end{lstlisting}
+\caption{\label{fig:impbintree}Side-effecting implementation of binary
+search trees}
+\end{figure}
+
+The two versions of binary trees presented so far are {\em
+persistent}, in the sense that maps are values that cannot be changed
+by side effects. By contrast, in the next implementation of binary
+trees, the implementations of \code{extend} and
+\code{remove} do have an effect on the state of their receiver
+object. This corresponds to the way binary trees are usually
+implemented in imperative languages. The new implementation can lead
+to some savings in computing time and memory allocation, but care is
+required not to use the original tree after it has been modified by a
+side-effecting operation.
+
+In this implementation, \code{value}, \code{l} and \code{r} are
+variables that can be affected by method calls.  The
+class \code{MutBinTree[kt, vt].Map} takes two instance parameters
+which define the \code{key} value and the initial value of the
+\code{value} variable. Empty trees are represented by a
+value \code{empty}, which has \code{null} (signifying undefined) in
+both its key and value fields. Note that this value needs to be
+defined lazily using \code{let} since its definition involves the
+creation of a
+\code{Map} object,
+which accesses \code{empty} recursively as part of its initialization.
+All methods test first whether the current tree is empty using the
+reference equality operator \code{eq} (\sref{sec:class-object}).
+
+As a program using the \code{MapStruct} abstraction, consider a function
+which creates a map from strings to integers and then applies it to a
+key string:
+\begin{lstlisting}
+def mapTest(def mapImpl: MapStruct[String, int]): int = {
+  val map: mapImpl.Map = mapImpl.empty.extend("ab", 1).extend("bx", 3)
+  val x = map("ab")             // returns 1
+}
+\end{lstlisting}
+The function is parameterized with the particular implementation of
+\code{MapStruct}. It can be applied to any one of the three implementations
+described above. E.g.:
+\begin{lstlisting}
+mapTest(AlgBinTree[String, int])
+mapTest(OOBinTree[String, int])
+mapTest(MutBinTree[String, int])
+\end{lstlisting}
+}
+ 
+
+
+
+
+\paragraph{Mixin Composition}
+We can now define a class of \code{Rational} numbers that
+support comparison operators.
+\begin{lstlisting}
+final class OrderedRational(n: int, d: int)
+ extends Rational(n, d) with Ord {
+  override def ==(that: OrderedRational) =
+    numer == that.numer && denom == that.denom;
+  def <(that: OrderedRational): boolean =
+    numer * that.denom < that.numer * denom;
+}
+\end{lstlisting}
+Class \code{OrderedRational} redefines method \code{==}, which is
+defined as reference equality in class \code{Object}. It also
+implements the abstract method \code{<} from class \code{Ord}.  In
+addition, it inherits all members of class \code{Rational} and all
+non-abstract members of class \code{Ord}. The implementations of
+\code{==} and \code{<} replace the definition of \code{==} in class
+\code{Object} and the abstract declaration of \code{<} in class
+\code{Ord}. The other inherited comparison methods then refer to this
+implementation in their body.
+
+The clause ``\code{Rational(d, d) with Ord}'' is an instance of {\em
+mixin composition}. It describes a template for an object that is
+compatible with both \code{Rational} and \code{Ord} and that contains
+all members of either class. \code{Rational} is called the {\em
+superclass} of \code{OrderedRational} while \code{Ord} is called a
+{\em mixin class}. The type of this template is the {\em compound
+type} ``\code{Rational with Ord}''.
+
+On the surface, mixin composition looks much like multiple
+inheritance. The difference between the two becomes apparent if we
+look at superclasses of inherited classes. With multiple inheritance,
+both \code{Rational} and \code{Ord} would contribute a superclass
+\code{Object} to the template. We therefore have to answer some
+tricky questions, such as whether members of \code{Object} are present
+once or twice and whether the initializer of \code{Object} is called
+once or twice. Mixin composition avoids these complications.  In the
+mixin composition \code{Rational with Ord}, class
+\code{Rational} is treated as actual superclass of class \code{Ord}.
+A mixin composition \code{C with M} is well-formed as long as the
+first operand \code{C} conforms to the declared superclass of the
+second operand \code{M}. This holds in our example, because
+\code{Rational} conforms to \code{Object}. In a sense, mixin composition
+amounts to overriding the superclass of a class.
+
+\paragraph{Final Classes}
+Note that class \code{OrderedRational} was defined
+\code{final}. This means that no classes extending \code{OrderedRational}
+may be defined in other parts of the program.
+%Within final classes the
+%type \code{this} is an alias of the defined class itself. Therefore,
+%we could define our \code{<} method with an argument of type
+%\code{OrderedRational} as a well-formed implementation of the abstract class
+%\code{less(that: this)} in class \code{Ord}.
+
+\chapter{\label{sec:simple-examples}Pattern Matching}
+
+\todo{Complete}
+
+Consider binary trees whose leafs contain integer arguments. This can
+be described by a class for trees, with subclasses for leafs and
+branch nodes:
+\begin{lstlisting}
+abstract class Tree;
+case class Branch(left: Tree, right: Tree) extends Tree;
+case class Leaf(x: int) extends Tree;
+\end{lstlisting}
+Note that the class \code{Tree} is not followed by an extends
+clause or a body. This defines \code{Tree} to be an empty
+subclass of \code{Object}, as if we had written
+\begin{lstlisting}
+class Tree extends Object {}
+\end{lstlisting}
+Note also that the two subclasses of \code{Tree} have a \code{case}
+modifier.  That modifier has two effects. First, it lets us construct
+values of a case class by simply calling the constructor, without
+needing a preceding \code{new}. Example:
+\begin{lstlisting}
+val tree1 = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)))
+\end{lstlisting}
+Second, it lets us use constructors for these classes in patterns, as
+is illustrated in the following example.
+\begin{lstlisting}
+def sumLeaves(t: Tree): int = t match {
+  case Branch(l, r) => sumLeaves(l) + sumLeaves(r)
+  case Leaf(x) => x
+}
+\end{lstlisting}
+The function \code{sumLeaves} sums up all the integer values in the
+leaves of a given tree \code{t}. It is is implemented by calling the
+\code{match} method of \code{t} with a {\em choice expression} as
+argument (\code{match} is a predefined method in class \code{Object}).
+The choice expression consists of two cases which both
+relate a pattern with an expression. The pattern of the first case,
+\code{Branch(l, r)} matches all instances of class \code{Branch}
+and binds the {\em pattern variables} \code{l} and \code{r} to the
+constructor arguments, i.e.\ the left and right subtrees of the
+branch.  Pattern variables always start with a lower case letter; to
+avoid ambiguities, constructors in patterns should start with an upper
+case letter.
+
+The effect of the choice expression is to select the first alternative
+whose pattern matches the given select value, and to evaluate the body
+of this alternative in a context where pattern variables are bound to
+corresponding parts of the selector. For instance, the application
+\code{sumLeaves(tree1)} would select the first alternative with the
+\code{Branch(l,r)} pattern, and would evaluate the expression
+\code{sumLeaves(l) + sumLeaves(r)} with bindings
+\begin{lstlisting}
+l = Branch(Leaf(1), Leaf(2)), r = Branch(Leaf(3), Leaf(4)).
+\end{lstlisting}
+As another example, consider the following class
+\begin{lstlisting}
+abstract final class Option[+a];
+case object None extends Option[All];
+case class Some[a](item: a) extends Option[a];
+\end{lstlisting}
+...
+
+%\todo{Several simple and intermediate examples needed}.
+
+\begin{lstlisting}
+def find[a,b](it: Iterator[(a, b)], x: a): Option[b] = {
+  var result: Option[b] = None;
+  while (it.hasNext && result == None) {
+    val (x1, y) = it.next;
+    if (x == x1) result = Some(y)
+  }
+  result
+}
+find(xs, x) match {
+  case Some(y) => System.out.println(y)
+  case None => System.out.println("no match")
+}
+\end{lstlisting}
+
+\comment{
+
+
+class MaxCounter {
+  var maxVal: Option[int] = None;
+  def set(x: int) = maxVal match {
+    case None => maxVal = Some(x)
+    case Some(y) => maxVal = Some(Math.max(x, y))
+  }
+}
+\end{lstlisting}
+}
+\comment{
+\begin{lstlisting}
+class Stream[a] = List[a]
+
+module Stream {
+  def concat(xss: Stream[Stream[a]]): Stream[a] = {
+    let result: Stream[a] = xss match {
+      case [] => []
+      case [] :: xss1 => concat(xss1)
+      case (x :: xs) :: xss1 => x :: concat(xs :: xss1)
+    }
+    result
+  }
+}
+\end{lstlisting}
+}
+\comment{
 }
 %\todo{We also need some XML examples.}
 
