@@ -1,3 +1,11 @@
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/
+**
+**  $Id$
+*/
+
 package scalap;
 
 import java.io._;
@@ -7,10 +15,10 @@ import scala.collection.mutable._;
 /** Entities are either text, symbols, or types.
  */
 trait Entity {
-	def isText: Boolean = false;
-	def isType: Boolean = false;
-	def isSymbol: Boolean = false;
-	def toSource: String = toString();
+    def isText: Boolean = false;
+    def isType: Boolean = false;
+    def isSymbol: Boolean = false;
+    def toSource: String = toString();
 }
 
 /** Text refers to a single string.
@@ -25,10 +33,10 @@ case class Text(str: String) extends Entity {
 trait Type extends Entity {
     override def isType: Boolean = true;
     override def toSource: String = {
-    	val writer = new ScalaWriter(new StringWriter());
-    	writer.setIndentString(null)*;
-    	writer.printType(this);
-    	writer.toString()
+        val writer = new ScalaWriter(new StringWriter());
+        writer.setIndentString(null)*;
+        writer.printType(this);
+        writer.toString()
     }
 }
 
@@ -56,15 +64,15 @@ abstract case class Symbol(name: String, flags: Int) extends Entity {
     var tpe: Type = NoType;
     var owner: Symbol = NoSymbol;
     def fullname: String = owner match {
-    	case s: ClassSymbol => {
-    		val prefix = s.fullname;
-    		if (prefix.length() == 0) name else (prefix + "." + name)
-    	}
-    	case s: ExternalSymbol => {
-    		val prefix = s.fullname;
-    		if (prefix.length() == 0) name else (prefix + "." + name)
-    	}
-    	case _ => name
+        case s: ClassSymbol => {
+            val prefix = s.fullname;
+            if (prefix.length() == 0) name else (prefix + "." + name)
+        }
+        case s: ExternalSymbol => {
+            val prefix = s.fullname;
+            if (prefix.length() == 0) name else (prefix + "." + name)
+        }
+        case _ => name
     }
     def fix(tpe: Type, owner: Symbol): Unit = {
         this.tpe = tpe;
@@ -80,7 +88,7 @@ abstract case class Symbol(name: String, flags: Int) extends Entity {
 }
 
 object NoSymbol extends Symbol("<nosymbol>", 0) {
-	override def fix(tpe: Type, owner: Symbol): Unit = {}
+    override def fix(tpe: Type, owner: Symbol): Unit = {}
 }
 
 class TypeSymbol(name: String, flags: Int) extends Symbol(name, flags) {
@@ -113,7 +121,7 @@ class ClassSymbol(name: String, flags: Int) extends Symbol(name, flags) {
 
 class ValSymbol(name: String, flags: Int) extends Symbol(name, flags) {
     var clazz: Symbol = NoSymbol;
- 	override def fix(sym: Symbol): Unit = {
+    override def fix(sym: Symbol): Unit = {
         clazz = sym;
     }
 }

@@ -1,5 +1,10 @@
-// AbstractFile
-// 04-Feb-2002, Matthias Zenger
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/
+**
+**  $Id$
+*/
 
 package scalap;
 
@@ -74,7 +79,7 @@ class PlainFile(f: File) with AbstractFile {
     def elements = {
         val fs = f.listFiles();
         if (fs == null)
-        	Iterator.empty[String]
+            Iterator.empty[String]
         else
             new Iterator[String] {
                 var i = 0;
@@ -109,32 +114,32 @@ class JarArchive(f: File) with AbstractFile {
         //entries = new mutable.HashMap[String, JarArchiveEntry];
         entries = new mutable.JavaMapAdaptor(new java.util.HashMap());
         if (jarFile != null) {
-        	val enum = jarFile.entries();
-        	while (enum.hasMoreElements()) {
-            	val candidate = enum.nextElement().asInstanceOf[JarEntry].getName();
-            	var i = candidate.indexOf('/');
-            	var j = 0;
-            	var files = entries;
-           		while (i >= 0) {
-                	val dirname = candidate.substring(j, i + 1);
-                	j = i + 1;
-                	if (!files.isDefinedAt(dirname))
-                		files(dirname) = new JarDirEntry(candidate.substring(0, j));
-                	files = files(dirname).entries;
-                	i = candidate.indexOf('/', j);
-            	}
-            	if (j < (candidate.length() - 1)) {
-            	    val filename = candidate.substring(j);
-            	    if (!files.isDefinedAt(filename))
-            	        files(filename) = new JarFileEntry(candidate);
-            	}
-        	}
+            val enum = jarFile.entries();
+            while (enum.hasMoreElements()) {
+                val candidate = enum.nextElement().asInstanceOf[JarEntry].getName();
+                var i = candidate.indexOf('/');
+                var j = 0;
+                var files = entries;
+                while (i >= 0) {
+                    val dirname = candidate.substring(j, i + 1);
+                    j = i + 1;
+                    if (!files.isDefinedAt(dirname))
+                        files(dirname) = new JarDirEntry(candidate.substring(0, j));
+                    files = files(dirname).entries;
+                    i = candidate.indexOf('/', j);
+                }
+                if (j < (candidate.length() - 1)) {
+                    val filename = candidate.substring(j);
+                    if (!files.isDefinedAt(filename))
+                        files(filename) = new JarFileEntry(candidate);
+                }
+            }
         }
     }
 
     def list(prefix: String) = {
-    	val pref = prefix.replace(File.separatorChar, '/');
-    	if (entries == null)
+        val pref = prefix.replace(File.separatorChar, '/');
+        if (entries == null)
             load;
         var i = pref.indexOf('/');
         var j = 0;
@@ -145,19 +150,19 @@ class JarArchive(f: File) with AbstractFile {
             j = i + 1;
             continue = files.isDefinedAt(dirname);
             if (continue) {
-            	files = files(dirname).entries;
-            	i = pref.indexOf('/', j);
+                files = files(dirname).entries;
+                i = pref.indexOf('/', j);
             }
         }
         if (!continue)
-        	Iterator.empty;
+            Iterator.empty;
         else if (j < (pref.length() - 1)) {
             if (files.isDefinedAt(pref.substring(j)))
-            	List(pref).elements;
+                List(pref).elements;
             else
                 Iterator.empty;
         } else
-        	files.keys;
+            files.keys;
     }
 
     def elements = list("");
@@ -175,36 +180,36 @@ class JarArchive(f: File) with AbstractFile {
             val dirname = name.substring(j, i + 1);
             j = i + 1;
             if (files != null) {
-            	if (files.isDefinedAt(dirname)) {
-            		if (j == namelen)
-            			res = files(dirname);
-            		else
-            			files = files(dirname).entries;
-            	} else
-            		files = null;
+                if (files.isDefinedAt(dirname)) {
+                    if (j == namelen)
+                        res = files(dirname);
+                    else
+                        files = files(dirname).entries;
+                } else
+                    files = null;
             }
             i = name.indexOf('/', j);
         }
         if (res != null)
-        	res
+            res
         else if (j < (namelen - 1)) {
-        	if (files == null)
-        		new JarArchiveEntry(name, false);
-        	else {
-        	    val filename = name.substring(j);
-        		if (files.isDefinedAt(filename))
-        			files(filename)
-        		else
-        			new JarArchiveEntry(name, false)
-          	}
+            if (files == null)
+                new JarArchiveEntry(name, false);
+            else {
+                val filename = name.substring(j);
+                if (files.isDefinedAt(filename))
+                    files(filename)
+                else
+                    new JarArchiveEntry(name, false)
+            }
         } else
             new JarArchiveEntry(name, true);
     }
 
-	class JarArchiveEntry(name: String, dir: Boolean) with AbstractFile {
+    class JarArchiveEntry(name: String, dir: Boolean) with AbstractFile {
 
         def getName = name.substring(
-       		name.lastIndexOf('/', name.length() - (if (dir) 2 else 1)) + 1);
+            name.lastIndexOf('/', name.length() - (if (dir) 2 else 1)) + 1);
 
         def getPath = name;
 
@@ -234,7 +239,7 @@ class JarArchive(f: File) with AbstractFile {
         override def elements = JarArchive.this.list(name);
 
         override def open(fname: String) = JarArchive.this.open(
-        	name + fname.replace(File.separatorChar, '/'));
+            name + fname.replace(File.separatorChar, '/'));
 
         override def entries: mutable.Map[String, JarArchiveEntry] = entr;
     }

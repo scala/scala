@@ -1,3 +1,11 @@
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/
+**
+**  $Id$
+*/
+
 package scalap;
 
 import java.io._;
@@ -17,9 +25,9 @@ class CodeWriter(writer: Writer) {
     def getIndentLevel = level;
 
     def setIndentLevel(level: Int): CodeWriter = {
-    	this.level = level;
-    	this
-   	}
+        this.level = level;
+        this
+    }
 
     def getIndentWidth = if (step == null) -1 else step.length();
 
@@ -52,17 +60,17 @@ class CodeWriter(writer: Writer) {
         if (step == null)
             newspace;
         else if (!line) {
-     		try {
-            	writer.write(nl);
-    		} catch {
-    			case e => error("IO error")
-    		}
+            try {
+                writer.write(nl);
+            } catch {
+                case e => error("IO error")
+            }
             line = align;
             align = true;
             space = false;
             this
         } else
-        	this
+            this
     }
 
     def newspace: CodeWriter = {
@@ -109,12 +117,12 @@ class CodeWriter(writer: Writer) {
     def print(value: Double): CodeWriter = print(String.valueOf(value));
 
     def print(value: String): CodeWriter = try {
-    	if (align) {
-    		var i = 0;
-    		while (i < level) {
-    		    writer.write(step);
-    		    i = i + 1;
-    		}
+        if (align) {
+            var i = 0;
+            while (i < level) {
+                writer.write(step);
+                i = i + 1;
+            }
         }
         if (space)
           writer.write(" ");
@@ -124,7 +132,7 @@ class CodeWriter(writer: Writer) {
         line = false;
         this
     } catch {
-    	case e => error("IO error")
+        case e => error("IO error")
     }
 
     override def toString(): String = writer.toString();

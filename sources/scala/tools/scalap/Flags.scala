@@ -1,4 +1,13 @@
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/
+**
+**  $Id$
+*/
+
 package scalap;
+
 
 object Flags {
 
@@ -31,13 +40,13 @@ object Flags {
     final val LABEL        = 0x00200000; // symbol is a label symbol
     final val STATIC       = 0x00400000; // "static" inner classes (i.e. after class norm.)
     final val STABLE       = 0x00800000; // functions that are assumed to be stable
-                          			     // (typically, access methods for valdefs)
+                                         // (typically, access methods for valdefs)
 
     final val CAPTURED     = 0x01000000; // variables is accessed from nested function.
     final val CASEACCESSOR = 0x02000000; // function is a case constructor
 
     final val ACCESSOR     = 0x04000000; // function is an access function for a
-                          			     // value or variable
+                                         // value or variable
     final val BRIDGE       = 0x08000000; // function is a bridge method.
 
     final val INTERFACE    = 0x10000000; // symbol is a Java interface
@@ -54,59 +63,59 @@ object Flags {
     final val ACCESSFLAGS   = PRIVATE | PROTECTED;
     final val VARIANCES     = COVAR | CONTRAVAR;
 
-   	def isDeferred(flags: Int): Boolean = (flags & DEFERRED) != 0;
+    def isDeferred(flags: Int): Boolean = (flags & DEFERRED) != 0;
 
-	def isAbstract(flags: Int): Boolean = (flags & ABSTRACT) != 0;
+    def isAbstract(flags: Int): Boolean = (flags & ABSTRACT) != 0;
 
-	def isFinal(flags: Int): Boolean = (flags & FINAL) != 0;
+    def isFinal(flags: Int): Boolean = (flags & FINAL) != 0;
 
-	def isPrivate(flags: Int): Boolean = (flags & PRIVATE)   != 0;
+    def isPrivate(flags: Int): Boolean = (flags & PRIVATE)   != 0;
 
-	def isProtected(flags: Int): Boolean = (flags & PROTECTED) != 0;
+    def isProtected(flags: Int): Boolean = (flags & PROTECTED) != 0;
 
-	def isSealed(flags: Int): Boolean = (flags & SEALED) != 0;
+    def isSealed(flags: Int): Boolean = (flags & SEALED) != 0;
 
-	def isOverride(flags: Int): Boolean = (flags & OVERRIDE) != 0;
+    def isOverride(flags: Int): Boolean = (flags & OVERRIDE) != 0;
 
-	def isCase(flags: Int): Boolean = (flags & CASE) != 0;
+    def isCase(flags: Int): Boolean = (flags & CASE) != 0;
 
-	def isCaseAccessor(flags: Int): Boolean = (flags & CASEACCESSOR) != 0;
+    def isCaseAccessor(flags: Int): Boolean = (flags & CASEACCESSOR) != 0;
 
-	def isInterface(flags: Int): Boolean = (flags & INTERFACE) != 0;
+    def isInterface(flags: Int): Boolean = (flags & INTERFACE) != 0;
 
-	def isTrait(flags: Int): Boolean = (flags & TRAIT) != 0;
+    def isTrait(flags: Int): Boolean = (flags & TRAIT) != 0;
 
-	def isObj(flags: Int): Boolean = (flags & OBJECT) != 0;
+    def isObj(flags: Int): Boolean = (flags & OBJECT) != 0;
 
-	def isDef(flags: Int): Boolean = (flags & DEF) != 0;
+    def isDef(flags: Int): Boolean = (flags & DEF) != 0;
 
-	def isObjClass(flags: Int): Boolean = (flags & OBJECT) != 0;
+    def isObjClass(flags: Int): Boolean = (flags & OBJECT) != 0;
 
-	def isStatic(flags: Int): Boolean = (flags & STATIC) != 0;
+    def isStatic(flags: Int): Boolean = (flags & STATIC) != 0;
 
-	def isJava(flags: Int): Boolean = (flags & JAVA) != 0;
+    def isJava(flags: Int): Boolean = (flags & JAVA) != 0;
 
-	def isNoVal(flags: Int): Boolean = (flags & PACKAGE) != 0;
+    def isNoVal(flags: Int): Boolean = (flags & PACKAGE) != 0;
 
-	def toString(flags: Int): String = {
-		val buffer = new StringBuffer();
-		var x: StringBuffer = buffer;
-		if (isPrivate(flags))
-			x = buffer.append("private ");
-		if (isProtected(flags))
-			x = buffer.append("protected ");
-		if (isAbstract(flags) && !isTrait(flags))
-			x = buffer.append("abstract ");
-		if (isFinal(flags) && !isObj(flags))
-			x = buffer.append("final ");
-		if (isSealed(flags))
-			x = buffer.append("sealed ");
-		if (isCase(flags))
-			x = buffer.append("case ");
-		if (isDef(flags))
-			x = buffer.append("def ");
-		if (isOverride(flags))
-			x = buffer.append("override ");
-		buffer.toString()
-	}
+    def toString(flags: Int): String = {
+        val buffer = new StringBuffer();
+        var x: StringBuffer = buffer;
+        if (isPrivate(flags))
+            x = buffer.append("private ");
+        if (isProtected(flags))
+            x = buffer.append("protected ");
+        if (isAbstract(flags) && !isTrait(flags))
+            x = buffer.append("abstract ");
+        if (isFinal(flags) && !isObj(flags))
+            x = buffer.append("final ");
+        if (isSealed(flags))
+            x = buffer.append("sealed ");
+        if (isCase(flags))
+            x = buffer.append("case ");
+        if (isDef(flags))
+            x = buffer.append("def ");
+        if (isOverride(flags))
+            x = buffer.append("override ");
+        buffer.toString()
+    }
 }

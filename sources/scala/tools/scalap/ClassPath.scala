@@ -1,5 +1,10 @@
-// ClassPath
-// 04-Mar-2002, Matthias Zenger
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/
+**
+**  $Id$
+*/
 
 package scalap;
 
@@ -32,7 +37,7 @@ class ClassPath {
     /** the corresponding file cache (for not reading .jar files over
      *  and over again)
      */
-	val cache = new FileCache;
+    val cache = new FileCache;
 
     /** the various class path roots
      */
@@ -45,7 +50,7 @@ class ClassPath {
      */
     protected def expand(edirs: String): List[String] =
         if (edirs == null)
-        	Nil
+            Nil
         else {
             val extdirs = edirs + PATH_SEP;
             val length = extdirs.length();
@@ -58,8 +63,8 @@ class ClassPath {
                     val iter = Iterator.fromArray(new File(dirname).list());
                     val dname = if (dirname.endsWith(FILE_SEP)) dirname else dirname + FILE_SEP;
                     while (iter.hasNext) {
-                    	val entry = iter.next;
-                    	if (entry.endsWith(".jar"))
+                        val entry = iter.next;
+                        if (entry.endsWith(".jar"))
                             path = (dname + entry) :: path;
                     }
                 }
@@ -72,14 +77,14 @@ class ClassPath {
      *  of existing class file locations
      */
     protected def decompose(p: String): List[String] = {
-    	val path = if (p.endsWith(PATH_SEP)) p else p + PATH_SEP;
-    	var components: List[String] = Nil;
+        val path = if (p.endsWith(PATH_SEP)) p else p + PATH_SEP;
+        var components: List[String] = Nil;
         var i = 0;
         while (i < path.length()) {
             val j = path.indexOf(PATH_SEP, i);
             val subpath = path.substring(i, j);
             if (new File(subpath).exists())
-            	components = subpath :: components;
+                components = subpath :: components;
             i = j + 1;
         }
         components.reverse;
@@ -90,17 +95,17 @@ class ClassPath {
      *  component.
      */
     def findFile(name: String): Pair[AbstractFile, String] = {
-      	val iter = root.elements;
-      	var entry: AbstractFile = null;
-      	var continue: Boolean = true;
-      	var origin: String = null;
-      	while (continue && iter.hasNext) {
-      		origin = iter.next;
-      		entry = cache.open(origin, name);
-      		if (entry.exists)
-      			continue = false;
-      	}
-      	Pair(entry, origin)
+        val iter = root.elements;
+        var entry: AbstractFile = null;
+        var continue: Boolean = true;
+        var origin: String = null;
+        while (continue && iter.hasNext) {
+            origin = iter.next;
+            entry = cache.open(origin, name);
+            if (entry.exists)
+                continue = false;
+        }
+        Pair(entry, origin)
     }
 
     /** find file with given name in class path and return an abstract
@@ -112,64 +117,64 @@ class ClassPath {
      *  file representation.
      */
     def openClass(name: String): AbstractFile =
-    	openFile(name.replace('.', File.separatorChar) + ".class");
+        openFile(name.replace('.', File.separatorChar) + ".class");
 
     def elements: Iterator[String] = root.elements;
 
     def classes: Iterator[String] = new Iterator[String] {
-    	val todo: mutable.Stack[Pair[AbstractFile, String]] = new mutable.Stack;
-    	var iter: Iterator[String] = Iterator.empty;
-    	var file: AbstractFile = null;
-    	var path: String = null;
-    	var clazz: String = null;
+        val todo: mutable.Stack[Pair[AbstractFile, String]] = new mutable.Stack;
+        var iter: Iterator[String] = Iterator.empty;
+        var file: AbstractFile = null;
+        var path: String = null;
+        var clazz: String = null;
         root.foreach { component => {
-        	val f = cache.open(component, null);
-        	if (f.exists && f.isDirectory)
-        		todo.push(Pair(f, null));
+            val f = cache.open(component, null);
+            if (f.exists && f.isDirectory)
+                todo.push(Pair(f, null));
         }};
-    	scan;
-    	def hasNext = (clazz != null);
-    	def next =
-    		if (clazz == null)
-    			error("no next element");
-    		else {
-    			val res = clazz; scan; res
-    		};
-    	def scan: Unit = {
-    		if (!iter.hasNext) {
-    			if (todo.isEmpty)
-    				clazz = null;
-    			else {
-    				val Pair(f, p) = todo.top;
-    				todo.pop;
-    				iter = f.elements;
-    				file = f;
-    				path = if ((p != null) && p.endsWith("/"))
-            			p.substring(0, p.length() - 1) else p;
-            		scan;
-            	}
-    		} else {
-    			var continue = true;
-    			while (continue && iter.hasNext) {
-    				val g = file.open(iter.next);
-    				clazz = if (path == null) g.getName else path + "." + g.getName;
-    				if (clazz.endsWith(".class")) {
-    					clazz = clazz.substring(0, clazz.length() - 6);
-    					continue = false;
-    				} else if (g.exists && g.isDirectory)
-    					todo.push(Pair(g, clazz));
-    			}
-    			if (continue)
-    				scan;
-    		}
-    	}
+        scan;
+        def hasNext = (clazz != null);
+        def next =
+            if (clazz == null)
+                error("no next element");
+            else {
+                val res = clazz; scan; res
+            };
+        def scan: Unit = {
+            if (!iter.hasNext) {
+                if (todo.isEmpty)
+                    clazz = null;
+                else {
+                    val Pair(f, p) = todo.top;
+                    todo.pop;
+                    iter = f.elements;
+                    file = f;
+                    path = if ((p != null) && p.endsWith("/"))
+                        p.substring(0, p.length() - 1) else p;
+                    scan;
+                }
+            } else {
+                var continue = true;
+                while (continue && iter.hasNext) {
+                    val g = file.open(iter.next);
+                    clazz = if (path == null) g.getName else path + "." + g.getName;
+                    if (clazz.endsWith(".class")) {
+                        clazz = clazz.substring(0, clazz.length() - 6);
+                        continue = false;
+                    } else if (g.exists && g.isDirectory)
+                        todo.push(Pair(g, clazz));
+                }
+                if (continue)
+                    scan;
+            }
+        }
     }
 
     /** return a textual representation of this class path
      */
     override def toString() = root match {
-    	case Nil => ""
-    	case x :: Nil => x
-    	case x :: xs => xs.foldLeft(x)((s, e) => s + PATH_SEP + e);
+        case Nil => ""
+        case x :: Nil => x
+        case x :: xs => xs.foldLeft(x)((s, e) => s + PATH_SEP + e);
     }
 }

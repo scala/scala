@@ -1,7 +1,16 @@
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/
+**
+**  $Id$
+*/
+
 package scalap;
 
+
 class ByteArrayReader(content: Array[Byte]) {
-	import java.io._;
+    import java.io._;
 
     /** the buffer containing the file
      */
@@ -76,7 +85,7 @@ class ByteArrayReader(content: Array[Byte]) {
 
     /** read an UTF8 encoded string
      */
-	def nextUTF8(len: Int): String = {
+    def nextUTF8(len: Int): String = {
         val cs: Array[Char] = new Array(len);
         var i = bp;
         var j = 0;
