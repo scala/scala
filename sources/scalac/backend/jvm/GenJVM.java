@@ -1462,7 +1462,7 @@ class GenJVM {
         int offset;
         String superClassName;
         if (cSym.isInterface()) {
-            offset = baseTps[0].isSameAs(defs.ANY_TYPE) ? 1 : 0;
+            offset = baseTps[0].symbol() == defs.ANY_CLASS ? 1 : 0;
             superClassName = JAVA_LANG_OBJECT;
         } else {
             offset = 1;

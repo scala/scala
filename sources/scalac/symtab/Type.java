@@ -2757,7 +2757,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    fullname == Names.scala_AnyVal ||
 		    fullname == Names.scala_All ||
 		    fullname == Names.scala_AllRef)
-		    return Global.instance.definitions.ANY_TYPE;
+		    return TypeRef(localThisType, Global.instance.definitions.ANY_CLASS, EMPTY_ARRAY);
 		else {
 		    Type this1 = unbox();
 		    if (this1 != this) return this1;
