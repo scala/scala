@@ -41,7 +41,7 @@ Test03Servlet
   </body>
 </html>
 Test04
-ArrayBuffer(<foo></foo>, <bar>Text</bar>, <foo></foo>)
+List(<foo></foo>,<bar>Text</bar>,<foo></foo>)
 <foo></foo>
 passed ok
 passed ok

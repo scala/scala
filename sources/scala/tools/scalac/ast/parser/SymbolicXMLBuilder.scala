@@ -42,6 +42,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
   val  _append = Name.fromString("append");
   val  _plus = Name.fromString("$plus");
   val  _collection = Name.fromString("collection");
+  val  _toList = Name.fromString("toList");
   val  _xml = Name.fromString("xml");
   val  _Comment = Name.fromString("Comment");
   val  _CharData = Name.fromString("CharData");
@@ -356,7 +357,10 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
                               Predef.Array[Tree]( t ));
       }
     }
-    _buffer;//make.Block( pos, ts.toArray(), nIdent );
+
+    _buffer =  make.Select( pos, _buffer, _toList );
+
+    _buffer;
   }
 
   def makeXMLseqPat( pos:int, args:Array[Tree] ) = {
