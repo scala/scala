@@ -6,6 +6,7 @@
 ##############################################################################
 # Usage
 #
+#   make verbfilter[.clean|.distclean]
 #   make [VERBFILTER=<verbfilter-basename>] <*.tex>
 #
 ##############################################################################
@@ -38,9 +39,12 @@ JAVAC			?= javac
 # Commands
 
 all			: verbfilter
+clean			: verbfilter.clean
 distclean		: verbfilter.distclean
 
 verbfilter		: $(patsubst %.verb.tex,%.tex,$(wildcard *.verb.tex))
+
+verbfilter.clean	:
 
 verbfilter.distclean	:
 	@for file in *.verb.tex; do \
@@ -50,6 +54,8 @@ verbfilter.distclean	:
 	done
 	$(RM) $(VERBFILTER:%=%.class)
 
+.PHONY			: verbfilter
+.PHONY			: verbfilter.clean
 .PHONY			: verbfilter.distclean
 
 ##############################################################################
