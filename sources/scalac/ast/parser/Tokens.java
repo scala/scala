@@ -61,6 +61,12 @@ public interface Tokens {
         DO = 51,
         TRAIT = 52,
         SEALED = 53,
+        /* THROW = 54, */
+        TRY = 55,
+        CATCH = 56,
+        FINALLY = 57,
+        WHILE = 58,
+        RETURN = 59,
 
         /* special symbols */
         COMMA = 61,

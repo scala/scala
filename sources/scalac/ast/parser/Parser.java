@@ -153,6 +153,7 @@ public class Parser implements Tokens {
 	case SYMBOLLIT: case TRUE: case FALSE: case NULL: case IDENTIFIER:
 	case THIS: case SUPER: case IF:
 	case FOR: case NEW: case USCORE:
+	case TRY: case WHILE: case DO:
 	case LPAREN: case LBRACE:
 	    return true;
 	default:
@@ -197,6 +198,14 @@ public class Parser implements Tokens {
 
     Tree scalaDot(int pos, Name name) {
 	return make.Select(pos, make.Ident(pos, Names.scala), name);
+    }
+
+    Tree scalaRuntimeDot(int pos, Name name) {
+	return make.Select(pos, scalaDot(pos, Names.runtime), name);
+    }
+
+    Tree ScalaRunTimeDot(int pos, Name name) {
+	return make.Select(pos, scalaRuntimeDot(pos, Names.ScalaRunTime), name);
     }
 
     Tree scalaBooleanDot(int pos, Name name) {
@@ -252,6 +261,54 @@ public class Parser implements Tokens {
 	    }
 	    return make.Apply(pos, make.Select(pos, rhs, name), new Tree[]{cont});
 	}
+
+    Tree makeTry(int pos, Tree body, Tree catcher, Tree finalizer) {
+	Tree t = body;
+	if (catcher != Tree.Empty)
+	    t =
+		make.Apply(
+		    pos,
+		    make.Select(
+			pos,
+			make.Apply(
+			    pos, ScalaRunTimeDot(pos, Names.Try), new Tree[]{t}),
+			Names.Catch),
+		    new Tree[]{catcher});
+	if (finalizer != Tree.Empty)
+	    t =
+		make.Apply(
+		    pos,
+		    make.Select(
+			pos,
+			make.Apply(
+			    pos, ScalaRunTimeDot(pos, Names.Try), new Tree[]{t}),
+			Names.Finally),
+		    new Tree[]{finalizer});
+	return t;
+    }
+
+    Tree makeWhile(int pos, Tree cond, Tree body) {
+	return
+	    make.Apply(
+		pos,
+		make.Apply(
+		    pos, ScalaRunTimeDot(pos, Names.While), new Tree[]{cond}),
+		new Tree[]{body});
+    }
+
+    Tree makeDoWhile(int pos, Tree body, Tree cond) {
+	return
+	    make.Apply(
+		    pos,
+		    make.Select(
+			pos,
+			make.Apply(
+			    pos,
+			    ScalaRunTimeDot(pos, Names.Do),
+			    new Tree[]{body}),
+			Names.While),
+		    new Tree[]{cond});
+    }
 
     /** Convert tree to formal parameter list
      */
@@ -674,6 +731,9 @@ public class Parser implements Tokens {
 
     /** Expr     ::= Bindings `=>' Expr
      *             | if `(' Expr `)' Expr [[`;'] else Expr]
+     *             | try `{' block `}' [catch Expr] [finally Expr]
+     *             | while `(' Expr `)' Expr
+     *             | do Expr [`;'] while `(' Expr `)'
      *             | for `(' Enumerators `)' (do | yield) Expr
      *             | [SimpleExpr `.'] Id `=' Expr
      *             | SimpleExpr ArgumentExprs `=' Expr
@@ -696,19 +756,45 @@ public class Parser implements Tokens {
 	    } else {
 		elsep = Tree.Empty;
 	    }
-	    return make.If(pos, cond, thenp, elsep) ;
+	    return make.If(pos, cond, thenp, elsep);
+	} else if (s.token == TRY) {
+	    int pos = s.skipToken();
+	    accept(LBRACE);
+	    Tree body = block(pos);
+	    accept(RBRACE);
+	    Tree catcher = Tree.Empty;
+	    if (s.token == CATCH) {
+		s.nextToken();
+		catcher = expr();
+	    }
+	    Tree finalizer = Tree.Empty;
+	    if (s.token == FINALLY) {
+		s.nextToken();
+		finalizer = expr();
+	    }
+	    return makeTry(pos, body, catcher, finalizer);
+	} else if (s.token == WHILE) {
+	    int pos = s.skipToken();
+	    accept(LPAREN);
+	    Tree cond = expr();
+	    accept(RPAREN);
+	    Tree body = expr();
+	    return makeWhile(pos, cond, body);
+	} else if (s.token == DO) {
+	    int pos = s.skipToken();
+	    Tree body = expr();
+	    if (s.token == SEMI) s.nextToken();
+	    accept(WHILE);
+	    accept(LPAREN);
+	    Tree cond = expr();
+	    accept(RPAREN);
+	    return makeDoWhile(pos, body, cond);
 	} else if (s.token == FOR) {
 	    s.nextToken();
 	    Tree[] enums;
-	    if (s.token == LBRACE) {
-		accept(LBRACE);
-		enums = enumerators();
-		accept(RBRACE);
-	    } else {
-		accept(LPAREN);
-		enums = enumerators();
-		accept(RPAREN);
-	    }
+	    accept(LPAREN);
+	    enums = enumerators();
+	    accept(RPAREN);
 	    if (s.token == DO) {
 		return makeFor(s.skipToken(), enums, Names.foreach, Names.foreach, expr());
 	    } else if (s.token == YIELD) {

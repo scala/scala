@@ -16,7 +16,7 @@ object Test {
         System.out.print("lookup(" + key + ") = ");
         try {
             System.out.println(map.lookup(key));
-        } except {
+        } catch {
             case e => System.out.println(e.getMessage());
         }
     }

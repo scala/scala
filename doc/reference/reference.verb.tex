@@ -1527,8 +1527,7 @@ classes to arbitrary types following the definitions of
 If two types in the base class sequence of a template refer to the
 same class definition, then that definition must define a trait
 (\sref{sec:traits}), and the type that comes later in the sequence must
-conform to the type that comes first. Furthermore, a base class
-sequence may not contain two different case classes
+conform to the type that comes first. 
 \sref{sec:case-classes}.
 
 \subsection{Evaluation}
@@ -1819,79 +1818,75 @@ object; it is not possible for clients to create objects of class
 \label{sec:classes}
 
 \syntax\begin{verbatim}
-  PureDef             \=::= \= $\CLASS$ ClassDef {`,' ClassDef}
-  ClassDef            \>::= \> Id ParamSig ClassTemplate
-  ClassTemplate   \>::=\> extends Constr {with Constr} [with `{' {TemplateStat `;'} `}']
-	          \>  |\> with `{' {TemplateStat `;'} `}'
+  ClsDef          \=::=\= class ClassDef {`,' ClassDef}
+  ClassDef        \=::=\= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
+  ClassTemplate   \>::=\> extends Template
+	          \>  |\> TemplateBody
+		  \>  |\>
 \end{verbatim}
 
-The most general form of class definition is $\CLASS;c[tps](ps_1)
-\ldots (ps_m);\EXTENDS;t$. Here,
+The most general form of class definition is 
+\verb@class c[tps](ps): s extends t@.
+Here,
 \begin{itemize}
 \item[]
-$c$ is the name of the class to be defined.
+\verb@c@ is the name of the class to be defined.
 \item[]
-$tps$ is a non-empty list of type parameters of the class being
+\verb@tps@ is a non-empty list of type parameters of the class being
 defined.  The scope of a type parameter is the whole class definition,
 including the type parameter section itself.  It is illegal to define
 two type parameters with the same name.  The type parameter section
-$[tps]$ may be omitted. A class with a type parameter section is
+\verb@[tps]@ may be omitted. A class with a type parameter section is
 called {\em polymorphic}, otherwise it is called {\em monomorphic}.
-\item[] $ps_1 \commadots ps_m$ are parameter clauses for the {\em primary
-constructor} of the class. The scope of a formal parameter defined in
-section $ps_i$ includes all parameter sections $ps_j$ for $j > i$ as
-well as the statements $stats$.  It is illegal to define two formal
-parameters with the same name.  The formal
-parameter clauses are omitted for interface classes (\sref{sec:interfaces}).
-\item[] $t$ is a
+\item[] 
+\verb@ps@ is a formal parameter clause for the {\em primary
+constructor} of the class. The scope of a formal parameter includes
+the template \verb@t@.  It is illegal to define two formal parameters
+with the same name.  The formal parameter section \verb@(ps)@ may be omitted
+in which case an empty parameter section \verb@()@ is assumed.
+\item[] 
+\verb@s@ is the {\em self type} of the class. Inside the
+class, the type of \verb@this@ is assumed to be \verb@s@.  The self
+type must conform to the self types of all classes which are inherited
+by the template \verb@t@. The self type declaration \verb@:s@ may be
+omitted, in which case the self type of the class is assumed to be
+equal to \verb@c[tps]@.
+\item[] 
+\verb@t@ is a
 template (\sref{sec:templates}) of the form
-$sc;\WITH;mc_1;\WITH;\ldots;\WITH;mc_n;\WITH;(stats)$
+\verb@sc with mc$_1$ with ... with mc$_n$ { stats }@
 which defines the base classes, behavior and initial state of objects of
-the class. The extends clause $\EXTENDS;sc$ can be omitted, in which case
+the class. The extends clause \verb@extends sc with ... with mc$_n$@
+can be omitted, in which case
 \verb@extends scala.Object@ is assumed.  The class body
-$\WITH;(stats)$ may also be omitted, in which case the empty body
-$\WITH;\{\}$ is assumed.
+\verb@{stats}@ may also be omitted, in which case the empty body
+\verb@{}@ is assumed.
 \end{itemize}
-This definition is conceptually equivalent to
-\begin{itemize}
-\item[]
-A definition of a new type $c[tps]$ which is a subtype of the types of
-$sc, mc_1 \commadots mc_n$, which defines the
-members of the template $t$ and which also carries the information
-whether the class is \verb@final@, and whether it defines a case class
-(\sref{sec:datadef}).
-\item[]
-A definition of a final constructor function with signature
-\begin{verbatim}
-def c[tps](ps$_1$)$\ldots$(ps$_n$):class c[tps]  ,
-\end{verbatim}
+This class definition defines both a type \verb@c[tps]@ and a constructor
+with signature \verb@constr c[tps](ps)@
 which when applied
-initializes members of its result type by evaluating the template $t$.
-\end{itemize}
-Both the type and the constructor definition inherit any
-\verb@private@ or \verb@protected@ modifiers present in the class
-definition.
+initializes instances of \verb@c[tps]@ type by evaluating the template \verb@t@.
 
-\section{Case Classes}
-\label{sec:datadef}
+\subsection{Case Classes}
+\label{sec:case-classes}
 
 \syntax\begin{verbatim}
-  PureDef     \=::= \= $\CASE$ $\CLASS$ ClassDef {`,' ClassDef}
+  ClsDef          \=::=\= case class ClassDef {`,' ClassDef}
 \end{verbatim}
 
 If a class definition is prefixed with \verb@case@, the class is said
 to be a {\em case class}.  The primary constructor of a case class may
-be used in a constructor pattern (\sref{sec:patterns}).  Case classes
-may not have abstract members, and none of the base classes of a case
-class may be a case class. Furthermore, no type may have two different
-case classes among its basetypes.
+be used in a constructor pattern (\sref{sec:patterns}).  None of the
+base classes of a case class may be a case class. Furthermore, no type
+may have two different case classes among its basetypes.
 
-A case class definition of $c[tps](ps_1)\ldots(ps_n)$ with type
-parameters $tps$ and value parameters $(ps_1)\ldots(ps_n)$ implicitly
+A case class definition of \verb@c[tps](ps)@ with type
+parameters \verb@tps@ and value parameters \verb@ps@ implicitly
 generates the function definition
-$$\DEF;c[tps](ps_1)\ldots(ps_n): c[tps] = \NEW;c[tps](ps_1)\ldots(ps_n)
-$$
-following the class definition itself.  Also implicity defined are
+\begin{verbatim}
+def c[tps](ps): c[tps] = new c[tps](ps)
+\end{verbatim}
+together with the class definition itself.  Also implicity defined are
 accessor member definitions in the class that return its value
 parameters. Every binding \verb@x: T@ in the parameter section leads
 to a value definition of \verb@x@ that defines \verb@x@
@@ -1902,14 +1897,17 @@ The case class may not contain a directly bound member with the same
 simple name as one of its value parameters.
 
 Every case class implicitly overrides some method definitions of class
-\verb@Object@ (\sref{sec:cls-object}). In particular:
+\verb@Object@ (\sref{sec:cls-object}) unless a definition of the same
+method is already given in the case class itself or a non-abstract
+definition of the same method is given in some base class of the case
+class different from \verb@Object@. In particular:
 \begin{itemize}
-\item[] Method \verb@==@ is structural equality, where two
+\item[] Method \verb@equals@ is structural equality, where two
 instances are equal if they belong to the same class and
-have equal (wrt \verb@==@) primary constructor arguments.
+have equal (wrt \verb@equals@) primary constructor arguments.
 \item[] Method \verb@hashCode@ computes a hash-code
 depending on the data structure in a way which maps equal (wrt
-\verb@==@) values to equal hash-codes.
+\verb@equals@) values to equal hash-codes.
 \item[] Method \verb@toString@ returns a string representation which
 contains the name of the class and its primary constructor arguments.
 \end{itemize}
@@ -1918,7 +1916,7 @@ contains the name of the class and its primary constructor arguments.
 calculus:
 
 \begin{verbatim}
-class Expr
+class Expr;
 case class
   Var (x: String) extends Expr,
   Apply (f: Expr, e: Expr) extends Expr,
@@ -1929,17 +1927,16 @@ This defines a class \verb@Expr@ with case classes
 expressions could then be written as follows.
 
 \begin{verbatim}
-type Env = (String)Value;
+type Env = String => Value;
 case class Value(e: Expr, env: Env);
 
 def eval(e: Expr, env: Env): Value = e match {
   case Var (x) =>
     env(x)
-  case Apply(f, g) => {
+  case Apply(f, g) =>
     val Value(Lambda (x, e1), env1) = eval(f, env);
     val v = eval(g, env);
     eval (e1, (y => if (y == x) v else env1(y)))
-  }
   case Lambda(_, _) =>
     Value(e, env)
 }
@@ -1950,6 +1947,8 @@ It is possible to define further case classes that extend type
 \begin{verbatim}
 case class Number(x: Int) extends Expr;
 \end{verbatim}
+
+This form of extensibility can be excluded by declaring the case class \verb@sealed@; in this case, only 
 
 \section{Interface Classes}
 
@@ -1998,16 +1997,16 @@ abstract class Comparable[a] with {
   ModuleDef     \=::= \= Id [`:' Type] ClassTemplate
 \end{verbatim}
 
-A module definition is of the form $\MODULE;m;\EXTENDS;t$ where $t$ is
+A module definition is of the form \verb@\MODULE;m;\EXTENDS;t@ where \verb@t@ is
 a template (\sref{sec:templates})
-$sc;\WITH;mc_1;\WITH;\ldots;\WITH;mc_n;\WITH;(stats)$.  The extends
-clause $\EXTENDS;sc$ can be omitted, in which case
+\verb@sc;\WITH;mc_1;\WITH;\ldots;\WITH;mc_n;\WITH;(stats)@.  The extends
+clause \verb@\EXTENDS;sc@ can be omitted, in which case
 \verb@extends scala.Object@ is assumed.
-The module body $\WITH;(stats)$ may also be omitted, in which case the
-empty body $\WITH;\{\}$ is assumed.
+The module body \verb@\WITH;(stats)@ may also be omitted, in which case the
+empty body \verb@\WITH;\{\}@ is assumed.
 
 The module definition defines a single object conforming to the
-template $t$.  It is almost equivalent to a triple of a class
+template \verb@t@.  It is almost equivalent to a triple of a class
 definition,
 a type definition and a value definition that creates an object of the class:
 \begin{verbatim}
@@ -4169,8 +4168,8 @@ grammar.
   CaseClause      \>::=\> case Pattern [`if' PostfixExpr] `=>' Block 
 
   Constr          \>::=\> StableId [TypeArgs] [`(' [Exprs] `)']  
-  ConstrExpr      \>::=\> Constr 
-                  \>  |\> `{' {BlockStat `;'} Constr `}'
+  ConstrExpr      \>::=\> this [ArgumentExpr]
+                  \>  |\> `{' {BlockStat `;'} this [ArgumentExpr] `}'
 
   Pattern         \>::=\> varid `:' Type1
 	          \>  |\> `_' `:' Type1
@@ -4236,7 +4235,7 @@ grammar.
   VarDef          \>::=\> Id [`:' Type] `=' Expr
                   \>  |\> Id `:' Type `=' `_'
   FunDef          \>::=\> Id [FunTypeParamClause] {ParamClause} [`:' Type] `=' Expr
-  ConstrDef       \>::=\> Id [FunTypeParamClause] [ParamClause] [`:' Type] `=' ConstrExpr
+  ConstrDef       \>::=\> this [ParamClause] `=' ConstrExpr
   TypeDef         \>::=\> Id `=' Type
   ClsDef          \>::=\> ([case] class | trait) ClassDef {`,' ClassDef}
                   \>  |\> [case] object ObjectDef {`,' ObjectDef}

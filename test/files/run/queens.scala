@@ -21,11 +21,11 @@ object M0 {
            abs(col - p.head) != delta &&
            isSafe(col, p.tail, delta + 1));
 
-        for {
+        for (
           val placement <- placeQueens(row - 1);
           val col <- columns;
           isSafe(col, placement, 1)
-        } yield {
+        ) yield {
           col :: placement
         }
       }

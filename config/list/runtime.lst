@@ -23,14 +23,14 @@ Function9.java
 Int.java
 Long.java
 MatchError.java
-NativeMonitor.java
-NativeLoop.java
 Object.java
 Ref.java
 Short.java
 Unit.java
 
 runtime/InterpreterSupport.java
+runtime/NativeLoop.java
+runtime/NativeMonitor.java
 runtime/ResultOrException.java
 runtime/RunTime.java
 

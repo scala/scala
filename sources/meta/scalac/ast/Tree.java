@@ -102,7 +102,10 @@ public class Tree {
         n_SelectFromType = node("SelectFromType", Type, HasSym),
         n_FunType        = node("FunType"       , Type, NoSym),
         n_CompoundType   = node("CompoundType"  , Type, NoSym),
-        n_AppliedType    = node("AppliedType"   , Type, NoSym);
+        n_AppliedType    = node("AppliedType"   , Type, NoSym),
+	n_Try            = node("Try"           , Term, NoSym),
+	n_While          = node("While"         , Term, NoSym),
+	n_DoUntil        = node("DoUntil"       , Term, NoSym);
 
     public final TreeNode[] nodes;
     public int arrays;
@@ -336,6 +339,24 @@ public class Tree {
             addField(t_TypeTree, "tpe").
             addField(t_TypeTrees, "args");
 
+	n_Try.
+	    setDescription("Try Expression").
+	    setRange(Phase.PARSER, Phase.END).
+	    addField(t_TermTree, "block").
+	    addField(t_TermTree, "catcher").
+	    addField(t_TermTree, "finalizer");
+
+	n_While.
+	    setDescription("While Loop").
+	    setRange(Phase.PARSER, Phase.END).
+	    addField(t_TermTree, "cond").
+	    addField(t_TermTree, "block");
+
+	n_DoUntil.
+	    setDescription("Do-Until Loop").
+	    setRange(Phase.PARSER, Phase.END).
+	    addField(t_TermTree, "block").
+	    addField(t_TermTree, "cond");
     }
 
     //########################################################################

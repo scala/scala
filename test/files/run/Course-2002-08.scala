@@ -89,16 +89,16 @@ object M1 {
 
 object M2 {
 
-  def while(def condition: Boolean)(def command: Unit): Unit =
+  def While(def condition: Boolean)(def command: Unit): Unit =
     if (condition) {
-      command; while(condition)(command)
+      command; While(condition)(command)
     } else {
     }
 
   def power (x: Double, exp: Int): Double = {
     var r = 1.0;
     var i = exp;
-    while (i > 0) { r = r * x; i = i - 1 }
+    While (i > 0) { r = r * x; i = i - 1 }
     r
   }
 

@@ -6,7 +6,6 @@
 $colon$colon.scala
 BufferedIterator.scala
 Cell.scala
-Except.scala
 Iterable.scala
 Iterator.scala
 Labelled.scala
@@ -78,6 +77,8 @@ concurrent/SyncChannel.scala
 concurrent/SyncVar.scala
 concurrent/TIMEOUT.scala
 concurrent/ops.scala
+
+runtime/ScalaRunTime.scala
 
 xml/Element.scala
 

@@ -50,14 +50,14 @@ class Interpreter {
         }
       }
       loop;
-    } except ({
+    } catch {
       case (exception: FileNotFoundException) =>
         System.out.println("not found: " + filename);
         "";
       case (exception: IOException) =>
         System.out.println("can't read: " + filename);
         "";
-    })
+    }
   }
 
   def run(prompt: String)(process: String => Unit): Unit = {

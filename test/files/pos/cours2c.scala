@@ -32,12 +32,12 @@ object m2 {
   def average(x: Double, y: Double) = (x + y)/2;
 
   def fixedPoint(f: Double => Double, firstGuess: Double) = {
-    def try(guess: Double): Double = {
+    def Try(guess: Double): Double = {
       val next = f(guess);
       if (isCloseEnough(guess, next)) next
-      else try(next)
+      else Try(next)
     }
-    try(firstGuess);
+    Try(firstGuess);
   }
 
   def sin(x: Double): Double = x;

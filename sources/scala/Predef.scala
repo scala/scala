@@ -33,27 +33,8 @@ object Predef {
 
     def exit: scala.Unit = System.exit(0);
 
-    def synchronized[A](obj: AnyRef)(def body: A) = NativeMonitor.synchronised(obj, body);
-
-    def try[a](def block: a): Except[a] =
-        new Except(scala.runtime.ResultOrException.tryBlock(block));
-
-    def while(def cond: Boolean)(def body: Unit): Unit = NativeLoop.loopWhile(cond, body);
-        /* if (cond) {
-            body; while(cond)(body)
-        } */
-
-    trait Until {
-        def until(def condition: Boolean): Unit
-    }
-
-    def repeat(def command: Unit): Until =
-        new Until {
-            def until(def condition: Boolean): Unit = {
-                command ;
-                if (condition) {} else until(condition)
-            }
-        }
+    def synchronized[A](obj: AnyRef)(def body: A) =
+      scala.runtime.NativeMonitor.synchronised(obj, body);
 
     type Pair = Tuple2;
     def Pair[a, b](x: a, y: b) = Tuple2(x, y);

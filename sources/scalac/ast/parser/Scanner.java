@@ -115,7 +115,7 @@ public class Scanner extends TokenData {
 	    fetchToken();
 	    switch (token) {
 	    case ELSE:   case EXTENDS:  case WITH:
-	    case YIELD:  case DO:
+	    case YIELD:  case CATCH:    case FINALLY:
 	    case COMMA:  case SEMI:     case DOT:
 	    case COLON:  case EQUALS:   case ARROW:
             case LARROW: case SUBTYPE:  case SUPERTYPE:
@@ -798,6 +798,7 @@ public class Scanner extends TokenData {
 	enterKeyword("as", AS);
         enterKeyword("case", CASE);
         enterKeyword("class", CLASS);
+        enterKeyword("catch", CATCH);
         enterKeyword("constr", CONSTR);
         enterKeyword("def", DEF);
         enterKeyword("do", DO);
@@ -805,6 +806,7 @@ public class Scanner extends TokenData {
         enterKeyword("extends", EXTENDS);
 	enterKeyword("false", FALSE);
         enterKeyword("final", FINAL);
+        enterKeyword("finally", FINALLY);
         enterKeyword("for", FOR);
         enterKeyword("if", IF);
         enterKeyword("import", IMPORT);
@@ -816,15 +818,18 @@ public class Scanner extends TokenData {
         enterKeyword("package", PACKAGE);
         enterKeyword("private", PRIVATE);
         enterKeyword("protected", PROTECTED);
+        enterKeyword("return", RETURN);
         enterKeyword("sealed", SEALED);
         enterKeyword("super", SUPER);
         enterKeyword("this", THIS);
         enterKeyword("trait", TRAIT);
 	enterKeyword("true", TRUE);
+	enterKeyword("try", TRY);
         enterKeyword("type", TYPE);
         enterKeyword("val", VAL);
         enterKeyword("var", VAR);
         enterKeyword("with", WITH);
+        enterKeyword("while", WHILE);
         enterKeyword("yield", YIELD);
         enterKeyword(".", DOT);
         enterKeyword("_", USCORE);
