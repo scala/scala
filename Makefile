@@ -29,6 +29,7 @@ PROJECT_JAR_INPUTDIR	 = $(PROJECT_OUTPUTDIR)
 PROJECT_JAR_FILES	+= ch
 PROJECT_JAR_FILES	+= scala
 PROJECT_JAR_FILES	+= scalac
+PROJECT_JAR_FILES	+= scaladoc
 PROJECT_JAR_FILES	+= scalai
 
 # scala scripts wrapper
@@ -101,6 +102,9 @@ SCALADOC_ROOT		 = $(PROJECT_SOURCEDIR)/scaladoc
 SCALADOC_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scaladoc.lst)
 SCALADOC_SOURCES	+= $(SCALADOC_LIST:%=$(SCALADOC_ROOT)/%)
 SCALADOC_JC_FILES	 = $(SCALADOC_SOURCES)
+SCALADOC_RSRC_LIST	 = resources/style.css
+SCALADOC_RSRC_FILES	+= $(SCALADOC_RSRC_LIST:%=$(SCALADOC_ROOT)/%)
+SCALADOC_RSRC_OUTPUTDIR	 = $(PROJECT_OUTPUTDIR)/scaladoc
 
 # dtd2scala
 DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/dtd2scala
@@ -139,7 +143,8 @@ fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
 	$(RM) .latest-dtd2scala
-	$(RM) .latest-scaladoc
+	$(RM) .latest-scaladoc-jc
+	$(RM) .latest-scaladoc-rsrc
 	$(RM) .latest-interpreter
 	$(RM) .latest-library-sc
 	$(RM) .latest-library-jc
@@ -167,7 +172,8 @@ compiler	: .latest-compiler
 library		: .latest-library-jc
 library		: .latest-library-sc
 interpreter	: .latest-interpreter
-scaladoc	: .latest-scaladoc
+scaladoc	: .latest-scaladoc-jc
+scaladoc	: .latest-scaladoc-rsrc
 dtd2scala	: .latest-dtd2scala
 library-doc	: .latest-library-sdc
 
@@ -223,8 +229,13 @@ library-doc	: .latest-library-sdc
 	@$(make) jc target=INTERPRETER INTERPRETER_JC_FILES='$?'
 	touch $@
 
-.latest-scaladoc	: $(SCALADOC_JC_FILES)
+.latest-scaladoc-jc	: $(SCALADOC_JC_FILES)
 	@$(make) jc target=SCALADOC SCALADOC_JC_FILES='$?'
+	touch $@
+
+.latest-scaladoc-rsrc	: $(SCALADOC_RSRC_FILES)
+	$(strip $(MIRROR) -m 644 -C $(SCALADOC_ROOT) $(SCALADOC_RSRC_LIST) \
+	    $(SCALADOC_RSRC_OUTPUTDIR))
 	touch $@
 
 .latest-dtd2scala	: $(DTD2SCALA_JC_FILES)
@@ -291,7 +302,8 @@ $(PROJECT_JAR_ARCHIVE)	: .latest-compiler
 $(PROJECT_JAR_ARCHIVE)	: .latest-library-jc
 $(PROJECT_JAR_ARCHIVE)	: .latest-library-sc
 $(PROJECT_JAR_ARCHIVE)	: .latest-interpreter
-$(PROJECT_JAR_ARCHIVE)	: .latest-scaladoc
+$(PROJECT_JAR_ARCHIVE)	: .latest-scaladoc-jc
+$(PROJECT_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
 $(PROJECT_JAR_ARCHIVE)	: .latest-dtd2scala
 $(PROJECT_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=PROJECT
