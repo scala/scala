@@ -25,6 +25,8 @@ Long.java
 Object.java
 Short.java
 Unit.java
+MatchError.java
+Algebraic.java
 
 runtime/RunTime.java
 
