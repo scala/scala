@@ -116,8 +116,11 @@ class UnCurry(global: scalac_Global, descr: UnCurryPhase) extends OwnerTransform
     tree match {
       case Tree$ClassDef(_, _, tparams, vparams, tpe, impl) =>
         val clazz: Symbol = tree.symbol();
-        val it = clazz.members().iterator();
-        while (it.hasNext()) checkNoDoubleDef(clazz, it.next());
+        val elems = clazz.members().elements();
+        var i = 0; while (i < elems.length) {
+          checkNoDoubleDef(clazz, elems(i));
+          i = i + 1
+        }
         copy.ClassDef(
 	  tree, clazz, tparams,
 	  uncurry(transform(vparams, clazz)),

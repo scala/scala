@@ -234,7 +234,7 @@ public class ScopeDebugger implements Debugger {
     public void append(StringBuffer buffer, Object object) {
         Scope scope = (Scope)object;
         buffer.append('{');
-        for (Scope.SymbolIterator i = scope.iterator(true); i.hasNext();) {
+        for (Scope.SymbolIterator i = scope.iterator(); i.hasNext();) {
             Debug.append(buffer, i.next());
             if (i.hasNext()) buffer.append(',');
         }

@@ -2076,7 +2076,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** Does this type implement all symbols in scope `s' with same or stronger types?
      */
     public boolean specializes(Scope s) {
-        for (Scope.SymbolIterator it = s.iterator(true); it.hasNext();) {
+        for (Scope.SymbolIterator it = s.iterator();
+	     it.hasNext();) {
             if (!specializes(it.next())) return false;
         }
         return true;
@@ -2309,6 +2310,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     private boolean isSubScope(Scope s1, Scope s2) {
         for (Scope.SymbolIterator it = s2.iterator(); it.hasNext(); ) {
             Symbol sym2 = it.next();
+            // todo: handle overloaded
             Symbol sym1 = s1.lookup(sym2.name);
             if (sym1.kind != sym2.kind ||
                 !sym1.info().isSameAs(

@@ -227,13 +227,8 @@ public class AddInterfaces extends GenTransformer {
      */
     private Tree getClassTree(Symbol clasz, TreeList body, Map methods) {
         Scope members = clasz.nextInfo().members();
-	/*
-        for (Scope.SymbolIterator i = members.iterator(false); i.hasNext(); ) {
-	    Symbol sym = i.next();
-	    System.out.println(clasz + " defines " + sym + ":" + sym.getType());
-	}
-	*/
-        for (Scope.SymbolIterator i = members.iterator(true); i.hasNext(); ) {
+        for (Scope.SymbolIterator i = members.iterator();
+	     i.hasNext(); ) {
             Symbol member = i.next();
             if (!member.isTerm()) continue;
             body.append(getMemberTree(clasz, member, methods));

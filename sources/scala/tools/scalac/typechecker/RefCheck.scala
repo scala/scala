@@ -86,16 +86,14 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     var i = 0; while (i < closure.length) {
       val basetype = closure(i);
       val baseclazz = basetype.symbol();
-      val it = basetype.members().iterator(true);
-      while (it.hasNext()) {
-	val sym = it.next();
-	if (sym.owner() == baseclazz) checkOverride(pos, clazz, sym);
-      }
+      val it = basetype.members().iterator();
+      while (it.hasNext())
+        checkOverride(pos, clazz, it.next());
       i = i + 1
     }
 
     val parents = clazz.info().parents();
-    val it = clazz.members().iterator(true);
+    val it = clazz.members().iterator();
     while (it.hasNext()) {
       val sym = it.next();
       if ((sym.flags & OVERRIDE) != 0 && sym.owner() == clazz) {

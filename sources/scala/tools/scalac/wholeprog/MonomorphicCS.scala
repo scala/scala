@@ -353,7 +353,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 	// walk all subclasses
 	hierarchy.getInEdges(cls).foreach( (e) => {
 	  val c = hierarchy.nodes(e.from).info;
-	  val it = c.members().iterator(true);
+	  val it = c.members().iterator();
 
 	  while (it.hasNext()) {
 	    val m = it.next();

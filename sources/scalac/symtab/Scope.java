@@ -13,48 +13,9 @@ import scalac.ApplicationError;
 
 public class Scope {
 
-    public static abstract class SymbolIterator {
-	public abstract boolean hasNext();
-	public abstract Symbol next();
-    }
-
-    /** A symbol iterator that returns all alternatives of an overloaded symbol
-     *  instead of the overloaded symbol itself.
-     */
-    public static class UnloadIterator extends SymbolIterator {
-        private SymbolIterator iterator;
-        private Symbol[] alternatives;
-        private int index;
-
-        public UnloadIterator(SymbolIterator iterator) {
-            this.iterator = iterator;
-            this.alternatives = null;
-            this.index = -1;
-        }
-
-        public boolean hasNext() {
-            return index >=  0 || iterator.hasNext();
-        }
-        public Symbol next() {
-            if (index >= 0) {
-                Symbol symbol = alternatives[index++];
-                if (index == alternatives.length) {
-                    alternatives = null;
-                    index = -1;
-                }
-                return symbol;
-            } else {
-                Symbol symbol = iterator.next();
-                switch (symbol.type()) {
-                case OverloadedType(Symbol[] alts, _):
-                    alternatives = alts;
-                    index = 0;
-                    return next();
-                default:
-                    return symbol;
-                }
-            }
-        }
+    public abstract static class SymbolIterator {
+        public abstract boolean hasNext();
+        public abstract Symbol next();
     }
 
     public static class Entry {
@@ -198,6 +159,7 @@ public class Scope {
 	// assert !sym.isConstructor();
 	return enter(new Entry(sym, this));
     }
+
     public final Scope enterNoHide(Symbol sym) {
         assert lookupEntry(sym.name) == Entry.NONE:
             sym + " hides " + lookup(sym.name);
@@ -296,32 +258,44 @@ public class Scope {
 	return elemsCache;
     }
 
+    class MySymbolIterator extends SymbolIterator {
+        private Symbol[] alternatives = Symbol.EMPTY_ARRAY;
+        private int altindex = 0;
+	private int elemindex = 0;
+
+        public MySymbolIterator() {
+	    elements();
+        }
+
+        public boolean hasNext() {
+            return altindex < alternatives.length ||
+                elemindex < elemsCache.length;
+	}
+
+        public Symbol next() {
+            if (altindex < alternatives.length)
+                return alternatives[altindex++];
+            else {
+                Symbol sym = elemsCache[elemindex++];
+                switch (sym.type()) {
+                case OverloadedType(Symbol[] alts, _):
+                    alternatives = alts;
+                    altindex = 0;
+                    return next();
+                default:
+                    return sym;
+                }
+            }
+        }
+    }
+
     /** return all symbols as an iterator,
      *  in the order they were entered in this scope.
      */
-    public SymbolIterator iterator() { return new MySymbols(); }
-
-    public SymbolIterator iterator(boolean unload) {
-        SymbolIterator iterator = iterator();
-        return unload ? new UnloadIterator(iterator) : iterator;
+    public SymbolIterator iterator() {
+        return new MySymbolIterator();
     }
 
-    class MySymbols extends SymbolIterator {
-
-	private int index;
-	MySymbols() {
-	    elements();
-	    index = 0;
-	}
-
-	public boolean hasNext() {
-	    return index < elemsCache.length;
-	}
-
-	public Symbol next() {
-	    return elemsCache[index++];
-	}
-    }
 
     public String toString() {
         return new SymbolTablePrinter().printScope(this).toString();

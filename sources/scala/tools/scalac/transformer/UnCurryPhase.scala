@@ -67,10 +67,11 @@ class UnCurryPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends P
       base
     case Type$CompoundType(parents, scope) =>
       val symbol = tp.symbol();
+      // todo: why not remove all inherited alternatives here?
       if (!symbol.isClass() || symbol.isCompoundSym()) tp
       else {
         val clone = new Scope();
-        val it = scope.iterator(true);
+        val it = scope.iterator();
         while (it.hasNext()) {
           val member = it.next();
           if (!isUnaccessedConstant(member) &&

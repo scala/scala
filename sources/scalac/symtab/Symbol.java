@@ -804,10 +804,10 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Is this symbol an overloaded symbol? */
     public final boolean isOverloaded() {
-        switch (info()) {
-        case OverloadedType(_,_): return true;
-        default                 : return false;
-        }
+        Type tp = rawInfo();
+        return
+            tp instanceof Type.OverloadedType ||
+            tp instanceof LazyOverloadedType;
     }
 
     /** Does this symbol denote a label? */
@@ -981,21 +981,6 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Symbol constructorClass() {
         return this;
-    }
-
-    /** Return first alternative if this has a (possibly lazy)
-     *  overloaded type, otherwise symbol itself.
-     *  Needed in ClassSymbol.primaryConstructor() and in UnPickle.
-     */
-    public Symbol firstAlternative() {
-        if (infos == null)
-            return this;
-        else if (infos.info instanceof Type.OverloadedType)
-            return infos.info.alternativeSymbols()[0];
-        else if (infos.info instanceof LazyOverloadedType)
-            return ((LazyOverloadedType) infos.info).sym1.firstAlternative();
-        else
-            return this;
     }
 
     /**
@@ -1519,25 +1504,27 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Overloading and Overriding -------------------------------------------
 
+    /** Return first alternative if this has a (possibly lazy)
+     *  overloaded type, otherwise symbol itself.
+     *  Needed in ClassSymbol.primaryConstructor() and in UnPickle.
+     */
+    public Symbol firstAlternative() {
+        if (infos == null)
+            return this;
+        else if (infos.info instanceof Type.OverloadedType) {
+            Symbol result = infos.info.alternativeSymbols()[0];
+            assert !result.isOverloaded();
+            return result;
+        } else if (infos.info instanceof LazyOverloadedType)
+            return ((LazyOverloadedType) infos.info).sym1.firstAlternative();
+        else
+            return this;
+    }
+
     /** Add another overloaded alternative to this symbol.
      */
     public Symbol overloadWith(Symbol that) {
-        assert isTerm() : Debug.show(this);
-        assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
-        //assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
-        assert this.isConstructor() == that.isConstructor();
-        int overflags;
-	//if (this.owner == that.owner)
-	    overflags = (this.flags & that.flags &
-			 (JAVA | ACCESSFLAGS | DEFERRED | PARAM | SYNTHETIC)) |
-		((this.flags | that.flags) & ACCESSOR);
-	// else // it's an inherited overloaded alternative
-	//    overflags = this.flags & SOURCEFLAGS;
-        Symbol overloaded = (this.isConstructor())
-            ? this.constructorClass().newConstructor(this.constructorClass().pos, overflags)
-            : owner.newTerm(pos, overflags, name, 0);
-        overloaded.setInfo(new LazyOverloadedType(this, that));
-        return overloaded;
+	throw new ApplicationError("overloadWith inapplicable for " + this);
     }
 
     /** A lazy type which, when forced computed the overloaded type
@@ -1743,6 +1730,26 @@ class TermSymbol extends Symbol {
         return new TermSymbol(owner, pos, flags, name, attrs);
     }
 
+    /** Add another overloaded alternative to this symbol.
+     */
+    public Symbol overloadWith(Symbol that) {
+        assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
+        //assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
+        assert this.isConstructor() == that.isConstructor();
+
+        int overflags;
+	//if (this.owner == that.owner)
+	    overflags = (this.flags & that.flags &
+			 (JAVA | ACCESSFLAGS | DEFERRED | PARAM | SYNTHETIC)) |
+		((this.flags | that.flags) & ACCESSOR);
+	// else // it's an inherited overloaded alternative
+	//    overflags = this.flags & SOURCEFLAGS;
+        Symbol overloaded = (this.isConstructor())
+            ? this.constructorClass().newConstructor(this.constructorClass().pos, overflags)
+            : owner().newTerm(pos, overflags, name, 0);
+        overloaded.setInfo(new LazyOverloadedType(this, that));
+        return overloaded;
+    }
 }
 
 /** A class for constructor symbols */
@@ -2110,24 +2117,24 @@ public class ClassSymbol extends TypeSymbol {
         Scope.SymbolIterator it = info().members().iterator();
         Symbol sym = null;
         if ((flags & JAVA) == 0) {
-			for (int i = 0; i <= index; i++) {
-				do {
-					sym = it.next();
-				} while (sym.kind != VAL || (sym.flags & CASEACCESSOR) == 0 || !sym.isMethod());
-			}
-			//System.out.println(this + ", case field[" + index + "] = " + sym);//DEBUG
-		} else {
-			sym = it.next();
-			while ((sym.flags & SYNTHETIC) == 0) {
-			    //System.out.println("skipping " + sym);
-			    sym = it.next();
-			}
-			for (int i = 0; i < index; i++)
-				sym = it.next();
-			//System.out.println("field accessor = " + sym);//DEBUG
-		}
-		assert sym != null : this;
-		return sym;
+            for (int i = 0; i <= index; i++) {
+                do {
+                    sym = it.next();
+                } while (sym != NONE && sym.kind != VAL || (sym.flags & CASEACCESSOR) == 0 || !sym.isMethod());
+            }
+            //System.out.println(this + ", case field[" + index + "] = " + sym);//DEBUG
+        } else {
+            sym = it.next();
+            while (sym != NONE && (sym.flags & SYNTHETIC) == 0) {
+                //System.out.println("skipping " + sym);
+                sym = it.next();
+            }
+            for (int i = 0; i < index; i++)
+                sym = it.next();
+            //System.out.println("field accessor = " + sym);//DEBUG
+        }
+        assert sym != null : this;
+        return sym;
     }
 
     public final Symbol rebindSym() {

@@ -90,7 +90,8 @@ public class SymbolCloner {
     /** Clones the given scope but not the type of its members. */
     public Scope cloneScopeWithoutTypes(Scope scope) {
         Scope clone = new Scope();
-        for (Scope.SymbolIterator i = scope.iterator(true); i.hasNext(); ) {
+        for (Scope.SymbolIterator i = scope.iterator();
+	     i.hasNext(); ) {
             clone.enterOrOverload(cloneSymbolWithoutType(i.next()));
         }
         return clone;
@@ -114,7 +115,8 @@ public class SymbolCloner {
     /** Clones the given scope and the type of its members. */
     public Scope cloneScope(Scope scope) {
         Scope clone = cloneScopeWithoutTypes(scope);
-        for (Scope.SymbolIterator i = scope.iterator(true); i.hasNext(); ) {
+        for (Scope.SymbolIterator i = scope.iterator();
+	     i.hasNext(); ) {
             Symbol member = i.next();
             member.setType(cloneType(member.info()));
         }

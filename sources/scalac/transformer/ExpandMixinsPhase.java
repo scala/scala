@@ -394,7 +394,8 @@ public class ExpandMixinsPhase extends Phase {
 
         private void createMixedInMemberSymbols(Scope symbols) {
             Scope scope = clasz.members();
-            for (SymbolIterator i = symbols.iterator(true); i.hasNext();) {
+            for (SymbolIterator i = symbols.iterator();
+		 i.hasNext();) {
                 Symbol member = i.next();
                 boolean shadowed = member.isPrivate() || member.isInitializer()
                     || member.overridingSymbol(clasz.thisType()) != member;

@@ -49,7 +49,7 @@ public class AddInterfacesPhase extends Phase {
             Scope newMembers = new Scope();
 
             Scope.SymbolIterator oldMembersIt =
-                new Scope.UnloadIterator(tp.members().iterator());
+                tp.members().iterator();
             while (oldMembersIt.hasNext()) {
                 Symbol member = oldMembersIt.next();
 
@@ -186,7 +186,7 @@ public class AddInterfacesPhase extends Phase {
             // Clone all members, entering them in the class scope.
             Scope classMembers = new Scope();
             Scope.SymbolIterator ifaceMembersIt =
-                new Scope.UnloadIterator(ifaceSym.members().iterator());
+                ifaceSym.members().iterator();
             while (ifaceMembersIt.hasNext()) {
                 Symbol ifaceMemberSym = ifaceMembersIt.next();
 

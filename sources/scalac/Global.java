@@ -377,6 +377,7 @@ public abstract class Global {
         while (currentPhase.next != null && reporter.errors() == 0) {
             currentPhase = currentPhase.next;
             start();
+            // System.out.println("*** " + currentPhase.descriptor.description() + " ***");
             // !!! new scalac.checkers.SymbolChecker(this).check();
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());

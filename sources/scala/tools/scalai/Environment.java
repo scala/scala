@@ -228,7 +228,7 @@ public class Environment {
 
     private void loadTemplateOverrides(Symbol symbol) {
         Type[] bases = symbol.parents();
-        SymbolIterator i = symbol.members().iterator(true);
+        SymbolIterator i = symbol.members().iterator();
         while (i.hasNext()) loadMethodOverride(bases, i.next());
     }
 

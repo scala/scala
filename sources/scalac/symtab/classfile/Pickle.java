@@ -133,9 +133,10 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
                     if (sym.isModuleClass()) putSymbol(sym.sourceModule());
 		    putType(sym.typeOfThis());
 		    putSymbol(sym.allConstructors());
-		    for (Scope.SymbolIterator it = sym.members().iterator();
-			 it.hasNext();)
-			putSymbol(it.next());
+                    Symbol[] elems = sym.members().elements();
+                    for (int i = 0; i < elems.length; i++)
+                        putSymbol(elems[i]);
+
 		    break;
 		case VAL:
 		    putType(sym.removeInheritedOverloaded(sym.info()));

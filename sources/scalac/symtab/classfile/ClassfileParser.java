@@ -165,7 +165,7 @@ public class ClassfileParser implements ClassfileConstants {
             if (m.isJava() && superclass.isJava()) {
                 Symbol mclass = m.moduleClass();
                 SymbolIterator i = superclass.linkedModule().moduleClass()
-                    .members().iterator(true);
+                    .members().iterator();
                 outer:
                 while (i.hasNext()) {
                     Symbol member = i.next();
@@ -190,8 +190,9 @@ public class ClassfileParser implements ClassfileConstants {
 
     private void addInheritedOverloaded() {
         Symbol[] elems = c.members().elements();
-        for (int i = 0; i < elems.length; i++)
+        for (int i = 0; i < elems.length; i++) {
             addInheritedOverloaded(elems[i]);
+        }
     }
 
     private void addInheritedOverloaded(Symbol sym) {

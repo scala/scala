@@ -634,7 +634,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
     if (symbol != null) {
       val global: scalac_Global  = scalac_Global.instance;
       if (global.currentPhase.id > global.PHASE.EXPLICITOUTER.id()) {
-        val i: Scope$SymbolIterator = symbol.members().iterator(true);
+        val i: Scope$SymbolIterator = symbol.members().iterator();
         while (i.hasNext()) {
           val member: Symbol = i.next();
           if (member.isTypeAlias() || member.isAbstractType())

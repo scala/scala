@@ -790,7 +790,7 @@ final class TypeCreator {
 	if (clazz.isModuleClass() && staticType != null) {
 	    syms2staticTypes.put(clazz, staticType);
 	}
-	for (Scope.SymbolIterator syms = clazz.members().iterator(true);
+	for (Scope.SymbolIterator syms = clazz.members().iterator();
 	     syms.hasNext(); )
 	    {
 		Symbol member = syms.next();
@@ -815,7 +815,8 @@ final class TypeCreator {
 	    ifaces.removeAll(getInterfacesOf(svper));
 	    for (Iterator i = ifaces.iterator(); i.hasNext(); ) {
 		Symbol iface = (Symbol)i.next();
-		for (Scope.SymbolIterator members = iface.members().iterator(true);
+		for (Scope.SymbolIterator members =
+			 iface.members().iterator();
 		     members.hasNext(); )
 		    {
 			Symbol method = members.next();

@@ -1850,7 +1850,7 @@ public abstract class HTMLGenerator {
 		// look for a member in the scope that has a tag
 		// @label with the given label
 		Scope scope = sym.moduleClass().members();
-		SymbolIterator it  = scope.iterator(true);
+		SymbolIterator it  = scope.iterator();
 		while (it.hasNext()) {
 		    Symbol member = (Symbol) it.next();
 		    Tag[] tags = getComment(member).tags;

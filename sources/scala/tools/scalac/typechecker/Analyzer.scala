@@ -1927,11 +1927,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     val templ1: Tree$Template = copy.Template(templ, parents, body1);
     templ1.setType(owner.getType());
     // initialize all members; necessary to initialize overloaded symbols
-    val members = owner.members().iterator(false);
-    while (members.hasNext()) {
-      val sym = members.next();
+    val members: Array[Symbol] = owner.members().elements();
+    var i = 0; while (i < members.length) {
+      val sym = members(i);
       sym.initialize();
       //System.out.println(owner.toString() + " defines " + sym + ":" + sym.getType());//DEBUG
+      i = i + 1
     }
     templ1
   }

@@ -1317,7 +1317,7 @@ class GenJVM {
                                                 JClass.NO_INTERFACES,
                                                 ctx.sourceFileName);
         Scope.SymbolIterator memberIt =
-            new Scope.UnloadIterator(cSym.members().iterator());
+            cSym.members().iterator();
         while (memberIt.hasNext()) {
             Symbol member = memberIt.next();
             if (!member.isMethod() || member.isInitializer())
@@ -1701,7 +1701,7 @@ class GenJVM {
     protected void addValueClassMembers(Context ctx, Tree.ClassDef cDef) {
         Symbol cSym = cDef.symbol();
         Scope.SymbolIterator memberIt =
-            new Scope.UnloadIterator(cSym.members().iterator());
+            cSym.members().iterator();
         while (memberIt.hasNext()) {
             Symbol member = memberIt.next();
             if (member.isTerm() && !member.isMethod())
@@ -1722,7 +1722,7 @@ class GenJVM {
             Phase bkpCurrent = global.currentPhase;
             global.currentPhase = refCheckPhase;
             Scope.SymbolIterator memberIt =
-                new Scope.UnloadIterator(iSym.members().iterator());
+                iSym.members().iterator();
             while (memberIt.hasNext()) {
                 Symbol member = memberIt.next();
                 if (member.isTerm() && !member.isMethod() && member.isPrivate())

@@ -100,7 +100,8 @@ public class TypesAsValuesPhase extends Phase {
         if (newSymbols == null) {
             newSymbols = new HashMap();
 
-            Scope.SymbolIterator membersIt = classSym.members().iterator(true);
+            Scope.SymbolIterator membersIt =
+		classSym.members().iterator();
             while (membersIt.hasNext()) {
                 Symbol member = membersIt.next();
                 if (member.isType() /*&& !member.isClass()*/) {
