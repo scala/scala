@@ -1,0 +1,84 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
+package scala.io;
+
+/** convenience methods to encode line and column number in one
+ *  single integer. The encode line (column)
+ * numbers range from 0 to LINE_MASK (COLUMN_MASK), where 0 indicates
+ * that the line (column) is the undefined and 1 represents the first
+ * line (column). Line (Column) numbers greater than LINE_MASK
+ * (COLUMN_MASK) are replaced by LINE_MASK (COLUMN_MASK). Furthermore,
+ * if the encoded line number is LINE_MASK, the column number is
+ * always set to 0.
+
+ * The following properties hold:
+ * - the undefined position is 0: encode(0,0) == 0
+ * - encodings are non-negative : encode(line,column) >= 0
+ * - position order is preserved:
+ *   (line1 < line2) || (line1 == line2 && column1 < column2)
+ * implies
+ *   encode(line1,column1) <= encode(line2,column2)
+ *  @author Burak Emir (translated from work by Matthias Zengers and others)
+ */
+object Position {
+
+  /** Number of bits used to encode the line number */
+  final val LINE_BITS   = 20;
+  /** Number of bits used to encode the column number */
+  final val COLUMN_BITS = 31 - LINE_BITS; // no negatives => 31
+
+  /** Mask to decode the line number */
+  final val LINE_MASK   = (1 << LINE_BITS) - 1;
+  /** Mask to decode the column number */
+  final val COLUMN_MASK = (1 << COLUMN_BITS) - 1;
+
+  /** The undefined position */
+  final val NOPOS       = 0;
+
+  /** The first position in a source file */
+  final val FIRSTPOS    = encode(1, 1);
+
+    //########################################################################
+    // Public Functions
+
+  /** Encodes a position into a single integer. */
+  final def encode(line: Int, column: Int): Int = {
+    var line1, column1 = 0;
+    if( line < 0 )
+      error(line+" < 0");
+    if(( line == 0 )&&(column != 0))
+      error(line+","+column+" not allowed");
+    if( column < 0 )
+      error(line+","+column+" not allowed");
+
+    if (line >= LINE_MASK) { line1 = LINE_MASK; column1 = 0; }
+    if (column > COLUMN_MASK) column1 = COLUMN_MASK;
+    (line1 << COLUMN_BITS) | column1;
+  }
+
+  /** Returns the line number of the encoded position. */
+  final def line(pos: Int): Int = {
+    (pos >> COLUMN_BITS) & LINE_MASK;
+  }
+
+  /** Returns the column number of the encoded position. */
+  final def column(pos: Int): Int = {
+    pos & COLUMN_MASK;
+  }
+
+  /** Returns a string representation of the encoded position. */
+  def toString(pos: Int): String = {
+    val sb = new StringBuffer();
+    sb.append(line(pos));
+    sb.append(':');
+    sb.append(column(pos));
+    sb.toString();
+  }
+}
