@@ -181,11 +181,6 @@ public class Autom2Scala  {
 	  return gen.ValDef( sym, init );
       }
 
-    Tree _scala() {
-	return gen.Ident(pos, defs.SCALA );
-    }
-
-
       /** `<switchResult>'
        */
       public Tree _swres() { return gen.Ident( pos, resultSym );}
