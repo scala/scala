@@ -915,8 +915,10 @@ class Parser(unit: Unit) {
           val pos1 = s.skipToken();
           if (s.token == IDENTIFIER && s.name == Names.STAR) {
             s.nextToken();
+            /*
             if( s.token != RPAREN )
               syntaxError(s.pos, " escaping sequences only allowed for last argument", true);
+            */
             t = make.Typed(
               pos, t, make.Ident(pos1, TypeNames.WILDCARD_STAR));
           } else {
@@ -992,7 +994,7 @@ class Parser(unit: Unit) {
            SYMBOLLIT | TRUE | FALSE | NULL =>
         t = literal(false);
       case IDENTIFIER | THIS | SUPER =>
-        t = if( s.name == LT ) {
+        t = if(( s.name == LT )&&( unit.global.xmlMarkup )) {
           xmlExprTop();  /* top-level xml expression */
         } else {
           stableRef(true, false);
@@ -1053,7 +1055,11 @@ class Parser(unit: Unit) {
   def xmlExprTop():Tree = {
     val pos = s.pos;
     var t = xmlExpr();
+    //Console.println("old:"+token2string( s.token ) );
+    s.token = EMPTY;
     s.nextToken();
+    //Console.println("new:"+token2string( s.token ) );
+    //Console.println("line:"+s.cline);
     if(( s.token == IDENTIFIER ) && ( s.name == LT ))  {
       val ts = new myTreeList();
       ts.append( t );
@@ -1323,7 +1329,7 @@ class Parser(unit: Unit) {
     case IDENTIFIER | THIS =>
       if (s.name == BAR) {
         make.Sequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
-      } else if (s.name == LT) {
+      } else if(( s.name == LT )&&( unit.global.xmlMarkup )) {
         xmlPatternTop()
       } else {
         var t = stableId();
@@ -1378,7 +1384,7 @@ class Parser(unit: Unit) {
       endch match {
         case '"' | '\'' => {
           s.nextch();
-          attrValue = s.xmlValue( endch );
+          attrValue = s.xmlAttribValue( endch );
           s.xmlToken( endch.asInstanceOf[char] );
           s.xmlSpaceOpt();
         }
@@ -1420,19 +1426,23 @@ class Parser(unit: Unit) {
         s.ch match {
           case '<' => {                                  /* tag */
             s.nextch();
-            if( s.ch != '/' ) { /* search end tag */
-              ts.append( xmlExpr() );
-	      s.xmlSpaceOpt();
-            } else {
-              exit = true
+            s.ch match {
+              case '/' => exit = true;
+              case '!' =>
+                s.xmlComment();
+              case _ =>
+                /* search end tag */
+                ts.append( xmlExpr() );
+	        s.xmlSpaceOpt();
             }
           }
+
           case '{' => {                                 /* Scala block */
             while( s.ch == '{' ) {
               s.nextToken();
               s.nextToken();
               val bs = new myTreeList();
-              val b = block( s.pos );
+              val b = expr(true,false); //block( s.pos );
               if( s.token != RBRACE ) {
                 s.xml_syntaxError(" expected end of Scala block");
               }
@@ -1447,7 +1457,6 @@ class Parser(unit: Unit) {
         }
       }
       xmlEndTag( elemName );
-      s.xmlSpaceOpt();
       if( attrMap.isEmpty )
 	makeXML( pos, elemName, ts.toArray() );
       else

@@ -663,37 +663,29 @@ class Scanner(_unit: Unit) extends TokenData {
 
   def xml_syntaxError(s:String) = {
     syntaxError("in XML literal: "+s);
-    nextch();
+    xml_nextch();
   }
 
-  /* this helper functions updates ccol and cline, only necessary in whitespace
-  *  production
+  /* this helper functions updates ccol and cline
   */
   def xml_nextch() = {
-    try {
-      nextch();
-    } catch {
-      case e:ArrayIndexOutOfBoundsException =>  {
-        token = EOF;
-        syntaxError(lastpos, "unclosed XML literal");
-        throw new ApplicationError("unclosed XML literal");
-      }
-    }
+    nextch();
     ch match {
-      case '\r' => {
+      case SU => syntaxError(lastpos, "unclosed XML literal"); token = EOF;
+      case CR =>
         cline = cline + 1;
         ccol = 0;
         nextch(); /* in compliance with XML spec */
-        if( ch == '\n' ) {
+        if( ch == LF ) {
           ccol = 0;
         }
-      }
-      case '\n' => {
+      case LF => {
         cline = cline + 1;
         ccol = 0;
       }
       case _ =>
     }
+    pos = Position.encode(cline, ccol);
   }
 
   def xml_isSpace() = ch match {
@@ -705,7 +697,6 @@ class Scanner(_unit: Unit) extends TokenData {
     while( xml_isSpace() ) {
       xml_nextch();
     }
-    pos = Position.encode(cline, ccol);
   }
 
   /** [3] S ::= (#x20 | #x9 | #xD | #xA)+
@@ -715,7 +706,6 @@ class Scanner(_unit: Unit) extends TokenData {
       xml_nextch();
       xmlSpaceOpt()
     } else {
-      pos = Position.encode(cline, ccol);
       xml_syntaxError("whitespace expected");
     }
   }
@@ -752,9 +742,8 @@ class Scanner(_unit: Unit) extends TokenData {
     if( xml_isNameStart() ) {
       val index = bp;
       while( xml_isNameChar() ) {
-        nextch();
+        xml_nextch();
       }
-      pos = Position.encode(cline, ccol);
       Name.fromAscii(buf, index, bp - index);
     } else {
       xml_syntaxError("name expected");
@@ -762,28 +751,46 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  def xmlValue(endch:char):String = {
+  /* consuming everything up to the next endch */
+  def xmlValue(endch:char):String = xmlValue(endch, true);
+
+  def xmlValue(endch:char, keep:boolean):String = {
     lastpos = pos;
     val index = bp;
-    while ( ch != endch ) {
-      if(( ch == '<' )||( ch == '&' )) {
-	pos = Position.encode(cline, ccol);
-        xml_syntaxError(ch.asInstanceOf[char]+" not allowed here");
-      }
-      xml_nextch();
-    };
-    pos = Position.encode(cline, ccol);
-    new String(buf, index, bp-index);
+    while ( ch != endch ) { xml_nextch();};
+    pos = Position.encode( cline, ccol );
+    if( keep )
+      new String(buf, index, bp-index);
+    else
+      null
+  }
+
+  def xmlAttribValue(endch:char):String = {
+    val s = xmlValue(endch, true);
+    if( s.indexOf('<') != -1 ) {
+        xml_syntaxError("'<' not allowed in attrib value");
+        "--syntax error--"
+    } else {
+      s
+    }
   }
 
   def xmlText():String = xmlValue('<');
 
+  def xmlComment() = {
+    xmlToken('!');
+    xmlToken('-');
+    xmlToken('-');
+    xmlValue('-', false);
+    xmlToken('-');
+    xmlToken('-');
+    xmlToken('>');
+  };
+
   def xmlToken(that:char):unit = {
     if( ch == that ) {
       xml_nextch();
-      pos = Position.encode(cline, ccol);
     } else {
-      pos = Position.encode(cline, ccol);
       xml_syntaxError("'"+that+"' expected instead of '"+ch.asInstanceOf[char]+"'");
     }
   }
