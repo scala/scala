@@ -41,7 +41,7 @@ public class Main {
             global.stop("total");
             global.reporter.printSummary();
         }
-        System.exit((reporter.errors() > 0) ? 1 : 0);
+        // System.exit((reporter.errors() > 0) ? 1 : 0);
     }
 
     //########################################################################

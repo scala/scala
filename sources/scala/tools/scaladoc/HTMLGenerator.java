@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Stack;
+import java.util.regex.*;
 
 import ch.epfl.lamp.util.XMLAttribute;
 import ch.epfl.lamp.util.HTMLPrinter;
@@ -210,6 +211,8 @@ public class HTMLGenerator {
     protected String stylesheet;
     protected boolean noindex;
     protected boolean validate;
+    protected boolean launchServer;
+    protected int port;
 
     /**
      * HTML pages may be generated recursively,
@@ -260,6 +263,13 @@ public class HTMLGenerator {
         this.stylesheet = args.stylesheet.value;
         this.noindex = args.noindex.value;
         this.validate = args.validate.value;
+        this.launchServer = args.server.value;
+        try {
+            this.port = Integer.parseInt(args.port.value);
+        }
+        catch (NumberFormatException e) {
+            this.port = 1280;
+        }
         Symbol[] packages = getPackages(args.packages);
         final DocSyms docSyms = new DocSyms(global, packages);
         this.isDocumented = new SymbolBooleanFunction() {
@@ -275,8 +285,12 @@ public class HTMLGenerator {
 
     /** Relative URL of the definition of the given symbol.
      */
-    protected String definitionURL(Symbol sym) {
+    protected String definitionURL(Symbol sym, Page page) {
         return page.rel(Location.get(sym));
+    }
+
+    protected String definitionURL(Symbol sym) {
+        return definitionURL(sym, page);
     }
 
     /** Get the list pf packages to be documented.
@@ -400,6 +414,22 @@ public class HTMLGenerator {
 
         // script
         createResource(HTMLPrinter.DEFAULT_JAVASCRIPT, null);
+
+        // launch HTTP server
+        if (launchServer) {
+            Servlet servlet = new ScaladocServlet();
+            Servlet[] servlets = new Servlet[]{ servlet };
+            //	File directory = new File(global.outpath);
+            try {
+                HTTPServer webServer = new HTTPServer(directory, port, servlets);
+                webServer.start();
+            }
+            catch (IOException e) {
+                System.out.println("Server could not start because of an "
+                                   + e.getClass());
+                System.out.println(e);
+            }
+        }
     }
 
     /**
@@ -508,10 +538,71 @@ public class HTMLGenerator {
      *
      * @param attrs
      */
-    protected void addDocumentationTitle(XMLAttribute[] attrs) {
+    protected void addDocumentationTitle(XMLAttribute[] attrs, Page page) {
         page.printlnOTag("div", attrs).indent();
         page.println(doctitle).undent();
         page.printlnCTag("div");
+    }
+
+    protected void addDocumentationTitle(XMLAttribute[] attrs) {
+        addDocumentationTitle(attrs, page);
+    }
+
+    /**
+     * Add a text field for searching symbols to the current page.
+     */
+    protected void addSearchSection(Page page) {
+        page.printlnOTag("table").indent();
+        page.printlnOTag("tr").indent();
+	page.printlnOTag("form", new XMLAttribute[] {
+                             new XMLAttribute("action", "/" + SERVLET_NAME),
+                             new XMLAttribute("method", "get") }).indent();
+        // by name
+	page.printlnSTag("input", new XMLAttribute[] {
+                             new XMLAttribute("type", "radio"),
+                             new XMLAttribute("checked", "true"),
+                             new XMLAttribute("name", "searchKind"),
+                             new XMLAttribute("id", "byName"),
+                             new XMLAttribute("value", "byName")
+                         });
+        page.println("by name");
+        // by comment
+	page.printlnSTag("input", new XMLAttribute[] {
+                             new XMLAttribute("type", "radio"),
+                             new XMLAttribute("name", "searchKind"),
+                             new XMLAttribute("id", "byComment"),
+                             new XMLAttribute("value", "byComment")
+                         });
+        page.println("by comment");
+        // by type
+	page.printlnSTag("input", new XMLAttribute[] {
+                             new XMLAttribute("type", "radio"),
+                             new XMLAttribute("name", "searchKind"),
+                             new XMLAttribute("id", "byType"),
+                             new XMLAttribute("value", "byType")
+                         });
+        page.println("by type");
+        // Text field
+	page.printlnSTag("input", new XMLAttribute[] {
+                             new XMLAttribute("name", "searchString"),
+                             new XMLAttribute("id", "word"),
+                             new XMLAttribute("size", "25"),
+                             new XMLAttribute("maxlength", "30"),
+                             new XMLAttribute("type", "text"),
+                         });
+        // Button
+	page.printlnSTag("input", new XMLAttribute[] {
+                             new XMLAttribute("type", "submit"),
+                             new XMLAttribute("value", "submit"),
+                         });
+        page.undent();
+	page.printlnCTag("form").undent();
+	page.printlnCTag("tr").undent();
+	page.printlnCTag("table");
+    }
+
+    protected void addSearchSection() {
+        addSearchSection(page);
     }
 
     /**
@@ -519,7 +610,7 @@ public class HTMLGenerator {
      *
      * @param sym
      */
-    protected void addNavigationBar(int navigationContext) {
+    protected void addNavigationBar(int navigationContext, Page page) {
 	try {
 	    String overviewLink = page.rel(ROOT_PAGE);
 	    String indexLink    = page.rel(INDEX_PAGE);
@@ -558,13 +649,19 @@ public class HTMLGenerator {
 
 	    page.undent();
 	    page.printlnCTag("tr").undent();
+            if (launchServer) {
+                page.printlnOTag("tr").indent();
+                addSearchSection(page);
+                page.undent();
+                page.printlnCTag("tr");
+            }
 	    page.printlnCTag("table").undent();
 	    page.printlnCTag("td");
 
 	    // product & version
 	    page.printlnOTag("td", ATTRS_NAVIGATION_PRODUCT).indent();
 	    addDocumentationTitle(new XMLAttribute[]{
-		new XMLAttribute("class", "doctitle")});
+                                      new XMLAttribute("class", "doctitle")}, page);
 	    page.undent();
 	    page.printlnCTag("td").undent();
 
@@ -575,6 +672,10 @@ public class HTMLGenerator {
 	    page.printlnCTag("tr").undent();
 	    page.printlnCTag("table");
 	} catch(Exception e) { throw Debug.abort(e); }
+    }
+
+    protected void addNavigationBar(int navigationContext) {
+        addNavigationBar(navigationContext, page);
     }
 
     /**
@@ -1272,15 +1373,19 @@ public class HTMLGenerator {
      * Adds to the current page an hyperlinked path leading to a given
      * symbol (including itself).
      */
-    protected void printPath(Symbol sym, String destinationFrame) {
+    protected void printPath(Symbol sym, String destinationFrame, Page page) {
 	sym = sym.isModuleClass() ? sym.module() : sym;
 	String name = removeHtmlSuffix(Location.getURI(sym).toString());
 	if (isDocumented.apply(sym)) {
-	    String target = definitionURL(sym);
+	    String target = definitionURL(sym, page);
 	    page.printlnAhref(target, destinationFrame, name);
 	}
 	else
 	    page.println(name);
+    }
+
+    protected void printPath(Symbol sym, String destinationFrame) {
+        printPath(sym, destinationFrame, page);
     }
 
     /**
@@ -1288,7 +1393,7 @@ public class HTMLGenerator {
      *
      * @param symbol
      */
-    protected void addIndexEntry(Symbol symbol) {
+    protected void addIndexEntry(Symbol symbol, Page page, SymbolTablePrinter symtab) {
 	// kind
 	String keyword = symtab.getSymbolKeywordForDoc(symbol);
 
@@ -1298,8 +1403,12 @@ public class HTMLGenerator {
 	// owner
 	if (!symbol.isRoot()) {
 	    page.print(" in ");
-	    printPath(symbol.owner(), SELF_FRAME);
+	    printPath(symbol.owner(), SELF_FRAME, page);
 	}
+    }
+
+    protected void addIndexEntry(Symbol symbol) {
+        addIndexEntry(symbol, page, symtab);
     }
 
     /**
@@ -1577,4 +1686,96 @@ public class HTMLGenerator {
 	*/
 	return Symbol.NONE;
     }
+
+    public static String SERVLET_NAME = "scaladocServlet";
+
+    public class ScaladocServlet extends Servlet {
+
+        public String name() {
+            return SERVLET_NAME;
+        }
+
+        public void apply(Map req, Writer out) {
+            // create page
+            String pagename = "query-page";
+            URI uri = Location.makeURI(pagename + ".html");
+            String destinationFrame = SELF_FRAME;
+            String title = pagename;
+
+            final Page page = new Page(out, uri, destinationFrame,
+                                 title, representation,
+                                 stylesheet/*, script*/);
+            page.open();
+            page.printHeader(ATTRS_META, getGenerator());
+            page.printOpenBody();
+            addNavigationBar(INDEX_NAV_CONTEXT, page);
+            page.printlnHLine();
+
+            // create symbol printer
+            final SymbolTablePrinter symtab =
+                SymbolTablePrinterFactory.makeHTML(page, isDocumented);
+
+            // analyze the request
+            String searchKind = (String) req.get("searchKind");
+            String searchString = (String) req.get("searchString");
+
+            if (searchKind.equals("byName")) {
+                String regexp = searchString;
+                final Pattern p = Pattern.compile(regexp);
+
+                page.printlnOTag("dl").indent();
+                ScalaSearch.foreach(global.definitions.ROOT,
+                                    new ScalaSearch.SymFun() {
+                                        public void apply(Symbol sym) {
+                                            String name = sym.nameString();
+                                            Matcher m = p.matcher(name);
+                                            if (m.find()) {
+                                                page.printOTag("dt");
+                                                addIndexEntry(sym, page, symtab);
+                                                page.printlnCTag("dt");
+                                                page.printlnTag("dd", firstSentence(getComment(sym)));
+                                            }
+                                        }
+                                    },
+                                    isDocumented);
+                page.undent().printlnCTag("dl");
+            }
+            else if (searchKind.equals("byComment")) {
+                String regexp = searchString;
+                final Pattern p = Pattern.compile(regexp);
+
+                page.printlnOTag("dl").indent();
+                ScalaSearch.foreach(global.definitions.ROOT,
+                                    new ScalaSearch.SymFun() {
+                                        public void apply(Symbol sym) {
+                                            Pair c = (Pair) global.mapSymbolComment.get(sym);
+                                            if (c != null) {
+                                                String comment = (String) c.fst;
+                                                Matcher m = p.matcher(comment);
+                                                if (m.find()) {
+                                                    page.printOTag("dt");
+                                                    addIndexEntry(sym, page, symtab);
+                                                    page.printlnCTag("dt");
+                                                    page.printlnTag("dd", firstSentence(getComment(sym)));
+                                                }
+                                            }
+                                        }
+                                    },
+                                    isDocumented);
+                page.undent().printlnCTag("dl");
+            }
+            else if (searchKind.equals("byType")) {
+                //                page.println("Sorry: search by type not yet implemented !");
+                page.println("You are searching for symbols with type: ");
+                symtab.printType(ScalaSearch.typeOfString(searchString, global));
+            }
+
+            // close page
+            page.printlnHLine();
+            addNavigationBar(INDEX_NAV_CONTEXT, page);
+            page.printFootpage();
+            page.close();
+        }
+    }
+
 }

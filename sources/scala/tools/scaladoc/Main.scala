@@ -35,7 +35,7 @@ object Main {
       global.stop("total");
       global.reporter.printSummary();
     }
-    System.exit(if (reporter.errors() > 0) 1 else 0);
+    // System.exit(if (reporter.errors() > 0) 1 else 0);
   }
 
 }

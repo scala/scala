@@ -40,6 +40,9 @@ public class HTMLGeneratorCommand extends CompilerCommand {
     public final StringOptionParser stylesheet;
     public final StringOptionParser windowtitle;
 
+    public final BooleanOptionParser server;
+    public final StringOptionParser port;
+
     public final BooleanOptionParser noindex;
     public final BooleanOptionParser validate;
 
@@ -118,6 +121,17 @@ public class HTMLGeneratorCommand extends CompilerCommand {
             "text",
             HTMLGenerator.DEFAULT_WINDOWTITLE);
 
+        this.server = new BooleanOptionParser(this,
+            "server",
+            "Launch an HTTP server for interactive search",
+            false);
+
+        this.port = new StringOptionParser(this,
+	    "port",
+            "Port number for the HTTP server",
+            "port",
+            "1280");
+
         this.noindex = new BooleanOptionParser(this,
             "noindex",
             "Do not generate index",
@@ -166,7 +180,9 @@ public class HTMLGeneratorCommand extends CompilerCommand {
         add(8, doctype);
         add(9, docencoding);
         add(10, validate);
-        add(11, packages);
+        add(11, server);
+        add(12, port);
+        add(13, packages);
     }
 
     //########################################################################
