@@ -454,6 +454,34 @@ scala_info() {
 }
 
 ##############################################################################
+# Implementation of scala
+
+# Returns true if the given arguments contain a Xbootclasspath: flag.
+scala_has_bootclasspath() {
+    while [ $# != 0 ]; do
+        case "$1" in
+            -Xbootclasspath:* ) return 0;;
+            -cp | -classpath  ) shift 2;;
+            -jar              ) return 1;;
+            -*                ) shift 1;;
+            *                 ) return 1;;
+        esac;
+    done;
+    return 1;
+}
+
+# Entry point of scala-info.
+scala() {
+    compute_variable EXEC;
+    if scala_has_bootclasspath "$@"; then
+        $EXEC java "$@";
+    else
+        compute_variable RUNTIME_CLASSES;
+        $EXEC java "-Xbootclasspath/a:$RUNTIME_CLASSES" "$@";
+    fi;
+}
+
+##############################################################################
 # Definition of UNAME, SOURCE, SCRIPT, PREFIX and VERSION
 
 unset SCRIPT;
@@ -489,6 +517,7 @@ unset JAVA_CLASSPATH;
 configure;
 
 case "$SCRIPT" in
+    scala      ) scala "$@";;
     scala-info ) scala_info "$@";;
     scalac*    ) exec_compile scalac.Main "$@";;
     scaladoc*  ) exec_compile scala.tools.scaladoc.Main "$@";;
