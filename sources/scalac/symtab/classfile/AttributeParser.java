@@ -143,7 +143,7 @@ public class AttributeParser implements ClassfileConstants {
             case CONSTANT_VALUE_ATTR:
             	Object constVal = pool.readPool(in.nextChar());
             	//System.out.println(sym.owner() + "." + sym + ": " + constVal + " of type " + constantType(type, constVal));
-            	sym.setFirstInfo(constantType(type, constVal));
+            	sym.setFirstInfo(parser.make.constantType(type, constVal));
                 return;
             case META_ATTR:
                 //System.out.println("parsing meta data for " + sym);
@@ -167,53 +167,6 @@ public class AttributeParser implements ClassfileConstants {
         }
     }
 
-    /** return the constant type for the given constant.
-     */
-    Type constantType(Type base, Object value) {
-        return Type.constantType(constantValue(base, value));
-    }
-    AConstant constantValue(Type base, Object value) {
-        if (base.symbol() == parser.global.definitions.BOOLEAN_CLASS)
-            return AConstant.BOOLEAN(((Number)value).intValue() != 0);
-        if (base.symbol() == parser.global.definitions.BYTE_CLASS)
-            return AConstant.BYTE(((Number)value).byteValue());
-        if (base.symbol() == parser.global.definitions.SHORT_CLASS)
-            return AConstant.SHORT(((Number)value).shortValue());
-        if (base.symbol() == parser.global.definitions.CHAR_CLASS)
-            return AConstant.CHAR((char)((Number)value).intValue());
-        if (base.symbol() == parser.global.definitions.INT_CLASS)
-            return AConstant.INT(((Number)value).intValue());
-        if (base.symbol() == parser.global.definitions.LONG_CLASS)
-            return AConstant.LONG(((Number)value).longValue());
-        if (base.symbol() == parser.global.definitions.FLOAT_CLASS)
-            return AConstant.FLOAT(((Number)value).floatValue());
-        if (base.symbol() == parser.global.definitions.DOUBLE_CLASS)
-            return AConstant.DOUBLE(((Number)value).doubleValue());
-        if (base.symbol() == parser.global.definitions.JAVA_STRING_CLASS)
-            return AConstant.STRING((String)value);
-    	throw Debug.abort("illegal value", value + " - " + base);
-    }
-
-    /** return the type of a given constant.
-     */
-    Type typeOfValue(Object value) {
-    	if (value instanceof Character)
-            return parser.make.charType();
-        else if (value instanceof Integer)
-            return parser.make.intType();
-        else if (value instanceof Long)
-            return parser.make.longType();
-        else if (value instanceof Float)
-            return parser.make.floatType();
-        else if (value instanceof Double)
-            return parser.make.doubleType();
-        else if (value instanceof String)
-            return parser.global.definitions.JAVA_STRING_CLASS.typeConstructor();
-        else if (value instanceof Boolean)
-            return parser.make.booleanType();
-        else
-        	throw new ApplicationError("unknown constant type");
-    }
 
     Scope tvars = new Scope();
 

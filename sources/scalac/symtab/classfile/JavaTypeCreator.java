@@ -9,7 +9,9 @@
 package scalac.symtab.classfile;
 
 import ch.epfl.lamp.util.Position;
-import scalac.util.*;
+import scalac.atree.AConstant;
+import scalac.util.Debug;
+import scalac.util.Name;
 import scalac.symtab.*;
 import Type.*;
 
@@ -114,4 +116,54 @@ public class JavaTypeCreator implements JavaTypeFactory {
     public Type packageType(Name packagename) {
         return null;
     }
+
+    /** return the constant type for the given constant.
+     */
+    public Type constantType(Type base, Object value) {
+        return Type.constantType(constantValue(base, value));
+    }
+
+    private AConstant constantValue(Type base, Object value) {
+        if (base.symbol() == definitions.BOOLEAN_CLASS)
+            return AConstant.BOOLEAN(((Number)value).intValue() != 0);
+        if (base.symbol() == definitions.BYTE_CLASS)
+            return AConstant.BYTE(((Number)value).byteValue());
+        if (base.symbol() == definitions.SHORT_CLASS)
+            return AConstant.SHORT(((Number)value).shortValue());
+        if (base.symbol() == definitions.CHAR_CLASS)
+            return AConstant.CHAR((char)((Number)value).intValue());
+        if (base.symbol() == definitions.INT_CLASS)
+            return AConstant.INT(((Number)value).intValue());
+        if (base.symbol() == definitions.LONG_CLASS)
+            return AConstant.LONG(((Number)value).longValue());
+        if (base.symbol() == definitions.FLOAT_CLASS)
+            return AConstant.FLOAT(((Number)value).floatValue());
+        if (base.symbol() == definitions.DOUBLE_CLASS)
+            return AConstant.DOUBLE(((Number)value).doubleValue());
+        if (base.symbol() == definitions.JAVA_STRING_CLASS)
+            return AConstant.STRING((String)value);
+    	throw Debug.abort("illegal value", value + " - " + base);
+    }
+
+    /** return the type of a given constant.
+     */
+    public Type typeOfValue(Object value) {
+    	if (value instanceof Character)
+            return charType();
+        else if (value instanceof Integer)
+            return intType();
+        else if (value instanceof Long)
+            return longType();
+        else if (value instanceof Float)
+            return floatType();
+        else if (value instanceof Double)
+            return doubleType();
+        else if (value instanceof String)
+            return definitions.JAVA_STRING_CLASS.typeConstructor();
+        else if (value instanceof Boolean)
+            return booleanType();
+        else
+	    throw Debug.abort("unknown constant type", value.getClass());
+    }
+
 }
