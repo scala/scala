@@ -391,7 +391,11 @@ class GenJVM {
 
                 funSym.owner().info(); // [HACK] ensure that flags are
                                        // transformed.
-                if (funSym.owner().isInterface())
+
+                // [HACK] in reality isSuperCall should never be true
+                // is the owner is an interface, but this is a quick
+                // fix before ExpandMixins is fixed.
+                if (funSym.owner().isInterface() && !isSuperCall)
                     ctx.code.emitINVOKEINTERFACE(clsName, mthName, funType);
                 else {
                     if (isConstrCall || isSuperCall) {
