@@ -3,7 +3,7 @@ package examples;
 object iterators {
 
   def printArray(xs: Array[Double]) =
-    Iterator.fromArray(xs) foreach (x => System.out.println(x));
+    Iterator.fromArray(xs) foreach { x => Console.println(x) };
 
   def findGreater(xs: Array[Double], limit: Double) =
     Iterator.fromArray(xs)
@@ -15,7 +15,8 @@ object iterators {
     val ar = Array[Double](6, 2, 8, 5, 1);
     printArray(ar);
     Console.println("Elements greater than 3.0:");
-    findGreater(ar, 3.0) foreach { x => Console.println(ar(x)); }
+    findGreater(ar, 3.0) foreach { x => Console.println(ar(x)) }
   }
 
 }
+
