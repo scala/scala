@@ -157,6 +157,7 @@ DATE			?= date
 NICE			?= nice
 ZIP			?= zip
 UNIX2DOS		?= unix2dos
+XARGS			?= xargs
 
 PICO			?= pico
 PICO_FLAGS		+= -make -source 1.4
@@ -202,6 +203,12 @@ distclean	: clean
 	$(RM) $(PROJECT_JAR_ARCHIVE)
 	$(RM) $(ROOT)/support/latex/*.class
 
+fixcvs		:
+	$(strip \
+	    $(FIND) . -type f -perm +a=x | \
+	    $(GREP) -v '.*/bin/.*' | \
+	    $(XARGS) -r $(CHMOD) a-x)
+
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 meta		: .latest-meta
 runtime		: .latest-runtime
@@ -213,6 +220,7 @@ library		: .latest-library
 .PHONY		: force
 .PHONY		: clean
 .PHONY		: distclean
+.PHONY		: fixcvs
 .PHONY		: scripts
 .PHONY		: meta
 .PHONY		: runtime
