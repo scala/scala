@@ -37,7 +37,6 @@ package scala.tools.scala4ant {
 	val nargs = new Array[ String ]( args.length - 1 );
 	var j = 0;
 	for( val  i <- List.range( 0, args.length ) ) {
-          Console.println( "args[ "+i+" ] = "+args(i));
 	    if( !args( i ).startsWith("-g") ) {
 		//System.err.print( args[ i ] +" ")
 		nargs( j ) = args( i );
