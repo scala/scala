@@ -141,7 +141,7 @@ trait Map[A, B] with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, 
      */
     def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2;
 
-    private class MapTo(key: A) {
+    class MapTo(key: A) {
         def ->(value: B): Unit = update(key, value);
     }
 }
