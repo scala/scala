@@ -41,6 +41,8 @@
 ##############################################################################
 # Defaults
 
+CYGWIN_PATH		?= $(1)
+CYGWIN_FILE		?= $(1)
 JAR			?= jar
 
 ##############################################################################
@@ -58,9 +60,9 @@ jar_FILES		 = $(call JAR_LOOKUP,JAR_FILES)
 # Command
 
 jar			+= c$(jar_FLAGS)f$(jar_MANIFEST:%=m)
-jar			+= $(jar_ARCHIVE)
-jar			+= $(jar_MANIFEST)
-jar			+= $(jar_FILES:%=$(jar_inputdir) %)
+jar			+= $(jar_ARCHIVE:%=$(call CYGWIN_FILE,%))
+jar			+= $(jar_MANIFEST:%=$(call CYGWIN_FILE,%))
+jar			+= $(jar_FILES:%=$(jar_inputdir) $(call CYGWIN_FILE,%))
 
 ##############################################################################
 # Functions
