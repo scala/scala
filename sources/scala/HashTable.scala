@@ -21,6 +21,10 @@ abstract class HashTable[A] {
      */
    	protected val initialSize: Int = 16;
 
+   	/** The initial threshold
+   	 */
+   	protected val initialThreshold: Int = ((initialSize as Float) * loadFactor) as Int;
+
     /** The actual hash table.
      */
   	protected var table: Array[List[Entry]] = new Array(initialSize);
@@ -32,7 +36,7 @@ abstract class HashTable[A] {
 
     /** The next size value at which to resize (capacity * load factor).
      */
-    protected var threshold: Int = ((initialSize as Float) * loadFactor) as Int;
+    protected var threshold: Int = initialThreshold;
 
     /** Returns the size of this hash map.
      */
