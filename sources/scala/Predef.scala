@@ -205,7 +205,8 @@ object Predef {
         }
         if (res != 0) res
         else if (i < xs.length) 1
-        else -1
+        else if (i < ys.length) -1
+        else 0
       case _ =>
         -(that compareTo xs)
     }
