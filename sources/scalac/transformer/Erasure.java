@@ -132,7 +132,7 @@ public class Erasure extends Transformer implements Modifiers {
 
 	case AbsTypeDef(_, _, _, _):
 	case AliasTypeDef(_, _, _, _):
-	    // eliminate
+	    // eliminate // !!!
 	    return Tree.Empty;
 
         case LabelDef(_, Ident[] params, Tree body):
@@ -140,17 +140,10 @@ public class Erasure extends Transformer implements Modifiers {
             body = transform(body, label.nextType().resultType());
 	    return gen.LabelDef(label, Tree.symbolOf(params), body);
 
-        case Block(_):
-            return transform(tree, tree.type().fullErasure()); // !!!
-
 	case Assign(Tree lhs, Tree rhs):
 	    lhs = transform(lhs);
 	    rhs = transform(rhs, lhs.type);
 	    return gen.Assign(tree.pos, lhs, rhs);
-
-	case If(_, _, _):
-        case Switch(_, _, _, _):
-            return transform(tree, tree.type().fullErasure()); // !!!
 
 	case Return(Tree expr):
             Symbol method = tree.symbol();
@@ -195,21 +188,23 @@ public class Erasure extends Transformer implements Modifiers {
             fun = transform(fun);
             vargs = transform(vargs);
             switch (fun) {
-            case Select(Tree qualifier, _):
-                if (!hasBoxing(qualifier)) break;
+            case Select(Apply(Tree bfun, Tree[] bargs), _):
+                Symbol bsym = bfun.symbol();
+                if (primitives.getPrimitive(bsym) != Primitive.BOX) break;
+                assert bargs.length == 1: fun;
                 switch (primitives.getPrimitive(fun.symbol())) {
                 case LENGTH:
                     assert vargs.length == 0: tree;
-                    Tree array = removeBoxing(qualifier);
+                    Tree array = bargs[0];
                     return genUnboxedArrayLength(tree.pos, array);
                 case APPLY:
                     assert vargs.length == 1: tree;
-                    Tree array = removeBoxing(qualifier);
+                    Tree array = bargs[0];
                     Tree index = vargs[0];
                     return genUnboxedArrayGet(tree.pos, array, index);
                 case UPDATE:
                     assert vargs.length == 2: tree;
-                    Tree array = removeBoxing(qualifier);
+                    Tree array = bargs[0];
                     Tree index = vargs[0];
                     Tree value = vargs[1];
                     return genUnboxedArraySet(tree.pos, array, index, value);
@@ -235,8 +230,13 @@ public class Erasure extends Transformer implements Modifiers {
 	    if (symbol == definitions.ZERO) return gen.mkNullLit(tree.pos);
             return gen.Ident(tree.pos, symbol);
 
-        case Literal(_):
-	    return tree.setType(tree.type().erasure()); // !!!
+        case Literal(Object value):
+	    return gen.mkLit(tree.pos, value);
+
+        case Block(_):
+	case If(_, _, _):
+        case Switch(_, _, _, _):
+            return transform(tree, tree.type().fullErasure());
 
         case Bad():
         case ModuleDef(_, _, _, _):
@@ -295,14 +295,11 @@ public class Erasure extends Transformer implements Modifiers {
             return gen.Switch(tree.pos, test, tags, bodies, otherwise, pt);
 
         case Return(_):
-            // !!!
             Tree value = transform(gen.mkDefaultValue(tree.pos, pt), pt);
             return gen.mkBlock(new Tree[] {transform(tree), value});
 
 	case Typed(Tree expr, _): // !!!
 	    return transform(expr, pt);
-
-            // !!! case Return(_):
 
         case LabelDef(_, _, _):
 	case Assign(_, _):
@@ -496,28 +493,6 @@ public class Erasure extends Transformer implements Modifiers {
 //////////////////////////////////////////////////////////////////////////////////
 // Box/Unbox and Coercions
 /////////////////////////////////////////////////////////////////////////////////
-    private boolean hasBoxing(Tree tree) {
-        switch (tree) {
-        case Apply(Tree fun, _):
-            return primitives.getPrimitive(fun.symbol()) == Primitive.BOX;
-        default:
-            return false;
-        }
-    }
-
-    /**
-     * Return the unboxed version of the given tree.
-     */
-    private Tree removeBoxing(Tree tree) {
-        switch (tree) {
-        case Apply(Tree fun, Tree[] args):
-            assert primitives.getPrimitive(fun.symbol())==Primitive.BOX: tree;
-            assert args.length == 1: tree;
-            return args[0];
-        default:
-            throw Debug.abort("illegal case", tree);
-        }
-    }
 
     private boolean isUnboxedType(Type type) {
 	switch (type) {
@@ -578,14 +553,10 @@ public class Erasure extends Transformer implements Modifiers {
      *  `{ tree ; scala.RunTime.box() }' if type of `tree' is `void'.
      */
     Tree box(Tree tree) {
-	Tree boxtree = gen.mkRef(tree.pos, primitives.RUNTIME_TYPE, boxSym(tree.type));
-	switch (tree.type) {
-	case UnboxedType(int kind):
-	    if (kind == TypeTags.UNIT)
-		return gen.Block(
-		    tree.pos, new Tree[]{tree, gen.Apply(boxtree, new Tree[0])});
-	}
-	return gen.Apply(boxtree, new Tree[]{tree});
+	Tree boxtree = gen.mkRef(tree.pos, boxSym(tree.type()));
+        return tree.type().equals(UNBOXED_UNIT)
+            ? gen.Block(new Tree[]{tree, gen.mkApply__(boxtree)})
+            : gen.mkApply_V(boxtree, new Tree[]{tree});
     }
 
     /** The symbol of the unbox method corresponding to unboxed type`unboxedtp'
@@ -597,16 +568,13 @@ public class Erasure extends Transformer implements Modifiers {
     /** Emit tree.asType() or tree.asTypeArray(), where pt = Type or pt = Type[].
      */
     Tree unbox(Tree tree, Type pt) {
-	Tree sel = gen.Select(tree, unboxSym(pt));
-	return gen.Apply(sel, new Tree[0]);
+	return gen.mkApply__(gen.Select(tree, unboxSym(pt)));
     }
 
     /** Generate a select from an unboxed type.
      */
     public Tree unboxedSelect(Tree qual, Symbol sym) {
-	return make.Select(qual.pos, qual, sym.name)
-	    .setSymbol(sym)
-            .setType(Type.singleType(boxedType(qual.type).symbol().thisType(),sym).erasure());
+	return gen.Select(qual, sym);
     }
 
     /** Subclass relation for class types; empty for other types.
@@ -664,14 +632,7 @@ public class Erasure extends Transformer implements Modifiers {
 	} else if ((isUnboxedArray(tree.type)
                     || (tree.type.symbol() == definitions.ANY_CLASS))
                    && isUnboxedArray(pt)) {
-	    return
-		make.Apply(tree.pos,
-		    make.TypeApply(tree.pos,
-			unboxedSelect(tree, definitions.AS),
-			new Tree[]{gen.mkType(tree.pos, pt)})
-		    .setType(new Type.MethodType(Symbol.EMPTY_ARRAY, pt)),
-                   new Tree[0])
-		.setType(pt);
+	    return gen.mkAsInstanceOf(tree, pt);
 	} else if (!isUnboxed(tree.type) && isUnboxed(pt)) {
 	    if (isBoxed(tree.type)) {
 		return coerce(unbox(tree, pt), pt);
@@ -683,17 +644,10 @@ public class Erasure extends Transformer implements Modifiers {
 		return cast(coerce(tree, bt), pt);
 	    }
 	} else if (isUnboxed(tree.type) && isUnboxed(pt)) {
-	    return gen.Apply(
-		unboxedSelect(box(tree), unboxSym(pt)),
-		new Tree[0]);
+	    return gen.mkApply__(gen.Select(box(tree), unboxSym(pt)));
 	} else if (!isUnboxed(tree.type) && !isUnboxed(pt) ||
 		   isUnboxedArray(tree.type) && isUnboxedArray(pt)) {
-	    return
-		gen.Apply(
-		    gen.TypeApply(
-			gen.Select(tree, definitions.AS),
-			new Tree[]{gen.mkType(tree.pos, pt)}),
-		    new Tree[0]);
+	    return gen.mkAsInstanceOf(tree, pt);
 	} else {
 	    throw Debug.abort("cannot cast " + tree.type + " to " + pt);
 	}
