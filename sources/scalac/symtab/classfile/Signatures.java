@@ -168,7 +168,7 @@ public class Signatures {
 
     /** Signals the given error. */
     private void error(String error) {
-        global.error("class file '" + in.path + "': " + error);
+        global.error("class file '" + in.file + "': " + error);
     }
 
     //########################################################################

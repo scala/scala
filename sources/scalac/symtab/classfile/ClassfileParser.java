@@ -77,7 +77,7 @@ public class ClassfileParser implements ClassfileConstants {
         try {
             int magic = in.nextInt();
             if (magic != JAVA_MAGIC)
-                throw new IOException("class file '" + in.path + "' "
+                throw new IOException("class file '" + in.file + "' "
                     + "has wrong magic number 0x" + Integer.toHexString(magic)
                     + ", should be 0x" + Integer.toHexString(JAVA_MAGIC));
             int minorVersion = in.nextChar();
@@ -85,7 +85,7 @@ public class ClassfileParser implements ClassfileConstants {
             if ((majorVersion < JAVA_MAJOR_VERSION) ||
                 ((majorVersion == JAVA_MAJOR_VERSION) &&
                  (minorVersion < JAVA_MINOR_VERSION)))
-                throw new IOException("class file '" + in.path + "' "
+                throw new IOException("class file '" + in.file + "' "
                     + "has unknown version "
                     + majorVersion + "." + minorVersion
                     + ", should be less than "
@@ -96,12 +96,12 @@ public class ClassfileParser implements ClassfileConstants {
             int flags = in.nextChar();
             Symbol clasz = pool.getClass(in.nextChar());
             if (c != clasz)
-                throw new IOException("class file '" + in.path + "' "
+                throw new IOException("class file '" + in.file + "' "
                     + "contains wrong class " + clasz.staticType());
             new ClassfileParser(global, in, c, make, pool).parse(flags);
         } catch (RuntimeException e) {
             if (global.debug) e.printStackTrace();
-            throw new IOException("class file '" + in.path + "' is broken");
+            throw new IOException("class file '" + in.file + "' is broken");
         }
     }
 
