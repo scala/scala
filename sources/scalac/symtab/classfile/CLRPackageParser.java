@@ -36,9 +36,11 @@ import scalac.symtab.Scope;
 import scalac.symtab.SymbolNameWriter;
 
 import ch.epfl.lamp.compiler.msil.*;
+
 /**
+ * Collects all types from all reference assemblies.
  */
-public class CLRPackageParser {
+public final class CLRPackageParser {
 
     //##########################################################################
 
@@ -80,9 +82,12 @@ public class CLRPackageParser {
 
     private final SymbolNameWriter snw = new SymbolNameWriter();
 
-    private Type[] types;
+    private final Type[] types;
+
+    private final CompilerCommand args;
 
     private CLRPackageParser(CompilerCommand args) {
+	this.args = args;
 	scala.tools.util.ClassPath.addFilesInPath(
             assemrefs, args.assemrefs.value);
 	Assembly mscorlib = findAssembly("mscorlib.dll");
@@ -140,8 +145,8 @@ public class CLRPackageParser {
 
     //##########################################################################
 
-    private java.util.Map syms2members = new HashMap();
-    private java.util.Map members2syms = new HashMap();
+    private final Map syms2members = new HashMap();
+    private final Map members2syms = new HashMap();
 
     public Type[] getTypes() { return types; }
 
@@ -172,10 +177,10 @@ public class CLRPackageParser {
     // assembly loading methods
 
     // a list of all loaded assemblies
-    protected final java.util.List assemblies = new LinkedList();
+    private final List assemblies = new LinkedList();
 
     // a set of all directories and assembly files
-    protected final Set/*<File>*/ assemrefs = new LinkedHashSet();
+    private final Set/*<File>*/ assemrefs = new LinkedHashSet();
 
     /** Load the assembly with the given name
      */
@@ -215,8 +220,9 @@ public class CLRPackageParser {
 		return assem;
 	    }
 	}
-	System.err.println("Cannot find assembly " + name
-			   + "; use the -r option to specify its location");
+	//the Global instance is not yet constructed; use the Reporter from args
+	args.reporter().error(null, "cannot find assembly " + name +
+			      "; use the -r option to specify its location");
 	throw Debug.abort();
     }
 
@@ -252,7 +258,7 @@ public class CLRPackageParser {
 	"scala.Long", "scala.MatchError", "scala.Ref", "scala.ScalaObject",
 	"scala.Short", "scala.Type", "scala.Unit", "scala.runtime.NativeLoop",
 	"scala.runtime.ResultOrException", "scala.runtime.RunTime",
-	"java.lang.Object", "java.lang.String", "java.lang.CharSequence",
+	"java.lang.String", "java.lang.CharSequence",
 	"java.lang.StringBuffer", "java.lang.Byte", "java.lang.Float",
 	"java.lang.Double", "java.lang.Cloneable"
     };
@@ -294,10 +300,9 @@ public class CLRPackageParser {
 	     i++)
 	{
 	    Type type = types[i];
-	    if (BANNED_TYPES.contains(type.FullName)) {
-		//System.out.println("Skipping CLR type " + type);
-		continue;
-	    }
+ 	    if (BANNED_TYPES.contains(type.FullName)) {
+ 		continue;
+ 	    }
 	    int k = type.FullName.indexOf(".", nl);
 	    if (k < 0) {
 		typesMap.put(type.Name, type);
@@ -328,6 +333,10 @@ public class CLRPackageParser {
 	return BANNED_TYPES.contains(fullname);
     }
 
+    boolean shouldLoadClassfile(Symbol sym) {
+	return BANNED_TYPES.contains(snw.toString(sym));
+    }
+
     /** Imports a CLR type in a scala package (only called from PackageParser)
      */
     void importType(Type type, Symbol pakage, Scope members) {
@@ -349,8 +358,9 @@ public class CLRPackageParser {
 		break;
 	    }
 	}
-	SymbolLoader loader = symtab == null ? completer()
-	    : new SymblParser(Global.instance, symtab);
+	SymbolLoader loader = symtab != null
+	    ? new SymblParser(Global.instance, symtab)
+	    : new CLRClassParser(Global.instance, type);
 
 	Name classname = Name.fromString(type.Name).toTypeName();
 	Symbol clazz =
@@ -359,14 +369,6 @@ public class CLRPackageParser {
 	map(clazz, type);
 // 	map(clazz, moduleType != null ? moduleType : type);
     }
-
-    private CLRClassParser completer;
-    private CLRClassParser completer() {
-	if (completer == null)
-	    completer = new CLRClassParser(Global.instance, this);
-	return completer;
-    }
-
 
     //##########################################################################
 } // CLRPackageParser
