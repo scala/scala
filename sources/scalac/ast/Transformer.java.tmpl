@@ -140,8 +140,12 @@ public class GenTransformer {
         case DefDef(_, _, _, _, _, Tree rhs):
             return gen.DefDef(tree.symbol(), transform(rhs));
 
-        // case AbsTypeDef(_, _, Tree rhs, Tree lobound):
-        // case AliasTypeDef(_, _, AbsTypeDef[] tparams, Tree rhs):
+        case AbsTypeDef(_, _, _, _):
+            return gen.AbsTypeDef(tree.symbol());
+
+        case AliasTypeDef(_, _, _, _):
+            return gen.AliasTypeDef(tree.symbol());
+
         // case Import(Tree expr, Name[] selectors):
         // case CaseDef(Tree pat, Tree guard, Tree body):
         // case Template(Tree[] parents, Tree[] body):
