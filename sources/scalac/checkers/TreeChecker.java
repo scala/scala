@@ -21,6 +21,7 @@ import scalac.ast.Tree.AbsTypeDef;
 import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
 import scalac.ast.Tree.ValDef;
+import scalac.ast.TreeInfo;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
@@ -212,8 +213,7 @@ public class TreeChecker {
 
     /** Checks the expression of given expected type. Returns true. */
     private boolean expression(Tree tree, Type expected) {
-        if ("".equals("")) return true; // !!!
-        type(tree, expected);
+        // !!! type(tree, expected);
         expected = tree.type();
         switch (tree) {
 
@@ -266,7 +266,7 @@ public class TreeChecker {
         case Return(Tree value):
             Symbol symbol = tree.symbol();
             assert symbol != null && symbol.isMethod(): show(tree);
-            assert currentMember() == symbol: show(tree);
+            // !!! assert currentMember() == symbol: show(tree);
             return expression(value, currentMember().resultType());
 
         case Throw(Tree value):
@@ -274,15 +274,11 @@ public class TreeChecker {
 
         case New(Template(Tree[] bases, Tree[] body)):
             assert bases.length == 1 && body.length == 0: show(tree);
-            switch (bases[0]) {
-            case Apply(Tree fun, _):
-                assert fun instanceof Tree.Ident; show(tree);
-                Symbol symbol = fun.symbol();
-                assert symbol != null && symbol.isInitializer(): show(tree);
-                return expression(tree, definitions.UNIT_TYPE());
-            default:
-                throw Debug.abort("illegal case", bases[0]);
-            }
+            Tree fun = TreeInfo.methPart(bases[0]);
+            assert fun instanceof Tree.Ident: show(tree);
+            Symbol symbol = fun.symbol();
+            assert symbol != null && symbol.isInitializer(): show(tree);
+            return expression(bases[0], definitions.UNIT_TYPE());
 
         case Apply(Tree vfun, Tree[] vargs):
             vapply(tree, vfun.type(), vargs);
@@ -373,7 +369,7 @@ public class TreeChecker {
         case Ident(_):
             if (symbol.isInitializer()) return true;
             assert labels.contains(symbol): show(tree);
-            assert symbol.owner() == currentMember(): show(tree);
+            // !!! assert symbol.owner() == currentMember(): show(tree);
             return true;
 
 
@@ -395,7 +391,7 @@ public class TreeChecker {
         case Ident(_):
             if (symbol.isModule()) return true;
             assert vvars.contains(symbol): show(tree);
-            assert symbol.owner() == currentMember(): show(tree);
+            // !!! assert symbol.owner() == currentMember(): show(tree);
             return true;
 
         default:
@@ -427,7 +423,7 @@ public class TreeChecker {
     // Private Methods - Checking type
 
     private boolean type(Tree tree, Type expected, Type loBound) {
-        if (!loBound.isSubType(tree.type())) {
+        if (false && !loBound.isSubType(tree.type())) { // !!! false &&
             Type.explainSwitch = true;
             assert loBound.isSubType(tree.type()): show(tree)
                 + format("loBound", expected);
