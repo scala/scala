@@ -81,6 +81,9 @@ public class AddConstructors extends GenTransformer {
     /** A constructor to initializer parameter substitution */
     private final SymbolSubstTypeMap subst;
 
+    /** The current primary initializer or null */
+    private Symbol primaryInitializer;
+
     public AddConstructors(Global global, HashMap initializers) {
 	super(global);
         this.initializers = initializers;
@@ -237,12 +240,22 @@ public class AddConstructors extends GenTransformer {
             subst.insertSymbol(
                 constructor.valueParams(),
                 initializer.valueParams());
+            if (constructor.isPrimaryConstructor())
+                primaryInitializer = initializer;
             rhs = transform(rhs);
+            primaryInitializer = null;
             subst.removeSymbol(constructor.valueParams());
             subst.removeSymbol(constructor.typeParams());
             // add consistent result expression
             rhs = gen.mkBlock(new Tree[] { rhs, gen.mkUnitLit(rhs.pos) });
             return gen.DefDef(initializer, rhs);
+
+        case ValDef(_, _, _, _):
+        case LabelDef(_, _, _):
+            if (primaryInitializer != null)
+                if (tree.symbol().owner() != primaryInitializer)
+                    tree.symbol().setOwner(primaryInitializer);
+            return super.transform(tree);
 
         case New(Template(Tree[] parents, _)):
             return gen.New(transform(parents[0], true));
