@@ -29,6 +29,8 @@ class Scanner(_unit: Unit) extends TokenData {
 
   val unit = _unit;
 
+  val cbuf = new StringBuffer();
+
   /** buffer for the documentation comment
   */
   var docBuffer: StringBuffer = null;
@@ -60,9 +62,111 @@ class Scanner(_unit: Unit) extends TokenData {
   var errpos = -1;
 
   /** the input buffer:
-  */
   var buf: Array[char] = unit.source.getContent();
   var bp: int = -1;
+  */
+
+  class SourceIterator(charArray:Array[char]) extends  Iterator[char] {
+    val buf:Array[char] = charArray;
+    var bp: int = -1;
+    /* inv: true if buf( bp ) is last of an odd number of ASCII '\' */
+    var odd = false;
+    var unicode1:int = 0;
+    var unicode2:int = 0;
+    def hasMore( i:int, j:int ) = i + j < buf.length;
+    def hasMore( j:int ) = bp + j < buf.length;
+    def hasNext = hasMore( 1 );
+
+    /** gets next char, handles unicode transform */
+    def next:char = {
+      bp = bp + 1;
+      val ch = buf( bp );
+      odd = ( ch == '\\' ) && !odd;
+      if( odd && hasNext && 'u' == buf( bp + 1 )) {
+        //Console.println("bp before "+bp+"["+buf(bp)+"]");
+        val Pair( newch, offset ) = nextUnicode( bp + 1 );
+        bp = bp + offset;
+        //Console.println("bp "+bp+"["+buf(bp)+"]");
+        newch
+      } else
+        ch
+    }
+    def raw:char = { bp = bp + 1; buf( bp ) }
+
+    /** precondition: hasNext
+    */
+    def lookahead1 = {
+      val ahead1 = buf( bp + 1 );
+      if( ahead1 == '\\' && !odd && hasMore( 2 ) && 'u' == buf( bp + 1 )) {
+        val Pair( newch, offset ) = nextUnicode( bp + 1 );
+        unicode1 = offset;
+        bp = bp + offset;
+        newch;
+      } else {
+        unicode1 = 0;
+        ahead1
+      }
+    }
+
+    /** precondition: hasMore( 2 ) */
+    def lookahead2 = {
+      val j = bp + unicode1 + 1 + 1;
+      val ahead2 = buf( j );
+      val even1 = unicode1 > 0 || '\\' != buf( j - 1 ) || odd;
+      if( ahead2 == '\\' && even1 && hasMore( j, 1 ) && 'u' == buf( j + 1 )) {
+        val Pair( newch, offset ) = nextUnicode( j + 1 );
+        unicode2 = offset;
+        newch;
+      } else {
+        ahead2
+      }
+    }
+
+    /** precondition: hasMore( 3 ) */
+    def lookahead3 = {
+      val j = bp + unicode1 + 1 + unicode2 + 1 + 1;
+      val ahead3 = buf( j );
+      var even2 = unicode2 > 0 || '\\' != buf( j - 1 ) || '\\' == buf( j - 2 );
+
+      if( ahead3 == '\\' && even2 && hasMore( j, 1 ) && 'u' == buf( j + 1 )) {
+        val Pair( newch, offset ) = nextUnicode( j + 1 );
+        newch;
+      } else {
+        ahead3
+      }
+    }
+
+    import SourceRepresentation.digit2int;
+
+    /** returns unicode and offset of next character */
+    def nextUnicode( p:int ):Pair[char,int] = {
+      var j = p;
+      //Console.print("nextUnicode["+p+"]="+buf( j ));
+      while ( buf( j ) == 'u' ) { j = j + 1 };
+      //Console.println("j now ["+j+"]="+buf( j ));
+      if ( j + 4 >= buf.length ) syntaxError("incomplete unicode escape");
+      def munch = {
+        val i = digit2int( buf( j ), 16 );
+        if( i == -1 ) {
+          syntaxError("error in unicode escape");
+          //error("bla");
+        }
+        j = j + 1;
+        i
+      }
+      var code:int = munch;
+      //Console.println("nextUnicode2, code ="+code);
+      code = (code << 4) + munch;
+      code = (code << 4) + munch;
+      code = (code << 4) + munch;
+      Pair( code.asInstanceOf[char], j - p )
+    }
+
+  } /* class SourceIterator */
+
+  /** the input iterator. Converts unicode characters as in Java spec (3.3)
+  */
+  var srcIterator:SourceIterator = new SourceIterator(unit.source.getContent());
 
   /** the current character
   */
@@ -76,7 +180,6 @@ class Scanner(_unit: Unit) extends TokenData {
   /** a buffer for character and string literals
   */
   var lit = new Array[char](64);
-  var litlen: int = _;
 
 
   /** INIT: Construct a scanner from a file input stream.
@@ -87,8 +190,9 @@ class Scanner(_unit: Unit) extends TokenData {
   nextToken();
 
   def nextch(): unit = {
-    bp = bp + 1; ch = buf(bp); ccol = ccol + 1;
-    //System.out.print(bp + "[" + ch + "]");//DEBUG
+    ch = srcIterator.next;
+    ccol = ccol + 1;
+    //System.out.print("[" + ch + "]");//DEBUG
   }
 
   /** read next token and return last position
@@ -150,7 +254,7 @@ class Scanner(_unit: Unit) extends TokenData {
   private def fetchToken(): unit = {
     if (token == EOF) return;
     lastpos = Position.encode(cline, ccol);
-    var index = bp;
+    //var index = bp;
     while (true) {
       ch match {
         case ' ' =>
@@ -172,8 +276,11 @@ class Scanner(_unit: Unit) extends TokenData {
           nextch();
         case _ =>
 	  pos = Position.encode(cline, ccol);
-	  index = bp;
+	  //index = bp;
 	  ch match {
+            case '\u21D2' =>
+              nextch(); token = ARROW;
+              return;
 	    case 'A' | 'B' | 'C' | 'D' | 'E' |
 		 'F' | 'G' | 'H' | 'I' | 'J' |
 		 'K' | 'L' | 'M' | 'N' | 'O' |
@@ -186,37 +293,41 @@ class Scanner(_unit: Unit) extends TokenData {
 		 'p' | 'q' | 'r' | 's' | 't' |
 		 'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
 		 'z' =>
+              putChar( ch );
 	      nextch();
-	      getIdentRest(index);  // scala-mode: wrong indent for multi-line case blocks
+	      getIdentRest;  // scala-mode: wrong indent for multi-line case blocks
 	      return;
 	    case '~' | '!' | '@' | '#' | '%' |
 		 '^' | '*' | '+' | '-' | '<' |
 		 '>' | '?' | ':' | '=' | '&' |
                  '|' | '\\' =>
+              putChar( ch );
 	      nextch();
-	      getOperatorRest(index);
+	      getOperatorRest; // XXX
 	      return;
 	    case '/' =>
 	      nextch();
 	      if (!skipComment()) {
-		getOperatorRest(index);
+                putChar( '/' );
+		getOperatorRest;
 		return;
 	      }
 	    case '0' =>
+              putChar( ch );
 	      nextch();
 	      if (ch == 'x' || ch == 'X') {
 		nextch();
 		base = 16;
-		getNumber(index + 2);
+		getNumber;
 	      } else {
 		base = 8;
-		getNumber(index);
+		getNumber;
 	      }
 	      return;       // scala-mode: return is a keyword
 	    case '1' | '2' | '3' | '4' |
 		 '5' | '6' | '7' | '8' | '9' =>
 	      base = 10;
-	      getNumber(index);
+	      getNumber;
 	      return;
 	    case '`' => //"   scala-mode: need to understand literals
 	      getStringLit('`');
@@ -227,7 +338,6 @@ class Scanner(_unit: Unit) extends TokenData {
 	      return;
 	    case '\'' =>
 	      nextch();
-	      litlen = 0;
 	      ch match {
 		case 'A' | 'B' | 'C' | 'D' | 'E' |
 		     'F' | 'G' | 'H' | 'I' | 'J' |
@@ -241,11 +351,11 @@ class Scanner(_unit: Unit) extends TokenData {
 		     'p' | 'q' | 'r' | 's' | 't' |
 		     'u' | 'v' | 'w' | 'x' | 'y' |
 		     'z' =>
-		  index = bp;
-		  putChar(ch);
+                       cbuf.setLength( 0 );
+		  putChar( ch );
 		  nextch();
 		  if (ch != '\'') {
-		    getIdentRest(index);
+		    getIdentRest;
 		    token = SYMBOLLIT;
 		    return;
 		  }
@@ -255,14 +365,20 @@ class Scanner(_unit: Unit) extends TokenData {
 	      if (ch == '\'') {
 		nextch();
 		token = CHARLIT;
+                name = Name.fromString( cbuf.toString() );
+                //Console.println("charlit:"+name);
+                //Console.println("intval:"+intVal(false));
+                cbuf.setLength( 0 );
 	      } else {
 		syntaxError("unclosed character literal");
 	      }
 	      return;
 	    case '.' =>
 	      nextch();
-	      if (('0' <= ch) && (ch <= '9')) getFraction(index);
-	      else token = DOT;
+	      if (('0' <= ch) && (ch <= '9')) {
+                putChar( '.' );
+                getFraction;
+              } else token = DOT;
 	      return;
 	    case ';' =>
 	      nextch(); token = SEMI;
@@ -355,7 +471,30 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  private def getIdentRest(index: int): unit = {
+  def isIdentStart( c:char ) = c.match {
+    case 'A' | 'B' | 'C' | 'D' | 'E' |
+    'F' | 'G' | 'H' | 'I' | 'J' |
+    'K' | 'L' | 'M' | 'N' | 'O' |
+    'P' | 'Q' | 'R' | 'S' | 'T' |
+    'U' | 'V' | 'W' | 'X' | 'Y' |
+    'Z' | '$' | '_' |
+    'a' | 'b' | 'c' | 'd' | 'e' |
+    'f' | 'g' | 'h' | 'i' | 'j' |
+    'k' | 'l' | 'm' | 'n' | 'o' |
+    'p' | 'q' | 'r' | 's' | 't' |
+    'u' | 'v' | 'w' | 'x' | 'y' |
+    'z'  => true
+    case _ => false;
+  }
+
+  def isIdentChar( c:char ) = isIdentStart( c ) || c.match {
+    case '0' | '1' | '2' | '3' | '4' |
+         '5' | '6' | '7' | '8' | '9' => true
+    case _ => false } ;
+
+
+  private def getIdentRest: unit = {
+    //Console.println("getIdentRest, cbuf="+cbuf.toString());
     while (true) {
       ch match {
         case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -372,84 +511,78 @@ class Scanner(_unit: Unit) extends TokenData {
 	     'z' |
 	     '0' | '1' | '2' | '3' | '4' |
 	     '5' | '6' | '7' | '8' | '9' =>
+          putChar( ch );
           nextch();
         case '_' =>
+          putChar( ch );
           nextch();
-          getIdentOrOperatorRest(index);
-	  return;
+          getIdentOrOperatorRest;
+          return;
         case _ =>
-          treatIdent(index, bp);
+          treatIdent;
 	  return;
       }
     }
   }
 
-  private def getOperatorRest(index: int): unit = {
+  private def getOperatorRest: unit = {
+    //Console.println("getOp");
     while (true) {
       ch match {
         case '~' | '!' | '@' | '#' | '%' |
 	     '^' | '*' | '+' | '-' | '<' |
              '>' | '?' | ':' | '=' | '&' |
              '|' | '\\' =>
+          putChar( ch );
 	  nextch();
         case '/' =>
-          val lastbp = bp;
           nextch();
           if (skipComment()) {
-            treatIdent(index, lastbp);
+            treatIdent;
             return;
+          } else {
+            putChar( '/' );
           }
         case _ =>
-          treatIdent(index, bp);
+          treatIdent;
           return;
       }
     }
   }
 
-  private def getIdentOrOperatorRest(index: int): unit = {
-    ch match {
-      case 'A' | 'B' | 'C' | 'D' | 'E' |
-	   'F' | 'G' | 'H' | 'I' | 'J' |
-	   'K' | 'L' | 'M' | 'N' | 'O' |
-	   'P' | 'Q' | 'R' | 'S' | 'T' |
-	   'U' | 'V' | 'W' | 'X' | 'Y' |
-	   'Z' | '$' | '_' |
-	   'a' | 'b' | 'c' | 'd' | 'e' |
-	   'f' | 'g' | 'h' | 'i' | 'j' |
-	   'k' | 'l' | 'm' | 'n' | 'o' |
-	   'p' | 'q' | 'r' | 's' | 't' |
-	   'u' | 'v' | 'w' | 'x' | 'y' |
-	   'z' |
-	   '0' | '1' | '2' | '3' | '4' |
-	   '5' | '6' | '7' | '8' | '9' =>
-        getIdentRest(index);
+  private def getIdentOrOperatorRest: unit = {
+    if( isIdentChar( ch ) )
+      getIdentRest
+    else ch match {
       case '~' | '!' | '@' | '#' | '%' |
            '^' | '*' | '+' | '-' | '<' |
            '>' | '?' | ':' | '=' | '&' |
            '|' | '\\' | '/' =>
-        getOperatorRest(index);
+        getOperatorRest;
       case _ =>
-        treatIdent(index, bp);
+        treatIdent;
     }
   }
 
   private def getStringLit(delimiter: char): unit = {
     nextch();
-    litlen = 0;
-    while (ch != delimiter && ch != CR && ch != LF && ch != SU)
+    while (ch != delimiter && ch != CR && ch != LF && ch != SU) {
       getlitch();
+    }
     if (ch == delimiter) {
       token = STRINGLIT;
-      name = Name.fromString(new String(lit, 0, litlen));
+      name = Name.fromString( cbuf.toString() );
+      cbuf.setLength( 0 );;
       nextch();
     } else {
-      syntaxError("unclosed character literal");
+      syntaxError("unclosed string literal");
     }
   }
 
-  def treatIdent(start: int, end: int) = {
-    name = Name.fromString(new String(buf, start, end - start));
-    token = name2token(name);
+  def treatIdent = {
+    name = Name.fromString( cbuf.toString() );
+    token = name2token( name );
+    cbuf.setLength( 0 );;
   }
 
   /** generate an error at the given position
@@ -466,7 +599,8 @@ class Scanner(_unit: Unit) extends TokenData {
 
   /** append Unicode character to "lit" buffer
   */
-  private def putChar(c: char) = {
+  private def putChar(c: char) = cbuf.append( c );
+    /*
     if (litlen == lit.length) {
       val newlit = new Array[char](lit.length * 2);
       System.arraycopy(lit, 0, newlit, 0, lit.length);
@@ -474,10 +608,9 @@ class Scanner(_unit: Unit) extends TokenData {
     }
     lit(litlen) = c;
     litlen = litlen + 1;
-  }
+  }*/
 
   /** return true iff next 6 characters are a valid unicode sequence:
-  */
   protected def isUnicode() =
     (bp + 6) < buf.length &&
     (buf(bp) == '\\') &&
@@ -486,11 +619,24 @@ class Scanner(_unit: Unit) extends TokenData {
     (SourceRepresentation.digit2int(buf(bp+3), 16) >= 0) &&
     (SourceRepresentation.digit2int(buf(bp+4), 16) >= 0) &&
     (SourceRepresentation.digit2int(buf(bp+5), 16) >= 0);
+  */
 
+  /** precondition: isUnicode() == true
+  protected def getUnicodeChar():char = {
+    var i : int = 0;
+    var k = bp + 2;
+    while( k < bp + 6 ) {
+      i = 16 * i +  SourceRepresentation.digit2int(buf( k ), 16);
+      k = k + 1;
+    };
+    i.asInstanceOf[char]
+  }
+*/
   /** read next character in character or string literal:
   */
   protected def getlitch() =
     if (ch == '\\') {
+        /*
       if (isUnicode()) {
         nextch();
         nextch();
@@ -501,6 +647,7 @@ class Scanner(_unit: Unit) extends TokenData {
         code = (code << 4) + SourceRepresentation.digit2int(ch, 16); nextch();
         putChar(code.asInstanceOf[char]);
       } else {
+        */
         nextch();
         if ('0' <= ch && ch <= '7') {
           val leadch: char = ch;
@@ -531,7 +678,7 @@ class Scanner(_unit: Unit) extends TokenData {
           }
           nextch();
         }
-      }
+      /* } */
     } else if (ch != SU) {
       putChar(ch);
       nextch();
@@ -539,54 +686,65 @@ class Scanner(_unit: Unit) extends TokenData {
 
   /** read fractional part of floating point number;
   */
-  protected def getFraction(index: int) = {
+  protected def getFraction = {
     while (SourceRepresentation.digit2int(ch, 10) >= 0) {
+      putChar( ch );
       nextch();
     }
     token = DOUBLELIT;
     if ((ch == 'e') || (ch == 'E')) {
-      nextch();
-      if ((ch == '+') || (ch == '-')) {
-        val sign: char = ch;
+      putChar( ch );
+      val c1 = srcIterator.lookahead1;
+      val c2 = srcIterator.lookahead2;
+      if ((c1 == '+') || (c1 == '-')  && ('0' >= c2) || (c2 <= '9')) {
         nextch();
-        if (('0' > ch) || (ch > '9')) {
-          ch = sign;
-          bp = bp - 1;
-          ccol = ccol - 1;
-        }
-      }
+        putChar( ch );
+        nextch();
+      } else
+        nextch();
       while (SourceRepresentation.digit2int(ch, 10) >= 0) {
+        putChar( ch );
         nextch();
       }
     }
     if ((ch == 'd') || (ch == 'D')) {
+      putChar( ch );
       nextch();
     } else if ((ch == 'f') || (ch == 'F')) {
+      putChar( ch );
       token = FLOATLIT;
       nextch();
     }
-    name = Name.fromString(new String(buf, index, bp - index));
+    name = Name.fromString( cbuf.toString() );
+    cbuf.setLength( 0 );
   }
 
   /** convert name, base to long value
   *  base = the base of the number; one of 8, 10, 16.
   */
   def intVal(negated: boolean): long = {
+    import SourceRepresentation.digit2int;
+
+    //Console.println("intVal:: name="+name+" name.length="+name.length());
     if (token == CHARLIT && !negated) {
-      if (litlen > 0)
-	lit(0)
+      if (name.length() > 0)
+        name.charAt( 0 )
       else
 	0
     } else {
+    //Console.println("hello");
+
       var value: long = 0;
       val divider = if (base == 10) 1 else 2;
       val limit: long = if (token == LONGLIT) Long.MAX_VALUE else Integer.MAX_VALUE;
       var i = 0;
       val len = name.length();
+    //Console.println("i "+i+" len "+len+" limit" + limit + " divider "+divider);
       while (i < len) {
-	val d = SourceRepresentation.digit2int(name.charAt(i), base);
+	val d = digit2int( name.charAt(i), base );
 	if (d < 0) {
-          syntaxError("malformed integer number");
+          //syntaxError("malformed integer number");
+          syntaxError("malformed integer number:\'"+name+"\'"+" length="+name.length()); //DEBUG
           return 0;
 	}
 	if (value < 0 ||
@@ -624,51 +782,84 @@ class Scanner(_unit: Unit) extends TokenData {
 
   def floatVal: double = floatVal(false);
 
+
+  /** see Java spec 3.10.2 */
+  def exponentPart(c1:char,c2:char) =
+    (c1 == 'e' || c1 == 'E') &&
+  ((c2 >= '0' && c2 <= '9') || (c2 == '+' || c2 == '-')) ;
+
+  /** see Java spec 3.10.2 */
+  def floatTypeSuffix(c1:char) =
+    (c1 == 'f' || c1 == 'F' ||
+     c1 == 'd' || c1 == 'D');
+
   /** read a number into name and set base
   */
-  protected def getNumber(index: int) = {
-    while (SourceRepresentation.digit2int(ch, if (base == 8) 10 else base) >= 0) {
+  protected def getNumber:unit = {
+    import SourceRepresentation.digit2int;
+    //Console.println("getNumber::start, cbuf="+cbuf.toString());
+    while (digit2int(ch, if (base == 8) 10 else base) >= 0) {
+      putChar( ch );
       nextch();
     }
-    if (base <= 10 && ch == '.') {
-      nextch();
-      if (ch >= '0' && ch <= '9')
-        getFraction(index);
-      else if (((bp + 2) < buf.length) && // guard for character lookahead
-               (ch == 'e' || ch == 'E' ||
-                ch == 'f' || ch == 'F' ||
-                ch == 'd' || ch == 'D')) {
-        val ch1 = buf(bp + 1); // lookahead
-        if ((ch1 >= 'a' && ch1 <= 'z') ||
-            (ch1 >= 'A' && ch1 <= 'Z') ||
-            (ch1 >= '0' && ch1 <= '9') ||
-             ch1 == '$' || ch1 == '_') {
-	  name = Name.fromString(new String(buf, index, bp - index));
-          token = INTLIT;
-        } else
-          getFraction(index);
-      } else if ((ch >= 'a' && ch <= 'z') ||
-                 (ch >= 'A' && ch <= 'Z') ||
-                  ch == '$' || ch == '_') {
-        bp = bp - 1;
-        ch = buf(bp);
-	ccol = ccol - 1;
-	name = Name.fromString(new String(buf, index, bp - index));
+    //Console.println("getNumber::. ch = "+ch+" cbuf="+cbuf.toString());
+    if (base <= 10 && ch == '.') { // '.' c1 c2
+      val c1 = srcIterator.lookahead1;
+      if (c1 >= '0' && c1 <= '9') {
+        putChar(ch);
+        nextch();
+        getFraction;
+      } else {
+        val c2 = srcIterator.lookahead2;
+        if(exponentPart(c1,c2)) {
+          putChar(ch);// +
+          getFraction;
+          return;
+        }
+        if(isIdentStart(c1)&&isIdentChar(c2)) { // is select
+	name = Name.fromString( cbuf.toString() );
+        cbuf.setLength( 0 );
         token = INTLIT;
-      } else
-        getFraction(index);
+        return;
+      } else /*{
+        val c2 = srcIterator.lookahead2;
+        if(exponentPart(c1,c2) ||
+           || (floatTypeSuffix(c1) && !isIdentChar( c2 ))
+           || !isIdentStart( c1 )) {
+          putChar(ch);
+          nextch();
+          getFraction;
+        }
+      }else if(isIdentStart(c1)) { // is select
+        //Console.println("is select");
+        //Console.println("c1 = "+c1);
+        //Console.println("floatTypeSuffix(c1) = "+floatTypeSuffix(c1));
+        //Console.println("c2 = "+c2);
+        //Console.println("!isIdentChar( c2 ) = "+ !isIdentChar( c2 ));
+
+	name = Name.fromString( cbuf.toString() );
+        cbuf.setLength( 0 );
+        token = INTLIT;
+      } else */{
+        putChar(ch);
+        nextch();
+        getFraction;
+      }
+      }
     } else if (base <= 10 &&
                (ch == 'e' || ch == 'E' ||
                 ch == 'f' || ch == 'F' ||
                 ch == 'd' || ch == 'D')) {
-      getFraction(index);
+      getFraction;
     } else {
       if (ch == 'l' || ch == 'L') {
-	name = Name.fromString(new String(buf, index, bp - index));
+	name = Name.fromString( cbuf.toString());
+        cbuf.setLength( 0 );
         nextch();
         token = LONGLIT;
       } else {
-	name = Name.fromString(new String(buf, index, bp - index));
+	name = Name.fromString( cbuf.toString() );
+        cbuf.setLength( 0 );
         token = INTLIT;
       }
     }
@@ -693,7 +884,7 @@ class Scanner(_unit: Unit) extends TokenData {
   */
   def xNext = {
     lastpos = pos;
-    nextch();
+    ch = srcIterator.raw; ccol = ccol + 1; // = nextch() without unicode
     ch match {
       case SU =>
 	syntaxError( lastpos, "unclosed XML literal" );
@@ -701,11 +892,8 @@ class Scanner(_unit: Unit) extends TokenData {
       case LF =>
         ccol = 0; cline = cline + 1;
       case CR =>
-        nextch();
-        if( LF == ch ) {
-	  ccol = 0; cline = cline + 1;
-	} else {
-	  bp = bp - 1; ch = CR
+        if( LF == srcIterator.lookahead1 ) {
+	  srcIterator.raw; ccol = 0; cline = cline + 1;
 	}
       case _ =>
         //Console.print(ch.asInstanceOf[char]); // DEBUG
@@ -776,30 +964,26 @@ class Scanner(_unit: Unit) extends TokenData {
   */
   def xName:Name = {
     if( xIsNameStart ) {
-      val index = bp;
-      while( xIsNameChar ) { xNext; }
-      Name.fromString(new String( buf, index, bp - index ));
+      while( xIsNameChar ) { putChar( ch ); xNext;  }
+      val n = Name.fromString( cbuf.toString() );
+      cbuf.setLength( 0 );
+      n
     } else {
       xSyntaxError( "name expected" );
       Names.EMPTY
     }
   }
 
-  /** @see xSkipToNext( char, boolean ) */
-  def xSkipToNext( endch:char ):String = xSkipToNext( endch, true );
 
-  /** move forward to next endch. return a string if needed.
+  /** move forward to next endch. returns a string if needed.
    *  @param endch the character to which we skip
-   *  @param keep  if true, this function returns the string, otherwise null
    */
-  def xSkipToNext( endch:char, keep:boolean ):String = {
+  def xSkipToNext( endch:char ):String = {
     lastpos = pos;
-    val index = bp;
-    while (( ch != endch )&&( ch != '{' )) { xNext; };
-    if( keep )
-      new String( buf, index, bp-index );
-    else
-      null
+    while (( ch != endch )&&( ch != '{' )) { putChar( ch ); xNext; };
+    val s = cbuf.toString();
+    cbuf.setLength( 0 );
+    s
   }
 
   /** attribute value, terminated by either ' or ". value may not contain <.
@@ -835,15 +1019,15 @@ class Scanner(_unit: Unit) extends TokenData {
     if( xCheckScalaBlock )
       return ""
     else {
-      val sb = new StringBuffer();
       lastpos = pos;
-      val index = bp;
       var exit = false;
       while( !exit ) {
-        sb.append( ch );
+        putChar( ch );
         exit = xxNext || ( ch == '<' ) || ( ch == '&' );
       }
-      sb.toString();
+      val s = cbuf.toString();
+      cbuf.setLength( 0 );
+      s
     }
   }
 
