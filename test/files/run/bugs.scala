@@ -6,16 +6,20 @@
 //############################################################################
 // Bug 135
 
-class Bug135Foo {
-  class Bar;
-  def foo = new Bar;
-}
+object Bug135Test {
 
-object Bug135Test  {
+  import scala.collection.immutable.TreeMap;
+  import scala.collection.immutable.Order;
+
   def main(args: Array[String]): Unit = {
-    (new Bug135Foo).foo;
-    ()
+    val intOrder =
+	new Order((x:int,y:int) => x < y, (x:int,y:int) => x == y);
+    val myMap:TreeMap[int,String] = new TreeMap(intOrder);
+    val map1 = myMap + 42 -> "The answer";
+    if (map1.get(42) != Some("The answer"))
+      Console.println("KO: " + map1.get(42));
   }
+
 }
 
 //############################################################################
@@ -35,12 +39,28 @@ object Bug167Test {
 }
 
 //############################################################################
+// Bug 168
+
+class Bug168Foo {
+  class Bar;
+  def foo = new Bar;
+}
+
+object Bug168Test  {
+  def main(args: Array[String]): Unit = {
+    (new Bug168Foo).foo;
+    ()
+  }
+}
+
+//############################################################################
 // Main
 
 object Test  {
   def main(args: Array[String]): Unit = {
     Bug135Test.main(args);
     Bug167Test.main(args);
+    Bug168Test.main(args);
   }
 }
 
