@@ -120,6 +120,7 @@ object Console {
      *  @param args the parameters used to instantiate the format.
      */
     def printf(text: String)(args: Any*): Unit = {
+      // todo: Uncurry
         if (text == null)
             out.print("null");
         else

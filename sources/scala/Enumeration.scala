@@ -86,7 +86,10 @@ abstract class Enumeration(initial: Int, names: String*) {
 
     trait Value extends Ord[Value] {
         def id: Int;
-        def < (that: Value): Boolean = id < that.id;
+	def < [S >: Value <: Ord[S]](that: S): Boolean = that match {
+	  case that1: Value => id < that1.id
+	  case _            => that > this
+	}
     }
 
     protected class Val(i: Int, name: String) extends Value {

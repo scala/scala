@@ -41,26 +41,7 @@ case class ImportList(tree: Tree, enclScope: Scope, prev: ImportList) {
     this.importType().isSameAs(that.importType());
 
   def importedSymbol(name: Name): Symbol = {
-    val t = this.importType();
-    var renamed = false;
-    tree match {
-      case Tree$Import(expr, selectors) =>
-	var i = 0;
-	while (i < selectors.length) {
-	  if (i + 1 < selectors.length && name.toTermName() == selectors(i+1)) {
-	    if (name.isTypeName())
-	      return t.lookupNonPrivate(selectors(i).toTypeName());
-	    else
-	      return t.lookupNonPrivate(selectors(i));
-	  } else if (name.toTermName() == selectors(i)) {
-	    renamed = true;
-	  } else if (selectors(i) == Names.IMPORT_WILDCARD && !renamed) {
-	    return t.lookupNonPrivate(name);
-	  }
-	  i = i + 2
-	}
-	Symbol.NONE
-    }
+    return TreeInfo.importedSymbol(tree, name);
   }
 }
 }

@@ -31,17 +31,15 @@ class TokenData {
   */
   var name: Name = null;
 
-  /** the value of a number
+  /** the base of a number
   */
-  var intVal: long = 0;
-  var floatVal: double = 0;
+  var base: int = 0;
 
   def copyFrom(td: TokenData) = {
     this.token = td.token;
     this.pos = td.pos;
     this.name = td.name;
-    this.intVal = td.intVal;
-    this.floatVal = td.floatVal;
+    this.base = td.base;
   }
 }
 }

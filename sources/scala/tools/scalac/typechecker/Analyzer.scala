@@ -39,19 +39,21 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   import Modifiers._;
   import Kinds._;
 
-  val definitions = global.definitions;
-  val infer = new scala.tools.scalac.typechecker.Infer(this);
-  val desugarize = new DeSugarize(make, copy, gen, infer, global);
-  val constfold = new ConstantFolder(global);
-
-  var unit: Unit = _;
-
   private var context: Context = _;
   private var pt: Type = _;
   private var mode: int = _;
 
   private var inAlternative: boolean = _;
   private var patternVars: HashMap = _;   // for pattern matching; maps x to {true,false}
+
+  val definitions = global.definitions;
+  val infer = new scala.tools.scalac.typechecker.Infer(this) {
+    override def getCoerceMeths = { context.coerceMeths; }
+  }
+  val desugarize = new DeSugarize(make, copy, gen, infer, global);
+  val constfold = new ConstantFolder(global);
+
+  var unit: Unit = _;
 
   override def apply(units: Array[Unit]): unit = {
     var i = 0; while (i <  units.length) {
@@ -87,6 +89,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   def enter(context: Context, unit: Unit): unit = {
     assert(this.unit == null, "start unit non null for " + unit);
+    context.infer = infer;
     this.unit = unit;
     this.context = context;
     this.patternVars = new HashMap();
@@ -1221,14 +1224,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  checkStable(expr);
 	  owntype = expr.getType();
 	  val tp: Type = owntype.widen();
-	  var i = 0; while (i < selectors.length) {
+	  { var i = 0; while (i < selectors.length) {
 	    if (selectors(i) != Names.IMPORT_WILDCARD &&
 		tp.lookup(selectors(i)) == Symbol.NONE &&
 		tp.lookup(selectors(i).toTypeName()) == Symbol.NONE)
 	      error(tree.pos, "" + NameTransformer.decode(selectors(i)) + " is not a member of " + expr);
 	    i = i + 2
-	  }
-
+	  }}
 	case _ =>
 	  throw new ApplicationError();
       }
@@ -1526,14 +1528,30 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if (pt.symbol() == definitions.UNIT_CLASS) {
 	  return gen.mkUnitBlock(tree);
 	} else if (infer.isCompatible(tree.getType(), pt)) {
-	  val coerceMeth: Symbol = tree.getType().lookup(Names.coerce);
-	  if (coerceMeth != Symbol.NONE) {
-	    val coerceType: Type = checkAccessible(
-	      tree.pos, coerceMeth, tree.getType().memberType(coerceMeth),
-	      tree, tree.getType());
-	    val tree1 = make.Select(tree.pos, tree, Names.coerce)
-	    .setSymbol(coerceMeth)
-	    .setType(coerceType);
+	  val coerce = infer.bestCoerce(tree.getType(), pt);
+	  if (coerce != null) {
+	    val coerceFn =
+	      if (coerce.qual == Tree.Empty) {
+		make.Ident(tree.pos, Names.view)
+		  .setSymbol(coerce.sym).setType(coerce.symtype)
+	      } else {
+		val coercetype = checkAccessible(
+		  tree.pos, coerce.sym, coerce.symtype, coerce.qual, coerce.qual.getType());
+		make.Select(tree.pos, coerce.qual, Names.view)
+		  .setSymbol(coerce.sym).setType(coercetype)
+	      }
+	    val tree1 = gen.Apply(coerceFn, NewArray.Tree(tree));
+	    return adapt(tree1, mode, pt);
+	  }
+	  // todo: remove
+ 	  val coerceMeth: Symbol = tree.getType().lookup(Names.coerce);
+ 	  if (coerceMeth != Symbol.NONE) {
+ 	    val coerceType: Type = checkAccessible(
+ 	      tree.pos, coerceMeth, tree.getType().memberType(coerceMeth),
+ 	      tree, tree.getType());
+ 	    val tree1 = make.Select(tree.pos, tree, Names.coerce)
+ 	    .setSymbol(coerceMeth)
+ 	    .setType(coerceType);
 	    return adapt(tree1, mode, pt);
 	  }
 	}
@@ -1798,7 +1816,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   /** Attribute a template
   */
   def transformTemplate(templ: Tree$Template, owner: Symbol): Tree$Template = {
-    if (global.debug) global.log("transforming template of " + owner);//debug
+    //if (global.debug) global.log("transforming template of " + owner);//DEBUG
     if (templ.getType() == null)
       defineTemplate(templ, owner, owner.members());//may happen for mixins
     //System.out.println(owner.info());//DEBUG

@@ -9,6 +9,8 @@
 
 package scala;
 
+/* Shall we use a nonvariant Ord?
+
 trait Ord[t <: Ord[t]]: t {
   def < (that: t): Boolean;
   def <=(that: t): Boolean = this < that || this == that;
@@ -16,7 +18,7 @@ trait Ord[t <: Ord[t]]: t {
   def >=(that: t): Boolean = that <= this;
 }
 
-/* Shall we use a covariant Ord?
+*/
 
 trait Ord[+T <: Ord[T]] {
   def < [S >: T <: Ord[S]](that: S): Boolean;
@@ -24,4 +26,3 @@ trait Ord[+T <: Ord[T]] {
   def > [S >: T <: Ord[S]](that: S): Boolean = that < this;
   def >=[S >: T <: Ord[S]](that: S): Boolean = that <= this;
 }
-*/

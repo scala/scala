@@ -75,10 +75,10 @@ functional style.
 def sort(xs: List[int]): List[int] = 
   if (xs.length <= 1) xs
   else {
-    val pivot = a(a.length / 2);
-    sort(a.filter(x => x < pivot))
-      :::  a.filter(x => x == pivot)
-      :::  sort(a.filter(x => x > pivot))
+    val pivot = xs(xs.length / 2);
+    sort(xs.filter(x => x < pivot))
+      :::  xs.filter(x => x == pivot)
+      :::  sort(xs.filter(x => x > pivot))
   }
 \end{lstlisting}
 
@@ -1605,7 +1605,7 @@ a more streamlined alternative definition of the empty set:
 \begin{lstlisting}
 object EmptySet extends IntSet {
   def contains(x: int): boolean = false;
-  def incl(x: int): IntSet = new NonEmptySet(x, empty, empty);
+  def incl(x: int): IntSet = new NonEmptySet(x, EmptySet, EmptySet);
 }
 \end{lstlisting}
 The syntax of an object definition follows the syntax of a class
@@ -2761,7 +2761,7 @@ A list containing the elements \code{x}$_1$, \ldots, \code{x}$_n$ is written
 \begin{lstlisting}
 val fruit = List("apples", "oranges", "pears");
 val nums  = List(1, 2, 3, 4);
-val diag3 = List(List(1, 0, 0), List(0, 1, 0));
+val diag3 = List(List(1, 0, 0), List(0, 1, 0), List(0, 0, 1));
 val empty = List();
 \end{lstlisting}
 Lists are similar to arrays in languages such as C or Java, but there
@@ -2779,7 +2779,7 @@ list all have the same type.  The type of a list with elements of type
 \begin{lstlisting}
 val fruit: List[String]    = List("apples", "oranges", "pears");
 val nums : List[int]       = List(1, 2, 3, 4);
-val diag3: List[List[int]] = List(List(1, 0, 0), List(0, 1, 0));
+val diag3: List[List[int]] = List(List(1, 0, 0), List(0, 1, 0), List(0, 0, 1));
 val empty: List[int]       = List();
 \end{lstlisting}
 

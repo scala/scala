@@ -572,18 +572,18 @@ class Parser(unit: Unit) {
   *                  | symbol [ArgumentExprs]
   *                  | null
   */
-  def literal(isPattern: boolean): Tree = {
+  def literal(isPattern: boolean, isNegated: boolean): Tree = {
     def litToTree() = s.token match {
       case CHARLIT =>
         gen.mkCharLit(s.pos, s.intVal.asInstanceOf[char])
       case INTLIT =>
-        gen.mkIntLit(s.pos, s.intVal.asInstanceOf[int])
+        gen.mkIntLit(s.pos, s.intVal(isNegated).asInstanceOf[int])
       case LONGLIT =>
-        gen.mkLongLit(s.pos, s.intVal)
+        gen.mkLongLit(s.pos, s.intVal(isNegated))
       case FLOATLIT =>
-        gen.mkFloatLit(s.pos, s.floatVal.asInstanceOf[float])
+        gen.mkFloatLit(s.pos, s.floatVal(isNegated).asInstanceOf[float])
       case DOUBLELIT =>
-        gen.mkDoubleLit(s.pos, s.floatVal)
+        gen.mkDoubleLit(s.pos, s.floatVal(isNegated))
       case STRINGLIT | SYMBOLLIT =>
         gen.mkStringLit(s.pos, s.name.toString())
       case TRUE =>
@@ -921,9 +921,16 @@ class Parser(unit: Unit) {
   /** PrefixExpr   ::= [`-' | `+' | `~' | `!'] SimpleExpr
   */
   def prefixExpr(): Tree =
-    if (s.token == IDENTIFIER &&
-        (s.name == MINUS ||
-         s.name == PLUS ||
+    if (s.token == IDENTIFIER && s.name == MINUS) {
+      val name = ident();
+      s.token match {
+	case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
+          return literal(false, true);
+	case _ =>
+	  make.Select(s.pos, simpleExpr(), name);
+      }
+    } else if (s.token == IDENTIFIER &&
+        (s.name == PLUS ||
          s.name == TILDE ||
          s.name == BANG)) {
       val name = ident();
@@ -947,7 +954,7 @@ class Parser(unit: Unit) {
     s.token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT |
            SYMBOLLIT | TRUE | FALSE | NULL =>
-        t = literal(false);
+        t = literal(false, false);
       case IDENTIFIER | THIS | SUPER =>
         t = if( s.xStartsXML ) {
           xmlp.xLiteral;
@@ -1263,6 +1270,14 @@ class Parser(unit: Unit) {
         xmlp.xLiteralPattern
       } else {
         var t = stableId();
+	s.token match {
+	  case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
+	    t match {
+	      case Tree$Ident(name) if name == Names.MINUS =>
+		return literal(true, true);
+	    }
+	  case _ =>
+	}
         while (s.token == LPAREN) {
           var ts = Tree.EMPTY_ARRAY;
           accept(LPAREN);
@@ -1276,7 +1291,7 @@ class Parser(unit: Unit) {
     case USCORE =>
       make.Ident(s.skipToken(), Names.PATTERN_WILDCARD)
     case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL =>
-      literal(true)
+      literal(true, false)
     case LPAREN =>
       val p = s.pos;
       s.nextToken();
@@ -1923,6 +1938,8 @@ class Parser(unit: Unit) {
                  isModifier()) {
         stats.append(joinComment(clsDef(modifiers())));
       } else if (s.token != SEMI) {
+	System.out.println(s.token);
+	System.out.println(s.name);
         syntaxError("illegal start of class or object definition", true);
       }
       if (s.token != RBRACE && s.token != EOF) accept(SEMI);

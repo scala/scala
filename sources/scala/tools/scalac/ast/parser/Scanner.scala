@@ -63,7 +63,7 @@ class Scanner(_unit: Unit) extends TokenData {
   /** the input buffer:
   */
   var buf: Array[byte] = unit.source.bytes();
-  var bp: int = -1;
+  private var bp: int = -1;
 
   /** the current character
   */
@@ -89,6 +89,7 @@ class Scanner(_unit: Unit) extends TokenData {
 
   def nextch(): unit = {
     bp = bp + 1; ch = buf(bp); ccol = ccol + 1;
+    //System.out.print(bp + "[" + (ch.asInstanceOf[char]) + "]");//DEBUG
   }
 
   /** read next token and return last position
@@ -141,7 +142,7 @@ class Scanner(_unit: Unit) extends TokenData {
           this.copyFrom(prev);
         }
       }
-      //System.out.println("<" + token2string(token) + ">");//DEBUG
+      //System.out.println("<" + token2string(token) + ":" + name + ">");//DEBUG
     }
   }
 
@@ -206,14 +207,17 @@ class Scanner(_unit: Unit) extends TokenData {
 	      nextch();
 	      if (ch == 'x' || ch == 'X') {
 		nextch();
-		getNumber(index + 2, 16);
+		base = 16;
+		getNumber(index + 2);
 	      } else {
-		getNumber(index, 8);
+		base = 8;
+		getNumber(index);
 	      }
 	      return;       // scala-mode: return is a keyword
 	    case '1' | '2' | '3' | '4' |
 		 '5' | '6' | '7' | '8' | '9' =>
-	      getNumber(index, 10);
+	      base = 10;
+	      getNumber(index);
 	      return;
 	    case '`' => //"   scala-mode: need to understand literals
 	      getStringLit('`');
@@ -252,12 +256,6 @@ class Scanner(_unit: Unit) extends TokenData {
 	      if (ch == '\'') {
 		nextch();
 		token = CHARLIT;
-		val ascii = new Array[byte](litlen * 2);
-		val alen = SourceRepresentation.source2ascii(lit, 0, litlen, ascii);
-		if (alen > 0)
-		  intVal = SourceRepresentation.ascii2string(ascii, 0, alen).charAt(0);
-		else
-		  intVal = 0;
 	      } else {
 		syntaxError("unclosed character literal");
 	      }
@@ -534,7 +532,6 @@ class Scanner(_unit: Unit) extends TokenData {
     }
 
   /** read fractional part of floating point number;
-  *  Then floatVal := buf[index..], converted to a floating point number.
   */
   protected def getFraction(index: int) = {
     while (SourceRepresentation.digit2int(ch, 10) >= 0) {
@@ -556,54 +553,76 @@ class Scanner(_unit: Unit) extends TokenData {
         nextch();
       }
     }
-    var limit = Double.MAX_VALUE;
     if ((ch == 'd') || (ch == 'D')) {
       nextch();
     } else if ((ch == 'f') || (ch == 'F')) {
       token = FLOATLIT;
-      limit = Float.MAX_VALUE;
       nextch();
     }
+    name = Name.fromAscii(buf, index, bp - index);
+  }
+
+  /** convert name, base to long value
+  *  base = the base of the number; one of 8, 10, 16.
+  */
+  def intVal(negated: boolean): long = {
+    if (token == CHARLIT && !negated) {
+      val ascii = new Array[byte](litlen * 2);
+      val alen = SourceRepresentation.source2ascii(lit, 0, litlen, ascii);
+      if (alen > 0)
+	SourceRepresentation.ascii2string(ascii, 0, alen).charAt(0)
+      else
+	0
+    } else {
+      var value: long = 0;
+      val divider = if (base == 10) 1 else 2;
+      val limit: long = if (token == LONGLIT) Long.MAX_VALUE else Integer.MAX_VALUE;
+      var i = 0;
+      val len = name.length();
+      while (i < len) {
+	val d = SourceRepresentation.digit2int(name sub i, base);
+	if (d < 0) {
+          syntaxError("malformed integer number");
+          return 0;
+	}
+	if (value < 0 ||
+            limit / (base / divider) < value ||
+            limit - (d / divider) < value * (base / divider) &&
+	    !(negated && limit == value * base - 1 + d)) {
+              syntaxError("integer number too large");
+              return 0;
+	    }
+	value = value * base + d;
+	i = i + 1;
+      }
+      if (negated) -value else value
+    }
+  }
+
+  def intVal: long = intVal(false);
+
+  /** convert name, base to double value
+  */
+  def floatVal(negated: boolean): double = {
+    val limit: double =
+      if (token == DOUBLELIT) Double.MAX_VALUE else Float.MAX_VALUE;
     try {
-      floatVal = Double.valueOf(new String(buf, index, bp - index)).doubleValue();
-      if (floatVal > limit)
+      val value = Double.valueOf(name.toString()).doubleValue();
+      if (value > limit)
         syntaxError("floating point number too large");
+      if (negated) -value else value
     } catch {
       case _: NumberFormatException =>
 	syntaxError("malformed floating point number");
+	0.0
     }
   }
 
-  /** intVal := buf(index..index+len-1), converted to an integer number.
-  *  base = the base of the number; one of 8, 10, 16.
-  *  max  = the maximal number before an overflow.
-  */
-  protected def makeInt (index: int, len: int, base: int, max: long): unit = {
-    intVal = 0;
-    val divider = if (base == 10) 1 else 2;
-    var i = 0;
-    while (i < len) {
-      val d = SourceRepresentation.digit2int(buf(index + i), base);
-      if (d < 0) {
-        syntaxError("malformed integer number");
-        return;
-      }
-      if (intVal < 0 ||
-          max / (base / divider) < intVal ||
-          max - (d / divider) < (intVal * (base / divider) - 0)) {
-        syntaxError("integer number too large");
-        return;
-      }
-      intVal = intVal * base + d;
-      i = i + 1;
-    }
-  }
+  def floatVal: double = floatVal(false);
 
-  /** read a number,
-  *  and convert buf[index..], setting either intVal or floatVal.
-  *  base = the base of the number; one of 8, 10, 16.
+  /** read a number into name and set base
   */
-  protected def getNumber(index: int, base: int) = {
+  protected def getNumber(index: int) = {
     while (SourceRepresentation.digit2int(ch, if (base == 8) 10 else base) >= 0) {
       nextch();
     }
@@ -630,9 +649,8 @@ class Scanner(_unit: Unit) extends TokenData {
                   ch == '$' || ch == '_') {
         bp = bp - 1;
         ch = buf(bp);
-        ccol = ccol - 1;
-        makeInt(index, bp - index, base, Integer.MAX_VALUE);
-        intVal = intVal.asInstanceOf[int];
+	ccol = ccol - 1;
+	name = Name.fromAscii(buf, index, bp - index);
         token = INTLIT;
       } else
         getFraction(index);
@@ -643,12 +661,11 @@ class Scanner(_unit: Unit) extends TokenData {
       getFraction(index);
     } else {
       if (ch == 'l' || ch == 'L') {
-        makeInt(index, bp - index, base, Long.MAX_VALUE);
+	name = Name.fromAscii(buf, index, bp - index);
         nextch();
         token = LONGLIT;
       } else {
-        makeInt(index, bp - index, base, Integer.MAX_VALUE);
-        intVal = intVal.asInstanceOf[int];
+	name = Name.fromAscii(buf, index, bp - index);
         token = INTLIT;
       }
     }

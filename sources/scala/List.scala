@@ -441,7 +441,11 @@ trait List[+a] extends Seq[a] {
   def filter(p: a => Boolean): List[a] = match {
     case Nil => this
     case head :: tail =>
-      if (p(head)) head :: (tail filter p) else tail filter p
+      val tail1 = tail filter p;
+      if (p(head))
+	if (tail eq tail1) this
+	else head :: tail1
+      else tail1
   };
 
   /** Remove all elements of the list which satisfy the predicate

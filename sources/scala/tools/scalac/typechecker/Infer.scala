@@ -28,6 +28,10 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
   def this(trans: Transformer) = this(trans.global, trans.gen, trans.make);
 
+// Coerce generator, overridable */
+
+  def getCoerceMeths: List[Coerce] = List();
+
 // Error messages -------------------------------------------------------------
 
   def applyErrorMsg(msg1: String, fn: Tree, msg2: String, argtypes: Array[Type], pt: Type): String =
@@ -465,8 +469,16 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     val tp1 = normalize(tp);
     if (tp1.isSubType(pt)) true
     else {
-      val coerceMeth: Symbol = tp1.lookup(Names.coerce);
-      coerceMeth.kind != NONE && canCoerce(tp1.memberType(coerceMeth));
+      val argtypes = NewArray.Type(tp1);
+      var coerceMeths = getCoerceMeths;
+      while (!coerceMeths.isEmpty && !isApplicable(coerceMeths.head.symtype, argtypes, pt, false))
+	coerceMeths = coerceMeths.tail;
+      if (!coerceMeths.isEmpty) true
+      // todo: remove
+      else {
+	val coerceMeth: Symbol = tp1.lookup(Names.coerce);
+        coerceMeth.kind != NONE && canCoerce(tp1.memberType(coerceMeth));
+      }
     }
   }
 
@@ -787,13 +799,17 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   /** Is function type `ftpe' applicable to `argtypes' and
   *  does its result conform to `pt'?
   */
-  def isApplicable(ftpe: Type, argtypes: Array[Type], pt: Type): boolean = ftpe match {
+  def isApplicable(ftpe: Type, argtypes: Array[Type], pt: Type): boolean =
+    isApplicable(ftpe, argtypes, pt, true);
+
+  def isApplicable(ftpe: Type, argtypes: Array[Type], pt: Type,
+		   coercible: boolean): boolean = ftpe match {
     case Type$MethodType(params, restpe) =>
       // sequences ? List( a* )
       val formals: Array[Type] = formalTypes(params, argtypes.length);
-      isCompatible(restpe, pt) &&
       formals.length == argtypes.length &&
-      isCompatible(argtypes, formals)
+      (if (coercible) isCompatible(argtypes, formals) && isCompatible(restpe, pt)
+       else Type.isSubType(argtypes, formals) && restpe.isSubType(pt));
     case Type$PolyType(tparams, Type$MethodType(params, restpe)) =>
       try {
 	val targs: Array[Type] = methTypeArgs(
@@ -944,6 +960,36 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       tree.setSymbol(alts(i)).setType(alttypes(i));
     }
   }
+
+  /** return coerce which best matches argument type `tp' and expected type `pt'.
+  */
+  def bestCoerce(tp: Type, pt: Type): Coerce = {
+    var best: Coerce = null;
+    var coerceMeths = getCoerceMeths;
+    val argtypes = NewArray.Type(tp);
+    while (!coerceMeths.isEmpty) {
+      if (isApplicable(coerceMeths.head.symtype, argtypes, pt, false) &&
+	  (best == null || specializes(coerceMeths.head.symtype, best.symtype)))
+	best = coerceMeths.head;
+      coerceMeths = coerceMeths.tail
+    }
+    if (best != null) {
+      coerceMeths = getCoerceMeths;
+      while (!coerceMeths.isEmpty) {
+	if (coerceMeths.head != best &&
+	    isApplicable(coerceMeths.head.symtype, argtypes, pt, false) &&
+	    !(specializes(best.symtype, coerceMeths.head.symtype) &&
+	      !specializes(coerceMeths.head.symtype, best.symtype)))
+	  throw new Type$Error(
+	    "ambiguous coerce,\n" +
+	    "both " + coerceMeths.head.sym + ": " + coerceMeths.head.symtype + coerceMeths.head.sym.locationString() + "\n" +
+            "and  " + best.sym + ": " + best.symtype + best.sym.locationString() + "\nmap argument type " +
+	    tp + " to expected type " + pt);
+	coerceMeths = coerceMeths.tail;
+      }
+    }
+    best
+  }
+}
 }
 
-}
