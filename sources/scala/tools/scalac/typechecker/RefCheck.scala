@@ -544,7 +544,8 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     val mvar = sym.owner().newFieldOrVariable(
       tree.pos, PRIVATE | MUTABLE | SYNTHETIC, varname)
       .setInfo(sym.getType());
-    sym.owner().members().enterOrOverload(mvar);
+    if (sym.owner().isClassType())
+      sym.owner().members().enterOrOverload(mvar);
     val vdef = gen.ValDef(mvar, gen.mkNullLit(tree.pos));
 
     // { if (null == m$) m$ = new m$class; m$ }
@@ -574,7 +575,8 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     val m_eqdef: Tree = gen.DefDef(
       m_eq,
       gen.Assign(gen.mkLocalRef(tree.pos, mvar), gen.Ident(tree.pos, m_eqarg)));
-    sym.owner().members().enterOrOverload(m_eq);
+    if (sym.owner().isClassType())
+      sym.owner().members().enterOrOverload(m_eq);
 
     NewArray.Tree(cdef, vdef, ddef, m_eqdef)
   }
