@@ -113,6 +113,8 @@ class GenJVM {
      * afterwards).
      */
     protected void gen(Context ctx, Tree tree) {
+        startCodeForTree(ctx, tree);
+
         Symbol sym = tree.symbol();
 
         switch (tree) {
@@ -199,6 +201,8 @@ class GenJVM {
         default:
             genLoad(ctx, tree, JType.VOID);
         }
+
+        endCodeForTree(ctx, tree);
     }
 
     protected void gen(Context ctx, Tree[] trees) {
@@ -211,6 +215,8 @@ class GenJVM {
      * stack, and make sure it is of the given expected type.
      */
     protected JType genLoad(Context ctx, Tree tree, JType expectedType) {
+        startCodeForTree(ctx, tree);
+
         JType generatedType = null;
         Symbol sym = tree.symbol();
 
@@ -333,7 +339,8 @@ class GenJVM {
                 case AS_UVALUE :
                     assert args.length == 0;
                     gen(ctx, ((Tree.Select)fun).qualifier);
-                    return JType.VOID;
+                    generatedType = JType.VOID;
+                    break;
 
                 default:
                     throw Debug.abort("unknown primitive ", prim);
@@ -507,6 +514,7 @@ class GenJVM {
                       || generatedType.isReferenceType()))
             genWidenConversion(ctx, generatedType, expectedType);
 
+        endCodeForTree(ctx, tree);
         return expectedType;
     }
 
@@ -523,6 +531,7 @@ class GenJVM {
             ctx.code.emitGETSTATIC(javaSymName,
                                    MODULE_INSTANCE_FIELD_NAME,
                                    type);
+
         return type;
     }
 
@@ -1355,6 +1364,29 @@ class GenJVM {
             }
         }
         return maxType;
+    }
+
+    /// Line numbers
+    //////////////////////////////////////////////////////////////////////
+
+    int[] pcStack = new int[32];
+    int pcStackDepth = 0;
+    void startCodeForTree(Context ctx, Tree tree) {
+        if (pcStackDepth == pcStack.length) {
+            int[] newPCStack = new int[pcStack.length * 2];
+            System.arraycopy(pcStack, 0, newPCStack, 0, pcStack.length);
+            pcStack = newPCStack;
+        }
+        pcStack[pcStackDepth++] = (ctx.code == null ? 0 : ctx.code.getPC());
+    }
+
+    void endCodeForTree(Context ctx, Tree tree) {
+        assert pcStackDepth > 0;
+        int startPC = pcStack[--pcStackDepth];
+        if (ctx.code != null)
+            ctx.code.completeLineNumber(startPC,
+                                        ctx.code.getPC(),
+                                        Position.line(tree.pos));
     }
 
     /// Context
