@@ -58,10 +58,10 @@ public class ExplicitOuterClassesPhase extends Phase {
 
     /** Applies this phase to the given type for the given symbol. */
     public Type transformInfo(Symbol symbol, Type type) {
-        if (symbol.isJava()) return type;
-        //System.out.println("!!! debug1 = " + Debug.show(symbol));
-        //if (symbol.name.toString().equals("x")) new Error("!!!").printStackTrace();
+        if (symbol.isPackage()) return type;
+        //System.out.println("!!! " + Debug.show(symbol) + ": " + type + " -> " + typeTransformer.apply(type));
         type = typeTransformer.apply(type);
+        if (symbol.isJava()) return type;
         if (symbol.isConstructor()) {
             Symbol[] tparams = type.typeParams();
             Symbol[] vparams = type.valueParams();
