@@ -250,6 +250,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == VAL && (flags & MUTABLE) != 0;
     }
 
+    /** Does this symbol denote a final symbol? */
+    public final boolean isFinal() {
+        return (flags & FINAL) != 0;
+    }
+
     /** Does this symbol denote a method?
      */
     public final boolean isInitializedMethod() {
