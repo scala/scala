@@ -30,6 +30,7 @@ public class RightTracerInScala extends TracerInScala  {
 
     Symbol targetSym;
 
+    HashMap helpMap;
     HashMap helpMap2 ;
     Vector  helpVarDefs;
 
@@ -48,12 +49,15 @@ public class RightTracerInScala extends TracerInScala  {
                                Tree pat,
                                Type elementType ) {
         super( dfa, elementType, owner, cf );
+
         this.seqVars = seqVars;
         this.allVars = CollectVariableTraverser.collectVars( pat );
 
         this.varsToExport = new HashSet();
         varsToExport.addAll( allVars );
         varsToExport.removeAll( seqVars );
+
+        this.helpMap = new HashMap();
 
         helpMap2 = new HashMap();
         helpVarDefs = new Vector();
@@ -83,11 +87,11 @@ public class RightTracerInScala extends TracerInScala  {
     void makeHelpVar( Symbol realVar, boolean keepType ) {
         Symbol helpVar = new TermSymbol( cf.pos,
                                          cf.fresh.newName( realVar.name
-                                                           .toString() ),
+                                                           .toString()+"RTIS" ),
                                          owner,
                                          0);
 
-        //System.out.println("making helpvar : "+realVar+" -> "+helpVar);
+        //System.out.println("RTiS making helpvar : "+realVar+" -> "+helpVar);
 
         if( keepType )
             helpVar.setType( realVar.type() );
@@ -273,7 +277,7 @@ public class RightTracerInScala extends TracerInScala  {
      *  now we care about free vars
      */
     Tree handleBody1( HashMap helpMap3  ) {
-        //System.out.println("Rtis.handleBody ... helpMap = " + helpMap );
+        //System.out.println("Rtis.handleBody ... helpMap3 = " + helpMap );
         // todo: change helpMap s.t. symbols are not reused.
 
         Tree res[] = new Tree[ helpMap3.keySet().size() + 1 ];
@@ -282,14 +286,13 @@ public class RightTracerInScala extends TracerInScala  {
             Symbol vsym = (Symbol) it.next();
             Symbol hv   = (Symbol) helpMap3.get( vsym );
             hv.setType( defs.LIST_TYPE( elementType ) ) ;
-            Tree refv   = gen.Ident(Position.FIRSTPOS, vsym);
-            Tree refhv  = gen.Ident(Position.FIRSTPOS, hv);
+            Tree refv   = gen.Ident(cf.pos, vsym);
+            Tree refhv  = gen.Ident(cf.pos, hv);
             res[ j++ ] = gen.Assign( refhv, refv );
         }
 
         res[ j ] = gen.mkBooleanLit( Position.FIRSTPOS, true ); // just `true'
-
-        return gen.mkBlock(res);
+       return gen.mkBlock(res);
     }
 
     // calling the AlgebraicMatcher here
@@ -302,8 +305,8 @@ public class RightTracerInScala extends TracerInScala  {
                                  currentElem(),
                                  defs.BOOLEAN_TYPE() );
 
-        final HashMap freshenMap = new HashMap();
-        HashMap helpMap3 = new HashMap();
+        final HashMap freshenMap = new HashMap(); // sym2exp -> new sym
+        HashMap helpMap3 = new HashMap();         // new sym -> original sym
 
         // "freshening": never use the same symbol more than once
         // (in later invocations of _cur_match)
@@ -435,31 +438,33 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
      */
     Tree[] getStms( Tree trace ) {
 
-        //System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
-
         Vector v = new Vector();
 
-        for( Iterator it = helpVarDefs.iterator(); it.hasNext(); ) {
-            v.add( (Tree) it.next() );
-        }
         Tree binderFunDef = gen.DefDef( this.funSym, code_body_NEW() );
         if( actionsPresent ) {
+            //System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
+            for( Iterator it = helpVarDefs.iterator(); it.hasNext(); ) {
+                v.add( (Tree) it.next() );
+            }
+
             //v.add( gen.DefDef( this.funSym, code_body() )  );
             v.add( binderFunDef );
             v.add( callFun( new Tree[] {  trace, gen.mkIntLit( cf.pos, 0 )  }  )  );
+
+            // bind variables handled by this righttracer
+            for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
+                v.add( bindVar( (Symbol) it.next() ) );
+            }
+
         };
+
         /*
-          for(Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
-          // DEBUG
-          Symbol var = (Symbol)it.next();
-          v.add( cf.debugPrintRuntime( var.name.toString() ));
-          v.add( cf.debugPrintRuntime( refHelpVar( var )) );
-          }
+        for(Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
+            System.out.println( "helpMap" );
+            System.out.println( it.next() );
+        }
         */
 
-        for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
-            v.add( bindVar( (Symbol) it.next() ) );
-        }
 
         Tree result[] = new Tree[ v.size() ];
         int j = 0;
@@ -480,5 +485,36 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
     }
 
     Tree current() {   return gen.Ident( pos, targetSym );}
+
+    Tree refHelpVar( Symbol realVar ) {
+        Symbol hv = (Symbol)helpMap.get( realVar );
+        assert hv != null : realVar;
+        return gen.Ident(Position.FIRSTPOS, hv);
+    }
+
+    Tree assignToHelpVar( Symbol realVar, Tree rhs ) {
+        Tree hv = refHelpVar( realVar );
+        return gen.Assign( hv, rhs );
+    }
+
+    Tree bindVar(Symbol realVar) {
+        Tree hv = refHelpVar( realVar );
+        /*
+          System.out.println("binding realVar.name "+realVar.name+" type:"+realVar.type()+" to hv type:"+hv.type());
+          realVar.setOwner( owner );
+          System.out.println("is same as realVar"+realVar.type().isSameAs( elementType ));
+          System.out.println("is same as hv"+realVar.type().isSameAs( hv.type() ));
+          if( realVar.type().isSameAs( elementType ))
+          return gen.ValDef( realVar, cf.SeqList_head( hv ));
+          else
+          return gen.ValDef( realVar, hv );
+        */
+        if( realVar.type().isSameAs( hv.getType())) {
+            return gen.ValDef( realVar, hv ); // e.g. x @ _*
+        }
+        return gen.ValDef( realVar, cf.SeqList_head( hv ));
+
+    }
+
 
 }

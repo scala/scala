@@ -15,7 +15,6 @@ import ch.epfl.lamp.util.Position;
 
 public class LeftTracerInScala extends TracerInScala {
 
-    HashMap export_nestedMap;
     Tree selector;
 
     /** symbol of the accumulator ( scala.SequenceList )
@@ -36,49 +35,10 @@ public class LeftTracerInScala extends TracerInScala {
 
         super( dfa, elementType, owner, cf );
         this.selector = selector;
-        helpVarDefs = new Vector();
-
-    }
-
-    Vector  helpVarDefs;
-
-    Symbol makeHelpVar( Symbol realVar ) {
-        Symbol helpVar = new TermSymbol( pos,
-                                         cf.fresh.newName( realVar.name
-                                                           .toString() ),
-                                         owner,
-                                         0)
-            .setType( defs.LIST_TYPE( elementType ) ) ;
-
-        helpMap.put( realVar, helpVar );
-
-        Tree varDef = gen.ValDef( helpVar, gen.Nil( cf.pos ));
-        // set mutable flag of symbol helpVar ??
-        helpVarDefs.add( varDef );
-        return helpVar;
-    }
-
-    Symbol makeHelpVarSEQ( Tree pat ) {
-        String helpName = String.valueOf( pat.hashCode() ); //wicked, in'it ?
-        Symbol helpVar =
-            new TermSymbol( pos,
-                            cf.fresh.newName(Name.fromString( helpName )),
-                            owner,
-                            0)
-            .setType( defs.LIST_TYPE( pat.getType() )) ;
-
-        Tree varDef = gen.ValDef( helpVar,
-                                  gen.mkDefaultValue( cf.pos,
-                                                      defs.LIST_TYPE( pat.getType() ))
-                                  );
-        helpVarDefs.add( varDef );
-        return helpVar;
     }
 
     protected void initializeSyms() {
         funSymName = "leftTracer";
-
-        export_nestedMap = new HashMap();
 
         super.initializeSyms();
         this.accumType = _accumType( elementType );
@@ -206,8 +166,6 @@ public class LeftTracerInScala extends TracerInScala {
 
         Vector v = new Vector();
 
-        v.addAll( helpVarDefs );
-
         //
         // `def leftTracer(...) = ...'                 the function definition
         v.add( theDefDef );
@@ -235,22 +193,10 @@ public class LeftTracerInScala extends TracerInScala {
 
         v.add( run );
 
-        // vars...
-        for( Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
-            v.add( bindVar( (Symbol) it.next()) );
-        }
-
-        /* DEBUG OUTPUT AT RUNTIME
-           v.add( gen.Console...( "the trace is" ) );
-           v.add( gen.Console...( gen.Ident( pos, resultSym ) ) );
-        */
-
         Tree res[] = new Tree[ v.size() ];
         int j = 0;
         for( Iterator it = v.iterator(); it.hasNext(); )
             res[ j++ ] = (Tree) it.next();
-
-        //_m.varMap = export_nestedMap;
 
         return res;
 
@@ -258,6 +204,8 @@ public class LeftTracerInScala extends TracerInScala {
 
     // calling the AlgebraicMatcher here
     Tree _cur_match( Tree pat ) {
+        //return gen.mkBooleanLit(cf.pos, true);
+
         //System.out.println("calling algebraic matcher on type:"+pat.type);
 
         Matcher m = new Matcher( funSym,
@@ -267,28 +215,14 @@ public class LeftTracerInScala extends TracerInScala {
         if( CollectVariableTraverser.containsBinding( pat )) {
             switch( pat ) {
             case Sequence(Tree[] pats):
-                //System.out.println("ouch! v Left");
-                Symbol hv = makeHelpVarSEQ( pat );
-                export_nestedMap.put( pat, hv );
-                Tree stm  = gen.Assign( gen.Ident(Position.FIRSTPOS, hv), currentElem() );
-                m.stms = new Tree[2];
-                m.stms[0] = stm;
-                m.stms[1] = gen.mkBooleanLit(Position.FIRSTPOS, true);
-                return gen.mkBlock(m.stms);
+                return gen.mkBooleanLit(cf.pos, true);
             }
         }
-
-        HashMap helpMap = FreshVariableTraverser.getVars( pat, owner, cf.fresh );
-        //System.out.println("varMap: "+helpMap );
-
-        //m.varMap = helpMap;
-
-        //replaceVars( pat );
 
         am.construct( m, new CaseDef[] {
             cf.gen.CaseDef( pat,
                             gen.mkBooleanLit( cf.pos, true )),
-            cf.gen.CaseDef( cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
+            cf.gen.CaseDef( cf.gen.Ident( pat.pos, defs.PATTERN_WILDCARD ),
                             gen.mkBooleanLit( cf.pos, false)) },
                       false);
         Tree res = am.toTree();
