@@ -56,11 +56,11 @@ public class ExplicitOuterClassesPhase extends Phase {
 
     /** Applies this phase to the given type for the given symbol. */
     public Type transformInfo(Symbol symbol, Type type) {
-        if (symbol.isJava() || symbol == Symbol.NONE) return type;
+        if (symbol.isJava()) return type;
         //System.out.println("!!! debug1 = " + Debug.show(symbol));
         //if (symbol.name.toString().equals("x")) new Error("!!!").printStackTrace();
         type = typeTransformer.apply(type);
-        if (symbol.isConstructor() && !symbol.isOverloaded()) {
+        if (symbol.isConstructor()) {
             Symbol[] tparams = type.typeParams();
             Symbol[] vparams = type.valueParams();
             Type result = type.resultType();
@@ -86,9 +86,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             type = Type.MethodType(vparams, result);
             if (tparams.length != 0) type = Type.PolyType(tparams, type);
         } else {
-            Symbol owner = symbol.isConstructor()
-                ? symbol.constructorClass()
-                : symbol.owner().isConstructor()
+            Symbol owner = symbol.owner().isConstructor()
                 ? symbol.owner()
                 : symbol.enclClass();
             //System.out.println("!!! debug2 = " + Debug.show(symbol) + " - " + Debug.show(owner) + " --- " + (owner == Symbol.NONE) + " -- #" + owner.name + "#");
