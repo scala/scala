@@ -237,7 +237,7 @@ public class ATreePrinter {
     //########################################################################
     // Public Methods - Printing trees
 
-    /** Prints the primitive */
+    /** Prints the primitive. */
     public ATreePrinter printPrimitive(APrimitive primitive) {
         switch (primitive) {
         case Negation(ATypeKind type):
@@ -263,17 +263,49 @@ public class ATreePrinter {
         }
     }
 
-    /** Prints the primitive operation of given type */
+    /** Prints the primitive operation of given type. */
     public ATreePrinter printPrimitiveOp(String op, ATypeKind type) {
         return printPrimitiveOp(op, type, null);
     }
 
-    /** Prints the primitive operation of given types */
+    /** Prints the primitive operation of given types. */
     public ATreePrinter printPrimitiveOp(String op, ATypeKind t1,ATypeKind t2){
         print('<').print(op).print('>');
         if (t1 != null && global.uniqid) print('#').print(t1.toString());
         if (t2 != null && global.uniqid) print(',').print(t2.toString());
         return this;
+    }
+
+    /** Prints the constant. */
+    public ATreePrinter printConstant(AConstant constant) {
+        switch (constant) {
+        case UNIT:
+            return print("()");
+        case BOOLEAN(boolean value):
+            return print(value);
+        case BYTE(byte value):
+            return print(value);
+        case SHORT(short value):
+            return print(value);
+        case CHAR(char value):
+            return print('\'').print(value).print('\'');
+        case INT(int value):
+            return print(value);
+        case LONG(long value):
+            return print(value);
+        case FLOAT(float value):
+            return print(value);
+        case DOUBLE(double value):
+            return print(value);
+        case STRING(String value):
+            return print('\"').print(value).print('\"');
+        case NULL:
+            return print("null");
+        case ZERO:
+            return print("<zero>");
+        default:
+            throw Debug.abort("unknown case", constant);
+        }
     }
 
     //########################################################################
