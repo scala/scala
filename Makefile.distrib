@@ -257,6 +257,7 @@ distrib-build-ia	: ia-build
 
 distrib-official	: version-update
 	@$(make) distrib INSTALL_VERSION='$$(PROJECT_VERSION)'
+	$(CVS) tag "release-$(subst .,_,$(PROJECT_VERSION))" $(PROJECT_ROOT)
 	@$(make) version-increment
 
 .PHONY			: distrib
