@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This script was automatically generated using Zero G's InstallAnywhere 5.5.1 Standard, Build 2032
      STATUS: Fully Functional LICENSED Edition
-     DATE:   Tue Sep 09 16:23:36 CEST 2003 -->
-<InstallAnywhere_Deployment_Project increments="1434">
+     DATE:   Thu Sep 11 15:34:43 CEST 2003 -->
+<InstallAnywhere_Deployment_Project increments="1504">
 	<!-- ** DO NOT EDIT ** Essential authorization and configuration data ** DO NOT EDIT ** -->
 	<essentialScriptInfo>
 		<versionID major="5" minor="5" revision="1"/>
@@ -10,9 +10,9 @@
 		<scriptID>12,42,11,90,77,49,48,53,53,85,78,57,55,55,50,65</scriptID>
 		<buildID>3,13,71,76,105,110,117,120,44,32,50,46,52,46,50,48,45,50,48,46,56,44,32,105,51,56,54,59,32,74,97,118,97,32,49,46,51,46,49,95,48,56,44,32,83,117,110,32,77,105,99,114,111,115,121,115,116,101,109,115,32,73,110,99,46,44,32,104,116,116,112,58,47,47,106,97,118,97,46,115,117,110,46,99,111,109,47,59,32,101,110,44,32,85,83,59,32,85,84,70,45,56</buildID>
 		<!-- The authorizationID may change between project saves and builds.  This does not effect the integrity of the project, nor do changes in this value represent changes in the actual InstallAnywhere project. -->
-		<authorizationID>1,0,0,-16,-125,-67,96,0,80,112,112,97,87,98,113,97,113,65,83,67,74,65,74,67,89,70,64,69,66,69,48,79,87,5,2,10,8,12,118,7,0,0,0</authorizationID>
+		<authorizationID>1,0,0,-16,-109,-47,96,80,80,112,112,97,87,98,113,97,113,65,83,67,74,65,74,67,89,70,64,69,66,69,48,79,87,5,2,8,0,28,112,7,0,0,0</authorizationID>
 	</essentialScriptInfo>
-	<installationObjects uniqueObjects="59">
+	<installationObjects uniqueObjects="64">
 		<object class="com.zerog.ia.installer.Installer" objectID="3c471adea52a">
 			<property name="classpath">
 				<object class="java.util.Vector"/>
@@ -21,7 +21,7 @@
 				<string><![CDATA[The installer cannot run on your configuration. It will now quit.]]></string>
 			</property>
 			<property name="userSplashPath">
-				<string><![CDATA[com/zerog/ia/installer/images/]]></string>
+				<string><![CDATA[/tmp/IA_Build_scala/images/]]></string>
 			</property>
 			<property name="userSplashName">
 				<string><![CDATA[Splash.png]]></string>
@@ -33,6 +33,9 @@
 					</method>
 					<method name="addElement">
 						<string><![CDATA[fr]]></string>
+					</method>
+					<method name="addElement">
+						<string><![CDATA[de]]></string>
 					</method>
 				</object>
 			</property>
@@ -179,7 +182,7 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 								<string><![CDATA[/tmp/IA_Build_scala]]></string>
 							</property>
 							<property name="resourceName">
-								<string><![CDATA[LICENSE]]></string>
+								<string><![CDATA[LICENSE_en.html]]></string>
 							</property>
 							<property name="sourceFileType">
 								<int>0</int>
@@ -604,7 +607,7 @@ Press "Done" to quit the installer.]]></string>
 				<object class="java.util.Properties">
 					<method name="put">
 						<string><![CDATA[com.zerog.ia.project.save.last.date]]></string>
-						<string><![CDATA[Tue Sep 09 16:23:36 CEST 2003]]></string>
+						<string><![CDATA[Thu Sep 11 15:34:43 CEST 2003]]></string>
 					</method>
 					<method name="put">
 						<string><![CDATA[com.zerog.ia.build.options.optimization.platform.merge]]></string>
@@ -843,7 +846,7 @@ Press "Done" to quit the installer.]]></string>
 			<property name="installerInfoData">
 				<object class="com.zerog.ia.installer.util.InstallerInfoData" objectID="3c471ae5a52b">
 					<property name="installerTitle">
-						<string><![CDATA[Scala]]></string>
+						<string><![CDATA[Scala Installer]]></string>
 					</property>
 					<property name="installerName">
 						<string><![CDATA[install]]></string>
@@ -1702,6 +1705,93 @@ and any path to a file to read from that file]]></string>
 												</object>
 											</rules>
 										</object>
+										<object class="com.zerog.ia.installer.actions.InstallFile" objectID="9f9e2f1bbcf5">
+											<property name="unixPermissions">
+												<string><![CDATA[664]]></string>
+											</property>
+											<property name="sourceName">
+												<string><![CDATA[LICENSE_en.html]]></string>
+											</property>
+											<property name="overrideUnixPermissions">
+												<boolean>false</boolean>
+											</property>
+											<property name="sourcePath">
+												<string><![CDATA[/tmp/IA_Build_scala/]]></string>
+											</property>
+											<property name="shouldUninstall">
+												<boolean>true</boolean>
+											</property>
+											<property name="destinationName">
+												<string><![CDATA[LICENSE_en.html]]></string>
+											</property>
+											<property name="fileSize">
+												<long>-1</long>
+											</property>
+											<property name="macBinary">
+												<boolean>false</boolean>
+											</property>
+											<property name="targetCheckKind">
+												<int>0</int>
+											</property>
+										</object>
+										<object class="com.zerog.ia.installer.actions.InstallFile" objectID="9f9e2f1cbcf5">
+											<property name="unixPermissions">
+												<string><![CDATA[664]]></string>
+											</property>
+											<property name="sourceName">
+												<string><![CDATA[LICENSE_fr.html]]></string>
+											</property>
+											<property name="overrideUnixPermissions">
+												<boolean>false</boolean>
+											</property>
+											<property name="sourcePath">
+												<string><![CDATA[/tmp/IA_Build_scala/]]></string>
+											</property>
+											<property name="shouldUninstall">
+												<boolean>true</boolean>
+											</property>
+											<property name="destinationName">
+												<string><![CDATA[LICENSE_fr.html]]></string>
+											</property>
+											<property name="fileSize">
+												<long>-1</long>
+											</property>
+											<property name="macBinary">
+												<boolean>false</boolean>
+											</property>
+											<property name="targetCheckKind">
+												<int>0</int>
+											</property>
+										</object>
+										<object class="com.zerog.ia.installer.actions.InstallFile" objectID="a45d601dbcfa">
+											<property name="unixPermissions">
+												<string><![CDATA[664]]></string>
+											</property>
+											<property name="sourceName">
+												<string><![CDATA[LICENSE_de.html]]></string>
+											</property>
+											<property name="overrideUnixPermissions">
+												<boolean>false</boolean>
+											</property>
+											<property name="sourcePath">
+												<string><![CDATA[/tmp/IA_Build_scala/]]></string>
+											</property>
+											<property name="shouldUninstall">
+												<boolean>true</boolean>
+											</property>
+											<property name="destinationName">
+												<string><![CDATA[LICENSE_de.html]]></string>
+											</property>
+											<property name="fileSize">
+												<long>-1</long>
+											</property>
+											<property name="macBinary">
+												<boolean>false</boolean>
+											</property>
+											<property name="targetCheckKind">
+												<int>0</int>
+											</property>
+										</object>
 									</installChildren>
 								</object>
 							</installChildren>
@@ -1740,6 +1830,22 @@ and any path to a file to read from that file]]></string>
 					</property>
 					<visualChildren>
 						<object refID="95f3984fbd04"/>
+					</visualChildren>
+				</object>
+				<object class="com.zerog.ia.installer.GhostDirectory" objectID="9f9e5260bcf5">
+					<property name="destinationFolder">
+						<object class="com.zerog.ia.installer.util.magicfolders.DoNotInstallMF" factoryID="993" objectID="9f9da4c2bcf1"/>
+					</property>
+					<property name="overrideUnixPermissions">
+						<boolean>false</boolean>
+					</property>
+					<property name="unixPermissions">
+						<string><![CDATA[775]]></string>
+					</property>
+					<visualChildren>
+						<object refID="a45d601dbcfa"/>
+						<object refID="9f9e2f1bbcf5"/>
+						<object refID="9f9e2f1cbcf5"/>
 					</visualChildren>
 				</object>
 				<object refID="3c471b21a52c"/>
