@@ -96,7 +96,7 @@ clean			:
 	$(RM) -r $(main_OBJECTDIR)
 	$(RM) -r $(PROJECT_APIDOCDIR)
 
-distclean		: distclean.library
+distclean		:
 	$(RM) $(LATEST_PREFIX)-*
 	$(RM) -r $(PROJECT_OBJECTDIR)
 
@@ -409,10 +409,6 @@ LIBRARY_SDC_OUTPUTDIR	 = $(PROJECT_APIDOCDIR)
 LIBRARY_JAR_ARCHIVE	 = $(LIBRARY_CLASSDIR).jar
 LIBRARY_JAR_INPUTDIR	 = $(LIBRARY_CLASSDIR)
 LIBRARY_JAR_FILES	+= .
-
-distclean		: distclean.library
-distclean.library	:
-	$(RM) $(LIBRARY_JAR_ARCHIVE)
 
 $(latest)library	: $(latest)library-jc
 $(latest)library	: $(latest)library-sc
