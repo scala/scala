@@ -30,11 +30,11 @@ ULTRAEDIT_LIST		+= scala.txt
 ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 
 # scala test
-TEST_ROOT		 = $(PROJECT_ROOT)/test/files
+TEST_ROOT		 = $(PROJECT_ROOT)/test
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-pos.lst)
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-neg.lst)
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-run.lst)
-TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/%)
+TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/files/%)
 
 ##############################################################################
 # beta versions
