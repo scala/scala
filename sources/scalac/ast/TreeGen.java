@@ -241,41 +241,42 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	}
     }
 
-    /** Build a tree to be used as a base class constructor for a template.
+
+    /** Build a call to a primary constructor.
      */
-    public Tree mkParentConstr(int pos, Type parentType, Tree[] parentArgs) {
-	switch (parentType) {
-	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Tree ref = mkRef(pos, pre, sym.allConstructors());
-	    switch (ref.type) {
-	    case OverloadedType(Symbol[] alts, Type[] alttypes):
-		infer.methodAlternative(
-		    ref, alts, alttypes, Tree.typeOf(parentArgs), Type.AnyType);
-	    }
-	    return mkApply(ref, mkTypes(pos, args), parentArgs);
+    public Tree mkPrimaryConstr(int pos, Type type) {
+        return mkPrimaryConstr(pos, type, Tree.EMPTY_ARRAY);
+    }
+
+    public Tree mkPrimaryConstr(int pos, Type type, Tree[] args) {
+	switch (type) {
+	case TypeRef(Type prefix, Symbol clazz, Type[] targs):
+            global.nextPhase();
+            Symbol constr = clazz.primaryConstructor();
+            global.prevPhase();
+	    return mkApply(mkRef(pos, prefix, constr), targs, args);
 	default:
-	    throw global.fail("invalid parent type", parentType);
+	    throw Debug.abort("invalid type", type);
 	}
     }
 
-    public Tree mkParentConstr(int pos, Type parentType) {
-        return mkParentConstr(pos, parentType, Tree.EMPTY_ARRAY);
-    }
-
-    /** Build an array of trees to be used as base classes for a template.
+    /** Build an array of calls to primary constructors.
      */
-    public Tree[] mkParentConstrs(int pos, Type[] parents, Tree[][] parentArgs) {
-        Tree[] constrs = new Tree[parents.length];
-        for (int i = 0; i < parents.length; ++i)
-	    constrs[i] = (parentArgs.length == 0 ?
-                          mkParentConstr(pos, parents[i])
-                          : mkParentConstr(pos, parents[i], parentArgs[i]));
-        return constrs;
+    public Tree[] mkPrimaryConstrs(int pos, Type[] types, Tree[][] args) {
+        assert types.length == args.length: Debug.show(types, " -- ", args);
+        Tree[] trees = new Tree[types.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkPrimaryConstr(pos, types[i], args[i]);
+        return trees;
     }
 
-    public Tree[] mkParentConstrs(int pos, Type[] parents) {
-        return mkParentConstrs(pos, parents, new Tree[][]{});
+    public Tree[] mkPrimaryConstrs(int pos, Type[] types) {
+        Tree[] trees = new Tree[types.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkPrimaryConstr(pos, types[i]);
+        return trees;
     }
+
 
     /** Build parameter sections corresponding to type.
      */
@@ -455,8 +456,10 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
  	try {
 	    switch (fn.type) {
 	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
+                global.nextPhase();
 		infer.methodAlternative(fn, alts, alttypes,
 					Tree.typeOf(args), Type.AnyType);
+                global.prevPhase();
 	    }
 	    switch (fn.type) {
 	    case Type.MethodType(Symbol[] vparams, Type restpe):
@@ -478,12 +481,16 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	try {
 	    switch (fn.type) {
 	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
+                global.nextPhase();
 		infer.polyAlternative(fn, alts, alttypes, args.length);
+                global.prevPhase();
 	    }
 	    switch (fn.type) {
 	    case Type.PolyType(Symbol[] tparams, Type restpe):
-		return make.TypeApply(pos, fn, args)
-		    .setType(restpe.subst(tparams, Tree.typeOf(args)));
+                global.nextPhase();
+                restpe = restpe.subst(tparams, Tree.typeOf(args));
+                global.prevPhase();
+		return make.TypeApply(pos, fn, args).setType(restpe);
 	    }
 	} catch (Type.Error ex) {
 	}
@@ -629,7 +636,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    templ.setType(clazzinfo);
 	    return ClassDef(pos, clazz, templ);
 	default:
-	    throw new ApplicationError();
+	    throw Debug.abort("illegal case", clazzinfo);
 	}
     }
 
@@ -646,28 +653,15 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
 
-
-    /** Generate class definition from class symbol and body.
-     *  All parents must by parameterless, or take unit parameters.
-     */
-    public Tree ClassDef(int pos, Symbol clazz, Symbol local, Tree[] body) {
+    /** Generate class definition from interface symbol */
+    public Tree mkInterfaceDef(Symbol clazz, Tree[] body) {
 	Global.instance.nextPhase();
-	Type clazzinfo = clazz.info();
+	Type[] parents = clazz.parents();
+        assert clazz.isInterface(): Debug.show(clazz);
 	Global.instance.prevPhase();
-	return ClassDef(pos, clazz, mkParentConstrs(pos, clazzinfo.parents()), local, body);
+        return ClassDef(clazz, mkPrimaryConstrs(clazz.pos, parents), body);
     }
 
-    public Tree ClassDef(int pos, Symbol clazz, Tree[] body) {
-	return ClassDef(pos, clazz, localDummy(pos, clazz), body);
-    }
-
-    public Tree ClassDef(Symbol clazz, Symbol local, Tree[] body) {
-	return ClassDef(clazz.pos, clazz, local, body);
-    }
-
-    public Tree ClassDef(Symbol clazz, Tree[] body) {
-	return ClassDef(clazz.pos, clazz, body);
-    }
 
     /** Build the expansion of (() => expr)
      */
@@ -699,12 +693,12 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    params[i] = vparams[i].symbol();
 	    argtypes[i] = params[i].type();
 	}
-	Type ft = definitions.functionType(argtypes, restype);
-
+        Type[] parentTypes = {
+            definitions.OBJECT_TYPE,
+            definitions.functionType(argtypes, restype) };
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
-	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, ft},
-                                        new Scope(), clazz));
+        clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
@@ -716,31 +710,34 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    params[i].setOwner(applyMeth);
 	}
 	changeOwner(body, owner, applyMeth);
-	Tree applyDef = DefDef(applyMeth, body);
-	Tree classDef = ClassDef(clazz, new Tree[]{applyDef});
+        Tree[] parentTrees = mkPrimaryConstrs(pos, parentTypes);
+        Tree[] memberTrees = { DefDef(applyMeth, body) };
+        Tree classDef = ClassDef(clazz, parentTrees, memberTrees);
 	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY)
-	    .setType(ft);
+            .setType(parentTypes[1]);
 	return Block(new Tree[]{classDef, alloc});
     }
 
 
     public Tree mkPartialFunction(int pos, Tree applyVisitor, Tree isDefinedAtVisitor,
 				  Type pattype, Type restype, Symbol owner) {
-	Type pft = definitions.partialFunctionType(pattype, restype);
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
-	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, pft},
-                                        new Scope(), clazz));
+        Type[] parentTypes = {
+            definitions.OBJECT_TYPE,
+            definitions.partialFunctionType(pattype, restype)};
+	clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
-
-	Tree classDef = ClassDef(clazz, new Tree[]{
-	    makeVisitorMethod(pos, Names.apply, applyVisitor,
-			      pattype, restype, clazz, owner),
-	    makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
-			      pattype, definitions.BOOLEAN_TYPE, clazz, owner)});
+        Tree[] parentTrees = mkPrimaryConstrs(pos, parentTypes);
+        Tree[] memberTrees = {
+            makeVisitorMethod(pos, Names.apply, applyVisitor,
+                              pattype, restype, clazz, owner),
+            makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
+                              pattype, definitions.BOOLEAN_TYPE, clazz, owner)};
+        Tree classDef = ClassDef(clazz, parentTrees, memberTrees);
 	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY)
-	    .setType(pft);
+	    .setType(parentTypes[1]);
 	return Block(new Tree[]{classDef, alloc});
     }
     //where

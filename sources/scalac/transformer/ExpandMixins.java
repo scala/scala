@@ -101,7 +101,7 @@ public class ClassExpander {
             inlineMixinVParams(mixin.valueParams(), constr.args);
             inlineMixinMembers(impl);
             parents[i] = Type.TypeRef(prefix, iface, args);
-            template.parents[i] = gen.mkParentConstr(constr.pos, parents[i]);
+            template.parents[i] = gen.mkPrimaryConstr(constr.pos, parents[i]);
             state = i;
             return;
         default:

@@ -297,7 +297,7 @@ class AddInterfaces extends Transformer {
                 throw Debug.abort("don't know what to do with this ", t);
         }
 
-        return gen.ClassDef(classDef.symbol(), ifaceBody.toArray());
+        return gen.mkInterfaceDef(classDef.symbol(), ifaceBody.toArray());
     }
 
     protected Tree makeClass(ClassDef classDef) {
@@ -336,7 +336,7 @@ class AddInterfaces extends Transformer {
         Type ifaceType = classSym.parents()[newParents.length - 1];
         global.prevPhase();
         newParents[newParents.length - 1] =
-            gen.mkParentConstr(classDef.pos, ifaceType);
+            gen.mkPrimaryConstr(classDef.pos, ifaceType);
 
         Symbol local = classDef.impl.symbol();
         local.setOwner(classSym);
