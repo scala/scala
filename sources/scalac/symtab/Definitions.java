@@ -679,6 +679,14 @@ public class Definitions {
         return TYPECONSTRUCTOR_FUNCTIONOUTER;
     }
 
+    private Symbol SCALACLASSTYPE_WEAKISINSTANCE;
+    public Symbol SCALACLASSTYPE_WEAKISINSTANCE() {
+        if (SCALACLASSTYPE_WEAKISINSTANCE == null)
+            SCALACLASSTYPE_WEAKISINSTANCE =
+                loadTerm(SCALACLASSTYPE_CLASS, Names.weakIsInstance);
+        return SCALACLASSTYPE_WEAKISINSTANCE;
+    }
+
     private Symbol SCALACLASSTYPE_SETPARENTS;
     public Symbol SCALACLASSTYPE_SETPARENTS() {
         if (SCALACLASSTYPE_SETPARENTS == null)

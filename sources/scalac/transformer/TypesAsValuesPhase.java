@@ -329,7 +329,7 @@ public class TypesAsValuesPhase extends Phase {
         transformer.apply(unit);
     }
 
-    private class TV_Transformer extends GenTransformer {
+    private class TV_Transformer extends TV_MiniTransformer {
         private Symbol currentOwner;
 
         public TV_Transformer(Global global) {
@@ -736,8 +736,29 @@ public class TypesAsValuesPhase extends Phase {
          */
         private Tree genInstanceTest(int pos, Tree expr, Type tp) {
             Tree tpVal = typeAsValue(pos, tp, currentOwner, EENV);
-            Tree fun = gen.Select(pos, tpVal, defs.TYPE_ISINSTANCE());
-            return gen.mkApply_V(pos, fun, new Tree[] { expr });
+
+            if (isKnowClassType(tp) && isLocalIdent(expr)) {
+                Symbol sym = expr.symbol();
+                Tree cheapTest =
+                    gen.mkIsInstanceOf(pos, gen.mkLocalRef(pos, sym), tp, true);
+                Symbol weakIsInst = defs.SCALACLASSTYPE_WEAKISINSTANCE();
+                Tree scalaTpVal = gen.mkAsInstanceOf(pos,
+                                                     tpVal,
+                                                     defs.SCALACLASSTYPE_TYPE(),
+                                                     true);
+                Tree expensiveTest =
+                    gen.mkApply_V(pos,
+                                  gen.Select(pos, scalaTpVal, weakIsInst),
+                                  new Tree[] { expr });
+                return gen.mkApply_V(pos,
+                                     gen.Select(pos,
+                                                cheapTest,
+                                                defs.BOOLEAN_AND()),
+                                     new Tree[] { expensiveTest });
+            } else {
+                Tree fun = gen.Select(pos, tpVal, defs.TYPE_ISINSTANCE());
+                return gen.mkApply_V(pos, fun, new Tree[] { expr });
+            }
         }
 
         /**
@@ -781,6 +802,24 @@ public class TypesAsValuesPhase extends Phase {
                 return true;
             } else
                 return false;
+        }
+
+        private boolean isKnowClassType(Type tp) {
+            switch (tp) {
+            case TypeRef(_, Symbol sym, _):
+                return (sym != defs.ARRAY_CLASS) && !sym.isParameter();
+            default:
+                return false;
+            }
+        }
+
+        private boolean isLocalIdent(Tree tree) {
+            switch (tree) {
+            case Ident(_):
+                return tree.symbol().isLocal();
+            default:
+                return false;
+            }
         }
 
         /**

@@ -32,6 +32,7 @@ public class Statistics {
     private static long uniqueInstantiationsCount = 0;
 
     private static long instanceOfCount = 0;
+    private static long weakInstanceOfCount = 0;
     private static long typeCastCount = 0;
 
     private static long ancestorSearchIterations = 0;
@@ -66,6 +67,11 @@ public class Statistics {
 
     public static synchronized boolean incInstanceOf() {
         ++instanceOfCount;
+        return true;
+    }
+
+    public static synchronized boolean incWeakInstanceOf() {
+        ++weakInstanceOfCount;
         return true;
     }
 
@@ -112,6 +118,8 @@ public class Statistics {
                        + uniqueInstantiationsCount + ")");
         stream.println("(instance-of . "
                        + instanceOfCount + ")");
+        stream.println("(weak-instance-of . "
+                       + weakInstanceOfCount + ")");
         stream.println("(type-cast . "
                        + typeCastCount + ")");
         if (ancestorSearches > 0) {
