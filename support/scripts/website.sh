@@ -176,6 +176,24 @@ function website-print-xml-installers-add-archives() {
     "${add[@]}" "zip"     "zip" "Zip Archive (Windows)";
 }
 
+function website-print-xml-installers-get-params() {
+    [ $# = 1 ] || abort "internal error";
+    local installhtm="$1"; shift 1;
+
+    if [ ! -f "$installhtm" ]; then
+        warning "could not find file '$installhtm'";
+        return 1;
+    fi;
+
+    local start=`grep -n "^setArchiveFile()\$" "$installhtm"`;
+    local end=`grep -n "^platformButtons()\$" "$installhtm"`;
+    start=$[${start%%:*} + 3];
+    end=$[${end%%:*} - 2];
+
+    head -$end "$installhtm" | tail -$[$end - $start] \
+        | sed '-es/[	 ]*//' '-es!>$!/>!' '-e/^$/d';
+}
+
 function website-print-xml-installers() {
     local program="$FUNCNAME";
     local version='$Revision$';
@@ -192,23 +210,12 @@ function website-print-xml-installers() {
     $program-add-archives   "$basepath";
     echo "</installers>";
 
-    local installhtm="$basepath.ia/Web_Installers/install.htm";
-    if [ ! -f "$installhtm" ]; then
-        warning "could not find file '$installhtm'";
-        return 1;
-    fi;
-
-    local start=`grep -n "^setArchiveFile()\$" "$installhtm"`;
-    local end=`grep -n "^platformButtons()\$" "$installhtm"`;
-    start=$[${start%%:*} + 3];
-    end=$[${end%%:*} - 2];
-
     echo "";
     echo "<webinstaller>";
     echo "";
     echo "<params>";
-    head -$end "$installhtm" | tail -$[$end - $start] \
-        | sed '-es/[	 ]*//' '-es!>$!/>!' '-e/^$/d';
+    $program-get-params "$basepath.ia/Web_Installers/install-unix.htm";
+    $program-get-params "$basepath.ia/Web_Installers/install-windows.htm";
     echo "</params>";
     echo "";
     echo "</webinstaller>";

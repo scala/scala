@@ -250,8 +250,11 @@ ia-build-unix		:
 	$(RM) -r $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION)
 	$(IA) $(IA_BUILD_PREFIX)/$(notdir $(IA_BUILD_PROJECTFILE))
 	$(INSTALL) -m 755 -d $(IA_INSTALL_PREFIX)
-	$(strip $(TAR) cf - -C $(IA_BUILD_OUTPUTDIR) Web_Installers | \
+	$(strip $(TAR) cf - -C $(IA_BUILD_OUTPUTDIR) Web_Installers/InstData |\
 	    $(TAR) xf - -C $(IA_INSTALL_PREFIX))
+	$(CHMOD) 644 $(IA_BUILD_OUTPUTDIR)/Web_Installers/install.htm
+	$(strip $(CP) -a $(IA_BUILD_OUTPUTDIR)/Web_Installers/install.htm \
+	    $(IA_INSTALL_PREFIX)/Web_Installers/install-unix.htm)
 
 ia-build-windows	:
 	$(INSTALL) -m 644 -p $(IA_CONFIG_PREFIX)/tools.zip $(IA_BUILD_PREFIX)
@@ -262,8 +265,11 @@ ia-build-windows	:
 	$(RM) -r $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION)
 	$(IA) $(IA_BUILD_PREFIX)/$(notdir $(IA_BUILD_PROJECTFILE))
 	$(INSTALL) -m 755 -d $(IA_INSTALL_PREFIX)
-	$(strip $(TAR) cf - -C $(IA_BUILD_OUTPUTDIR) Web_Installers | \
+	$(strip $(TAR) cf - -C $(IA_BUILD_OUTPUTDIR) Web_Installers/InstData |\
 	    $(TAR) xf - -C $(IA_INSTALL_PREFIX))
+	$(CHMOD) 644 $(IA_BUILD_OUTPUTDIR)/Web_Installers/install.htm
+	$(strip $(CP) -a $(IA_BUILD_OUTPUTDIR)/Web_Installers/install.htm \
+	    $(IA_INSTALL_PREFIX)/Web_Installers/install-windows.htm)
 
 ia-build-all		: ia-build-common
 ia-build-all		: ia-build-unix
