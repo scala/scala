@@ -41,7 +41,7 @@ public class PackageParser extends SymbolLoader {
     /** Are we targeting the MSIL? */
     private boolean forMSIL;
 
-    private SymbolNameWriter snw = new SymbolNameWriter();
+    private final CLRPackageParser clrParser;
 
     //########################################################################
     // Public Constructors
@@ -51,6 +51,7 @@ public class PackageParser extends SymbolLoader {
         super(global);
         this.directory = directory;
 	this.forMSIL = global.target == global.TARGET_MSIL;
+	this.clrParser = forMSIL ? CLRPackageParser.instance() : null;
     }
 
     //########################################################################
@@ -89,8 +90,8 @@ public class PackageParser extends SymbolLoader {
 	Set namespaces = null;
 	ch.epfl.lamp.compiler.msil.Type type = null;
 	if (forMSIL) {
-	    types = clrParser().getTypes(peckage);
-	    namespaces = clrParser().getNamespaces(peckage);
+	    types = clrParser.getTypes(peckage);
+	    namespaces = clrParser.getNamespaces(peckage);
 	}
 
         // create JVM and source members
@@ -121,17 +122,11 @@ public class PackageParser extends SymbolLoader {
             peckage.newLoadedClass(0, classname, loader, members);
         }
 
-	if (forMSIL) {
-	    for (Iterator i = types.keySet().iterator(); i.hasNext(); ) {
-		classes.remove(i.next());
-	    }
-	}
-
         for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
 	    //assert !types.containsKey(name) : types.get(name);
-	    if (!forMSIL || clrParser().shouldLoadClassfile(peckage, name)) {
+	    if (!forMSIL || clrParser.shouldLoadClassfile(peckage, name)) {
 		AbstractFile cfile = (AbstractFile)entry.getValue();
 		packages.remove(name);
 		Name classname = Name.fromString(name).toTypeName();
@@ -144,7 +139,7 @@ public class PackageParser extends SymbolLoader {
 	    // import the CLR types contained in the package (namespace)
 	    for (Iterator i = types.values().iterator(); i.hasNext(); ) {
 		type = (ch.epfl.lamp.compiler.msil.Type)i.next();
-		clrParser().importType(type, peckage, members);
+		clrParser.importType(type, peckage, members);
 	    }
 	}
 
@@ -162,17 +157,16 @@ public class PackageParser extends SymbolLoader {
  	    // import the CLR namespaces contained in the package (namespace)
  	    for (Iterator i = namespaces.iterator(); i.hasNext(); ) {
  		String namespace = (String)i.next();
- 		clrParser().importNamespace(namespace, peckage, members);
+		Name name = Name.fromString(namespace);
+		if (members.lookup(name) == Symbol.NONE) {
+		    peckage.newLoadedPackage(name, this, members);
+		}
  	    }
 	}
 
         // initialize package
         peckage.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, peckage));
         return "directory path '" + directory + "'";
-    }
-
-    private CLRPackageParser clrParser() {
-	return CLRPackageParser.instance(global);
     }
 
     //########################################################################
