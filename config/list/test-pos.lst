@@ -12,7 +12,6 @@ pos/S3.scala
 pos/S5.scala
 pos/S8.scala
 pos/X.scala
-pos/Y.scala
 pos/Z.scala
 pos/abstract.scala
 pos/aliases.scala
@@ -134,6 +133,5 @@ pos/traits.scala
 pos/valdefs.scala
 pos/viewtest1.scala
 pos/viewtest2.scala
-pos/vincent.scala
 
 ##############################################################################
