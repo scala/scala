@@ -122,14 +122,6 @@ public class TreeChecker {
             popOwner();
             return true;
 
-        case ValDef(_, _, _, Tree rhs):
-            Symbol symbol = tree.symbol();
-            assert symbol != null && symbol.isModule(): show(tree);
-            pushOwner(symbol);
-            expression(rhs, symbol.type());
-            popOwner();
-            return true;
-
         default:
             throw Debug.abort("illegal case", tree);
         }

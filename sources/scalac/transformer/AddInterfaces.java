@@ -176,9 +176,7 @@ public class AddInterfaces extends GenTransformer {
             this.clasz = null;
             return;
         case DefDef(_, _, _, _, _, _):
-            return;
         case ValDef(_, _, _, _):
-            if (tree.symbol().owner().isPackage()) trees.append(tree);
             return;
         default:
             throw Debug.abort("illegal tree", tree);

@@ -65,16 +65,13 @@ public class ATreeFromSTree {
 
         case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
             AClass clasz = new AClass(tree.symbol());
+            // !!! add static field to global modules
             repository.addClass(clasz);
             member(clasz, body);
             return;
 
         case PackageDef(_, Template(_, Tree[] body)):
             template(repository, body);
-            return;
-
-        case ValDef(_, _, _, Tree rhs):
-            // !!!
             return;
 
         default:

@@ -281,6 +281,9 @@ public class Compiler {
         case ClassDef(_, _, _, _, _, _):
             sources.put(tree, source);
             environment.insertClassDef(symbol, (Tree.ClassDef)tree);
+            if (symbol.isModuleClass() && symbol.module().isGlobalModule()) {
+                environment.insertVariable(symbol.module(), Variable.Module(new CodePromise(new ModuleBuilder(this, source, symbol.module())), null));
+            }
             return;
 
         // !!! these could be removed
@@ -288,11 +291,6 @@ public class Compiler {
             assert packaged.symbol().isPackage() : Debug.show(tree); // !!! was isJavaPackage
             assert bases.length == 0 : Debug.show(tree);
             declare(source, body);
-            return;
-
-        case ValDef(_, _, _, Tree body):
-            assert symbol.isModule() : Debug.show(symbol);
-            environment.insertVariable(symbol, Variable.Module(new CodePromise(new ModuleBuilder(this, source, symbol, body)), null));
             return;
 
         default:
@@ -408,17 +406,21 @@ public class Compiler {
         private final Compiler compiler;
         private final SourceFile source;
         private final Symbol symbol;
-        private final Tree body;
 
-        public ModuleBuilder(Compiler compiler, SourceFile source, Symbol symbol, Tree body) {
+        public ModuleBuilder(Compiler compiler, SourceFile source, Symbol symbol) {
             this.compiler = compiler;
             this.source = source;
             this.symbol = symbol;
-            this.body = body;
         }
 
         public CodeContainer generate() {
-            return compiler.compile(source, symbol, body, Symbol.EMPTY_ARRAY);
+            TreeGen gen = compiler.global.treeGen;
+            Symbol clasz = symbol.moduleClass();
+            Symbol initializer = clasz.lookup(Names.INITIALIZER);
+            compiler.global.prevPhase();
+            Tree code =gen.New(gen.Apply(gen.Ident(symbol.pos, initializer)));
+            compiler.global.nextPhase();
+            return compiler.compile(source, symbol, code, Symbol.EMPTY_ARRAY);
         }
     }
 

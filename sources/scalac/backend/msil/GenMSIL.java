@@ -191,9 +191,6 @@ public final class GenMSIL {
 		//currModule = getPackage(packageName);
 		genPackage(currAssembly, impl.body);
 		break;
-	    case ValDef(_, _, _, _):
-		//log("ValDef: " + dumpSym(tree.symbol()));
-		break;
 	    default:
 		throw new ApplicationError
 		    ("Illegal top-level definition: " + Debug.show(tree));
@@ -216,13 +213,6 @@ public final class GenMSIL {
 		Type type = tc.getType(sym);
 		if (type instanceof TypeBuilder)
 		    genClass(sym, classBody);
-		break;
-
-	    case ValDef(_, _, Tree tpe, Tree rhs):
-		if (sym.isModule()) {
-		} else
-		    throw new ApplicationError();
-		//log("ValDef: " + dumpSym(tree.symbol()));
 		break;
 
 	    case PackageDef(Tree packaged, Template(_ , Tree[] body2)):

@@ -524,11 +524,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     private Tree[] transformModule(Tree tree, int mods, Name name, Tree tpe, Tree.Template templ) {
 	Symbol sym = tree.symbol();
 	Tree cdef = gen.ClassDef(sym.moduleClass(), templ);
+	if (sym.isGlobalModule()) return new Tree[]{cdef};
 	Tree alloc = gen.New(gen.mkPrimaryConstr(tree.pos, sym.moduleClass()));
-	if (sym.isGlobalModule()) {
-	    Tree vdef = gen.ValDef(sym, alloc);
-	    return new Tree[]{cdef, vdef};
-	} else {
+	{
 	    // var m$: T = null;
 	    Name varname = Name.fromString(name + "$");
 	    Symbol mvar = new TermSymbol(
