@@ -155,6 +155,12 @@ runtime/matching/Rule.scala
 
 testing/UnitTest.scala
 
+util/regexp/Alphabet.scala
+util/regexp/Base.scala
+util/regexp/WordExp.scala
+util/regexp/PointedHedgeExp.scala
+util/regexp/SyntaxErrorException.scala
+
 xml/Attribute.scala
 xml/AttributeSeq.scala
 xml/BindingFactoryAdapter.scala
@@ -175,9 +181,9 @@ xml/Text.scala
 xml/TextBuffer.scala
 xml/Utility.scala
 
+xml/dtd/ContentModel.scala
 xml/dtd/Decl.scala
 xml/dtd/Parser.scala
-xml/dtd/RegExp.scala
 xml/dtd/Scanner.scala
 xml/dtd/Tokens.scala
 xml/dtd/Validation.scala

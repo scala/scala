@@ -76,6 +76,7 @@
 
      private val &ccElementName;Validator = {
        import scala.xml.dtd._;
+       import ContentModel._;
        new ElementValidator(<qstring ref="namespace"/>, <elemDecl/>);
      }
 

@@ -12,7 +12,9 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
-import scala.xml.dtd.{AttrDecl,ElemDecl,RegExp,ANY_,PCDATA_,Eps,Star,RNode,Sequ,Alt}
+import scala.xml.dtd.{AttrDecl, ContentModel, ElemName, ElemDecl};
+
+import ContentModel._ ;
 import scala.xml.dtd.{REQUIRED,IMPLIED,DEFAULT};
 import scala.xml.nobinding.XML ;
 
@@ -115,7 +117,7 @@ class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elem
       /*Console.println("sCM:"+ r.getClass() + " r:"+r );*/
       r match {
         case Eps   => ""
-        case RNode(name) => refTag( name ).toString();
+        case Letter(ElemName(name)) => refTag( name ).toString();
         case Star(r) => "("+shallowContentModel( r ) +") *"
         case Alt( rs @ _* )  => shallowContentModel1( rs, '|' )
         case Sequ( rs @ _* ) =>  shallowContentModel1( rs, ',' )
@@ -134,7 +136,7 @@ class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elem
         val sb = new StringBuffer("tagIterator( ch ).forall( x:Int => x match {");
         for( val alt <- alts.elements ) {
           sb.append("                          case ");
-          alt match { case RNode( name ) => sb.append( refTag( name ).toString() )}
+          alt match { case Letter(ElemName( name )) => sb.append( refTag( name ).toString() )}
           sb.append(" => true \n");
         }
         sb.append("case _ => false })");
@@ -175,7 +177,7 @@ class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elem
                 fOut.print(sb.toString());
 
               case "elemDecl" =>
-                fOut.print(curModel.toString());
+                fOut.print(ContentModel.toString( curModel ));
 
               case "template" => {
                 lookup.update("objectName", objectName);
