@@ -120,7 +120,8 @@ class AddInterfaces extends SubstTransformer {
         (Modifiers.MODUL | Modifiers.SYNTHETIC | Modifiers.JAVA);
 
     protected boolean needInterface(Symbol sym) {
-        return (sym.primaryConstructorClass().flags & NO_INTERFACE_MODS) == 0;
+        return (sym != Symbol.NONE)
+            && ((sym.primaryConstructorClass().flags & NO_INTERFACE_MODS) == 0);
     }
 
     protected boolean memberGoesInInterface(Symbol member) {
@@ -630,8 +631,10 @@ class AddInterfaces extends SubstTransformer {
 
                 classConstrSym.setInfo(tparamsSM.apply(classConstrSym.info()));
                 Symbol[] vparams = vparams(classConstrSym.nextInfo());
-                for (int i = 0; i < vparams.length; ++i)
+                for (int i = 0; i < vparams.length; ++i) {
+                    vparams[i].setOwner(classConstrSym);
                     vparams[i].updateInfo(tparamsSM.apply(vparams[i].info()));
+                }
 
                 Scope newIFaceMembers = new Scope();
                 Scope classMembers = new Scope();
