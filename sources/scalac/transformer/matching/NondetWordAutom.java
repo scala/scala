@@ -412,6 +412,18 @@ public class NondetWordAutom  {
 
       }
 
+    /** collects variables
+     * @return all variables bound by this binding nfa
+     */
+    static Set collectVariables( NondetWordAutom nfa ) {
+        HashSet seqVars = new HashSet();
+        for( int j = 0; j < nfa.nstates; j++ ) {
+            if( nfa.qbinders[ j ] != null )
+                seqVars.addAll( nfa.qbinders[ j ] );
+        }
+        return seqVars;
+    }
+
       /** collapses several normalized NondetWordAutom objects into one.
        */
 
@@ -515,5 +527,6 @@ public class NondetWordAutom  {
             }
 
       }
+
 
 }

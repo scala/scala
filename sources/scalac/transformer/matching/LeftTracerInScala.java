@@ -15,6 +15,7 @@ import ch.epfl.lamp.util.Position;
 
 public class LeftTracerInScala extends TracerInScala {
 
+    HashMap export_nestedMap;
     Tree selector;
 
     /** symbol of the accumulator ( scala.SequenceList )
@@ -27,16 +28,14 @@ public class LeftTracerInScala extends TracerInScala {
         return cf.SeqTraceType( elemType );
     }
 
-
-    Matcher _m ;
     public LeftTracerInScala( DetWordAutom dfa,
                               Type elementType,
-                              Matcher m,
+                              Symbol owner,
+                              Tree selector,
                               CodeFactory cf ) {
 
-        super( dfa, elementType, m.owner, cf );
-        this._m = m;
-        this.selector = m.selector;
+        super( dfa, elementType, owner, cf );
+        this.selector = selector;
         helpVarDefs = new Vector();
 
     }
@@ -79,7 +78,7 @@ public class LeftTracerInScala extends TracerInScala {
     protected void initializeSyms() {
         funSymName = "leftTracer";
 
-        nestedMap = new HashMap();
+        export_nestedMap = new HashMap();
 
         super.initializeSyms();
         this.accumType = _accumType( elementType );
@@ -251,13 +250,11 @@ public class LeftTracerInScala extends TracerInScala {
         for( Iterator it = v.iterator(); it.hasNext(); )
             res[ j++ ] = (Tree) it.next();
 
-        _m.varMap = nestedMap;
+        //_m.varMap = export_nestedMap;
 
         return res;
 
     }
-
-    public HashMap nestedMap;
 
     // calling the AlgebraicMatcher here
     Tree _cur_match( Tree pat ) {
@@ -272,7 +269,7 @@ public class LeftTracerInScala extends TracerInScala {
             case Sequence(Tree[] pats):
                 //System.out.println("ouch! v Left");
                 Symbol hv = makeHelpVarSEQ( pat );
-                nestedMap.put( pat, hv );
+                export_nestedMap.put( pat, hv );
                 Tree stm  = gen.Assign( gen.Ident(Position.FIRSTPOS, hv), currentElem() );
                 m.stms = new Tree[2];
                 m.stms[0] = stm;
@@ -284,7 +281,7 @@ public class LeftTracerInScala extends TracerInScala {
         HashMap helpMap = FreshVariableTraverser.getVars( pat, owner, cf.fresh );
         //System.out.println("varMap: "+helpMap );
 
-        m.varMap = helpMap;
+        //m.varMap = helpMap;
 
         //replaceVars( pat );
 

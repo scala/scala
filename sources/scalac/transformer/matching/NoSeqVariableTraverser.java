@@ -5,7 +5,7 @@ import scalac.ast.Tree ;
 import scalac.ast.Traverser ;
 import scalac.symtab.Symbol ;
 
-import java.util.Vector;
+import java.util.HashSet;
 
 class NoSeqVariableTraverser extends CollectVariableTraverser {
 
@@ -22,7 +22,7 @@ class NoSeqVariableTraverser extends CollectVariableTraverser {
             super();
       }
 
-      static Vector varsNoSeq( Tree  pat ) {
+      static HashSet varsNoSeq( Tree  pat ) {
 
             NoSeqVariableTraverser nvt = new NoSeqVariableTraverser();
             nvt.traverse( pat );
@@ -30,7 +30,7 @@ class NoSeqVariableTraverser extends CollectVariableTraverser {
 
       }
 
-      static Vector varsNoSeq( Tree[]  pats ) {
+      static HashSet varsNoSeq( Tree[]  pats ) {
 
             NoSeqVariableTraverser nvt = new NoSeqVariableTraverser();
             for(int i = 0; i < pats.length; i++)

@@ -23,10 +23,10 @@ import ch.epfl.lamp.util.Position;
 
 public class RightTracerInScala extends TracerInScala  {
 
-    Vector seqVars;
-    Vector allVars;
+    Set seqVars;
+    Set allVars;
 
-    Matcher _m;
+    Set varsToExport ;
 
     Symbol targetSym;
 
@@ -36,35 +36,24 @@ public class RightTracerInScala extends TracerInScala  {
 
     /** translate right tracer to code
      * @param dfa determinized left tracer
-     * @param left nondeterm. left tracer
+     * @param left nondeterm. left tracer (only needed for variables!)
      * @param cf   ...
      * @param pat  ?
      * @param elementType ...
      */
     public RightTracerInScala( DetWordAutom dfa,
-                               NondetWordAutom left,
-                               Matcher m,
+                               Set seqVars,
+                               Symbol owner,
                                CodeFactory cf,
                                Tree pat,
                                Type elementType ) {
-        super( dfa, elementType, m.owner, cf );
-        this._m = m;
-
-        Vector seqVars = new Vector();
-
-        for( int j = 0; j < left.nstates; j++ ) {
-            if( left.qbinders[ j ] != null )
-                for( Iterator it = left.qbinders[ j ].iterator();
-                     it.hasNext() ; ) {
-                    Symbol varSym = (Symbol) it.next();
-
-                    if( !seqVars.contains( varSym ) )
-                        seqVars.add( varSym );
-                }
-        }
-
+        super( dfa, elementType, owner, cf );
         this.seqVars = seqVars;
         this.allVars = CollectVariableTraverser.collectVars( pat );
+
+        this.varsToExport = new HashSet();
+        varsToExport.addAll( allVars );
+        varsToExport.removeAll( seqVars );
 
         helpMap2 = new HashMap();
         helpVarDefs = new Vector();
@@ -75,7 +64,8 @@ public class RightTracerInScala extends TracerInScala  {
 
         for( Iterator it = allVars.iterator(); it.hasNext(); ) {
             Symbol varSym = (Symbol) it.next();
-            if( !seqVars.contains( varSym )) {
+            if(( varSym.name.toString().indexOf("$") == -1 )
+               && ( !seqVars.contains( varSym ))) {
                 makeHelpVar( varSym, true );
             }
         }
@@ -91,7 +81,7 @@ public class RightTracerInScala extends TracerInScala  {
      */
 
     void makeHelpVar( Symbol realVar, boolean keepType ) {
-        Symbol helpVar = new TermSymbol( pos,
+        Symbol helpVar = new TermSymbol( cf.pos,
                                          cf.fresh.newName( realVar.name
                                                            .toString() ),
                                          owner,
@@ -103,7 +93,6 @@ public class RightTracerInScala extends TracerInScala  {
             helpVar.setType( realVar.type() );
         else
             helpVar.setType( defs.LIST_TYPE(elementType) );
-
 
         helpMap.put( realVar, helpVar );
 
@@ -148,13 +137,13 @@ public class RightTracerInScala extends TracerInScala  {
             .setType( defs.INT_TYPE() ) ;
 
         this.curSym = new TermSymbol( pos,
-                                      cf.fresh.newName("elem"),
+                                      cf.fresh.newName("currentElement"),
                                       funSym,
                                       0)
             .setType( elementType ) ;
 
         this.targetSym = new TermSymbol( pos,
-                                         cf.fresh.newName("trgt"),
+                                         cf.fresh.newName("targetState"),
                                          funSym,
                                          0)
             .setType( defs.INT_TYPE() ) ;
@@ -168,7 +157,7 @@ public class RightTracerInScala extends TracerInScala  {
     Tree loadCurrentElem( Tree body ) {
         return gen.mkBlock( new Tree[] {
             gen.If( cf.isEmpty( _iter() ),
-                    run_finished( 0 ),
+                    run_finished( 0 ),            // we are done
                     gen.mkBlock( new Tree[] {
                         gen.ValDef( this.targetSym,
                                     cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
@@ -178,43 +167,6 @@ public class RightTracerInScala extends TracerInScala  {
                     )});
     }
 
-    /*
-      public Tree code_body() {
-
-      Tree body = code_error(); // never reached at runtime.
-
-      // state [ nstates-1 ] is the dead state, so we skip it
-
-      //`if( state == q ) <code_state> else {...}'
-      for( int i = dfa.nstates-1; i >= 0; i-- ) {
-      body = code_state( i, body );
-      }
-
-      Tree t3 = gen.If( cf.isEmpty( _iter() ),
-      run_finished( 0 ),
-      gen.mkBlock( new Tree[] {
-      gen.ValDef( targetSym,
-      cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
-      gen.ValDef( curSym,
-      cf.SeqTrace_headElem( gen.Ident( pos, iterSym))),
-
-      body }));
-
-      t3 = gen.mkBlock( new Tree[] {
-      cf.debugPrintRuntime("enter binderFun"),
-      cf.debugPrintRuntime(" state:"),
-      cf.debugPrintRuntime( gen.Ident( pos, stateSym )),
-      cf.debugPrintRuntime(" iter:"),
-      cf.debugPrintRuntime(_iter()),
-      cf.debugPrintNewlineRuntime(""),
-      t3 });
-
-
-      //System.out.println("enter RightTracerInScala:code_body()");// DEBUG
-      //System.out.println("dfa.nstates"+dfa.nstates);// DEBUG
-      return t3;
-      }
-    */
     /** see code_state0_NEW
      */
     Tree code_state0( Tree elseBody ) { // careful, map Int to Int
@@ -258,7 +210,10 @@ public class RightTracerInScala extends TracerInScala  {
             Integer I = (Integer) tmapTag.get( tagI );
             targets[ i ] = (Tree) tmapBody.get( I );
         }
-        return gen.Switch( gen.Ident( pos, targetSym ), tags, targets, code_error()/*cannot happen*/ );
+        return gen.Switch( gen.Ident( pos, targetSym ),
+                           tags,
+                           targets,
+                           code_error()/*cannot happen*/ );
 
     }
 
@@ -347,11 +302,7 @@ public class RightTracerInScala extends TracerInScala  {
                                  currentElem(),
                                  defs.BOOLEAN_TYPE() );
 
-        // there could be variables in regular expressions under Sequence
-        // node, export those later (?!WHY?!)
-
-        Vector varsToExport = NoSeqVariableTraverser.varsNoSeq( pat );
-        HashMap freshenMap = new HashMap();
+        final HashMap freshenMap = new HashMap();
         HashMap helpMap3 = new HashMap();
 
         // "freshening": never use the same symbol more than once
@@ -359,24 +310,47 @@ public class RightTracerInScala extends TracerInScala  {
 
         for( Iterator it = varsToExport.iterator(); it.hasNext(); ) {
             Symbol key = (Symbol) it.next();
-            this.helpMap2.put( key, helpMap.get( key ));
-            // "freshening"
-            Symbol newSym = key.cloneSymbol();
-            newSym.name = key.name.append( Name.fromString("gu234") ); // is fresh now :-)
-            freshenMap.put( key, newSym );
-            helpMap3.put( newSym, helpMap.get( key ));
+            if( key.name.toString().indexOf("$") == -1 ) {
+                this.helpMap2.put( key, helpMap.get( key ));
+                // "freshening" by appending string ( a bit dangerous )
+                Symbol newSym = key.cloneSymbol().setOwner( funSym );
+                newSym.name = key.name.append( Name.fromString("%") );
+                freshenMap.put( key, newSym );
+                helpMap3.put( newSym, helpMap.get( key ));
+                //System.out.println( "key: "+ key + " key.owner:"+key.owner());
+                //System.out.println( "newsym owner:"+newSym.owner());
+            } else {
+                freshenMap.put( key, key );
+            }
         }
 
-        //System.out.println("RightTracerInScala::freshenMap :"+freshenMap);
         //System.out.println("RightTracerInScala:: -pat :"+pat.toString());
-        //System.out.println("RightTracerInScala::varsToExport :"+varsToExport);
+        /*
+System.out.println("RightTracerInScala - the seqVars"+seqVars);
+        System.out.println("RightTracerInScala - the varsToExport"+varsToExport);
+        */
+        //System.out.println("RightTracerInScala::freshenMap :"+freshenMap);
 
         // "freshening"
 
         /* TEST
          */
         TreeCloner tc = new TreeCloner( cf.unit.global, freshenMap, Type.IdMap );
+
+        /*
+        Transformer tc = new Transformer(cf.unit.global) {
+                public Tree transform(Tree tree) {
+                    tree = super.transform(tree);
+                    if (tree.hasSymbol()) {
+                        Object symbol = freshenMap.get(tree.symbol());
+                        if (symbol != null) tree.setSymbol((Symbol)symbol);
+                    }
+                    return tree;
+                }
+            };
+        */
         pat = tc.transform( pat );
+
 
         //System.out.println("RightTracerInScala:: -pat( after subst ) :"+pat);
 
@@ -492,8 +466,6 @@ public class RightTracerInScala extends TracerInScala  {
         for( Iterator it = v.iterator(); it.hasNext(); ) {
             result[ j++ ] = (Tree) it.next();
         }
-
-        // helpvarSEQ via _m.varMap
 
         return result;
     }

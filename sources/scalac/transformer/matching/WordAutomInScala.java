@@ -16,7 +16,7 @@ import scalac.ast.TreeGen;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.transformer.TransMatch.Matcher;
-import scalac.typechecker.*;
+//import scalac.typechecker.*;
 import Tree.*;
 
 import java.util.*;
@@ -34,8 +34,8 @@ public class WordAutomInScala extends Autom2Scala {
                           Type resultType) {
 
         Tree run = callFun( new Tree[] {
-            cf.newIterator(selector),
-            gen.mkIntLit(Position.FIRSTPOS, 0) } );
+            cf.newIterator( selector ),
+            gen.mkIntLit( cf.pos, 0 ) } );
 
         /* return code `var <swres>: scala.Int = <init>' */
 
@@ -46,12 +46,12 @@ public class WordAutomInScala extends Autom2Scala {
         // conditions
         Tree cond[] = new Tree[body.length];
         //Tree bbody[] = new Tree[body.length];
-        for (int i = body.length - 1; i >= 0; i--)
-            cond[i] = cf.Equals(_swres(), gen.mkIntLit(Position.FIRSTPOS, i));
+        for( int i = body.length - 1; i >= 0; i-- )
+            cond[i] = cf.Equals(_swres(), gen.mkIntLit( cf.pos, i ));
 
         result = cf.Switch( selector, cond, body, failTree );
 
-        result = cf.gen.mkBlock( pos, new Tree[] { theDefDef, run, result } );
+        result = cf.gen.mkBlock( cf.pos, new Tree[] { theDefDef, run, result } );
         //unit.global.debugPrinter.print( result );
         return result;
     }
@@ -83,7 +83,7 @@ public class WordAutomInScala extends Autom2Scala {
             return code_fail();
 
         return callFun(new Tree[] { _iter(),
-                                    gen.mkIntLit(Position.FIRSTPOS, target.intValue())} );
+                                    gen.mkIntLit( cf.pos, target.intValue() )} );
     }
 
     /** constructor
@@ -94,14 +94,12 @@ public class WordAutomInScala extends Autom2Scala {
      * @param optim       flag that indicates whether to optimize
      * @return            an object that translates the dfa
      */
-    public WordAutomInScala(int pos,
-                            DetWordAutom dfa,
+    public WordAutomInScala(DetWordAutom dfa,
                             Type elementType,
                             Symbol owner,
                             CodeFactory cf,
                             boolean optim) {
         super(dfa, elementType, owner, cf);
-        this.pos = pos;
         this.optimize &= optim;
 
     }

@@ -7,7 +7,7 @@ import Tree.*;
 //import scala.compiler.printer.TextTreePrinter ; // DEBUGGING\
     //import scala.compiler.printer.XMLAutomPrinter ; // DEBUGGING\
 
-import scalac.transformer.TransMatch.Matcher ;
+    import scalac.transformer.TransMatch.Matcher ;
 import scalac.ast.* ;
 import scalac.symtab.* ;
 
@@ -23,187 +23,162 @@ import ch.epfl.lamp.util.Position;
 
 public class SequenceMatcher extends PatternTool {
 
-      CodeFactory cf;
+    final static Integer IGNORED = new Integer(42);
+    CodeFactory cf;
 
-      Matcher _m;
+    Matcher _m;
 
-      Tree pat[];
-      Tree body[];
+    //Tree pat[];
+    //Tree body[];
+
+    BindingBerrySethi bbuild = null;
 
     /** translates the det/switching automaton to scala code
      *  precondition: pat.type() corresponds to element type
      */
-      Tree addBinderToBody( Tree pat, Tree body ) {
+    Tree addBinderToBody( Tree pat, Tree body ) {
+        if( bbuild == null )
+            bbuild = new BindingBerrySethi();
 
-            Type elementType = cf.getElemType_Sequence( pat.getType() );
+        Type elementType = cf.getElemType_Sequence( pat.getType() );
 
-            BindingBerrySethi build = new BindingBerrySethi();
-            NondetWordAutom left =  build.automatonFrom( pat, new Integer(0) );
-            NondetWordAutom right = build.revnfa;
+        // (a) build *binding* nfa (sequential machine)
+        NondetWordAutom left =  bbuild.automatonFrom( pat, IGNORED );
+        NondetWordAutom right = bbuild.revnfa;
 
-            //  - - -> left
+        //  (b) determinize + translate L
 
-            DetWordAutom dLeft  =
-                  new DetWordAutom( left );
+        DetWordAutom dLeft  = new DetWordAutom( left );
 
-            Matcher mL = new Matcher( _m.owner, _m.selector, null );
+        LeftTracerInScala ltis =
+            new LeftTracerInScala( dLeft, elementType, _m.owner, _m.selector, cf);
 
-            LeftTracerInScala ltis =
-                  new LeftTracerInScala( dLeft, elementType, mL, cf);
+        Tree stms[] = ltis.getTrace();
 
-            Tree stms[] = ltis.getTrace();
+        Tree theTrace = gen.Ident( cf.pos, ltis.resultSym );
 
-            Tree sel = gen.Ident( Position.FIRSTPOS, ltis.resultSym );
+        //  (c) determinize + translate R
 
-            // <- - - right
+        DetWordAutom dRight = new DetWordAutom( right, left, dLeft );
 
-            DetWordAutom dRight =
-                  new DetWordAutom( right, left, dLeft);
+        Set seqVars = NondetWordAutom.collectVariables( left );
+        final RightTracerInScala rtis =
+            new RightTracerInScala( dRight, seqVars, _m.owner,
+                                    cf, pat, elementType );
 
-            //System.out.println( "vars: "+vars );
-            int j;
+        Tree stms2[] = rtis.getStms( theTrace );
 
-            final RightTracerInScala rtis =
-                  new RightTracerInScala( dRight, left, mL,
-                                          cf, pat, elementType );
+        // paste statements together
 
-            Tree stms2[] = rtis.getStms( sel );             // to scala
+        Tree items[] = new Tree[ stms.length + stms2.length + 1 ];
 
-            // run them, bind
+        System.arraycopy( stms, 0, items, 0, stms.length );
+        System.arraycopy( stms2, 0, items, stms.length, stms2.length );
 
-            Tree items[] = new Tree[ stms.length
-                                     + stms2.length
-                                     + 1 ];
+        items[ stms.length + stms2.length ] = body;
 
-            System.arraycopy( stms, 0, items, 0, stms.length );
-            System.arraycopy( stms2, 0, items, stms.length, stms2.length );
-
-            j = stms.length + stms2.length ;
-            items[ stms.length + stms2.length ] = body;
-
-            Transformer treeCloner = new Transformer(unit.global) {
-                    public Tree transform(Tree tree) {
-                        tree = super.transform(tree);
-                        if (tree.hasSymbol()) {
-                            Object symbol = rtis.helpMap2.get(tree.symbol());
-                            if (symbol != null) tree.setSymbol((Symbol)symbol);
-                        }
-                        return tree;
+        Transformer treeCloner = new Transformer(unit.global) {
+                public Tree transform(Tree tree) {
+                    tree = super.transform(tree);
+                    if (tree.hasSymbol()) {
+                        Object symbol = rtis.helpMap2.get(tree.symbol());
+                        if (symbol != null) tree.setSymbol((Symbol)symbol);
                     }
-                };
-            //System.out.println("helpmap");
-            //System.out.println( rtis.helpMap2 );
+                    return tree;
+                }
+            };
+        //System.out.println("helpmap");
+        //System.out.println( rtis.helpMap2 );
 
-            items[ stms.length + stms2.length ] = treeCloner.transform( body );
-            /*
-            for( Iterator it = rtis.helpMap2.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry e = (Map.Entry)it.next();
-                Symbol key = (Symbol)e.getKey();
-                Symbol val = (Symbol)e.getValue();
-                val.setInfo( key.type() ); // !!! ?
-            }
-            */
-            return gen.mkBlock( body.pos, items );
-      }
+        items[ stms.length + stms2.length ] = treeCloner.transform( body );
+        return gen.mkBlock( body.pos, items );
+    }
 
-      /** turns body `case pat(x,y,z) => body' into
-       **  `{ <runLeft>;<runRight>;body }' if
-       *  necessary.
-       *  @param body the array containing the bodies of the visitor
-       */
-      Tree[] addBindersToBodies( Tree body[] ) {
-            //System.out.println("addBindersToBodies");
-            Tree nbody[] = new Tree[ body.length ];
-            for( int i = 0; i < body.length; i++ ) {
-                  Integer iI = new Integer( i );
+    private NondetWordAutom[] buildNfas( Tree[] pat ) {
+        BerrySethi build = new BerrySethi();
+        NondetWordAutom manyNfa[] = new NondetWordAutom[ pat.length ];
 
-                  if( !CollectVariableTraverser.containsBinding( pat[ i ] ) )
-                        {
-                              nbody[ i ] = body[ i ]; // no need for binding
-                        }
-                  else
-                        {
-                              nbody[ i ] =
-                                    addBinderToBody( pat[ i ], body[ i ] );
-                        }
-            }
-            return nbody;
-      }
-      Type elementType ;
+        for( int i = 0; i < pat.length; i++ ) {
+            manyNfa[ i ] = build.automatonFrom( pat[ i ],
+                                                new Integer( i ));
+            //manyNfa[ i ].print();
+        }
+        return manyNfa;
+    }
 
-      /** constructs a word recognizer from an array of patterns which
-       *  should all be SequencePatterns ( no wildcard * )
-       *  precondition: pat.type corresponds to element type
-       *  @param _m          Matcher object, holds the result
-       *  @param pat         the (Sequence) patterns
-       *  @param body        the bodies
-       *  @param defaultCase code that is run when nothing matches. may be null, it
-       *                     becomes a ThrowMatchError then
+    /** constructs a word recognizer from an array of patterns which
+     *  should all be SequencePatterns ( no wildcard * )
+     *  precondition: pat.type corresponds to element type
+     *  @param _m          Matcher object, holds the result
+     *  @param pat         the (Sequence) patterns
+     *  @param body        the bodies
+     *  @param defaultCase code that is run when nothing matches. may be null, it
+     *                     becomes a ThrowMatchError then
+     *  @param doBinding   flasg that indicates whether variables should be bound
+    */
+    public void construct( Matcher _m,
+                           Tree[] pat,
+                           Tree[] body,
+                           Tree defaultCase,
+                           boolean doBinding ) {
+        this._m = _m;
+        //this.pat  = pat;
+        //this.body = body;
+        assert body.length == pat.length;
+        if( defaultCase == null )
+            defaultCase = cf.ThrowMatchError( cf.pos, _m.resultType );
 
-       */
-      public void construct( Matcher _m,
-                             Tree[] pat,
-                             Tree[] body,
-                             Tree defaultCase,
-                             boolean doBinding ) {
-            this.pat  = pat;
-            this.body = body;
-            assert body.length == pat.length;
-            this._m = _m;
+        this.cf = new CodeFactory( unit, _m.pos );
 
-            this.cf = new CodeFactory( unit, _m.pos );
+        Type seqType = pat[ 0 ].getType();
+        Type elementType = cf.getElemType_Sequence( seqType );
 
-            Type seqType = pat[ 0 ].getType();
+        // STEP 1 - build nfas for each pattern
 
-            elementType = cf.getElemType_Sequence( seqType );
+        NondetWordAutom manyNfa[] = buildNfas( pat );
 
-            NondetWordAutom manyNfa[] = new NondetWordAutom[ pat.length ];
+        // STEP 2 - recognizing
 
-            BerrySethi build = new BerrySethi();
+        // (a) merge nfas into one if necessary
+        NondetWordAutom nfa =
+            (pat.length > 1) ? new NondetWordAutom( manyNfa )
+            : manyNfa[ 0 ];
+        //nfa.print();
 
-            for( int i = 0; i < pat.length; i++ )
-                  {
-                        manyNfa[ i ] = build.automatonFrom( pat[ i ],
-                                                            new Integer( i ));
-			//manyNfa[ i ].print();
-                  }
+        // (b) determinize
+        DetWordAutom dfa = new DetWordAutom( nfa );
 
-            // merge nfas into one if necessary
+        // (c) translate to scala code
+        WordAutomInScala scalaAut = new WordAutomInScala( dfa,
+                                                          elementType,
+                                                          _m.owner,
+                                                          cf,
+                                                          unit.global.target == Global.TARGET_JVM );
+        scalaAut.translate();
 
-            NondetWordAutom nfa =
-                  (pat.length > 1) ? new NondetWordAutom( manyNfa )
-                  : manyNfa[ 0 ];
+        // STEP 3 - binding
 
-	    //nfa.print();
+        Tree newbody[];
+        if( !doBinding )
+            newbody = body;
+        else {  // this is done in the body of the matching case
+            newbody = new Tree[body.length];
+            for( int i = 0; i < body.length; i++ )
+                if( !CollectVariableTraverser.containsBinding( pat[ i ] ) )
+                    newbody[ i ] = body[ i ]; // no need for binding
+                else
+                    newbody[ i ] = addBinderToBody( pat[ i ], body[ i ] );
+        }
 
-            DetWordAutom dfa = new DetWordAutom( nfa );
-
-            WordAutomInScala scalaAut = new WordAutomInScala( _m.pos,
-                                                              dfa,
-                                                              elementType,
-                                                              _m.owner,
-                                                              cf,
-							      unit.global.target == Global.TARGET_JVM );
-            scalaAut.translate();
-
-            if( defaultCase == null )
-                  defaultCase = cf.ThrowMatchError( Position.FIRSTPOS, _m.resultType );
-
-            Tree newbody[] = doBinding ? addBindersToBodies( body ): body;
-
-            // FIXME - CODE FOR TESTING TUPLE STUFF
-
-            _m.tree = scalaAut.getMatcherSwitch( _m.selector,
-						 defaultCase,
-						 newbody,
-						 _m.resultType );
-      } // construct (Matcher, Tree[], Tree[], Tree, boolean )
+        _m.tree = scalaAut.getMatcherSwitch( _m.selector,
+                                             defaultCase,
+                                             newbody,
+                                             _m.resultType );
+    } // construct (Matcher, Tree[], Tree[], Tree, boolean )
 
       /** constructor, invoked  by AlgebraicMatcher
        */
-      SequenceMatcher( Unit unit ) {
-            super( unit );
-            //Symbol predefSym = defs.getModule( defs.SCALA, Names.Predef );
-            //Scope predefScope = predefSym.members();
-      }
+    SequenceMatcher( Unit unit ) {
+        super( unit );
+    }
 } // class SequenceMatcher

@@ -83,7 +83,7 @@ class CodeFactory extends PatternTool {
 	Type tpe1 = tpe.widen().baseType( defs.SEQ_CLASS );
 
 	if( tpe1 == Type.NoType )
-	    throw new ApplicationError("arg "+tpe+" not subtype of Sequence[ A ]");
+	    throw new ApplicationError("arg "+tpe+" not subtype of Seq[ A ]");
 
 	return tpe1.typeArgs()[ 0 ];
     }

@@ -4,34 +4,40 @@ import scalac.util.Name ;
 import scalac.ast.Tree ;
 import scalac.symtab.Symbol ;
 
-import java.util.Vector;
+
+import java.util.HashSet;
 
 class CollectVariableTraverser extends VariableTraverser {
 
-      protected Vector vars;
-
+    protected HashSet nogeneratedVars;
+    protected HashSet vars;
+    /*
       boolean isVariableName( Name name ) {
             return ( name.toString().indexOf("$") == -1 )
                   && super.isVariableName( name );
       }
-
+    */
       void handleVariableSymbol( Symbol sym ) {
             vars.add( sym );
+            if( sym.name.toString().indexOf("$") == -1 ) {
+                nogeneratedVars.add( sym );
+            }
       }
 
       public CollectVariableTraverser() {
-            this.vars = new Vector();
+            this.vars = new HashSet();
+            this.nogeneratedVars = new HashSet();
       }
 
       static boolean containsBinding( Tree  pat ) {
 
             CollectVariableTraverser cvt = new CollectVariableTraverser();
             cvt.traverse( pat );
-            return !cvt.vars.isEmpty();
+            return !cvt.nogeneratedVars.isEmpty();
 
       }
 
-    static Vector collectVars( Tree pat ) {
+    static HashSet collectVars( Tree pat ) {
 	CollectVariableTraverser cvt = new CollectVariableTraverser();
 	cvt.traverse( pat );
 	return cvt.vars;
