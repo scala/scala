@@ -244,7 +244,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
         print(definition);
 
       case Tree$ClassDef(mods, name, tparams, vparams, tpe, impl) =>
-	printModifiers(mods);
+	printSModifiers(mods);
 	print(if ((mods & Modifiers.INTERFACE) != 0) KW_INTERFACE else KW_CLASS);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
@@ -260,7 +260,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printTemplate(null, KW_WITH, impl, true);
 
       case Tree$ModuleDef(mods, name, tpe, impl) =>
-	printModifiers(mods);
+	printSModifiers(mods);
 	print(KW_OBJECT);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
@@ -268,7 +268,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printTemplate(null, KW_EXTENDS, impl, true);
 
       case Tree$ValDef(mods, name, tpe, rhs) =>
-	printModifiers(mods);
+	printSModifiers(mods);
 	if ((mods & Modifiers.MUTABLE) != 0) {
 	  print(KW_VAR);
 	} else {
@@ -285,14 +285,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	}
 
       case Tree$PatDef(mods, pat, rhs) =>
-	printModifiers(mods);
+	printSModifiers(mods);
 	print(KW_VAL);
 	print(Space);
 	print(pat);
 	printOpt(TXT_EQUAL, rhs, true);
 
       case Tree$DefDef(mods, name, tparams, vparams, tpe, rhs) =>
-	printModifiers(mods);
+	printSModifiers(mods);
 	print(KW_DEF);
 	print(Space);
 	if (name.isTypeName()) print(KW_THIS);
@@ -303,14 +303,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printOpt(TXT_EQUAL, rhs, true);
 
       case Tree$AbsTypeDef(mods, name, rhs, lobound) =>
-	printModifiers(mods);
+	printSModifiers(mods);
 	print(KW_TYPE);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
 	printBounds(lobound, rhs, mods);
 
       case Tree$AliasTypeDef(mods, name, tparams, rhs) =>
-	printModifiers(mods);
+	printSModifiers(mods);
 	print(KW_TYPE);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
@@ -595,7 +595,11 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       print(TXT_RIGHT_BRACE);
     }
 
-  protected def printModifiers(flags: int): unit = {
+  //##########################################################################
+  // Protected Methods - Printing modifiers
+
+  /** Print syntactic modifiers. */
+  protected def printSModifiers(flags: int): unit = {
     if ((flags & Modifiers.ABSTRACT) != 0) {
       print(KW_ABSTRACT);
       print(Space);
@@ -629,6 +633,44 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       print(Space);
     }
   }
+
+  /** Print attributed modifiers. */
+  protected def printAModifiers(symbol: Symbol): Unit = {
+    if (symbol.isAbstractClass()) {
+      print(KW_ABSTRACT);
+      print(Space);
+    }
+    if (symbol.isFinal()) {
+      print(KW_FINAL);
+      print(Space);
+    }
+    if (symbol.isSealed()) {
+      print(KW_SEALED);
+      print(Space);
+    }
+    if (symbol.isPrivate()) {
+      print(KW_PRIVATE);
+      print(Space);
+    }
+    if (symbol.isProtected()) {
+      print(KW_PROTECTED);
+      print(Space);
+    }
+    if (symbol.isOverride()) {
+      print(KW_OVERRIDE);
+      print(Space);
+    }
+    if (symbol.isCaseClass()) {
+      print(KW_CASE);
+      print(Space);
+    }
+    if (symbol.isDefParameter()) {
+      print(KW_DEF);
+      print(Space);
+    }
+  }
+
+  //##########################################################################
 
   protected def printTemplate(symbol: Symbol,
                               prefix: Text,
@@ -711,12 +753,12 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
   protected def printParam(tree: Tree): unit = tree match {
     case Tree$AbsTypeDef(mods, name, bound, lobound) =>
-      printModifiers(mods);
+      printSModifiers(mods);
       printSymbolDefinition(tree.symbol(), name);
       printBounds(lobound, bound, mods);
 
     case Tree$ValDef(mods, name, tpe, Tree.Empty) =>
-      printModifiers(mods);
+      printSModifiers(mods);
       if ((mods & Modifiers.PARAMACCESSOR) != 0) {
         print(KW_VAL); print(Space);
       }
