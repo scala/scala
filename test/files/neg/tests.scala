@@ -45,3 +45,12 @@ object Test0Test {
 }
 
 //############################################################################
+// Test 1 - References to Generated Classes
+
+trait Test1 {
+ def a: Any = new scala.Tuple2$class(1,1);
+ def b: scala.Predef$$anon$7;
+ def c: scala.List$Class;
+}
+
+//############################################################################

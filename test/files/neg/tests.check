@@ -13,4 +13,13 @@ tests.scala:37: package test0 is not a value
 tests.scala:38: package bar is not a value
     {System.out.print(22); test0.bar}.System.out.println();
                                 ^
-5 errors found
+tests.scala:51: type Tuple2$class is not a member of scala
+ def a: Any = new scala.Tuple2$class(1,1);
+                       ^
+tests.scala:52: type Predef$$anon$7 is not a member of scala
+ def b: scala.Predef$$anon$7;
+             ^
+tests.scala:53: type List$Class is not a member of scala
+ def c: scala.List$Class;
+             ^
+8 errors found
