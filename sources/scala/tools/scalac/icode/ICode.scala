@@ -11,13 +11,13 @@ import scalac.{Global => scalac_Global}
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.atree._;
 import scalac.util.Debug;
 
 package scala.tools.scalac.icode {
 
-import scalac_symtab._;
+
 
 /** This class represents the intermediate code of a method*/
 class ICode(label: String, global: scalac_Global) {

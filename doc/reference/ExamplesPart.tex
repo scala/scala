@@ -833,7 +833,7 @@ two given numbers \code{a} and \code{b}:
 \begin{lstlisting}
 def powerOfTwo(x: int): int = if (x == 0) 1 else x * powerOfTwo(x - 1);
 def sumPowersOfTwo(a: int, b: int): int =
-  if (a > b) 0 else powerOfTwo(x) + sumPowersOfTwo(a + 1, b)
+  if (a > b) 0 else powerOfTwo(a) + sumPowersOfTwo(a + 1, b)
 \end{lstlisting}
 \end{enumerate}
 These functions are all instances of
@@ -1438,10 +1438,10 @@ method is invoked by simply mentioning its name.
 \begin{lstlisting}
 class Rational(n: int, d: int) extends AnyRef {
   ... // as before
-  def square = Rational(numer*numer, denom*denom);
+  def square = new Rational(numer*numer, denom*denom);
 }
 val r = new Rational(3,4);
-System.out.println(r.square);           // prints``9/16''
+System.out.println(r.square);           // prints``9/16''*
 \end{lstlisting}
 That is, parameterless methods are accessed just as value fields such
 as \code{numer} are. The difference between values and parameterless

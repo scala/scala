@@ -2,11 +2,11 @@
 import scala.collection.immutable;
 import scala.collection.mutable;
 import scala.runtime.matching._;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 
 package scala.tools.scalac.transformer.matching {
 
-import scalac_symtab.Symbol;
+
 
 object InitialGrammar {
   /** returns an initial grammar, with any tree rule and any hedge rule */

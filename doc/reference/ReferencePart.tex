@@ -513,12 +513,12 @@ c: (Int) (String, String) String
 
 A polymorphic method type is denoted internally as ~\lstinline@[$\tps\,$]$T$@~ where
 \lstinline@[$\tps\,$]@ is a type parameter section 
-~\lstinline@[$a_1$ <: $L_1$ >: $U_1 \commadots a_n$ <: $L_n$ >: $U_n$]@~ 
+~\lstinline@[$a_1$ >: $L_1$ <: $U_1 \commadots a_n$ >: $L_n$ <: $U_n$]@~ 
 for some $n \geq 0$ and $T$ is a
 (value or method) type.  This type represents named methods that
 take type arguments ~\lstinline@$S_1 \commadots S_n$@~ which
 conform (\sref{sec:param-types}) to the lower bounds
-~\lstinline@$S_1 \commadots S_n$@~ and the upper bounds
+~\lstinline@$L_1 \commadots L_n$@~ and the upper bounds
 ~\lstinline@$U_1 \commadots U_n$@~ and that yield results of type $T$.
 
 \example The declarations

@@ -2,7 +2,7 @@
 import scalac.{Global => scalac_Global}
 import scalac.{CompilationUnit => scalac_CompilationUnit}
 import scalac.atree._;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.util.Name;
 import scalac.util._;
 import scala.collection.mutable._;
@@ -10,7 +10,7 @@ import scalac.ast._;
 
 package scala.tools.scalac.wholeprog {
 
-import scalac_symtab._;
+
 
 /**
  * This class builds the set of classes included in the Application (whole

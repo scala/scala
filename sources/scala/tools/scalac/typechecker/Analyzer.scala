@@ -23,7 +23,7 @@ import scalac.atree.AConstant;
 import scalac.atree.AConstant$CHAR;
 import scalac.atree.AConstant$INT;
 import scalac.symtab.classfile._;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import Tree._;
 import java.util.HashMap;
 import scala.tools.scalac.util.NewArray;
@@ -37,7 +37,6 @@ import java.lang.{Boolean, Byte, Short, Character, Integer, Object}
  */
 class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(global) {
 
-  import scalac_symtab._;
   import Modifiers._;
   import Kinds._;
 
@@ -1636,6 +1635,25 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       }
     }
 
+    if (stopPos > tree.pos) {
+      // set stopPos to beginning of block enclosed in the scope which defines the
+      // referenced symbol.
+      var lastc = Context.NONE;
+      var c = nextcontext;
+      while (c.outer.scope != null && c.outer.scope.lookup(name) == sym) {
+	c.tree match {
+	  case Tree$Block(_, _) | Tree$CaseDef(_, _, _) | Tree$ClassDef(_, _, _, _, _, _) | Tree$ModuleDef(_, _, _, _) =>
+	    lastc = c;
+	  case _ =>
+	}
+	c = c.outer
+      }
+      if (lastc != Context.NONE) {
+	//System.out.println("revising stop to [" + lastc.tree + "]; symbol = " + sym + ", context = " + nextcontext);//DEBUG
+	stopPos = lastc.tree.pos;
+      }
+    }
+
     var impcontext: Context = context.prevImport;
     var lastimpcontext: Context = null;
     var sym1: Symbol = Symbol.NONE;
@@ -2834,7 +2852,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           }
 
 	case Tree$Select(qual, name) =>
-	  val qualmode: int = EXPRmode | POLYmode | QUALmode;
+	  val qualmode: int = if (name == Names.match) EXPRmode
+                              else EXPRmode | POLYmode | QUALmode;
 	  var qual1: Tree = transform(qual, qualmode);
 	  if (name.isTypeName())
 	    qual1 = checkStable(qual1);

@@ -7,12 +7,12 @@
 // $Id$
 
 import scalac.atree._;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.{Global => scalac_Global};
 
 package scala.tools.scalac.icode {
 
-import scalac_symtab._;
+
 
 /* This class simulates the type of the opperand
  * stack of the ICode. */

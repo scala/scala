@@ -200,19 +200,21 @@ public class TreeInfo {
 	switch (tree) {
 	case Import(Tree expr, Name[] selectors):
 	    Type pre = tree.symbol().type();
-	    boolean renamed = false;
-	    for (int i = 0; i < selectors.length; i = i + 2) {
-		if (i + 1 < selectors.length && name.toTermName() == selectors[i + 1]) {
-		    if (name.isTypeName())
-			return pre.lookupNonPrivate(selectors[i].toTypeName());
-		    else
-			return pre.lookupNonPrivate(selectors[i]);
-		} else if (name.toTermName() == selectors[i]) {
-		    renamed = true;
-		} else if (selectors[i] == Names.IMPORT_WILDCARD && !renamed) {
-		    return pre.lookupNonPrivate(name);
-		}
-	    }
+            if (pre != Type.ErrorType) {
+                boolean renamed = false;
+                for (int i = 0; i < selectors.length; i = i + 2) {
+                    if (i + 1 < selectors.length && name.toTermName() == selectors[i + 1]) {
+                        if (name.isTypeName())
+                            return pre.lookupNonPrivate(selectors[i].toTypeName());
+                        else
+                            return pre.lookupNonPrivate(selectors[i]);
+                    } else if (name.toTermName() == selectors[i]) {
+                        renamed = true;
+                    } else if (selectors[i] == Names.IMPORT_WILDCARD && !renamed) {
+                        return pre.lookupNonPrivate(name);
+                    }
+                }
+            }
 	    return Symbol.NONE;
 	default:
 	    throw new ApplicationError();

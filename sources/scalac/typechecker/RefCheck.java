@@ -849,10 +849,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Tree[] body1;
 	if (sym.isCaseClass()) {
 	    body1 = addCaseMethods(templ.body, sym);
-	} else {
+	} else if ((sym.flags & ABSTRACT) == 0) {
 	    body1 = new Tree[templ.body.length + 1];
 	    System.arraycopy(templ.body, 0, body1, 0, templ.body.length);
 	    body1[templ.body.length] = tagMethod(sym);
+        } else {
+            body1 = templ.body;
 	}
 	return copy.Template(templ, templ.parents, body1);
     }

@@ -11,7 +11,7 @@ import java.util._;
 import scalac.{Global => scalac_Global};
 import scalac._;
 import scalac.ast._;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.util._;       // Names
 
 import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
@@ -28,7 +28,7 @@ import scalac.transformer.matching.AlgebraicMatcher ;
  */
 package scala.tools.scalac.transformer {
 
-import scalac_symtab._;
+
 import matching.FullRegularTranslator ;
 import matching.GrammarPrinter ; //DEBUG
 

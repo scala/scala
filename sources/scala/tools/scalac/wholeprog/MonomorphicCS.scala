@@ -14,7 +14,7 @@
 
 import scalac.{Global => scalac_Global}
 import scalac.{CompilationUnit => scalac_CompilationUnit}
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.util._;
 import scala.collection.mutable._;
 import scalac.ast._;
@@ -23,7 +23,7 @@ import scala.tools.scalac.wholeprog.graph._;
 
 package scala.tools.scalac.wholeprog {
 
-import scalac_symtab._;
+
 
 class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
   type CallGraph = Graph[Symbol, MethodNode, CallEdge];

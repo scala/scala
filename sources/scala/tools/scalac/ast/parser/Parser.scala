@@ -7,7 +7,7 @@
 \*                                                                      */
 
 import scalac.symtab.Modifiers;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.ast._;
 import scalac.atree.AConstant;
 import scalac._;
@@ -22,7 +22,7 @@ import scala.collection.mutable.ListBuffer;
 
 package scala.tools.scalac.ast.parser {
 
-import scalac_symtab.Type;
+
 
 /** A recursive descent parser for the programming language Scala.
  *

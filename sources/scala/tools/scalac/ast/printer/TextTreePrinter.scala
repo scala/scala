@@ -9,7 +9,7 @@
 
 import scalac.ast.printer._;
 import scalac.ast._;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.util.Debug;
 import scalac.{Global => scalac_Global, Phase};
 import scalac.CompilationUnit;
@@ -18,7 +18,7 @@ import scalac.util.TypeNames;
 
 package scala.tools.scalac.ast.printer {
 
-import scalac_symtab._;
+
 import java.io._;
 
 /**

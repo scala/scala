@@ -13,11 +13,11 @@ import scalac.CompilationUnit;
 import scalac.{Global => scalac_Global}
 import scalac.atree._;
 
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 
 package scala.tools.scalac.icode {
 
-import scalac_symtab.Symbol;
+
 
 /* This class implements a Printer for the ICode */
 class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePrinter) {

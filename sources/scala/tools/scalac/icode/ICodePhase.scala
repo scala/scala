@@ -6,7 +6,7 @@
 
 // $Id$
 
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.transformer.{ICodePhase => scalac_ICodePhase}
 import scalac.{Global => scalac_Global}
 import scalac.{CompilationUnit => scalac_CompilationUnit}
@@ -18,8 +18,8 @@ import ch.epfl.lamp.util.CodePrinter;
 
 package scala.tools.scalac.icode {
 
-import scalac_symtab.Symbol;
-import scalac_symtab.Type;
+
+
 
 /** This class represents the ICode phase. This phase use the ATrees
   * that represents the code with some primitives backends-like

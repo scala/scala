@@ -6,7 +6,7 @@
 
 // $Id$
 
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.{Global => scalac_Global};
 import scalac.atree._;
 import scalac.CompilationUnit;
@@ -19,8 +19,6 @@ import java.util.StringTokenizer;
 import java.io.File;
 
 package scala.tools.scalac.backend {
-
-import scalac_symtab._;
 
 /* This class implements the backend which create
  * Java Virtual Machine's bytecode with

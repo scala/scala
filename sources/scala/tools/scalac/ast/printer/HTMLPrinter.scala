@@ -8,12 +8,12 @@
 // $Id$
 
 import scalac.CompilationUnit;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.ast.Tree;
 
 package scala.tools.scalac.ast.printer {
 
-import scalac_symtab.Symbol;
+
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.Math;
