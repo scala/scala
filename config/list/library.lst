@@ -4,7 +4,6 @@
 # $Id$
 
 $colon$colon.scala
-#$percent.scala # waiting for scaladoc bug to be fixed
 AnyVal.java
 Array.java
 Boolean.java
@@ -29,8 +28,6 @@ Function8.java
 Function9.java
 Int.java
 Iterable.scala
-IterableArray.scala
-IterableString.scala
 Iterator.scala
 List.scala
 Long.java
@@ -47,10 +44,8 @@ Ref.java
 ScalaObject.java
 Seq.scala
 Short.java
-Similarity.scala
 Some.scala
 Stream.scala
-StructuralEquality.scala
 Symbol.scala
 Tuple1.scala
 Tuple2.scala
@@ -65,9 +60,9 @@ Type.java
 Unit.java
 
 collection/Map.scala
-collection/MapWrapper.scala
+collection/MapProxy.scala
 collection/Set.scala
-collection/SetWrapper.scala
+collection/SetProxy.scala
 
 collection/mutable/AppendBuffer.scala
 collection/mutable/ArrayBuffer.scala
@@ -86,7 +81,7 @@ collection/mutable/JavaSetAdaptor.scala
 collection/mutable/LinkedList.scala
 collection/mutable/ListBuffer.scala
 collection/mutable/Map.scala
-collection/mutable/MapWrapper.scala
+collection/mutable/MapProxy.scala
 collection/mutable/Modification.scala
 collection/mutable/MultiMap.scala
 collection/mutable/MutableList.scala
@@ -99,7 +94,7 @@ collection/mutable/Removal.scala
 collection/mutable/Reset.scala
 collection/mutable/RevertableHistory.scala
 collection/mutable/Set.scala
-collection/mutable/SetWrapper.scala
+collection/mutable/SetProxy.scala
 collection/mutable/SingleLinkedList.scala
 collection/mutable/Stack.scala
 collection/mutable/Subscriber.scala
