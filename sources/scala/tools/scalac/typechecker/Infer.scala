@@ -375,7 +375,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	NewArray.ValDef(gen.mkParam(paramsym)),
 	gen.Apply(meth, NewArray.Tree(gen.Ident(meth.pos, paramsym))),
 	meth.getType().resultType(),
-	getContext.owner)
+	getContext.owner,
+        false)
     case _ =>
       meth
   }

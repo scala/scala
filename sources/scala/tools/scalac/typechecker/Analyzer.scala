@@ -2602,7 +2602,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    restype = body1.getType().deconst();
 	  restype = checkNoEscape(tree.pos, restype);
 	  context = prevContext;
-	  gen.mkFunction(tree.pos, vparams1, body1, restype, context.owner);
+	  gen.mkFunction(tree.pos, vparams1, body1, restype, context.owner, false);
 
 	case Tree.TypeApply(fn, args) =>
 
