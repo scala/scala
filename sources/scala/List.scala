@@ -54,7 +54,7 @@ object List {
     case head :: tail => head ::: flatten(tail)
   }
 
-  def unzip[a](l: List[Pair[a,a]]): Pair[List[a], List[a]] = l match {
+  def unzip[a,b](l: List[Pair[a,b]]): Pair[List[a], List[b]] = l match {
     case Nil => Pair(Nil, Nil)
     case Pair(f, s) :: tail =>
       val Pair(fs, ss) = unzip(tail);
