@@ -4,6 +4,8 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
+// $Id$
+
 package scalac;
 
 import scalac.Global;
