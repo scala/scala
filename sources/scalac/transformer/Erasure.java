@@ -311,7 +311,7 @@ public class Erasure extends GenTransformer implements Modifiers {
         if (isUnboxedSimpleType(tree.type())) {
             if (isUnboxedSimpleType(pt)) return convert(tree, pt);
             Type to = pt.erasure();
-            if (!isUnboxedSimpleType(to) || to.isSameAs(tree.type()))
+            if (!isUnboxedSimpleType(to) || isSameAs(to, tree.type()))
                 return box(tree);
             else
                 return coerce(convert(tree, to), pt);
@@ -578,7 +578,7 @@ public class Erasure extends GenTransformer implements Modifiers {
                 for (int i = 0; i < symbols.length; i++) {
                     types[i] = symbols[i].nextType();
                     for (int j = 0; j < i; j++) {
-                        if (!types[i].isSameAs(types[j])) continue;
+                        if (!isSameAs(types[i], types[j])) continue;
                         errorOverlappingSignatures(symbols[j], symbols[i]);
                         break;
                     }
@@ -737,7 +737,7 @@ public class Erasure extends GenTransformer implements Modifiers {
     public void addBridgeMethodsTo(Symbol method) {
         assert method.owner().isClass() && !method.owner().isInterface();
         Symbol overridden = getOverriddenMethod(method);
-        if (overridden != Symbol.NONE && !isSameAs(overridden.nextType(), method.nextType()))
+        if (!overridden.isNone() && !isSameAs(overridden.nextType(), method.nextType()))
             addBridge(method.owner(), method, overridden);
     }
 
@@ -746,12 +746,11 @@ public class Erasure extends GenTransformer implements Modifiers {
         Symbol overriding = method.overridingSymbol(owner.thisType());
         if (overriding == method) {
             Symbol overridden = method.overriddenSymbol(owner.thisType().parents()[0], owner);
-            if (overridden != Symbol.NONE && !isSameAs(overridden.nextType(), method.nextType()))
+            if (!overridden.isNone() && !isSameAs(overridden.nextType(), method.nextType()))
                 addBridge(owner, method, overridden);
-	    if (forMSIL && (overridden == Symbol.NONE
-			    || (overridden != Symbol.NONE && overridden.owner() != owner)))
+	    if (forMSIL && (overridden.isNone() || overridden.owner() != owner))
 		    addEmptyBridge(owner, method);
-        } else if (overriding != Symbol.NONE && !isSameAs(overriding.nextType(), method.nextType()))
+        } else if (!overriding.isNone() && !isSameAs(overriding.nextType(), method.nextType()))
             addBridge(owner, overriding, method);
     }
 
