@@ -17,6 +17,8 @@ import scalac.symtab.Definitions;
 import scalac.ast.printer.*;
 import scalac.backend.Primitives;
 // !!! <<< Interpreter stuff
+import scalac.symtab.Kinds;
+import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 // !!! >>> Interpreter stuff
 
@@ -389,7 +391,7 @@ public class  Global {
                         treeGen.mkRef(0, INTERPRETER()),
                         SHOW_DEFINITION()),
                     new Tree[] {
-                        make.Literal(0, tree.symbol().defString()).setType(
+                        make.Literal(0, show(tree.symbol())).setType(
                             definitions.JAVA_STRING_TYPE)}));
             return;
         case ValDef(_, _, _, _):
@@ -400,7 +402,7 @@ public class  Global {
                         treeGen.mkRef(0, INTERPRETER()),
                         SHOW_VALUE_DEFINITION()),
                     new Tree[] {
-                        make.Literal(0, tree.symbol().defString()).setType(
+                        make.Literal(0, show(tree.symbol())).setType(
                             definitions.JAVA_STRING_TYPE),
                         treeGen.Ident(tree.symbol())}));
             return;
@@ -412,6 +414,111 @@ public class  Global {
     private boolean mustShow(Symbol symbol) {
         return !symbol.isAccessor();
     }
+
+    private String show(Symbol symbol) {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(symbol.defKeyword()).append(' ');
+        String name = symbol.nameString();
+        int index = name.indexOf('$');
+        if (index > 0) name = name.substring(0, index);
+        buffer.append(name).append(inner(symbol));
+        if (symbol.isInitializedMethod())
+            appendDefInfo(buffer, symbol.info());
+        else
+            append(buffer, symbol.info());
+        return buffer.toString();
+    }
+
+    private String inner(Symbol symbol) {
+        switch (symbol.kind) {
+        case Kinds.CLASS: return " extends ";
+        case Kinds.ALIAS: return " = ";
+        case Kinds.TYPE : return " <: ";
+        case Kinds.VAL  : return symbol.isModule() ? "extends" :
+            symbol.isInitializedMethod() ? "" : ": ";
+        default   : throw Debug.abort("illegal case: " + symbol.kind);
+        }
+    }
+
+    private StringBuffer appendDefInfo(StringBuffer buffer, Type type) {
+        switch (type) {
+        case MethodType(Symbol[] vparams, Type result):
+            append(buffer, Symbol.type(vparams), "(", ",", ")");
+            return appendDefInfo(buffer, result);
+        case PolyType(Symbol[] tparams, Type result):
+            if (tparams.length == 0) return appendDefInfo(buffer, result);
+            append(buffer, Symbol.type(tparams), "[", ",", "]");
+            return appendDefInfo(buffer, result);
+        default:
+            buffer.append(": ");
+            return append(buffer, type);
+        }
+    }
+
+    private StringBuffer appendPrefix(StringBuffer buffer, Type prefix) {
+        if (prefix.isSameAs(definitions.ROOT_TYPE)) return buffer;
+        if (prefix.isSameAs(definitions.SCALA_TYPE)) return buffer;
+        return append(buffer, prefix).append('.');
+    }
+
+    private StringBuffer appendSymbol(StringBuffer buffer, Symbol symbol) {
+        return buffer.append(symbol.nameString());
+    }
+
+    private StringBuffer append(StringBuffer buffer, Type type) {
+        switch (type) {
+        case ErrorType:
+            return buffer.append("<error>");
+        case AnyType:
+            return buffer.append("<any type>");
+        case NoType:
+            return buffer.append("<notype>");
+        case ThisType(Symbol sym):
+            appendSymbol(buffer, sym);
+            return buffer;
+        case TypeRef(Type pre, Symbol sym, Type[] args):
+            appendPrefix(buffer, pre);
+            appendSymbol(buffer, sym);
+            if (args.length > 0) append(buffer, args, "[", ",", "]");
+            return buffer;
+        case SingleType(Type pre, Symbol sym):
+            appendPrefix(buffer, pre);
+            appendSymbol(buffer, sym);
+            return buffer;
+        case CompoundType(Type[] parts, _// Scope members
+            ):
+            return buffer.append("<!!! no yet implemented: CompoundType !!!>");
+        case MethodType(Symbol[] vparams, Type result):
+            append(buffer, Symbol.type(vparams), "(", ",", ")");
+            return append(buffer, result);
+        case PolyType(Symbol[] tparams, Type result):
+            if (tparams.length == 0) return append(buffer, result);
+            append(buffer, Symbol.type(tparams), "[", ",", "]");
+            return append(buffer, result);
+        case OverloadedType(_, Type[] alttypes):
+            return append(buffer, alttypes, "", " & ", "");
+        case CovarType(Type tp):
+            return append(buffer.append('+'), tp);
+        case LazyType():
+        case TypeVar(_, _):
+        case UnboxedType(_):
+        case UnboxedArrayType(_):
+            throw Debug.abort("illegal case", type);
+        default:
+            throw Debug.abort("illegal case", type);
+        }
+    }
+
+    private StringBuffer append(StringBuffer buffer, Type[] types,
+        String prefix, String infix, String suffix)
+    {
+        buffer.append(prefix);
+        for (int i = 0; i < types.length; i++)
+            append(i > 0 ? buffer.append(infix) : buffer, types[i]);
+        buffer.append(suffix);
+        return buffer;
+    }
+
     // !!! >>> Interpreter stuff
 
     /** stop the compilation process immediately
