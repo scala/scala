@@ -214,7 +214,7 @@ dtd2scala	: .latest-dtd2scala
 	touch $@
 
 .latest-library-sdc	: $(LIBRARY_SDC_FILES)
-	@$(make) sdc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,\$$$$,$(LIBRARY_SC_FILES))'
+	@$(make) sdc target=LIBRARY LIBRARY_SDC_FILES='$(subst $$,\$$$$,$(LIBRARY_SDC_FILES))'
 	touch $@
 
 .latest-interpreter	: $(INTERPRETER_JC_FILES)
