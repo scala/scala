@@ -16,6 +16,7 @@ java/Type.java
 
 scala/AbstractScalaExpander.java
 scala/MetaFunction.java
+scala/MetaTuple.java
 
 scalac/Phase.java
 
