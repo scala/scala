@@ -250,6 +250,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  if (isAccessible(sym, site, sitetype)) {
 	    symtype
 	  } else {
+	    System.out.println(sym.flags & (PRIVATE | PROTECTED));//debug
 	    error(pos, "" + sym + " cannot be accessed in " + sitetype.widen());
 	    Type.ErrorType
 	  }
@@ -288,8 +289,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
      accessWithin(owner)
      ||
      ((sym.flags & PRIVATE) == 0) &&
-     sitetype.symbol().isSubClass(owner) &&
-     (site.isInstanceOf[Tree$Super] || isSubClassOfEnclosing(sitetype.symbol()))
+     (site.isInstanceOf[Tree$Super] ||
+      (sitetype.symbol().isSubClass(owner) &&
+       isSubClassOfEnclosing(sitetype.symbol())))
     }
   }
 
@@ -1021,9 +1023,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  var rhs = _rhs;
 	  var restype: Type = null;
 	  pushContext(tree, sym, new Scope(context.scope));
-	  if (name == Names.CONSTRUCTOR)
+	  if (name == Names.CONSTRUCTOR) {
 	    context.enclClass.owner.flags =
 	      context.enclClass.owner.flags | INCONSTRUCTOR;
+	  }
 	  val tparamSyms = enterParams(tparams);
 	  val vparamSyms = enterParams(vparams);
 	  if (tpe != Tree.Empty) {
@@ -1031,8 +1034,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    (tree.asInstanceOf[Tree$DefDef]).tpe = tpe;
 	    restype = tpe.getType();
 	  } else if (name == Names.CONSTRUCTOR) {
-	    restype = context.enclClass.owner.getType().subst(
-	      context.enclClass.owner.typeParams(), tparamSyms);
+	    if (context.enclClass.owner.typeParams().length != 0)
+	      error(tree.pos, "secondary constructors for parameterized classes not yet implemented");
+	    restype = context.enclClass.owner.getType();/*.subst(
+	      context.enclClass.owner.typeParams(), tparamSyms)*/;
 	      context.enclClass.owner.flags =
 		context.enclClass.owner.flags & ~INCONSTRUCTOR;
 	  } else {
@@ -2449,14 +2454,29 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    val constr: Symbol = c.allConstructors();
 		    val fn0: Tree = fn1;
 		    fn1 = gen.mkRef(fn1.pos, pre, constr);
-		    fn1 match {
-		      case Tree$Select(fn1qual, _) =>
+		    if (constr.owner().isPackage()) {
+		      var c = context;
+		      while (c != Context.NONE &&
+			     !c.tree.isInstanceOf[Tree$ClassDef] &&
+			     !c.tree.isInstanceOf[Tree$Template])
+			c = c.outer;
+		      if (c.owner.isConstructor())
+			// we are in a superclass constructor call
 			fn1.setType(checkAccessible(
-			  fn1.pos, constr, fn1.getType(), fn1qual, fn1qual.getType()));
-		      case _ =>
-			if (constr.owner().isPackage())
+			  fn1.pos, constr, fn1.getType(), make.Super(tree.pos, Names.EMPTY.toTypeName(), Names.EMPTY.toTypeName()), c.owner.constructorClass().typeConstructor()));
+		      else
+			fn1.setType(checkAccessible(
+			  fn1.pos, constr, fn1.getType(), c.tree, c.owner.typeConstructor()));
+		    } else {
+		      fn1 match {
+			case Tree$Select(fn1qual, _) =>
 			  fn1.setType(checkAccessible(
-			    fn1.pos, constr, fn1.getType(), Tree.Empty, constr.owner().getType()));
+			    fn1.pos, constr, fn1.getType(), fn1qual, fn1qual.getType()));
+			case _ =>
+			  if (constr.owner().isPackage())
+			    fn1.setType(checkAccessible(
+			      fn1.pos, constr, fn1.getType(), Tree.Empty, constr.owner().getType()));
+		      }
 		    }
 		    if (tsym == c) {
 		      fn0 match {

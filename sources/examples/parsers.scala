@@ -1,5 +1,8 @@
 package examples;
-abstract class Parsers[intype] {
+
+abstract class Parsers {
+
+  type intype;
 
   abstract class Parser {
 
@@ -39,7 +42,7 @@ abstract class Parsers[intype] {
   def rep1(p: Parser): Parser = p &&& rep(p);  // p+ = p p*
 }
 
-abstract class ListParsers[intype] extends Parsers[intype] {
+abstract class ListParsers extends Parsers {
 
   def chr(p: char => boolean): Parser;
 
@@ -55,7 +58,8 @@ abstract class ListParsers[intype] extends Parsers[intype] {
   def expr      : Parser = ident ||| number ||| list;
 }
 
-class ParseString(s: String) extends Parsers[int] {
+class ParseString(s: String) extends Parsers {
+  type intype = int;
   val input = 0;
   def chr(p: char => boolean) = new Parser {
     def apply(in: int): Parser#Result =
@@ -68,7 +72,7 @@ object Test {
 
   def main(args: Array[String]): unit =
     if (args.length == 1) {
-      val ps = new ListParsers[int] with ParseString(args(0));
+      val ps = new ListParsers with ParseString(args(0));
       ps.exprs(input) match {
 	case Some(n) =>
 	  System.out.println("parsed: " + args(0).substring(0, n));

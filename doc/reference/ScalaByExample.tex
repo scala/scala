@@ -6210,23 +6210,23 @@ A synchronized variable (or syncvar for short) offers \code{get} and
 block until the variable has been defined. An \code{unset} operation
 resets the variable to undefined state.
 
-Synchronized variables can be implemented as follows.
+Here's the standard implementation of synchronized variables.
 \begin{lstlisting}
-class SyncVar[a] extends Monitor {
-  private val defined = new Signal;
-  private var isDefined: boolean = false;
-  private var value: a;
+package scala.concurrent;
+class SyncVar[a] with Monitor {
+  private var isDefined: Boolean = false;
+  private var value: a = _;
   def get = synchronized {
-    if (!isDefined) defined.wait;
+    if (!isDefined) wait();
     value
   }
   def set(x: a) = synchronized {
-    value = x ; isDefined = true ; defined.send;
+    value = x ; isDefined = true ; notifyAll();
   }
-  def isSet: boolean =
+  def isSet: Boolean = 
     isDefined;
-  def unset = synchronized {
-    isDefined = false;
+  def unset = synchronized { 
+    isDefined = false; 
   }
 }
 \end{lstlisting}
@@ -6240,18 +6240,20 @@ Futures are used in order to make good use of parallel processing
 resources.  A typical usage is:
 
 \begin{lstlisting}
+import scala.concurrent.ops._;
+...
 val x = future(someLengthyComputation);
 anotherLengthyComputation;
 val y = f(x()) + g(x());
 \end{lstlisting}
 
-Futures can be implemented in Scala as follows.
-
+The \code{future} method is defined in object
+\code{scala.concurrent.ops} as follows.
 \begin{lstlisting}
 def future[a](def p: a): unit => a = {
   val result = new SyncVar[a];
   fork { result.set(p) }
-  (=> result.get)
+  (() => result.get)
 }
 \end{lstlisting}
 
@@ -6275,31 +6277,33 @@ The next example presents a function \code{par} which takes a pair of
 computations as parameters and which returns the results of the computations
 in another pair. The two computations are performed in parallel.
 
+The function is defined in object
+\code{scala.concurrent.ops} as follows.
 \begin{lstlisting}
-def par[a, b](def xp: a, def yp: b): (a, b) = {
-  val y = new SyncVar[a];
-  fork { y.set(yp) }
-  (xp, y)
-}
+  def par[a, b](def xp: a, def yp: b): Pair[a, b] = {
+    val y = new SyncVar[b];
+    spawn { y set yp }
+    Pair(xp, y.get)
+  }
 \end{lstlisting}
-
-The next example presents a function \code{replicate} which performs a
+Defined in the same place is a function \code{replicate} which performs a
 number of replicates of a computation in parallel. Each
 replication instance is passed an integer number which identifies it.
-
 \begin{lstlisting}
-def replicate(start: int, end: int)(def p: int => unit): unit = {
-  if (start == end) {
-  } else if (start + 1 == end) {
-    p(start)
-  } else {
-    val mid = (start + end) / 2;
-    par ( replicate(start, mid)(p), replicate(mid, end)(p) )
+  def replicate(start: Int, end: Int)(p: Int => Unit): Unit = {
+    if (start == end) 
+      ()
+    else if (start + 1 == end)
+      p(start)
+    else {
+      val mid = (start + end) / 2;
+      spawn { replicate(start, mid)(p) }
+      replicate(mid, end)(p)
+    }
   }
-}
 \end{lstlisting}
 
-The next example shows how to use \code{replicate} to perform parallel
+The next function uses \code{replicate} to perform parallel
 computations on all elements of an array.
 
 \begin{lstlisting}
