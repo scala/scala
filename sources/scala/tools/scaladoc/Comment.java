@@ -201,7 +201,7 @@ public class Comment extends DefaultHandler {
 
     void showHtmlError(SAXParseException e) {
         String msg = "";
-        msg += "documentation comments should be written in HTML" + "\n";
+        msg += "documentation comments should be written in XHTML" + "\n";
         msg += e.getMessage() + "\n";
         if (unit != null)
             unit.warning(holder.pos, msg);
