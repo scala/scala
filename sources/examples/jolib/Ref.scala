@@ -1,21 +1,23 @@
-import concurrent.jolib._;
 import concurrent.SyncVar;
+import concurrent.jolib._;
 
-class Ref(init: int) extends Join {
+class Ref[a](init: a) extends Join {
 
-  object get extends Synchr[int](this) { case class C() extends SyncVar[int]; }
-  object set extends Synchr[unit](this) { case class C(x: int) extends SyncVar[unit]; }
-  object state extends Asynchr(this) { case class C(x: int); }
+  object get extends Synchr[a](this) { case class C() extends SyncVar[a]; }
+  object set extends Synchr[unit](this) { case class C(x: a) extends SyncVar[unit]; }
+  object state extends Asynchr(this) { case class C(x: a); }
 
   rules (
-    Pair(List(get, state), { case List(g @ get.C(), state.C(x) ) => { g.set(x); state.send(state.C(x)) } }),
-    Pair(List(set, state), { case List(s @ set.C(x), state.C(y) ) => { s.set(()); state.send(state.C(x)) } })
+    Pair(List(get, state), { case List(g @ get.C(), state.C(x) ) =>
+      { g.set(x); state.send(state.C(x)) } }),
+    Pair(List(set, state), { case List(s @ set.C(x), state.C(y) ) =>
+      { s.set(()); state.send(state.C(x)) } })
   );
 
   state.send(state.C(init));
 
-  def Get: int = get.send(get.C());
-  def Set(x: int): unit = set.send(set.C(x));
+  def Get: a = get.send(get.C());
+  def Set(x: a): unit = set.send(set.C(x));
 }
 
 object RefTest {
