@@ -290,32 +290,7 @@ public class ExpandMixins extends Transformer {
 	    }
 
         default:
-            Tree newTree = super.transform(tree);
-
-            switch (newTree) {
-            case Apply(Select(Tree qualifier, _), Tree[] args): {
-                Tree fun = ((Tree.Apply)newTree).fun;
-                Symbol funOwnerSym = fun.symbol().owner();
-                Symbol qualSym = qualifier.type.widen().symbol().moduleClass();
-                if (! (qualifier instanceof Tree.Super
-                       || qualSym.isSubClass(funOwnerSym))) {
-		    global.log("inserting cast from " + qualSym + " to " + funOwnerSym);//debug
-                    Type ownerTp = funOwnerSym.type();
-                    Tree castQualifier =
-                        gen.Apply(gen.TypeApply(gen.Select(qualifier, defs.AS),
-                                                new Tree[] {
-                                                    gen.mkType(qualifier.pos, ownerTp)
-                                                }),
-                                  Tree.EMPTY_ARRAY);
-                    return copy.Apply(newTree,
-                                      copy.Select(fun, castQualifier),
-                                      args);
-                } else
-                    return newTree;
-            }
-            default:
-                return newTree;
-            }
+            return super.transform(tree);
         }
     }
 

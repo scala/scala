@@ -172,12 +172,32 @@ class AddInterfaces extends Transformer {
                 // constructor, use the class constructor instead.
                 Symbol clsSym = sym.primaryConstructorClass();
                 if (phase.needInterface(clsSym))
-                    return gen.Select(qualifier,
+                    return gen.Select(transform(qualifier),
                                       phase.getClassSymbol(clsSym).constructor());
                 else
                     return super.transform(tree);
-            } else
-                return super.transform(tree);
+            } else {
+                qualifier = transform(qualifier);
+                Symbol owner = sym.owner();
+                if (owner.isClass()
+                    && owner.isJava() && !owner.isInterface()
+                    && owner != defs.ANY_CLASS
+                    && owner != defs.ANYREF_CLASS
+                    && owner != defs.JAVA_OBJECT_CLASS) {
+                    Type qualifierType = qualifier.type().bound();
+                    if (phase.needInterface(qualifierType.symbol())) {
+                        Type castType = qualifierType.baseType(owner);
+                        qualifier =
+                            gen.Apply(
+                                gen.TypeApply(
+                                    gen.Select(qualifier, defs.AS),
+                                    new Tree[] {
+                                        gen.mkType(tree.pos, castType)}),
+                                Tree.EMPTY_ARRAY);
+                    }
+                }
+                return copy.Select(tree, sym, qualifier);
+            }
         }
 
         case Ident(_): {
