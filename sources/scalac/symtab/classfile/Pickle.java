@@ -144,8 +144,8 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		    throw new ApplicationError();
 		}
 	    } else if (sym.kind != NONE) {
-		putEntry(sym.isModuleClass() ? sym.name.toTermName() : sym.name);
-		if (sym.owner() != Global.instance.definitions.ROOT_CLASS)
+		putEntry(sym.isModuleClass() || sym.isRoot() ? sym.name.toTermName() : sym.name);
+		if (!sym.owner().isRoot())
 		    putSymbol(sym.owner());
 	    }
 	}
@@ -354,7 +354,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeByte(NONEsym);
 	    writeByte(0); // space for length
 	} else {
-	    if (sym.isModuleClass()) {
+	    if (sym.isModuleClass() || sym.isRoot()) {
 		writeByte(EXTMODCLASSref);
 		writeByte(0); // space for length
 		writeRef(sym.name.toTermName());
@@ -364,7 +364,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		assert !sym.isConstructor() : sym;
 		writeRef(sym.name);
 	    }
-	    if (sym.owner() != Global.instance.definitions.ROOT_CLASS)
+	    if (!sym.owner().isRoot())
 		writeRef(sym.owner());
 	}
 	sym.flags &= ~ALTERNATIVE;

@@ -29,7 +29,6 @@ public class Definitions {
     // Public Fields & Methods - Root module
 
     /** The root module */
-    public final Symbol ROOT;
     public final Symbol ROOT_CLASS;
     public final Type   ROOT_TYPE() {return ROOT_CLASS.type();}
 
@@ -465,10 +464,8 @@ public class Definitions {
         // create attributed tree typer
         atyper = new ATreeTyper(global, this);
 
-        // the root module
-        ROOT = TermSymbol.newJavaPackageModule(
-            Names.ROOT, Symbol.NONE, new PackageParser(global));
-        ROOT_CLASS = ROOT.moduleClass();
+        // the root package
+        ROOT_CLASS = ClassSymbol.newRootClass(new PackageParser(global));
 
         // the scala package
         Symbol SCALA_PACKAGE = getClass(Names.scala);

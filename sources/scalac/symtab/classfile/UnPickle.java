@@ -186,7 +186,10 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		}
 		if (name == Names.ROOT && owner == Symbol.NONE) {
 		    sym = Global.instance.definitions.ROOT_CLASS;
-                    if (tag == EXTref) sym = sym.module();
+                    if (tag == EXTref) sym = sym;
+                    // !!! line above is usefull for the transition
+                    // !!! after some time, replace it by the following line:
+                    // !!! assert tag != EXTref;
 		} else {
 		    sym = owner.info().lookup(name);
 		    if (tag == EXTMODCLASSref) {
@@ -336,7 +339,12 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		    : Type.ThisType(sym);
 		break;
 	    case SINGLEtpe:
-		tpe = Type.singleType(readTypeRef(), readSymbolRef());
+                Type prefix = readTypeRef();
+                Symbol symbol = readSymbolRef();
+		tpe = symbol.isRoot() ? symbol.thisType() : Type.singleType(prefix, symbol);
+                // !!! code above is usefull for the transition
+                // !!! after some time, replace it by the following line:
+		// !!! tpe = Type.singleType(readTypeRef(), readSymbolRef());
 		break;
 	    case CONSTANTtpe:
 		Type base = readTypeRef();

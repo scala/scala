@@ -37,6 +37,10 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The absent symbol */
     public static final NoSymbol NONE = new NoSymbol();
 
+// Attribues -------------------------------------------------------------
+
+    public static final int IS_ROOT = 0x00000001;
+
 // Fields -------------------------------------------------------------
 
     /** The unique identifier generator */
@@ -365,7 +369,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol denote the root class or root module?
      */
     public final boolean isRoot() {
-        return this.moduleClass() == Global.instance.definitions.ROOT_CLASS;
+        return (attrs & IS_ROOT) != 0;
+        //return this.moduleClass() == Global.instance.definitions.ROOT_CLASS;
     }
 
     /** Does this symbol denote something loaded from a Java class? */
@@ -1739,6 +1744,21 @@ public class ClassSymbol extends TypeSymbol {
         this(Position.NOPOS, name, owner, JAVA);
         this.module = TermSymbol.newCompanionModule(this, JAVA, parser.staticsParser(this));
         this.setInfo(parser);
+    }
+
+    /** Creates the root class. */
+    public static Symbol newRootClass(PackageParser parser) {
+        int pos = Position.NOPOS;
+        Name name = Names.ROOT.toTypeName();
+        Symbol owner = Symbol.NONE;
+        int flags = JAVA | PACKAGE | FINAL | SYNTHETIC;
+        int attrs = IS_ROOT;
+        Symbol clasz = new ClassSymbol(pos, name, owner, flags, attrs);
+        clasz.setInfo(parser);
+        clasz.primaryConstructor().setInfo(
+            Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
+        //            Type.MethodType(Symbol.EMPTY_ARRAY, clasz.thisType()));
+        return clasz;
     }
 
     /** Return a fresh symbol with the same fields as this one.
