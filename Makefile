@@ -158,7 +158,7 @@ PICO_FLAGS		+= -make -source 1.4
 ##############################################################################
 # Functions
 
-RUN			 = echo $(1); $(1) || exit $$?
+RUN			 = echo '$(1)'; $(1) || exit $$?
 READLIST		 = $(shell cat $(1) | grep -v "^\#")
 
 make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
