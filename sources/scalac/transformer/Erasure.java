@@ -417,7 +417,7 @@ public class Erasure extends Transformer implements Modifiers {
         case New(Template templ):
             if (tree.type.symbol() == definitions.UNIT_CLASS)
                 // !!! return Tree.Literal(UNIT, null).setType(owntype);
-                throw Debug.abort("found unit literal");
+                throw Debug.abort("found unit literal in " + currentClass);
             if (tree.type.symbol() == definitions.ARRAY_CLASS) {
                 switch (templ.parents[0]) {
                 case Apply(_, Tree[] args):
@@ -491,6 +491,11 @@ public class Erasure extends Transformer implements Modifiers {
 	    if (global.debug) global.log("fn: " + fun1.symbol() + ":" + fun1.type);//debug
 	    switch (fun1.type) {
 	    case MethodType(Symbol[] params, Type restpe):
+                assert params.length == args.length:
+                    "\nclass    : " + Debug.show(currentClass) +
+                    "\ntree     : " + tree +
+                    "\nfun1     : " + fun1 +
+                    "\nfun1.type: " + fun1.type;
 		Tree[] args1 = args;
 		for (int i = 0; i < args.length; i++) {
 		    Tree arg = args[i];
