@@ -159,6 +159,12 @@ class AddInterfaces extends Transformer {
             return gen.This(tree.pos, classThisSym);
         }
 
+        case Super(_, _): {
+            // Use class symbol for references to "super".
+            Symbol classSuperSym = phase.getClassSymbol(tree.symbol());
+            return gen.Super(tree.pos, classSuperSym);
+        }
+
         case Select(Super(_, _), _): {
             // Use class member symbols for references to "super".
 
@@ -166,8 +172,9 @@ class AddInterfaces extends Transformer {
             Symbol classOwner = phase.getClassSymbol(sym.owner());
             Map ownerMemberMap = phase.getClassMemberMap(classOwner);
             if (ownerMemberMap != null && ownerMemberMap.containsKey(sym)) {
+                Tree qualifier = transform(((Select)tree).qualifier);
                 Symbol newSym = (Symbol)ownerMemberMap.get(sym);
-                return gen.Select(((Select)tree).qualifier, newSym);
+                return gen.Select(tree.pos, qualifier, newSym);
             } else
                 return super.transform(tree);
         }
