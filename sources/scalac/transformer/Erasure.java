@@ -299,17 +299,17 @@ public class Erasure extends Transformer implements Modifiers {
 	if (c.isClass() && !c.isInterface()) {
 	    Type[] basetypes = c.parents();
 
-	    //System.out.println("trying " + sym + ":" + sym.info() + " in " + c + " <= " + scalac.util.ArrayApply.toString(basetypes));//DEBUG
+            //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure()); global.prevPhase();
 
 	    for (int i = 0; i < basetypes.length; i++) {
 		Symbol sym1 = sym.overriddenSymbol(basetypes[i]);
 
-		//if (sym1.kind != NONE) System.out.println("overridden: " + sym1 + sym1.locationString() + " by " + sym + sym.locationString());//DEBUG
+                //global.nextPhase();  System.out.println("!!! " + Debug.show(sym) + " @ " + basetypes[i] + " -> " + Debug.show(sym1) + (sym1.kind == Kinds.NONE ? "" : " : " + sym1.type().erasure() + " => " + (isSameAs(sym1.type().erasure(), sym.type().erasure()) ? "ok" : "ADD BRIDGE"))); global.prevPhase();
 
 		if (sym1.kind != Kinds.NONE &&
 		    !isSameAs(sym1.type().erasure(), sym.type().erasure())) {
 
-		    //System.out.println("add bridge: " + sym1 + sym1.locationString() + " by " + sym + sym.locationString());//DEBUG
+                    //System.out.println("!!! " + Debug.show(sym) + " adding bridge for " + Debug.show(sym1));
 
 		    addBridge(sym, sym1);
 		}
