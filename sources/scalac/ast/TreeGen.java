@@ -502,7 +502,7 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build the expansion of (() => expr)
      *  This is:
-     *    { class $clazz() extends scala.Function0 { def apply() = expr } ; new $clazz() }
+     *    { class $anon() extends scala.Function0 { def apply() = expr } ; new $anon() }
      */
     public Tree mkUnitFunction(Tree expr, Type tp, Symbol owner) {
 	int pos = expr.pos;
@@ -510,7 +510,8 @@ public class TreeGen implements Kinds, Modifiers {
 
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
-	clazz.setInfo(Type.compoundType(new Type[]{f0t}, new Scope(), clazz));
+	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, f0t},
+                                        new Scope(), clazz));
 	clazz.constructor().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
