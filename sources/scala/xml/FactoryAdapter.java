@@ -1,4 +1,4 @@
-package scala.xml ;
+package scala.xml;
 // MIT License
 
 import java.io.OutputStream;
@@ -7,11 +7,11 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
-import java.util.Map ;
-import java.util.HashMap ;
-import java.util.LinkedList ;
-import java.util.Stack ;
-import java.util.Iterator ;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Stack;
+import java.util.Iterator;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -32,105 +32,109 @@ import org.xml.sax.helpers.XMLReaderFactory;
 
 
 /** 2do:
-    - handle MixedContent properly !
-    - ? canonical XML ?
-    - performance ( java Array <-> scala.Array )
+ * - handle MixedContent properly !
+ *  - ? canonical XML ?
+ *  - performance ( java Array <-> scala.Array )
  */
 public abstract class FactoryAdapter
     extends DefaultHandler
     implements ContentHandler, ErrorHandler // SAX2
 {
 
-      // default settings
+    // default settings
 
-      /** Default parser name. */
-      protected static final String
-            DEFAULT_PARSER_NAME = "org.apache.xerces.parsers.SAXParser";
+    /** Default parser name. */
+    protected static final String
+        DEFAULT_PARSER_NAME = "org.apache.xerces.parsers.SAXParser";
 
-      /** Namespaces feature id (http://xml.org/sax/features/namespaces). */
-      protected static final String NAMESPACES_FEATURE_ID = "http://xml.org/sax/features/namespaces";
+    /** Namespaces feature id (http://xml.org/sax/features/namespaces). */
+    protected static final String
+        NAMESPACES_FEATURE_ID = "http://xml.org/sax/features/namespaces";
 
-      //
-      // Constructors
-      //
+    //
+    // Constructors
+    //
 
-      /** Default constructor. */
-      public FactoryAdapter() {
-            buffer = new StringBuffer();
-            attribStack = new Stack();
-            hStack = new Stack();
-            tagStack = new Stack();
-            //fOut = new PrintWriter( System.out );
-      } // <init>()
+    /** Default constructor. */
+    public FactoryAdapter() {
+        buffer = new StringBuffer();FactoryAdapter
+        attribStack = new Stack();
+        hStack = new Stack();
+        tagStack = new Stack();
+        //fOut = new PrintWriter(System.out);
+    } // <init>()
 
 
-      // Data
+    // Data
 
-      Stack hStack;   // [ element ] contains siblings
-      Stack tagStack; // [String]
+    Stack hStack;   // [ element ] contains siblings
+    Stack tagStack; // [String]
 
-      Stack attribStack;
+    Stack attribStack;
 
-      String curTag ;
+    String curTag;
 
-      StringBuffer buffer;
-      boolean      capture;
+    StringBuffer buffer;
+    boolean capture;
 
-      // these are defined in a scala class
+    // these are defined in a scala class
 
-      abstract boolean elementContainsText( String localName ) ;
+    abstract boolean elementContainsText(String localName);
 
-      abstract scala.Object createElement(String elemName,
+    abstract scala.Object createElement(String elemName,
                                           Map attribs,
-                                          Iterator chIter );
+                                          Iterator chIter);
 
-      abstract scala.Object createPCDATA( String text );
+    abstract scala.Object createPCDATA(String text);
+
+    //
+    // ContentHandler methods
+    //
+
+    /** Set document locator.
+     */
+    public void setDocumentLocator(Locator locator) {
+    }
+
+    /** Start document.
+     */
+    public void startDocument() throws SAXException {
+    }
 
 
-      //
-      // ContentHandler methods
-      //
-
-      /** Set document locator. */
-      public void setDocumentLocator(Locator locator) {
-      }
-
-      /** Start document. */
-      public void startDocument() throws SAXException {
-      }
-
-
-      /** Characters. */
-      public void characters(char[] ch, int offset, int length)
+    /** Characters. */
+    public void characters(char[] ch, int offset, int length)
             throws SAXException {
 
-            boolean ws = false;
+        boolean ws = false;
 
-            //System.err.println( "before \""+buffer+"\"" );
+        //System.err.println( "before \""+buffer+"\"" );
 
-            if( capture )
-                  for( int i = offset; i < offset + length; i++ )
-                        if( Character.isWhitespace( ch[ i ] )) {
-                              if( !ws ) {
-                                    buffer.append(' ');
-                                    ws = true;
-                              }
-                        } else {
-                              buffer.append( ch[ i ] );
-                              ws = false;
-                        }
+        if (capture)
+            for (int i = offset; i < offset + length; i++)
+                if (Character.isWhitespace(ch[i])) {
+                    if (!ws) {
+                        buffer.append(' ');
+                        ws = true;
+                    }
+                } else {
+                    buffer.append(ch[i]);
+                    ws = false;
+                }
 
-            //System.err.println( "after \""+buffer+"\"" );
-            //System.err.println();
+        //System.err.println( "after \""+buffer+"\"" );
+        //System.err.println();
 
     } // characters(char[],int,int)
 
-    /** Ignorable whitespace. */
+    /** Ignorable whitespace.
+     */
     public void ignorableWhitespace(char[] ch, int offset, int length)
         throws SAXException {
     }
 
-    /** End document. */
+    /** End document.
+     */
     public void endDocument() throws SAXException {
     }
 
@@ -138,25 +142,25 @@ public abstract class FactoryAdapter
     // ContentHandler methods
     //
 
-    /** Start prefix mapping. */
-      public void startPrefixMapping(String prefix, String uri)
-            throws SAXException {
-      }
+    /** Start prefix mapping.
+     */
+    public void startPrefixMapping(String prefix, String uri)
+        throws SAXException {
+    }
 
-
-
-    /** Start element. */
+    /** Start element.
+     */
     public void startElement(String uri, String localName, String qname,
                              Attributes attributes) throws SAXException {
 
-          captureText();
+        captureText();
 
-          tagStack.push( curTag );
-          curTag = localName ;
+        tagStack.push(curTag);
+        curTag = localName ;
 
-          capture = elementContainsText(localName) ;
+        capture = elementContainsText(localName) ;
 
-          hStack.push( null );
+        hStack.push( null );
         HashMap map = null;
 
         if (attributes == null) {
@@ -182,84 +186,85 @@ public abstract class FactoryAdapter
     } // startElement(String,String,String,Attributes)
 
 
-      /** this way to deal with whitespace is quite nonstandard, but useful
-       */
+    /** this way to deal with whitespace is quite nonstandard, but useful
+     */
+    void captureText() {
+        if (capture == true) {
+             hStack.push(createPCDATA(buffer.toString()));
+        }
+        buffer.setLength(0);
+    }
 
-      void captureText() {
-            if( capture == true ) {
-                  hStack.push( createPCDATA(buffer.toString() ));
-            }
-            buffer.setLength( 0 );
-      }
-
-      /** End element. */
-      public void endElement(String uri, String localName, String qname)
+    /** End element.
+     */
+    public void endElement(String uri, String localName, String qname)
             throws SAXException {
 
-            captureText();
+        captureText();
 
+        Map attribMap = (HashMap) attribStack.pop();
 
-            Map attribMap = (HashMap) attribStack.pop();
+        // reverse order to get it right
+        LinkedList v       = new LinkedList();
+        scala.Object child = (scala.Object) hStack.pop();
+        while( child != null ) {
+            v.addFirst(child);
+            child = (scala.Object) hStack.pop();
+        }
 
-            // reverse order to get it right
+        // create element
+        rootElem = createElement(localName, attribMap, v.iterator());
+        hStack.push(rootElem);
 
-            LinkedList v       = new LinkedList();
-            scala.Object child = (scala.Object) hStack.pop();
-            while( child != null ) {
-                  v.addFirst( child );
-                  child = (scala.Object) hStack.pop();
-            }
+        // set
+        curTag = (String) tagStack.pop();
 
-            // create element
+        if (curTag != null) // root level
+            capture = elementContainsText(curTag);
+        else
+            capture = false;
 
-            rootElem = createElement( localName, attribMap, v.iterator() );
-            hStack.push( rootElem );
+    } // endElement(String,String,String)
 
-            // set
+    /** End prefix mapping.
+     */
+    public void endPrefixMapping(String prefix) throws SAXException {
+    }
 
-            curTag = (String) tagStack.pop();
+    /** Skipped entity.
+     */
+    public void skippedEntity(String name) throws SAXException {
+    }
 
-            if( curTag != null ) // root level
-                  capture = elementContainsText( curTag );
-            else
-                  capture = false;
+    //
+    // ErrorHandler methods
+    //
 
-      } // endElement(String,String,String)
+    /** Warning.
+     */
+    public void warning(SAXParseException ex) throws SAXException {
+        printError("Warning", ex);
+    }
 
-      /** End prefix mapping. */
-      public void endPrefixMapping(String prefix) throws SAXException {
-      }
+    /** Error.
+     */
+    public void error(SAXParseException ex) throws SAXException {
+        printError("Error", ex);
+    }
 
-      /** Skipped entity. */
-      public void skippedEntity(String name) throws SAXException {
-      }
+    /** Fatal error.
+     */
+    public void fatalError(SAXParseException ex) throws SAXException {
+        printError("Fatal Error", ex);
+        throw ex;
+    }
 
-      //
-      // ErrorHandler methods
-      //
+    //
+    // Protected methods
+    //
 
-      /** Warning. */
-      public void warning(SAXParseException ex) throws SAXException {
-            printError("Warning", ex);
-      }
-
-      /** Error. */
-      public void error(SAXParseException ex) throws SAXException {
-            printError("Error", ex);
-      }
-
-      /** Fatal error. */
-      public void fatalError(SAXParseException ex) throws SAXException {
-            printError("Fatal Error", ex);
-            throw ex;
-      }
-
-      //
-      // Protected methods
-      //
-
-
-    /** Prints the error message. */
+    /** Prints the error message.
+     */
     protected void printError(String type, SAXParseException ex) {
 
         System.err.print("[");
@@ -285,65 +290,69 @@ public abstract class FactoryAdapter
 
     } // printError(String,SAXParseException)
 
-      scala.Object rootElem ;
-    //
+    scala.Object rootElem;
+
+    //FactoryAdapter
     // MAIN
     //
 
-      public scala.Object loadXML( String fileName ) {
+    /** load XML document
+     */
+    public scala.Object loadXML(String fileName) {
 
-                // variables
-                //PrintWriter out = new PrintWriter(System.out);
-                XMLReader parser = null;
+        // variables
+        //PrintWriter out = new PrintWriter(System.out);
+        XMLReader parser = null;
 
-                // use default parser
-                // create parser
-                try {
-                      parser = XMLReaderFactory.createXMLReader(DEFAULT_PARSER_NAME);
-                }
-                catch (Exception e) {
-                      System.err.println("error: Unable to instantiate parser ("+DEFAULT_PARSER_NAME+")");
-                      System.exit(-1);
-                }
+        // use default parser
+        // create parser
+        try {
+             parser = XMLReaderFactory.createXMLReader(DEFAULT_PARSER_NAME);
+        }
+        catch (Exception e) {
+            System.err.println("error: Unable to instantiate parser (" +
+                               DEFAULT_PARSER_NAME + ")");
+            System.exit(-1);
+        }
 
-                // set parser features
-                try {
-                      parser.setFeature(NAMESPACES_FEATURE_ID, true);
-                }
-                catch (SAXException e) {
-                      System.err.println("warning: Parser does not support feature ("+NAMESPACES_FEATURE_ID+")");
-                }
+        // set parser features
+        try {
+            parser.setFeature(NAMESPACES_FEATURE_ID, true);
+        }
+        catch (SAXException e) {
+            System.err.println("warning: Parser does not support feature (" +
+                               NAMESPACES_FEATURE_ID + ")");
+        }
 
-                // set handlers
+        // set handlers
+        parser.setErrorHandler(this);
 
-                parser.setErrorHandler( this );
+        if (parser instanceof XMLReader) {
+            parser.setContentHandler(this);
+        }
+        else {
+            System.err.println("wrong parser");
+            System.exit(-1);
+        }
 
-                if (parser instanceof XMLReader) {
-                      parser.setContentHandler( this );
-                }            else {
-                      System.err.println("wrong parser");
-                      System.exit(-1);
-                }
+        // parse file
+        try {
+            System.err.println("[parsing \"" + fileName + "\"]");
+            parser.parse( fileName );
+        }
+        catch (SAXParseException e) {
+            // ignore
+        }
+        catch (Exception e) {
+            System.err.println("error: Parse error occurred - " + e.getMessage());
+            if (e instanceof SAXException) {
+                e = ((SAXException)e).getException();
+            }
+            e.printStackTrace(System.err);
+        }
 
-                // parse file
-                try {
-                      System.err.println("[parsing \""+fileName+"\"]");
-                      parser.parse( fileName );
-                }
-                catch (SAXParseException e) {
-                      // ignore
-                }
-                catch (Exception e) {
-                      System.err.println("error: Parse error occurred - "+e.getMessage());
-                      if (e instanceof SAXException) {
-                            e = ((SAXException)e).getException();
-                      }
-                      e.printStackTrace(System.err);
-                }
+        return rootElem;
 
-                return rootElem;
-
-          } // loadXML
+    } // loadXML
 
 } // class FactoryAdapter
-
