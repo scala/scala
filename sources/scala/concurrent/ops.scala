@@ -19,11 +19,12 @@ object ops {
     Pair(xp, y.get)
   }
 
-  def replicate(start: Int, end: Int)(def p: Int => Unit): Unit = {
-    if (start == end) {
-    } else if (start + 1 == end) {
+  def replicate(start: Int, end: Int)(p: Int => Unit): Unit = {
+    if (start == end)
+      ()
+    else if (start + 1 == end)
       p(start)
-    } else {
+    else {
       val mid = (start + end) / 2;
       spawn { replicate(start, mid)(p) }
       replicate(mid, end)(p)
