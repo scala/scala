@@ -1,4 +1,3 @@
-testing: /home/odersky/scala/test/files/neg/imports.scala             [FAILED]
 imports.scala:26: not found: value v_coi
   def method: C_coi = v_coi;
                       ^

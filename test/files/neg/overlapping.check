@@ -1,6 +1,6 @@
-overlapping.scala:9: overlapping overloaded alternatives; the two following alternatives of method foo have the same erasure: ()Any
- alternative 1: def foo: X.this.I
- alternative 2: def foo: X.this.J
+overlapping.scala:9: Double declaration:
+method foo: X.this.I and
+method foo: X.this.J have same types after erasure
   def foo: J;
       ^
 one error found
