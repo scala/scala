@@ -10,17 +10,28 @@
 package scala.collection.immutable;
 
 
-trait Map[A, B, This <: scala.collection.immutable.Map[A, B, This]]: This with scala.collection.Map[A, B] {
+trait Map[A, B, This <: Map[A, B, This]]: This with scala.collection.Map[A, B] {
 
     def update(key: A, value: B): This;
 
-    def remove(key: A): This;
+    def -(key: A): This;
 
-    def clear: This;
+    def remove(keys: A*): This = removeElems(keys);
 
-    def put(mappings: Pair[A, B]*): This = putMap(mappings);
+    def removeElems(keys: Iterable[A]): This = {
+    	val iter = keys.elements;
+        var res = this;
+        while (iter.hasNext) {
+            res = res - iter.next;
+        }
+        res;
+    }
 
-    def putMap(map: Iterable[Pair[A, B]]): This = {
+    def +(key: A): MapTo = new MapTo(key);
+
+    def add(mappings: Pair[A, B]*): This = addElems(mappings);
+
+    def addElems(map: Iterable[Pair[A, B]]): This = {
         val iter = map.elements;
         var res = this;
         while (iter.hasNext) {
@@ -60,4 +71,8 @@ trait Map[A, B, This <: scala.collection.immutable.Map[A, B, This]]: This with s
             } + "}";
 
     def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2;
+
+    class MapTo(key: A) {
+        def ->(value: B): This = update(key, value);
+    }
 }
