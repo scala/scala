@@ -13,11 +13,15 @@ java/Type.java
 
 scalac/Phase.java
 
+scalac/ast/AbstractTreeCaseExpander.java
+scalac/ast/AbstractTreeExpander.java
+scalac/ast/AbstractTreeMethodExpander.java
+
 scalac/ast/Tree.java
+scalac/ast/TreeField.java
 scalac/ast/TreeKind.java
+scalac/ast/TreeNode.java
 scalac/ast/TreeSymbol.java
 scalac/ast/TreeType.java
-scalac/ast/TreeField.java
-scalac/ast/TreeNode.java
 
 ##############################################################################
