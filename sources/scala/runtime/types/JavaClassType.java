@@ -36,7 +36,7 @@ public class JavaClassType extends ClassType {
         return jct;
     }
 
-    private JavaClassType(String fullName) throws ClassNotFoundException {
+    public JavaClassType(String fullName) throws ClassNotFoundException {
         super(Class.forName(fullName, false, loader), true);
     }
 }

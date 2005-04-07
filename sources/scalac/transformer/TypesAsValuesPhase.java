@@ -426,7 +426,7 @@ public class TypesAsValuesPhase extends Phase {
                     assert targs.length == 1 && vargs.length == 0;
                     Type type = targs[0].type;
                     Tree expr = transform(qualifierOf(fun));
-                    return isTrivial(type)
+                    return (isTrivial(type) && !isSpecial(type))
                         ? super.transform(tree)
                         : genInstanceTest(tree.pos, expr, type);
                 } else if (funSym == defs.ANY_AS) {
@@ -436,11 +436,11 @@ public class TypesAsValuesPhase extends Phase {
                     //   asValue(T).cast(e).asInstanceOf[T]
                     // unless T is a trivial type for which a Java
                     // instance test is sufficient, in which case the
-                    // expression is left as is.
+                    // erased version of asInstanceOf is used.
                     assert targs.length == 1 && vargs.length == 0;
                     Type type = targs[0].type;
                     Tree expr = transform(qualifierOf(fun));
-                    return isTrivial(type)
+                    return (isTrivial(type) && !isSpecial(type))
                         ? super.transform(tree)
                         : genTypeCast(tree.pos, expr, type);
                 } else if (!monoPrimitive(funSym)) {
@@ -739,10 +739,17 @@ public class TypesAsValuesPhase extends Phase {
         private Tree genInstanceTest(int pos, Tree expr, Type tp) {
             Tree tpVal = typeAsValue(pos, tp, currentOwner, EENV);
 
-            if (isKnowClassType(tp) && isLocalIdent(expr)) {
-                Symbol sym = expr.symbol();
+            if (isKnowClassType(tp)) {
+                Symbol val =
+                    currentOwner.newVariable(pos,
+                                             Modifiers.SYNTHETIC,
+                                             Names.LOCAL(currentOwner));
+                val.setType(expr.type);
+
+                Tree valDef = gen.ValDef(val, expr);
+
                 Tree cheapTest =
-                    gen.mkIsInstanceOf(pos, gen.mkLocalRef(pos, sym), tp, true);
+                    gen.mkIsInstanceOf(pos, gen.mkLocalRef(pos, val), tp, true);
                 Symbol weakIsInst = defs.SCALACLASSTYPE_WEAKISINSTANCE();
                 Tree scalaTpVal = gen.mkAsInstanceOf(pos,
                                                      tpVal,
@@ -751,12 +758,16 @@ public class TypesAsValuesPhase extends Phase {
                 Tree expensiveTest =
                     gen.mkApply_V(pos,
                                   gen.Select(pos, scalaTpVal, weakIsInst),
-                                  new Tree[] { expr });
-                return gen.mkApply_V(pos,
-                                     gen.Select(pos,
-                                                cheapTest,
-                                                defs.BOOLEAN_AND()),
-                                     new Tree[] { expensiveTest });
+                                  new Tree[] { gen.mkLocalRef(pos, val) });
+
+                Tree bothTests =
+                    gen.mkApply_V(pos,
+                                  gen.Select(pos,
+                                             cheapTest,
+                                             defs.BOOLEAN_AND()),
+                                  new Tree[] { expensiveTest });
+
+                return gen.mkBlock(pos, valDef, bothTests);
             } else {
                 Tree fun = gen.Select(pos, tpVal, defs.TYPE_ISINSTANCE());
                 return gen.mkApply_V(pos, fun, new Tree[] { expr });
@@ -809,19 +820,22 @@ public class TypesAsValuesPhase extends Phase {
                 return false;
         }
 
-        private boolean isKnowClassType(Type tp) {
+        private boolean isSpecial(Type tp) {
             switch (tp) {
             case TypeRef(_, Symbol sym, _):
-                return (sym != defs.ARRAY_CLASS) && !sym.isParameter();
+                return (sym == defs.ANY_CLASS)
+                    || (sym == defs.ANYVAL_CLASS)
+                    || (sym == defs.ALLREF_CLASS)
+                    || (sym == defs.ALL_CLASS);
             default:
                 return false;
             }
         }
 
-        private boolean isLocalIdent(Tree tree) {
-            switch (tree) {
-            case Ident(_):
-                return tree.symbol().isLocal();
+        private boolean isKnowClassType(Type tp) {
+            switch (tp) {
+            case TypeRef(_, Symbol sym, _):
+                return (sym != defs.ARRAY_CLASS) && !sym.isParameter();
             default:
                 return false;
             }

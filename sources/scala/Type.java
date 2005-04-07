@@ -12,6 +12,7 @@ package scala;
 
 import scala.runtime.RunTime;
 import scala.runtime.types.ScalaClassType;
+import scala.runtime.types.JavaClassType;
 import scala.runtime.types.TypeBoolean;
 import scala.runtime.types.TypeByte;
 import scala.runtime.types.TypeChar;
@@ -73,10 +74,19 @@ abstract public class Type implements java.io.Serializable {
      */
     public Object cast(Object o) {
         assert Statistics.incTypeCast();
-        assert (o == null) || Statistics.decInstanceOf();
-        if (! (o == null || isInstance(o)))
-            throw new ClassCastException("\n" + ((ScalaObject)o).getType() + "\n" + this.toString());
-        return o;
+        if (o == null) {
+            if (this.isSubType(JavaLangObject))
+                return null;
+            else
+                throw new ClassCastException();
+        } else {
+            assert Statistics.decInstanceOf();
+            if (isInstance(o))
+                return o;
+            else
+                throw new ClassCastException("\n" + ((ScalaObject)o).getType()
+                                             + "\n" + this.toString());
+        }
     }
 
     // Value types
@@ -95,6 +105,16 @@ abstract public class Type implements java.io.Serializable {
     public static final TypeAnyVal AnyVal = new TypeAnyVal();
     public static final TypeAllRef AllRef = new TypeAllRef();
     public static final TypeAll    All    = new TypeAll();
+
+    private static JavaClassType JavaLangObject;
+
+    static {
+        try {
+            JavaLangObject = new JavaClassType("java.lang.Object");
+        } catch (ClassNotFoundException e) {
+            throw new Error(e);
+        }
+    }
 
     public static boolean isSameType(Type[] these, Type[] those) {
         if (these.length != those.length)
