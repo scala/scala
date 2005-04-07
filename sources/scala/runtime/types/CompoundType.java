@@ -24,13 +24,11 @@ import scala.runtime.RunTime;
 
 public class CompoundType extends Type {
     public final ClassType[] components;
+    public final boolean emptyRefinement;
 
     public CompoundType(ClassType[] components, boolean emptyRefinement) {
         this.components = components;
-
-        if (!emptyRefinement)
-            throw new Error("attempt to build a compound type with "
-                            + "non-empty refinement");
+        this.emptyRefinement = emptyRefinement;
     }
 
     public Array newArray(int size) {
@@ -52,8 +50,12 @@ public class CompoundType extends Type {
     }
 
     public boolean isSubType(Type that) {
+        if (!emptyRefinement)
+            throw new Error("cannot compute isSubType (non-empty refinement)");
+
         if (that instanceof CompoundType) {
-            ClassType[] thatComponents = ((CompoundType)that).components;
+            CompoundType thatCT = (CompoundType)that;
+            ClassType[] thatComponents = thatCT.components;
             for (int i = 0; i < thatComponents.length; ++i) {
                 if (!this.isSubType(thatComponents[i]))
                     return false;
@@ -69,6 +71,9 @@ public class CompoundType extends Type {
     }
 
     public boolean isSameType(Type that) {
+        if (!emptyRefinement)
+            throw new Error("cannot compute isSameType (non-empty refinement)");
+
         if (that instanceof CompoundType) {
             CompoundType thatCT = (CompoundType)that;
 
