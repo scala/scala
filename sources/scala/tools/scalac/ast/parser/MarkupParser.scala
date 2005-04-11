@@ -292,6 +292,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /*[Duplicate]*/ def element: Tree = {
     val pos1 = pos;
     val Tuple2(qname, attrMap) = xTag;
+    //Console.println("MarkupParser::element("+qname+","+attrMap+")");
     if(ch == '/') { // empty element
       xToken('/');
       xToken('>');

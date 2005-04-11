@@ -225,18 +225,24 @@ xml/EntityRef.scala
 xml/ExternalID.scala
 xml/FactoryAdapter.scala
 xml/LoggedNodeFactory.scala
+xml/MetaData.scala
+xml/NamespaceBinding.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeFactory.scala
 xml/NodeSeq.scala
-xml/NodeTraverser.scala
+#xml/NodeTraverser.scala
+xml/Null.scala
 xml/Parsing.scala
+xml/PrefixedAttribute.scala
 xml/PrettyPrinter.scala
 xml/ProcInstr.scala
 xml/SpecialNode.scala
 xml/Text.scala
 xml/TextBuffer.scala
+xml/TopScope.scala
 xml/UName.scala
+xml/UnprefixedAttribute.scala
 xml/Utility.scala
 
 xml/dtd/ContentModel.scala
@@ -250,13 +256,11 @@ xml/dtd/ValidationException.scala
 xml/nobinding/NoBindingFactoryAdapter.scala
 xml/nobinding/XML.scala
 
-xml/parsing/AttribValue.scala
 xml/parsing/ConstructingHandler.scala
 xml/parsing/ConstructingParser.scala
 xml/parsing/FatalError.scala
 xml/parsing/MarkupHandler.scala
 xml/parsing/MarkupParser.scala
-xml/parsing/XSDHandler.scala
 xml/path/Expression.scala
 
 xml/transform/BasicTransformer.scala

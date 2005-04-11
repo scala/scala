@@ -134,7 +134,10 @@ class TransMatch( global:scalac_Global )
       }
       i = i+1;
     }
+    //Console.println("TransMatch: ");
+    //for(val ci <- cases) Console.println(ci);
     if( containsReg ) {
+      //Console.println("TransMatch: isRegular!");
       /*
       val pe = new matching.PatternExp(global.definitions); // TEST
       var j = 0;
@@ -149,13 +152,17 @@ class TransMatch( global:scalac_Global )
       am.construct( matcher, cases.asInstanceOf[ Array[Tree] ] );
       matcher.tree
     } else {
+      //Console.println("TransMatch: NOT regular");
       val pm = new matching.PatternMatcher( cunit );
       pm.initialize(root, currentOwner, restpe, true );
       try{
       pm.construct( cases.asInstanceOf[ Array[Tree] ] );
       } catch {
         case e:Throwable =>
-          Console.println("failed on pats"+scala.Iterator.fromArray(cases).toList.mkString("","\n","")+", message\n"+e.getMessage())
+          Console.print("failed on pats "+scala.Iterator.fromArray(cases).toList.mkString("","\n","")+", message\n"+e.getMessage());
+          Console.println(" with exception:"+e.getMessage());
+          //e.printStackTrace();
+          Debug.abort()
       }
       if (global.log()) {
         global.log("internal pattern matching structure");

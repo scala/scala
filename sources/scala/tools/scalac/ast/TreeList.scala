@@ -14,7 +14,7 @@ package scala.tools.scalac.ast {
 /** List of trees.
  */
 
-final class TreeList(ts: Array[Tree]) {
+final class TreeList(ts: Array[Tree]) with Iterable[Tree] {
 
   private var trees = ts;
   private var len = ts.length;
@@ -45,6 +45,14 @@ final class TreeList(ts: Array[Tree]) {
   def clear(): unit = {
     trees = new Array[Tree](4);
     len = 0;
+  }
+
+  def elements = new Iterator[Tree] { // don't change treelist while iterating!
+    private var i = 0;
+    def hasNext: Boolean = i < len;
+    def next: Tree =
+      if (i < len) { val x = trees(i) ; i = i + 1 ; x }
+      else error("next on empty iterator");
   }
 
   def length(): int = len;

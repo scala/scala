@@ -1,45 +1,11 @@
 package scala.xml.parsing;
 
-import scala.collection.Map ;
-import scala.collection.mutable ;
+/** implementation of MarkupHandler that constructs nodes */
+class ConstructingHandler extends MarkupHandler {
 
-/** */
-class ConstructingHandler extends MarkupHandler[Node] {
+  def element(pos: int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
+    Elem(pre, label, attrs, pscope, nodes:_*);
 
-  //def attributeCDataValue(pos: int, str:String) = CDataValue(str);
-
-  //def attributeNamespaceDecl(pos: int, uri: String) = NamespaceDecl(uri);
-
-  def element(pos: int, uri: String, label: String, attrMap1: Map[Pair[String,String],Attribute], args: mutable.Buffer[Node]):Iterable[Node] = {
-
-    var attrs = new Array[Attribute](attrMap1.size);
-    {
-      var i = 0;
-      val it = attrMap1.elements;
-      while( it.hasNext ) {
-        val Pair(Pair(uri:String, key:String), va: Attribute) = it.next;
-        attrs( i ) = va;
-        /*
-        va match {
-          case CDataValue(str) => attrs( i ) = Attribute(uri, key, str);
-        }
-        */
-        i = i + 1;
-      }
-    }
-    val attrSeq: Seq[Attribute] = attrs;
-    val nodes = new Array[Node]( args.length );
-    {
-      var i = 0;
-      val it = args.elements;
-      while( i < args.length ) {
-        nodes(i) = it.next;
-        i = i + 1;
-      }
-    }
-    val ch: Seq[Node] = nodes;
-    Some(Elem(uri, label, AttributeSeq.fromAttrs(uri,attrSeq:_*), ch:_*));
-  };
 
   def procInstr(pos: Int, target: String, txt: String ) =
     ProcInstr(target, txt);

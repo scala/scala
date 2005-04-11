@@ -17,13 +17,12 @@ import scala.tools.scalac.util.NewArray;
 import scala.collection.immutable.{ Map, ListMap };
 import scala.collection.mutable;
 import scala.xml.{Text,TextBuffer};
-import scala.xml.parsing.{ AttribValue, MarkupHandler };
 import scalac.util.{ Name, Names, TypeNames } ;
 
 package scala.tools.scalac.ast.parser {
 
 /** this class builds instance of Tree that represent XML */
-class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS: Boolean ) /*extends MarkupHandler[Tree,Tree]*/ {
+class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS: Boolean ) {
 
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
@@ -31,8 +30,15 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
 
   val  _ArrayBuffer = Name.fromString("ArrayBuffer");
   val  _Attribute = Name.fromString("Attribute");
+  val  _MetaData = Name.fromString("MetaData");
+  val  _NamespaceBinding = Name.fromString("NamespaceBinding");
   val  _NodeBuffer = Name.fromString("NodeBuffer");
   val  _NoAttributes = Name.fromString("NoAttributes");
+
+  val  _Null = Name.fromString("Null");
+
+  val  _PrefixedAttribute = Name.fromString("PrefixedAttribute");
+  val  _UnprefixedAttribute = Name.fromString("UnprefixedAttribute");
   val  _TreeMap = Name.fromString("TreeMap");
   val  _Elem = Name.fromString("Elem");
   val  _Seq = Name.fromString("Seq");
@@ -73,6 +79,21 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
 
   private def _scala_xml( pos: int, name: Name ) =
     make.Select( pos, _scala( pos, _xml ), name );
+
+  private def _scala_xml_MetaData( pos: int ) =
+     p.convertToTypeId(_scala_xml( pos, _MetaData ));
+
+  private def _scala_xml_NamespaceBinding( pos: int ) =
+     p.convertToTypeId(_scala_xml( pos, _NamespaceBinding ));
+
+  private def _scala_xml_Null( pos: int ) =
+     _scala_xml( pos, _Null );
+
+  private def _scala_xml_PrefixedAttribute( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _PrefixedAttribute ));
+
+  private def _scala_xml_UnprefixedAttribute( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _UnprefixedAttribute ));
 
   private def _scala_xml_Node( pos: int ) =
     _scala_xml( pos, _Node );
@@ -170,12 +191,13 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
    *  @todo map:       a map of attributes !!!
    */
 
-  protected def mkXML(pos: int, isPattern: boolean, namespace: Tree, label: Tree, attrs: Array[Tree], children: mutable.Buffer[Tree]): Tree = {
+  protected def mkXML(pos: int, isPattern: boolean, pre: Tree, label: Tree, attrs: /*Array[*/Tree/*]*/ , scope:Tree, children: mutable.Buffer[Tree]): Tree = {
     if( isPattern ) {
       val ts = new mutable.ArrayBuffer[Tree]();
-      ts.append( namespace );
+      ts.append( pre );
       ts.append( label );
       ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) ); // attributes?
+      ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) ); // scope?
       convertToTextPat( children );
       ts ++ children;
       make.Apply(pos,
@@ -183,8 +205,12 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
                  bufferToArray( ts ))
     } else {
       val ab = new scala.collection.mutable.ArrayBuffer[Tree]();
-      ab + namespace;
+      ab + pre;
       ab + label;
+      ab + attrs;
+      ab + scope;
+
+      /*
       if(( attrs.length ) == 0 )
         ab + _scala_xml_Node_NoAttributes( pos )
       else
@@ -193,6 +219,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
                                     _scala_xml_Node_NoAttributes( pos ),
                                     Names.PERCENT ),
                         attrs);
+                        */
       if(( children.length ) > 0 )
         ab + make.Typed(pos,
                         makeXMLseq( pos, children ),
@@ -243,7 +270,11 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     make.New( pos, constr );
   }
 
-  // create
+  // code to create attribute
+  /*
+   scala.xml.Attribute(uri, "key", [value])
+   */
+
   def makeAttribute( pos: int, ns:String, key:String, value:Tree ):Tree =
     make.Apply(pos,
                _scala_xml_Attribute(pos),
@@ -311,7 +342,8 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
           true,
           new Tree$Ident( Names.PATTERN_WILDCARD ):Tree,
           gen.mkStringLit( pos, n ):Tree,
-          Predef.Array[Tree](),
+          null, //Predef.Array[Tree](),
+          null,
           args);
 
   protected def convertToTextPat(t: Tree): Tree = t match {
@@ -369,11 +401,13 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
 
 
 
+  /** returns Some(prefix) if pre:name, None otherwise */
   def getPrefix( name:String ):Option[String] = {
     val i = name.indexOf(':');
     if( i != -1 ) Some( name.substring(0, i) ) else None
   }
 
+  /** splits */
   protected def qualifiedAttr( pos:Int, namespace:String, name:String ):Pair[String,String] = {
     getPrefix( name ).match {
       case Some( pref ) =>
@@ -394,54 +428,229 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
         Pair( "namespace$default", name );
     }
 
+  final val _md = Name.fromString("$md");
+  final val _scope = Name.fromString("$scope");
+  final val _tmpscope = Name.fromString("$tmpscope");
+
   /** makes an element */
-  def element(pos: int, label: String, attrMap: mutable.Map[String,Tree], args: mutable.Buffer[Tree]): Tree = {
+  def element(pos: int, qname: String, attrMap: mutable.Map[String,Tree], args: mutable.Buffer[Tree]): Tree = {
+    //Console.println("SymbolicXMLBuilder::element("+pos+","+qname+","+attrMap+","+args+")");
     var setNS = new mutable.HashMap[String, Tree];
+
+    val tlist = new myTreeList();
+    val tlist2 = new myTreeList();
+
+    def handleNamespaceBinding(pre:String, uri:Tree): Unit = {
+      val t = make.Assign(pos,
+                          make.Ident(pos, _tmpscope),
+                          make.New(pos,
+                                   make.Apply(
+                                     pos,
+                                     p.convertToConstr(_scala_xml( pos, _NamespaceBinding )),
+                                     Predef.Array[Tree](
+                                       {if(pre==null)
+                                         gen.mkNullLit(pos)
+                                        else
+                                          gen.mkStringLit(pos, pre)} ,
+                                       uri,
+                                       make.Ident(pos, _tmpscope)))
+                                 )
+                        );
+      tlist.append( t );
+      //Console.println("SymbolicXMLBuilder::handleNamespaceBinding:");
+      //Console.println(t.toString());
+
+    }
+
     /* DEBUG */
     val attrIt = attrMap.keys;
     while( attrIt.hasNext ) {
       val z = attrIt.next;
-      if( z.startsWith("xmlns") ) {
+      if( z.startsWith("xmlns") ) {  // handle namespace
         val i = z.indexOf(':');
         if( i == -1 )
-          setNS.update("default", attrMap( z ) );
+          handleNamespaceBinding(null, attrMap( z ));
+          //setNS.update("default", attrMap( z ) );
         else {
           val zz = z.substring( i+1, z.length() );
-          setNS.update( zz, attrMap( z ) );
+          //setNS.update( zz, attrMap( z ) );
+          handleNamespaceBinding(zz, attrMap( z ));
         }
         attrMap -= z;
       }
     }
+
+    val moreNamespaces = (0 < tlist.length());
+
     /* */
-    val i = label.indexOf(':');
-    val Pair( namespace, newlabel ) = qualified( pos, label );
+    val i = qname.indexOf(':');
 
-    var attr:Array[Tree] =
-      if( attrMap.isEmpty )
-        Tree.EMPTY_ARRAY
-      else {
-        val attrs:Array[Tree] = new Array[Tree](attrMap.size);
+    var newlabel = qname;
+    val pre = getPrefix(qname).match {
+      case Some(p) =>
+        newlabel = qname.substring(p.length()+1, qname.length());
+        p;
+      case None =>
+        null
+    }
+    //val Pair( pre, newlabel ) = qualified( pos, label );
+    //Console.println("SymbolicXMLBuilder::(489) "+pre);
+
+    // make attributes
+
+    def handlePrefixedAttribute(pre:String, key:String, value:Tree): Unit = {
+      val t =
+        make.Assign(pos,
+                    make.Ident(pos, _md),
+                    make.New(pos,
+                             make.Apply(pos,
+                                        _scala_xml_PrefixedAttribute(pos),
+                                        Predef.Array[Tree](
+                                          gen.mkStringLit(pos,pre),
+                                          gen.mkStringLit(pos,key),
+                                          value,
+                                          make.Ident(pos, _md)
+                                        )
+                                      )
+                           )
+                  );
+      tlist2.append( t );
+     // Console.println("SymbolicXMLBuilder::handlePrefixed :");
+     // Console.println(t.toString());
+    }
+
+    def handleUnprefixedAttribute(key:String, value:Tree): Unit = {
+      val t = make.Assign(pos,
+                          make.Ident(pos, _md),
+                          make.New(pos,
+                                   make.Apply(pos,
+                                              _scala_xml_UnprefixedAttribute(pos),
+                                              Predef.Array[Tree](
+                                                gen.mkStringLit(pos,key),
+                                                value,
+                                                make.Ident(pos, _md)
+                                              )
+                                            )
+                                 )
+                        );
+      tlist2.append(t);
+      //Console.println("SymbolicXMLBuilder::handlePrefixed :");
+      //Console.println(t.toString());
+
+    }
+
+    //var attr:Array[Tree] =
+    //  if( attrMap.isEmpty )
+    //    Tree.EMPTY_ARRAY ; //gen.mkNullLit(pos); //
+    //  else {
+    //    val attrs:Array[Tree] = new Array[Tree](attrMap.size);
         /* DEBUG */
-        var k = 0;
-        var it = attrMap.elements;
-        while( it.hasNext ) {
-          val ansk = it.next;
-          val Pair( ns, aname ) = qualifiedAttr( pos, namespace, ansk._1 );
-          attrs( k ) = makeAttribute( pos, ns, aname, ansk._2 );
-          k = k + 1;
-        }
-        /* */
-        attrs
+    //    var k = 0;
+    var it = attrMap.elements;
+    while( it.hasNext ) {
+      val ansk = it.next;
 
+      getPrefix( ansk._1 ).match {
+        case Some(pre) =>
+          val key = ansk._1.substring(pre.length()+1, ansk._1.length());
+          handlePrefixedAttribute(pre, key, ansk._2);
+        case None      =>
+          handleUnprefixedAttribute(ansk._1, ansk._2);
       }
+      //val Pair( ns, aname ) = qualifiedAttr( pos, namespace, ansk._1 );
+      //attrs( k ) = makeAttribute( pos, ns, aname, ansk._2 );
+      //k = k + 1;
+    }
+    /* */
+    //  attrs
+
+     // }
+
+    val moreAttributes = (0 < tlist2.length());
+
+    val ts = new mutable.ArrayBuffer[Tree]();
+
+    if(moreNamespaces) {
+      ts +  make.ValDef(pos,
+                        Modifiers.MUTABLE,
+                        _tmpscope,
+                        _scala_xml_NamespaceBinding(pos),
+                        make.Ident(pos, _scope));
+      ts ++ tlist;
+    }
+
+    //Console.println("printing ts");
+    //for(val t <- ts)
+     // Console.println(t.toString());
+
+    val ts2 = new mutable.ArrayBuffer[Tree]();
+
+    if(moreNamespaces) {
+      ts2 +  make.ValDef(pos, 0, _scope, Tree.Empty, make.Ident(pos, _tmpscope));
+    }
+    if(moreAttributes) {
+      ts2 +  make.ValDef(pos,
+                         Modifiers.MUTABLE,
+                         _md,
+                         _scala_xml_MetaData(pos),
+                         _scala_xml_Null(pos));
+      ts2 ++ tlist2;
+    }
+    //Console.println("printing ts2");
+    //for(val t <- ts2)
+    //  Console.println(t.toString());
+
+    val stms:Array[Tree] = new Array[Tree]( ts.length );
+    ts.elements.copyToArray( stms, 0 );
+
+    val stms2:Array[Tree] = new Array[Tree]( ts2.length );
+    ts2.elements.copyToArray( stms2, 0 );
+
+    val makeSymbolicPrefix = {
+      if(null == pre)
+        gen.mkNullLit(pos)
+      else
+        gen.mkStringLit(pos,pre)
+    }
+
+    val makeSymbolicAttrs = {
+      if(moreAttributes)
+        make.Ident(pos, _md) //attr:Array[Tree],
+      else
+        _scala_xml_Null(pos)
+    }
 
     var t = mkXML(pos,
                   false,
-                  make.Ident(pos, Name.fromString(namespace)):Tree,
+                  makeSymbolicPrefix,
                   gen.mkStringLit(pos, newlabel):Tree,
-                  attr:Array[Tree],
+                  makeSymbolicAttrs,
+                  make.Ident(pos, _scope),
                   args);
-    /* DEBUG */
+    /*
+    Console.println("printing _pre");
+    Console.println({if(null == pre) "null" else pre.toString()});
+    Console.println("printing newlabel");
+    Console.println(newlabel.toString());
+    Console.println("printing _scope");
+    Console.println(_scope.toString());
+    Console.println("printing t");
+    Console.println(t.toString());
+    */
+
+    if(0 < stms2.length) {
+      t = make.Block( pos, stms2, t );
+    }
+    ;
+    if(0 < stms.length) {
+      t = make.Block(pos, stms, t);
+    }
+    ;
+    //Console.println("SymbolicXMLBuilder::element returns :");
+    //Console.println(res.toString());
+
+    t
+    /* DEBUG
     if( !setNS.isEmpty ) {
       val nsStms = new Array[Tree]( setNS.size );
       var i = 0;
@@ -450,10 +659,10 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
         i = i + 1;
       }
       make.Block( pos, nsStms, t )
-    } else {
-    /* */
+      } else {
       t
-    }
+      } */
+
   }
 
   def setNamespacePrefix(pos:Int, pref:String, uri:Tree) =

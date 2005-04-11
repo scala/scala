@@ -15,7 +15,7 @@ import scala.collection.immutable;
 object Node {
 
   /** the constant empty attribute sequence */
-  final def NoAttributes: AttributeSeq = AttributeSeq.Empty;
+  final def NoAttributes: MetaData = Null;
 
   /** the empty namespace */
   val EmptyNamespace = "";
@@ -28,41 +28,42 @@ object Node {
  */
 abstract class Node extends NodeSeq {
 
-  private var internalAttrMap:Map[String, String] = null;
+  /** prefix of this node */
+  def prefix: String = null;
 
   /** label of this node. I.e. "foo" for &lt;foo/&gt;) */
   def label: String;
 
   /** the namespace of this node */
-  def namespace: String;
+  //final def namespace: String = scope.getURI(prefix);
 
-  /** used internally. Text = -1 PI = -2 Comment = -3 CDATA = -4 EntityRef = -5    */
+  /** used internally. Text = -1 PI = -2 Comment = -3 EntityRef = -5    */
   def typeTag$: Int = 0;
 
-  /** attribute map for attributes with the same namespace as this element  */
-  final def attribute: Map[String,String] = {
-    if( internalAttrMap == null )
-      internalAttrMap = new Map[String,String] {
-	val theMap = new collection.mutable.HashMap[String,String];
-	theMap ++= attributes.elements
-	          .filter( x => x.namespace == namespace )
-	          .map( x => Pair(x.key, x.value) );
+  /** the namespace bindings */
+  def scope: NamespaceBinding = null;
 
-	def size =
-          theMap.size;
+  def namespace = getNamespace(prefix);
 
-	def elements =
-          theMap.elements;
+  def getNamespace(_pre: String) =
+    if(scope == null) null else scope.getURI(_pre);
 
-	def get(x: String) =
-          theMap.get(x);
-      };
-    internalAttrMap
-  }
+  /** returns value of a MetaData instance with the same key. For
+   *  efficiency, the namespace is not checked.
+   */
+  final def attribute(key: String) =
+    attributes.getValue(key);
+
+  /** returns value of a MetaData instance with the given namespace and the
+   *  given key. Note that unqualified attributes have namespace null.
+   */
+  final def attribute(uri:String, key: String) =
+    attributes.getValue(uri, this, key);
 
   /** attribute axis - all attributes of this node, in order defined by attrib
   */
-  def attributes: AttributeSeq;
+  def attributes: MetaData =
+    Null;
 
   /** child axis (all children of this node) */
   def child:      Seq[Node];
@@ -75,18 +76,18 @@ abstract class Node extends NodeSeq {
   def descendant_or_self: List[Node] = this :: descendant;
 
   /** structural equality */
-  override def equals(x: Any): Boolean = x match {
+  override def equals(x: Any): Boolean = {
+    x match {
     case that: Node =>
-      //Console.print("(Node)");
-      that.label == this.label
-    && that.attributes ==  this.attributes
-    && that.child.sameElements(this.child) // sameElements
-    case _ => false
+      (that.label == this.label )
+      &&(that.attributes ==  this.attributes)
+      && that.child.sameElements(this.child)// sameElements
+      case _ => false
+    }
   }
-
   /** returns a hashcode */
-  override def hashCode(): Int =
-    Utility.hashCode(namespace, label, attribute.toList.hashCode(), child);
+  override def hashCode(): Int = 0;
+    //Utility.hashCode(namespace, label, attributes.hashCode(), child);
 
 
   /** method for NodeSeq */
@@ -105,5 +106,13 @@ abstract class Node extends NodeSeq {
    */
   override def toString(): String =
     toString(false);
+
+  def nameToString(sb: StringBuffer): StringBuffer  = {
+    if(null != prefix) {
+      sb.append(prefix);
+      sb.append(':');
+    }
+    sb.append(label);
+  }
 
 }

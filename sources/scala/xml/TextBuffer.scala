@@ -39,7 +39,7 @@ class TextBuffer {
   }
 
   /** returns an empty sequence if text is only whitespace */
-  def toText:Seq[Text] = {
+  def toText:Seq[Text[String]] = {
     var len = sb.length(); /* invariant */
     if( len == 0 ) return Nil;
 

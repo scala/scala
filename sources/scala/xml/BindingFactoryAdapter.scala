@@ -24,7 +24,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() with NodeFactory[N
   /** mapping from element names to an element constructor
     *  (constr:Seq[Node],HashMap[String,String] => Node)
     */
-  val f: Map[ String, (AttributeSeq,Seq[Node]) => Node ];
+  val f: Map[ String, (MetaData, NamespaceBinding, Seq[Node]) => Node ];
 
   /** mapping from element names to a truth value indicating
   * whether the corresponding element may have text children
@@ -59,32 +59,29 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() with NodeFactory[N
       }
     }
 
-  protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): Node = {
+  protected def create(uname: UName, attrs: MetaData, scope: NamespaceBinding, children:Seq[Node]): Node = {
     if( this.namespace == uname.uri ) {
       val c = getConstructor( uname.label );
-      c( attrs, children );
+      c( attrs, scope, children );
     } else {
-      Elem( uname.uri, uname.label, attrs, children:_* );
+      Elem( uname.uri, uname.label, attrs, scope, children:_* );
     }
   }
 
   /** creates an element. see also compress */
-  def   createNode(uri:String,
-                   elemName:String,
-                   attribs:HashMap[Pair[String,String],String],
-                   children:List[Node] ):Node = {
-      val uri$ = uri.intern();
-      val attribs1 = AttributeSeq.fromMap(attribs);
+  def   createNode(pre:String, elemName: String, attribs: MetaData, scope: NamespaceBinding, children:List[Node] ):Node = {
+      //val uri$ = uri.intern();
+      //val attribs1 = AttributeSeq.fromMap(attribs);
 
       // 2do:optimize
       if( !compress ) {
         // get constructor
         val c = getConstructor(elemName);
-        c( attribs1, children );
+        c( attribs, scope, children );
       } else { // do hash-consing
 
-        val ahc = attribs.toList.hashCode();
-        makeNode(UName(uri$, elemName), attribs1, children);
+        val ahc = attribs.hashCode();
+        makeNode(pre, elemName, attribs, scope, children);
         /*
 	val h = Utility.hashCode( uri$, elemName, ahc, children );
         cache.get( h ).match {
@@ -106,6 +103,6 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() with NodeFactory[N
     } // createNode
 
    /** creates PCDATA element */
-   def createText( text:String ):Text  = new Text( text );
+   def createText( text:String )  = new Text( text );
 
 } // BindingFactoryAdapter

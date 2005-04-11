@@ -2615,6 +2615,36 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
                 errorTermTree(tree)
 	    }
 	  }
+        case Tree.Apply(fn, args) if ((mode & PATTERNmode) != 0) =>
+	    val fn1 = transform(fn, mode | FUNmode, pt);
+	    val argMode = PATTERNmode;
+	    // type arguments with formals as prototypes if they exist.
+	    fn1.setType(infer.freshInstance(fn1.getType()));
+	    val argtypes = transformArgs(
+	      tree.pos, fn1.symbol(), Symbol.EMPTY_ARRAY, fn1.getType(), argMode, args, pt);
+
+
+	    if (argtypes == null)
+	      setError(tree)
+	    else {
+	      var i: int = 0;
+	      while (i < argtypes.length && !argtypes(i).isError())
+		i = i + 1;
+	      if (i < argtypes.length) setError(tree);
+
+	    fn1.getType() match {
+	      case Type$MethodType(params, restp) =>
+                copy.Apply(tree, fn1, args).setType(restp);
+              case _ =>
+	        if (!fn1.getType().isError())
+                  error(
+	            tree.pos,
+	            infer.applyErrorMsg(
+		        "", fn1, " cannot be applied to ", argtypes, pt));
+              errorTermTree(tree)
+	    }
+	    }
+
 
 	case Tree.Apply(fn, args) =>
 	  mode = mode & ~SEQUENCEmode;

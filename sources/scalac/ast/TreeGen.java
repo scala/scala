@@ -136,6 +136,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a string literal. */
     public Tree mkStringLit(int pos, String value) {
+        assert value != null;
         return Literal(pos, AConstant.STRING(value));
     }
 

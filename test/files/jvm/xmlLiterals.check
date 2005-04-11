@@ -67,5 +67,4 @@ Test05Ref
 <foo>{</foo>
 <foo>&nbsp;{<bar><baz></baz></bar><bar></bar></foo>
 namespace
-<ns0:foo xmlns:ns0="www.bar.com" xmlns:ns1="www.baz.com"><ns1:baz></ns1:baz></ns0:foo>
 <bar:foo xmlns:bar="www.bar.com" xmlns="www.baz.com"><baz></baz></bar:foo>

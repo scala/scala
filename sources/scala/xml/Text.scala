@@ -16,9 +16,14 @@ import scala.collection.immutable ;
  * @param text the text contained in this node, may not be null.
 **/
 
-case class Text( text:String ) extends SpecialNode {
 
-  if(null == text)
+case class Text[A]( data: A ) extends SpecialNode {
+
+  /** @deprecated
+   */
+  def text = toString();
+
+  if(null == data)
     throw new java.lang.NullPointerException("tried to construct Text with null");
 
   final override def typeTag$:Int = -1;
@@ -28,15 +33,15 @@ case class Text( text:String ) extends SpecialNode {
   def label    = "#PCDATA";
 
   final override def equals(x:Any) = x match {
-    case s:String  => text.equals( s );
-    case Text( s ) => text.equals( s );
+    case s:String  => s.equals( data.toString() );
+    case Text( s ) => data == s ;
     case _ => false;
   }
 
   /** hashcode for this Text */
-  override def hashCode() = text.hashCode();
+  override def hashCode() = data.hashCode();
 
   /** returns text, with some characters escaped according to XML spec */
-  override def toString() = Utility.escape( text );
+  override def toString() = Utility.escape( data.toString() );
 
 }

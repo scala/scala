@@ -20,10 +20,10 @@ abstract class NodeFactory[A <: Node] {
   /* default behaviour is to use hash-consing */
   val cache = new mutable.HashMap[int,List[A]]();
 
-  protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): A;
+  protected def create(pre: String, name: String, attrs: MetaData, scope: NamespaceBinding, children:Seq[Node]): A;
 
-  protected def construct(hash:Int, old:List[A], uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
-    val el = create(uname, attrSeq, children);
+  protected def construct(hash:Int, old:List[A], pre: String, name: String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]): A = {
+    val el = create(pre, name, attrSeq, scope, children);
     cache.update( hash, el::old );
     el
   }
@@ -41,25 +41,27 @@ abstract class NodeFactory[A <: Node] {
     }
   }
 
-  def nodeEquals(n: Node, uname: UName, attrSeq:AttributeSeq, children:Seq[Node]) =
-    (n.namespace == uname.uri)
-    &&(n.label == uname.label)
+  def nodeEquals(n: Node, pre: String, name: String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]) =
+    (n.prefix == pre)
+    &&(n.label == name)
     &&(n.attributes == attrSeq)
+  // scope??
     &&(eqElements(n.child,children));
 
-  def makeNode(uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
-    val hash    = Utility.hashCode( uname, attrSeq.hashCode(), children ) ;
+  def makeNode(pre: String, name: String, attrSeq:MetaData, scpe: NamespaceBinding, children:Seq[Node]): A = {
+    //Console.println("NodeFactory::makeNode("+pre+","+name+","+attrSeq+","+scpe+","+children+")");
+    val hash    = Utility.hashCode( pre, name, attrSeq.hashCode(), scpe.hashCode(), children ) ;
     cache.get( hash ) match {
       case Some(list) => // find structurally equal
         val it     = list.elements;
-        val lookup = it.find { x => nodeEquals(x,uname,attrSeq,children) };
+        val lookup = it.find { x => nodeEquals(x, pre, name, attrSeq, scpe, children) };
         lookup match {
           case Some(x) =>
             //Console.println("[cache hit !]"+x);
             x; // return cached elem
-          case _       => construct(hash, list, uname, attrSeq, children);
+          case _       => construct(hash, list, pre, name, attrSeq, scpe, children);
         }
-      case _          => construct(hash, Nil, uname, attrSeq, children)
+      case _          => construct(hash, Nil, pre, name, attrSeq, scpe, children)
     }
   }
 

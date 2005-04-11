@@ -15,10 +15,10 @@ package scala.xml;
 abstract class SpecialNode extends Node {
 
   /** always Node.EmptyNamespace */
-  final def namespace = Node.EmptyNamespace;
+  //final def namespace = Node.EmptyNamespace;
 
- /** always empty */
-  final def attributes = Node.NoAttributes;
+  /** always empty */
+  //final def attributes = Node.NoAttributes;
 
   /** always empty */
   final def child = Nil;

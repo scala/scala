@@ -37,23 +37,24 @@ with scala.util.logging.Logged {
   // methods of NodeFactory
 
   /** logged version of makeNode method */
-  override def makeNode(uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
+  override def makeNode(pre:String, label:String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]): A = {
     if(logNode)
-      log("[makeNode for "+uname+"]");
+      log("[makeNode for "+label+"]");
 
-    val hash    = Utility.hashCode(uname, attrSeq.hashCode(), children) ;
+    val hash = Utility.hashCode(pre, label, attrSeq.hashCode(), scope.hashCode(), children) ;
 
+    /*
     if(logCompressLevel >= FULL) {
       log("[hashcode total:"+hash);
-      log(" elem name "+uname+" hash "+(41 * uname.uri.hashCode() % 7 + uname.label.hashCode()));
+      log(" elem name "+uname+" hash "+ ? ));
       log(" attrs     "+attrSeq+" hash "+attrSeq.hashCode());
       log(" children :"+children+" hash "+children.hashCode());
     }
-
+    */
     if(!cache.get( hash ).isEmpty && (logCompressLevel >= CACHE))
       log("[cache hit !]");
 
-    super.makeNode(uname, attrSeq, children);
+    super.makeNode(pre, label, attrSeq, scope, children);
   }
 
   override def makeText(s: String) = {

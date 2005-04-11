@@ -30,16 +30,17 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 
 
-//import org.xml.sax.helpers.XMLReaderFactory;
-
-/** SAX adapter class, for use with Java SAX parser
-**/
+/** SAX adapter class, for use with Java SAX parser. Keeps track of
+ *  namespace bindings, without relying on namespace handling of the
+ *  underlying SAX parser.
+ */
 abstract class FactoryAdapter extends DefaultHandler() {
 
-  val buffer = new StringBuffer();
-  val attribStack = new Stack[HashMap[Pair[String,String],String]];
-  val hStack  = new Stack[Node];   // [ element ] contains siblings
-  val tagStack  = new Stack[String]; // [String]
+  val buffer      = new StringBuffer();
+  val attribStack = new Stack[MetaData];
+  val hStack      = new Stack[Node];   // [ element ] contains siblings
+  val tagStack    = new Stack[String];
+  var scopeStack  = new Stack[NamespaceBinding];
 
   var curTag : String = null ;
   var capture:boolean = false;
@@ -47,26 +48,23 @@ abstract class FactoryAdapter extends DefaultHandler() {
   // abstract methods
 
   /** Tests if an XML element contains text.
-  * @return true if element named <code>localName</code> contains text.
-  */
-   def nodeContainsText( localName:String ):boolean ; // abstract
+   * @return true if element named <code>localName</code> contains text.
+   */
+  def nodeContainsText( localName:String ):boolean ; // abstract
 
   /** creates an new non-text(tree) node.
-  * @param elemName
-  * @param attribs
-  * @param chIter
-  * @return a new XML element.
-  */
-  def createNode(uri:String,
-                 elemName:String ,
-                 attribs:HashMap[Pair[String,String],String] ,
-                 chIter:List[Node] ):Node; //abstract
+   * @param elemName
+   * @param attribs
+   * @param chIter
+   * @return a new XML element.
+   */
+  def createNode(pre: String, elemName: String, attribs: MetaData, scope: NamespaceBinding, chIter: List[Node] ):Node; //abstract
 
   /** creates a Text node.
    * @param text
    * @return a new Text node.
    */
-  def createText( text:String ):Text; // abstract
+  def createText( text:String ):Text[String]; // abstract
 
   //
   // ContentHandler methods
@@ -79,7 +77,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
   * @param offset
   * @param length
   */
-   override def characters( ch:Array[char] , offset:int , length:int ):Unit = {
+   override def characters(ch: Array[Char], offset: Int, length: Int): Unit = {
 
         if (capture) {
           if( normalizeWhitespace ) { // normalizing whitespace is not compliant, but useful */
@@ -105,6 +103,8 @@ abstract class FactoryAdapter extends DefaultHandler() {
 	}
    }
 
+  protected def scope() = scopeStack.top;
+
     //var elemCount = 0; //STATISTICS
 
     /* ContentHandler methods */
@@ -113,42 +113,52 @@ abstract class FactoryAdapter extends DefaultHandler() {
      def startPrefixMapping( prefix:String , uri:String ):Unit = {}
      */
 
+
+
     /* Start element. */
-    override def startElement(uri:String,
-                              localName:String,
-                              qname:String ,
-                              attributes:Attributes ):Unit = {
-        /*elemCount = elemCount + 1; STATISTICS */
-        captureText();
+    override def startElement(uri:String, _localName:String, qname:String, attributes:Attributes ):Unit = {
+      /*elemCount = elemCount + 1; STATISTICS */
+      captureText();
+      //Console.println("FactoryAdapter::startElement("+uri+","+_localName+","+qname+","+attributes+")");
+      tagStack.push(curTag);
+      curTag = qname; //localName ;
 
-        tagStack.push(curTag);
-        curTag = localName ;
+      val colon = qname.indexOf(':');
+      val localName = if(-1 == colon) qname else qname.substring(colon+1,qname.length());
 
-        capture = nodeContainsText(localName) ;
+      //Console.println("FactoryAdapter::startElement - localName ="+localName);
 
-        hStack.push( null );
-        var map:HashMap[Pair[String,String],String] = null:HashMap[Pair[String,String],String];
+      capture = nodeContainsText(localName) ;
 
-        if (attributes == null) {
-          // may not happen
-        }
-        else {
-              map = new HashMap[Pair[String,String],String];
+      hStack.push( null );
+      var m: MetaData = Null;
 
-	      for( val i <- List.range( 0, attributes.getLength() )) {
-                val attrNS = attributes.getURI(i);
-                val attrLocalName = attributes.getLocalName(i);
-                val attrType = attributes.getType(i);
-                val attrValue = attributes.getValue(i);
-                // we only handle string attributes
-                if( attrType.equals("CDATA") ) {
-		  map.update( Pair(attrNS,attrLocalName), attrValue );
-		}
-              }
-	}
-
-        val _ = attribStack.push( map );
-
+      var scpe = scope();
+      for( val i <- List.range( 0, attributes.getLength() )) {
+        //val attrType = attributes.getType(i); // unused for now
+        val qname = attributes.getQName(i);
+        val value = attributes.getValue(i);
+        val colon = qname.indexOf(':');
+        if(-1 != colon) {                     // prefixed attribute
+          val pre = qname.substring(0, colon);
+          val key = attributes.getLocalName(i);
+          if("xmlns" == pre)
+            scpe = value.length() match {
+              case 0 => new NamespaceBinding(key, null,  scpe);
+              case _ => new NamespaceBinding(key, value, scpe);
+            } else
+              m = new PrefixedAttribute(pre, key, value, m)
+        } else if("xmlns" == qname)
+          scpe = value.length() match {
+            case 0 => new NamespaceBinding(null, null,  scpe);
+            case _ => new NamespaceBinding(null, value, scpe);
+          }
+          else
+            m = new UnprefixedAttribute(qname, value, m)
+      }
+      scopeStack.push(scpe);
+      attribStack.push( m );
+      {}
     } // startElement(String,String,String,Attributes)
 
 
@@ -170,32 +180,37 @@ abstract class FactoryAdapter extends DefaultHandler() {
      * @param qname
      * @throws org.xml.sax.SAXException if ..
      */
-    override def endElement(uri:String , localName:String , qname:String ):Unit
-            /*throws SAXException*/ = {
+    override def endElement(uri:String , _localName:String , qname:String ):Unit = {
+      captureText();
 
-        captureText();
+      val metaData = attribStack.pop;
 
-        val attribMap = attribStack.pop;
+      // reverse order to get it right
+      var v:List[Node] = Nil;
+      var child:Node = hStack.pop;
+      while( child != null ) {
+        v = child::v;
+        child = hStack.pop;
+      }
 
-        // reverse order to get it right
-        var v:List[Node] = Nil;
-        var child:Node = hStack.pop;
-        while( child != null ) {
-            v = child::v;
-            child = hStack.pop;
-        }
+      val colon = qname.indexOf(':');
+      val localName = if(-1 == colon) qname else qname.substring(colon+1,qname.length());
 
-        // create element
-        rootElem = createNode( uri, localName, attribMap, v );
-        hStack.push(rootElem);
-
-        // set
-        curTag = tagStack.pop;
-
-        if (curTag != null) // root level
-            capture = nodeContainsText(curTag);
+      // create element
+      rootElem = if(-1 == colon)
+          createNode( null, localName, metaData, scopeStack.pop, v );
         else
-            capture = false;
+          createNode( qname.substring(0,colon), localName, metaData, scopeStack.pop, v );
+
+      hStack.push(rootElem);
+
+      // set
+      curTag = tagStack.pop;
+
+      if (curTag != null) // root level
+        capture = nodeContainsText(curTag);
+      else
+        capture = false;
 
     } // endElement(String,String,String)
 
@@ -266,7 +281,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
       // create parser
       try {
         val f = SAXParserFactory.newInstance();
-        f.setNamespaceAware( true );
+        f.setNamespaceAware( false );
         parser = f.newSAXParser();
       } catch {
 	case ( e:Exception ) => {
@@ -278,7 +293,9 @@ abstract class FactoryAdapter extends DefaultHandler() {
       // parse file
       try {
         //System.err.println("[parsing \"" + source + "\"]");
+        scopeStack.push(null);
         parser.parse( source, this );
+        scopeStack.pop;
       } catch {
         case ( e:SAXParseException ) => {
           // ignore

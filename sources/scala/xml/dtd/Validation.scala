@@ -43,7 +43,7 @@ class ElementValidator(namespace$$: String, elemSpec: RegExp) {
       val it = s.elements;
       while( it.hasNext ) {
         val n = it.next;
-        if(( n.namespace == namespace )&& !set.contains( n.label ))
+        //if(( n.namespace == namespace )&& !set.contains( n.label )) // todo
           throw MakeValidationException.fromUndefinedElement( n.label );
       }
     }

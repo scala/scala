@@ -24,7 +24,7 @@ class NodeTraverser[A <: AnyRef](handle: parsing.MarkupHandler[A]) {
       while(it.hasNext) {
         nb.appendAll(traverse(it.next));
       }
-    handle.element(0, n.namespace, n.label, n.attributes.toMap, nb)
+    handle.element(0, n.namespace, n.label, n.attributes, nb)
   }
 
 }

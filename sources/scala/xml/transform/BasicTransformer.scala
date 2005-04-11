@@ -77,7 +77,7 @@ trait BasicTransformer with Function1[Node,Node] {
       if(ch.eq(nch))
 	n
       else
-	Elem(n.namespace, n.label, n.attributes, nch:_*)
+	Elem(n.namespace, n.label, n.attributes, n.scope, nch:_*)
     }
   }
 

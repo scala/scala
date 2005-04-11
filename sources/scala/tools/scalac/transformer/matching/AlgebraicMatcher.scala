@@ -75,7 +75,7 @@ import java.util.Iterator ;
     /** initializes this AlgebraicMatcher, see Matcher.initialize
      void initialize() {}
      */
-
+    /*
     def isStarApply(tree: Tree.Apply): Boolean = {
       val params:Array[Symbol] = tree.fun.getType().valueParams();
       //System.err.println( tree.fun.type.resultType().symbol() );
@@ -84,7 +84,7 @@ import java.util.Iterator ;
       && params.length > 0
       && (params(params.length-1).flags & Modifiers.REPEATED) != 0;
     }
-
+*/
 //////////// generator methods
 
     override def toTree(): Tree = {
@@ -145,6 +145,7 @@ import java.util.Iterator ;
 
     def callSequenceMatcher(node: PatternNode, selector: Tree):  Tree = {
 
+      //Console.println("calling sequent matcher for"+node);
       /*    ???????????????????????? necessary to test whether is a Seq?
        gen.If(selector.pos, maybe cf.And( cf.Is(selector, seqpat.type()) )???)
        */

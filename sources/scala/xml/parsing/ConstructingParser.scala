@@ -26,7 +26,7 @@ object ConstructingParser {
 
 /** an xml parser. parses XML and invokes callback methods of a MarkupHandler
  */
-abstract class ConstructingParser extends MarkupParser[Node] {
+abstract class ConstructingParser extends MarkupParser {
 
   val handle = new ConstructingHandler();
 

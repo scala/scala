@@ -34,7 +34,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   protected var items:List[Item] = Nil;
 
   protected var cur = 0;
-  protected var pmap:Map[String,String] = _;
+  //protected var pmap:Map[String,String] = _;
 
   protected def reset() = {
     cur = 0;
@@ -96,40 +96,110 @@ class PrettyPrinter( width:Int, step:Int ) {
 
   protected def leafTag( n:Node ) = {
     val sb = new StringBuffer("<");
-    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
-    Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
+    n.nameToString(sb);
+    //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
+    n.attributes.toString(sb);
+    //Utility.attr2xml( n.scope, n.attributes, pmap, sb );
     sb.append("/>");
     sb.toString();
   }
 
-  protected def rootStartTag(n: Node) = {
+  protected def startTag(n: Node, pscope: NamespaceBinding): Pair[String, Int] = {
     val sb = new StringBuffer("<");
-    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
-    Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
-    if(( pmap.size != 1 )|| !pmap.contains(""))
-      for( val c <- pmap.elements; c._2 != "xml" ) {
-        sb.append(" xmlns:");
-        sb.append(c._2);
-        sb.append("=\"");
-        sb.append(c._1);
-        sb.append('"');
+    n.nameToString(sb); //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
+    val i = sb.length() + 1;
+    n.attributes.toString(sb);
+    var scp = n.scope;
+    while( scp != TopScope && !scp.eq(pscope)) {
+      sb.append(' ');
+      sb.append("xmlns");
+      if(scp.prefix != null) {
+        sb.append(':');
+        sb.append(scp.prefix);
       }
+      sb.append("=\"");
+      if(scp.uri != null) sb.append(scp.uri);
+      sb.append('\"');
+      scp = scp.parent;
+    }
+
+    //Utility.attr2xml( n.namespace, n.attributes, pmap, sb );
     sb.append('>');
-    sb.toString();
-  }
-  protected def startTag(n: Node) = {
-    val sb = new StringBuffer("<");
-    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
-    Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
-    sb.append('>');
-    sb.toString();
+    Pair(sb.toString(), i);
   }
 
   protected def endTag(n: Node) = {
     val sb = new StringBuffer("</");
-    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
+    n.nameToString(sb); //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
     sb.append('>');
     sb.toString();
+  }
+
+
+  protected def breakable( n:Node ):boolean = {
+    val it = n.child.elements;
+    while( it.hasNext )
+      it.next match {
+        case _:Text[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
+        case _:Node => return true;
+      }
+    return false
+  }
+  /** @param tail: what we'd like to sqeeze in */
+  protected def traverse( node:Node, pscope: NamespaceBinding, ind:int ):Unit = {
+    node match {
+
+      case _:Text[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
+        makeBox( ind, node.toString() );
+
+      case _:Node =>
+        val sb = new StringBuffer();
+        val test = { Utility.toXML(node, pscope, sb, false); sb.toString()};
+        if(( test.length() < width - cur )&&( !breakable( node ))){ // all ?
+          makeBox( ind, test );
+        } else {  // start tag + content + end tag
+          //Console.println(node.label+" ind="+ind);
+          val Pair(stg, len2) = startTag( node, pscope );
+          val etg             = endTag( node );
+          //val len2   = pmap(node.namespace).length() + node.label.length() + 2;
+
+          if( stg.length() < width - cur ) { // start tag fits
+
+            makeBox( ind, stg );
+            makeBreak();
+            traverse( node.child.elements, node.scope, ind + step );
+            makeBox( ind, etg );
+
+          } else if( len2 < width - cur ) {
+            // <start label + attrs + tag + content + end tag
+            makeBox( ind, stg.substring( 0,    len2 ));
+            makeBreak(); // todo: break the rest in pieces
+            /*{ //@todo
+             val sq:Seq[String] = stg.split(" ");
+             val it = sq.elements;
+             it.next;
+             for( val c <- it ) {
+             makeBox( ind+len2-2, c );
+             makeBreak();
+               }
+               }*/
+            makeBox( ind, stg.substring( len2, stg.length() ));
+            makeBreak();
+            traverse( node.child.elements, node.scope, ind + step );
+            makeBox( cur, etg );
+          } else { // give up
+            makeBox( ind, test );
+            makeBreak();
+          }
+        }
+    }
+  }
+
+  protected def traverse( it:Iterator[Node], scope:NamespaceBinding, ind:int ):unit = {
+    for( val c <- it ) {
+      traverse( c, scope, ind );
+      makeBreak();
+    }
   }
 
   /** appends a formatted string containing well-formed XML with
@@ -138,16 +208,20 @@ class PrettyPrinter( width:Int, step:Int ) {
    * @param pmap the namespace to prefix mapping
    * @param sb the stringbuffer to append to
    */
-  def format(n: Node, pmap: Map[String,String], sb: StringBuffer ): Unit = {
+  def format(n: Node, sb: StringBuffer ): Unit = { // entry point
+    format(n,null,sb)
+  }
+
+  def format(n: Node, pscope:NamespaceBinding, sb: StringBuffer): Unit = { // entry point
     reset();
-    this.pmap = pmap;
-    traverse1( n, 0 );
+    traverse( n, pscope, 0 );
     var cur = 0;
     //Console.println( items.reverse );
     for( val b <- items.reverse ) b match {
       case Break =>
         sb.append('\n');  // on windows: \r\n ?
         cur = 0;
+
       case Box(i, s) =>
         while( cur < i ) {
           sb.append(' ');
@@ -159,170 +233,39 @@ class PrettyPrinter( width:Int, step:Int ) {
     }
   }
 
-  protected def breakable( n:Node ):boolean = {
-    val it = n.child.elements;
-    while( it.hasNext )
-      it.next match {
-        case _:Text | _:Comment | _:EntityRef | _:ProcInstr =>
-        case _:Node => return true;
-      }
-    return false
-  }
-    /** @param tail: what we'd like to sqeeze in */
-    protected def traverse( node:Node, ind:int ):Unit = {
-      node match {
-
-        case _:Text | _:Comment | _:EntityRef | _:ProcInstr =>
-          makeBox( ind, node.toString() );
-
-        case _:Node =>
-          val sb = new StringBuffer();
-          val test = { Utility.toXML1(node,pmap,sb); sb.toString()};
-          if(( test.length() < width - cur )&&( !breakable( node ))){ // all ?
-            makeBox( ind, test );
-          } else {  // start tag + content + end tag
-            //Console.println(node.label+" ind="+ind);
-            val stg    = startTag( node );
-            val etg    = endTag( node );
-            val len2   = pmap(node.namespace).length() + node.label.length() + 2;
-
-            if( stg.length() < width - cur ) { // start tag fits
-
-              makeBox( ind, stg );
-              makeBreak();
-              traverse( node.child.elements, ind + step );
-              makeBox( ind, etg );
-
-            } else if( len2 < width - cur ) {
-              // <start label + attrs + tag + content + end tag
-              makeBox( ind, stg.substring( 0,    len2 ));
-              makeBreak();
-              /*{ //@todo
-               val sq:Seq[String] = stg.split(" ");
-               val it = sq.elements;
-               it.next;
-               for( val c <- it ) {
-               makeBox( ind+len2-2, c );
-               makeBreak();
-               }
-               }*/
-              makeBox( ind, stg.substring( len2, stg.length() ));
-              makeBreak();
-              traverse( node.child.elements, ind + step );
-              makeBox( cur, etg );
-            } else {
-            makeBox( ind, test );
-            makeBreak();
-            }
-          }
-      }
-    }
-
-    /** @param tail: what we'd like to sqeeze in */
-    protected def traverse1( node:Node, ind:int ):Unit = {
-      node match {
-
-        case _:Text | _:Comment | _:EntityRef | _:ProcInstr =>
-          makeBox( ind, node.toString() );
-
-        case _:Node => {
-          // start tag + content + end tag
-            //Console.println(node.label+" ind="+ind);
-            val stg    = rootStartTag( node );
-            val etg    = endTag( node );
-            val len2   = pmap(node.namespace).length() +node.label.length() + 2;
-
-            if( stg.length() < width - cur ) { // start tag fits
-
-              makeBox( ind, stg );
-              makeBreak();
-              traverse( node.child.elements, ind + step );
-              makeBox( ind, etg );
-
-            } else if( len2 < width - cur ) {
-              val sq:Seq[String] = stg.split(" ");
-              val it = sq.elements;
-              var tmp    = it.next;
-              makeBox( ind, tmp );
-              var curlen = cur + tmp.length();
-              while( it.hasNext ) {
-                var tmp    = it.next;
-                if( tmp.length() + curlen + 1 < width ) {
-                  makeBox( ind, " " );
-                  makeBox( ind, tmp );
-                  curlen = curlen + tmp.length() + 1;
-                } else {
-                  makeBreak();
-                  makeBox( len2+1, tmp );
-                  curlen = len2+1;
-                }
-              }
-              // <start label + attrs + tag + content + end tag
-              //makeBox( ind, stg.substring( 0,    len2 ));
-              //makeBreak();
-              /*{ //@todo
-                val sq:Seq[String] = stg.split(" ");
-                val it = sq.elements;
-                it.next;
-                for( val c <- it ) {
-                  makeBox( ind+len2-2, c );
-                  makeBreak();
-                }
-              }*/
-              //makeBox( ind, stg.substring( len2, stg.length() ));
-              makeBreak();
-              traverse( node.child.elements, ind + step );
-              makeBox( cur, etg );
-            } else { // it does not fit, dump everything
-              val sb = new StringBuffer();
-              val tmp = { Utility.toXML1(node,pmap,sb); sb.toString()};
-              makeBox( ind, tmp );
-              makeBreak();
-            }
-        }
-      }
-    }
-
-  protected def traverse( it:Iterator[Node], ind:int ):unit = {
-    for( val c <- it ) {
-      traverse( c, ind );
-      makeBreak();
-    }
-  }
-
   // public convenience methods
 
   /** returns a formatted string containing well-formed XML with
    *  default namespace prefix mapping
    *  @param n the node to be serialized
    */
-  def format(n: Node): String = format(n, Utility.defaultPrefixes( n ));
+  def format(n: Node): String = format(n, null); //Utility.defaultPrefixes( n ));
 
   /** returns a formatted string containing well-formed XML with
    * given namespace to prefix mapping
    * @param n the node to be serialized
    * @param pmap the namespace to prefix mapping
    */
-  def format(n: Node, pmap: Map[String,String]): String = {
+  def format(n: Node, pscope: NamespaceBinding): String = {
     val sb = new StringBuffer();
-    format( n, pmap, sb );
+    format( n, pscope, sb );
     sb.toString();
   }
 
   /* returns a formatted string containing well-formed XML nodes with
   *  default namespace prefix mapping
   */
-  def format( nodes:Seq[Node] ):String = {
-    format(nodes, Utility.defaultPrefixes( nodes ))
+  def formatNodes( nodes:Seq[Node] ):String = {
+    formatNodes(nodes, null)
   }
 
   /** returns a formatted string containing well-formed XML
    * @param nodes the sequence of nodes to be serialized
    * @param pmap the namespace to prefix mapping
    */
-  def format( nodes:Seq[Node], pmap:Map[String,String] ):String = {
+  def formatNodes( nodes:Seq[Node], pscope: NamespaceBinding ):String = {
     var sb = new StringBuffer();
-    format( nodes, pmap, sb );
+    formatNodes( nodes, pscope, sb );
     sb.toString();
   }
 
@@ -332,8 +275,9 @@ class PrettyPrinter( width:Int, step:Int ) {
    * @param pmap the namespace to prefix mapping
    * @param sb the string buffer to which to append to
    */
-  def format( nodes: Seq[Node], pmap: Map[String,String], sb: StringBuffer ): Unit = {    for( val n <- nodes.elements ) {
-      sb.append(format( n, pmap ))
+  def formatNodes( nodes: Seq[Node], pscope: NamespaceBinding, sb: StringBuffer ): Unit = {
+    for( val n <- nodes.elements ) {
+      sb.append(format( n, pscope ))
     }
   }
 }

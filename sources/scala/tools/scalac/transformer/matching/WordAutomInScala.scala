@@ -55,7 +55,7 @@ package scala.tools.scalac.transformer.matching {
 
       result = cf.gen.mkBlock( cf.pos,
                               NewArray.Tree (
-                                gen.ValDef( iterSym, cf.newIterator( selector )),
+                                gen.ValDef( iterSym, cf.newIterator( selector.duplicate() )),
                                 gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0) ),
                                 gen.ValDef( resultSym, theDefDef )),
                               result );

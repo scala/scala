@@ -9,18 +9,14 @@
 
 package scala.xml.parsing;
 
-import scala.xml.Attribute;
-import scala.collection.{ mutable, Map };
-import scala.collection.immutable.ListMap;
-
 /** an xml parser. parses XML, invokes callback methods of a MarkupHandler
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
-abstract class MarkupParser[MarkupType <: AnyRef] {
+abstract class MarkupParser {
 
   /** the handler of the markup */
-  val handle: MarkupHandler[MarkupType];
+  val handle: MarkupHandler;
 
   /** if true, does not remove surplus whitespace */
   val preserveWS: Boolean;
@@ -40,15 +36,8 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
   /** append Unicode character to name buffer*/
   protected def putChar(c: Char) = cbuf.append(c);
 
-  protected var aMap: mutable.Map[String,Attribute] = _;
-
-  final val noChildren = new mutable.ListBuffer[MarkupType];
-  final val noAttribs  = new mutable.HashMap[Pair[String,String], Attribute];
-
   //var xEmbeddedBlock = false;
 
-  var defaultURI: String = "";
-  val lookupURI: mutable.Map[String,String] = new mutable.HashMap[String,String]();
   /** this method assign the next character to ch and advances in input */
   def nextch: Unit;
 
@@ -75,110 +64,83 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
   }
    */
 
-  /** parse attribute and add it to listmap
+  /** parse attribute and create namespace scope, metadata
    *  [41] Attributes    ::= { S Name Eq AttValue }
-   *       AttValue     ::= `'` { _  } `'`
-   *                      | `"` { _ } `"`
-   *                      | `{` scalablock `}`
-  */
-  def xAttributes = {
-    val aMap = new mutable.HashMap[Pair[String,String],Pair[Int,String]];
+   */
+  def xAttributes(pscope:NamespaceBinding): Pair[MetaData,NamespaceBinding] = {
+    var scope: NamespaceBinding = pscope;
+    var aMap: MetaData = null;
     while( xml.Parsing.isNameStart( ch )) {
       val pos = this.pos;
-      val key1 = xName;
-      var prefix: String = _;
-      var key: String    = _;
 
-      handle.namespacePrefix(key1) match {
-        case Some(x @ "xmlns") =>
-          prefix = null;
-          key    = key1.substring(x.length()+1, key1.length());
-        case Some(x)       =>
-          prefix = x;
-          key    = key1.substring(x.length()+1, key1.length());
+      val qname = xName;
+      val _     = xEQ;
+      val value = xAttributeValue();
+
+      Utility.prefix(qname) match {
+        case Some("xmlns") =>
+          val prefix = qname.substring(6 /*xmlns:*/ , qname.length());
+          scope = new NamespaceBinding(prefix, value, scope);
+
+        case Some(prefix)       =>
+          val key = qname.substring(prefix.length()+1, qname.length());
+          aMap = new PrefixedAttribute(prefix, key, value, aMap);
+
         case _             =>
-          if( key1 == "xmlns" ) {
-            prefix= null;
-            key   = "";
-          } else {
-            prefix = "";
-            key    = key1
-          }
-      }
-      xEQ;
-      val delim = ch;
-      val pos1 = pos;
-      val value:String = ch match {
-        case '"' | '\'' =>
-          nextch;
-          val tmp = xAttributeValue(delim);
-          nextch;
-          tmp;
-        case _ =>
-          reportSyntaxError( "' or \" delimited attribute value expected" );
-          "<syntax-error>"
-      };
-
-      if(prefix == null) {
-         handle.internal_namespaceDecl(key, value);
-      } else {
-        aMap.update( Pair(prefix,key), Pair(pos,value) );
+          if( qname == "xmlns" )
+            scope = new NamespaceBinding(null, value, scope);
+          else
+            aMap = new UnprefixedAttribute(qname, value, aMap);
       }
 
       if ((ch != '/') && (ch != '>'))
         xSpace;
     }
-    // @todo, iterate over attributes, replace prefix, call handleAttribute.
-    handle.internal_startPrefixMapping;
-    val aMap1 = new mutable.HashMap[Pair[String,String],Attribute];
-    val it = aMap.elements;
-    while( it.hasNext ) {
-      val x @ Pair(Pair(pref,key),Pair(pos,value)) = it.next;
-      val uri = handle.namespace(pref);
-      val qkey = Pair(uri, key);
-      // well-formedness constraint: unique attribute names
-      if (aMap1.contains(qkey))
-        reportSyntaxError( "attribute " + key + " may only be defined once" );
-      aMap1.update(qkey,  handle.attribute(pos, uri, key, value));
-    }
-    aMap1
+
+    if(!aMap.wellformed(scope))
+        reportSyntaxError( "double attribute");
+
+    Pair(aMap,scope)
   }
 
   /** attribute value, terminated by either ' or ". value may not contain &lt;.
-   *  @param endch either ' or "
+   *       AttValue     ::= `'` { _  } `'`
+   *                      | `"` { _ } `"`
    */
-  def xAttributeValue(endch: Char): String = {
+  def xAttributeValue(): String = {
+    val endch = ch;
+    nextch;
     while (ch != endch) {
+      if('<' == ch)
+        reportSyntaxError( "'<' not allowed in attrib value" );
       putChar(ch);
-      nextch
+      nextch;
     }
+    nextch;
     val str = cbuf.toString();
     cbuf.setLength( 0 );
+
     // @todo: normalize attribute value
     // well-formedness constraint
-    if (str.indexOf('<') != -1) {
-      reportSyntaxError( "'<' not allowed in attrib value" ); ""
-    }
-    else
-      str
+    str
+
   }
 
   /** parse a start or empty tag.
    *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
    */
-  protected def xTag: Pair[String, mutable.Map[Pair[String,String],Attribute]] = {
-    val elemqName = xName;
+  protected def xTag(pscope:NamespaceBinding): Tuple3[String, MetaData, NamespaceBinding] = {
+    val qname = xName;
 
     xSpaceOpt;
-    val aMap: mutable.Map[Pair[String,String],Attribute] =
-      if(xml.Parsing.isNameStart( ch )) {
-        xAttributes;
-      } else {
-        handle.internal_startPrefixMapping;
-        noAttribs;
-      };
-    Pair(elemqName, aMap);
+    val Pair(aMap: MetaData, scope: NamespaceBinding) = {
+      if(xml.Parsing.isNameStart( ch ))
+        xAttributes(pscope)
+      else
+        Pair(null, pscope)
+    }
+    Triple(qname, aMap, scope);
   }
 
   /** [42]  '&lt;' xmlEndTag ::=  '&lt;' '/' Name S? '&gt;'
@@ -195,7 +157,7 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
    *
    * see [15]
    */
-  def xCharData: Iterable[MarkupType] = {
+  def xCharData: NodeSeq = {
     xToken('[');
     xToken('C');
     xToken('D');
@@ -251,7 +213,7 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
    *
    * see [15]
    */
-  def xComment: Iterable[MarkupType] = {
+  def xComment: NodeSeq = {
     val sb: StringBuffer = new StringBuffer();
     xToken('-');
     xToken('-');
@@ -267,17 +229,18 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
     throw FatalError("this cannot happen");
   };
 
-  def appendText(pos: Int, ts: mutable.Buffer[MarkupType], txt: String): Unit = {
-    if (!preserveWS)
-      for (val t <- TextBuffer.fromString(txt).toText) {
-        ts.appendAll(handle.text(pos, t.text));
-      }
+  /* todo: move this into the NodeBuffer class */
+  def appendText(pos: Int, ts: NodeBuffer, txt: String): Unit = {
+    if (preserveWS)
+      ts + handle.text(pos, txt);
     else
-      ts.appendAll(handle.text(pos, txt));
+      for (val t <- TextBuffer.fromString(txt).toText) {
+        ts + handle.text(pos, t.text);
+      }
   }
 
-  def content: mutable.Buffer[MarkupType] = {
-    var ts = new mutable.ArrayBuffer[MarkupType];
+  def content(pscope: NamespaceBinding): NodeSeq = {
+    var ts = new NodeBuffer;
     var exit = false;
     while( !exit ) {
       /*      if( xEmbeddedBlock ) {
@@ -293,23 +256,23 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
               case '!' =>
                 nextch;
                 if ('[' == ch)                 // CDATA
-                  ts.appendAll(xCharData);
+                  ts + xCharData;
                 else                            // comment
-                  ts.appendAll(xComment);
+                  ts + xComment;
               case '?' =>                       // PI
                 nextch;
-                ts.appendAll(xProcInstr);
+                ts + xProcInstr;
               case _   =>
-                ts.appendAll(element1);     // child
+                ts + element1(pscope);     // child
             }
 
-          case '{' =>
+          //case '{' =>
 /*            if( xCheckEmbeddedBlock ) {
               ts.appendAll(xEmbeddedExpr);
             } else {*/
-              val str = new StringBuffer("{");
-              str.append(xText);
-              appendText(tmppos, ts, str.toString());
+          //    val str = new StringBuffer("{");
+          //    str.append(xText);
+          //    appendText(tmppos, ts, str.toString());
             /*}*/
           // postcond: xEmbeddedBlock == false!
           case '&' => // EntityRef or CharRef
@@ -319,11 +282,11 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
                 nextch;
               val theChar = handle.text( tmppos, xCharRef );
               xToken(';');
-              ts.appendAll( theChar );
+              ts + theChar ;
               case _ => // EntityRef
                 val n = xName ;
                 xToken(';');
-                ts.appendAll( handle.entityRef( tmppos, n ) );
+                ts + handle.entityRef( tmppos, n ) ;
             }
           case _ => // text content
             appendText(tmppos, ts, xText);
@@ -331,48 +294,42 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
         }
     /*}*/
   }
-  ts
-} /* end content */
+    // 2do: optimize seq repr.
+    new NodeSeq {
+      val theSeq = ts.toList;
+    }
+  } /* end content */
 
-  def element: Iterable[MarkupType] = {
+  def element(pscope: NamespaceBinding): NodeSeq = {
     xToken('<');
-    element1
+    element1(pscope);
   }
 
   /** '&lt;' element ::= xmlTag1 '&gt;'  { xmlExpr | '{' simpleExpr '}' } ETag
    *               | xmlTag1 '/' '&gt;'
    */
-  def element1: Iterable[MarkupType] = {
-    var pref: Map[String, String] = _;
-    var pos1 = pos;
-    val Pair(qname, aMap) = xTag;
-    val ts: mutable.Buffer[MarkupType] = {
+  def element1(pscope: NamespaceBinding): NodeSeq = {
+    val pos = this.pos;
+    val Tuple3(qname, aMap, scope) = xTag(pscope);
+    val ts = {
       if(ch == '/') {    // empty element
         xToken('/');
         xToken('>');
-        //pref = handle.namespaceDecl( aMap );
-        //handle.internal_startPrefixMapping( pref );
-        noChildren;
+        NodeSeq.Empty;
       } else {          // element with  content
         xToken('>');
-        //pref = handle.namespaceDecl( aMap );
-        //handle.internal_startPrefixMapping( pref );
-        val tmp = content;
+        val tmp = content(scope);
         xEndTag( qname );
         tmp;
       }
     }
-    var name = qname;
-    val uri = handle.namespacePrefix(qname).match {
-      case Some(pref) =>
-        name = name.substring(pref.length()+1, name.length());
-        handle.namespace( pref );
-      case _          =>
-        handle.namespace("");
+    Utility.prefix(qname) match {
+      case Some(pre) =>
+        val local = qname.substring(pre.length()+1, qname.length());
+        handle.element(pos, pre, local, aMap, scope, ts );
+      case _ =>
+        handle.element(pos, null, qname, aMap, scope, ts );
     }
-    val res = handle.element(pos1, uri, name, aMap, ts );
-    handle.internal_endPrefixMapping;
-    res
   }
 
   //def xEmbeddedExpr: MarkupType;
@@ -417,7 +374,7 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
    *
    * see [15]
    */
-  def xProcInstr: Iterable[MarkupType] = {
+  def xProcInstr: NodeSeq = {
     val sb:StringBuffer = new StringBuffer();
     val n = xName;
     if( xml.Parsing.isSpace( ch ) ) {

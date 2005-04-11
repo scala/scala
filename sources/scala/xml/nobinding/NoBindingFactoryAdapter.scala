@@ -16,6 +16,7 @@ import org.xml.sax.InputSource;
 */
 class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
 
+
   // FactoryAdapter methods
 
   /** returns true. Every XML node may contain text that the application needs
@@ -24,33 +25,25 @@ class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
 
 
   // methods for NodeFactory[Elem]
-  protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): Elem = {
-     Elem( uname.uri, uname.label, attrs, children:_* );
+  protected def create(pre: String, label: String, attrs: MetaData, scpe: NamespaceBinding, children:Seq[Node]): Elem = {
+     Elem( pre, label, attrs, scpe, children:_* );
   }
 
   // methods for FactoryAdapter
 
   /** creates a node. never creates the same node twice, using hash-consing
   */
-  def createNode(uri:String, label: String, attrs: mutable.HashMap[Pair[String,String],String], children: List[Node] ): Elem = {
+  def createNode(pre:String, label: String, attrs: MetaData, scpe: NamespaceBinding, children: List[Node] ): Elem = {
+    //Console.println("NoBindingFactoryAdapter::createNode("+pre+","+label+","+attrs+","+scpe+","+children+")");
+     Elem( pre, label, attrs, scpe, children:_* );
 
-    // this is a dirty hack to quickly add xmlns.
-    // does SAX handle prefixes, xmlns stuff ?
-    val defNS = getDefaultNamespace( attrs.keys );
-    var uri$:String = if(( defNS.length() > 0 )&&( uri.length == 0 )) {
-      defNS
-    } else {
-      uri.intern();
-    }
-    val attrSeq = AttributeSeq.fromMap( uri$, attrs );
-    val elHashCode =
-      Utility.hashCode( uri$, label, attrSeq.hashCode(), children ) ;
-    makeNode(UName(uri$,label),attrSeq, children);
+    //makeNode(pre, label, attrs, scope, children);
   }
 
   /** creates a text node
   */
-  def createText( text:String ) = Text( text );
+  def createText( text:String ) =
+    Text( text );
 
   /** loads an XML document, returning a Symbol node.
   */
