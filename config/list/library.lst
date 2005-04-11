@@ -215,8 +215,6 @@ util/regexp/WordExp.scala
 util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
 
-xml/Attribute.scala
-xml/AttributeSeq.scala
 xml/BindingFactoryAdapter.scala
 xml/Comment.scala
 xml/DocType.scala
@@ -241,7 +239,6 @@ xml/SpecialNode.scala
 xml/Text.scala
 xml/TextBuffer.scala
 xml/TopScope.scala
-xml/UName.scala
 xml/UnprefixedAttribute.scala
 xml/Utility.scala
 
