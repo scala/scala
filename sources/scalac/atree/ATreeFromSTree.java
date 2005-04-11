@@ -364,6 +364,10 @@ public class ATreeFromSTree {
             assert targs.length == 0 && vargs.length == 1: tree;
             return make.EQ(tree, ATypeKind.REF, object, expression(vargs[0]));
 
+        case ANYNI:
+            assert targs.length == 0 && vargs.length == 1: tree;
+            return make.NE(tree, ATypeKind.REF, object, expression(vargs[0]));
+
         case ANYEQ:
             Symbol lf = newLocal(tree, definitions.ANY_TYPE());
             Symbol rg = newLocal(tree, definitions.ANY_TYPE());
@@ -481,6 +485,7 @@ public class ATreeFromSTree {
         }
         if (clasz == definitions.OBJECT_CLASS) {
             addGenerator(definitions.OBJECT_EQ, Generator.ANYID);
+            addGenerator(definitions.OBJECT_NE, Generator.ANYNI);
             addGenerator(definitions.OBJECT_SYNCHRONIZED, Generator.SYNCHRONIZED);
         }
         if (clasz == definitions.STRING_CLASS) {
@@ -535,6 +540,7 @@ public class ATreeFromSTree {
     /** Code generators for primitive methods. */
     private static class Generator {
         case ANYID;
+        case ANYNI;
         case ANYEQ;
         case ANYNE;
         case ISAS(boolean cast);

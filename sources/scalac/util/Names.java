@@ -197,6 +197,7 @@ public class Names {
     public static final Name _match = Name.fromString("match");
     public static final Name map = Name.fromString("map");
     public static final Name n = Name.fromString("n");
+    public static final Name ne = Name.fromString("ne");
     public static final Name nobinding = Name.fromString("nobinding");
     public static final Name next = Name.fromString("next");
     public static final Name newArray = Name.fromString("newArray");

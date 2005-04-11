@@ -1011,7 +1011,7 @@ public final class GenMSIL {
 	case ADD: case SUB: case MUL: case DIV: case MOD:
 	case OR: case XOR: case AND:
 	case LSL: case LSR: case ASR:
-	case ID: case EQ: case NE: case LT: case LE: case GT: case GE:
+	case ID: case NI: case EQ: case NE: case LT: case LE: case GT: case GE:
 	case ZNOT: case ZOR: case ZAND:
 	case IS: case AS:
 	case CONCAT:
@@ -1246,7 +1246,7 @@ public final class GenMSIL {
 	case ID: case EQ: // FIXME?: should ID be treated as EQ?
 	    res =  items.CondItem(Test.Binary(Test.EQ, toType), null, null);
 	    break;
-	case NE:
+	case NI: case NE: // FIXME?: should NI be treated as NE?
 	    res = items.CondItem(Test.Binary(Test.NE, toType), null, null);
 	    break;
 	case LT:

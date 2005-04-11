@@ -668,6 +668,7 @@ public class Primitives {
 
         // scala.Object
         addPrimitive(defs.OBJECT_EQ, Primitive.ID);
+        addPrimitive(defs.OBJECT_NE, Primitive.NI);
         addPrimitive(defs.OBJECT_SYNCHRONIZED, Primitive.SYNCHRONIZED);
 
         // scala.String

@@ -348,7 +348,7 @@ public class GenJVM {
                     generatedType = resType;
                     break;
 
-                case ID:
+                case ID: case NI:
                 case EQ: case NE: case LT: case LE: case GE: case GT:
                 case ZNOT: case ZOR: case ZAND:
                     JCode.Label falseLabel = ctx.code.newLabel();
@@ -711,7 +711,7 @@ public class GenJVM {
                 Tree[] allArgs = extractPrimitiveArgs((Tree.Apply)tree);
 
                 switch (prim) {
-                case ID: case EQ: case NE:
+                case ID: case NI: case EQ: case NE:
                     assert allArgs.length == 2;
                     Tree unbox1 = unbox(allArgs[0]);
                     Tree unbox2 = unbox(allArgs[1]);
@@ -863,6 +863,9 @@ public class GenJVM {
 
         if (prim == Primitive.ID) {
             if (when) ctx.code.emitIF_ACMPEQ(target);
+            else ctx.code.emitIF_ACMPNE(target);
+        } else if (prim == Primitive.NI) {
+            if (!when) ctx.code.emitIF_ACMPEQ(target);
             else ctx.code.emitIF_ACMPNE(target);
         } else {
             // Comparison between two references. We inline the code
@@ -1193,7 +1196,7 @@ public class GenJVM {
     protected boolean isJumpingPrimitive(Symbol sym) {
         if (prims.isPrimitive(sym)) {
             switch (prims.getPrimitive(sym)) {
-            case ID   : case EQ  : case NE   :
+            case ID   : case NI  : case EQ   : case NE :
             case LT   : case LE  : case GE   : case GT :
             case ZNOT : case ZOR : case ZAND :
                 return true;
@@ -1228,7 +1231,7 @@ public class GenJVM {
             case ZARRAY_LENGTH : case BARRAY_LENGTH : case SARRAY_LENGTH :
             case CARRAY_LENGTH : case IARRAY_LENGTH : case LARRAY_LENGTH :
             case FARRAY_LENGTH : case DARRAY_LENGTH : case OARRAY_LENGTH :
-            case IS : case AS : case ID :
+            case IS : case AS : case ID : case NI :
             case CONCAT : case THROW : case SYNCHRONIZED:
             case B2B: case B2S: case B2C: case B2I: case B2L: case B2F: case B2D:
             case S2B: case S2S: case S2C: case S2I: case S2L: case S2F: case S2D:

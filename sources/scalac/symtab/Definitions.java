@@ -330,6 +330,7 @@ public class Definitions {
 
     /** Some java.lang.Object methods */
     public final Symbol OBJECT_EQ;
+    public final Symbol OBJECT_NE;
     public final Symbol OBJECT_SYNCHRONIZED;
 
     /** Some java.lang.String methods */
@@ -877,10 +878,13 @@ public class Definitions {
         // add members to java.lang.Object
         OBJECT_EQ =
             newMethod(OBJECT_CLASS, Names.eq, Modifiers.FINAL);
+        OBJECT_NE =
+            newMethod(OBJECT_CLASS, Names.ne, Modifiers.FINAL);
         OBJECT_SYNCHRONIZED =
             newMethod(OBJECT_CLASS, Names.synchronized_, Modifiers.FINAL);
 
         initMethod(OBJECT_EQ, new Type[]{ANYREF_TYPE()}, boolean_TYPE());
+        initMethod(OBJECT_NE, new Type[]{ANYREF_TYPE()}, boolean_TYPE());
         Symbol OBJECT_SYNCHRONIZED_TPARAM =
             newTParam(OBJECT_SYNCHRONIZED,0,ANY_TYPE());
         Symbol OBJECT_SYNCHRONIZED_VPARAM =

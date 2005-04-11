@@ -315,6 +315,10 @@ public class Evaluator {
             assert args.length == 1 : Debug.show(args);
             return object == args[0] ? Boolean.TRUE : Boolean.FALSE;
 
+        case Ne:
+            assert args.length == 1 : Debug.show(args);
+            return object != args[0] ? Boolean.TRUE : Boolean.FALSE;
+
         case EqEq:
             assert args.length == 1 : Debug.show(args);
             return object == null ? new Boolean(args[0] == null) : new Boolean(object.equals(args[0])); // !!!

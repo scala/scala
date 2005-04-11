@@ -133,6 +133,47 @@ object Test2Test {
 }
 
 //############################################################################
+// Test 3 - Methods eq and ne
+
+object Test3Test {
+
+  class Foo { override def equals(that: Any) = throw new Error("abort"); }
+
+  def check(expected: Boolean, actual1: Boolean, actual2: Boolean): Unit =
+    System.out.println(
+      if ((actual1 == expected) && (actual2 == !expected)) "Ok" else "KO: "
+        + "expected: " + expected + " - " + (!expected) + ", "
+        + "found: " + actual1 + " - " + actual1);
+
+  def main(args: Array[String]): Unit = {
+    val foo1: AnyRef = null;
+    val foo2: AnyRef = new Foo();
+    val foo3: AnyRef = new Foo();
+
+    check(true , null eq null, null ne null);
+    check(true , null eq foo1, null ne foo1);
+    check(false, null eq foo2, null ne foo2);
+    check(false, null eq foo3, null ne foo3);
+
+    check(true , foo1 eq null, foo1 ne null);
+    check(true , foo1 eq foo1, foo1 ne foo1);
+    check(false, foo1 eq foo2, foo1 ne foo2);
+    check(false, foo1 eq foo3, foo1 ne foo3);
+
+    check(false, foo2 eq null, foo2 ne null);
+    check(false, foo2 eq foo1, foo2 ne foo1);
+    check(true , foo2 eq foo2, foo2 ne foo2);
+    check(false, foo2 eq foo3, foo2 ne foo3);
+
+    check(false, foo3 eq null, foo3 ne null);
+    check(false, foo3 eq foo1, foo3 ne foo1);
+    check(false, foo3 eq foo2, foo3 ne foo2);
+    check(true , foo3 eq foo3, foo3 ne foo3);
+  }
+
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -158,6 +199,7 @@ object Test  {
     test("Test0"  , Test0Test.main(args));
     test("Test1"  , Test1Test.main(args));
     test("Test2"  , Test2Test.main(args));
+    test("Test3"  , Test3Test.main(args));
 
     if (errors > 0) {
       System.out.println();

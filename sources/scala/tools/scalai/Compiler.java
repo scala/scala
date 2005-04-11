@@ -179,6 +179,10 @@ public class Compiler {
         Override eq_override = Override.empty().insert(definitions.OBJECT_EQ);
         environment.insertOverride(definitions.OBJECT_EQ, eq_override);
 
+        environment.insertFunction(definitions.OBJECT_NE, Function.Ne);
+        Override ne_override = Override.empty().insert(definitions.OBJECT_NE);
+        environment.insertOverride(definitions.OBJECT_NE, ne_override);
+
         environment.insertFunction(definitions.ANY_EQEQ, Function.EqEq);
         Override eqeq_override = Override.empty().insert(definitions.ANY_EQEQ);
         environment.insertOverride(definitions.ANY_EQEQ, eqeq_override);

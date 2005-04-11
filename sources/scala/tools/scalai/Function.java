@@ -32,6 +32,7 @@ public class Function {
     public case Throw;
     public case StringPlus;
     public case Eq;
+    public case Ne;
     public case EqEq;
     public case BangEq;
     public case HashCode;
@@ -72,6 +73,9 @@ public class Function {
 
         case Eq:
             return "Eq";
+
+        case Ne:
+            return "Ne";
 
         case EqEq:
             return "EqEq";

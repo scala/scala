@@ -47,6 +47,7 @@ public class Primitive {
 
     // Comparison operations
     public case ID;                           // x eq y
+    public case NI;                           // x ne y
     public case EQ;                           // x == y
     public case NE;                           // x != y
     public case LT;                           // x < y
