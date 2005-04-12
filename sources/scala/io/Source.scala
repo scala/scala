@@ -86,8 +86,9 @@ abstract class Source extends Iterator[Char] {
   val tabinc = 4;
 
   protected val iter: Iterator[Char];
-  /** returns next characters, updates positions and assigns the character
-   *  ch as side effect
+
+  /** returns next character and has the following side-effects: updates
+   *  position (ccol and cline) and assigns the character to ch
    */
   def next = {
     ch = iter.next;
@@ -103,6 +104,7 @@ abstract class Source extends Iterator[Char] {
     }
     ch
   };
+
   /** returns true if this source has more characters
    */
   def hasNext = iter.hasNext;
