@@ -215,7 +215,6 @@ util/regexp/WordExp.scala
 util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
 
-xml/BindingFactoryAdapter.scala
 xml/Comment.scala
 xml/DocType.scala
 xml/Elem.scala
