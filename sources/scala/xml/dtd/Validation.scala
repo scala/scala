@@ -68,7 +68,8 @@ class ElementValidator(namespace$$: String, elemSpec: RegExp) {
 class AttributeValidator( namespace$$:String, attrSpec1: Seq[dtd.AttrDecl]) {
   final val namespace = namespace$$.intern();
   final val attrSpec = new mutable.HashMap[String,AttrDecl]();
-  var attribsTemplate:List[Attribute] = Nil;
+  //var attribsTemplate:MetaData = Null;
+
   for( val adecl <- attrSpec1 ) {
     attrSpec.update( adecl.name, adecl )
   }
@@ -84,38 +85,42 @@ class AttributeValidator( namespace$$:String, attrSpec1: Seq[dtd.AttrDecl]) {
       req = req + 1;
       case dtd.DEFAULT( _, attValue ) =>
         map.update( key, attValue );
-        attribsTemplate =
-          add( attribsTemplate, Attribute(namespace, key, attValue));
+        //attribsTemplate =
+          //new UnprefixedAttribute(key, attValue, attribsTemplate);
+      //add( attribsTemplate, Attribute(namespace, key, attValue));
       case dtd.IMPLIED  =>
     }
   }
 
+  /*
   def add(as:List[Attribute], x:Attribute):List[Attribute] = {
     if( x.namespace.length() == 0 )
       scala.xml.Attribute( namespace, x.key, x.value )::as;
     else
       x::as;
   };
+  */
 
-  def validate( attributes:AttributeSeq ):AttributeSeq = {
+  def validate( attributes:MetaData ): MetaData = {
     var actualReq = 0;
-    var attribs: List[Attribute] = Nil;
+    var nattribs: MetaData = Null;
     for( val b <- attributes ) {
-      if( b.key == "xmlns" ) {} // this should not get even here
-      else if( b.namespace != namespace )
-        attribs = add( attribs, b);
-      else attrSpec.get( b.key ) match {
+      if( b.key == "xmlns" )
+        {} // this should not get even here
+      else /*if( b.namespace != namespace ) // this was to allow foreigns once
+        nattribs = b.copy(nattribs);
+      else */  attrSpec.get( b.key ) match {
         case Some( AttrDecl( key, tpe, df )) => df match {
           case DEFAULT( true, attValue ) =>
             if( b.value != attValue )
               MakeValidationException.fromFixedAttribute( key, attValue, b.value );
             else
-              add( attribs, b )
+              nattribs = b.copy(nattribs);
           case REQUIRED =>
             actualReq = actualReq + 1;
-          attribs = add( attribs, b )
+            nattribs = b.copy(nattribs);
           case _ =>
-            attribs = add( attribs, b )
+            nattribs = b.copy(nattribs);
         }
         case _ =>
           MakeValidationException.fromUndefinedAttribute( b.key )
@@ -125,10 +130,10 @@ class AttributeValidator( namespace$$:String, attrSpec1: Seq[dtd.AttrDecl]) {
       var allKeys = new mutable.HashSet[String]();
       for( val AttrDecl( key, _, REQUIRED ) <- attrSpec.values )
         allKeys += key;
-      for( val a <- attribs )
+      for( val a <- nattribs )
         allKeys -= a.key;
       MakeValidationException.fromMissingAttribute( allKeys )
     }
-    AttributeSeq.fromAttrs( (attribsTemplate:::attribs):_* )
+    nattribs
   }
 }
