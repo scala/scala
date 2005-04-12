@@ -112,7 +112,7 @@ nsc			: main.nsc
 scalai			: main.scalai
 scaladoc		: main.scaladoc
 scalap			: main.scalap
-dtd2scala		: main.dtd2scala
+#dtd2scala		: main.dtd2scala
 scala4ant		: main.scala4ant
 scalatest		: main.scalatest
 tools			: main.tools
@@ -130,7 +130,7 @@ $(prefix).nsc		: $(latest)nsc
 $(prefix).scalai	: $(latest)scalai
 $(prefix).scaladoc	: $(latest)scaladoc
 $(prefix).scalap	: $(latest)scalap
-$(prefix).dtd2scala	: $(latest)dtd2scala
+#$(prefix).dtd2scala	: $(latest)dtd2scala
 $(prefix).scala4ant	: $(latest)scala4ant
 $(prefix).scalatest	: $(latest)scalatest
 $(prefix).tools		: $(latest)tools
@@ -156,7 +156,7 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: scalai
 .PHONY			: scaladoc
 .PHONY			: scalap
-.PHONY			: dtd2scala
+#.PHONY			: dtd2scala
 .PHONY			: scala4ant
 .PHONY			: scalatest
 .PHONY			: tools
@@ -174,7 +174,7 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: $(prefix).scalai
 .PHONY			: $(prefix).scaladoc
 .PHONY			: $(prefix).scalap
-.PHONY			: $(prefix).dtd2scala
+#.PHONY			: $(prefix).dtd2scala
 .PHONY			: $(prefix).scala4ant
 .PHONY			: $(prefix).scalatest
 .PHONY			: $(prefix).tools
@@ -286,7 +286,7 @@ SCRIPTS_ALIASES_NAMES	+= scalarun
 SCRIPTS_ALIASES_NAMES	+= scalarun-debug
 SCRIPTS_ALIASES_NAMES	+= scalaint
 SCRIPTS_ALIASES_NAMES	+= scalaint-debug
-SCRIPTS_ALIASES_NAMES	+= dtd2scala
+#SCRIPTS_ALIASES_NAMES	+= dtd2scala
 SCRIPTS_ALIASES_NAMES	+= scalap
 SCRIPTS_ALIASES_NAMES	+= scalatest
 SCRIPTS_ALIASES_FILES	+= $(SCRIPTS_ALIASES_NAMES:%=$(SCRIPTS_BINARYDIR)/%)
@@ -596,28 +596,28 @@ $(latest)scalap-sc	: $(SCALAP_SC_FILES)
 ##############################################################################
 # Targets - scala tools - dtd2scala
 
-PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
-DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/dtd2scala
-DTD2SCALA_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
-DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
-DTD2SCALA_SC_FILES	+= $(filter %.scala,$(DTD2SCALA_SOURCES))
-DTD2SCALA_RSRC_LIST	+= $(filter %.xml,$(DTD2SCALA_LIST))
-DTD2SCALA_RSRC_FILES	+= $(filter %.xml,$(DTD2SCALA_SOURCES))
-DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(JC_OUTPUTDIR)/%)
+#PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
+#DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/dtd2scala
+#DTD2SCALA_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
+#DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
+#DTD2SCALA_SC_FILES	+= $(filter %.scala,$(DTD2SCALA_SOURCES))
+#DTD2SCALA_RSRC_LIST	+= $(filter %.xml,$(DTD2SCALA_LIST))
+#DTD2SCALA_RSRC_FILES	+= $(filter %.xml,$(DTD2SCALA_SOURCES))
+#DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(JC_OUTPUTDIR)/%)
 
-$(latest)dtd2scala	: $(latest)dtd2scala-sc
-$(latest)dtd2scala	: $(latest)dtd2scala-rsrc
-$(latest)dtd2scala	:
-	$(TOUCH) $@
+#$(latest)dtd2scala	: $(latest)dtd2scala-sc
+#$(latest)dtd2scala	: $(latest)dtd2scala-rsrc
+#$(latest)dtd2scala	:
+#	$(TOUCH) $@
 
-$(latest)dtd2scala-sc	: $(DTD2SCALA_SC_FILES)
-	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
-	$(TOUCH) $@
+#$(latest)dtd2scala-sc	: $(DTD2SCALA_SC_FILES)
+#	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
+#	$(TOUCH) $@
 
-$(latest)dtd2scala-rsrc	: $(DTD2SCALA_RSRC_FILES)
-	$(strip $(MIRROR) -m 644 -C $(DTD2SCALA_ROOT) $(DTD2SCALA_RSRC_LIST) \
-	    $(DTD2SCALA_RSRC_OUTPUTDIR))
-	$(TOUCH) $@
+#$(latest)dtd2scala-rsrc	: $(DTD2SCALA_RSRC_FILES)
+#	$(strip $(MIRROR) -m 644 -C $(DTD2SCALA_ROOT) $(DTD2SCALA_RSRC_LIST) \
+#	    $(DTD2SCALA_RSRC_OUTPUTDIR))
+#	$(TOUCH) $@
 
 ##############################################################################
 # Targets - scala tools - scala4ant
@@ -670,7 +670,7 @@ $(latest)tools		: $(latest)scalac
 $(latest)tools		: $(latest)scalai
 $(latest)tools		: $(latest)scaladoc
 $(latest)tools		: $(latest)scalap
-$(latest)tools		: $(latest)dtd2scala
+#$(latest)tools		: $(latest)dtd2scala
 $(latest)tools		: $(latest)scala4ant
 $(latest)tools		: $(latest)scalatest
 $(latest)tools		:
