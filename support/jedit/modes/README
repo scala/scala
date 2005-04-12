@@ -1,0 +1,33 @@
+* Introduction
+
+This directory contains an additional syntax highlighting mode (.xml) for
+Scala programs. You will need to add a mode catalog entry after placing the
+mode file in an appropriate mode directory.
+
+More information about jEdit is available from:
+
+   http://www.jedit.org/
+
+* Installation
+
+Copy the file "scala.xml" to the following location:
+
+   ~/.jedit/modes/
+
+or alternatively to the location:
+
+   <jedit_instdir>/modes/
+
+Add the following entry to the file "catalog" present in the same directory
+as "scala.xml" you just copied.
+
+   <MODE NAME="scala" FILE="scala.xml" FILE_NAME_GLOB="*.scala" />
+
+Restart the jEdit text editor.
+
+From that point on, loading a file whose name ends in ".scala" automatically
+turns Scala mode on.
+
+* Version
+
+$Id$
