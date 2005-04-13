@@ -92,22 +92,12 @@ public class CLRClassParser extends SymbolLoader {
 	    if (ntype.IsNestedPrivate() || ntype.IsNestedAssembly()
 		|| ntype.IsNestedFamANDAssem())
 		continue;
-	    int j = ntype.FullName.lastIndexOf('.');
-	    String n = (j < 0 ? ntype.FullName : ntype.FullName.substring(j + 1))
-		.replace('+', '#');
-	    Name classname = Name.fromString(n).toTypeName();
-	    Name aliasname = Name.fromString(ntype.Name).toTypeName();
-	    // put the class at the level of its outermost class
-	    // the owner of a class is always its most specific package
+	    Name classname = Name.fromString(ntype.Name).toTypeName();
 	    CLRClassParser loader = new CLRClassParser(global, ntype);
             SymbolOrigin origin = SymbolOrigin.CLRAssembly(ntype.Assembly());
-	    Symbol nclazz = clazz.owner().newLoadedClass
-                (JAVA, classname, loader, null, origin);
+	    Symbol nclazz = staticsClass.newLoadedClass
+                (JAVA, classname, loader, statics, origin);
 	    clrTypes.map(nclazz, ntype);
-	    // create an alias in the module of the outer class
-	    Symbol alias = staticsClass.newTypeAlias(Position.NOPOS,
-                translateAttributes(ntype), aliasname, make.classType(nclazz));
-	    statics.enterNoHide(alias);
 	}
 
 	FieldInfo[] fields = type.getFields();
