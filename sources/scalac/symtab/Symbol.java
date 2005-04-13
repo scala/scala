@@ -291,7 +291,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final ClassSymbol newLoadedClass(int flags, Name name,
         SymbolLoader loader, Scope scope, SymbolOrigin origin)
     {
-        assert isPackageClass(): Debug.show(this);
         assert loader != null: Debug.show(this) + " - " + name;
         ClassSymbol clasz = new LinkedClassSymbol(this, flags, name);
         clasz.setInfo(loader);
