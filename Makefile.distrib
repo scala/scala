@@ -27,8 +27,13 @@ GEDIT_FILES		 = $(GEDIT_LIST:%=$(GEDIT_ROOT)/%)
 
 # jedit scala-mode
 JEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/jedit
-JEDIT_LIST		+= scala.xml
-JEDIT_LIST		+= README
+JEDIT_LIST		+= modes/scala.xml
+JEDIT_LIST		+= modes/README
+JEDIT_LIST		+= console/commando/scala.xml
+JEDIT_LIST		+= console/commando/scalac.xml
+JEDIT_LIST		+= console/commando/scalaint.xml
+JEDIT_LIST		+= console/commando/scalarun.xml
+JEDIT_LIST		+= console/README
 JEDIT_FILES		 = $(JEDIT_LIST:%=$(JEDIT_ROOT)/%)
 
 # scite scala-mode
