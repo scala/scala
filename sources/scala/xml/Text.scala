@@ -17,7 +17,7 @@ import scala.collection.immutable ;
 **/
 
 
-case class Text[A]( data: A ) extends SpecialNode {
+case class Text[+A]( data: A ) extends SpecialNode {
 
   /** @deprecated
    */
@@ -34,7 +34,7 @@ case class Text[A]( data: A ) extends SpecialNode {
 
   final override def equals(x:Any) = x match {
     case s:String  => s.equals( data.toString() );
-    case Text( s ) => data == s ;
+    case s:Text[A] => data == s.data ;
     case _ => false;
   }
 
