@@ -32,7 +32,7 @@ public class CompoundType extends Type {
     }
 
     public Array newArray(int size) {
-        throw new Error();      // TODO
+        throw new Error("cannot create arrays of compound types");
     }
 
     public Object defaultValue() {

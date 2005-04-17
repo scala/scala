@@ -103,6 +103,7 @@ public class TypesAsValuesPhase extends Phase {
     private final TEnv EENV = new TEnv();
 
     private final Map/*<Symbol, Symbol>*/ predefTypes;
+    private final Map/*<Type, String>*/ basicTypes;
 
     private HashMap/*<Symbol, Ancestor[][]>*/ ancestorCache = new HashMap();
 
@@ -129,6 +130,16 @@ public class TypesAsValuesPhase extends Phase {
             predefTypes.put(defs.ALLREF_CLASS,  defs.RTT_ALLREF());
             predefTypes.put(defs.ALL_CLASS,     defs.RTT_ALL());
 
+            basicTypes = new HashMap();
+            basicTypes.put(defs.BOOLEAN_TYPE(), "Z");
+            basicTypes.put(defs.BYTE_TYPE(),    "B");
+            basicTypes.put(defs.CHAR_TYPE(),    "C");
+            basicTypes.put(defs.DOUBLE_TYPE(),  "D");
+            basicTypes.put(defs.FLOAT_TYPE(),   "F");
+            basicTypes.put(defs.INT_TYPE(),     "I");
+            basicTypes.put(defs.LONG_TYPE(),    "J");
+            basicTypes.put(defs.SHORT_TYPE(),   "S");
+
             membersToAdd.put(defs.ARRAY_CLASS, new Symbol[0]);
             paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
 
@@ -136,7 +147,7 @@ public class TypesAsValuesPhase extends Phase {
         } else {
             transformer = new TV_MiniTransformer(global);
             typeAccessorType = null;
-            predefTypes = null;
+            predefTypes = basicTypes = null;
         }
     }
 
@@ -401,8 +412,8 @@ public class TypesAsValuesPhase extends Phase {
                 return gen.ValDef(symbol, transform(rhs, symbol));
 
             case New(Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs)):
-                // TODO still needed?
-                if (fun.symbol() == ARRAY_CONSTRUCTOR && false) {
+                if (fun.symbol() == ARRAY_CONSTRUCTOR
+                    && targs[0].type().symbol().isParameter()) {
                     // Transform array creations:
                     //   new Array[T](size)
                     // becomes
@@ -411,7 +422,7 @@ public class TypesAsValuesPhase extends Phase {
                     assert vargs.length == 1;
                     Tree newArrayfun = gen.mkRef(tree.pos,
                                                  typeAsValue(targs[0].pos,
-                                                             targs[0].type,
+                                                             targs[0].type(),
                                                              currentOwner,
                                                              EENV),
                                                  defs.TYPE_NEWARRAY());
@@ -855,7 +866,7 @@ public class TypesAsValuesPhase extends Phase {
                     return env.treeForVar(sym);
                 } else if (sym == defs.ARRAY_CLASS) {
                     assert args.length == 1;
-                    return arrayType(pos, sym, args[0], owner, env);
+                    return arrayType(pos, args[0], owner, env);
                 } else if (predefTypes.containsKey(sym)) {
                     return gen.mkGlobalRef(pos, (Symbol)predefTypes.get(sym));
                 } else if (sym.isJava()) {
@@ -885,15 +896,41 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         private Tree arrayType(int pos,
-                               Symbol sym,
                                Type elemType,
                                Symbol owner,
                                TEnv env) {
-            Tree constr =
-                gen.mkPrimaryConstructorGlobalRef(pos,
-                                                  defs.JAVAREFARRAYTYPE_CLASS);
-            Tree[] args = new Tree[]{ typeAsValue(pos, elemType, owner, env) };
-            return gen.New(pos, gen.mkApply_V(constr, args));
+            Type realElemType = elemType;
+            int dimensions = 1;
+            while (realElemType.symbol() == defs.ARRAY_CLASS) {
+                realElemType = realElemType.typeArgs()[0];
+                ++dimensions;
+            }
+
+            if (isTrivial(elemType)) {
+                Tree nameLit;
+                if (basicTypes.containsKey(elemType))
+                    nameLit =
+                        gen.mkStringLit(pos, (String)basicTypes.get(elemType));
+                else
+                    nameLit = gen.mkSymbolNameLit(pos, realElemType.symbol());
+
+                Tree constr =
+                    gen.mkGlobalRef(pos, defs.JAVACLASSTYPE_JAVAARRAYTYPE());
+                Tree[] args = new Tree[]{
+                    nameLit,
+                    gen.mkIntLit(pos, dimensions)
+                };
+                return gen.mkApply_V(constr, args);
+            } else {
+                Tree constr =
+                    gen.mkGlobalRef(pos,
+                                    defs.JAVAREFARRAYTYPE_JAVAREFARRAYTYPE());
+                Tree[] args = new Tree[]{
+                    typeAsValue(pos, elemType, owner, env),
+                    gen.mkIntLit(pos, dimensions)
+                };
+                return gen.mkApply_V(constr, args);
+            }
         }
 
         private Tree javaType(int pos, Symbol sym) {

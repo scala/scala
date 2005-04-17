@@ -21,7 +21,7 @@ public class SingleType extends Type {
     }
 
     public Array newArray(int size) {
-        throw new Error();      // TODO
+        throw new Error("cannot create array of single types");
     }
 
     public Object defaultValue() {

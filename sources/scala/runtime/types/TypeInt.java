@@ -17,9 +17,6 @@ import scala.Int;
 
 public class TypeInt extends ValueType {
     private final Int ZERO = RunTime.box_ivalue(0);
-    public Array newArray(int size) {
-        return RunTime.box_iarray(new int[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Int))
@@ -27,6 +24,9 @@ public class TypeInt extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Integer.TYPE;
+    }
     public String toString() { return "scala.Int"; }
     public int hashCode() { return 0x44444444; }
 };

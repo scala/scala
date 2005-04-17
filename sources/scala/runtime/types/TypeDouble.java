@@ -16,9 +16,6 @@ import scala.Array;
 
 public public class TypeDouble extends ValueType {
     private final scala.Double ZERO = RunTime.box_dvalue(0.0);
-    public Array newArray(int size) {
-        return RunTime.box_darray(new double[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Double))
@@ -26,6 +23,9 @@ public public class TypeDouble extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Double.TYPE;
+    }
     public String toString() { return "scala.Double"; }
     public int hashCode() { return 0x11111111; }
 };

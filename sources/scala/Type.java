@@ -58,6 +58,11 @@ abstract public class Type implements java.io.Serializable {
     abstract public boolean isSameType(Type that);
     abstract public boolean isSubType(Type that);
 
+    public boolean isSameAsJavaType(Class that) {
+        throw new Error("cannot compare Scala type " + this
+                        + " with Java type " + that);
+    }
+
     public boolean equals(Object that) {
         return (that instanceof Type) && this.isSameType((Type)that);
     }

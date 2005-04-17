@@ -21,10 +21,22 @@ import scala.Array;
  */
 
 public class JavaRefArrayType extends Type {
+    public final int dimensions;
     public final Type elemType;
 
-    public JavaRefArrayType(Type elemType) {
+    public static JavaRefArrayType javaRefArrayType(Type elemType,
+                                                    int dimensions) {
+        if (elemType instanceof JavaRefArrayType) {
+            JavaRefArrayType other = (JavaRefArrayType)elemType;
+            return new JavaRefArrayType(other.elemType,
+                                        dimensions + other.dimensions);
+        } else
+            return new JavaRefArrayType(elemType, dimensions);
+    }
+
+    private JavaRefArrayType(Type elemType, int dimensions) {
         this.elemType = elemType;
+        this.dimensions = dimensions;
     }
 
     public Array newArray(int size) {
@@ -37,25 +49,21 @@ public class JavaRefArrayType extends Type {
 
     public boolean isInstance(Object o) {
         assert Statistics.incInstanceOf();
-        if (o instanceof Object[]) {
-            if (elemType instanceof ClassType) {
-                ClassType elemTypeClass = (ClassType)elemType;
-                if (o.getClass().getComponentType() == elemTypeClass.clazz) {
-                    if (elemTypeClass.isTrivial)
-                        return true;
-                    else
-                        throw new Error("not able to compute isInstance");
-                } else
-                    return false;
-            } else
-                throw new Error("not able to compute isInstance");
-        } else
-            return false;
+        return this.isSameAsJavaType(o.getClass());
     }
 
     public boolean isSameType(Type that) {
         return (that instanceof JavaRefArrayType)
             && (elemType.isSameType(((JavaRefArrayType)that).elemType));
+    }
+
+    public boolean isSameAsJavaType(Class that) {
+        Class thatElemType = that;
+        for (int i = 0; i < dimensions && thatElemType != null; ++i)
+            thatElemType = thatElemType.getComponentType();
+
+        return (thatElemType != null)
+            && (elemType.isSameAsJavaType(thatElemType));
     }
 
     public boolean isSubType(Type that) {

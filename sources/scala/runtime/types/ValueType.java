@@ -11,6 +11,7 @@
 package scala.runtime.types;
 
 import scala.Type;
+import scala.Array;
 
 /**
  * Abstract superclass for all value types.
@@ -30,5 +31,8 @@ abstract public class ValueType extends Type {
     }
     public boolean isSameType(Type that) {
         return this == that;
+    }
+    public Array newArray(int size) {
+        throw new Error("internal error (Scala runtime)");
     }
 }

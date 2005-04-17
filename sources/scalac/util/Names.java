@@ -191,6 +191,8 @@ public class Names {
     public static final Name isEmpty = Name.fromString("isEmpty");
     public static final Name instantiate = Name.fromString("instantiate");
     public static final Name java = Name.fromString("java");
+    public static final Name javaRefArrayType = Name.fromString("javaRefArrayType");
+    public static final Name javaArrayType = Name.fromString("javaArrayType");
     public static final Name javaClassType = Name.fromString("javaClassType");
     public static final Name lang = Name.fromString("lang");
     public static final Name length = Name.fromString("length");

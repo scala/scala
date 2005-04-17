@@ -36,6 +36,17 @@ public class JavaClassType extends ClassType {
         return jct;
     }
 
+    public static JavaClassType javaArrayType(String elemFullName, int dimen) {
+        StringBuffer fullName = new StringBuffer();
+        for (int i = 0; i < dimen; ++i)
+            fullName.append('[');
+        if (elemFullName.length() == 1 && "ZBCDFIJS".indexOf(elemFullName) >= 0)
+            fullName.append(elemFullName);
+        else
+            fullName.append('L').append(elemFullName).append(';');
+        return javaClassType(fullName.toString());
+    }
+
     public JavaClassType(String fullName) throws ClassNotFoundException {
         super(Class.forName(fullName, false, loader), true);
     }

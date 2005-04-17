@@ -17,9 +17,6 @@ import scala.Unit;
 
 public class TypeUnit extends ValueType {
     private final Unit ZERO = RunTime.box_uvalue();
-    public Array newArray(int size) {
-        return RunTime.box_oarray(new Object[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Unit))
@@ -27,6 +24,9 @@ public class TypeUnit extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Void.TYPE;
+    }
     public String toString() { return "scala.Unit"; }
     public int hashCode() { return 0x99999999; }
 };

@@ -24,7 +24,7 @@ import scala.runtime.RunTime;
 
 abstract public class SpecialType extends Type {
     public Array newArray(int size) {
-        return RunTime.box_oarray(new Object[size]);
+        throw new Error("cannot create arrays of special types");
     }
 
     public Object defaultValue() {

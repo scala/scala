@@ -714,6 +714,24 @@ public class Definitions {
         return JAVACLASSTYPE_JAVACLASSTYPE;
     }
 
+    private Symbol JAVACLASSTYPE_JAVAARRAYTYPE;
+    public Symbol JAVACLASSTYPE_JAVAARRAYTYPE() {
+        if (JAVACLASSTYPE_JAVAARRAYTYPE == null)
+            JAVACLASSTYPE_JAVAARRAYTYPE =
+                loadTerm(JAVACLASSTYPE_CLASS.linkedModule().moduleClass(),
+                         Names.javaArrayType);
+        return JAVACLASSTYPE_JAVAARRAYTYPE;
+    }
+
+    private Symbol JAVAREFARRAYTYPE_JAVAREFARRAYTYPE;
+    public Symbol JAVAREFARRAYTYPE_JAVAREFARRAYTYPE() {
+        if (JAVAREFARRAYTYPE_JAVAREFARRAYTYPE == null)
+            JAVAREFARRAYTYPE_JAVAREFARRAYTYPE =
+                loadTerm(JAVAREFARRAYTYPE_CLASS.linkedModule().moduleClass(),
+                         Names.javaRefArrayType);
+        return JAVAREFARRAYTYPE_JAVAREFARRAYTYPE;
+    }
+
     //########################################################################
     // Public Fields - Global values
 

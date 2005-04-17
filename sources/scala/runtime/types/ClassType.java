@@ -24,7 +24,6 @@ public abstract class ClassType extends Type {
     }
 
     public Array newArray(int size) {
-        // TODO is that correct if we have type arguments?
         Object[] array =
             (Object[])java.lang.reflect.Array.newInstance(clazz, size);
         return RunTime.box_oarray(array);
@@ -64,6 +63,15 @@ public abstract class ClassType extends Type {
     public boolean isSameType(Type that) {
         return (that instanceof ClassType)
             && (((ClassType)that).clazz == this.clazz);
+    }
+
+    public boolean isSameAsJavaType(Class that) {
+        if (this.isTrivial)
+            return clazz == that;
+        else if (clazz != that)
+            return false;
+        else
+            throw new Error("uncomparable types");
     }
 
     public int hashCode() {

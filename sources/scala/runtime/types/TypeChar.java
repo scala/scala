@@ -17,9 +17,6 @@ import scala.Char;
 
 public class TypeChar extends ValueType {
     private final Char ZERO = RunTime.box_cvalue((char)0);
-    public Array newArray(int size) {
-        return RunTime.box_carray(new char[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Char))
@@ -27,6 +24,9 @@ public class TypeChar extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == char.class;
+    }
     public String toString() { return "scala.Char"; }
     public int hashCode() { return 0x66666666; }
 };

@@ -17,9 +17,6 @@ import scala.Byte;
 
 public class TypeByte extends ValueType {
     private final Byte ZERO = RunTime.box_bvalue((byte)0);
-    public Array newArray(int size) {
-        return RunTime.box_barray(new byte[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Byte))
@@ -27,6 +24,9 @@ public class TypeByte extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Byte.TYPE;
+    }
     public String toString() { return "scala.Byte"; }
     public int hashCode() { return 0x77777777; }
 };

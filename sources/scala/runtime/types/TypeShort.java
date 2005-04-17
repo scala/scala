@@ -16,9 +16,6 @@ import scala.Array;
 
 public class TypeShort extends ValueType {
     private final scala.Short ZERO = RunTime.box_svalue((short)0);
-    public Array newArray(int size) {
-        return RunTime.box_sarray(new short[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Short))
@@ -26,6 +23,9 @@ public class TypeShort extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Short.TYPE;
+    }
     public String toString() { return "scala.Short"; }
     public int hashCode() { return 0x55555555; }
 };

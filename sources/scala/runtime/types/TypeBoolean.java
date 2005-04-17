@@ -17,9 +17,6 @@ import scala.Boolean;
 
 public class TypeBoolean extends ValueType {
     private final Boolean ZERO = RunTime.box_zvalue(false);
-    public Array newArray(int size) {
-        return RunTime.box_zarray(new boolean[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Boolean))
@@ -27,6 +24,9 @@ public class TypeBoolean extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Boolean.TYPE;
+    }
     public String toString() { return "scala.Boolean"; }
     public int hashCode() { return 0x88888888; }
 };

@@ -16,9 +16,6 @@ import scala.Array;
 
 public class TypeFloat extends ValueType {
     private final scala.Float ZERO = RunTime.box_fvalue(0.0f);
-    public Array newArray(int size) {
-        return RunTime.box_farray(new float[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Float))
@@ -26,6 +23,9 @@ public class TypeFloat extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Float.TYPE;
+    }
     public String toString() { return "scala.Float"; }
     public int hashCode() { return 0x22222222; }
 };

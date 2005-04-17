@@ -16,9 +16,6 @@ import scala.Array;
 
 public class TypeLong extends ValueType {
     private final scala.Long ZERO = RunTime.box_lvalue(0l);
-    public Array newArray(int size) {
-        return RunTime.box_larray(new long[size]);
-    }
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Long))
@@ -26,6 +23,9 @@ public class TypeLong extends ValueType {
         return o;
     }
     public Object defaultValue() { return ZERO; }
+    public boolean isSameAsJavaType(Class that) {
+        return that == java.lang.Long.TYPE;
+    }
     public String toString() { return "scala.Long"; }
     public int hashCode() { return 0x33333333; }
 };
