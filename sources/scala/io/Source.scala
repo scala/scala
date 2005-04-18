@@ -9,8 +9,11 @@
 
 package scala.io;
 
-/** convenience methods to create an iterable representation of a source file
- *  @author Burak Emir
+import java.io.{ File, FileInputStream, PrintStream };
+
+/** convenience methods to create an iterable representation of a source
+ *  file
+ *  @author buraq
  */
 object Source {
 
@@ -29,6 +32,7 @@ object Source {
   def fromChars(chars: Array[Char]): Source = {
     val it = Iterator.fromArray(chars);
     new Source {
+      def reset = fromChars(chars);
       val iter = it;
     }
   }
@@ -37,6 +41,7 @@ object Source {
   def fromString(s: String): Source = {
     val it = Iterator.fromString(s);
     new Source {
+      def reset = fromString(s);
       val iter = it;
     }
   }
@@ -45,23 +50,27 @@ object Source {
    *  filename.
    */
   def fromFile(name: String): Source =
-    fromFile( new java.io.File( name ));
+    fromFile( new File( name ));
 
   /** creates Source from file with given name, using given encoding, setting
    *  its description to filename.
    */
   def fromFile(name: String, enc: String): Source =
-    fromFile( new java.io.File( name ), enc);
+    fromFile( new File( name ), enc);
 
   /** creates Source from file, using default character encoding, setting its
    *  description to filename.
    */
   def fromFile(file: java.io.File): Source = {
     val arr: Array[Byte] = new Array[Byte]( file.length().asInstanceOf[Int] );
-    val is = new java.io.FileInputStream( file );
+    val is = new FileInputStream( file );
     is.read( arr );
     val s = fromBytes(arr);
-    s.descr = file.getName();
+    s.descr = new StringBuffer()
+              .append( file.getAbsolutePath() )
+              .append( File.pathSeparator )
+              .append( file.getName() )
+              .toString();
     s
   }
 
@@ -70,7 +79,7 @@ object Source {
    */
   def fromFile(file: java.io.File, enc: String): Source = {
     val arr: Array[Byte] = new Array[Byte]( file.length().asInstanceOf[Int] );
-    val is = new java.io.FileInputStream( file );
+    val is = new FileInputStream( file );
     is.read( arr );
     val s = fromBytes(arr, enc);
     s.descr = file.getName();
@@ -79,13 +88,74 @@ object Source {
 }
 
 /** an iterable representation of source files.
- *  @author Burak Emir
+ *  calling method reset returns an identical, resetted source
+ *
+ *  @author buraq
  */
 abstract class Source extends Iterator[Char] {
-  /** default col increment for tabs '\t', set to 4 */
-  val tabinc = 4;
 
+
+  // ------ protected values
+
+  /** the actual iterator */
   protected val iter: Iterator[Char];
+
+  protected var cline = 1;
+  protected var ccol = 1;
+
+  // ------ public values
+
+  /** position of last character returned by next*/
+  var pos = 0;
+
+  /** the last character returned by next.
+   *  the value before the first call to next is undefined.
+   */
+  var ch: Char = _;
+
+  /** description of this source */
+  var descr: String = "";
+
+  var nerrors = 0;
+  var nwarnings = 0;
+
+  /** default col increment for tabs '\t', set to 4 initially
+   */
+  var tabinc = 4;
+
+  //
+  // -- methods
+  //
+
+  /** convenience method, returns given line from Source */
+  def getLine(line: Int): String = {
+    val buf = new StringBuffer();
+    val it = reset;
+    var i = 0;
+    while( it.hasNext
+          && i < (line-1)
+          && Character.LINE_SEPARATOR != it.next.getType ) {
+            i = i + 1
+          }
+    if(!it.hasNext) { // this should not happen
+      throw new java.lang.IllegalArgumentException(
+        "line "+line+" does not exist?!"
+      );
+    }
+    var ch = it.next;
+    while( it.hasNext
+          && Character.LINE_SEPARATOR != ch ) {
+      buf.append( ch );
+      ch = it.next;
+    }
+    val res = buf.toString();
+    buf.setLength( 0 );
+    res
+  }
+
+  /** returns true if this source has more characters
+   */
+  def hasNext = iter.hasNext;
 
   /** returns next character and has the following side-effects: updates
    *  position (ccol and cline) and assigns the character to ch
@@ -105,19 +175,40 @@ abstract class Source extends Iterator[Char] {
     ch
   };
 
-  /** returns true if this source has more characters
-   */
-  def hasNext = iter.hasNext;
 
-  var cline = 1;
-  var ccol = 1;
-  /** position of last character returned by next*/
-  var pos = 0;
+  /** reports an error message to console */
+  def reportError(pos: Int, msg: String): Unit = {
+    report(pos, msg, java.lang.System.out);
+  }
 
-  /** the last character returned by next.
-   *  the value before the first call to next is undefined
-   */
-  var ch: Char = _;
-  /** description of this source */
-  var descr:String = "";
+  def reportError(pos: Int, msg: String, out: PrintStream): Unit = {
+    nerrors = nerrors + 1;
+    report(pos, msg, java.lang.System.out);
+  }
+
+  def report(pos: Int, msg: String, out: PrintStream): Unit = {
+    val line = Position.line(pos);
+    Console.println(descr+":"+line+": "+msg);
+    Console.println(getLine(line));
+    var i = 1;
+    val col = Position.column(pos);
+    while( i < col ) {
+      Console.print(' ');
+      i = i + 1;
+    }
+    Console.println('^');
+  }
+
+  /** reports a warning message to java.lang.System.out */
+  def reportWarning(pos: Int, msg: String): Unit =
+    reportWarning(pos, msg, java.lang.System.out);
+
+  def reportWarning(pos: Int, msg: String, out: PrintStream): Unit = {
+    nwarnings = nwarnings + 1;
+    report(pos, "warning! "+msg, out);
+  }
+
+  /** the actual reset method */
+  def reset: Source;
+
 }
