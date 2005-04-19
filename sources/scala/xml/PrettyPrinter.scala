@@ -109,21 +109,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     n.nameToString(sb); //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
     val i = sb.length() + 1;
     n.attributes.toString(sb);
-    var scp = n.scope;
-    while( scp != TopScope && !scp.eq(pscope)) {
-      sb.append(' ');
-      sb.append("xmlns");
-      if(scp.prefix != null) {
-        sb.append(':');
-        sb.append(scp.prefix);
-      }
-      sb.append("=\"");
-      if(scp.uri != null) sb.append(scp.uri);
-      sb.append('\"');
-      scp = scp.parent;
-    }
-
-    //Utility.attr2xml( n.namespace, n.attributes, pmap, sb );
+    n.scope.toString(sb, pscope);
     sb.append('>');
     Pair(sb.toString(), i);
   }

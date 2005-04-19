@@ -43,7 +43,7 @@ object Predef {
   def scd[a](x: Any, y: a): a = y;
 
   val namespace$default = "";
-  val $scope = null;
+  val $scope = scala.xml.TopScope;
 
   type Function[-a,+b] = Function1[a,b];
 

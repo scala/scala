@@ -41,7 +41,7 @@ abstract class Node extends NodeSeq {
   def typeTag$: Int = 0;
 
   /** the namespace bindings */
-  def scope: NamespaceBinding = null;
+  def scope: NamespaceBinding = TopScope;
 
   def namespace = getNamespace(prefix);
 

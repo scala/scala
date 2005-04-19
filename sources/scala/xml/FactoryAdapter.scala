@@ -103,8 +103,6 @@ abstract class FactoryAdapter extends DefaultHandler() {
 	}
    }
 
-  protected def scope() = scopeStack.top;
-
     //var elemCount = 0; //STATISTICS
 
     /* ContentHandler methods */
@@ -133,7 +131,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
       hStack.push( null );
       var m: MetaData = Null;
 
-      var scpe = scope();
+      var scpe = scopeStack.top;
       for( val i <- List.range( 0, attributes.getLength() )) {
         //val attrType = attributes.getType(i); // unused for now
         val qname = attributes.getQName(i);
@@ -141,12 +139,13 @@ abstract class FactoryAdapter extends DefaultHandler() {
         val colon = qname.indexOf(':');
         if(-1 != colon) {                     // prefixed attribute
           val pre = qname.substring(0, colon);
-          val key = attributes.getLocalName(i);
+          val key = qname.substring(colon+1, qname.length());
           if("xmlns" == pre)
             scpe = value.length() match {
               case 0 => new NamespaceBinding(key, null,  scpe);
               case _ => new NamespaceBinding(key, value, scpe);
-            } else
+            }
+          else
               m = new PrefixedAttribute(pre, key, value, m)
         } else if("xmlns" == qname)
           scpe = value.length() match {
@@ -196,11 +195,12 @@ abstract class FactoryAdapter extends DefaultHandler() {
       val colon = qname.indexOf(':');
       val localName = if(-1 == colon) qname else qname.substring(colon+1,qname.length());
 
+      val scp = scopeStack.pop;
       // create element
       rootElem = if(-1 == colon)
-          createNode( null, localName, metaData, scopeStack.pop, v );
+          createNode( null, localName, metaData, scp, v );
         else
-          createNode( qname.substring(0,colon), localName, metaData, scopeStack.pop, v );
+          createNode( qname.substring(0,colon), localName, metaData, scp, v );
 
       hStack.push(rootElem);
 
@@ -293,7 +293,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
       // parse file
       try {
         //System.err.println("[parsing \"" + source + "\"]");
-        scopeStack.push(null);
+        scopeStack.push(TopScope);
         parser.parse( source, this );
         scopeStack.pop;
       } catch {

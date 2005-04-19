@@ -82,54 +82,6 @@ object Utility {
   val noPrefixes: Map[String,String] =
     immutable.ListMap.Empty[String,String].update("","");
 
-  /**
-   * Returns a default prefix mapping for a set of namespaces.
-   * the empty namespace is mapped to the empty prefix
-   *
-   * @param rootns
-   * @param nset
-  def defaultPrefixes(rootns: String, nset: mutable.Set[String]): Map[String,String] = {
-    val map = new mutable.HashMap[String,String]();
-    if (nset.contains("http://www.w3.org/XML/1998/namespace"))
-       map.update("http://www.w3.org/XML/1998/namespace", "xml");
-    if (nset.contains(""))
-      map.update("", "");
-    var i = 0;
-    for (val ns <- nset)
-      map.get(ns) match {
-        case None      => map.update( ns, "ns"+i ); i = i + 1;
-        case Some( _ ) =>
-      }
-    // Console.println("defaultPrefixes:"+map); // DEBUG
-    return map;
-  }
-   */
-
-  /**
-   * @see "defaultPrefixes(String, mutable.Set[String])"
-  def defaultPrefixes(n: Node): Map[String,String] =
-    defaultPrefixes(n.namespace, collectNamespaces( n ));
-   */
-
-  /**
-   * @see "defaultPrefixes(String, mutable.Set[String])"
-  def defaultPrefixes(nodes: Seq[Node]): Map[String,String] =
-    defaultPrefixes("", collectNamespaces(nodes));
-   */
-
-
-  def scope2map(n:NamespaceBinding): immutable.Map[String,String] =
-      scope2map(n, immutable.ListMap.Empty[String,String]);
-
-  def scope2map(n:NamespaceBinding, map:immutable.Map[String,String]): immutable.Map[String,String] = {
-    if(TopScope == n)
-      map
-    else if(null == n.uri)
-       scope2map(n.parent, map - n.prefix)
-    else
-      scope2map(n.parent, map.update(n.prefix, n.uri))
-  }
-
   /** string representation of an XML node, with comments stripped the comments
    * @see "toXML(Node, Boolean)"
    */
@@ -146,35 +98,10 @@ object Utility {
    */
   def toXML(n: Node, stripComment: Boolean): String = {
     val sb = new StringBuffer();
-    toXML(n, null, sb, stripComment);
+    toXML(n, TopScope, sb, stripComment);
     sb.toString();
   }
 
-  /**
-   * @see "toXML(Node, Map[String,String], Boolean)"
-  def toXML(x: Node, pmap: Map[String,String]): String =
-    toXML(x, pmap, false);
-   */
-
-  /**
-   * Serializes a node with given namespace prefix mapping. The prefix
-   * mapping may not map the empty namespace "" to some non-empty prefix.
-   *
-   * @param x the node to serialize
-   * @param pmap a mapping from namespace URIs to prefixes
-   * @param stripComment
-  def toXML(x: Node, pmap: Map[String,String], stripComment: Boolean): String = {
-    val sb = new StringBuffer();
-    toXML(x, pmap, sb, stripComment);
-    sb.toString();
-  }
-   */
-
-  /**
-   * @see "toXML(Node, Map[String,String], StringBuffer, Boolean)"
-  def toXML(x: Node, pmap: Map[String,String], sb: StringBuffer): Unit =
-    toXML(x, pmap, sb, false);
-   */
 
   /** serializes a tree to the given stringbuffer
    *  with the given namespace prefix mapping.
@@ -210,19 +137,7 @@ object Utility {
         if (x.attributes != null) {
           x.attributes.toString(sb)
         }
-        var scp = x.scope;
-        while( scp != null && !scp.eq(pscope)) {
-          sb.append(' ');
-          sb.append("xmlns");
-          if(scp.prefix != null) {
-            sb.append(':');
-            sb.append(scp.prefix);
-          }
-          sb.append("=\"");
-          if(scp.uri != null) sb.append(scp.uri);
-          sb.append('\"');
-          scp = scp.parent;
-        }
+        x.scope.toString(sb, pscope);
         sb.append('>');
         for (val c <- x.child.elements) {
           toXML(c, x.scope, sb, stripComment);
@@ -240,31 +155,6 @@ object Utility {
     val i = name.indexOf(':');
     if( i != -1 ) Some( name.substring(0, i) ) else None
   }
-
-  /**
-   * For a Node n, returns string representation of <code>n.attributes</code>
-   *
-   * @param ns
-   * @param attrib
-   * @param pmap
-   * @param sb
-  def attr2xml(attrib: Iterator[MetaData], sb: StringBuffer ) = {
-    val md = attrib;
-    while(null != md) {
-      sb.append(' ');
-      md.match {
-        case _:UnprefixedAttribute =>
-          sb.append(x.key);
-        case p:PrefixedAttribute =>
-          sb.append(p.pre);
-          sb.append(':');
-          sb.append(x.key);
-        }
-        sb.append("=");
-        appendQuoted(x.value, sb)
-      }
-  }
-   */
 
   /**
    * Returns a hashcode for the given constituents of a node
@@ -301,26 +191,6 @@ object Utility {
     sb.append('"').append(s).append('"');
     sb.toString();
   }
-
-  /**
-   * Appends prefixed name to given stringbuffer using
-   * namespace-to-prefix mapping pmap.
-   *
-   * precondition: pmap.contains(ns)
-   *
-   * @param ns
-   * @param name
-   * @param pmap
-   * @param sb
-  def appendPrefixedName(pref: String, name: String, pmap: Map[String, String], sb: StringBuffer): Unit = {
-    //val pref = pmap( ns );
-    if (pref.length() > 0) {
-      sb.append(pref);
-      sb.append(':')
-    }
-    sb.append(name)
-  }
-   */
 
   /**
    * Appends &quot;s&quot; if s does not contain &quot;, &apos;s&apos;

@@ -8,7 +8,7 @@ import scala.testing.UnitTest._ ;
 
 object Test with Application {
   val e:  scala.xml.MetaData         = Null; //Node.NoAttributes;
-  val sc: scala.xml.NamespaceBinding = null;
+  val sc: scala.xml.NamespaceBinding = TopScope;
 
   val xmlFile1 = "<hello><world/></hello>";
   val isrc1 = new InputSource( new StringReader( xmlFile1 ) );

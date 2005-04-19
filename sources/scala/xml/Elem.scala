@@ -23,6 +23,9 @@ import scala.collection.mutable.ArrayBuffer;
 // "val" is redundant for non-overriding arguments
 case class Elem(override val prefix:String, val label: String, override val attributes: MetaData, override val scope: NamespaceBinding, val child: Node*) extends Node {
 
+  if(null== scope)
+    error("scope is null");
+
   //@todo: copy the children,
   //  setting namespace scope if necessary
   //  cleaning adjacent text nodes if necessary
