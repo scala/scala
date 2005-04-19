@@ -159,8 +159,7 @@ public class CompilerCommand extends CommandParser {
 
         this.encoding = new StringOptionParser(this,
             "encoding", "Specify character encoding used by source files",
-            // !!! is there a way to get the platform default charset name
-            "encoding", "ISO-8859-1"),
+            "encoding", System.getProperty("file.encoding", "ISO-8859-1")),
 
         this.separate = new ChoiceOptionParser(this,
             "separate", "Read symbol files for separate compilation: (yes, no)",
