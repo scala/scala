@@ -379,7 +379,7 @@ public class Definitions {
 
     public Symbol SCALAOBJECT_GETTYPE() {
         if (SCALAOBJECT_GETTYPE == null)
-            SCALAOBJECT_GETTYPE = loadTerm(SCALAOBJECT_CLASS, Names.getType);
+            SCALAOBJECT_GETTYPE = loadTerm(SCALAOBJECT_CLASS, Names.getScalaType);
         return SCALAOBJECT_GETTYPE;
     }
 

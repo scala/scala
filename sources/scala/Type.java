@@ -89,7 +89,7 @@ abstract public class Type implements java.io.Serializable {
             if (isInstance(o))
                 return o;
             else
-                throw new ClassCastException("\n" + ((ScalaObject)o).getType()
+                throw new ClassCastException("\n" + ((ScalaObject)o).getScalaType()
                                              + "\n" + this.toString());
         }
     }

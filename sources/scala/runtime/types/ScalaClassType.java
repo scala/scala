@@ -54,12 +54,12 @@ public class ScalaClassType extends ClassType {
     public boolean isInstance(Object o) {
         return super.isInstance(o)
             && (isTrivial
-                || ((ScalaObject)o).getType().weakIsSubScalaClassType(this));
+                || ((ScalaObject)o).getScalaType().weakIsSubScalaClassType(this));
     }
 
     public boolean weakIsInstance(Object o) {
         assert Statistics.incWeakInstanceOf();
-        return ((ScalaObject)o).getType().weakIsSubScalaClassType(this);
+        return ((ScalaObject)o).getScalaType().weakIsSubScalaClassType(this);
     }
 
     protected boolean isSubClassType(ClassType that) {

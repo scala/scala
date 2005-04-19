@@ -180,7 +180,7 @@ public class Names {
     public static final Name get = Name.fromString("get");
     public static final Name getClass = Name.fromString("getClass");
     public static final Name getInstantiation = Name.fromString("getInstantiation");
-    public static final Name getType = Name.fromString("getType");
+    public static final Name getScalaType = Name.fromString("getScalaType");
     public static final Name isInstance = Name.fromString("isInstance");
     public static final Name hashCode = Name.fromString("hashCode");
     public static final Name hasNext = Name.fromString("hasNext");

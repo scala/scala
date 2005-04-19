@@ -374,7 +374,7 @@ public class TypesAsValuesPhase extends Phase {
             case DefDef(_, _, _, _, _, Tree rhs):
                 Symbol symbol = getSymbolFor(tree);
 
-                if (symbol.name == Names.getType && symbol.isSynthetic()) {
+                if (symbol.name == Names.getScalaType && symbol.isSynthetic()) {
                     // Correct the body of the getType method which,
                     // until now, was a placeholder (introduced by
                     // RefCheck).
