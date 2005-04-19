@@ -308,7 +308,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
               var last = lastch;
               nextch();
               last.match {
-                case ' '|'{'|'('|'>' if xml.Parsing.isNameStart( ch ) =>
+                case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart( ch ) =>
                   token = XMLSTART;
                 case _ =>
                   putChar('<');
@@ -504,7 +504,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	else syntaxError("unclosed comment");
         openComments = openComments - 1;
       }
-      true
+      lastch = ' ';
+      true;
     } else {
       false
     }
