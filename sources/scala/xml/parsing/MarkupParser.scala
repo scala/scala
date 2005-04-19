@@ -69,7 +69,7 @@ abstract class MarkupParser {
    */
   def xAttributes(pscope:NamespaceBinding): Pair[MetaData,NamespaceBinding] = {
     var scope: NamespaceBinding = pscope;
-    var aMap: MetaData = null;
+    var aMap: MetaData = Null;
     while( xml.Parsing.isNameStart( ch )) {
       val pos = this.pos;
 
@@ -138,7 +138,7 @@ abstract class MarkupParser {
       if(xml.Parsing.isNameStart( ch ))
         xAttributes(pscope)
       else
-        Pair(null, pscope)
+        Pair(Null, pscope)
     }
     Triple(qname, aMap, scope);
   }
