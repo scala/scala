@@ -5,7 +5,9 @@ package scala.xml;
  * represented with the null uri. Neither prefix nor uri may be empty,
  * which is not checked.
  */
-class NamespaceBinding(val prefix: String, val uri: String, val parent: NamespaceBinding) {
+class NamespaceBinding(val prefix: String, val uri: String, val parent: NamespaceBinding) with java.io.Serializable {
+
+  private val serialVersionUID = 0 -  2518644165573446725L;
 
   if(null != prefix && 0 == prefix.length())
     error("zero length prefix not allowed");
