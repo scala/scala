@@ -49,7 +49,7 @@ import java.util.Collections;
  * - For all polymorphic methods/constructors, add a value parameter
  *   for each type parameter.
  *
- * - Add a method getType to every class, to obtain its type as a
+ * - Add a method getScalaType to every class, to obtain its type as a
  *   value.
  *
  * - Transform all type expressions into value expressions: type
@@ -180,15 +180,10 @@ public class TypesAsValuesPhase extends Phase {
                 ? classSym.newStaticMethod(pos, 0, imName)
                 : classSym.owner().newMethodOrFunction(pos, flags, imName);
 
-            // TODO special case for monomorphic instantiations
             Symbol[] argTypes;
-            if (true || classSym.typeParams().length > 0) {
-                Symbol typesP =
-                    imSym.newVParam(pos, 0, Name.fromString("types"));
-                typesP.setInfo(defs.ARRAY_TYPE(defs.TYPE_TYPE()));
-                argTypes = new Symbol[]{ typesP };
-            } else
-                argTypes = Symbol.EMPTY_ARRAY;
+            Symbol typesP = imSym.newVParam(pos, 0, Name.fromString("types"));
+            typesP.setInfo(defs.ARRAY_TYPE(defs.TYPE_TYPE()));
+            argTypes = new Symbol[]{ typesP };
 
             imSym.setInfo(new Type.MethodType(argTypes,
                                               isStatic
@@ -252,7 +247,7 @@ public class TypesAsValuesPhase extends Phase {
                     toAddL.add(getInstMethSym(member));
             }
 
-            if (!isNestedClass(classSym)) {
+            if (needsInstantiationMethod(classSym)) {
                 toAddL.add(getTConstructorSym(classSym));
                 toAddL.add(getClassInitSym(classSym));
                 toAddL.add(getInstMethSym(classSym));
@@ -334,8 +329,48 @@ public class TypesAsValuesPhase extends Phase {
             return type;
     }
 
+    /**
+     * Return true iff the given type is trivial, that is if it
+     * has neither a prefix, nor type parameters.
+     */
+    private boolean isTrivial(Type tp) {
+        switch (tp) {
+        case TypeRef(_, Symbol sym, Type[] args):
+            if (sym == defs.ARRAY_CLASS)
+                return isTrivial(args[0]);
+            else
+                return sym.isStatic() && args.length == 0;
+        case SingleType(_, _):
+        case ThisType(_):
+        case CompoundType(_, _):
+            return false;
+        default:
+            throw Debug.abort("unexpected type", tp);
+        }
+    }
+
+    /**
+     * Return true iff the given type is strongly trivial, that is
+     * if it and all its ancestors are trivial.
+     */
+    private boolean isStronglyTrivial(Type tp) {
+        if (isTrivial(tp)) {
+            Type[] parents = tp.parents();
+            for (int i = 0; i < parents.length; ++i) {
+                if (!isStronglyTrivial(parents[i]))
+                    return false;
+            }
+            return true;
+        } else
+            return false;
+    }
+
     private boolean isNestedClass(Symbol classSym) {
         return !classSym.owner().isPackageClass();
+    }
+
+    private boolean needsInstantiationMethod(Symbol classSym) {
+        return !(isNestedClass(classSym) || isStronglyTrivial(classSym.type()));
     }
 
     public void apply(CompilationUnit unit) {
@@ -355,7 +390,7 @@ public class TypesAsValuesPhase extends Phase {
                 Symbol clsSym = tree.symbol();
 
                 TreeList newBody = new TreeList();
-                if (!isNestedClass(clsSym)) {
+                if (needsInstantiationMethod(clsSym)) {
                     Symbol tcSym = getTConstructorSym(clsSym);
                     newBody.append(tConstructorVal(clsSym, tcSym));
                     Symbol ciSym = getClassInitSym(clsSym);
@@ -375,9 +410,9 @@ public class TypesAsValuesPhase extends Phase {
                 Symbol symbol = getSymbolFor(tree);
 
                 if (symbol.name == Names.getScalaType && symbol.isSynthetic()) {
-                    // Correct the body of the getType method which,
-                    // until now, was a placeholder (introduced by
-                    // RefCheck).
+                    // Correct the body of the getScalaType method
+                    // which, until now, was a placeholder (introduced
+                    // by RefCheck).
                     return gen.DefDef(symbol,
                                       scalaClassType(symbol.pos,
                                                      symbol.owner().type(),
@@ -764,7 +799,7 @@ public class TypesAsValuesPhase extends Phase {
                 Symbol isNonTrivialInst = defs.CLASSTYPE_ISNONTRIVIALINSTANCE();
                 Tree scalaTpVal = gen.mkAsInstanceOf(pos,
                                                      tpVal,
-                                                     defs.SCALACLASSTYPE_TYPE(),
+                                                     defs.CLASSTYPE_TYPE(),
                                                      true);
                 Tree expensiveTest =
                     gen.mkApply_V(pos,
@@ -793,42 +828,6 @@ public class TypesAsValuesPhase extends Phase {
             Tree fun = gen.Select(pos, tpVal, defs.TYPE_CAST());
             Tree castCall = gen.mkApply_V(pos, fun, new Tree[] { expr });
             return gen.mkAsInstanceOf(pos, castCall, tp);
-        }
-
-        /**
-         * Return true iff the given type is trivial, that is if it
-         * has neither a prefix, nor type parameters.
-         */
-        private boolean isTrivial(Type tp) {
-            switch (tp) {
-            case TypeRef(_, Symbol sym, Type[] args):
-                if (sym == defs.ARRAY_CLASS)
-                    return isTrivial(args[0]);
-                else
-                    return sym.isStatic() && args.length == 0;
-            case SingleType(_, _):
-            case ThisType(_):
-            case CompoundType(_, _):
-                return false;
-            default:
-                throw Debug.abort("unexpected type", tp);
-            }
-        }
-
-        /**
-         * Return true iff the given type is strongly trivial, that is
-         * if it and all its ancestors are trivial.
-         */
-        private boolean isStronglyTrivial(Type tp) {
-            if (isTrivial(tp)) {
-                Type[] parents = tp.parents();
-                for (int i = 0; i < parents.length; ++i) {
-                    if (!isStronglyTrivial(parents[i]))
-                        return false;
-                }
-                return true;
-            } else
-                return false;
         }
 
         private boolean isSpecial(Type tp) {
@@ -872,7 +871,7 @@ public class TypesAsValuesPhase extends Phase {
                 } else if (sym.isJava()) {
                     assert args.length <= 1
                         : Debug.show(sym) + " " + args.length;
-                    return javaType(pos, sym);
+                    return javaClassType(pos, sym);
                 } else if (!sym.isParameter()) {
                     // Reference to a "global" type.
                     return scalaClassType(pos, tp, owner, env);
@@ -933,7 +932,7 @@ public class TypesAsValuesPhase extends Phase {
             }
         }
 
-        private Tree javaType(int pos, Symbol sym) {
+        private Tree javaClassType(int pos, Symbol sym) {
             Tree constr =
                 gen.mkGlobalRef(pos, defs.JAVACLASSTYPE_JAVACLASSTYPE());
             Tree nameLit = gen.mkSymbolNameLit(pos, sym);
@@ -975,6 +974,9 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         private Tree scalaClassType(int pos, Type tp, Symbol owner, TEnv env) {
+            if (isStronglyTrivial(tp))
+                return javaClassType(pos, tp.symbol());
+
             switch (tp) {
             case TypeRef(Type pre, Symbol sym, Type[] args):
                 Symbol insSym = getInstMethSym(sym);
@@ -982,18 +984,14 @@ public class TypesAsValuesPhase extends Phase {
                     ? gen.Select(pos, gen.mkQualifier(pos, pre), insSym)
                     : gen.Ident(pos, insSym);
 
-                // TODO special case for monomorphic cases
                 Tree[] insArgs;
-                if (true || args.length > 0) {
-                    Tree[] elems = new Tree[args.length];
-                    int[] perm = typeParamsPermutation(sym.typeParams());
-                    for (int i = 0; i < args.length; ++i)
-                        elems[i] = typeAsValue(pos, args[perm[i]], owner, env);
-                    insArgs = new Tree[] {
-                        gen.mkNewArray(pos, defs.TYPE_TYPE(), elems, owner)
-                    };
-                } else
-                    insArgs = Tree.EMPTY_ARRAY;
+                Tree[] elems = new Tree[args.length];
+                int[] perm = typeParamsPermutation(sym.typeParams());
+                for (int i = 0; i < args.length; ++i)
+                    elems[i] = typeAsValue(pos, args[perm[i]], owner, env);
+                insArgs = new Tree[] {
+                    gen.mkNewArray(pos, defs.TYPE_TYPE(), elems, owner)
+                };
 
                 return gen.mkApply_V(pos, preFun, insArgs);
 

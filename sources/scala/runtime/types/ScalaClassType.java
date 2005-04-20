@@ -69,13 +69,14 @@ public class ScalaClassType extends ClassType {
                     || isNonTrivialSubClassType((ScalaClassType)that)));
     }
 
-    public boolean isNonTrivialSubClassType(ScalaClassType that) {
-        ScalaClassType parentCT = myInstantiationFor(that);
+    public boolean isNonTrivialSubClassType(ClassType that) {
+        ScalaClassType thatCT = (ScalaClassType)that;
+        ScalaClassType parentCT = myInstantiationFor(thatCT);
 
         // At this stage, if parentCT is null, it means that the
         // constructors had different prefixes, hence we return false.
         return (parentCT != null)
-            && (parentCT == that || parentCT.hasSubInstantiation(that));
+            && (parentCT == thatCT || parentCT.hasSubInstantiation(thatCT));
     }
 
     // Return true iff the instantiation of THIS is "smaller" than the
