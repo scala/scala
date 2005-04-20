@@ -134,7 +134,7 @@ abstract class Source extends Iterator[Char] {
     var i = 0;
     while( it.hasNext
           && i < (line-1)
-          && Character.LINE_SEPARATOR != it.next.getType ) {
+          && Character.LINE_SEPARATOR != Character.getType(it.next) ) {
             i = i + 1
           }
     if(!it.hasNext) { // this should not happen
