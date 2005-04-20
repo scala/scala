@@ -127,24 +127,25 @@ abstract class Source extends Iterator[Char] {
   // -- methods
   //
 
-  /** convenience method, returns given line from Source */
+  /** convenience method, returns given line (not including newline)
+   *  from Source
+   */
   def getLine(line: Int): String = {
     val buf = new StringBuffer();
     val it = reset;
     var i = 0;
-    while( it.hasNext
-          && i < (line-1)
-          && Character.LINE_SEPARATOR != Character.getType(it.next) ) {
-            i = i + 1
-          }
+
+    while( it.hasNext && i < (line-1))
+      if('\n' == it.next)
+        i = i + 1;
+
     if(!it.hasNext) { // this should not happen
       throw new java.lang.IllegalArgumentException(
         "line "+line+" does not exist?!"
       );
     }
     var ch = it.next;
-    while( it.hasNext
-          && Character.LINE_SEPARATOR != ch ) {
+    while(it.hasNext && '\n' != ch) {
       buf.append( ch );
       ch = it.next;
     }
