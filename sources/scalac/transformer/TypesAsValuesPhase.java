@@ -761,14 +761,14 @@ public class TypesAsValuesPhase extends Phase {
 
                 Tree cheapTest =
                     gen.mkIsInstanceOf(pos, gen.mkLocalRef(pos, val), tp, true);
-                Symbol weakIsInst = defs.SCALACLASSTYPE_WEAKISINSTANCE();
+                Symbol isNonTrivialInst = defs.CLASSTYPE_ISNONTRIVIALINSTANCE();
                 Tree scalaTpVal = gen.mkAsInstanceOf(pos,
                                                      tpVal,
                                                      defs.SCALACLASSTYPE_TYPE(),
                                                      true);
                 Tree expensiveTest =
                     gen.mkApply_V(pos,
-                                  gen.Select(pos, scalaTpVal, weakIsInst),
+                                  gen.Select(pos, scalaTpVal, isNonTrivialInst),
                                   new Tree[] { gen.mkLocalRef(pos, val) });
 
                 Tree bothTests =

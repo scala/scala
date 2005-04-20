@@ -680,12 +680,12 @@ public class Definitions {
         return TYPECONSTRUCTOR_FUNCTIONOUTER;
     }
 
-    private Symbol SCALACLASSTYPE_WEAKISINSTANCE;
-    public Symbol SCALACLASSTYPE_WEAKISINSTANCE() {
-        if (SCALACLASSTYPE_WEAKISINSTANCE == null)
-            SCALACLASSTYPE_WEAKISINSTANCE =
-                loadTerm(SCALACLASSTYPE_CLASS, Names.weakIsInstance);
-        return SCALACLASSTYPE_WEAKISINSTANCE;
+    private Symbol CLASSTYPE_ISNONTRIVIALINSTANCE;
+    public Symbol CLASSTYPE_ISNONTRIVIALINSTANCE() {
+        if (CLASSTYPE_ISNONTRIVIALINSTANCE == null)
+            CLASSTYPE_ISNONTRIVIALINSTANCE =
+                loadTerm(CLASSTYPE_CLASS, Names.isNonTrivialInstance);
+        return CLASSTYPE_ISNONTRIVIALINSTANCE;
     }
 
     private Symbol SCALACLASSTYPE_SETPARENTS;

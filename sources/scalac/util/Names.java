@@ -226,7 +226,7 @@ public class Names {
     public static final Name update = Name.fromString("update");
     public static final Name view = Name.fromString("view");
     public static final Name wait = Name.fromString("wait");
-    public static final Name weakIsInstance = Name.fromString("weakIsInstance");
+    public static final Name isNonTrivialInstance = Name.fromString("isNonTrivialInstance");
     public static final Name xml = Name.fromString("xml");
 
 

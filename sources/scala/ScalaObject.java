@@ -10,7 +10,7 @@
 
 package scala;
 
-import scala.runtime.types.ScalaClassType;
+import scala.runtime.types.ClassType;
 
 /** @meta class extends scala.AnyRef;
  */
@@ -18,7 +18,7 @@ public interface ScalaObject {
     /**
      * Return the Scala type of the object.
      */
-    public ScalaClassType getScalaType();
+    public ClassType getScalaType();
 
     /** This method is needed for optimizing pattern matching expressions
      *  which match on constructors of case classes.

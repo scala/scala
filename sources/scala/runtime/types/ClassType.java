@@ -38,6 +38,11 @@ public abstract class ClassType extends Type {
         return clazz.isInstance(o);
     }
 
+    public boolean isNonTrivialInstance(Object o) {
+        assert isTrivial;       // must be overridden for non-trivial types
+        return true;
+    }
+
     public boolean isSubType(Type that) {
         return (that == Type.Any)
             || (that instanceof ClassType
@@ -48,6 +53,11 @@ public abstract class ClassType extends Type {
 
     protected boolean isSubClassType(ClassType that) {
         return that.clazz.isAssignableFrom(this.clazz);
+    }
+
+    public boolean isNonTrivialSubClassType(ClassType that) {
+        assert isTrivial;       // must be overridden for non-trivial types
+        return true;
     }
 
     protected final boolean isSubCompoundType(CompoundType that) {

@@ -54,22 +54,22 @@ public class ScalaClassType extends ClassType {
     public boolean isInstance(Object o) {
         return super.isInstance(o)
             && (isTrivial
-                || ((ScalaObject)o).getScalaType().weakIsSubScalaClassType(this));
+                || ((ScalaObject)o).getScalaType().isNonTrivialSubClassType(this));
     }
 
-    public boolean weakIsInstance(Object o) {
+    public boolean isNonTrivialInstance(Object o) {
         assert Statistics.incWeakInstanceOf();
-        return ((ScalaObject)o).getScalaType().weakIsSubScalaClassType(this);
+        return ((ScalaObject)o).getScalaType().isNonTrivialSubClassType(this);
     }
 
     protected boolean isSubClassType(ClassType that) {
         return (this == that)
             || (super.isSubClassType(that)
                 && (that.isTrivial
-                    || weakIsSubScalaClassType((ScalaClassType)that)));
+                    || isNonTrivialSubClassType((ScalaClassType)that)));
     }
 
-    private boolean weakIsSubScalaClassType(ScalaClassType that) {
+    public boolean isNonTrivialSubClassType(ScalaClassType that) {
         ScalaClassType parentCT = myInstantiationFor(that);
 
         // At this stage, if parentCT is null, it means that the
