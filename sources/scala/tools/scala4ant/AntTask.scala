@@ -31,6 +31,7 @@ class AntTask extends Javac {
 
     } catch {
       case e:ClassNotFoundException =>
+        Console.println("Cannot run scala4ant.\nIt seems fjbg.jar is not in your CLASSPATH.");
         throw new BuildException("Cannot run scala4ant.\nIt seems fjbg.jar is not in your CLASSPATH.");
     };
 
