@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -89,7 +89,7 @@ object List {
     case head :: tail => head ::: flatten(tail)
   }
 
-  /** Transform a list of pair into a pair of lists.
+  /** Transforms a list of pair into a pair of lists.
    *
    *  @param l the list of pairs to unzip
    *  @return a pair of lists: the first list in the pair contains the list
@@ -567,7 +567,7 @@ sealed trait List[+a] extends Seq[a] {
       else tail1
   };
 
-  /** Remove all elements of the list which satisfy the predicate
+  /** Removes all elements of the list which satisfy the predicate
    *  <code>p</code>. This is like <code>filter</code> with the
    *  predicate inversed.
    *
@@ -782,17 +782,39 @@ sealed trait List[+a] extends Seq[a] {
 
   override def toString() = mkString("List(", ",", ")");
 
-  /** Return a list formed from this list and the specified list
+  /** Returns a list formed from this list and the specified list
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
    *
-   *  @param that must have the same length as the self list.
+   *  @param <code>that</code> must have the same length as the self list.
    *  @return <code>[(a0,b0), ..., (an,bn)]</code> when
    *  <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
    */
   def zip[b](that: List[b]): List[Pair[a,b]] =
     if (this.isEmpty || that.isEmpty) Nil
     else Pair(this.head, that.head) :: this.tail.zip(that.tail);
+
+  /** Returns a list formed from this list and the specified list
+   *  <code>that</code> by associating each element of the former with
+   *  the element at the same position in the latter.
+   *
+   *  @param <code>that</code> may have a different length as the self list.
+   *  @param <code>thisElem</code> is used to fill up the resulting list if
+   *  the self list is shorter than <code>that</code>
+   *  @param <code>thatElem</code> is used to fill up the resulting list if
+   *  <code>that</code> is shorter than the self list
+   *  @return <code>[(a0,b0), ..., (an,bn), (elem,bn+1), ..., (elem,bm)]</code>
+   *  when <code>[a0, ..., an] zip [b0, ..., bm]</code> is invoked where
+   *  <code>m &gt; n</code>.
+   */
+  def zipAll[c >: a, b](that: List[b], thisElem: c, thatElem: b): List[Pair[c,b]] =
+    if (this.isEmpty && that.isEmpty)
+      Nil
+    else {
+      val this1 = if (this.isEmpty) List.make(that.length, thisElem) else this;
+      val that1 = if (that.isEmpty) List.make(this.length, thatElem) else that;
+      Pair(this1.head, that1.head) :: this1.tail.zipAll(that1.tail, thisElem, thatElem)
+    }
 
   /** Computes the union of this list and the given list
    *  <code>that</code>.
@@ -849,10 +871,10 @@ sealed trait List[+a] extends Seq[a] {
  *  @version 1.0, 15/07/2003
  */
 case object Nil extends List[All] with java.io.Serializable {
-    private val serialVersionUID = 0 - 8256821097970055419L;
-    def isEmpty = true;
-    def head: All = error("head of empty list");
-    def tail: List[All] = error("tail of empty list");
+  private val serialVersionUID = 0 - 8256821097970055419L;
+  def isEmpty = true;
+  def head: All = error("head of empty list");
+  def tail: List[All] = error("tail of empty list");
 }
 
 /** A non empty list characterized by a head and a tail.
@@ -861,8 +883,8 @@ case object Nil extends List[All] with java.io.Serializable {
  *  @version 1.0, 15/07/2003
  */
 final case class ::[+b](hd: b, tl: List[b]) extends List[b] with java.io.Serializable {
-    private val serialVersionUID = 0 - 8476791151983527571L;
-    def isEmpty: boolean = false;
-    def head: b = hd;
-    def tail: List[b] = tl;
+  private val serialVersionUID = 0 - 8476791151983527571L;
+  def isEmpty: boolean = false;
+  def head: b = hd;
+  def tail: List[b] = tl;
 }
