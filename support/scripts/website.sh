@@ -389,6 +389,7 @@ function website-build() {
     run cp -a "$resourcesdir/examples/random.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/simpleInterpreter.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/sort.html" "$websitedir/examples/";
+    run cp -a "$resourcesdir/examples/sort1.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/timeofday.html" "$websitedir/examples/";
 }
 
