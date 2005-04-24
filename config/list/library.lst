@@ -210,7 +210,6 @@ util/grammar/TreeRHS.scala
 util/regexp/Base.scala
 util/regexp/PointedHedgeExp.scala
 util/regexp/SyntaxError.scala
-util/regexp/WildcardBase.scala
 util/regexp/WordExp.scala
 util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
