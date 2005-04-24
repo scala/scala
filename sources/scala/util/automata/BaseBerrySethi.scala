@@ -17,10 +17,6 @@ abstract class BaseBerrySethi {
 
   protected var pos = 0;;
 
-  // maps a letter to an Integer ( the position )
-  // is not *really* needed (preorder determines position!)
-  protected var posMap: mutable.HashMap[RegExp, Int] = _;
-
   protected var globalFirst: immutable.Set[Int] = _;
 
   // results which hold all info for the NondetWordAutomaton
@@ -85,6 +81,7 @@ abstract class BaseBerrySethi {
   // precondition: pos is final
   //               pats are successor patterns of a Sequence node
   protected def compFollow(r: Seq[RegExp]): immutable.Set[Int] = {
+    Console.println("compFollow( "+r.toList);
     var first = emptySet;
     var fol = emptySet;
     if( r.length > 0 ) {//non-empty expr
@@ -94,15 +91,20 @@ abstract class BaseBerrySethi {
       fol = fol + pos; // don't modify pos !
       while( it.hasNext ) {
         val p = it.next;
+        Console.println("  p now = "+p);
         first = compFollow1( fol, p );
+        Console.println("  first = "+first);
+        Console.println("  fol before = "+fol);
         fol = if( p.isNullable )
           fol incl first
         else
           first;
+        Console.println("  fol after = "+fol);
       }
     }
-    this.follow.update( 0, first );
-    return first;
+    this.follow.update( 0, fol /*first*/ );
+    Console.println("follow(0) = "+fol);
+    return fol;
   }
 
   /** returns the first set of an expression, setting the follow set along
@@ -110,7 +112,7 @@ abstract class BaseBerrySethi {
    */
   protected def compFollow1( fol1:immutable.Set[Int], r:RegExp): immutable.Set[Int] = {
     var fol = fol1;
-    //System.out.println("compFollow1("+fol+","+pat+")");
+    //System.out.println("compFollow1("+fol+","+r+")");
     r match {
 
       case x:Alt =>

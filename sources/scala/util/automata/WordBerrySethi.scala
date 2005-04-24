@@ -30,15 +30,19 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   protected var initials:immutable.Set[Int] = _ ;
   //NondetWordAutom revNfa ;
 
+  // maps a letter to an Integer ( the position )
+  // is not *really* needed (preorder determines position!)
+  //protected var posMap: mutable.HashMap[RegExp, Int] = _;
+
   /** computes first( r ) where the word regexp r */
   protected override def compFirst(r: RegExp): immutable.Set[Int] = r match {
-    case x:Letter => emptySet + posMap(x);  // singleton set
+    case x:Letter => emptySet + x.pos ;//posMap(x);  // singleton set
     case _ => super.compFirst(r);
   }
 
   /** computes last( r ) where the word regexp r */
   protected override def compLast(r: RegExp): immutable.Set[Int] = r match {
-    case x:Letter => emptySet + posMap(x) // singleton set
+    case x:Letter => emptySet + x.pos; //posMap(x) // singleton set
     case _ => super.compLast(r)
   }
 
@@ -49,7 +53,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     r match {
 
       case x:Letter =>
-        val i = posMap( x );
+        //val i = posMap( x );
+        val i = x.pos;
         this.follow.update( i, fol1 );
         emptySet + i;
 
@@ -63,8 +68,9 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
 
   /** called at the leaves of the regexp */
-  protected def  seenLabel( r:RegExp, i:Int, label: _labelT ): Unit = {
-    this.posMap.update( r, i );
+  protected def seenLabel( r:RegExp, i:Int, label: _labelT ): Unit = {
+    Console.println("seenLabel (1)");
+    //this.posMap.update( r, i );
     this.labelAt = this.labelAt.update( i, label );
     //@ifdef if( label != Wildcard ) {
       this.labels += label ;
@@ -72,15 +78,17 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   // overriden in BindingBerrySethi
-  protected def seenLabel( r: RegExp, label: _labelT ): Unit = {
+  protected def seenLabel( r: RegExp, label: _labelT ): Int = {
+    //Console.println("seenLabel (2)");
     pos = pos + 1;
     seenLabel( r, pos, label );
+    pos
   }
 
 
   // todo: replace global variable pos with acc
   override def traverse(r: RegExp): Unit = r match {
-      case Letter( label ) => seenLabel( r, label ) ;
+      case a @ Letter( label ) => a.pos = seenLabel( r, label ) ;
       case _               => super.traverse(r)
   }
 
@@ -97,7 +105,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   protected def initialize(subexpr: Seq[RegExp]): Unit = {
-    this.posMap = new mutable.HashMap[RegExp,Int]();
+    //this.posMap = new mutable.HashMap[RegExp,Int]();
     this.labelAt = new immutable.TreeMap[Int,_labelT]();
     this.follow = new mutable.HashMap[Int,immutable.Set[Int]]();
     this.labels = new mutable.HashSet[_labelT]();
@@ -129,7 +137,10 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   protected def collectTransitions(): Unit = {  // make transitions
+    Console.println("WBS.collectTrans, this.follow.keys = "+this.follow.keys);
+    Console.println("WBS.collectTrans, pos = "+this.follow.keys);
     var j = 0; while( j < pos ) {
+      Console.println("WBS.collectTrans, j = "+j);
       val fol = this.follow( j );
       val it = fol.elements;
       while( it.hasNext ) {
