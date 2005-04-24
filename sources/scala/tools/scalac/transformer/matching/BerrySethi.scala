@@ -234,6 +234,7 @@ class BerrySethi(val unit: CompilationUnit ) {
   // starts from the right-to-left
   // precondition: pos is final
   //               pats are successor patterns of a Sequence node
+  // returns first-set (== follow set of initial state)
   def compFollow(pats: Array[Tree]): TreeSet = {
     var first:TreeSet  = null;
     this.recVars = new HashMap();
@@ -253,13 +254,8 @@ class BerrySethi(val unit: CompilationUnit ) {
 
       } while( i > 0 );
     }
-    if( null == first )
-      first = new TreeSet();
-    else {
-      first = fol;
-    }
-    this.follow.put(new Integer( 0 ), first);
-    return first;
+    this.follow.put(new Integer( 0 ), fol);
+    return fol;
   }
 
   var recVars: HashMap = _;

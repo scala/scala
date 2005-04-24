@@ -21,10 +21,13 @@ package scala.tools.scalac.transformer.matching {
 
 class BindingBerrySethi(unit:CompilationUnit)  extends BerrySethi(unit) {
 
+  // variables
 
   var deltaqRev: Array[HashMap ] = _;    // delta of Rev
   var defaultqRev:Array[Vector] = _;  // default transitions of Rev
   var qbinders:Array[Vector] = _;  // transitions <-> variables
+  var revnfa:  NondetWordAutom = _ ;
+  var varAt: HashMap = _;   // chi:    Positions -> Vars (Symbol)
 
   override def makeTransition(srcI: Integer, destI: Integer, label: Label): Unit = {
     val src  = srcI.intValue() ;
@@ -50,8 +53,6 @@ class BindingBerrySethi(unit:CompilationUnit)  extends BerrySethi(unit) {
     revArrows.add( srcI );
   }
 
-  var  revnfa:  NondetWordAutom = _ ;
-
   override def seenLabel( pat:Tree , label:Label  ): Unit = {
     var i = new Integer({pos = pos + 1; pos} );
     seenLabel( pat, i, label );
@@ -71,8 +72,6 @@ class BindingBerrySethi(unit:CompilationUnit)  extends BerrySethi(unit) {
         this.varAt.put( i, binders );
     }
   }
-
-  var varAt: HashMap = _;   // chi:    Positions -> Vars (Symbol)
 
    override def initialize( pats:Array[Tree]  ): Unit = {
     this.varAt = new HashMap(); // Xperiment
