@@ -11,8 +11,6 @@ import scala.collection.{ immutable, mutable, Set, Map };
  */
 abstract class NondetWordAutom[T <: AnyRef] {
 
-  //type _labelT <: AnyRef ;
-
   val nstates:  Int;
   val labels: Seq[T];
 
