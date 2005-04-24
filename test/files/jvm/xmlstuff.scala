@@ -1,8 +1,7 @@
 import java.io.StringReader;
 import org.xml.sax.InputSource;
-import scala.xml.nobinding.XML;
 import scala.testing.UnitTest._ ;
-import scala.xml.{Node,NodeSeq,Elem,Text};
+import scala.xml.{Node, NodeSeq, Elem, Text, XML};
 
 object Test with Application {
 

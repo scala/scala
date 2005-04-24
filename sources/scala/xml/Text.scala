@@ -9,22 +9,19 @@
 
 package scala.xml;
 
-import scala.collection.immutable ;
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML
  *  representations
  * @author Burak Emir
  * @param text the text contained in this node, may not be null.
-**/
-
-
+ */
 case class Text[+A]( data: A ) extends SpecialNode {
-
-  /** @deprecated
-   */
-  def text = toString();
 
   if(null == data)
     throw new java.lang.NullPointerException("tried to construct Text with null");
+
+  /** @deprecated
+   */
+  def text = data.toString();
 
   final override def typeTag$:Int = -1;
 
@@ -42,6 +39,7 @@ case class Text[+A]( data: A ) extends SpecialNode {
   override def hashCode() = data.hashCode();
 
   /** returns text, with some characters escaped according to XML spec */
-  override def toString() = Utility.escape( data.toString() );
+  def toString(sb:StringBuffer) =
+    Utility.escape( data.toString(), sb );
 
 }

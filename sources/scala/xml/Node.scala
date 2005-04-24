@@ -34,9 +34,6 @@ abstract class Node extends NodeSeq {
   /** label of this node. I.e. "foo" for &lt;foo/&gt;) */
   def label: String;
 
-  /** the namespace of this node */
-  //final def namespace: String = scope.getURI(prefix);
-
   /** used internally. Text = -1 PI = -2 Comment = -3 EntityRef = -5    */
   def typeTag$: Int = 0;
 
@@ -76,17 +73,16 @@ abstract class Node extends NodeSeq {
   def descendant_or_self: List[Node] = this :: descendant;
 
   /** structural equality */
-  override def equals(x: Any): Boolean = {
-    x match {
+  override def equals(x: Any): Boolean = x match {
     case that: Node =>
-      (that.label == this.label )
+      (that.prefix == this.prefix )
+      &&(that.label == this.label )
       &&(that.attributes ==  this.attributes)
-      && that.child.sameElements(this.child)// sameElements
+      && that.child.sameElements(this.child) // sameElements
       case _ => false
-    }
   }
   /** returns a hashcode */
-  override def hashCode(): Int = 0;
+  override def hashCode(): Int;
     //Utility.hashCode(namespace, label, attributes.hashCode(), child);
 
 

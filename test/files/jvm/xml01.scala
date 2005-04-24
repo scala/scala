@@ -1,7 +1,6 @@
 import java.io.StringReader;
 import org.xml.sax.InputSource;
 import scala.xml._;
-import scala.xml.nobinding._;
 import scala.util.logging._;
 
 import scala.testing.UnitTest._ ;
@@ -18,8 +17,9 @@ object Test with Application {
 
   val c = new Node {
     def label = "hello";
-    //def namespace = "";
-    def child = List(Elem("","world",e,sc));
+    override def hashCode() =
+      Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child);
+    def child = Elem(null, "world", e, sc);
     //def attributes = e;
   };
 
@@ -36,10 +36,10 @@ object Test with Application {
   val i = new InputSource( new StringReader( x2 ));
   val x2p = XML.load( i );
 
-  assertEquals(x2p, Elem("","book",e,sc,
-                          Elem("","author",e,sc,Text("Peter Buneman")),
-                          Elem("","author",e,sc,Text("Dan Suciu")),
-                          Elem("","title",e,sc,Text("Data on ze web"))));
+  assertEquals(x2p, Elem(null,"book",e,sc,
+                          Elem(null,"author",e,sc,Text("Peter Buneman")),
+                          Elem(null,"author",e,sc,Text("Dan Suciu")),
+                          Elem(null,"title",e,sc,Text("Data on ze web"))));
 
   val xmlFile2 = "<bib><book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book><book><author>John Mitchell</author><title>Foundations of Programming Languages</title></book></bib>";
   val isrc2 = new InputSource( new StringReader( xmlFile2 ) );
@@ -49,9 +49,9 @@ object Test with Application {
   Console.println("xpath \\");
 
 
-  assertSameElements( parsedxml1 \ "_" ,    List( Elem("","world",e,sc) ) );
+  assertSameElements( parsedxml1 \ "_" ,    List( Elem(null,"world",e,sc) ) );
 
-  assertSameElements( parsedxml1 \ "world", List( Elem("","world",e,sc) ) );
+  assertSameElements( parsedxml1 \ "world", List( Elem(null,"world",e,sc) ) );
 
 /*
   Console.println( parsedxml2 \ "_" );
@@ -65,13 +65,13 @@ object Test with Application {
       parsedxml2 \ "_" ,
 
       List(
-        Elem("","book", e,sc,
-             Elem("","author",e,sc,Text("Peter Buneman")),
-             Elem("","author",e,sc,Text("Dan Suciu")),
-             Elem("","title",e,sc,Text("Data on ze web"))),
-        Elem("","book",e,sc,
-             Elem("","author",e,sc,Text("John Mitchell")),
-             Elem("","title",e,sc,Text("Foundations of Programming Languages"))))
+        Elem(null,"book", e,sc,
+             Elem(null,"author",e,sc,Text("Peter Buneman")),
+             Elem(null,"author",e,sc,Text("Dan Suciu")),
+             Elem(null,"title",e,sc,Text("Data on ze web"))),
+        Elem(null,"book",e,sc,
+             Elem(null,"author",e,sc,Text("John Mitchell")),
+             Elem(null,"title",e,sc,Text("Foundations of Programming Languages"))))
   );
   assertEquals( (parsedxml2 \ "author").length, 0 );
 
@@ -79,13 +79,13 @@ object Test with Application {
       parsedxml2 \ "book",
 
       List(
-        Elem("","book",e,sc,
-             Elem("","author",e,sc,Text("Peter Buneman")),
-             Elem("","author",e,sc,Text("Dan Suciu")),
-             Elem("","title",e,sc,Text("Data on ze web"))),
-        Elem("","book",e,sc,
-             Elem("","author",e,sc,Text("John Mitchell")),
-             Elem("","title",e,sc,Text("Foundations of Programming Languages")))
+        Elem(null,"book",e,sc,
+             Elem(null,"author",e,sc,Text("Peter Buneman")),
+             Elem(null,"author",e,sc,Text("Dan Suciu")),
+             Elem(null,"title",e,sc,Text("Data on ze web"))),
+        Elem(null,"book",e,sc,
+             Elem(null,"author",e,sc,Text("John Mitchell")),
+             Elem(null,"title",e,sc,Text("Foundations of Programming Languages")))
       )
   );
 
@@ -94,11 +94,11 @@ object Test with Application {
       parsedxml2 \ "_" \ "_",
 
     List(
-      Elem("","author",e,sc,Text("Peter Buneman")),
-      Elem("","author",e,sc,Text("Dan Suciu")),
-      Elem("","title",e,sc,Text("Data on ze web")),
-      Elem("","author",e,sc,Text("John Mitchell")),
-      Elem("","title",e,sc,Text("Foundations of Programming Languages"))
+      Elem(null,"author",e,sc,Text("Peter Buneman")),
+      Elem(null,"author",e,sc,Text("Dan Suciu")),
+      Elem(null,"title",e,sc,Text("Data on ze web")),
+      Elem(null,"author",e,sc,Text("John Mitchell")),
+      Elem(null,"title",e,sc,Text("Foundations of Programming Languages"))
     )
   );
 
@@ -107,9 +107,9 @@ object Test with Application {
       parsedxml2 \ "_" \ "author",
 
       List(
-        Elem("","author",e,sc,Text("Peter Buneman")),
-        Elem("","author",e,sc,Text("Dan Suciu")),
-        Elem("","author",e,sc,Text("John Mitchell"))
+        Elem(null,"author",e,sc,Text("Peter Buneman")),
+        Elem(null,"author",e,sc,Text("Dan Suciu")),
+        Elem(null,"author",e,sc,Text("John Mitchell"))
       )
 
   );
@@ -123,9 +123,9 @@ object Test with Application {
       parsedxml2 \\ "author",
 
       List(
-        Elem("","author",e,sc,Text("Peter Buneman")),
-        Elem("","author",e,sc,Text("Dan Suciu")),
-        Elem("","author",e,sc,Text("John Mitchell"))
+        Elem(null,"author",e,sc,Text("Peter Buneman")),
+        Elem(null,"author",e,sc,Text("Dan Suciu")),
+        Elem(null,"author",e,sc,Text("John Mitchell"))
       )
 
  );
@@ -134,30 +134,30 @@ object Test with Application {
       (new NodeSeq { val theSeq = List( parsedxml2 ) }) \\ "_",
 
       List(
-        Elem("","bib",e,sc,
-             Elem("","book",e,sc,
-                  Elem("","author",e,sc,Text("Peter Buneman")),
-                  Elem("","author",e,sc,Text("Dan Suciu")),
-                  Elem("","title",e,sc,Text("Data on ze web"))),
-             Elem("","book",e,sc,
-                  Elem("","author",e,sc,Text("John Mitchell")),
-                  Elem("","title",e,sc,Text("Foundations of Programming Languages")))),
-        Elem("","book",e,sc,
-             Elem("","author",e,sc,Text("Peter Buneman")),
-             Elem("","author",e,sc,Text("Dan Suciu")),
-             Elem("","title",e,sc,Text("Data on ze web"))),
-        Elem("","author",e,sc,Text("Peter Buneman")),
+        Elem(null,"bib",e,sc,
+             Elem(null,"book",e,sc,
+                  Elem(null,"author",e,sc,Text("Peter Buneman")),
+                  Elem(null,"author",e,sc,Text("Dan Suciu")),
+                  Elem(null,"title",e,sc,Text("Data on ze web"))),
+             Elem(null,"book",e,sc,
+                  Elem(null,"author",e,sc,Text("John Mitchell")),
+                  Elem(null,"title",e,sc,Text("Foundations of Programming Languages")))),
+        Elem(null,"book",e,sc,
+             Elem(null,"author",e,sc,Text("Peter Buneman")),
+             Elem(null,"author",e,sc,Text("Dan Suciu")),
+             Elem(null,"title",e,sc,Text("Data on ze web"))),
+        Elem(null,"author",e,sc,Text("Peter Buneman")),
         Text("Peter Buneman"),
-        Elem("","author",e,sc,Text("Dan Suciu")),
+        Elem(null,"author",e,sc,Text("Dan Suciu")),
         Text("Dan Suciu"),
-        Elem("","title",e,sc,Text("Data on ze web")),
+        Elem(null,"title",e,sc,Text("Data on ze web")),
         Text("Data on ze web"),
-        Elem("","book",e,sc,
-             Elem("","author",e,sc,Text("John Mitchell")),
-             Elem("","title",e,sc,Text("Foundations of Programming Languages"))),
-        Elem("","author",e,sc,Text("John Mitchell")),
+        Elem(null,"book",e,sc,
+             Elem(null,"author",e,sc,Text("John Mitchell")),
+             Elem(null,"title",e,sc,Text("Foundations of Programming Languages"))),
+        Elem(null,"author",e,sc,Text("John Mitchell")),
         Text("John Mitchell"),
-        Elem("","title",e,sc,Text("Foundations of Programming Languages")),
+        Elem(null,"title",e,sc,Text("Foundations of Programming Languages")),
         Text("Foundations of Programming Languages")
       )
   );
@@ -168,7 +168,7 @@ object Test with Application {
       parsedxml2 \\ "title",
 
       List(
-        Elem("","title",e,sc,Text("Data on ze web")),
-        Elem("","title",e,sc,Text("Foundations of Programming Languages")))
+        Elem(null,"title",e,sc,Text("Data on ze web")),
+        Elem(null,"title",e,sc,Text("Foundations of Programming Languages")))
   );
 }

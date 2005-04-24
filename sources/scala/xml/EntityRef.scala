@@ -9,29 +9,30 @@
 
 package scala.xml;
 
-import scala.collection.immutable ;
-/** an XML node for text (PCDATA). Used in both non-bound and bound XML
- *  representations
- * @author Burak Emir
+/** an XML node for entity references
+ *
+ * @author buraq
  * @param text the text contained in this node
-**/
+ **/
 
 case class EntityRef( entityName:String ) extends SpecialNode {
 
   final override def typeTag$:Int = -5;
 
+  /** structural equality */
+  override def equals(x: Any): Boolean = x match {
+    case EntityRef(x) => x.equals(entityName);
+    case _ => false
+  }
+
   /** the constant "#ENTITY"
   */
   def label    = "#ENTITY";
 
-  final override def equals(x:Any) = x match {
-    case EntityRef( s ) => entityName.equals( s );
-    case _ => false;
-  }
-
   override def hashCode() = entityName.hashCode();
 
-  /** returns text, with some characters escaped according to XML spec */
-  final override def toString():String = "&"+entityName+";";
+  /** appends "&amp; entityName;" to this stringbuffer */
+  def toString(sb:StringBuffer) =
+    sb.append("&").append(entityName).append(";");
 
 }

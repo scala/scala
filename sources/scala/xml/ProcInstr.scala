@@ -18,6 +18,11 @@ package scala.xml;
 
 case class ProcInstr(target:String, text:String) extends SpecialNode {
 
+  if( !Parsing.isName( target ) )
+    throw new IllegalArgumentException(target+" must be an XML Name");
+  else if( text.indexOf("?>" ) != -1 )
+    throw new IllegalArgumentException(text+" may not contain \"?>\"");
+
   final override def typeTag$:Int = -2;
 
   val z:Seq[Char] = target; z match {
@@ -25,14 +30,11 @@ case class ProcInstr(target:String, text:String) extends SpecialNode {
       throw new IllegalArgumentException(target+" is reserved");
     case _ =>
   }
-  if( !Parsing.isName( target ) )
-    throw new IllegalArgumentException(target+" must be an XML Name");
-  else if( text.indexOf("?>" ) != -1 )
-    throw new IllegalArgumentException(text+" may not contain \"?>\"");
 
-  final override def equals(x:Any) = x match {
-    case x @ ProcInstr( t2, s2 ) => target.equals( t2 ) && text.equals( s2 );
-    case _ => false;
+  /** structural equality */
+  override def equals(x: Any): Boolean = x match {
+    case ProcInstr(x,y) => x.equals(target) && y.equals(text);
+    case _ => false
   }
 
   /** the constant "#PI" */
@@ -41,15 +43,18 @@ case class ProcInstr(target:String, text:String) extends SpecialNode {
   /** hashcode for this PI */
   override def hashCode() = target.hashCode() * 7 + text.hashCode();
 
-  /** returns &quot;&lt;?&quot;+target+(&quot; &quot;+text)?+&quot;?&gt;&quot; */
-  final override def toString() = {
-    val sb = new StringBuffer("<?");
-    sb.append(target);
+  /** appends &quot;&lt;?&quot; target (&quot; &quot;+text)?+&quot;?&gt;&quot;
+   *  to this stringbuffer.
+   */
+  def toString(sb: StringBuffer) = {
+    sb
+    .append("<?")
+    .append(target);
     if( text.length() > 0 ) {
-        sb.append(' ');
-        sb.append(text);
+      sb
+      .append(' ')
+      .append(text);
     };
     sb.append("?>");
-    sb.toString()
   }
 }

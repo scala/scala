@@ -14,13 +14,18 @@ package scala.xml;
 **/
 abstract class SpecialNode extends Node {
 
-  /** always Node.EmptyNamespace */
-  //final def namespace = Node.EmptyNamespace;
-
   /** always empty */
-  //final def attributes = Node.NoAttributes;
+  final override def attributes = Null;
+
+  /** always Node.EmptyNamespace */
+  final override def namespace = null;
 
   /** always empty */
   final def child = Nil;
+
+  final override def toString(): String =
+    toString(new StringBuffer()).toString();
+
+  def toString(sb:StringBuffer): StringBuffer ;
 
 }

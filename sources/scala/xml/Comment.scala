@@ -15,27 +15,29 @@ import scala.collection.immutable ;
  *
  * @author Burak Emir
  * @param text text contained in this node, may not contain "--"
-**/
+ */
 
-case class Comment( text:String ) extends SpecialNode {
+case class Comment(text: String) extends SpecialNode {
 
   final override def typeTag$:Int = -3;
 
   if( text.indexOf("--" ) != -1 )
     throw new IllegalArgumentException("text containts \"--\"");
 
-  final override def equals(x:Any) = x match {
-    case Comment( s ) => text.equals( s );
-    case _ => false;
+  /** structural equality */
+  override def equals(x: Any): Boolean = x match {
+    case Comment(x) => x.equals(text);
+      case _ => false
   }
 
-  /** the constant "#REM" */
+  /** the constant &quot;#REM&quot; */
   def label    = "#REM";
 
   /** hashcode for this Comment */
   override def hashCode() = text.hashCode();
 
-  /** returns "<!--"+text+"-->" */
-  final override def toString() = "<!--"+text+"-->";
-
+  /** appends &quot;<!-- text -->&quot; to this stringbuffer */
+  def toString(sb: StringBuffer) = {
+    sb.append("<!--").append(text).append("-->")
+  }
 }

@@ -215,17 +215,12 @@ util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
 
 xml/Comment.scala
-xml/DocType.scala
 xml/Elem.scala
 xml/EntityRef.scala
-xml/ExternalID.scala
-xml/FactoryAdapter.scala
-xml/LoggedNodeFactory.scala
 xml/MetaData.scala
 xml/NamespaceBinding.scala
 xml/Node.scala
 xml/NodeBuffer.scala
-xml/NodeFactory.scala
 xml/NodeSeq.scala
 #xml/NodeTraverser.scala
 xml/Null.scala
@@ -239,23 +234,28 @@ xml/TextBuffer.scala
 xml/TopScope.scala
 xml/UnprefixedAttribute.scala
 xml/Utility.scala
+xml/XML.scala
 
 xml/dtd/ContentModel.scala
+xml/dtd/DocType.scala
 xml/dtd/Decl.scala
+xml/dtd/ExternalID.scala
 xml/dtd/Parser.scala
 xml/dtd/Scanner.scala
 xml/dtd/Tokens.scala
 xml/dtd/Validation.scala
 xml/dtd/ValidationException.scala
 
-xml/nobinding/NoBindingFactoryAdapter.scala
-xml/nobinding/XML.scala
+xml/factory/NodeFactory.scala
+xml/factory/LoggedNodeFactory.scala
 
 xml/parsing/ConstructingHandler.scala
 xml/parsing/ConstructingParser.scala
 xml/parsing/FatalError.scala
 xml/parsing/MarkupHandler.scala
 xml/parsing/MarkupParser.scala
+xml/parsing/FactoryAdapter.scala
+xml/parsing/NoBindingFactoryAdapter.scala
 xml/path/Expression.scala
 
 xml/transform/BasicTransformer.scala
