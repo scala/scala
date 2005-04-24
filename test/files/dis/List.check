@@ -43,6 +43,7 @@ sealed trait List[+a]() extends scala.Seq[a] with scala.ScalaObject {
     def mkString(java.lang.String, java.lang.String, java.lang.String): java.lang.String;
     override def toString(): java.lang.String;
     def zip[b](scala.List[b]): scala.List[scala.Tuple2[a, b]];
+    def zipAll[c >: a, b](scala.List[b], c, b): scala.List[scala.Tuple2[c, b]];
     def union[b >: a](scala.List[b]): scala.List[b];
     def diff[b >: a](scala.List[b]): scala.List[b];
     def intersect[b >: a](scala.List[b]): scala.List[b];
