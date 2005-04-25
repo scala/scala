@@ -412,6 +412,15 @@ object testWR  {
                 assertEquals( doit6( s10 ), "decimal number");
     }
 
+    def  test8: Unit = {
+      Console.println("testWR_8");
+
+      assertTrue( List('d','c').match {
+        case List('a'*, 'd'|'e', 'c'*) => true
+        case _                         => false
+      });
+    }
+
   def test7:Unit = {
     Console.println("testWR_7");
     assertEquals( List(1,2) match {
@@ -426,7 +435,8 @@ object testWR  {
         test4;
         test5;
         test6;
-      test7;
+        test7;
+        test8;
     }
 
 
