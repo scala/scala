@@ -32,7 +32,11 @@ public class CompoundType extends Type {
     }
 
     public Array newArray(int size) {
-        throw new Error("cannot create arrays of compound types");
+        if (Type.unsafeArraysAllowed.get() == java.lang.Boolean.TRUE)
+            return (Array)
+                java.lang.reflect.Array.newInstance(components[0].clazz, size);
+        else
+            throw new Error("cannot create arrays of compound types");
     }
 
     public Object defaultValue() {

@@ -43,6 +43,18 @@ abstract public class Type implements java.io.Serializable {
         assert Statistics.incInstances(getClass().getName(), this);
     }
 
+    protected static ThreadLocal unsafeArraysAllowed = new BooleanThreadLocal();
+
+    /*
+     * Allow (or not) the creation of "unsafe" arrays for the current
+     * thread.
+     */
+    public static void allowUnsafeArrays(boolean allow) {
+        unsafeArraysAllowed.set(allow
+                                ? java.lang.Boolean.TRUE
+                                : java.lang.Boolean.FALSE);
+    }
+
     /** @meta method [?T](scala.Int) scala.Array[?T]; */
     abstract public Array newArray(int size);
 
@@ -139,5 +151,11 @@ abstract public class Type implements java.io.Serializable {
             h = FNV_Hash.hashStep(h, PearsonHash.hash8(types[i].hashCode()));
 
         return h;
+    }
+}
+
+class BooleanThreadLocal extends ThreadLocal {
+    protected Object initialValue() {
+        return java.lang.Boolean.TRUE;
     }
 }

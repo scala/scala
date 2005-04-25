@@ -24,7 +24,12 @@ import scala.runtime.RunTime;
 
 abstract public class SpecialType extends Type {
     public Array newArray(int size) {
-        throw new Error("cannot create arrays of special types");
+        if (Type.unsafeArraysAllowed.get() == java.lang.Boolean.TRUE)
+            return (Array)
+                java.lang.reflect.Array.newInstance(Object.class, size);
+        else
+            throw new Error("cannot create arrays of special type "
+                            + "(" + getClass().getName() + ")");
     }
 
     public Object defaultValue() {

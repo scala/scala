@@ -21,7 +21,11 @@ public class SingleType extends Type {
     }
 
     public Array newArray(int size) {
-        throw new Error("cannot create array of single types");
+        if (Type.unsafeArraysAllowed.get() == java.lang.Boolean.TRUE)
+            return (Array)
+                java.lang.reflect.Array.newInstance(instance.getClass(), size);
+        else
+            throw new Error("cannot create array of single types");
     }
 
     public Object defaultValue() {
