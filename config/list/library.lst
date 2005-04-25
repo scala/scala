@@ -223,16 +223,12 @@ xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeSeq.scala
 #xml/NodeTraverser.scala
-xml/Null.scala
 xml/Parsing.scala
-xml/PrefixedAttribute.scala
 xml/PrettyPrinter.scala
 xml/ProcInstr.scala
 xml/SpecialNode.scala
 xml/Text.scala
 xml/TextBuffer.scala
-xml/TopScope.scala
-xml/UnprefixedAttribute.scala
 xml/Utility.scala
 xml/XML.scala
 
@@ -256,6 +252,8 @@ xml/parsing/MarkupHandler.scala
 xml/parsing/MarkupParser.scala
 xml/parsing/FactoryAdapter.scala
 xml/parsing/NoBindingFactoryAdapter.scala
+xml/parsing/TokenTests.scala
+
 xml/path/Expression.scala
 
 xml/transform/BasicTransformer.scala
