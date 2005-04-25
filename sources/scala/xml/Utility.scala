@@ -16,7 +16,7 @@ import scala.collection.mutable;
  * Utility functions for processing instances of bound and not bound XML
  * classes, as well as escaping text nodes
  */
-object Utility {
+object Utility with parsing.TokenTests {
 
   def view(s: String): Text[String] = Text(s);
 

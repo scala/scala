@@ -26,7 +26,7 @@ class ExternalID ;
 
 case class SystemID( systemLiteral:String ) extends ExternalID {
 
-  if( !Parsing.checkSysID( systemLiteral ) )
+  if( !Utility.checkSysID( systemLiteral ) )
     throw new IllegalArgumentException(
       "can't use both \" and ' in systemLiteral"
     );
@@ -43,11 +43,11 @@ case class SystemID( systemLiteral:String ) extends ExternalID {
 **/
 case class PublicID( publicLiteral:String, systemLiteral:String ) extends ExternalID {
 
-  if( !Parsing.checkPubID( publicLiteral ))
+  if( !Utility.checkPubID( publicLiteral ))
     throw new IllegalArgumentException(
       "publicLiteral must consist of PubidChars"
     );
-  if( !Parsing.checkSysID( systemLiteral ) )
+  if( !Utility.checkSysID( systemLiteral ) )
     throw new IllegalArgumentException(
       "can't use both \" and ' in systemLiteral"
     );

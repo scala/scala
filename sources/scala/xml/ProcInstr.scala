@@ -18,7 +18,7 @@ package scala.xml;
 
 case class ProcInstr(target:String, text:String) extends SpecialNode {
 
-  if( !Parsing.isName( target ) )
+  if( !Utility.isName( target ) )
     throw new IllegalArgumentException(target+" must be an XML Name");
   else if( text.indexOf("?>" ) != -1 )
     throw new IllegalArgumentException(text+" may not contain \"?>\"");

@@ -8,7 +8,9 @@
 \*                                                                      */
 package scala.xml ;
 
-/** helper functions for parsing XML fragments */
+/** DEPRECATED - use either parsing.TokenTests, or Utilty (helper functions
+ *  for parsing XML fragments ).
+ */
 object Parsing {
 
   /** (#x20 | #x9 | #xD | #xA) */

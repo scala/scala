@@ -19,7 +19,7 @@ package scala.xml.dtd;
 
 case class DocType( name:String, extID:ExternalID, intSubset:Seq[dtd.Decl]) {
 
-  if( !Parsing.isName( name ) )
+  if( !Utility.isName( name ) )
     throw new IllegalArgumentException(name+" must be an XML Name");
 
   /** hashcode for this processing instruction */

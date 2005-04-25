@@ -61,7 +61,7 @@ case class NotationDecl( name:String, tpe:String ) extends MarkupDecl;
 
 /** a parsed entity reference */
 case class PEReference(ent:String) extends Decl {
-  if( !Parsing.isName( ent ))
+  if( !Utility.isName( ent ))
     throw new IllegalArgumentException("ent must be an XML Name");
 
   final override def toString() = "%"+ent+";"

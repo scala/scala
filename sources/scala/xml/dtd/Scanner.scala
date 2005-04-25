@@ -1,7 +1,9 @@
 package scala.xml.dtd ;
 
-/** Scanner for regexps (content models in DTD element declarations) */
-class Scanner with Tokens {
+/** Scanner for regexps (content models in DTD element declarations)
+ *  todo: cleanup
+ */
+class Scanner with Tokens with parsing.TokenTests {
 
   //                                                   zzz   constants   zzz
   final val ENDCH = '\u0000';
@@ -45,33 +47,39 @@ class Scanner with Tokens {
     val jt = ds.elements; while( jt.hasNext ) { acc( jt.next ) }
   }
 
+  /*
   final def isSpace = c match {
     case  '\u0020' | '\u0009' | '\u000D' | '\u000A' => true
     case _ => false;
   }
+  */
 
-  final def readToken:int = if( isSpace ) {
-    while( isSpace ) { it.next }; S
-  } else c match {
-    case '('   => next; LPAREN
-    case ')'   => next; RPAREN
-    case ','   => next; COMMA
-    case '*'   => next; STAR
-    case '+'   => next; PLUS
-    case '?'   => next; OPT
-    case '|'   => next; CHOICE
-    case '#'   => next; accS( "PCDATA" ); TOKEN_PCDATA
-    case ENDCH => END;
-    case _     =>
-      if( Parsing.isNameStart( c ) )      name; // NAME
-      else {
-        error("unexpected character:"+c); END
+  final def readToken:int =
+    if(isSpace(c)) {
+      while( isSpace(c) ) {
+        c = it.next;
       }
-  }
+      S
+    } else c match {
+      case '('   => next; LPAREN
+      case ')'   => next; RPAREN
+      case ','   => next; COMMA
+      case '*'   => next; STAR
+      case '+'   => next; PLUS
+      case '?'   => next; OPT
+      case '|'   => next; CHOICE
+      case '#'   => next; accS( "PCDATA" ); TOKEN_PCDATA
+      case ENDCH => END;
+      case _     =>
+        if( isNameStart( c ) )      name; // NAME
+        else {
+          error("unexpected character:"+c); END
+        }
+    }
 
   final def name = {
     val sb = new StringBuffer();
-    do { sb.append( c ); next } while ( Parsing.isNameChar( c ) ) ;
+    do { sb.append( c ); next } while ( isNameChar( c ) ) ;
     value = sb.toString();
     NAME
   }

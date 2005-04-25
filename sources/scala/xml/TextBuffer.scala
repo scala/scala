@@ -30,7 +30,7 @@ class TextBuffer {
   /** appends this string to the text buffer, trimming whitespaces as needed */
   def append(  cs:Seq[Char] ):TextBuffer = {
     for( val c <- cs ) {
-      if( Parsing.isSpace( c ) )
+      if( Utility.isSpace( c ) )
         appendSpace;
       else
         appendChar( c )
@@ -43,7 +43,7 @@ class TextBuffer {
     var len = sb.length(); /* invariant */
     if( len == 0 ) return Nil;
 
-    if( Parsing.isSpace( sb.charAt( len - 1 ) )) {
+    if( Utility.isSpace( sb.charAt( len - 1 ) )) {
       len = len - 1;
       sb.setLength( len )
     }

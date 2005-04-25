@@ -13,7 +13,7 @@ package scala.xml.parsing;
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
-abstract class MarkupParser {
+abstract class MarkupParser with TokenTests {
 
   /** the handler of the markup */
   val handle: MarkupHandler;
@@ -70,7 +70,7 @@ abstract class MarkupParser {
   def xAttributes(pscope:NamespaceBinding): Pair[MetaData,NamespaceBinding] = {
     var scope: NamespaceBinding = pscope;
     var aMap: MetaData = Null;
-    while( xml.Parsing.isNameStart( ch )) {
+    while( isNameStart( ch )) {
       val pos = this.pos;
 
       val qname = xName;
@@ -135,7 +135,7 @@ abstract class MarkupParser {
 
     xSpaceOpt;
     val Pair(aMap: MetaData, scope: NamespaceBinding) = {
-      if(xml.Parsing.isNameStart( ch ))
+      if(isNameStart( ch ))
         xAttributes(pscope)
       else
         Pair(Null, pscope)
@@ -339,11 +339,11 @@ abstract class MarkupParser {
    *  see  [5] of XML 1.0 specification
    */
   def xName: String = {
-    if (xml.Parsing.isNameStart(ch)) {
+    if (isNameStart(ch)) {
       do {
         putChar(ch);
         nextch;
-      } while (xml.Parsing.isNameChar(ch));
+      } while (isNameChar(ch));
       val n = cbuf.toString().intern();
       cbuf.setLength(0);
       n
@@ -358,11 +358,11 @@ abstract class MarkupParser {
   def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
 
   /** skip optional space S? */
-  def xSpaceOpt = while (xml.Parsing.isSpace(ch)) { nextch; };
+  def xSpaceOpt = while (isSpace(ch)) { nextch; };
 
   /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
   def xSpace = {
-    if (xml.Parsing.isSpace(ch)) {
+    if (isSpace(ch)) {
       nextch; xSpaceOpt
     }
     else {
@@ -377,7 +377,7 @@ abstract class MarkupParser {
   def xProcInstr: NodeSeq = {
     val sb:StringBuffer = new StringBuffer();
     val n = xName;
-    if( xml.Parsing.isSpace( ch ) ) {
+    if( isSpace( ch ) ) {
       xSpace;
       while (true) {
         if (ch=='?' && { sb.append( ch ); nextch; ch == '>' }) {
