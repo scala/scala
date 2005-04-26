@@ -229,6 +229,7 @@ xml/ProcInstr.scala
 xml/SpecialNode.scala
 xml/Text.scala
 xml/TextBuffer.scala
+xml/TopScope.scala
 xml/Utility.scala
 xml/XML.scala
 
