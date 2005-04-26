@@ -9,11 +9,16 @@
 
 package scala.xml.parsing;
 
-/** an xml parser. parses XML, invokes callback methods of a MarkupHandler
+import scala.xml.dtd._ ;
+/** an xml parser. parses XML 1.0, invokes callback methods of a MarkupHandler
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
 abstract class MarkupParser with TokenTests {
+
+  //
+  // variables, values
+  //
 
   /** the handler of the markup */
   val handle: MarkupHandler;
@@ -32,6 +37,118 @@ abstract class MarkupParser with TokenTests {
 
   /** character buffer, for names */
   protected val cbuf = new StringBuffer();
+
+  var dtd: DTD = null;
+
+  var decls: List[scala.xml.dtd.Decl] = Nil;
+
+  //
+  // methods
+  //
+
+  /** &lt;? prolog ::= xml S
+   */
+  def prolog(): Tuple3[Option[String], Option[String], Option[Boolean]] = {
+
+    var info_ver: Option[String] = None;
+    var info_enc: Option[String] = None;
+    var info_stdl: Option[Boolean] = None;
+
+    xToken('x');
+    xToken('m');
+    xToken('l');
+    xSpace;
+    val Pair(md,scp) = xAttributes(TopScope);
+    xToken('?');
+    xToken('>');
+    xSpace;
+    if(TopScope == scp) {
+      var m = md;
+
+      if(!m.isPrefixed && m.key == "version") {
+        if(m.value == "1.0") {
+          info_ver = Some("1.0");
+          m = m.next;
+        } else {
+          reportSyntaxError("cannot deal with versions != 1.0");
+        }
+      } else
+        reportSyntaxError("VersionInfo expected!");
+
+      if(!m.isPrefixed && m.key == "encoding") {
+        val enc = m.value;
+        if(!isValidIANAEncoding(enc))
+          reportSyntaxError("\""+enc+"\" is not a valid encoding");
+        info_enc = Some(enc);
+        m = m.next
+      }
+
+      if(!m.isPrefixed && m.key == "standalone") {
+        m.value.match {
+          case "yes" =>
+            info_stdl = Some(true);
+          case "no" =>
+            info_stdl = Some(false);
+          case _ =>
+            reportSyntaxError("either 'yes' or 'no' expected");
+        }
+        m = m.next
+      }
+
+      if(m != Null)
+        reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
+    } else
+        reportSyntaxError("no xmlns definitions here, please");
+
+    Tuple3(info_ver,info_enc,info_stdl)
+  }
+
+  /**
+   *[22]        prolog     ::=          XMLDecl? Misc* (doctypedecl Misc*)?
+   *[23]        XMLDecl    ::=          '&lt;?xml' VersionInfo EncodingDecl? SDDecl? S? '?>'
+   *[24]        VersionInfo        ::=          S 'version' Eq ("'" VersionNum "'" | '"' VersionNum '"')
+   *[25]        Eq         ::=          S? '=' S?
+   *[26]        VersionNum         ::=          '1.0'
+   *[27]        Misc       ::=          Comment | PI | S
+   */
+
+  def document(): Document = {
+    this.dtd = null;
+    var info_prolog: Tuple3[Option[String], Option[String], Option[Boolean]] =
+      Tuple3(None,None,None);
+    if('<' != ch) {
+      reportSyntaxError("< expected");
+      return null;
+    }
+
+    nextch; // is prolog ?
+    if('?' == ch)
+      info_prolog = prolog();
+
+    val children = content(TopScope); // DTD handled as side effect
+    var elemCount = 0;
+    var theNode: Node = _;
+    for(val c <- children) c.match {
+      case _:ProcInstr => ;
+      case _:Comment => ;
+      case _:EntityRef => // todo: fix entities, shouldn't be "special"
+        reportSyntaxError("no entity references alllowed here");
+      case m:Node =>
+        elemCount = elemCount + 1;
+      theNode = m;
+    }
+    if(1 != elemCount)
+      reportSyntaxError("document should contain exactly one element");
+
+    val doc = new Document();
+    doc.children    = children;
+    doc.docElem    = theNode;
+    doc.version    = info_prolog._1;
+    doc.encoding   = info_prolog._2;
+    doc.standAlone = info_prolog._3;
+    doc.dtd        = this.dtd;
+    return doc
+  }
 
   /** append Unicode character to name buffer*/
   protected def putChar(c: Char) = cbuf.append(c);
@@ -53,6 +170,12 @@ abstract class MarkupParser with TokenTests {
       nextch;
     else
       reportSyntaxError("'" + that + "' expected instead of '" + ch + "'");
+  }
+
+  def xToken(that: Seq[Char]): Unit = {
+    val it = that.elements;
+    while(it.hasNext)
+      xToken(it.next);
   }
 
   /** checks whether next character starts a Scala block, if yes, skip it.
@@ -93,7 +216,7 @@ abstract class MarkupParser with TokenTests {
             aMap = new UnprefixedAttribute(qname, value, aMap);
       }
 
-      if ((ch != '/') && (ch != '>'))
+      if ((ch != '/') && (ch != '>') && ('?' != ch))
         xSpace;
     }
 
@@ -158,13 +281,7 @@ abstract class MarkupParser with TokenTests {
    * see [15]
    */
   def xCharData: NodeSeq = {
-    xToken('[');
-    xToken('C');
-    xToken('D');
-    xToken('A');
-    xToken('T');
-    xToken('A');
-    xToken('[');
+    xToken("[CDATA[");
     val pos1 = pos;
     val sb:StringBuffer = new StringBuffer();
     while (true) {
@@ -257,7 +374,9 @@ abstract class MarkupParser with TokenTests {
                 nextch;
                 if ('[' == ch)                 // CDATA
                   ts + xCharData;
-                else                            // comment
+                else if ('D' == ch) // doctypedecl, parse DTD
+                  parseDTD();
+                else // comment
                   ts + xComment;
               case '?' =>                       // PI
                 nextch;
@@ -298,7 +417,55 @@ abstract class MarkupParser with TokenTests {
     new NodeSeq {
       val theSeq = ts.toList;
     }
-  } /* end content */
+  } // content(NamespaceBinding)
+
+  /** externalID ::= SYSTEM S syslit
+   *                 PUBLIC S pubid S syslit
+   */
+
+  def externalID(): ExternalID = ch.match {
+    case 'S' =>
+      nextch;
+      xToken("YSTEM");
+      val sysID = systemLiteral();
+      new SystemID(sysID);
+    case 'P' =>
+      nextch; xToken("UBLIC");
+      val pubID = pubidLiteral();
+      xSpace;
+      val sysID = systemLiteral();
+      new PublicID(pubID, sysID);
+  }
+  /** parses document type declaration and assigns it to instance variable
+   *  dtd.
+   *
+   *  <! parseDTD ::= DOCTYPE name ...
+   */
+  def parseDTD(): Unit = { // dirty but fast
+    var extID: ExternalID = null;
+    if(this.dtd != null)
+      reportSyntaxError("unexpected character");
+    xToken("DOCTYPE");
+    xSpace;
+    val n = xName;
+    xSpace;
+    //external ID
+    if('S' == ch || 'P' == ch) {
+      extID = externalID();
+      xSpace;
+    }
+    if('[' == ch) { // internal subset
+      nextch;
+      /* TODO */
+      while(']' != ch)
+        nextch;
+      // TODO: do the DTD parsing?? ?!?!?!?!!
+      xToken(']');
+    }
+    this.dtd = new DTD {
+      override var externalID = extID;
+    }
+  }
 
   def element(pscope: NamespaceBinding): NodeSeq = {
     xToken('<');
@@ -413,6 +580,211 @@ abstract class MarkupParser with TokenTests {
       cbuf.setLength(0);
       str
     /*}*/
+  }
+
+  /** attribute value, terminated by either ' or ". value may not contain &lt;.
+   *       AttValue     ::= `'` { _ } `'`
+   *                      | `"` { _ } `"`
+   */
+  def systemLiteral(): String = {
+    val endch = ch;
+    if(ch!='\'' && ch != '"')
+      reportSyntaxError("quote ' or \" expected");
+    nextch;
+    while (ch != endch) {
+      putChar(ch);
+      nextch;
+    }
+    nextch;
+    val str = cbuf.toString();
+    cbuf.setLength( 0 );
+    str
+  }
+
+
+  /* [12]       PubidLiteral ::=        '"' PubidChar* '"' | "'" (PubidChar - "'")* "'" */
+  def pubidLiteral(): String = {
+    val endch = ch;
+    if(ch!='\'' && ch != '"')
+      reportSyntaxError("quote ' or \" expected");
+    nextch;
+    while (ch != endch) {
+      putChar(ch);
+      if(!isPubIDChar(ch))
+        reportSyntaxError("char '"+ch+"' is not allowed in public id");
+      nextch;
+    }
+    nextch;
+    val str = cbuf.toString();
+    cbuf.setLength( 0 );
+    str
+  }
+
+  //
+  //  dtd parsing
+  //
+
+  def intSubset(): Unit = {
+    xSpace;
+    while(']' != ch)
+      ch match {
+        case '%' =>
+          nextch;
+          decls = PEReference(xName) :: decls;
+          xToken(';')
+          //peReference
+      case '<' =>
+        nextch;
+
+        if('?' == ch)
+          xProcInstr; // simply ignore processing instructions!
+        else {
+          xToken('!');
+          ch.match {
+            case '-' =>
+              xComment ; // ignore comments
+
+            case 'E' =>
+              nextch;
+              if('L' == ch) {
+                nextch;
+                elementDecl()
+              } else
+                entityDecl();
+
+            case 'A' =>
+              nextch;
+              attrDecl();
+
+            case 'N' =>
+              nextch;
+              notationDecl();
+          }
+        }
+        case _ =>
+          reportSyntaxError("unexpected character");
+      }
+  }
+
+  /** <! element := ELEMENT
+   */
+  def elementDecl(): Unit = {
+    xToken("EMENT");
+    xSpace;
+    val n = xName;
+    xSpace;
+    while('>' != ch) {
+      putChar(ch);
+      nextch;
+    }
+    nextch;
+    val cmstr = cbuf.toString();
+    cbuf.setLength( 0 );
+    val cm = ContentModel.parse(cmstr);
+    decls = ElemDecl(n, cm, null)::decls;
+  }
+
+  /** <! element := ELEMENT
+   */
+  def attrDecl() = {
+    xToken("TTLIST");
+    xSpace;
+    val n = xName;
+    var attList: List[AttrDecl] = Nil;
+    // later: find the elemDecl for n
+    while('>' != ch) {
+      val aname = xName;
+      var defdecl: DefaultDecl = null;
+      xSpace;
+      while('"' != ch && '\'' != ch && '#' != ch && '<' != ch) {
+        if(!isSpace(ch))
+          cbuf.append(ch);
+        nextch;
+      }
+      ch match {
+        case '\'' | '"' =>
+          val defValue = xAttributeValue(); // default value
+          defdecl = DEFAULT(false, defValue);
+
+        case '#' => xName.match {
+            case "FIXED" =>
+              xSpace;
+              val defValue = xAttributeValue(); // default value
+              defdecl = DEFAULT(true, defValue);
+            case "IMPLIED" =>
+              defdecl = IMPLIED
+            case "REQUIRED" =>
+              defdecl = REQUIRED
+          }
+        case _ =>
+      }
+      xSpaceOpt;
+
+      attList = AttrDecl(xName, cbuf.toString(), defdecl) :: attList;
+      cbuf.setLength(0);
+    }
+    nextch;
+    decls = AttListDecl(n, attList.reverse) :: decls
+  }
+
+  /** <! element := ELEMENT
+   */
+  def entityDecl() = {
+    var isParameterEntity = false;
+    var entdef: EntityDef = null;
+    xToken("NTITY");
+    xSpace;
+    if('%' == ch) {
+      isParameterEntity = true;
+      xSpace;
+    }
+    val n = xName;
+    xSpace;
+
+    val res = ch match {
+      case 'S' | 'P' => //sy
+        val extID = externalID();
+        if(isParameterEntity) {
+
+
+          ParameterEntityDecl(n, ExtDef(extID))
+
+        } else { // notation?
+
+          xSpace;
+          if('>' != ch) {
+            xToken("NDATA");
+            xSpace;
+            val notat = xName;
+            xSpace;
+            UnparsedEntityDecl(n, extID, notat);
+          } else
+
+            ParsedEntityDecl(n, ExtDef(extID));
+
+        }
+
+      case '"' | '\'' =>
+        val av = xAttributeValue();
+        if(isParameterEntity)
+          ParameterEntityDecl(n, IntDef(av))
+        else
+          ParsedEntityDecl(n, IntDef(av));
+    }
+    decls = res :: decls;
+  } // entityDecl
+
+  /** 'N' notationDecl ::= "OTATION"
+   */
+  def notationDecl() = {
+    xToken("OTATION");
+    xSpace;
+    val notat = xName;
+    xSpace;
+    val extID = externalID();
+    xSpace;
+    xToken('>');
+    decls = NotationDecl(notat, extID) :: decls;
   }
 
 }

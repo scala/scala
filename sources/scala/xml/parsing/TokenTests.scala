@@ -85,6 +85,34 @@ trait TokenTests {
     case _ => false;
   }
 
+  /**
+   * Returns true if the encoding name is a valid IANA encoding.
+   * This method does not verify that there is a decoder available
+   * for this encoding, only that the characters are valid for an
+   * IANA encoding name.
+   *
+   * @param ianaEncoding The IANA encoding name.
+   */
+  def isValidIANAEncoding(ianaEncoding: Seq[Char]): Boolean = {
+    val it = ianaEncoding.elements;
+    if(!it.hasNext)
+      return false;
+
+    var c = it.next;
+    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+      while(it.hasNext) {
+        c = it.next;
+        if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') &&
+            (c < '0' || c > '9') && c != '.' && c != '_' &&
+            c != '-') {
+              return false;
+            }
+      }
+      return true;
+    } else
+      return false;
+  } // isValidIANAEncoding(String): Boolean
+
   def checkSysID( s:String ):boolean = {
     s.indexOf('"') == -1 || s.indexOf('\'') == -1
   }

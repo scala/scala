@@ -16,27 +16,23 @@ abstract class Decl ;
 
 abstract class MarkupDecl extends Decl ;
 
-case class ElemDecl( name:String ,
-                     contentModel:String ,
-                     attribs:Map[String,AttrDecl] )
-     extends MarkupDecl {
+/** an element declaration
+ */
+case class ElemDecl(name: String, contentModel: ContentModel.RegExp, attList: AttListDecl) extends MarkupDecl {
 
-       final val parsedContentModel:ContentModel.RegExp = {
-         try {
-           ContentModel.parse( contentModel );
-         } catch {
-           case _:Error =>
-             Console.println( "error parsing declaration of " + name );
-             Console.println( "content model was:\n" + contentModel );
-             null
-         }
-       }
+  //def mixed  = ; // to do
 
-       def containsText = contentModel.indexOf("#PCDATA") != -1 ;
-};
+  def setAttList(nAttList:AttListDecl) =
+    ElemDecl(name, contentModel, nAttList);
+} // ElemDecl
 
-/** an attribute declaration */
-case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) extends MarkupDecl {
+case class AttListDecl(name: String, attrs:List[AttrDecl]) extends MarkupDecl;
+
+/** an attribute declaration. at this point, the tpe is a string. Future
+ *  versions might provide a way to access the attribute types more
+ *  directly.
+ */
+case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) {
   final override def toString() = {
     val sb = new StringBuffer("AttrDecl(");
     sb.append('"');
@@ -53,14 +49,48 @@ case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) extends Mark
   }
 }
 
+class EntityDecl extends MarkupDecl;
 /** an entity declaration */
-case class EntityDecl( name:String, tpe:String ) extends MarkupDecl;
+
+case class ParsedEntityDecl( name:String, entdef:EntityDef )
+     extends EntityDecl;
+
+case class ParameterEntityDecl(name: String, entdef: EntityDef)
+     extends EntityDecl;
+
+class EntityDef;
+
+case class IntDef(value:String) extends EntityDef {
+  private def validateValue(): Unit = {
+    var tmp = value;
+    var ix  = tmp.indexOf('%');
+    while( ix != -1) {
+      val iz = tmp.indexOf(';', ix);
+      if(iz == -1 && iz == ix + 1)
+        error("no % allowed in entity value, except for parameter-entity-references");
+      else {
+        val n = tmp.substring(ix, iz);
+
+        if( !Utility.isName( n ))
+          throw new IllegalArgumentException("ent must be an XML Name");
+
+        tmp = tmp.substring(iz+1, tmp.length());
+        ix  = tmp.indexOf('%');
+      }
+    }
+  }
+  validateValue();
+}
+case class ExtDef(extID:ExternalID) extends EntityDef;
+
+/** an entity declaration */
+case class UnparsedEntityDecl( name:String, extID:ExternalID, notation:String ) extends EntityDecl;
 
 /** a notation declaration */
-case class NotationDecl( name:String, tpe:String ) extends MarkupDecl;
+case class NotationDecl( name:String, extID:ExternalID ) extends MarkupDecl;
 
 /** a parsed entity reference */
-case class PEReference(ent:String) extends Decl {
+case class PEReference(ent:String) extends MarkupDecl {
   if( !Utility.isName( ent ))
     throw new IllegalArgumentException("ent must be an XML Name");
 
