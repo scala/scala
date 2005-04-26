@@ -215,7 +215,7 @@ util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
 
 xml/Comment.scala
-#xml/Document.scala
+xml/Document.scala
 xml/Elem.scala
 xml/EntityRef.scala
 xml/MetaData.scala
