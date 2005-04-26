@@ -342,7 +342,8 @@ object TreeInfo {
   def symbolTypeText(t: Tree): String = {
     val s = t.symbol();
     if (s != null)
-      s.`type`().toString();
+//      s.`type`().toString();
+      TypePrinter.apply(s.getType());
     else
       "";
   }
@@ -368,5 +369,51 @@ object TreeInfo {
     else "";
   }
 }
+
+  object TypePrinter {
+    def apply(t: Type): String = t match {
+      case Type.ThisType(s) => "ThisType(" + s.name + ")\n";
+      case Type.SingleType(pre, s) => "SingleType(" +  apply(pre) + ", " + s.name + ")\n";
+      case Type.ConstantType(base, value) => "ConstantType(" + apply(base) + ", " + value + ")\n";
+      case Type.TypeRef(pre, s, args) => "TypeRef(" + apply(pre) + ", " + s.name + ", " + apply(args) + ")\n)";
+      case Type.CompoundType(parts, members) => "CompoundType(" + apply(parts) + ", [members])\n";
+      case Type.MethodType(vparams, result) => "MethodType( (" + apply(vparams) + "), " + apply(result) + ")\n";
+      case Type.PolyType(tparams, result) => "PolyType( (" + apply(tparams) + "), " + apply(result) + ")\n";
+      case Type.OverloadedType(alts, alttypes) => "OverloadedType()";
+      case Type.LazyType() => "LazyType()\n";
+      case Type.TypeVar(orig, constr) => "TypeVar()";
+      case Type.UnboxedType(tag) => "UnboxedType(" + tag + ");\n";
+      case Type.UnboxedArrayType(tag) => "UnboxedArrayType(" + tag + ")\n";
+      case _ => "<unknown case>[" + t + "]";
+    }
+
+    def apply(ts: Array[Type]): String = {
+      var s: StringBuffer = new StringBuffer();
+      var i: Int = 0;
+
+      while (i < ts.length) {
+	s.append(apply(ts(i)));
+	if (i != ts.length - 1)
+	  s.append(", ");
+	i = i + 1;
+      }
+      s.toString();
+    }
+
+    def apply(ts: Array[Symbol]): String = {
+      var s: StringBuffer = new StringBuffer();
+      var i: Int = 0;
+
+      while (i < ts.length) {
+	s.append(apply(ts(i).getType()));
+	if (i != ts.length - 1)
+	  s.append(", ");
+	i = i + 1;
+      }
+      s.toString();
+    }
+
+  }
+
 
 } // package

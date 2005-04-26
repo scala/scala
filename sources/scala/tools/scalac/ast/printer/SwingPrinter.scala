@@ -190,7 +190,7 @@ class WindowFrame {
     val topSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, topPane, topRightPane);
     topPane.add(new JScrollPane(tree), BorderLayout.CENTER);
 
-    topRightPane.add(infoPanel, BorderLayout.CENTER);
+    topRightPane.add(new JScrollPane(infoPanel), BorderLayout.CENTER);
 
     bottomPane.add(new JScrollPane(textArea), BorderLayout.CENTER);
     textArea.setFont(new Font("monospaced", Font.PLAIN, 14));
@@ -248,7 +248,7 @@ class InfoPanel extends JPanel() {
       symLabel.setText(TreeInfo.symbolText(t));
       stypeLabel.setText(TreeInfo.symbolTypeText(t));
       attLabel.setText(TreeInfo.symbolAttributes(t));
-      ttypeLabel.setText(t.`type`().toString());
+      ttypeLabel.setText(t.getType().toString());
     } else
       reset;
 
