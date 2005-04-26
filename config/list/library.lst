@@ -215,6 +215,7 @@ util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
 
 xml/Comment.scala
+#xml/Document.scala
 xml/Elem.scala
 xml/EntityRef.scala
 xml/MetaData.scala
@@ -222,19 +223,23 @@ xml/NamespaceBinding.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeSeq.scala
+xml/Null.scala
 #xml/NodeTraverser.scala
 xml/Parsing.scala
 xml/PrettyPrinter.scala
+xml/PrefixedAttribute.scala
 xml/ProcInstr.scala
 xml/SpecialNode.scala
 xml/Text.scala
 xml/TextBuffer.scala
 xml/TopScope.scala
+xml/UnprefixedAttribute.scala
 xml/Utility.scala
 xml/XML.scala
 
 xml/dtd/ContentModel.scala
 xml/dtd/DocType.scala
+#xml/dtd/DTD.scala
 xml/dtd/Decl.scala
 xml/dtd/ExternalID.scala
 xml/dtd/Parser.scala
