@@ -28,13 +28,15 @@ public abstract class CompilerPhases {
     public final PhaseDescriptor REFCHECK;
     public final PhaseDescriptor UNCURRY;
     // public final PhaseDescriptor OPTIMIZE;
+    public final PhaseDescriptor TAILCALL; // Moved here experimentally
+
     public final PhaseDescriptor TRANSMATCH;
     public final PhaseDescriptor LAMBDALIFT;
     public final PhaseDescriptor ADDACCESSORS;
     public final PhaseDescriptor EXPLICITOUTER;
     public final PhaseDescriptor ADDCONSTRUCTORS;
     public final PhaseDescriptor TYPESASVALUES;
-    public final PhaseDescriptor TAILCALL;
+
     public final PhaseDescriptor WHOLEPROG;
     public final PhaseDescriptor ADDINTERFACES;
     public final PhaseDescriptor EXPANDMIXIN;
@@ -112,6 +114,13 @@ public abstract class CompilerPhases {
 //                 "tree-optimizer",
 //                 "tree optimization",
 //                 scalac.optimizer.OptimizePhase.class),
+
+            this.TAILCALL = new PhaseDescriptor(
+                "tailcall",
+                "add tail-calls",
+                "added tail-calls",
+                TAILCALL_PHASE()),
+
             this.TRANSMATCH = new PhaseDescriptor(
                 "transmatch",
                 "translate match expressions",
@@ -142,11 +151,6 @@ public abstract class CompilerPhases {
                 "add explicit constructor for each class",
                 "added constructors",
                 ADDCONSTRUCTORS_PHASE()),
-            this.TAILCALL = new PhaseDescriptor(
-                "tailcall",
-                "add tail-calls",
-                "added tail-calls",
-                TAILCALL_PHASE()),
             this.WHOLEPROG = new PhaseDescriptor(
                 "wholeprog",
                 "perform whole program analysis",
