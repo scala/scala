@@ -10,12 +10,19 @@ object ConstructingParser {
     val p = new ConstructingParser() {
       val input = inp;
       override val handle = theHandle;
-      def nextch = if(input.hasNext) { ch = input.next; pos = input.pos; }
+      def nextch =
+        if(input.hasNext) {
+          ch = input.next;
+          pos = input.pos;
+        } else
+          eof = true;
+
       override val preserveWS = true;
 
       /** report a syntax error */
       def reportSyntaxError(str: String): Unit = {
-        Console.println(inp.descr+":"+scala.io.Position.toString(pos)+":"+str);
+        //Console.println(inp.descr+":"+scala.io.Position.toString(pos)+":"+str);
+        inp.reportError(pos, str)
       }
 
     };

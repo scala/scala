@@ -15,4 +15,9 @@ abstract class DTD {
 
   //def getAttribDecl(elem: String, attr: String): AttrDecl;
 
+  override def toString() = {
+    val s = super.toString();
+    "[DTD "+s.substring(s.indexOf('@'), s.length())+"]";
+  }
+
 }

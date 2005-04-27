@@ -42,6 +42,8 @@ abstract class MarkupParser with TokenTests {
 
   var decls: List[scala.xml.dtd.Decl] = Nil;
 
+  var eof: Boolean = false;
+
   //
   // methods
   //
@@ -54,9 +56,7 @@ abstract class MarkupParser with TokenTests {
     var info_enc: Option[String] = None;
     var info_stdl: Option[Boolean] = None;
 
-    xToken('x');
-    xToken('m');
-    xToken('l');
+    xToken("xml");
     xSpace;
     val Pair(md,scp) = xAttributes(TopScope);
     xToken('?');
@@ -122,9 +122,10 @@ abstract class MarkupParser with TokenTests {
     }
 
     nextch; // is prolog ?
-    if('?' == ch)
+    if('?' == ch) {
+      nextch;
       info_prolog = prolog();
-
+    }
     val children = content(TopScope); // DTD handled as side effect
     var elemCount = 0;
     var theNode: Node = _;
@@ -133,13 +134,17 @@ abstract class MarkupParser with TokenTests {
       case _:Comment => ;
       case _:EntityRef => // todo: fix entities, shouldn't be "special"
         reportSyntaxError("no entity references alllowed here");
+      case s:SpecialNode =>
+        if(s.toString().trim().length() > 0) //non-empty text nodes not allowed
+          elemCount = elemCount + 2;
       case m:Node =>
         elemCount = elemCount + 1;
       theNode = m;
     }
-    if(1 != elemCount)
-      reportSyntaxError("document should contain exactly one element");
-
+    if(1 != elemCount) {
+      reportSyntaxError("document must contain exactly one element");
+      Console.println(children.toList);
+    }
     val doc = new Document();
     doc.children    = children;
     doc.docElem    = theNode;
@@ -358,29 +363,35 @@ abstract class MarkupParser with TokenTests {
 
   def content(pscope: NamespaceBinding): NodeSeq = {
     var ts = new NodeBuffer;
-    var exit = false;
+    var exit = eof;
     while( !exit ) {
+      //Console.println("in content, ch = '"+ch+"' line="+scala.io.Position.line(pos));
       /*      if( xEmbeddedBlock ) {
        ts.append( xEmbeddedExpr );
        } else {*/
         tmppos = pos;
-        ch match {
+        exit = eof;
+        if(!eof)
+          ch match {
           case '<' => // another tag
+            //Console.println("before ch = '"+ch+"' line="+scala.io.Position.line(pos)+" pos="+pos);
             nextch;
+            //Console.println("after ch = '"+ch+"' line="+scala.io.Position.line(pos)+" pos="+pos);
+
             ch match {
               case '/' =>
                 exit = true;                    // end tag
               case '!' =>
                 nextch;
-                if ('[' == ch)                 // CDATA
-                  ts + xCharData;
-                else if ('D' == ch) // doctypedecl, parse DTD
-                  parseDTD();
-                else // comment
-                  ts + xComment;
+              if ('[' == ch)                 // CDATA
+                ts + xCharData;
+              else if ('D' == ch) // doctypedecl, parse DTD
+                parseDTD();
+              else // comment
+                ts + xComment;
               case '?' =>                       // PI
                 nextch;
-                ts + xProcInstr;
+              ts + xProcInstr;
               case _   =>
                 ts + element1(pscope);     // child
             }
@@ -408,11 +419,12 @@ abstract class MarkupParser with TokenTests {
                 ts + handle.entityRef( tmppos, n ) ;
             }
           case _ => // text content
+            //Console.println("text content?? pos = "+pos);
             appendText(tmppos, ts, xText);
           // here xEmbeddedBlock might be true
-        }
+          }
     /*}*/
-  }
+    }
     // 2do: optimize seq repr.
     new NodeSeq {
       val theSeq = ts.toList;
@@ -439,7 +451,7 @@ abstract class MarkupParser with TokenTests {
   /** parses document type declaration and assigns it to instance variable
    *  dtd.
    *
-   *  <! parseDTD ::= DOCTYPE name ...
+   *  <! parseDTD ::= DOCTYPE name ... >
    */
   def parseDTD(): Unit = { // dirty but fast
     var extID: ExternalID = null;
@@ -461,7 +473,9 @@ abstract class MarkupParser with TokenTests {
         nextch;
       // TODO: do the DTD parsing?? ?!?!?!?!!
       xToken(']');
+      xSpaceOpt;
     }
+    xToken('>');
     this.dtd = new DTD {
       override var externalID = extID;
     }
@@ -570,11 +584,18 @@ abstract class MarkupParser with TokenTests {
     /*if( xCheckEmbeddedBlock )
       return ""
     else {*/
+    //Console.println("in xText! ch = '"+ch+"'");
       var exit = false;
       while( !exit ) {
+        //Console.println("LOOP in xText! ch = '"+ch+"' + pos="+pos);
         putChar( ch );
+        val opos = pos;
         nextch;
-        exit = /*{ nextch; xCheckEmbeddedBlock }||*/( ch == '<' ) || ( ch == '&' );
+
+        //Console.println("STILL LOOP in xText! ch = '"+ch+"' + pos="+pos+" opos="+opos);
+
+
+        exit = eof || /*{ nextch; xCheckEmbeddedBlock }||*/( ch == '<' ) || ( ch == '&' );
       }
       val str = cbuf.toString();
       cbuf.setLength(0);
@@ -693,6 +714,7 @@ abstract class MarkupParser with TokenTests {
     var attList: List[AttrDecl] = Nil;
     // later: find the elemDecl for n
     while('>' != ch) {
+      Console.println("");
       val aname = xName;
       var defdecl: DefaultDecl = null;
       xSpace;
