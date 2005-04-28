@@ -7,8 +7,8 @@ package scala.tools.nsc.ast.parser;
 
 abstract class ParserPhase(prev: Phase)
 	 extends StdPhase(prev)
-            with Lexical
-	    with Syntactic {
+            with Scanners
+	    with Parsers {
     def name = "parser";
     def apply(unit: global.CompilationUnit): unit = {
       global.informProgress("parsing " + unit);

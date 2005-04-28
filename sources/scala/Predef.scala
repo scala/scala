@@ -142,7 +142,7 @@ object Predef {
 
   // views -------------------------------------------------------------
 
-  def view(x: int): Ordered[int] = new Ordered[int] with Proxy(x) {
+  implicit def view(x: int): Ordered[int] = new Proxy(x) with Ordered[int] {
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
         if (x < y1) -1
@@ -152,7 +152,7 @@ object Predef {
     }
   }
 
-  def view(x: char): Ordered[char] = new Ordered[char] with Proxy(x) {
+  implicit def view(x: char): Ordered[char] = new Proxy(x) with Ordered[char] {
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
         if (x < y1) -1
@@ -162,7 +162,7 @@ object Predef {
     }
   }
 
-  def view(x: long): Ordered[long] = new Ordered[long] with Proxy(x) {
+  implicit def view(x: long): Ordered[long] = new Proxy(x) with Ordered[long] {
     def compareTo [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
         if (x < y1) -1
@@ -172,7 +172,7 @@ object Predef {
     }
   }
 
-  def view(x: float): Ordered[float] = new Ordered[float] with Proxy(x) {
+  implicit def view(x: float): Ordered[float] = new Proxy(x) with Ordered[float] {
     def compareTo [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
         if (x < y1) -1
@@ -182,7 +182,7 @@ object Predef {
     }
   }
 
-  def view(x: double): Ordered[double] = new Ordered[double] with Proxy(x) {
+  implicit def view(x: double): Ordered[double] = new Proxy(x) with Ordered[double] {
     def compareTo [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
         if (x < y1) -1
@@ -192,7 +192,7 @@ object Predef {
     }
   }
 
-  def view(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy(x) {
+  implicit def view(x: boolean): Ordered[boolean] = new Proxy(x) with Ordered[boolean] {
     def compareTo [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
         if (x == y1) 0
@@ -202,7 +202,7 @@ object Predef {
     }
   }
 
-  def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Ordered[Array[A]] with Proxy(xs) {
+  implicit def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Proxy(xs) with Ordered[Array[A]] {
     def compareTo[B >: Array[A] <% Ordered[B]](that: B): Int = that match {
       case ys: Array[A] =>
         var i, res = 0;
@@ -227,7 +227,7 @@ object Predef {
   /* We can't bootstrap currently with the following views included. We have to
    * wait for the next release...
    *
-  def view[A <% Ordered[A], B <% Ordered[B]](x: Tuple2[A, B]): Ordered[Tuple2[A, B]] =
+  implicit def view[A <% Ordered[A], B <% Ordered[B]](x: Tuple2[A, B]): Ordered[Tuple2[A, B]] =
         new Ordered[Tuple2[A, B]] with Proxy(x) {
           def compareTo[T >: Tuple2[A, B] <% Ordered[T]](y: T): Int = y match {
             case y1: Tuple2[A, B] => first(x._1.compareTo(y1._1),
@@ -236,7 +236,7 @@ object Predef {
           }
         }
 
-  def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C]]
+  implicit def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C]]
         (x: Tuple3[A, B, C]): Ordered[Tuple3[A, B, C]] =
         new Ordered[Tuple3[A, B, C]] with Proxy(x) {
           def compareTo[T >: Tuple3[A, B, C] <% Ordered[T]](y: T): Int = y match {
@@ -247,7 +247,7 @@ object Predef {
           }
         }
 
-  def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C], D <% Ordered[D]]
+  implicit def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C], D <% Ordered[D]]
         (x: Tuple4[A, B, C, D]): Ordered[Tuple4[A, B, C, D]] =
         new Ordered[Tuple4[A, B, C, D]] with Proxy(x) {
           def compareTo[T >: Tuple4[A, B, C, D] <% Ordered[T]](y: T): Int = y match {
@@ -259,7 +259,7 @@ object Predef {
           }
         }
 
-  def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C], D <% Ordered[D], E <% Ordered[E]]
+  implicit def view[A <% Ordered[A], B <% Ordered[B], C <% Ordered[C], D <% Ordered[D], E <% Ordered[E]]
         (x: Tuple5[A, B, C, D, E]): Ordered[Tuple5[A, B, C, D, E]] =
         new Ordered[Tuple5[A, B, C, D, E]] with Proxy(x) {
           def compareTo[T >: Tuple5[A, B, C, D, E] <% Ordered[T]](y: T): Int = y match {
@@ -273,14 +273,14 @@ object Predef {
         }
   */
 
-  def view(x: String): Ordered[String] = new Ordered[String] with Proxy(x) {
+  implicit def view(x: String): Ordered[String] = new Proxy(x) with Ordered[String] {
     def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
       case y1: String => x compareTo y1;
       case _ => -(y compareTo x)
     }
   }
 
-  def view[A](xs: Array[A]): Seq[A] = new Seq[A] {
+  implicit def view[A](xs: Array[A]): Seq[A] = new Seq[A] {
     def length = xs.length;
     def elements = Iterator.fromArray(xs);
     def apply(n: Int) = xs(n);
@@ -289,7 +289,7 @@ object Predef {
     override protected def stringPrefix: String = "Array";
   }
 
-  def view(str: String): Seq[Char] = new Seq[Char] {
+  implicit def view(str: String): Seq[Char] = new Seq[Char] {
     def length = str.length();
     def elements = Iterator.fromString(str);
     def apply(n: Int) = str.charAt(n);
@@ -297,4 +297,29 @@ object Predef {
     override def equals(y: Any): Boolean = (str == y);
     override protected def stringPrefix: String = "String";
   }
+
+  implicit def byte2short(x: byte): short = x.coerce;
+  implicit def byte2int(x: byte): int = x.coerce;
+  implicit def byte2long(x: byte): long = x.coerce;
+  implicit def byte2float(x: byte): float = x.coerce;
+  implicit def byte2double(x: byte): double = x.coerce;
+
+  implicit def short2int(x: short): int = x.coerce;
+  implicit def short2long(x: short): long = x.coerce;
+  implicit def short2float(x: short): float = x.coerce;
+  implicit def short2double(x: short): double = x.coerce;
+
+  implicit def char2int(x: char): int = x.coerce;
+  implicit def char2long(x: char): long = x.coerce;
+  implicit def char2float(x: char): float = x.coerce;
+  implicit def char2double(x: char): double = x.coerce;
+
+  implicit def int2long(x: int): long = x.coerce;
+  implicit def int2float(x: int): float = x.coerce;
+  implicit def int2double(x: int): double = x.coerce;
+
+  implicit def long2float(x: long): float = x.coerce;
+  implicit def long2double(x: long): double = x.coerce;
+
+  implicit def float2double(x: float): double = x.coerce;
 }

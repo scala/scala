@@ -36,6 +36,7 @@ public abstract class Int     extends AnyVal {
 
     /** @meta method []scala.Int    ; */
     public int     $plus      (            ) { return +value        ; }
+
     /** @meta method []scala.Int    ; */
     public int     $minus     (            ) { return -value        ; }
 

@@ -86,12 +86,15 @@ abstract class TreeGen {
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef = atPos(sym.pos) {
     global.ValDef(flags2mods(sym.flags), sym.name, TypeTree(sym.tpe), rhs)
+      setSymbol sym setType UnitClass.tpe
   }
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree);
 
-  def AbsTypeDef(sym: Symbol) =
+  def AbsTypeDef(sym: Symbol) = atPos(sym.pos) {
     global.AbsTypeDef(flags2mods(sym.flags), sym.name,
-                      TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi));
+                      TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi))
+      setSymbol sym setType UnitClass.tpe
+  }
 
   def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree) = atPos(sym.pos) {
     var cnt = 0;
@@ -110,6 +113,7 @@ abstract class TreeGen {
           vparamss.map(.map(ValDef)),
           TypeTree(tpe),
           rhs(vparamss))
+	  setSymbol sym setType UnitClass.tpe
     }
     mk(List(), List(), sym.tpe)
   }

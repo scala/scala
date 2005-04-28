@@ -43,14 +43,15 @@ object Tokens {
   val PRIVATE = 34;
   val PROTECTED = 35;
   val OVERRIDE = 36;
-  val VAR = 37;
-  val DEF = 38;
-  val TYPE = 39;
-  val EXTENDS = 40;
-  val TRUE = 41;
-  val FALSE = 42;
-  val OBJECT = 43;
-  val CLASS = 44;
+  val IMPLICIT = 37;
+  val VAR = 38;
+  val DEF = 39;
+  val TYPE = 40;
+  val EXTENDS = 41;
+  val TRUE = 42;
+  val FALSE = 43;
+  val OBJECT = 44;
+  val CLASS = 45;
 
   val IMPORT = 46;
   val PACKAGE = 47;
@@ -75,10 +76,11 @@ object Tokens {
   val EQUALS = 66;
   val LARROW = 67;
   val ARROW = 68;
-  val SUBTYPE = 69;
-  val SUPERTYPE = 70;
-  val HASH = 71;
-  val AT = 72;
+  val SUBTYPE = 70;
+  val SUPERTYPE = 71;
+  val HASH = 72;
+  val AT = 73;
+  val VIEWBOUND = 74; //todo: elim
 
   /** parenthesis */
   val LPAREN = 90;

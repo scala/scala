@@ -53,18 +53,16 @@ abstract class TreePrinters {
         print("["); printSeq(ts){printParam}{print(", ")}; print("]")
       }
 
-    def printValueParams(ts: List[ValDef]): unit =
-      if (!ts.isEmpty) {
-        print("("); printSeq(ts){printParam}{print(", ")}; print(")")
-      }
+    def printValueParams(ts: List[ValDef]): unit = {
+      print("(");
+      if (!ts.isEmpty) printModifiers(ts.head.mods & IMPLICIT);
+      printSeq(ts){printParam}{print(", ")};
+      print(")")
+    }
 
     def printParam(tree: Tree): unit = tree match {
       case ValDef(mods, name, tp, rhs) =>
-        if ((mods & PARAMACCESSOR) != 0) {
-          print(tree)
-        } else {
-          print(symName(tree, name)); printOpt(": ", tp);
-        }
+	print(symName(tree, name)); printOpt(": ", tp);
       case AbsTypeDef(mods, name, lo, hi) =>
         print(symName(tree, name));
         printOpt(" >: ", lo); printOpt(" <: ", hi);
@@ -83,7 +81,8 @@ abstract class TreePrinters {
       if (!tree.isEmpty) { print(prefix); print(tree) }
 
     def printModifiers(flags: int): unit = {
-      val s = flagsToString(flags);
+      val mask = if (settings.debug.value) -1 else PrintableFlags;
+      val s = flagsToString(flags & mask);
       if (s.length() != 0) print(s + " ")
     }
 
@@ -117,10 +116,10 @@ abstract class TreePrinters {
             if (rhs.isEmpty) print("_") else print(rhs)
           }
 
-        case DefDef(mods, name, tparams, vparams, tp, rhs) =>
+        case DefDef(mods, name, tparams, vparamss, tp, rhs) =>
           printModifiers(mods);
           print("def " + symName(tree, name));
-          printTypeParams(tparams); vparams foreach printValueParams;
+          printTypeParams(tparams); vparamss foreach printValueParams;
           printOpt(": ", tp); printOpt(" = ", rhs);
 
         case AbsTypeDef(mods, name, lo, hi) =>
@@ -167,7 +166,7 @@ abstract class TreePrinters {
           printRow(trees, "(", "| ", ")")
 
         case Bind(name, t) =>
-          print(symName(tree, name)); print(" @ "); print(t)
+          print("("); print(symName(tree, name)); print(" @ "); print(t); print(")");
 
         case Function(vparams, body) =>
           print("("); printValueParams(vparams); print(" => "); print(body); print(")")

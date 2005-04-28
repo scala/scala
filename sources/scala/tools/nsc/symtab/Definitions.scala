@@ -68,16 +68,16 @@ abstract class Definitions: SymbolTable {
 
     def tupleType(elems: List[Type]) = {
       val sym = TupleClass(elems.length);
-      typeRef(sym.info.prefix, sym, elems)
+      typeRef(sym.typeConstructor.prefix, sym, elems)
     }
 
     def functionType(formals: List[Type], restpe: Type) = {
       val sym = FunctionClass(formals.length);
-      typeRef(sym.info.prefix, sym, formals ::: List(restpe))
+      typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
     }
 
     def seqType(arg: Type) =
-      typeRef(SeqClass.info.prefix, SeqClass, List(arg));
+      typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg));
 
     // members of class scala.Any
     var Any_==          : Symbol = _;
@@ -87,9 +87,12 @@ abstract class Definitions: SymbolTable {
     var Any_toString    : Symbol = _;
     var Any_isInstanceOf: Symbol = _;
     var Any_asInstanceOf: Symbol = _;
+    var Any_isInstanceOfErased: Symbol = _;
+    var Any_asInstanceOfErased: Symbol = _;
 
     // members of class java.lang.{Object, String}
     var Object_eq          : Symbol = _;
+    var Object_ne          : Symbol = _;
     var Object_synchronized: Symbol = _;
     var String_+           : Symbol = _;
 
@@ -138,9 +141,18 @@ abstract class Definitions: SymbolTable {
       msym
     }
 
+    private def newMethod(owner: Symbol, name: Name, formals: List[Type], restpe: Type): Symbol =
+      newMethod(owner, name).setInfo(MethodType(formals, restpe));
+
+    private def newPolyMethod(owner: Symbol, name: Name, tcon: Symbol => Type): Symbol = {
+      val msym = newMethod(owner, name);
+      val tparam = newTypeParam(msym, 0);
+      msym.setInfo(PolyType(List(tparam), tcon(tparam)))
+    }
+
     private def newTypeParam(owner: Symbol, index: int): Symbol =
       owner.newTypeParameter(Position.NOPOS, "T" + index)
-        .setInfo(TypeBounds(AllClass.tpe, AnyClass.tpe));
+        .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor));
 
     def init = {
       RootClass =
@@ -165,10 +177,10 @@ abstract class Definitions: SymbolTable {
       AnyValClass = getClass("scala.AnyVal");
       ObjectClass = getClass("java.lang.Object");
 
-      AnyRefClass = newAlias(ScalaPackageClass, "AnyRef", ObjectClass.tpe);
+      AnyRefClass = newAlias(ScalaPackageClass, "AnyRef", ObjectClass.typeConstructor);
 
-      AllRefClass = newClass(ScalaPackageClass, "AllRef", List(AnyRefClass.tpe));
-      AllClass = newClass(ScalaPackageClass, "All", List(AnyClass.tpe));
+      AllRefClass = newClass(ScalaPackageClass, "AllRef", List(AnyRefClass.typeConstructor));
+      AllClass = newClass(ScalaPackageClass, "All", List(AnyClass.typeConstructor));
 
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");
@@ -194,7 +206,6 @@ abstract class Definitions: SymbolTable {
       SeqClass = getClass("scala.Seq");
       ListClass = getClass("scala.List");
       ArrayClass = getClass("scala.Array");
-      System.out.println("array class: " + ArrayClass.tpe);//debug
       TypeClass = getClass("scala.Type");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
@@ -207,53 +218,45 @@ abstract class Definitions: SymbolTable {
 	    PolyType(
 	      List(tparam),
 	      ClassInfoType(
-		List(typeRef(SeqClass.tpe.prefix, SeqClass, List(tparam.typeConstructor))),
+		List(typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor))),
 		new Scope(),
 		RepeatedParamClass)))
        }
 
       // members of class scala.Any
-      Any_==           = newMethod(AnyClass, "==")
-			     .setInfo(MethodType(List(AnyClass.tpe), BooleanClass.tpe))
-			     .setFlag(FINAL);
-      Any_!=           = newMethod(AnyClass, "!=")
-			     .setInfo(MethodType(List(AnyClass.tpe), BooleanClass.tpe))
-			     .setFlag(FINAL);
-      Any_equals       = newMethod(AnyClass, "equals")
-			     .setInfo(MethodType(List(AnyClass.tpe), BooleanClass.tpe));
-      Any_hashCode     = newMethod(AnyClass, "hashCode")
-			     .setInfo(MethodType(List(), IntClass.tpe));
-      Any_toString     = newMethod(AnyClass, "toString")
-			     .setInfo(MethodType(List(), StringClass.tpe));
-      Any_isInstanceOf = newMethod(AnyClass, "isInstanceOf")
-			     .setFlag(FINAL);
-	{ val tparam = newTypeParam(Any_isInstanceOf, 0);
-	  Any_isInstanceOf.setInfo(PolyType(List(tparam), BooleanClass.tpe));
-	}
-      Any_asInstanceOf = newMethod(AnyClass, "asInstanceOf")
-			     .setFlag(FINAL);
-	{ val tparam = newTypeParam(Any_asInstanceOf, 0);
-	  Any_asInstanceOf.setInfo(PolyType(List(tparam), tparam.typeConstructor));
-	}
+      Any_== = newMethod(
+        AnyClass, "==", List(AnyClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
+      Any_!= = newMethod(
+        AnyClass, "!=", List(AnyClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
+      Any_equals = newMethod(
+        AnyClass, "equals", List(AnyClass.typeConstructor), BooleanClass.typeConstructor);
+      Any_hashCode = newMethod(
+        AnyClass, "hashCode", List(), IntClass.typeConstructor);
+      Any_toString = newMethod(
+        AnyClass, "toString", List(), StringClass.typeConstructor);
+
+      Any_isInstanceOf = newPolyMethod(
+        AnyClass, "isInstanceOf", tparam => BooleanClass.typeConstructor) setFlag FINAL;
+      Any_asInstanceOf = newPolyMethod(
+        AnyClass, "asInstanceOf", tparam => tparam.typeConstructor) setFlag FINAL;
+      Any_isInstanceOfErased = newPolyMethod(
+        AnyClass, "isInstanceOf$erased", tparam => BooleanClass.typeConstructor) setFlag FINAL;
+      Any_asInstanceOfErased = newPolyMethod(
+        AnyClass, "asInstanceOf$erased", tparam => tparam.typeConstructor) setFlag FINAL;
 
       // members of class java.lang.{Object, String}
-      Object_eq           = newMethod(ObjectClass, "eq")
-				.setInfo(MethodType(List(AnyRefClass.tpe), BooleanClass.tpe))
-				.setFlag(FINAL);
-      Object_synchronized = newMethod(ObjectClass, "synchronized")
-				.setFlag(FINAL);
-	{ val tparam = newTypeParam(Object_synchronized, 0);
-	  Object_synchronized.setInfo(
-	    PolyType(
-	      List(tparam),
-	      MethodType(List(tparam.typeConstructor), tparam.typeConstructor)));
-	}
-      String_+            = newMethod(StringClass, "+")
-				.setInfo(MethodType(List(AnyClass.tpe), StringClass.tpe))
-				.setFlag(FINAL);
+      Object_eq = newMethod(
+        ObjectClass, "eq", List(AnyRefClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
+      Object_ne = newMethod(
+        ObjectClass, "ne", List(AnyRefClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
+      Object_synchronized = newPolyMethod(
+        ObjectClass, "synchronized", tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL;
+
+      String_+ = newMethod(
+        StringClass, "+", List(AnyClass.typeConstructor), StringClass.typeConstructor) setFlag FINAL;
 
       // pattern wildcard
-      PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.tpe)
+      PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor)
     }
   }
 }

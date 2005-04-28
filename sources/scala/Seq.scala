@@ -11,7 +11,7 @@ package scala;
 
 
 object Seq {
-  def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] = new Ordered[Seq[A]] with Proxy(xs) {
+  def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] = new Proxy(xs) with Ordered[Seq[A]] {
     def compareTo[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
       case ys: Seq[A] =>
         var res = 0;
@@ -35,7 +35,7 @@ object Seq {
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
+trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
 
   /** Returns the length of the sequence.
   *

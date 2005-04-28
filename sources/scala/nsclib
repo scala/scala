@@ -1,0 +1,1 @@
+scala scala.tools.nsc.Main -bootclasspath /home/linuxsoft/apps/java-1.4.2_07/jre/lib/rt.jar -classpath "bootclasses:$HOME/scala/sources" -verbose -prompt -nopredefs

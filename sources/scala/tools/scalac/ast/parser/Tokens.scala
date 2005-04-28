@@ -64,6 +64,7 @@ object Tokens {
   val FALSE = 42;
   val OBJECT = 43;
   val CLASS = 44;
+  val IMPLICIT = 45;
 
   val IMPORT = 46;
   val PACKAGE = 47;
@@ -180,6 +181,7 @@ object Tokens {
   enterKeyword("finally", FINALLY);
   enterKeyword("for", FOR);
   enterKeyword("if", IF);
+  enterKeyword("implicit", IMPLICIT);
   enterKeyword("import", IMPORT);
   enterKeyword("new", NEW);
   enterKeyword("null", NULL);

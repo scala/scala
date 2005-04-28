@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-import scala.tools.util.Position;
+import scala.tools.util.{AbstractFile, Position}
 import Flags._;
 
 abstract class Symbols: SymbolTable {
@@ -111,6 +111,7 @@ abstract class Symbols: SymbolTable {
     final def isModuleClass = isClass && hasFlag(MODULE);
     final def isPackageClass = isClass && hasFlag(PACKAGE);
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName;
+    final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME;
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName;
 
     /** Does this symbol denote a stable value? */
@@ -168,7 +169,7 @@ abstract class Symbols: SymbolTable {
     final def resetFlag(mask: long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: long): long = rawflags & mask;
     final def hasFlag(mask: long): boolean = (rawflags & mask) != 0;
-    final def resetFlags: unit = { rawflags = rawflags & SOURCEFLAGS }
+    final def resetFlags: unit = { rawflags = rawflags & SourceFlags }
 
 // Info and Type -------------------------------------------------------------------
 
@@ -187,7 +188,7 @@ abstract class Symbols: SymbolTable {
     final def info: Type = {
       var cnt = 0;
       while ((rawflags & INITIALIZED) == 0) {
-        assert(infos != null, "infos null for " + this.name + " " + (this == definitions.EmptyPackageClass));//debug
+        assert(infos != null, this.name);
 	val tp = infos.info;
         if ((rawflags & LOCKED) != 0) {
           setInfo(ErrorType);
@@ -203,7 +204,7 @@ abstract class Symbols: SymbolTable {
 	cnt = cnt + 1;
 	// allow for two completions:
 	//   one: sourceCompleter to LazyType, two: LazyType to completed type
-	if (cnt == 2) throw new Error("no progress in completing " + this + ":" + tp);
+	if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp);
       }
       rawInfo
     }
@@ -212,11 +213,9 @@ abstract class Symbols: SymbolTable {
     def setInfo(info: Type): this.type = {
       infos = new TypeHistory(phase, info, null);
       limit = phase;
-      assert(info != null, "setInfo(null) for " + name + " at phase " + phase);//debug
+      assert(info != null);
       rawflags = if (info.isComplete) rawflags | INITIALIZED & ~LOCKED;
 		 else rawflags & ~INITIALIZED & ~LOCKED;
-      if (info.isInstanceOf[MethodType] || info.isInstanceOf[PolyType])
-	assert(isClass || hasFlag(METHOD));
       this
     }
 
@@ -248,7 +247,7 @@ abstract class Symbols: SymbolTable {
           phase = current;
           limit = current;
 	}
-	assert(infos != null, name.toString() + " " + limit + " " + phase);//debug
+	assert(infos != null/*, name.toString() + " " + limit + " " + phase*/);
 	infos.info
       } else {
 	var infos = this.infos;
@@ -278,7 +277,15 @@ abstract class Symbols: SymbolTable {
     def typeConstructor: Type = throw new Error("typeConstructor inapplicable for " + this);
 
     /** The type parameters of this symbol */
-    def typeParams: List[Symbol] = rawInfo.typeParams;
+    def typeParams: List[Symbol] = {
+/*
+      if (!hasFlag(MODULE)) {
+        System.out.println("complete load " + this);
+        rawInfo.completeLoad(this);
+      }
+*/
+      rawInfo.typeParams
+    }
 
     /** Reset symbol to initial state
      */
@@ -337,7 +344,7 @@ abstract class Symbols: SymbolTable {
 
     def suchThat(cond: Symbol => boolean): Symbol = {
       val result = filter(cond);
-      assert(!result.hasFlag(OVERLOADED));
+      assert(!result.hasFlag(OVERLOADED)/*, result.alternatives*/);
       result
     }
 
@@ -412,10 +419,11 @@ abstract class Symbols: SymbolTable {
           sym => (sym hasFlag MODULE) && (sym.rawInfo != NoType));
       else NoSymbol;
 
-    /** For a module its linked class, for a class its linked module, NoSymbol otherwise */
+    /** For a module its linked class, for a class its linked module or case factory otherwise */
     final def linkedSym: Symbol =
-      if (isModule) linkedClass
-      else if (isClass) linkedModule
+      if (isTerm) linkedClass
+      else if (isClass && owner.isPackageClass)
+        owner.info.decl(name.toTermName).suchThat(sym => sym.rawInfo != NoType)
       else NoSymbol;
 
     /** The module corresponding to this module class (note that this
@@ -554,7 +562,7 @@ abstract class Symbols: SymbolTable {
 
     /** String representation of symbol's definition */
     final def defString: String =
-      compose(List(flagsToString(flags & EXPLICITFLAGS),
+      compose(List(flagsToString(flags & ExplicitFlags),
 		   keyString,
 		   varianceString + nameString,
 		   infoString(rawInfo)));
@@ -597,7 +605,7 @@ abstract class Symbols: SymbolTable {
         tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
                            this, typeParams map (.tpe));
       }
-      assert(tpeCache != null, "" + this + " " + phase);
+      assert(tpeCache != null/*, "" + this + " " + phase*/);
       tpeCache
     }
     override def typeConstructor: Type = {
@@ -623,7 +631,7 @@ abstract class Symbols: SymbolTable {
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name)
    extends TypeSymbol(initOwner, initPos, initName) {
-    var sourceFile: String = null;
+    var sourceFile: AbstractFile = null;
     private var thissym: Symbol = this;
     override def isClass: boolean = true;
     override def reset(completer: Type): unit = {
@@ -666,7 +674,7 @@ abstract class Symbols: SymbolTable {
    *  Note: Not all module classes are of this type; when unpickled, we get plain class symbols!
    */
   class ModuleClassSymbol(module: ModuleSymbol) extends ClassSymbol(module.owner, module.pos, module.name.toTypeName) {
-    setFlag(module.getFlag(MODULE2CLASSFLAGS) | MODULE | FINAL);
+    setFlag(module.getFlag(ModuleToClassFlags) | MODULE | FINAL);
     override def sourceModule = module;
   }
 

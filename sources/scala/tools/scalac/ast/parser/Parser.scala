@@ -127,6 +127,7 @@ class Parser(unit: CompilationUnit) {
     || (s.token == SEALED)
     || (s.token == PRIVATE)
     || (s.token == PROTECTED)
+    || (s.token == IMPLICIT)
     || (s.token == OVERRIDE);
 
   def isLocalModifier(): boolean =
@@ -1413,6 +1414,8 @@ class Parser(unit: CompilationUnit) {
           mod = Modifiers.SEALED;
         case PRIVATE =>
           mod = Modifiers.PRIVATE;
+        case IMPLICIT =>
+          mod = 0;
         case PROTECTED =>
           mod = Modifiers.PROTECTED;
         case OVERRIDE =>

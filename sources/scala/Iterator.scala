@@ -9,6 +9,7 @@
 
 package scala;
 
+import Predef._;
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -20,14 +21,14 @@ package scala;
 object Iterator {
 
   def empty[a] = new Iterator[a] {
-      def hasNext: boolean = false;
-      def next: a = error("next on empty iterator");
+      def hasNext: Boolean = false;
+      def next: a = Predef.error("next on empty iterator");
   }
 
   def single[a](x: a) = new Iterator[a] {
     private var hasnext = false;
-    def hasNext: boolean = hasnext;
-    def next: a = if (hasnext) { hasnext = false; x } else error("next on empty iterator");
+    def hasNext: Boolean = hasnext;
+    def next: a = if (hasnext) { hasnext = false; x } else Predef.error("next on empty iterator");
   }
 
   def fromValues[a](xs: a*) = xs.elements;
@@ -37,7 +38,7 @@ object Iterator {
     def hasNext: Boolean = i < xs.length;
     def next: a =
       if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
-      else error("next on empty iterator");
+      else Predef.error("next on empty iterator");
   }
 
   def fromString(str: String): Iterator[Char] = new Iterator[Char] {
@@ -77,13 +78,13 @@ object Iterator {
    *  @param step the increment value of the iterator
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int, step: Int) = new Iterator[Int] {
+  def range(lo: Int, end: Int, step: Int): Iterator[Int] = new Iterator[Int] {
     private var i = lo;
     def hasNext: Boolean =  i < end;
     def next: Int =
-      if (i < end) { val j = i; i = i + step; j } else error("next on empty iterator");
+      if (i < end) { val j = i; i = i + step; j } else Predef.error("next on empty iterator");
     def head: Int =
-      if (i < end) i else error("head on empty iterator");
+      if (i < end) i else Predef.error("head on empty iterator");
   }
 
   /** Create an iterator with elements
@@ -96,13 +97,13 @@ object Iterator {
    *  @param step the increment function of the iterator
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int, step: Int => Int) = new Iterator[Int] {
+  def range(lo: Int, end: Int, step: Int => Int): Iterator[Int] = new Iterator[Int] {
     private var i = lo;
     def hasNext: Boolean =  i < end;
     def next: Int =
-      if (i < end) { val j = i; i = step(i); j } else error("next on empty iterator");
+      if (i < end) { val j = i; i = step(i); j } else Predef.error("next on empty iterator");
     def head: Int =
-      if (i < end) i else error("head on empty iterator");
+      if (i < end) i else Predef.error("head on empty iterator");
   }
 
   /** Create an iterator with elements
@@ -172,7 +173,7 @@ trait Iterator[+A] {
         def hasNext = remaining > 0 && Iterator.this.hasNext;
         def next: A =
             if (hasNext) { remaining = remaining - 1; Iterator.this.next }
-            else error("next on empty iterator");
+            else Predef.error("next on empty iterator");
     }
 
     /** Removes the first <code>n</code> elements from this iterator.
@@ -216,7 +217,7 @@ trait Iterator[+A] {
             else if (Iterator.this.hasNext) {
                 cur = f(Iterator.this.next);
                 next
-            } else error("next on empty iterator");
+            } else Predef.error("next on empty iterator");
     }
 
     /** Returns an iterator over all the elements of this iterator that
@@ -289,7 +290,7 @@ trait Iterator[+A] {
      *  @return True iff there is an element of this list which is
      *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
      */
-    def contains(elem: Any): boolean = exists { x => x == elem };
+    def contains(elem: Any): Boolean = exists { x => x == elem };
 
     /** Find and return the first element of the iterable object satisfying a
      *  predicate, if any.

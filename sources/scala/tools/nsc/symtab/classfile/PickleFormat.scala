@@ -31,6 +31,7 @@ object PickleFormat {
  *                  | 19 CLASSINFOtpe len_Nat classsym_Ref {tpe_Ref}
  *                  | 20 METHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | 21 POLYTtpe len_Nat tpe_Ref {sym_Ref}
+ *                  | 22 IMPLICITMETHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | 24 LITERALunit len_Nat
  *                  | 25 LITERALboolean len_Nat value_Long
  *                  | 26 LITERALbyte len_Nat value_Long
@@ -71,6 +72,7 @@ object PickleFormat {
   val CLASSINFOtpe = 19;
   val METHODtpe = 20;
   val POLYtpe = 21;
+  val IMPLICITMETHODtpe = 22;
   val LITERALunit = 24;
   val LITERALboolean = 25;
   val LITERALbyte = 26;

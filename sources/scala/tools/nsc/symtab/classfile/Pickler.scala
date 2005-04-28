@@ -28,8 +28,7 @@ abstract class Pickler {
       case PackageDef(_, stats) => stats foreach pickle;
       case ClassDef(_, _, _, _, _) | ModuleDef(_, _, _) =>
 	val sym = tree.symbol;
-	System.out.println("add " + sym);//debug
-	System.out.println("pickling " + tree + " " + sym);//debug
+	if (settings.debug.value) System.out.println("pickling " + tree + " " + sym);//debug
 	val pickle = new Pickle(sym.name.toTermName, sym.owner);
 	def add(sym: Symbol) = {
 	  if (!sym.isExternal && !symData.contains(sym)) {
@@ -75,7 +74,6 @@ abstract class Pickler {
 
     /** Store symbol in index. If symbol is local, also store everything it refers to. */
     def putSymbol(sym: Symbol): unit = if (putEntry(sym)) {
-      System.out.println("put symbol " + sym);
       if (isLocal(sym)) {
 	putEntry(sym.name);
 	putSymbol(sym.owner);
@@ -136,7 +134,6 @@ abstract class Pickler {
     private def writeSymInfo(sym: Symbol): unit = {
       writeRef(sym.name);
       writeRef(sym.owner);
-      System.out.println("" + sym + " has flags " + sym.flags + " " + (sym.flags & PickledFlags));
       writeNat((sym.flags & PickledFlags).asInstanceOf[int]);
       writeRef(sym.info)
     }
@@ -171,10 +168,8 @@ abstract class Pickler {
 	case sym: TypeSymbol =>
 	  writeSymInfo(sym);
 	  if (sym.isAbstractType) TYPEsym else ALIASsym
-	case sym: ModuleSymbol =>
-	  writeSymInfo(sym); MODULEsym
 	case sym: TermSymbol =>
-	  writeSymInfo(sym); VALsym
+	  writeSymInfo(sym); if (sym.isModule) MODULEsym else VALsym
 	case NoType =>
 	  NOtpe
 	case NoPrefix =>
@@ -194,7 +189,9 @@ abstract class Pickler {
 	case ClassInfoType(parents, decls, clazz) =>
 	  writeRef(clazz); writeRefs(parents); CLASSINFOtpe
 	case MethodType(formals, restpe) =>
-	  writeRef(restpe); writeRefs(formals); METHODtpe
+	  writeRef(restpe); writeRefs(formals);
+	  if (entry.isInstanceOf[ImplicitMethodType]) IMPLICITMETHODtpe
+	  else METHODtpe
 	case PolyType(tparams, restpe) =>
 	  writeRef(restpe); writeRefs(tparams); POLYtpe
 	case Constant(null) =>
@@ -232,7 +229,7 @@ abstract class Pickler {
     def finish = {
       assert(writeIndex == 0);
       writeNat(ep);
-      System.out.println("" + ep + " entries");//debug
+      if (settings.debug.value) System.out.println("" + ep + " entries");//debug
       for (val i <- Iterator.range(0, ep)) writeEntry(entries(i))
     }
   }

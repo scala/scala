@@ -10,7 +10,7 @@ import scala.tools.util.{Position, SourceFile}
 import SourceFile.{LF, FF, CR, SU}
 import scala.tools.nsc.util.CharArrayReader;
 
-abstract class Lexical: ParserPhase {
+abstract class Scanners: ParserPhase {
 
   import global._;
 
@@ -102,7 +102,7 @@ abstract class Lexical: ParserPhase {
         token match {
           case ELSE | EXTENDS | WITH | YIELD | CATCH | FINALLY |
                COMMA | SEMI | DOT | COLON | EQUALS | ARROW |
-               LARROW | SUBTYPE | SUPERTYPE | HASH | AT |
+               LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | AT |
                RPAREN | RBRACKET | RBRACE =>
           case _ =>
             if (token == EOF || Position.line(pos) > Position.line(prevpos)) {
@@ -728,6 +728,7 @@ abstract class Lexical: ParserPhase {
       enterKeyword("finally", FINALLY);
       enterKeyword("for", FOR);
       enterKeyword("if", IF);
+      enterKeyword("implicit", IMPLICIT);
       enterKeyword("import", IMPORT);
       enterKeyword("match", MATCH);
       enterKeyword("new", NEW);
@@ -758,6 +759,7 @@ abstract class Lexical: ParserPhase {
       enterKeyword("=>", ARROW);
       enterKeyword("<-", LARROW);
       enterKeyword("<:", SUBTYPE);
+      enterKeyword("<%", VIEWBOUND);
       enterKeyword(">:", SUPERTYPE);
       enterKeyword("#", HASH);
       enterKeyword("@", AT);

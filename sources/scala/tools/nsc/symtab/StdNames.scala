@@ -106,10 +106,12 @@ abstract class StdNames: SymbolTable {
     val apply = newTermName("apply");
     val array = newTermName("array");
     val asInstanceOf = newTermName("asInstanceOf");
+    val asInstanceOfErased = newTermName("asInstanceOf$erased");
     val box = newTermName("box");
     val checkCastability = newTermName("checkCastability");
     val coerce = newTermName("coerce");
     val defaultValue = newTermName("defaultValue");
+    val dummy = newTermName("$dummy");
     val elem = newTermName("elem");
     val elements = newTermName("elements");
     val fail = newTermName("fail");
@@ -124,6 +126,7 @@ abstract class StdNames: SymbolTable {
     val hasNext = newTermName("hasNext");
     val head = newTermName("head");
     val isInstanceOf = newTermName("isInstanceOf");
+    val isInstanceOfErased = newTermName("isInstanceOf$erased");
     val isDefinedAt = newTermName("isDefinedAt");
     val isEmpty = newTermName("isEmpty");
     val java = newTermName("java");

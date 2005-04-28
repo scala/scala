@@ -253,10 +253,10 @@ abstract class ClassfileParser {
       val methodCount = in.nextChar();
       for (val i <- Iterator.range(0, methodCount)) parseMethod();
       if (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol && (sflags & INTERFACE) == 0) {
-        System.out.println("adding constructor to " + clazz);//debug
+        //System.out.println("adding constructor to " + clazz);//DEBUG
         instanceDefs enter
           clazz.newConstructor(Position.NOPOS)
-            .setFlag(clazz.flags & CONSTRFLAGS).setInfo(MethodType(List(), clazz.tpe));
+            .setFlag(clazz.flags & ConstrFlags).setInfo(MethodType(List(), clazz.tpe));
       }
     }
   }
@@ -285,7 +285,13 @@ abstract class ClassfileParser {
       in.skip(4); skipAttributes();
     } else {
       val name = pool.getName(in.nextChar());
-      val info = pool.getType(in.nextChar());
+      var info = pool.getType(in.nextChar());
+      if (name == nme.CONSTRUCTOR)
+	info match {
+	  case MethodType(formals, restpe) =>
+	    assert(restpe == definitions.UnitClass.tpe);
+	    info = MethodType(formals, clazz.tpe)
+	}
       val sym = getOwner(jflags)
         .newMethod(Position.NOPOS, name).setFlag(sflags).setInfo(info);
       parseAttributes(sym, info);

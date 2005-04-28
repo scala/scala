@@ -9,6 +9,8 @@
 
 package scala;
 
+import Predef._;
+
 /** This object provides methods for creating specialized lists, and for
  *  transforming special kinds of lists (e.g. lists of lists).
  *
@@ -312,7 +314,7 @@ sealed trait List[+a] extends Seq[a] {
   def :::[b >: a](prefix: List[b]): List[b] = prefix match {
     case Nil => this
     case head :: tail => head :: (tail ::: this);
-  };
+  }
 
   /** Reverse the given prefix and append the current list to that.
    *  This function is equivalent to an application of <code>reverse</code>
@@ -323,17 +325,17 @@ sealed trait List[+a] extends Seq[a] {
    */
   def reverse_:::[b >: a](prefix: List[b]): List[b] = prefix match {
     case Nil => this
-    case head :: tail => tail reverse_::: (head :: this)
-  };
+    case head :: tail => tail.reverse_:::(head :: this)//todo: remove type annotation
+  }
 
   /** Returns the number of elements in the list.
    *
    *  @return the number of elements in the list.
    */
-  def length: Int = match {
+  def length: Int = this match {
     case Nil => 0
     case _ :: xs => xs.length + 1
-  };
+  }
 
   /** Creates a list with all indices in the list. This is
    *  equivalent to a call to <code>List.range(0, xs.length)</code>.
@@ -360,32 +362,32 @@ sealed trait List[+a] extends Seq[a] {
         error("next on empty Iterator")
       else {
         val result = current.head; current = current.tail; result
-      };
-  };
+      }
+  }
 
   /** Transform this sequence into a list of all elements.
   *
   *  @return  a list which enumerates all elements of this sequence.
   */
-  override def toList = this;
+  override def toList: List[a] = this;
 
   /** Returns the list without its last element.
    *
    *  @return the list without its last element.
    *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
-  def init: List[a] = match {
+  def init: List[a] = this match {
     case Nil => error("Nil.init")
     case _ :: Nil => Nil
     case head :: tail => head :: tail.init
-  };
+  }
 
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
    *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
-  def last: a = match {
+  def last: a = this match {
     case Nil => error("Nil.last")
     case last :: Nil => last
     case _ :: tail => tail.last
@@ -421,9 +423,9 @@ sealed trait List[+a] extends Seq[a] {
     def loop(lead: List[a], lag: List[a]): List[a] = lead match {
       case Nil => lag
       case _ :: tail => loop(tail, lag.tail)
-    };
+    }
     loop(drop(n), this)
-  };
+  }
 
   /** Returns the list wihout its rightmost <code>n</code> elements.
    *
@@ -451,7 +453,7 @@ sealed trait List[+a] extends Seq[a] {
     else {
       val Pair(tail1, tail2) = tail splitAt (n-1);
       Pair(head :: tail1, tail2)
-    };
+    }
 
   /** Returns the longest prefix of this list whose elements satisfy
    *  the predicate <code>p</code>.
@@ -482,7 +484,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @return a pair consisting of the longest prefix of the list whose
    *  elements all satisfy <code>p</code>, and the rest of the list.
    */
-  def span(p: a => Boolean): Pair[List[a], List[a]] = match {
+  def span(p: a => Boolean): Pair[List[a], List[a]] = this match {
     case Nil => Pair(Nil, Nil)
     case head :: tail =>
       if (p(head)) {
@@ -490,11 +492,11 @@ sealed trait List[+a] extends Seq[a] {
         Pair(head :: tail1, tail2)
       } else
         Pair(Nil, this)
-  };
+  }
 
   /** Like <code>span</code> but with the predicate inverted.
    */
-  def break(p: a => Boolean): Pair[List[a], List[a]] = span { x => !p(x) };
+  def break(p: a => Boolean): Pair[List[a], List[a]] = span { x => !p(x) }
 
   /** Returns the <code>n</code>-th element of this list. The first element
    *  (head of the list) is at position 0.
@@ -511,14 +513,14 @@ sealed trait List[+a] extends Seq[a] {
    *  @param f function to apply to each element.
    *  @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
    */
-  def map[b](f: a => b): List[b] = match {
+  def map[b](f: a => b): List[b] = this match {
     case Nil => Nil
     case head :: tail => f(head) :: (tail map f)
   }
 
   /** Like xs map f, but returns xs unchanged if function `f' maps all elements to themselves
    */
-  def mapConserve[b >: a](f: a => b): List[b] = match {
+  def mapConserve[b >: a](f: a => b): List[b] = this match {
     case Nil => Nil
     case head :: tail =>
       val head1 = f(head);
@@ -539,17 +541,17 @@ sealed trait List[+a] extends Seq[a] {
       case head :: tail => loop(tail, f(head) :: res)
     }
     loop(this, Nil)
-  };
+  }
 
   /** Apply the given function <code>f</code> to each element of this list
    *  (while respecting the order of the elements).
    *
    *  @param f the treatment to apply to each element.
    */
-  override def foreach(f: a => Unit): Unit = match {
+  override def foreach(f: a => Unit): Unit = this match {
     case Nil => ()
     case head :: tail => f(head); tail foreach f
-  };
+  }
 
   /** Returns all the elements of this list that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
@@ -557,15 +559,14 @@ sealed trait List[+a] extends Seq[a] {
    *  @param p the redicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
-  def filter(p: a => Boolean): List[a] = match {
+  def filter(p: a => Boolean): List[a] = this match {
     case Nil => this
     case head :: tail =>
-      val tail1 = tail filter p;
-      if (p(head))
-        if (tail eq tail1) this
-        else head :: tail1
-      else tail1
-  };
+      if (p(head)) {
+	val tail1 = tail filter p;
+        if (tail eq tail1) this else head :: tail1
+      } else tail filter p
+  }
 
   /** Removes all elements of the list which satisfy the predicate
    *  <code>p</code>. This is like <code>filter</code> with the
@@ -574,11 +575,11 @@ sealed trait List[+a] extends Seq[a] {
    *  @param p the predicate to use to test elements
    *  @return the list without all elements which satisfy <code>p</code>
    */
-  def remove(p: a => Boolean): List[a] = match {
+  def remove(p: a => Boolean): List[a] = this match {
     case Nil => this
     case head :: tail =>
       if (p(head)) tail remove p else head :: (tail remove p)
-  };
+  }
 
   /** Partition the list in two sub-lists according to a predicate.
    *
@@ -588,13 +589,13 @@ sealed trait List[+a] extends Seq[a] {
    *  relative order of the elements in the sub-lists is the same as in
    *  the original list.
    */
-  def partition(p: a => Boolean): Pair[List[a], List[a]] = match {
+  def partition(p: a => Boolean): Pair[List[a], List[a]] = this match {
     case Nil => Pair(Nil, Nil)
     case head :: tail =>
       val Pair(taily, tailn) = tail partition p;
       if (p(head)) Pair(head :: taily, tailn)
       else Pair(taily, head :: tailn)
-  };
+  }
 
   /** Sort the list according to the comparison function
    *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
@@ -608,7 +609,7 @@ sealed trait List[+a] extends Seq[a] {
    */
   def sort(lt : (a,a) => Boolean): List[a] = {
     def sort_1(smaller: List[a], acc: List[a]): List[a] =
-      smaller.match {
+      smaller match {
         case Nil =>
           acc
         case List(x) =>
@@ -629,7 +630,7 @@ sealed trait List[+a] extends Seq[a] {
           sort_1(x::small, y::sort_1(z::large, acc))
         }
       }
-    match {
+    this match {
       case Nil =>
         this
       case List(x) =>
@@ -658,10 +659,10 @@ sealed trait List[+a] extends Seq[a] {
    *  @param p the predicate for which to count
    *  @return the number of elements satisfying the predicate <code>p</code>.
    */
-  def count(p: a => Boolean): Int = match {
+  def count(p: a => Boolean): Int = this match {
     case Nil => 0
     case head :: tail => if (p(head)) 1 + (tail count p) else (tail count p)
-  };
+  }
 
   /** Tests if the predicate <code>p</code> is satisfied by all elements
    *  in this list.
@@ -689,7 +690,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @return True iff there is an element of this list which is
    *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
    */
-  def contains(elem: Any): boolean = exists { x => x == elem };
+  def contains(elem: Any): boolean = exists { x => x == elem }
 
   /** Find and return the first element of the list satisfying a
    *  predicate, if any.
@@ -698,10 +699,10 @@ sealed trait List[+a] extends Seq[a] {
    *  @return the first element in the list satisfying <code>p</code>,
    *  or <code>None</code> if none exists.
    */
-  override def find(p: a => Boolean): Option[a] = match {
+  override def find(p: a => Boolean): Option[a] = this match {
     case Nil => None
     case head :: tail => if (p(head)) Some(head) else tail find p
-  };
+  }
 
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from left to right, and starting with
@@ -710,10 +711,10 @@ sealed trait List[+a] extends Seq[a] {
    *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
-  override def foldLeft[b](z: b)(f: (b, a) => b): b = match {
+  override def foldLeft[b](z: b)(f: (b, a) => b): b = this match {
     case Nil => z
     case x :: xs => xs.foldLeft[b](f(z, x))(f)
-  };
+  }
 
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from rigth to left, and starting with
@@ -722,21 +723,21 @@ sealed trait List[+a] extends Seq[a] {
    *  @return <code>a0 op (... op (an op z)...)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
-  override def foldRight[b](z: b)(f: (a, b) => b): b = match {
+  override def foldRight[b](z: b)(f: (a, b) => b): b = this match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
-  };
+  }
 
   def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => error("Nil.reduceLeft")
     case x :: xs => ((xs: List[b]) foldLeft (x: b))(f)
-  };
+  }
 
-  def reduceRight[b >: a](f: (b, b) => b): b = match {
+  def reduceRight[b >: a](f: (b, b) => b): b = this match {
     case Nil => error("Nil.reduceRight")
     case x :: Nil => x: b
     case x :: xs => f(x, xs reduceRight f)
-  };
+  }
 
   /** Applies the given function <code>f</code> to each element of
    *  this list, then concatenates the results.
@@ -745,7 +746,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @return <code>f(a0) ::: ... ::: f(an)</code> if this list is
    *  <code>[a0, ..., an]</code>.
    */
-  def flatMap[b](f: a => List[b]): List[b] = match {
+  def flatMap[b](f: a => List[b]): List[b] = this match {
     case Nil => Nil
     case head :: tail => f(head) ::: (tail flatMap f)
   }
@@ -774,7 +775,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @param end ending string.
    *  @return a string representation of this list.
    */
-  def mkString(start: String, sep: String, end: String): String = match {
+  def mkString(start: String, sep: String, end: String): String = this match {
     case Nil => start + end
     case last :: Nil => start + last + end
     case fst :: tail => start + fst + sep + tail.mkString("", sep, end)
@@ -823,7 +824,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @return a list without doubles containing the elements of this
    *  list and those of the given list <code>that</code>.
    */
-  def union[b >: a](that: List[b]): List[b] = match {
+  def union[b >: a](that: List[b]): List[b] = this match {
     case Nil => that
     case head :: tail =>
       if (that contains head) tail union that
@@ -836,7 +837,7 @@ sealed trait List[+a] extends Seq[a] {
    *  @param that the list of elements to remove from this list.
    *  @return this list without the elements of the given list <code>that</code>.
    */
-  def diff[b >: a](that: List[b]): List[b] = match {
+  def diff[b >: a](that: List[b]): List[b] = this match {
     case Nil => Nil
     case head :: tail =>
       if (that contains head) tail diff that
@@ -857,7 +858,7 @@ sealed trait List[+a] extends Seq[a] {
    *
    *  @return the list without doubles.
    */
-  def removeDuplicates: List[a] = match {
+  def removeDuplicates: List[a] = this match {
     case Nil => this
     case head :: tail =>
       if (tail contains head) tail.removeDuplicates

@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-import collection.mutable.ListBuffer;
+import util.ListBuffer;
 import symtab.Flags._;
 
 class EtaExpansion: Analyzer {
@@ -26,7 +26,8 @@ class EtaExpansion: Analyzer {
    *          }
    *  tree is already attributed
    */
-  def etaExpand(tree: Tree, tpe: Type): Tree = {
+  def etaExpand(tree: Tree): Tree = {
+    val tpe = tree.tpe;
     var cnt = 0;
     def freshName() = { cnt = cnt + 1; newTermName("eta$" + cnt) }
     val defs = new ListBuffer[Tree];

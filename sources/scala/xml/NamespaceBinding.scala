@@ -1,11 +1,13 @@
 package scala.xml;
 
+import Predef._;
+
 /** represents namespace bindings and scopes. The binding for the
  * default namespace is treated as a null prefix. the absent namespace is
  * represented with the null uri. Neither prefix nor uri may be empty,
  * which is not checked.
  */
-class NamespaceBinding(val prefix: String, val uri: String, val parent: NamespaceBinding) with java.io.Serializable {
+class NamespaceBinding(val prefix: String, val uri: String, val parent: NamespaceBinding) extends AnyRef with java.io.Serializable {
 
   private val serialVersionUID = 0 -  2518644165573446725L;
 

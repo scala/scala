@@ -23,13 +23,13 @@ trait Ordered[+a] {
    *  <code>x == 0</code>   iff    <code>this == that</code>
    *  <code>x &gt; 0</code>    iff    <code>this &gt; that</code>
    */
-  def compareTo [b >: a <% Ordered[b]](that: b): int;
+  def compareTo [b >: a <% Ordered[b]](that: b): Int;
 
-  def <  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <  0;
+  def <  [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) <  0;
 
-  def >  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >  0;
+  def >  [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) >  0;
 
-  def <= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <= 0;
+  def <= [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) <= 0;
 
-  def >= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >= 0;
+  def >= [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) >= 0;
 }

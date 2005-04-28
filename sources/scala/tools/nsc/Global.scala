@@ -8,7 +8,7 @@ package scala.tools.nsc;
 import java.io._;
 import java.nio.charset._;
 import scala.tools.util._;
-import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
+import scala.collection.mutable.{HashSet,HashMap}
 
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
@@ -116,7 +116,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  def rootLoader: LazyType = loaders.packageLoader(classPath.getRoot());
+  def rootLoader: LazyType = new loaders.PackageLoader(classPath.getRoot());
 
 // Phases ------------------------------------------------------------
 
@@ -130,8 +130,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object analyzer extends Analyzer {
     val global: Global.this.type = Global.this;
   }
+  val infer = new analyzer.Inferencer(analyzer.NoContext);
+
   val namerPhase = new analyzer.NamerPhase(parserPhase);
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
+
   val picklePhase = new pickler.PicklePhase(typeCheckPhase);
 
 /*
@@ -162,7 +165,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     fileset += unit.source.getFile();
   }
 
-  def units: Seq[CompilationUnit] = unitbuf;
+  def units: Iterator[CompilationUnit] = unitbuf.elements;
 
   /** A map from compiled top-level symbols to their source files */
   val symSource = new HashMap[Symbol, AbstractFile];
@@ -203,7 +206,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	}
     } else {
       for (val Pair(sym, file) <- symSource.elements)
-	sym.reset(loaders.sourcefileLoader(file));
+	sym.reset(new loaders.SourcefileLoader(file));
     }
     informTime("total", startTime);
   }
@@ -254,10 +257,18 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   /** Returns the file with the given suffix for the given class. */
   private def getFile(clazz: Symbol, suffix: String) = {
-    val outdir = settings.outdir.value;
-    new File(
-      if (outdir == "") clazz.simpleName.toString() + suffix
-      else outdir + File.separatorChar + clazz.fullNameString(File.separatorChar) + suffix);
+    val outdirname = settings.outdir.value;
+    var outdir = new File(if (outdirname == "") "." else outdirname);
+    val filename = clazz.fullNameString('.');
+    var start = 0;
+    var end = filename.indexOf('.', start);
+    while (end >= start) {
+      outdir = new File(outdir, filename.substring(start, end));
+      if (!outdir.exists()) outdir.mkdir();
+      start = end + 1;
+      end = filename.indexOf('.', start);
+    }
+    new File(outdir, filename.substring(start) + suffix)
   }
 
   private def writeSymblFile(clazz: Symbol, pickled: PickleBuffer) = {

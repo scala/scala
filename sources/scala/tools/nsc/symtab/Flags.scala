@@ -8,7 +8,7 @@ package scala.tools.nsc.symtab;
 object Flags {
 
   // modifiers
-  val DEFERRED      = 0x00000001;   // was `abstract' for members
+  val IMPLICIT      = 0x00000001;
   val FINAL         = 0x00000002;
   val PRIVATE       = 0x00000004;
   val PROTECTED     = 0x00000008;
@@ -20,9 +20,9 @@ object Flags {
                                     // with abstract override.
                                     // Note difference to DEFERRED!
 
-  val METHOD        = 0x00000100;   // a def parameter
-  val TRAIT         = 0x00000200;   // a trait
-  val JAVA          = 0x00000400;   // symbol was defined by a Java class
+  val DEFERRED      = 0x00000100;   // was `abstract' for members
+  val METHOD        = 0x00000200;   // a def parameter
+  val TRAIT         = 0x00000400;   // a trait
   val MODULE        = 0x00000800;   // symbol is module or class implementing a module
 
   val MUTABLE       = 0x00001000;   // symbol is a mutable variable.
@@ -36,11 +36,10 @@ object Flags {
   val LOCAL         = 0x00080000;   // symbol is local to current class.
 	                            // pre: PRIVATE is also set
 
-  val SYNTHETIC     = 0x00100000;   // symbol is compiler-generated
-  val STABLE        = 0x00200000;   // functions that are assumed to be stable
+  val JAVA          = 0x00100000;   // symbol was defined by a Java class
+  val SYNTHETIC     = 0x00200000;   // symbol is compiler-generated
+  val STABLE        = 0x00400000;   // functions that are assumed to be stable
 				    // (typically, access methods for valdefs)
-  val INITIALIZED   = 0x00400000;   // symbol's definition is complete
-  val LOCKED        = 0x00800000;   // temporary flag to catch cyclic dependencies
 
   val ACCESSED      = 0x01000000;   // symbol was accessed at least once
   val SELECTOR      = 0x02000000;   // symbol was used as selector in Select
@@ -61,25 +60,31 @@ object Flags {
   val OVERLOADED    = 0x400000000l; // symbol is overloaded
 
   val TRANS_FLAG    = 0x800000000l; // transient flag guaranteed to be reset after each phase.
-  val LIFTED        = TRANS_FLAG;    // transient flag for lambdalift
-  val INCONSTRUCTOR = TRANS_FLAG;    // transient flag for analyzer
+  val LIFTED        = TRANS_FLAG;   // transient flag for lambdalift
+  val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
+
+  val INITIALIZED   = 0x1000000000l; // symbol's definition is complete
+  val LOCKED        = 0x2000000000l; // temporary flag to catch cyclic dependencies
 
   // masks
-  val SOURCEFLAGS   = 0x00077777;    // these modifiers can be set in source programs.
-  val GENFLAGS      =                // these modifiers can be in generated trees
-    SOURCEFLAGS | SYNTHETIC | STABLE | ACCESSOR | ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE;
-  val EXPLICITFLAGS =                // these modifiers can be set explicitly in source programs.
-    PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE;
+  val SourceFlags   = 0x001FFFFF;    // these modifiers can be set in source programs.
+  val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
+    PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT;
+  val PrintableFlags =               // these modifiers appear in TreePrinter output.
+    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | ACCESSOR |
+    ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE;
+  val GenFlags      =                // these modifiers can be in generated trees
+    SourceFlags | PrintableFlags;
 
-  val ACCESSFLAGS   = PRIVATE | PROTECTED;
-  val VARIANCES     = COVARIANT | CONTRAVARIANT;
-  val CONSTRFLAGS   = JAVA;
-  val PICKLEDFLAGS  = 0x77777777 & ~LOCKED & ~INITIALIZED;
+  val AccessFlags   = PRIVATE | PROTECTED;
+  val Variances     = COVARIANT | CONTRAVARIANT;
+  val ConstrFlags   = JAVA;
+  val PickledFlags  = 0xFFFFFFFF & ~LOCKED & ~INITIALIZED;
 
   /** Module flags inherited by their module-class */
-  val MODULE2CLASSFLAGS = ACCESSFLAGS | PACKAGE;
+  val ModuleToClassFlags = AccessFlags | PACKAGE;
 
-  def flags2mods(flags: long): int = flags.asInstanceOf[int] & GENFLAGS;
+  def flags2mods(flags: long): int = flags.asInstanceOf[int] & GenFlags;
 
   def flagsToString(flags: long): String =
     List.range(0, 63)
@@ -91,8 +96,10 @@ object Flags {
     else if (flag == IS_ERROR) "<is_error>"
     else if (flag == OVERLOADED) "<overloaded>"
     else if (flag == TRANS_FLAG) "<transient>"
+    else if (flag == INITIALIZED) "<initialized>"
+    else if (flag == LOCKED) "<locked>"
     else flag.asInstanceOf[int] match {
-      case DEFERRED      => "<deferred>"
+      case IMPLICIT      => "implicit"
       case FINAL         => "final"
       case PRIVATE       => "private"
       case PROTECTED     => "protected"
@@ -102,9 +109,9 @@ object Flags {
       case CASE          => "case"
       case ABSTRACT      => "abstract"
 
+      case DEFERRED      => "<deferred>"
       case METHOD        => "<method>"
       case TRAIT         => "<trait>"
-      case JAVA          => "<java>"
       case MODULE        => "<module>"
 
       case MUTABLE       => "<mutable>"
@@ -117,14 +124,12 @@ object Flags {
       case ABSOVERRIDE   => "<absoverride>"
       case LOCAL         => "<local>"
 
+      case JAVA          => "<java>"
       case SYNTHETIC     => "<synthetic>"
       case STABLE        => "<stable>"
-      case INITIALIZED   => "<initialized>"
-      case LOCKED        => "<locked>"
 
       case ACCESSED      => "<accessed>"
       case SELECTOR      => "<selector>"
-
       case CAPTURED      => "<captured>"
       case ACCESSOR      => "<accessor>"
 

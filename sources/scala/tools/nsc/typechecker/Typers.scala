@@ -16,7 +16,6 @@ trait Typers: Analyzer {
   abstract class TypeCompleter(val tree: Tree) extends LazyType;
 
   class Typer(context: Context) {
-    import context.unit;
 
     val typechecker = new TypeChecker(context);
 
@@ -53,13 +52,23 @@ trait Typers: Analyzer {
       }
     }
 
+    def caseFactoryCompleter(tree: Tree) = new TypeCompleter(tree) {
+      override def complete(sym: Symbol): unit = {
+	val clazz = tree.symbol;
+	var tpe = clazz.primaryConstructor.tpe;
+	val tparams = clazz.typeParams;
+	if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
+	sym.setInfo(tpe);
+      }
+    }
+
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
       if (sym.isVariable || sym.hasFlag(FINAL)) tpe.deconst else tpe;
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
 	param.symbol = owner.newValueParameter(param.pos, param.name)
-	  .setInfo(typeCompleter(param));
+	  .setInfo(typeCompleter(param)).setFlag(param.mods & IMPLICIT);
         context.scope enter param.symbol;
         param.symbol
       }
@@ -80,7 +89,8 @@ trait Typers: Analyzer {
       val parents = typechecker.parentTypes(templ) map (.tpe);
       val decls = new Scope();
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
-      ClassInfoType(parents, decls, clazz)    }
+      ClassInfoType(parents, decls, clazz)
+    }
 
     private def classSig(tparams: List[AbsTypeDef], tpt: Tree, impl: Template): Type = {
       val tparamSyms = typechecker.reenterTypeParams(tparams);
@@ -91,6 +101,7 @@ trait Typers: Analyzer {
     }
 
     private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): Type = {
+      def checkContractive: unit = {}; //todo: complete
       val meth = context.owner;
       val tparamSyms = typechecker.reenterTypeParams(tparams);
       val vparamSymss = enterValueParams(meth, vparamss);
@@ -100,8 +111,14 @@ trait Typers: Analyzer {
 		    else typechecker.transformExpr(rhs).tpe;
 	  tpt.tpe
 	} else typechecker.transformType(tpt).tpe);
-      def mkMethodType(vparams: List[Symbol], restpe: Type) =
-	MethodType(vparams map (.tpe), restpe);
+      def mkMethodType(vparams: List[Symbol], restpe: Type) = {
+	val formals = vparams map (.tpe);
+	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))	{
+          if (settings.debug.value) System.out.println("create implicit");//debug
+	  checkContractive;
+	  new ImplicitMethodType(formals, restpe)
+	} else MethodType(formals, restpe);
+      }
       makePolyType(
 	tparamSyms,
 	if (vparamSymss.isEmpty) PolyType(List(), restype)
@@ -130,7 +147,7 @@ trait Typers: Analyzer {
             deconstIfNotFinal(sym,
               if (tpt.isEmpty)
                 if (rhs.isEmpty) {
-		  unit.error(tpt.pos, "missing parameter type");
+		  context.error(tpt.pos, "missing parameter type");
                   ErrorType
                 } else {
                   tpt.tpe = new TypeChecker(context.make(tree, sym))
@@ -153,9 +170,11 @@ trait Typers: Analyzer {
               case Pair(from, to) :: rest =>
                 if (from != nme.WILDCARD && base != ErrorType &&
 		    base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
-	          unit.error(tree.pos, from.decode + " is not a member of " + expr);
+	          context.error(tree.pos, from.decode + " is not a member of " + expr);
+		if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
+		  context.error(tree.pos, from.decode + " is renamed twice");
 	        if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
-		  unit.error(tree.pos, to.decode + " appears twice as a target of a renaming");
+		  context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
                 checkSelectors(rest)
               case Nil =>
 	    }
@@ -178,24 +197,26 @@ trait Typers: Analyzer {
     def validate(sym: Symbol): unit = {
       def checkNoConflict(flag1: int, flag2: int): unit =
 	if (sym.hasFlag(flag1) && sym.hasFlag(flag2))
-	  unit.error(sym.pos,
+	  context.error(sym.pos,
 	    if (flag1 == DEFERRED)
 	      "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
 	    else
 	      "illegal combination of modifiers: " +
 	      Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2));
+      if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
+	context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods");
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
-	unit.error(sym.pos, "`abstract' modifier can be used only for classes; " +
+	context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
 	  "\nit should be omitted for abstract members");
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isClass)
-	unit.error(sym.pos, "`override' modifier not allowed for classes");
+	context.error(sym.pos, "`override' modifier not allowed for classes");
       if (sym.info.symbol == definitions.FunctionClass(0) &&
 	  sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
-	unit.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
+	context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
 	if (!sym.isValueParameter && !sym.isTypeParameter &&
 	    (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
-	  unit.error(sym.pos,
+	  context.error(sym.pos,
 	    "only classes can have declared but undefined members" +
 	    (if (!sym.isVariable) ""
 	     else "\n(Note that variables need to be initialized to be defined)"));

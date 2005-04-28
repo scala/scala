@@ -103,13 +103,15 @@ abstract class UnPickler {
 	      sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot
 		    else owner.newModule(Position.NOPOS, name, mclazz)
 	    case VALsym =>
-	      sym = owner.newValue(Position.NOPOS, name)
+	      sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
+		    else owner.newValue(Position.NOPOS, name)
 	    case _ =>
 	      errorBadSignature("bad symbol tag: " + tag);
 	  }
 	  sym.setFlag(flags);
 	  sym.setInfo(new LazyTypeRef(inforef));
-	  if (sym.owner.isClass && !sym.isModuleClass && !sym.hasFlag(PARAM))
+	  if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
+              !sym.isModuleClass && !sym.hasFlag(PARAM))
             sym.owner.info.decls enter sym
       }
       sym
@@ -144,6 +146,9 @@ abstract class UnPickler {
 	case METHODtpe =>
 	  val restpe = readTypeRef();
 	  MethodType(until(end, readTypeRef), restpe)
+	case IMPLICITMETHODtpe =>
+	  val restpe = readTypeRef();
+	  new ImplicitMethodType(until(end, readTypeRef), restpe)
 	case POLYtpe =>
 	  val restpe = readTypeRef();
 	  PolyType(until(end, readSymbolRef), restpe)

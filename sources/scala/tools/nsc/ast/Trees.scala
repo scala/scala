@@ -146,7 +146,7 @@ class Trees: Global {
 
   /** Bind of a variable to a rhs pattern, eliminated by TransMatch */
   case class Bind(name: Name, body: Tree)
-       extends TermTree;
+       extends DefTree;
 
   /** Anonymous function, eliminated by analyzer */
   case class Function(vparams: List[ValDef], body: Tree)

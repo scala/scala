@@ -129,18 +129,21 @@ abstract class Types: SymbolTable {
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: List[Symbol] = findMember(nme.ANYNAME, 0).alternatives;
+    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0).alternatives;
 
     /** A list of all non-private members of this type (defined or inherited) */
-    def nonPrivateMembers: List[Symbol] = findMember(nme.ANYNAME, PRIVATE).alternatives;
+    def nonPrivateMembers: List[Symbol] = findMember(nme.ANYNAME, PRIVATE, 0).alternatives;
+
+    /** A list of all implicit symbols of this type  (defined or inherited) */
+    def implicitMembers: List[Symbol] = findMember(nme.ANYNAME, 0, IMPLICIT).alternatives;
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, 0);
+    def member(name: Name): Symbol = findMember(name, 0, 0);
 
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE);
+    def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE, 0);
 
     /** The least type instance of given class which is a supertype
      *  of this type */
@@ -159,10 +162,8 @@ abstract class Types: SymbolTable {
       sym.info.asSeenFrom(this, sym.owner);
 
     /** The type of `sym', seen as a member of this type. */
-    def memberType(sym: Symbol): Type = {
-      assert(sym.tpe != null, sym);//debug
+    def memberType(sym: Symbol): Type =
       sym.tpe.asSeenFrom(this, sym.owner);
-    }
 
     /** Substitute types `to' for occurrences of references to symbols `from'
      *  in this type. */
@@ -288,6 +289,9 @@ abstract class Types: SymbolTable {
     /** If this is a lazy type, assign a new type to `sym'. */
     def complete(sym: Symbol): unit = {}
 
+    /** If this is a symbol loader type, assign the loaded type to `sym'. */
+    def completeLoad(sym: Symbol): unit = {}
+
     private def findDecl(name: Name, excludedFlags: int): Symbol = {
       var alts: List[Symbol] = List();
       var sym: Symbol = NoSymbol;
@@ -306,7 +310,7 @@ abstract class Types: SymbolTable {
       else baseClasses.head.newOverloaded(this, alts)
     }
 
-    protected def findMember(name: Name, excludedFlags: int): Symbol = {
+    protected def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
       //System.out.println("find member " + name.decode + " in " + this.baseClasses);//DEBUG
       var members: Scope = null;
       var member: Symbol = NoSymbol;
@@ -321,26 +325,30 @@ abstract class Types: SymbolTable {
 	  var entry = if (name == nme.ANYNAME) decls.elems else decls lookupEntry name;
 	  while (entry != null) {
 	    val sym = entry.sym;
-	    val excl = sym.getFlag(excluded);
-	    if (excl == 0) {
-	      if (name.isTypeName) {
-		return sym
-	      } else if (member == NoSymbol) {
-		member = sym
-	      } else if (members == null) {
-                if (member.name != sym.name || !memberType(member).matches(memberType(sym)))
-		  members = new Scope(List(member, sym))
-	      } else {
-		var prevEntry = members lookupEntry sym.name;
-		while (prevEntry != null &&
-		       !(memberType(prevEntry.sym) matches memberType(sym)))
-		  prevEntry = members lookupNextEntry prevEntry;
-		if (prevEntry == null)
-		  members enter sym
-	      }
-	    } else if (excl == DEFERRED) {
-	      continue = true;
-	    }
+            if (sym.getFlag(requiredFlags) == requiredFlags) {
+              val excl = sym.getFlag(excluded);
+              if (excl == 0) {
+                if (name.isTypeName) {
+                  return sym
+                } else if (member == NoSymbol) {
+                  member = sym
+                } else if (members == null) {
+                  if (member.name != sym.name ||
+                      member != sym && !memberType(member).matches(memberType(sym)))
+                    members = new Scope(List(member, sym))
+                } else {
+                  var prevEntry = members lookupEntry sym.name;
+                  while (prevEntry != null && prevEntry.sym != sym &&
+                         !(memberType(prevEntry.sym) matches memberType(sym)))
+                    prevEntry = members lookupNextEntry prevEntry;
+                  if (prevEntry == null) {
+                    members enter sym;
+		  }
+                }
+              } else if (excl == DEFERRED) {
+                continue = true;
+              }
+            }
 	    entry = if (name == nme.ANYNAME) entry.next else decls lookupNextEntry entry
 	  } // while (entry != null)
 	  excluded = excluded | PRIVATE
@@ -384,7 +392,7 @@ abstract class Types: SymbolTable {
     // todo see whether we can do without
     override def isError: boolean = true;
     override def decls: Scope = new ErrorScope(NoSymbol);
-    override def findMember(name: Name, excludedFlags: int): Symbol = decls lookup name;
+    override def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = decls lookup name;
     override def baseType(clazz: Symbol): Type = this;
     override def toString(): String = "<error>";
     override def narrow: Type = this;
@@ -437,7 +445,9 @@ abstract class Types: SymbolTable {
     }
     override def symbol = sym;
     override def prefix: Type = pre;
-    override def prefixString: String = pre.prefixString + sym.nameString + ".";
+    override def prefixString: String =
+      if (sym.isEmptyPackage && !settings.debug.value) ""
+      else pre.prefixString + sym.nameString + ".";
   }
 
   /** A class for the bounds of abstract types and type parameters
@@ -473,7 +483,7 @@ abstract class Types: SymbolTable {
         validClosure = phase;
         closureCache = null;
         closureCache = computeClosure;
-	System.out.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//debug
+	//System.out.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
       }
       if (closureCache == null)
         throw new TypeError("illegal cyclic reference involving " + symbol);
@@ -519,7 +529,7 @@ abstract class Types: SymbolTable {
       if (parents.isEmpty) this else parents.head.erasure;
 
     override def toString(): String =
-      parents.mkString("", " with ", "") + decls.toString()
+      parents.mkString("", " with ", "") + decls.mkString("{", "; ", "}")
   }
 
   /** A class representing intersection types with refinements of the form
@@ -590,8 +600,7 @@ abstract class Types: SymbolTable {
       if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
       else {
         val result = transform(sym.info.closure);
-        System.out.println("closure[" + this + "] = " +
-                           List.fromArray(sym.info.closure) + " => " + result);
+        //System.out.println("closure[" + this + "] = " + List.fromArray(sym.info.closure) + " => " + result);//DEBUG
         result
       }
 
@@ -630,7 +639,9 @@ abstract class Types: SymbolTable {
     override def toString(): String = paramTypes.mkString("(", ",", ")") + resultType;
   }
 
-  class ImplicitMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt);
+  class ImplicitMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt) {
+    override def toString(): String = paramTypes.mkString("(implicit ", ",", ")") + resultType;
+  }
 
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
@@ -652,7 +663,6 @@ abstract class Types: SymbolTable {
 
     override def toString(): String =
       (if (typeParams.isEmpty) "=> " else typeParams.mkString("[", ",", "]")) + resultType;
-
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = typeParams map (.cloneSymbol(owner));
@@ -721,7 +731,7 @@ abstract class Types: SymbolTable {
       if (sym1.hasFlag(LOCKED))
         throw new TypeError("illegal cyclic reference involving " + sym1);
       sym1.setFlag(LOCKED);
-      val result = sym1.info.asSeenFrom(pre, sym1.owner).subst(sym1.typeParams, args);
+      val result = sym1.info.resultType.asSeenFrom(pre, sym1.owner).subst(sym1.typeParams, args);
       sym1.resetFlag(LOCKED);
       result
     } else {
@@ -821,6 +831,7 @@ abstract class Types: SymbolTable {
         val paramtypes1 = paramtypes mapConserve this;
         val result1 = this(result);
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
+        else if (tp.isInstanceOf[ImplicitMethodType]) new ImplicitMethodType(paramtypes1, result1)
         else MethodType(paramtypes1, result1)
       case PolyType(tparams, result) =>
         val tparams1 = mapOver(tparams);
@@ -891,7 +902,7 @@ abstract class Types: SymbolTable {
 	      if (symclazz == clazz && (pre.widen.symbol isSubClass symclazz))
 		pre.baseType(symclazz) match {
 		  case TypeRef(_, basesym, baseargs) =>
-		    instParam(basesym.typeParams, baseargs);
+		    instParam(basesym.info.typeParams, baseargs);
 		  case _ =>
                     throwError
 		}
@@ -1050,7 +1061,8 @@ abstract class Types: SymbolTable {
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         pts1.length == pts2.length &&
         isSameTypes(pts1, pts2) &&
-        res1 =:= res2
+        res1 =:= res2 &&
+        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
       case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
         tparams1.length == tparams2.length &&
         List.forall2(tparams1, tparams2)
@@ -1100,6 +1112,7 @@ abstract class Types: SymbolTable {
       case Pair(ConstantType(_, _), ConstantType(_, _)) => tp1 =:= tp2
 
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
+	//System.out.println("isSubType " + tp1 + " " + tp2);//DEBUG
         def isSubArgs(tps1: List[Type], tps2: List[Type],
                       tparams: List[Symbol]): boolean = {
           tps1.isEmpty && tps2.isEmpty
@@ -1111,21 +1124,23 @@ abstract class Types: SymbolTable {
            isSubArgs(tps1.tail, tps2.tail, tparams.tail)
         }
         sym1 == sym2 && (pre1 <:< pre2) &&
-        isSubArgs(args1, args2, sym1.typeParams)
+        isSubArgs(args1, args2, sym1.info.typeParams)
         ||
-        sym1.isAbstractType && (tp1.bounds.hi <:< tp2)
+        sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
         ||
-        sym2.isAbstractType && (tp1 <:< tp2.bounds.lo)
+        sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
         ||
         sym2.isClass &&
-          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })//debug
+          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
         ||
         sym1 == AllClass
         ||
         sym1 == AllRefClass && sym2 != AllClass && tp2 <:< AnyRefClass.tpe
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         pts1.length == pts2.length &&
-        isSameTypes(pts1, pts2) && (res1 <:< res2)
+        isSameTypes(pts1, pts2) &&
+        (res1 <:< res2) &&
+        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
       case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
         tparams1.length == tparams2.length &&
         List.forall2(tparams1, tparams2)
@@ -1191,12 +1206,15 @@ abstract class Types: SymbolTable {
   /** A function implementing tp1 matches tp2 */
   private def matchesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
     case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
-      isSameTypes(pts1, pts2) && (res1 matches res2)
+      isSameTypes(pts1, pts2) && (res1 matches res2) &&
+      tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
     case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       tparams1.length == tparams2.length &&
       (res1 matches res2.substSym(tparams2, tparams1))
-    case Pair(MethodType(_, _), _) | Pair(PolyType(_, _), _) =>
-      false
+    case Pair(MethodType(_, _), _) => false
+    case Pair(PolyType(_, _), _)   => false
+    case Pair(_, MethodType(_, _)) => false
+    case Pair(_, PolyType(_, _))   => false
     case _ =>
       !phase.exactMatch || tp1 =:= tp2
   }
@@ -1296,8 +1314,18 @@ abstract class Types: SymbolTable {
   /** The least sorted upwards closed upper bound of a non-empty list
    *  of closures.
    *  @See lubList for more explanations. */
-  private def lubArray(tss: List[Array[Type]]): Array[Type] =
-    Predef.Array(lubList(tss map (ts: Array[Type] => List.fromArray(ts))): _* );
+  private def lubArray(tss: List[Array[Type]]): Array[Type] = {
+    var lubs = lubList(tss map (ts: Array[Type] => List.fromArray(ts)));
+    var arr = new Array[Type](lubs.length);
+    var i = 0;
+    while (i < arr.length) {
+      arr(i) = lubs.head;
+      i = i + 1;
+      lubs = lubs.tail
+    }
+    arr
+    // todo: replace by  Predef.Array(lubs: _* )
+  }
 
   /** The minimal symbol (wrt Symbol.isLess) of a list of types */
   private def minSym(tps: List[Type]): Symbol =
@@ -1382,7 +1410,10 @@ abstract class Types: SymbolTable {
             addMember(lubThisType, lubType, lubsym(sym));
         if (lubType.decls.isEmpty) lubBase else lubType;
     }
-    limitRecursion(ts, "least upper", lub0);
+    if (settings.debug.value) System.out.println("lub of " + ts);//debug
+    val res = limitRecursion(ts, "least upper", lub0);
+    if (settings.debug.value) System.out.println("lub of " + ts + " is " + res);//debug
+    res
   }
 
   /** The greatest lower bound wrt <:< of a list of types */
@@ -1458,7 +1489,7 @@ abstract class Types: SymbolTable {
   /** The most deeply nested owner that contains all the symbols
    *  of thistype or prefixless typerefs/singletype occurrences in given list of types */
   private def commonOwner(tps: List[Type]): Symbol = {
-    System.out.println("computing common owner of types " + tps);//debug
+    if (settings.debug.value) System.out.println("computing common owner of types " + tps);//debug
     commonOwnerMap.init;
     tps mapConserve commonOwnerMap;
     commonOwnerMap.result
@@ -1477,7 +1508,7 @@ abstract class Types: SymbolTable {
       val pre = if (variance == 1) lub(pres) else glb(pres);
       val argss = tps map (.typeArgs);
       val args =
-	List.map2(sym.typeParams, List.transpose(argss))
+	List.map2(sym.info.typeParams, List.transpose(argss))
         ((tparam, as) =>
 	  if (tparam.variance == variance) lub(as)
 	  else if (tparam.variance == -variance) glb(as)

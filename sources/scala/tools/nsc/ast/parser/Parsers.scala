@@ -6,7 +6,7 @@
 package scala.tools.nsc.ast.parser;
 
 import scala.tools.util.Position;
-import scala.collection.mutable.ListBuffer;
+import util.ListBuffer;
 import symtab.Flags;
 import Tokens._;
 
@@ -38,7 +38,7 @@ import Tokens._;
  *  (4) Wraps naked case definitions in a match as follows:
  *        { cases }   ==>   (x => x.match {cases}), except when already argument to match
  */
-abstract class Syntactic: ParserPhase {
+abstract class Parsers: ParserPhase {
 
   import global._;
   import posAssigner.atPos;
@@ -56,7 +56,7 @@ abstract class Syntactic: ParserPhase {
     var loopNestingDepth = 0;
 
     object treeBuilder extends TreeBuilder {
-      val global: Syntactic.this.global.type = Syntactic.this.global;
+      val global: Parsers.this.global.type = Parsers.this.global;
       def freshName(prefix: String): Name = unit.fresh.newName(prefix);
     }
     import treeBuilder._;
@@ -126,7 +126,7 @@ abstract class Syntactic: ParserPhase {
 /////// TOKEN CLASSES //////////////////////////////////////////////////////
 
     def isModifier: boolean = in.token match {
-      case ABSTRACT | FINAL | SEALED | PRIVATE | PROTECTED | OVERRIDE => true
+      case ABSTRACT | FINAL | SEALED | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT => true
       case _ => false
     }
 
@@ -741,12 +741,13 @@ abstract class Syntactic: ParserPhase {
 	simpleExpr()
       }
 
-    /* SimpleExpr    ::= literal
+    /* SimpleExpr    ::= new SimpleType [`(' [Exprs] `)'] {`with' SimpleType} [TemplateBody]
+     *                |  SimpleExpr1
+     * SimpleExpr1   ::= literal
      *                | xLiteral
      *                | StableRef
      *                | `(' [Expr] `)'
      *                | BlockExpr
-     *                | new SimpleType [`(' [Exprs] `)'] {`with' SimpleType} [TemplateBody]
      *                | SimpleExpr `.' Id
      *                | SimpleExpr TypeArgs
      *                | SimpleExpr ArgumentExprs
@@ -784,7 +785,7 @@ abstract class Syntactic: ParserPhase {
 	case LBRACE =>
 	  t = blockExpr()
 	case NEW =>
-	  t = atPos(in.skipToken()) {
+	  return atPos(in.skipToken()) {
             val parents = new ListBuffer[Tree] + simpleType();
             var args: List[Tree] = List();
             if (in.token == LPAREN) args = argumentExprs();
@@ -1058,6 +1059,8 @@ abstract class Syntactic: ParserPhase {
           loop(addMod(mods, Flags.PROTECTED))
 	case OVERRIDE =>
           loop(addMod(mods, Flags.OVERRIDE))
+	case IMPLICIT =>
+          loop(addMod(mods, Flags.IMPLICIT))
 	case _ =>
           mods
       }
@@ -1091,48 +1094,60 @@ abstract class Syntactic: ParserPhase {
 
 //////// PARAMETERS //////////////////////////////////////////////////////////
 
-    /** ParamClauses ::= {ParamClause}
-     */
-    def paramClauses(ofClass: boolean): List[List[ValDef]] = {
-      val vds = new ListBuffer[List[ValDef]];
-      while (in.token == LPAREN) vds += paramClause(ofClass);
-      vds.toList
-    }
-
-    /** ParamClause ::= `(' [Param {`,' Param}] `)'
-     *  ClassParamClause ::= `(' [ClassParam {`,' ClassParam}] `)'
-     */
-    def paramClause(ofClass: boolean): List[ValDef] = {
-      accept(LPAREN);
-      val params = new ListBuffer[ValDef];
-      if (in.token != RPAREN) {
-        params += param(ofClass);
-        while (in.token == COMMA) {
-          in.nextToken(); params += param(ofClass)
-        }
-      }
-      accept(RPAREN);
-      params.toList
-    }
-
-    /** Param ::= Id `:' ParamType
+    /** ParamClauses ::= {`(' [Param {`,' Param}] ')'}
+     *                   [`(' implicit Param {`,' Param} `)']
+     *  Param ::= Id `:' ParamType
+     *  ClassParamClauses ::= {`(' [ClassParam {`' ClassParam}] ')'}
+     *                        [`(' implicit ClassParam {`,' ClassParam} `)']
      *  ClassParam ::= [[modifiers] val] Param
      */
-    def param(ofClass: boolean): ValDef = {
-      atPos(in.pos) {
-	var mods = Flags.PARAM;
-	if (ofClass) {
-	  mods = modifiers() | Flags.PARAMACCESSOR;
-	  if (in.token == VAL) in.nextToken()
-	  else {
-	    if (mods != Flags.PARAMACCESSOR) accept(VAL);
-	    mods = mods | Flags.PRIVATE | Flags.LOCAL;
+    def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: boolean): List[List[ValDef]] = {
+      var implicitmod = 0;
+      def param(): ValDef = {
+	atPos(in.pos) {
+	  var mods = Flags.PARAM;
+	  if (owner.isTypeName) {
+	    mods = modifiers() | Flags.PARAMACCESSOR;
+	    if (in.token == VAL) in.nextToken()
+	    else {
+	      if (mods != Flags.PARAMACCESSOR) accept(VAL);
+	      if (!ofCaseClass) mods = mods | Flags.PRIVATE | Flags.LOCAL;
+	    }
 	  }
+          val name = ident();
+          accept(COLON);
+          ValDef(mods | implicitmod, name, paramType(), EmptyTree)
 	}
-        val name = ident();
-        accept(COLON);
-        ValDef(mods, name, paramType(), EmptyTree)
       }
+      def paramClause(): List[ValDef] = {
+	val params = new ListBuffer[ValDef];
+	if (in.token != RPAREN) {
+	  if (in.token == IMPLICIT) {
+	    if (!implicitViews.isEmpty)
+	      syntaxError("cannot have both view bounds `<%' and implicit parameters", false);
+	    in.nextToken();
+	    implicitmod = Flags.IMPLICIT
+	  }
+          params += param();
+          while (in.token == COMMA) {
+            in.nextToken(); params += param()
+          }
+	}
+	params.toList
+      }
+      val vds = new ListBuffer[List[ValDef]];
+      val pos = in.pos;
+      while (implicitmod == 0 && in.token == LPAREN) {
+	in.nextToken();
+	vds += paramClause();
+	accept(RPAREN);
+      }
+      val result = vds.toList;
+      if (owner == nme.CONSTRUCTOR &&
+	  (result.isEmpty || (!result.head.isEmpty &&
+			      (result.head.head.mods & Flags.IMPLICIT) != 0)))
+	syntaxError(pos, "auxiliary constructor needs non-implicit parameter list", false);
+      addImplicitViews(result, implicitViews)
     }
 
     /** ParamType ::= Type | `=>' Type | Type `*'
@@ -1152,37 +1167,41 @@ abstract class Syntactic: ParserPhase {
       }
 
     /** TypeParamClauseOpt ::= [`[' TypeParam {`,' TypeParam} `]']
+     *  TypeParam    ::= [`+' | `-'] FunTypeParam
      *  FunTypeParamClauseOpt ::= [`[' FunTypeParam {`,' FunTypeParam} `]']
+     *  FunTypeParam ::= Id TypeBounds
      */
-    def typeParamClauseOpt(ofClass: boolean): List[AbsTypeDef] = {
+    def typeParamClauseOpt(owner: Name, implicitViews: ListBuffer[Tree]): List[AbsTypeDef] = {
+      def typeParam(): AbsTypeDef = {
+	var mods = Flags.PARAM;
+	if (owner.isTypeName && in.token == IDENTIFIER) {
+          if (in.name == PLUS) {
+            in.nextToken();
+            mods = mods | Flags.COVARIANT;
+          } else if (in.name == MINUS) {
+            in.nextToken();
+            mods = mods | Flags.CONTRAVARIANT;
+          }
+	}
+        val pname = ident();
+	val param = atPos(in.pos) { typeBounds(mods, pname) }
+        if (in.token == VIEWBOUND && (implicitViews != null))
+          implicitViews += atPos(in.skipToken()) {
+            makeFunctionTypeTree(List(Ident(pname.toTypeName)), typ())
+          }
+        param
+      }
       val params = new ListBuffer[AbsTypeDef];
       if (in.token == LBRACKET) {
         in.nextToken();
-        params += typeParam(ofClass);
+        params += typeParam();
         while (in.token == COMMA) {
           in.nextToken();
-          params += typeParam(ofClass);
+          params += typeParam();
         }
         accept(RBRACKET);
       }
       params.toList
-    }
-
-    /** TypeParam    ::= [`+' | `-'] FunTypeParam
-     *  FunTypeParam ::= Id TypeBounds
-     */
-    def typeParam(ofClass: boolean): AbsTypeDef = {
-      var mods = Flags.PARAM;
-      if (ofClass && in.token == IDENTIFIER) {
-        if (in.name == PLUS) {
-          in.nextToken();
-          mods = mods | Flags.COVARIANT;
-        } else if (in.name == MINUS) {
-          in.nextToken();
-          mods = mods | Flags.CONTRAVARIANT;
-        }
-      }
-      atPos(in.pos) { typeBounds(mods, ident()) }
     }
 
     /** TypeBounds ::= [`>:' Type] [`<:' Type]
@@ -1321,14 +1340,14 @@ abstract class Syntactic: ParserPhase {
       } while (in.token == COMMA);
       val tp = typedOpt();
       val rhs =
-	if (tp == EmptyTree || in.token == EQUALS) equalsExpr()
+	if (tp.isEmpty || in.token == EQUALS) equalsExpr()
 	else {
           newmods = newmods | Flags.DEFERRED;
           EmptyTree
         }
       def mkDefs(p: Tree): List[Tree] = {
 	val trees =
-	  makePatDef(newmods, if (tp == EmptyTree) p else Typed(p, tp), rhs.duplicate)
+	  makePatDef(newmods, if (tp.isEmpty) p else Typed(p, tp), rhs.duplicate)
 	    map atPos(p.pos);
 	if (rhs == EmptyTree) {
 	  trees match {
@@ -1352,7 +1371,7 @@ abstract class Syntactic: ParserPhase {
 	lhs += Pair(in.skipToken(), ident())
       } while (in.token == COMMA);
       val tp = typedOpt();
-      val rhs = if (tp == EmptyTree || in.token == EQUALS) {
+      val rhs = if (tp.isEmpty || in.token == EQUALS) {
 	accept(EQUALS);
 	if (tp != EmptyTree && in.token == USCORE) {
 	  in.nextToken();
@@ -1368,7 +1387,7 @@ abstract class Syntactic: ParserPhase {
     }
 
     /** FunDef ::= FunSig `:' Type `=' Expr
-     *           | this ParamClause `=' ConstrExpr
+     *           | this ParamClause ParamClauses `=' ConstrExpr
      *  FunDcl ::= FunSig `:' Type
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      */
@@ -1376,17 +1395,18 @@ abstract class Syntactic: ParserPhase {
       atPos(in.skipToken()) {
 	if (in.token == THIS) {
 	  in.nextToken();
-	  val vparams = List(paramClause(false));
+	  val vparamss = paramClauses(nme.CONSTRUCTOR, List(), false);
 	  accept(EQUALS);
-	  DefDef(mods, nme.CONSTRUCTOR, List(), vparams, TypeTree(), constrExpr())
+	  DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), constrExpr())
 	} else {
 	  var newmods = mods;
 	  val name = ident();
-	  val tparams = typeParamClauseOpt(false);
-	  val vparamss = paramClauses(false);
+          val implicitViews = new ListBuffer[Tree];
+	  val tparams = typeParamClauseOpt(name, implicitViews);
+	  val vparamss = paramClauses(name, implicitViews.toList, false);
 	  val restype = typedOpt();
 	  val rhs =
-	    if (restype == EmptyTree || in.token == EQUALS) equalsExpr();
+	    if (restype.isEmpty || in.token == EQUALS) equalsExpr();
 	    else {
 	      newmods = newmods | Flags.DEFERRED;
 	      EmptyTree
@@ -1425,7 +1445,7 @@ abstract class Syntactic: ParserPhase {
         val name = ident().toTypeName;
         in.token match {
           case LBRACKET =>
-            val tparams = typeParamClauseOpt(true);
+            val tparams = typeParamClauseOpt(name, null);
             accept(EQUALS);
             AliasTypeDef(mods, name, tparams, typ())
           case EQUALS =>
@@ -1464,11 +1484,15 @@ abstract class Syntactic: ParserPhase {
     def classDef(mods: int): Tree =
       atPos(in.skipToken()) {
 	val name = ident().toTypeName;
-	val tparams = typeParamClauseOpt(true);
+        val implicitViews = new ListBuffer[Tree];
+	val tparams = typeParamClauseOpt(name, implicitViews);
 	if ((mods & Flags.CASE) != 0 && in.token != LPAREN) accept(LPAREN);
-	val vparamss = paramClauses(true);
+	val vparamss = paramClauses(name, implicitViews.toList, (mods & Flags.CASE) != 0);
 	val thistpe = simpleTypedOpt();
-	val mods1 = if (vparamss.isEmpty && (mods & ABSTRACT) != 0) mods | Flags.TRAIT else mods;
+	val mods1 = if (vparamss.isEmpty && (mods & Flags.ABSTRACT) != 0) {
+	  if (settings.debug.value) System.out.println("is trait: " + name);//debug
+	  mods | Flags.TRAIT
+	} else mods;
 	val template = classTemplate(mods1, vparamss);
 	ClassDef(mods1, name, tparams, thistpe, template)
       }

@@ -24,7 +24,7 @@ trait Namers: Analyzer {
     val typer = new Typer(context);
 
     private def doubleDefError(pos: int, sym: Symbol): unit =
-      context.unit.error(pos,
+      context.error(pos,
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()));
 
@@ -35,7 +35,7 @@ trait Namers: Analyzer {
       val newflags = mods & ~(INITIALIZED | LOCKED);
       sym.flags = oldflags | newflags;
       if (sym.isModule)
-        updatePosFlags(sym.moduleClass, pos, (mods & MODULE2CLASSFLAGS) | MODULE | FINAL);
+        updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
       sym
     }
 
@@ -85,45 +85,45 @@ trait Namers: Analyzer {
     private def enterCaseFactorySymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
       if (m.isModule && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
+        m.resetFlag(MODULE);
         updatePosFlags(m, pos, mods)
       } else {
         enterInScope(context.owner.newMethod(pos, name).setFlag(mods))
       }
     }
 
-    def enterSyms(trees: List[Tree]): unit =
-      for (val tree <- trees) enterSym(tree);
+    def enterSyms(trees: List[Tree]): Namer =
+      (this /: trees) ((namer, tree) => namer.enterSym(tree));
 
-    def enterSym(tree: Tree): Symbol = {
+    def enterSym(tree: Tree): Namer = {
 
-      def finishWith(tparams: List[AbsTypeDef]) = {
+      def finishWith(tparams: List[AbsTypeDef]): unit = {
         if (settings.debug.value) log("entered " + tree.symbol);
 	var ltype: LazyType = typer.typeCompleter(tree);
         if (!tparams.isEmpty) {
 	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
 	  ltype = new LazyPolyType(tparams map (.symbol), ltype);
 	}
-	tree.symbol.setInfo(ltype)
+	tree.symbol.setInfo(ltype);
       }
       def finish = finishWith(List());
 
-      if (tree.symbol != null && tree.symbol != NoSymbol) tree.symbol
-      else {
+      if (tree.symbol == null || tree.symbol == NoSymbol) {
 	val owner = context.owner;
 	tree match {
 	  case PackageDef(name, stats) =>
 	    tree.symbol = enterPackageSymbol(tree.pos, name);
 	    val namer = new Namer(
 	      context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls));
-	    stats map namer.enterSym;
-            tree.symbol
+	    namer.enterSyms(stats);
 	  case ClassDef(mods, name, tparams, _, _) =>
 	    if ((mods & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
-		tree.pos, mods & ACCESSFLAGS | CASE, name.toTermName);
-	      finishWith(tparams map (.duplicate.asInstanceOf[AbsTypeDef]));
+		tree.pos, mods & AccessFlags | CASE, name.toTermName)
+		setInfo typer.caseFactoryCompleter(tree)
 	    }
 	    tree.symbol = enterClassSymbol(tree.pos, mods, name);
+	    if (settings.debug.value) System.out.println("entered: " + tree.symbol + flagsToString(tree.symbol.flags));//debug
 	    finishWith(tparams)
 	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods | MODULE | FINAL, name);
@@ -146,7 +146,6 @@ trait Namers: Analyzer {
 		  owner.newValue(tree.pos, name)
 	            .setFlag(mods | PRIVATE | LOCAL).setInfo(typer.typeCompleter(tree))
 	        else getter;
-              tree.symbol
             } else {
               tree.symbol =
                 enterInScope(owner.newValue(tree.pos, name).setFlag(mods));
@@ -154,7 +153,7 @@ trait Namers: Analyzer {
             }
 	  case DefDef(mods, nme.CONSTRUCTOR, tparams, vparams, tp, rhs) =>
 	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
-	      .setFlag(mods | owner.getFlag(CONSTRFLAGS));
+	      .setFlag(mods | owner.getFlag(ConstrFlags));
 	    finishWith(tparams)
 	  case DefDef(mods, name, tparams, _, _, _) =>
 	    tree.symbol = enterInScope(owner.newMethod(tree.pos, name)).setFlag(mods);
@@ -169,13 +168,13 @@ trait Namers: Analyzer {
 	    enterSym(defn)
 	  case DocDef(_, defn) =>
 	    enterSym(defn)
-	  case Import(_, _) =>
-	    tree.symbol = NoSymbol.newImport(tree.pos);
-	    finish
+	  case imp @ Import(_, _) =>
+	    tree.symbol = NoSymbol.newImport(tree.pos).setInfo(typer.typeCompleter(tree));
+	    return new Namer(context.makeNewImport(imp));
 	  case _ =>
-            tree.symbol
 	}
       }
+      this
     }
   }
 }

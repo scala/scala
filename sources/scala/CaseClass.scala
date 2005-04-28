@@ -13,7 +13,7 @@ package scala;
  *
  *  @author  Burak Emir
  */
-trait CaseClass with java.io.Serializable {
+trait CaseClass extends AnyRef with java.io.Serializable {
 
   /** for a case class A(x_0,...,x_(k-1)), returns x_i for 0 &lt;= i &lt; k,
   **  null otherwise

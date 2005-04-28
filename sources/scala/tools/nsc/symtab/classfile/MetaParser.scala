@@ -6,7 +6,7 @@
 package scala.tools.nsc.symtab.classfile;
 
 import java.util.{StringTokenizer, NoSuchElementException}
-import scala.collection.mutable.ListBuffer;
+import util.ListBuffer;
 import scala.tools.util.Position;
 
 abstract class MetaParser{
@@ -51,7 +51,7 @@ abstract class MetaParser{
       else {
 	val args = new ListBuffer[Type];
 	do {
-	  nextToken(); args append parseType();
+	  nextToken(); args += parseType();
 	} while (token == ",");
 	nextToken();
 	appliedType(tp, args.toList)
@@ -79,9 +79,9 @@ abstract class MetaParser{
     nextToken();
     val syms = new ListBuffer[Symbol];
     if (token != "]") {
-      syms append parseTypeParam();
+      syms += parseTypeParam();
       while (token == ",") {
-        nextToken(); syms append parseTypeParam();
+        nextToken(); syms += parseTypeParam();
       }
     }
     assert(token == "]");
@@ -92,9 +92,9 @@ abstract class MetaParser{
     nextToken();
     val tps = new ListBuffer[Type];
     if (token != ")") {
-      tps append parseType();
+      tps += parseType();
       while (token == ",") {
-        nextToken(); tps append parseType();
+        nextToken(); tps += parseType();
       }
     }
     assert(token == ")");
@@ -110,7 +110,7 @@ abstract class MetaParser{
       } else if (token == "extends") {
 	val tps = new ListBuffer[Type];
 	do {
-          nextToken(); tps append parseType()
+          nextToken(); tps += parseType()
 	} while (token == "with");
 	ownertype match {
           case ClassInfoType(parents, decls, clazz) =>

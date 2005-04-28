@@ -195,7 +195,7 @@ abstract class Scopes: SymbolTable {
       if (elemsCache == null) {
         elemsCache = Nil;
         var e = elems;
-        while (e != null) {
+        while (e != null && e.owner == this) {
           elemsCache = e.sym :: elemsCache;
           e = e.next
         }
@@ -207,8 +207,10 @@ abstract class Scopes: SymbolTable {
      */
     def elements: Iterator[Symbol] = toList.elements;
 
-    override def toString(): String =
-      toList.map(.defString).mkString("{\n  ", ";\n  ", "\n}");
+    def mkString(start: String, sep: String, end: String) =
+      toList.map(.defString).mkString(start, sep, end);
+
+    override def toString(): String = mkString("{\n  ", ";\n  ", "\n}");
 
     /** Return the nesting level of this scope, i.e. the number of times this scope
      *  was nested in another */

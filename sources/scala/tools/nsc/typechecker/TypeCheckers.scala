@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-import collection.mutable.ListBuffer;
+import nsc.util.ListBuffer;
 import symtab.Flags._;
 import scala.tools.util.Position;
 
@@ -22,14 +22,34 @@ trait TypeCheckers: Analyzer {
       unit.body = new TypeChecker(startContext.make(unit)).transformExpr(unit.body)
   }
 
-  class TypeChecker(context: Context) {
+  class TypeChecker(context0: Context) {
+    import context0.unit;
 
-    import context.unit;
+    val infer = new Inferencer(context0) {
+      override def isCoercible(tp: Type, pt: Type): boolean =
+        context0.reportGeneralErrors && // this condition prevents chains of views
+	inferView(Position.NOPOS, tp, pt, false) != EmptyTree
+    }
 
-    val infer = new Inferencer(context);
+    private def inferView(pos: int, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
+      if (settings.debug.value) System.out.println("infer view from " + from + " to " + to);//debug
+      val res = inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous);
+      res
+    }
+
+    private def inferView(pos: int, from: Type, name: Name, reportAmbiguous: boolean): Tree = {
+      val to = refinedType(List(WildcardType), NoSymbol);
+      val psym = (if (name.isTypeName) to.symbol.newAbstractType(pos, name)
+		  else to.symbol.newValue(pos, name)) setInfo WildcardType;
+      to.decls.enter(psym);
+      inferView(pos, from, to, reportAmbiguous)
+    }
+
     import infer._;
 
-    object namer extends Namer(context);
+    object namer extends Namer(context0);
+
+    var context = context0;
 
     /** Mode constants
     */
@@ -92,7 +112,9 @@ trait TypeCheckers: Analyzer {
 
       /** Check that type `tree' does not refer to private components unless itself is wrapped
        *  in something private (`owner' tells where the type occurs). */
-      def privates[T <: Tree](owner: Symbol, tree: T): T = check(owner, EmptyScope, tree);
+      def privates[T <: Tree](owner: Symbol, tree: T): T = {
+	check(owner, EmptyScope, tree);
+      }
 
       /**  Check that type `tree' does not refer to entities defined in scope `scope'. */
       def locals[T <: Tree](scope: Scope, tree: T): T = check(NoSymbol, scope, tree);
@@ -167,8 +189,10 @@ trait TypeCheckers: Analyzer {
      *  (3) Apply polymorphic types to fresh instances of their type parameters and
      *      store these instances in context.undetparams,
      *      unless followed by explicit type application.
-     *  (4) When in mode EXPRmode but not FUNmode, convert unapplied methods to functions
-     *      However, if function is `match' or a constructor, issue an error.
+     *  (4) In mode EXPRmode but not FUNmode, do the following to unapplied methods:
+     *  (4.1) if the method has only implicit parameters, pass implicit arguments
+     *  (4.2) otherwise, convert to function by eta-expansion, unless function is
+     *        a constructor, in which case we issue an error.
      *  (5) Convert a class type that serves as a constructor in a pattern as follows:
      *  (5.1) If this type refers to a case class, set tree's type to the unique
      *        instance of its primary constructor that is a subtype of the expected type.
@@ -193,29 +217,34 @@ trait TypeCheckers: Analyzer {
       case PolyType(List(), restpe) => // (2)
 	transform(constfold(tree.setType(restpe)), mode, pt);
       case PolyType(tparams, restpe) if ((mode & TAPPmode) == 0) => // (3)
+	if (tree.symbol != null) {
+	  if (settings.debug.value) System.out.println("adapting " + tree + " " + tree.symbol.tpe + " " + tree.symbol.getClass() + " " + tree.symbol.hasFlag(CASE));//debug
+	}
 	val tparams1 = tparams map (.cloneSymbol);
+        for (val tparam1 <- tparams1)
+          tparam1.setInfo(tparam1.info.substSym(tparams, tparams1));
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
-                      TypeTree() setPos tparam.pos setType tparam.tpe));
+                      TypeTree() setPos tparam.pos setType tparam.tpe)) setPos tree.pos;
 	context.undetparams = context.undetparams ::: tparams1;
 	adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
-      case MethodType(_, _) if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
-				isCompatible(tree.tpe, pt)) => // (4)
+      case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode) => // (4.1)
+	transform(applyImplicitArgs(tree), mode, pt)
+      case mt: MethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
+	                      isCompatible(tree.tpe, pt)) => // (4.2)
 	val meth = treeInfo.methSymbol(tree);
 	if (meth.isConstructor) errorTree(tree, "missing arguments for " + meth)
-	else transform(etaExpand(tree, tree.tpe), mode, pt)
+	else transform(etaExpand(tree), mode, pt)
       case _ =>
 	if (tree.isType) {
 	  val clazz = tree.tpe.symbol;
 	  if ((mode & PATTERNmode) != 0) { // (5)
+	    clazz.initialize;
 	    if (clazz.hasFlag(CASE)) {   // (5.1)
-	      val tparams = context.undetparams;
-	      context.undetparams = List();
-	      inferConstructorInstance(
-		TypeTree() setPos tree.pos
-                  setType tree.tpe.prefix.memberType(clazz.primaryConstructor),
-		tparams, pt);
-	      tree
+	      val tree1 = TypeTree() setPos tree.pos
+                  setType tree.tpe.prefix.memberType(clazz.primaryConstructor);
+	      inferConstructorInstance(tree1, clazz.typeParams, pt);
+	      tree1
 	    } else if (clazz.isSubClass(SeqClass)) { // (5.2)
 	      pt.baseType(clazz).baseType(SeqClass) match {
 		case TypeRef(pre, seqClass, args) =>
@@ -224,8 +253,10 @@ trait TypeCheckers: Analyzer {
 		  errorTree(tree, "expected pattern type " + pt +
 			    " does not conform to sequence " + clazz)
 	      }
-	    } else errorTree(tree,
-                             clazz.toString() + " is neither a case class nor a sequence class")
+	    } else {
+	      System.out.println("bad: " + clazz + flagsToString(clazz.flags) + clazz.hasFlag(CASE));//debug
+	      errorTree(tree, clazz.toString() + " is neither a case class nor a sequence class")
+	    }
 	  } else if ((mode & FUNmode) != 0) {
 	    tree
 	  } else if (tree.symbol != null && !tree.symbol.typeParams.isEmpty) { // (7)
@@ -248,16 +279,20 @@ trait TypeCheckers: Analyzer {
 	} else {
 	  val tree1 = constfold(tree, pt); // (10) (11)
 	  if (tree1 != tree) transform(tree1, mode, pt);
-	  else if ((mode & EXPRmode) != 0)
-	    if (pt.symbol == UnitClass && tree1.tpe <:< AnyClass.tpe)  // (12)
-	      transform(Block(List(tree), Literal(())), mode, pt)
-	    else { // (13)
-	      val vmeth = bestView(tree.tpe, pt);
-	      if (vmeth != NoSymbol)
-		transform(Apply(Ident(vmeth.name), List(tree)), mode, pt)
-	      else typeErrorTree(tree, tree.tpe, pt)
-	    }
-	  else typeErrorTree(tree, tree.tpe, pt)
+	  else {
+            if ((mode & (EXPRmode | FUNmode)) == EXPRmode) {
+              assert(pt != null);
+              assert(tree1.tpe != null, tree1);
+	      if (pt.symbol == UnitClass && tree1.tpe <:< AnyClass.tpe)  // (12)
+	        return transform(Block(List(tree), Literal(())), mode, pt)
+	      else if (context.reportGeneralErrors) { // (13); the condition prevents chains of views
+	        val coercion = inferView(tree.pos, tree.tpe, pt, true);
+	        if (coercion != EmptyTree)
+		  return transform(Apply(coercion, List(tree)) setPos tree.pos, mode, pt);
+	      }
+            }
+	    typeErrorTree(tree, tree.tpe, pt)
+          }
 	}
     }
 
@@ -271,6 +306,11 @@ trait TypeCheckers: Analyzer {
     def parentTypes(templ: Template): List[Tree] = {
       var supertpt = transform(templ.parents.head, TYPEmode | FUNmode, WildcardType);
       var mixins = templ.parents.tail map transformType;
+      // If first parent is trait, make it first mixin and add its superclass as first parent
+      if (supertpt.tpe.symbol != null && supertpt.tpe.symbol.isTrait) {
+        supertpt = gen.TypeTree(supertpt.tpe.parents(0)) setPos supertpt.pos;
+        mixins = templ.parents
+      }
       if (supertpt.symbol != null) {
         val tparams = supertpt.symbol.typeParams;
         if (!tparams.isEmpty) {
@@ -283,9 +323,6 @@ trait TypeCheckers: Analyzer {
                 tparams,
                 vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
                 superargs map (.duplicate))) setPos supertpt.pos;
-        } else if (supertpt.symbol.isTrait) {
-          supertpt = gen.TypeTree(supertpt.tpe.parents(0)) setPos supertpt.pos;
-          mixins = templ.parents
         }
       }
       (supertpt :: mixins) mapConserve (tpt => checkNoEscaping.privates(context.owner, tpt))
@@ -348,14 +385,14 @@ trait TypeCheckers: Analyzer {
       reenterTypeParams(cdef.tparams);
       val tparams1 = cdef.tparams mapConserve transformAbsTypeDef;
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, transformType(cdef.tpt));
-      val impl1 = new TypeChecker(context.make(cdef.impl, clazz, clazz.info.decls))
+      val impl1 = new TypeChecker(context.make(cdef.impl, clazz, new Scope()))
         .transformTemplate(cdef.impl);
       copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl1) setType NoType
     }
 
     def transformModuleDef(mdef: ModuleDef): Tree = {
       val clazz = mdef.symbol.moduleClass;
-      val impl1 = new TypeChecker(context.make(mdef.impl, clazz, clazz.info.decls))
+      val impl1 = new TypeChecker(context.make(mdef.impl, clazz, new Scope()))
         .transformTemplate(mdef.impl);
       copy.ModuleDef(mdef, mdef.mods, mdef.name, impl1) setType NoType
     }
@@ -365,16 +402,15 @@ trait TypeCheckers: Analyzer {
 	def setter: DefDef = {
 	  val sym = vd.symbol;
 	  val setter = sym.owner.info.decls.lookup(nme.SETTER_NAME(sym.name)).suchThat(.hasFlag(ACCESSOR));
-	  atPos(vd.pos)(
-	    gen.DefDef(setter, vparamss => gen.Assign(gen.mkRef(vparamss.head.head), gen.mkRef(sym)))
-	  ).setType(null) // to force type check
+          atPos(vd.pos)(gen.DefDef(
+            setter, vparamss => gen.Assign(gen.mkRef(vparamss.head.head), gen.mkRef(sym))));
 	}
-	def getter: ValDef = {
+	def getter: DefDef = {
 	  val sym = vd.symbol;
 	  val getter = sym.owner.info.decls.lookup(sym.name).suchThat(.hasFlag(ACCESSOR));
-	  atPos(vd.pos)(
-	    gen.ValDef(getter, gen.mkRef(sym))
-	  ).setType(null) // to force type check
+	  val result = atPos(vd.pos)(gen.DefDef(getter, vparamss => gen.mkRef(sym)));
+          checkNoEscaping.privates(result.symbol, result.tpt);
+          result
 	}
 	if ((mods & MUTABLE) != 0) List(stat, getter, setter) else List(stat, getter)
       case _ =>
@@ -386,7 +422,7 @@ trait TypeCheckers: Analyzer {
       val parents1 = parentTypes(templ);
       validateParentClasses(parents1, context.owner.typeOfThis);
       val body1 = templ.body flatMap addGetterSetter;
-      val body2 = transformStats(templ.body, templ.symbol);
+      val body2 = transformStats(body1, templ.symbol);
       copy.Template(templ, parents1, body2) setType context.owner.tpe
     }
 
@@ -450,13 +486,13 @@ trait TypeCheckers: Analyzer {
         if ((mode & INCONSTRmode) != 0) {
           val constrCall = transform(block.stats.head, mode, WildcardType);
           context.enclClass.owner.resetFlag(INCONSTRUCTOR);
-          constrCall :: block.stats.tail mapConserve transformExpr
+          constrCall :: transformStats(block.stats.tail, context.owner);
         } else {
-          block.stats mapConserve transformExpr
+	  transformStats(block.stats, context.owner)
         }
       val expr1 = transform(block.expr, mode & ~(FUNmode | QUALmode), pt);
-      checkNoEscaping.locals(
-        context.scope, copy.Block(block, stats1, expr1) setType expr1.tpe.deconst)
+      val block1 = copy.Block(block, stats1, expr1) setType expr1.tpe.deconst;
+      if (isFullyDefined(pt)) block1 else checkNoEscaping.locals(context.scope, block1)
     }
 
     def transformCase(cdef: CaseDef, pattpe: Type, pt: Type): CaseDef = {
@@ -484,7 +520,8 @@ trait TypeCheckers: Analyzer {
                 if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
 		else argpt
         }
-        namer.enterSym(vparam)
+        namer.enterSym(vparam);
+	vparam.symbol
       }
       val vparams1 = fun.vparams mapConserve transformValDef;
       val body1 = transform(fun.body, EXPRmode, respt);
@@ -493,7 +530,8 @@ trait TypeCheckers: Analyzer {
     }
 
     def transformRefinement(stats: List[Tree]): List[Tree] = {
-      for (val stat <- stats) namer.enterSym(stat) setFlag OVERRIDE;
+      namer.enterSyms(stats);
+      for (val stat <- stats) stat.symbol setFlag OVERRIDE;
       transformStats(stats, NoSymbol);
     }
 
@@ -501,8 +539,14 @@ trait TypeCheckers: Analyzer {
       stats mapConserve { stat =>
         if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
 	  errorTree(stat, "only declarations allowed here");
-        (if (stat.isDef) TypeChecker.this
-         else new TypeChecker(context.make(stat, exprOwner))).transformExpr(stat)
+	stat match {
+	  case imp @ Import(_, _) =>
+	    context = context.makeNewImport(imp);
+	    EmptyTree
+	  case _ =>
+	    (if (stat.isDef && exprOwner != context.owner)
+	      new TypeChecker(context.make(stat, exprOwner)) else this).transformExpr(stat)
+	}
       }
 
     private def transform1(tree: Tree, mode: int, pt: Type): Tree = {
@@ -510,8 +554,8 @@ trait TypeCheckers: Analyzer {
       def funmode = mode & stickyModes | FUNmode | POLYmode;
 
       def transformCases(cases: List[CaseDef], pattp: Type): List[CaseDef] = {
-        val tc1 = new TypeChecker(context.makeNewScope(tree, context.owner));
-        cases mapConserve (cdef => tc1.transformCase(cdef, pattp, pt))
+        cases mapConserve (cdef => new TypeChecker(context.makeNewScope(tree, context.owner))
+                                     .transformCase(cdef, pattp, pt))
       }
 
       def transformTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
@@ -522,7 +566,7 @@ trait TypeCheckers: Analyzer {
           if (tparams.length == args.length) {
             val targs = args map (.tpe);
             checkBounds(tree.pos, tparams, targs, "");
-	    System.out.println("type app " + tparams + " => " + targs + " = " + restpe.subst(tparams, targs));//debug
+	    if (settings.debug.value) System.out.println("type app " + tparams + " => " + targs + " = " + restpe.subst(tparams, targs));//debug
 	    copy.TypeApply(tree, fun, args) setType restpe.subst(tparams, targs);
           } else {
             errorTree(tree, "wrong number of type parameters for " + treeSymTypeMsg(fun))
@@ -571,6 +615,7 @@ trait TypeCheckers: Analyzer {
               val args1 = List.map2(args, formals)(transformArg);
               if (args1 exists (.tpe.isError)) setError(tree)
               else {
+                if (settings.debug.value) System.out.println("infer method inst " + fun + ", tparams = " + tparams + ", args = " + args1.map(.tpe) + ", pt = " + pt + ", lobounds = " + tparams.map(.tpe.bounds.lo));//debug
                 val undetparams = inferMethodInstance(fun, tparams, args1, pt);
                 val result = transformApply(fun, args1);
                 context.undetparams = undetparams;
@@ -607,15 +652,21 @@ trait TypeCheckers: Analyzer {
        */
       def transformSelect(qual: Tree, name: Name): Tree = {
 	val sym = qual.tpe.member(name);
-	if (sym == NoSymbol && qual.isTerm) {
-	  val vmeth = bestView(qual.tpe, name);
-	  if (vmeth != NoSymbol)
-	    return transform(Select(Apply(Ident(vmeth.name), List(qual)), name), mode, pt)
+	if (sym == NoSymbol && qual.isTerm && (qual.symbol == null || qual.symbol.isValue)) {
+	  val coercion = inferView(qual.pos, qual.tpe, name, true);
+	  if (coercion != EmptyTree)
+	    return transform(
+	      copy.Select(tree, Apply(coercion, List(qual)) setPos qual.pos, name), mode, pt)
 	}
         if (sym.info == NoType)
           errorTree(tree, decode(name) + " is not a member of " + qual.tpe.widen)
-        else
-	  stabilize(checkAccessible(tree, sym, qual.tpe, qual), qual.tpe)
+        else {
+	  val tree1 = tree match {
+	    case Select(_, _) => copy.Select(tree, qual, name)
+	    case SelectFromTypeTree(_, _) => copy.SelectFromTypeTree(tree, qual, name);
+	  }
+	  stabilize(checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe)
+	}
       }
 
       /** Attribute an identifier consisting of a simple name or an outer reference.
@@ -634,8 +685,8 @@ trait TypeCheckers: Analyzer {
 
 	var cx = context;
 	while (defSym == NoSymbol && cx != NoContext) {
-	  defEntry = cx.scope.lookupEntry(name);
-	  pre = cx.enclClass.owner.thisType;
+          pre = cx.enclClass.owner.thisType;
+          defEntry = cx.scope.lookupEntry(name);
 	  if (defEntry != null) defSym = defEntry.sym
 	  else {
             cx = cx.enclClass;
@@ -671,7 +722,7 @@ trait TypeCheckers: Analyzer {
 	    var impSym1 = NoSymbol;
 	    var imports1 = imports.tail;
 	    def ambiguousImportError = ambiguousError(
-	      "it is imported twice in the same scope by\n" + impSym +  "\nand " + impSym1);
+	      "it is imported twice in the same scope by\n" + imports.head +  "\nand " + imports1.head);
 	    while (!imports1.isEmpty && imports1.head.depth == imports.head.depth) {
 	      var impSym1 = imports1.head.importedSymbol(name);
 	      if (impSym1 != NoSymbol) {
@@ -679,15 +730,16 @@ trait TypeCheckers: Analyzer {
 		  if (imports.head.isExplicitImport(name)) ambiguousImportError;
 		  impSym = impSym1;
 		  imports = imports1;
-		}
-		if (imports.head.isExplicitImport(name)) impSym1 = NoSymbol;
+		} else if (!imports.head.isExplicitImport(name)) ambiguousImportError
 	      }
+	      imports1 = imports1.tail;
 	    }
-	    if (impSym1 != NoSymbol) ambiguousImportError;
 	    defSym = impSym;
 	    qual = imports.head.qual;
 	    pre = qual.tpe;
 	  } else {
+            System.out.println(context);//debug
+            System.out.println(context.imports);//debug
 	    error(tree.pos, "not found: " + decode(name));
 	    defSym = context.owner.newErrorSymbol(name);
 	  }
@@ -707,8 +759,9 @@ trait TypeCheckers: Analyzer {
         case PolyType(List(), restp @ ConstantType(base, value)) => // (1)
           Literal(value) setPos tree.pos setType restp
         case _ =>
-          if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
-            inferExprAlternative(tree, pt);
+          if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0) {
+            inferExprAlternative(tree, pt)
+	  }
           if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) // (2)
             checkStable(tree)
           else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !tree.symbol.isValue) // (3)
@@ -721,10 +774,9 @@ trait TypeCheckers: Analyzer {
       }
 
       // begin transform1
-      System.out.println("transforming " + tree);//debug
       val sym: Symbol = tree.symbol;
       if (sym != null) sym.initialize;
-      if (settings.debug.value && tree.isDef) global.log("transforming definition of " + sym);
+      //if (settings.debug.value && tree.isDef) global.log("transforming definition of " + sym);//DEBUG
       tree match {
         case PackageDef(name, stats) =>
           val stats1 = new TypeChecker(context.make(tree, sym.moduleClass, sym.info.decls))
@@ -732,10 +784,7 @@ trait TypeCheckers: Analyzer {
           copy.PackageDef(tree, name, stats1) setType NoType
 
         case cdef @ ClassDef(_, _, _, _, _) =>
-          val result = new TypeChecker(context.makeNewScope(tree, sym)).transformClassDef(cdef);
-	  System.out.println("entered: " + result.symbol);//debug
-	  result
-
+          new TypeChecker(context.makeNewScope(tree, sym)).transformClassDef(cdef)
 
         case mdef @ ModuleDef(_, _, _) =>
           transformModuleDef(mdef)
@@ -754,9 +803,6 @@ trait TypeCheckers: Analyzer {
 
         case ldef @ LabelDef(_, List(), _) =>
           new TypeChecker(context.makeNewScope(tree, context.owner)).transformLabelDef(ldef)
-
-        case Import(_, _) =>
-          EmptyTree
 
         case Attributed(attr, defn) =>
           val attr1 = transform(attr, EXPRmode, AttributeClass.tpe);
@@ -786,7 +832,8 @@ trait TypeCheckers: Analyzer {
         case Bind(name, body) =>
           val body1 = transform(body, mode, pt);
           val vble = context.owner.newValue(tree.pos, name).setInfo(
-            if (treeInfo.isSequenceValued(body)) seqType(pt) else pt);
+            if (treeInfo.isSequenceValued(body)) seqType(pt) else body1.tpe);
+	  //todo: check whether we can always use body1.tpe
           namer.enterInScope(vble);
           copy.Bind(tree, name, body1) setSymbol vble setType pt
 
@@ -801,18 +848,17 @@ trait TypeCheckers: Analyzer {
           }
           val lhs1 = transformExpr(lhs);
           val varsym = lhs1.symbol;
-          System.out.println("" + lhs1 + " " + " " + lhs1.getClass() + varsym);//debug
           if (varsym != null && isGetter(varsym)) {
             lhs1 match {
               case Select(qual, name) =>
                 transform(Apply(Select(qual, nme.SETTER_NAME(name)), List(rhs)), mode, pt)
             }
           } else if (varsym != null && varsym.isVariable) {
-            val rhs1 = transform(rhs, EXPRmode, lhs.tpe);
+            val rhs1 = transform(rhs, EXPRmode, lhs1.tpe);
             copy.Assign(tree, lhs1, rhs1) setType UnitClass.tpe;
           } else {
             System.out.println("" + lhs1 + " " + " " + lhs1.getClass() + varsym);//debug
-            if (!lhs.tpe.isError) error(tree.pos, "assignment to non-variable ");
+            if (!lhs1.tpe.isError) error(tree.pos, "assignment to non-variable ");
             setError(tree)
           }
 
@@ -931,15 +977,19 @@ trait TypeCheckers: Analyzer {
             case RefinedType(parents, _) => qual1.tpe = parents.head;
             case _ =>
           }
-          transformSelect(qual1, nme.CONSTRUCTOR);
+	  transformSelect(qual1, nme.CONSTRUCTOR);
 
         case Select(qual, name) =>
           var qual1 = transform(qual, EXPRmode | QUALmode | POLYmode, WildcardType);
           if (name.isTypeName) qual1 = checkStable(qual1);
-          transformSelect(qual1, name);
+          val res = transformSelect(qual1, name);
+	  res
 
         case Ident(name) =>
-          transformIdent(name)
+	  if (name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode)
+	    tree setType pt
+	  else
+            transformIdent(name);
 
         case Literal(value) =>
           tree setType literalType(value)
@@ -958,14 +1008,14 @@ trait TypeCheckers: Analyzer {
             else {
               val decls = new Scope();
               val self = refinedType(parents1 map (.tpe), context.enclClass.owner, decls);
-              new TypeChecker(context.make(tree, self.symbol, decls)).transformRefinement(templ.body);
+              new TypeChecker(context.make(tree, self.symbol, new Scope())).transformRefinement(templ.body);
               self
             }
           }
 
         case AppliedTypeTree(tpt, args) =>
           val tpt1 = transform(tpt, mode | FUNmode | TAPPmode, WildcardType);
-          val tparams = tpt1.tpe.symbol.typeParams;
+          val tparams = tpt1.tpe.symbol.info.typeParams;
           val args1 = args mapConserve transformType;
           if (tpt1.tpe.isError)
             setError(tree)
@@ -980,21 +1030,85 @@ trait TypeCheckers: Analyzer {
 
     def transform(tree: Tree, mode: int, pt: Type): Tree =
       try {
-        if (tree.tpe != null) tree
-	else {
-          val tree1 = transform1(tree, mode, pt);
-          System.out.println("transformed " + tree1 + ":" + tree1.tpe);//debug
-          adapt(tree1, mode, pt)
-        }
+        if (settings.debug.value) assert(pt != null, tree);//debug
+        val tree1 = if (tree.tpe != null) tree else transform1(tree, mode, pt);
+        if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
       } catch {
         case ex: TypeError =>
 	  reportTypeError(tree.pos, ex);
 	  setError(tree)
+	case ex: Throwable =>
+	  if (settings.debug.value)
+	    System.out.println("exception when tranforming " + tree + ", pt = " + pt);
+	  throw(ex)
       }
 
     def transformExpr(tree: Tree): Tree = transform(tree, EXPRmode, WildcardType);
     def transformQualExpr(tree: Tree): Tree = transform(tree, EXPRmode | QUALmode, WildcardType);
     def transformType(tree: Tree) = transform(tree, TYPEmode, WildcardType);
+
+    /* -- Views --------------------------------------------------------------- */
+
+    private def transformImplicit(pos: int, info: ImplicitInfo, pt: Type): Tree =
+      if (isCompatible(info.tpe, pt)) {
+	var tree: Tree = EmptyTree;
+	try {
+	  tree = transform1(Ident(info.name) setPos pos, EXPRmode, pt);
+	  if (settings.debug.value) System.out.println("transformed implicit " + tree + ":" + tree.tpe + ", pt = " + pt);//debug
+	  if (settings.debug.value) assert(isCompatible(tree.tpe, pt), "bad impl " + info.tpe + " " + tree.tpe + " " + pt);//debug
+	  val tree1 = adapt(tree, EXPRmode, pt);
+	  if (settings.debug.value) System.out.println("adapted implicit " + tree.symbol + ":" + info.sym);//debug
+	  if (info.sym == tree.symbol) tree1 else EmptyTree
+	} catch {
+	  case ex: TypeError =>
+	    if (settings.debug.value)
+	      System.out.println(tree.toString() + " is not a valid implicit value because:\n" + ex.getMessage());
+	  EmptyTree
+	}
+      } else EmptyTree;
+
+    private def inferImplicit(pos: int, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
+      val tc = new TypeChecker(context.makeImplicit(reportAmbiguous));
+      var iss = context.implicitss;
+      var tree: Tree = EmptyTree;
+      while (tree == EmptyTree && !iss.isEmpty) {
+	var is = iss.head;
+	if (settings.debug.value) System.out.println("testing " + is.head.sym + ":" + is.head.tpe);//debug
+	iss = iss.tail;
+	while (!is.isEmpty) {
+	  tree = tc.transformImplicit(pos, is.head, pt);
+	  val is0 = is;
+	  is = is.tail;
+	  if (tree != EmptyTree) {
+	    while (!is.isEmpty) {
+	      val tree1 = tc.transformImplicit(pos, is.head, pt);
+	      if (tree1 != EmptyTree)
+		error(pos,
+		      "ambiguous implicit value:\n" +
+		      " both " + is0.head.sym + is0.head.sym.locationString +
+		      "\n and" + is.head.sym + is.head.sym.locationString +
+		      (if (isView)
+			 "\n are possible conversion functions from " +
+		         pt.typeArgs(0) + " to " + pt.typeArgs(1)
+		       else
+			 "\n match expected type " + pt));
+	      is = is.tail
+	    }
+	  }
+	}
+      }
+      tree
+    }
+
+    def applyImplicitArgs(tree: Tree): Tree = tree.tpe match {
+      case MethodType(formals, _) =>
+        def implicitArg(pt: Type) = {
+          val arg = inferImplicit(tree.pos, pt, false, true);
+          if (arg != EmptyTree) arg
+          else errorTree(tree, "no implicit argument matching parameter type " + pt + " was found.")
+        }
+      Apply(tree, formals map implicitArg) setPos tree.pos
+    }
   }
 }
 
