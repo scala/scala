@@ -260,6 +260,7 @@ IA_BUILD_OUTPUTDIR	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME)_Build_Output
 IA_INSTALL_PREFIX	 = $(INSTALL_PREFIX).ia
 
 CONVERT_FLAGS		+= -gravity southeast -pointsize 12 -fill red
+CONVERT_FLAGS		+= -family Helvetica
 CONVERT_FLAGS		+= -draw "text 4,4 'v$(INSTALL_VERSION)'"
 
 XSLTPROC_FLAGS		+= --stringparam version "$(INSTALL_VERSION)"
