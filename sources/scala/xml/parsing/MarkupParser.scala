@@ -451,7 +451,7 @@ abstract class MarkupParser with TokenTests {
   /** parses document type declaration and assigns it to instance variable
    *  dtd.
    *
-   *  <! parseDTD ::= DOCTYPE name ... >
+   *  &lt;! parseDTD ::= DOCTYPE name ... >
    */
   def parseDTD(): Unit = { // dirty but fast
     var extID: ExternalID = null;
@@ -687,7 +687,7 @@ abstract class MarkupParser with TokenTests {
       }
   }
 
-  /** <! element := ELEMENT
+  /** &lt;! element := ELEMENT
    */
   def elementDecl(): Unit = {
     xToken("EMENT");
@@ -705,7 +705,7 @@ abstract class MarkupParser with TokenTests {
     decls = ElemDecl(n, cm, null)::decls;
   }
 
-  /** <! element := ELEMENT
+  /** &lt;! element := ELEMENT
    */
   def attrDecl() = {
     xToken("TTLIST");
@@ -749,7 +749,7 @@ abstract class MarkupParser with TokenTests {
     decls = AttListDecl(n, attList.reverse) :: decls
   }
 
-  /** <! element := ELEMENT
+  /** &lt;! element := ELEMENT
    */
   def entityDecl() = {
     var isParameterEntity = false;
