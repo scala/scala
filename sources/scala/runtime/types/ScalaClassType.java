@@ -257,6 +257,8 @@ public class ScalaClassType extends ClassType {
     // Enforces uniqueness of the instance when serializing and
     // deserializing the same Scala type object many times.
     private Object readResolve() {
+        if (constr.clazz == null)
+             return this; // TODO: check why clazz may be null
         String fullName = constr.clazz.getName();
         Class instClazz = constr.clazz;
         if (constr.clazz.isInterface()) {
