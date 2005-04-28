@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -28,5 +28,9 @@ public public class TypeDouble extends ValueType {
     }
     public String toString() { return "scala.Double"; }
     public int hashCode() { return 0x11111111; }
-};
 
+    // Make TypeDouble a serializable singleton
+    public static TypeDouble INSTANCE = new TypeDouble();
+    protected TypeDouble() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}

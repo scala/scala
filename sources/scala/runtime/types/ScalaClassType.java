@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -16,6 +16,17 @@ import scala.ScalaObject;
 import scala.runtime.RunTime;
 import scala.runtime.FNV_Hash;
 import scala.runtime.PearsonHash;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+
+/**
+ * Provides a run-time representation of the Scala types.
+ *
+ * @author Michel Schinz
+ * @version 1.0
+ */
 
 public class ScalaClassType extends ClassType {
     public static final ScalaClassType[] EMPTY_ARRAY =
@@ -236,4 +247,44 @@ public class ScalaClassType extends ClassType {
             }
         }
     }
+
+    private static final ClassLoader loader =
+        ClassLoader.getSystemClassLoader();
+
+    // Must match value defined in class scalac.util.Names !
+    private static final String INSTANTIATE_PREFIX = "instantiate$";
+
+    // Enforces uniqueness of the instance when serializing and
+    // deserializing the same Scala type object many times.
+    private Object readResolve() {
+        String fullName = constr.clazz.getName();
+        Class instClazz = constr.clazz;
+        if (constr.clazz.isInterface()) {
+            try {
+                instClazz = Class.forName(fullName + "$class", false, loader);
+            }
+            catch (ClassNotFoundException e) {
+                throw new Error(e);
+            }
+        }
+        try {
+            int inx = fullName.lastIndexOf('.');
+            String className = (inx < 0) ? fullName : fullName.substring(inx + 1);
+            String name = INSTANTIATE_PREFIX + className + "$";
+            Class[] paramTypes = new Class[]{ Type[].class };
+            Method instMeth = instClazz.getDeclaredMethod(name, paramTypes);
+            assert Modifier.isStatic(instMeth.getModifiers());
+            return instMeth.invoke(null, new Object[]{ inst });
+        }
+        catch (NoSuchMethodException e) {
+            throw new Error(e);
+        }
+        catch (IllegalAccessException e) {
+            throw new Error(e);
+        }
+        catch (InvocationTargetException e) {
+            throw new Error(e);
+        }
+    }
+
 }

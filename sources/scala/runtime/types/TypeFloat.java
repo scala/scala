@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -28,5 +28,9 @@ public class TypeFloat extends ValueType {
     }
     public String toString() { return "scala.Float"; }
     public int hashCode() { return 0x22222222; }
-};
 
+    // Make TypeFloat a serializable singleton
+    public static TypeFloat INSTANCE = new TypeFloat();
+    protected TypeFloat() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}

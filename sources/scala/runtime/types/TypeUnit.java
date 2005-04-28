@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -29,4 +29,9 @@ public class TypeUnit extends ValueType {
     }
     public String toString() { return "scala.Unit"; }
     public int hashCode() { return 0x99999999; }
-};
+
+    // Make TypeUnit a serializable singleton
+    public static TypeUnit INSTANCE = new TypeUnit();
+    protected TypeUnit() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -28,4 +28,9 @@ public class TypeLong extends ValueType {
     }
     public String toString() { return "scala.Long"; }
     public int hashCode() { return 0x33333333; }
-};
+
+    // Make TypeLong a serializable singleton
+    public static TypeLong INSTANCE = new TypeLong();
+    protected TypeLong() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}

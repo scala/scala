@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -29,4 +29,9 @@ public class TypeChar extends ValueType {
     }
     public String toString() { return "scala.Char"; }
     public int hashCode() { return 0x66666666; }
-};
+
+    // Make TypeChar a serializable singleton
+    public static TypeChar INSTANCE = new TypeChar();
+    protected TypeChar() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}

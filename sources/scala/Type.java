@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -107,21 +107,21 @@ abstract public class Type implements java.io.Serializable {
     }
 
     // Value types
-    public static final TypeDouble  Double  = new TypeDouble();
-    public static final TypeFloat   Float   = new TypeFloat();
-    public static final TypeLong    Long    = new TypeLong();
-    public static final TypeInt     Int     = new TypeInt();
-    public static final TypeShort   Short   = new TypeShort();
-    public static final TypeChar    Char    = new TypeChar();
-    public static final TypeByte    Byte    = new TypeByte();
-    public static final TypeBoolean Boolean = new TypeBoolean();
-    public static final TypeUnit    Unit    = new TypeUnit();
+    public static final TypeDouble  Double  = TypeDouble.INSTANCE;
+    public static final TypeFloat   Float   = TypeFloat.INSTANCE;
+    public static final TypeLong    Long    = TypeLong.INSTANCE;
+    public static final TypeInt     Int     = TypeInt.INSTANCE;
+    public static final TypeShort   Short   = TypeShort.INSTANCE;
+    public static final TypeChar    Char    = TypeChar.INSTANCE;
+    public static final TypeByte    Byte    = TypeByte.INSTANCE;
+    public static final TypeBoolean Boolean = TypeBoolean.INSTANCE;
+    public static final TypeUnit    Unit    = TypeUnit.INSTANCE;
 
     // "Special" types
-    public static final TypeAny    Any    = new TypeAny();
-    public static final TypeAnyVal AnyVal = new TypeAnyVal();
-    public static final TypeAllRef AllRef = new TypeAllRef();
-    public static final TypeAll    All    = new TypeAll();
+    public static final TypeAny    Any    = TypeAny.INSTANCE;
+    public static final TypeAnyVal AnyVal = TypeAnyVal.INSTANCE;
+    public static final TypeAllRef AllRef = TypeAllRef.INSTANCE;
+    public static final TypeAll    All    = TypeAll.INSTANCE;
 
     private static JavaClassType JavaLangObject;
 

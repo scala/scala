@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -29,4 +29,9 @@ public class TypeBoolean extends ValueType {
     }
     public String toString() { return "scala.Boolean"; }
     public int hashCode() { return 0x88888888; }
-};
+
+    // Make TypeBoolean a serializable singleton
+    public static TypeBoolean INSTANCE = new TypeBoolean();
+    protected TypeBoolean() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -26,4 +26,9 @@ public class TypeAnyVal extends SpecialType {
     public String toString() { return "scala.AnyVal"; }
 
     public int hashCode() { return 0xCCCCCCCC; }
-};
+
+    // Make TypeAnyVal a serializable singleton
+    public static TypeAnyVal INSTANCE = new TypeAnyVal();
+    protected TypeAnyVal() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}

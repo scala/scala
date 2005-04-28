@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -28,4 +28,9 @@ public class TypeShort extends ValueType {
     }
     public String toString() { return "scala.Short"; }
     public int hashCode() { return 0x55555555; }
-};
+
+    // Make TypeShort a serializable singleton
+    public static TypeShort INSTANCE = new TypeShort();
+    protected TypeShort() { /* exists only to that instantiation */ }
+    private Object readResolve() { return INSTANCE; }
+}
