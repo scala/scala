@@ -1,0 +1,293 @@
+.\" ##########################################################################
+.\" #                      __                                                #
+.\" #      ________ ___   / /  ___     Scala On-line Manual Pages            #
+.\" #     / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL              #
+.\" #   __\ \/ /__/ __ |/ /__/ __ |                                          #
+.\" #  /____/\___/_/ |_/____/_/ | |    http://scala.epfl.ch/                 #
+.\" #                           |/                                           #
+.\" ##########################################################################
+.\"
+.\" Process this file with nroff -man scalac.1
+.\"
+.TH scalac 1  "April 29, 2005" "version 0.1" "USER COMMANDS"
+.\"
+.\" ################################# NAME ###################################
+.\"
+.SH NAME
+scalac \- Compiler for the Scala language
+.\"
+.\" ############################### SYNOPSIS #################################
+.\"
+.SH SYNOPSIS
+\fBscalac\fR [ <\fIoptions\fR> ] <\fIsource files\fR>
+.\"
+.\" ############################### PARAMETERS ###############################
+.\"
+.SH PARAMETERS
+.TP
+<\fIoptions\fR>
+Command line options. See \fBOPTIONS\fR below.
+.TP
+<\fIsource files\fR>
+One or more source files to be compiled (such as MyClass.scala).
+.\"
+.\" ############################## DESCRIPTION ###############################
+.\"
+.SH DESCRIPTION
+The \fBscalac\fR tool reads class and object definitions, written in the
+Scala programming language, and compiles them into bytecode class files.
+.PP
+By default, the compiler puts each class file in the same directory as its
+source file. You can specify a separate destination directory with -d (see
+\fBOPTIONS\fR, below).
+.\"
+.\" ############################### OPTIONS ##################################
+.\"
+.SH OPTIONS
+The compiler has a set of standard options that are supported on the current
+development environment and will be supported in future releases.  An
+additional set of non-standard options are specific to the current virtual
+machine implementation and are subject to change in the future.  Non-standard
+options begin with \fB-X\fR.
+.SS Standard Options
+.TP
+\fB\-g\fR
+Generate debugging info
+.TP
+\fB\-nowarn\fR
+Generate no warnings
+.TP
+\fB\-verbose\fR
+Output messages about what the compiler is doing
+.TP
+\fB\-classpath\fR <\fIpath\fR>
+Specify where to find user class files (on Unix-based systems
+a colon-separated list of paths, on Windows-based systems, a
+semicolon-separate list of paths). This does not override the
+built-in ("boot") search path.
+.TP
+\fB\-sourcepath\fR <\fIpath\fR>
+Specify where to find input source files.
+.TP
+\fB\-bootclasspath\fR <\fIpath\fR>
+Override location of bootstrap class files (where to find the
+standard built-in classes, such as "scala.List").
+.TP
+\fB\-extdirs\fR <\fIdirs\fR>
+Override location of installed extensions.
+.TP
+\fB\-d\fR <directory>
+Specify where to place generated class files.
+.TP
+\fB\-encoding\fR <\fIencoding\fR>
+Specify character encoding used by source files.
+.TP
+\fB\-separate:\fR<\fIseparate\fR>
+Read symbol files for separate compilation: (yes, no).
+.TP
+\fB\-target:\fR<\fItarget\fR>
+Specify which backend to use (jvm, msil).
+.TP
+\fB\-r\fR <assembly files>
+Assemblies referenced by the source program (only relevant with
+option '-target:msil').
+.TP
+\fB\-o\fR <assembly name>
+Name of the output assembly (only relevant with '-target:msil').
+.TP
+\fB\-version\fR
+Print product version and exit.
+.TP
+\fB\-? -help\fR
+Print a synopsis of standard options.
+.SS Debug Options
+.TP
+.B \-debug
+Output debugging messages.
+.TP
+\fB\-explaintypes\fR
+Explain type errors in more detail.
+.TP
+\fB\-uniqid\fR
+Print identifiers with unique names (debugging option).
+.TP
+\fB\-types\fR
+Print tree types (debugging option).
+.TP
+\fB\-prompt\fR
+Display a prompt after each error (debugging option).
+.TP
+\fB\-noimports\fR
+Compile without any implicit imports.
+.TP
+\fB\-nopredefs\fR
+Compile without any implicit predefined values.
+.TP
+\fB\-skip:\fR<\fIphases\fR>
+Skip <phases> (see below).
+.TP
+\fB\-check:\fR<\fIphases\fR>
+Check the tree after <\fIphases\fR> (see below).
+.TP
+\fB\-print:\fR<phases>
+Print out program after <\fIphases\fR> (see below).
+.TP
+\fB\-printer:\fR<printer>
+Printer to use.
+.TP
+\fB\-print-file\fR <\fIfile\fR>
+Specify file in which to print trees.
+.TP
+\fB\-graph:\fR<\fIphases\fR>
+Graph the program after <phases> (see below).
+.TP
+\fB\-stop:\fR<\fIphases\fR>
+Stop after first phase in <phases> (see below).
+.TP
+\fB\-log:\fR<\fIphases\fR>
+Log operations in <\fIphases\fR> (see below).
+.SS Non-Standard Options
+.TP
+\fB\-Xshortname\fR
+Display short file names in error reports.
+.TP
+\fB\-Xmarkup\fR
+No effect, only for compatibility.
+.TP
+\fB\-Xnewmatch\fR
+New pattern matching.
+.TP
+\fB\-XpreserveWS\fR
+Don't trim whitespace in XML literals.
+.TP
+\fB\-XrootClass\fR <\fIclass\fR>
+Specify the root class of the global application.
+.TP
+\fB\-XappFile\fR <\fIfile\fR>
+Specify the filename where to dump the whole-application inferred from the rootclass.
+.TP
+\fB\-XdotFile\fR <\fIfile\fR>
+Specify the filename where to print the AST in graphviz dot format.
+.TP
+\fB\-Xrta\fR
+Perform Rapid Type analysis for method call resolution.
+.TP
+\fB\-Xinline\fR
+Inline method calls that can be resolved statically.
+.TP
+\fB\-Xrtt\fR
+Enable run-time types.
+.SS Compilation Phases
+.TP
+\fIinitial\fR
+initializing compiler
+.TP
+\fIparse\fR
+parse source files
+.TP
+\fInamer\fR
+create symbols
+.TP
+\fIanalyze\fR
+name and type analysis
+.TP
+\fIrefcheck\fR
+reference checking
+.TP
+\fIuncurry\fR
+uncurry function types and applications
+.TP
+\fItransmatch\fR
+translate match expressions
+.TP
+\fIlambdalift\fR
+lambda lifter
+.TP
+\fItypesasvalues\fR
+represent types as values
+.TP
+\fIaddaccessors\fR
+add accessors for constructor arguments
+.TP
+\fIexplicitouterclasses\fR
+make links from inner classes to enclosing one explicit
+.TP
+\fIaddconstructors\fR
+add explicit constructor for each class
+.TP
+\fItailcall\fR
+add tail-calls
+.TP
+\fIwholeprog\fR
+perform whole program analysis
+.TP
+\fIaddinterfaces\fR
+add one interface per class
+.TP
+\fIexpandmixins\fR
+expand mixins by code copying
+.TP
+\fIboxing\fR
+makes boxing explicit
+.TP
+\fIerasure\fR
+type eraser
+.TP
+\fIicode\fR
+generate icode
+.TP
+\fIcodegen\fR
+enable code generation
+.TP
+\fIterminal\fR
+compilation terminated
+.TP
+\fIall\fR
+matches all phases
+
+.\"
+.\" ############################### EXAMPLES #################################
+.\"
+.SH EXAMPLES
+.TP
+Compile a Scala program
+\fBscalac\fR HelloWorld
+.PP
+.TP
+Compile a Scala program to a user-defined target directory \fBclasses\fR
+\fBscalac\fR \-d classes HelloWorld.scala
+.PP
+.\"
+.\" ############################# EXIT STATUS ################################
+.\"
+.SH "EXIT STATUS"
+\fBscalac\fR returns a zero exist status if it succeeds to compile the
+specified input files. Non zero is returned in case of failure.
+.\"
+.\" ############################## AUTHOR(S) #################################
+.\"
+.SH AUTHOR
+Written by Stephane Micheloud.
+.\"
+.\" ################################ BUGS ####################################
+.\"
+.SH "REPORTING BUGS"
+Report bugs to <scala@lists.epfl.ch>.
+.\"
+.\" ############################# COPYRIGHT ##################################
+.\"
+.SH COPYRIGHT
+Copyright \(co 2002-2005 LAMP/EPFL
+.PP
+This is free software; see the distribution for copying conditions.  There is
+NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.\"
+.\" ############################## SEE ALSO ##################################
+.\"
+.SH "SEE ALSO"
+.BR scala(1),
+.BR scalaint(1),
+.BR scalarun(1)
+.\"
+.\" ##########################################################################
+.\" $Id$
