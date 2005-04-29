@@ -54,6 +54,14 @@ ULTRAEDIT_LIST		+= scala.txt
 ULTRAEDIT_LIST		+= README
 ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 
+# scala man pages
+MANPAGES_ROOT		 = $(PROJECT_SUPPORTDIR)/man
+MANPAGES_LIST		+= man1/scala.1
+MANPAGES_LIST		+= man1/scalac.1
+MANPAGES_LIST		+= man1/scalaint.1
+MANPAGES_LIST		+= man1/scalarun.1
+MANPAGES_FILES		 = $(MANPAGES_LIST:%=$(MANPAGES_ROOT)/%)
+
 # scala test
 TEST_ROOT		 = $(PROJECT_TESTDIR)
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test.lst)
@@ -153,6 +161,11 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/ultraedit
 	$(strip $(MIRROR) -m 644 -p -C $(ULTRAEDIT_ROOT) $(ULTRAEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/ultraedit)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/man
+	$(strip $(MIRROR) -m 644 -p -C $(MANPAGES_ROOT) $(MANPAGES_LIST) \
+	    $(INSTALL_SUPPORTDIR)/man)
+	$(FIND) $(INSTALL_SUPPORTDIR)/man -type f -exec $(GZIP) "{}" ";"
+
 	$(INSTALL) -m 755 -d $(INSTALL_TESTDIR)
 	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) $(TEST_LIST) \
 	    $(INSTALL_TESTDIR))
