@@ -76,76 +76,30 @@ standard built-in classes, such as "scala.List").
 \fB\-extdirs\fR <\fIdirs\fR>
 Override location of installed extensions.
 .TP
-\fB\-d\fR <directory>
+\fB\-d\fR <\fIdirectory\fR>
 Specify where to place generated class files.
 .TP
 \fB\-encoding\fR <\fIencoding\fR>
 Specify character encoding used by source files.
 .TP
 \fB\-separate:\fR<\fIseparate\fR>
-Read symbol files for separate compilation: (yes, no).
+Read symbol files for separate compilation: (\fIyes\fR, \fIno\fR).
 .TP
 \fB\-target:\fR<\fItarget\fR>
-Specify which backend to use (jvm, msil).
+Specify which backend to use (\fIjvm\fR, \fImsil\fR).
 .TP
-\fB\-r\fR <assembly files>
-Assemblies referenced by the source program (only relevant with
+\fB\-r\fR <\fIassembly files\fR>
+CLR Assemblies referenced by the source program (only relevant with
 option '-target:msil').
 .TP
-\fB\-o\fR <assembly name>
-Name of the output assembly (only relevant with '-target:msil').
+\fB\-o\fR <\fIassembly name\fR>
+Name of the output assembly (only relevant with option '-target:msil').
 .TP
 \fB\-version\fR
 Print product version and exit.
 .TP
 \fB\-? -help\fR
 Print a synopsis of standard options.
-.SS Debug Options
-.TP
-.B \-debug
-Output debugging messages.
-.TP
-\fB\-explaintypes\fR
-Explain type errors in more detail.
-.TP
-\fB\-uniqid\fR
-Print identifiers with unique names (debugging option).
-.TP
-\fB\-types\fR
-Print tree types (debugging option).
-.TP
-\fB\-prompt\fR
-Display a prompt after each error (debugging option).
-.TP
-\fB\-noimports\fR
-Compile without any implicit imports.
-.TP
-\fB\-nopredefs\fR
-Compile without any implicit predefined values.
-.TP
-\fB\-skip:\fR<\fIphases\fR>
-Skip <phases> (see below).
-.TP
-\fB\-check:\fR<\fIphases\fR>
-Check the tree after <\fIphases\fR> (see below).
-.TP
-\fB\-print:\fR<phases>
-Print out program after <\fIphases\fR> (see below).
-.TP
-\fB\-printer:\fR<printer>
-Printer to use.
-.TP
-\fB\-print-file\fR <\fIfile\fR>
-Specify file in which to print trees.
-.TP
-\fB\-graph:\fR<\fIphases\fR>
-Graph the program after <phases> (see below).
-.TP
-\fB\-stop:\fR<\fIphases\fR>
-Stop after first phase in <phases> (see below).
-.TP
-\fB\-log:\fR<\fIphases\fR>
-Log operations in <\fIphases\fR> (see below).
 .SS Non-Standard Options
 .TP
 \fB\-Xshortname\fR
@@ -177,6 +131,52 @@ Inline method calls that can be resolved statically.
 .TP
 \fB\-Xrtt\fR
 Enable run-time types.
+.SS Debug Options
+.TP
+.B \-debug
+Output debugging messages.
+.TP
+\fB\-explaintypes\fR
+Explain type errors in more detail.
+.TP
+\fB\-uniqid\fR
+Print identifiers with unique names.
+.TP
+\fB\-types\fR
+Print tree types.
+.TP
+\fB\-prompt\fR
+Display a prompt after each error.
+.TP
+\fB\-noimports\fR
+Compile without any implicit imports.
+.TP
+\fB\-nopredefs\fR
+Compile without any implicit predefined values.
+.TP
+\fB\-skip:\fR<\fIphases\fR>
+Skip <\fIphases\fR> (see below).
+.TP
+\fB\-check:\fR<\fIphases\fR>
+Check the tree after <\fIphases\fR> (see below).
+.TP
+\fB\-print:\fR<phases>
+Print out program after <\fIphases\fR> (see below).
+.TP
+\fB\-printer:\fR<\fIprinter\fR>
+Printer to use.
+.TP
+\fB\-print-file\fR <\fIfile\fR>
+Specify file in which to print trees.
+.TP
+\fB\-graph:\fR<\fIphases\fR>
+Graph the program after <\fIphases\fR> (see below).
+.TP
+\fB\-stop:\fR<\fIphases\fR>
+Stop after first phase in <\fIphases\fR> (see below).
+.TP
+\fB\-log:\fR<\fIphases\fR>
+Log operations in <\fIphases\fR> (see below).
 .SS Compilation Phases
 .TP
 \fIinitial\fR
@@ -252,11 +252,13 @@ matches all phases
 .TP
 Compile a Scala program
 \fBscalac\fR HelloWorld
-.PP
 .TP
-Compile a Scala program to a user-defined target directory \fBclasses\fR
+Compile a Scala program to the destination directory \fBclasses\fR
 \fBscalac\fR \-d classes HelloWorld.scala
-.PP
+.TP
+Compile all Scala files found in the source directory \fBsrc\fR to the
+destination directory \fBclasses\fR
+\fBscalac\fR \-d classes src/*.scala 
 .\"
 .\" ############################# EXIT STATUS ################################
 .\"
@@ -286,6 +288,7 @@ NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 .\"
 .SH "SEE ALSO"
 .BR scala(1),
+.BR scaladoc(1),
 .BR scalaint(1),
 .BR scalarun(1)
 .\"

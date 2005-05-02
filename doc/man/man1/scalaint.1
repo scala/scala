@@ -1,4 +1,4 @@
-.\" ##########################################################################
+﻿.\" ##########################################################################
 .\" #                      __                                                #
 .\" #      ________ ___   / /  ___     Scala On-line Manual Pages            #
 .\" #     / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL              #
@@ -62,10 +62,8 @@ The \fBscalaint\fR command supports the following options
 \fB\-c\fR <\fIstring\fR>
 Evaluate <\fIstring\fR> and print result.
 .TP
-\fB\-classpath\fR <\fIpath\fR>
-Specify where to find user class files (on Unix-based systems
-a colon-separated list of paths, on Windows-based systems, a
-semicolon-separate list of paths).
+\fB\-interactive\fR
+Start interpreter in interactive mode.
 .TP
 \fB\-nologo\fR
 Print no logo at interactive interpreter start.
@@ -78,6 +76,11 @@ Generate debugging info.
 .TP
 \fB\-nowarn\fR
 Generate no warnings.
+.TP
+\fB\-classpath\fR <\fIpath\fR>
+Specify where to find user class files (on Unix-based systems
+a colon-separated list of paths, on Windows-based systems, a
+semicolon-separate list of paths).
 .\"
 .\" ############################### EXAMPLES #################################
 .\"
@@ -116,6 +119,7 @@ NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 .SH "SEE ALSO"
 .BR scala(1),
 .BR scalac(1),
+.BR scaladoc(1),
 .BR scalarun(1)
 .\"
 .\" ##########################################################################

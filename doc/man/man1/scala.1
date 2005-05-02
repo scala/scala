@@ -43,9 +43,9 @@ class’s \fBmain\fR method. The method must have the following signature:
 .PP
           \fBdef\fR main(args: Array[String]): Unit
 .PP
-The method must not return any value, and it must accept a String array as a
-parameter. By default, the first non-option argument is the name of the class
-to be invoked. A fully-qualified class name should be used.
+The method must not return any value, and it must accept a \fBString\fR
+array as a parameter. By default, the first non-option argument is the name
+of the class to be invoked. A fully-qualified class name should be used.
 .PP
 The Scala runtime searches for the startup class, and other classes used, in
 three sets of locations: the bootstrap class path, the installed extensions,
@@ -60,10 +60,19 @@ set of non-standard options are specific to the current virtual machine
 implementation and are subject to change in the future. Non-standard options
 begin with \fB-X\fR.
 .TP
-\fB\-classpath\fR <\fIpath\fR>
+\fB\-cp -classpath\fR <\fIpath\fR>
 Specify where to find user class files (on Unix-based systems a
 colon-separated list of paths, on Windows-based systems, a semicolon-separate
 list of paths).
+.TP
+\fB\-help\fR
+Print this help message.
+.TP
+\fB\-showversion\fR
+Print product version and continue.
+.TP
+\fB\-version\fR
+Print product version and exit.
 .\"
 .\" ############################### EXAMPLES #################################
 .\"
@@ -105,6 +114,7 @@ NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 .\"
 .SH "SEE ALSO"
 .BR scalac(1),
+.BR scaladoc(1),
 .BR scalaint(1),
 .BR scalarun(1)
 .\"
