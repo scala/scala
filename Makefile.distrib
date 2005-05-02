@@ -227,7 +227,7 @@ install-windows		: install
 	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
 	    $(RM) "$$nixfile"; \
 	done
-#	$(RM) $(INSTALL_PREFIX)/bin/.scala_wrapper
+	$(RM) $(INSTALL_PREFIX)/bin/.scala_wrapper
 	$(FIND) $(INSTALL_SRCDIR) -type f -exec $(UNIX2DOS) "{}" ";"
 	$(FIND) $(INSTALL_APIDOCDIR) -type f -exec $(UNIX2DOS) "{}" ";"
 	$(FIND) $(INSTALL_EXAMPLEDIR) -type f -exec $(UNIX2DOS) "{}" ";"
