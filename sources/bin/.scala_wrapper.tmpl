@@ -344,7 +344,7 @@ scala_has_bootclasspath() {
     while [ $# != 0 ]; do
         case "$1" in
             -Xbootclasspath:* ) return 0;;
-            -cp | -classpath  ) shift 2;;
+            -cp | -classpath  ) shift 1; [ $# != 0 ] && shift 1;;
             -jar              ) return 1;;
             -*                ) shift 1;;
             *                 ) return 1;;
