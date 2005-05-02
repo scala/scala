@@ -1,6 +1,6 @@
 
 if "%SCALA_HOME%" == "" goto error1
-if not exist "%SCALA_HOME%\VERSION-%VERSION%" goto error2
+if not exist "%SCALA_HOME%\share\doc\scala-%VERSION%\VERSION-%VERSION%" goto error2
 
 set ARGS=
 
@@ -23,4 +23,7 @@ echo ERROR: environment variable SCALA_HOME points to the wrong directory "%SCAL
 goto end
 
 :end
+set VERSION=
+set COMMAND=
 
+if "%OS%"=="Windows_NT" @endlocal
