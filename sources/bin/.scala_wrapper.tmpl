@@ -889,7 +889,7 @@ test_main() {
     ERRORS=0;
     SUCCESS_COUNT=0;
     FAILURE_COUNT=0;
-    TESTROOT=`dirname "$default_LIBRARY_SOURCES"`;
+    TESTROOT={#TEST_SRCDIR#};
     SRCDIR={#TEST_SRCDIR#};
     OBJDIR={#TEST_OBJDIR#};
 
