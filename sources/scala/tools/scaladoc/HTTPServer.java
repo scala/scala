@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -51,7 +51,7 @@ class EchoServlet extends Servlet {
             String value = (String) map.get(key);
             try {
                 out.write(key + " -> " + value + "\n");
-            } catch(IOException e) {}
+            } catch (IOException e) {}
         }
     }
 }
@@ -68,7 +68,7 @@ public class HTTPServer extends Thread {
     private ServerSocket server;
     private int numThreads = 50;
 
-    private Map/*[String,Servlet]*/ servletNamed;
+    private Map/*<String,Servlet>*/ servletNamed;
 
     public HTTPServer(File documentRootDirectory,
                       int port,
@@ -104,7 +104,7 @@ public class HTTPServer extends Thread {
                       Servlet[] servlets) throws IOException {
         this(documentRootDirectory, port, "index.html");
         servletNamed = new HashMap();
-        for(int i = 0; i < servlets.length; i++)
+        for (int i = 0; i < servlets.length; i++)
             servletNamed.put("/" + servlets[i].name(), servlets[i]);
     }
 
@@ -208,7 +208,7 @@ class RequestProcessor implements Runnable {
      * the result map.
      */
     public static Map parseQuery(String query) {
-        Map map = new HashMap();
+        Map/*<String,String>*/ map = new HashMap();
         try {
             String[] bindings = query.split("\\&");
             String regexp = "([^=]*)=([^=]*)";
@@ -237,15 +237,15 @@ class RequestProcessor implements Runnable {
                 out.write("Server: HTTPServer 1.0\r\n");
                 out.write("Content-type: text/html\r\n\r\n");
             }
-            out.write("<HTML>\r\n");
-            out.write("<HEAD><TITLE>File Not Found</TITLE>\r\n");
-            out.write("</HEAD>\r\n");
-            out.write("<BODY>");
-            out.write("<H1>HTTP Error 404: File Not Found</H1>\r\n");
-            out.write("</BODY></HTML>\r\n");
+            out.write("<html>\r\n");
+            out.write("<head><title>File Not Found</title>\r\n");
+            out.write("</head>\r\n");
+            out.write("<body>");
+            out.write("<h1>HTTP Error 404: File Not Found</h1>\r\n");
+            out.write("</body></html>\r\n");
             out.flush();
         }
-        catch(IOException e) {
+        catch (IOException e) {
 
         }
     }
@@ -360,12 +360,12 @@ class RequestProcessor implements Runnable {
                         out.write("Server: HTTPServer 1.0\r\n");
                         out.write("Content-type: text/html\r\n\r\n");
                     }
-                    out.write("<HTML>\r\n");
-                    out.write("<HEAD><TITLE>Not Implemented</TITLE>\r\n");
-                    out.write("</HEAD>\r\n");
-                    out.write("<BODY>");
-                    out.write("<H1>HTTP Error 501: Not Implemented</H1>\r\n");
-                    out.write("</BODY></HTML>\r\n");
+                    out.write("<html>\r\n");
+                    out.write("<head><title>Not Implemented</title>\r\n");
+                    out.write("</head>\r\n");
+                    out.write("<body>");
+                    out.write("<h1>HTTP Error 501: Not Implemented</h1>\r\n");
+                    out.write("</body></html>\r\n");
                     out.flush();
                 }
             }
