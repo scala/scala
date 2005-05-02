@@ -58,6 +58,7 @@ ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 MANPAGES_ROOT		 = $(PROJECT_SUPPORTDIR)/man
 MANPAGES_LIST		+= man1/scala.1
 MANPAGES_LIST		+= man1/scalac.1
+MANPAGES_LIST		+= man1/scaladoc.1
 MANPAGES_LIST		+= man1/scalaint.1
 MANPAGES_LIST		+= man1/scalarun.1
 MANPAGES_FILES		 = $(MANPAGES_LIST:%=$(MANPAGES_ROOT)/%)
@@ -164,7 +165,7 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/man
 	$(strip $(MIRROR) -m 644 -p -C $(MANPAGES_ROOT) $(MANPAGES_LIST) \
 	    $(INSTALL_SUPPORTDIR)/man)
-	$(FIND) $(INSTALL_SUPPORTDIR)/man -type f -exec $(GZIP) "{}" ";"
+	$(FIND) $(INSTALL_SUPPORTDIR)/man -type f -exec $(GZIP) -f "{}" ";"
 
 	$(INSTALL) -m 755 -d $(INSTALL_TESTDIR)
 	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) $(TEST_LIST) \
