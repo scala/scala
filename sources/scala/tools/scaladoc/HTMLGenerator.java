@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-04, LAMP/EPFL           **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
 ** $Id$
@@ -67,7 +67,7 @@ public abstract class HTMLGenerator {
      */
     protected final String FRAME_PAGE            = "index.html";
     protected final String ROOT_PAGE             = Location.ROOT_NAME + ".html";
-    protected final String PACKAGE_INDEX_PAGE     = "package-index-page.html";
+    protected final String PACKAGE_INDEX_PAGE    = "package-index-page.html";
     protected final String HELP_PAGE             = "help-page.html";
     protected final String SEARCH_SECTION        = "search-section";
     protected final String INDEX_PAGE            = "index-page.html";
@@ -134,12 +134,14 @@ public abstract class HTMLGenerator {
             new XMLAttribute("valign", "top"),
             new XMLAttribute("class", "navigation-links")
         };
-    protected final XMLAttribute[] ATTRS_NAVIGATION_ENABLED = new XMLAttribute[]{
-            new XMLAttribute("class", "navigation-enabled") };
-
-    protected final XMLAttribute[] ATTRS_NAVIGATION_SELECTED = new XMLAttribute[]{
-            new XMLAttribute("class", "navigation-selected") };
-
+    protected final XMLAttribute[] ATTRS_NAVIGATION_ENABLED =
+        new XMLAttribute[]{
+            new XMLAttribute("class", "navigation-enabled")
+        };
+    protected final XMLAttribute[] ATTRS_NAVIGATION_SELECTED =
+        new XMLAttribute[]{
+            new XMLAttribute("class", "navigation-selected")
+        };
     protected final XMLAttribute[] ATTRS_NAVIGATION_PRODUCT =
         new XMLAttribute[]{
             new XMLAttribute("align", "right"),
@@ -170,7 +172,8 @@ public abstract class HTMLGenerator {
     public static final String VERSION =
         System.getProperty("scala.version", "unknown version");
     protected final String GENERATOR = PRODUCT + " (" + VERSION + ")";
-    protected final SimpleDateFormat df = new SimpleDateFormat("EEE MMM d HH:mm:ss z yyyy");
+    protected final SimpleDateFormat df =
+        new SimpleDateFormat("EEE MMM d HH:mm:ss z yyyy");
     protected final XMLAttribute[] ATTRS_META =
         new XMLAttribute[]{ new XMLAttribute("generator", GENERATOR) };
     protected String getGenerator() {
@@ -250,9 +253,9 @@ public abstract class HTMLGenerator {
      */
     public abstract TypeIsomorphism newTypeIso(Global global);
 
-    /** Page promises: Map[String, Promise].
+    /** Page promises.
      */
-    public Map promises;
+    public Map/*<String, Promise>*/ promises;
 
     /**
      * Creates a new instance.
@@ -330,7 +333,7 @@ public abstract class HTMLGenerator {
 	if (option.main != null) {
 	    Symbol[] packages = new Symbol[option.args.length + 1];
 	    packages[0] = global.definitions.getModule(option.main);
-	    for(int i = 0; i < option.args.length; i++)
+	    for (int i = 0; i < option.args.length; i++)
 		packages[i+1] = global.definitions.getModule(option.args[i]);
 	    return packages;
 	}
@@ -345,7 +348,10 @@ public abstract class HTMLGenerator {
             File f = new File(rootDirectory, uri);
             f.getParentFile().mkdirs();
             return new BufferedWriter(new FileWriter(f));
-        } catch(IOException e) { throw Debug.abort(e); }
+        }
+        catch (IOException e) {
+            throw Debug.abort(e);
+        }
     }
 
     /**
@@ -356,11 +362,12 @@ public abstract class HTMLGenerator {
     protected void createPrinters(Writer writer, URI uri, String title, String destinationFrame) {
 	stack.push(page);
 	stack.push(symtab);
+
 	// Create a new page.
 	page = new Page(writer, uri, destinationFrame,
-			title, representation,
-                        adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_STYLESHEET), uri).toString(),
-                        adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_JAVASCRIPT), uri).toString());
+            title, representation,
+            adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_STYLESHEET), uri).toString(),
+            adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_JAVASCRIPT), uri).toString());
 	// Create a printer to print symbols and types.
 	symtab = SymbolTablePrinterFactory.makeHTML(this, page, isDocumented);
 	page.open();
@@ -415,20 +422,20 @@ public abstract class HTMLGenerator {
 
         // Class and object pages
         ScalaSearch.foreach(root,
-			    new ScalaSearch.SymFun() {
-				public void apply(Symbol sym) {
-				    if (ScalaSearch.isContainer(sym) &&
-					isDocumented.apply(sym)) {
-                                        Promise containerPage = new ContainerPromise(sym);
-                                        promises.put(containerPage.name(), containerPage);
- 					if (sym.isPackage() || sym.isPackageClass()) {
-                                            Promise containerIndexPage = new ContainerIndexPromise(sym);
-                                            promises.put(containerIndexPage.name(), containerIndexPage);
-                                        }
-				    }
-				}
-			    }
-			    );
+            new ScalaSearch.SymFun() {
+                public void apply(Symbol sym) {
+                    if (ScalaSearch.isContainer(sym) &&
+                        isDocumented.apply(sym)) {
+                        Promise containerPage = new ContainerPromise(sym);
+                        promises.put(containerPage.name(), containerPage);
+                        if (sym.isPackage() || sym.isPackageClass()) {
+                            Promise containerIndexPage = new ContainerIndexPromise(sym);
+                            promises.put(containerIndexPage.name(), containerIndexPage);
+                        }
+                    }
+                }
+            }
+        );
 
 	if (!noindex) {
             // Page with index of Scala documented entities
@@ -552,7 +559,7 @@ public abstract class HTMLGenerator {
     /**
      * Generates a HTML page for a class or object definition.
      */
-    class ContainerPromise  extends Promise {
+    class ContainerPromise extends Promise {
 
         protected Symbol sym;
 
@@ -1152,7 +1159,7 @@ public abstract class HTMLGenerator {
                 }
 
                 reader.close();
-                //                writer.close();
+                // writer.close();
             } catch (IOException exception) {
                 throw Debug.abort(exception); // !!! reporting an error would be wiser
             }
@@ -1169,7 +1176,8 @@ public abstract class HTMLGenerator {
 	    return PACKAGE_PAGE;
 	else {
 	    String packagePage = Location.getURI(sym).toString();
-	    return removeHtmlSuffix(packagePage) + File.separator + PACKAGE_PAGE;
+	    // !!! separator character in URI paths is '/'
+	    return removeHtmlSuffix(packagePage) + "/" + PACKAGE_PAGE;
 	}
     }
 
@@ -2126,11 +2134,17 @@ public abstract class Promise {
             computeIn(cache);
             try {
                 cache.close();
-            } catch(IOException e) { e.printStackTrace(); }
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         try {
             writer.write(cache.toString());
-        } catch(IOException e) { e.printStackTrace(); }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /** Print the web page on the given writer. */

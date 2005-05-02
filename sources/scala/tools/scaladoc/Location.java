@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -53,7 +53,7 @@ public class Location {
 //     }
     static public URI getURI(Symbol sym) {
 	if (uris.get(sym) == null) {
-	    URI uri;
+	    URI uri = null;
 	    try {
 		if (sym.isModule())
 		    uri = getURI(sym.moduleClass());
@@ -64,7 +64,7 @@ public class Location {
 		else
 		    uri = new URI(getURI(sym.owner()).toString() + "#" + nextFreeId(sym.owner()));
 		uris.put(sym, uri);
-	    } catch(Exception e) { throw Debug.abort(sym.defString()); }
+	    } catch (Exception e) { throw Debug.abort(sym.defString()); }
 	}
 	return (URI) uris.get(sym);
     }
@@ -76,8 +76,10 @@ public class Location {
 		return new URI(ROOT_NAME);
 	    else if (sym.owner().isRoot())
 		return new URI(getName(sym));
-	    else
-		return new URI(getPath(sym.owner()).toString() + File.separator + getName(sym));
+	    else {
+	        // !!! separator character in URI paths is '/'
+		return new URI(getPath(sym.owner()).toString() + "/" + getName(sym));
+            }
 	} catch(Exception e) { return null; }
     }
     // where
@@ -101,7 +103,10 @@ public class Location {
     static protected URI makeURI(String uri) {
 	try {
 	    return new URI(uri);
-	} catch(Exception e) { throw Debug.abort(e); }
+	}
+        catch(Exception e) {
+            throw Debug.abort(e);
+        }
     }
 
     /////////////////// AS SEEN FROM //////////////////////
@@ -118,11 +123,16 @@ public class Location {
 	File f_u = new File(u.getPath());
 	File f_v = new File(v.getPath());
 	try {
+	    /// !!! separator character in URI paths is '/'
+	    String uriPath = asSeenFrom(f_u, f_v).getPath().replace('\\', '/');
 	    return
-		new URI(asSeenFrom(f_u, f_v).getPath()
+		new URI(uriPath
 			+ (u.getFragment() != null ? "#" + u.getFragment() : ""))
 		.normalize();
-	} catch(Exception e) { return null; }
+	}
+	catch (Exception e) {
+	    throw Debug.abort(e);
+        }
     }
     // where
     /** f must be of the form ('.' | ['.' '/' ] A/...) */
@@ -197,7 +207,10 @@ public class Location {
     static protected URI mkURI(String uri) {
 	try {
 	    return new URI(uri);
-	} catch(Exception e) { throw Debug.abort(e); }
+	}
+        catch (Exception e) {
+            throw Debug.abort(e);
+        }
     }
 
     public static void main(String[] args) {
@@ -213,4 +226,3 @@ public class Location {
     }
 
 }
-
