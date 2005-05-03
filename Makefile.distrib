@@ -213,6 +213,7 @@ install-windows		: install
 	    nixexec=`SCALA_JAVA_CMD="echo java" SCALA_CLASSPATH=\"%CLASSPATH%\" $$nixfile`; \
 	    winexec="$$nixexec"; \
 	    winexec=`echo "$$winexec" | sed -es"#$$root#\"%SCALA_HOME%\"#g"`; \
+	    winexec=`echo "$$winexec" | sed -es"#/share/$(INSTALL_PACKAGE)##g"`; \
 	    winexec=`echo "$$winexec" | tr '/' '\\\\' | tr ':' ';'`; \
 	    winexec=`echo "$$winexec" | sed -es"#Xbootclasspath.a;#Xbootclasspath/a:#g"`; \
 	    $(RM) -f "$$winfile"; \
