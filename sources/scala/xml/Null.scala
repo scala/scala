@@ -7,7 +7,7 @@ case object Null extends MetaData  {
 
   override def containedIn1(m:MetaData): Boolean = false;
 
-  /** returns a copy of this MetaData item with next field set to argument */
+  /** returns its argument */
   def copy(next: MetaData) = next;
 
   /** returns null */
