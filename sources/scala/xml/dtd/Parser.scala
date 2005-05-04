@@ -6,7 +6,7 @@ object Parser with Scanner { // a bit too permissive concerning #PCDATA
   import ContentModel._ ;
 
   /** parses the argument to a regexp */
-  def parse(s:String):RegExp = { initScanner( s ); contentspec }
+  def parse(s:String): ContentModel = { initScanner( s ); contentspec }
 
   //                                              zzz   parser methods   zzz
   def accept( tok:int ) = {
@@ -29,32 +29,47 @@ object Parser with Scanner { // a bit too permissive concerning #PCDATA
     case _    => s
   }
 
-  //                             contentspec ::= EMPTY|ANY|mixed|regexp
-  def contentspec:RegExp = token match {
 
-    case NAME    =>
-      if( value.equals( "ANY" ) )
-        ANY_
-      else if( value.equals( "EMPTY" ) )
-        Eps
-      else
-        error("unexpected name:" + value );
+  // contentspec ::= EMPTY | ANY | (#PCDATA) | "(#PCDATA|"regexp)
 
+  def contentspec: ContentModel = token match {
+
+    case NAME    => value.match {
+      case "ANY"   => ANY
+      case "EMPTY" => EMPTY
+      case _       => error("expected ANY, EMPTY or '(' instead of " + value );
+    }
     case LPAREN =>
+
       nextToken;
       sOpt;
-      if( token == TOKEN_PCDATA )
-        mixed;
-      else
-        regexp;
-    case _ =>        error("unexpected token:" + token2string(token) );
-  }
+      if( token != TOKEN_PCDATA )
+        ELEMENTS(regexp);
+      else {
+        nextToken;
+        token match {
+        case RPAREN =>
+          PCDATA
+        case CHOICE =>
+          val res = MIXED(choiceRest(Eps));
+          sOpt;
+          accept( RPAREN );
+          accept( STAR );
+          res
+        case _ =>
+          error("unexpected token:" + token2string(token) );
+        }
+      }
 
+    case _ =>
+      error("unexpected token:" + token2string(token) );
+    }
   //                                  sopt ::= S?
   def sOpt = if( token == S ) nextToken;
 
   //                      (' S? mixed ::= '#PCDATA' S? ')'
   //                                    | '#PCDATA' (S? '|' S? atom)* S? ')*'
+  /*
   def mixed = {
     accept( TOKEN_PCDATA );
     sOpt;
@@ -72,7 +87,7 @@ object Parser with Scanner { // a bit too permissive concerning #PCDATA
       Star( t )
     }
   }
-
+*/
   //       '(' S? regexp ::= cp S? [seqRest|choiceRest] ')' [ '+' | '*' | '?' ]
   def regexp:RegExp = {
     //Console.println("regexp, token = "+token2string(token));

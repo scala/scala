@@ -214,6 +214,7 @@ util/regexp/WordExp.scala
 util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
 
+xml/Atom.scala
 xml/Comment.scala
 xml/Document.scala
 xml/Elem.scala
@@ -233,6 +234,7 @@ xml/SpecialNode.scala
 xml/Text.scala
 xml/TextBuffer.scala
 xml/TopScope.scala
+xml/TypeSymbol.scala
 xml/UnprefixedAttribute.scala
 xml/Utility.scala
 xml/XML.scala
@@ -245,7 +247,8 @@ xml/dtd/ExternalID.scala
 xml/dtd/Parser.scala
 xml/dtd/Scanner.scala
 xml/dtd/Tokens.scala
-xml/dtd/Validation.scala
+xml/dtd/DtdTypeSymbol.scala
+#xml/dtd/Validation.scala
 xml/dtd/ValidationException.scala
 
 xml/factory/NodeFactory.scala

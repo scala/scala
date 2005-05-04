@@ -14,23 +14,25 @@ package scala.xml;
  * @author Burak Emir
  * @param text the text contained in this node, may not be null.
  */
-case class Text( _data: String ) extends Atom[String](_data) {
+class Atom[+A]( val data: A ) extends SpecialNode {
 
-  if(null == data)
-    throw new java.lang.NullPointerException("tried to construct Text with null");
+  final override def typeTag$:Int = -1;
 
-  /** @deprecated
-   */
-  def text = data.toString();
+  /** the constant "#PCDATA"
+  */
+  def label = "#PCDATA";
 
-  final override def equals(x:Any) = x match {
-    case s:String  => s.equals( data.toString() );
-    case s:Text    => data == s.data ;
+ override def equals(x:Any) = x match {
+    case s:Atom[A] => data == s.data ;
     case _ => false;
   }
 
+  /** hashcode for this Text */
+  override def hashCode() =
+    data.hashCode();
+
   /** returns text, with some characters escaped according to XML spec */
-  override def toString(sb:StringBuffer) =
+  def toString(sb:StringBuffer) =
     Utility.escape( data.toString(), sb );
 
 }

@@ -76,13 +76,17 @@ trait TokenTests {
     } else false;
   }
 
-  def isPubIDChar( c:Char ) = c match {
-    case '\u0020' | '\u000D' | '\u000A' => true;
-    case _ if
-      ('0' < c && c < '9')||('a' < c && c < 'z')||('A' < c && c < 'Z') => true;
-    case '-' | '\''| '(' | ')' | '+' | ',' | '.' | '/' | ':'  | '=' |
-         '?' | ';' | '!' | '*' | '#' | '@' | '$' | '_' | '%'           => true
-    case _ => false;
+  def isPubIDChar( c:Char ) = {
+    //Console.println("char: '"+c+"'");
+    c match {
+      case '\u0020' | '\u000D' | '\u000A' => true;
+      case _ if
+        ('0' <= c && c <= '9')||('a' <= c && c <= 'z')||('A' <= c && c <= 'Z') => true;
+      case '-' | '\''| '(' | ')' | '+' | ',' | '.' | '/' | ':'  | '=' |
+      '?' | ';' | '!' | '*' | '#' | '@' | '$' | '_' | '%'           => true
+      case _ => //Console.println("false: '"+c+"'");
+        false;
+    }
   }
 
   /**
@@ -117,11 +121,16 @@ trait TokenTests {
     s.indexOf('"') == -1 || s.indexOf('\'') == -1
   }
 
-  def checkPubID( s:String ):boolean = {
+  def checkPubID( s:String ): Boolean = {
+    //Console.println("checkPubID of \""+s+"\"");
     if( s.length() > 0 ) {
       val z:Seq[Char] = s;
       val y = z.elements;
-      while( y.hasNext && isPubIDChar( y.next ) ){};
+      var c = ' ';
+      while( y.hasNext && isPubIDChar( c ) ){
+        //Console.println(c);
+        c = y.next
+      };
       !y.hasNext
     } else true
   }

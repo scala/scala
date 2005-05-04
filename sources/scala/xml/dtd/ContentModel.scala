@@ -9,18 +9,9 @@ object ContentModel extends scala.util.regexp.WordExp {
     override def toString() = "ElemName(\""+name+"\")";
   }
 
-  case object PCDATA_ extends RegExp {
-    final val isNullable = false;
-    override def toString() = "PCDATA_";
-  }
+  def parse(s: String): ContentModel = Parser.parse( s );
 
-  case object ANY_    extends RegExp {
-    final val isNullable = true;
-    override def toString() = "ANY_";
-  }
-
-  def parse(s: String): RegExp = Parser.parse( s );
-
+  /*
   def isMixed(alt: Alt): Boolean = {
     val it = alt.rs.elements;
     it.next == PCDATA_ && {
@@ -28,6 +19,7 @@ object ContentModel extends scala.util.regexp.WordExp {
       !it.hasNext
     }
   }
+  */
 
   def getLabels(r: RegExp): scala.collection.Set[String] = {
     val s = new scala.collection.mutable.HashSet[String]();
@@ -54,37 +46,86 @@ object ContentModel extends scala.util.regexp.WordExp {
     sb.toString();
   }
 
-  /* precond: rs.length > 1 */
-  private def toString(rs: Seq[RegExp], sb: StringBuffer):Unit = {
+  /* precond: rs.length >= 1 */
+  private def toString(rs: Seq[RegExp], sb: StringBuffer, sep: Char): Unit = {
     val it = rs.elements;
-    sb.append('(');
     toString(it.next, sb);
     for(val z <- it) {
-      sb.append( ',' );
+      sb.append( sep );
       toString( z, sb );
     }
-    sb.append( ')' );
   }
 
-  def toString(r: RegExp, sb:StringBuffer):Unit = {
+  def toString(c: ContentModel, sb: StringBuffer): StringBuffer = c.match {
+
+      case ANY    =>
+        sb.append("ANY");
+
+      case EMPTY    =>
+        sb.append("EMPTY");
+
+      case PCDATA =>
+        sb.append("(#PCDATA)");
+
+      case ELEMENTS( r ) =>
+        toString(r, sb)
+
+      case MIXED( r ) =>
+        sb.append("(#PCDATA"); toString(r, sb); sb.append( ')' )
+
+  }
+
+  def toString(r: RegExp, sb:StringBuffer): StringBuffer = {
     r match {
-      case PCDATA_ => sb.append("PCDATA_");
-      case ANY_    => sb.append("ANY_");
-      case Eps     => sb.append("Eps");
+      case Eps     =>
+        sb
+
       case Sequ(rs @ _*) =>
-        sb.append("Sequ");
-        toString(rs, sb);
+        sb.append( '(' ); toString(rs, sb, ','); sb.append( ')' );
+
       case Alt(rs @ _*) =>
-        sb.append("Alt");
-        toString(rs, sb);
+        sb.append( '(' ); toString(rs, sb, '|'); sb.append( ')' );
+
       case Star(r: RegExp) =>
-        sb.append("Star(");
-        toString(r, sb);
-        sb.append(')');
+        sb.append( '(' ); toString(r, sb); sb.append( ")*" );
+
       case Letter(ElemName(name)) =>
-        sb.append("Letter(ElemName(\"");
         sb.append(name);
-        sb.append("\"))");
+
     }
   }
+}
+
+sealed abstract class ContentModel {
+  override def toString(): String = {
+    val sb = new StringBuffer();
+    toString(sb);
+    sb.toString();
+  }
+
+  def toString(sb:StringBuffer): StringBuffer;
+}
+
+case object PCDATA extends ContentModel {
+  def toString(sb:StringBuffer): StringBuffer = sb.append("(#PCDATA)");
+}
+case object EMPTY extends ContentModel {
+  def toString(sb:StringBuffer): StringBuffer = sb.append("EMPTY");
+}
+case object ANY extends ContentModel {
+  def toString(sb:StringBuffer): StringBuffer = sb.append("ANY");
+}
+
+case class  MIXED(r:ContentModel.RegExp) extends ContentModel {
+  def toString(sb:StringBuffer): StringBuffer =  {
+    sb.append("(#PCDATA|");
+    ContentModel.toString(r, sb);
+    sb.append(")*");
+  }
+}
+
+case class  ELEMENTS(r:ContentModel.RegExp) extends ContentModel {
+  def toString(sb:StringBuffer): StringBuffer =
+    ContentModel.toString(r, sb);
+
 }

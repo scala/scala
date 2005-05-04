@@ -10,55 +10,105 @@
 
 package scala.xml.dtd ;
 
-import scala.collection.Map ;
-
 abstract class Decl ;
 
-abstract class MarkupDecl extends Decl ;
+abstract class MarkupDecl extends Decl {
+
+  final override def toString(): String = {
+    toString(new StringBuffer()).toString();
+  }
+
+  def toString(sb: StringBuffer): StringBuffer;
+
+}
 
 /** an element declaration
  */
-case class ElemDecl(name: String, contentModel: ContentModel.RegExp, attList: AttListDecl) extends MarkupDecl {
+case class ElemDecl(name: String, contentModel: ContentModel) extends MarkupDecl with DtdTypeSymbol {
 
   //def mixed  = ; // to do
 
-  def setAttList(nAttList:AttListDecl) =
-    ElemDecl(name, contentModel, nAttList);
+  def toString(sb: StringBuffer): StringBuffer = {
+    sb
+    .append("<!ELEMENT ")
+    .append(name)
+    .append(' ');
+
+    ContentModel.toString(contentModel, sb);
+    sb.append('>');
+  }
+
 } // ElemDecl
 
-case class AttListDecl(name: String, attrs:List[AttrDecl]) extends MarkupDecl;
+case class AttListDecl(name: String, attrs:List[AttrDecl]) extends MarkupDecl with DtdTypeSymbol {
+
+  def toString(sb: StringBuffer): StringBuffer = {
+    sb
+    .append("<!ATTLIST ")
+    .append(name)
+    .append('\n')
+    .append(attrs.mkString("","\n",">"));
+  }
+}
 
 /** an attribute declaration. at this point, the tpe is a string. Future
  *  versions might provide a way to access the attribute types more
  *  directly.
  */
 case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) {
-  final override def toString() = {
-    val sb = new StringBuffer("AttrDecl(");
-    sb.append('"');
-    sb.append( name );
-    sb.append('"');
-    sb.append(',');
-    sb.append('"');
-    sb.append( tpe );
-    sb.append('"');
-    sb.append(',');
-    sb.append(default.toString());
-    sb.append(')');
-    sb.toString();
+
+  final override def toString(): String =
+    toString(new StringBuffer()).toString();
+
+  final def toString(sb: StringBuffer): StringBuffer = {
+    sb.append("  ").append( name ).append(' ').append( tpe ).append(' ');
+    default.toString(sb)
+  }
+
+}
+
+/** an entity declaration */
+abstract class EntityDecl extends MarkupDecl;
+
+/** a parsed general entity declaration */
+case class ParsedEntityDecl( name:String, entdef:EntityDef ) extends EntityDecl {
+
+  final def toString(sb: StringBuffer): StringBuffer = {
+    sb.append("<!ENTITY ").append( name ).append(' ');
+    entdef.toString(sb).append('>');
   }
 }
 
-class EntityDecl extends MarkupDecl;
-/** an entity declaration */
+/** a parameter entity declaration */
+case class ParameterEntityDecl(name: String, entdef: EntityDef) extends EntityDecl {
 
-case class ParsedEntityDecl( name:String, entdef:EntityDef )
-     extends EntityDecl;
+  final def toString(sb: StringBuffer): StringBuffer = {
+    sb.append("<!ENTITY % ").append( name ).append(' ');
+    entdef.toString(sb).append('>');
+  }
+}
 
-case class ParameterEntityDecl(name: String, entdef: EntityDef)
-     extends EntityDecl;
+/** an unparsed entity declaration */
+case class UnparsedEntityDecl( name:String, extID:ExternalID, notation:String ) extends EntityDecl {
+  final  def toString(sb: StringBuffer): StringBuffer = {
+    sb.append("<!ENTITY ").append( name );
+    extID.toString(sb).append(" NDATA ").append(notation).append('>');
+  }
+}
+/** a notation declaration */
+case class NotationDecl( name:String, extID:ExternalID ) extends MarkupDecl {
+  final  def toString(sb: StringBuffer): StringBuffer = {
+    sb.append("<!NOTATION ").append( name ).append(' ');
+    extID.toString(sb);
+  }
+}
 
-class EntityDef;
+abstract class EntityDef {
+  final override def toString(): String =
+    toString(new StringBuffer()).toString();
+
+  def toString(sb: StringBuffer): StringBuffer;
+}
 
 case class IntDef(value:String) extends EntityDef {
   private def validateValue(): Unit = {
@@ -80,41 +130,53 @@ case class IntDef(value:String) extends EntityDef {
     }
   }
   validateValue();
+
+  final def toString(sb: StringBuffer): StringBuffer =
+    Utility.appendQuoted(value, sb);
+
 }
-case class ExtDef(extID:ExternalID) extends EntityDef;
 
-/** an entity declaration */
-case class UnparsedEntityDecl( name:String, extID:ExternalID, notation:String ) extends EntityDecl;
+case class ExtDef(extID:ExternalID) extends EntityDef {
+  final def toString(sb: StringBuffer): StringBuffer =
+    extID.toString(sb);
+}
 
-/** a notation declaration */
-case class NotationDecl( name:String, extID:ExternalID ) extends MarkupDecl;
+
 
 /** a parsed entity reference */
 case class PEReference(ent:String) extends MarkupDecl {
   if( !Utility.isName( ent ))
     throw new IllegalArgumentException("ent must be an XML Name");
 
-  final override def toString() = "%"+ent+";"
+  final def toString(sb: StringBuffer): StringBuffer =
+    sb.append('%').append(ent).append(';');
 }
 
 
 // default declarations for attributes
 
-class DefaultDecl ;
+abstract class DefaultDecl {
+  override def toString(): String;
+  def toString(sb: StringBuffer): StringBuffer;
+}
 
 case object REQUIRED extends DefaultDecl {
-  final override def toString() = "REQUIRED";
+  final override def toString(): String = "#REQUIRED";
+  final def toString(sb:StringBuffer) = sb.append("#REQUIRED");
 }
+
 case object IMPLIED extends DefaultDecl {
-  final override def toString() = "IMPLIED";
+  final override def toString(): String = "#IMPLIED";
+  final def toString(sb:StringBuffer) = sb.append("#IMPLIED");
 }
+
 case class DEFAULT(fixed:boolean, attValue:String) extends DefaultDecl {
-  final override def toString() = {
-    val sb = new StringBuffer("DEFAULT(");
-    sb.append( fixed );
-    sb.append(',');
+  final override def toString(): String =
+    toString(new StringBuffer()).toString();
+
+  final def toString(sb:StringBuffer): StringBuffer = {
+    if(fixed)
+      sb.append("#FIXED ");
     Utility.appendEscapedQuoted( attValue, sb );
-    sb.append(')');
-    sb.toString()
   }
 }

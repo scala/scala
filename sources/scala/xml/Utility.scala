@@ -18,7 +18,7 @@ import scala.collection.mutable;
  */
 object Utility with parsing.TokenTests {
 
-  def view(s: String): Text[String] = Text(s);
+  def view(s: String): Text = Text(s);
 
   /* escapes the characters &lt; &gt; &amp; and &quot; from string */
   final def escape(text: String): String =
@@ -153,16 +153,25 @@ object Utility with parsing.TokenTests {
   }
    */
 
-  def systemLiteralToString(s: String) = {
-    val sb = new StringBuffer("SYSTEM ");
-    appendQuoted(s, sb);
+  def systemLiteralToString(s: String): String = {
+    val sb = new StringBuffer();
+    systemLiteralToString(sb, s);
     sb.toString();
+ }
+
+  def systemLiteralToString(sb: StringBuffer, s: String): StringBuffer = {
+    sb.append("SYSTEM ");
+    appendQuoted(s, sb);
   }
 
-  def publicLiteralToString(s: String) = {
-    val sb = new StringBuffer("PUBLIC ");
-    sb.append('"').append(s).append('"');
+  def publicLiteralToString(s: String): String = {
+    val sb = new StringBuffer();
+    systemLiteralToString(sb, s);
     sb.toString();
+ }
+
+  def publicLiteralToString(sb: StringBuffer, s: String): StringBuffer = {
+    sb.append("PUBLIC \"").append(s).append('"')
   }
 
   /**

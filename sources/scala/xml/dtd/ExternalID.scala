@@ -16,7 +16,15 @@ package scala.xml.dtd;
  * @param  text   text contained in this node, may not contain "?>"
 **/
 
-class ExternalID ;
+abstract class ExternalID  {
+
+  /** returns "PUBLIC "+publicLiteral+" SYSTEM "+systemLiteral */
+  override def toString(): String;
+
+  /** returns "PUBLIC "+publicLiteral+" SYSTEM "+systemLiteral */
+   def toString(sb: StringBuffer): StringBuffer;
+
+}
 
 /** a system identifier
  *
@@ -24,14 +32,18 @@ class ExternalID ;
  * @param  systemLiteral the system identifier literal
 **/
 
-case class SystemID( systemLiteral:String ) extends ExternalID {
+case class SystemID( systemLiteral:String ) extends ExternalID with parsing.TokenTests{
 
-  if( !Utility.checkSysID( systemLiteral ) )
+  if( !checkSysID( systemLiteral ) )
     throw new IllegalArgumentException(
       "can't use both \" and ' in systemLiteral"
     );
+  /** returns " SYSTEM "+systemLiteral */
   final override def toString() =
     Utility.systemLiteralToString( systemLiteral );
+
+  final def toString(sb: StringBuffer): StringBuffer =
+    Utility.systemLiteralToString( sb, systemLiteral );
 }
 
 
@@ -39,15 +51,18 @@ case class SystemID( systemLiteral:String ) extends ExternalID {
  *
  * @author Burak Emir
  * @param  publicLiteral the public identifier literal
- * @param  systemLiteral the system identifier literal
+ * @param  systemLiteral (can be null for notation pubIDs) the system identifier literal
 **/
-case class PublicID( publicLiteral:String, systemLiteral:String ) extends ExternalID {
+case class PublicID( publicLiteral:String, systemLiteral:String ) extends ExternalID with parsing.TokenTests{
+  //Console.println("constructing PublicID \""+publicLiteral+"\" "+systemLiteral);
 
-  if( !Utility.checkPubID( publicLiteral ))
+  //Console.println("util returns "+checkPubID( publicLiteral ));
+
+  if( !checkPubID( publicLiteral ))
     throw new IllegalArgumentException(
       "publicLiteral must consist of PubidChars"
     );
-  if( !Utility.checkSysID( systemLiteral ) )
+  if( systemLiteral!= null && !checkSysID( systemLiteral ) )
     throw new IllegalArgumentException(
       "can't use both \" and ' in systemLiteral"
     );
@@ -62,8 +77,16 @@ case class PublicID( publicLiteral:String, systemLiteral:String ) extends Extern
   final def child = Nil;
 
   /** returns "PUBLIC "+publicLiteral+" SYSTEM "+systemLiteral */
-  final override def toString() =
-    Utility.publicLiteralToString( publicLiteral )
-  + Utility.systemLiteralToString( systemLiteral );
+  final override def toString(): String = {
+    toString(new StringBuffer()).toString();
+  }
 
+  /** appends "PUBLIC "+publicLiteral+" SYSTEM "+systemLiteral to argument */
+  final def toString(sb: StringBuffer): StringBuffer = {
+    Utility.publicLiteralToString( sb, publicLiteral ).append(' ');
+    if(systemLiteral!=null)
+      Utility.systemLiteralToString( sb, systemLiteral );
+    else
+      sb
+  }
 }

@@ -126,7 +126,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     val it = n.child.elements;
     while( it.hasNext )
       it.next match {
-        case _:Text[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
+        case _:Atom[Any] | _: Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
         case _:Node => return true;
       }
     return false
@@ -135,7 +135,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   protected def traverse( node:Node, pscope: NamespaceBinding, ind:int ):Unit = {
     node match {
 
-      case _:Text[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
+      case _:Atom[Any] | _:Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
         makeBox( ind, node.toString() );
 
       case _:Node =>

@@ -52,6 +52,8 @@ abstract class MarkupParser with TokenTests {
    */
   def prolog(): Tuple3[Option[String], Option[String], Option[Boolean]] = {
 
+    //Console.println("(DEBUG) prolog");
+
     var info_ver: Option[String] = None;
     var info_enc: Option[String] = None;
     var info_stdl: Option[Boolean] = None;
@@ -113,6 +115,9 @@ abstract class MarkupParser with TokenTests {
    */
 
   def document(): Document = {
+
+    //Console.println("(DEBUG) document");
+
     this.dtd = null;
     var info_prolog: Tuple3[Option[String], Option[String], Option[Boolean]] =
       Tuple3(None,None,None);
@@ -145,6 +150,7 @@ abstract class MarkupParser with TokenTests {
       reportSyntaxError("document must contain exactly one element");
       Console.println(children.toList);
     }
+
     val doc = new Document();
     doc.children    = children;
     doc.docElem    = theNode;
@@ -439,24 +445,29 @@ abstract class MarkupParser with TokenTests {
     case 'S' =>
       nextch;
       xToken("YSTEM");
+      xSpace;
       val sysID = systemLiteral();
       new SystemID(sysID);
     case 'P' =>
       nextch; xToken("UBLIC");
+      xSpace;
       val pubID = pubidLiteral();
       xSpace;
       val sysID = systemLiteral();
       new PublicID(pubID, sysID);
   }
+
+
   /** parses document type declaration and assigns it to instance variable
    *  dtd.
    *
    *  &lt;! parseDTD ::= DOCTYPE name ... >
    */
   def parseDTD(): Unit = { // dirty but fast
+    //Console.println("(DEBUG) parseDTD");
     var extID: ExternalID = null;
     if(this.dtd != null)
-      reportSyntaxError("unexpected character");
+      reportSyntaxError("unexpected character (DOCTYPE already defined");
     xToken("DOCTYPE");
     xSpace;
     val n = xName;
@@ -469,8 +480,10 @@ abstract class MarkupParser with TokenTests {
     if('[' == ch) { // internal subset
       nextch;
       /* TODO */
-      while(']' != ch)
-        nextch;
+      //Console.println("hello");
+      intSubset();
+      //while(']' != ch)
+      //  nextch;
       // TODO: do the DTD parsing?? ?!?!?!?!!
       xToken(']');
       xSpaceOpt;
@@ -478,6 +491,7 @@ abstract class MarkupParser with TokenTests {
     xToken('>');
     this.dtd = new DTD {
       override var externalID = extID;
+      override val decls      = MarkupParser.this.decls.reverse;
     }
   }
 
@@ -631,6 +645,7 @@ abstract class MarkupParser with TokenTests {
     nextch;
     while (ch != endch) {
       putChar(ch);
+      //Console.println("hello '"+ch+"'"+isPubIDChar(ch));
       if(!isPubIDChar(ch))
         reportSyntaxError("char '"+ch+"' is not allowed in public id");
       nextch;
@@ -646,13 +661,15 @@ abstract class MarkupParser with TokenTests {
   //
 
   def intSubset(): Unit = {
+    //Console.println("(DEBUG) intSubset()");
     xSpace;
-    while(']' != ch)
+    while(']' != ch) {
       ch match {
         case '%' =>
           nextch;
           decls = PEReference(xName) :: decls;
-          xToken(';')
+          xToken(';');
+          xSpace;
           //peReference
       case '<' =>
         nextch;
@@ -682,9 +699,12 @@ abstract class MarkupParser with TokenTests {
               notationDecl();
           }
         }
-        case _ =>
-          reportSyntaxError("unexpected character");
+        xSpace;
+      case _ =>
+        reportSyntaxError("unexpected character '"+ch+"'");
+        nextch;
       }
+    }
   }
 
   /** &lt;! element := ELEMENT
@@ -702,33 +722,40 @@ abstract class MarkupParser with TokenTests {
     val cmstr = cbuf.toString();
     cbuf.setLength( 0 );
     val cm = ContentModel.parse(cmstr);
-    decls = ElemDecl(n, cm, null)::decls;
+    decls = ElemDecl(n, cm)::decls;
   }
 
-  /** &lt;! element := ELEMENT
+  /** &lt;! attlist := ATTLIST
    */
   def attrDecl() = {
     xToken("TTLIST");
     xSpace;
     val n = xName;
+    xSpace;
     var attList: List[AttrDecl] = Nil;
     // later: find the elemDecl for n
     while('>' != ch) {
-      Console.println("");
       val aname = xName;
+      //Console.println("attribute name: "+aname);
       var defdecl: DefaultDecl = null;
       xSpace;
+      // could be enumeration (foo,bar) parse this later :-/
       while('"' != ch && '\'' != ch && '#' != ch && '<' != ch) {
         if(!isSpace(ch))
           cbuf.append(ch);
         nextch;
       }
+      val atpe = cbuf.toString();
+      cbuf.setLength(0);
+      //Console.println("attr type: "+atpe);
       ch match {
         case '\'' | '"' =>
           val defValue = xAttributeValue(); // default value
           defdecl = DEFAULT(false, defValue);
 
-        case '#' => xName.match {
+        case '#' =>
+          nextch;
+          xName.match {
             case "FIXED" =>
               xSpace;
               val defValue = xAttributeValue(); // default value
@@ -742,7 +769,7 @@ abstract class MarkupParser with TokenTests {
       }
       xSpaceOpt;
 
-      attList = AttrDecl(xName, cbuf.toString(), defdecl) :: attList;
+      attList = AttrDecl(aname, atpe, defdecl) :: attList;
       cbuf.setLength(0);
     }
     nextch;
@@ -752,23 +779,26 @@ abstract class MarkupParser with TokenTests {
   /** &lt;! element := ELEMENT
    */
   def entityDecl() = {
+    //Console.println("entityDecl()");
     var isParameterEntity = false;
     var entdef: EntityDef = null;
     xToken("NTITY");
     xSpace;
     if('%' == ch) {
+      nextch;
       isParameterEntity = true;
       xSpace;
     }
     val n = xName;
     xSpace;
-
+    //Console.println("hello");
     val res = ch match {
       case 'S' | 'P' => //sy
         val extID = externalID();
         if(isParameterEntity) {
 
-
+          xSpaceOpt;
+          xToken('>');
           ParameterEntityDecl(n, ExtDef(extID))
 
         } else { // notation?
@@ -778,21 +808,27 @@ abstract class MarkupParser with TokenTests {
             xToken("NDATA");
             xSpace;
             val notat = xName;
-            xSpace;
+            xSpaceOpt;
+            xToken('>');
             UnparsedEntityDecl(n, extID, notat);
           } else
-
+            nextch;
             ParsedEntityDecl(n, ExtDef(extID));
 
         }
 
       case '"' | '\'' =>
+        //Console.println("hello 2");
         val av = xAttributeValue();
+        xSpaceOpt;
+        xToken('>');
+        //Console.println("hello 3");
         if(isParameterEntity)
           ParameterEntityDecl(n, IntDef(av))
         else
           ParsedEntityDecl(n, IntDef(av));
     }
+    //Console.println("res = "+res);
     decls = res :: decls;
   } // entityDecl
 
@@ -803,8 +839,23 @@ abstract class MarkupParser with TokenTests {
     xSpace;
     val notat = xName;
     xSpace;
-    val extID = externalID();
-    xSpace;
+    val extID = if(ch == 'S') {
+      externalID();
+    } else if(ch == 'P') {
+      /** PublicID (without system, only used in NOTATION) */
+      nextch;
+      xToken("UBLIC");
+      xSpace;
+      val pubID = pubidLiteral();
+      xSpaceOpt;
+      val sysID = if(ch != '>')
+        systemLiteral()
+      else
+        null;
+      new PublicID(pubID, sysID);
+    } else
+      error("PUBLIC or SYSTEM expected");
+    xSpaceOpt;
     xToken('>');
     decls = NotationDecl(notat, extID) :: decls;
   }

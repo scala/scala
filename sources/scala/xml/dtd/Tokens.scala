@@ -6,7 +6,6 @@ class Tokens {
 
   final val TOKEN_PCDATA = 0;
   final val NAME         = 1;
-  final val EMPTY        = 2;
   final val LPAREN       = 3;
   final val RPAREN       = 4;
   final val COMMA        = 5;
@@ -20,7 +19,6 @@ class Tokens {
   final def token2string( i:int ):String = i.match {
     case 0 => "#PCDATA";
     case 1 => "NAME";
-    case 2 => "EMPTY";
     case 3 => "(";
     case 4 => ")";
     case 5 => ",";

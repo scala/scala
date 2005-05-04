@@ -63,7 +63,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
    * @param text
    * @return a new Text node.
    */
-  def createText( text:String ):Text[String]; // abstract
+  def createText( text:String ):Text; // abstract
 
   //
   // ContentHandler methods
