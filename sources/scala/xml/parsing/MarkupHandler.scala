@@ -2,7 +2,12 @@ package scala.xml.parsing;
 
 import scala.xml.dtd._ ;
 
-/** class that handles markup - provides callback methods to MarkupParser */
+/** class that handles markup - provides callback methods to MarkupParser.
+ *  the default is nonvalidating behaviour
+ *
+ *  @todo can we ignore more entity declarations (i.e. those with extIDs)?
+ *  @todo expanding entity references
+ */
 abstract class MarkupHandler {
 
   /** returns true is this markup handler is validing */
@@ -32,12 +37,15 @@ abstract class MarkupHandler {
   def comment(pos: Int, comment: String ): NodeSeq;
 
   /** callback method invoked by MarkupParser after parsing entity ref.
+   *  @todo expanding entity references
    */
   def entityRef(pos: Int, n: String): NodeSeq;
 
   /** callback method invoked by MarkupParser after parsing text.
    */
   def text(pos: Int, txt:String): NodeSeq;
+
+  // DTD handler methods
 
   def elemDecl(n: String, cmstr: String): Unit = {}
 
