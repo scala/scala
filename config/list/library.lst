@@ -262,6 +262,7 @@ xml/parsing/MarkupParser.scala
 xml/parsing/FactoryAdapter.scala
 xml/parsing/NoBindingFactoryAdapter.scala
 xml/parsing/TokenTests.scala
+xml/parsing/ValidatingMarkupHandler.scala
 
 xml/path/Expression.scala
 

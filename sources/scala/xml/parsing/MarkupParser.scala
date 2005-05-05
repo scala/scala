@@ -9,22 +9,21 @@
 
 package scala.xml.parsing;
 
+import scala.io.Source;
 import scala.xml.dtd._ ;
+
 /** an xml parser. parses XML 1.0, invokes callback methods of a MarkupHandler
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
-abstract class MarkupParser with TokenTests {
+abstract class MarkupParser(input: Source): MarkupHandler with TokenTests {
 
   //
   // variables, values
   //
 
-  /** the handler of the markup */
+  /** the handler of the markup, should return this */
   val handle: MarkupHandler;
-
-  /** if true, does not remove surplus whitespace */
-  val preserveWS: Boolean;
 
   /** holds the position in the source file */
   var pos: Int = _;
@@ -39,8 +38,6 @@ abstract class MarkupParser with TokenTests {
   protected val cbuf = new StringBuffer();
 
   var dtd: DTD = null;
-
-  var decls: List[scala.xml.dtd.Decl] = Nil;
 
   var eof: Boolean = false;
 
@@ -167,12 +164,15 @@ abstract class MarkupParser with TokenTests {
   //var xEmbeddedBlock = false;
 
   /** this method assign the next character to ch and advances in input */
-  def nextch: Unit;
+  def nextch: Unit = {
+    if(input.hasNext) {
+      ch = input.next;
+      pos = input.pos;
+    } else
+      eof = true;
+  }
 
   //final val enableEmbeddedExpressions: Boolean = false;
-
-  /** report a syntax error */
-  def reportSyntaxError(str: String): Unit;
 
   /** munch expected XML token, report syntax error for unexpected
   */
@@ -431,9 +431,10 @@ abstract class MarkupParser with TokenTests {
           }
     /*}*/
     }
+    val list = ts.toList;
     // 2do: optimize seq repr.
     new NodeSeq {
-      val theSeq = ts.toList;
+      val theSeq = list;
     }
   } // content(NamespaceBinding)
 
@@ -491,7 +492,7 @@ abstract class MarkupParser with TokenTests {
     xToken('>');
     this.dtd = new DTD {
       override var externalID = extID;
-      override val decls      = MarkupParser.this.decls.reverse;
+      override val decls      = handle.decls.reverse;
     }
   }
 
@@ -521,9 +522,9 @@ abstract class MarkupParser with TokenTests {
     Utility.prefix(qname) match {
       case Some(pre) =>
         val local = qname.substring(pre.length()+1, qname.length());
-        handle.element(pos, pre, local, aMap, scope, ts );
+        handle.elem(pos, pre, local, aMap, scope, ts );
       case _ =>
-        handle.element(pos, null, qname, aMap, scope, ts );
+        handle.elem(pos, null, qname, aMap, scope, ts );
     }
   }
 
@@ -667,7 +668,7 @@ abstract class MarkupParser with TokenTests {
       ch match {
         case '%' =>
           nextch;
-          decls = PEReference(xName) :: decls;
+          handle.peReference(xName);
           xToken(';');
           xSpace;
           //peReference
@@ -721,8 +722,7 @@ abstract class MarkupParser with TokenTests {
     nextch;
     val cmstr = cbuf.toString();
     cbuf.setLength( 0 );
-    val cm = ContentModel.parse(cmstr);
-    decls = ElemDecl(n, cm)::decls;
+    handle.elemDecl(n, cmstr);
   }
 
   /** &lt;! attlist := ATTLIST
@@ -773,7 +773,7 @@ abstract class MarkupParser with TokenTests {
       cbuf.setLength(0);
     }
     nextch;
-    decls = AttListDecl(n, attList.reverse) :: decls
+    handle.attListDecl(n, attList.reverse);
   }
 
   /** &lt;! element := ELEMENT
@@ -791,15 +791,14 @@ abstract class MarkupParser with TokenTests {
     }
     val n = xName;
     xSpace;
-    //Console.println("hello");
-    val res = ch match {
+    ch match {
       case 'S' | 'P' => //sy
         val extID = externalID();
         if(isParameterEntity) {
 
           xSpaceOpt;
           xToken('>');
-          ParameterEntityDecl(n, ExtDef(extID))
+          handle.parameterEntityDecl(n, ExtDef(extID))
 
         } else { // notation?
 
@@ -810,26 +809,24 @@ abstract class MarkupParser with TokenTests {
             val notat = xName;
             xSpaceOpt;
             xToken('>');
-            UnparsedEntityDecl(n, extID, notat);
-          } else
+            handle.unparsedEntityDecl(n, extID, notat);
+          } else {
             nextch;
-            ParsedEntityDecl(n, ExtDef(extID));
-
+            handle.parsedEntityDecl(n, ExtDef(extID));
+          }
         }
 
       case '"' | '\'' =>
-        //Console.println("hello 2");
         val av = xAttributeValue();
         xSpaceOpt;
         xToken('>');
-        //Console.println("hello 3");
         if(isParameterEntity)
-          ParameterEntityDecl(n, IntDef(av))
+          handle.parameterEntityDecl(n, IntDef(av));
         else
-          ParsedEntityDecl(n, IntDef(av));
+          handle.parsedEntityDecl(n, IntDef(av));
     }
-    //Console.println("res = "+res);
-    decls = res :: decls;
+
+    {}
   } // entityDecl
 
   /** 'N' notationDecl ::= "OTATION"
@@ -857,7 +854,14 @@ abstract class MarkupParser with TokenTests {
       error("PUBLIC or SYSTEM expected");
     xSpaceOpt;
     xToken('>');
-    decls = NotationDecl(notat, extID) :: decls;
+    handle.notationDecl(notat, extID)
   }
+
+  /** report a syntax error */
+  def reportSyntaxError(str: String): Unit = {
+    //Console.println(inp.descr+":"+scala.io.Position.toString(pos)+":"+str);
+    input.reportError(pos, str)
+  }
+
 
 }
