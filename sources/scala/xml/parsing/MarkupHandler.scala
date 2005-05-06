@@ -54,8 +54,12 @@ abstract class MarkupHandler {
   def parameterEntityDecl(name: String, edef: EntityDef): Unit =
     decls = ParameterEntityDecl(name, edef) :: decls;
 
-  def parsedEntityDecl(name: String, edef: EntityDef): Unit =
-    decls = ParsedEntityDecl(name, edef) :: decls;
+  def parsedEntityDecl(name: String, edef: EntityDef): Unit = edef.match {
+    case _:ExtDef if isValidating =>
+      ; // ignore (cf 4.4.1)
+    case _ =>
+      decls = ParsedEntityDecl(name, edef) :: decls;
+  }
 
   def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit =
     {}
