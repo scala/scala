@@ -811,11 +811,12 @@ sealed trait List[+a] extends Seq[a] {
   def zipAll[c >: a, b](that: List[b], thisElem: c, thatElem: b): List[Pair[c,b]] =
     if (this.isEmpty && that.isEmpty)
       Nil
-    else {
-      val this1 = if (this.isEmpty) List.make(that.length, thisElem) else this;
-      val that1 = if (that.isEmpty) List.make(this.length, thatElem) else that;
-      Pair(this1.head, that1.head) :: this1.tail.zipAll(that1.tail, thisElem, thatElem)
-    }
+    else if (this.isEmpty)
+      List.make(that.length, thisElem) zip that
+    else if (that.isEmpty)
+      this zip List.make(this.length, thatElem)
+    else
+      Pair(this.head, that.head) :: this.tail.zipAll(that.tail, thisElem, thatElem);
 
   /** Computes the union of this list and the given list
    *  <code>that</code>.
