@@ -239,6 +239,7 @@ run/exceptions.scala
 run/imports.scala
 run/iq.scala
 run/lisp.scala
+run/lists.scala
 run/literals.scala
 run/map_test.scala
 run/misc.scala
