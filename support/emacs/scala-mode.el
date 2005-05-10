@@ -17,10 +17,57 @@
 ;; (note that XEmacs is not supported currently, the function below
 ;; only works around a single incompatibility).
 
-(defun scala-regexp-opt-charset (cset)
-  (regexp-opt-charset (if (integerp ?a)
-                          cset
-                        (mapcar #'char-to-string cset))))
+;;(defun scala-regexp-opt-charset (cset)
+;;  (regexp-opt-charset (if (integerp ?a)
+;;                          cset
+;;                        (mapcar #'char-to-string cset))))
+(defun scala-regexp-opt-charset (chars)
+  ;;
+  ;; Return a regexp to match a character in CHARS.
+  ;;
+  ;; The basic idea is to find character ranges.  Also we take care in the
+  ;; position of character set meta characters in the character set regexp.
+  ;;
+  (let* ((charmap (make-char-table 'case-table))
+     (start -1) (end -2)
+     (charset "")
+     (bracket "") (dash "") (caret ""))
+    ;;
+    ;; Make a character map but extract character set meta characters.
+    (dolist (char chars)
+      (case char
+    (?\]
+     (setq bracket "]"))
+    (?^
+     (setq caret "^"))
+    (?-
+     (setq dash "-"))
+    (otherwise
+     (aset charmap char t))))
+    ;;
+    ;; Make a character set from the map using ranges where applicable.
+    (map-char-table
+     (lambda (c v)
+       (when v
+     (if (= (1- c) end) (setq end c)
+       (if (> end (+ start 2))
+           (setq charset (format "%s%c-%c" charset start end))
+         (while (>= end start)
+           (setq charset (format "%s%c" charset start))
+           (incf start)))
+       (setq start c end c))))
+     charmap)
+    (when (>= end start)
+      (if (> end (+ start 2))
+      (setq charset (format "%s%c-%c" charset start end))
+    (while (>= end start)
+      (setq charset (format "%s%c" charset start))
+      (incf start))))
+    ;;
+    ;; Make sure a caret is not first and a dash is first or last.
+    (if (and (string-equal charset "") (string-equal bracket ""))
+    (concat "[" dash caret "]")
+      (concat "[" bracket charset caret dash "]"))))
 
 ;; Customization
 
