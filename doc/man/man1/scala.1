@@ -43,7 +43,7 @@ class’s \fBmain\fR method. The method must have the following signature:
 .PP
           \fBdef\fR main(args: Array[String]): Unit
 .PP
-The method must not return any value, and it must accept a \fBString\fR
+The method must return a \fBUnit\fR value, and it must accept a \fBString\fR
 array as a parameter. By default, the first non-option argument is the name
 of the class to be invoked. A fully-qualified class name should be used.
 .PP
@@ -59,20 +59,29 @@ runtime environment and will be supported in future releases. An additional
 set of non-standard options are specific to the current virtual machine
 implementation and are subject to change in the future. Non-standard options
 begin with \fB-X\fR.
+.SS Standard Options
 .TP
 \fB\-cp -classpath\fR <\fIpath\fR>
 Specify where to find user class files (on Unix-based systems a
 colon-separated list of paths, on Windows-based systems, a semicolon-separate
 list of paths).
 .TP
-\fB\-help\fR
-Print this help message.
+\fB\-D\fR<\fIname\fR>=<\fIvalue\fR>
+Set a system property.
+.TP
+\fB\-verbose\fR[:class|gc|jni]
+Enable verbose output.
 .TP
 \fB\-showversion\fR
 Print product version and continue.
 .TP
 \fB\-version\fR
 Print product version and exit.
+.TP
+\fB\-help\fR
+Print this help message.
+.SS Non-Standard Options
+Same options as the \fBjava\fR command.
 .\"
 .\" ############################### EXAMPLES #################################
 .\"
@@ -91,7 +100,7 @@ Execute a Scala program generated in a user-defined directory \fBclasses\fR
 .\" ############################# EXIT STATUS ################################
 .\"
 .SH "EXIT STATUS"
-\fBscala\fR returns a zero exist status if it succeeds. Non zero is returned
+\fBscala\fR returns a zero exit status if it succeeds. Non zero is returned
 in case of failure.
 .\"
 .\" ############################## AUTHOR(S) #################################
