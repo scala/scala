@@ -15,7 +15,6 @@ import scala.Array;
 import scala.ScalaObject;
 import scala.runtime.RunTime;
 import scala.runtime.FNV_Hash;
-import scala.runtime.PearsonHash;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -51,15 +50,12 @@ public class ScalaClassType extends ClassType {
         this.constr = constr;
         this.inst = inst;
 
-        int hash = FNV_Hash.hashStep(FNV_Hash.INIT,
-                                     PearsonHash.hash8(constr.hashCode()));
+        int hash = FNV_Hash.hashStep32(FNV_Hash.INIT, constr.hashCode());
         for (int i = 0; i < inst.length; ++i) {
-            hash = FNV_Hash.hashStep(hash,
-                                     PearsonHash.hash8(inst[i].hashCode()));
+            hash = FNV_Hash.hashStep32(hash, inst[i].hashCode());
         }
         this.hashCode = hash;
         this.parents = parents;
-        this.ancestors = constr.isStronglyTrivial ? EMPTY_ANCESTORS : null;
     }
 
     public boolean isInstance(Object o) {

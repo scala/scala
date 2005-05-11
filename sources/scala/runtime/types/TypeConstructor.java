@@ -46,11 +46,9 @@ public class TypeConstructor implements java.io.Serializable {
 
     /**
      * Indication of triviality: a constructor is trivial iff it has
-     * no enclosing class, and no type arguments. It is strongly
-     * trivial if all its ancestors, itself included, are trivial.
+     * no enclosing class, and no type arguments.
      */
     public final boolean isTrivial;
-    public final boolean isStronglyTrivial;
 
     public final int ancestorCacheDepth;
     /**
@@ -99,7 +97,6 @@ public class TypeConstructor implements java.io.Serializable {
             (ancestorCode == null ? EMPTY_ANCESTOR_CODE : ancestorCode);
 
         this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
-        this.isStronglyTrivial = (ancestorCacheDepth == 0);
 
         try {
             this.clazz = Class.forName(fullName, false, loader);

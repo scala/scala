@@ -29,7 +29,6 @@ import scala.runtime.types.TypeAnyVal;
 import scala.runtime.types.Statistics;
 
 import scala.runtime.FNV_Hash;
-import scala.runtime.PearsonHash;
 
 /**
  * Run-time types for Scala.
@@ -148,7 +147,7 @@ abstract public class Type implements java.io.Serializable {
 
         int h = FNV_Hash.INIT;
         for (int i = 0; i < len; ++i)
-            h = FNV_Hash.hashStep(h, PearsonHash.hash8(types[i].hashCode()));
+            h = FNV_Hash.hashStep32(h, types[i].hashCode());
 
         return h;
     }

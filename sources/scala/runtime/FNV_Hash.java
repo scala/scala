@@ -20,8 +20,15 @@ package scala.runtime;
 public class FNV_Hash {
     public static final int INIT = -2128831035;
 
-    public static int hashStep(int current, int newByte) {
-        return (current * 16777619) ^ newByte;
+    public static int hashStep8(int current, int newInt8) {
+        return (current * 16777619) ^ newInt8;
+    }
+
+    public static int hashStep32(int current, int newInt32) {
+        final int v1 = hashStep8(current, newInt32 >> 24);
+        final int v2 = hashStep8(v1, (newInt32 >> 16) & 0xFF);
+        final int v3 = hashStep8(v2, (newInt32 >> 8) & 0xFF);
+        return hashStep8(v3, newInt32 & 0xFF);
     }
 
     public static int hash32(byte[] bytes) {
@@ -29,7 +36,7 @@ public class FNV_Hash {
 
         int h = INIT;
         for (int i = 0; i < len; ++i)
-            h = hashStep(h, bytes[i]);
+            h = hashStep8(h, bytes[i]);
 
         return h;
     }

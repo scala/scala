@@ -150,7 +150,6 @@ mobile/Location.scala
 
 runtime/AtomicReference.java
 runtime/FNV_Hash.java
-runtime/PearsonHash.java
 runtime/IOMap.java
 runtime/InterpreterSupport.java
 runtime/RunTime.java
