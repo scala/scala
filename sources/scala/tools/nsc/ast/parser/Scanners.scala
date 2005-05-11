@@ -681,7 +681,7 @@ abstract class Scanners: ParserPhase {
 
     /** generate an error at the given position
     */
-    def syntaxError(pos: int, msg: String) = {
+    def syntaxError(pos: int, msg: String): unit = {
       unit.error(pos, msg);
       token = ERROR;
       errpos = pos;
@@ -703,66 +703,65 @@ abstract class Scanners: ParserPhase {
 
       // Enter keywords
 
-      def enterKeyword(s: String, tokenId: int) = {
+      def enterKeyword(n: Name, tokenId: int): unit = {
 	while (tokenId >= tokenName.length) {
 	  val newTokName = new Array[Name](tokenName.length * 2);
 	  System.arraycopy(tokenName, 0, newTokName, 0, newTokName.length);
 	  tokenName = newTokName;
 	}
-	val n = newTermName(s);
 	tokenName(tokenId) = n;
 	if (n.start > maxKey) maxKey = n.start;
 	if (tokenId >= tokenCount) tokenCount = tokenId + 1;
       }
 
-      enterKeyword("abstract", ABSTRACT);
-      enterKeyword("case", CASE);
-      enterKeyword("class", CLASS);
-      enterKeyword("catch", CATCH);
-      enterKeyword("def", DEF);
-      enterKeyword("do", DO);
-      enterKeyword("else", ELSE);
-      enterKeyword("extends", EXTENDS);
-      enterKeyword("false", FALSE);
-      enterKeyword("final", FINAL);
-      enterKeyword("finally", FINALLY);
-      enterKeyword("for", FOR);
-      enterKeyword("if", IF);
-      enterKeyword("implicit", IMPLICIT);
-      enterKeyword("import", IMPORT);
-      enterKeyword("match", MATCH);
-      enterKeyword("new", NEW);
-      enterKeyword("null", NULL);
-      enterKeyword("object", OBJECT);
-      enterKeyword("override", OVERRIDE);
-      enterKeyword("package", PACKAGE);
-      enterKeyword("private", PRIVATE);
-      enterKeyword("protected", PROTECTED);
-      enterKeyword("return", RETURN);
-      enterKeyword("sealed", SEALED);
-      enterKeyword("super", SUPER);
-      enterKeyword("this", THIS);
-      enterKeyword("throw", THROW);
-      enterKeyword("trait", TRAIT);
-      enterKeyword("true", TRUE);
-      enterKeyword("try", TRY);
-      enterKeyword("type", TYPE);
-      enterKeyword("val", VAL);
-      enterKeyword("var", VAR);
-      enterKeyword("with", WITH);
-      enterKeyword("while", WHILE);
-      enterKeyword("yield", YIELD);
-      enterKeyword(".", DOT);
-      enterKeyword("_", USCORE);
-      enterKeyword(":", COLON);
-      enterKeyword("=", EQUALS);
-      enterKeyword("=>", ARROW);
-      enterKeyword("<-", LARROW);
-      enterKeyword("<:", SUBTYPE);
-      enterKeyword("<%", VIEWBOUND);
-      enterKeyword(">:", SUPERTYPE);
-      enterKeyword("#", HASH);
-      enterKeyword("@", AT);
+      enterKeyword(nme.ABSTRACTkw, ABSTRACT);
+      enterKeyword(nme.CASEkw, CASE);
+      enterKeyword(nme.CLASSkw, CLASS);
+      enterKeyword(nme.CATCHkw, CATCH);
+      enterKeyword(nme.DEFkw, DEF);
+      enterKeyword(nme.DOkw, DO);
+      enterKeyword(nme.ELSEkw, ELSE);
+      enterKeyword(nme.EXTENDSkw, EXTENDS);
+      enterKeyword(nme.FALSEkw, FALSE);
+      enterKeyword(nme.FINALkw, FINAL);
+      enterKeyword(nme.FINALLYkw, FINALLY);
+      enterKeyword(nme.FORkw, FOR);
+      enterKeyword(nme.IFkw, IF);
+      enterKeyword(nme.IMPLICITkw, IMPLICIT);
+      enterKeyword(nme.IMPORTkw, IMPORT);
+      enterKeyword(nme.MATCHkw, MATCH);
+      enterKeyword(nme.NEWkw, NEW);
+      enterKeyword(nme.NULLkw, NULL);
+      enterKeyword(nme.OBJECTkw, OBJECT);
+      enterKeyword(nme.OVERRIDEkw, OVERRIDE);
+      enterKeyword(nme.PACKAGEkw, PACKAGE);
+      enterKeyword(nme.PRIVATEkw, PRIVATE);
+      enterKeyword(nme.PROTECTEDkw, PROTECTED);
+      enterKeyword(nme.RETURNkw, RETURN);
+      enterKeyword(nme.SEALEDkw, SEALED);
+      enterKeyword(nme.SUPERkw, SUPER);
+      enterKeyword(nme.THISkw, THIS);
+      enterKeyword(nme.THROWkw, THROW);
+      enterKeyword(nme.TRAITkw, TRAIT);
+      enterKeyword(nme.TRUEkw, TRUE);
+      enterKeyword(nme.TRYkw, TRY);
+      enterKeyword(nme.TYPEkw, TYPE);
+      enterKeyword(nme.VALkw, VAL);
+      enterKeyword(nme.VARkw, VAR);
+      enterKeyword(nme.WITHkw, WITH);
+      enterKeyword(nme.WHILEkw, WHILE);
+      enterKeyword(nme.YIELDkw, YIELD);
+      enterKeyword(nme.DOTkw, DOT);
+      enterKeyword(nme.USCOREkw, USCORE);
+      enterKeyword(nme.COLONkw, COLON);
+      enterKeyword(nme.EQUALSkw, EQUALS);
+      enterKeyword(nme.ARROWkw, ARROW);
+      enterKeyword(nme.LARROWkw, LARROW);
+      enterKeyword(nme.SUBTYPEkw, SUBTYPE);
+      enterKeyword(nme.VIEWBOUNDkw, VIEWBOUND);
+      enterKeyword(nme.SUPERTYPEkw, SUPERTYPE);
+      enterKeyword(nme.HASHkw, HASH);
+      enterKeyword(nme.ATkw, AT);
 
       // Build keyword array
       key = new Array[byte](maxKey+1);

@@ -53,7 +53,7 @@ abstract class ConstantFolder {
 
   private def foldBinop(op: Name, lvalue: Any, rvalue: Any): Any = Triple(op, lvalue, rvalue) match {
     case Triple(nme.ZOR , x: boolean, y: boolean) => x | y
-    case Triple(nme.OR, , x: boolean, y: boolean) => x | y
+    case Triple(nme.OR  , x: boolean, y: boolean) => x | y
     case Triple(nme.OR  , x: int    , y: int    ) => x | y
     case Triple(nme.OR  , x: long   , y: long   ) => x | y
 

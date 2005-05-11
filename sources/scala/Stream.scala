@@ -25,7 +25,7 @@ object Stream {
     def printElems(buf: StringBuffer, prefix: String): StringBuffer = buf;
   }
 
-  def cons[a](hd: a, def/*!!!*/ tl: Stream[a]) = new Stream[a] {
+  def cons[a](hd: a, tl: => Stream[a]) = new Stream[a] {
     def isEmpty = false;
     def head = hd;
     private var tlVal: Stream[a] = _;
@@ -129,7 +129,7 @@ trait Stream[+a] extends Seq[a] {
 
   def length: int = if (isEmpty) 0 else tail.length + 1;
 
-  def append[b >: a](def/*!!!*/ rest: Stream[b]): Stream[b] =
+  def append[b >: a](rest: => Stream[b]): Stream[b] =
     if (isEmpty) rest
     else Stream.cons(head, tail.append(rest));
 

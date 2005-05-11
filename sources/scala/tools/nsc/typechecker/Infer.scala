@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-class Infer: Analyzer {
+abstract class Infer: Analyzer {
   import symtab.Flags._;
   import global._;
   import definitions._;
@@ -17,11 +17,16 @@ class Infer: Analyzer {
   /** The formal parameter types corresponding to `formals'.
    *  If `formals' has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned. */
-  def formalTypes(formals: List[Type], nargs: int): List[Type] =
-    if (!formals.isEmpty && (formals.last.symbol == RepeatedParamClass)) {
-      val ft = formals.last.typeArgs.head;
-      formals.init ::: (for (val i <- List.range(formals.length - 1, nargs)) yield ft)
-    } else formals;
+  def formalTypes(formals: List[Type], nargs: int): List[Type] = {
+    val formals1 = formals map {
+      case TypeRef(_, sym, List(arg)) if (sym == ByNameParamClass) => arg
+      case formal => formal
+    }
+    if (!formals1.isEmpty && (formals1.last.symbol == RepeatedParamClass)) {
+      val ft = formals1.last.typeArgs.head;
+      formals1.init ::: (for (val i <- List.range(formals1.length - 1, nargs)) yield ft)
+    } else formals1
+  }
 
   /** A fresh type varable with given type parameter as origin. */
   def freshVar(tparam: Symbol): TypeVar = new TypeVar(tparam.tpe, new TypeConstraint);
@@ -205,17 +210,18 @@ class Infer: Analyzer {
     def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
       if (sym.isError) {
 	tree setSymbol sym setType ErrorType
-      } else if (sym.owner.hasFlag(INCONSTRUCTOR) && !sym.isTypeParameter && site.isInstanceOf[This]) {
+      } else if (sym.owner.hasFlag(INCONSTRUCTOR) &&
+		 !sym.isTypeParameter && !sym.isConstructor &&
+		 site.isInstanceOf[This]) {
 	errorTree(tree, "" + sym + " cannot be accessed from constructor");
       } else {
-	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site));
+	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
 	if (sym1 == NoSymbol) {
 	  errorTree(tree, sym.toString() + " cannot be accessed in " + pre.widen)
 	} else {
 	  tree setSymbol sym1 setType pre.memberType(sym1)
 	}
       }
-
 
     def isCompatible(tp: Type, pt: Type): boolean = {
       val tp1 = normalize(tp);
@@ -325,11 +331,11 @@ class Infer: Analyzer {
 	()
       }
       val targs = solve(tvars, tparams, tparams map varianceInTypes(formals), false);
-      List.map2(tparams, targs) ((tparam, targ) =>
+      List.map2(tparams, targs) {(tparam, targ) =>
 	if (targ.symbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
 	  uninstantiated += tparam;
 	  tparam.tpe
-	} else targ)
+	} else targ}
     }
 
 
@@ -354,7 +360,7 @@ class Infer: Analyzer {
 	    }
 	  }
 	case PolyType(tparams, restpe) =>
-	  val tparams1 = tparams map (.cloneSymbol);
+	  val tparams1 = cloneSymbols(tparams);
 	  isApplicable(tparams1 ::: undetparams, restpe.substSym(tparams, tparams1), argtpes, pt)
 	case ErrorType =>
 	  true
@@ -476,7 +482,7 @@ class Infer: Analyzer {
      *  If several alternatives match `pt', take parameterless one.
      *  Error if no or several such alternatives exist.
      */
-    def inferExprAlternative(tree: Tree, pt: Type): unit = {
+    def inferExprAlternative(tree: Tree, pt: Type): unit = tryTwice {
       val pre = tree.symbol.info.prefix;
       val alts = tree.symbol.alternatives filter (alt =>
 	isCompatible(pre.memberType(alt), pt));
@@ -516,7 +522,7 @@ class Infer: Analyzer {
      *  with pt = WildcardType.
      *  Otherwise, if there is no best alternative, error.
      */
-    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = {
+    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tryTwice {
       val pre = tree.symbol.info.prefix;
       if (settings.debug.value) System.out.println("infer method alt " + tree.symbol + " with alternatives " + (tree.symbol.alternatives map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);//debug
       val alts = tree.symbol.alternatives filter (alt =>
@@ -540,10 +546,26 @@ class Infer: Analyzer {
 			       "argument types " + argtpes.mkString("(", ",", ")") +
 			       (if (pt == WildcardType) "" else " and expected result type " + pt));
 	setError(tree);
-        ()
+	()
       } else {
 	tree.setSymbol(best).setType(pre.memberType(best))
       }
+    }
+
+    /** Try inference twice, once without views and once with views, unless views are already disabled.
+     */
+    def tryTwice(infer: => unit): unit = {
+      if (context.reportGeneralErrors) {
+	context.reportGeneralErrors = false;
+	try {
+	  infer
+	} catch {
+	  case ex: TypeError =>
+	    context.reportGeneralErrors = true;
+	    infer
+	}
+	context.reportGeneralErrors = true
+      } else infer
     }
 
     /** Assign `tree' the type of unique polymorphic alternative with `nparams'
@@ -553,10 +575,10 @@ class Infer: Analyzer {
     def inferPolyAlternative(tree: Tree, nparams: int): unit = {
       val pre = tree.symbol.info.prefix;
       val alts = tree.symbol.alternatives filter (alt =>
-	alt.info.typeParams.length == nparams);
+	alt.typeParams.length == nparams);
       if (alts.isEmpty) {
 	errorTree(tree,
-	  if (tree.symbol.alternatives exists (alt => alt.info.typeParams.length > 0))
+	  if (tree.symbol.alternatives exists (alt => alt.typeParams.length > 0))
 	    "wrong number of type parameters for " + treeSymTypeMsg(tree)
 	  else treeSymTypeMsg(tree) + " does not take type parameters")
       } else if (!alts.tail.isEmpty) {

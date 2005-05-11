@@ -149,28 +149,28 @@ abstract class ClassfileParser {
     def getSuperClass(index: int): Symbol =
       if (index == 0) definitions.AnyClass else getClassSymbol(index);
 
-    def getLiteral(index: int): Any = {
+    def getLiteral(index: int): Constant = {
       if (index <= 0 || len <= index) errorBadIndex(index);
       var value = values(index);
       if (value == null) {
         val start = starts(index);
         value = in.buf(start) match {
           case CONSTANT_STRING =>
-            getName(in.getChar(start + 1)).toString()
+            Constant(getName(in.getChar(start + 1)).toString())
           case CONSTANT_INTEGER =>
-            in.getInt(start + 1)
+            Constant(in.getInt(start + 1))
           case CONSTANT_FLOAT =>
-            in.getFloat(start + 1)
+            Constant(in.getFloat(start + 1))
           case CONSTANT_LONG =>
-            in.getLong(start + 1)
+            Constant(in.getLong(start + 1))
           case CONSTANT_DOUBLE =>
-            in.getDouble(start + 1)
+            Constant(in.getDouble(start + 1))
           case _ =>
             errorBadTag(start);
         }
         values(index) = value;
       }
-      value
+      value.asInstanceOf[Constant]
     }
 
     /** Throws an exception signaling a bad constant index. */
@@ -264,7 +264,7 @@ abstract class ClassfileParser {
   def parseField(): unit = {
     val jflags = in.nextChar();
     var sflags = transFlags(jflags);
-    if ((sflags & FINAL) != 0) sflags = sflags | MUTABLE;
+    if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE;
     if ((sflags & PRIVATE) != 0) {
       in.skip(4); skipAttributes();
     } else {
@@ -314,22 +314,21 @@ abstract class ClassfileParser {
           sym.setFlag(DEPRECATED);
           in.skip(attrLen)
         case nme.ConstantValueATTR =>
-	  def cast(value: Any, tp: Type): Any = {
+	  def cast(c: Constant, tp: Type): Any = {
 	    val s = symtype.symbol;
-	    if (s == definitions.ByteClass) value.asInstanceOf[byte]
-	    else if (s == definitions.ShortClass) value.asInstanceOf[short]
-	    else if (s == definitions.CharClass) value.asInstanceOf[char]
-	    else if (s == definitions.IntClass) value.asInstanceOf[int]
-	    else if (s == definitions.LongClass) value.asInstanceOf[long]
-	    else if (s == definitions.FloatClass) value.asInstanceOf[float]
-	    else if (s == definitions.DoubleClass) value.asInstanceOf[double]
+	    if (s == definitions.ByteClass) c.value.asInstanceOf$erased[int].asInstanceOf$erased[byte]
+	    else if (s == definitions.ShortClass) c.value.asInstanceOf$erased[int].asInstanceOf$erased[short]
+	    else if (s == definitions.CharClass) c.value.asInstanceOf$erased[int].asInstanceOf$erased[char]
+	    else if (s == definitions.IntClass) c.value.asInstanceOf$erased[int]
+	    else if (s == definitions.LongClass) c.value.asInstanceOf$erased[long]
+	    else if (s == definitions.FloatClass) c.value.asInstanceOf$erased[float]
+	    else if (s == definitions.DoubleClass) c.value.asInstanceOf$erased[double]
 	    else if (s == definitions.UnitClass) ()
-	    else if (s == definitions.BooleanClass) value.asInstanceOf[int] != 0
-	    else if (s == definitions.StringClass) value.asInstanceOf[String]
-	    else value
+	    else if (s == definitions.BooleanClass) c.value.asInstanceOf$erased[int] != 0
+	    else c.value
 	  }
-          val value = pool.getLiteral(in.nextChar());
-          sym.setInfo(ConstantType(symtype, cast(value, symtype)))
+          val c = pool.getLiteral(in.nextChar());
+          sym.setInfo(ConstantType(symtype, cast(c, symtype)))
         case nme.InnerClassesATTR =>
           parseInnerClasses()
         case nme.ScalaSignatureATTR =>

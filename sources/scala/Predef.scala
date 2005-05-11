@@ -142,7 +142,8 @@ object Predef {
 
   // views -------------------------------------------------------------
 
-  implicit def view(x: int): Ordered[int] = new Proxy(x) with Ordered[int] {
+  implicit def view(x: int): Ordered[int] = new Ordered[int] with Proxy {
+    def self: Any = x;
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
         if (x < y1) -1
@@ -152,7 +153,8 @@ object Predef {
     }
   }
 
-  implicit def view(x: char): Ordered[char] = new Proxy(x) with Ordered[char] {
+  implicit def view(x: char): Ordered[char] = new Ordered[char] with Proxy {
+    def self: Any = x;
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
         if (x < y1) -1
@@ -162,7 +164,8 @@ object Predef {
     }
   }
 
-  implicit def view(x: long): Ordered[long] = new Proxy(x) with Ordered[long] {
+  implicit def view(x: long): Ordered[long] = new Ordered[long] with Proxy {
+    def self: Any = x;
     def compareTo [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
         if (x < y1) -1
@@ -172,7 +175,8 @@ object Predef {
     }
   }
 
-  implicit def view(x: float): Ordered[float] = new Proxy(x) with Ordered[float] {
+  implicit def view(x: float): Ordered[float] = new Ordered[float] with Proxy {
+    def self: Any = x;
     def compareTo [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
         if (x < y1) -1
@@ -182,7 +186,8 @@ object Predef {
     }
   }
 
-  implicit def view(x: double): Ordered[double] = new Proxy(x) with Ordered[double] {
+  implicit def view(x: double): Ordered[double] = new Ordered[double] with Proxy {
+    def self: Any = x;
     def compareTo [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
         if (x < y1) -1
@@ -192,7 +197,8 @@ object Predef {
     }
   }
 
-  implicit def view(x: boolean): Ordered[boolean] = new Proxy(x) with Ordered[boolean] {
+  implicit def view(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy {
+    def self: Any = x;
     def compareTo [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
         if (x == y1) 0
@@ -202,7 +208,8 @@ object Predef {
     }
   }
 
-  implicit def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Proxy(xs) with Ordered[Array[A]] {
+  implicit def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Ordered[Array[A]] with Proxy {
+    def self: Any = xs;
     def compareTo[B >: Array[A] <% Ordered[B]](that: B): Int = that match {
       case ys: Array[A] =>
         var i, res = 0;
@@ -273,7 +280,8 @@ object Predef {
         }
   */
 
-  implicit def view(x: String): Ordered[String] = new Proxy(x) with Ordered[String] {
+  implicit def view(x: String): Ordered[String] = new Ordered[String] with Proxy {
+    def self: Any = x;
     def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
       case y1: String => x compareTo y1;
       case _ => -(y compareTo x)

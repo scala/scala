@@ -40,7 +40,7 @@ abstract class MetaData extends Iterable[MetaData] with java.io.Serializable {
 
   /** deep equals method */
   override def equals(that: Any) = {
-    that.match {
+    that match {
       case m:MetaData =>
         var res = (this.length == m.length) && (this.hashCode() == m.hashCode());
         val it = this.elements;

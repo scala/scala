@@ -16,29 +16,31 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004
  */
-class StackProxy[A](s: Stack[A]) extends Stack[A] with SeqProxy[A](s) {
+trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
+
+    def self: Stack[A];
 
     /** Access element number <code>n</code>.
      *
      *  @return  the element at index <code>n</code>.
      */
-    override def apply(n: Int): A = s.apply(n);
+    override def apply(n: Int): A = self.apply(n);
 
     /** Returns the length of this stack.
      */
-    override def length: Int = s.length;
+    override def length: Int = self.length;
 
     /** Checks if the stack is empty.
      *
      *  @return true, iff there is no element on the stack
      */
-    override def isEmpty: Boolean = s.isEmpty;
+    override def isEmpty: Boolean = self.isEmpty;
 
     /** Pushes a single element on top of the stack.
      *
      *  @param  elem        the element to push onto the stack
      */
-    override def +=(elem: A): Unit = s += elem;
+    override def +=(elem: A): Unit = self += elem;
 
     /** Pushes all elements provided by an <code>Iterable</code> object
      *  on top of the stack. The elements are pushed in the order they
@@ -46,7 +48,7 @@ class StackProxy[A](s: Stack[A]) extends Stack[A] with SeqProxy[A](s) {
      *
      *  @param  iter        an iterable object
      */
-    override def ++=(iter: Iterable[A]): Unit = s ++= iter;
+    override def ++=(iter: Iterable[A]): Unit = self ++= iter;
 
 
     /** Pushes all elements provided by an iterator
@@ -55,14 +57,14 @@ class StackProxy[A](s: Stack[A]) extends Stack[A] with SeqProxy[A](s) {
      *
      *  @param  iter        an iterator
      */
-    override def ++=(it: Iterator[A]): Unit = s ++= it;
+    override def ++=(it: Iterator[A]): Unit = self ++= it;
 
     /** Pushes a sequence of elements on top of the stack. The first element
      *  is pushed first, etc.
      *
      *  @param  elems       a sequence of elements
      */
-    override def push(elems: A*): Unit = s ++= elems;
+    override def push(elems: A*): Unit = self ++= elems;
 
     /** Returns the top element of the stack. This method will not remove
      *  the element from the stack. An error is signaled if there is no
@@ -70,17 +72,17 @@ class StackProxy[A](s: Stack[A]) extends Stack[A] with SeqProxy[A](s) {
      *
      *  @return the top element
      */
-    override def top: A = s.top;
+    override def top: A = self.top;
 
     /** Removes the top element from the stack.
      */
-    override def pop: A = s.pop;
+    override def pop: A = self.pop;
 
     /**
      * Removes all elements from the stack. After this operation completed,
      * the stack will be empty.
      */
-    override def clear: Unit = s.clear;
+    override def clear: Unit = self.clear;
 
     /** Returns an iterator over all elements on the stack. This iterator
      *  is stable with respect to state changes in the stack object; i.e.
@@ -90,17 +92,17 @@ class StackProxy[A](s: Stack[A]) extends Stack[A] with SeqProxy[A](s) {
      *
      *  @return an iterator over all stack elements.
      */
-    override def elements: Iterator[A] = s.elements;
+    override def elements: Iterator[A] = self.elements;
 
     /** Creates a list of all stack elements in FIFO order.
      *
      *  @return the created list.
      */
-    override def toList: List[A] = s.toList;
+    override def toList: List[A] = self.toList;
 
     /** This method clones the stack.
      *
      *  @return  a stack with the same elements.
      */
-    override def clone(): Stack[A] = new StackProxy(s.clone());
+    override def clone(): Stack[A] = new StackProxy[A] { def self = StackProxy.this.self.clone() }
 }

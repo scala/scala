@@ -116,8 +116,9 @@ class Contexts: Analyzer {
     def ambiguousError(pos: int, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): unit = {
       val msg =
 	"ambiguous reference to overloaded definition,\n" +
-	"both " + sym1 + ": " + pre.memberType(sym1) + "\n" +
-	"and  " + sym2 + ": " + pre.memberType(sym2) + "\nmatch " + rest;
+	"both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
+	"\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
+        "\nmatch " + rest;
       if (reportAmbiguousErrors) unit.error(pos, msg)
       else throw new TypeError(msg);
     }
@@ -137,12 +138,12 @@ class Contexts: Analyzer {
 
     override def toString(): String = {
       if (this == NoContext) "NoContext";
-      else owner.toString() + " @ " + tree.toString() + "\n:: " + outer.toString()
+      else owner.toString() + " @ " + tree.getClass() + " " + tree.toString() + ", scope = " + scope.hashCode() + "\n:: " + outer.toString()
     }
 
     /** Is `sym' accessible as a member of tree `site' with type `pre' in current context?
      */
-    def isAccessible(sym: Symbol, pre: Type, site: Tree): boolean = {
+    def isAccessible(sym: Symbol, pre: Type, superAccess: boolean): boolean = {
 
       /** Are we inside definition of `owner'? */
       def accessWithin(owner: Symbol): boolean = {
@@ -169,14 +170,14 @@ class Contexts: Analyzer {
       accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre.isInstanceOf[ThisType])
       ||
       (!sym.hasFlag(PRIVATE) &&
-       (site.isInstanceOf[Super] ||
+       (superAccess ||
 	(pre.widen.symbol.isSubClass(sym.owner) && isSubClassOfEnclosing(pre.widen.symbol))))
     }
 
     private var implicitsCache: List[List[ImplicitInfo]] = null;
 
     private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
-      for (val sym <- syms; sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, EmptyTree))
+      for (val sym <- syms; sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
       yield ImplicitInfo(sym.name, pre.memberType(sym), sym);
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
@@ -200,7 +201,9 @@ class Contexts: Analyzer {
       if (implicitsCache == null) {
 	val newImplicits: List[ImplicitInfo] =
 	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
-	    collectImplicits(owner.info.implicitMembers, owner.thisType)
+            if (!owner.hasFlag(INITIALIZED)) return outer.implicitss;
+	    if (settings.debug.value) System.out.println("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers);//debug
+	    collectImplicits(owner.thisType.implicitMembers, owner.thisType)
 	  } else if (scope != outer.scope && !owner.isPackageClass) {
 	    if (settings.debug.value) System.out.println("collect local implicits " + scope.toList);//debug
 	    collectImplicits(scope.toList, NoPrefix)

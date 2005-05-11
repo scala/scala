@@ -25,7 +25,7 @@ object ListSet {
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  */
-class ListSet[A] with Set[A] {
+class ListSet[A] extends AnyRef with Set[A] {
 
     /** Returns the number of elements in this set.
      *

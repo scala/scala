@@ -69,15 +69,16 @@ object Flags {
   // masks
   val SourceFlags   = 0x001FFFFF;    // these modifiers can be set in source programs.
   val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
-    PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT;
+    PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
   val PrintableFlags =               // these modifiers appear in TreePrinter output.
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | ACCESSOR |
     ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE;
   val GenFlags      =                // these modifiers can be in generated trees
     SourceFlags | PrintableFlags;
+  val FieldFlags = MUTABLE | ACCESSED | PARAMACCESSOR;
 
   val AccessFlags   = PRIVATE | PROTECTED;
-  val Variances     = COVARIANT | CONTRAVARIANT;
+  val VARIANCES     = COVARIANT | CONTRAVARIANT;
   val ConstrFlags   = JAVA;
   val PickledFlags  = 0xFFFFFFFF & ~LOCKED & ~INITIALIZED;
 
@@ -121,7 +122,7 @@ object Flags {
 
       case COVARIANT     => "<covariant>"
       case CONTRAVARIANT => "<contravariant>"
-      case ABSOVERRIDE   => "<absoverride>"
+      case ABSOVERRIDE   => "abstract override"
       case LOCAL         => "<local>"
 
       case JAVA          => "<java>"

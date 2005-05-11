@@ -10,6 +10,7 @@
 package scala;
 
 import scala.collection.mutable._;
+import Predef._;
 
 /**
  * <p>The class <code>Enumeration</code> provides the same functionality as the

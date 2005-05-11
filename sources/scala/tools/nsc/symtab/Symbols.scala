@@ -80,7 +80,7 @@ abstract class Symbols: SymbolTable {
       clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz));
       clazz
     }
-    final def newErrorSymbol(name: Name) =
+    final def newErrorSymbol(name: Name): Symbol =
       if (name.isTypeName) newErrorClass(name) else newErrorValue(name);
 
 // Tests ----------------------------------------------------------------------
@@ -107,7 +107,7 @@ abstract class Symbols: SymbolTable {
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
     final def isTypeParameter = isType && hasFlag(PARAM);
     final def isAnonymousClass = isClass && (name startsWith nme.ANON_CLASS_NAME); // startsWith necessary because name may grow when lifted
-    final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME; // no lifting for refinement classes
+    final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE);
     final def isPackageClass = isClass && hasFlag(PACKAGE);
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName;
@@ -188,6 +188,7 @@ abstract class Symbols: SymbolTable {
     final def info: Type = {
       var cnt = 0;
       while ((rawflags & INITIALIZED) == 0) {
+        if (settings.debug.value) System.out.println("completing " + this + " in " + this.owner);//debug
         assert(infos != null, this.name);
 	val tp = infos.info;
         if ((rawflags & LOCKED) != 0) {
@@ -197,8 +198,9 @@ abstract class Symbols: SymbolTable {
         rawflags = rawflags | LOCKED;
 	val current = phase;
 	phase = infos.start;
-        //System.out.println("completing " + this);//DEBUG
         tp.complete(this);
+	if ((rawflags & INITIALIZED) != 0 && settings.debug.value)
+          System.out.println("completed " + this/* + ":" + info*/);//debug
         rawflags = rawflags & ~LOCKED;
 	phase = current;
 	cnt = cnt + 1;
@@ -277,14 +279,10 @@ abstract class Symbols: SymbolTable {
     def typeConstructor: Type = throw new Error("typeConstructor inapplicable for " + this);
 
     /** The type parameters of this symbol */
+    def unsafeTypeParams: List[Symbol] = rawInfo.typeParams;
+
     def typeParams: List[Symbol] = {
-/*
-      if (!hasFlag(MODULE)) {
-        System.out.println("complete load " + this);
-        rawInfo.completeLoad(this);
-      }
-*/
-      rawInfo.typeParams
+      rawInfo.load(this); rawInfo.typeParams
     }
 
     /** Reset symbol to initial state
@@ -534,7 +532,7 @@ abstract class Symbols: SymbolTable {
       else if (isAliasType)
 	typeParamsString + " = " + tp.resultType
       else if (isAbstractType)
-	tp.match {
+	tp match {
 	  case TypeBounds(lo, hi) =>
 	    (if (lo.symbol == AllClass) "" else " >: " + lo) +
 	    (if (hi.symbol == AnyClass) "" else " <: " + hi)
@@ -600,10 +598,10 @@ abstract class Symbols: SymbolTable {
     override def tpe: Type = {
       assert(tpeCache != NoType, this);
       if (valid != phase) {
-        valid = phase;
+        if (hasFlag(INITIALIZED)) valid = phase;
         tpeCache = NoType;
         tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
-                           this, typeParams map (.tpe));
+                           this, unsafeTypeParams map (.tpe))
       }
       assert(tpeCache != null/*, "" + this + " " + phase*/);
       tpeCache
@@ -617,7 +615,8 @@ abstract class Symbols: SymbolTable {
     override def setInfo(tp: Type): this.type = {
       valid = null;
       tyconCache = null;
-      super.setInfo(tp)
+      super.setInfo(tp);
+      this
     }
     override def reset(completer: Type): unit = {
       super.reset(completer);
@@ -688,6 +687,18 @@ abstract class Symbols: SymbolTable {
     override def alternatives: List[Symbol] = List();
     override def reset(completer: Type): unit = {}
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error();
+  }
+
+  def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
+    val syms1 = syms map (.cloneSymbol);
+    for (val sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1));
+    syms1
+  }
+
+  def cloneSymbols(syms: List[Symbol], owner: Symbol): List[Symbol] = {
+    val syms1 = syms map (.cloneSymbol(owner));
+    for (val sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1));
+    syms1
   }
 
   /** An exception for cyclic references of symbol definitions */

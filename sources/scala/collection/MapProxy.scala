@@ -17,25 +17,27 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class MapProxy[A, +B](map: Map[A, B]) extends Map[A, B] with IterableProxy(map) {
+trait MapProxy[A, +B] extends Map[A, B] with IterableProxy[Pair[A, B]] {
 
-    def size: Int = map.size;
+    def self: Map[A, B];
 
-    def get(key: A): Option[B] = map.get(key);
+    def size: Int = self.size;
 
-    override def isEmpty: Boolean = map.isEmpty;
+    def get(key: A): Option[B] = self.get(key);
 
-    override def apply(key: A): B = map.apply(key);
+    override def isEmpty: Boolean = self.isEmpty;
 
-    override def contains(key: A): Boolean = map.contains(key);
+    override def apply(key: A): B = self.apply(key);
 
-    override def isDefinedAt(key: A) = map.isDefinedAt(key);
+    override def contains(key: A): Boolean = self.contains(key);
 
-    override def keys: Iterator[A] = map.keys;
+    override def isDefinedAt(key: A) = self.isDefinedAt(key);
 
-    override def values: Iterator[B] = map.values;
+    override def keys: Iterator[A] = self.keys;
 
-    override def foreach(f: (A, B) => Unit) = map.foreach(f);
+    override def values: Iterator[B] = self.values;
 
-    override def toList: List[Pair[A, B]] = map.toList;
+    override def foreach(f: (A, B) => Unit) = self.foreach(f);
+
+    override def toList: List[Pair[A, B]] = self.toList;
 }

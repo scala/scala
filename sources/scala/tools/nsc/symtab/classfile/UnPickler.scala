@@ -9,6 +9,7 @@ import scala.tools.util.{Position, UTF8Codec};
 import java.lang.{Float, Double};
 import Flags._;
 import PickleFormat._;
+import collection.mutable.HashMap;
 
 abstract class UnPickler {
   val global: Global;
@@ -19,7 +20,7 @@ abstract class UnPickler {
   } catch {
     case ex: Throwable =>
       if (settings.debug.value) ex.printStackTrace();
-      throw new RuntimeException("error readng Scala signature: " + ex.getMessage());
+      throw new RuntimeException("error reading Scala signature of " + classRoot.nameString + ": " + ex.getMessage());
   }
 
   private class UnPickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {
@@ -27,10 +28,18 @@ abstract class UnPickler {
 
     private val index = createIndex;
     private val entries = new Array[AnyRef](index.length);
+    private val symScopes = new HashMap[Symbol, Scope];
+
     for (val i <- Iterator.range(0, index.length))
       if (isSymbolEntry(i)) { at(i, readSymbol); () }
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
+
+    /** The scope associated with given symbol */
+    private def symScope(sym: Symbol) = symScopes.get(sym) match {
+      case None => val s = new Scope(); symScopes(sym) = s; s
+      case Some(s) => s
+    }
 
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: int): boolean = {
@@ -84,7 +93,6 @@ abstract class UnPickler {
 	  sym = NoSymbol
 	case _ =>
 	  val name = readNameRef();
-          System.out.println("reading symbol " + name);//debug
 	  val owner = readSymbolRef();
 	  val flags = readNat();
 	  val inforef = readNat();
@@ -111,8 +119,8 @@ abstract class UnPickler {
 	  sym.setFlag(flags);
 	  sym.setInfo(new LazyTypeRef(inforef));
 	  if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
-              !sym.isModuleClass && !sym.hasFlag(PARAM))
-            sym.owner.info.decls enter sym
+              !sym.isModuleClass && !sym.isRefinementClass && !sym.hasFlag(PARAM | LOCAL))
+            symScope(sym.owner) enter sym
       }
       sym
     }
@@ -139,10 +147,10 @@ abstract class UnPickler {
           new TypeBounds(readTypeRef(), readTypeRef())
 	case REFINEDtpe =>
 	  val clazz = readSymbolRef();
-	  new RefinedType(until(end, readTypeRef), new Scope()) { override def symbol = clazz }
+	  new RefinedType(until(end, readTypeRef), symScope(clazz)) { override def symbol = clazz }
 	case CLASSINFOtpe =>
 	  val clazz = readSymbolRef();
-	  ClassInfoType(until(end, readTypeRef), new Scope(), clazz)
+	  ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
 	case METHODtpe =>
 	  val restpe = readTypeRef();
 	  MethodType(until(end, readTypeRef), restpe)
@@ -184,10 +192,11 @@ abstract class UnPickler {
     private def readConstantRef(): Constant = at(readNat(), readConstant);
 
     private def errorBadSignature(msg: String) =
-      throw new RuntimeException("malformed Scala signature at " + readIndex + "; " + msg);
+      throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg);
 
     private class LazyTypeRef(i: int) extends LazyType {
-      override def complete(sym: Symbol): unit = sym setInfo at(i, readType)
+      override def complete(sym: Symbol): unit = sym setInfo at(i, readType);
+      override def load(sym: Symbol): unit = complete(sym)
     }
   }
 }

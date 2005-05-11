@@ -61,7 +61,7 @@ import java.lang.Math;
  *  @author  Michel Schinz
  *  @version 1.1, 2005-01-20
  */
-abstract class Tree[A <% Ordered[A], B] with java.io.Serializable {
+abstract class Tree[A <% Ordered[A], B]() extends AnyRef with java.io.Serializable {
   /* Data structure:
   ** - size:Int - the number of elements in the tree.
   ** - tree:T, which is composed of nodes of the form:
@@ -168,7 +168,7 @@ abstract class Tree[A <% Ordered[A], B] with java.io.Serializable {
       var iter = tree.mk_iter(scala.Nil);
       def hasNext = !iter.isEmpty;
       def next =
-        iter.match {
+        iter match {
           case (GBNode(_,v,_,t)::iter_tail) => {
             iter= t.mk_iter(iter_tail);
             v;
@@ -186,8 +186,8 @@ abstract class Tree[A <% Ordered[A], B] with java.io.Serializable {
     New(size, tree.balance(size));
 }
 
-private abstract class InsertTree[A <% Ordered[A],B]()
-                 with java.io.Serializable {
+protected abstract class InsertTree[A <% Ordered[A],B]()
+                 extends AnyRef with java.io.Serializable {
   def insertLeft(k: A, v: B, t: GBTree[A,B]): InsertTree[A,B];
   def insertRight(k: A, v: B, t: GBTree[A,B]): InsertTree[A,B];
   def node: GBTree[A,B];
@@ -225,7 +225,7 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
 *  GBTree is an internal class used by Tree.
 */
 
-private abstract class GBTree[A <% Ordered[A],B] with java.io.Serializable {
+protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef with java.io.Serializable {
   type aNode = GBTree[A,B];
   type anInsertTree = InsertTree[A,B];
 
@@ -246,7 +246,7 @@ private abstract class GBTree[A <% Ordered[A],B] with java.io.Serializable {
   def balance(s:int):GBTree[A,B];
 }
 
-private case class GBLeaf[A <% Ordered[A],B] extends GBTree[A,B] {
+private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
   def count = Pair(1, 0);
   def isDefinedAt(key:A) = false;
   def get(_key:A) = None;

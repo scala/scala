@@ -17,19 +17,21 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class SetProxy[A](set: Set[A]) extends Set[A] with IterableProxy(set) {
+trait SetProxy[A] extends Set[A] with IterableProxy[A] {
 
-    def size: Int = set.size;
+    def self: Set[A];
 
-    override def isEmpty: Boolean = set.isEmpty;
+    def size: Int = self.size;
 
-    def contains(elem: A): Boolean = set.contains(elem);
+    override def isEmpty: Boolean = self.isEmpty;
 
-    override def subsetOf(that: Set[A]): Boolean = set.subsetOf(that);
+    def contains(elem: A): Boolean = self.contains(elem);
 
-    override def foreach(f: A => Unit): Unit = set.foreach(f);
+    override def subsetOf(that: Set[A]): Boolean = self.subsetOf(that);
 
-    override def exists(p: A => Boolean): Boolean = set.exists(p);
+    override def foreach(f: A => Unit): Unit = self.foreach(f);
 
-    override def toList: List[A] = set.toList;
+    override def exists(p: A => Boolean): Boolean = self.exists(p);
+
+    override def toList: List[A] = self.toList;
 }

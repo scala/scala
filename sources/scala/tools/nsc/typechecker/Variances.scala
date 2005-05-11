@@ -5,9 +5,9 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-/** Variances form a lattice, 0 <= COVARIANT <= Variances, 0 <= CONTRAVARIANT <= Variances
+/** Variances form a lattice, 0 <= COVARIANT <= Variances, 0 <= CONTRAVARIANT <= VARIANCES
  */
-class Variances: Analyzer {
+abstract class Variances: Analyzer {
 
   import global._;
   import symtab.Flags._;
@@ -19,13 +19,13 @@ class Variances: Analyzer {
     else v
   }
 
-  /** Map everything below Variances to 0 */
+  /** Map everything below VARIANCES to 0 */
   private def cut(v: int): int =
-    if (v == Variances) v else 0;
+    if (v == VARIANCES) v else 0;
 
   /** Compute variance of type parameter `tparam' in types of all symbols `sym'. */
   def varianceInSyms(syms: List[Symbol])(tparam: Symbol): int =
-    (Variances /: syms) ((v, sym) => v & varianceInSym(sym)(tparam));
+    (VARIANCES /: syms) ((v, sym) => v & varianceInSym(sym)(tparam));
 
   /** Compute variance of type parameter `tparam' in type of symbol `sym'. */
   def varianceInSym(sym: Symbol)(tparam: Symbol): int =
@@ -34,16 +34,16 @@ class Variances: Analyzer {
 
   /** Compute variance of type parameter `tparam' in all types `tps'. */
   def varianceInTypes(tps: List[Type])(tparam: Symbol): int =
-    (Variances /: tps) ((v, tp) => v & varianceInType(tp)(tparam));
+    (VARIANCES /: tps) ((v, tp) => v & varianceInType(tp)(tparam));
 
   /** Compute variance of type parameter `tparam' in all type arguments
-   *  `tps' which correspond to formal type parameters `tparams'. */
-  def varianceInArgs(tps: List[Type], tparams: List[Symbol])(tparam: Symbol): int = {
-    var v: int = Variances;
-    for (val Pair(tp, tparam) <- tps zip tparams) {
+   *  `tps' which correspond to formal type parameters `tparams1'. */
+  def varianceInArgs(tps: List[Type], tparams1: List[Symbol])(tparam: Symbol): int = {
+    var v: int = VARIANCES;
+    for (val Pair(tp, tparam1) <- tps zip tparams1) {
       val v1 = varianceInType(tp)(tparam);
-      v = v & (if (tparam.hasFlag(COVARIANT)) v1
-	       else if (tparam.hasFlag(CONTRAVARIANT)) flip(v1)
+      v = v & (if (tparam1.hasFlag(COVARIANT)) v1
+	       else if (tparam1.hasFlag(CONTRAVARIANT)) flip(v1)
 	       else cut(v1))
     }
     v
@@ -52,7 +52,7 @@ class Variances: Analyzer {
   /** Compute variance of type parameter `tparam' in type `tp'. */
   def varianceInType(tp: Type)(tparam: Symbol): int = tp match {
     case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_, _) =>
-      Variances
+      VARIANCES
     case SingleType(pre, sym) =>
       cut(varianceInType(pre)(tparam))
     case TypeRef(pre, sym, args) =>

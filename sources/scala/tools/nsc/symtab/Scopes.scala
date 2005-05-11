@@ -169,7 +169,7 @@ abstract class Scopes: SymbolTable {
      */
     def lookupEntry(name: Name): ScopeEntry = {
       var e: ScopeEntry = null;
-      if (hashtable != null) {
+      if (false & hashtable != null) {
 	e = hashtable(name.start & HASHMASK);
 	while (e != null && e.sym.name != name) e = e.tail;
       } else {
@@ -182,7 +182,7 @@ abstract class Scopes: SymbolTable {
     /** lookup next entry with same name as this one */
     def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
       var e = entry;
-      if (hashtable != null)
+      if (hashtable != null) //debug
 	do { e = e.tail } while (e != null && e.sym.name != entry.sym.name)
       else
 	do { e = e.next } while (e != null && e.sym.name != entry.sym.name);

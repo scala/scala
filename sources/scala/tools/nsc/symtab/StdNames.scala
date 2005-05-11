@@ -11,6 +11,56 @@ abstract class StdNames: SymbolTable {
 
   object nme {
 
+    // Scala keywords; enter them first to minimize scanner.maxKey
+    val ABSTRACTkw = newTermName("abstract");
+    val CASEkw = newTermName("case");
+    val CLASSkw = newTermName("class");
+    val CATCHkw = newTermName("catch");
+    val DEFkw = newTermName("def");
+    val DOkw = newTermName("do");
+    val ELSEkw = newTermName("else");
+    val EXTENDSkw = newTermName("extends");
+    val FALSEkw = newTermName("false");
+    val FINALkw = newTermName("final");
+    val FINALLYkw = newTermName("finally");
+    val FORkw = newTermName("for");
+    val IFkw = newTermName("if");
+    val IMPLICITkw = newTermName("implicit");
+    val IMPORTkw = newTermName("import");
+    val MATCHkw = newTermName("match");
+    val NEWkw = newTermName("new");
+    val NULLkw = newTermName("null");
+    val OBJECTkw = newTermName("object");
+    val OVERRIDEkw = newTermName("override");
+    val PACKAGEkw = newTermName("package");
+    val PRIVATEkw = newTermName("private");
+    val PROTECTEDkw = newTermName("protected");
+    val RETURNkw = newTermName("return");
+    val SEALEDkw = newTermName("sealed");
+    val SUPERkw = newTermName("super");
+    val THISkw = newTermName("this");
+    val THROWkw = newTermName("throw");
+    val TRAITkw = newTermName("trait");
+    val TRUEkw = newTermName("true");
+    val TRYkw = newTermName("try");
+    val TYPEkw = newTermName("type");
+    val VALkw = newTermName("val");
+    val VARkw = newTermName("var");
+    val WITHkw = newTermName("with");
+    val WHILEkw = newTermName("while");
+    val YIELDkw = newTermName("yield");
+    val DOTkw = newTermName(".");
+    val USCOREkw = newTermName("_");
+    val COLONkw = newTermName(":");
+    val EQUALSkw = newTermName("=");
+    val ARROWkw = newTermName("=>");
+    val LARROWkw = newTermName("<-");
+    val SUBTYPEkw = newTermName("<:");
+    val VIEWBOUNDkw = newTermName("<%");
+    val SUPERTYPEkw = newTermName(">:");
+    val HASHkw = newTermName("#");
+    val ATkw = newTermName("@");
+
     private val LOCAL_PREFIX_STRING = "local$";
     private val MIXIN_PREFIX_STRING = "mixin$";
     private val OUTER_PREFIX_STRING = "outer$";
@@ -44,6 +94,7 @@ abstract class StdNames: SymbolTable {
     val STAR = newTermName("*");
     val ROOT = newTermName("<root>");
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>");
+    val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>");
 
     val CONSTRUCTOR = newTermName("<init>");
     val INITIALIZER = newTermName("<init>");

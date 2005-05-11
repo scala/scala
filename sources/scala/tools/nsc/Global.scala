@@ -209,16 +209,16 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	sym.reset(new loaders.SourcefileLoader(file));
     }
     informTime("total", startTime);
+    informStatistics;
   }
 
-  def compileLate(file: AbstractFile): unit = {
+  def compileLate(file: AbstractFile): unit =
     if (!(fileset contains file)) {
       val unit = new CompilationUnit(getSourceFile(file));
       addUnit(unit);
       atPhase(parserPhase) { parserPhase(unit) }
       atPhase(namerPhase) { namerPhase(unit) }
     }
-  }
 
   def compileFiles(files: List[AbstractFile]): unit =
     try {
@@ -283,5 +283,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (settings.debug.value) ex.printStackTrace();
       error("could not write file " + file);
     }
+  }
+
+  private def informStatistics = {
+    inform("#identifiers : " + analyzer.idcnt);
+    inform("#selections  : " + analyzer.selcnt);
+    inform("#applications: " + analyzer.appcnt);
+    inform("#implicits   : " + analyzer.implcnt);
   }
 }

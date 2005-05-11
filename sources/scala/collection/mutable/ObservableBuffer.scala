@@ -22,17 +22,17 @@ abstract class ObservableBuffer[A, This <: ObservableBuffer[A, This]]: This
                     extends Buffer[A]
                     with Publisher[Message[Pair[Location, A]] with Undoable, This] {
 
-    abstract override def +(elem: A): Buffer[A] = {
-        super.+(elem);
-        publish(new Include(Pair(End, elem)) with Undoable {
+    abstract override def +(element: A): Buffer[A] = {
+        super.+(element);
+        publish(new Include(Pair(End, element)) with Undoable {
             def undo: Unit = trimEnd(1);
         });
         this
     }
 
-    abstract override def +:(elem: A): Buffer[A] = {
-        super.+:(elem);
-        publish(new Include(Pair(Start, elem)) with Undoable {
+    abstract override def +:(element: A): Buffer[A] = {
+        super.+:(element);
+        publish(new Include(Pair(Start, element)) with Undoable {
             def undo: Unit = trimStart(1);
         });
         this
@@ -50,21 +50,21 @@ abstract class ObservableBuffer[A, This <: ObservableBuffer[A, This]]: This
         }
     }
 
-    abstract override def update(n: Int, newelem: A): Unit = {
-        val oldelem = apply(n);
-        super.update(n, newelem);
-        publish(new Update(Pair(Index(n), newelem)) with Undoable {
-            def undo: Unit = update(n, oldelem);
+    abstract override def update(n: Int, newelement: A): Unit = {
+        val oldelement = apply(n);
+        super.update(n, newelement);
+        publish(new Update(Pair(Index(n), newelement)) with Undoable {
+            def undo: Unit = update(n, oldelement);
         });
     }
 
     abstract override def remove(n: Int): A = {
-        val oldelem = apply(n);
+        val oldelement = apply(n);
         super.remove(n);
-        publish(new Remove(Pair(Index(n), oldelem)) with Undoable {
-            def undo: Unit = insert(n, oldelem);
+        publish(new Remove(Pair(Index(n), oldelement)) with Undoable {
+            def undo: Unit = insert(n, oldelement);
         });
-        oldelem
+        oldelement
     }
 
     abstract override def clear: Unit = {

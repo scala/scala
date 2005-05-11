@@ -62,7 +62,10 @@ abstract class Definitions: SymbolTable {
     var NilModule: Symbol = _;
     var ConsClass: Symbol = _;
     var RepeatedParamClass: Symbol = _;
+    var ByNameParamClass: Symbol = _;
 
+    val MaxTupleArity = 9;
+    val MaxFunctionArity = 9;
     def TupleClass(i: int): Symbol = getClass("scala.Tuple" + i);
     def FunctionClass(i: int): Symbol = getClass("scala.Function" + i);
 
@@ -126,6 +129,15 @@ abstract class Definitions: SymbolTable {
       clazz.setInfo(ClassInfoType(parents, new Scope(), clazz));
       owner.info.decls.enter(clazz);
       clazz
+    }
+
+    private def newCovariantPolyClass(owner: Symbol, name: Name, parent: Symbol => Type): Symbol = {
+      val clazz = newClass(owner, name, List());
+      val tparam = newTypeParam(clazz, 0) setFlag COVARIANT;
+      clazz.setInfo(
+	PolyType(
+	  List(tparam),
+	  ClassInfoType(List(parent(tparam)), new Scope(), clazz)))
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {
@@ -212,16 +224,11 @@ abstract class Definitions: SymbolTable {
       MatchErrorModule = getModule("scala.MatchError");
       NilModule = getModule("scala.Nil");
       ConsClass = getClass("scala.$colon$colon");
-      RepeatedParamClass = newClass(ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME, List());
-	{ val tparam = newTypeParam(RepeatedParamClass, 0);
-	  RepeatedParamClass.setInfo(
-	    PolyType(
-	      List(tparam),
-	      ClassInfoType(
-		List(typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor))),
-		new Scope(),
-		RepeatedParamClass)))
-       }
+      RepeatedParamClass = newCovariantPolyClass(
+        ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
+        tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
+      ByNameParamClass = newCovariantPolyClass(
+        ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
 
       // members of class scala.Any
       Any_== = newMethod(

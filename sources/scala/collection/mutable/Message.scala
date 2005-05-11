@@ -27,7 +27,7 @@ trait Message[+A];
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Include[+A](elem: A) extends Message[A];
+case class Include[+I](elem: I) extends Message[I];
 
 /** This observable update refers to destructive modification operations
  *  of elements from collection classes.
@@ -50,7 +50,7 @@ case class Remove[+A](elem: A) extends Message[A];
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Reset[+A] extends Message[A];
+case class Reset[+A]() extends Message[A];
 
 /** Objects of this class represent compound messages consisting
  *  of a sequence of other messages.

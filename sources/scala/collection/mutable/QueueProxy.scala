@@ -16,29 +16,31 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-class QueueProxy[A](q: Queue[A]) extends Queue[A] with SeqProxy[A](q) {
+trait QueueProxy[A] extends Queue[A] with SeqProxy[A] {
+
+    def self: Queue[A];
 
     /** Access element number <code>n</code>.
      *
      *  @return  the element at index <code>n</code>.
      */
-    override def apply(n: Int): A = q.apply(n);
+    override def apply(n: Int): A = self.apply(n);
 
     /** Returns the length of this queue.
      */
-    override def length: Int = q.length;
+    override def length: Int = self.length;
 
     /** Checks if the queue is empty.
      *
      *  @return true, iff there is no element in the queue.
      */
-    override def isEmpty: Boolean = q.isEmpty;
+    override def isEmpty: Boolean = self.isEmpty;
 
     /** Inserts a single element at the end of the queue.
      *
      *  @param  elem        the element to insert
      */
-    override def +=(elem: A): Unit = q += elem;
+    override def +=(elem: A): Unit = self += elem;
 
     /** Adds all elements provided by an <code>Iterable</code> object
      *  at the end of the queue. The elements are prepended in the order they
@@ -46,7 +48,7 @@ class QueueProxy[A](q: Queue[A]) extends Queue[A] with SeqProxy[A](q) {
      *
      *  @param  iter        an iterable object
      */
-    override def ++=(iter: Iterable[A]): Unit = q ++= iter;
+    override def ++=(iter: Iterable[A]): Unit = self ++= iter;
 
     /** Adds all elements provided by an iterator
      *  at the end of the queue. The elements are prepended in the order they
@@ -54,42 +56,42 @@ class QueueProxy[A](q: Queue[A]) extends Queue[A] with SeqProxy[A](q) {
      *
      *  @param  iter        an iterator
      */
-    override def ++=(it: Iterator[A]): Unit = q ++= it;
+    override def ++=(it: Iterator[A]): Unit = self ++= it;
 
     /** Adds all elements to the queue.
      *
      *  @param  elems       the elements to add.
      */
-    override def enqueue(elems: A*): Unit = q ++= elems;
+    override def enqueue(elems: A*): Unit = self ++= elems;
 
     /** Returns the first element in the queue, and removes this element
      *  from the queue.
      *
      *  @return the first element of the queue.
      */
-    override def dequeue: A = q.dequeue;
+    override def dequeue: A = self.dequeue;
 
     /** Returns the first element in the queue, or throws an error if there
      *  is no element contained in the queue.
      *
      *  @return the first element.
      */
-    override def front: A = q.front;
+    override def front: A = self.front;
 
     /** Removes all elements from the queue. After this operation is completed,
      *  the queue will be empty.
      */
-    override def clear: Unit = q.clear;
+    override def clear: Unit = self.clear;
 
     /** Returns an iterator over all elements on the queue.
      *
      *  @return an iterator over all queue elements.
      */
-    override def elements: Iterator[A] = q.elements;
+    override def elements: Iterator[A] = self.elements;
 
     /** This method clones the queue.
      *
      *  @return  a queue with the same elements.
      */
-    override def clone(): Queue[A] = new QueueProxy(q.clone());
+    override def clone(): Queue[A] = new QueueProxy[A] { def self = QueueProxy.this.self.clone() }
 }

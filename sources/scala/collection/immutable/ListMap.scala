@@ -22,7 +22,7 @@ object ListMap {
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  */
-class ListMap[A, B] with Map[A, B] {
+class ListMap[A, B] extends AnyRef with Map[A, B] {
 
     /** This method returns a new ListMap instance mapping keys of the
      *  same type to values of type <code>C</code>.

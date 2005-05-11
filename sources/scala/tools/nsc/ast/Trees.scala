@@ -9,7 +9,7 @@ import java.io.StringWriter;
 import java.io.PrintWriter;
 import scala.tools.util.Position;
 
-class Trees: Global {
+abstract class Trees: Global {
 
   abstract class Tree {
 
@@ -165,7 +165,7 @@ class Trees: Global {
 
   /** Return expression */
   case class Return(expr: Tree)
-       extends SymTree;
+       extends SymTree with TermTree;
 
   case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
        extends TermTree;
@@ -678,19 +678,19 @@ class Trees: Global {
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
-      trees mapConserve (tree => transform(tree));
+      List.mapConserve(trees)(transform);
     def transformTemplate(tree: Template): Template =
       transform(tree: Tree).asInstanceOf[Template];
     def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =
-      trees mapConserve (tree => transform(tree).asInstanceOf[AbsTypeDef]);
+      List.mapConserve(trees)(tree=> transform(tree).asInstanceOf[AbsTypeDef]);
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
-      trees mapConserve (tree => transform(tree).asInstanceOf[ValDef]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[ValDef]);
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
-      treess mapConserve (tree => transformValDefs(tree));
+      List.mapConserve(treess)(tree => transformValDefs(tree));
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
-      trees mapConserve (tree => transform(tree).asInstanceOf[CaseDef]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[CaseDef]);
     def transformIdents(trees: List[Ident]): List[Ident] =
-      trees mapConserve (tree => transform(tree).asInstanceOf[Ident]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[Ident]);
   }
 
   class Traverser {

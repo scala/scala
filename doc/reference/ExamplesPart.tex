@@ -3359,8 +3359,9 @@ That is,
 \end{lstlisting}
 For associative and commutative operators, \code{/:} and
 \code{:\\} are equivalent (even though there may be a difference
-in efficiency).  But sometimes, only one of the two operators is
-appropriate or has the right type:
+in efficiency).  
+%But sometimes, only one of the two operators is
+%appropriate or has the right type:
 
 \begin{exercise} Consider the problem of writing a function \code{flatten},
 which takes a list of element lists as arguments. The result of
@@ -3369,10 +3370,11 @@ single list. Here is the an implementation of this method in terms of
 \code{:\\}.
 \begin{lstlisting}
 def flatten[a](xs: List[List[a]]): List[a] = 
-  (xs :\ Nil) {(x, xs) => x ::: xs}
+  (xs :\ (Nil: List[a])) {(x, xs) => x ::: xs}
 \end{lstlisting} 
-In this case it is not possible to replace the application of
-\code{:\\} with \code{/:}. Explain why.
+Consider replacing the first part of the body of \lstinline@flatten@
+by \lstinline@(Nil /: xs)@. What would be the difference in asymptotoc
+complexity between the two versions of \lstinline@flatten@?
 
 In fact \code{flatten} is predefined together with a set of other
 userful function in an object called \code{List} in the standatd Scala

@@ -158,7 +158,7 @@ abstract class Parsers: ParserPhase {
 
     /** Join the comment associated with a definition
     */
-    def joinComment(def trees: List[Tree]): List[Tree] = {
+    def joinComment(trees: => List[Tree]): List[Tree] = {
       val buf = in.docBuffer;
       if (buf != null) {
 	in.docBuffer = null;
@@ -750,10 +750,11 @@ abstract class Parsers: ParserPhase {
      *                | BlockExpr
      *                | SimpleExpr `.' Id
      *                | SimpleExpr TypeArgs
-     *                | SimpleExpr ArgumentExprs
+     *                | SimpleExpr1 ArgumentExprs
      */
     def simpleExpr(): Tree = {
       var t: Tree = _;
+      var isNew = false;
       in.token match {
 	case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT |
 	     SYMBOLLIT | TRUE | FALSE | NULL =>
@@ -785,7 +786,7 @@ abstract class Parsers: ParserPhase {
 	case LBRACE =>
 	  t = blockExpr()
 	case NEW =>
-	  return atPos(in.skipToken()) {
+	  t = atPos(in.skipToken()) {
             val parents = new ListBuffer[Tree] + simpleType();
             var args: List[Tree] = List();
             if (in.token == LPAREN) args = argumentExprs();
@@ -796,6 +797,7 @@ abstract class Parsers: ParserPhase {
             val stats = if (in.token == LBRACE) templateBody() else List();
             makeNew(parents.toList, stats, args)
           }
+	  isNew = true
 	case _ =>
 	  syntaxError("illegal start of simple expression", true);
 	  t = errorTermTree
@@ -811,11 +813,12 @@ abstract class Parsers: ParserPhase {
 	      case _ =>
 		return t;
 	    }
-	  case LPAREN | LBRACE =>
+	  case LPAREN | LBRACE if (!isNew) =>
 	    t = atPos(in.pos) { Apply(t, argumentExprs()) }
 	  case _ =>
 	    return t
 	}
+	isNew = false
       }
       null;//dummy
     }
@@ -1064,7 +1067,10 @@ abstract class Parsers: ParserPhase {
 	case _ =>
           mods
       }
-      loop(0);
+      var mods = loop(0);
+      if ((mods & (Flags.ABSTRACT | Flags.OVERRIDE)) == (Flags.ABSTRACT | Flags.OVERRIDE))
+        mods = mods & ~(Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE;
+      mods
     }
 
     /** LocalClassModifiers ::= {LocalClassModifier}
@@ -1154,7 +1160,10 @@ abstract class Parsers: ParserPhase {
      */
     def paramType(): Tree =
       if (in.token == ARROW)
-        atPos(in.skipToken()) { makeFunctionTypeTree(List(), typ()) }
+        atPos(in.skipToken()) {
+          AppliedTypeTree(
+              scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
+        }
       else {
         val t = typ();
         if (in.token == IDENTIFIER && in.name == STAR) {
@@ -1490,7 +1499,6 @@ abstract class Parsers: ParserPhase {
 	val vparamss = paramClauses(name, implicitViews.toList, (mods & Flags.CASE) != 0);
 	val thistpe = simpleTypedOpt();
 	val mods1 = if (vparamss.isEmpty && (mods & Flags.ABSTRACT) != 0) {
-	  if (settings.debug.value) System.out.println("is trait: " + name);//debug
 	  mods | Flags.TRAIT
 	} else mods;
 	val template = classTemplate(mods1, vparamss);

@@ -9,7 +9,6 @@
 
 package scala.collection.mutable;
 
-
 /** Buffers are used to create sequences of elements incrementally by
  *  appending, prepending, or inserting new elements. It is also
  *  possible to access and modify elements in a random access fashion
@@ -18,7 +17,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 02/03/2004
  */
-trait Buffer[A] with Seq[A] with Scriptable[Message[Pair[Location, A]]] with Cloneable {
+trait Buffer[A] extends AnyRef with Seq[A] with Scriptable[Message[Pair[Location, A]]] with Cloneable {
 
     /** Append a single element to this buffer and return
      *  the identity of the buffer.

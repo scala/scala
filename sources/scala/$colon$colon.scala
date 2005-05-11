@@ -11,6 +11,7 @@ package scala;
 
 import java.io.Serializable;
 
+import Predef._;
 
 /** A non empty list characterized by a head and a tail.
  *

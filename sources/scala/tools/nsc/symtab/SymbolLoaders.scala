@@ -59,11 +59,13 @@ abstract class SymbolLoaders {
       initRoot(root);
       if (!root.isPackageClass) initRoot(root.linkedSym);
     }
+    override def load(root: Symbol): unit = complete(root);
 
     private def initRoot(root: Symbol): unit = {
       if (root.rawInfo == this)
         root.setInfo(if (ok) NoType else ErrorType);
-      if (root.isModule) initRoot(root.moduleClass)
+      if (root.isModule) initRoot(root.moduleClass);
+      if (root.isClass && !root.isModuleClass) root.rawInfo.load(root)
     }
   }
 
@@ -148,21 +150,17 @@ abstract class SymbolLoaders {
     val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
   }
 
-  abstract class ClassSymbolLoader(file: AbstractFile) extends SymbolLoader(file) {
-    override def completeLoad(root: Symbol): unit = complete(root);
-  }
-
-  class ClassfileLoader(file: AbstractFile) extends ClassSymbolLoader(file) {
+  class ClassfileLoader(file: AbstractFile) extends SymbolLoader(file) {
     protected def doComplete(root: Symbol): unit = classfileParser.parse(file, root);
     protected def kindString: String = "class file";
   }
 
-  class SymblfileLoader(file: AbstractFile) extends ClassSymbolLoader(file) {
+  class SymblfileLoader(file: AbstractFile) extends SymbolLoader(file) {
     protected def doComplete(root: Symbol): unit = symblfileParser.parse(file, root);
     protected def kindString: String = "symbl file";
   }
 
-  class SourcefileLoader(file: AbstractFile) extends ClassSymbolLoader(file) {
+  class SourcefileLoader(file: AbstractFile) extends SymbolLoader(file) {
     protected def doComplete(root: Symbol): unit = global.compileLate(file);
     protected def kindString: String = "source file";
   }

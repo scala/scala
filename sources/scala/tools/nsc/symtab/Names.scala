@@ -54,7 +54,7 @@ class Names {
   private def enterChars(cs: Array[char], offset: int, len: int): unit = {
     var i = 0;
     while (i < len) {
-      if (nc == chrs.length) {
+      if (nc + i == chrs.length) {
         val newchrs = new Array[char](chrs.length * 2);
         System.arraycopy(chrs, 0, newchrs, 0, chrs.length);
         chrs = newchrs;
@@ -95,34 +95,23 @@ class Names {
 
   /** create a type name from the characters in cs[offset..offset+len-1].
    */
-  def newTypeName(cs: Array[char], offset: int, len: int): Name = {
-    val h = hashValue(cs, offset, len) & HASH_MASK;
-    var n = typeHashtable(h);
-    while ((n != null) && (n.length != len || !equals(n.start, cs, offset, len)))
-      n = n.next;
-    if (n == null) {
-      n = new TypeName(nc, len, h);
-      enterChars(cs, offset, len);
-    }
-    n
-  }
+  def newTypeName(cs: Array[char], offset: int, len: int): Name =
+    newTermName(cs, offset, len).toTypeName;
 
   /** create a type name from string
    */
   def newTypeName(s: String): Name =
-    newTypeName(s.toCharArray(), 0, s.length());
+    newTermName(s).toTypeName;
 
   /** create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1].
    */
-  def newTypeName(bs: Array[byte], offset: int, len: int): Name = {
-    val cs = new Array[char](bs.length);
-    val nchrs = UTF8Codec.decode(bs, offset, cs, 0, len);
-    newTypeName(cs, 0, nchrs)
-  }
+  def newTypeName(bs: Array[byte], offset: int, len: int): Name =
+    newTermName(bs, offset, len).toTypeName;
+
 
   def nameChars: Array[char] = chrs;
 
-  def view(s: String): Name = newTermName(s);
+  implicit def view(s: String): Name = newTermName(s);
 
 // Classes ----------------------------------------------------------------------
 

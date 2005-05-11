@@ -2,7 +2,7 @@ package scala.xml.dtd ;
 
 /** Parser for regexps (content models in DTD element declarations) */
 
-object Parser with Scanner { // a bit too permissive concerning #PCDATA
+object Parser extends Scanner { // a bit too permissive concerning #PCDATA
   import ContentModel._ ;
 
   /** parses the argument to a regexp */

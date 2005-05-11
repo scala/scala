@@ -10,7 +10,7 @@
 package scala;
 
 import java.io.Serializable;
-
+import Predef._;
 
 /** The empty list.
  *

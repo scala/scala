@@ -51,6 +51,7 @@ abstract class Pickler {
 
     /** Is root in symbol.owner*? */
     private def isLocal(sym: Symbol): boolean =
+      sym.isRefinementClass ||
       sym.name.toTermName == rootName && sym.owner == rootOwner ||
       sym != NoSymbol && isLocal(sym.owner);
 
@@ -179,7 +180,8 @@ abstract class Pickler {
 	case SingleType(pre, sym) =>
 	  writeRef(pre); writeRef(sym); SINGLEtpe
 	case ConstantType(base, value) =>
-	  writeRef(base); writeRef(value); CONSTANTtpe
+	  writeRef(base); writeRef(Constant(value));
+	  CONSTANTtpe
 	case TypeRef(pre, sym, args) =>
 	  writeRef(pre); writeRef(sym); writeRefs(args); TYPEREFtpe
 	case TypeBounds(lo, hi) =>

@@ -21,7 +21,16 @@ trait Namers: Analyzer {
 
   class Namer(context: Context) {
 
-    val typer = new Typer(context);
+    val typer = {
+      def isTemplateContext(context: Context): boolean = context.tree match {
+	case Template(_, _) => true
+	case Import(_, _) => isTemplateContext(context.outer)
+	case _ => false
+      }
+      new Typer(
+	if (isTemplateContext(context)) context.make(context.tree, context.owner, new Scope())
+	else context)
+    }
 
     private def doubleDefError(pos: int, sym: Symbol): unit =
       context.error(pos,
@@ -144,7 +153,7 @@ trait Namers: Analyzer {
 	      tree.symbol =
 	        if ((mods & DEFERRED) == 0)
 		  owner.newValue(tree.pos, name)
-	            .setFlag(mods | PRIVATE | LOCAL).setInfo(typer.typeCompleter(tree))
+	            .setFlag(mods & FieldFlags | PRIVATE | LOCAL).setInfo(typer.typeCompleter(tree))
 	        else getter;
             } else {
               tree.symbol =

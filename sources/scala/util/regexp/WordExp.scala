@@ -16,7 +16,7 @@ trait WordExp extends Base {
     var pos = -1;
   }
 
-  case class Wildcard extends RegExp {
+  case class Wildcard() extends RegExp {
     final val isNullable = false;
     var pos = -1;
   }

@@ -19,7 +19,7 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
   /** default constructor, initial size of 512 bits */
   def this() = this( 512 );  // ResizableArray.initialSize << 5
 
-  class ByteArray with ResizableArray[Int] {
+  class ByteArray extends AnyRef with ResizableArray[Int] {
 
     final def ensureBits(nbits: Int): Unit = {
       super[ResizableArray].ensureSize(memsize( nbits ));

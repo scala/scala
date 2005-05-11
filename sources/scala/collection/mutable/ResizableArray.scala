@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger, Burak Emir
  *  @version 1.0, 03/05/2004
  */
-abstract class ResizableArray[A] with Iterable[A] with java.io.Serializable {
+abstract class ResizableArray[A] extends AnyRef with Iterable[A] with java.io.Serializable {
     import java.lang.System.arraycopy;
 
     protected val initialSize: Int = 16;

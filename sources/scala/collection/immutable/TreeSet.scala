@@ -16,7 +16,7 @@ package scala.collection.immutable;
  *  @author  Burak Emir
  *  @version 1.1, 03/05/2004
  */
-class TreeSet[A <% Ordered[A]] extends Tree[A, A] with Set[A] {
+class TreeSet[A <% Ordered[A]]() extends Tree[A, A] with Set[A] {
 
     override protected type This = TreeSet[A];
     override protected def getThis: This = this;

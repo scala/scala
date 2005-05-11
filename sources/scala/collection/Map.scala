@@ -9,7 +9,6 @@
 
 package scala.collection;
 
-
 /** This trait defines the interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
  *  Trait <code>Map</code> may only be used for
@@ -24,7 +23,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.1, 02/05/2004
  */
-trait Map[A, +B] with PartialFunction[A, B] with Iterable[Pair[A, B]] {
+trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A, B]] {
 
     /** Compute the number of key-to-value mappings.
      *

@@ -183,7 +183,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       val finalsArr = new Array[Int](pos);
       {
         var k = 0; while(k < pos) {
-          finalsArr(k) = finals.get(k).match {
+          finalsArr(k) = finals.get(k) match {
             case Some(z) => z;
             case None => 0; // 0 == not final
           };

@@ -45,7 +45,7 @@ abstract class NondetWordAutom[T <: AnyRef] {
 
   /** returns a bitset with the next states for given state and label */
   def next(q:Int, a: T): immutable.BitSet = {
-    delta(q).get(a).match {
+    delta(q).get(a) match {
       case Some(bs) => bs
       case _        => default(q)
     }

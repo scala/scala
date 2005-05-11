@@ -14,7 +14,7 @@ package scala.collection;
  *  @author  Burak Emir, Stephane Micheloud
  *  @version 1.0
  */
-abstract class BitSet with Function1[Int,Boolean] {
+abstract class BitSet extends AnyRef with Function1[Int,Boolean] {
 
   /** number of bits in this bitset */
   def size: Int;

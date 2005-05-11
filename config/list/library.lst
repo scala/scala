@@ -46,7 +46,7 @@ ScalaObject.java
 Seq.scala
 SeqProxy.scala
 SerialVersionUID.scala
-Serializable.scala
+serializable.scala
 Short.java
 Some.scala
 Stream.scala

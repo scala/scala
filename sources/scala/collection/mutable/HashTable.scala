@@ -9,6 +9,7 @@
 
 package scala.collection.mutable;
 
+import Predef._;
 
 /** This class can be used to construct data structures that are based
  *  on hashtables. Class <code>HashTable[A]</code> implements a hashtable
@@ -27,7 +28,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-abstract class HashTable[A] with java.io.Serializable {
+abstract class HashTable[A] extends AnyRef with java.io.Serializable {
 
     /** The load factor for the hash table.
      */

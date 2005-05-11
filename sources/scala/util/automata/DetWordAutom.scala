@@ -34,7 +34,7 @@ abstract class DetWordAutom[T <: AnyRef] {
     sb.append(" finals=");
     var map = new scala.collection.immutable.ListMap[Int,Int];
     var j = 0; while( j < nstates ) {
-      if(finals.isDefinedAt(j))
+      if(j < finals.length)
         map = map.update(j,finals(j));
       j = j + 1;
     }
@@ -45,7 +45,7 @@ abstract class DetWordAutom[T <: AnyRef] {
       sb.append("->");
       sb.append(delta(i).toString());
       sb.append('\n');
-      if(default.isDefinedAt(i)) {
+      if(i < default.length) {
         sb.append("_>");
         sb.append(default(i).toString());
         sb.append('\n');

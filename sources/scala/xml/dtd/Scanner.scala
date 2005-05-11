@@ -3,7 +3,7 @@ package scala.xml.dtd ;
 /** Scanner for regexps (content models in DTD element declarations)
  *  todo: cleanup
  */
-class Scanner with Tokens with parsing.TokenTests {
+class Scanner extends Tokens with parsing.TokenTests {
 
   //                                                   zzz   constants   zzz
   final val ENDCH = '\u0000';

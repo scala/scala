@@ -16,7 +16,7 @@ import scala.collection.mutable;
  * Utility functions for processing instances of bound and not bound XML
  * classes, as well as escaping text nodes
  */
-object Utility with parsing.TokenTests {
+object Utility extends AnyRef with parsing.TokenTests {
 
   def view(s: String): Text = Text(s);
 
@@ -56,7 +56,7 @@ object Utility with parsing.TokenTests {
   def collectNamespaces(n: Node, set: mutable.Set[String]): Unit = {
     if( n.typeTag$ >= 0 ) {
       set += n.namespace;
-      for (val a <- n.attributes) a.match {
+      for (val a <- n.attributes) a match {
           case _:PrefixedAttribute =>
             set += a.getNamespace(n)
           case _ =>

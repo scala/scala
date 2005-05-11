@@ -25,7 +25,7 @@ abstract class SymbolTable extends Names
     ph = p
   }
 
-  def atPhase[T](ph: Phase)(def op: T): T = {
+  def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase;
     phase = ph;
     val result = op;

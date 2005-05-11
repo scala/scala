@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import util.ListBuffer;
 import symtab.Flags._;
 
-class EtaExpansion: Analyzer {
+abstract class EtaExpansion: Analyzer {
 
   import global._;
   import posAssigner.atPos;
@@ -44,7 +44,7 @@ class EtaExpansion: Analyzer {
 	}
       tree match {
 	case Apply(fn, args) =>
-          copy.Apply(tree, liftoutPrefix(fn), args mapConserve liftout);
+          copy.Apply(tree, liftoutPrefix(fn), List.mapConserve(args)(liftout));
 	case TypeApply(fn, args) =>
           copy.TypeApply(tree, liftoutPrefix(fn), args)
 	case Select(qual, name) =>

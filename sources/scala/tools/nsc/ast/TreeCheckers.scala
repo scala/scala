@@ -7,7 +7,7 @@ package scala.tools.nsc.ast;
 
 import scala.tools.util.Position;
 
-class TreeCheckers: Global {
+abstract class TreeCheckers: Global {
 
   object treeChecker extends Traverser {
     override def traverse(tree: Tree): unit = {

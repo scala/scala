@@ -202,6 +202,19 @@ object List {
     if (xs.isEmpty || ys.isEmpty) Nil
     else f(xs.head, ys.head) :: map2(xs.tail, ys.tail)(f);
 
+  /** Like xs map f, but returns xs unchanged if function `f' maps all elements to themselves
+   */
+  def mapConserve[a <: AnyRef](xs: List[a])(f: a => a): List[a] = {
+    if (xs.isEmpty) xs
+    else {
+      val head = xs.head;
+      val head1 = f(head);
+      val tail = xs.tail;
+      val tail1 = mapConserve(tail)(f);
+      if ((head1 eq head) && (tail1 eq tail)) xs else head1 :: tail1
+    }
+  }
+
   /** Returns the list resulting from applying the given function <code>f</code> to
    *  corresponding elements of the argument lists.
    *
@@ -274,7 +287,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-sealed trait List[+a] extends Seq[a] {
+/*sealed*/ trait List[+a] extends Seq[a] { // todo make sealed once we figure out how to build
 
   /** Returns true if the list does not contain any elements.
    *  @return true, iff the list is empty.
@@ -518,16 +531,6 @@ sealed trait List[+a] extends Seq[a] {
     case head :: tail => f(head) :: (tail map f)
   }
 
-  /** Like xs map f, but returns xs unchanged if function `f' maps all elements to themselves
-   */
-  def mapConserve[b >: a](f: a => b): List[b] = this match {
-    case Nil => Nil
-    case head :: tail =>
-      val head1 = f(head);
-      val tail1 = tail mapConserve f;
-      if (head1 == head && (tail1 eq tail)) this else head1 :: tail1
-  }
-
   /** Apply a function to all the elements of the list, and return the
    *  reversed list of results. This is equivalent to a call to <code>map</code>
    *  followed by a call to <code>reverse</code>, but more efficient.
@@ -548,9 +551,12 @@ sealed trait List[+a] extends Seq[a] {
    *
    *  @param f the treatment to apply to each element.
    */
-  override def foreach(f: a => Unit): Unit = this match {
-    case Nil => ()
-    case head :: tail => f(head); tail foreach f
+  override def foreach(f: a => Unit): Unit = {
+    def loop(xs: List[a]): Unit = xs match {
+      case Nil => ()
+      case head :: tail => f(head); loop(tail)
+    }
+    loop(this)
   }
 
   /** Returns all the elements of this list that satisfy the
@@ -866,7 +872,7 @@ sealed trait List[+a] extends Seq[a] {
       else head :: tail.removeDuplicates
   }
 }
-
+/*
 /** The empty list.
  *
  *  @author  Martin Odersky
@@ -890,3 +896,4 @@ final case class ::[+b](hd: b, tl: List[b]) extends List[b] with java.io.Seriali
   def head: b = hd;
   def tail: List[b] = tl;
 }
+*/

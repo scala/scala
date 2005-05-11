@@ -9,9 +9,11 @@
 
 package scala;
 
+import Predef._;
 
 object Seq {
-  def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] = new Proxy(xs) with Ordered[Seq[A]] {
+  def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] = new Ordered[Seq[A]] with Proxy {
+    def self: Any = xs;
     def compareTo[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
       case ys: Seq[A] =>
         var res = 0;

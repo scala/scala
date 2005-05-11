@@ -56,14 +56,14 @@ trait Typers: Analyzer {
       override def complete(sym: Symbol): unit = {
 	val clazz = tree.symbol;
 	var tpe = clazz.primaryConstructor.tpe;
-	val tparams = clazz.typeParams;
+	val tparams = clazz.unsafeTypeParams;
 	if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
 	sym.setInfo(tpe);
       }
     }
 
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
-      if (sym.isVariable || sym.hasFlag(FINAL)) tpe.deconst else tpe;
+      if (sym.isVariable || !sym.isFinal) tpe.deconst else tpe;
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
@@ -192,7 +192,6 @@ trait Typers: Analyzer {
      *   - `override' modifier never for classes
      *   - `def' modifier never for parameters of case classes
      *   - declarations only in traits or abstract classes
-     *   - todo: in desugarize: replace ABSTRACT OVERRIDE with ABSOVERRIDE
      */
     def validate(sym: Symbol): unit = {
       def checkNoConflict(flag1: int, flag2: int): unit =

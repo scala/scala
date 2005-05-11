@@ -16,7 +16,7 @@ class Tokens {
   final val END          = 10;
   final val S            = 13;
 
-  final def token2string( i:int ):String = i.match {
+  final def token2string( i:int ):String = i match {
     case 0 => "#PCDATA";
     case 1 => "NAME";
     case 3 => "(";

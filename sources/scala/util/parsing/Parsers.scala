@@ -31,14 +31,14 @@ abstract class Parsers {
       }
     }
 
-    def ||| (def p: Parser[a]) = new Parser[a] {
+    def ||| (p: => Parser[a]) = new Parser[a] {
       def apply(in: inputType): Result = Parser.this.apply(in) match {
 	case None => p(in)
 	case s => s
       }
     }
 
-    def &&& [b](def p: Parser[b]): Parser[b] =
+    def &&& [b](p: => Parser[b]): Parser[b] =
       for (val _ <- this; val x <- p) yield x;
   }
 

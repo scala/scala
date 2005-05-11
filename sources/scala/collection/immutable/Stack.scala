@@ -22,7 +22,7 @@ object Stack {
  *  @author  Matthias Zenger
  *  @version 1.0, 10/07/2003
  */
-class Stack[+A] with Seq[A] {
+class Stack[+A] extends Seq[A] {
 
     /** Checks if this stack is empty.
      *

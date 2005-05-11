@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 09/05/2004
  */
-trait Set[A] with scala.collection.Set[A] with Scriptable[Message[A]] with Cloneable {
+trait Set[A] extends AnyRef with scala.collection.Set[A] with Scriptable[Message[A]] with Cloneable {
 
     /** This method allows one to add or remove an element <code>elem</code>
      *  from this set depending on the value of parameter <code>included</code>.

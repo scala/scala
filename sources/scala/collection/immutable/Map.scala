@@ -22,7 +22,7 @@ package scala.collection.immutable;
  *  @author  Erik Stenman
  *  @version 1.1, 22/03/2004
  */
-trait Map[A, B] with scala.collection.Map[A, B] {
+trait Map[A, B] extends AnyRef with scala.collection.Map[A, B] {
 
     /** This method returns a new map instance of the same class
      *  mapping keys of the same type to values of type <code>C</code>.

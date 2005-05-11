@@ -97,9 +97,7 @@ abstract class TreeBuilder {
         List(ClassDef(
           FINAL | SYNTHETIC, x, List(), TypeTree(),
           Template(parents, makeConstructorPart(0, List(List()), args) ::: stats))),
-        Typed(
-          New(Apply(Select(Ident(x), nme.CONSTRUCTOR), List())),
-          makeIntersectionTypeTree(parents map (.duplicate))))
+        New(Apply(Select(Ident(x), nme.CONSTRUCTOR), List())))
     }
 
   /** Create a tree represeting an assignment <lhs = rhs> */
@@ -274,18 +272,21 @@ abstract class TreeBuilder {
 	    cnt = cnt + 1;
 	    ValDef(mods, v, TypeTree(), Select(Ident(tmp), newTermName("_" + cnt)))
 	  }
-	firstDef :: restDefs
+	  firstDef :: restDefs
       }
   }
 
   /** Add constructor to template */
   def makeConstructorPart(mods: int, vparamss: List[List[ValDef]], args: List[Tree]): List[Tree] = {
-    val vparamss1 = vparamss map (.map (vd =>
-      ValDef(PARAM | (vd.mods & IMPLICIT), vd.name, vd.tpt.duplicate, EmptyTree)));
+    var vparamss1 =
+      vparamss map (.map (vd =>
+	ValDef(PARAM | (vd.mods & IMPLICIT), vd.name, vd.tpt.duplicate, EmptyTree)));
+    if (vparamss1.isEmpty ||
+	!vparamss1.head.isEmpty && (vparamss1.head.head.mods & IMPLICIT) != 0)
+      vparamss1 = List() :: vparamss1;
     val constr: Tree = DefDef(
-      mods & ConstrFlags | SYNTHETIC, nme.CONSTRUCTOR, List(),
-      if (vparamss1.isEmpty) List(List()) else vparamss1,
-      TypeTree(), makeSuperCall(args));
+      mods & ConstrFlags | SYNTHETIC, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(),
+      makeSuperCall(args));
     val vparams: List[Tree] =
       for (val vparams <- vparamss; val vparam <- vparams) yield vparam;
     vparams ::: List(constr)

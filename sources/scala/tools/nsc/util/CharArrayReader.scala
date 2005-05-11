@@ -50,7 +50,7 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
         def evenSlashPrefix: boolean = {
           var p = bp - 2;
           while (p >= 0 && buf(p) == '\\') p = p - 1;
-          p % 2 == 0
+          (bp - p) % 2 == 0
         }
         def udigit: int = {
           val d = digit2int(buf(bp), 16);
