@@ -171,6 +171,7 @@ runtime/types/ClassType.java
 runtime/types/JavaClassType.java
 runtime/types/JavaRefArrayType.java
 runtime/types/ScalaClassType.java
+runtime/types/LazyParents.java
 runtime/types/CompoundType.java
 runtime/types/SingleType.java
 runtime/types/ValueType.java

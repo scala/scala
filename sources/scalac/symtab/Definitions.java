@@ -239,6 +239,11 @@ public class Definitions {
 
     public final Symbol COMPOUNDTYPE_CLASS;
 
+    public final Symbol LAZYPARENTS_CLASS;
+    public final Type   LAZYPARENTS_TYPE() {
+        return LAZYPARENTS_CLASS.staticType();
+    }
+
     /** The scala.Predef module */
     public final Symbol PREDEF;
 
@@ -822,6 +827,7 @@ public class Definitions {
         SINGLETYPE_CLASS = getJVMClass("scala.runtime.types.SingleType");
         TYPECONSTRUCTOR_CLASS = getJVMClass("scala.runtime.types.TypeConstructor");
         COMPOUNDTYPE_CLASS = getJVMClass("scala.runtime.types.CompoundType");
+        LAZYPARENTS_CLASS = getJVMClass("scala.runtime.types.LazyParents");
 
         PREDEF = getModule("scala.Predef");
         CONSOLE = getModule("scala.Console");

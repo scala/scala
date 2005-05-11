@@ -25,6 +25,7 @@ public class Names {
     private static final String TUPLE_FIELD_PREFIX = "_";
     private static final String TYPE_PREFIX = "type$";
     private static final String INSTANTIATE_PREFIX = "instantiate$";
+    private static final String LAZYPARENTS_PREFIX = "LazyParents$";
     private static final String TYPECONSTRUCTOR_PREFIX = "tConstructor$";
 
     public static Name ALIAS(ClassSymbol clasz) {
@@ -78,6 +79,10 @@ public class Names {
         return Name.fromString(INSTANTIATE_PREFIX
                                + sym.name
                                + (isStatic ? "$" : ""));
+    }
+
+    public static Name LAZYPARENTS(Symbol clsSym) {
+        return Name.fromString(LAZYPARENTS_PREFIX + clsSym.name).toTypeName();
     }
 
     public static Name TYPECONSTRUCTOR(Symbol sym, boolean isStatic) {
@@ -176,6 +181,7 @@ public class Names {
     public static final Name finalize = Name.fromString("finalize");
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
+    public static final Name force = Name.fromString("force");
     public static final Name functionOuter = Name.fromString("FUNCTION_OUTER");
     public static final Name get = Name.fromString("get");
     public static final Name getClass = Name.fromString("getClass");

@@ -23,7 +23,7 @@ import scala.runtime.IOMap;
  * @version 1.0
  */
 
-public class TypeConstructor implements java.io.Serializable {
+public final class TypeConstructor implements java.io.Serializable {
     public final static TypeConstructor[] EMPTY_ARRAY =
         new TypeConstructor[0];
 
@@ -123,7 +123,7 @@ public class TypeConstructor implements java.io.Serializable {
         return inst;
     }
 
-    public ScalaClassType instantiate(Type[] args, ScalaClassType[] parents) {
+    public ScalaClassType instantiate(Type[] args, Object parents) {
         ScalaClassType tp = new ScalaClassType(this, args, parents);
 
         try {
@@ -137,7 +137,6 @@ public class TypeConstructor implements java.io.Serializable {
         }
         return tp;
     }
-
 
     //////////////////////////////////////////////////////////////////////
 

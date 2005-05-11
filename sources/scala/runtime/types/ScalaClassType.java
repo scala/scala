@@ -37,14 +37,12 @@ public class ScalaClassType extends ClassType {
     private final TypeConstructor constr;
     private final Type[] inst;
 
-    private ScalaClassType[] parents;
+    private Object parents;
     private ScalaClassType[][] ancestors = null;
 
     private final int hashCode;
 
-    public ScalaClassType(TypeConstructor constr,
-                          Type[] inst,
-                          ScalaClassType[] parents) {
+    public ScalaClassType(TypeConstructor constr, Type[] inst, Object parents) {
         super(constr.clazz, constr.isTrivial);
 
         this.constr = constr;
@@ -167,27 +165,11 @@ public class ScalaClassType extends ClassType {
         return hashCode;
     }
 
-    public ScalaClassType setParents(ScalaClassType[] parents) {
-        assert this.parents == null || Type.isSameType(this.parents, parents);
-        this.parents = parents;
-        // TODO notifyAll?
-        return this;
-    }
-
     public ScalaClassType[] getParents() {
-        int timeout = 1;
-        while (parents == null) {
-            try {
-                wait(timeout);
-            } catch (InterruptedException e) {
-                throw new Error(e);
-            }
-            timeout *= 2;
-            if (timeout >= 1000)
-                throw new Error("computation of parents apparently stuck for "
-                                + this);
-        }
-        return parents;
+        if (parents instanceof LazyParents)
+            return ((LazyParents)parents).force();
+        else
+            return (ScalaClassType[])parents;
     }
 
     private ScalaClassType[][] getAncestors() {
@@ -196,6 +178,7 @@ public class ScalaClassType extends ClassType {
         return ancestors;
     }
 
+    // TODO concurrent access?
     private void computeAncestors() {
         final int level = constr.level;
         final int ancestorDepth = constr.ancestorCacheDepth;

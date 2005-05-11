@@ -85,6 +85,10 @@ public class TypesAsValuesPhase extends Phase {
     private final HashMap/*<Symbol,Symbol>*/ instantiator =
         new HashMap();
 
+    /** The lazy parent class corresponding to a given class. */
+    private final HashMap/*<Symbol,Symbol>*/ lazyParentsClass =
+        new HashMap();
+
     /** The class constructor corresponding to a given class. */
     private final HashMap/*<Symbol,Symbol>*/ classInitialiser =
         new HashMap();
@@ -95,7 +99,7 @@ public class TypesAsValuesPhase extends Phase {
     private final Definitions defs = global.definitions;
     private final Primitives prims = global.primitives;
 
-    private final Type.MethodType typeAccessorType;
+    private final Type.MethodType typeAccessorType, lazyForceType;
 
     private final Symbol ARRAY_CONSTRUCTOR =
         defs.ARRAY_CLASS.primaryConstructor();
@@ -113,7 +117,11 @@ public class TypesAsValuesPhase extends Phase {
         // replaces [ia]sInstanceOf with their erased counterpart.
         if (global.runTimeTypes && global.target != Global.TARGET_MSIL) {
             transformer = new TV_Transformer(global);
-            typeAccessorType = new Type.MethodType(new Symbol[]{}, defs.TYPE_TYPE());
+            typeAccessorType =
+                new Type.MethodType(new Symbol[]{}, defs.TYPE_TYPE());
+            lazyForceType =
+                new Type.MethodType(Symbol.EMPTY_ARRAY,
+                                    defs.ARRAY_TYPE(defs.SCALACLASSTYPE_TYPE()));
             predefTypes = new HashMap();
             predefTypes.put(defs.DOUBLE_CLASS,  defs.RTT_DOUBLE());
             predefTypes.put(defs.FLOAT_CLASS,   defs.RTT_FLOAT());
@@ -146,7 +154,7 @@ public class TypesAsValuesPhase extends Phase {
             ancestorCache.put(defs.OBJECT_CLASS, new Ancestor[0][]);
         } else {
             transformer = new TV_MiniTransformer(global);
-            typeAccessorType = null;
+            typeAccessorType = lazyForceType = null;
             predefTypes = basicTypes = null;
         }
     }
@@ -193,6 +201,32 @@ public class TypesAsValuesPhase extends Phase {
             instantiator.put(classSym, imSym);
         }
         return imSym;
+    }
+
+    private Symbol getLazyParentClassSym(Symbol classSym) {
+        Symbol lpcSym = (Symbol)lazyParentsClass.get(classSym);
+        if (lpcSym == null) {
+            int pos = classSym.pos;
+            Name lpcName = Names.LAZYPARENTS(classSym);
+            lpcSym = classSym.owner().newClass(pos, 0, lpcName);
+
+            Type lpcInfo =
+                Type.compoundType(new Type[] { defs.LAZYPARENTS_TYPE() },
+                                  new Scope(),
+                                  lpcSym);
+            lpcSym.setInfo(lpcInfo);
+
+            Symbol lpcConstrSym = lpcSym.primaryConstructor();
+            Symbol typesP =
+                lpcConstrSym.newVParam(pos, 0, Name.fromString("types"));
+            typesP.setInfo(defs.ARRAY_TYPE(defs.TYPE_TYPE()));
+
+            lpcConstrSym.setInfo(new Type.MethodType(new Symbol[]{ typesP },
+                                                     defs.UNIT_TYPE()));
+
+            lazyParentsClass.put(classSym, lpcSym);
+        }
+        return lpcSym;
     }
 
     private Symbol getTConstructorSym(Symbol classSym) {
@@ -379,9 +413,19 @@ public class TypesAsValuesPhase extends Phase {
 
     private class TV_Transformer extends TV_MiniTransformer {
         private Symbol currentOwner;
+        private TreeList additionalTopLevelClasses;
 
         public TV_Transformer(Global global) {
             super(global);
+        }
+
+        public void apply(CompilationUnit unit) {
+            unit.global.log("transforming " + unit);
+            additionalTopLevelClasses = new TreeList();
+            TreeList newUnitBody = new TreeList(transform(unit.body));
+            newUnitBody.append(additionalTopLevelClasses);
+            additionalTopLevelClasses = null;
+            unit.body = newUnitBody.toArray();
         }
 
         public Tree transform(Tree tree) {
@@ -391,12 +435,20 @@ public class TypesAsValuesPhase extends Phase {
 
                 TreeList newBody = new TreeList();
                 if (needsInstantiationMethod(clsSym)) {
+                    boolean lazy = isCyclic(clsSym);
+
                     Symbol tcSym = getTConstructorSym(clsSym);
                     newBody.append(tConstructorVal(clsSym, tcSym));
                     Symbol ciSym = getClassInitSym(clsSym);
                     newBody.append(classInitialiser(clsSym, ciSym, tcSym));
                     Symbol imSym = getInstMethSym(clsSym);
-                    newBody.append(instantiatorBody(clsSym, imSym));
+                    newBody.append(instantiatorBody(clsSym, imSym, lazy));
+
+                    if (lazy) {
+                        Symbol lpcSym = getLazyParentClassSym(clsSym);
+                        Tree lpc = lazyParentsClass(clsSym, lpcSym);
+                        additionalTopLevelClasses.append(lpc);
+                    }
                 }
                 newBody.append(transformStatements(impl.body, impl.symbol()));
 
@@ -525,10 +577,15 @@ public class TypesAsValuesPhase extends Phase {
                 switch (stat) {
                 case ClassDef(_, _, _, _, _, Tree.Template impl):
                     Symbol clsSym = stat.symbol();
+                    boolean lazy = isCyclic(clsSym);
                     Symbol tcSym = getTConstructorSym(clsSym);
                     newStats.add(beginIdx++, tConstructorVal(clsSym, tcSym));
                     Symbol insSym = getInstMethSym(clsSym);
-                    newStats.add(instantiatorBody(clsSym, insSym));
+                    newStats.add(instantiatorBody(clsSym, insSym, lazy));
+                    if (lazy) {
+                        Symbol lpcSym = getLazyParentClassSym(clsSym);
+                        newStats.add(lazyParentsClass(clsSym, lpcSym));
+                    }
                     break;
 
                 case AbsTypeDef(_, _, _, _):
@@ -680,13 +737,30 @@ public class TypesAsValuesPhase extends Phase {
             return gen.mkNewArray(pos, defs.INT_TYPE(), intLits, owner);
         }
 
+        private Tree lazyParentsClass(Symbol clsSym, Symbol lazyClsSym) {
+            int pos = clsSym.pos;
+
+            Symbol typesSym = lazyClsSym.primaryConstructor().valueParams()[0];
+
+            Symbol forceSym = lazyClsSym.newMethod(pos, 0, Names.force);
+            forceSym.setInfo(lazyForceType);
+            lazyClsSym.members().enter(forceSym);
+            Tree.DefDef forceDef =
+                gen.DefDef(forceSym,
+                           parentsArray(pos, clsSym, typesSym, forceSym));
+
+            return gen.ClassDef(lazyClsSym, new Tree[] { forceDef });
+        }
+
         /**
          * Return a method to instantiate the given type.
          */
-        private Tree.DefDef instantiatorBody(Symbol clsSym, Symbol insSym) {
+        private Tree.DefDef instantiatorBody(Symbol clsSym,
+                                             Symbol insSym,
+                                             boolean lazy) {
             // TODO fix flags for all symbols below
             final int pos = clsSym.pos;
-            final Symbol[] vparams = insSym.valueParams();
+            final Symbol typesArr = insSym.valueParams()[0];
 
             Tree[] body = new Tree[2];
 
@@ -697,7 +771,7 @@ public class TypesAsValuesPhase extends Phase {
                            gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
                            defs.TYPECONSTRUCTOR_GETINSTANTIATION());
 
-            Tree[] getInstArgs = new Tree[]{ gen.mkLocalRef(pos, vparams[0]) };
+            Tree[] getInstArgs = new Tree[]{ gen.mkLocalRef(pos, typesArr) };
 
             Symbol instVal =
                 insSym.newVariable(pos, 0, Name.fromString("inst"));
@@ -716,7 +790,54 @@ public class TypesAsValuesPhase extends Phase {
                                          defs.ANY_BANGEQ),
                               new Tree[] { gen.mkNullLit(pos) });
             Tree thenP = gen.mkLocalRef(pos, instVal);
+            Tree elseP = lazy
+                ? lazyInstantiateCall(pos, clsSym, typesArr)
+                : strictInstantiateCall(pos, clsSym, typesArr, insSym);
+            Tree ifExpr =
+                gen.If(pos, cond, thenP, elseP, defs.SCALACLASSTYPE_TYPE());
 
+            return gen.DefDef(insSym, gen.mkBlock(pos, instValDef, ifExpr));
+        }
+
+        private Tree strictInstantiateCall(int pos,
+                                           Symbol clsSym,
+                                           Symbol tpArraySym,
+                                           Symbol owner) {
+            Tree instFun =
+                gen.Select(pos,
+                           gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
+                           defs.TYPECONSTRUCTOR_INSTANTIATE());
+            Tree[] instArgs = new Tree[] {
+                gen.mkLocalRef(pos, tpArraySym),
+                parentsArray(pos, clsSym, tpArraySym, owner)
+            };
+            return gen.mkApply_V(pos, instFun, instArgs);
+        }
+
+        private Tree lazyInstantiateCall(int pos,
+                                         Symbol clsSym,
+                                         Symbol tpArraySym) {
+            Tree instFun =
+                gen.Select(pos,
+                           gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
+                           defs.TYPECONSTRUCTOR_INSTANTIATE());
+            Symbol lpcSym = getLazyParentClassSym(clsSym);
+            Tree lazyConstr =
+                gen.mkPrimaryConstructorLocalRef(pos, lpcSym);
+            Tree[] lazyConstrArgs = new Tree[] {
+                gen.mkLocalRef(pos, tpArraySym)
+            };
+            Tree[] instArgs = new Tree[] {
+                gen.mkLocalRef(pos, tpArraySym),
+                gen.New(pos, gen.mkApply_V(lazyConstr, lazyConstrArgs))
+            };
+            return gen.mkApply_V(pos, instFun, instArgs);
+        }
+
+        private Tree parentsArray(final int pos,
+                                  final Symbol clsSym,
+                                  final Symbol tpArraySym,
+                                  final Symbol owner) {
             final HashMap varMap = new HashMap();
             Symbol[] tparams = clsSym.typeParams();
             for (int i = 0; i < tparams.length; ++i)
@@ -732,7 +853,7 @@ public class TypesAsValuesPhase extends Phase {
 
                     public Tree treeForVar(Symbol sym) {
                         int idx = ((Integer)varMap.get(sym)).intValue();
-                        Tree array = gen.mkLocalRef(pos, vparams[0]);
+                        Tree array = gen.mkLocalRef(pos, tpArraySym);
                         return gen.mkArrayGet(pos, array, idx);
                     }
                 };
@@ -742,40 +863,15 @@ public class TypesAsValuesPhase extends Phase {
             for (int i = 0; i < parents.length; ++i) {
                 Type parent = parents[i];
                 if (!isStronglyTrivial(parent))
-                    parentTypes.append(typeAsValue(pos, parent, insSym, tEnv));
+                    parentTypes.append(typeAsValue(pos, parent, owner, tEnv));
             }
             boolean emptyParents = (parentTypes.length() == 0);
-            Tree parentsArray = emptyParents
+            return emptyParents
                 ? gen.mkGlobalRef(pos, defs.SCALACLASSTYPE_EMPTYARRAY())
                 : gen.mkNewArray(pos,
                                  defs.SCALACLASSTYPE_TYPE(),
                                  parentTypes.toArray(),
-                                 insSym);
-            Tree instFun =
-                gen.Select(pos,
-                           gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
-                           defs.TYPECONSTRUCTOR_INSTANTIATE());
-            Tree[] instArgs = new Tree[] {
-                gen.mkLocalRef(pos, vparams[0]),
-                emptyParents ? parentsArray : gen.mkNullLit(pos)
-            };
-            Tree instCall = gen.mkApply_V(pos, instFun, instArgs);
-
-            Tree elseP;
-            if (!emptyParents) {
-                Tree setParentsFun =
-                    gen.Select(pos, instCall, defs.SCALACLASSTYPE_SETPARENTS());
-
-                elseP = gen.mkApply_V(pos,
-                                      setParentsFun,
-                                      new Tree[] { parentsArray });
-            } else
-                elseP = instCall;
-
-            Tree ifExpr =
-                gen.If(pos, cond, thenP, elseP, defs.SCALACLASSTYPE_TYPE());
-
-            return gen.DefDef(insSym, gen.mkBlock(pos, instValDef, ifExpr));
+                                 owner);
         }
 
         /**
@@ -849,6 +945,29 @@ public class TypesAsValuesPhase extends Phase {
             default:
                 return false;
             }
+        }
+
+        private boolean referencesSym(Symbol sym, Type tp, HashSet visited) {
+            switch (tp) {
+            case TypeRef(_, Symbol cSym, Type[] args):
+                return (visited.add(cSym)
+                        && (sym == cSym
+                            || referencesSym(sym, args, visited)
+                            || referencesSym(sym, cSym.parents(), visited)));
+            default:
+                return false;   // TODO ok?
+            }
+        }
+
+        private boolean referencesSym(Symbol sym, Type[] tps, HashSet visited) {
+            for (int i = 0; i < tps.length; ++i)
+                if (referencesSym(sym, tps[i], visited))
+                    return true;
+            return false;
+        }
+
+        private boolean isCyclic(Symbol sym) {
+            return referencesSym(sym, sym.parents(), new HashSet());
         }
 
         /**
