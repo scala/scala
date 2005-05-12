@@ -839,7 +839,7 @@ public class TypesAsValuesPhase extends Phase {
                                   final Symbol tpArraySym,
                                   final Symbol owner) {
             final HashMap varMap = new HashMap();
-            Symbol[] tparams = clsSym.typeParams();
+            final Symbol[] tparams = clsSym.typeParams();
             for (int i = 0; i < tparams.length; ++i)
                 varMap.put(tparams[i], new Integer(i));
 
@@ -850,11 +850,24 @@ public class TypesAsValuesPhase extends Phase {
                     public boolean definesVar(Symbol sym) {
                         return varMap.containsKey(sym);
                     }
-
                     public Tree treeForVar(Symbol sym) {
                         int idx = ((Integer)varMap.get(sym)).intValue();
                         Tree array = gen.mkLocalRef(pos, tpArraySym);
                         return gen.mkArrayGet(pos, array, idx);
+                    }
+                    public boolean definesVarArray(Symbol[] syms) {
+                        if (syms.length == tparams.length) {
+                            for (int i = 0; i < syms.length; ++i) {
+                                if (syms[i] != tparams[i])
+                                    return false;
+                            }
+                            return true;
+                        } else
+                            return false;
+                    }
+                    public Tree treeForVarArray(Symbol[] syms) {
+                        assert definesVarArray(syms);
+                        return gen.mkLocalRef(pos, tpArraySym);
                     }
                 };
 
@@ -1103,16 +1116,22 @@ public class TypesAsValuesPhase extends Phase {
                     ? gen.Select(pos, gen.mkQualifier(pos, pre), insSym)
                     : gen.Ident(pos, insSym);
 
-                Tree[] insArgs;
-                Tree[] elems = new Tree[args.length];
+                Tree insArg;
                 int[] perm = typeParamsPermutation(sym.typeParams());
+                Symbol[] permArgs = new Symbol[args.length];
                 for (int i = 0; i < args.length; ++i)
-                    elems[i] = typeAsValue(pos, args[perm[i]], owner, env);
-                insArgs = new Tree[] {
-                    gen.mkNewArray(pos, defs.TYPE_TYPE(), elems, owner)
-                };
+                    permArgs[i] = args[perm[i]].symbol();
 
-                return gen.mkApply_V(pos, preFun, insArgs);
+                if (env.definesVarArray(permArgs))
+                    insArg = env.treeForVarArray(permArgs);
+                else {
+                    Tree[] tps = new Tree[args.length];
+                    for (int i = 0; i < args.length; ++i)
+                        tps[i] = typeAsValue(pos, args[perm[i]], owner, env);
+                    insArg = gen.mkNewArray(pos, defs.TYPE_TYPE(), tps, owner);
+                }
+
+                return gen.mkApply_V(pos, preFun, new Tree[] { insArg });
 
             default:
                 throw Debug.abort("unexpected type: ", tp);
@@ -1338,6 +1357,12 @@ public class TypesAsValuesPhase extends Phase {
         }
         public Tree treeForVar(Symbol sym) {
             throw Debug.abort("no tree for variable " + sym);
+        }
+        public boolean definesVarArray(Symbol[] syms) {
+            return false;
+        }
+        public Tree treeForVarArray(Symbol[] syms) {
+            throw Debug.abort("no tree for variable array " + syms);
         }
     }
 
