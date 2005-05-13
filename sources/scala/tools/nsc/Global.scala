@@ -17,7 +17,7 @@ import ast._;
 import ast.parser._;
 import typechecker._;
 
-class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with TreeCheckers with CompilationUnits {
+class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with CompilationUnits {
 
 // sub-components --------------------------------------------------
 
@@ -39,6 +39,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object pickler extends Pickler {
+    val global: Global.this.type = Global.this
+  }
+
+  object checker extends TreeCheckers {
     val global: Global.this.type = Global.this
   }
 
@@ -189,10 +193,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	val startTime = System.currentTimeMillis();
 	phase.run;
 	if (settings.print contains phase.name) treePrinter.printAll();
-	if (settings.check contains phase.name) checkTrees;
 	informTime(phase.description, startTime);
       }
       phase = if (settings.stop contains phase.name) terminalPhase else phase.next;
+      if (settings.check contains phase.name) checker.checkTrees;
     }
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
@@ -233,9 +237,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     } catch {
       case ex: IOException => error(ex.getMessage());
     }
-
-  def checkTrees: unit =
-    for (val unit <- units) treeChecker.traverse(unit.body);
 
   def showDef(name: Name, module: boolean): unit = {
     def getSym(name: Name, module: boolean): Symbol = {

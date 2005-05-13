@@ -54,6 +54,7 @@ class Contexts: Analyzer {
 
     var reportAmbiguousErrors = false;
     var reportGeneralErrors = false;
+    var checking = false;
 
     def undetparams = _undetparams;
     def undetparams_=(ps: List[Symbol]) = {
@@ -76,6 +77,7 @@ class Contexts: Analyzer {
       c.imports = imports;
       c.reportAmbiguousErrors = this.reportAmbiguousErrors;
       c.reportGeneralErrors = this.reportGeneralErrors;
+      c.checking = this.checking;
       c.outer = this;
       c
     }
@@ -110,8 +112,10 @@ class Contexts: Analyzer {
     }
 
     def error(pos: int, msg: String): unit =
-      if (reportGeneralErrors) unit.error(pos, msg)
-      else throw new TypeError(msg);
+      if (reportGeneralErrors)
+        unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
+      else
+        throw new TypeError(msg);
 
     def ambiguousError(pos: int, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): unit = {
       val msg =

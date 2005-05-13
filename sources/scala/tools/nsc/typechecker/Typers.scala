@@ -27,7 +27,7 @@ abstract class Typers: Analyzer {
       unit.body = newTyper(startContext.make(unit)).transformExpr(unit.body)
   }
 
-  def newTyper(context: Context) = new Typer(context);
+  def newTyper(context: Context): Typer = new Typer(context);
 
   class Typer(context0: Context) {
     import context0.unit;
