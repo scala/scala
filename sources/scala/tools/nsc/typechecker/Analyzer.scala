@@ -13,7 +13,6 @@ abstract class Analyzer
 	 extends Contexts
 	 with Namers
 	 with Typers
-	 with TypeCheckers
 	 with Infer
 	 with Variances
          with EtaExpansion {

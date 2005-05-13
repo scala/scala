@@ -35,7 +35,7 @@ class Settings(error: String => unit) {
   val nopredefs     = BooleanSetting("-nopredefs", "Compile without any implicit predefined values");
   val skip          = PhasesSetting ("-skip", "Skip");
   val check         = PhasesSetting ("-check", "Check the tree after");
-  val print         = PhasesSetting ("-print", "Print out program after");
+  val print        = PhasesSetting ("-print", "Print out program after");
   val printer       = ChoiceSetting ("-printer", "Printer to use", List("text", "html"), "text");
   val printfile     = StringSetting ("-printfile", "file", "Specify file in which to print trees", "-");
   val graph         = PhasesSetting ("-graph", "Graph the program after");
@@ -152,7 +152,7 @@ class Settings(error: String => unit) {
       case _ => args
     }
 
-    override def helpSyntax = name + ":<phases>";
+    override def helpSyntax = name + ":<phase>";
 
     def contains(phasename: String): boolean =
       value exists (str => phasename startsWith str)
