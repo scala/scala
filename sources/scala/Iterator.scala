@@ -26,7 +26,7 @@ object Iterator {
   }
 
   def single[a](x: a) = new Iterator[a] {
-    private var hasnext = false;
+    private var hasnext = true;
     def hasNext: Boolean = hasnext;
     def next: a = if (hasnext) { hasnext = false; x } else Predef.error("next on empty iterator");
   }
