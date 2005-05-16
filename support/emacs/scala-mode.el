@@ -117,11 +117,11 @@ reserved keywords when used alone.")
   "Regular expression matching a single Scala special character")
 
 (defconst scala-keywords-re
-  (regexp-opt '("abstract" "case" "class" "catch" "def" "do" "else"
-                "extends" "final" "finally" "for" "if" "import" "new" "object"
-                "override" "package" "private" "protected" "return"
-                "sealed" "super" "this" "throw" "trait" "try" "type" "val" "var"
-                "with" "while" "yield")
+  (regexp-opt '("abstract" "case" "class" "catch" "def" "do" "else" "extends"
+                "final" "finally" "for" "if" "implicit" "import" "new" "match"
+                "object" "override" "package" "private" "protected" "return"
+                "sealed" "super" "this" "throw" "trait" "try" "type" "val"
+                "var" "with" "while" "yield")
 	      'words))
 
 (defconst scala-constants-re
