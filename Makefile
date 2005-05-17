@@ -57,6 +57,17 @@ test_SCALAC		 = $(main_OBJECTDIR)/bin/scalac
 test_SCALADOC		 = $(test_OBJECTDIR)/bin/scaladoc
 test_SCALA_CMD		 = $(test_OBJECTDIR)/bin/scala
 
+tnsc_PREFIX		 = tnsc
+tnsc_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(tnsc_PREFIX)
+tnsc_LIBRARY_CLASSDIR	 = $(tnsc_OBJECTDIR)/lib/$(LIBRARY_NAME)
+tnsc_TOOLS_CLASSDIR	 = $(tnsc_OBJECTDIR)/lib/$(TOOLS_NAME)
+tnsc_JC_OUTPUTDIR	 = $(tnsc_TOOLS_CLASSDIR)
+tnsc_JC_CLASSPATH	 = $(tnsc_JC_OUTPUTDIR):$(tnsc_LIBRARY_CLASSDIR)
+tnsc_SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
+tnsc_SCALAC		 = $(main_OBJECTDIR)/bin/scalansc
+tnsc_SCALADOC		 = $(tnsc_OBJECTDIR)/bin/scaladoc
+tnsc_SCALA_CMD		 = $(tnsc_OBJECTDIR)/bin/scala
+
 ##############################################################################
 # Variables
 
@@ -100,6 +111,7 @@ meta			: meta.all
 boot			: boot.all
 main			: main.all
 test			: test.all
+tnsc			: tnsc.all
 
 scripts			: main.scripts
 lamplib			: main.lamplib
@@ -139,11 +151,13 @@ meta.%			: ; @$(make) prefix="meta" $@;
 boot.% 			: ; @$(make) prefix="boot" $@;
 main.%			: ; @$(make) prefix="main" $@;
 test.%			: ; @$(make) prefix="test" $@;
+tnsc.%			: ; @$(make) prefix="tnsc" $@;
 
 .PHONY			: meta
 .PHONY			: boot
 .PHONY			: main
 .PHONY			: test
+.PHONY			: tnsc
 
 .PHONY			: scripts
 .PHONY			: lamplib
@@ -256,6 +270,12 @@ $(latest)all		: $(latest)library
 $(latest)all		: $(latest)tools
 endif
 
+ifeq ($(prefix),tnsc)
+$(latest)all		: $(latest)lamplib
+$(latest)all		: $(latest)library
+$(latest)all		: $(latest)tools
+endif
+
 $(latest)all		:
 	$(TOUCH) $@
 
@@ -263,6 +283,7 @@ $(LATEST_PREFIX)-meta-%	: ; @$(make) prefix="meta" $@
 $(LATEST_PREFIX)-boot-%	: ; @$(make) prefix="boot" $@
 $(LATEST_PREFIX)-main-%	: ; @$(make) prefix="main" $@
 $(LATEST_PREFIX)-test-%	: ; @$(make) prefix="test" $@
+$(LATEST_PREFIX)-tnsc-%	: ; @$(make) prefix="tnsc" $@
 
 ##############################################################################
 # Targets - scala scripts
