@@ -39,16 +39,16 @@ abstract class EtaExpansion: Analyzer {
 	if (treeInfo.isPureExpr(tree)) tree
 	else {
 	  val vname: Name = freshName();
-	  defs += ValDef(SYNTHETIC, vname, TypeTree(), tree);
-	  Ident(vname)
+	  defs += atPos(tree.pos)(ValDef(SYNTHETIC, vname, TypeTree(), tree));
+	  Ident(vname) setPos tree.pos
 	}
       tree match {
 	case Apply(fn, args) =>
-          copy.Apply(tree, liftoutPrefix(fn), List.mapConserve(args)(liftout));
+          copy.Apply(tree, liftoutPrefix(fn), List.mapConserve(args)(liftout)) setType null
 	case TypeApply(fn, args) =>
-          copy.TypeApply(tree, liftoutPrefix(fn), args)
+          copy.TypeApply(tree, liftoutPrefix(fn), args) setType null
 	case Select(qual, name) =>
-          copy.Select(tree, liftout(qual), name)
+          copy.Select(tree, liftout(qual), name) setSymbol NoSymbol setType null
         case Ident(name) =>
           tree
       }
@@ -60,7 +60,7 @@ abstract class EtaExpansion: Analyzer {
         val params = formals map (formal =>
           ValDef(SYNTHETIC | PARAM, freshName(), TypeTree().setType(formal), EmptyTree));
         val args = params map (param => Ident(param.name));
-        Function(params, expand(Apply(tree, args), restpe))
+        atPos(tree.pos)(Function(params, expand(Apply(tree, args), restpe)))
       case _ =>
         tree
     }

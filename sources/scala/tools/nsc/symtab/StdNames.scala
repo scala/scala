@@ -76,6 +76,7 @@ abstract class StdNames: SymbolTable {
     def TUPLE_FIELD(index: int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index);
 
     def SETTER_NAME(name: Name) = encode(name.toString() + "_=");
+    def LOCAL_NAME(name: Name) = encode(name.toString() + " ");
 
     val ERROR = newTermName("<error>");
     val ERRORtype = newTypeName("<error>");

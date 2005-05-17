@@ -14,23 +14,22 @@ abstract class ConstantFolder {
   private val NoValue = new Object();
 
   /** If tree is a constant operation, replace with result. */
-  def apply(tree: Tree): Tree = {
-    val newvalue = tree match {
-      case Apply(Select(Literal(x), op), List(Literal(y))) => foldBinop(op, x, y)
-      case Select(Literal(x), op) => foldUnop(op, x)
-      case _ => NoValue
-    }
-    if (newvalue != NoValue) Literal(newvalue) else tree
-  }
+  def apply(tree: Tree): Tree = fold(tree, tree match {
+    case Apply(Select(Literal(x), op), List(Literal(y))) => foldBinop(op, x, y)
+    case Select(Literal(x), op) => foldUnop(op, x)
+    case _ => NoValue
+  });
 
   /** If tree is a constant value that can be converted to type `pt', perform the conversion */
-  def apply(tree: Tree, pt: Type): Tree = {
-    val newvalue = tree match {
-      case Literal(value) => foldTyped(value, pt)
-      case _ => NoValue
-    }
-    if (newvalue != NoValue) Literal(newvalue) else tree
-  }
+  def apply(tree: Tree, pt: Type): Tree = fold(tree, tree match {
+    case Literal(value) => foldTyped(value, pt)
+    case _ => NoValue
+  });
+
+  def fold(tree: Tree, value: Any): Tree =
+    if (value != NoValue)
+      copy.Literal(tree, value) setType ConstantType(literalType(value), value)
+    else tree;
 
   private def foldUnop(op: Name, value: Any): Any = Pair(op, value) match {
     case Pair(nme.ZNOT, x: boolean) => !x
@@ -182,4 +181,18 @@ abstract class ConstantFolder {
 	NoValue
     }
   }
+
+  def literalType(value: Any): Type =
+    if (value.isInstanceOf[unit]) UnitClass.tpe
+    else if (value.isInstanceOf[boolean]) BooleanClass.tpe
+    else if (value.isInstanceOf[byte]) ByteClass.tpe
+    else if (value.isInstanceOf[short]) ShortClass.tpe
+    else if (value.isInstanceOf[char]) CharClass.tpe
+    else if (value.isInstanceOf[int]) IntClass.tpe
+    else if (value.isInstanceOf[long]) LongClass.tpe
+    else if (value.isInstanceOf[float]) FloatClass.tpe
+    else if (value.isInstanceOf[double]) DoubleClass.tpe
+    else if (value.isInstanceOf[String]) StringClass.tpe
+    else if (value == null) AllRefClass.tpe
+    else throw new FatalError("unexpected literal value: " + value);
 }

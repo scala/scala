@@ -78,9 +78,8 @@ abstract class TreeInfo {
   /** Is tree a pure constructor?
    */
   def isPureConstr(tree: Tree): boolean = tree match {
-    case Ident(_)
-       | Select(_, _) =>
-      tree.symbol != null && tree.symbol.isPrimaryConstructor;
+    case Ident(_) | Select(_, _) =>
+      tree.symbol.isPrimaryConstructor
     case TypeApply(fn, _) =>
       isPureConstr(fn)
     case Apply(fn, List()) =>
@@ -139,13 +138,6 @@ abstract class TreeInfo {
     case Sequence(_) => true
     case Alternative(ts) => ts exists isSequenceValued
     case _ => false
-  }
-
-  /** The method symbol of an application node, or NoSymbol, if none exists.
-   */
-  def methSymbol(tree: Tree): Symbol = {
-    val meth = methPart(tree);
-    if (meth.hasSymbol) meth.symbol else NoSymbol
   }
 
   /** The method part of an application node

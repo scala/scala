@@ -22,7 +22,9 @@ import Flags._;
   case ClassInfoType(parents, defs, clazz) =>
   case MethodType(paramtypes, result) =>
   case PolyType(tparams, result) =>
+  // the last three types are not used after phase `typer'.
   case OverloadedType(pre, tparams, alts) =>
+  case AntiPolyType(pre: Type, targs) =>
   case TypeVar(_, _) =>
 */
 
@@ -706,21 +708,31 @@ abstract class Types: SymbolTable {
     }
   }
 
-  /** A class representing a type variable
-   */
-  case class TypeVar(origin: Type, constr: TypeConstraint) extends Type {
-
-    override def symbol = origin.symbol;
-
-    override def toString(): String =
-      if (constr.inst == NoType) "?" + origin else constr.inst.toString();
-  }
-
-  /** A class containing the alternatives and type prefix of an overloaded symbol
+  /** A class containing the alternatives and type prefix of an overloaded symbol.
+   *  Not used after phase `typer'.
    */
   case class OverloadedType(pre: Type, alternatives: List[Symbol]) extends Type {
     override def prefix: Type = pre;
     override def toString() = (alternatives map pre.memberType).mkString("", " <and> ", "")
+  }
+
+  /** A class remembering a type instantiation for some a set of overloaded polymorphic symbols.
+   *  Not used after phase `typer'.
+   */
+  case class AntiPolyType(pre: Type, targs: List[Type]) extends Type {
+    override def toString() = pre.toString() + targs.mkString("(with type arguments ", ",", ")");
+    override def memberType(sym: Symbol) = pre.memberType(sym) match {
+      case PolyType(tparams, restp) => restp.subst(tparams, targs)
+    }
+  }
+
+  /** A class representing a type variable
+   *  Not used after phase `typer'.
+   */
+  case class TypeVar(origin: Type, constr: TypeConstraint) extends Type {
+    override def symbol = origin.symbol;
+    override def toString(): String =
+      if (constr.inst == NoType) "?" + origin else constr.inst.toString();
   }
 
   /** A class representing an as-yet unevaluated type.
@@ -881,6 +893,11 @@ abstract class Types: SymbolTable {
         val pre1 = this(pre);
         if (pre1 eq pre) tp
         else OverloadedType(pre1, alts)
+      case AntiPolyType(pre, args) =>
+        val pre1 = this(pre);
+	val args1 = List.mapConserve(args)(this);
+        if ((pre1 eq pre) && (args1 eq args)) tp
+        else AntiPolyType(pre1, args1)
       case TypeVar(_, constr) =>
 	if (constr.inst != NoType) this(constr.inst)
 	else tp
@@ -1068,14 +1085,14 @@ abstract class Types: SymbolTable {
       case Pair(_, WildcardType) => true
 
       case Pair(NoType, _) => false
-      case Pair(NoPrefix, _) => false
+      case Pair(NoPrefix, _) => tp2.symbol.isPackageClass
       case Pair(_, NoType) => false
-      case Pair(_, NoPrefix) => false
+      case Pair(_, NoPrefix) => tp1.symbol.isPackageClass
 
       case Pair(ThisType(sym1), ThisType(sym2)) =>
         sym1 == sym2
       case Pair(SingleType(pre1, sym1), SingleType(pre2, sym2))
-      if (sym1 == sym2 && pre1 =:= pre2) =>
+      if ((sym1 == sym2) && (pre1 =:= pre2)) =>
         true
       /*
       case Pair(SingleType(pre1, sym1), ThisType(sym2))
@@ -1143,9 +1160,9 @@ abstract class Types: SymbolTable {
       case Pair(_, WildcardType) => true
 
       case Pair(NoType, _)   => false
-      case Pair(NoPrefix, _) => false
+      case Pair(NoPrefix, _) => tp2.symbol.isPackageClass
       case Pair(_, NoType)   => false
-      case Pair(_, NoPrefix) => false
+      case Pair(_, NoPrefix) => tp1.symbol.isPackageClass
 
       case Pair(ThisType(_), ThisType(_))               => tp1 =:= tp2
       case Pair(ThisType(_), SingleType(_, _))          => tp1 =:= tp2

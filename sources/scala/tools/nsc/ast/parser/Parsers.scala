@@ -1655,11 +1655,12 @@ abstract class Parsers: ParserPhase {
     /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)']
      */
     def attribute(): Tree = {
+      val pos = in.pos;
       var t: Tree = convertToTypeId(stableId());
       if (in.token == LBRACKET)
         t = atPos(in.pos)(AppliedTypeTree(t, typeArgs()));
       val args = if (in.token == LPAREN) argumentExprs() else List();
-      makeNew(List(t), List(), args)
+      atPos(pos) { makeNew(List(t), List(), args) }
     }
 
     def joinAttributes(attrs: List[Tree], defs: List[Tree]): List[Tree] =
@@ -1724,23 +1725,24 @@ abstract class Parsers: ParserPhase {
      *                    | package QualId `{' TopStatSeq `}'
      *                    | TopStatSeq
      */
-    def compilationUnit(): Tree = {
-      if (in.token == PACKAGE) {
-        val pos = in.skipToken();
-        val pkg = qualId();
-        if (in.token == SEMI) {
+    def compilationUnit(): Tree =
+      atPos(in.pos) {
+        if (in.token == PACKAGE) {
           in.nextToken();
-          makePackaging(pkg, topStatSeq()) setPos pos;
+          val pkg = qualId();
+          if (in.token == SEMI) {
+            in.nextToken();
+            makePackaging(pkg, topStatSeq())
+          } else {
+            accept(LBRACE);
+            val t =  makePackaging(pkg, topStatSeq());
+            accept(RBRACE);
+	    t
+          }
         } else {
-          accept(LBRACE);
-          val t =  makePackaging(pkg, topStatSeq());
-          accept(RBRACE);
-	  t
+          makePackaging(Ident(nme.EMPTY_PACKAGE_NAME), topStatSeq())
         }
-      } else {
-        makePackaging(Ident(nme.EMPTY_PACKAGE_NAME), topStatSeq())
       }
-    }
   }
 }
 

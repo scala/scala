@@ -157,7 +157,7 @@ class Contexts: Analyzer {
 	  if (c.outer.enclClass == null) assert(false, "accessWithin(" + owner + ") " + c);//debug
 	  c = c.outer.enclClass;
 	}
-	c != NoContext;
+	c != NoContext
       }
 
       /** Is `clazz' a subclass of an enclosing class? */
@@ -171,7 +171,7 @@ class Contexts: Analyzer {
       ||
       (!sym.hasFlag(PRIVATE | PROTECTED))
       ||
-      accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre.isInstanceOf[ThisType])
+      accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
       ||
       (!sym.hasFlag(PRIVATE) &&
        (superAccess ||

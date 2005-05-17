@@ -43,10 +43,10 @@ abstract class TreeGen {
   /** Builds a reference to given symbol. */
   def mkRef(sym: Symbol): Tree = mkRef(sym.owner.thisType, sym);
 
-  /** Replacecs tree type with a stable type if possible */
+  /** Replaces tree type with a stable type if possible */
   def stabilize(tree: Tree): Tree = tree match {
     case Ident(_) =>
-      if (tree.symbol.isStable) tree.setType(singleType(NoPrefix, tree.symbol))
+      if (tree.symbol.isStable) tree.setType(singleType(tree.symbol.owner.thisType, tree.symbol))
       else tree
     case Select(qual, _) =>
       if (tree.symbol.isStable && qual.tpe.isStable) tree.setType(singleType(qual.tpe, tree.symbol))
@@ -62,12 +62,12 @@ abstract class TreeGen {
   def TypeTree(tp: Type) = global.TypeTree() setType tp;
 
   def This(sym: Symbol) =
-    global.This(sym.name) setSymbol sym setType sym.thisType;
+    typer.transformQualExpr(global.This(sym.name) setSymbol sym);
 
   def Ident(sym: Symbol) = {
     assert(sym.isTerm);
     sym.setFlag(ACCESSED);
-    global.Ident(sym.name) setSymbol sym setType sym.tpe;
+    typer.transformExpr(global.Ident(sym.name) setSymbol sym);
   }
 
   def Select(qual: Tree, sym: Symbol) = {
@@ -76,24 +76,16 @@ abstract class TreeGen {
     global.Select(qual, sym.name) setSymbol sym setType qual.tpe.memberType(sym);
   }
 
-  def Apply(fun: Tree, args: List[Tree]) = fun.tpe match {
-    case MethodType(formals, restpe) =>
-      global.Apply(fun, args) setType restpe
-  }
-
-  def Assign(lhs: Tree, rhs: Tree) =
-    global.Assign(lhs, rhs) setType UnitClass.tpe;
-
   def ValDef(sym: Symbol, rhs: Tree): ValDef = atPos(sym.pos) {
     global.ValDef(flags2mods(sym.flags), sym.name, TypeTree(sym.tpe), rhs)
-      setSymbol sym setType UnitClass.tpe
+      setSymbol sym setType NoType
   }
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree);
 
   def AbsTypeDef(sym: Symbol) = atPos(sym.pos) {
     global.AbsTypeDef(flags2mods(sym.flags), sym.name,
                       TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi))
-      setSymbol sym setType UnitClass.tpe
+      setSymbol sym setType NoType
   }
 
   def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree) = atPos(sym.pos) {
@@ -113,7 +105,7 @@ abstract class TreeGen {
           vparamss.map(.map(ValDef)),
           TypeTree(tpe),
           rhs(vparamss))
-	  setSymbol sym setType UnitClass.tpe
+	  setSymbol sym setType NoType
     }
     mk(List(), List(), sym.tpe)
   }

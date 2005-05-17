@@ -117,11 +117,17 @@ abstract class Trees: Global {
 
   /** Attribuetd definition */
   case class Attributed(attribute: Tree, definition: Tree)
-       extends Tree;
+       extends Tree {
+    override def symbol: Symbol = definition.symbol;
+    override def symbol_=(sym: Symbol): unit = { definition.symbol = sym }
+  }
 
   /** Documented definition, eliminated by analyzer */
   case class DocDef(comment: String, definition: Tree)
-       extends Tree;
+       extends Tree {
+    override def symbol: Symbol = definition.symbol;
+    override def symbol_=(sym: Symbol): unit = { definition.symbol = sym }
+  }
 
   /** Instantiation template */
   case class Template(parents: List[Tree], body: List[Tree])
@@ -165,7 +171,7 @@ abstract class Trees: Global {
 
   /** Return expression */
   case class Return(expr: Tree)
-       extends SymTree with TermTree;
+       extends TermTree with SymTree;
 
   case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
        extends TermTree;
@@ -186,11 +192,17 @@ abstract class Trees: Global {
 
   /** Type application */
   case class TypeApply(fun: Tree, args: List[Tree])
-       extends TermTree;
+       extends TermTree {
+    override def symbol: Symbol = fun.symbol;
+    override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
+  }
 
   /** Value application */
   case class Apply(fun: Tree, args: List[Tree])
-       extends TermTree;
+       extends TermTree {
+    override def symbol: Symbol = fun.symbol;
+    override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
+  }
 
   /** Super reference */
   case class Super(qual: Name, mixin: Name)
@@ -216,7 +228,10 @@ abstract class Trees: Global {
 
   /** Literal */
   case class Literal(value: Any)
-       extends TermTree;
+       extends TermTree {
+    // todo: change hashcode generation to make this superfluous
+    override def hashCode(): int = if (value == null) 0 else value.hashCode() * 41 + 17;
+  }
 
   /** General type term, introduced by RefCheck. */
   case class TypeTree() extends TypTree {
@@ -237,7 +252,10 @@ abstract class Trees: Global {
 
   /** Applied type, eliminated by RefCheck */
   case class AppliedTypeTree(tpt: Tree, args: List[Tree])
-       extends TypTree;
+       extends TypTree {
+    override def symbol: Symbol = tpt.symbol;
+    override def symbol_=(sym: Symbol): unit = { tpt.symbol = sym }
+ }
 
 /* A standard pattern match
   case EmptyTree =>

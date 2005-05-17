@@ -482,35 +482,35 @@ abstract class Infer: Analyzer {
      *  If several alternatives match `pt', take parameterless one.
      *  Error if no or several such alternatives exist.
      */
-    def inferExprAlternative(tree: Tree, pt: Type): unit = tryTwice {
-      val pre = tree.symbol.info.prefix;
-      val alts = tree.symbol.alternatives filter (alt =>
-	isCompatible(pre.memberType(alt), pt));
-      def improves(sym1: Symbol, sym2: Symbol): boolean =
-	sym2 == NoSymbol ||
-	((sym1.owner isSubClass sym2.owner) &&
-	 {val tp1 = pre.memberType(sym1);
-	  val tp2 = pre.memberType(sym2);
-	  tp2 == ErrorType ||
-	  !global.infer.isCompatible(tp2, pt) && global.infer.isCompatible(tp1, pt) ||
-	  (tp2.paramSectionCount > 0) && (tp1.paramSectionCount == 0 || specializes(tp1, tp2))
-	});
-      val best = ((NoSymbol: Symbol) /: alts) ((best, alt) =>
-	if (improves(alt, best)) alt else best);
-      val competing = alts dropWhile (alt => best == alt || improves(best, alt));
-      if (best == NoSymbol) {
-	tree match {//debug
-	  case Select(qual, _) =>
-	    System.out.println("qual: " + qual + ":" + qual.tpe + " with decls " + qual.tpe.decls + " with members " + qual.tpe.members + " with members " + qual.tpe.member(newTermName("$minus")));
-	  case _ =>
+    def inferExprAlternative(tree: Tree, pt: Type): unit = tree.tpe match {
+      case OverloadedType(pre, alts) => tryTwice {
+	val alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt));
+	def improves(sym1: Symbol, sym2: Symbol): boolean =
+	  sym2 == NoSymbol ||
+	  ((sym1.owner isSubClass sym2.owner) &&
+	     {val tp1 = pre.memberType(sym1);
+	      val tp2 = pre.memberType(sym2);
+	      tp2 == ErrorType ||
+	      !global.infer.isCompatible(tp2, pt) && global.infer.isCompatible(tp1, pt) ||
+	      (tp2.paramSectionCount > 0) && (tp1.paramSectionCount == 0 || specializes(tp1, tp2))
+	     });
+	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
+	  if (improves(alt, best)) alt else best);
+	val competing = alts1 dropWhile (alt => best == alt || improves(best, alt));
+	if (best == NoSymbol) {
+	  tree match {//debug
+	    case Select(qual, _) =>
+	      System.out.println("qual: " + qual + ":" + qual.tpe + " with decls " + qual.tpe.decls + " with members " + qual.tpe.members + " with members " + qual.tpe.member(newTermName("$minus")));
+	    case _ =>
+	  }
+	  typeErrorTree(tree, tree.symbol.tpe, pt)
+	} else if (!competing.isEmpty) {
+	  context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt);
+	  setError(tree);
+          ()
+	} else {
+	  tree.setSymbol(best).setType(pre.memberType(best))
 	}
-	typeErrorTree(tree, tree.symbol.tpe, pt)
-      } else if (!competing.isEmpty) {
-	context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt);
-	setError(tree);
-        ()
-      } else {
-	tree.setSymbol(best).setType(pre.memberType(best))
       }
     }
 
@@ -522,33 +522,33 @@ abstract class Infer: Analyzer {
      *  with pt = WildcardType.
      *  Otherwise, if there is no best alternative, error.
      */
-    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tryTwice {
-      val pre = tree.symbol.info.prefix;
-      if (settings.debug.value) System.out.println("infer method alt " + tree.symbol + " with alternatives " + (tree.symbol.alternatives map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);//debug
-      val alts = tree.symbol.alternatives filter (alt =>
-	isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
-      def improves(sym1: Symbol, sym2: Symbol) = {
-	sym2 == NoSymbol ||
-	((sym1.owner isSubClass sym2.owner) &&
-	 specializes(pre.memberType(sym1), pre.memberType(sym2)))
-      }
-      val best = ((NoSymbol: Symbol) /: alts) ((best, alt) =>
-	if (improves(alt, best)) alt else best);
-      val competing = alts dropWhile (alt => best == alt || improves(best, alt));
-      if (best == NoSymbol) {
-	if (pt == WildcardType) {
-	  errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
-	} else {
-	  inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
+    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
+      case OverloadedType(pre, alts) => tryTwice {
+	if (settings.debug.value) System.out.println("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);//debug
+	val alts1 = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
+	def improves(sym1: Symbol, sym2: Symbol) = {
+	  sym2 == NoSymbol ||
+	  ((sym1.owner isSubClass sym2.owner) &&
+	   specializes(pre.memberType(sym1), pre.memberType(sym2)))
 	}
-      } else if (!competing.isEmpty) {
-	context.ambiguousError(tree.pos, pre, best, competing.head,
-			       "argument types " + argtpes.mkString("(", ",", ")") +
-			       (if (pt == WildcardType) "" else " and expected result type " + pt));
-	setError(tree);
-	()
-      } else {
-	tree.setSymbol(best).setType(pre.memberType(best))
+	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
+	  if (improves(alt, best)) alt else best);
+	val competing = alts1 dropWhile (alt => best == alt || improves(best, alt));
+	if (best == NoSymbol) {
+	  if (pt == WildcardType) {
+	    errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
+	  } else {
+	    inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
+	  }
+	} else if (!competing.isEmpty) {
+	  context.ambiguousError(tree.pos, pre, best, competing.head,
+				 "argument types " + argtpes.mkString("(", ",", ")") +
+				 (if (pt == WildcardType) "" else " and expected result type " + pt));
+	  setError(tree);
+	  ()
+	} else {
+	  tree.setSymbol(best).setType(pre.memberType(best))
+	}
       }
     }
 
@@ -572,23 +572,24 @@ abstract class Infer: Analyzer {
      *  as the number of type parameters, if it exists.
      *  If several or none such polymorphic alternatives exist, error.
      */
-    def inferPolyAlternative(tree: Tree, nparams: int): unit = {
-      val pre = tree.symbol.info.prefix;
-      val alts = tree.symbol.alternatives filter (alt =>
-	alt.typeParams.length == nparams);
-      if (alts.isEmpty) {
-	errorTree(tree,
-	  if (tree.symbol.alternatives exists (alt => alt.typeParams.length > 0))
-	    "wrong number of type parameters for " + treeSymTypeMsg(tree)
-	  else treeSymTypeMsg(tree) + " does not take type parameters")
-      } else if (!alts.tail.isEmpty) {
-	context.ambiguousError(tree.pos, pre, alts.head, alts.tail.head,
-			       "polymorphic function with " + nparams + " parameters");
-	setError(tree);
-        ()
-      } else {
-	tree.setSymbol(alts.head).setType(pre.memberType(alts.head))
-      }
+    def inferPolyAlternatives(tree: Tree, nparams: int): unit = tree.tpe match {
+      case OverloadedType(pre, alts) =>
+	val sym = tree.symbol filter (alt => alt.typeParams.length == nparams);
+	if (sym == NoSymbol) {
+	  errorTree(tree,
+		    if (alts exists (alt => alt.typeParams.length > 0))
+		      "wrong number of type parameters for " + treeSymTypeMsg(tree)
+		    else treeSymTypeMsg(tree) + " does not take type parameters")
+	} else if (sym.hasFlag(OVERLOADED)) {
+	  val tparams = sym.alternatives.head.typeParams;
+	  val tpe =
+	    PolyType(tparams,
+		     OverloadedType(AntiPolyType(pre, tparams map (.tpe)), sym.alternatives));
+	  sym.setInfo(tpe);
+	  tree.setSymbol(sym).setType(tpe);
+	} else {
+	  tree.setSymbol(sym).setType(pre.memberType(sym))
+	}
     }
   }
 }

@@ -11,6 +11,8 @@ abstract class TreeCheckers extends Analyzer {
 
   import global._;
 
+  val tpeOfTree = new scala.collection.mutable.HashMap[Tree, Type];
+
   def checkTrees: unit = {
     System.out.println("[consistency check at start of phase " + phase + "]");
     for (val unit <- units) check(unit);
@@ -21,7 +23,11 @@ abstract class TreeCheckers extends Analyzer {
     reporter.prompt(true);
     val context = startContext.make(unit);
     context.checking = true;
-    new TreeChecker(context).transformExpr(unit.body);
+    tpeOfTree.clear;
+    val checker = new TreeChecker(context);
+    checker.precheck.traverse(unit.body);
+    checker.transformExpr(unit.body);
+    checker.postcheck.traverse(unit.body);
     reporter.prompt(curPrompt);
   }
 
@@ -32,23 +38,47 @@ abstract class TreeCheckers extends Analyzer {
     import infer._;
 
     override def transform(tree: Tree, mode: int, pt: Type): Tree = {
-      System.out.println("**** checking " + tree);//debug
-      if (tree.pos == Position.NOPOS)
-	error(tree.pos, "tree without position: " + tree)
-      else if (phase.id > typeCheckPhase.id)
-        if (tree.tpe == null)
-	  error(tree.pos, "tree without type: " + tree);
-        else {
-          val oldtpe = tree.tpe;
-          tree.tpe = null;
+      //System.out.println("**** checking " + tree);//debug
+      tree match {
+	case EmptyTree | TypeTree() =>
+	  ;
+	case _ =>
+	  if (!tpeOfTree.contains(tree)) {
+	    tpeOfTree.update(tree, tree.tpe);
+            tree.tpe = null
+	  }
           val newtree = super.transform(tree, mode, pt);
           if (newtree ne tree)
-            error(tree.pos, "trees differ\n old: " + tree + "\n new: " + newtree);
-          else if (!(oldtpe =:= newtree.tpe))
-            error(tree.pos, "types differ\n old: " + oldtpe + "\n new: " + newtree.tpe);
-          tree.tpe = oldtpe
-        }
+            error(tree.pos, "trees differ\n old: " + tree + " [" + tree.getClass() + "]\n new: " +
+		  newtree + " [" + newtree.getClass() + "]");
+      }
       tree
+    }
+
+    object precheck extends Traverser {
+      override def traverse(tree: Tree): unit = {
+	if (tree.pos == Position.NOPOS)
+	  error(tree.pos, "tree without position: " + tree)
+	else if (tree.tpe == null && phase.id >= typeCheckPhase.id)
+	  error(tree.pos, "tree without type: " + tree)
+      }
+    }
+
+    object postcheck extends Traverser {
+      override def traverse(tree: Tree): unit = tree match {
+	case EmptyTree | TypeTree() =>
+	  ;
+	case _ =>
+	  tpeOfTree.get(tree) match {
+	    case Some(oldtpe) =>
+	      if (!(oldtpe =:= tree.tpe))
+		error(tree.pos, "types differ\n old: " + oldtpe + "\n new: " + tree.tpe +
+		      "\n tree: " + tree);
+	      tree.tpe = oldtpe;
+	      super.traverse(tree)
+	    case None =>
+	  }
+      }
     }
   }
 }

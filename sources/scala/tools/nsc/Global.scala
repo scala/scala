@@ -42,6 +42,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object typer extends analyzer.Typer(analyzer.NoContext);
+
   object checker extends TreeCheckers {
     val global: Global.this.type = Global.this
   }
@@ -52,7 +54,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val attributes = new HashMap[Symbol, List[AttrInfo]];
 
 // reporting -------------------------------------------------------
-
 
   def error(msg: String) = reporter.error(null, msg);
   def warning(msg: String) = reporter.warning(null, msg);

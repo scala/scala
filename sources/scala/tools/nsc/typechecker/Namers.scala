@@ -121,7 +121,7 @@ trait Namers: Analyzer {
       }
       def finish = finishWith(List());
 
-      if (tree.symbol == null || tree.symbol == NoSymbol) {
+      if (tree.symbol == NoSymbol) {
 	val owner = context.owner;
 	tree match {
 	  case PackageDef(name, stats) =>
@@ -151,14 +151,16 @@ trait Namers: Analyzer {
 	      enterInScope(getter);
 	      if ((mods & MUTABLE) != 0) {
 	        val setter = owner.newMethod(tree.pos, nme.SETTER_NAME(name))
-		  .setFlag(accmods).setInfo(innerNamer.setterTypeCompleter(tree));
+		  .setFlag(accmods & ~STABLE).setInfo(innerNamer.setterTypeCompleter(tree));
 	        enterInScope(setter)
 	      }
 	      tree.symbol =
-	        if ((mods & DEFERRED) == 0)
-		  owner.newValue(tree.pos, name)
-	            .setFlag(mods & FieldFlags | PRIVATE | LOCAL).setInfo(innerNamer.typeCompleter(tree))
-	        else getter;
+		if ((mods & DEFERRED) == 0)
+		  enterInScope(
+		    owner.newValue(tree.pos, nme.LOCAL_NAME(name))
+ 	              .setFlag(mods & FieldFlags | PRIVATE | LOCAL)
+		      .setInfo(innerNamer.typeCompleter(tree)))
+		else getter;
             } else {
               tree.symbol =
                 enterInScope(owner.newValue(tree.pos, name).setFlag(mods));
