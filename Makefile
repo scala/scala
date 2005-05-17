@@ -274,6 +274,7 @@ ifeq ($(prefix),tnsc)
 $(latest)all		: $(latest)lamplib
 $(latest)all		: $(latest)library
 $(latest)all		: $(latest)tools
+$(latest)all		: $(latest)nsc
 endif
 
 $(latest)all		:
