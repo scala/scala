@@ -96,6 +96,9 @@ public class TypesAsValuesPhase extends Phase {
     private final HashMap/*<Symbol,Symbol>*/ tConstructor =
         new HashMap();
 
+    private final HashMap/*<Symbol, HashSet<Symbol>>*/ constructorNeed =
+        new HashMap();
+
     private final Definitions defs = global.definitions;
     private final Primitives prims = global.primitives;
 
@@ -960,27 +963,44 @@ public class TypesAsValuesPhase extends Phase {
             }
         }
 
-        private boolean referencesSym(Symbol sym, Type tp, HashSet visited) {
+        private void addConstructorsNeededBy(HashSet roots,
+                                             Type tp,
+                                             HashSet set){
             switch (tp) {
-            case TypeRef(_, Symbol cSym, Type[] args):
-                return (visited.add(cSym)
-                        && (sym == cSym
-                            || referencesSym(sym, args, visited)
-                            || referencesSym(sym, cSym.parents(), visited)));
+            case TypeRef(_, Symbol pSym, Type[] args):
+                if (!pSym.isParameter()) {
+                    set.add(pSym);
+                    set.addAll(constructorsNeededBy(roots, pSym));
+                    for (int i = 0; i < args.length; ++i)
+                        addConstructorsNeededBy(roots, args[i], set);
+                }
+                break;
             default:
-                return false;   // TODO ok?
+                ;               // nothing to do
             }
         }
 
-        private boolean referencesSym(Symbol sym, Type[] tps, HashSet visited) {
-            for (int i = 0; i < tps.length; ++i)
-                if (referencesSym(sym, tps[i], visited))
-                    return true;
-            return false;
+        private HashSet constructorsNeededBy(HashSet roots, Symbol sym) {
+            HashSet constr = new HashSet();
+            if (roots.add(sym)) {
+                Type[] parents = sym.parents();
+                for (int i = 0; i < parents.length; ++i)
+                    addConstructorsNeededBy(roots, parents[i], constr);
+            }
+            return constr;
+        }
+
+        private HashSet constructorsNeededBy(Symbol sym) {
+            HashSet constr = (HashSet)constructorNeed.get(sym);
+            if (constr == null) {
+                constr = constructorsNeededBy(new HashSet(), sym);
+                constructorNeed.put(sym, constr);
+            }
+            return constr;
         }
 
         private boolean isCyclic(Symbol sym) {
-            return referencesSym(sym, sym.parents(), new HashSet());
+            return constructorsNeededBy(sym).contains(sym);
         }
 
         /**
