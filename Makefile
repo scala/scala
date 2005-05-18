@@ -541,7 +541,8 @@ $(latest)nsc-jc		: $(NSC_JC_FILES)
 	$(TOUCH) $@
 
 $(latest)nsc-sc		: $(NSC_SC_FILES)
-	@$(make) sc target=NSC NSC_SC_FILES='$?'
+# !!!	@$(make) sc target=NSC NSC_SC_FILES='$?'
+	@$(make) sc target=NSC
 	$(TOUCH) $@
 
 ##############################################################################
