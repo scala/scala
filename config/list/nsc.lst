@@ -37,7 +37,6 @@ symtab/classfile/ClassfileConstants.scala
 symtab/classfile/ClassfileParser.scala
 symtab/classfile/Constant.scala
 symtab/classfile/MetaParser.scala
-symtab/classfile/Pickle.scala
 symtab/classfile/PickleBuffer.scala
 symtab/classfile/PickleFormat.scala
 symtab/classfile/Pickler.scala
