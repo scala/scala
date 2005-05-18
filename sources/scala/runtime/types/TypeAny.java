@@ -28,7 +28,7 @@ public class TypeAny extends SpecialType {
 
     public int hashCode() { return 0xBBBBBBBB; }
 
-    // Make TypeAll a serializable singleton
+    // Make TypeAny a serializable singleton
     public static TypeAny INSTANCE = new TypeAny();
     protected TypeAny() { /* exists only to that instantiation */ }
     private Object readResolve() { return INSTANCE; }
