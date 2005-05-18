@@ -37,7 +37,7 @@ public class ScalaClassType extends ClassType {
     private final TypeConstructor constr;
     private final Type[] inst;
 
-    private Object parents;
+    private final Object parents;
     private ScalaClassType[][] ancestors = null;
 
     private final int hashCode;
@@ -178,14 +178,13 @@ public class ScalaClassType extends ClassType {
         return ancestors;
     }
 
-    // TODO concurrent access?
     private void computeAncestors() {
         final int level = constr.level;
         final int ancestorDepth = constr.ancestorCacheDepth;
         final int[] ancestorCode = constr.ancestorCode;
         ScalaClassType[] parents = getParents();
 
-        ancestors = new ScalaClassType[ancestorDepth][];
+        ScalaClassType[][] ancestors = new ScalaClassType[ancestorDepth][];
         ScalaClassType[][] initialAncestors = parents.length > 0
             ? parents[0].getAncestors()
             : EMPTY_ANCESTORS;
@@ -225,6 +224,7 @@ public class ScalaClassType extends ClassType {
                 ancestors[l] = newRow;
             }
         }
+        this.ancestors = ancestors;
     }
 
     private static final ClassLoader loader =
