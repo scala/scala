@@ -112,7 +112,6 @@ grammar.
   CaseClause      ::=  case Pattern [`if' PostfixExpr] `=>' Block 
 
   Constr          ::=  StableId [TypeArgs] [`(' [Exprs] `)']  
-  SimpleConstr    ::=  Id [TypeArgs] [`(' [Exprs] `)']  
 
   Pattern         ::=  Pattern1 { `|' Pattern1 }
   Pattern1        ::=  varid `:' Type
