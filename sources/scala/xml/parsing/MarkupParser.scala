@@ -16,14 +16,19 @@ import scala.xml.dtd._ ;
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
-abstract class MarkupParser(input: Source): MarkupHandler with TokenTests {
+abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
 
   //
   // variables, values
   //
 
+  var input: Source = _input;
+
   /** the handler of the markup, should return this */
   val handle: MarkupHandler;
+
+  /** stack of inputs */
+  var inpStack: List[Source] = Nil;
 
   /** holds the position in the source file */
   var pos: Int = _;
@@ -168,7 +173,9 @@ abstract class MarkupParser(input: Source): MarkupHandler with TokenTests {
     if(input.hasNext) {
       ch = input.next;
       pos = input.pos;
-    } else
+    } else if (Nil!=inpStack)
+      pop();
+    else
       eof = true;
   }
 
@@ -422,7 +429,10 @@ abstract class MarkupParser(input: Source): MarkupHandler with TokenTests {
               case _ => // EntityRef
                 val n = xName ;
                 xToken(';');
+                /*
                 ts + handle.entityRef( tmppos, n ) ;
+                */
+                push( n );
             }
           case _ => // text content
             //Console.println("text content?? pos = "+pos);
@@ -494,6 +504,7 @@ abstract class MarkupParser(input: Source): MarkupHandler with TokenTests {
       override var externalID = extID;
       override val decls      = handle.decls.reverse;
     }
+    this.dtd.initializeEntities();
   }
 
   def element(pscope: NamespaceBinding): NodeSeq = {
@@ -863,5 +874,18 @@ abstract class MarkupParser(input: Source): MarkupHandler with TokenTests {
     input.reportError(pos, str)
   }
 
+
+  def push(entityName:String) = {
+
+    inpStack = input :: inpStack;
+    input = this.dtd.replacementText( entityName );
+    nextch;
+  }
+
+  def pop() = {
+    input = inpStack.head;
+    inpStack = inpStack.tail;
+    nextch;
+  }
 
 }

@@ -1,5 +1,6 @@
 package scala.xml.dtd;
 
+import scala.io.Source;
 import scala.collection.mutable.{ HashMap, Map }
 
 /** a document type declaration */
@@ -17,6 +18,8 @@ abstract class DTD {
   var attr: Map[String, AttListDecl] =
     new HashMap[String, AttListDecl]();
 
+  var ent: Map[String, EntityDecl] =
+    new HashMap[String, EntityDecl]();
 
   var decls: List[Decl] = Nil;
 
@@ -34,15 +37,24 @@ abstract class DTD {
     sb.append("]").toString()
   }
 
-  /** creates fresh type symbols from declarations */
-  def createTypeSymbols(): Unit = {
-    elem.clear;
-    /*
-    for(val d <- decl)
-      d.match {
-        case ElemDecl(name, contentModel) =>
-          elementType.update(name, new ElementType(name, contentModel)
-      }
-      */
+  def initializeEntities() = {
+    for(val x <- decls) x match {
+      case y @ ParsedEntityDecl(name, _) => ent.update(name, y);
+      case y @ UnparsedEntityDecl(name, _, _) => ent.update(name, y);
+      case y @ ParameterEntityDecl(name, _) => ent.update(name, y);
+      case _ =>
+    }
   }
+
+  def replacementText( entityName: String ): Source = {
+    ent.get(entityName).match {
+      case Some(ParsedEntityDecl(_, IntDef(value))) =>
+        Source.fromString(value);
+      case Some(_) =>
+        Source.fromString("<!-- "+entityName+"; -->");
+      case None =>
+        Source.fromString("<!-- unknown entity "+entityName+"; -->")
+    }
+  }
+
 }
