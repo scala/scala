@@ -18,9 +18,22 @@ public public class TypeDouble extends ValueType {
     private final scala.Double ZERO = RunTime.box_dvalue(0.0);
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
-        if (! (o == null || o instanceof scala.Double))
-            throw new ClassCastException(); // TODO error message
-        return o;
+        if (o == null || o instanceof scala.Double)
+            return o;
+        else if (o instanceof scala.Float)
+            return RunTime.box_dvalue(((scala.Float)o).value);
+        else if (o instanceof scala.Long)
+            return RunTime.box_dvalue(((scala.Long)o).value);
+        else if (o instanceof scala.Int)
+            return RunTime.box_dvalue(((scala.Int)o).value);
+        else if (o instanceof scala.Short)
+            return RunTime.box_dvalue(((scala.Short)o).value);
+        else if (o instanceof scala.Char)
+            return RunTime.box_dvalue(((scala.Char)o).value);
+        else if (o instanceof scala.Byte)
+            return RunTime.box_dvalue(((scala.Byte)o).value);
+        else
+            throw new ClassCastException();
     }
     public Object defaultValue() { return ZERO; }
     public boolean isSameAsJavaType(Class that) {

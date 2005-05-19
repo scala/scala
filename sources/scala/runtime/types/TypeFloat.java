@@ -18,9 +18,22 @@ public class TypeFloat extends ValueType {
     private final scala.Float ZERO = RunTime.box_fvalue(0.0f);
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
-        if (! (o == null || o instanceof scala.Float))
-            throw new ClassCastException(); // TODO error message
-        return o;
+        if (o == null || o instanceof scala.Float)
+            return o;
+        else if (o instanceof scala.Double)
+            return RunTime.box_fvalue((float)((scala.Double)o).value);
+        else if (o instanceof scala.Long)
+            return RunTime.box_fvalue(((scala.Long)o).value);
+        else if (o instanceof scala.Int)
+            return RunTime.box_fvalue(((scala.Int)o).value);
+        else if (o instanceof scala.Short)
+            return RunTime.box_fvalue(((scala.Short)o).value);
+        else if (o instanceof scala.Char)
+            return RunTime.box_fvalue(((scala.Char)o).value);
+        else if (o instanceof scala.Byte)
+            return RunTime.box_fvalue(((scala.Byte)o).value);
+        else
+            throw new ClassCastException();
     }
     public Object defaultValue() { return ZERO; }
     public boolean isSameAsJavaType(Class that) {

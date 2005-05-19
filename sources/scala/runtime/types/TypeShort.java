@@ -18,9 +18,22 @@ public class TypeShort extends ValueType {
     private final scala.Short ZERO = RunTime.box_svalue((short)0);
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
-        if (! (o == null || o instanceof scala.Short))
-            throw new ClassCastException(); // TODO error message
-        return o;
+        if (o == null || o instanceof scala.Short)
+            return o;
+        else if (o instanceof scala.Double)
+            return RunTime.box_svalue((short)((scala.Double)o).value);
+        else if (o instanceof scala.Float)
+            return RunTime.box_svalue((short)((scala.Float)o).value);
+        else if (o instanceof scala.Long)
+            return RunTime.box_svalue((short)((scala.Long)o).value);
+        else if (o instanceof scala.Int)
+            return RunTime.box_svalue((short)((scala.Int)o).value);
+        else if (o instanceof scala.Char)
+            return RunTime.box_svalue((short)((scala.Char)o).value);
+        else if (o instanceof scala.Byte)
+            return RunTime.box_svalue(((scala.Byte)o).value);
+        else
+            throw new ClassCastException();
     }
     public Object defaultValue() { return ZERO; }
     public boolean isSameAsJavaType(Class that) {

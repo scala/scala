@@ -18,9 +18,22 @@ public class TypeLong extends ValueType {
     private final scala.Long ZERO = RunTime.box_lvalue(0l);
     public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
-        if (! (o == null || o instanceof scala.Long))
-            throw new ClassCastException(); // TODO error message
-        return o;
+        if (o == null || o instanceof scala.Long)
+            return o;
+        else if (o instanceof scala.Double)
+            return RunTime.box_lvalue((long)((scala.Double)o).value);
+        else if (o instanceof scala.Float)
+            return RunTime.box_lvalue((long)((scala.Float)o).value);
+        else if (o instanceof scala.Int)
+            return RunTime.box_lvalue(((scala.Int)o).value);
+        else if (o instanceof scala.Short)
+            return RunTime.box_lvalue(((scala.Short)o).value);
+        else if (o instanceof scala.Char)
+            return RunTime.box_lvalue(((scala.Char)o).value);
+        else if (o instanceof scala.Byte)
+            return RunTime.box_lvalue(((scala.Byte)o).value);
+        else
+            throw new ClassCastException();
     }
     public Object defaultValue() { return ZERO; }
     public boolean isSameAsJavaType(Class that) {
