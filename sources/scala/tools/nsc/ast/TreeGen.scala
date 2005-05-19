@@ -62,12 +62,12 @@ abstract class TreeGen {
   def TypeTree(tp: Type) = global.TypeTree() setType tp;
 
   def This(sym: Symbol) =
-    typer.transformQualExpr(global.This(sym.name) setSymbol sym);
+    global.This(sym.name) setSymbol sym setType sym.thisType;
 
   def Ident(sym: Symbol) = {
     assert(sym.isTerm);
     sym.setFlag(ACCESSED);
-    typer.transformExpr(global.Ident(sym.name) setSymbol sym);
+    global.Ident(sym.name) setSymbol sym setType sym.tpe;
   }
 
   def Select(qual: Tree, sym: Symbol) = {
@@ -75,6 +75,14 @@ abstract class TreeGen {
     sym.setFlag(ACCESSED);
     global.Select(qual, sym.name) setSymbol sym setType qual.tpe.memberType(sym);
   }
+
+  def Apply(fun: Tree, args: List[Tree]) = fun.tpe match {
+    case MethodType(formals, restpe) =>
+      global.Apply(fun, args) setType restpe
+  }
+
+  def Assign(lhs: Tree, rhs: Tree) =
+    global.Assign(lhs, rhs) setType UnitClass.tpe;
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef = atPos(sym.pos) {
     global.ValDef(flags2mods(sym.flags), sym.name, TypeTree(sym.tpe), rhs)

@@ -34,7 +34,7 @@ object Parser extends Scanner { // a bit too permissive concerning #PCDATA
 
   def contentspec: ContentModel = token match {
 
-    case NAME    => value.match {
+    case NAME    => value match {
       case "ANY"   => ANY
       case "EMPTY" => EMPTY
       case _       => error("expected ANY, EMPTY or '(' instead of " + value );

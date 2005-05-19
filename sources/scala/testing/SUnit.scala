@@ -40,7 +40,7 @@ object SUnit {
   }
 
   /** a TestCase defines the fixture to run multiple tests */
-  class TestCase(val name: String) with Test with Assert {
+  class TestCase(val name: String) extends Test with Assert {
     protected def createResult() =
       new TestResult();
 
@@ -101,7 +101,7 @@ object SUnit {
   }
 
   /** a TestSuite runs a composite of test cases */
-  class TestSuite(tests:Test*) with Test {
+  class TestSuite(tests:Test*) extends Test {
 
     def this(names:Seq[String], constr:String=>Test) =
       this((names.toList map constr):_*);
@@ -130,55 +130,55 @@ object SUnit {
   /** this trait defined useful assert methods */
   trait Assert {
     /** equality */
-    def assertEquals[A](msg:String, expected:A, def actual:A): Unit =
+    def assertEquals[A](msg:String, expected:A, actual: => A): Unit =
       if( expected != actual ) fail(msg);
 
     /** equality */
-    def assertEquals[A](expected:A, def actual:A): Unit  =
+    def assertEquals[A](expected:A, actual: => A): Unit  =
       assertEquals("(no message)", expected, actual);
 
     /** falseness */
-    def assertFalse(msg:String, def actual: Boolean): Unit =
+    def assertFalse(msg:String, actual: => Boolean): Unit =
       assertEquals(msg, false, actual);
     /** falseness */
-    def assertFalse(def actual: Boolean): Unit =
+    def assertFalse(actual: => Boolean): Unit =
       assertFalse("(no message)", actual);
 
     /** not null */
-    def assertNotNull(msg:String, def actual: AnyRef): Unit =
+    def assertNotNull(msg:String, actual: => AnyRef): Unit =
       if( null == actual ) fail(msg);
 
     /** not null */
-    def assertNotNull(def actual: AnyRef): Unit  =
+    def assertNotNull(actual: => AnyRef): Unit  =
       assertNotNull("(no message)", actual);
 
     /** reference inequality */
-    def assertNotSame(msg:String, def expected: AnyRef, def actual: AnyRef): Unit =
+    def assertNotSame(msg:String, expected: => AnyRef, actual: => AnyRef): Unit =
       if(expected.eq(actual)) fail(msg);
     /** reference inequality */
-    def assertNotSame(def expected: AnyRef, def actual: AnyRef): Unit  =
+    def assertNotSame(expected: => AnyRef, actual: => AnyRef): Unit  =
       assertNotSame("(no message)", expected, actual);
 
     /** null */
-    def assertNull(msg:String, def actual: AnyRef): Unit =
+    def assertNull(msg:String, actual: => AnyRef): Unit =
         if( null != actual ) fail(msg);
     /** null */
-    def assertNull(def actual: AnyRef): Unit =
+    def assertNull(actual: => AnyRef): Unit =
       assertNull("(no message)", actual);
 
 
     /** reference equality */
-    def assertSame(msg:String, def expected: AnyRef, def actual: AnyRef): Unit =
+    def assertSame(msg:String, expected: => AnyRef, actual: => AnyRef): Unit =
         if(!expected.eq(actual)) fail(msg);
     /** reference equality */
-    def assertSame(def expected: AnyRef, def actual: AnyRef): Unit  =
+    def assertSame(expected: => AnyRef, actual: => AnyRef): Unit  =
       assertNull("(no message)", actual);
 
     /** trueness */
-    def assertTrue(msg:String, def actual: Boolean): Unit =
+    def assertTrue(msg:String, actual: => Boolean): Unit =
       assertEquals(msg, true, actual);
     /** trueness */
-    def assertTrue(def actual: Boolean): Unit  =
+    def assertTrue(actual: => Boolean): Unit  =
       assertTrue("(no message)", actual);
 
     /** throws AssertFailed with given message */

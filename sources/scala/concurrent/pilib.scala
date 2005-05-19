@@ -26,14 +26,14 @@ object pilib {
   * spawn &lt; p_1 | ... | p_n &gt;
   */
   trait Spawn {
-    def <(def p: unit): Spawn;
-    def |(def p: unit): Spawn;
+    def <(p: => unit): Spawn;
+    def |(p: => unit): Spawn;
     def > : unit;
   }
   val spawn = new Spawn {
   //object spawn extends Spawn { // BUG !
-    def <(def p: unit): Spawn = { scala.concurrent.ops.spawn(p); this }
-    def |(def p: unit): Spawn = { scala.concurrent.ops.spawn(p); this }
+    def <(p: => unit): Spawn = { scala.concurrent.ops.spawn(p); this }
+    def |(p: => unit): Spawn = { scala.concurrent.ops.spawn(p); this }
     def > : unit = ()
   }
 
@@ -101,7 +101,7 @@ object pilib {
   }
 
   class Product[a](c: Chan[a], v: a) {
-    def *[b](def f: b) = c.output(v, () => f);
+    def *[b](f: => b) = c.output(v, () => f);
   }
 
   //////////////////// SUM OF GUARDED PROCESSES //////////////////////

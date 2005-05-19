@@ -65,13 +65,12 @@ abstract class MetaParser{
       else if (token == "-") { nextToken(); Flags.CONTRAVARIANT }
       else 0;
     assert(token.startsWith("?"));
-    val sym = owner.newTypeParameter(Position.NOPOS, newTypeName(token))
-      .setFlag(vflag)
-      .setInfo(TypeBounds(
-	definitions.AllClass.tpe,
-	definitions.AnyClass.tpe));
-    locals enter sym;
+    val sym = owner.newTypeParameter(Position.NOPOS, newTypeName(token)).setFlag(vflag);
     nextToken();
+    val lo = if (token == ">") { nextToken(); parseType() } else definitions.AllClass.tpe;
+    val hi = if (token == "<") { nextToken(); parseType() } else definitions.AnyClass.tpe;
+    sym.setInfo(TypeBounds(lo, hi));
+    locals enter sym;
     sym
   }
 

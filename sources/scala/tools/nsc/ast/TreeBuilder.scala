@@ -19,8 +19,9 @@ abstract class TreeBuilder {
   def freshName(): Name = freshName("x$");
 
   private object patvarTransformer extends Transformer {
+    private var boundVars: List[Name] = List(nme.WILDCARD);
     override def transform(tree: Tree): Tree = tree match {
-      case Ident(name) if (treeInfo.isVariableName(name) && name != nme.WILDCARD) =>
+      case Ident(name) if (treeInfo.isVariableName(name) && !(boundVars exists (name.==))) =>
 	atPos(tree.pos)(Bind(name, Ident(nme.WILDCARD)))
       case Typed(id @ Ident(name), tpt) =>
 	Bind(name, atPos(tree.pos)(Typed(Ident(nme.WILDCARD), tpt))) setPos id.pos
@@ -30,7 +31,12 @@ abstract class TreeBuilder {
 	copy.Apply(tree, fn, transformTrees(args))
       case Typed(expr, tpt) =>
 	copy.Typed(tree, transform(expr), tpt)
-      case Sequence(_) | Alternative(_) | Bind(_, _) =>
+      case Bind(name, body) =>
+	boundVars = name :: boundVars;
+	val body1 = transform(body);
+	boundVars = boundVars.tail;
+	copy.Bind(tree, name, body1)
+      case Sequence(_) | Alternative(_) =>
 	super.transform(tree)
       case _ =>
 	tree

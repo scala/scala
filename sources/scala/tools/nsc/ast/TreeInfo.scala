@@ -71,6 +71,8 @@ abstract class TreeInfo {
       isPureExpr(fn)
     case Typed(expr, _) =>
       isPureExpr(expr)
+    case Block(stats, expr) =>
+      (stats forall isPureDef) && isPureExpr(expr)
     case _ =>
       false
   }

@@ -11,10 +11,11 @@ object ConstructingParser {
 /** an xml parser. parses XML and invokes callback methods of a MarkupHandler
  */
 class ConstructingParser(inp: scala.io.Source, presWS:Boolean)
-extends  MarkupHandler
-with     MarkupParser(inp)
-with     ConstructingHandler(presWS) {
+extends  ConstructingHandler
+with     MarkupParser  {
 
+  val preserveWS = presWS;
+  val input = inp;
   val handle = this;
 
 }

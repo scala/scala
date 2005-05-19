@@ -56,6 +56,8 @@ abstract class EtaExpansion: Analyzer {
 
     /** Eta-expand lifted tree */
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
+      case mt: ImplicitMethodType =>
+        tree
       case MethodType(formals, restpe) =>
         val params = formals map (formal =>
           ValDef(SYNTHETIC | PARAM, freshName(), TypeTree().setType(formal), EmptyTree));

@@ -1,7 +1,7 @@
 package scala.runtime.matching ;
 
 /* hedge grammar rules */
-abstract class Rule with Ordered[Rule] {
+abstract class Rule extends Ordered[Rule] {
 
   def compareTo [b >: Rule <% Ordered[b]](that: b): int = that match {
     case r:Rule =>

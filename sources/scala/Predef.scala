@@ -142,7 +142,7 @@ object Predef {
 
   // views -------------------------------------------------------------
 
-  implicit def view(x: int): Ordered[int] = new Ordered[int] with Proxy {
+  implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
     def self: Any = x;
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
@@ -152,8 +152,9 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+  def view(x: int): Ordered[int] = int2ordered(x);
 
-  implicit def view(x: char): Ordered[char] = new Ordered[char] with Proxy {
+  implicit def char2ordered(x: char): Ordered[char] = new Ordered[char] with Proxy {
     def self: Any = x;
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
@@ -163,8 +164,9 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+  def view(x: char): Ordered[char] = char2ordered(x);
 
-  implicit def view(x: long): Ordered[long] = new Ordered[long] with Proxy {
+  implicit def long2ordered(x: long): Ordered[long] = new Ordered[long] with Proxy {
     def self: Any = x;
     def compareTo [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
@@ -174,8 +176,9 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+  def view(x: long): Ordered[long] = long2ordered(x);
 
-  implicit def view(x: float): Ordered[float] = new Ordered[float] with Proxy {
+  implicit def float2ordered(x: float): Ordered[float] = new Ordered[float] with Proxy {
     def self: Any = x;
     def compareTo [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
@@ -185,8 +188,9 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+  def view(x: float): Ordered[float] = float2ordered(x);
 
-  implicit def view(x: double): Ordered[double] = new Ordered[double] with Proxy {
+  implicit def double2ordered(x: double): Ordered[double] = new Ordered[double] with Proxy {
     def self: Any = x;
     def compareTo [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
@@ -196,8 +200,9 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+  def view(x: double): Ordered[double] = double2ordered(x);
 
-  implicit def view(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy {
+  implicit def boolean2ordered(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy {
     def self: Any = x;
     def compareTo [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
@@ -207,8 +212,9 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
+  def view(x: boolean): Ordered[boolean] = boolean2ordered(x);
 
-  implicit def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Ordered[Array[A]] with Proxy {
+  implicit def array2ordered[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = new Ordered[Array[A]] with Proxy {
     def self: Any = xs;
     def compareTo[B >: Array[A] <% Ordered[B]](that: B): Int = that match {
       case ys: Array[A] =>
@@ -225,6 +231,7 @@ object Predef {
         -(that compareTo xs)
     }
   }
+  def view[A <% Ordered[A]](xs: Array[A]): Ordered[Array[A]] = array2ordered(xs);
 
   private def first(xs: Int*): Int = xs.elements.find(x => x != 0) match {
     case Some(r) => r
@@ -280,15 +287,18 @@ object Predef {
         }
   */
 
-  implicit def view(x: String): Ordered[String] = new Ordered[String] with Proxy {
+  implicit def string2ordered(x: String): Ordered[String] = new Ordered[String] with Proxy {
     def self: Any = x;
     def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
       case y1: String => x compareTo y1;
       case _ => -(y compareTo x)
     }
   }
+  def view(x: String): Ordered[String] = string2ordered(x);
 
-  implicit def view[A](xs: Array[A]): Seq[A] = new Seq[A] {
+  implicit def ordered2ordered[a <: Ordered[a]](x: a): Ordered[a] = x;
+
+  implicit def array2seq[A](xs: Array[A]): Seq[A] = new Seq[A] {
     def length = xs.length;
     def elements = Iterator.fromArray(xs);
     def apply(n: Int) = xs(n);
@@ -296,8 +306,9 @@ object Predef {
     override def equals(y: Any): Boolean = (xs == y);
     override protected def stringPrefix: String = "Array";
   }
+  def view[A](xs: Array[A]): Seq[A] = array2seq(xs);
 
-  implicit def view(str: String): Seq[Char] = new Seq[Char] {
+  implicit def string2seq(str: String): Seq[Char] = new Seq[Char] {
     def length = str.length();
     def elements = Iterator.fromString(str);
     def apply(n: Int) = str.charAt(n);
@@ -305,6 +316,7 @@ object Predef {
     override def equals(y: Any): Boolean = (str == y);
     override protected def stringPrefix: String = "String";
   }
+  def view(x: String): Seq[Char] = string2seq(x);
 
   implicit def byte2short(x: byte): short = x.coerce;
   implicit def byte2int(x: byte): int = x.coerce;

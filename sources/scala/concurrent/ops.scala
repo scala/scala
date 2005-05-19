@@ -12,18 +12,18 @@ package scala.concurrent;
 
 object ops {
 
-  def spawn(def p: Unit) = {
+  def spawn(p: => Unit) = {
     val t = new Thread() { override def run() = p; }
     t.start()
   }
 
-  def future[a](def p: a): () => a = {
+  def future[a](p: => a): () => a = {
     val result = new SyncVar[a];
     spawn { result set p }
     () => result.get
   }
 
-  def par[a, b](def xp: a, def yp: b): Pair[a, b] = {
+  def par[a, b](xp: => a, yp: => b): Pair[a, b] = {
     val y = new SyncVar[b];
     spawn { y set yp }
     Pair(xp, y.get)

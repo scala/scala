@@ -27,9 +27,9 @@ abstract class ConstantFolder {
   });
 
   def fold(tree: Tree, value: Any): Tree =
-    if (value != NoValue)
+    if (value != NoValue && value != ()) {
       copy.Literal(tree, value) setType ConstantType(literalType(value), value)
-    else tree;
+    } else tree;
 
   private def foldUnop(op: Name, value: Any): Any = Pair(op, value) match {
     case Pair(nme.ZNOT, x: boolean) => !x

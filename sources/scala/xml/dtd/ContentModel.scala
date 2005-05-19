@@ -56,7 +56,7 @@ object ContentModel extends scala.util.regexp.WordExp {
     }
   }
 
-  def toString(c: ContentModel, sb: StringBuffer): StringBuffer = c.match {
+  def toString(c: ContentModel, sb: StringBuffer): StringBuffer = c match {
 
       case ANY    =>
         sb.append("ANY");

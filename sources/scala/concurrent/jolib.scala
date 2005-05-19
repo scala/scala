@@ -21,7 +21,7 @@ object jolib {
 
   /////////////////// JOIN DEFINITION /////////////////////////
 
-  class Join with Monitor {
+  class Join {
 
     private var ruls: List[Pair[Pattern, Rule]] = null;
 

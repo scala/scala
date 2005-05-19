@@ -15,7 +15,7 @@ class SyncChannel[a] {
   private var reading = false;
   private var writing = false;
 
-  def await(def cond: Boolean) = while (!cond) { wait() }
+  def await(cond: => Boolean) = while (!cond) { wait() }
 
   def write(x: a) = synchronized {
     await(!writing);

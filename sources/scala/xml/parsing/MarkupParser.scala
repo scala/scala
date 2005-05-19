@@ -16,7 +16,9 @@ import scala.xml.dtd._ ;
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
-abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
+abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef with TokenTests {
+
+  val input: Source;
 
   //
   // variables, values
@@ -88,7 +90,7 @@ abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
       }
 
       if(!m.isPrefixed && m.key == "standalone") {
-        m.value.match {
+        m.value match {
           case "yes" =>
             info_stdl = Some(true);
           case "no" =>
@@ -136,7 +138,7 @@ abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
     val children = content(TopScope); // DTD handled as side effect
     var elemCount = 0;
     var theNode: Node = _;
-    for(val c <- children) c.match {
+    for(val c <- children) c match {
       case _:ProcInstr => ;
       case _:Comment => ;
       case _:EntityRef => // todo: fix entities, shouldn't be "special"
@@ -452,7 +454,7 @@ abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
    *                 PUBLIC S pubid S syslit
    */
 
-  def externalID(): ExternalID = ch.match {
+  def externalID(): ExternalID = ch match {
     case 'S' =>
       nextch;
       xToken("YSTEM");
@@ -690,7 +692,7 @@ abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
           xProcInstr; // simply ignore processing instructions!
         else {
           xToken('!');
-          ch.match {
+          ch match {
             case '-' =>
               xComment ; // ignore comments
 
@@ -766,7 +768,7 @@ abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
 
         case '#' =>
           nextch;
-          xName.match {
+          xName match {
             case "FIXED" =>
               xSpace;
               val defValue = xAttributeValue(); // default value
@@ -842,7 +844,7 @@ abstract class MarkupParser(_input: Source): MarkupHandler with TokenTests {
 
   /** 'N' notationDecl ::= "OTATION"
    */
-  def notationDecl() = {
+  def notationDecl(): Unit = {
     xToken("OTATION");
     xSpace;
     val notat = xName;

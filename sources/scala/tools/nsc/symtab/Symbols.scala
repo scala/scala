@@ -188,7 +188,7 @@ abstract class Symbols: SymbolTable {
     final def info: Type = {
       var cnt = 0;
       while ((rawflags & INITIALIZED) == 0) {
-        if (settings.debug.value) System.out.println("completing " + this + " in " + this.owner);//debug
+        //if (settings.debug.value) System.out.println("completing " + this + " in " + this.owner);//DEBUG
         assert(infos != null, this.name);
 	val tp = infos.info;
         if ((rawflags & LOCKED) != 0) {
@@ -199,8 +199,8 @@ abstract class Symbols: SymbolTable {
 	val current = phase;
 	phase = infos.start;
         tp.complete(this);
-	if ((rawflags & INITIALIZED) != 0 && settings.debug.value)
-          System.out.println("completed " + this/* + ":" + info*/);//debug
+	// if (settings.debug.value && (rawflags & INITIALIZED) != 0) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
+
         rawflags = rawflags & ~LOCKED;
 	phase = current;
 	cnt = cnt + 1;

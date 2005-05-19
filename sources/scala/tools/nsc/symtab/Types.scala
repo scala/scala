@@ -462,6 +462,7 @@ abstract class Types: SymbolTable {
     override def prefixString: String =
       if (sym.isEmptyPackage && !settings.debug.value) ""
       else pre.prefixString + sym.nameString + ".";
+    assert(prefixString != "Nil.");//debug
   }
 
   /** A class for the bounds of abstract types and type parameters
@@ -575,6 +576,7 @@ abstract class Types: SymbolTable {
 
   /** A class representing a constant type */
   case class ConstantType(base: Type, value: Any) extends SingletonType {
+    assert(base.symbol != UnitClass);
     override def symbol: Symbol = base.symbol;
     override def singleDeref: Type = base;
     override def deconst: Type = base;
@@ -800,6 +802,13 @@ abstract class Types: SymbolTable {
   /** the canonical creator for a refined type with an initially empty scope */
   def refinedType(parents: List[Type], owner: Symbol): RefinedType =
     refinedType(parents, owner, new Scope);
+
+  /** A creator for intersection type where intersections of a single type are
+   *  replaced by the type itself. */
+  def intersectionType(tps: List[Type], owner: Symbol): Type = tps match {
+    case List(tp) => tp
+    case _ => refinedType(tps, owner)
+  }
 
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself. */
@@ -1438,7 +1447,7 @@ abstract class Types: SymbolTable {
         val lubBaseTypes: Array[Type] = lubArray(closures);
         val lubParents = spanningTypes(List.fromArray(lubBaseTypes));
 	val lubOwner = commonOwner(ts);
-	val lubBase = refinedType(lubParents, lubOwner);
+	val lubBase = intersectionType(lubParents, lubOwner);
         val lubType = refinedType(lubParents, lubOwner);
         val lubThisType = lubType.symbol.thisType;
         val narrowts = ts map (.narrow);
@@ -1505,7 +1514,7 @@ abstract class Types: SymbolTable {
       case ts =>
 	try {
 	  val glbOwner = commonOwner(ts);
-          val glbBase = refinedType(ts, glbOwner);
+          val glbBase = intersectionType(ts, glbOwner);
           val glbType = refinedType(ts, glbOwner);
           val glbThisType = glbType.symbol.thisType;
           def glbsym(proto: Symbol): Symbol = {
