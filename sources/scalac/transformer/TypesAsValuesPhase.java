@@ -1324,12 +1324,13 @@ public class TypesAsValuesPhase extends Phase {
             case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
                 Symbol funSym = fun.symbol();
                 if (funSym == defs.ANY_IS || funSym == defs.ANY_AS) {
+                    assert vargs.length == 0;
                     Symbol erasedSym = (funSym == defs.ANY_AS)
                         ? defs.ANY_AS_ERASED
                         : defs.ANY_IS_ERASED;
                     return gen.mkApplyTV(tree.pos,
                                          gen.Select(fun.pos,
-                                                    qualifierOf(fun),
+                                                    transform(qualifierOf(fun)),
                                                     erasedSym),
                                          targs,
                                          vargs);
