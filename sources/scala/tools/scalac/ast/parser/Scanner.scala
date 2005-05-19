@@ -563,6 +563,11 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           nextch();
           getIdentOrOperatorRest;
           return;
+	case SU =>
+          // true == java.lang.Character.isUnicodeIdentifierPart(SU)
+          treatIdent;
+	  return;
+
         case _ if(java.lang.Character.isUnicodeIdentifierPart(ch)) =>
           putChar( ch );
           nextch();
