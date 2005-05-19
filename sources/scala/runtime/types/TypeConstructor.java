@@ -1,6 +1,6 @@
 /*                     __                                               * \
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -27,7 +27,9 @@ public final class TypeConstructor implements java.io.Serializable {
     public final static TypeConstructor[] EMPTY_ARRAY =
         new TypeConstructor[0];
 
-    public final static Object FUNCTION_OUTER = new Object();
+    private static class Outer implements java.io.Serializable {}
+
+    public final static Object FUNCTION_OUTER = new Outer();
 
     /** Java class corresponding to this constructor. */
     public Class clazz;
