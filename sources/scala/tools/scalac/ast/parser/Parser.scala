@@ -167,7 +167,7 @@ class Parser(unit: CompilationUnit) {
 
   /** Join the comment associated with a definition
   */
-  def joinComment(def trees: Array[Tree]): Array[Tree] = {
+  def joinComment(trees: => Array[Tree]): Array[Tree] = {
     // push comment
     commentStack.push(if (s.docBuffer == null) null else s.docBuffer.toString());
     s.docBuffer = null;

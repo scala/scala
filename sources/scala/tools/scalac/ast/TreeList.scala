@@ -14,7 +14,7 @@ package scala.tools.scalac.ast {
 /** List of trees.
  */
 
-final class TreeList(ts: Array[Tree]) with Iterable[Tree] {
+final class TreeList(ts: Array[Tree]) extends Iterable[Tree] {
 
   private var trees = ts;
   private var len = ts.length;

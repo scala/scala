@@ -61,7 +61,7 @@ case class CONSTANT(constant: AConstant) extends ICInstruction{
   * Stack: ...:array[a](Ref):index(Int)
   *    ->: ...:element(a)
   */
-case class LOAD_ARRAY_ITEM extends ICInstruction {
+case class LOAD_ARRAY_ITEM() extends ICInstruction {
   /** Returns a string representation of this instruction */
   override def toString(): String = "LOAD_ARRAY_ITEM";
 
@@ -97,7 +97,7 @@ case class LOAD_FIELD(field: Symbol, isStatic: boolean) extends ICInstruction {
   * Stack: ...:array[a](Ref):index(Int):value(a)
   *    ->: ...
   */
-case class STORE_ARRAY_ITEM extends ICInstruction {
+case class STORE_ARRAY_ITEM() extends ICInstruction {
   /** Returns a string representation of this instruction */
   override def toString(): String = "STORE_ARRAY_ITEM";
 
@@ -285,7 +285,7 @@ case class CZJUMP(successBlock: IBasicBlock, failureBlock: IBasicBlock, cond: AT
   * Stack: ...
   *    ->: ...
   */
-case class RETURN extends ICInstruction {
+case class RETURN() extends ICInstruction {
   /** Returns a string representation of this instruction */
   override def toString(): String ="RETURN";
 
@@ -297,7 +297,7 @@ case class RETURN extends ICInstruction {
   * Stack: ...:Throwable(Ref)
   *    ->: ...:
   */
-case class THROW extends ICInstruction {
+case class THROW() extends ICInstruction {
 /** Returns a string representation of this instruction */
   override def toString(): String ="THROW";
 
@@ -333,7 +333,7 @@ case class DROP (typ: Type) extends ICInstruction {
   * Stack: ...:object(ref)
   *    ->: ...:
   */
-  case class MONITOR_ENTER extends ICInstruction {
+  case class MONITOR_ENTER() extends ICInstruction {
 
     /** Returns a string representation of this instruction */
     override def toString(): String ="MONITOR_ENTER";
@@ -346,7 +346,7 @@ case class DROP (typ: Type) extends ICInstruction {
   * Stack: ...:object(ref)
   *    ->: ...:
   */
-  case class MONITOR_EXIT extends ICInstruction {
+  case class MONITOR_EXIT() extends ICInstruction {
 
     /** Returns a string representation of this instruction */
     override def toString(): String ="MONITOR_EXIT";

@@ -29,7 +29,7 @@ import java.util.ArrayList;
  * @version 1.0
  */
 class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
-  with TreePrinter
+  extends TreePrinter
 {
   //##########################################################################
   // Public Fields

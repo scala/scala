@@ -25,7 +25,7 @@ package scala.tools.scalac.transformer.matching {
 
   /**  @param owner owner of the pattern matching expression
    */
-  class Autom2Scala(val dfa: DetWordAutom, val elementType: Type, val owner: Symbol, val cf: CodeFactory)  with PatternTool(cf.unit) {
+  class Autom2Scala(val dfa: DetWordAutom, val elementType: Type, val owner: Symbol, val cf: CodeFactory) extends PatternTool(cf.unit) {
 
     protected var optimize = true;
 
@@ -54,7 +54,7 @@ package scala.tools.scalac.transformer.matching {
     var pos: Int = Position.FIRSTPOS;
 
     def funRetType(): Type = {
-      funSym.getType().match {
+      funSym.getType() match {
         case Type.MethodType( _, retType )=>
           retType;
         case _ => throw new RuntimeException();
@@ -82,7 +82,7 @@ package scala.tools.scalac.transformer.matching {
     def currentElem() = { gen.Ident( cf.pos, curSym ).setType( curSym.getType() ); }
 
     def currentMatches(label: Label): Tree = {
-      label.match {
+      label match {
         case TreeLabel( pat ) =>
           _cur_match( pat );
         case SimpleLabel(lit: Tree.Literal) =>
