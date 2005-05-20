@@ -69,5 +69,6 @@ object List extends scala.AnyRef with scala.ScalaObject {
     final def forall2[a, b](scala.List[a], scala.List[b])((a, b) => scala.Boolean): scala.Boolean;
     final def exists2[a, b](scala.List[a], scala.List[b])((a, b) => scala.Boolean): scala.Boolean;
     final def transpose[a](scala.List[scala.List[a]]): scala.List[scala.List[a]];
+    final def list2ordered[a <% scala.Ordered[a]](a => scala.Ordered[a])(scala.List[a]): scala.Ordered[scala.List[a]];
     final def view[a <% scala.Ordered[a]](a => scala.Ordered[a])(scala.List[a]): scala.Ordered[scala.List[a]]
 }
