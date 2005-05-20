@@ -1,23 +1,21 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
-** $Id$
 \*                                                                      */
 
+// $Id$
 
-
+import scalac.ApplicationError;
 import scalac.CompilationUnit;
 //import scalac.ast.TreeGen;
 //import scalac.util.*;
 //import scalac.symtab.*;
-   import scalac.util.Name ;
-   import scalac.ast.Tree ;
-   import scalac.symtab.Symbol ;
+import scalac.ast.Tree;
+import scalac.symtab.Symbol;
+import scalac.util.Name;
 
-
-import scalac.ApplicationError ;
 package scala.tools.scalac.transformer.matching {
 /** this class takes care of tedious stuff which has nothing to do with
  *  matching
@@ -28,8 +26,8 @@ package scala.tools.scalac.transformer.matching {
      var generatedVars = false;
 
      def handleVariableSymbol(sym: Symbol): Unit  =
-       if( sym.name.toString().indexOf("$") == -1 ) {
-         generatedVars = true; // .add( sym );
+       if (sym.name.toString().indexOf("$") == -1) {
+         generatedVars = true; // .add(sym);
        }
 
      def isVariableName(name: Name): Boolean =
@@ -48,17 +46,17 @@ package scala.tools.scalac.transformer.matching {
 
        import Tree._ ;
 
-       tree.match {
-         case x @ Ident(name)=>
+       tree match {
+         case x @ Ident(name) =>
            if(x.symbol() != unit.global.definitions.PATTERN_WILDCARD)
              throw new ApplicationError("shouldn't happen?!");
 
          case Bind(name, subtree) =>
            var sym: Symbol = _;
 
-         if( isVariableName( name )
+         if (isVariableName(name)
             && isVariableSymbol( {sym = tree.symbol(); tree.symbol()} ))
-           handleVariableSymbol( sym );
+           handleVariableSymbol(sym);
 
          traverse( subtree );
 
@@ -74,10 +72,11 @@ package scala.tools.scalac.transformer.matching {
          case _ : Alternative | _ : Select | _ : Literal =>  ; // no variables
 
          case _ =>
-           throw new ApplicationError("unknown pattern node:"+tree+" = "+tree.getClass());
+           throw new ApplicationError(
+             "unknown pattern node:" + tree + " = " + tree.getClass());
        }
      }
-     traverse( pat );
+     traverse(pat);
      generatedVars;
    }
 

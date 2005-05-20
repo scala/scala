@@ -1,20 +1,22 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 import java.io._;
-import java.util.ArrayList;
 import java.lang.Object;
+import java.util.ArrayList;
 
 import scalac._;
-import scalac.util._;
-import scalac.symtab._;
-import scalac.ast._;
-import scalac.typechecker.Infer;
 import scalac.{Global => scalac_Global, CompilationUnit => scalac_CompilationUnit}
+import scalac.ast._;
+import scalac.symtab._;
+import scalac.typechecker.Infer;
+import scalac.util._;
 
 import scala.tools.scalac.util.NewArray;
 
@@ -385,18 +387,19 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
       // e.match (case p => Tuple_N(x_1, ..., x_N))
       val cases = NewArray.CaseDef(make.CaseDef(pos, pat, Tree.Empty, tuple));
-      val match: Tree = make.Apply(
+      val matchTree: Tree = make.Apply(
 	pos,
 	make.Select(pos, rhs, Names._match),
 	NewArray.Tree(make.Visitor(pos, cases)));
 
       if (vars.length == 0) {
 	// e.match (case p => ())
-	print(pat, "patdef", match);
-	NewArray.Tree(match);
-      } else if (vars.length == 1) {
+	print(pat, "patdef", matchTree);
+	NewArray.Tree(matchTree);
+      }
+      else if (vars.length == 1) {
 	// val x_1 = e.match (case p => x_1)
-	val valdef: Tree = make.ValDef(pos, mods, vars(0), Tree.Empty, match);
+	val valdef: Tree = make.ValDef(pos, mods, vars(0), Tree.Empty, matchTree);
 	print(pat, "patdef", valdef);
 	NewArray.Tree(valdef)
       } else {
@@ -405,7 +408,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
 	// private synthetic val t$ = e.match (case p => (x_1, ..., x_N))
 	val res = new Array[Tree](vars.length + 1);
-	res(0) = make.ValDef(pos, PRIVATE | SYNTHETIC, vble, Tree.Empty, match);
+	res(0) = make.ValDef(pos, PRIVATE | SYNTHETIC, vble, Tree.Empty, matchTree);
 	for (val i <- Iterator.range(0, vars.length)) {
 	  // val x_i = t$._i
 	  res(i + 1) = make.ValDef(

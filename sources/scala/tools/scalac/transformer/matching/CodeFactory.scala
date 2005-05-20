@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
 ** $Id$
@@ -26,14 +26,14 @@ class CodeFactory(val unit: CompilationUnit, pos1: Int) extends PatternTool(unit
 
     /** a faked switch statement
      */
-  def Switch(condition: Array[Tree], body: Array[Tree], defaultBody: Tree  ): Tree = {
+  def Switch(condition: Array[Tree], body: Array[Tree], defaultBody: Tree): Tree = {
     //assert condition != null:"cond is null";
     //assert body != null:"body is null";
     //assert defaultBody != null:"defaultBody is null";
     var result = defaultBody;
 
     var i = condition.length-1;
-    while(i >= 0) {
+    while (i >= 0) {
       result = gen.If(condition(i), body(i), result);
       i = i - 1
     }
@@ -144,7 +144,7 @@ class CodeFactory(val unit: CompilationUnit, pos1: Int) extends PatternTool(unit
     gen.mkApply__(gen.Select(arg, defs.LIST_HEAD()));
   }
 
-  def Negate(tree:Tree ): Tree = {
+  def Negate(tree: Tree): Tree = {
     tree match {
       case Literal(BOOLEAN(value))=>
         gen.mkBooleanLit(tree.pos, !value);
@@ -153,7 +153,7 @@ class CodeFactory(val unit: CompilationUnit, pos1: Int) extends PatternTool(unit
     }
   }
 
-  /*protected*/ def And(left: Tree, right: Tree):  Tree = {
+  /*protected*/ def And(left: Tree, right: Tree): Tree = {
     left match {
       case Literal(BOOLEAN(value)) =>
 	return if(value) right else left;
@@ -167,13 +167,13 @@ class CodeFactory(val unit: CompilationUnit, pos1: Int) extends PatternTool(unit
     gen.mkApply_V(gen.Select(left, defs.BOOLEAN_AND()), Predef.Array[Tree](right));
   }
 
-  /*protected*/ def Or(left:Tree , right:Tree ): Tree = {
+  /*protected*/ def Or(left: Tree, right: Tree): Tree = {
     left match {
       case Literal(BOOLEAN(value))=>
 	    return if(value) left else right;
       case _ =>
     }
-    right.match {
+    right match {
       case Literal(BOOLEAN(value)) =>
 	if (!value) return left;
       case _ =>
@@ -200,7 +200,7 @@ class CodeFactory(val unit: CompilationUnit, pos1: Int) extends PatternTool(unit
   }
 
   // used by Equals
-  private def getEqEq(left:Type , right:Type ): Symbol = {
+  private def getEqEq(left: Type, right: Type): Symbol = {
     val sym = left.lookupNonPrivate(Names.EQEQ);
     //assert sym != Symbol.NONE
     //    : Debug.show(left) + "::" + Debug.show(left.members());
@@ -260,7 +260,7 @@ class CodeFactory(val unit: CompilationUnit, pos1: Int) extends PatternTool(unit
       ));
   }
 
-  def Error(pos:int , tpe:Type ):  Tree = {
+  def Error(pos: Int, tpe: Type): Tree = {
     gen.mkApplyTV(
       gen.mkGlobalRef(pos, defs.MATCHERROR_FAIL()),
       Predef.Array[Tree](gen.mkType(pos, tpe)),
@@ -271,11 +271,11 @@ class CodeFactory(val unit: CompilationUnit, pos1: Int) extends PatternTool(unit
   }
 
 
-  def pairType( left:Type , right:Type  ):  Type = {
+  def pairType(left: Type, right: Type): Type = {
     defs.TUPLE_TYPE(Predef.Array[Type] ( left, right ) );
   }
 
-    def newPair(left: Tree , right: Tree):  Tree = {
+    def newPair(left: Tree, right: Tree): Tree = {
       gen.New(
         gen.mkApplyTV(
           gen.mkPrimaryConstructorGlobalRef( pos, defs.TUPLE_CLASS(2)),

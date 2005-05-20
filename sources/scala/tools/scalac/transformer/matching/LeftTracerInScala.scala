@@ -1,3 +1,11 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
 import scalac._;
 import scalac.ast._;
 import scalac.symtab._;
@@ -10,8 +18,8 @@ import scala.tools.util.Position;
 
 package scala.tools.scalac.transformer.matching {
 
-class LeftTracerInScala(dfa: DetWordAutom, elementType: Type, owner: Symbol, cf: CodeFactory, val selector: Tree )
-extends TracerInScala( dfa, elementType, owner, cf ) {
+class LeftTracerInScala(dfa: DetWordAutom, elementType: Type, owner: Symbol, cf: CodeFactory, val selector: Tree)
+extends TracerInScala(dfa, elementType, owner, cf) {
 
   //final def defs = cf.defs;
 
@@ -120,22 +128,22 @@ extends TracerInScala( dfa, elementType, owner, cf ) {
     // state [ nstates-1 ] is the dead state, so we skip it
 
     //`if( state == q ) <code_state> else {...}'
-    var i = dfa.nstates()-2;
-    while(i >= 0) {
-      body = code_state( i, body );
+    var i = dfa.nstates() - 2;
+    while (i >= 0) {
+      body = code_state(i, body);
       i = i - 1;
     }
-    loadCurrentElem( body );
+    loadCurrentElem(body);
   }
 
     /** return code for state i of the dfa SAME AS IN SUPER, ONLY SINK IS GONE
      */
-  def code_state(i: Int, elseBody: Tree): Tree  = {
+  def code_state(i: Int, elseBody: Tree): Tree = {
 
     var runFinished: Tree = _; // holds result of the run
     var finalSwRes: Int = 0;
 
-    runFinished = run_finished( i );
+    runFinished = run_finished(i);
 
     var stateBody: Tree = _ ; // action(delta) for one particular label/test
 
@@ -161,7 +169,7 @@ extends TracerInScala( dfa, elementType, owner, cf ) {
                            stateBody);
       }
     }
-    stateBody = gen.If( cf.Negate( gen.Ident( cf.pos, hasnSym )),
+    stateBody = gen.If(cf.Negate(gen.Ident(cf.pos, hasnSym)),
                        runFinished,
                        stateBody );
     gen.If( cf.Equals( _state(), gen.mkIntLit(cf.pos, i )),
@@ -173,7 +181,7 @@ extends TracerInScala( dfa, elementType, owner, cf ) {
 
     initializeSyms();
 
-    cf.gen.mkBlock( cf.pos, Predef.Array[Tree] (
+    cf.gen.mkBlock(cf.pos, Predef.Array[Tree] (
       gen.ValDef( iterSym, cf.newIterator( selector, selector.getType() )),
       gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0) ),
       gen.ValDef( accumSym, gen.mkNil( cf.pos )),
@@ -191,14 +199,14 @@ extends TracerInScala( dfa, elementType, owner, cf ) {
   override def _cur_match(pat: Tree): Tree  = {
     //return gen.mkBooleanLit(cf.pos, true);
 
-    //System.out.println("calling algebraic matcher on type:"+pat.type);
+    //System.out.println("calling algebraic matcher on type:" + pat.type);
 
     val m = new PartialMatcher( owner,
                                currentElem(),
                                defs.boolean_TYPE() );
 
-    val res1 = if(containsBinding( pat )) {
-      pat.match {
+    val res1 = if(containsBinding(pat)) {
+      pat match {
         case Sequence(pats) =>
           gen.mkBooleanLit(cf.pos, true);
         case _ =>
@@ -208,7 +216,7 @@ extends TracerInScala( dfa, elementType, owner, cf ) {
 
     if (res1 == null) {
 
-      am.construct( m, Predef.Array[Tree] (
+      am.construct(m, Predef.Array[Tree] (
         cf.gen.CaseDef( pat,
                        gen.mkBooleanLit( cf.pos, true )),
         cf.gen.CaseDef( cf.gen.Ident( pat.pos, defs.PATTERN_WILDCARD ),
@@ -223,12 +231,12 @@ extends TracerInScala( dfa, elementType, owner, cf ) {
 
     /** return the accumulator + last state
      */
-    override def run_finished(state: Int): Tree  = {
-      val hd = cf.newPair( gen.mkIntLit( cf.pos, state ),
+    override def run_finished(state: Int): Tree = {
+      val hd = cf.newPair( gen.mkIntLit(cf.pos, state),
                           gen.mkDefaultValue(cf.pos,
                                              elementType));
       //System.err.println(hd.type);
-      gen.mkNewCons(  cf.pos,
+      gen.mkNewCons(cf.pos,
                     accumTypeArg,
                     hd,
                     gen.Ident( cf.pos, accumSym ));

@@ -1,3 +1,12 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+** /_____/\____/\___/\____/____/                                        **
+**                                                                      **
+\*                                                                      */
+
+// $Id$
+
 import scalac.ast.Tree ;
 import Tree._ ;
 
@@ -360,11 +369,11 @@ class DetWordAutom  {
 
 
 
-  def isDead( state: int  ):  boolean = {
+  def isDead(state: Int): Boolean = {
     return state == _nstates - 1; // by construction
   }
 
-  def isDead(  state: Integer ):  boolean = {
+  def isDead(state: Integer): Boolean = {
     return state.intValue() == _nstates - 1; // by construction
   }
 
@@ -372,26 +381,25 @@ class DetWordAutom  {
   /** returns target of the transition from state i with label label.
    *  null if no such transition exists.
    */
-  def delta( i:int , label:Label  ):  Integer = {
-	var target:Integer =_;
-	label.match {
-	case DefaultLabel() =>
-	  if( !hasDefault( i ) )
-	    return null;
-	  return _defaultq( i ).asInstanceOf[Integer] ;
-	case SimpleLabel( _ ) | TreeLabel( _ ) =>
-	  return _deltaq( i ).get( label ).asInstanceOf[Integer] ;
-	  /*case LPair( Integer state, Label lab ):
-	   return state;
-	   */
-	 case _ =>
-	   throw new ApplicationError("whut's this: label="+label+", class "+label.getClass());
-	}
+  def delta(i: Int, label: Label): Integer = {
+    var target:Integer =_;
+    label match {
+    case DefaultLabel() =>
+      if (! hasDefault(i))
+        return null;
+        return _defaultq( i ).asInstanceOf[Integer] ;
+    case SimpleLabel( _ ) | TreeLabel( _ ) =>
+      return _deltaq( i ).get( label ).asInstanceOf[Integer] ;
+    /*case LPair( Integer state, Label lab ):
+      return state;
+     */
+    case _ =>
+      throw new ApplicationError("whut's this: label="+label+", class "+label.getClass());
+    }
   }
 
-  def delta( i:Integer , label:Label  ):  Integer  = {
-    return delta( i.intValue(), label );
-  }
+  def delta(i: Integer, label: Label): Integer =
+    delta(i.intValue(), label);
 
   /** should maybe in nfa, not here
    */
@@ -400,12 +408,12 @@ class DetWordAutom  {
 
     var min = Integer.MAX_VALUE ;
     val it = states.iterator();
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       val state = it.next().asInstanceOf[Integer];
       if( nfa.isFinal( state ) && (state.intValue() < min ))
 	min = state.intValue();
     }
-    if( min == Integer.MAX_VALUE )
+    if (min == Integer.MAX_VALUE)
       throw new ApplicationError("I expected a final set of states");
     return new Integer( min );
   }
@@ -858,13 +866,13 @@ class DetWordAutom  {
   /** you may only call this before the set[set[...]] representation
    *  gets flattened.
    */
-  def printBefore( states:TreeSet , deftrans:HashMap  ): Unit = {
+  def printBefore(states: TreeSet, deftrans: HashMap): Unit = {
     var  trans: HashMap = _;
-    Console.println( states );
+    Console.println(states);
     val  it = states.iterator();
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       val state = it.next().asInstanceOf[TreeSet];
-      Console.print("state:"+state.toString()+" transitions ");
+      Console.print("state:" + state.toString() + " transitions ");
       trans = delta.get( state ).asInstanceOf[HashMap];
       val labs = _labels.iterator();
       while(labs.hasNext()) {
@@ -873,10 +881,10 @@ class DetWordAutom  {
 	Console.print( "  (" + label.toString()
 		      + "," + target.toString()+")");
       }
-      Console.print("default trans"+deftrans.get( state ));
+      Console.print("default trans"+deftrans.get(state));
       Console.println;
     }
-    Console.println("final states:" + finals );
+    Console.println("final states:" + finals);
   }
 }
 }

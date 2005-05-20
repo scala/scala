@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2004, LAMP/EPFL         **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
 ** $Id$
@@ -36,7 +36,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   /** add the given character to the documentation buffer
   */
   protected def addCharToDoc(ch: Char): unit =
-      if (docBuffer != null) docBuffer.append(ch);
+    if (docBuffer != null) docBuffer.append(ch);
 
   /** layout & character constants
   */
@@ -64,7 +64,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   var bp: Int = -1;
   */
 
-  class SourceIterator(charArray:Array[Char]) extends  Iterator[Char] {
+  class SourceIterator(charArray: Array[Char]) extends Iterator[Char] {
     val buf:Array[Char] = charArray;
     var bp: Int = -1;
     /* inv: true if buf( bp ) is last of an odd number of ASCII '\' */
@@ -75,7 +75,9 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     def hasMore(j: Int) = bp + j < buf.length;
     def hasNext = hasMore( 1 );
 
-    /** gets next char, handles unicode transform */
+    /**
+     * Gets next char, handles unicode transform
+     */
     def next: Char = {
       bp = bp + 1;
       val ch = buf( bp );
@@ -96,12 +98,13 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     */
     def lookahead1 = {
       val ahead1 = buf( bp + 1 );
-      if( ahead1 == '\\' && !odd && hasMore( 2 ) && 'u' == buf( bp + 1 )) {
-        val Pair( newch, offset ) = nextUnicode( bp + 1 );
+      if (ahead1 == '\\' && !odd && hasMore(2) && 'u' == buf(bp + 1)) {
+        val Pair(newch, offset) = nextUnicode(bp + 1);
         unicode1 = offset;
         bp = bp + offset;
         newch;
-      } else {
+      }
+      else {
         unicode1 = 0;
         ahead1
       }
@@ -112,11 +115,12 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
       val j = bp + unicode1 + 1 + 1;
       val ahead2 = buf( j );
       val even1 = unicode1 > 0 || '\\' != buf( j - 1 ) || odd;
-      if( ahead2 == '\\' && even1 && hasMore( j, 1 ) && 'u' == buf( j + 1 )) {
-        val Pair( newch, offset ) = nextUnicode( j + 1 );
+      if (ahead2 == '\\' && even1 && hasMore(j, 1) && 'u' == buf(j + 1)) {
+        val Pair(newch, offset) = nextUnicode(j + 1);
         unicode2 = offset;
         newch;
-      } else {
+      }
+      else {
         ahead2
       }
     }
@@ -127,8 +131,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
       val ahead3 = buf( j );
       var even2 = unicode2 > 0 || '\\' != buf( j - 1 ) || '\\' == buf( j - 2 );
 
-      if( ahead3 == '\\' && even2 && hasMore( j, 1 ) && 'u' == buf( j + 1 )) {
-        val Pair( newch, offset ) = nextUnicode( j + 1 );
+      if (ahead3 == '\\' && even2 && hasMore( j, 1 ) && 'u' == buf(j + 1)) {
+        val Pair(newch, offset) = nextUnicode(j + 1);
         newch;
       } else {
         ahead3
@@ -140,10 +144,10 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     /** returns unicode and offset of next character */
     def nextUnicode(p: Int): Pair[Char,Int] = {
       var j = p;
-      while ( buf( j ) == 'u' ) { j = j + 1 };
-      if ( j + 4 >= buf.length ) syntaxError("incomplete unicode escape");
+      while ( buf(j) == 'u' ) { j = j + 1 };
+      if (j + 4 >= buf.length) syntaxError("incomplete unicode escape");
       def munch = {
-        val i = digit2int( buf( j ), 16 );
+        val i = digit2int( buf(j), 16 );
         if( i == -1 ) {
           syntaxError("error in unicode escape");
         };
@@ -151,11 +155,11 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
         i
       }
       var code:Int = munch;
-      //Console.println("nextUnicode2, code ="+code);
+      //Console.println("nextUnicode2, code =" + code);
       code = (code << 4) + munch;
       code = (code << 4) + munch;
       code = (code << 4) + munch;
-      Pair( code.asInstanceOf[Char], j - p )
+      Pair(code.asInstanceOf[Char], j - p)
     }
 
   } /* class SourceIterator */
@@ -238,7 +242,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           next.copyFrom(this);
           this.copyFrom(prev);
         }
-      } else if (token == SEMI) {
+      }
+      else if (token == SEMI) {
         prev.copyFrom(this);
         fetchToken();
         if (token != ELSE) {
@@ -280,7 +285,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	  //index = bp;
 	  ch match {
             case '\u21D2' =>
-              nextch(); token = ARROW;
+              nextch();
+              token = ARROW;
               return;
 	    case 'A' | 'B' | 'C' | 'D' | 'E' |
 		 'F' | 'G' | 'H' | 'I' | 'J' |
@@ -294,12 +300,12 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 		 'p' | 'q' | 'r' | 's' | 't' |
 		 'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
 		 'z' =>
-              putChar( ch );
+              putChar(ch);
 	      nextch();
 	      getIdentRest;  // scala-mode: wrong indent for multi-line case blocks
 	      return;
             case _ if (java.lang.Character.isUnicodeIdentifierStart(ch)) =>
-              putChar( ch );
+              putChar(ch);
 	      nextch();
 	      getIdentRest;
               return;
@@ -307,8 +313,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
             case '<' => // is XMLSTART?
               var last = lastch;
               nextch();
-              last.match {
-                case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart( ch ) =>
+              last match {
+                case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(ch) =>
                   token = XMLSTART;
                 case _ =>
                   putChar('<');
@@ -332,7 +338,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 		return;
 	      }
 	    case '0' =>
-              putChar( ch );
+              putChar(ch);
 	      nextch();
 	      if (ch == 'x' || ch == 'X') {
 		nextch();
@@ -370,8 +376,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 		     'p' | 'q' | 'r' | 's' | 't' |
 		     'u' | 'v' | 'w' | 'x' | 'y' |
 		     'z' =>
-                       cbuf.setLength( 0 );
-		  putChar( ch );
+                       cbuf.setLength(0);
+		  putChar(ch);
 		  nextch();
 		  if (ch != '\'') {
 		    getIdentRest;
@@ -380,7 +386,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 		  }
                 case _ if(java.lang.Character.isUnicodeIdentifierStart(ch)) =>
                   cbuf.setLength( 0 );
-		  putChar( ch );
+		  putChar(ch);
 		  nextch();
 		  if (ch != '\'') {
 		    getIdentRest;
@@ -395,7 +401,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 		nextch();
 		token = CHARLIT;
                 name = Name.fromString( cbuf.toString() );
-                cbuf.setLength( 0 );
+                cbuf.setLength(0);
 	      } else {
 		syntaxError("unclosed character literal");
 	      }
@@ -403,7 +409,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	    case '.' =>
 	      nextch();
 	      if (('0' <= ch) && (ch <= '9')) {
-                putChar( '.' );
+                putChar('.');
                 getFraction;
               } else token = DOT;
 	      return;
@@ -443,7 +449,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
                 case java.lang.Character.MATH_SYMBOL => true;
                 case java.lang.Character.OTHER_SYMBOL => true;
                 case _ => false;}) {
-                  putChar( ch );
+                  putChar(ch);
                   getOperatorRest;
                 } else {
 	          nextch();
@@ -455,13 +461,14 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     }
   }
 
-  private def skipComment(): boolean = {
+  private def skipComment(): Boolean = {
     if (ch == '/') {
       do {
         nextch();
       } while ((ch != CR) && (ch != LF) && (ch != SU));
       true
-    } else if (ch == '*') {
+    }
+    else if (ch == '*') {
       docBuffer = null;
       var openComments = 1;
       nextch();
@@ -511,7 +518,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     }
   }
 
-  def isIdentStart( c: Char ) = c.match {
+  def isIdentStart(ch: Char) = ch match {
     case 'A' | 'B' | 'C' | 'D' | 'E' |
     'F' | 'G' | 'H' | 'I' | 'J' |
     'K' | 'L' | 'M' | 'N' | 'O' |
@@ -525,19 +532,21 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     'u' | 'v' | 'w' | 'x' | 'y' |
     'z'  =>
       true
-    case _ if(java.lang.Character.isUnicodeIdentifierStart(c)) =>
-      true;
-    case _ => false;
+    case _ if (java.lang.Character.isUnicodeIdentifierStart(ch)) =>
+      true
+    case _ =>
+      false
   }
 
-  def isIdentPart( c: Char ) = isIdentStart( c ) || c.match {
+  def isIdentPart(ch: Char) = isIdentStart(ch) || (ch match {
     case '0' | '1' | '2' | '3' | '4' |
          '5' | '6' | '7' | '8' | '9' =>
-           true
-    case _ if(java.lang.Character.isUnicodeIdentifierPart(c)) =>
-      true;
-    case _ => false } ;
-
+      true
+    case _ if (java.lang.Character.isUnicodeIdentifierPart(ch)) =>
+      true
+    case _ =>
+      false
+  });
 
   private def getIdentRest: Unit = {
     while (true) {
@@ -559,7 +568,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           putChar( ch );
           nextch();
         case '_' =>
-          putChar( ch );
+          putChar(ch);
           nextch();
           getIdentOrOperatorRest;
           return;
@@ -568,8 +577,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           treatIdent;
 	  return;
 
-        case _ if(java.lang.Character.isUnicodeIdentifierPart(ch)) =>
-          putChar( ch );
+        case _ if (java.lang.Character.isUnicodeIdentifierPart(ch)) =>
+          putChar(ch);
           nextch();
         case _ =>
           treatIdent;
@@ -585,7 +594,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	     '^' | '*' | '+' | '-' | '<' |
              '>' | '?' | ':' | '=' | '&' |
              '|' | '\\' =>
-          putChar( ch );
+          putChar(ch);
 	  nextch();
         case '/' =>
           nextch();
@@ -596,12 +605,12 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
             putChar( '/' );
           }
         case _ =>
-          if( java.lang.Character.getType( ch ).asInstanceOf[byte] match {
+          if (java.lang.Character.getType(ch).asInstanceOf[byte] match {
             case java.lang.Character.MATH_SYMBOL => true;
             case java.lang.Character.OTHER_SYMBOL => true;
             case _ => false;
           }) {
-            putChar( ch );
+            putChar(ch);
             nextch();
           } else {
             treatIdent;
@@ -612,7 +621,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   }
 
   private def getIdentOrOperatorRest: unit = {
-    if( isIdentPart( ch ) )
+    if (isIdentPart(ch))
       getIdentRest
     else ch match {
       case '~' | '!' | '@' | '#' | '%' |
@@ -635,15 +644,16 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   private def getStringLit(delimiter: Char): unit = {
     nextch();
-    while (srcIterator.hasNext && ch != delimiter && ch != CR && ch != LF ) {
+    while (srcIterator.hasNext && ch != delimiter && ch != CR && ch != LF) {
       getlitch();
     }
     if (ch == delimiter) {
       token = STRINGLIT;
       name = Name.fromString( cbuf.toString() );
-      cbuf.setLength( 0 );;
+      cbuf.setLength(0);
       nextch();
-    } else {
+    }
+    else {
       syntaxError("unclosed string literal");
       name = Names.ERROR;
     }
@@ -673,7 +683,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   /** append Unicode character to "lit" buffer
   */
-  private def putChar(c: Char) = cbuf.append( c );
+  private def putChar(ch: Char) = cbuf.append(ch);
     /*
     if (litlen == lit.length) {
       val newlit = new Array[char](lit.length * 2);
@@ -696,11 +706,11 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   */
 
   /** precondition: isUnicode() == true
-  protected def getUnicodeChar():char = {
+  protected def getUnicodeChar(): Char = {
     var i : Int = 0;
     var k = bp + 2;
     while( k < bp + 6 ) {
-      i = 16 * i +  SourceRepresentation.digit2int(buf( k ), 16);
+      i = 16 * i +  SourceRepresentation.digit2int(buf(k), 16);
       k = k + 1;
     };
     i.asInstanceOf[char]
@@ -754,7 +764,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           nextch();
         }
       /* } */
-    } else  {
+    }
+    else {
       putChar(ch);
       nextch();
     }
@@ -763,7 +774,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   */
   protected def getFraction = {
     while (SourceRepresentation.digit2int(ch, 10) >= 0) {
-      putChar( ch );
+      putChar(ch);
       nextch();
     }
     token = DOUBLELIT;
@@ -773,12 +784,12 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
       val c2 = srcIterator.lookahead2;
       if ((c1 == '+') || (c1 == '-')  && ('0' >= c2) || (c2 <= '9')) {
         nextch();
-        putChar( ch );
+        putChar(ch);
         nextch();
       } else
         nextch();
       while (SourceRepresentation.digit2int(ch, 10) >= 0) {
-        putChar( ch );
+        putChar(ch);
         nextch();
       }
     }
@@ -786,7 +797,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
       putChar( ch );
       nextch();
     } else if ((ch == 'f') || (ch == 'F')) {
-      putChar( ch );
+      putChar(ch);
       token = FLOATLIT;
       nextch();
     }
@@ -802,7 +813,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
     if (token == CHARLIT && !negated) {
       if (name.length() > 0)
-        name.charAt( 0 )
+        name.charAt(0)
       else
 	0
     } else {
@@ -844,7 +855,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
       if (value > limit)
         syntaxError("floating point number too large");
       if (negated) -value else value
-    } catch {
+    }
+    catch {
       case _: NumberFormatException =>
 	syntaxError("malformed floating point number");
 	0.0
@@ -855,9 +867,9 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
 
   /** see Java spec 3.10.2 */
-  def exponentPart(c1: Char,c2: Char) =
+  def exponentPart(c1: Char, c2: Char) =
     (c1 == 'e' || c1 == 'E') &&
-  ((c2 >= '0' && c2 <= '9') || (c2 == '+' || c2 == '-')) ;
+    ((c2 >= '0' && c2 <= '9') || (c2 == '+' || c2 == '-')) ;
 
   /** see Java spec 3.10.2 */
   def floatTypeSuffix(c1: Char) =
@@ -878,19 +890,21 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
         putChar(ch);
         nextch();
         getFraction;
-      } else {
+      }
+      else {
         val c2 = srcIterator.lookahead2;
-        if(exponentPart(c1,c2)) {
+        if (exponentPart(c1,c2)) {
           putChar(ch);// +
           getFraction;
           return;
         }
-        if(isIdentStart(c1)&&isIdentPart(c2)) { // is select
+        if (isIdentStart(c1)&&isIdentPart(c2)) { // is select
 	  name = Name.fromString( cbuf.toString() );
           cbuf.setLength( 0 );
           token = INTLIT;
           return;
-        } else {
+        }
+        else {
           putChar(ch);
           nextch();
           getFraction;
@@ -901,15 +915,16 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
                 ch == 'f' || ch == 'F' ||
                 ch == 'd' || ch == 'D')) {
       getFraction;
-    } else {
+    }
+    else {
       if (ch == 'l' || ch == 'L') {
-	name = Name.fromString( cbuf.toString());
-        cbuf.setLength( 0 );
+	name = Name.fromString(cbuf.toString());
+        cbuf.setLength(0);
         nextch();
         token = LONGLIT;
       } else {
-	name = Name.fromString( cbuf.toString() );
-        cbuf.setLength( 0 );
+	name = Name.fromString(cbuf.toString());
+        cbuf.setLength(0);
         token = INTLIT;
       }
     }
@@ -991,5 +1006,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     case _ =>
       token2string(token)
   }
+
 }
-}
+
+} // package

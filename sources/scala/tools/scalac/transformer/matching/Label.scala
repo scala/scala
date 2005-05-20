@@ -1,30 +1,40 @@
-import scalac.ApplicationError;
-import scalac.ast.Tree ;
-import scalac.ast.TreeInfo ;
-import scalac.symtab.Symbol ;
-import scalac.symtab.Type ;
-import Tree.Literal ;
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
 
-/** this class represents the label that a transition in an automaton may carry.
- *  these get translated to specific (boolean) tests
+// $Id$
+
+import scalac.ApplicationError;
+import scalac.ast.Tree;
+import scalac.ast.TreeInfo;
+import scalac.symtab.Symbol;
+import scalac.symtab.Type;
+
+import Tree.Literal;
+
+/**
+ * This class represents the label that a transition in an automaton
+ * may carry. These get translated to specific (boolean) tests
  */
 package scala.tools.scalac.transformer.matching {
 
 class Label {
 
 
-      //case class RLabel( Object rstate, Label lab, Symbol vars[] );
+      //case class RLabel(Object rstate, Label lab, Symbol vars[]);
 
-      override def hashCode(): Int = match {
+      override def hashCode(): Int = this match {
         case DefaultLabel() =>
           return 0;
-        case SimpleLabel( lit )=>
+        case SimpleLabel(lit) =>
           return lit.value.hashCode();
-        case TreeLabel( pat ) =>
+        case TreeLabel(pat) =>
           // if pat is an  Apply, than this case can only be correctly
           // handled there are no other similar Applys (nondeterminism)
           return pat.getType().hashCode();
-        case TypeLabel( tpe ) =>
+        case TypeLabel(tpe) =>
           return tpe.hashCode();
         case _ =>
           return super.hashCode();
@@ -35,15 +45,15 @@ class Label {
               return false;
         val oL = o.asInstanceOf[Label];
         //System.out.print(this + " equals " + oL);
-         this.match {
+         this match {
            case DefaultLabel()=>
-           oL.match {
+           oL match {
              case DefaultLabel() =>
                return true;
              case _ => false;
            } //
            case SimpleLabel( lit ) =>
-           oL.match {
+           oL match {
              case SimpleLabel( lit2 ) =>
              return /*(lit.kind == lit2.kind)
 	     && */lit.value.equals( lit2.value );
@@ -51,11 +61,11 @@ class Label {
            }
 
            case TreeLabel( pat ) =>
-             oL.match {
+             oL match {
                case TreeLabel( pat2 ) =>
-	       pat.match {
+	       pat match {
 		 case Tree.Apply( _, _ ) =>
-		   pat2.match {
+		   pat2 match {
 		     case Tree.Apply( _, _ ) =>
 		       return TreeInfo.methSymbol( pat ) == TreeInfo.methSymbol( pat2 );
 		   }
@@ -64,16 +74,16 @@ class Label {
                case _ => false
              }
 
-           case TypeLabel( tpe ) =>
-             oL.match {
+           case TypeLabel(tpe) =>
+             oL match {
                case TypeLabel( tpe2) =>
-                 return tpe.equals( tpe2 );
+                 return tpe.equals(tpe2);
                case _ => false;
              }
-           case LPair(  state,  lab ) =>
-             oL.match {
-               case LPair(  state2,  lab2 ) =>
-                 return  state.equals( state2 ) && lab.equals( lab2 ) ;
+           case LPair(state, lab) =>
+             oL match {
+               case LPair(state2, lab2) =>
+                 return  state.equals(state2) && lab.equals(lab2);
                case _ => false;
              }
            case _ => return false;
@@ -81,10 +91,10 @@ class Label {
       }
 
 
-  def toString2(): String  = {
+  def toString2(): String = {
     val ext = System.getProperty("extendedMatching");
-    if(( ext != null )&& ext.equals( "true" )) {
-      this.match {
+    if ((ext != null) && ext.equals("true")) {
+      this match {
         case DefaultLabel() =>
           return "<>:p"+p;
         case SimpleLabel( lit ) =>
@@ -98,36 +108,29 @@ class Label {
     throw new ApplicationError("this never happens");
   }
 
-  override def toString():  String = {
-
-    this.match {
-      case DefaultLabel() =>
-        return "<>";
-      case SimpleLabel(  lit) =>
-        return lit.toString();
-      case TreeLabel(pat) =>
-        return pat.toString();
-      case TypeLabel( tpe ) =>
-        return tpe.toString();
-      case LPair( state, lab  ) =>
-        return "("+state.toString()+","+lab.toString()+")";
-      case _ =>
-        throw new ApplicationError("this never happens");
-    }
+  override def toString(): String = this match {
+    case DefaultLabel() =>
+      "<>";
+    case SimpleLabel(  lit) =>
+      lit.toString();
+    case TreeLabel(pat) =>
+      pat.toString();
+    case TypeLabel(tpe) =>
+      tpe.toString();
+    case LPair(state, lab) =>
+      "(" + state.toString() + "," + lab.toString() + ")";
+    case _ =>
+      throw new ApplicationError("this never happens");
   }
 
   val p = -1; // tree state - only needed for extended matching
 
-
 }
 
+case class DefaultLabel()                    extends Label;
+case class SimpleLabel(lit: Literal)         extends Label;
+case class TreeLabel(pat: Tree)              extends Label; // Apply, Sequence
+case class TypeLabel(tpe: Type)              extends Label; // Apply, Sequence
+case class LPair(state: Integer, lab: Label) extends Label;
 
-  case class DefaultLabel() extends Label;
-  case class SimpleLabel(  lit: Literal ) extends Label;
-  case class TreeLabel(  pat: Tree ) extends Label; // Apply, Sequence
-
-  case class TypeLabel( tpe: Type  ) extends Label; // Apply, Sequence
-
-  case class LPair(  state: Integer, lab: Label  ) extends Label;
-}
-
+} // package

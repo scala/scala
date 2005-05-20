@@ -1,14 +1,21 @@
-/** $Id */
-import scalac.CompilationUnit ;
-import scalac.ApplicationError ;
-import scalac.ast.Tree ;
-import scalac.ast.TreeInfo ;
-import scalac.util.Name ;
-import Tree._ ;
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+** /_____/\____/\___/\____/____/                                        **
+**                                                                      **
+** $Id$
+\*                                                                      */
 
-import java.util._ ;
+import scalac.CompilationUnit;
+import scalac.ApplicationError;
+import scalac.ast.Tree;
+import scalac.ast.TreeInfo;
+import scalac.util.Name;
+import Tree._;
 
-//import scala.compiler.printer.XMLAutomPrinter ;
+import java.util._;
+
+//import scala.compiler.printer.XMLAutomPrinter;
 
 /** a Berry-Sethi style construction for nfas.
  *  this class plays is the "Builder" for the "Director" class WordRecognizer.
@@ -18,7 +25,7 @@ package scala.tools.scalac.transformer.matching {
 class BerrySethi(val unit: CompilationUnit ) {
 
   def isStar(n: Name): boolean = {
-    TreeInfo.isNameOfStarPattern( n );
+    TreeInfo.isNameOfStarPattern(n);
   }
     /*
 
@@ -45,29 +52,29 @@ class BerrySethi(val unit: CompilationUnit ) {
 
 
   // Unit test ?
-  def nullable(  pat: Tree ): boolean = {
+  def nullable(pat: Tree): Boolean = {
     //System.out.print("<nullable>");
     //DEBUG.print( pat );
     //System.out.println("</nullable>");
-    pat.match {
+    pat match {
       case Apply(_, _) =>
         return false;
 
       case Sequence( trees ) =>
-        return (trees.length == 0) || nullable( trees );
-      //case Subsequence( Tree[] trees ):
+        return (trees.length == 0) || nullable(trees);
+      //case Subsequence(Tree[] trees):
       //return
       case Bind(n, t) =>
         /*
-         if( isStar( n ) ) // generated for star/plus(?)
+         if (isStar(n)) // generated for star/plus(?)
          return true;
          */
         return nullable( t );
-      case Alternative( choices) =>
+      case Alternative(choices) =>
         var result = false;
       var i = 0;
       while(i < choices.length && !result) {
-        result = result || nullable( choices( i ) );
+        result = result || nullable(choices(i));
         i = i + 1
       }
       return result;
@@ -80,10 +87,10 @@ class BerrySethi(val unit: CompilationUnit ) {
   /** returns true if a Sequence pattern matches the empty sequence
    *  @param pat the sequence pattern.
    */
-  def nullableSequence(pat: Tree): boolean = {
-    pat.match {
-      case Sequence( pats ) =>
-        return nullable( pats );
+  def nullableSequence(pat: Tree): Boolean = {
+    pat match {
+      case Sequence(pats) =>
+        return nullable(pats);
     }
     return false;
   }
@@ -92,7 +99,7 @@ class BerrySethi(val unit: CompilationUnit ) {
    *  sequence or subsequence node) is nullable.
    *  @param pats the sequence of patterns
    */
-  def nullable( pats:Array[Tree] ): boolean = {
+  def nullable(pats: Array[Tree]): Boolean = {
     var result = true;
     var i = 0;
     while(i < pats.length && result){
@@ -109,7 +116,7 @@ class BerrySethi(val unit: CompilationUnit ) {
     //System.out.print("<compFirst>");
     //DEBUG.print( pat );
             //System.out.println("</compFirst>");
-    pat.match {
+    pat match {
       case Sequence( trees ) =>
         return compFirst( trees );
       case Typed(_,_) |  Select(_,_) | Apply(_, _) =>
@@ -132,11 +139,11 @@ class BerrySethi(val unit: CompilationUnit ) {
         }
         return tmp;
 
-      case Bind( _, tree ) =>
-        return compFirst( tree );
+      case Bind(_, tree) =>
+        return compFirst(tree);
 
       case Ident(  name ) =>
-        //if( name != Name.fromString("_") )
+        //if (name != Name.fromString("_"))
         //    throw new ApplicationError("unexpected pattern");
         val tmp = new TreeSet();
         tmp.add( posMap.get( pat ).asInstanceOf[Integer]); // singleton set
@@ -151,12 +158,12 @@ class BerrySethi(val unit: CompilationUnit ) {
 
   /** computes last( alpha ) where alpha is a word regexp
    */
-  def compLast( pat:Tree  ): TreeSet = {
+  def compLast(pat: Tree): TreeSet = {
     //System.out.print("<last>");
     //DEBUG.print( pat );
     //System.out.println("</compLast>");
-    pat.match {
-      case Sequence( _ ) |  Apply(_, _) =>
+    pat match {
+      case Sequence( _ ) | Apply(_, _) =>
         val tmp = new TreeSet();
         tmp.add(posMap.get( pat ).asInstanceOf[Integer]); // singleton set
         return tmp;
@@ -266,7 +273,7 @@ class BerrySethi(val unit: CompilationUnit ) {
   def compFollow1( fol1:TreeSet , pat:Tree  ): TreeSet = {
     var fol = fol1;
     //System.out.println("compFollow1("+fol+","+pat+")");
-    pat.match {
+    pat match {
       case Sequence( trees ) =>
         var first: TreeSet = null;
         var i = trees.length;
@@ -389,7 +396,7 @@ class BerrySethi(val unit: CompilationUnit ) {
 
   // todo: replace global variable pos with acc
   def traverse( pat:Tree  ): Unit = {
-    pat.match {
+    pat match {
 
       // (is tree automaton stuff, more than Berry-Sethi)
       case Apply( _, _ ) | Typed( _, _ )| Select( _, _ ) =>
@@ -474,7 +481,7 @@ class BerrySethi(val unit: CompilationUnit ) {
     var dest = destI.intValue() ;
     var  arrows: Vector = _; //, revArrows;
     //Label revLabel = new Pair( srcI, label );
-    label.match {
+    label match {
       case DefaultLabel() =>
         arrows = defaultq( src );
       //revArrows = defaultqRev[ dest ];
@@ -569,7 +576,7 @@ class BerrySethi(val unit: CompilationUnit ) {
     //System.out.println( "enter automatonFrom("+pat+","+finalTag+")"); // UNIT TEST
     //System.out.println( pat );
     //System.out.println( nullableSequence( pat )); // UNIT TEST
-    pat.match {
+    pat match {
       case Sequence( subexpr ) =>
         initialize( subexpr );
 
@@ -595,15 +602,15 @@ class BerrySethi(val unit: CompilationUnit ) {
       initializeAutom();
 
 
-      // defaultqRev = new Vector[ pos ];  // default transitions
+      // defaultqRev = new Vector[pos];  // default transitions
 
       collectTransitions();
 
-      if( nullable( subexpr )) // initial state is final
-	finals.put( new Integer(0), finalTag );
+      if (nullable(subexpr)) // initial state is final
+	finals.put(new Integer(0), finalTag);
 
       //TreeSet initials = new TreeSet();
-      //initials.add( new Integer( 0 ) );
+      //initials.add(new Integer(0));
 
       val result =
         new NondetWordAutom(pos, // = nstates
@@ -618,8 +625,8 @@ class BerrySethi(val unit: CompilationUnit ) {
        System.out.println("inBerrySethi");
        XMLAutomPrinter pr = new XMLAutomPrinter( System.out );
        pr.begin();
-       pr.print( result );
-       pr.print( revNfa );
+       pr.print(result);
+       pr.print(revNfa);
        pr.end();
        System.out.println("initialsRev = "+initialsRev);
        System.out.println("outBerrySethi");
@@ -640,7 +647,7 @@ class BerrySethi(val unit: CompilationUnit ) {
     var it = this.posMap.keySet().iterator();
     while(it.hasNext()) {
       val t = it.next().asInstanceOf[Tree];
-      t.match {
+      t match {
         case Literal( _ ) =>
           Console.print( "(" + t.toString() + " -> ");
           val s2 = (posMap.get(t).asInstanceOf[Integer]).toString();

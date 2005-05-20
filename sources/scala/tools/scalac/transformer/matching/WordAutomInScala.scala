@@ -1,12 +1,10 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
 // $Id$
-
-
 
 import scala.tools.util.Position;
 
@@ -98,17 +96,17 @@ package scala.tools.scalac.transformer.matching {
 
     /** code for the return value of the automaton translation
      */
-    override def run_finished( state: Int): Tree = { // T E S T
-      if( dfa.isFinal( state ))
-        gen.mkIntLit(Position.FIRSTPOS, dfa.finals.get( new Integer( state ) ).asInstanceOf[Integer].intValue() );
+    override def run_finished(state: Int): Tree = { // T E S T
+      if( dfa.isFinal(state))
+        gen.mkIntLit(Position.FIRSTPOS, dfa.finals.get(new Integer(state)).asInstanceOf[Integer].intValue());
       else
-        gen.mkIntLit( Position.FIRSTPOS, FAIL );
+        gen.mkIntLit(Position.FIRSTPOS, FAIL);
     }
 
 
     // calling the /*AlgebraicMatcher*/PatternMatcher here
     override def _cur_match(pat: Tree): Tree = { // TE ST
-      val m = new PartialMatcher( this.owner,   /* owner*/
+      val m = new PartialMatcher(this.owner,   /* owner*/
                                  currentElem(), /* root */
                                  defs.boolean_TYPE() /* restype */);
 
@@ -139,7 +137,7 @@ package scala.tools.scalac.transformer.matching {
       val target = dfa.delta(i, label);
 
       if (target == null)
-        label.match  {
+        label match {
           case DefaultLabel() =>
             code_error(); // this may not happen !
           case _ =>

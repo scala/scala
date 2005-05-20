@@ -1,6 +1,10 @@
-/**
- *  $Id$
- */
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
 
 import scalac._;
 import scalac.ast._;
@@ -25,11 +29,11 @@ package scala.tools.scalac.transformer.matching {
      * @param elementType ...
      */
 class RightTracerInScala(dfa: DetWordAutom, seqVars: Set, owner: Symbol, cf: CodeFactory, pat:Tree, elementType: Type)
-extends TracerInScala( dfa, elementType, owner, cf )  {
+extends TracerInScala(dfa, elementType, owner, cf) {
 
 
-  final def collectVars( pat:Tree  ): HashSet = {
-    var vars  = new HashSet();
+  final def collectVars(pat: Tree): HashSet = {
+    var vars = new HashSet();
 
     def handleVariableSymbol(sym: Symbol): Unit  = {
       vars.add( sym );
@@ -49,7 +53,7 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
     }
     def traverse(tree: Tree): Unit = {
       import Tree._ ;
-      tree.match {
+      tree match {
         case x @ Ident(name)=>
           if(x.symbol() != cf.unit.global.definitions.PATTERN_WILDCARD)
             throw new ApplicationError("shouldn't happen?!");
@@ -256,7 +260,7 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
   }
 
   override def currentMatches(label: Label): Tree = {
-    label.match {
+    label match {
       case LPair( target, theLab ) =>
         cf.Equals( gen.mkIntLit( cf.pos, target.intValue() ),
                          current() );
@@ -419,11 +423,11 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
 
     //System.out.println("delta("+i+","+label+")" );
     var  theLab: Label = null;
-    label.match {
+    label match {
       case LPair ( state, lab2 )=>
         //assert ntarget == state;
         theLab = lab2;
-      lab2.match {
+      lab2 match {
         case TreeLabel( pat ) =>
           algMatchTree = _cur_match( pat );
         case _ =>
@@ -433,11 +437,11 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
     }
     //assert dfa.qbinders != null : "qbinders ?";
 
-    var vars = dfa.qbinders( i );
+    var vars = dfa.qbinders(i);
 
     //System.out.println("dfa.qbinders[ i ]"+vars);
 
-    if( null == vars ) vars = new Vector(); // TODO: make this more consistent
+    if (null == vars) vars = new Vector(); // TODO: make this more consistent
     //assert vars != null;
 
     val stms = new Array[Tree]( vars.size()
@@ -463,10 +467,10 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
   }
 
   override def stateWrap(i: Int): Tree = {
-    if( i == 0 )
+    if (i == 0)
       code_state0_NEW();
     else
-      code_state_NEW( i );
+      code_state_NEW(i);
   }
 
   /* returns statements that do the work of the right-transducer
@@ -523,12 +527,12 @@ extends TracerInScala( dfa, elementType, owner, cf )  {
     }
 
   def assignToHelpVar(realVar: Symbol, rhs: Tree): Tree = {
-    val hv = refHelpVar( realVar );
-    gen.Assign( hv, rhs );
+    val hv = refHelpVar(realVar);
+    gen.Assign(hv, rhs);
   }
 
   def bindVar(realVar: Symbol): Tree = {
-    val hv = refHelpVar( realVar );
+    val hv = refHelpVar(realVar);
         /*
           System.out.println("binding realVar.name "+realVar.name+" type:"+realVar.type()+" to hv type:"+hv.type());
           realVar.setOwner( owner );
