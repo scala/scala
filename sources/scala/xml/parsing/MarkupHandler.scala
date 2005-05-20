@@ -51,14 +51,14 @@ abstract class MarkupHandler {
 
   def attListDecl(name: String, attList: List[AttrDecl]): Unit = {}
 
-  def parameterEntityDecl(name: String, edef: EntityDef): Unit = edef.match {
+  def parameterEntityDecl(name: String, edef: EntityDef): Unit = edef match {
     case _:ExtDef if !isValidating =>
       ; // ignore (cf REC-xml 4.4.1)
     case _ =>
       decls = ParameterEntityDecl(name, edef) :: decls;
   }
 
-  def parsedEntityDecl(name: String, edef: EntityDef): Unit = edef.match {
+  def parsedEntityDecl(name: String, edef: EntityDef): Unit = edef match {
     case _:ExtDef if !isValidating =>
       ; // ignore (cf REC-xml 4.8 and 4.4.1)
     case _ =>

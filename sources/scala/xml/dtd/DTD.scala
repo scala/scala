@@ -47,7 +47,7 @@ abstract class DTD {
   }
 
   def replacementText( entityName: String ): Source = {
-    ent.get(entityName).match {
+    ent.get(entityName) match {
       case Some(ParsedEntityDecl(_, IntDef(value))) =>
         Source.fromString(value);
       case Some(_) =>
