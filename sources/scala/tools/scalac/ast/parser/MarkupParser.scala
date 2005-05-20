@@ -1,34 +1,38 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2004, LAMP/EPFL         **
-** /_____/\____/\___/\____/____/                                        **
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
 \*                                                                      */
 
-// $Id$
+import java.lang.{Integer, Long, Float, Double};
 
+import scalac._;
 import scalac.ast._;
 import scalac.atree.AConstant;
-import scalac._;
 import scalac.symtab.Modifiers;
-import scala.tools.util.Position;
-import java.lang.{Integer, Long, Float, Double};
+
 import scala.Iterator;
-import scala.tools.scalac.util.NewArray;
 import scala.collection.immutable.ListMap ;
 import scala.collection.mutable;
+import scala.tools.scalac.util.NewArray;
+import scala.tools.util.Position;
 import scala.xml.{Text,TextBuffer};
 
 package scala.tools.scalac.ast.parser {
 
-class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean ) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
+class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
 
-  import Tokens.{EMPTY, LBRACE, RBRACE} ;
+  import Tokens.{EMPTY, LBRACE, RBRACE};
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
   final val preserveWS = presWS;
 
   /** the XML tree factory */
-  val handle: SymbolicXMLBuilder = new SymbolicXMLBuilder( unit.global.make, unit.global.treeGen, p, presWS );
+  val handle: SymbolicXMLBuilder =
+    new SymbolicXMLBuilder(unit.global.make, unit.global.treeGen, p, presWS);
 
   /** holds the position in the source file */
   /*[Duplicate]*/ var pos: Int = _;
@@ -74,7 +78,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   */
   /*[Duplicate]*/ def xAttributes = {
     var aMap = new mutable.HashMap[String, Tree]();
-    while( xml.Parsing.isNameStart( ch )) {
+    while (xml.Parsing.isNameStart(ch)) {
       val key = xName;
       xEQ;
       val delim = ch;
@@ -105,16 +109,16 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /** attribute value, terminated by either ' or ". value may not contain <.
    *  @param endch either ' or "
    */
-  /*[Duplicate]*/ def xAttributeValue( endch:char ):String = {
-    while ( ch != endch ) {
-      putChar( ch );
+  /*[Duplicate]*/ def xAttributeValue(endCh: char): String = {
+    while (ch != endCh) {
+      putChar(ch);
       nextch;
     };
     val str = cbuf.toString();
-    cbuf.setLength( 0 );
+    cbuf.setLength(0);
     // @todo: normalize attribute value
     // well-formedness constraint
-    if( str.indexOf('<') != -1 ) {
+    if (str.indexOf('<') != -1) {
       reportSyntaxError( "'<' not allowed in attrib value" ); ""
     } else {
       str
@@ -128,7 +132,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /*[Duplicate]*/ def xTag: Pair[String, mutable.Map[String, Tree]] = {
     val elemName = xName;
     xSpaceOpt;
-    val aMap = if(xml.Parsing.isNameStart( ch )) {
+    val aMap = if (xml.Parsing.isNameStart(ch)) {
       xAttributes;
     } else {
       new mutable.HashMap[String, Tree]();
@@ -160,7 +164,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     val pos1 = pos;
     val sb:StringBuffer = new StringBuffer();
     while (true) {
-      if( ch==']'  &&
+      if (ch==']' &&
          { sb.append( ch ); nextch; ch == ']' } &&
          { sb.append( ch ); nextch; ch == '>' } ) {
         sb.setLength( sb.length() - 2 );
@@ -181,7 +185,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     val hex  = ( ch == 'x' ) && { nextch; true };
     val base = if (hex) 16 else 10;
     var i = 0;
-    while( ch != ';' ) {
+    while (ch != ';') {
       ch match {
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           i = i * base + Character.digit( ch, base );
@@ -293,11 +297,12 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     val pos1 = pos;
     val Tuple2(qname, attrMap) = xTag;
     //Console.println("MarkupParser::element("+qname+","+attrMap+")");
-    if(ch == '/') { // empty element
+    if (ch == '/') { // empty element
       xToken('/');
       xToken('>');
       handle.element( pos1, qname, attrMap, new mutable.ListBuffer[Tree] );
-    } else { // handle content
+    }
+    else { // handle content
       xToken('>');
       debugLastStartElement.push(Pair(pos1,qname));
       val ts = content;
@@ -336,9 +341,10 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
 
   /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
   /*[Duplicate]*/ def xSpace = {
-    if( xml.Parsing.isSpace( ch ) ) {
+    if (xml.Parsing.isSpace(ch)) {
       nextch; xSpaceOpt
-    } else {
+    }
+    else {
       reportSyntaxError("whitespace expected");
     }
   }
@@ -413,7 +419,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     var tree = element;
     xSpaceOpt;
     // parse more XML ?
-    if( ch=='<' )  {
+    if (ch == '<') {
       val ts = new mutable.ArrayBuffer[Tree]();
       ts.append( tree );
       while( ch == '<' ) {
@@ -426,7 +432,8 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //Console.println("out of xLiteral, parsed:"+tree.toString());
     s.xSync2;
     tree
-  } catch {
+  }
+  catch {
     case _:ArrayIndexOutOfBoundsException =>
       s.syntaxError(debugLastStartElement.top._1,
                     "missing end tag in XML literal for <"
@@ -444,9 +451,9 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     handle.isPattern = true;
     val pos = s.pos;
     var tree = xPattern; xSpaceOpt;
-    if( ch == '<' )  {
+    if (ch == '<') {
       val ts = new myTreeList(); ts.append( tree );
-      while( ch == '<' && lookahead != '-' ) {
+      while (ch == '<' && lookahead != '-') {
         nextch;
         ts.append( xPattern );
         xSpaceOpt;
@@ -477,10 +484,10 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
 
   /** xScalaPatterns  ::= patterns
    */
-  def xScalaPatterns:Array[Tree] = {
+  def xScalaPatterns: Array[Tree] = {
     sync;
     val b = p.patterns();
-    if( s.token != RBRACE )
+    if (s.token != RBRACE)
       reportSyntaxError(" expected end of Scala patterns");
     init;
     return b
@@ -506,11 +513,11 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *                      | `{` scalablock `}`
   def xAttributes = {
     var aMap = new mutable.HashMap[String, AttribValue[Tree]];
-    while( xml.Parsing.isNameStart( ch )) {
+    while (xml.Parsing.isNameStart(ch)) {
       val key = xName;
       xEQ;
       val delim = ch;
-      val value:Tree = ch match {
+      val value: Tree = ch match {
         case '"' | '\'' =>
           val pos1 = pos;
           nextch;
@@ -536,8 +543,8 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   */
 
 
-  def reportSyntaxError(str:String) = {
-    s.syntaxError("in XML literal: "+str);
+  def reportSyntaxError(str: String) = {
+    s.syntaxError("in XML literal: " + str);
     nextch;
   }
 
@@ -565,7 +572,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     xToken('>');
     var ts = new mutable.ArrayBuffer[Tree];
     var exit = false;
-    while( !exit ) {
+    while (! exit) {
       val pos2 = pos;
       if( xEmbeddedBlock ) {
         ts ++ xScalaPatterns;
@@ -585,16 +592,16 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
               ts ++ xScalaPatterns;
             }
             // postcond: xEmbeddedBlock = false;
-          if( xEmbeddedBlock ) throw new ApplicationError(); // assert
+          if (xEmbeddedBlock) throw new ApplicationError(); // assert
           case _ => // teMaxt
             appendText( pos2, ts, xText );
           // here  xEmbeddedBlock might be true;
           //if( xEmbeddedBlock ) throw new ApplicationError("after:"+text); // assert
 	}
     }
-    xEndTag( qname );
+    xEndTag(qname);
     debugLastStartElement.pop;
-    handle.makeXMLpat( pos1, qname, ts );
+    handle.makeXMLpat(pos1, qname, ts);
   }
 
 } /* class MarkupParser */

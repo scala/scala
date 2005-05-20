@@ -1,14 +1,16 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 ** $Id$
 \*                                                                      */
-package scala.xml.parsing ;
 
-/** helper functions for parsing XML fragments
+package scala.xml.parsing;
+
+/**
+ * Helper functions for parsing XML fragments
  */
 trait TokenTests {
 
@@ -19,7 +21,7 @@ trait TokenTests {
   }
 
   /** (#x20 | #x9 | #xD | #xA)+ */
-  final def isSpace( cs:Seq[Char] ):Boolean = {
+  final def isSpace(cs: Seq[Char]): Boolean = {
     val it = cs.elements;
     it.hasNext && it.forall { isSpace };
   }
@@ -29,7 +31,7 @@ trait TokenTests {
    *
    * see [4] and Appendix B of XML 1.0 specification
   */
-  def isNameChar( ch:Char ) = isNameStart( ch ) || (ch match {
+  def isNameChar(ch: Char) = isNameStart(ch) || (ch match {
     case '.' | '-' | ':' => true;
     case _ => java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
       case java.lang.Character.COMBINING_SPACING_MARK => true; // Mc
@@ -48,13 +50,13 @@ trait TokenTests {
    *  We do not allow a name to start with ':'.
    *  see [3] and Appendix B of XML 1.0 specification
    */
-  def isNameStart( ch:Char ) =
-    java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
-      case  java.lang.Character.LOWERCASE_LETTER => true;
-      case  java.lang.Character.UPPERCASE_LETTER => true;
-      case  java.lang.Character.OTHER_LETTER     => true;
-      case  java.lang.Character.TITLECASE_LETTER => true;
-      case  java.lang.Character.LETTER_NUMBER    => true;
+  def isNameStart(ch: Char) =
+    java.lang.Character.getType(ch).asInstanceOf[Byte] match {
+      case java.lang.Character.LOWERCASE_LETTER => true;
+      case java.lang.Character.UPPERCASE_LETTER => true;
+      case java.lang.Character.OTHER_LETTER     => true;
+      case java.lang.Character.TITLECASE_LETTER => true;
+      case java.lang.Character.LETTER_NUMBER    => true;
       case _ => ch match {
         case '_' => true
         case _ => false;
@@ -65,26 +67,29 @@ trait TokenTests {
    *
    *  see  [5] of XML 1.0 specification
    */
-  def isName( s:String ):boolean = {
+  def isName(s: String): boolean = {
     if( s.length() > 0 ) {
       val z:Seq[Char] = s;
       val y           = z.elements;
-      if( isNameStart( y.next ) ) {
-        while( y.hasNext && isNameChar( y.next ) ) {};
+      if (isNameStart(y.next)) {
+        while (y.hasNext && isNameChar(y.next)) {};
         !y.hasNext
       } else false;
     } else false;
   }
 
-  def isPubIDChar( c:Char ) = {
-    //Console.println("char: '"+c+"'");
-    c match {
+  def isPubIDChar(ch: Char): boolean = {
+    //Console.println("char: '" + ch + "'");
+    ch match {
       case '\u0020' | '\u000D' | '\u000A' => true;
       case _ if
-        ('0' <= c && c <= '9')||('a' <= c && c <= 'z')||('A' <= c && c <= 'Z') => true;
-      case '-' | '\''| '(' | ')' | '+' | ',' | '.' | '/' | ':'  | '=' |
-      '?' | ';' | '!' | '*' | '#' | '@' | '$' | '_' | '%'           => true
-      case _ => //Console.println("false: '"+c+"'");
+        ('0' <= ch && ch <= '9') || ('a' <= ch && ch <= 'z') ||
+        ('A' <= ch && ch <= 'Z') => true;
+      case '-' | '\''| '(' | ')' | '+' | ',' | '.' |
+           '/' | ':' | '=' | '?' | ';' | '!' | '*' |
+           '#' | '@' | '$' | '_' | '%' => true
+      case _ =>
+        //Console.println("false: '" + ch + "'");
         false;
     }
   }
@@ -99,12 +104,12 @@ trait TokenTests {
    */
   def isValidIANAEncoding(ianaEncoding: Seq[Char]): Boolean = {
     val it = ianaEncoding.elements;
-    if(!it.hasNext)
+    if (!it.hasNext)
       return false;
 
     var c = it.next;
     if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-      while(it.hasNext) {
+      while (it.hasNext) {
         c = it.next;
         if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') &&
             (c < '0' || c > '9') && c != '.' && c != '_' &&
@@ -121,18 +126,20 @@ trait TokenTests {
     s.indexOf('"') == -1 || s.indexOf('\'') == -1
   }
 
-  def checkPubID( s:String ): Boolean = {
+  def checkPubID(s: String): Boolean = {
     //Console.println("checkPubID of \""+s+"\"");
-    if( s.length() > 0 ) {
-      val z:Seq[Char] = s;
+    if (s.length() > 0) {
+      val z: Seq[Char] = s;
       val y = z.elements;
       var c = ' ';
-      while( y.hasNext && isPubIDChar( c ) ){
+      while (y.hasNext && isPubIDChar(c)) {
         //Console.println(c);
         c = y.next
       };
       !y.hasNext
-    } else true
+    }
+    else
+      true
   }
 
 }
