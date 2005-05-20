@@ -40,7 +40,7 @@ object Main {
 	case ex @ FatalError(msg) =>
 	  if (command.settings.debug.value)
 	    ex.printStackTrace();
-	  System.out.println("fatal error: " + msg);
+	  reporter.error(null, "fatal error: " + msg);
       }
       reporter.printSummary()
     }
