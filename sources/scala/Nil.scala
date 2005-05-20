@@ -9,7 +9,6 @@
 
 package scala;
 
-import java.io.Serializable;
 import Predef._;
 
 /** The empty list.
@@ -17,7 +16,7 @@ import Predef._;
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-case object Nil extends List[All] with Serializable {
+case object Nil extends List[All] with java.io.Serializable {
     private val serialVersionUID = 0 - 8256821097970055419L;
     def isEmpty = true;
     def head: All = error("head of empty list");
