@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,9 +12,13 @@ package scala.xml.parsing;
 import scala.io.Source;
 import scala.xml.dtd._ ;
 
-/** an xml parser. parses XML 1.0, invokes callback methods of a MarkupHandler
- *  and returns whatever the markup handler returns. Use ConstructingParser
- *  if you just want to parse XML to construct instances of scala.xml.Node.
+/**
+ * An XML parser.
+ *
+ * Parses XML 1.0, invokes callback methods of a MarkupHandler
+ * and returns whatever the markup handler returns. Use
+ * <code>ConstructingParser</code> if you just want to parse XML to
+ * construct instances of <code>scala.xml.Node</code>.
  */
 abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef with TokenTests {
 
@@ -24,7 +28,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   // variables, values
   //
 
-  var input: Source = _input;
+  var curInput: Source = input;
 
   /** the handler of the markup, should return this */
   val handle: MarkupHandler;
@@ -71,8 +75,8 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     if(TopScope == scp) {
       var m = md;
 
-      if(!m.isPrefixed && m.key == "version") {
-        if(m.value == "1.0") {
+      if (!m.isPrefixed && m.key == "version") {
+        if (m.value == "1.0") {
           info_ver = Some("1.0");
           m = m.next;
         } else {
@@ -81,15 +85,15 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       } else
         reportSyntaxError("VersionInfo expected!");
 
-      if(!m.isPrefixed && m.key == "encoding") {
+      if (!m.isPrefixed && m.key == "encoding") {
         val enc = m.value;
-        if(!isValidIANAEncoding(enc))
-          reportSyntaxError("\""+enc+"\" is not a valid encoding");
+        if (!isValidIANAEncoding(enc))
+          reportSyntaxError("\"" + enc + "\" is not a valid encoding");
         info_enc = Some(enc);
         m = m.next
       }
 
-      if(!m.isPrefixed && m.key == "standalone") {
+      if (!m.isPrefixed && m.key == "standalone") {
         m.value match {
           case "yes" =>
             info_stdl = Some(true);
@@ -101,7 +105,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
         m = m.next
       }
 
-      if(m != Null)
+      if (m != Null)
         reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
     } else
         reportSyntaxError("no xmlns definitions here, please");
@@ -124,21 +128,21 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
     this.dtd = null;
     var info_prolog: Tuple3[Option[String], Option[String], Option[Boolean]] =
-      Tuple3(None,None,None);
-    if('<' != ch) {
+      Tuple3(None, None, None);
+    if ('<' != ch) {
       reportSyntaxError("< expected");
       return null;
     }
 
     nextch; // is prolog ?
-    if('?' == ch) {
+    if ('?' == ch) {
       nextch;
       info_prolog = prolog();
     }
     val children = content(TopScope); // DTD handled as side effect
     var elemCount = 0;
     var theNode: Node = _;
-    for(val c <- children) c match {
+    for (val c <- children) c match {
       case _:ProcInstr => ;
       case _:Comment => ;
       case _:EntityRef => // todo: fix entities, shouldn't be "special"
@@ -150,13 +154,13 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
         elemCount = elemCount + 1;
       theNode = m;
     }
-    if(1 != elemCount) {
+    if (1 != elemCount) {
       reportSyntaxError("document must contain exactly one element");
       Console.println(children.toList);
     }
 
     val doc = new Document();
-    doc.children    = children;
+    doc.children   = children;
     doc.docElem    = theNode;
     doc.version    = info_prolog._1;
     doc.encoding   = info_prolog._2;
@@ -172,10 +176,11 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
   /** this method assign the next character to ch and advances in input */
   def nextch: Unit = {
-    if(input.hasNext) {
+    if (curInput.hasNext) {
       ch = input.next;
       pos = input.pos;
-    } else if (Nil!=inpStack)
+    }
+    else if (Nil != inpStack)
       pop();
     else
       eof = true;
@@ -194,7 +199,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
   def xToken(that: Seq[Char]): Unit = {
     val it = that.elements;
-    while(it.hasNext)
+    while (it.hasNext)
       xToken(it.next);
   }
 
@@ -213,7 +218,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def xAttributes(pscope:NamespaceBinding): Pair[MetaData,NamespaceBinding] = {
     var scope: NamespaceBinding = pscope;
     var aMap: MetaData = Null;
-    while( isNameStart( ch )) {
+    while (isNameStart(ch)) {
       val pos = this.pos;
 
       val qname = xName;
@@ -254,14 +259,14 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     val endch = ch;
     nextch;
     while (ch != endch) {
-      if('<' == ch)
+      if ('<' == ch)
         reportSyntaxError( "'<' not allowed in attrib value" );
       putChar(ch);
       nextch;
     }
     nextch;
     val str = cbuf.toString();
-    cbuf.setLength( 0 );
+    cbuf.setLength(0);
 
     // @todo: normalize attribute value
     // well-formedness constraint
@@ -278,7 +283,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
     xSpaceOpt;
     val Pair(aMap: MetaData, scope: NamespaceBinding) = {
-      if(isNameStart( ch ))
+      if (isNameStart(ch))
         xAttributes(pscope)
       else
         Pair(Null, pscope)
@@ -291,7 +296,8 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def xEndTag(n: String) = {
     xToken('/');
     val m = xName;
-    if(n != m) reportSyntaxError("expected closing tag of " + n/* +", not "+m*/);
+    if (n != m)
+      reportSyntaxError("expected closing tag of " + n/* +", not "+m*/);
     xSpaceOpt;
     xToken('>')
   }
@@ -303,9 +309,9 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def xCharData: NodeSeq = {
     xToken("[CDATA[");
     val pos1 = pos;
-    val sb:StringBuffer = new StringBuffer();
+    val sb: StringBuffer = new StringBuffer();
     while (true) {
-      if( ch==']'  &&
+      if (ch==']'  &&
          { sb.append(ch); nextch; ch == ']' } &&
          { sb.append(ch); nextch; ch == '>' } ) {
         sb.setLength(sb.length() - 2);
@@ -326,13 +332,13 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     val hex  = (ch == 'x') && { nextch; true };
     val base = if (hex) 16 else 10;
     var i = 0;
-    while( ch != ';' ) {
+    while (ch != ';') {
       ch match {
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           i = i * base + Character.digit( ch, base );
         case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
            | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
-          if( !hex )
+          if (! hex)
             reportSyntaxError("hex char not allowed in decimal char ref\n"
                          +"Did you mean to write &#x ?");
           else
@@ -379,7 +385,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def content(pscope: NamespaceBinding): NodeSeq = {
     var ts = new NodeBuffer;
     var exit = eof;
-    while( !exit ) {
+    while (! exit) {
       //Console.println("in content, ch = '"+ch+"' line="+scala.io.Position.line(pos));
       /*      if( xEmbeddedBlock ) {
        ts.append( xEmbeddedExpr );
@@ -479,7 +485,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def parseDTD(): Unit = { // dirty but fast
     //Console.println("(DEBUG) parseDTD");
     var extID: ExternalID = null;
-    if(this.dtd != null)
+    if (this.dtd != null)
       reportSyntaxError("unexpected character (DOCTYPE already defined");
     xToken("DOCTYPE");
     xSpace;
@@ -490,7 +496,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       extID = externalID();
       xSpace;
     }
-    if('[' == ch) { // internal subset
+    if ('[' == ch) { // internal subset
       nextch;
       /* TODO */
       //Console.println("hello");
@@ -521,14 +527,15 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     val pos = this.pos;
     val Tuple3(qname, aMap, scope) = xTag(pscope);
     val ts = {
-      if(ch == '/') {    // empty element
+      if (ch == '/') {  // empty element
         xToken('/');
         xToken('>');
         NodeSeq.Empty;
-      } else {          // element with  content
+      }
+      else {           // element with  content
         xToken('>');
         val tmp = content(scope);
-        xEndTag( qname );
+        xEndTag(qname);
         tmp;
       }
     }
@@ -586,10 +593,10 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def xProcInstr: NodeSeq = {
     val sb:StringBuffer = new StringBuffer();
     val n = xName;
-    if( isSpace( ch ) ) {
+    if (isSpace(ch)) {
       xSpace;
       while (true) {
-        if (ch=='?' && { sb.append( ch ); nextch; ch == '>' }) {
+        if (ch == '?' && { sb.append( ch ); nextch; ch == '>' }) {
           sb.setLength(sb.length() - 1);
           nextch;
           return handle.procInstr(tmppos, n.toString(), sb.toString());
@@ -614,9 +621,9 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     else {*/
     //Console.println("in xText! ch = '"+ch+"'");
       var exit = false;
-      while( !exit ) {
+      while (! exit) {
         //Console.println("LOOP in xText! ch = '"+ch+"' + pos="+pos);
-        putChar( ch );
+        putChar(ch);
         val opos = pos;
         nextch;
 
@@ -637,7 +644,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
    */
   def systemLiteral(): String = {
     val endch = ch;
-    if(ch!='\'' && ch != '"')
+    if (ch != '\'' && ch != '"')
       reportSyntaxError("quote ' or \" expected");
     nextch;
     while (ch != endch) {
@@ -646,7 +653,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     }
     nextch;
     val str = cbuf.toString();
-    cbuf.setLength( 0 );
+    cbuf.setLength(0);
     str
   }
 
@@ -654,7 +661,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   /* [12]       PubidLiteral ::=        '"' PubidChar* '"' | "'" (PubidChar - "'")* "'" */
   def pubidLiteral(): String = {
     val endch = ch;
-    if(ch!='\'' && ch != '"')
+    if (ch!='\'' && ch != '"')
       reportSyntaxError("quote ' or \" expected");
     nextch;
     while (ch != endch) {
@@ -666,7 +673,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     }
     nextch;
     val str = cbuf.toString();
-    cbuf.setLength( 0 );
+    cbuf.setLength(0);
     str
   }
 
@@ -677,7 +684,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def intSubset(): Unit = {
     //Console.println("(DEBUG) intSubset()");
     xSpace;
-    while(']' != ch) {
+    while (']' != ch) {
       ch match {
         case '%' =>
           nextch;
@@ -698,7 +705,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
             case 'E' =>
               nextch;
-              if('L' == ch) {
+              if ('L' == ch) {
                 nextch;
                 elementDecl()
               } else
@@ -728,13 +735,13 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     xSpace;
     val n = xName;
     xSpace;
-    while('>' != ch) {
+    while ('>' != ch) {
       putChar(ch);
       nextch;
     }
     nextch;
     val cmstr = cbuf.toString();
-    cbuf.setLength( 0 );
+    cbuf.setLength(0);
     handle.elemDecl(n, cmstr);
   }
 
@@ -747,13 +754,13 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     xSpace;
     var attList: List[AttrDecl] = Nil;
     // later: find the elemDecl for n
-    while('>' != ch) {
+    while ('>' != ch) {
       val aname = xName;
       //Console.println("attribute name: "+aname);
       var defdecl: DefaultDecl = null;
       xSpace;
       // could be enumeration (foo,bar) parse this later :-/
-      while('"' != ch && '\'' != ch && '#' != ch && '<' != ch) {
+      while ('"' != ch && '\'' != ch && '#' != ch && '<' != ch) {
         if(!isSpace(ch))
           cbuf.append(ch);
         nextch;
@@ -797,7 +804,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     var entdef: EntityDef = null;
     xToken("NTITY");
     xSpace;
-    if('%' == ch) {
+    if ('%' == ch) {
       nextch;
       isParameterEntity = true;
       xSpace;
@@ -816,7 +823,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
         } else { // notation?
 
           xSpace;
-          if('>' != ch) {
+          if ('>' != ch) {
             xToken("NDATA");
             xSpace;
             val notat = xName;
@@ -833,7 +840,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
         val av = xAttributeValue();
         xSpaceOpt;
         xToken('>');
-        if(isParameterEntity)
+        if (isParameterEntity)
           handle.parameterEntityDecl(n, IntDef(av));
         else
           handle.parsedEntityDecl(n, IntDef(av));
@@ -849,16 +856,17 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     xSpace;
     val notat = xName;
     xSpace;
-    val extID = if(ch == 'S') {
+    val extID = if (ch == 'S') {
       externalID();
-    } else if(ch == 'P') {
+    }
+    else if (ch == 'P') {
       /** PublicID (without system, only used in NOTATION) */
       nextch;
       xToken("UBLIC");
       xSpace;
       val pubID = pubidLiteral();
       xSpaceOpt;
-      val sysID = if(ch != '>')
+      val sysID = if (ch != '>')
         systemLiteral()
       else
         null;
@@ -870,22 +878,22 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     handle.notationDecl(notat, extID)
   }
 
-  /** report a syntax error */
+  /**
+   * report a syntax error
+   */
   def reportSyntaxError(str: String): Unit = {
     //Console.println(inp.descr+":"+scala.io.Position.toString(pos)+":"+str);
-    input.reportError(pos, str)
+    curInput.reportError(pos, str)
   }
 
-
   def push(entityName:String) = {
-
-    inpStack = input :: inpStack;
-    input = this.dtd.replacementText( entityName );
+    inpStack = curInput :: inpStack;
+    curInput = this.dtd.replacementText(entityName);
     nextch;
   }
 
   def pop() = {
-    input = inpStack.head;
+    curInput = inpStack.head;
     inpStack = inpStack.tail;
     nextch;
   }
