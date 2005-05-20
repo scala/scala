@@ -436,6 +436,10 @@ $(latest)library-jc	: $(LIBRARY_JC_FILES)
 	$(TOUCH) $@
 
 $(latest)library-sc	: $(LIBRARY_SC_FILES)
+	@if [ "$(prefix)" = tnsc ]; then \
+	  $(make) sc target=LIBRARY LIBRARY_SC_FLAGS='$$(SC_FLAGS) -nopredefs'\
+	  LIBRARY_SC_FILES=$(LIBRARY_ROOT)/Predef.scala; \
+	fi
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	$(TOUCH) $@
 
