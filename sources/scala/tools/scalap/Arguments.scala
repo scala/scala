@@ -173,25 +173,25 @@ class Arguments {
     def getArgument(option: String): Option[String] = arguments get option;
 
     def getSuffixes(prefix: String): Set[String] =
-        prefixes.get(prefix).match {
+        prefixes.get(prefix) match {
             case None => new HashSet;
             case Some(set) => set
         }
 
     def containsSuffix(prefix: String, suffix: String): Boolean =
-        prefixes.get(prefix).match {
+        prefixes.get(prefix) match {
             case None => false
             case Some(set) => set contains suffix
         };
 
     def getBindings(tag: String): Map[String, String] =
-        bindings.get(tag).match {
+        bindings.get(tag) match {
             case None => new HashMap;
             case Some(map) => map
         }
 
     def getBinding(option: String, key: String): Option[String] =
-        bindings.get(option).match {
+        bindings.get(option) match {
             case None => None
             case Some(map) => map get key
         };
