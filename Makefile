@@ -274,7 +274,6 @@ ifeq ($(prefix),tnsc)
 $(latest)all		: $(latest)lamplib
 $(latest)all		: $(latest)library
 $(latest)all		: $(latest)tools
-$(latest)all		: $(latest)nsc
 endif
 
 $(latest)all		:
@@ -692,10 +691,13 @@ TOOLS_JAR_FILES		+= .
 
 $(latest)tools		: $(latest)lamplib
 $(latest)tools		: $(latest)util
+ifneq ($(prefix),tnsc)
 $(latest)tools		: $(latest)scalac
-#$(latest)tools		: $(latest)nsc
 $(latest)tools		: $(latest)scalai
 $(latest)tools		: $(latest)scaladoc
+else
+$(latest)tools		: $(latest)nsc
+endif
 $(latest)tools		: $(latest)scalap
 #$(latest)tools		: $(latest)dtd2scala
 $(latest)tools		: $(latest)scala4ant
