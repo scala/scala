@@ -16,6 +16,7 @@ import util._;
 import ast._;
 import ast.parser._;
 import typechecker._;
+import transmatch._;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with CompilationUnits {
 
@@ -135,12 +136,20 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object analyzer extends Analyzer {
     val global: Global.this.type = Global.this;
   }
+
+  object transmatcher extends TransMatcher {
+    val global: Global.this.type = Global.this;
+  }
+
   val infer = new analyzer.Inferencer(analyzer.NoContext);
 
   val namerPhase = new analyzer.NamerPhase(parserPhase);
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
 
+  val transMatchPhase = new transmatcher.TransMatchPhase(typeCheckPhase);
+
   val picklePhase = new pickler.PicklePhase(typeCheckPhase);
+
 
 /*
   object icode extends ICode {
