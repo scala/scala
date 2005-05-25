@@ -62,9 +62,11 @@ abstract class SymbolLoaders {
     override def load(root: Symbol): unit = complete(root);
 
     private def initRoot(root: Symbol): unit = {
-      if (root.rawInfo == this)
+      if (root.rawInfo == this) {
         root.setInfo(if (ok) NoType else ErrorType);
-      if (root.isModule) initRoot(root.moduleClass);
+        if (root.isModule)
+          root.moduleClass.setInfo(if (ok) NoType else ErrorType)
+      }
       if (root.isClass && !root.isModuleClass) root.rawInfo.load(root)
     }
   }

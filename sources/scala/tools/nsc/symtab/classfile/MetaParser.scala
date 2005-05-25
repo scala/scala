@@ -148,7 +148,6 @@ abstract class MetaParser{
       else owner.owner.tpe
     }
     owner.setInfo(parse());
-    System.out.println("constr " + owner + " = " + owner.info);
     assert(token == ";")
   }
 }

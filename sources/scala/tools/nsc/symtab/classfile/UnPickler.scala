@@ -102,14 +102,16 @@ abstract class UnPickler {
 	    case ALIASsym =>
 	      sym = owner.newAliasType(Position.NOPOS, name);
 	    case CLASSsym =>
-	      sym = if ((flags & MODULE) == 0 &&
-			name == classRoot.name && owner == classRoot.owner) classRoot
-		    else owner.newClass(Position.NOPOS, name);
+	      sym =
+                if (name == classRoot.name && owner == classRoot.owner)
+                  if ((flags & MODULE) != 0) moduleRoot.moduleClass else classRoot
+		else owner.newClass(Position.NOPOS, name);
 	      if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
 	    case MODULEsym =>
 	      val mclazz = at(inforef, readType).symbol.asInstanceOf[ClassSymbol];
-	      sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot
-		    else owner.newModule(Position.NOPOS, name, mclazz)
+	      sym =
+                if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot
+		else owner.newModule(Position.NOPOS, name, mclazz)
 	    case VALsym =>
 	      sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
 		    else owner.newValue(Position.NOPOS, name)

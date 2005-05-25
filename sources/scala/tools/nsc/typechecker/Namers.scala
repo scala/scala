@@ -14,8 +14,8 @@ trait Namers: Analyzer {
   import global._;
 
   class NamerPhase(prev: Phase) extends StdPhase(prev) {
-    def name = "namer";
     val global: Namers.this.global.type = Namers.this.global;
+    def name = "namer";
     def apply(unit: CompilationUnit): unit =
       new Namer(startContext.make(unit)).enterSym(unit.body);
   }
@@ -49,6 +49,9 @@ trait Namers: Analyzer {
       sym.flags = oldflags | newflags;
       if (sym.isModule)
         updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
+      if (sym.owner.isPackageClass && sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader])
+        // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
+        sym.linkedSym.setInfo(NoType);
       sym
     }
 
@@ -77,7 +80,7 @@ trait Namers: Analyzer {
     private def enterClassSymbol(pos: int, mods: int, name: Name): Symbol = {
       val c: Symbol = context.scope.lookup(name);
       if (c.isType && c.isExternal && context.scope == c.owner.info.decls) {
-        updatePosFlags(c, pos, mods)
+        updatePosFlags(c, pos, mods);
       } else {
 	enterInScope(context.owner.newClass(pos, name).setFlag(mods))
       }
@@ -85,7 +88,7 @@ trait Namers: Analyzer {
 
     private def enterModuleSymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
-      if (m.isModule && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
+      if (m.isTerm && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
         updatePosFlags(m, pos, mods)
       } else {
         val newm = context.owner.newModule(pos, name);
@@ -97,8 +100,7 @@ trait Namers: Analyzer {
 
     private def enterCaseFactorySymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
-      if (m.isModule && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
-        m.resetFlag(MODULE);
+      if (m.isTerm && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, mods)
       } else {
         enterInScope(context.owner.newMethod(pos, name).setFlag(mods))
@@ -225,7 +227,7 @@ trait Namers: Analyzer {
 
     def selfTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol): unit = {
-        sym.setInfo(typer.transformType(tree).tpe);
+        sym.setInfo(typer.typedType(tree).tpe);
       }
     }
 
@@ -285,9 +287,9 @@ trait Namers: Analyzer {
       val restype = deconstIfNotFinal(meth,
 	if (tpt.isEmpty) {
 	  tpt.tpe = if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
-		    else typer.transformExpr(rhs).tpe;
+		    else typer.typed(rhs).tpe;
 	  tpt.tpe
-	} else typer.transformType(tpt).tpe);
+	} else typer.typedType(tpt).tpe);
       def mkMethodType(vparams: List[Symbol], restpe: Type) = {
 	val formals = vparams map (.tpe);
 	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))	{
@@ -303,7 +305,7 @@ trait Namers: Analyzer {
     }
 
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
-      makePolyType(typer.reenterTypeParams(tparams), typer.transformType(rhs).tpe);
+      makePolyType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
 
     private def typeSig(tree: Tree): Type =
       try {
@@ -327,20 +329,19 @@ trait Namers: Analyzer {
 		  context.error(tpt.pos, "missing parameter type");
                   ErrorType
                 } else {
-                  tpt.tpe = newTyper(context.make(tree, sym))
-                    .transformExpr(rhs).tpe;
+                  tpt.tpe = newTyper(context.make(tree, sym)).typed(rhs).tpe;
                   tpt.tpe
                 }
-              else typer.transformType(tpt).tpe)
+              else typer.typedType(tpt).tpe)
 
 	  case AliasTypeDef(_, _, tparams, rhs) =>
             new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
 
 	  case AbsTypeDef(_, _, lo, hi) =>
-            TypeBounds(typer.transformType(lo).tpe, typer.transformType(hi).tpe);
+            TypeBounds(typer.typedType(lo).tpe, typer.typedType(hi).tpe);
 
           case Import(expr, selectors) =>
-            val expr1 = typer.transformQualExpr(expr);
+            val expr1 = typer.typedQualifier(expr);
 	    val base = expr1.tpe;
             typer.checkStable(expr1);
             def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {

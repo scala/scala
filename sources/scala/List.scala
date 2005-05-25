@@ -147,6 +147,17 @@ object List {
    *  @return the list of substrings
    */
   def fromString(str: String, separator: Char): List[String] = {
+    var words: List[String] = List();
+    var pos = str.length();
+    while (pos > 0) {
+      val pos1 = str.lastIndexOf(separator, pos - 1);
+      if (pos1 + 1 < pos)
+	words = str.substring(pos1 + 1, pos) :: words;
+      pos = pos1
+    }
+    words
+  }
+/*
     var res: List[String] = Nil;
     var start = 0;
     var end = str.indexOf(separator);
@@ -159,7 +170,7 @@ object List {
     }
     res.reverse
   }
-
+*/
   /** Returns the given string as a list of characters.
    *
    *  @param str the string to convert.
@@ -288,7 +299,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-/*sealed*/ trait List[+a] extends Seq[a] { // todo make sealed once we figure out how to build
+sealed trait List[+a] extends Seq[a] { // todo make sealed once we figure out how to build
 
   /** Returns true if the list does not contain any elements.
    *  @return true, iff the list is empty.
@@ -873,7 +884,7 @@ object List {
       else head :: tail.removeDuplicates
   }
 }
-/*
+
 /** The empty list.
  *
  *  @author  Martin Odersky
@@ -897,4 +908,3 @@ final case class ::[+b](hd: b, tl: List[b]) extends List[b] with java.io.Seriali
   def head: b = hd;
   def tail: List[b] = tl;
 }
-*/

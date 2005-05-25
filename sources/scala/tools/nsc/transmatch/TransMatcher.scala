@@ -24,7 +24,7 @@ abstract class TransMatcher {
 
   def newTransMatcher = new TransMatch();
 
-  class TransMatch extends Transformer(copy) {
+  class TransMatch extends Transformer {
     override def transform(tree: Tree) = tree match {
       case _ => super.transform(tree);
     }

@@ -4,7 +4,7 @@ object Address {
   def empty = new Address();
 }
 
-import List.list2ordered;
+//import List.list2ordered;
 
 /** Address holds the path in reverse Dewey notation
 */

@@ -21,15 +21,14 @@ abstract class ConstantFolder {
   });
 
   /** If tree is a constant value that can be converted to type `pt', perform the conversion */
-  def apply(tree: Tree, pt: Type): Tree = fold(tree, tree match {
-    case Literal(value) => foldTyped(value, pt)
+  def apply(tree: Tree, pt: Type): Tree = fold(tree, tree.tpe match {
+    case ConstantType(base, value) => foldTyped(value, pt)
     case _ => NoValue
   });
 
-  def fold(tree: Tree, value: Any): Tree =
-    if (value != NoValue && value != ()) {
-      copy.Literal(tree, value) setType ConstantType(literalType(value), value)
-    } else tree;
+  private def fold(tree: Tree, value: Any): Tree =
+    if (value != NoValue && value != ()) tree setType ConstantType(literalType(value), value)
+    else tree;
 
   private def foldUnop(op: Name, value: Any): Any = Pair(op, value) match {
     case Pair(nme.ZNOT, x: boolean) => !x

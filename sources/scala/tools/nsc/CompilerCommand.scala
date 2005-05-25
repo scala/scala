@@ -8,7 +8,7 @@ package scala.tools.nsc;
 import scala.tools.util.Reporter;
 
 /** A class representing command line info for scalac */
-class CompilerCommand(arguments: Array[String], error: String => unit) {
+class CompilerCommand(arguments: List[String], error: String => unit, interactive: boolean) {
   private var fs: List[String] = List();
 
   /** All files to compile */
@@ -39,16 +39,21 @@ class CompilerCommand(arguments: Array[String], error: String => unit) {
   }
 
   // initialization
-  var args = List.fromArray(arguments);
+  var args = arguments;
   var ok = true;
   while (!args.isEmpty && ok) {
     val args0 = args;
     if (args.head.startsWith("-")) {
-      for (val setting <- settings.allSettings)
-        args = setting.tryToSet(args);
-      if (args eq args0) {
-	error("unknown option: '" + args.head + "'");
+      if (interactive) {
+	error("no options can be given in interactive mode");
 	ok = false
+      } else {
+	for (val setting <- settings.allSettings)
+          args = setting.tryToSet(args);
+	if (args eq args0) {
+	  error("unknown option: '" + args.head + "'");
+	  ok = false
+	}
       }
     } else if (args.head.endsWith(".scala")) {
       fs = args.head :: fs;

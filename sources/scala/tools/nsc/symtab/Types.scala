@@ -63,13 +63,6 @@ abstract class Types: SymbolTable {
      *  identity for all other types */
     def deconst: Type = this;
 
-    /** Map a parameterless method type to its result type
-     *  identity for all other types */
-    def derefDef: Type = this match {
-      case PolyType(List(), restp) => restp
-      case _ => this
-    }
-
     /** For a TypeBounds type, itself;
      *  for a reference denoting an abstract type, its bounds,
      *  for all other types, a TypeBounds type all of whose bounds are this type.
@@ -319,7 +312,7 @@ abstract class Types: SymbolTable {
       else baseClasses.head.newOverloaded(this, alts)
     }
 
-    protected def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
+    def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
       //System.out.println("find member " + name.decode + " in " + this.baseClasses);//DEBUG
       var members: Scope = null;
       var member: Symbol = NoSymbol;
@@ -471,6 +464,9 @@ abstract class Types: SymbolTable {
     protected def supertype: Type = hi;
     override def bounds: TypeBounds = this;
     def containsType(that: Type) = lo <:< that && that <:< hi;
+    override def toString() =
+      (if (lo.symbol != AllClass) " >: " + lo else "") +
+      (if (hi.symbol != AnyClass) " <: " + hi else "");
   }
 
   /** A common base class for intersection types and class types

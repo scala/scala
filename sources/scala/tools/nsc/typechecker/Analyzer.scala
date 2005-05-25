@@ -14,7 +14,8 @@ abstract class Analyzer
 	 with Namers
 	 with Typers
 	 with Infer
-	 with Variances
-         with EtaExpansion {
+         with EtaExpansion
+          {
   val global: Global;
 }
+

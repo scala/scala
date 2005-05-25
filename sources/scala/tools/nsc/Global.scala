@@ -17,6 +17,7 @@ import ast._;
 import ast.parser._;
 import typechecker._;
 import transmatch._;
+import transform._;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with CompilationUnits {
 
@@ -50,6 +51,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   val copy = new LazyTreeCopier();
+
+  object variance extends Variances {
+    val global: Global.this.type = Global.this
+  }
 
   type AttrInfo = Pair[Type, List[Any]];
   val attributes = new HashMap[Symbol, List[AttrInfo]];
@@ -118,7 +123,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     getSourceFile(f)
   }
 
-  private object loaders extends SymbolLoaders {
+  object loaders extends SymbolLoaders {
     val global: Global.this.type = Global.this
   }
 
@@ -136,24 +141,25 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object analyzer extends Analyzer {
     val global: Global.this.type = Global.this;
   }
+  val infer = new analyzer.Inferencer(analyzer.NoContext);
 
   object transmatcher extends TransMatcher {
     val global: Global.this.type = Global.this;
   }
 
-  val infer = new analyzer.Inferencer(analyzer.NoContext);
+  object sampleTransform extends SampleTransform {
+    val global: Global.this.type = Global.this;
+  }
 
   val namerPhase = new analyzer.NamerPhase(parserPhase);
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
-
-  val transMatchPhase = new transmatcher.TransMatchPhase(typeCheckPhase);
-
   val picklePhase = new pickler.PicklePhase(typeCheckPhase);
-
+  val transMatchPhase = new transmatcher.TransMatchPhase(picklePhase);
+  val samplePhase = new sampleTransform.Phase(transMatchPhase);
 
 /*
   object icode extends ICode {
-    val global: Global.this.type = Global.this
+    val symtab: Global.this.type = Global.this
   }
   val codegenPhase = new icode.CodeGenPhase(erasurePhase)
 
@@ -163,11 +169,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   }
 */
-  val terminalPhase = new StdPhase(picklePhase) {
-    def name = "terminal";
+  val terminalPhase = new StdPhase(samplePhase) {
     val global: Global.this.type = Global.this;
+    def name = "terminal";
     def apply(unit: CompilationUnit): unit = {}
   }
+
+
 
 // Units and how to compile them -------------------------------------
 
@@ -212,12 +220,14 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
 
     if (reporter.errors() == 0) {
-      for (val Pair(sym, pickled) <- symData.elements.toList)
+      for (val Pair(sym, pickled) <- symData.elements.toList) {
+	sym.pos = Position.NOPOS;
 	if (symData contains sym) {
 	  symData -= sym;
 	  symData -= sym.linkedSym;
 	  writeSymblFile(sym, pickled)
 	}
+      }
     } else {
       for (val Pair(sym, file) <- symSource.elements)
 	sym.reset(new loaders.SourcefileLoader(file));

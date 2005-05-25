@@ -5,12 +5,20 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
+import symtab.Flags._;
+
 /** Variances form a lattice, 0 <= COVARIANT <= Variances, 0 <= CONTRAVARIANT <= VARIANCES
  */
-abstract class Variances: Analyzer {
+abstract class Variances {
 
+  val global: Global;
   import global._;
-  import symtab.Flags._;
+
+  /** Convert variance to string */
+  private def varianceString(variance: int): String =
+    if (variance == COVARIANT) "covariant"
+    else if (variance == CONTRAVARIANT) "contravariant"
+    else "invariant";
 
   /** Flip between covariant and contravariant */
   private def flip(v: int): int = {
@@ -18,6 +26,11 @@ abstract class Variances: Analyzer {
     else if (v == CONTRAVARIANT) COVARIANT;
     else v
   }
+
+  private def compose(v1: int, v2: int) =
+    if (v1 == 0) 0
+    else if (v1 == CONTRAVARIANT) flip(v2)
+    else v2;
 
   /** Map everything below VARIANCES to 0 */
   private def cut(v: int): int =

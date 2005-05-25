@@ -28,6 +28,7 @@ class Settings(error: String => unit) {
   val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm");
   val debug         = BooleanSetting("-debug", "Output debugging messages");
   val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail");
+  val interactive   = BooleanSetting("-interactive", "Interactive mode");
   val uniqid        = BooleanSetting("-uniqid", "Print identifiers with unique names (debugging option)");
   val printtypes    = BooleanSetting("-printtypes", "Print tree types (debugging option)");
   val prompt        = BooleanSetting("-prompt", "Display a prompt after each error (debugging option)");

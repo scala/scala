@@ -155,6 +155,14 @@ abstract class Symbols: SymbolTable {
     /** Symbol was preloaded from package */
     final def isExternal: boolean = pos == Position.NOPOS;
 
+    /** A a member of class `base' is incomplete if (1) it is declared deferred or
+     *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.
+     */
+    final def isIncompleteIn(base: Symbol): boolean =
+      (this == NoSymbol) ||
+      (this hasFlag DEFERRED) ||
+      (this hasFlag ABSOVERRIDE) && isIncompleteIn(superSymbol(base));
+
     /** The variance of this symbol as an integer */
     final def variance: int =
       if (hasFlag(COVARIANT)) 1
@@ -293,6 +301,7 @@ abstract class Symbols: SymbolTable {
       infos = null;
       setInfo(completer)
     }
+
 // Comparisons ----------------------------------------------------------------
 
     /** A total ordering between symbols that refines the class
@@ -417,6 +426,10 @@ abstract class Symbols: SymbolTable {
           sym => (sym hasFlag MODULE) && (sym.rawInfo != NoType));
       else NoSymbol;
 
+    /** The top-level class containing this symbol */
+    def toplevelClass: Symbol =
+      if (isClass && owner.isPackageClass) this else owner.toplevelClass;
+
     /** For a module its linked class, for a class its linked module or case factory otherwise */
     final def linkedSym: Symbol =
       if (isTerm) linkedClass
@@ -442,6 +455,20 @@ abstract class Symbols: SymbolTable {
     final def overridingSymbol(base: Symbol): Symbol =
       base.info.nonPrivateDecl(name).suchThat(sym =>
         sym.isType || (base.thisType.memberType(sym) matches base.thisType.memberType(this)));
+
+    /** The symbol accessed by a super in the definition of `this' when seen from
+     *  class `base'. This symbol is always concrete.
+     *  pre: `this.owner' is in the base class sequence of `base'.
+     */
+     final def superSymbol(base: Symbol): Symbol = {
+      var bcs = base.info.baseClasses.dropWhile(.!=(owner)).tail;
+      var sym: Symbol = NoSymbol;
+      while (!bcs.isEmpty && sym == NoSymbol) {
+	sym = overriddenSymbol(bcs.head).suchThat(sym => !(sym hasFlag DEFERRED));;
+	bcs = bcs.tail
+      }
+      sym
+    }
 
 // ToString -------------------------------------------------------------------
 
@@ -554,8 +581,8 @@ abstract class Symbols: SymbolTable {
 
     /** String representation of symbol's variance */
     private def varianceString: String =
-      if (variance > 0) "+"
-      else if (variance < 0) "-"
+      if (variance == 1) "+"
+      else if (variance == -1) "-"
       else "";
 
     /** String representation of symbol's definition */
@@ -682,6 +709,7 @@ abstract class Symbols: SymbolTable {
     super.setInfo(NoType);
     override def setInfo(info: Type): this.type = { assert(info == NoType); this }
     override def enclClass: Symbol = this;
+    override def toplevelClass: Symbol = this;
     override def enclMethod: Symbol = this;
     override def owner: Symbol = throw new Error();
     override def alternatives: List[Symbol] = List();

@@ -26,7 +26,7 @@ abstract class TreeCheckers extends Analyzer {
     tpeOfTree.clear;
     val checker = new TreeChecker(context);
     checker.precheck.traverse(unit.body);
-    checker.transformExpr(unit.body);
+    checker.typed(unit.body);
     checker.postcheck.traverse(unit.body);
     reporter.prompt(curPrompt);
   }
@@ -37,7 +37,7 @@ abstract class TreeCheckers extends Analyzer {
 
     import infer._;
 
-    override def transform(tree: Tree, mode: int, pt: Type): Tree = {
+    override def typed(tree: Tree, mode: int, pt: Type): Tree = {
       //System.out.println("**** checking " + tree);//debug
       tree match {
 	case EmptyTree | TypeTree() =>
@@ -47,13 +47,14 @@ abstract class TreeCheckers extends Analyzer {
 	    tpeOfTree.update(tree, tree.tpe);
             tree.tpe = null
 	  }
-          val newtree = super.transform(tree, mode, pt);
+          val newtree = super.typed(tree, mode, pt);
           if (newtree ne tree)
             error(tree.pos, "trees differ\n old: " + tree + " [" + tree.getClass() + "]\n new: " +
 		  newtree + " [" + newtree.getClass() + "]");
       }
       tree
     }
+    override def typed(tree: Tree) = super.typed(tree); // doto remove for new compiler
 
     object precheck extends Traverser {
       override def traverse(tree: Tree): unit = {

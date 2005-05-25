@@ -244,8 +244,8 @@ abstract class ClassfileParser {
       clazz.setFlag(sflags);
       if (!hasMeta) {
 	clazz.setInfo(classInfo);
-	statics.setInfo(staticInfo);
       }
+      statics.setInfo(staticInfo);
       staticModule.setInfo(statics.tpe);
       in.bp = curbp;
       val fieldCount = in.nextChar();

@@ -59,8 +59,6 @@ abstract class Definitions: SymbolTable {
     var PredefModule: Symbol = _;
     var ConsoleModule: Symbol = _;
     var MatchErrorModule: Symbol = _;
-    var NilModule: Symbol = _;
-    var ConsClass: Symbol = _;
     var RepeatedParamClass: Symbol = _;
     var ByNameParamClass: Symbol = _;
 
@@ -81,6 +79,9 @@ abstract class Definitions: SymbolTable {
 
     def seqType(arg: Type) =
       typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg));
+
+//    def NilModule: Symbol = getModule("scala.Nil");
+//    def ConsClass: Symbol = getClass("scala.$colon$colon");
 
     // members of class scala.Any
     var Any_==          : Symbol = _;
@@ -222,8 +223,6 @@ abstract class Definitions: SymbolTable {
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
       MatchErrorModule = getModule("scala.MatchError");
-      NilModule = getModule("scala.Nil");
-      ConsClass = getClass("scala.$colon$colon");
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));

@@ -9,6 +9,7 @@ abstract class Infer: Analyzer {
   import symtab.Flags._;
   import global._;
   import definitions._;
+  import variance.{varianceInType, varianceInTypes};
   import posAssigner.atPos;
   import util.ListBuffer;
 
@@ -527,7 +528,7 @@ abstract class Infer: Analyzer {
 	if (settings.debug.value) System.out.println("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);//debug
 	val alts1 = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
 	def improves(sym1: Symbol, sym2: Symbol) = {
-	  sym2 == NoSymbol ||
+	  sym2 == NoSymbol || sym2.isError ||
 	  ((sym1.owner isSubClass sym2.owner) &&
 	   specializes(pre.memberType(sym1), pre.memberType(sym2)))
 	}
