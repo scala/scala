@@ -975,6 +975,9 @@ public class TypesAsValuesPhase extends Phase {
                         addConstructorsNeededBy(roots, args[i], set);
                 }
                 break;
+            case CompoundType(Type[] parts, _):
+                for (int i = 0; i < parts.length; ++i)
+                    addConstructorsNeededBy(roots, parts[i], set);
             default:
                 ;               // nothing to do
             }
@@ -1000,7 +1003,16 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         private boolean isCyclic(Symbol sym) {
-            return constructorsNeededBy(sym).contains(sym);
+            HashSet constrs = constructorsNeededBy(sym);
+            if (constrs.contains(sym))
+                return true;
+            Iterator constrsIt = constrs.iterator();
+            while (constrsIt.hasNext()) {
+                Symbol constr = (Symbol)constrsIt.next();
+                if (constr.isAbstractType())
+                    return true;
+            }
+            return false;
         }
 
         /**
