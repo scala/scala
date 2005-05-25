@@ -13,7 +13,6 @@ import scala.io.Source;
 
 object ConstructingParser {
 
-
   def fromFile(inp: java.io.File, preserveWS: Boolean) = {
     /* DEBUG
     val src = Source.fromFile(inp);
@@ -61,7 +60,6 @@ with     MarkupParser  {
       fileStr = inp.descr.substring(5, inp.descr.length());
     }
     fileStr = fileStr.substring(0,fileStr.lastIndexOf(java.io.File.separator)+1);
-
     Source.fromFile(fileStr + systemLiteral);
   }
 }

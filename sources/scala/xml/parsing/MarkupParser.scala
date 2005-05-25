@@ -44,8 +44,6 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   /** holds the position in the source file */
   var pos: Int = _;
 
-  /* true if reading external sources */
-  var isReadingExternal = false;;
 
   /* true if reading external subset */
   var inExtSubSet = false;
@@ -229,10 +227,9 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       pos = curInput.pos;
     } else {
       //Console.println("nextch, curInput.hasNext == false ")      ;
-      //Console.println("nextch, isReadingExternal == "+isReadingExternal);
       //Console.println("nextch, Nil != inpStack == "+(Nil!=inpStack));
-      if ((!isReadingExternal) && (Nil != inpStack)) {
-        /** for external source, we like to be notified of eof! */
+      if (Nil != inpStack) {
+        /** for external source, inpStack == Nil ! need notify of eof! */
         pop();
       } else {
         eof = true;
@@ -585,7 +582,6 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     if(null != extID) {
       val extSubsetSrc = externalSource( extID.systemId );
 
-      isReadingExternal = true;
       inExtSubSet = true;
       /*
        .indexOf(':') != -1) { // assume URI
@@ -603,7 +599,6 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       nextch;
       extSubset();
 
-      isReadingExternal = false;
       inExtSubSet = false;
 
       curInput = old;
@@ -873,10 +868,10 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
             //Console.println("how can we be eof = "+eof);
 
             // eof = true because not external?!
-              if(!eof)
-                error("expected only INCLUDE or IGNORE");
+              //if(!eof)
+              //  error("expected only INCLUDE or IGNORE");
 
-              pop();
+              //pop();
 
 
               //Console.println("hello, popped");
@@ -914,20 +909,15 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   }
 
   def markupDecl(): Unit = ch match {
-    /** parameter entity reference
-     *  n-v: just create PE-reference
-     *  v:   "parse replacementText into NodeBuffer ?"
-     */
-    case '%' =>
+    case '%' =>                  // parameter entity reference
       nextch;
       val ent = xName;
       xToken(';');
       if(!isValidating)
-        handle.peReference(ent);
-      else {
-        //Console.println("pushed entity "+ent);
-        push(ent);
-      }
+        handle.peReference(ent); //  n-v: just create PE-reference
+      else
+        push(ent);               //    v: parse replacementText
+
     //peReference
     case '<' =>
       nextch;
@@ -936,7 +926,6 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     case _ if isSpace(ch) =>
       xSpace;
     case _ =>
-      //Console.println("still think am reading external: "+isReadingExternal);
       reportSyntaxError("markupdecl: unexpected character '"+ch+"'");
       nextch;
   }
@@ -1114,7 +1103,9 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     //Console.println("BEFORE PUSHING  "+ch);
     //Console.println("BEFORE PUSHING  "+pos);
     //Console.println("PUSHING "+entityName);
-    inpStack = curInput :: inpStack;
+    if(!eof) {
+      inpStack = curInput :: inpStack;
+    }
     curInput = replacementText(entityName);
     nextch;
   }
@@ -1131,11 +1122,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     inpStack = inpStack.tail;
     ch = curInput.ch;
     pos = curInput.pos;
-    eof = !curInput.hasNext;
-      //Console.println("returned (popped), current ch = "+ch )
-    //Console.println("POPPING  ch now "+ch);
-    //Console.println("POPPING  ch now "+pos);
-    //nextch;
+    eof = false; // must be false, because of places where entity refs occur
   }
 
 }
