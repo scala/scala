@@ -91,7 +91,7 @@ case class ParameterEntityDecl(name: String, entdef: EntityDef) extends EntityDe
 /** an unparsed entity declaration */
 case class UnparsedEntityDecl( name:String, extID:ExternalID, notation:String ) extends EntityDecl {
   final  def toString(sb: StringBuffer): StringBuffer = {
-    sb.append("<!ENTITY ").append( name );
+    sb.append("<!ENTITY ").append( name ).append(' ');
     extID.toString(sb).append(" NDATA ").append(notation).append('>');
   }
 }
