@@ -19,10 +19,15 @@ import scala.xml.dtd._ ;
  * and returns whatever the markup handler returns. Use
  * <code>ConstructingParser</code> if you just want to parse XML to
  * construct instances of <code>scala.xml.Node</code>.
+ *
+ * While XML elements are returned, DTD declarations - if handled - are
+ * collected using side-effects.
  */
 abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef with TokenTests {
 
   val input: Source;
+
+  def externalSource(systemLiteral: String): Source;
 
   //
   // variables, values
@@ -38,6 +43,12 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
   /** holds the position in the source file */
   var pos: Int = _;
+
+  /* true if reading external sources */
+  var isReadingExternal = false;;
+
+  /* true if reading external subset */
+  var inExtSubSet = false;
 
   /** holds temporary values of pos */
   var tmppos: Int = _;
@@ -56,6 +67,19 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   // methods
   //
 
+  /** &lt;? prolog ::= xml S ... ?&gt;
+   */
+  def xmlProcInstr(): MetaData = {
+    xToken("xml");
+    xSpace;
+    val Pair(md,scp) = xAttributes(TopScope);
+    if(scp != TopScope)
+      reportSyntaxError("no xmlns definitions here, please.");
+    xToken('?');
+    xToken('>');
+    md
+  }
+
   /** &lt;? prolog ::= xml S
    */
   def prolog(): Tuple3[Option[String], Option[String], Option[Boolean]] = {
@@ -66,51 +90,75 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     var info_enc: Option[String] = None;
     var info_stdl: Option[Boolean] = None;
 
-    xToken("xml");
+    var m = xmlProcInstr();
+
     xSpace;
-    val Pair(md,scp) = xAttributes(TopScope);
-    xToken('?');
-    xToken('>');
-    xSpace;
-    if(TopScope == scp) {
-      var m = md;
 
-      if (!m.isPrefixed && m.key == "version") {
-        if (m.value == "1.0") {
-          info_ver = Some("1.0");
-          m = m.next;
-        } else {
-          reportSyntaxError("cannot deal with versions != 1.0");
-        }
-      } else
-        reportSyntaxError("VersionInfo expected!");
-
-      if (!m.isPrefixed && m.key == "encoding") {
-        val enc = m.value;
-        if (!isValidIANAEncoding(enc))
-          reportSyntaxError("\"" + enc + "\" is not a valid encoding");
-        info_enc = Some(enc);
-        m = m.next
+    if (!m.isPrefixed && m.key == "version") {
+      if (m.value == "1.0") {
+        info_ver = Some("1.0");
+        m = m.next;
+      } else {
+        reportSyntaxError("cannot deal with versions != 1.0");
       }
-
-      if (!m.isPrefixed && m.key == "standalone") {
-        m.value match {
-          case "yes" =>
-            info_stdl = Some(true);
-          case "no" =>
-            info_stdl = Some(false);
-          case _ =>
-            reportSyntaxError("either 'yes' or 'no' expected");
-        }
-        m = m.next
-      }
-
-      if (m != Null)
-        reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
     } else
-        reportSyntaxError("no xmlns definitions here, please");
+      reportSyntaxError("VersionInfo expected!");
 
+    if (!m.isPrefixed && m.key == "encoding") {
+      val enc = m.value;
+      if (!isValidIANAEncoding(enc))
+        reportSyntaxError("\"" + enc + "\" is not a valid encoding");
+      info_enc = Some(enc);
+      m = m.next
+    }
+
+    if (!m.isPrefixed && m.key == "standalone") {
+      m.value match {
+        case "yes" =>
+          info_stdl = Some(true);
+        case "no" =>
+          info_stdl = Some(false);
+        case _ =>
+          reportSyntaxError("either 'yes' or 'no' expected");
+      }
+      m = m.next
+    }
+
+    if (m != Null)
+      reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
     Tuple3(info_ver,info_enc,info_stdl)
+  }
+
+  /** prolog, but without standalone */
+  def textDecl(): Tuple2[Option[String],Option[String]] = {
+
+    var info_ver: Option[String] = None;
+    var info_enc: Option[String] = None;
+
+    var m = xmlProcInstr();
+
+    if (!m.isPrefixed && m.key == "version") {
+      if (m.value == "1.0") {
+        info_ver = Some("1.0");
+        m = m.next;
+      } else {
+        reportSyntaxError("cannot deal with versions != 1.0");
+      }
+    } else
+      reportSyntaxError("VersionInfo expected!");
+
+    if (m != Null && !m.isPrefixed && m.key == "encoding") {
+      val enc = m.value;
+      if (!isValidIANAEncoding(enc))
+        reportSyntaxError("\"" + enc + "\" is not a valid encoding");
+      info_enc = Some(enc);
+      m = m.next
+    }
+
+    if (m != Null)
+      reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
+
+    Tuple2(info_ver, info_enc);
   }
 
   /**
@@ -152,7 +200,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
           elemCount = elemCount + 2;
       case m:Node =>
         elemCount = elemCount + 1;
-      theNode = m;
+        theNode = m;
     }
     if (1 != elemCount) {
       reportSyntaxError("document must contain exactly one element");
@@ -177,13 +225,21 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   /** this method assign the next character to ch and advances in input */
   def nextch: Unit = {
     if (curInput.hasNext) {
-      ch = input.next;
-      pos = input.pos;
+      ch = curInput.next;
+      pos = curInput.pos;
+    } else {
+      //Console.println("nextch, curInput.hasNext == false ")      ;
+      //Console.println("nextch, isReadingExternal == "+isReadingExternal);
+      //Console.println("nextch, Nil != inpStack == "+(Nil!=inpStack));
+      if ((!isReadingExternal) && (Nil != inpStack)) {
+        /** for external source, we like to be notified of eof! */
+        pop();
+      } else {
+        eof = true;
+        ch = 0.asInstanceOf[Char];
+      //throw new Exception("this is the end")
+      }
     }
-    else if (Nil != inpStack)
-      pop();
-    else
-      eof = true;
   }
 
   //final val enableEmbeddedExpressions: Boolean = false;
@@ -193,8 +249,10 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def xToken(that: Char): Unit = {
     if (ch == that)
       nextch;
-    else
+    else  {
       reportSyntaxError("'" + that + "' expected instead of '" + ch + "'");
+      error("FATAL");
+    }
   }
 
   def xToken(that: Seq[Char]): Unit = {
@@ -273,6 +331,24 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     str
 
   }
+
+  /** entity value, terminated by either ' or ". value may not contain &lt;.
+   *       AttValue     ::= `'` { _  } `'`
+   *                      | `"` { _ } `"`
+   */
+  def xEntityValue(): String = {
+    val endch = ch;
+    nextch;
+    while (ch != endch) {
+      putChar(ch);
+      nextch;
+    }
+    nextch;
+    val str = cbuf.toString();
+    cbuf.setLength(0);
+    str
+  }
+
 
   /** parse a start or empty tag.
    *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
@@ -382,6 +458,26 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       }
   }
 
+  /** '<' content1 ::=  ... */
+  def content1(pscope: NamespaceBinding, ts: NodeBuffer): Unit = {
+    ch match {
+      case '!' =>
+        nextch;
+      if ('[' == ch)                 // CDATA
+        ts + xCharData;
+      else if ('D' == ch) // doctypedecl, parse DTD
+        parseDTD();
+      else // comment
+        ts + xComment;
+      case '?' =>                       // PI
+        nextch;
+        ts + xProcInstr;
+      case _   =>
+        ts + element1(pscope);     // child
+    }
+  }
+
+  /** content1 ::=  '&lt;' content1 | '&amp;' charref ... */
   def content(pscope: NamespaceBinding): NodeSeq = {
     var ts = new NodeBuffer;
     var exit = eof;
@@ -399,24 +495,10 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
             nextch;
             //Console.println("after ch = '"+ch+"' line="+scala.io.Position.line(pos)+" pos="+pos);
 
-            ch match {
-              case '/' =>
-                exit = true;                    // end tag
-              case '!' =>
-                nextch;
-              if ('[' == ch)                 // CDATA
-                ts + xCharData;
-              else if ('D' == ch) // doctypedecl, parse DTD
-                parseDTD();
-              else // comment
-                ts + xComment;
-              case '?' =>                       // PI
-                nextch;
-              ts + xProcInstr;
-              case _   =>
-                ts + element1(pscope);     // child
-            }
-
+            if('/' ==ch)
+              exit = true;                    // end tag
+            else
+              content1(pscope, ts)
           //case '{' =>
 /*            if( xCheckEmbeddedBlock ) {
               ts.appendAll(xEmbeddedExpr);
@@ -496,6 +578,44 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       extID = externalID();
       xSpace;
     }
+
+    /* parse external subset of DTD
+     */
+
+    if(null != extID) {
+      val extSubsetSrc = externalSource( extID.systemId );
+
+      isReadingExternal = true;
+      inExtSubSet = true;
+      /*
+       .indexOf(':') != -1) { // assume URI
+         Source.fromFile(new java.net.URI(extID.systemLiteral));
+       } else {
+         Source.fromFile(extID.systemLiteral);
+       }
+      */
+      //Console.println("I'll print it now");
+      val old = curInput;
+      tmppos = curInput.pos;
+      val oldch = ch;
+      curInput = extSubsetSrc;
+      pos = 0;
+      nextch;
+      extSubset();
+
+      isReadingExternal = false;
+      inExtSubSet = false;
+
+      curInput = old;
+      pos = curInput.pos;
+      ch = curInput.ch;
+      eof = false;
+      //while(extSubsetSrc.hasNext)
+      //Console.print(extSubsetSrc.next);
+
+      //Console.println("returned from external, current ch = "+ch )
+    }
+
     if ('[' == ch) { // internal subset
       nextch;
       /* TODO */
@@ -512,7 +632,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       override var externalID = extID;
       override val decls      = handle.decls.reverse;
     }
-    this.dtd.initializeEntities();
+    //this.dtd.initializeEntities();
   }
 
   def element(pscope: NamespaceBinding): NodeSeq = {
@@ -556,10 +676,10 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
    */
   def xName: String = {
     if (isNameStart(ch)) {
-      do {
+      while (isNameChar(ch)) {
         putChar(ch);
         nextch;
-      } while (isNameChar(ch));
+      }
       val n = cbuf.toString().intern();
       cbuf.setLength(0);
       n
@@ -574,7 +694,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
 
   /** skip optional space S? */
-  def xSpaceOpt = while (isSpace(ch)) { nextch; };
+  def xSpaceOpt = while (isSpace(ch) && !eof) { nextch; };
 
   /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
   def xSpace = {
@@ -681,50 +801,154 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   //  dtd parsing
   //
 
+  def extSubset(): Unit = {
+    var textdecl:Tuple2[Option[String],Option[String]] = null;
+    if(ch=='<') {
+      nextch;
+      if(ch=='?') {
+        nextch;
+        textdecl = textDecl()
+      } else
+        markupDecl1();
+    }
+    while(curInput.hasNext) {
+      markupDecl();
+    }
+  }
+
+  def markupDecl1() = {
+    def doInclude() = {
+      xToken('['); while(']' != ch) markupDecl(); nextch // ']'
+    }
+    def doIgnore() = {
+      xToken('['); while(']' != ch) nextch; nextch; // ']'
+    }
+    if('?' == ch) {
+      nextch;
+      xProcInstr; // simply ignore processing instructions!
+    } else {
+      xToken('!');
+      ch match {
+        case '-' =>
+          xComment ; // ignore comments
+
+        case 'E' =>
+          nextch;
+          if ('L' == ch) {
+            nextch;
+            elementDecl()
+          } else
+            entityDecl();
+
+        case 'A' =>
+          nextch;
+          attrDecl();
+
+        case 'N' =>
+          nextch;
+          notationDecl();
+
+        case '[' if inExtSubSet =>
+          nextch;
+          xSpaceOpt;
+          ch match {
+            case '%' =>
+              nextch;
+              val ent = xName;
+              xToken(';');
+              xSpaceOpt;
+            /*
+              Console.println("hello, pushing!");
+            {
+              val test =  replacementText(ent);
+              while(test.hasNext)
+                Console.print(test.next);
+            } */
+              push(ent);
+              xSpaceOpt;
+              //Console.println("hello, getting name");
+              val stmt = xName;
+              //Console.println("hello, got name");
+              xSpaceOpt;
+            //Console.println("how can we be eof = "+eof);
+
+            // eof = true because not external?!
+              if(!eof)
+                error("expected only INCLUDE or IGNORE");
+
+              pop();
+
+
+              //Console.println("hello, popped");
+              stmt.match {
+                // parameter entity
+                case "INCLUDE" =>
+                  doInclude();
+                case "IGNORE" =>
+                  doIgnore()
+              }
+            case 'I' =>
+              nextch;
+              ch.match {
+                case 'G' =>
+                  nextch;
+                  xToken("NORE");
+                  xSpaceOpt;
+                  doIgnore()
+                case 'N' =>
+                  nextch;
+                  xToken("NCLUDE");
+                  doInclude()
+              }
+          }
+        xToken(']');
+        xToken('>');
+
+        case _  =>
+          curInput.reportError(pos, "unexpected character '"+ch+"', expected some markupdecl");
+        while(ch!='>')
+          nextch;
+
+      }
+    }
+  }
+
+  def markupDecl(): Unit = ch match {
+    /** parameter entity reference
+     *  n-v: just create PE-reference
+     *  v:   "parse replacementText into NodeBuffer ?"
+     */
+    case '%' =>
+      nextch;
+      val ent = xName;
+      xToken(';');
+      if(!isValidating)
+        handle.peReference(ent);
+      else {
+        //Console.println("pushed entity "+ent);
+        push(ent);
+      }
+    //peReference
+    case '<' =>
+      nextch;
+      markupDecl1();
+
+    case _ if isSpace(ch) =>
+      xSpace;
+    case _ =>
+      //Console.println("still think am reading external: "+isReadingExternal);
+      reportSyntaxError("markupdecl: unexpected character '"+ch+"'");
+      nextch;
+  }
+
+  /**  "rec-xml/#ExtSubset" pe references may not occur within markup
+   declarations
+   */
   def intSubset(): Unit = {
     //Console.println("(DEBUG) intSubset()");
     xSpace;
     while (']' != ch) {
-      ch match {
-        case '%' =>
-          nextch;
-          handle.peReference(xName);
-          xToken(';');
-          xSpace;
-          //peReference
-      case '<' =>
-        nextch;
-
-        if('?' == ch)
-          xProcInstr; // simply ignore processing instructions!
-        else {
-          xToken('!');
-          ch match {
-            case '-' =>
-              xComment ; // ignore comments
-
-            case 'E' =>
-              nextch;
-              if ('L' == ch) {
-                nextch;
-                elementDecl()
-              } else
-                entityDecl();
-
-            case 'A' =>
-              nextch;
-              attrDecl();
-
-            case 'N' =>
-              nextch;
-              notationDecl();
-          }
-        }
-        xSpace;
-      case _ =>
-        reportSyntaxError("unexpected character '"+ch+"'");
-        nextch;
-      }
+      markupDecl()
     }
   }
 
@@ -837,7 +1061,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
         }
 
       case '"' | '\'' =>
-        val av = xAttributeValue();
+        val av = xEntityValue();
         xSpaceOpt;
         xToken('>');
         if (isParameterEntity)
@@ -887,15 +1111,31 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   }
 
   def push(entityName:String) = {
+    //Console.println("BEFORE PUSHING  "+ch);
+    //Console.println("BEFORE PUSHING  "+pos);
+    //Console.println("PUSHING "+entityName);
     inpStack = curInput :: inpStack;
-    curInput = this.dtd.replacementText(entityName);
+    curInput = replacementText(entityName);
     nextch;
   }
 
+  /*
+  def push(src:Source) = {
+    curInput = src;
+    nextch;
+  }
+  */
   def pop() = {
+    //Console.println("POPPING");
     curInput = inpStack.head;
     inpStack = inpStack.tail;
-    nextch;
+    ch = curInput.ch;
+    pos = curInput.pos;
+    eof = !curInput.hasNext;
+      //Console.println("returned (popped), current ch = "+ch )
+    //Console.println("POPPING  ch now "+ch);
+    //Console.println("POPPING  ch now "+pos);
+    //nextch;
   }
 
 }

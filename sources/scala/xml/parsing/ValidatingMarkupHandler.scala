@@ -12,14 +12,9 @@ abstract class ValidatingMarkupHandler extends MarkupHandler {
   final override def attListDecl(name: String, attList: List[AttrDecl]): Unit =
     decls = AttListDecl( name, attList) :: decls;
 
-  final override def parameterEntityDecl(name: String, edef: EntityDef): Unit =
-    decls = ParameterEntityDecl( name, edef) :: decls;
-
-  final override def parsedEntityDecl(name: String, edef: EntityDef): Unit =
-    decls = ParsedEntityDecl( name, edef) :: decls;
-
-  final override def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit =
-    decls = UnparsedEntityDecl( name, extID, notat) :: decls;
+  final override def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit = {
+    decls =  UnparsedEntityDecl( name, extID, notat) :: decls;
+  }
 
   final override def notationDecl(notat: String, extID: ExternalID): Unit =
     decls = NotationDecl( notat, extID) :: decls;

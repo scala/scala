@@ -9,7 +9,11 @@
 
 package scala.xml.parsing;
 
+import scala.io.Source;
+import scala.collection.mutable.{ HashMap, Map }
 import scala.xml.dtd._ ;
+
+import scala.util.logging._;
 
 /** class that handles markup - provides callback methods to MarkupParser.
  *  the default is nonvalidating behaviour
@@ -17,7 +21,10 @@ import scala.xml.dtd._ ;
  *  @todo can we ignore more entity declarations (i.e. those with extIDs)?
  *  @todo expanding entity references
  */
-abstract class MarkupHandler {
+abstract class MarkupHandler with Logged with ConsoleLogger {
+
+  // impl. of Logged
+  //def log(msg:String) = {}
 
   /** returns true is this markup handler is validing */
   val isValidating: Boolean = false;
@@ -26,6 +33,21 @@ abstract class MarkupHandler {
   val preserveWS: Boolean;
 
   var decls: List[scala.xml.dtd.Decl] = Nil;
+
+  var ent:  Map[String, EntityDecl]  = new HashMap[String, EntityDecl]();
+
+  def replacementText( entityName: String ): Source = {
+    ent.get(entityName) match {
+      case Some(ParsedEntityDecl(_, IntDef(value))) =>
+        Source.fromString(value);
+      case Some(ParameterEntityDecl(_, IntDef(value))) =>
+        Source.fromString(" "+value+" ");
+      case Some(_) =>
+        Source.fromString("<!-- "+entityName+"; -->");
+      case None =>
+        Source.fromString("<!-- unknown entity "+entityName+"; -->")
+    }
+  }
 
   /** callback method invoked by MarkupParser after parsing an element.
    *
@@ -60,18 +82,26 @@ abstract class MarkupHandler {
 
   def attListDecl(name: String, attList: List[AttrDecl]): Unit = {}
 
-  def parameterEntityDecl(name: String, edef: EntityDef): Unit = edef match {
-    case _:ExtDef if !isValidating =>
-      ; // ignore (cf REC-xml 4.4.1)
-    case _ =>
-      decls = ParameterEntityDecl(name, edef) :: decls;
+  def parameterEntityDecl(name: String, edef: EntityDef): Unit = {
+    //log("parameterEntityDecl("+name+","+edef+")");
+    edef match {
+      case _:ExtDef if !isValidating =>
+        ; // ignore (cf REC-xml 4.4.1)
+      case _ =>
+        val y =  ParameterEntityDecl(name, edef);
+        decls = y :: decls;
+        ent.update(name, y);
+        //log("ent.get(..) = "+ent.get(name));
+    }
   }
 
   def parsedEntityDecl(name: String, edef: EntityDef): Unit = edef match {
     case _:ExtDef if !isValidating =>
       ; // ignore (cf REC-xml 4.8 and 4.4.1)
     case _ =>
-      decls = ParsedEntityDecl(name, edef) :: decls;
+      val y = ParsedEntityDecl(name, edef);
+      decls = y :: decls;
+      ent.update(name, y)
   }
 
   def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit =

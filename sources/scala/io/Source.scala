@@ -58,6 +58,11 @@ object Source {
   def fromFile(name: String, enc: String): Source =
     fromFile( new File( name ), enc);
 
+  /** creates Source from file with given file: URI
+   */
+  def fromFile(uri: java.net.URI): Source =
+    fromFile(new File(uri));
+
   /** creates Source from file, using default character encoding, setting its
    *  description to filename.
    */
@@ -66,12 +71,7 @@ object Source {
     val is = new FileInputStream( file );
     is.read( arr );
     val s = fromBytes(arr);
-    s.descr = new StringBuffer()
-              .append( file.getAbsolutePath() )
-              .append( File.pathSeparator )
-              .append( file.getName() )
-              .toString();
-    s
+    return setFileDescriptor(file,s);
   }
 
   /** creates Source from file, using given character encoding, setting its
@@ -83,8 +83,17 @@ object Source {
     is.read( arr );
     val s = fromBytes(arr, enc);
     s.descr = file.getName();
+    return setFileDescriptor(file,s);
+  }
+
+  def setFileDescriptor(file: File, s: Source): Source = {
+    s.descr = new StringBuffer()
+              .append( "file:" )
+              .append( file.getAbsolutePath() )
+              .toString();
     s
   }
+
 }
 
 /** an iterable representation of source files.
@@ -113,7 +122,7 @@ abstract class Source extends Iterator[Char] {
    */
   var ch: Char = _;
 
-  /** description of this source */
+  /** description of this source, default empty */
   var descr: String = "";
 
   var nerrors = 0;

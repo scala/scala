@@ -12,14 +12,11 @@ abstract class DTD {
 
   def unparsedEntities: Seq[EntityDecl] = Nil;
 
-  var elem: Map[String, ElemDecl] =
-    new HashMap[String, ElemDecl]();
+  var elem: Map[String, ElemDecl]    = new HashMap[String, ElemDecl]();
 
-  var attr: Map[String, AttListDecl] =
-    new HashMap[String, AttListDecl]();
+  var attr: Map[String, AttListDecl] = new HashMap[String, AttListDecl]();
 
-  var ent: Map[String, EntityDecl] =
-    new HashMap[String, EntityDecl]();
+  var ent:  Map[String, EntityDecl]  = new HashMap[String, EntityDecl]();
 
   var decls: List[Decl] = Nil;
 
@@ -37,24 +34,15 @@ abstract class DTD {
     sb.append("]").toString()
   }
 
+  /*
   def initializeEntities() = {
     for(val x <- decls) x match {
-      case y @ ParsedEntityDecl(name, _) => ent.update(name, y);
+      case y @ ParsedEntityDecl(name, _)      => ent.update(name, y);
       case y @ UnparsedEntityDecl(name, _, _) => ent.update(name, y);
-      case y @ ParameterEntityDecl(name, _) => ent.update(name, y);
+      case y @ ParameterEntityDecl(name, _)   => ent.update(name, y);
       case _ =>
     }
   }
-
-  def replacementText( entityName: String ): Source = {
-    ent.get(entityName) match {
-      case Some(ParsedEntityDecl(_, IntDef(value))) =>
-        Source.fromString(value);
-      case Some(_) =>
-        Source.fromString("<!-- "+entityName+"; -->");
-      case None =>
-        Source.fromString("<!-- unknown entity "+entityName+"; -->")
-    }
-  }
+  */
 
 }
