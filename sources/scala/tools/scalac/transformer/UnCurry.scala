@@ -156,17 +156,25 @@ class UnCurry(global: scalac_Global, descr: UnCurryPhase) extends OwnerTransform
 	// argument to parameterless function e => ( => e)
 	val ftype: Type = fn.getType();
         val fn1: Tree = transform(fn);
-        val myInArray: boolean = TreeInfo.methSymbol(fn1) == global.definitions.PREDEF_ARRAY();
-        inArray = myInArray;
+        val myInArray: boolean =
+          TreeInfo.methSymbol(fn1) == global.definitions.PREDEF_ARRAY();
+        val old = inArray;
+        inArray = myInArray; // a hack to communicate with toSequence.
         val args1 = transformArgs(tree.pos, args, ftype);
-        if (myInArray)
-          fn1 match {
-            case Tree$Apply(TypeApply(Select(fn2, _), targs), _) =>
-              return gen.mkBlock(args1(0).pos, fn2, args1(0))
-            case _ =>
-              assert(false, "dead")
+        inArray   = old;
+        if (myInArray) {
+          args1(0).getType().baseType(global.definitions.ARRAY_CLASS).match {
+            case Type.NoType =>
+              copy.Apply(tree,fn, Predef.Array[Tree]{args1(0)});
+            case _      => fn1 match {
+              case Tree$Apply(TypeApply(Select(fn2, _), targs), _) =>
+                return gen.mkBlock(args1(0).pos, fn2, args1(0))
+              case _ =>
+                assert(false, "dead")
+            }
           }
-        if (TreeInfo.methSymbol(fn1) == global.definitions.ANY_MATCH && !(args1(0).isInstanceOf[Tree.Visitor])) {
+        }
+          if (TreeInfo.methSymbol(fn1) == global.definitions.ANY_MATCH && !(args1(0).isInstanceOf[Tree.Visitor])) {
 	  TreeInfo.methPart(fn1) match {
 	    case Tree$Select(qual, name) =>
 	      assert(name == Names._match);

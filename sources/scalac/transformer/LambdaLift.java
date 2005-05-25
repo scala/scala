@@ -459,8 +459,8 @@ public class LambdaLift extends OwnerTransformer
 	    Tree fn1 = transform(fn);
 	    switch (fn1) {
 	    case TypeApply(Tree fn2, Tree[] targs):
-                if (args.length == 1 && fn2.symbol() == definitions.PREDEF_ARRAY()) {
-                      throw new ApplicationError("this should not happen");
+                //if (args.length == 1 && fn2.symbol() == definitions.PREDEF_ARRAY()) {
+                //    throw new ApplicationError("this should not happen");
                       /* // this moved to UnCurry
                     switch (args[0]) {
                     case Sequence(Tree[] items):
@@ -479,7 +479,7 @@ public class LambdaLift extends OwnerTransformer
                         }
                     }
                       */
-                }
+                //}
 		fn1 = copy.TypeApply(
 		    fn1, fn2, addFreeArgs(tree.pos, get(free.ftvs, fsym), targs, true));
 		break;
