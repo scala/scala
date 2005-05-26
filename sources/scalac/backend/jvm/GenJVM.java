@@ -167,14 +167,16 @@ public class GenJVM {
 
             addValueClassMembers(ctx1, classDef);
             gen(ctx1, impl);
-
-            JMethod clinit = getClassConstructorMethod(ctx1);
-            if (clinit.getCode().getSize() == 0) {
-                Context ctx2 =
-                    ctx1.withMethod(clinit, Collections.EMPTY_MAP, false);
-                completeClassConstructor(ctx2, sym);
-                ctx2.code.emitRETURN();
-                genLocalVariableTable(ctx2);
+            HashMap staticMembers = collectStaticClassMembers(ctx1, sym);
+            if (ctx1.isModuleClass || staticMembers.size() != 0) {
+                JMethod clinit = getClassConstructorMethod(ctx1);
+                if (clinit.getCode().getSize() == 0) {
+                    Context ctx2 =
+                        ctx1.withMethod(clinit, Collections.EMPTY_MAP, false);
+                    completeClassConstructor(ctx2, staticMembers);
+                    ctx2.code.emitRETURN();
+                    genLocalVariableTable(ctx2);
+                }
             }
 
             leaveClass(ctx1, sym);
@@ -207,8 +209,11 @@ public class GenJVM {
                     if (! Modifiers.Helper.isAbstract(sym.flags)) {
                         JType retType = ctx1.method.getReturnType();
                         genLoad(ctx1, rhs, retType);
-                        if (sym.name == Names.CLASS_CONSTRUCTOR)
-                            completeClassConstructor(ctx1, sym.owner());
+                        if (sym.name == Names.CLASS_CONSTRUCTOR) {
+                            HashMap staticMembers =
+                                collectStaticClassMembers(ctx, sym.owner());
+                            completeClassConstructor(ctx1, staticMembers);
+                        }
                         ctx1.code.emitRETURN(retType);
                         ctx1.method.freeze();
                     }
@@ -1758,10 +1763,26 @@ public class GenJVM {
     /// Misc.
     //////////////////////////////////////////////////////////////////////
 
-    private void completeClassConstructor(Context ctx, Symbol classSym) {
+    /**
+     * Add value members (i.e. fields) to current class.
+     */
+    protected void addValueClassMembers(Context ctx, Tree.ClassDef cDef) {
+        Symbol cSym = cDef.symbol();
+        Scope.SymbolIterator memberIt =
+            cSym.members().iterator();
+        while (memberIt.hasNext()) {
+            Symbol member = memberIt.next();
+            if (member.isTerm() && !member.isMethod())
+                ctx.clazz.addNewField(javaModifiers(member),
+                                      member.name.toString(),
+                                      typeStoJ(member.info()));
+        }
+    }
+
+    private void completeClassConstructor(Context ctx, HashMap staticMembers) {
         if (ctx.isModuleClass)
             addModuleInstanceField(ctx);
-        addStaticClassMembers(ctx, classSym);
+        addStaticClassMembers(ctx, staticMembers);
     }
 
     /**
@@ -1786,24 +1807,7 @@ public class GenJVM {
                                      Strings.EMPTY_ARRAY);
     }
 
-    /**
-     * Add value members (i.e. fields) to current class.
-     */
-    protected void addValueClassMembers(Context ctx, Tree.ClassDef cDef) {
-        Symbol cSym = cDef.symbol();
-        Scope.SymbolIterator memberIt =
-            cSym.members().iterator();
-        while (memberIt.hasNext()) {
-            Symbol member = memberIt.next();
-            if (member.isTerm() && !member.isMethod())
-                ctx.clazz.addNewField(javaModifiers(member),
-                                      member.name.toString(),
-                                      typeStoJ(member.info()));
-        }
-    }
-
-    // The following function is a single big hack.
-    protected void addStaticClassMembers(Context ctx, Symbol cSym) {
+    private HashMap collectStaticClassMembers(Context ctx, Symbol cSym) {
         HashMap/*<Symbol, AConstant>*/ staticMembers = new HashMap();
         Symbol iSym = ctx.isModuleClass
             ? cSym : addInterfacesPhase.getInterfaceSymbol(cSym);
@@ -1822,7 +1826,12 @@ public class GenJVM {
                     }
             }
             global.currentPhase = bkpCurrent;
+        }
+        return staticMembers;
+    }
 
+    // The following function is a single big hack.
+    protected void addStaticClassMembers(Context ctx, HashMap staticMembers) {
             // Add them and initialize them.
             Iterator smIt = staticMembers.keySet().iterator();
             while (smIt.hasNext()) {
@@ -1842,7 +1851,6 @@ public class GenJVM {
                                        field.getName(),
                                        tp);
             }
-        }
     }
 
     /**
