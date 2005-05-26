@@ -1644,6 +1644,7 @@ public class GenJVM {
         }
 
         JClass cls = fjbgContext.JClass(javaModifiers(cSym)
+                                        & ~JAccessFlags.ACC_STATIC
                                         | JAccessFlags.ACC_SUPER,
                                         javaName,
                                         superClassName,
