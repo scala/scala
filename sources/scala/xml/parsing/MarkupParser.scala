@@ -45,8 +45,8 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   var pos: Int = _;
 
 
-  /* true if reading external subset */
-  var inExtSubSet = false;
+  /* used when reading external subset */
+  var extIndex = -1;
 
   /** holds temporary values of pos */
   var tmppos: Int = _;
@@ -226,9 +226,9 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       ch = curInput.next;
       pos = curInput.pos;
     } else {
-      //Console.println("nextch, curInput.hasNext == false ")      ;
-      //Console.println("nextch, Nil != inpStack == "+(Nil!=inpStack));
-      if (Nil != inpStack) {
+      val ilen = inpStack.length;
+      //Console.println("  ilen = "+ilen+ " extIndex = "+extIndex);
+      if ((ilen != extIndex) && (ilen > 0)) {
         /** for external source, inpStack == Nil ! need notify of eof! */
         pop();
       } else {
@@ -580,9 +580,11 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
      */
 
     if(null != extID) {
-      val extSubsetSrc = externalSource( extID.systemId );
 
-      inExtSubSet = true;
+      pushExternal(extID.systemId);
+      //val extSubsetSrc = externalSource( extID.systemId );
+
+      extIndex = inpStack.length;
       /*
        .indexOf(':') != -1) { // assume URI
          Source.fromFile(new java.net.URI(extID.systemLiteral));
@@ -591,20 +593,23 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
        }
       */
       //Console.println("I'll print it now");
-      val old = curInput;
-      tmppos = curInput.pos;
-      val oldch = ch;
-      curInput = extSubsetSrc;
-      pos = 0;
-      nextch;
+      //val old = curInput;
+      //tmppos = curInput.pos;
+      //val oldch = ch;
+      //curInput = extSubsetSrc;
+      //pos = 0;
+      //nextch;
+
       extSubset();
 
-      inExtSubSet = false;
+      pop();
 
-      curInput = old;
-      pos = curInput.pos;
-      ch = curInput.ch;
-      eof = false;
+      extIndex = -1;
+
+      //curInput = old;
+      //pos = curInput.pos;
+      //ch = curInput.ch;
+      //eof = false;
       //while(extSubsetSrc.hasNext)
       //Console.print(extSubsetSrc.next);
 
@@ -806,7 +811,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       } else
         markupDecl1();
     }
-    while(curInput.hasNext) {
+    while(!eof) {
       markupDecl();
     }
   }
@@ -843,7 +848,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
           nextch;
           notationDecl();
 
-        case '[' if inExtSubSet =>
+        case '[' if inpStack.length >= extIndex =>
           nextch;
           xSpaceOpt;
           ch match {
@@ -949,9 +954,11 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     val n = xName;
     xSpace;
     while ('>' != ch) {
+      //Console.println("["+ch+"]");
       putChar(ch);
       nextch;
     }
+    //Console.println("END["+ch+"]");
     nextch;
     val cmstr = cbuf.toString();
     cbuf.setLength(0);
@@ -1102,10 +1109,10 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def push(entityName:String) = {
     //Console.println("BEFORE PUSHING  "+ch);
     //Console.println("BEFORE PUSHING  "+pos);
-    //Console.println("PUSHING "+entityName);
-    if(!eof) {
+    //Console.print("[PUSHING "+entityName+"]");
+    if(!eof)
       inpStack = curInput :: inpStack;
-    }
+
     curInput = replacementText(entityName);
     nextch;
   }
@@ -1116,13 +1123,31 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     nextch;
   }
   */
+
+  def pushExternal(systemId:String) = {
+    //Console.print("BEFORE PUSH, curInput = $"+curInput.descr);
+    //Console.println(" stack = "+inpStack.map { x => "$"+x.descr });
+
+    //Console.print("[PUSHING EXTERNAL "+systemId+"]");
+    if(!eof)
+      inpStack = curInput :: inpStack;
+
+    curInput = externalSource(systemId);
+
+    //Console.print("AFTER PUSH, curInput = $"+curInput.descr);
+    //Console.println(" stack = "+inpStack.map { x => "$"+x.descr });
+
+    nextch;
+  }
   def pop() = {
-    //Console.println("POPPING");
+
     curInput = inpStack.head;
     inpStack = inpStack.tail;
     ch = curInput.ch;
     pos = curInput.pos;
     eof = false; // must be false, because of places where entity refs occur
+    //Console.println("\n AFTER POP, curInput = $"+curInput.descr);
+    //Console.println(inpStack.map { x => x.descr });
   }
 
 }

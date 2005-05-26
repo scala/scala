@@ -256,6 +256,7 @@ xml/factory/LoggedNodeFactory.scala
 
 xml/parsing/ConstructingHandler.scala
 xml/parsing/ConstructingParser.scala
+xml/parsing/ExternalSources.scala
 xml/parsing/FatalError.scala
 xml/parsing/MarkupHandler.scala
 xml/parsing/MarkupParser.scala
