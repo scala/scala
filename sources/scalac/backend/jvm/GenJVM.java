@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -61,8 +61,6 @@ public class GenJVM {
     protected final static String JAVA_LANG_STRING = "java.lang.String";
     protected final static String JAVA_LANG_STRINGBUFFER =
         "java.lang.StringBuffer";
-    protected final static String JAVA_IO_SERIALIZABLE =
-        "java.io.Serializable";
     protected final static String JAVA_RMI_REMOTE = "java.rmi.Remote";
     protected final static String JAVA_RMI_REMOTEEXCEPTION =
         "java.rmi.RemoteException";
@@ -1620,18 +1618,6 @@ public class GenJVM {
     //////////////////////////////////////////////////////////////////////
 
     /**
-     * Appends Serializable name to the list of interface names
-     * (we assume Serializable is not yet present in the list)
-     */
-    private static String[] appendSerializable(String[] names) {
-        int n = names.length;
-        String[] names1 = new String[n + 1];
-        System.arraycopy(names, 0, names1, 0, n);
-        names1[n] = JAVA_IO_SERIALIZABLE;
-        return names1;
-    }
-
-    /**
      * Record the entry into a class, and return the appropriate
      * context.
      */
@@ -1643,34 +1629,26 @@ public class GenJVM {
 
         int offset;
         String superClassName;
-        boolean addSerializableName = false;
         if (cSym.isInterface()) {
             offset = baseTps[0].symbol() == defs.ANY_CLASS ? 1 : 0;
             superClassName = JAVA_LANG_OBJECT;
         } else {
             offset = 1;
             superClassName = javaName(baseTps[0].symbol());
-            // assume Scala traits with/without RTT are serializable
-            addSerializableName = cSym.isTrait();
         }
         String[] interfaceNames = new String[baseTps.length - offset];
         for (int i = offset; i < baseTps.length; ++i) {
             Symbol baseSym = baseTps[i].symbol();
-            addSerializableName =
-                addSerializableName && baseSym != defs.SERIALIZABLE_CLASS;
             assert baseSym.isInterface() : cSym + " implements " + baseSym;
             interfaceNames[i - offset] = javaName(baseSym);
         }
 
-        String[] interfaceNames1 = (addSerializableName)
-                                   ? appendSerializable(interfaceNames)
-                                   : interfaceNames;
         JClass cls = fjbgContext.JClass(javaModifiers(cSym)
                                         & ~JAccessFlags.ACC_STATIC
                                         | JAccessFlags.ACC_SUPER,
                                         javaName,
                                         superClassName,
-                                        interfaceNames1,
+                                        interfaceNames,
                                         ctx.sourceFileName);
 
         return ctx.withClass(cls,
