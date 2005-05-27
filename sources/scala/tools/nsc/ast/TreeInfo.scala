@@ -138,6 +138,7 @@ abstract class TreeInfo {
   def isSequenceValued(tree: Tree): boolean = tree match {
     case Bind(_, body) => isSequenceValued(body)
     case Sequence(_) => true
+    case Star(_) => true
     case Alternative(ts) => ts exists isSequenceValued
     case _ => false
   }

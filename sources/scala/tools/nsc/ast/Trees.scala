@@ -234,6 +234,10 @@ abstract class Trees: Global {
   case class Alternative(trees: List[Tree])
        extends TermTree;
 
+  /** Repetition of pattern, eliminated by TransMatch */
+  case class Star(elem: Tree)
+       extends TermTree;
+
   /** Bind of a variable to a rhs pattern, eliminated by TransMatch */
   case class Bind(name: Name, body: Tree)
        extends DefTree;
@@ -377,6 +381,7 @@ abstract class Trees: Global {
   case CaseDef(pat, guard, body) =>                               (eliminated by transmatch)
   case Sequence(trees) =>                                         (eliminated by transmatch)
   case Alternative(trees) =>                                      (eliminated by transmatch)
+  case Star(elem) =>                                              (eliminated by transmatch)
   case Bind(name, body) =>                                        (eliminated by transmatch)
   case Function(vparams, body) =>                                 (eliminated by typecheck)
   case Assign(lhs, rhs) =>
@@ -418,6 +423,7 @@ abstract class Trees: Global {
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef;
     def Sequence(tree: Tree, trees: List[Tree]): Sequence;
     def Alternative(tree: Tree, trees: List[Tree]): Alternative;
+    def Star(tree: Tree, elem: Tree): Star;
     def Bind(tree: Tree, name: Name, body: Tree): Bind;
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function;
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign;
@@ -475,6 +481,8 @@ abstract class Trees: Global {
       new Sequence(trees).copyAttrs(tree);
     def Alternative(tree: Tree, trees: List[Tree]) =
       new Alternative(trees).copyAttrs(tree);
+    def Star(tree: Tree, elem: Tree) =
+      new Star(elem).copyAttrs(tree);
     def Bind(tree: Tree, name: Name, body: Tree) =
       new Bind(name, body).copyAttrs(tree);
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
@@ -602,6 +610,11 @@ abstract class Trees: Global {
       case t @ Alternative(trees0)
       if ((trees0 == trees)) => t
       case _ => copy.Alternative(tree, trees)
+    }
+    def Star(tree: Tree, elem: Tree) = tree match {
+      case t @ Star(elem0)
+      if ((elem0 == elem)) => t
+      case _ => copy.Star(tree, elem)
     }
     def Bind(tree: Tree, name: Name, body: Tree) = tree match {
       case t @ Bind(name0, body0)
@@ -767,6 +780,8 @@ abstract class Trees: Global {
         copy.Sequence(tree, transformTrees(trees))
       case Alternative(trees) =>
         copy.Alternative(tree, transformTrees(trees))
+      case Star(elem) =>
+        copy.Star(tree, transform(elem))
       case Bind(name, body) =>
         copy.Bind(tree, name, transform(body))
       case Function(vparams, body) =>
@@ -891,6 +906,8 @@ abstract class Trees: Global {
         traverseTrees(trees)
       case Alternative(trees) =>
         traverseTrees(trees)
+      case Star(elem) =>
+        traverse(elem)
       case Bind(name, body) =>
         traverse(body)
       case Function(vparams, body) =>

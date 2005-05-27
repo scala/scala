@@ -19,9 +19,8 @@ abstract class TreeBuilder {
   def freshName(): Name = freshName("x$");
 
   private object patvarTransformer extends Transformer {
-    private var boundVars: List[Name] = List(nme.WILDCARD);
     override def transform(tree: Tree): Tree = tree match {
-      case Ident(name) if (treeInfo.isVariableName(name) && !(boundVars exists (name.==))) =>
+      case Ident(name) if (treeInfo.isVariableName(name)) =>
 	atPos(tree.pos)(Bind(name, Ident(nme.WILDCARD)))
       case Typed(id @ Ident(name), tpt) =>
 	Bind(name, atPos(tree.pos)(Typed(Ident(nme.WILDCARD), tpt))) setPos id.pos
@@ -32,11 +31,8 @@ abstract class TreeBuilder {
       case Typed(expr, tpt) =>
 	copy.Typed(tree, transform(expr), tpt)
       case Bind(name, body) =>
-	boundVars = name :: boundVars;
-	val body1 = transform(body);
-	boundVars = boundVars.tail;
-	copy.Bind(tree, name, body1)
-      case Se quence(_) | Alternative(_) =>
+	copy.Bind(tree, name, transform(body))
+      case Sequence(_) | Alternative(_) | Star(_) =>
 	super.transform(tree)
       case _ =>
 	tree
@@ -49,7 +45,7 @@ abstract class TreeBuilder {
     def init: Traverser = { buf.clear; this }
     override def traverse(tree: Tree): unit = tree match {
       case Bind(name, tpe) =>
-	if (buf.elements forall (name !=)) buf += name;
+	if ((name != nme.WILDCARD) && (buf.elements forall (name !=))) buf += name;
 	traverse(tpe)
       case _ => super.traverse(tree)
     }
@@ -211,22 +207,9 @@ abstract class TreeBuilder {
     Sequence(for (val t <- ts; val e <- elements(t)) yield e)
   }
 
-  /** Create tree for the p* regex pattern, becomes z@( |(p,z)) */
-  def makeStar(p: Tree): Tree = {
-    val zname = freshName();
-    Bind(zname,
-      makeAlternative(List(
-	Sequence(List()),
-	makeSequence(List(p, Ident(zname))))))
-  }
-
-  /** Create tree for the p+ regex pattern, becomes z@(p,(z| ))  */
-  def makePlus(p: Tree): Tree = {
-    val zname = freshName();
-    Bind(zname,
-      makeSequence(List(
-	p, makeAlternative(List(Ident(zname), Sequence(List()))))))
-  }
+  /** Create tree for the p+ regex pattern, becomes p p*  */
+  def makePlus(p: Tree): Tree =
+    makeSequence(List(p, Star(p.duplicate)));
 
   /** Create tree for the p? regex pattern, becomes (p| )         */
   def makeOpt(p: Tree): Tree =

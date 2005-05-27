@@ -164,6 +164,9 @@ abstract class TreePrinters {
         case Alternative(trees) =>
           printRow(trees, "(", "| ", ")")
 
+        case Star(elem) =>
+          print("("); print(elem); print(")*");
+
         case Bind(name, t) =>
           print("("); print(symName(tree, name)); print(" @ "); print(t); print(")");
 

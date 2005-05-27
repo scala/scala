@@ -897,15 +897,16 @@ abstract class Typers: Analyzer {
 	  val alts1 = List.mapConserve(alts)(alt => typed(alt, mode, pt));
           copy.Alternative(tree, alts1) setType pt
 
+        case Star(elem) =>
+	  val elem1 = typed(elem, mode, pt);
+          copy.Star(tree, elem1) setType pt
+
         case Bind(name, body) =>
           var vble = tree.symbol;
-          if (vble == NoSymbol) {
-            vble = context.owner.newValue(tree.pos, name);
-            if (vble.name != nme.WILDCARD) namer.enterInScope(vble);
-          }
-          vble.setInfo(pt);
+          if (vble == NoSymbol) vble = context.owner.newValue(tree.pos, name);
           val body1 = typed(body, mode, pt);
           vble.setInfo(if (treeInfo.isSequenceValued(body)) seqType(body1.tpe) else body1.tpe);
+          if (vble.name != nme.WILDCARD) namer.enterInScope(vble);
           copy.Bind(tree, name, body1) setSymbol vble setType pt
 
         case fun @ Function(_, _) =>

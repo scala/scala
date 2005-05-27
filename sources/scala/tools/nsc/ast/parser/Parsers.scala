@@ -974,7 +974,7 @@ abstract class Parsers: ParserPhase {
       var top = simplePattern(seqOK);
       if (seqOK && in.token == IDENTIFIER) {
 	if (in.name == STAR)
-	  return atPos(in.skipToken())(makeStar(top))
+	  return atPos(in.skipToken())(Star(top))
 	else if (in.name == PLUS)
           return atPos(in.skipToken())(makePlus(top))
 	else if (in.name == OPT)
