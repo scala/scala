@@ -117,6 +117,10 @@ abstract class Definitions: SymbolTable {
     var Object_synchronized: Symbol = _;
     var String_+           : Symbol = _;
 
+    // members of class scala.Iterator
+    var Iterator_next      : Symbol = _;
+    var Iterator_hasNext   : Symbol = _;
+
     // pattern wildcard
     var PatternWildcard: Symbol = _;
 
@@ -277,6 +281,9 @@ abstract class Definitions: SymbolTable {
 
       String_+ = newMethod(
         StringClass, "+", List(AnyClass.typeConstructor), StringClass.typeConstructor) setFlag FINAL;
+
+      //Iterator_next =    //??
+      //Iterator_hasNext = //??
 
       // pattern wildcard
       PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor)
