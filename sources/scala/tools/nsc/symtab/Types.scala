@@ -32,6 +32,7 @@ abstract class Types: SymbolTable {
   import definitions._;
 
   private var explainSwitch = false;
+  private var checkMalformedSwitch = true;
 
   val emptyTypeArray = new Array[Type](0);
 
@@ -180,6 +181,9 @@ abstract class Types: SymbolTable {
     def substThis(from: Symbol, to: Type): Type =
       new SubstThisMap(from, to) apply this;
 
+    def substSuper(from: Type, to: Type): Type =
+      new SubstSuperMap(from, to) apply this;
+
     /** Does this type contain a reference to this symbol? */
     def contains(sym: Symbol): boolean =
       new ContainsTraverser(sym).traverse(this).result;
@@ -310,11 +314,13 @@ abstract class Types: SymbolTable {
     }
 
     def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
-      //System.out.println("find member " + name.decode + " in " + this.baseClasses);//DEBUG
+      //System.out.println("find member " + name.decode + " in " + this + ":" + this.baseClasses);//DEBUG
       var members: Scope = null;
       var member: Symbol = NoSymbol;
       var excluded = excludedFlags | DEFERRED;
       var continue = true;
+      var savedCheckMalformedSwitch = checkMalformedSwitch;
+      checkMalformedSwitch = false;
       while (continue) {
 	continue = false;
 	var bcs = baseClasses;
@@ -328,13 +334,14 @@ abstract class Types: SymbolTable {
               val excl = sym.getFlag(excluded);
               if (excl == 0) {
                 if (name.isTypeName) {
+                  checkMalformedSwitch = savedCheckMalformedSwitch;
                   return sym
                 } else if (member == NoSymbol) {
                   member = sym
                 } else if (members == null) {
                   if (member.name != sym.name ||
                       member != sym && !memberType(member).matches(memberType(sym)))
-                    members = new Scope(List(member, sym))
+                    members = new Scope(List(member, sym));
                 } else {
                   var prevEntry = members lookupEntry sym.name;
                   while (prevEntry != null &&
@@ -358,6 +365,7 @@ abstract class Types: SymbolTable {
 	} // while (!bcs.isEmpty)
 	excluded = excludedFlags
       } // while (continue)
+      checkMalformedSwitch = savedCheckMalformedSwitch;
       if (members == null) member
       else baseClasses.head.newOverloaded(this, members.toList)
     }
@@ -452,7 +460,16 @@ abstract class Types: SymbolTable {
     override def prefixString: String =
       if (sym.isEmptyPackage && !settings.debug.value) ""
       else pre.prefixString + sym.nameString + ".";
-    assert(prefixString != "Nil.");//debug
+  }
+
+  case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
+    override def symbol = thistpe.symbol;
+    override def singleDeref = supertp;
+    override def prefixString =
+      if (thistpe.prefixString.endsWith("this."))
+        thistpe.prefixString.substring(0, thistpe.prefixString.length() - 5) + "super."
+      else thistpe.prefixString;
+    override def narrow: Type = thistpe.narrow
   }
 
   /** A class for the bounds of abstract types and type parameters
@@ -757,15 +774,17 @@ abstract class Types: SymbolTable {
 
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): SingleType = {
-    if (!pre.isStable && !pre.isError)
+    if (checkMalformedSwitch && !pre.isStable && !pre.isError) {
+      System.out.println("malformed: " + pre + "." + sym.name + checkMalformedSwitch);//debug
       throw new MalformedType(pre, sym.name.toString());
+    }
     new SingleType(pre, rebind(pre, sym)) {}
   }
 
   /** The canonical creator for typerefs */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
     val sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym;
-    if (sym1.isAbstractType && !pre.isStable && !pre.isError)
+    if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.nameString);
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
@@ -850,6 +869,11 @@ abstract class Types: SymbolTable {
           if (pre1 eq pre) tp
           else singleType(pre1, sym)
         }
+      case SuperType(thistp, supertp) =>
+        val thistp1 = this(thistp);
+        val supertp1 = this(supertp);
+        if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
+        else SuperType(thistp1, supertp1)
       case ConstantType(base, value) =>
         val base1 = this(base);
         if (base1 eq base) tp
@@ -944,13 +968,13 @@ abstract class Types: SymbolTable {
             else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
         case SingleType(pre, sym) =>
-	  if (sym.isPackageClass) tp // fast path
+	  if (sym.isPackageClass) tp // fast path // todo remove this case; it is redundant
           else
-	    try {
+//	    try {
               mapOver(tp)
-            } catch {
-              case ex: MalformedType => apply(tp.singleDeref) // todo: try needed?
-            }
+//            } catch {
+//              case ex: MalformedType => apply(tp.singleDeref) // todo: try needed?
+//            }
 	case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
 	  def toInstance(pre: Type, clazz: Symbol): Type =
 	    if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
@@ -1028,6 +1052,10 @@ abstract class Types: SymbolTable {
       case ThisType(sym) if (sym == from) => to
       case _ => mapOver(tp)
     }
+  }
+
+  class SubstSuperMap(from: Type, to: Type) extends TypeMap {
+    def apply(tp: Type): Type = if (tp eq from) to else mapOver(tp);
   }
 
   /** A map to convert every occurrence of a wildcard type to a fresh

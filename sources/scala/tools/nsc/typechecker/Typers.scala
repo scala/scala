@@ -1037,7 +1037,7 @@ abstract class Typers: Analyzer {
                   ErrorType
                 } else ps.head
               }
-	    tree setSymbol clazz setType owntype
+	    tree setSymbol clazz setType SuperType(clazz.thisType, owntype)
 	  }
 
         case This(qual) =>

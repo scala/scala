@@ -220,7 +220,10 @@ abstract class Infer: Analyzer {
 	if (sym1 == NoSymbol) {
 	  errorTree(tree, sym.toString() + " cannot be accessed in " + pre.widen)
 	} else {
-	  tree setSymbol sym1 setType pre.memberType(sym1)
+          var owntype = pre.memberType(sym1);
+          if (pre.isInstanceOf[SuperType])
+            owntype = owntype.substSuper(pre, site.symbol.thisType);
+	  tree setSymbol sym1 setType owntype
 	}
       }
 
