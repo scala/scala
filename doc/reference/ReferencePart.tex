@@ -96,11 +96,12 @@ syntactic class \code{id} of lexical identifiers.
 \begin{lstlisting}
 abstract    case    catch    class    def    
 do    else    extends    false    final    
-finally    for    if    import    new    
-null    object    override    package    private    
-protected    return    sealed    super    this    
-throw    trait    try    true    type    
-val    var    while    with   yield
+finally    for    if    implicit    import
+match    new    null    object    override
+package    private    protected    return    sealed
+super    this    throw    trait    try
+true    type    val    var    while
+with   yield
 _    :    =    =>    <-    <:    >:    #    @
 \end{lstlisting}
 
@@ -1014,7 +1015,7 @@ value definition ~\lstinline@val $p$ = $e$@~ is expanded as follows:
 
 1. If the pattern $p$ has bound variables $x_1 \commadots x_n$, where $n > 1$:
 \begin{lstlisting}
-val $\Dollar x$ = $e$.match {case $p$ => scala.Tuple$n$($x_1 \commadots x_n$)}
+val $\Dollar x$ = $e$ match {case $p$ => scala.Tuple$n$($x_1 \commadots x_n$)}
 val $x_1$ = $\Dollar x$._1
 $\ldots$
 val $x_n$ = $\Dollar x$._n  .
@@ -1025,12 +1026,12 @@ Here, $\Dollar x$ is a fresh name.  The class
 
 2. If $p$ has a unique bound variable $x$:
 \begin{lstlisting}
-val $x$ = $e$.match { case $p$ => $x$ }
+val $x$ = $e$ match { case $p$ => $x$ }
 \end{lstlisting}
 
 3. If $p$ has no bound variables:
 \begin{lstlisting}
-$e$.match { case $p$ => ()}
+$e$ match { case $p$ => ()}
 \end{lstlisting}
 
 \example
@@ -1044,9 +1045,9 @@ val x :: xs = mylist;     // an infix pattern definition
 
 The last two definitions have the following expansions.
 \begin{lstlisting}
-val x = f().match { case Some(x) => x }
+val x = f() match { case Some(x) => x }
 
-val x$\Dollar$ = mylist.match { case x :: xs => scala.Tuple2(x, xs) }
+val x$\Dollar$ = mylist match { case x :: xs => scala.Tuple2(x, xs) }
 val x = x$\Dollar$._1;
 val xs = x$\Dollar$._2;
 \end{lstlisting}
@@ -4439,13 +4440,13 @@ abstract class Any {
   def toString(): String = $\ldots$
 
   /** Type test */
-  def isInstanceOf[a]: Boolean = match {
+  def isInstanceOf[a]: Boolean = this match {
     case x: a => true
     case _ => false
   }
 
   /** Type cast */
-  def asInstanceOf[a]: a = match {
+  def asInstanceOf[a]: a = this match {
     case x: a => x
     case _ => if (this eq null) this
               else throw new ClassCastException()
