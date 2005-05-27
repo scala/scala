@@ -23,10 +23,11 @@ ast/parser/Parsers.scala
 ast/parser/Scanners.scala
 ast/parser/Tokens.scala
 
-#matching/CodeFactory.scala
+matching/CodeFactory.scala
 #matching/PatternMatcher.scala
-#matching/PatternNodeCreator.scala
-#matching/PatternUtil.scala
+matching/PatternNode.scala
+matching/PatternNodeCreator.scala
+matching/PatternUtil.scala
 #matching/TransMatcher.scala
 
 symtab/Definitions.scala
