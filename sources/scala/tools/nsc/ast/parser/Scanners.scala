@@ -716,8 +716,8 @@ abstract class Scanners: ParserPhase {
 
       enterKeyword(nme.ABSTRACTkw, ABSTRACT);
       enterKeyword(nme.CASEkw, CASE);
-      enterKeyword(nme.CLASSkw, CLASS);
       enterKeyword(nme.CATCHkw, CATCH);
+      enterKeyword(nme.CLASSkw, CLASS);
       enterKeyword(nme.DEFkw, DEF);
       enterKeyword(nme.DOkw, DO);
       enterKeyword(nme.ELSEkw, ELSE);
@@ -748,8 +748,8 @@ abstract class Scanners: ParserPhase {
       enterKeyword(nme.TYPEkw, TYPE);
       enterKeyword(nme.VALkw, VAL);
       enterKeyword(nme.VARkw, VAR);
-      enterKeyword(nme.WITHkw, WITH);
       enterKeyword(nme.WHILEkw, WHILE);
+      enterKeyword(nme.WITHkw, WITH);
       enterKeyword(nme.YIELDkw, YIELD);
       enterKeyword(nme.DOTkw, DOT);
       enterKeyword(nme.USCOREkw, USCORE);
