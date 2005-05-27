@@ -21,7 +21,7 @@ object EqualityTest {
 //############################################################################
 // Test classes in package "scala"
 
-object Test1_scala {
+object Test1_scala with java.io.Serializable {
   private def arrayToString[A](arr: Array[A]): String = {
     List.fromArray(arr).mkString("Array[",",","]");
   }
@@ -43,10 +43,10 @@ object Test1_scala {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[x1.type];
-    val y2 = in.readObject().asInstanceOf[x2.type];
-    val y3 = in.readObject().asInstanceOf[x3.type];
-    val y4 = in.readObject().asInstanceOf[x4.type];
+    val y1 = in.readObject().asInstanceOf[List[All]];
+    val y2 = in.readObject().asInstanceOf[Option[All]];
+    val y3 = in.readObject().asInstanceOf[Array[Int]];
+    val y4 = in.readObject().asInstanceOf[Function[Int, Int]];
     in.close();
 
     System.out.println("x1 = " + x1);
@@ -77,7 +77,7 @@ object Test1_scala {
 //############################################################################
 // Test classes in package "scala.collection.immutable"
 
-object Test2_immutable {
+object Test2_immutable with java.io.Serializable {
   import scala.collection.immutable.{BitSet,ListMap,ListSet,Queue,Stack,
     TreeSet,TreeMap};
 
@@ -118,14 +118,14 @@ object Test2_immutable {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[x1.type];
-    val y2 = in.readObject().asInstanceOf[x2.type];
-    val y3 = in.readObject().asInstanceOf[x3.type];
-    val y4 = in.readObject().asInstanceOf[x4.type];
-    val y5 = in.readObject().asInstanceOf[x5.type];
-    val y6 = in.readObject().asInstanceOf[x6.type];
-    val y7 = in.readObject().asInstanceOf[x7.type];
-    val y8 = in.readObject().asInstanceOf[x8.type];
+    val y1 = in.readObject().asInstanceOf[List[Pair[String, Int]]];
+    val y2 = in.readObject().asInstanceOf[ListMap[String, Int]];
+    val y3 = in.readObject().asInstanceOf[BitSet];
+    val y4 = in.readObject().asInstanceOf[ListSet[Int]];
+    val y5 = in.readObject().asInstanceOf[Queue[String]];
+    val y6 = in.readObject().asInstanceOf[Stack[String]];
+    val y7 = in.readObject().asInstanceOf[TreeMap[Int, String]];
+    val y8 = in.readObject().asInstanceOf[TreeSet[Int]];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -183,12 +183,12 @@ object Test3_mutable {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[x1.type];
-    val y2 = in.readObject().asInstanceOf[x2.type];
-    val y3 = in.readObject().asInstanceOf[x3.type];
-    val y4 = in.readObject().asInstanceOf[x4.type];
-    val y5 = in.readObject().asInstanceOf[x5.type];
-    val y6 = in.readObject().asInstanceOf[x6.type];
+    val y1 = in.readObject().asInstanceOf[HashMap[String, Int]];
+    val y2 = in.readObject().asInstanceOf[BitSet];
+    val y3 = in.readObject().asInstanceOf[HashSet[String]];
+    val y4 = in.readObject().asInstanceOf[LinkedList[Int]];
+    val y5 = in.readObject().asInstanceOf[Queue[Int]];
+    val y6 = in.readObject().asInstanceOf[Stack[Int]];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -251,8 +251,8 @@ object Test4_xml {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[x1.type];
-    val y2 = in.readObject().asInstanceOf[x2.type];
+    val y1 = in.readObject().asInstanceOf[scala.xml.Elem];
+    val y2 = in.readObject().asInstanceOf[scala.xml.Elem];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -294,8 +294,8 @@ object Test5 {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[x1.type];
-    val y2 = in.readObject().asInstanceOf[x2.type];
+    val y1 = in.readObject().asInstanceOf[Person];
+    val y2 = in.readObject().asInstanceOf[Employee];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -331,9 +331,9 @@ object Test6 with java.io.Serializable {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[x1.type];
-    val y2 = in.readObject().asInstanceOf[x2.type];
-    val y3 = in.readObject().asInstanceOf[x3.type];
+    val y1 = in.readObject().asInstanceOf[Person];
+    val y2 = in.readObject().asInstanceOf[Employee];
+    val y3 = in.readObject().asInstanceOf[Person];
     in.close();
 
     EqualityTest.check(x1, y1);
