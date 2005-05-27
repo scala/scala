@@ -37,6 +37,9 @@ abstract class Definitions: SymbolTable {
     // the scala value classes
     var UnitClass: Symbol = _;
     var BooleanClass: Symbol = _;
+    def Boolean_not = IterableClass.info.decl(nme.ZNOT);
+    def Boolean_and = IterableClass.info.decl(nme.ZAND);
+    def Boolean_or  = IterableClass.info.decl(nme.ZOR);
     var ByteClass: Symbol = _;
     var ShortClass: Symbol = _;
     var CharClass: Symbol = _;
@@ -47,6 +50,7 @@ abstract class Definitions: SymbolTable {
 
     // the scala reference classes
     var ScalaObjectClass: Symbol = _;
+    def ScalaObjectClass_tag = ScalaObjectClass.info.decl( nme.tag );
     var AttributeClass: Symbol = _;
     var RefClass: Symbol = _;
     var PartialFunctionClass: Symbol = _;
@@ -55,12 +59,18 @@ abstract class Definitions: SymbolTable {
     def Iterable_hasNext = IterableClass.info.decl("hasNext");
     var IteratorClass: Symbol = _;
     var SeqClass: Symbol = _;
+    def Seq_length = SeqClass.info.decl("length");
     var ListClass: Symbol = _;
+    def List_isEmpty = ListClass.info.decl("isEmpty");
+    def List_head = ListClass.info.decl("head");
+    def List_tail = ListClass.info.decl("tail");
     var ArrayClass: Symbol = _;
     var TypeClass: Symbol = _;
     var PredefModule: Symbol = _;
     var ConsoleModule: Symbol = _;
     var MatchErrorModule: Symbol = _;
+    def MatchError_fail = MatchErrorModule.info.decl("fail");
+    def MatchError_report = MatchErrorModule.info.decl("report");
     var RepeatedParamClass: Symbol = _;
     var ByNameParamClass: Symbol = _;
 
@@ -75,11 +85,16 @@ abstract class Definitions: SymbolTable {
 	typeRef(sym.typeConstructor.prefix, sym, elems)
       } else NoType;
 
+    def tupleField(n:int, j:int) =
+      TupleClass(n).info.decl("_"+j.toString());
+
     def functionType(formals: List[Type], restpe: Type) =
       if (formals.length <= MaxFunctionArity) {
 	val sym = FunctionClass(formals.length);
 	typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
       } else NoType;
+
+    def functionApply(n:int) = FunctionClass(n).info.decl("apply");
 
     def isTupleType(tp: Type): boolean = tp match {
       case TypeRef(_, sym, elems) =>

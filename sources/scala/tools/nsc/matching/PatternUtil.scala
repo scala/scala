@@ -9,14 +9,19 @@
 
 package scala.tools.nsc.matching;
 
-/** utility function
+import scala.tools.util.Position;
+
+/** utility functions
  */
 abstract class PatternUtil {
 
   val global: Global;
 
-  val unit: CompilationUnit;
+  import global._;
+
   var pos: Position;
+
+  var unit: CompilationUnit = _;
 
   import global.definitions;
 
@@ -29,23 +34,23 @@ abstract class PatternUtil {
       }
 
     def isVariableName(name: Name): Boolean =
-      ( name.isVariable() ) && ( name != Name.fromString("_") ) ;
+      ( treeInfo.isVariableName(name) ) && ( name != nme.USCOREkw ) ;
 
     def isVariableSymbol(sym: Symbol): Boolean =
-      ( sym != null )&&( !sym.isPrimaryConstructor() );
+      ( sym != null )&&( !sym.isPrimaryConstructor );
 
     def traverse(tree: Tree): Unit = {
 
       tree match {
         case x @ Ident(name) =>
-          if(x.symbol() != definitions.PATTERN_WILDCARD)
-            throw new ApplicationError("shouldn't happen?!");
+          if(x.symbol != definitions.PatternWildcard)
+            error("shouldn't happen?!");
 
         case Bind(name, subtree) =>
           var sym: Symbol = _;
 
         if (isVariableName(name)
-            && isVariableSymbol( {sym = tree.symbol(); tree.symbol()} ))
+            && isVariableSymbol( {sym = tree.symbol; tree.symbol} ))
           handleVariableSymbol(sym);
 
         traverse( subtree );

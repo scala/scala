@@ -15,11 +15,15 @@ abstract class TransMatcher {
   import definitions._;
   import posAssigner.atPos;
 
+  private var unit: CompilationUnit;
+
   class TransMatchPhase(prev: Phase) extends StdPhase(prev) {
     def name = "transmatcher";
     val global: TransMatcher.this.global.type = TransMatcher.this.global;
-    def apply(unit: CompilationUnit): unit =
+    def apply(unit: CompilationUnit): unit = {
+      TransMatcher.this.unit = unit;
       unit.body = newTransMatcher.transform(unit.body);
+    }
   }
 
   def newTransMatcher = new TransMatch();

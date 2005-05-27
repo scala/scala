@@ -1,12 +1,16 @@
 package scala.tools.nsc.matching;
 
+import scala.tools.util.Position;
 
 /** PatternNode factory.
  *  we inherit the globals from PatternTool.
  */
 
-abstract class PatternNodeCreator(val owner:Symbol) extends PatternUtil {
+abstract class PatternNodeCreator extends PatternUtil with PatternNodes {
 
+  import global._;
+
+  var owner:Symbol = _;
   /** the owner of the variable symbols that might be created */
   //Symbol owner;
 
@@ -14,7 +18,7 @@ abstract class PatternNodeCreator(val owner:Symbol) extends PatternUtil {
     val sym = newVar(Position.FIRSTPOS, tpe);
     val node = new SequencePat(sym, len);
     node.pos = pos;
-    node.setType(tpe);
+    node.tpe = tpe;
     node;
   }
 
@@ -40,7 +44,7 @@ abstract class PatternNodeCreator(val owner:Symbol) extends PatternUtil {
     node;
   }
 
-  def ConstantPat(pos: int, tpe: Type, value:AConstant ) = {
+  def ConstantPat(pos: int, tpe: Type, value: Any /*AConstant*/ ) = {
     val node = new ConstantPat( value );
     node.pos = pos;
     node.setType(tpe);
@@ -50,7 +54,7 @@ abstract class PatternNodeCreator(val owner:Symbol) extends PatternUtil {
   def VariablePat(pos: int,  tree:Tree) = {
     val node = new VariablePat( tree );
     node.pos = pos;
-    node.setType(tree.getType());
+    node.setType(tree.tpe);
     node;
   }
 
@@ -83,15 +87,15 @@ abstract class PatternNodeCreator(val owner:Symbol) extends PatternUtil {
   }
 
   def newVar(pos: int, name: Name, tpe: Type): Symbol= {
-    val sym = owner.newVariable(pos, 0, name);
-    sym.setType(tpe);
+    val sym = owner.newVariable(0, name);
+    sym.setInfo(tpe);
     //System.out.println("PatternNodeCreator::newVar creates symbol "+sym);
     //System.out.println("owner: "+sym.owner());
     sym;
   }
 
   def newVar(pos: int, tpe: Type): Symbol = {
-    newVar(pos, fresh.newName("temp"), tpe);
+    newVar(pos, unit.fresh.newName("temp"), tpe);
   }
 }
 
