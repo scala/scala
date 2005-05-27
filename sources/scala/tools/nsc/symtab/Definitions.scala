@@ -51,6 +51,8 @@ abstract class Definitions: SymbolTable {
     var RefClass: Symbol = _;
     var PartialFunctionClass: Symbol = _;
     var IterableClass: Symbol = _;
+    def Iterable_next = IterableClass.info.decl("next");
+    def Iterable_hasNext = IterableClass.info.decl("hasNext");
     var IteratorClass: Symbol = _;
     var SeqClass: Symbol = _;
     var ListClass: Symbol = _;
