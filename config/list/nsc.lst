@@ -23,6 +23,12 @@ ast/parser/Parsers.scala
 ast/parser/Scanners.scala
 ast/parser/Tokens.scala
 
+#matching/CodeFactory.scala
+#matching/PatternMatcher.scala
+#matching/PatternNodeCreator.scala
+#matching/PatternUtil.scala
+#matching/TransMatcher.scala
+
 symtab/Definitions.scala
 symtab/Flags.scala
 symtab/InfoTransformers.scala
@@ -42,8 +48,6 @@ symtab/classfile/PickleFormat.scala
 symtab/classfile/Pickler.scala
 symtab/classfile/SymblfileParser.scala
 symtab/classfile/UnPickler.scala
-
-transmatch/TransMatcher.scala
 
 typechecker/Analyzer.scala
 typechecker/ConstantFolder.scala
