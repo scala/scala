@@ -2,7 +2,7 @@
 ##############################################################################
 #                      __                                                    #
 #      ________ ___   / /  ___     Scala Tools Launch Script                 #
-#     / __/ __// _ | / /  / _ |    (c) 2002-2003, LAMP/EPFL                  #
+#     / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL                  #
 #   __\ \/ /__/ __ |/ /__/ __ |                                              #
 #  /____/\___/_/ |_/____/_/ | |                                              #
 #                           |/                                               #
@@ -570,7 +570,6 @@ test_print_help() {
     echo "--jvm           next files test the JVM backend";
     echo "--int           next files test the interpreter";
     echo "--shl           next files test the interpreter shell";
-    echo "--xml           next files test the dtd2scala tool";
     echo "--dis           next files test the disassembler";
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
@@ -670,21 +669,6 @@ test_run_dis() {
     mkdir -p "$dstbase".obj &&
     $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
     $SCALAP -classpath "$os_dstbase".obj `cat "$argsfile"` &&
-    rm -rf "$dstbase".obj;
-}
-
-# Tests the dtd2scala tool.
-test_run_xml() {
-    argsfile="$srcbase".namespace;
-    if [ ! -f "$argsfile" ]; then
-        argsfile=/dev/null;
-    fi;
-    rm -rf "$dstbase".obj &&
-    mkdir -p "$dstbase".obj &&
-    $DTD2SCALA -d "$os_dstbase".obj "$os_srcbase".dtd dtd `cat "$argsfile"` &&
-    $SOCOS -d "$os_dstbase".obj "$@" "$os_dstbase".obj/dtd.scala \
-        "$os_srcbase".scala &&
-    $SCALA -classpath "$os_dstbase".obj Test "$os_srcbase".xml &&
     rm -rf "$dstbase".obj;
 }
 
@@ -822,8 +806,6 @@ test_check_all() {
         "shl" $FILES_SHL;
     test_check_kind "Testing disassembler" \
         "dis" $FILES_DIS;
-    test_check_kind "Testing dtd2scala tool" \
-        "xml" $FILES_XML;
     test_check_kind "Testing compiler (on files whose compilation should succeed)" \
         "pos" $FILES_POS;
     test_check_kind "Testing compiler (on files whose compilation should fail)" \
@@ -855,7 +837,6 @@ test_add_file() {
         jvm  ) FILES_JVM="$FILES_JVM $1"; return;;
         int  ) FILES_INT="$FILES_INT $1"; return;;
         shl  ) FILES_SHL="$FILES_SHL $1"; return;;
-        xml  ) FILES_XML="$FILES_XML $1"; return;;
         dis  ) FILES_DIS="$FILES_DIS $1"; return;;
         pos  ) FILES_POS="$FILES_POS $1"; return;;
         neg  ) FILES_NEG="$FILES_NEG $1"; return;;
@@ -867,7 +848,6 @@ test_add_file() {
         jvm  | */jvm  | */jvm/*  | jvm/*  ) FILES_JVM="$FILES_JVM $1";;
         int  | */int  | */int/*  | int/*  ) FILES_INT="$FILES_INT $1";;
         shl  | */shl  | */shl/*  | shl/*  ) FILES_SHL="$FILES_SHL $1";;
-        xml  | */xml  | */xml/*  | xml/*  ) FILES_XML="$FILES_XML $1";;
         dis  | */dis  | */dis/*  | dis/*  ) FILES_DIS="$FILES_DIS $1";;
         pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
         neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
@@ -899,7 +879,6 @@ test_main() {
     FILES_JVM="";
     FILES_INT="";
     FILES_SHL="";
-    FILES_XML="";
     FILES_DIS="";
     FILES_POS="";
     FILES_NEG="";
@@ -909,7 +888,6 @@ test_main() {
     SOCOS="$PREFIX/bin/scalac";
     SURUS="$PREFIX/bin/scalarun";
     SCALAP="$PREFIX/bin/scalap";
-    DTD2SCALA="$PREFIX/bin/dtd2scala";
     DIFF="diff";
 
     case "$SCRIPT" in
@@ -930,7 +908,6 @@ test_main() {
             --jvm        ) TEST_TYPE="jvm"; shift 1;;
             --int        ) TEST_TYPE="int"; shift 1;;
             --shl        ) TEST_TYPE="shl"; shift 1;;
-            --xml        ) TEST_TYPE="xml"; shift 1;;
             --dis        ) TEST_TYPE="dis"; shift 1;;
             --pos        ) TEST_TYPE="pos"; shift 1;;
             --neg        ) TEST_TYPE="neg"; shift 1;;
@@ -940,7 +917,7 @@ test_main() {
             --show-diff  ) SHOWDIFF="true"; shift 1;;
             --failed     ) FAILED="true"; shift 1;;
             --errors=    ) abort "illegal empty argument for option --errors";;
-            --errors=*   )ERRORS=`expr "$1" : "--errors=\([0-9]*\)$"`;shift 1;;
+            --errors=*   ) ERRORS=`expr "$1" : "--errors=\([0-9]*\)$"`;shift 1;;
             --flags=     ) abort "illegal empty argument for option --flags";;
             --flags=*    ) FLAGS=`expr "$1" : "--flags=\(.*\)"`; shift 1;;
             --color=     ) abort "illegal empty argument for option --color";;
@@ -975,9 +952,6 @@ test_main() {
         case "$TEST_TYPE" in
             auto | shl ) FILES_SHL="$FILES_SHL $SRCDIR/shl";;
         esac;
-#         case "$TEST_TYPE" in
-#             auto | xml ) FILES_XML="$FILES_XML $SRCDIR/xml";;
-#         esac;
         case "$TEST_TYPE" in
             auto | dis ) FILES_DIS="$FILES_DIS $SRCDIR/dis";;
         esac;
@@ -1066,7 +1040,6 @@ case "$SCRIPT" in
     scalaint*  ) compiler_start "" scala.tools.scalai.Main -interactive "$@";;
     scaladoc*  ) tool_start "" scala.tools.scaladoc.Main "$@";;
     scalap*    ) tool_start "" scala.tools.scalap.Main "$@";;
-    dtd2scala* ) tool_start "" scala.tools.dtd2scala.Main "$@";;
     scalatest* ) test_main "$@";;
     scalanstest* ) test_main "$@";;
     *          ) abort "Don't know what to do for $SCRIPT.";;
