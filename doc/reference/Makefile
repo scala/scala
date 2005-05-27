@@ -26,6 +26,8 @@ LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaReference.%)
 LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaByExample.%)
 LATEX_TARGETS		+= $(LATEX_FORMATS:%=ProgrammingInScala.%)
 
+LATEX_SOURCES		+= ExamplesPart.tex
+LATEX_SOURCES		+= ReferencePart.tex
 LATEX_SOURCES		+= ScalaRationale.tex
 LATEX_SOURCES		+= ScalaByExample.tex
 LATEX_SOURCES		+= ScalaReference.tex
