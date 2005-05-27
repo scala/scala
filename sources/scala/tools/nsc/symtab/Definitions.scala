@@ -97,8 +97,8 @@ abstract class Definitions: SymbolTable {
     def seqType(arg: Type) =
       typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg));
 
-//    def NilModule: Symbol = getModule("scala.Nil");
-//    def ConsClass: Symbol = getClass("scala.$colon$colon");
+    def NilModule: Symbol = getModule("scala.Nil");
+    def ConsClass: Symbol = getClass("scala.$colon$colon");
 
     // members of class scala.Any
     var Any_==          : Symbol = _;
