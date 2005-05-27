@@ -604,20 +604,26 @@ abstract class Scanners: ParserPhase {
       }
       token = INTLIT;
       if (base <= 10 && in.ch == '.') {
-	putChar(in.ch);
+        val lookahead = in.copy;
+	lookahead.next;
+        lookahead.ch match {
+          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
+	    putChar(in.ch);
+	    in.next;
+	    return getFraction
+          case _ =>
+        }
+      }
+      if (base <= 10 &&
+	  (in.ch == 'e' || in.ch == 'E' ||
+	   in.ch == 'f' || in.ch == 'F' ||
+	   in.ch == 'd' || in.ch == 'D')) {
+	return getFraction
+      }
+      setName;
+      if (in.ch == 'l' || in.ch == 'L') {
 	in.next;
-	getFraction
-      } else if (base <= 10 &&
-		 (in.ch == 'e' || in.ch == 'E' ||
-		  in.ch == 'f' || in.ch == 'F' ||
-		  in.ch == 'd' || in.ch == 'D')) {
-	getFraction
-      } else {
-	setName;
-	if (in.ch == 'l' || in.ch == 'L') {
-	  in.next;
-	  token = LONGLIT;
-	}
+	token = LONGLIT;
       }
     }
 

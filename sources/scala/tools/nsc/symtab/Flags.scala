@@ -40,6 +40,7 @@ object Flags {
   val SYNTHETIC     = 0x00200000;   // symbol is compiler-generated
   val STABLE        = 0x00400000;   // functions that are assumed to be stable
 				    // (typically, access methods for valdefs)
+  val STATIC        = 0x00800000;   // static field, method or class
 
   val ACCESSED      = 0x01000000;   // symbol was accessed at least once
   val SELECTOR      = 0x02000000;   // symbol was used as selector in Select
@@ -72,10 +73,10 @@ object Flags {
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
   val PrintableFlags =               // these modifiers appear in TreePrinter output.
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | ACCESSOR |
-    ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE;
+    ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE | STATIC;
   val GenFlags      =                // these modifiers can be in generated trees
     SourceFlags | PrintableFlags;
-  val FieldFlags = MUTABLE | ACCESSED | PARAMACCESSOR;
+  val FieldFlags = MUTABLE | ACCESSED | PARAMACCESSOR | STATIC;
 
   val AccessFlags   = PRIVATE | PROTECTED;
   val VARIANCES     = COVARIANT | CONTRAVARIANT;
@@ -128,6 +129,7 @@ object Flags {
       case JAVA          => "<java>"
       case SYNTHETIC     => "<synthetic>"
       case STABLE        => "<stable>"
+      case STATIC        => "<static>"
 
       case ACCESSED      => "<accessed>"
       case SELECTOR      => "<selector>"

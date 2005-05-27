@@ -3,7 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.ast;
+package scala.tools.nsc.ast.parser;
 
 import symtab.Flags._;
 import util.ListBuffer;
@@ -36,7 +36,7 @@ abstract class TreeBuilder {
 	val body1 = transform(body);
 	boundVars = boundVars.tail;
 	copy.Bind(tree, name, body1)
-      case Sequence(_) | Alternative(_) =>
+      case Se quence(_) | Alternative(_) =>
 	super.transform(tree)
       case _ =>
 	tree

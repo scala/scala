@@ -124,7 +124,7 @@ abstract class Symbols: SymbolTable {
       isConstructor && owner.primaryConstructor == this;
 
     /** Is this symbol static (i.e. with no outer instance)? */
-    final def isStatic: boolean = isRoot || owner.isStaticOwner;
+    final def isStatic: boolean = hasFlag(STATIC) || isRoot || owner.isStaticOwner;
 
     /** Does this symbol denote a class that defines static symbols? */
     final def isStaticOwner: boolean = isPackageClass || isStatic && isModuleClass;

@@ -567,14 +567,14 @@ abstract class Typers: Analyzer {
     }
 
     def typedFunction(fun: Function, mode: int, pt: Type): Function = {
-      val Triple(clazz, argpts, respt) = pt match {
-        case TypeRef(_, sym, argtps)
-        if (fun.vparams.length <= MaxFunctionArity && sym == FunctionClass(fun.vparams.length) ||
-            sym == PartialFunctionClass && fun.vparams.length == 1 && fun.body.isInstanceOf[Match]) =>
-          Triple(sym, argtps.init, argtps.last)
-        case _ =>
-          Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
-      }
+      val Triple(clazz, argpts, respt) =
+        if (isFunctionType(pt)
+            ||
+            pt.symbol == PartialFunctionClass &&
+            fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
+          Triple(pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
+        else
+          Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType);
       val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
         vparam match {
           case ValDef(_, _, tpt, _) =>
@@ -1212,11 +1212,7 @@ abstract class Typers: Analyzer {
       }
 
       def implicitsOfType(tp: Type): List[List[ImplicitInfo]] = {
-	val tp1 =
-	  if (tp.typeArgs.length - 1 <= MaxFunctionArity &&
-	      tp.symbol == FunctionClass(tp.typeArgs.length - 1))
-	    intersectionType(tp.typeArgs.reverse)
-	  else tp;
+	val tp1 = if (isFunctionType(tp)) intersectionType(tp.typeArgs.reverse) else tp;
 	tp1.baseClasses map implicitsOfClass;
       }
 

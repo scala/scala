@@ -12,6 +12,7 @@ import symtab.Flags._;
 /** Methods to create symbols and to enter them into scopes. */
 trait Namers: Analyzer {
   import global._;
+  import definitions._;
 
   class NamerPhase(prev: Phase) extends StdPhase(prev) {
     val global: Namers.this.global.type = Namers.this.global;
@@ -219,7 +220,7 @@ trait Namers: Analyzer {
     def setterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol): unit = {
         if (settings.debug.value) log("defining " + sym);
-        sym.setInfo(MethodType(List(typeSig(tree)), definitions.UnitClass.tpe));
+        sym.setInfo(MethodType(List(typeSig(tree)), UnitClass.tpe));
         if (settings.debug.value) log("defined " + sym);
         validate(sym);
       }
@@ -280,7 +281,6 @@ trait Namers: Analyzer {
     }
 
     private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): Type = {
-      def checkContractive: unit = {}; //todo: complete
       val meth = context.owner;
       val tparamSyms = typer.reenterTypeParams(tparams);
       val vparamSymss = enterValueParams(meth, vparamss);
@@ -292,16 +292,50 @@ trait Namers: Analyzer {
 	} else typer.typedType(tpt).tpe);
       def mkMethodType(vparams: List[Symbol], restpe: Type) = {
 	val formals = vparams map (.tpe);
-	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))	{
-          if (settings.debug.value) System.out.println("create implicit");//debug
-	  checkContractive;
+	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))
 	  new ImplicitMethodType(formals, restpe)
-	} else MethodType(formals, restpe);
+	else MethodType(formals, restpe);
       }
       makePolyType(
 	tparamSyms,
 	if (vparamSymss.isEmpty) PolyType(List(), restype)
 	else (vparamSymss :\ restype)(mkMethodType))
+    }
+
+    /** If `sym' is an implicit value, check that its type signature `tp' is contractive.
+     *  This means: The type of every implicit parameter is properly contained
+     *  in the type that is obtained by removing all implicit parameters and converting
+     *  the rest to a function type.
+     *  If the check succeeds return `tp' itself, otherwise `ErrorType'.
+     */
+    private def checkContractive(sym: Symbol, tp: Type): Type = {
+      /* The type signature without implicit parameters converted to function type */
+      def provided(tp: Type): Type = tp match {
+	case PolyType(_, restpe) => provided(restpe);
+	case mt: ImplicitMethodType => mt.resultType;
+	case MethodType(formals, restpe) => functionType(formals, provided(restpe))
+	case _ => tp
+      }
+      /* The types of all implicit parameters */
+      def required(tp: Type): List[Type] = tp match {
+	case PolyType(_, restpe) => required(restpe);
+	case mt: ImplicitMethodType => mt.paramTypes;
+	case MethodType(formals, restpe) => required(restpe);
+	case _ => List()
+      }
+      var result = tp;
+      if (sym hasFlag IMPLICIT) {
+	val p = provided(tp);
+	for (val r <- required(tp)) {
+	  if (!isContainedIn(r, p) || (r =:= p)) {
+	    context.error(sym.pos, "implicit " + sym + " is not contractive," +
+			  "\n because the implicit parameter type " + r +
+			  "\n is not strictly contained in the signature " + p);
+	    result = ErrorType;
+	  }
+	}
+      }
+      result
     }
 
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
@@ -320,7 +354,8 @@ trait Namers: Analyzer {
             clazz.tpe;
 
 	  case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-	    new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs)
+	    checkContractive(sym,
+	      new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs))
 
 	  case ValDef(_, _, tpt, rhs) =>
             deconstIfNotFinal(sym,
@@ -387,7 +422,7 @@ trait Namers: Analyzer {
 	  "\nit should be omitted for abstract members");
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isClass)
 	context.error(sym.pos, "`override' modifier not allowed for classes");
-      if (sym.info.symbol == definitions.FunctionClass(0) &&
+      if (sym.info.symbol == FunctionClass(0) &&
 	  sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
 	context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
@@ -406,6 +441,40 @@ trait Namers: Analyzer {
       checkNoConflict(PRIVATE, PROTECTED);
       checkNoConflict(PRIVATE, OVERRIDE);
       checkNoConflict(DEFERRED, FINAL);
+    }
+  }
+
+  /* Is type `tp1' properly contained in type `tp2'? */
+  def isContainedIn(tp1: Type, tp2: Type) = {
+    //System.out.println("is " + tp1 + " contained in " + tp2 + "?");//DEBUG
+    new ContainsTraverser(tp1).traverse(tp2).result;
+  }
+
+  /* Type `elemtp' is contained in type `tp' is one of the following holds:
+   *  - elemtp and tp are the same
+   *  - tp is a function type and elemtp is not
+   *  - tp and elemtp are function types, and arity of tp is greater than arity of elemtp
+   *  - tp and elemtp are both parameterized types with same type constructor and prefix,
+   *    and each type argument of elemtp is contained in the corresponding type argument of tp.
+   */
+  private class ContainsTraverser(elemtp: Type) extends TypeTraverser {
+    var result = false;
+    def traverse(tp: Type): ContainsTraverser = {
+      if (!result) {
+        if (elemtp =:= tp)
+          result = true
+        else if (isFunctionType(tp) &&
+                 (!isFunctionType(elemtp) || tp.typeArgs.length > elemtp.typeArgs.length))
+          result = true
+        else Pair(tp, elemtp) match {
+          case Pair(TypeRef(pre, sym, args), TypeRef(elempre, elemsym, elemargs)) =>
+            if ((sym == elemsym) && (pre =:= elempre) && (args.length == elemargs.length))
+              result = List.forall2(elemargs, args) (isContainedIn)
+          case _ =>
+        }
+      }
+      if (!result) mapOver(tp);
+      this
     }
   }
 

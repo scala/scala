@@ -181,11 +181,8 @@ abstract class Types: SymbolTable {
       new SubstThisMap(from, to) apply this;
 
     /** Does this type contain a reference to this symbol? */
-    def contains(sym: Symbol): boolean = {
-      val m = new ContainsMap(sym);
-      m(this);
-      m.result
-    }
+    def contains(sym: Symbol): boolean =
+      new ContainsTraverser(sym).traverse(this).result;
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): boolean =
@@ -649,8 +646,7 @@ abstract class Types: SymbolTable {
 	  return args(0).toString() + "*";
 	if (sym == ByNameParamClass && !args.isEmpty)
 	  return "=> " + args(0).toString();
-	if (args.length > 0 && args.length <= MaxFunctionArity - 1 &&
-	    sym == FunctionClass(args.length - 1))
+	if (isFunctionType(this))
 	  return args.init.mkString("(", ", ", ")") + " => " + args.last;
       }
       pre.prefixString + sym.nameString +
@@ -931,6 +927,11 @@ abstract class Types: SymbolTable {
     }
   }
 
+  abstract class TypeTraverser extends TypeMap {
+    def traverse(tp: Type): TypeTraverser;
+    def apply(tp: Type): Type = { traverse(tp); tp }
+  }
+
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     def apply(tp: Type): Type =
@@ -1039,9 +1040,9 @@ abstract class Types: SymbolTable {
   }
 
   /** A map to implement the contains method */
-  class ContainsMap(sym: Symbol) extends TypeMap {
+  class ContainsTraverser(sym: Symbol) extends TypeTraverser {
     var result = false;
-    def apply(tp: Type): Type = {
+    def traverse(tp: Type): ContainsTraverser = {
       if (!result) {
         tp match {
           case TypeRef(_, sym1, _) if (sym == sym1) => result = true
@@ -1049,7 +1050,7 @@ abstract class Types: SymbolTable {
           case _ => mapOver(tp)
         }
       }
-      tp
+      this
     }
   }
 
@@ -1058,24 +1059,22 @@ abstract class Types: SymbolTable {
   object commonOwnerMap extends TypeMap {
     var result: Symbol = _;
     def init = { result = NoSymbol }
-    def apply(tp: Type): Type = tp match {
-      case ThisType(sym) =>
-        register(sym);
-        tp
-      case TypeRef(NoPrefix, sym, args) =>
-        register(sym.owner);
-        for (val arg <- args) apply(arg);
-        tp
-      case SingleType(NoPrefix, sym) =>
-        register(sym.owner);
-        tp
-      case _ =>
-        mapOver(tp)
+    def apply(tp: Type): Type = {
+      tp match {
+	case ThisType(sym) =>
+          register(sym);
+	case TypeRef(NoPrefix, sym, args) =>
+          register(sym.owner); args foreach {arg => apply(arg); ()}
+	case SingleType(NoPrefix, sym) =>
+          register(sym.owner);
+	case _ =>
+          mapOver(tp)
+      }
+      tp
     }
-    private def register(sym: Symbol) = {
+    private def register(sym: Symbol): unit = {
       while (result != NoSymbol && sym != result && !(sym isNestedIn result))
         result = result.owner;
-      result
     }
   }
 
@@ -1580,7 +1579,7 @@ abstract class Types: SymbolTable {
   private def commonOwner(tps: List[Type]): Symbol = {
     if (settings.debug.value) System.out.println("computing common owner of types " + tps);//debug
     commonOwnerMap.init;
-    List.mapConserve(tps)(commonOwnerMap);
+    tps foreach { tp => commonOwnerMap.apply(tp); () }
     commonOwnerMap.result
   }
 

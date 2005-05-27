@@ -67,14 +67,31 @@ abstract class Definitions: SymbolTable {
     def TupleClass(i: int): Symbol = getClass("scala.Tuple" + i);
     def FunctionClass(i: int): Symbol = getClass("scala.Function" + i);
 
-    def tupleType(elems: List[Type]) = {
-      val sym = TupleClass(elems.length);
-      typeRef(sym.typeConstructor.prefix, sym, elems)
+    def tupleType(elems: List[Type]) =
+      if (elems.length <= MaxTupleArity) {
+	val sym = TupleClass(elems.length);
+	typeRef(sym.typeConstructor.prefix, sym, elems)
+      } else NoType;
+
+    def functionType(formals: List[Type], restpe: Type) =
+      if (formals.length <= MaxFunctionArity) {
+	val sym = FunctionClass(formals.length);
+	typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
+      } else NoType;
+
+    def isTupleType(tp: Type): boolean = tp match {
+      case TypeRef(_, sym, elems) =>
+        elems.length <= MaxTupleArity && sym == TupleClass(elems.length);
+      case _ =>
+        false
     }
 
-    def functionType(formals: List[Type], restpe: Type) = {
-      val sym = FunctionClass(formals.length);
-      typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
+    def isFunctionType(tp: Type): boolean = tp match {
+      case TypeRef(_, sym, args) =>
+        (args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
+        (sym == FunctionClass(args.length - 1))
+      case _ =>
+        false
     }
 
     def seqType(arg: Type) =
