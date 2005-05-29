@@ -11,4 +11,4 @@
 package scala;
 
 /** @meta class extends scala.Any; */
-public abstract class AnyVal implements java.io.Serializable {}
+public abstract class AnyVal {}

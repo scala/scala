@@ -20,7 +20,7 @@ import Predef._;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Option[+A] extends Iterable[A] with java.io.Serializable {
+trait Option[+A] extends Iterable[A] {
 
   def isEmpty: Boolean = this match {
     case None => true

@@ -7,7 +7,8 @@ import Predef._;
  * represented with the null uri. Neither prefix nor uri may be empty,
  * which is not checked.
  */
-class NamespaceBinding(val prefix: String, val uri: String, val parent: NamespaceBinding) extends AnyRef with java.io.Serializable {
+[serializable]
+class NamespaceBinding(val prefix: String, val uri: String, val parent: NamespaceBinding) extends AnyRef {
 
   private val serialVersionUID = 0 -  2518644165573446725L;
 

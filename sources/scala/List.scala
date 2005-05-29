@@ -890,7 +890,9 @@ sealed trait List[+a] extends Seq[a] { // todo make sealed once we figure out ho
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-case object Nil extends List[All] with java.io.Serializable {
+[SerialVersionUID(0 - 8256821097970055419L)]
+case object Nil extends List[All] {
+  // still needed - the backend doesn't recognize the SerialVersionUID attribute
   private val serialVersionUID = 0 - 8256821097970055419L;
   def isEmpty = true;
   def head: All = error("head of empty list");
@@ -902,7 +904,9 @@ case object Nil extends List[All] with java.io.Serializable {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-final case class ::[+b](hd: b, tl: List[b]) extends List[b] with java.io.Serializable {
+[SerialVersionUID(0 - 8476791151983527571L)]
+final case class ::[+b](hd: b, tl: List[b]) extends List[b] {
+  // still needed - the backend doesn't recognize the SerialVersionUID attribute
   private val serialVersionUID = 0 - 8476791151983527571L;
   def isEmpty: boolean = false;
   def head: b = hd;

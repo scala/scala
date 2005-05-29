@@ -43,7 +43,8 @@ trait DefaultMapModel[A, B] extends AnyRef with scala.collection.mutable.Map[A, 
     }
 }
 
-protected class DefaultEntry[A,B](k: A, v: B) extends AnyRef with java.io.Serializable {
+[serializable]
+protected class DefaultEntry[A,B](k: A, v: B) extends AnyRef {
     def key = k;
     var value = v;
     def toPair = Pair(k, value);

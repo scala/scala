@@ -61,7 +61,7 @@ import java.lang.Math;
  *  @author  Michel Schinz
  *  @version 1.1, 2005-01-20
  */
-abstract class Tree[A <% Ordered[A], B]() extends AnyRef with java.io.Serializable {
+abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
   /* Data structure:
   ** - size:Int - the number of elements in the tree.
   ** - tree:T, which is composed of nodes of the form:
@@ -186,8 +186,7 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef with java.io.Serializab
     New(size, tree.balance(size));
 }
 
-protected abstract class InsertTree[A <% Ordered[A],B]()
-                 extends AnyRef with java.io.Serializable {
+protected abstract class InsertTree[A <% Ordered[A],B]() extends AnyRef {
   def insertLeft(k: A, v: B, t: GBTree[A,B]): InsertTree[A,B];
   def insertRight(k: A, v: B, t: GBTree[A,B]): InsertTree[A,B];
   def node: GBTree[A,B];
@@ -225,7 +224,7 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
 *  GBTree is an internal class used by Tree.
 */
 
-protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef with java.io.Serializable {
+protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
   type aNode = GBTree[A,B];
   type anInsertTree = InsertTree[A,B];
 

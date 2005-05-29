@@ -28,7 +28,8 @@ import Predef._;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-abstract class HashTable[A] extends AnyRef with java.io.Serializable {
+[serializable]
+abstract class HashTable[A] extends AnyRef {
 
     /** The load factor for the hash table.
      */

@@ -10,7 +10,7 @@
 
 package scala;
 
-public abstract class Short   extends AnyVal {
+public abstract class Short   extends AnyVal implements java.io.Serializable {
 
     public final short   value;
 

@@ -10,7 +10,7 @@
 
 package scala;
 
-public abstract class Int     extends AnyVal {
+public abstract class Int     extends AnyVal implements java.io.Serializable {
 
     public final int     value;
 

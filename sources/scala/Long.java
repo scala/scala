@@ -10,7 +10,7 @@
 
 package scala;
 
-public abstract class Long    extends AnyVal {
+public abstract class Long    extends AnyVal implements java.io.Serializable {
 
     public final long    value;
 

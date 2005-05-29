@@ -10,7 +10,7 @@
 
 package scala;
 
-public abstract class Double  extends AnyVal {
+public abstract class Double  extends AnyVal implements java.io.Serializable {
 
     public final double  value;
 

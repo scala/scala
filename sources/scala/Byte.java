@@ -10,7 +10,7 @@
 
 package scala;
 
-public abstract class Byte    extends AnyVal {
+public abstract class Byte    extends AnyVal implements java.io.Serializable {
 
     public final byte    value;
 

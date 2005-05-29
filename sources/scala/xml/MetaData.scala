@@ -9,7 +9,8 @@ package scala.xml;
  *
  * @todo _vlue should be a normalized attribute value
  */
-abstract class MetaData extends Iterable[MetaData] with java.io.Serializable {
+[serializable]
+abstract class MetaData extends Iterable[MetaData] {
 
   /** appends given MetaData items to this MetaData list */
   def append(m: MetaData): MetaData =

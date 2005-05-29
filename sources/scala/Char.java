@@ -10,7 +10,7 @@
 
 package scala;
 
-public abstract class Char    extends AnyVal {
+public abstract class Char    extends AnyVal implements java.io.Serializable {
 
     public final char    value;
 

@@ -10,7 +10,7 @@
 
 package scala;
 
-public abstract class Float   extends AnyVal {
+public abstract class Float   extends AnyVal implements java.io.Serializable {
 
     public final float   value;
 
