@@ -78,6 +78,7 @@
 ../../../scalac/symtab/classfile/Pickle.java
 ../../../scalac/symtab/classfile/UnPickle.java
 
+../../../scalac/symtab/AttributeInfo.java
 ../../../scalac/symtab/ClosureHistory.java
 ../../../scalac/symtab/Definitions.java
 ../../../scalac/symtab/EntryTags.java

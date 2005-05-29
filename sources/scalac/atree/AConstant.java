@@ -14,6 +14,8 @@ import scalac.symtab.Symbol;
 /** This class represents a constant. */
 public class AConstant {
 
+    public static final AConstant[] EMPTY_ARRAY = new AConstant[0];
+
     //########################################################################
     // Public Cases
 

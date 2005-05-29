@@ -256,6 +256,12 @@ public class AddInterfacesPhase extends Phase {
                                                   classSym));
             ifaceToClass.put(ifaceSym, classSym);
             classToIFace.put(classSym, ifaceSym);
+
+            // move attributes to the implementing class
+            AttributeInfo attr = global.removeAttributes(ifaceSym);
+            if (attr != null) {
+                global.setAttribute(classSym, attr);
+            }
         }
         return classSym;
     }

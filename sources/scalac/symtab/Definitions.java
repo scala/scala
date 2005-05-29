@@ -77,10 +77,6 @@ public class Definitions {
     public final Symbol THROWABLE_CLASS;
     public final Type   THROWABLE_TYPE() {return THROWABLE_CLASS.staticType();}
 
-    /** The java.io.Serializable class */
-    public final Symbol SERIALIZABLE_CLASS;
-    public final Type   SERIALIZABLE_TYPE() {return SERIALIZABLE_CLASS.staticType();}
-
     //########################################################################
     // Public Fields & Methods - Scala value classes
 
@@ -252,6 +248,12 @@ public class Definitions {
 
     /** The scala.MatchError module */
     public final Symbol MATCHERROR;
+
+    //########################################################################
+    // attributes
+
+    public final Symbol SCALA_SERIALIZABLE_CONSTR;
+    public final Symbol SCALA_SERIAL_VERSION_UID_CONSTR;
 
     //########################################################################
     // Public Fields & Methods - Scala primitive types
@@ -789,7 +791,6 @@ public class Definitions {
 	STRING_CLASS = getClass(forMSIL ? "System.String" : "java.lang.String");
         THROWABLE_CLASS =
             getClass(forMSIL ? "System.Exception" : "java.lang.Throwable");
-	SERIALIZABLE_CLASS = getClass("java.io.Serializable");
 
         // the scala value classes
         UNIT_CLASS = getClass("scala.Unit");
@@ -832,6 +833,11 @@ public class Definitions {
         PREDEF = getModule("scala.Predef");
         CONSOLE = getModule("scala.Console");
         MATCHERROR = getModule("scala.MatchError");
+
+        SCALA_SERIALIZABLE_CONSTR = getClass("scala.serializable")
+            .primaryConstructor();
+        SCALA_SERIAL_VERSION_UID_CONSTR = getClass("scala.SerialVersionUID")
+            .primaryConstructor();
 
         // initialize generated classes and aliases
         initClass(ANY_CLASS, Type.EMPTY_ARRAY);

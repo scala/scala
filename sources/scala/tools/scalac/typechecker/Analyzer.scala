@@ -56,8 +56,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   var unit: CompilationUnit = _;
 
-  type AttrInfo = Pair/*<Symbol, Array[AConstant]>*/ ;
-
   def enterUnit(unit: CompilationUnit): unit =
     enter(
       new Context(
@@ -2163,15 +2161,15 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
    	case Tree.Attributed(attr, definition) =>
 
-	  def attrInfo(attr: Tree): AttrInfo = attr match {
+	  def attrInfo(attr: Tree): Tuple2[Symbol, Array[AConstant]] = attr match {
             case Tree.Ident(_) | Tree.Select(_, _) =>
-	      new Pair(attr.symbol(), new Array[AConstant](0))
+	      Tuple2(attr.symbol(), AConstant.EMPTY_ARRAY)
             case Tree.Apply(fn, args) =>
-	      new Pair(attrInfo(fn).fst, attrArgInfos(args))
+	      Tuple2(attrInfo(fn)._1, attrArgInfos(args))
             case _ =>
               unit.error(attr.pos, "malformed attribute");
-              new Pair(Symbol.NONE.newErrorClass(errorName(attr).toTypeName()),
-                       new Array[AConstant](0))
+              Tuple2(Symbol.NONE.newErrorClass(errorName(attr).toTypeName()),
+                     AConstant.EMPTY_ARRAY)
           }
 
 	  def attrArgInfos(args: Array[Tree]): Array[AConstant] = {
@@ -2190,9 +2188,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  val attr1 = transform(attr, CONSTRmode, definitions.ATTRIBUTE_TYPE());
           val res = transform(definition);
           val defsym = res.symbol();
-	  var attrs = global.mapSymbolAttr.get(defsym).asInstanceOf[List[AttrInfo]];
-	  if (attrs == null) attrs = List();
-	  global.mapSymbolAttr.put(defsym, attrInfo(attr1) :: attrs);
+          val attrpair = attrInfo(attr1);
+          global.addAttribute(defsym, attrpair._1, attrpair._2);
           res
 
    	case Tree.DocDef(comment, definition) =>

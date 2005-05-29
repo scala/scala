@@ -877,6 +877,7 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
   private def addSyntheticMethods(templ: Template, clazz: ClassSymbol): Template = {
     val ts = new TreeList();
     if (clazz.isCaseClass()) {
+      global.addAttribute(clazz, defs.SCALA_SERIALIZABLE_CONSTR);
       if (!hasImplementation(clazz, Names.toString)) {
 	ts.append(toStringMethod(clazz));
       }
@@ -900,12 +901,17 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       if (global.target != Global.TARGET_MSIL)
         ts.append(getTypeMethod(clazz));
     }
-    if (clazz.isModuleClass() && clazz.isSubClass(defs.SERIALIZABLE_CLASS)) {
-      // If you serialize a singleton and then deserialize it twice,
-      // you will have two instances of your singleton, unless you implement
-      // the readResolve() method (see http://www.javaworld.com/javaworld/
-      // jw-04-2003/jw-0425-designpatterns_p.html)
-      ts.append(readResolveMethod(clazz));
+    if (clazz.isModuleClass()) {
+      val attrs = global.getAttributes(clazz);
+      val serializable = attrs != null &&
+        attrs.getAttrArguments(defs.SCALA_SERIALIZABLE_CONSTR) != null;
+      if (serializable) {
+        // If you serialize a singleton and then deserialize it twice,
+        // you will have two instances of your singleton, unless you implement
+        // the readResolve() method (see http://www.javaworld.com/javaworld/
+        // jw-04-2003/jw-0425-designpatterns_p.html)
+        ts.append(readResolveMethod(clazz));
+      }
     }
     copy.Template(
       templ, templ.parents,

@@ -35,6 +35,7 @@ import scala.tools.util.ReporterTimer;
 import scalac.ast.*;
 import scalac.ast.parser.*;
 import scalac.ast.printer.TreePrinter;
+import scalac.atree.AConstant;
 import scalac.atree.ATreePrinter;
 import scalac.backend.Primitives;
 // !!! <<< Interpreter stuff
@@ -121,7 +122,7 @@ public abstract class Global {
 
     /** attributes of symbols
      */
-    public final Map/*<Symbol, Pair<Symbol, AConstant[]>>*/ mapSymbolAttr = new HashMap();
+    protected final Map/*<Symbol, AttributeInfo>*/ mapSymbolAttr = new HashMap();
 
     /** views associated with (upper-bounded) type parameters
      */
@@ -414,6 +415,31 @@ public abstract class Global {
 	    CompilationUnit unit = new CompilationUnit(this, source, false, mixinOnly);
             loop.insert(unit);
 	}
+    }
+
+    public void addAttribute(Symbol sym, Symbol aSym, AConstant[] params) {
+        AttributeInfo attr = getAttributes(sym);
+        attr = new AttributeInfo(aSym, params, attr);
+        //mapSymbolAttr.put(sym, attr);
+        setAttribute(sym, attr);
+    }
+
+    public void addAttribute(Symbol sym, Symbol aSym) {
+        addAttribute(sym, aSym, AConstant.EMPTY_ARRAY);
+    }
+
+    public void setAttribute(Symbol sym, AttributeInfo attr) {
+        mapSymbolAttr.put(sym, attr);
+        if (sym.isModule() && !sym.isModuleClass())
+            mapSymbolAttr.put(sym.moduleClass(), attr);
+    }
+
+    public AttributeInfo getAttributes(Symbol sym) {
+        return (AttributeInfo)mapSymbolAttr.get(sym);
+    }
+
+    public AttributeInfo removeAttributes(Symbol sym) {
+        return (AttributeInfo)mapSymbolAttr.remove(sym);
     }
 
     public abstract void dump(CompilationUnit[] units);

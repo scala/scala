@@ -1624,6 +1624,10 @@ public class GenJVM {
     protected Context enterClass(Context ctx, Symbol cSym) {
         String javaName = javaName(cSym);
 
+        AttributeInfo attrs = global.getAttributes(cSym);
+        boolean serializable = attrs != null
+            && attrs.getAttrArguments(defs.SCALA_SERIALIZABLE_CONSTR) != null;
+
         scalac.symtab.Type[] baseTps = cSym.info().parents();
         assert baseTps.length > 0 : Debug.show(cSym);
 
@@ -1636,12 +1640,15 @@ public class GenJVM {
             offset = 1;
             superClassName = javaName(baseTps[0].symbol());
         }
-        String[] interfaceNames = new String[baseTps.length - offset];
+        String[] interfaceNames = new String[baseTps.length - offset
+                                             + (serializable ? 1 : 0)];
         for (int i = offset; i < baseTps.length; ++i) {
             Symbol baseSym = baseTps[i].symbol();
             assert baseSym.isInterface() : cSym + " implements " + baseSym;
             interfaceNames[i - offset] = javaName(baseSym);
         }
+        if (serializable)
+            interfaceNames[interfaceNames.length - 1] = "java.io.Serializable";
 
         JClass cls = fjbgContext.JClass(javaModifiers(cSym)
                                         & ~JAccessFlags.ACC_STATIC
