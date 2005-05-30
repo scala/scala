@@ -1245,7 +1245,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
-
+        global.addAttribute(clazz, definitions.SCALA_SERIALIZABLE_CONSTR);
 	Symbol applyMeth = clazz.newMethod(pos, FINAL, Names.apply)
 	    .setInfo(Type.MethodType(params, restype));
 	clazz.info().members().enter(applyMeth);
