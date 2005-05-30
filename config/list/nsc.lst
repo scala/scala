@@ -50,6 +50,8 @@ symtab/classfile/Pickler.scala
 symtab/classfile/SymblfileParser.scala
 symtab/classfile/UnPickler.scala
 
+transform/TypesAsValues.scala
+
 typechecker/Analyzer.scala
 typechecker/ConstantFolder.scala
 typechecker/Contexts.scala
