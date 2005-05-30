@@ -74,4 +74,46 @@ abstract class TreeGen {
     if (qual.tpe != null) result setType atPhase(phase.next)(qual.tpe.memberType(sym));
     result
   }
+
+
+  /** Builds an instance test with given value and type. */
+  def mkIsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = {
+    val sym =
+      if(erased)
+        definitions.Any_isInstanceOfErased
+      else
+        definitions.Any_isInstanceOf;
+
+    Apply(
+      TypeApply(
+        Select(value, sym),
+        List(TypeTree(tpe))),
+      List())
+  }
+
+  def mkIsInstanceOf(value: Tree, tpe: Type): Tree = {
+    val afterTAV = global.phase >= global.typesAsValuesPhase;
+    mkIsInstanceOf(value, tpe, afterTAV);
+  }
+
+  /** Builds a cast with given value and type. */
+  def mkAsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = {
+    val sym =
+      if(erased)
+        definitions.Any_asInstanceOfErased
+      else
+        definitions.Any_asInstanceOf;
+
+    Apply(
+      TypeApply(
+        Select(value, sym),
+        List(TypeTree(tpe))),
+      List())
+  }
+
+  def mkAsInstanceOf(value: Tree, tpe: Type): Tree = {
+    val afterTAV = global.phase >= global.typesAsValuesPhase;
+    mkAsInstanceOf(value, tpe, afterTAV);
+  }
+
 }

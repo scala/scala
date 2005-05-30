@@ -133,6 +133,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   object parserPhase extends ParserPhase(NoPhase) {
     val global: Global.this.type = Global.this
+
   }
   val firstPhase = parserPhase;
 
@@ -147,6 +148,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   //  val global: Global.this.type = Global.this;
   //}
 
+  //object typesAsValues extends TypesAsValues {
+  //  val global: Global.this.type = Global.this;
+  //}
+
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this;
   }
@@ -156,6 +161,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val picklePhase = new pickler.PicklePhase(typeCheckPhase);
   //val transMatchPhase = new transmatcher.TransMatchPhase(picklePhase);
   //val samplePhase = new sampleTransform.Phase(transMatchPhase);
+  val typesAsValuesPhase: Phase = null; //new typesAsValues.Phase(transMatchPhase);
   val samplePhase = new sampleTransform.Phase(typeCheckPhase);
 /*
   object icode extends ICode {

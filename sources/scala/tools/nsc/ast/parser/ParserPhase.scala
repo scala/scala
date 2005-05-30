@@ -14,4 +14,8 @@ abstract class ParserPhase(prev: Phase)
       global.informProgress("parsing " + unit);
       unit.body = new Parser(unit).parse();
     }
+
+              /** this is the first phase */
+  override def >= (other: Phase) = this == other;
+
 }

@@ -21,6 +21,10 @@ abstract class Phase(val prev: Phase) {
 
   override def toString() = name;
 
+  def >= (other: Phase): Boolean = {
+    this == other || prev >= other
+  }
+
   //  def check(units: List[CompilationUnit]): unit =
   //    for (val unit <- units; val checker <- checkers) checker.traverse(unit);  //  def checkers: List[Checker] = List();
 
