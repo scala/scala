@@ -21,7 +21,8 @@ object EqualityTest {
 //############################################################################
 // Test classes in package "scala"
 
-object Test1_scala with java.io.Serializable {
+[serializable]
+object Test1_scala {
   private def arrayToString[A](arr: Array[A]): String = {
     List.fromArray(arr).mkString("Array[",",","]");
   }
@@ -76,8 +77,8 @@ object Test1_scala with java.io.Serializable {
 
 //############################################################################
 // Test classes in package "scala.collection.immutable"
-
-object Test2_immutable with java.io.Serializable {
+[serializable]
+object Test2_immutable {
   import scala.collection.immutable.{BitSet,ListMap,ListSet,Queue,Stack,
     TreeSet,TreeMap};
 
@@ -268,7 +269,8 @@ object Test4_xml {
 //############################################################################
 // Test user-defined classes WITHOUT nesting
 
-class Person(_name: String) with java.io.Serializable {
+[serializable]
+class Person(_name: String) {
   private var name = _name;
   override def toString() = name;
   override def equals(that: Any): Boolean =
@@ -276,7 +278,8 @@ class Person(_name: String) with java.io.Serializable {
     (name == that.asInstanceOf[Person].name);
 }
 
-class Employee(_name: String) with java.io.Serializable {
+[serializable]
+class Employee(_name: String) {
   private var name = _name;
   override def toString() = name;
 }
@@ -311,7 +314,8 @@ object Test5 {
 //############################################################################
 // Test user-defined classes WITH nesting
 
-object Test6 with java.io.Serializable {
+[serializable]
+object Test6 {
   object bill extends Employee("Bill") {
     val x = paul;
   }
