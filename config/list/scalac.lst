@@ -173,6 +173,7 @@ transformer/matching/PartialMatcher.scala
 transformer/matching/PatternMatcher.scala
 transformer/matching/PatternNode.scala
 transformer/matching/PatternNodeCreator.scala
+transformer/matching/PatternNodeDebugPrinter.scala
 transformer/matching/PatternTool.scala
 transformer/matching/RightTracerInScala.scala
 transformer/matching/TracerInScala.scala

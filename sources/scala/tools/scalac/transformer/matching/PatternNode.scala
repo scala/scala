@@ -24,6 +24,11 @@ package scala.tools.scalac.transformer.matching {
    var or: PatternNode = _;
    var and: PatternNode = _;
 
+   def bodyToTree(): Tree = this match {
+     case _b:Body =>
+       return _b.body(0);
+   }
+
    def getTpe(): Type = {
      tpe;
    }

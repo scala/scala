@@ -76,94 +76,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
   /** pretty printer
    */
   def print(): Unit = {
-    print(root.and, "");
-  }
-
-  def print(patNode: PatternNode, indent: String): Unit = {
-
-    def newIndent(s: String) = {
-      val removeBar: Boolean = (null == patNode.or);
-      val sb = new StringBuffer();
-      sb.append(indent);
-      if (removeBar)
-        sb.setCharAt(indent.length() - 1, ' ');
-      var i = 0; while (i < s.length()) {
-        sb.append(' ');
-        i = i + 1
-      }
-      sb.toString()
-    }
-
-    if (patNode == null)
-      System.out.println(indent + "NULL");
-    else
-      patNode match {
-
-        case _h: Header =>
-          val selector = _h.selector;
-          val next = _h.next;
-          Console.println(indent + "HEADER(" + patNode.getTpe() +
-                          ", " + selector + ")");
-          print(patNode.or, indent + "|");
-          if (next != null)
-            print(next, indent);
-
-        case ConstrPat(casted) =>
-          val s = "-- " + patNode.getTpe().symbol().name +
-                    "(" + patNode.getTpe() + ", " + casted + ") -> ";
-          val nindent = newIndent(s);
-          Console.println(nindent + s);
-          print(patNode.and, nindent);
-          if (patNode.or != null)
-            print(patNode.or, indent);
-
-        case SequencePat( casted, plen ) =>
-          val s = "-- " + patNode.getTpe().symbol().name + "(" +
-                  patNode.getTpe() +
-                  ", " + casted + ", " + plen + ") -> ";
-          val nindent = newIndent(s);
-          Console.println(indent + s);
-          print(patNode.and, nindent);
-          if (patNode.or != null)
-            print(patNode.or, indent);
-
-        case DefaultPat() =>
-          Console.println(indent + "-- _ -> ");
-          print(patNode.and, indent.substring(0, indent.length() - 1) +
-                      "         ");
-          if (patNode.or != null)
-            print(patNode.or, indent);
-
-        case ConstantPat(value) =>
-          val s = "-- CONST(" + value + ") -> ";
-          val nindent = newIndent(s);
-          Console.println(indent + s);
-          print(patNode.and, nindent);
-          if (patNode.or != null)
-            print(patNode.or, indent);
-
-        case VariablePat(tree) =>
-          val s = "-- STABLEID(" + tree + ": " + patNode.getTpe() + ") -> ";
-          val nindent = newIndent(s);
-          Console.println(indent + s);
-          print(patNode.and, nindent);
-          if (patNode.or != null)
-            print(patNode.or, indent);
-
-        case AltPat(header) =>
-          Console.println(indent + "-- ALTERNATIVES:");
-          print(header, indent + "   * ");
-          print(patNode.and, indent + "   * -> ");
-          if (patNode.or != null)
-            print(patNode.or, indent);
-
-        case _b:Body =>
-          if ((_b.guard.length == 0) && (_b.body.length == 0))
-            Console.println(indent + "true");
-          else
-            Console.println(indent + "BODY(" + _b.body.length + ")");
-
-      }
+    new PatternNodeDebugPrinter().print(root.and, "");
   }
 
   /** enters a sequence of cases into the pattern matcher
@@ -213,26 +126,24 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
     }
   }
 
-    protected def patternArgs(tree: Tree):Array[Tree] = {
-      tree match {
-        case Bind(_, pat) =>
-          patternArgs(pat);
-        case Apply(_, args) =>
-          if ( isSeqApply(tree.asInstanceOf[Apply])  && !delegateSequenceMatching)
-            args(0) match {
-              case Sequence(ts) =>
-                ts;
-              case _ =>
-                args;
-            }
-          else args
-        case Sequence(ts) =>
-          if (!delegateSequenceMatching)
-                ts;
-            else
-              Tree.EMPTY_ARRAY;
-        case _ =>
-          Tree.EMPTY_ARRAY;
+  protected def patternArgs(tree: Tree):Array[Tree] = {
+    tree match {
+      case Bind(_, pat)   => patternArgs(pat);
+      case Apply(_, args) => if ( isSeqApply(tree.asInstanceOf[Apply])
+                                   && !delegateSequenceMatching)
+                              args(0) match {
+                                case Sequence(ts) => ts;
+                                case _            => args;
+                              }
+                             else
+                               args
+
+      case Sequence(ts) => if (!delegateSequenceMatching)
+                            ts;
+                           else
+                             Tree.EMPTY_ARRAY;
+
+      case _            => Tree.EMPTY_ARRAY;
       }
     }
 
@@ -418,16 +329,16 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
    */
   protected def enter1(pat: Tree, index: Int, target: PatternNode, casted: Symbol,  env: CaseEnv): PatternNode = {
     //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
-    val patArgs = patternArgs(pat);        // get pattern arguments
-    var curHeader = target.and.asInstanceOf[Header];    // advance one step in intermediate representation
-    if (curHeader == null) {                  // check if we have to add a new header
+    val patArgs   = patternArgs(pat);                 // get pattern arguments
+    var curHeader = target.and.asInstanceOf[Header];  // advance one step in IR
+    if (curHeader == null) {                 // check if we must add new header
       //assert index >= 0 : casted;
       if (index < 0) throw new ApplicationError("error entering:" + casted);
       target.and = {curHeader = newHeader(pat.pos, casted, index); curHeader};
       curHeader.or = patternNode(pat, curHeader, env);
       enter(patArgs, curHeader.or, casted, env);
-    }
-    else {
+
+    } else {
       // find most recent header
       while (curHeader.next != null)
       curHeader = curHeader.next;
@@ -436,7 +347,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
       var next: PatternNode = curHeader;
       // add branch to curHeader, but reuse tests if possible
       while (true) {
-        if (next.isSameAs(patNode)) {           // test for patNode already present --> reuse
+        if (next.isSameAs(patNode)) {     // patNode already present ?--> reuse
           // substitute... !!!
           patNode match {
             case ConstrPat(ocasted) =>
@@ -488,93 +399,63 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
     target;
   }
 
-    protected def nCaseComponents(tree: Tree): int = {
-        tree match {
-          case Apply(fn, _) =>
-            val tpe = tree.getType().symbol().primaryConstructor().getType();
-          //Console.println("~~~ " + tree.type() + ", " + tree.type().symbol().primaryConstructor());
-            tpe match {
-                // I'm not sure if this is a good idea, but obviously, currently all case classes
-                // without constructor arguments have type NoType
-            case Type.NoType =>
-                throw new ApplicationError("this cannot happen");
-              0
-            case Type.MethodType(args, _) =>
-                args.length;
-            case Type.PolyType(tvars, Type.MethodType(args, _)) =>
-                args.length;
-            case Type.PolyType(tvars, _) =>
-                0;
-            case _ =>
-              throw new ApplicationError("not yet implemented;" +
-                                         "pattern matching for " + tree + ": " + tpe);
-            }
-        }
-      return 0;
-    }
-
-
-    //////////// generator methods
-
-    def toTree(): Tree = {
-      if (optimize && isSimpleIntSwitch())
-        intSwitchToTree();
-      else if (false && optimize && isSimpleSwitch())
-        switchToTree();
-      else {
-        //print();
-        generalSwitchToTree();
+  protected def nCaseComponents(tree: Tree): int = {
+    tree match {
+      case Apply(fn, _) =>
+        val tpe = tree.getType().symbol().primaryConstructor().getType();
+      //Console.println("~~~ " + tree.type() + ", " + tree.type().symbol().primaryConstructor());
+      tpe match {
+        // I'm not sure if this is a good idea, but obviously, currently all case classes
+        // without constructor arguments have type NoType
+        case Type.NoType =>
+          throw new ApplicationError("this cannot happen");
+        0
+        case Type.MethodType(args, _) =>
+          args.length;
+        case Type.PolyType(tvars, Type.MethodType(args, _)) =>
+          args.length;
+        case Type.PolyType(tvars, _) =>
+          0;
+        case _ =>
+          throw new ApplicationError("not yet implemented;" +
+                                     "pattern matching for " + tree + ": " + tpe);
       }
     }
+    return 0;
+  }
 
-  case class Break(res:Boolean) extends java.lang.Throwable;
-  case class Break2() extends java.lang.Throwable;
 
-    protected def isSimpleSwitch(): Boolean  = {
-      print();
+  //////////// generator methods
+
+  def toTree(): Tree = {
+    if (optimize && isSimpleIntSwitch())
+      intSwitchToTree();
+    else if (false /* optimize && isSimpleSwitch() */) // disabled
+      switchToTree();
+    else {
+      //print();
+      generalSwitchToTree();
+    }
+  }
+
+
+  protected def isSimpleIntSwitch(): Boolean = {
+    if (selector.getType().widen().isSameAs(defs.int_TYPE())) {
       var patNode = root.and;
       while (patNode != null) {
         var node = patNode;
         while (({node = node.or; node}) != null) {
           node match {
-                case VariablePat(tree) =>
-                  Console.println(((tree.symbol().flags & Modifiers.CASE) != 0));
-                case ConstrPat(_) =>
-                  Console.println(node.getTpe().toString() + " / " + ((node.getTpe().symbol().flags & Modifiers.CASE) != 0));
-                    var inner = node.and;
-                    def funct(inner: PatternNode): Boolean = {
-                      //outer: while (true) {
-                      inner match {
-                        case _h:Header =>
-                          if (_h.next != null)
-                            throw Break(false);
-                          funct(inner.or)
-
-                        case DefaultPat() =>
-                          funct(inner.and);
-
-                        case b:Body =>
-                          if ((b.guard.length > 1) ||
-                              (b.guard(0) != Tree.Empty))
-                            throw Break(false);
-
-                          throw Break2() // break outer
-                        case _ =>
-                          Console.println(inner);
-                          throw Break(false);
-                      }
-                    }
-                    var res = false;
-                    var set = false;
-                    try {
-                      funct(inner)
-                    } catch {
-                      case Break(res1) =>
-                        res = res1;
-                        set = true;
-                      case Break2() =>
-                    }
-                    if(set) return res;
+            case ConstantPat(_) => ;
+            case _ =>
+              return false;
+          }
+          node.and match {
+            case _b:Body =>
+              if ((_b.guard.length > 1) ||
+                  (_b.guard(0) != Tree.Empty) ||
+                  (_b.bound(0).length > 0))
+                return false;
             case _ =>
               return false;
           }
@@ -582,48 +463,48 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
         patNode = patNode.nextH();
       }
       return true;
+    } else
+      return false;
+  }
+
+
+  protected def numCases(patNode1: PatternNode): Int = {
+    var patNode = patNode1;
+    var n = 0;
+    while (({patNode = patNode.or; patNode}) != null)
+    patNode match {
+      case DefaultPat() => ;
+      case _ =>
+        n = n + 1;
     }
+    n;
+  }
 
-    protected def isSimpleIntSwitch(): Boolean = {
-      if (selector.getType().widen().isSameAs(defs.int_TYPE())) {
-        var patNode = root.and;
-        while (patNode != null) {
-          var node = patNode;
-          while (({node = node.or; node}) != null) {
-            node match {
-              case ConstantPat(_) => ;
-              case _ =>
-                return false;
-            }
-            node.and match {
-              case _b:Body =>
-                if ((_b.guard.length > 1) ||
-                    (_b.guard(0) != Tree.Empty) ||
-                    (_b.bound(0).length > 0))
-                  return false;
-              case _ =>
-                return false;
-            }
-          }
-          patNode = patNode.nextH();
-        }
-        return true;
-      } else
-        return false;
+  protected def _defaultBody(patNode1: PatternNode, otherwise: Tree ): Tree = {
+    var patNode = patNode1;
+    while (patNode != null) {
+      var node = patNode;
+      while (({node = node.or; node}) != null)
+      node match {
+        case DefaultPat() =>
+          return node.and.bodyToTree();
+        case _ =>
+      }
+      patNode = patNode.nextH();
     }
+    otherwise;
+  }
 
-    class TagBodyPair(tag1: Int, body1: Tree, next1:TagBodyPair ) {
+  /** This method translates pattern matching expressions that match
+   *  on integers on the top level.
+   */
+  def intSwitchToTree(): Tree = {
 
-      var tag: int = tag1;
-      var body: Tree = body1;
-      var next: TagBodyPair = next1;
-
+    case class TagBodyPair(tag: Int, body: Tree, next: TagBodyPair) {
       def length(): Int = {
         if (null == next) 1 else (next.length() + 1);
       }
     }
-
-    /* static */
     def insert(tag: Int, body: Tree, current: TagBodyPair): TagBodyPair = {
       if (current == null)
         return new TagBodyPair(tag, body, null);
@@ -632,116 +513,70 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
       else
         return new TagBodyPair(tag, body, current);
     }
-
-    protected def numCases(patNode1: PatternNode): Int = {
-      var patNode = patNode1;
-      var n = 0;
-      while (({patNode = patNode.or; patNode}) != null)
-      patNode match {
-        case DefaultPat() => ;
+    //print();
+    val ncases = numCases(root.and);
+    val matchError = cf.ThrowMatchError(selector.pos, resultVar.getType());
+    // without a case, we return a match error if there is no default case
+    if (ncases == 0)
+      return _defaultBody(root.and, matchError);
+    // for one case we use a normal if-then-else instruction
+    else if (ncases == 1) {
+      root.and.or match {
+        case ConstantPat(value) =>
+          return gen.If(cf.Equals(selector,
+                                  gen.Literal(root.and.or.pos, value)),
+                        (root.and.or.and).bodyToTree(),
+                        _defaultBody(root.and, matchError));
         case _ =>
-          n = n + 1;
+          return generalSwitchToTree();
       }
-      n;
     }
+    //
+    // if we have more than 2 cases than use a switch statement
 
-    protected def _defaultBody(patNode1: PatternNode, otherwise: Tree ): Tree = {
-      var patNode = patNode1;
-      while (patNode != null) {
-        var node = patNode;
-        while (({node = node.or; node}) != null)
+    val _h:Header = root.and.asInstanceOf[Header];
+    val next = _h.next;
+    var mappings: TagBodyPair = null;
+    var defaultBody = matchError;
+    var patNode = root.and;
+
+    // convert or-branches to sorted list of tag-body pairs
+
+    while (patNode != null) {
+      var node = patNode.or;
+      while (node != null) {
         node match {
           case DefaultPat() =>
-            return bodyToTree(node.and);
-          case _ =>
-        }
-        patNode = patNode.nextH();
-      }
-      otherwise;
-    }
+            if (defaultBody != null)
+              throw new ApplicationError(); // shouldn't happen
+          defaultBody = node.and.bodyToTree();
+          node = node.or;
 
-    /** This method translates pattern matching expressions that match
-     *  on integers on the top level.
+          case ConstantPat(AConstant.INT(value))=>
+            mappings = insert(value, node.and.bodyToTree(), mappings);
+            node = node.or;
+
+          case _ =>
+            throw new ApplicationError(node.toString());
+        }
+      }
+      patNode = patNode.nextH();
+    }
+    /* mappings != null because numCases(...) > 2
+     * so there were at least 2 or-branches
      */
-    def intSwitchToTree(): Tree = {
-      //print();
-      val ncases = numCases(root.and);
-      val matchError = cf.ThrowMatchError(selector.pos, resultVar.getType());
-      // without a case, we return a match error if there is no default case
-      if (ncases == 0)
-        return _defaultBody(root.and, matchError);
-      // for one case we use a normal if-then-else instruction
-      else if (ncases == 1) {
-        root.and.or match {
-          case ConstantPat(value) =>
-            return gen.If(cf.Equals(selector,
-                                    gen.Literal(root.and.or.pos, value)),
-                          bodyToTree(root.and.or.and),
-                          _defaultBody(root.and, matchError));
-          case _ =>
-            return generalSwitchToTree();
-        }
-      }
-      //
-      // if we have more than 2 cases than use a switch statement
-
-      val _h:Header = root.and.asInstanceOf[Header];
-      val next = _h.next;
-      var mappings: TagBodyPair = null;
-      var defaultBody = matchError;
-      var patNode = root.and;
-
-      // convert or-branches to sorted list of tag-body pairs
-
-      while (patNode != null) {
-        var node = patNode.or;
-        while (node != null) {
-          node match {
-            case DefaultPat() =>
-              if (defaultBody != null)
-                throw new ApplicationError(); // shouldn't happen
-              defaultBody = bodyToTree(node.and);
-              node = node.or;
-
-            case ConstantPat(AConstant.INT(value))=>
-              mappings = insert(
-                value,
-                bodyToTree(node.and),
-                mappings);
-                node = node.or;
-
-            case _ =>
-              throw new ApplicationError(node.toString());
-          }
-        }
-        patNode = patNode.nextH();
-      }
-      /* mappings != null because numCases(...) > 2
-       * so there were at least 2 or-branches
-       */
-      var n = mappings.length();
-      val tags = new Array[Int](n);
-      val bodies = new Array[Tree](n);
-      n = 0;
-      while (mappings != null) {
-        tags(n) = mappings.tag;
-        bodies(n) = mappings.body;
-        n = n + 1;
-        mappings = mappings.next;
-      }
-      return gen.Switch(selector, tags, bodies, defaultBody, resultVar.getType());
+    var n = mappings.length();
+    val tags = new Array[Int](n);
+    val bodies = new Array[Tree](n);
+    n = 0;
+    while (mappings != null) {
+      tags(n) = mappings.tag;
+      bodies(n) = mappings.body;
+      n = n + 1;
+      mappings = mappings.next;
     }
-
-    protected def bodyToTree(node: PatternNode): Tree = {
-      node match {
-        case _b:Body =>
-          return _b.body(0);
-      }
-    }
-
-    def switchToTree(): Tree = {
-      throw new Error();
-    }
+    return gen.Switch(selector,tags, bodies, defaultBody, resultVar.getType());
+  }
 
     def generalSwitchToTree(): Tree = {
       val ts = Predef.Array[Tree] (
@@ -821,6 +656,8 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
       return cases > 2;
     }
 
+  protected def toOptTree(node1: PatternNode, selector: Tree): Tree = {
+
     class TagNodePair(tag1: int, node1: PatternNode, next1: TagNodePair) {
       var tag: int = tag1;
       var node: PatternNode = node1;
@@ -830,27 +667,24 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
         return if (null == next)  1 else (next.length() + 1);
       }
     }
-
-  protected def toOptTree(node1: PatternNode, selector: Tree): Tree = {
-    def insert(tag: Int, node: PatternNode, current: TagNodePair): TagNodePair = {
-      if (current == null)
-        return new TagNodePair(tag, node, null);
-      else if (tag > current.tag)
-        return new TagNodePair(current.tag, current.node, insert(tag, node, current.next));
-      else if (tag == current.tag) {
-        val old = current.node;
-        current.node = node;
-        node.or = old;
-        return current;
-      } else
-        return new TagNodePair(tag, node, current);
-    }
-
     def  insertNode(tag:int , node:PatternNode , current:TagNodePair ): TagNodePair = {
+      def insert(tag: Int, node: PatternNode, current: TagNodePair): TagNodePair = {
+        if (current == null)
+          return new TagNodePair(tag, node, null);
+        else if (tag > current.tag)
+          return new TagNodePair(current.tag, current.node, insert(tag, node, current.next));
+        else if (tag == current.tag) {
+          val old = current.node;
+          current.node = node;
+          node.or = old;
+          return current;
+        } else
+          return new TagNodePair(tag, node, current);
+      } // def insert
       val newnode = node.dup();
       newnode.or = null;
       return insert(tag, newnode, current);
-    }
+    } // def insertNode
 
     var node = node1;
     //System.err.println("pm.toOptTree called"+node);
@@ -925,6 +759,74 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
                           toTree(node.or, selector.duplicate()));
         }
     }
+
+
+  protected def isSimpleSwitch(): Boolean  = {
+    /*
+
+  case class Break(res:Boolean) extends java.lang.Throwable;
+  case class Break2() extends java.lang.Throwable;
+
+
+    print();
+    var patNode = root.and;
+    while (patNode != null) {
+      var node = patNode;
+      while (({node = node.or; node}) != null) {
+        node match {
+          case VariablePat(tree) =>
+            Console.println(((tree.symbol().flags & Modifiers.CASE) != 0));
+          case ConstrPat(_) =>
+            Console.println(node.getTpe().toString() + " / " + ((node.getTpe().symbol().flags & Modifiers.CASE) != 0));
+          var inner = node.and;
+          def funct(inner: PatternNode): Boolean = {
+            //outer: while (true) {
+            inner match {
+              case _h:Header =>
+                if (_h.next != null)
+                  throw Break(false);
+              funct(inner.or)
+
+              case DefaultPat() =>
+                funct(inner.and);
+
+              case b:Body =>
+                if ((b.guard.length > 1) ||
+                    (b.guard(0) != Tree.Empty))
+                  throw Break(false);
+
+              throw Break2() // break outer
+              case _ =>
+                Console.println(inner);
+              throw Break(false);
+            }
+          }
+          var res = false;
+          var set = false;
+          try {
+            funct(inner)
+          } catch {
+            case Break(res1) =>
+              res = res1;
+              set = true;
+              case Break2() =>
+          }
+          if(set) return res;
+          case _ =>
+            return false;
+        }
+        }
+      patNode = patNode.nextH();
+      }
+    return true;
+    */
+    return false;
+  }
+
+  def switchToTree(): Tree = {
+    throw new Error();
+  }
+
 }
 }
 
