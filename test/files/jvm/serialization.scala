@@ -3,18 +3,30 @@
 //############################################################################
 // $Id$
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.System;
 
 object EqualityTest {
-  def check[A,B](x: A, y: B): Unit = {
+  def check[A, B](x: A, y: B): Unit = {
     System.out.println("x = " + x);
     System.out.println("y = " + y);
-    System.out.println("x equals y: " + (x equals y) + " - y equals x: " + (y equals x));
+    System.out.println(
+      "x equals y: " + (x equals y) + " - y equals x: " + (y equals x));
     System.out.println();
+  }
+}
+
+object Serialize {
+  def write[A](o: A): Array[Byte] = { //  throws Exception
+    val ba = new java.io.ByteArrayOutputStream(512);
+    val out = new java.io.ObjectOutputStream(ba);
+    out.writeObject(o);
+    out.close();
+    ba.toByteArray()
+  }
+  def read[A](buffer: Array[Byte]): A = { // throws Exception
+    val in =
+      new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(buffer));
+    in.readObject().asInstanceOf[A]
   }
 }
 
@@ -23,10 +35,9 @@ object EqualityTest {
 
 [serializable]
 object Test1_scala {
-  private def arrayToString[A](arr: Array[A]): String = {
+  private def arrayToString[A](arr: Array[A]): String =
     List.fromArray(arr).mkString("Array[",",","]");
-  }
-  private def arrayEquals[A,B](a1: Array[A], a2: Array[B]) =
+  private def arrayEquals[A, B](a1: Array[A], a2: Array[B]) =
      (a1.length == a2.length) &&
      (Iterator.range(0, a1.length) forall { i => a1(i) == a2(i) });
   val x1 = Nil;
@@ -35,20 +46,10 @@ object Test1_scala {
   val x4 = x: Int => 2 * x;
 
   try {
-    val dataFile = java.io.File.createTempFile("test1", ".ser");
-    val out = new ObjectOutputStream(new FileOutputStream(dataFile));
-    out.writeObject(x1);
-    out.writeObject(x2);
-    out.writeObject(x3);
-    out.writeObject(x4);
-    out.close();
-
-    val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[List[All]];
-    val y2 = in.readObject().asInstanceOf[Option[All]];
-    val y3 = in.readObject().asInstanceOf[Array[Int]];
-    val y4 = in.readObject().asInstanceOf[Function[Int, Int]];
-    in.close();
+    val y1: List[All]          = Serialize.read(Serialize.write(x1));
+    val y2: Option[All]        = Serialize.read(Serialize.write(x2));
+    val y3: Array[Int]         = Serialize.read(Serialize.write(x3));
+    val y4: Function[Int, Int] = Serialize.read(Serialize.write(x4));
 
     System.out.println("x1 = " + x1);
     System.out.println("y1 = " + y1);
@@ -66,7 +67,6 @@ object Test1_scala {
     System.out.println("y4 = <na>");
     System.out.println("x4(2): " + x4(2) + " - y4(2): " + y4(2));
     System.out.println();
-    dataFile.deleteOnExit()
   }
   catch {
     case e: Exception =>
@@ -106,28 +106,14 @@ object Test2_immutable {
   val x8 = new TreeSet[Int]().incl(2).incl(0);
 
   try {
-    val dataFile = java.io.File.createTempFile("test2", ".ser");
-    val out = new ObjectOutputStream(new FileOutputStream(dataFile));
-    out.writeObject(x1);
-    out.writeObject(x2);
-    out.writeObject(x3);
-    out.writeObject(x4);
-    out.writeObject(x5);
-    out.writeObject(x6);
-    out.writeObject(x7);
-    out.writeObject(x8);
-    out.close();
-
-    val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[List[Pair[String, Int]]];
-    val y2 = in.readObject().asInstanceOf[ListMap[String, Int]];
-    val y3 = in.readObject().asInstanceOf[BitSet];
-    val y4 = in.readObject().asInstanceOf[ListSet[Int]];
-    val y5 = in.readObject().asInstanceOf[Queue[String]];
-    val y6 = in.readObject().asInstanceOf[Stack[String]];
-    val y7 = in.readObject().asInstanceOf[TreeMap[Int, String]];
-    val y8 = in.readObject().asInstanceOf[TreeSet[Int]];
-    in.close();
+    val y1: List[Pair[String, Int]] = Serialize.read(Serialize.write(x1));
+    val y2: ListMap[String, Int]    = Serialize.read(Serialize.write(x2));
+    val y3: BitSet                  = Serialize.read(Serialize.write(x3));
+    val y4: ListSet[Int]            = Serialize.read(Serialize.write(x4));
+    val y5: Queue[String]           = Serialize.read(Serialize.write(x5));
+    val y6: Stack[String]           = Serialize.read(Serialize.write(x6));
+    val y7: TreeMap[Int, String]    = Serialize.read(Serialize.write(x7));
+    val y8: TreeSet[Int]            = Serialize.read(Serialize.write(x8));
 
     EqualityTest.check(x1, y1);
     EqualityTest.check(x2, y2);
@@ -137,7 +123,6 @@ object Test2_immutable {
     EqualityTest.check(x6, y6);
     EqualityTest.check(x7, y7);
     EqualityTest.check(x8, y8);
-    dataFile.deleteOnExit()
   }
   catch {
     case e: Exception =>
@@ -173,24 +158,12 @@ object Test3_mutable {
   x6 ++= x5;
 
   try {
-    val dataFile = java.io.File.createTempFile("test3", ".ser");
-    val out = new ObjectOutputStream(new FileOutputStream(dataFile));
-    out.writeObject(x1);
-    out.writeObject(x2);
-    out.writeObject(x3);
-    out.writeObject(x4);
-    out.writeObject(x5);
-    out.writeObject(x6);
-    out.close();
-
-    val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[HashMap[String, Int]];
-    val y2 = in.readObject().asInstanceOf[BitSet];
-    val y3 = in.readObject().asInstanceOf[HashSet[String]];
-    val y4 = in.readObject().asInstanceOf[LinkedList[Int]];
-    val y5 = in.readObject().asInstanceOf[Queue[Int]];
-    val y6 = in.readObject().asInstanceOf[Stack[Int]];
-    in.close();
+    val y1: HashMap[String, Int] = Serialize.read(Serialize.write(x1));
+    val y2: BitSet               = Serialize.read(Serialize.write(x2));
+    val y3: HashSet[String]      = Serialize.read(Serialize.write(x3));
+    val y4: LinkedList[Int]      = Serialize.read(Serialize.write(x4));
+    val y5: Queue[Int]           = Serialize.read(Serialize.write(x5));
+    val y6: Stack[Int]           = Serialize.read(Serialize.write(x6));
 
     EqualityTest.check(x1, y1);
     EqualityTest.check(x2, y2);
@@ -198,7 +171,6 @@ object Test3_mutable {
     EqualityTest.check(x4, y4);
     EqualityTest.check(x5, y5);
     EqualityTest.check(x6, y6);
-    dataFile.deleteOnExit()
   }
   catch {
     case e: Exception =>
@@ -245,20 +217,11 @@ object Test4_xml {
     </html>;
 
   try {
-    val dataFile = java.io.File.createTempFile("test4", ".ser");
-    val out = new ObjectOutputStream(new FileOutputStream(dataFile));
-    out.writeObject(x1);
-    out.writeObject(x2);
-    out.close();
-
-    val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[scala.xml.Elem];
-    val y2 = in.readObject().asInstanceOf[scala.xml.Elem];
-    in.close();
+    val y1: scala.xml.Elem = Serialize.read(Serialize.write(x1));
+    val y2: scala.xml.Elem = Serialize.read(Serialize.write(x2));
 
     EqualityTest.check(x1, y1);
     EqualityTest.check(x2, y2);
-    dataFile.deleteOnExit()
   }
   catch {
     case e: Exception =>
@@ -290,20 +253,11 @@ object Test5 {
   val x2 = bob;
 
   try {
-    val dataFile = java.io.File.createTempFile("test5", ".ser");
-    val out = new ObjectOutputStream(new FileOutputStream(dataFile));
-    out.writeObject(x1);
-    out.writeObject(x2);
-    out.close();
-
-    val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[Person];
-    val y2 = in.readObject().asInstanceOf[Employee];
-    in.close();
+    val y1: Person   = Serialize.read(Serialize.write(x1));
+    val y2: Employee = Serialize.read(Serialize.write(x2));
 
     EqualityTest.check(x1, y1);
     EqualityTest.check(x2, y2);
-    dataFile.deleteOnExit()
   }
   catch {
     case e: Exception =>
@@ -327,23 +281,13 @@ object Test6 {
   val x3 = paul;
 
   try {
-    val dataFile = java.io.File.createTempFile("test6", ".ser");
-    val out = new ObjectOutputStream(new FileOutputStream(dataFile));
-    out.writeObject(x1);
-    out.writeObject(x2);
-    out.writeObject(x3);
-    out.close();
-
-    val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[Person];
-    val y2 = in.readObject().asInstanceOf[Employee];
-    val y3 = in.readObject().asInstanceOf[Person];
-    in.close();
+    val y1: Person   = Serialize.read(Serialize.write(x1));
+    val y2: Employee = Serialize.read(Serialize.write(x2));
+    val y3: Person   = Serialize.read(Serialize.write(x3));
 
     EqualityTest.check(x1, y1);
     EqualityTest.check(x2, y2);
     EqualityTest.check(x3, y3);
-    dataFile.deleteOnExit()
   }
   catch {
     case e: Exception =>
