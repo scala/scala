@@ -590,58 +590,16 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
       return gen.mkBlock(selector.pos, ts, res);
     }
 
-    /*protected*/ def toTree(node1: PatternNode): Tree = {
-      var node = node1;
-      var res = gen.mkBooleanLit(node.pos, false);
-      while (node != null)
-      node match {
-        case _h:Header =>
-          val selector = _h.selector;
-          val next = _h.next;
-          //res = cf.And(mkNegate(res), toTree(node.or, selector));
-          //Console.println("HEADER TYPE = " + selector.type);
-          if (optimize(node.getTpe(), node.or))
-            res = cf.Or(res, toOptTree(node.or, selector));
-          else
-            res = cf.Or(res, toTree(node.or, selector));
-          node = next;
-
-        case _b:Body =>
-          var bound = _b.bound;
-          val guard = _b.guard;
-          val body  = _b.body;
-          if ((bound.length == 0) &&
-              (guard.length == 0) &&
-              (body.length == 0)) {
-                return gen.mkBooleanLit(node.pos, true); // cf.Or(res, gen.mkBooleanLit(node.pos, true));
-              } else if (!doBinding)
-                bound = Predef.Array[Array[ValDef]]( Predef.Array[ValDef]() );
-                var i = guard.length - 1; while(i >= 0) {
-                  val ts = bound(i).asInstanceOf[Array[Tree]];
-                  var res0 = gen.mkBlock(gen.Assign(gen.Ident(body(i).pos, resultVar),
-                                                     body(i)),
-                                          gen.mkBooleanLit(body(i).pos, true));
-                  if (guard(i) != Tree.Empty)
-                    res0 = cf.And(guard(i), res0);
-                  res = cf.Or(gen.mkBlock(body(i).pos, ts, res0), res);
-                  i = i - 1
-                }
-        return res;
-        case _ =>
-          throw new ApplicationError();
-      }
-      return res;
-    }
-
-    protected def optimize(selType:Type, alternatives1: PatternNode ): boolean = {
-      var alternatives = alternatives1;
+  def toTree(node1: PatternNode): Tree = {
+    def optimize1(selType:Type, alternatives1: PatternNode ): boolean = {
+      var alts = alternatives1;
       if (!optimize || !selType.isSubType(defs.SCALAOBJECT_TYPE()))
         return false;
       var cases = 0;
-      while (alternatives != null) {
-        alternatives match {
+      while (alts != null) {
+        alts match {
           case ConstrPat(_) =>
-            if (alternatives.getTpe().symbol().isCaseClass())
+            if (alts.getTpe().symbol().isCaseClass())
               cases = cases +1;
             else
               return false;
@@ -651,10 +609,50 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
           case _ =>
             return false;
         }
-        alternatives = alternatives.or;
+        alts = alts.or;
       }
       return cases > 2;
     }
+
+    var node = node1;
+    var res = gen.mkBooleanLit(node.pos, false);
+    while (node != null)
+    node match {
+      case _h:Header =>
+        val selector = _h.selector;
+        val next = _h.next;
+        //res = cf.And(mkNegate(res), toTree(node.or, selector));
+        //Console.println("HEADER TYPE = " + selector.type);
+        if (optimize1(node.getTpe(), node.or))
+          res = cf.Or(res, toOptTree(node.or, selector));
+        else
+          res = cf.Or(res, toTree(node.or, selector));
+      node = next;
+
+      case _b:Body =>
+        var bound = _b.bound;
+        val guard = _b.guard;
+        val body  = _b.body;
+        if ((bound.length == 0) &&
+            (guard.length == 0) &&
+            (body.length == 0)) {
+              return gen.mkBooleanLit(node.pos, true); // cf.Or(res, gen.mkBooleanLit(node.pos, true));
+            } else if (!doBinding)
+              bound = Predef.Array[Array[ValDef]]( Predef.Array[ValDef]() );
+        var i = guard.length - 1; while(i >= 0) {
+          val ts = bound(i).asInstanceOf[Array[Tree]];
+          var res0 = gen.mkBlock(gen.Assign(gen.Ident(body(i).pos, resultVar),
+                                            body(i)),
+                                 gen.mkBooleanLit(body(i).pos, true));
+          if (guard(i) != Tree.Empty)
+            res0 = cf.And(guard(i), res0);
+          res = cf.Or(gen.mkBlock(body(i).pos, ts, res0), res);
+          i = i - 1
+        }
+      return res;
+    }
+    return res;
+  }
 
   protected def toOptTree(node1: PatternNode, selector: Tree): Tree = {
 
