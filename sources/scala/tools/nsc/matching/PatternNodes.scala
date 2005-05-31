@@ -24,6 +24,11 @@ abstract class PatternNodes {
   var or: PatternNode = _;
   var and: PatternNode = _;
 
+   def bodyToTree(): Tree = this match {
+     case _b:Body =>
+       return _b.body(0);
+   }
+
   def getTpe(): Type = {
     tpe;
   }
@@ -196,6 +201,93 @@ abstract class PatternNodes {
            return "<unknown pat>";
        }
      }
+
+  def print(indent: String, sb: StringBuffer): StringBuffer = {
+
+    val patNode = this;
+
+    def cont = if (patNode.or != null) patNode.or.print(indent, sb); else sb;
+
+    def newIndent(s: String) = {
+      val removeBar: Boolean = (null == patNode.or);
+      val sb = new StringBuffer();
+      sb.append(indent);
+      if (removeBar)
+        sb.setCharAt(indent.length() - 1, ' ');
+      var i = 0; while (i < s.length()) {
+        sb.append(' ');
+        i = i + 1
+      }
+      sb.toString()
+    }
+
+    if (patNode == null)
+      sb.append(indent).append("NULL");
+    else
+      patNode match {
+
+        case _h: Header =>
+          val selector = _h.selector;
+          val next = _h.next;
+          sb.append(indent + "HEADER(" + patNode.getTpe() +
+                          ", " + selector + ")").append('\n');
+          patNode.or.print(indent + "|", sb);
+          if (next != null)
+            next.print(indent, sb);
+          else
+            sb
+        case ConstrPat(casted) =>
+          val s = "-- " + patNode.getTpe().symbol.name +
+                    "(" + patNode.getTpe() + ", " + casted + ") -> ";
+          val nindent = newIndent(s);
+          sb.append(nindent + s).append('\n');
+          patNode.and.print(nindent, sb);
+          cont;
+
+        case SequencePat( casted, plen ) =>
+          val s = "-- " + patNode.getTpe().symbol.name + "(" +
+                  patNode.getTpe() +
+                  ", " + casted + ", " + plen + ") -> ";
+          val nindent = newIndent(s);
+          sb.append(indent + s).append('\n');
+          patNode.and.print(nindent, sb);
+          cont;
+
+        case DefaultPat() =>
+          sb.append(indent + "-- _ -> ").append('\n');
+          patNode.and.print(indent.substring(0, indent.length() - 1) +
+                      "         ", sb);
+          cont;
+
+        case ConstantPat(value) =>
+          val s = "-- CONST(" + value + ") -> ";
+          val nindent = newIndent(s);
+          sb.append(indent + s).append('\n');
+          patNode.and.print( nindent, sb);
+          cont;
+
+        case VariablePat(tree) =>
+          val s = "-- STABLEID(" + tree + ": " + patNode.getTpe() + ") -> ";
+          val nindent = newIndent(s);
+          sb.append(indent + s).append('\n');
+          patNode.and.print(nindent, sb);
+          cont;
+
+        case AltPat(header) =>
+          sb.append(indent + "-- ALTERNATIVES:").append('\n');
+          header.print(indent + "   * ", sb);
+          patNode.and.print(indent + "   * -> ", sb);
+          cont;
+
+        case _b:Body =>
+          if ((_b.guard.length == 0) && (_b.body.length == 0))
+            sb.append(indent + "true").append('\n') ;
+          else
+            sb.append(indent + "BODY(" + _b.body.length + ")").append('\n');
+
+      }
+  } // def print
+
   }
 
   class Header(sel1: Tree, next1: Header ) extends PatternNode {
@@ -273,4 +365,6 @@ abstract class PatternNodes {
     }
 
   } // class CaseEnv
+
+
 }
