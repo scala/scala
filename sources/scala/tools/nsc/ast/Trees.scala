@@ -254,7 +254,14 @@ abstract class Trees: Global {
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree;
 
-  /** Pattern matching expression */
+  /** Pattern matching expression  (before TransMatch)
+   *  Switch statements            (after TransMatch)
+   *
+   *  after TM, cases will satisfy the following constraints:
+   *  - all guards are EmptyTree,
+   *  - all patterns will be either Literal(x:Int) or Alternative(lit|...|lit)
+   *  - except for an "otherwise" branch, which has pattern Ident(nme.WILDCARD)
+   */
   case class Match(selector: Tree, cases: List[CaseDef]) extends TermTree;
 
   /** Return expression */
