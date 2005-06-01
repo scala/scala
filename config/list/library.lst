@@ -244,7 +244,7 @@ xml/dtd/DocType.scala
 xml/dtd/DTD.scala
 xml/dtd/Decl.scala
 xml/dtd/ExternalID.scala
-xml/dtd/Parser.scala
+xml/dtd/ContentModelParser.scala
 xml/dtd/Scanner.scala
 xml/dtd/Tokens.scala
 xml/dtd/DtdTypeSymbol.scala
