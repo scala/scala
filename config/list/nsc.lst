@@ -13,7 +13,6 @@ Phase.scala
 Settings.scala
 StdPhase.scala
 
-ast/TreeBuilder.scala
 ast/TreeGen.scala
 ast/TreeInfo.scala
 ast/TreePrinters.scala
@@ -22,11 +21,13 @@ ast/parser/ParserPhase.scala
 ast/parser/Parsers.scala
 ast/parser/Scanners.scala
 ast/parser/Tokens.scala
+ast/parser/TreeBuilder.scala
 
 matching/CodeFactory.scala
+#matching/PartialMatcher.scala
 #matching/PatternMatcher.scala
-matching/PatternNode.scala
 matching/PatternNodeCreator.scala
+matching/PatternNodes.scala
 matching/PatternUtil.scala
 #matching/TransMatcher.scala
 
@@ -50,6 +51,8 @@ symtab/classfile/Pickler.scala
 symtab/classfile/SymblfileParser.scala
 symtab/classfile/UnPickler.scala
 
+transform/SampleTransform.scala
+transform/Transform.scala
 transform/TypesAsValues.scala
 
 typechecker/Analyzer.scala
