@@ -462,7 +462,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
         nextch;
       if ('[' == ch)                 // CDATA
         ts + xCharData;
-      else if ('D' == ch) // doctypedecl, parse DTD
+      else if ('D' == ch) // doctypedecl, parse DTD // @todo REMOVE HACK
         parseDTD();
       else // comment
         ts + xComment;
@@ -633,6 +633,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       override val decls      = handle.decls.reverse;
     }
     //this.dtd.initializeEntities();
+    handle.endDTD(n);
   }
 
   def element(pscope: NamespaceBinding): NodeSeq = {
@@ -646,26 +647,28 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def element1(pscope: NamespaceBinding): NodeSeq = {
     val pos = this.pos;
     val Tuple3(qname, aMap, scope) = xTag(pscope);
+    val Tuple2(pre, local) = Utility.prefix(qname).match {
+      case Some(p) => Pair(p,qname.substring(p.length()+1, qname.length()));
+      case _       => Pair(null,qname);
+    }
     val ts = {
       if (ch == '/') {  // empty element
         xToken('/');
         xToken('>');
+        handle.elemStart(pos, pre, local, aMap, scope);
         NodeSeq.Empty;
       }
-      else {           // element with  content
+      else {           // element with content
         xToken('>');
+        handle.elemStart(pos, pre, local, aMap, scope);
         val tmp = content(scope);
         xEndTag(qname);
         tmp;
       }
     }
-    Utility.prefix(qname) match {
-      case Some(pre) =>
-        val local = qname.substring(pre.length()+1, qname.length());
-        handle.elem(pos, pre, local, aMap, scope, ts );
-      case _ =>
-        handle.elem(pos, null, qname, aMap, scope, ts );
-    }
+    val res = handle.elem(pos, pre, local, aMap, scope, ts );
+    handle.elemEnd(pos, pre, local);
+    res
   }
 
   //def xEmbeddedExpr: MarkupType;
@@ -1101,10 +1104,19 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   /**
    * report a syntax error
    */
-  def reportSyntaxError(str: String): Unit = {
-    //Console.println(inp.descr+":"+scala.io.Position.toString(pos)+":"+str);
+  def reportSyntaxError(pos: int, str: String): Unit = {
     curInput.reportError(pos, str)
   }
+
+  def reportSyntaxError(str: String): Unit = reportSyntaxError(pos, str);
+
+  /**
+   * report a syntax error
+   */
+  def reportValidationError(pos: int, str: String): Unit = {
+    curInput.reportError(pos, str)
+  }
+
 
   def push(entityName:String) = {
     //Console.println("BEFORE PUSHING  "+ch);

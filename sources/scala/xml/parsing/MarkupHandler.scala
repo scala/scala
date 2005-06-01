@@ -21,10 +21,7 @@ import scala.util.logging._;
  *  @todo can we ignore more entity declarations (i.e. those with extIDs)?
  *  @todo expanding entity references
  */
-abstract class MarkupHandler with Logged with ConsoleLogger {
-
-  // impl. of Logged
-  //def log(msg:String) = {}
+abstract class MarkupHandler with Logged  {
 
   /** returns true is this markup handler is validing */
   val isValidating: Boolean = false;
@@ -32,9 +29,18 @@ abstract class MarkupHandler with Logged with ConsoleLogger {
   /** if true, does not remove surplus whitespace */
   val preserveWS: Boolean;
 
-  var decls: List[scala.xml.dtd.Decl] = Nil;
+  var decls: List[Decl] = Nil;
 
   var ent:  Map[String, EntityDecl]  = new HashMap[String, EntityDecl]();
+
+  def lookupElemDecl(Label: String): ElemDecl =  {
+    def lookup(xs:List[Decl]): ElemDecl = xs.match {
+      case (z @ ElemDecl(Label, _)) :: zs => return z;
+      case _::zs                        => lookup(zs);
+      case _                            => return null
+    }
+    lookup(decls)
+  }
 
   def replacementText( entityName: String ): Source = {
     ent.get(entityName) match {
@@ -49,7 +55,30 @@ abstract class MarkupHandler with Logged with ConsoleLogger {
     }
   }
 
-  /** callback method invoked by MarkupParser after parsing an element.
+ //def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {}
+
+  def endDTD(n:String): Unit = {}
+
+  /** callback method invoked by MarkupParser after start-tag of element.
+   *
+   *  @param pos      the position in the sourcefile
+   *  @param pre      the prefix
+   *  @param label    the local name
+   *  @param attrs    the attributes (metadata)
+   */
+  def elemStart(pos: int, pre: String, label: String, attrs: MetaData, scope:NamespaceBinding): Unit = {}
+
+  /** callback method invoked by MarkupParser after end-tag of element.
+   *
+   *  @param pos      the position in the sourcefile
+   *  @param pre      the prefix
+   *  @param label    the local name
+   *  @param attrs    the attributes (metadata)
+   */  def elemEnd(pos: int, pre: String, label: String): Unit = {}
+
+  /** callback method invoked by MarkupParser after parsing an elementm,
+   *  between the elemStart and elemEnd callbacks
+   *
    *
    *  @param pos      the position in the sourcefile
    *  @param pre      the prefix
@@ -114,7 +143,7 @@ abstract class MarkupHandler with Logged with ConsoleLogger {
     decls = PEReference( name ) :: decls;
 
   /** report a syntax error */
-  def reportSyntaxError(str: String): Unit;
+  def reportSyntaxError(pos: Int, str: String): Unit;
 
 }
 

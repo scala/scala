@@ -33,7 +33,9 @@ extends  ConstructingHandler
 with     ExternalSources
 with     MarkupParser  {
 
-  override val isValidating = true;
+  // default impl. of Logged
+  def log(msg:String): Unit = {}
+
   val preserveWS = presWS;
   val input = inp;
   val handle = this;

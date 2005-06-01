@@ -69,7 +69,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   /** called at the leaves of the regexp */
   protected def seenLabel( r:RegExp, i:Int, label: _labelT ): Unit = {
-    Console.println("seenLabel (1)");
+    //Console.println("seenLabel (1)");
     //this.posMap.update( r, i );
     this.labelAt = this.labelAt.update( i, label );
     //@ifdef if( label != Wildcard ) {
@@ -137,10 +137,10 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   protected def collectTransitions(): Unit = {  // make transitions
-    Console.println("WBS.collectTrans, this.follow.keys = "+this.follow.keys);
-    Console.println("WBS.collectTrans, pos = "+this.follow.keys);
+    //Console.println("WBS.collectTrans, this.follow.keys = "+this.follow.keys);
+    //Console.println("WBS.collectTrans, pos = "+this.follow.keys);
     var j = 0; while( j < pos ) {
-      Console.println("WBS.collectTrans, j = "+j);
+      //Console.println("WBS.collectTrans, j = "+j);
       val fol = this.follow( j );
       val it = fol.elements;
       while( it.hasNext ) {

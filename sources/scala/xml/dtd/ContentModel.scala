@@ -1,25 +1,26 @@
 package scala.xml.dtd ;
 
+import scala.util.regexp.WordExp;
+import scala.util.automata._;
 
-object ContentModel extends scala.util.regexp.WordExp {
+object ContentModel extends WordExp  {
   type _labelT = ElemName;
   type _regexpT = RegExp;
+
+  object Translator extends WordBerrySethi  {
+
+    override val lang: ContentModel.this.type = ContentModel.this;
+    import lang._ ;
+    //val re  = Sequ(Star(Letter(IntConst( 3 ))));
+    //val aut = automatonFrom(re, 7)
+  }
+
 
   case class ElemName(name: String) extends Label {
     override def toString() = "ElemName(\""+name+"\")";
   }
 
-  def parse(s: String): ContentModel = Parser.parse( s );
-
-  /*
-  def isMixed(alt: Alt): Boolean = {
-    val it = alt.rs.elements;
-    it.next == PCDATA_ && {
-      while( it.hasNext && it.next.isInstanceOf[Letter] ) {} ;
-      !it.hasNext
-    }
-  }
-  */
+  def parse(s: String): ContentModel = ContentModelParser.parse( s );
 
   def getLabels(r: RegExp): scala.collection.Set[String] = {
     val s = new scala.collection.mutable.HashSet[String]();
@@ -48,12 +49,15 @@ object ContentModel extends scala.util.regexp.WordExp {
 
   /* precond: rs.length >= 1 */
   private def toString(rs: Seq[RegExp], sb: StringBuffer, sep: Char): Unit = {
+
     val it = rs.elements;
-    toString(it.next, sb);
+    val fst = it.next;
+    toString(fst, sb);
     for(val z <- it) {
       sb.append( sep );
       toString( z, sb );
     }
+    sb
   }
 
   def toString(c: ContentModel, sb: StringBuffer): StringBuffer = c match {
@@ -67,11 +71,8 @@ object ContentModel extends scala.util.regexp.WordExp {
       case PCDATA =>
         sb.append("(#PCDATA)");
 
-      case ELEMENTS( r ) =>
-        toString(r, sb)
-
-      case MIXED( r ) =>
-        sb.append("(#PCDATA"); toString(r, sb); sb.append( ')' )
+      case ELEMENTS( _ ) | MIXED( _ ) =>
+        c.toString(sb)
 
   }
 
@@ -84,7 +85,7 @@ object ContentModel extends scala.util.regexp.WordExp {
         sb.append( '(' ); toString(rs, sb, ','); sb.append( ')' );
 
       case Alt(rs @ _*) =>
-        sb.append( '(' ); toString(rs, sb, '|'); sb.append( ')' );
+        sb.append( '(' ); toString(rs, sb, '|');  sb.append( ')' );
 
       case Star(r: RegExp) =>
         sb.append( '(' ); toString(r, sb); sb.append( ")*" );
@@ -94,6 +95,7 @@ object ContentModel extends scala.util.regexp.WordExp {
 
     }
   }
+
 }
 
 sealed abstract class ContentModel {
@@ -104,6 +106,16 @@ sealed abstract class ContentModel {
   }
 
   def toString(sb:StringBuffer): StringBuffer;
+  /*
+  def validate(cs: NodeSeq): Boolean = this.match {
+    case ANY         => true ;
+    case EMPTY       => cs.length == 0;
+    case PCDATA      => cs.length == 0
+                     || (cs.length == 1 && cs(0).isInstanceOf[Text]);
+    case m@MIXED(r)    => m.runDFA(cs);
+    case e@ELEMENTS(r) => e.runDFA(cs);
+  }
+  */
 }
 
 case object PCDATA extends ContentModel {
@@ -115,17 +127,99 @@ case object EMPTY extends ContentModel {
 case object ANY extends ContentModel {
   def toString(sb:StringBuffer): StringBuffer = sb.append("ANY");
 }
+abstract class DFAContentModel extends ContentModel {
+  import ContentModel.{ ElemName };
+  def r: ContentModel.RegExp;
+  private var _dfa: DetWordAutom[ContentModel.ElemName] = null;
 
-case class  MIXED(r:ContentModel.RegExp) extends ContentModel {
+  def dfa = {
+    if(null == _dfa) {
+      val nfa = ContentModel.Translator.automatonFrom(r, 1);
+      _dfa = new SubsetConstruction(nfa).determinize;
+    }
+    _dfa
+  }
+  /*
+  def getIterator(ns:NodeSeq): Iterator[String];
+  def runDFA(ns:NodeSeq): Boolean = {
+    if(null == _dfa) {
+      val nfa = ContentModel.Translator.automatonFrom(r, 1);
+      _dfa = new SubsetConstruction(nfa).determinize;
+    }
+    var q = 0;
+    val it = getIterator(ns);
+    Console.println("it empty from the start? "+(!it.hasNext));
+    while( it.hasNext ) {
+      val e = it.next;
+      Console.println("next = "+e);
+      if(null == e) {
+        return _dfa.isFinal(q)
+      } else {
+        Console.println(" got :"+ElemName(e));
+        Console.println("delta:" + _dfa.delta(q));
+
+        _dfa.delta(q).get(ElemName(e)).match {
+          case Some(p) => q = p;
+          case _       => throw ValidationException("element "+e+" not allowed here")
+        }
+        Console.println("q now " + q);
+      }
+    }
+    _dfa.isFinal(q)
+  }
+  */
+}
+case class MIXED(r:ContentModel.RegExp) extends DFAContentModel {
+  import ContentModel.{ Alt, Eps, RegExp };
+  /*
+  def getIterator(ns:NodeSeq) = new Iterator[String] {
+    def cond(n:Node) =
+      !n.isInstanceOf[Text] && !n.isInstanceOf[SpecialNode];
+Console.println("ns = "+ns);
+    val jt = ns.elements;
+    def hasNext = jt.hasNext;
+    def next = {
+      var r: Node = jt.next;
+      while(!cond(r) && jt.hasNext)  {
+        Console.println("skipping "+r);
+        r = jt.next;
+      }
+      Console.println("MIXED, iterator.next, r = "+r);
+      if(Text("") == r)
+        null
+      else
+        r.label
+    }
+  }
+  */
   def toString(sb:StringBuffer): StringBuffer =  {
     sb.append("(#PCDATA|");
-    ContentModel.toString(r, sb);
+    r.match {
+      case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);
+    }
     sb.append(")*");
   }
 }
 
-case class  ELEMENTS(r:ContentModel.RegExp) extends ContentModel {
+case class  ELEMENTS(r:ContentModel.RegExp) extends DFAContentModel {
+  /*
+  def getIterator(ns:NodeSeq) = new Iterator[String] {
+    val jt = ns.elements.buffered;
+    def hasNext = jt.hasNext;
+    def next = {
+      var r: Node = jt.next;
+      while(r.isInstanceOf[SpecialNode] && jt.hasNext) {
+        r = jt.head;
+        jt.next;
+      }
+      Console.println("MIXED, iterator.next, r = "+r);
+      if(r.isInstanceOf[Text])
+        throw ValidationException("Text not allowed here!")
+      else
+        r.label
+    }
+  }
+  */
   def toString(sb:StringBuffer): StringBuffer =
     ContentModel.toString(r, sb);
-
 }
