@@ -632,9 +632,9 @@ abstract class PatternMatcher extends PatternUtil with PatternNodes with Pattern
   }
 
   def generalSwitchToTree(): Tree = {
-    val ts = Predef.Array[Tree] (
+    val ts = List(
       ValDef(root.symbol, selector),
-      ValDef(resultVar, gen.mkDefaultValue(selector.pos, resultVar.tpe)));
+      ValDef(resultVar, EmptyTree /* DefaultValue */));
     val res = If(toTree(root.and),
                  Ident(resultVar),
                  cf.ThrowMatchError(selector.pos,
