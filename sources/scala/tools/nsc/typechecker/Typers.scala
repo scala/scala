@@ -20,7 +20,7 @@ abstract class Typers: Analyzer {
   var selcnt = 0;
   var implcnt = 0;
 
-  class TypeCheckPhase(prev: Phase) extends StdPhase(prev) {
+  class TyperPhase(prev: Phase) extends StdPhase(prev) {
     def name = "typer";
     val global: Typers.this.global.type = Typers.this.global;
     def apply(unit: CompilationUnit): unit =
@@ -39,7 +39,7 @@ abstract class Typers: Analyzer {
     }
 
     private def inferView(pos: int, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
-      if (settings.debug.value) System.out.println("infer view from " + from + " to " + to);//debug
+      if (settings.debug.value) log("infer view from " + from + " to " + to);//debug
       val res = inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous);
       res
     }
@@ -234,7 +234,7 @@ abstract class Typers: Analyzer {
      */
 //    def adapt(tree: Tree, mode: int, pt: Type): Tree = {
     private def adapt(tree: Tree, mode: int, pt: Type): Tree = tree.tpe match {
-      case ct @ ConstantType(base, value) if (ct <:< pt) => // (0)
+      case ct @ ConstantType(base, value) if ((mode & TYPEmode) == 0 && (ct <:< pt)) => // (0)
 	copy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
 	inferExprAlternative(tree, pt);
@@ -245,7 +245,7 @@ abstract class Typers: Analyzer {
       if ((mode & EXPRmode) != 0 && sym == ByNameParamClass) => // (2)
 	adapt(tree setType arg, mode, pt);
       case PolyType(tparams, restpe) if ((mode & TAPPmode) == 0) => // (3)
-	if (settings.debug.value && tree.symbol != null) System.out.println("adapting " + tree + " " + tree.symbol.tpe + " " + tree.symbol.getClass() + " " + tree.symbol.hasFlag(CASE));//debug
+	if (settings.debug.value && tree.symbol != null) log("adapting " + tree + " " + tree.symbol.tpe + " " + tree.symbol.getClass() + " " + tree.symbol.hasFlag(CASE));//debug
 	val tparams1 = cloneSymbols(tparams);
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
@@ -324,7 +324,7 @@ abstract class Typers: Analyzer {
 		  return typed(Apply(coercion, List(tree)) setPos tree.pos, mode, pt);
 	      }
             }
-            System.out.println(tree);
+            if (settings.debug.value) log("error tree = " + tree);
 	    typeErrorTree(tree, tree.tpe, pt)
           }
 	}
@@ -339,7 +339,7 @@ abstract class Typers: Analyzer {
       val newTree = New(supertpt) setType
 	PolyType(tparams, appliedType(supertpt.tpe, tparams map (.tpe)));
       val tree = typed(atPos(supertpt.pos)(Apply(Select(newTree, nme.CONSTRUCTOR), superargs)));
-      if (settings.debug.value) System.out.println("superconstr " + tree + " co = " + context.owner);//debug
+      if (settings.debug.value) log("superconstr " + tree + " co = " + context.owner);//debug
       tree.tpe
     }
 
@@ -366,6 +366,7 @@ abstract class Typers: Analyzer {
                 superargs map (.duplicate))) setPos supertpt.pos;
         }
       }
+      //System.out.println("parents(" + context.owner + ") = " + supertpt :: mixins);//DEBUG
       List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(context.owner, tpt))
     }
 
@@ -477,6 +478,9 @@ abstract class Typers: Analyzer {
         if (context.owner.isAnonymousClass)
           intersectionType(context.owner.info.parents, context.owner.owner)
         else context.owner.typeOfThis;
+      // the following is necessary for templates generated later
+      new Namer(context.outer.make(templ, context.owner, context.owner.info.decls))
+	.enterSyms(templ.body);
       validateParentClasses(parents1, selfType);
       val body1 = templ.body flatMap addGetterSetter;
       val body2 = typedStats(body1, templ.symbol);
@@ -616,6 +620,8 @@ abstract class Typers: Analyzer {
 
       def funmode = mode & stickyModes | FUNmode | POLYmode;
 
+      def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps);
+
       def typedCases(cases: List[CaseDef], pattp: Type): List[CaseDef] = {
         List.mapConserve(cases)(cdef =>
 	  newTyper(context.makeNewScope(tree, context.owner)).typedCase(cdef, pattp, pt))
@@ -629,7 +635,7 @@ abstract class Typers: Analyzer {
           if (tparams.length == args.length) {
             val targs = args map (.tpe);
             checkBounds(tree.pos, tparams, targs, "");
-	    if (settings.debug.value) System.out.println("type app " + tparams + " => " + targs + " = " + restpe.subst(tparams, targs));//debug
+	    if (settings.debug.value) log("type app " + tparams + " => " + targs + " = " + restpe.subst(tparams, targs));//debug
 	    copy.TypeApply(tree, fun, args) setType restpe.subst(tparams, targs);
           } else {
             errorTree(tree, "wrong number of type parameters for " + treeSymTypeMsg(fun))
@@ -682,7 +688,7 @@ abstract class Typers: Analyzer {
               val args1 = List.map2(args, formals)(typedArg);
               if (args1 exists (.tpe.isError)) setError(tree)
               else {
-                if (settings.debug.value) System.out.println("infer method inst " + fun + ", tparams = " + tparams + ", args = " + args1.map(.tpe) + ", pt = " + pt + ", lobounds = " + tparams.map(.tpe.bounds.lo));//debug
+                if (settings.debug.value) log("infer method inst " + fun + ", tparams = " + tparams + ", args = " + args1.map(.tpe) + ", pt = " + pt + ", lobounds = " + tparams.map(.tpe.bounds.lo));//debug
                 val undetparams = inferMethodInstance(fun, tparams, args1, pt);
                 val result = typedApply(fun, args1);
                 context.undetparams = undetparams;
@@ -734,7 +740,7 @@ abstract class Typers: Analyzer {
 	      copy.Select(tree, Apply(coercion, List(qual)) setPos qual.pos, name), mode, pt)
 	}
         if (sym.info == NoType) {
-          if (settings.debug.value) System.out.println("qual = " + qual + "\nmembers = " + qual.tpe.members);
+          if (settings.debug.value) log("qual = " + qual + ":" + qual.tpe + "\nmembers = " + qual.tpe.members + "\nfound = " + sym);
           errorTree(tree,
 	    decode(name) + " is not a member of " + qual.tpe.widen +
 	    (if (Position.line(tree.pos) > Position.line(qual.pos))
@@ -826,8 +832,8 @@ abstract class Typers: Analyzer {
 	      pre = qual.tpe;
 	    } else {
               if (settings.debug.value) {
-	        System.out.println(context);//debug
-	        System.out.println(context.imports);//debug
+	        log(context);//debug
+	        log(context.imports);//debug
               }
 	      error(tree.pos, "not found: " + decode(name));
 	      defSym = context.owner.newErrorSymbol(name);
@@ -844,7 +850,7 @@ abstract class Typers: Analyzer {
       // begin typed1
       val sym: Symbol = tree.symbol;
       if (sym != null) sym.initialize;
-      //if (settings.debug.value && tree.isDef) global.log("typing definition of " + sym);//DEBUG
+      //if (settings.debug.value && tree.isDef) log("typing definition of " + sym);//DEBUG
       tree match {
         case PackageDef(name, stats) =>
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
@@ -945,13 +951,13 @@ abstract class Typers: Analyzer {
           } else {
             val thenp1 = typed(thenp, pt);
             val elsep1 = typed(elsep, pt);
-            copy.If(tree, cond1, thenp1, elsep1) setType lub(List(thenp1.tpe, elsep1.tpe));
+            copy.If(tree, cond1, thenp1, elsep1) setType ptOrLub(List(thenp1.tpe, elsep1.tpe));
           }
 
         case Match(selector, cases) =>
           val selector1 = typed(selector);
           val cases1 = typedCases(cases, selector1.tpe);
-          copy.Match(tree, selector1, cases1) setType lub(cases1 map (.tpe))
+          copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
 
         case Return(expr) =>
           val enclFun = if (tree.symbol != NoSymbol) tree.symbol else context.owner.enclMethod;
@@ -970,7 +976,7 @@ abstract class Typers: Analyzer {
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe);
           copy.Try(tree, block1, catches1, finalizer1)
-            setType lub(block1.tpe :: (catches1 map (.tpe)))
+            setType ptOrLub(block1.tpe :: (catches1 map (.tpe)))
 
         case Throw(expr) =>
           val expr1 = typed(expr, ThrowableClass.tpe);
@@ -1009,7 +1015,7 @@ abstract class Typers: Analyzer {
           var fun1 = typed(fun, funmode, funpt);
           // if function is overloaded, filter all alternatives that match
 	  // number of arguments and expected result type.
-	  // if (settings.debug.value) System.out.println("trans app " + fun1 + ":" + fun1.symbol + ":" + fun1.tpe + " " + args);//DEBUG
+	  // if (settings.debug.value) log("trans app " + fun1 + ":" + fun1.symbol + ":" + fun1.tpe + " " + args);//DEBUG
 	  if (fun1.hasSymbol && fun1.symbol.hasFlag(OVERLOADED)) {
 	    val argtypes = args map (arg => AllClass.tpe);
 	    val pre = fun1.symbol.tpe.prefix;
@@ -1110,7 +1116,7 @@ abstract class Typers: Analyzer {
       try {
         if (settings.debug.value) {
           assert(pt != null, tree);//debug
-	  //System.out.println("typing " + tree);//DEBUG
+	  //System.out.println("typing " + tree);//debug
 	}
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt);
         if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
@@ -1119,21 +1125,42 @@ abstract class Typers: Analyzer {
 	  reportTypeError(tree.pos, ex);
 	  setError(tree)
 	case ex: Throwable =>
-	  if (true || settings.debug.value)//!!!
+	  if (settings.debug.value)
 	    System.out.println("exception when typing " + tree + ", pt = " + pt);
 	  throw(ex)
       }
 
+    def atOwner(owner: Symbol): Typer =
+      new Typer(context.make(context.tree, owner));
+
+    def atOwner(tree: Tree, owner: Symbol): Typer =
+      new Typer(context.make(tree, owner));
+
+    /** Types expression or definition `tree' */
     def typed(tree: Tree): Tree =
       typed(tree, EXPRmode, WildcardType);
+
+    /** Types expression `tree' with given prototype `pt' */
     def typed(tree: Tree, pt: Type): Tree =
       typed(tree, EXPRmode, pt);
+
+    /** Types qualifier `tree' of a select node. E.g. is tree occurs in acontext like `tree.m'. */
     def typedQualifier(tree: Tree): Tree =
       typed(tree, EXPRmode | QUALmode | POLYmode, WildcardType);
+
+    /** Types function part of an application */
+    def typedOperator(tree: Tree): Tree =
+      typed(tree, EXPRmode | FUNmode | POLYmode | TAPPmode, WildcardType);
+
+    /** Types a pattern with prototype `pt' */
     def typedPattern(tree: Tree, pt: Type): Tree =
       typed(tree, PATTERNmode, pt);
+
+    /** Types a (fully parameterized) type tree */
     def typedType(tree: Tree): Tree =
       typed(tree, TYPEmode, WildcardType);
+
+    /** Types a type or type constructor tree */
     def typedTypeConstructor(tree: Tree): Tree =
       typed(tree, TYPEmode | FUNmode, WildcardType);
 
@@ -1150,16 +1177,16 @@ abstract class Typers: Analyzer {
 	var tree: Tree = EmptyTree;
         def fail(reason: String): Tree = {
           if (settings.debug.value)
-            System.out.println(tree.toString() + " is not a valid implicit value because:\n" + reason);
+            log(tree.toString() + " is not a valid implicit value because:\n" + reason);
           EmptyTree
         }
 	try {
           tree = Ident(info.name) setPos pos;
           if (!local) tree setSymbol info.sym;
 	  tree = typed1(tree, EXPRmode, pt);
-	  if (settings.debug.value) System.out.println("typed implicit " + tree + ":" + tree.tpe + ", pt = " + pt);//debug
+	  if (settings.debug.value) log("typed implicit " + tree + ":" + tree.tpe + ", pt = " + pt);//debug
 	  val tree1 = adapt(tree, EXPRmode, pt);
-	  if (settings.debug.value) System.out.println("adapted implicit " + tree.symbol + ":" + info.sym);//debug
+	  if (settings.debug.value) log("adapted implicit " + tree.symbol + ":" + info.sym);//debug
 	  if (info.sym == tree.symbol) tree1
           else fail("syms differ: " + tree.symbol + " " + info.sym)
 	} catch {
@@ -1183,7 +1210,7 @@ abstract class Typers: Analyzer {
 	  iss = iss.tail;
 	  while (!is.isEmpty) {
 	    tree = tc.typedImplicit(pos, is.head, pt, local);
-            if (settings.debug.value) System.out.println("tested " + is.head.sym + is.head.sym.locationString + ":" + is.head.tpe + "=" + tree);//debug
+            if (settings.debug.value) log("tested " + is.head.sym + is.head.sym.locationString + ":" + is.head.tpe + "=" + tree);//debug
 	    val is0 = is;
 	    is = is.tail;
 	    if (tree != EmptyTree) {

@@ -20,9 +20,9 @@ abstract class TreeBuilder {
 
   private object patvarTransformer extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
-      case Ident(name) if (treeInfo.isVariableName(name)) =>
+      case Ident(name) if (treeInfo.isVariableName(name) && name != nme.WILDCARD) =>
 	atPos(tree.pos)(Bind(name, Ident(nme.WILDCARD)))
-      case Typed(id @ Ident(name), tpt) =>
+      case Typed(id @ Ident(name), tpt) if (treeInfo.isVariableName(name) && name != nme.WILDCARD) =>
 	Bind(name, atPos(tree.pos)(Typed(Ident(nme.WILDCARD), tpt))) setPos id.pos
       case Apply(fn @ Apply(_, _), args) =>
 	copy.Apply(tree, transform(fn), transformTrees(args))
@@ -90,16 +90,16 @@ abstract class TreeBuilder {
   }
 
   /** Create tree representing an object creation <new parents { stats }> */
-  def makeNew(parents: List[Tree], stats: List[Tree], args: List[Tree]): Tree =
+  def makeNew(parents: List[Tree], stats: List[Tree], argss: List[List[Tree]]): Tree =
     if (parents.tail.isEmpty && stats.isEmpty)
-      Apply(Select(New(parents.head), nme.CONSTRUCTOR), args)
+      New(parents.head, argss)
     else {
       val x = freshName(nme.ANON_CLASS_NAME.toString());
       Block(
         List(ClassDef(
           FINAL | SYNTHETIC, x, List(), TypeTree(),
-          Template(parents, makeConstructorPart(0, List(List()), args) ::: stats))),
-        New(Apply(Select(Ident(x), nme.CONSTRUCTOR), List())))
+          Template(parents, List(List()), argss, stats))),
+	New(Ident(x), List(List())))
     }
 
   /** Create a tree represeting an assignment <lhs = rhs> */
@@ -265,28 +265,6 @@ abstract class TreeBuilder {
       }
   }
 
-  /** Add constructor to template */
-  def makeConstructorPart(mods: int, vparamss: List[List[ValDef]], args: List[Tree]): List[Tree] = {
-    var vparamss1 =
-      vparamss map (.map (vd =>
-	ValDef(PARAM | (vd.mods & IMPLICIT), vd.name, vd.tpt.duplicate, EmptyTree)));
-    if (vparamss1.isEmpty ||
-	!vparamss1.head.isEmpty && (vparamss1.head.head.mods & IMPLICIT) != 0)
-      vparamss1 = List() :: vparamss1;
-    val constr: Tree = DefDef(
-      mods & ConstrFlags | SYNTHETIC, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(),
-      makeSuperCall(args));
-    val vparams: List[Tree] =
-      for (val vparams <- vparamss; val vparam <- vparams) yield vparam;
-    vparams ::: List(constr)
-  }
-
-  /** Create supercall */
-  def makeSuperCall(args: List[Tree]): Tree =
-    Apply(
-      Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR),
-      args);
-
   /** Create a tree representing a function type */
   def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(
@@ -295,7 +273,7 @@ abstract class TreeBuilder {
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
-    def makeViewParam(tpt: Tree) = ValDef(PARAM | IMPLICIT, freshName("view$"), tpt, EmptyTree);
+    def makeViewParam(tpt: Tree) = ValDef(PARAM | IMPLICIT | LOCAL | PRIVATE, freshName("view$"), tpt, EmptyTree);
     if (implicitViews.isEmpty) vparamss
     else vparamss ::: List(implicitViews map makeViewParam)
   }

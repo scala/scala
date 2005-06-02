@@ -16,6 +16,7 @@ abstract class SymbolTable extends Names
                               with StdNames {
   def settings: Settings;
   def rootLoader: LazyType;
+  def log(msg: Object): unit;
 
   private var CNT = 0;
   private var ph: Phase = NoPhase;

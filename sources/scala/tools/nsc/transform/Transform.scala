@@ -5,20 +5,18 @@
 // $Id$
 package scala.tools.nsc.transform;
 
-/** A sample transform.
+/** A base class for transforms.
+ *  A transform contains a compiler phase which applies a tree transformer.
  */
-abstract class Transform {
-
-  val global: Global;
+abstract class Transform extends SubComponent {
 
   protected val phaseName: String;
-  protected def newTransformer: global.Transformer;
+  protected def newTransformer(unit: global.CompilationUnit): global.Transformer;
 
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    val global: Transform.this.global.type = Transform.this.global;
     def name: String = phaseName;
     def apply(unit: global.CompilationUnit): unit =
-      unit.body = newTransformer.transform(unit.body);
+      unit.body = newTransformer(unit).transform(unit.body);
   }
 }
 

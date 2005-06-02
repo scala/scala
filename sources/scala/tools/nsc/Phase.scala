@@ -15,15 +15,18 @@ abstract class Phase(val prev: Phase) {
 
   def name: String;
   def description: String = name;
-  def exactMatch: boolean = false;
+  def erasedTypes: boolean = false;
 
   def run: unit;
 
   override def toString() = name;
 
+  //commented out, just use `id' to compare.
+  /*
   def >= (other: Phase): Boolean = {
     this == other || prev >= other
   }
+  */
 
   //  def check(units: List[CompilationUnit]): unit =
   //    for (val unit <- units; val checker <- checkers) checker.traverse(unit);  //  def checkers: List[Checker] = List();

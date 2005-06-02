@@ -14,7 +14,7 @@ import scala.tools.util.Position;
 /** utility functions
  */
 abstract class PatternUtil {
-
+/*
   val global: Global;
 
   import global._;
@@ -74,5 +74,5 @@ abstract class PatternUtil {
     traverse(pat);
     generatedVars;
   }
-
+*/
 } // class PatternUtil

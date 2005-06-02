@@ -8,83 +8,83 @@ package scala.tools.nsc.symtab;
 object Flags {
 
   // modifiers
-  val IMPLICIT      = 0x00000001;
-  val FINAL         = 0x00000002;
-  val PRIVATE       = 0x00000004;
-  val PROTECTED     = 0x00000008;
+  final val IMPLICIT      = 0x00000001;
+  final val FINAL         = 0x00000002;
+  final val PRIVATE       = 0x00000004;
+  final val PROTECTED     = 0x00000008;
 
-  val SEALED        = 0x00000010;
-  val OVERRIDE      = 0x00000020;
-  val CASE          = 0x00000040;
-  val ABSTRACT      = 0x00000080;   // abstract class, or used in conjunction
+  final val SEALED        = 0x00000010;
+  final val OVERRIDE      = 0x00000020;
+  final val CASE          = 0x00000040;
+  final val ABSTRACT      = 0x00000080;   // abstract class, or used in conjunction
                                     // with abstract override.
                                     // Note difference to DEFERRED!
 
-  val DEFERRED      = 0x00000100;   // was `abstract' for members
-  val METHOD        = 0x00000200;   // a def parameter
-  val TRAIT         = 0x00000400;   // a trait
-  val MODULE        = 0x00000800;   // symbol is module or class implementing a module
+  final val DEFERRED      = 0x00000100;   // was `abstract' for members
+  final val METHOD        = 0x00000200;   // a def parameter
+  final val TRAIT         = 0x00000400;   // a trait
+  final val MODULE        = 0x00000800;   // symbol is module or class implementing a module
 
-  val MUTABLE       = 0x00001000;   // symbol is a mutable variable.
-  val PARAM         = 0x00002000;   // symbol is a (value or type) parameter to a method
-  val PACKAGE       = 0x00004000;   // symbol is a java package
-  val DEPRECATED    = 0x00008000;   // symbol is deprecated.
+  final val MUTABLE       = 0x00001000;   // symbol is a mutable variable.
+  final val PARAM         = 0x00002000;   // symbol is a (value or type) parameter to a method
+  final val PACKAGE       = 0x00004000;   // symbol is a java package
+  final val DEPRECATED    = 0x00008000;   // symbol is deprecated.
 
-  val COVARIANT     = 0x00010000;   // symbol is a covariant type variable
-  val CONTRAVARIANT = 0x00020000;   // symbol is a contravariant type variable
-  val ABSOVERRIDE   = 0x00040000;   // combination of abstract & override
-  val LOCAL         = 0x00080000;   // symbol is local to current class.
+  final val COVARIANT     = 0x00010000;   // symbol is a covariant type variable
+  final val CONTRAVARIANT = 0x00020000;   // symbol is a contravariant type variable
+  final val ABSOVERRIDE   = 0x00040000;   // combination of abstract & override
+  final val LOCAL         = 0x00080000;   // symbol is local to current class.
 	                            // pre: PRIVATE is also set
 
-  val JAVA          = 0x00100000;   // symbol was defined by a Java class
-  val SYNTHETIC     = 0x00200000;   // symbol is compiler-generated
-  val STABLE        = 0x00400000;   // functions that are assumed to be stable
+  final val JAVA          = 0x00100000;   // symbol was defined by a Java class
+  final val SYNTHETIC     = 0x00200000;   // symbol is compiler-generated
+  final val STABLE        = 0x00400000;   // functions that are assumed to be stable
 				    // (typically, access methods for valdefs)
-  val STATIC        = 0x00800000;   // static field, method or class
+  final val STATIC        = 0x00800000;   // static field, method or class
 
-  val ACCESSED      = 0x01000000;   // symbol was accessed at least once
-  val SELECTOR      = 0x02000000;   // symbol was used as selector in Select
+  final val ACCESSED      = 0x01000000;   // symbol was accessed at least once
+  final val SELECTOR      = 0x02000000;   // symbol was used as selector in Select
 
-  val CAPTURED      = 0x04000000;   // variable is accessed from nested function. Set by LambdaLift
-  val ACCESSOR      = 0x08000000;   // a value or variable accessor
+  final val CAPTURED      = 0x04000000;   // variable is accessed from nested function. Set by LambdaLift
+  final val ACCESSOR      = 0x08000000;   // a value or variable accessor
 
-  val ACCESS_METHOD = 0x10000000;   // function is an access function for a method in some
+  final val ACCESS_METHOD = 0x10000000;   // function is an access function for a method in some
                                     // outer class; set by ExplicitOuter
-  val PARAMACCESSOR = 0x20000000;   // for value definitions: is an access method for a val parameter
+  final val PARAMACCESSOR = 0x20000000;   // for value definitions: is an access method for a final val parameter
                                     // for parameters: is a val parameter
 
-  val LABEL         = 0x40000000;   // symbol is a label. Set by TailCall
-  val BRIDGE        = 0x80000000;   // function is a bridge method. Set by Erasure
+  final val LABEL         = 0x40000000;   // symbol is a label. Set by TailCall
+  final val BRIDGE        = 0x80000000;   // function is a bridge method. Set by Erasure
 
-  val INTERFACE     = 0x100000000l; // symbol is an interface
-  val IS_ERROR      = 0x200000000l; // symbol is an error symbol
-  val OVERLOADED    = 0x400000000l; // symbol is overloaded
+  final val INTERFACE     = 0x100000000l; // symbol is an interface
+  final val IS_ERROR      = 0x200000000l; // symbol is an error symbol
+  final val OVERLOADED    = 0x400000000l; // symbol is overloaded
 
-  val TRANS_FLAG    = 0x800000000l; // transient flag guaranteed to be reset after each phase.
-  val LIFTED        = TRANS_FLAG;   // transient flag for lambdalift
-  val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
+  final val TRANS_FLAG    = 0x800000000l; // transient flag guaranteed to be reset after each phase.
+  final val LIFTED        = TRANS_FLAG;   // transient flag for lambdalift
+  final val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
 
-  val INITIALIZED   = 0x1000000000l; // symbol's definition is complete
-  val LOCKED        = 0x2000000000l; // temporary flag to catch cyclic dependencies
+  final val INITIALIZED   = 0x1000000000l; // symbol's definition is complete
+  final val LOCKED        = 0x2000000000l; // temporary flag to catch cyclic dependencies
 
   // masks
-  val SourceFlags   = 0x001FFFFF;    // these modifiers can be set in source programs.
-  val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
+  final val SourceFlags   = 0x001FFFFF;    // these modifiers can be set in source programs.
+  final val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
-  val PrintableFlags =               // these modifiers appear in TreePrinter output.
+  final val PrintableFlags =               // these modifiers appear in TreePrinter output.
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | ACCESSOR |
     ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE | STATIC;
-  val GenFlags      =                // these modifiers can be in generated trees
+  final val GenFlags      =                // these modifiers can be in generated trees
     SourceFlags | PrintableFlags;
-  val FieldFlags = MUTABLE | ACCESSED | PARAMACCESSOR | STATIC;
+  final val FieldFlags = MUTABLE | ACCESSED | PARAMACCESSOR | STATIC | FINAL;
 
-  val AccessFlags   = PRIVATE | PROTECTED;
-  val VARIANCES     = COVARIANT | CONTRAVARIANT;
-  val ConstrFlags   = JAVA;
-  val PickledFlags  = 0xFFFFFFFF & ~LOCKED & ~INITIALIZED;
+  final val AccessFlags   = PRIVATE | PROTECTED;
+  final val VARIANCES     = COVARIANT | CONTRAVARIANT;
+  final val ConstrFlags   = JAVA;
+  final val PickledFlags  = 0xFFFFFFFF & ~LOCKED & ~INITIALIZED;
 
   /** Module flags inherited by their module-class */
-  val ModuleToClassFlags = AccessFlags | PACKAGE;
+  final val ModuleToClassFlags = AccessFlags | PACKAGE;
 
   def flags2mods(flags: long): int = flags.asInstanceOf[int] & GenFlags;
 

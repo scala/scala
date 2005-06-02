@@ -40,7 +40,8 @@ abstract class TreeGen {
   }
 
   /** Builds a reference to given symbol. */
-  def mkRef(sym: Symbol): Tree = mkRef(sym.owner.thisType, sym);
+  def mkRef(sym: Symbol): Tree =
+    if (sym.owner.isClass) mkRef(sym.owner.thisType, sym) else Ident(sym);
 
   /** Replaces tree type with a stable type if possible */
   def stabilize(tree: Tree): Tree = tree match {
@@ -92,8 +93,7 @@ abstract class TreeGen {
   }
 
   def mkIsInstanceOf(value: Tree, tpe: Type): Tree = {
-    val afterTAV = global.phase >= global.typesAsValuesPhase;
-    mkIsInstanceOf(value, tpe, afterTAV);
+    mkIsInstanceOf(value, tpe, global.phase.erasedTypes);
   }
 
   /** Builds a cast with given value and type. */
@@ -112,8 +112,7 @@ abstract class TreeGen {
   }
 
   def mkAsInstanceOf(value: Tree, tpe: Type): Tree = {
-    val afterTAV = global.phase >= global.typesAsValuesPhase;
-    mkAsInstanceOf(value, tpe, afterTAV);
+    mkAsInstanceOf(value, tpe, global.phase.erasedTypes);
   }
 
 }

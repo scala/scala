@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import symtab.Flags._;
 import scala.tools.util.Position;
 
-class Contexts: Analyzer {
+abstract class Contexts: Analyzer {
   import global._;
 
   val NoContext = new Context {
@@ -197,7 +197,7 @@ class Contexts: Analyzer {
 	  }
 	  impls
       }
-      if (settings.debug.value) System.out.println("collect implicit imports " + imp + "=" + collect(imp.tree.selectors));//debug
+      if (settings.debug.value) log("collect implicit imports " + imp + "=" + collect(imp.tree.selectors));//debug
       collect(imp.tree.selectors)
     }
 
@@ -206,10 +206,10 @@ class Contexts: Analyzer {
 	val newImplicits: List[ImplicitInfo] =
 	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
             if (!owner.hasFlag(INITIALIZED)) return outer.implicitss;
-	    if (settings.debug.value) System.out.println("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers);//debug
+	    if (settings.debug.value) log("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers);//debug
 	    collectImplicits(owner.thisType.implicitMembers, owner.thisType)
 	  } else if (scope != outer.scope && !owner.isPackageClass) {
-	    if (settings.debug.value) System.out.println("collect local implicits " + scope.toList);//debug
+	    if (settings.debug.value) log("collect local implicits " + scope.toList);//debug
 	    collectImplicits(scope.toList, NoPrefix)
 	  } else if (imports != outer.imports) {
 	    assert(imports.tail == outer.imports);

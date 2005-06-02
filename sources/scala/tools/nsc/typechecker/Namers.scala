@@ -15,7 +15,6 @@ trait Namers: Analyzer {
   import definitions._;
 
   class NamerPhase(prev: Phase) extends StdPhase(prev) {
-    val global: Namers.this.global.type = Namers.this.global;
     def name = "namer";
     def apply(unit: CompilationUnit): unit =
       new Namer(startContext.make(unit)).enterSym(unit.body);
@@ -43,7 +42,7 @@ trait Namers: Analyzer {
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()));
 
     private def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
-      if (settings.debug.value) System.out.println("overwriting " + sym);
+      if (settings.debug.value) log("overwriting " + sym);
       sym.pos = pos;
       val oldflags = sym.flags & (INITIALIZED | LOCKED);
       val newflags = mods & ~(INITIALIZED | LOCKED);
@@ -81,6 +80,7 @@ trait Namers: Analyzer {
     private def enterClassSymbol(pos: int, mods: int, name: Name): Symbol = {
       val c: Symbol = context.scope.lookup(name);
       if (c.isType && c.isExternal && context.scope == c.owner.info.decls) {
+	symSource(c) = context.unit.source.getFile();
         updatePosFlags(c, pos, mods);
       } else {
 	enterInScope(context.owner.newClass(pos, name).setFlag(mods))
@@ -90,6 +90,7 @@ trait Namers: Analyzer {
     private def enterModuleSymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
       if (m.isTerm && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
+	symSource(m) = context.unit.source.getFile();
         updatePosFlags(m, pos, mods)
       } else {
         val newm = context.owner.newModule(pos, name);
@@ -102,6 +103,7 @@ trait Namers: Analyzer {
     private def enterCaseFactorySymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
       if (m.isTerm && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
+	symSource(m) = context.unit.source.getFile();
         updatePosFlags(m, pos, mods)
       } else {
         enterInScope(context.owner.newMethod(pos, name).setFlag(mods))
@@ -114,7 +116,7 @@ trait Namers: Analyzer {
     def enterSym(tree: Tree): Namer = {
 
       def finishWith(tparams: List[AbsTypeDef]): unit = {
-        if (settings.debug.value) log("entered " + tree.symbol);
+        if (settings.debug.value) log("entered " + tree.symbol + " in " + context.owner);
 	var ltype: LazyType = innerNamer.typeCompleter(tree);
         if (!tparams.isEmpty) {
 	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
@@ -139,7 +141,6 @@ trait Namers: Analyzer {
 		setInfo innerNamer.caseFactoryCompleter(tree)
 	    }
 	    tree.symbol = enterClassSymbol(tree.pos, mods, name);
-	    if (settings.debug.value) System.out.println("entered: " + tree.symbol + flagsToString(tree.symbol.flags));//debug
 	    finishWith(tparams)
 	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods | MODULE | FINAL, name);
@@ -243,7 +244,7 @@ trait Namers: Analyzer {
     }
 
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
-      if (sym.isVariable || !sym.isFinal) tpe.deconst else tpe;
+      if (sym.isVariable || !(sym hasFlag FINAL)) tpe.deconst else tpe;
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
@@ -284,12 +285,12 @@ trait Namers: Analyzer {
       val meth = context.owner;
       val tparamSyms = typer.reenterTypeParams(tparams);
       val vparamSymss = enterValueParams(meth, vparamss);
-      val restype = deconstIfNotFinal(meth,
+      val restype =
 	if (tpt.isEmpty) {
 	  tpt.tpe = if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
-		    else typer.typed(rhs).tpe;
+		    else deconstIfNotFinal(meth, typer.typed(rhs).tpe);
 	  tpt.tpe
-	} else typer.typedType(tpt).tpe);
+	} else typer.typedType(tpt).tpe;
       def mkMethodType(vparams: List[Symbol], restpe: Type) = {
 	val formals = vparams map (.tpe);
 	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))
@@ -358,16 +359,15 @@ trait Namers: Analyzer {
 	      new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs))
 
 	  case ValDef(_, _, tpt, rhs) =>
-            deconstIfNotFinal(sym,
-              if (tpt.isEmpty)
-                if (rhs.isEmpty) {
-		  context.error(tpt.pos, "missing parameter type");
-                  ErrorType
-                } else {
-                  tpt.tpe = newTyper(context.make(tree, sym)).typed(rhs).tpe;
-                  tpt.tpe
-                }
-              else typer.typedType(tpt).tpe)
+            if (tpt.isEmpty)
+              if (rhs.isEmpty) {
+		context.error(tpt.pos, "missing parameter type");
+                ErrorType
+              } else {
+                tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).typed(rhs).tpe);
+                tpt.tpe
+              }
+            else typer.typedType(tpt).tpe
 
 	  case AliasTypeDef(_, _, tparams, rhs) =>
             new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
@@ -437,7 +437,6 @@ trait Namers: Analyzer {
       }
       checkNoConflict(DEFERRED, PRIVATE);
       checkNoConflict(FINAL, SEALED);
-      if (!sym.hasFlag(MODULE)) checkNoConflict(FINAL, PRIVATE);
       checkNoConflict(PRIVATE, PROTECTED);
       checkNoConflict(PRIVATE, OVERRIDE);
       checkNoConflict(DEFERRED, FINAL);

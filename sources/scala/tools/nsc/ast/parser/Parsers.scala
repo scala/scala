@@ -38,7 +38,7 @@ import Tokens._;
  *  (4) Wraps naked case definitions in a match as follows:
  *        { cases }   ==>   (x => x.match {cases}), except when already argument to match
  */
-abstract class Parsers: ParserPhase {
+abstract class Parsers: SyntaxAnalyzer {
 
   import global._;
   import posAssigner.atPos;
@@ -741,7 +741,7 @@ abstract class Parsers: ParserPhase {
 	simpleExpr()
       }
 
-    /* SimpleExpr    ::= new SimpleType [`(' [Exprs] `)'] {`with' SimpleType} [TemplateBody]
+    /* SimpleExpr    ::= new SimpleType {`(' [Exprs] `)'} {`with' SimpleType} [TemplateBody]
      *                |  SimpleExpr1
      * SimpleExpr1   ::= literal
      *                | xLiteral
@@ -788,14 +788,16 @@ abstract class Parsers: ParserPhase {
 	case NEW =>
 	  t = atPos(in.skipToken()) {
             val parents = new ListBuffer[Tree] + simpleType();
-            var args: List[Tree] = List();
-            if (in.token == LPAREN) args = argumentExprs();
+            val argss = new ListBuffer[List[Tree]];
+            if (in.token == LPAREN)
+	      do { argss += argumentExprs() } while (in.token == LPAREN)
+	    else argss += List();
             while (in.token == WITH) {
 	      in.nextToken();
 	      parents += simpleType()
             }
             val stats = if (in.token == LBRACE) templateBody() else List();
-            makeNew(parents.toList, stats, args)
+            makeNew(parents.toList, stats, argss.toList)
           }
 	  isNew = true
 	case _ =>
@@ -1488,7 +1490,7 @@ abstract class Parsers: ParserPhase {
       }
 
     /** ClassDef ::= ClassSig [`:' SimpleType] ClassTemplate
-     *  ClassSig ::= Id [TypeParamClause] [ClassParamClause]
+     *  ClassSig ::= Id [TypeParamClause] {ClassParamClause}
      */
     def classDef(mods: int): Tree =
       atPos(in.skipToken()) {
@@ -1501,7 +1503,7 @@ abstract class Parsers: ParserPhase {
 	val mods1 = if (vparamss.isEmpty && (mods & Flags.ABSTRACT) != 0) {
 	  mods | Flags.TRAIT
 	} else mods;
-	val template = classTemplate(mods1, vparamss);
+	val template = classTemplate(mods1, name, vparamss);
 	ClassDef(mods1, name, tparams, thistpe, template)
       }
 
@@ -1510,27 +1512,31 @@ abstract class Parsers: ParserPhase {
     def objectDef(mods: int): Tree =
       atPos(in.skipToken()) {
 	val name = ident();
-	val template = classTemplate(mods, List());
+	val template = classTemplate(mods, name, List());
 	ModuleDef(mods, name, template)
       }
 
     /** ClassTemplate ::= [`extends' TemplateParents] [TemplateBody]
+     *  TemplateParents ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
      */
-    def classTemplate(mods: int, vparamss: List[List[ValDef]]): Template =
+    def classTemplate(mods: int, name: Name, vparamss: List[List[ValDef]]): Template =
       atPos(in.pos) {
         val parents = new ListBuffer[Tree];
-        var args: List[Tree] = List();
+        val argss = new ListBuffer[List[Tree]];
         if (in.token == EXTENDS) {
           in.nextToken();
           parents += simpleType();
-          if (in.token == LPAREN) args = argumentExprs();
+          if (in.token == LPAREN)
+	    do { argss += argumentExprs() } while (in.token == LPAREN)
+	  else argss += List();
           while (in.token == WITH) {
 	    in.nextToken();
 	    parents += simpleType()
           }
-        }
-        parents += scalaScalaObjectConstr;
-	if ((mods & Flags.CASE)!= 0) parents += caseClassConstr;
+        } else argss += List();
+	if (name != nme.ScalaObject.toTypeName)
+          parents += scalaScalaObjectConstr;
+	if (name.isTypeName && (mods & Flags.CASE) != 0) parents += caseClassConstr;
         val ps = parents.toList;
 	var body =
 	  if (in.token == LBRACE) {
@@ -1540,9 +1546,8 @@ abstract class Parsers: ParserPhase {
               syntaxError("`extends' or `{' expected", true);
             List()
 	  }
-	if ((mods & Flags.TRAIT) == 0)
-	  body = makeConstructorPart(mods, vparamss, args) ::: body;
-	Template(ps, body)
+	if ((mods & Flags.TRAIT) == 0) Template(ps, vparamss, argss.toList, body)
+	else Template(ps, body)
       }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
@@ -1660,7 +1665,7 @@ abstract class Parsers: ParserPhase {
       if (in.token == LBRACKET)
         t = atPos(in.pos)(AppliedTypeTree(t, typeArgs()));
       val args = if (in.token == LPAREN) argumentExprs() else List();
-      atPos(pos) { makeNew(List(t), List(), args) }
+      atPos(pos) { New(t, List(args)) }
     }
 
     def joinAttributes(attrs: List[Tree], defs: List[Tree]): List[Tree] =

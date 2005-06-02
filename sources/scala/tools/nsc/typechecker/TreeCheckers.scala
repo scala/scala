@@ -60,7 +60,7 @@ abstract class TreeCheckers extends Analyzer {
       override def traverse(tree: Tree): unit = {
 	if (tree.pos == Position.NOPOS)
 	  error(tree.pos, "tree without position: " + tree)
-	else if (tree.tpe == null && phase.id >= typeCheckPhase.id)
+	else if (tree.tpe == null && phase.id >= typerPhase.id)
 	  error(tree.pos, "tree without type: " + tree)
       }
     }

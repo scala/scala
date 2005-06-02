@@ -40,21 +40,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object pickler extends Pickler {
-    val global: Global.this.type = Global.this
-  }
-
-  object typer extends analyzer.Typer(analyzer.NoContext);
-
   object checker extends TreeCheckers {
     val global: Global.this.type = Global.this
   }
 
   val copy = new LazyTreeCopier();
-
-  object variance extends Variances {
-    val global: Global.this.type = Global.this
-  }
 
   type AttrInfo = Pair[Type, List[Any]];
   val attributes = new HashMap[Symbol, List[AttrInfo]];
@@ -71,7 +61,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   def informTime(msg: String, start: long) =
     informProgress(msg + " in " + (System.currentTimeMillis() - start) + "ms");
 
-  def log(msg: String) =
+  def log(msg: Object): unit =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
 
 // file interface -------------------------------------------------------
@@ -131,10 +121,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
 // Phases ------------------------------------------------------------
 
-  object parserPhase extends ParserPhase(NoPhase) {
+  object syntaxAnalyzer extends SyntaxAnalyzer {
     val global: Global.this.type = Global.this
 
   }
+  val parserPhase = new syntaxAnalyzer.ParserPhase(NoPhase);
   val firstPhase = parserPhase;
 
   definitions.init; // needs firstPhase to be defined, that's why it is placed here.
@@ -142,7 +133,28 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object analyzer extends Analyzer {
     val global: Global.this.type = Global.this;
   }
-  val infer = new analyzer.Inferencer(analyzer.NoContext);
+  val typer = new analyzer.Typer(analyzer.NoContext.make(EmptyTree, definitions.RootClass, new Scope())) {
+    override def typed(tree: Tree, mode: int, pt: Type): Tree = {
+      if (settings.debug.value) log("typing [[" + tree + "]]");
+      val result = super.typed(tree, mode, pt);
+      if (settings.debug.value) log(" ==> " + result + ":" + result.tpe);
+      result
+    }
+  }
+  val infer = typer.infer;
+
+  val namerPhase = new analyzer.NamerPhase(parserPhase);
+  val typerPhase = new analyzer.TyperPhase(namerPhase);
+
+  object pickler extends Pickler {
+    val global: Global.this.type = Global.this
+  }
+  val picklePhase = new pickler.PicklePhase(typerPhase);
+
+  object refchecks extends RefChecks {
+    val global: Global.this.type = Global.this;
+  }
+  val refchecksPhase = new refchecks.Phase(picklePhase);
 
   //object transmatcher extends TransMatcher {
   //  val global: Global.this.type = Global.this;
@@ -155,14 +167,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this;
   }
+  val samplePhase = new sampleTransform.Phase(refchecksPhase);
 
-  val namerPhase = new analyzer.NamerPhase(parserPhase);
-  val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
-  val picklePhase = new pickler.PicklePhase(typeCheckPhase);
   //val transMatchPhase = new transmatcher.TransMatchPhase(picklePhase);
-  //val samplePhase = new sampleTransform.Phase(transMatchPhase);
-  val typesAsValuesPhase: Phase = null; //new typesAsValues.Phase(transMatchPhase);
-  val samplePhase = new sampleTransform.Phase(typeCheckPhase);
 /*
   object icode extends ICode {
     val symtab: Global.this.type = Global.this
@@ -175,12 +182,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   }
 */
-  val terminalPhase = new StdPhase(samplePhase) {
-    val global: Global.this.type = Global.this;
+  val terminalPhase = new Phase(samplePhase) {
     def name = "terminal";
-    def apply(unit: CompilationUnit): unit = {}
+    def run: unit = {}
   }
-
 
 
 // Units and how to compile them -------------------------------------
@@ -235,8 +240,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	}
       }
     } else {
-      for (val Pair(sym, file) <- symSource.elements)
+      for (val Pair(sym, file) <- symSource.elements) {
 	sym.reset(new loaders.SourcefileLoader(file));
+	if (sym.isTerm) sym.moduleClass.reset(loaders.errorLoader);
+      }
     }
     informTime("total", startTime);
     informStatistics;

@@ -9,7 +9,6 @@ abstract class Infer: Analyzer {
   import symtab.Flags._;
   import global._;
   import definitions._;
-  import variance.{varianceInType, varianceInTypes};
   import posAssigner.atPos;
   import util.ListBuffer;
 
@@ -136,14 +135,6 @@ abstract class Infer: Analyzer {
     case MethodType(formals, restpe) => functionType(formals, normalize(restpe))
     case PolyType(List(), restpe) => normalize(restpe);
     case tp1 => tp1
-  }
-
-  class TreeSubstituter(tparams: List[Symbol], targs: List[Type]) extends Traverser {
-    val typeSubst = new SubstTypeMap(tparams, targs);
-    override def traverse(tree: Tree): unit = {
-      if (tree.tpe != null) tree.tpe = typeSubst(tree.tpe);
-      super.traverse(tree)
-    }
   }
 
   /** The context-dependent inferencer part */
@@ -426,7 +417,7 @@ abstract class Infer: Analyzer {
 	      foundReqMsg(PolyType(undetparams, skipImplicit(tree.tpe)), pt));
       } else {
 	checkBounds(tree.pos, undetparams, targs, "inferred ");
-	new TreeSubstituter(undetparams, targs).traverse(tree);
+	new TreeTypeSubstituter(undetparams, targs).traverse(tree);
       }
 
     /** Substitite free type variables `undetparams' of application `fn(args)', given prototype `pt'.
@@ -439,7 +430,7 @@ abstract class Infer: Analyzer {
 	  val targs = methTypeArgs(
 	    undetparams, formalTypes(formals, argtpes.length), restpe, argtpes, pt, uninstantiated);
 	  checkBounds(fn.pos, undetparams, targs, "inferred ");
-	  val treeSubst = new TreeSubstituter(undetparams, targs);
+	  val treeSubst = new TreeTypeSubstituter(undetparams, targs);
 	  treeSubst.traverse(fn);
 	  treeSubst.traverseTrees(args);
 	  uninstantiated.toList;
@@ -465,7 +456,7 @@ abstract class Infer: Analyzer {
 	try {
 	  val targs = solve(tvars, undetparams, undetparams map varianceInType(restpe), true);
           checkBounds(tree.pos, undetparams, targs, "inferred ");
-	  new TreeSubstituter(undetparams, targs).traverse(tree)
+	  new TreeTypeSubstituter(undetparams, targs).traverse(tree)
 	} catch {
 	  case ex: NoInstance =>
             errorTree(tree, "constructor of type " + restpe +
@@ -528,7 +519,7 @@ abstract class Infer: Analyzer {
      */
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-	if (settings.debug.value) System.out.println("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);//debug
+	if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);//debug
 	val alts1 = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
 	def improves(sym1: Symbol, sym2: Symbol) = {
 	  sym2 == NoSymbol || sym2.isError ||

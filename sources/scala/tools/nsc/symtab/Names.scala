@@ -16,6 +16,8 @@ class Names {
   private val HASH_MASK = 0x7FFF;
   private val NAME_SIZE = 0x20000;
 
+  final val nameDebug = true;
+
   /** memory to store all names sequentially
    */
   var chrs: Array[char] = new Array[char](NAME_SIZE);
@@ -250,7 +252,7 @@ class Names {
     /** Replace $op_name by corresponding operator symbol */
     def decode: String =
       NameTransformer.decode(toString()) +
-      (if (isTypeName) "!" else "");//debug
+      (if (nameDebug && isTypeName) "!" else "");//debug
   }
 
   private class TermName(index: int, len: int, hash: int) extends Name(index, len) {

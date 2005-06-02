@@ -73,6 +73,8 @@ abstract class Symbols: SymbolTable {
       new ClassSymbol(this, pos, name);
     final def newAnonymousClass(pos: int) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName);
+    final def newAnonymousFunctionClass(pos: int) =
+      newClass(pos, nme.ANONFUN_CLASS_NAME.toTypeName);
     final def newRefinementClass(pos: int) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName);
     final def newErrorClass(name: Name) = {
@@ -106,7 +108,7 @@ abstract class Symbols: SymbolTable {
     final def isAliasType = isType && !isClass && !hasFlag(DEFERRED);
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
     final def isTypeParameter = isType && hasFlag(PARAM);
-    final def isAnonymousClass = isClass && (name startsWith nme.ANON_CLASS_NAME); // startsWith necessary because name may grow when lifted
+    final def isAnonymousClass = isClass && (name startsWith nme.ANON_CLASS_NAME); // startsWith necessary because name may grow when lifted and also because of anonymous function classes
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE);
     final def isPackageClass = isClass && hasFlag(PACKAGE);
@@ -139,8 +141,8 @@ abstract class Symbols: SymbolTable {
     final def isSealed: boolean =
       isClass && (hasFlag(SEALED) || isSubClass(AnyValClass) || isSubClass(ArrayClass));
 
-    /** Is this symbol locally defined? I.e. not a member of a class or module */
-    final def isLocal: boolean = owner.isTerm || hasFlag(LOCAL);
+    /** Is this symbol locally defined? I.e. not accessed from outside `this' instance */
+    final def isLocal: boolean = owner.isTerm;
 
     /** Is this class locally defined?
      *  A class is local, if
@@ -159,7 +161,7 @@ abstract class Symbols: SymbolTable {
      *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.
      */
     final def isIncompleteIn(base: Symbol): boolean =
-      (this == NoSymbol) ||
+      (base == NoSymbol) ||
       (this hasFlag DEFERRED) ||
       (this hasFlag ABSOVERRIDE) && isIncompleteIn(superSymbol(base));
 
@@ -308,13 +310,17 @@ abstract class Symbols: SymbolTable {
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
      *  the ordering is given by: (isType, -|closure| for type symbols, id)
      */
-    final def isLess(that: Symbol): boolean =
+    final def isLess(that: Symbol): boolean = {
+      def closureLength(sym: Symbol) =
+	if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
+	else sym.info.closure.length;
       if (this.isType)
 	that.isType &&
-	{val diff = this.info.closure.length - that.info.closure.length;
+	{val diff = closureLength(this) - closureLength(that);
 	 diff > 0 || diff == 0 && this.id < that.id}
       else
 	that.isType || this.id < that.id;
+    }
 
     /** A partial ordering between symbols.
      *  (this isNestedIn that) holds iff this symbol is defined within
@@ -351,7 +357,7 @@ abstract class Symbols: SymbolTable {
 
     def suchThat(cond: Symbol => boolean): Symbol = {
       val result = filter(cond);
-      assert(!result.hasFlag(OVERLOADED)/*, result.alternatives*/);
+      assert(!(result hasFlag OVERLOADED), result.alternatives);
       result
     }
 
@@ -396,7 +402,7 @@ abstract class Symbols: SymbolTable {
     /** Return every accessor of a primary constructor parameter in this case class */
     final def caseFieldAccessors: List[Symbol] = {
       assert(isClass && hasFlag(CASE));
-      info.decls.toList.filter(sym => !sym.hasFlag(PARAM) && sym.hasFlag(PARAMACCESSOR))
+      info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(PARAMACCESSOR))
     }
 
     /** The symbol accessed by this accessor function.
@@ -449,18 +455,18 @@ abstract class Symbols: SymbolTable {
     /** The symbol overridden by this symbol in given base class */
     final def overriddenSymbol(base: Symbol): Symbol =
       base.info.nonPrivateDecl(name).suchThat(sym =>
-        sym.isType || (owner.thisType.memberType(sym) matches tpe));
+        !sym.isTerm || (owner.thisType.memberType(sym) matches tpe));
 
     /** The symbol overriding this symbol in given subclass */
     final def overridingSymbol(base: Symbol): Symbol =
       base.info.nonPrivateDecl(name).suchThat(sym =>
-        sym.isType || (base.thisType.memberType(sym) matches base.thisType.memberType(this)));
+        !sym.isTerm || (base.thisType.memberType(sym) matches base.thisType.memberType(this)));
 
     /** The symbol accessed by a super in the definition of `this' when seen from
      *  class `base'. This symbol is always concrete.
      *  pre: `this.owner' is in the base class sequence of `base'.
      */
-     final def superSymbol(base: Symbol): Symbol = {
+    final def superSymbol(base: Symbol): Symbol = {
       var bcs = base.info.baseClasses.dropWhile(.!=(owner)).tail;
       var sym: Symbol = NoSymbol;
       while (!bcs.isEmpty && sym == NoSymbol) {
@@ -473,7 +479,7 @@ abstract class Symbols: SymbolTable {
 // ToString -------------------------------------------------------------------
 
     /** A tag which (in the ideal case) uniquely identifies class symbols */
-    final def tag: int = name.toString().hashCode();
+    final def tag: int = fullNameString.hashCode();
 
     /** The simple name of this Symbol (this is always a term name) */
     final def simpleName: Name =
@@ -589,8 +595,7 @@ abstract class Symbols: SymbolTable {
     final def defString: String =
       compose(List(flagsToString(flags & ExplicitFlags),
 		   keyString,
-		   varianceString + nameString,
-		   infoString(rawInfo)));
+		   varianceString + nameString + infoString(rawInfo)));
 
     /** Concatenate strings separated by spaces */
     private def compose(ss: List[String]): String =

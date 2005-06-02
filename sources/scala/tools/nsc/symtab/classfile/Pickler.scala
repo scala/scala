@@ -15,33 +15,31 @@ import PickleFormat._;
  * Serialize a top-level module and/or class;
  *  @see EntryTags.scala    for symbol table attribute format.
  */
-abstract class Pickler {
-  val global: Global;
+abstract class Pickler extends SubComponent {
   import global._;
 
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
     def name = "pickler";
-    val global: Pickler.this.global.type = Pickler.this.global;
-    def apply(unit: CompilationUnit): unit = pickle(unit.body);
-
-    private def pickle(tree: Tree): unit = tree match {
-      case PackageDef(_, stats) => stats foreach pickle;
-      case ClassDef(_, _, _, _, _) | ModuleDef(_, _, _) =>
-	val sym = tree.symbol;
-	if (settings.debug.value) System.out.println("pickling " + tree + " " + sym);//debug
-	val pickle = new Pickle(sym.name.toTermName, sym.owner);
-	def add(sym: Symbol) = {
-	  if (!sym.isExternal && !symData.contains(sym)) {
-	    if (settings.debug.value) log("pickling " + sym);
-	    pickle.putSymbol(sym);
-	    symData(sym) = pickle;
+    def apply(unit: CompilationUnit): unit = {
+      def pickle(tree: Tree): unit = tree match {
+	case PackageDef(_, stats) => stats foreach pickle;
+	case ClassDef(_, _, _, _, _) | ModuleDef(_, _, _) =>
+	  val sym = tree.symbol;
+	  val pickle = new Pickle(sym.name.toTermName, sym.owner);
+	  def add(sym: Symbol) = {
+	    if (!sym.isExternal && !symData.contains(sym)) {
+	      if (settings.debug.value) log("pickling " + sym);
+	      pickle.putSymbol(sym);
+	      symData(sym) = pickle;
+	    }
 	  }
-	}
-	add(sym);
-	add(sym.linkedSym);
-	pickle.finish
-      case _ =>
+	  add(sym);
+	  add(sym.linkedSym);
+	  pickle.finish
+	case _ =>
       }
+      pickle(unit.body);
+    }
   }
 
   class Pickle(rootName: Name, rootOwner: Symbol) extends PickleBuffer(new Array[byte](4096), -1, 0) {
@@ -231,7 +229,7 @@ abstract class Pickler {
     def finish = {
       assert(writeIndex == 0);
       writeNat(ep);
-      if (settings.debug.value) System.out.println("" + ep + " entries");//debug
+      if (settings.debug.value) log("" + ep + " entries");//debug
       for (val i <- Iterator.range(0, ep)) writeEntry(entries(i))
     }
   }

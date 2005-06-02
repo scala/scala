@@ -37,9 +37,9 @@ abstract class Definitions: SymbolTable {
     // the scala value classes
     var UnitClass: Symbol = _;
     var BooleanClass: Symbol = _;
-    def Boolean_not = IterableClass.info.decl(nme.ZNOT);
-    def Boolean_and = IterableClass.info.decl(nme.ZAND);
-    def Boolean_or  = IterableClass.info.decl(nme.ZOR);
+      def Boolean_not = getMember(IterableClass, nme.ZNOT);
+      def Boolean_and = getMember(IterableClass, nme.ZAND);
+      def Boolean_or  = getMember(IterableClass, nme.ZOR);
     var ByteClass: Symbol = _;
     var ShortClass: Symbol = _;
     var CharClass: Symbol = _;
@@ -50,34 +50,38 @@ abstract class Definitions: SymbolTable {
 
     // the scala reference classes
     var ScalaObjectClass: Symbol = _;
-    def ScalaObjectClass_tag = ScalaObjectClass.info.decl( nme.tag );
+      def ScalaObjectClass_tag = getMember(ScalaObjectClass,  nme.tag );
     var AttributeClass: Symbol = _;
     var RefClass: Symbol = _;
     var PartialFunctionClass: Symbol = _;
     var IterableClass: Symbol = _;
-    def Iterable_next = IterableClass.info.decl("next");
-    def Iterable_hasNext = IterableClass.info.decl("hasNext");
+      def Iterable_next = getMember(IterableClass, "next");
+      def Iterable_hasNext = getMember(IterableClass, "hasNext");
     var IteratorClass: Symbol = _;
     var SeqClass: Symbol = _;
-    def Seq_length = SeqClass.info.decl("length");
+      def Seq_length = getMember(SeqClass, "length");
     var ListClass: Symbol = _;
-    def List_isEmpty = ListClass.info.decl("isEmpty");
-    def List_head = ListClass.info.decl("head");
-    def List_tail = ListClass.info.decl("tail");
+      def List_isEmpty = getMember(ListClass, "isEmpty");
+      def List_head = getMember(ListClass, "head");
+      def List_tail = getMember(ListClass, "tail");
     var ArrayClass: Symbol = _;
     var TypeClass: Symbol = _;
+    var SerializableClass: Symbol = _;
     var PredefModule: Symbol = _;
     var ConsoleModule: Symbol = _;
     var MatchErrorModule: Symbol = _;
-    def MatchError_fail = MatchErrorModule.info.decl("fail");
-    def MatchError_report = MatchErrorModule.info.decl("report");
+      def MatchError_fail = getMember(MatchErrorModule, "fail");
+      def MatchError_report = getMember(MatchErrorModule, "report");
+    var CaseOpsModule: Symbol = _;
     var RepeatedParamClass: Symbol = _;
     var ByNameParamClass: Symbol = _;
 
     val MaxTupleArity = 9;
     val MaxFunctionArity = 9;
     def TupleClass(i: int): Symbol = getClass("scala.Tuple" + i);
+      def tupleField(n:int, j:int) = getMember(TupleClass(n), "_" + j);
     def FunctionClass(i: int): Symbol = getClass("scala.Function" + i);
+      def functionApply(n:int) = getMember(FunctionClass(n), "apply");
 
     def tupleType(elems: List[Type]) =
       if (elems.length <= MaxTupleArity) {
@@ -85,8 +89,6 @@ abstract class Definitions: SymbolTable {
 	typeRef(sym.typeConstructor.prefix, sym, elems)
       } else NoType;
 
-    def tupleField(n:int, j:int) =
-      TupleClass(n).info.decl("_"+j.toString());
 
     def functionType(formals: List[Type], restpe: Type) =
       if (formals.length <= MaxFunctionArity) {
@@ -94,7 +96,6 @@ abstract class Definitions: SymbolTable {
 	typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
       } else NoType;
 
-    def functionApply(n:int) = FunctionClass(n).info.decl("apply");
 
     def isTupleType(tp: Type): boolean = tp match {
       case TypeRef(_, sym, elems) =>
@@ -143,8 +144,16 @@ abstract class Definitions: SymbolTable {
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname, true);
+
     def getClass(fullname: Name): Symbol =
       getModuleOrClass(fullname, false);
+
+    def getMember(owner: Symbol, name: Name) = {
+      val result = owner.info.nonPrivateMember(name);
+      if (result == NoSymbol)
+    	throw new FatalError(owner.toString() + " does not have a member " + name);
+      result
+    }
 
     private def getModuleOrClass(fullname: Name, module: boolean): Symbol = {
       var sym = RootClass;
@@ -258,9 +267,11 @@ abstract class Definitions: SymbolTable {
       ListClass = getClass("scala.List");
       ArrayClass = getClass("scala.Array");
       TypeClass = getClass("scala.Type");
+      SerializableClass = getClass("java.io.Serializable");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
       MatchErrorModule = getModule("scala.MatchError");
+      CaseOpsModule = getModule("scala.runtime.CaseOps");
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));

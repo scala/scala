@@ -109,9 +109,7 @@ abstract class Scopes: SymbolTable {
 
     /** enter a symbol
      */
-    def enter(sym: Symbol): unit = {
-      enter(newScopeEntry(sym, this));
-    }
+    def enter(sym: Symbol): unit = enter(newScopeEntry(sym, this));
 
     private def createHash: unit = {
       hashtable = new Array[ScopeEntry](HASHSIZE);

@@ -11,15 +11,15 @@ Main.scala
 NoPhase.scala
 Phase.scala
 Settings.scala
-StdPhase.scala
+SubComponent.scala
 
 ast/TreeGen.scala
 ast/TreeInfo.scala
 ast/TreePrinters.scala
 ast/Trees.scala
-ast/parser/ParserPhase.scala
 ast/parser/Parsers.scala
 ast/parser/Scanners.scala
+ast/parser/SyntaxAnalyzer.scala
 ast/parser/Tokens.scala
 ast/parser/TreeBuilder.scala
 
@@ -53,7 +53,6 @@ symtab/classfile/UnPickler.scala
 
 transform/SampleTransform.scala
 transform/Transform.scala
-transform/TypesAsValues.scala
 
 typechecker/Analyzer.scala
 typechecker/ConstantFolder.scala

@@ -883,7 +883,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
 
               //Console.println("hello, popped");
-              stmt.match {
+              stmt match {
                 // parameter entity
                 case "INCLUDE" =>
                   doInclude();
@@ -892,7 +892,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
               }
             case 'I' =>
               nextch;
-              ch.match {
+              ch match {
                 case 'G' =>
                   nextch;
                   xToken("NORE");

@@ -12,14 +12,14 @@ abstract class SampleTransform extends Transform {
 
   import global._;                  // the global environment
   import definitions._;             // standard classes and methods
-  import typer.typed;               // methods to type trees
+  import typer.{typed, atOwner};               // methods to type trees
   import posAssigner.atPos;         // for filling in tree positions
 
   /** the following two members override abstract members in Transform */
   protected val phaseName: String = "sample-phase";
-  protected def newTransformer: Transformer = new SampleTransformer;
+  protected def newTransformer(unit: CompilationUnit): Transformer = new SampleTransformer(unit);
 
-  class SampleTransformer extends Transformer {
+  class SampleTransformer(unit: CompilationUnit) extends Transformer {
 
     override def transform(tree: Tree): Tree = {
       val tree1 = super.transform(tree);      // transformers always maintain `currentOwner'.

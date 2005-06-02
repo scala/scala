@@ -212,7 +212,7 @@ abstract class Types: SymbolTable {
      *    - Or both types are method types with equivalent type parameter types
      *      and matching result types
      *    - Or both types are equivalent
-     *    - Or phase.exactMatch is false and both types are neither method nor
+     *    - Or phase.erasedTypes is false and both types are neither method nor
      *      poly types.
      */
     def matches(that: Type): boolean =
@@ -313,6 +313,7 @@ abstract class Types: SymbolTable {
       else baseClasses.head.newOverloaded(this, alts)
     }
 
+    //todo: use narrow.memberType?
     def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
       //System.out.println("find member " + name.decode + " in " + this + ":" + this.baseClasses);//DEBUG
       var members: Scope = null;
@@ -403,7 +404,14 @@ abstract class Types: SymbolTable {
     // todo see whether we can do without
     override def isError: boolean = true;
     override def decls: Scope = new ErrorScope(NoSymbol);
-    override def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = decls lookup name;
+    override def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
+      var sym = decls lookup name;
+      if (sym == NoSymbol) {
+	sym = NoSymbol.newErrorSymbol(name);
+	decls enter sym
+      }
+      sym
+    }
     override def baseType(clazz: Symbol): Type = this;
     override def toString(): String = "<error>";
     override def narrow: Type = this;
@@ -477,10 +485,8 @@ abstract class Types: SymbolTable {
   case class TypeBounds(lo: Type, hi: Type) extends SubType {
     protected def supertype: Type = hi;
     override def bounds: TypeBounds = this;
-    def containsType(that: Type) = lo <:< that && that <:< hi;
-    override def toString() =
-      (if (lo.symbol != AllClass) " >: " + lo else "") +
-      (if (hi.symbol != AnyClass) " <: " + hi else "");
+    def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
+    override def toString() = ">: " + lo + " <: " + hi;
   }
 
   /** A common base class for intersection types and class types
@@ -488,6 +494,8 @@ abstract class Types: SymbolTable {
   abstract class CompoundType extends Type {
     override val parents: List[Type];
     override val decls: Scope;
+
+    assert(!parents.exists (.isInstanceOf[TypeBounds]), this);//debug
 
     private var closureCache: Array[Type] = _;
     private var baseClassCache: List[Symbol] = _;
@@ -565,7 +573,8 @@ abstract class Types: SymbolTable {
 
     override def toString(): String =
       parents.mkString("", " with ", "") +
-      (if (settings.debug.value || decls.elems != null) decls.mkString("{", "; ", "}") else "")
+      (if (settings.debug.value || parents.isEmpty || decls.elems != null)
+	decls.mkString("{", "; ", "}") else "")
   }
 
   /** A class representing intersection types with refinements of the form
@@ -600,6 +609,7 @@ abstract class Types: SymbolTable {
    */
   case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
     assert(!sym.isAbstractType || pre.isStable || pre.isError);
+    assert(!pre.isInstanceOf[ClassInfoType], this);
 
     def transform(tp: Type): Type =
       tp.asSeenFrom(pre, sym.owner).subst(sym.typeParams, args);
@@ -711,7 +721,8 @@ abstract class Types: SymbolTable {
     override def erasure = resultType.erasure;
 
     override def toString(): String =
-      (if (typeParams.isEmpty) "=>! " else typeParams.mkString("[", ",", "]")) + resultType;//!!!
+      (if (typeParams.isEmpty) "=>! "
+       else (typeParams map (.defString)).mkString("[", ",", "]")) + resultType;
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = cloneSymbols(typeParams, owner);
@@ -774,10 +785,8 @@ abstract class Types: SymbolTable {
 
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): SingleType = {
-    if (checkMalformedSwitch && !pre.isStable && !pre.isError) {
-      System.out.println("malformed: " + pre + "." + sym.name + checkMalformedSwitch);//debug
+    if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString());
-    }
     new SingleType(pre, rebind(pre, sym)) {}
   }
 
@@ -967,14 +976,6 @@ abstract class Types: SymbolTable {
             else if ((sym isSubClass clazz) && (pre.widen.symbol isSubClass sym)) pre
             else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
-        case SingleType(pre, sym) =>
-	  if (sym.isPackageClass) tp // fast path // todo remove this case; it is redundant
-          else
-//	    try {
-              mapOver(tp)
-//            } catch {
-//              case ex: MalformedType => apply(tp.singleDeref) // todo: try needed?
-//            }
 	case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
 	  def toInstance(pre: Type, clazz: Symbol): Type =
 	    if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
@@ -1309,7 +1310,7 @@ abstract class Types: SymbolTable {
     case Pair(_, MethodType(_, _)) => false
     case Pair(_, PolyType(_, _))   => false
     case _ =>
-      !phase.exactMatch || tp1 =:= tp2
+      !phase.erasedTypes || tp1 =:= tp2
   }
 
   /** Prepend type `tp' to closure `cl' */
@@ -1458,16 +1459,18 @@ abstract class Types: SymbolTable {
       case List() => AllClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
-	assert(false);//debug
 	PolyType(
 	  List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
-	  ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds))),
-	  lub0(ts map (.resultType)))
+	    ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds))),
+          lub0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, lub0(matchingRestypes(ts, pts)))
+      case ts @ TypeBounds(_, _) :: rest =>
+        TypeBounds(glb(ts map (.bounds.lo)), lub(ts map (.bounds.hi)))
       case ts =>
         val closures: List[Array[Type]] = ts map (.closure);
         val lubBaseTypes: Array[Type] = lubArray(closures);
+	//log("closures = " + (closures map (cl => List.fromArray(cl))) + ", lubbases = " + List.fromArray(lubBaseTypes));//DEBUG
         val lubParents = spanningTypes(List.fromArray(lubBaseTypes));
 	val lubOwner = commonOwner(ts);
 	val lubBase = intersectionType(lubParents, lubOwner);
@@ -1483,7 +1486,7 @@ abstract class Types: SymbolTable {
 	  else {
             val symtypes = List.map2(narrowts, syms)
               ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType));
-	    System.out.println("common symbols: " + syms + ":" + symtypes);//debug
+	    if (settings.debug.value) log("common symbols: " + syms + ":" + symtypes);//debug
             if (proto.isTerm)
               proto.cloneSymbol.setInfo(lub(symtypes))
             else if (symtypes.tail forall (symtypes.head =:=))
@@ -1506,18 +1509,18 @@ abstract class Types: SymbolTable {
         for (val sym <- lubBase.nonPrivateMembers)
           // add a refinement symbol for all non-class members of lubBase
           // which are refined by every type in ts.
-          if (!sym.isClass && (narrowts forall (t => refines(t, sym))))
+          if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
             addMember(lubThisType, lubType, lubsym(sym));
         if (lubType.decls.isEmpty) lubBase else lubType;
     }
     if (settings.debug.value) {
-      System.out.println(indent + "lub of " + ts);//debug
+      log(indent + "lub of " + ts);//debug
       indent = indent + "  ";
     }
     val res = limitRecursion(ts, "least upper", lub0);
     if (settings.debug.value) {
       indent = indent.substring(0, indent.length() - 2);
-      System.out.println(indent + "lub of " + ts + " is " + res);//debug
+      log(indent + "lub of " + ts + " is " + res);//debug
     }
     res
   }
@@ -1531,9 +1534,11 @@ abstract class Types: SymbolTable {
         PolyType(
           List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
           ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds))),
-          glb0(ts map (.resultType)))
+          glb0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, glb0(matchingRestypes(ts, pts)))
+      case ts @ TypeBounds(_, _) :: rest =>
+        TypeBounds(lub(ts map (.bounds.lo)), glb(ts map (.bounds.hi)))
       case ts =>
 	try {
 	  val glbOwner = commonOwner(ts);
@@ -1573,7 +1578,7 @@ abstract class Types: SymbolTable {
               })
           }
           for (val t <- ts; val sym <- t.nonPrivateMembers)
-            if (!(sym.isClass || (glbThisType specializes sym)))
+            if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
 	      addMember(glbThisType, glbType, glbsym(sym));
 	  if (glbType.decls.isEmpty) glbBase else glbType;
 	} catch {
@@ -1583,13 +1588,13 @@ abstract class Types: SymbolTable {
         }
     }
     if (settings.debug.value) {
-      System.out.println(indent + "glb of " + ts);//debug
+      log(indent + "glb of " + ts);//debug
       indent = indent + "  ";
     }
     val res = limitRecursion(ts, "greatest lower", glb0);
     if (settings.debug.value) {
       indent = indent.substring(0, indent.length() - 2);
-      System.out.println(indent + "glb of " + ts + " is " + res);//debug
+      log(indent + "glb of " + ts + " is " + res);//debug
     }
     res
   }
@@ -1605,7 +1610,7 @@ abstract class Types: SymbolTable {
   /** The most deeply nested owner that contains all the symbols
    *  of thistype or prefixless typerefs/singletype occurrences in given list of types */
   private def commonOwner(tps: List[Type]): Symbol = {
-    if (settings.debug.value) System.out.println("computing common owner of types " + tps);//debug
+    if (settings.debug.value) log("computing common owner of types " + tps);//debug
     commonOwnerMap.init;
     tps foreach { tp => commonOwnerMap.apply(tp); () }
     commonOwnerMap.result
@@ -1648,7 +1653,7 @@ abstract class Types: SymbolTable {
   /** Make symbol `sym' a member of scope `tp.decls' where `thistp' is the narrowed
    *  owner type of the scope */
   private def addMember(thistp: Type, tp: Type, sym: Symbol): unit = {
-    System.out.println("add member " + sym);//debug
+    if (settings.debug.value) log("add member " + sym);//debug
     if (!(thistp specializes sym)) {
       if (sym.isTerm)
         for (val alt <- tp.nonPrivateDecl(sym.name).alternatives)
@@ -1671,6 +1676,19 @@ abstract class Types: SymbolTable {
 	throw new Error("lub/glb of incompatible types: " + tps.mkString("", " and ", ""))
     }
 
+  /** All types in list must be polytypes with type parameter lists of
+   *  same length as tparams.
+   *  Returns list of instance types, where corresponding type
+   *  parameters are renamed to tparams.
+   */
+  private def matchingInstTypes(tps: List[Type], tparams: List[Symbol]): List[Type] =
+    tps map {
+      case PolyType(tparams1, restpe) if (tparams1.length == tparams.length) =>
+        restpe.substSym(tparams1, tparams)
+      case _ =>
+	throw new Error("lub/glb of incompatible types: " + tps.mkString("", " and ", ""))
+    }
+
   /** All types in list must be method types with equal parameter types.
    *  Returns list of their result types.
    */
@@ -1685,7 +1703,7 @@ abstract class Types: SymbolTable {
 // Errors and Diagnostics ---------------------------------------------------------
 
   /** An exception signalling a type error */
-  class TypeError(msg: String) extends java.lang.Error(msg);
+  class TypeError(val msg: String) extends java.lang.Error(msg);
 
   /** An exception signalling a malformed type */
   class MalformedType(msg: String) extends TypeError(msg) {
