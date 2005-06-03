@@ -27,6 +27,9 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
   val input: Source;
 
+  /** if true, does not remove surplus whitespace */
+  val preserveWS: Boolean;
+
   def externalSource(systemLiteral: String): Source;
 
   //

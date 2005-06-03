@@ -21,16 +21,13 @@ import scala.util.logging._;
  *  @todo can we ignore more entity declarations (i.e. those with extIDs)?
  *  @todo expanding entity references
  */
-abstract class MarkupHandler extends AnyRef with Logged with ConsoleLogger {
+abstract class MarkupHandler extends AnyRef with Logged {
 
   // impl. of Logged
   //def log(msg:String) = {}
 
   /** returns true is this markup handler is validing */
   val isValidating: Boolean = false;
-
-  /** if true, does not remove surplus whitespace */
-  val preserveWS: Boolean;
 
   var decls: List[Decl] = Nil;
 

@@ -11,6 +11,10 @@ package scala.xml ;
 
 object NodeSeq {
   final val Empty = new NodeSeq { def theSeq = Nil; }
+  def fromSeq(s:Seq[Node]):NodeSeq = new NodeSeq {
+    def theSeq = s;
+  }
+  def view(s:Seq[Node]):NodeSeq = fromSeq(s);
 }
 
 /** a wrapper around Seq[Node] that adds XPath and comprehension methods */

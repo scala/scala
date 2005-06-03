@@ -225,7 +225,7 @@ xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeSeq.scala
 xml/Null.scala
-#xml/NodeTraverser.scala
+xml/NodeTraverser.scala
 xml/Parsing.scala
 xml/PrettyPrinter.scala
 xml/PrefixedAttribute.scala
