@@ -37,9 +37,9 @@ abstract class Definitions: SymbolTable {
     // the scala value classes
     var UnitClass: Symbol = _;
     var BooleanClass: Symbol = _;
-      def Boolean_not = getMember(IterableClass, nme.ZNOT);
-      def Boolean_and = getMember(IterableClass, nme.ZAND);
-      def Boolean_or  = getMember(IterableClass, nme.ZOR);
+      def Boolean_not = getMember(BooleanClass, nme.ZNOT);
+      def Boolean_and = getMember(BooleanClass, nme.ZAND);
+      def Boolean_or  = getMember(BooleanClass, nme.ZOR);
     var ByteClass: Symbol = _;
     var ShortClass: Symbol = _;
     var CharClass: Symbol = _;
