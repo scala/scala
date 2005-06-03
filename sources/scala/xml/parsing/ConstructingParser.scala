@@ -34,7 +34,7 @@ with     ExternalSources
 with     MarkupParser  {
 
   // default impl. of Logged
-  def log(msg:String): Unit = {}
+  override def log(msg:String): Unit = {}
 
   val preserveWS = presWS;
   val input = inp;
