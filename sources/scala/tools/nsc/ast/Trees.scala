@@ -246,9 +246,14 @@ abstract class Trees: Global {
   case class Block(stats: List[Tree], expr: Tree)
        extends TermTree;
 
-  /** Case clause in a pattern match, eliminated by TransMatch */
+  /** Case clause in a pattern match, eliminated by TransMatch
+   *  (except for occurences in switch statements)
+   */
   case class CaseDef(pat: Tree, guard: Tree, body: Tree)
        extends Tree;
+
+  /** casedef shorthand */
+  def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body);
 
   /** Sequence of expression/patterns (comma separated expressions),
    *  eliminated by TransMatch */
@@ -367,7 +372,6 @@ abstract class Trees: Global {
     sym.setFlag(ACCESSED);
     Ident(sym.name) setSymbol sym
   }
-
 
   /** Literal */
   case class Literal(value: Any)

@@ -10,9 +10,7 @@ package scala.tools.nsc.matching ;
 
 import scala.tools.util.Position;
 
-abstract class PatternNodes {
-
-  val global: Global;
+trait PatternNodes: TransMatcher {
 
   import global._;
 

@@ -5,13 +5,47 @@ package scala.tools.nsc.matching ;
 
 import scala.tools.util.Position;
 
-abstract class CodeFactory extends PatternUtil {
+abstract class CodeFactory: TransMatcher  {
 
   import global._ ;
 
   import definitions._;             // standard classes and methods
   import typer.typed;               // methods to type trees
   import posAssigner.atPos;         // for filling in tree positions
+
+
+  /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
+  def SeqTraceType( elemType: Type  ):  Type = {
+    appliedType(definitions.ListClass.typeConstructor,
+                List(pairType(definitions.IntClass.info,
+                              elemType)))
+  }
+
+
+
+  def pairType(left: Type, right: Type) = {
+    appliedType( definitions.TupleClass(2).typeConstructor,
+                List(left,right))
+  }
+
+  /**  returns `Iterator[ elemType ]' */
+  def _seqIterType( elemType: Type  ):  Type = {
+    appliedType( definitions.IteratorClass.typeConstructor,
+                List(elemType))
+  }
+
+  /** returns A for T <: Sequence[ A ]
+   */
+  def getElemType_Sequence(tpe: Type):  Type = {
+    //System.err.println("getElemType_Sequence("+tpe.widen()+")");
+    val tpe1 = tpe.widen.baseType( definitions.SeqClass );
+
+    if( tpe1 == NoType )
+      Predef.error("arg "+tpe+" not subtype of Seq[ A ]");
+
+    return tpe1.typeArgs( 0 );
+  }
+
 
   // --------- these are new
 
@@ -56,19 +90,6 @@ abstract class CodeFactory extends PatternUtil {
   def isEmpty( iter: Tree  ):  Tree =
     Apply(Select(iter, definitions.List_isEmpty), List());
 
-
-  def SeqTrace_headElem( arg: Tree  ) = { // REMOVE SeqTrace
-    val t = Apply(Select(arg, definitions.List_head), List());
-    Apply(Select(t, definitions.tupleField(2,2)),List())
-  }
-
-  def SeqTrace_headState( arg: Tree  ) = { // REMOVE SeqTrace
-    val t = Apply(Select(arg, definitions.List_head), List());
-    Apply(Select(t, definitions.tupleField(2,1)),List())
-  }
-
-  def SeqTrace_tail( arg: Tree ): Tree =  // REMOVE SeqTrace
-    Apply(Select(arg, definitions.List_tail), List());
 
   /** `arg.head' */
   def SeqList_head( arg: Tree ) =
@@ -161,28 +182,30 @@ abstract class CodeFactory extends PatternUtil {
     Apply(Select(left, eqsym), List(right));
   }
 
-  def ThrowMatchError(pos: Int, tpe: Type ) =
+  def ThrowMatchError(pos: Int ) =
     Apply(
       gen.mkRef(definitions.MatchError_fail),
       List(
-        Literal(unit.toString()),
+        Literal(cunit.toString()),
         Literal(Position.line(pos))
       )
     );
 
-  def ThrowMatchError(pos:int , tpe:Type , tree:Tree ) =
+  /* // ?!
+  def ThrowMatchError(pos:int , tree:Tree ) =
    Apply(
      gen.mkRef(definitions.MatchError_report),
      List(
-       Literal(unit.toString()),
+       Literal(cunit.toString()),
        Literal(Position.line(pos)),
        tree
      )
    );
+  */
+  def Error(pos: Int) =
+    ThrowMatchError(pos);
 
-  def Error(pos: Int, tpe: Type) =
-    ThrowMatchError(pos: Int, tpe: Type );
-
+  /*
   def newPair(left: Tree, right: Tree) =
     New(
       Apply(
@@ -190,6 +213,6 @@ abstract class CodeFactory extends PatternUtil {
         List(left,right)
       )
     );
-
+  */
 }
 
