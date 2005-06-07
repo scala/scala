@@ -902,9 +902,8 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
         ts.append(getTypeMethod(clazz));
     }
     if (clazz.isModuleClass()) {
-      val attrs = global.getAttributes(clazz);
-      val serializable = attrs != null &&
-        attrs.getAttrArguments(defs.SCALA_SERIALIZABLE_CONSTR) != null;
+      val serializable =
+        global.getAttrArguments(clazz, defs.SCALA_SERIALIZABLE_CONSTR) != null;
       if (serializable) {
         // If you serialize a singleton and then deserialize it twice,
         // you will have two instances of your singleton, unless you implement

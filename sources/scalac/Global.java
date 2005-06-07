@@ -417,27 +417,51 @@ public abstract class Global {
 	}
     }
 
-    public void addAttribute(Symbol sym, Symbol aSym, AConstant[] params) {
+
+    /** Add attribute for a symbol
+     *  @param sym - symbol of the defininition to which the attribute is applied
+     *  @param aSym - symbol of the constructor of the attribute class
+     *  @param args - arguments to the attribute constructor
+     */
+    public void addAttribute(Symbol sym, Symbol aSym, AConstant[] args) {
         AttributeInfo attr = getAttributes(sym);
-        attr = new AttributeInfo(aSym, params, attr);
-        //mapSymbolAttr.put(sym, attr);
+        attr = new AttributeInfo(aSym, args, attr);
         setAttribute(sym, attr);
     }
 
+    /** Add attribute with no arguments
+     *  @param sym - symbol of the defininition to which the attribute is applied
+     *  @param aSym - symbol of the constructor of the attribute class
+     */
     public void addAttribute(Symbol sym, Symbol aSym) {
         addAttribute(sym, aSym, AConstant.EMPTY_ARRAY);
     }
 
+    /** Set the attributes for a given symbol
+     */
     public void setAttribute(Symbol sym, AttributeInfo attr) {
         mapSymbolAttr.put(sym, attr);
         if (sym.isModule() && !sym.isModuleClass())
             mapSymbolAttr.put(sym.moduleClass(), attr);
     }
 
+    /** Return all attributes for a given symbol
+     */
     public AttributeInfo getAttributes(Symbol sym) {
         return (AttributeInfo)mapSymbolAttr.get(sym);
     }
 
+    /** Return attribute arguments
+     *  @param sym - symbol of the definition
+     *  @param aSym - symbol of the constructor of the attribute class
+     */
+    public AConstant[] getAttrArguments(Symbol sym, Symbol aSym) {
+        AttributeInfo attrs = getAttributes(sym);
+        return attrs == null ? null : attrs.getAttrArguments(aSym);
+    }
+
+    /** Remove the attributes for a given symbol
+     */
     public AttributeInfo removeAttributes(Symbol sym) {
         return (AttributeInfo)mapSymbolAttr.remove(sym);
     }
