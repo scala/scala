@@ -58,9 +58,9 @@ x = {title, buffers, layers}
 y = {title, buffers, layers}
 x equals y: true - y equals x: true
 
-x = Seq(2, 3)
-y = Seq(2, 3)
-x equals y: false - y equals x: false
+x = LinkedList(2, 3)
+y = LinkedList(2, 3)
+x equals y: true - y equals x: true
 
 x = Queue(20, 2, 3)
 y = Queue(20, 2, 3)
