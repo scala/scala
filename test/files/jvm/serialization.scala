@@ -246,6 +246,7 @@ class Employee(_name: String) {
   private var name = _name;
   override def toString() = name;
 }
+[serializable]
 object bob extends Employee("Bob");
 
 object Test5 {
@@ -270,9 +271,11 @@ object Test5 {
 
 [serializable]
 object Test6 {
+  [serializable]
   object bill extends Employee("Bill") {
     val x = paul;
   }
+  [serializable]
   object paul extends Person("Paul") {
     val x = 4; //  bill; => StackOverflowException !!!
   }
