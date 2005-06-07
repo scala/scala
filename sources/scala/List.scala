@@ -892,8 +892,6 @@ sealed trait List[+a] extends Seq[a] { // todo make sealed once we figure out ho
  */
 [SerialVersionUID(0 - 8256821097970055419L)]
 case object Nil extends List[All] {
-  // still needed - the backend doesn't recognize the SerialVersionUID attribute
-  private val serialVersionUID = 0 - 8256821097970055419L;
   def isEmpty = true;
   def head: All = error("head of empty list");
   def tail: List[All] = error("tail of empty list");
@@ -906,8 +904,6 @@ case object Nil extends List[All] {
  */
 [SerialVersionUID(0 - 8476791151983527571L)]
 final case class ::[+b](hd: b, tl: List[b]) extends List[b] {
-  // still needed - the backend doesn't recognize the SerialVersionUID attribute
-  private val serialVersionUID = 0 - 8476791151983527571L;
   def isEmpty: boolean = false;
   def head: b = hd;
   def tail: List[b] = tl;
