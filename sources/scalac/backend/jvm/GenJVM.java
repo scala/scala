@@ -167,13 +167,14 @@ public class GenJVM {
 
             addValueClassMembers(ctx1, classDef);
             gen(ctx1, impl);
-            HashMap staticMembers = collectStaticClassMembers(ctx1, sym);
-            if (ctx1.isModuleClass || staticMembers.size() != 0) {
+            AConstant[] aargs = global.getAttrArguments
+                (sym, defs.SCALA_SERIAL_VERSION_UID_CONSTR);
+            if (ctx1.isModuleClass || aargs != null) {
                 JMethod clinit = getClassConstructorMethod(ctx1);
                 if (clinit.getCode().getSize() == 0) {
                     Context ctx2 =
                         ctx1.withMethod(clinit, Collections.EMPTY_MAP, false);
-                    completeClassConstructor(ctx2, staticMembers);
+                    completeClassConstructor(ctx2, sym);
                     ctx2.code.emitRETURN();
                     genLocalVariableTable(ctx2);
                 }
@@ -209,11 +210,8 @@ public class GenJVM {
                     if (! Modifiers.Helper.isAbstract(sym.flags)) {
                         JType retType = ctx1.method.getReturnType();
                         genLoad(ctx1, rhs, retType);
-                        if (sym.name == Names.CLASS_CONSTRUCTOR) {
-                            HashMap staticMembers =
-                                collectStaticClassMembers(ctx, sym.owner());
-                            completeClassConstructor(ctx1, staticMembers);
-                        }
+                        if (sym.name == Names.CLASS_CONSTRUCTOR)
+                            completeClassConstructor(ctx1, sym.owner());
                         ctx1.code.emitRETURN(retType);
                         ctx1.method.freeze();
                     }
@@ -1624,9 +1622,8 @@ public class GenJVM {
     protected Context enterClass(Context ctx, Symbol cSym) {
         String javaName = javaName(cSym);
 
-        AttributeInfo attrs = global.getAttributes(cSym);
-        boolean serializable = attrs != null
-            && attrs.getAttrArguments(defs.SCALA_SERIALIZABLE_CONSTR) != null;
+        boolean serializable =
+            global.getAttrArguments(cSym, defs.SCALA_SERIALIZABLE_CONSTR) != null;
 
         scalac.symtab.Type[] baseTps = cSym.info().parents();
         assert baseTps.length > 0 : Debug.show(cSym);
@@ -1787,10 +1784,20 @@ public class GenJVM {
         }
     }
 
-    private void completeClassConstructor(Context ctx, HashMap staticMembers) {
+    protected void completeClassConstructor(Context ctx, Symbol cSym) {
         if (ctx.isModuleClass)
             addModuleInstanceField(ctx);
-        addStaticClassMembers(ctx, staticMembers);
+        AConstant[] aargs =
+            global.getAttrArguments(cSym, defs.SCALA_SERIAL_VERSION_UID_CONSTR);
+        if (aargs == null)
+            return;
+        assert aargs.length == 1 : "Wrong attribute arguments: ";
+        String fieldName = "serialVersionUID";
+        JField field = ctx.clazz.addNewField
+            (JAccessFlags.ACC_STATIC | JAccessFlags.ACC_PUBLIC, fieldName,
+             JType.LONG);
+        genLoadLiteral(ctx, aargs[0], JType.LONG);
+        ctx.code.emitPUTSTATIC(ctx.clazz.getName(), fieldName, JType.LONG);
     }
 
     /**
@@ -1815,51 +1822,6 @@ public class GenJVM {
                                      Strings.EMPTY_ARRAY);
     }
 
-    private HashMap collectStaticClassMembers(Context ctx, Symbol cSym) {
-        HashMap/*<Symbol, AConstant>*/ staticMembers = new HashMap();
-        Symbol iSym = ctx.isModuleClass
-            ? cSym : addInterfacesPhase.getInterfaceSymbol(cSym);
-        if (iSym != null) {
-            // Compute the list of static members to add.
-            Phase bkpCurrent = global.currentPhase;
-            global.currentPhase = refCheckPhase;
-            Scope.SymbolIterator memberIt =
-                iSym.members().iterator();
-            while (memberIt.hasNext()) {
-                Symbol member = memberIt.next();
-                if (member.isTerm() && !member.isMethod() && member.isPrivate())
-                    switch (member.info()) {
-                    case ConstantType(_, AConstant value):
-                        staticMembers.put(member, value);
-                    }
-            }
-            global.currentPhase = bkpCurrent;
-        }
-        return staticMembers;
-    }
-
-    // The following function is a single big hack.
-    protected void addStaticClassMembers(Context ctx, HashMap staticMembers) {
-            // Add them and initialize them.
-            Iterator smIt = staticMembers.keySet().iterator();
-            while (smIt.hasNext()) {
-                Symbol sm = (Symbol)smIt.next();
-                String smName = sm.name.toString();
-                JType tp = typeStoJ(sm.info());
-                JField field =
-                    ctx.clazz.addNewField((javaModifiers(sm)
-                                            | JAccessFlags.ACC_STATIC
-                                            | JAccessFlags.ACC_PUBLIC)
-                                           & ~JAccessFlags.ACC_PRIVATE,
-                                           smName.substring(0,
-                                                            smName.length()-1),
-                                           tp);
-                genLoadLiteral(ctx, (AConstant)staticMembers.get(sm), tp);
-                ctx.code.emitPUTSTATIC(ctx.clazz.getName(),
-                                       field.getName(),
-                                       tp);
-            }
-    }
 
     /**
      * Return true iff the given symbol is a static (in the Java
