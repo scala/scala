@@ -64,6 +64,7 @@
                 <keyword>finally</keyword>
 		<keyword>for</keyword>
 		<keyword>if</keyword>
+		<keyword>match</keyword>
 		<keyword>return</keyword>
                 <keyword>throw</keyword>
 		<keyword>try</keyword>
@@ -74,6 +75,7 @@
 	<keyword-list _name = "Modifiers" style = "Keyword" case-sensitive="TRUE">
 		<keyword>abstract</keyword>
 		<keyword>final</keyword>
+		<keyword>implicit</keyword>
 		<keyword>override</keyword>
 		<keyword>private</keyword>
 		<keyword>protected</keyword>
