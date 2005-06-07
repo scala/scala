@@ -37,6 +37,7 @@ object Seq {
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
+[serializable]
 trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
 
   /** Returns the length of the sequence.

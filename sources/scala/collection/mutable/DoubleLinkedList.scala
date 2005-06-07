@@ -17,6 +17,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
+[serializable]
 abstract class DoubleLinkedList[A, This <: DoubleLinkedList[A, This]]: This
     extends SingleLinkedList[A, This] {
 

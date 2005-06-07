@@ -21,6 +21,7 @@ package scala.collection.immutable;
  *  @author  Burak Emir
  *  @version 1.0
  */
+[serializable]
 class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet with Ordered[BitSet] {
 
   /** lexicographic ordering */

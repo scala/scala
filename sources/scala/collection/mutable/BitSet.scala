@@ -14,11 +14,13 @@ package scala.collection.mutable ;
  *  @author  Burak Emir
  *  @param initSize: initial size in nbits
  */
+[serializable]
 class BitSet(initSize: Int) extends scala.collection.BitSet {
 
   /** default constructor, initial size of 512 bits */
   def this() = this( 512 );  // ResizableArray.initialSize << 5
 
+  [serializable]
   class ByteArray extends AnyRef with ResizableArray[Int] {
 
     final def ensureBits(nbits: Int): Unit = {

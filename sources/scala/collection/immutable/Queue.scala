@@ -20,6 +20,7 @@ object Queue {
  *  @author  Erik Stenman
  *  @version 1.0, 08/07/2003
  */
+[serializable]
 class Queue[+A](elem: A*) extends Seq[A] {
   protected val in: List[A] = Nil;
   protected val out: List[A] = itToList(elem.elements);

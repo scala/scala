@@ -19,7 +19,8 @@ object TreeMap {
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] {
+//[serializable]
+class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] with java.io.Serializable {
 
     override protected type This = TreeMap[A, B];
     override protected def getThis: This = this;

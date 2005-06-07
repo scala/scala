@@ -18,6 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
+[serializable]
 class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[Pair[B, A]] {
 
     protected val log: Queue[Pair[B, A]] = new Queue[Pair[B, A]];

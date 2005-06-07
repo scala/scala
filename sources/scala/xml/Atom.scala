@@ -14,6 +14,7 @@ package scala.xml;
  * @author Burak Emir
  * @param text the text contained in this node, may not be null.
  */
+[serializable]
 class Atom[+A]( val data: A ) extends SpecialNode {
 
   final override def typeTag$:Int = -1;

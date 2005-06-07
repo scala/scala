@@ -15,6 +15,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
+[serializable]
 class HashSet[A] extends scala.collection.mutable.Set[A] with HashTable[A] {
 
     def contains(elem: A): Boolean = findEntry(elem) match {

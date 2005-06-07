@@ -61,7 +61,8 @@ import java.lang.Math;
  *  @author  Michel Schinz
  *  @version 1.1, 2005-01-20
  */
-abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
+//[serializable]
+abstract class Tree[A <% Ordered[A], B]() extends AnyRef with java.io.Serializable {
   /* Data structure:
   ** - size:Int - the number of elements in the tree.
   ** - tree:T, which is composed of nodes of the form:
@@ -223,8 +224,8 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
 /**
 *  GBTree is an internal class used by Tree.
 */
-
-protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
+//[serializable]
+protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef with java.io.Serializable {
   type aNode = GBTree[A,B];
   type anInsertTree = InsertTree[A,B];
 

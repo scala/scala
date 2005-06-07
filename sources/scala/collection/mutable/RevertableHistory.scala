@@ -18,6 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
+[serializable]
 class RevertableHistory[A <: Undoable, B] extends History[A, B] with Undoable {
 
     /** Rollback the full history.

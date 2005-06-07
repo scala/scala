@@ -16,6 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
+[serializable]
 class Stack[A] extends MutableList[A] with Cloneable {
 
     /** Checks if the stack is empty.

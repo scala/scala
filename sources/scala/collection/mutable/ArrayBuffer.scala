@@ -16,6 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 15/03/2004
  */
+[serializable]
 class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
 
     def apply(n: Int): A = {

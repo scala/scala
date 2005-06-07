@@ -22,6 +22,7 @@ object ListMap {
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  */
+[serializable]
 class ListMap[A, B] extends AnyRef with Map[A, B] {
 
     /** This method returns a new ListMap instance mapping keys of the
