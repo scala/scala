@@ -10,6 +10,7 @@
 
 package scala;
 
+/** @meta class extends scala.AnyVal; */
 public abstract class Int     extends AnyVal implements java.io.Serializable {
 
     public final int     value;

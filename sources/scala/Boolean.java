@@ -10,7 +10,8 @@
 
 package scala;
 
-public abstract class Boolean extends AnyVal {
+/** @meta class extends scala.AnyVal; */
+public abstract class Boolean extends AnyVal implements java.io.Serializable {
 
     public final boolean value;
 
