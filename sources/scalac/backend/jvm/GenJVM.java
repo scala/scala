@@ -86,6 +86,9 @@ public class GenJVM {
         new JObjectType("java.lang.Throwable");
 
     protected final Symbol JAVA_RMI_REMOTE_CLASS;
+    protected final Symbol SCALA_SERIAL_VERSION_UID_CONSTR;
+    protected final Symbol SCALA_TRANSIENT_CONSTR;
+    protected final Symbol SCALA_VOLATILE_CONSTR;
 
     protected final Global global;
     protected final Definitions defs;
@@ -113,6 +116,12 @@ public class GenJVM {
         initArithPrimMap();
 
         JAVA_RMI_REMOTE_CLASS = defs.getClass(JAVA_RMI_REMOTE);
+        SCALA_SERIAL_VERSION_UID_CONSTR =
+            defs.getClass("scala.SerialVersionUID") .primaryConstructor();
+        SCALA_TRANSIENT_CONSTR =
+            defs.getClass("scala.transient").primaryConstructor();
+        SCALA_VOLATILE_CONSTR =
+            defs.getClass("scala.volatile").primaryConstructor();
     }
 
     /// Code generation
@@ -168,7 +177,7 @@ public class GenJVM {
             addValueClassMembers(ctx1, classDef);
             gen(ctx1, impl);
             AConstant[] aargs = global.getAttrArguments
-                (sym, defs.SCALA_SERIAL_VERSION_UID_CONSTR);
+                (sym, SCALA_SERIAL_VERSION_UID_CONSTR);
             if (ctx1.isModuleClass || aargs != null) {
                 JMethod clinit = getClassConstructorMethod(ctx1);
                 if (clinit.getCode().getSize() == 0) {
@@ -1777,10 +1786,16 @@ public class GenJVM {
             cSym.members().iterator();
         while (memberIt.hasNext()) {
             Symbol member = memberIt.next();
-            if (member.isTerm() && !member.isMethod())
-                ctx.clazz.addNewField(javaModifiers(member),
+            if (member.isTerm() && !member.isMethod()) {
+                int flags = javaModifiers(member);
+                if (global.getAttrArguments(member,SCALA_TRANSIENT_CONSTR)!=null)
+                    flags |= JAccessFlags.ACC_TRANSIENT;
+                if (global.getAttrArguments(member,SCALA_VOLATILE_CONSTR)!=null)
+                    flags |= JAccessFlags.ACC_VOLATILE;
+                ctx.clazz.addNewField(flags,
                                       member.name.toString(),
                                       typeStoJ(member.info()));
+            }
         }
     }
 
@@ -1788,7 +1803,7 @@ public class GenJVM {
         if (ctx.isModuleClass)
             addModuleInstanceField(ctx);
         AConstant[] aargs =
-            global.getAttrArguments(cSym, defs.SCALA_SERIAL_VERSION_UID_CONSTR);
+            global.getAttrArguments(cSym, SCALA_SERIAL_VERSION_UID_CONSTR);
         if (aargs == null)
             return;
         assert aargs.length == 1 : "Wrong attribute arguments: ";

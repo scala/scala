@@ -253,7 +253,6 @@ public class Definitions {
     // attributes
 
     public final Symbol SCALA_SERIALIZABLE_CONSTR;
-    public final Symbol SCALA_SERIAL_VERSION_UID_CONSTR;
 
     //########################################################################
     // Public Fields & Methods - Scala primitive types
@@ -835,8 +834,6 @@ public class Definitions {
         MATCHERROR = getModule("scala.MatchError");
 
         SCALA_SERIALIZABLE_CONSTR = getClass("scala.serializable")
-            .primaryConstructor();
-        SCALA_SERIAL_VERSION_UID_CONSTR = getClass("scala.SerialVersionUID")
             .primaryConstructor();
 
         // initialize generated classes and aliases
