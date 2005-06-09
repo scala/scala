@@ -69,6 +69,15 @@ trait Iterable[+A] {
      */
     def elements: Iterator[A];
 
+    /** Concatenates two iterable objects
+     *
+     *  @return the new iterable object
+     *  @author buraq
+     */
+    def concat[B >: A](that:Iterable[B]): Iterable[B] = new Iterable[B]  {
+      def elements: Iterator[B] = Iterable.this.elements.append(that.elements);
+    }
+
     /** Apply a function <code>f</code> to all elements of this
      *  iterable object.
      *

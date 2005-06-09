@@ -12,6 +12,17 @@ package scala;
 import Predef._;
 
 object Seq {
+
+  /** builds a singleton sequence
+   *  @author buraq
+   */
+  def single[A](x:A) = new Seq[A] {
+    def length = 1;
+    def elements = Iterator.single(x);
+    override def isDefinedAt(x: Int): Boolean = (x == 0);
+    def apply(i:Int) = x; // caller's responsibility to check isDefinedAt
+  }
+
   def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] = new Ordered[Seq[A]] with Proxy {
     def self: Any = xs;
     def compareTo[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
@@ -45,6 +56,22 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   *  @return the sequence length.
   */
   def length: Int;
+
+  /** Returns the concatenation of two sequences.
+   *
+   *  @return concatenation of this sequence with argument
+   *  @author buraq
+   */
+  def concat[B >: A](that:Seq[B]): Seq[B] = new Seq[B] {
+    def length = Seq.this.length + that.length;
+    def elements: Iterator[B] = Seq.this.elements.append(that.elements);
+    def apply(i:Int) = {
+      if(Seq.this.isDefinedAt(i))
+        Seq.this.apply(i)
+      else
+        that.apply(i - Seq.this.length);
+    }
+  }
 
   /** Is this partial function defined for the index <code>x</code>?
   *
@@ -164,3 +191,4 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   */
   protected def stringPrefix: String = "Seq";
 }
+
