@@ -31,7 +31,6 @@ import transform.Transform;
  *       unless they are defined in the class or a baseclass
  *       different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
- *   - Function nodes are eliminated.
  */
 abstract class RefChecks extends Transform {
 
@@ -280,7 +279,7 @@ abstract class RefChecks extends Transform {
 	case NoType => ;
 	case NoPrefix => ;
 	case ThisType(_) => ;
-	case ConstantType(_, _) => ;
+	case ConstantType(_) => ;
 	case SingleType(pre, sym) =>
 	  validateVariance(pre, variance)
 	case TypeRef(pre, sym, args) =>
@@ -389,12 +388,12 @@ abstract class RefChecks extends Transform {
 	val caseFields = clazz.caseFieldAccessors map gen.mkRef;
 	typed(
 	  DefDef(method, vparamss =>
-	    if (caseFields.isEmpty) Literal(null)
+	    if (caseFields.isEmpty) Literal(Constant(null))
 	    else {
 	      var i = caseFields.length;
-	      var cases = List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(null)));
+	      var cases = List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(null))));
 	      for (val field <- caseFields.reverse) {
-		i = i - 1; cases = CaseDef(Literal(i), EmptyTree, field) :: cases
+		i = i - 1; cases = CaseDef(Literal(Constant(i)), EmptyTree, field) :: cases
 	      }
 	      Match(Ident(vparamss.head.head), cases)
 	    }))
@@ -402,26 +401,26 @@ abstract class RefChecks extends Transform {
 
       def caseArityMethod: Tree = {
 	val method = syntheticMethod(nme.caseArity, FINAL, PolyType(List(), IntClass.tpe));
-	typed(DefDef(method, vparamss => Literal(clazz.caseFieldAccessors.length)))
+	typed(DefDef(method, vparamss => Literal(Constant(clazz.caseFieldAccessors.length))))
       }
 
       def caseNameMethod: Tree = {
 	val method = syntheticMethod(nme.caseName, FINAL, PolyType(List(), StringClass.tpe));
-	typed(DefDef(method, vparamss => Literal(clazz.name.decode)))
+	typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
       }
 
       def moduleToStringMethod: Tree = {
 	val method = syntheticMethod(nme.toString_, FINAL, MethodType(List(), StringClass.tpe));
-	typed(DefDef(method, vparamss => Literal(clazz.name.decode)))
+	typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
       }
 
       def tagMethod: Tree = {
 	val method = syntheticMethod(nme.tag, FINAL, MethodType(List(), IntClass.tpe));
-	typed(DefDef(method, vparamss => Literal(clazz.tag)))
+	typed(DefDef(method, vparamss => Literal(Constant(clazz.tag))))
       }
 
       def forwardingMethod(name: Name): Tree = {
-	val target = getMember(CaseOpsModule, "_" + name);
+	val target = getMember(ScalaRunTimeModule, "_" + name);
 	val method = syntheticMethod(
 	  name, 0, MethodType(target.tpe.paramTypes.tail, target.tpe.resultType));
 	typed(DefDef(method, vparamss =>
@@ -487,7 +486,7 @@ abstract class RefChecks extends Transform {
 	    mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
 	    sym.owner.info.decls.enter(mvar);
 	  }
-          val vdef = typed(ValDef(mvar, if (sym.isLocal) Literal(null) else EmptyTree));
+          val vdef = typed(ValDef(mvar, if (sym.isLocal) Literal(Constant(null)) else EmptyTree));
 
           // def m: T = { if (m$ == null) m$ = new m$class; m$ }
           sym.setFlag(METHOD | STABLE);
@@ -497,7 +496,7 @@ abstract class RefChecks extends Transform {
               Block(
 		List(
 		  If(
-                    Apply(Select(Ident(mvar), nme.EQ), List(Literal(null))),
+                    Apply(Select(Ident(mvar), nme.EQ), List(Literal(Constant(null)))),
                     Assign(Ident(mvar), New(TypeTree(moduleType), List(List()))),
                     EmptyTree)),
 		Ident(mvar))));
@@ -569,76 +568,6 @@ abstract class RefChecks extends Transform {
 
 	case TypeApply(fn, args) =>
 	  checkBounds(fn.tpe.typeParams, args map (.tpe));
-
-	case Function(vparams, body) =>
-	  /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
-	   *
-	   *    class $anon() extends Object() with FunctionN[T_1, .., T_N, R] with ScalaObject {
-	   *      def apply(x_1: T_1, ..., x_N: T_n): R = body
-	   *    }
-	   *    new $anon()
-	   *
-	   *  transform a function node (x => body) of type PartialFunction[T, R] where
-	   *    body = x match { case P_i if G_i => E_i }_i=1..n
-	   *  to:
-	   *
-	   *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
-	   *      def apply(x: T): R = body;
-	   *      def isDefinedAt(x: T): boolean = x match {
-	   *        case P_1 if G_1 => true
-	   *        ...
-	   *        case P_n if G_n => true
-	   *        case _ => false
-	   *      }
-	   *    }
-	   *    new $anon()
-	   *
-	   *  However, if one of the patterns P_i if G_i is a default pattern, generate instead
-	   *
-	   *      def isDefinedAt(x: T): boolean = true
-	   */
-	  result = {
-	    val anonClass =
-	      currentOwner.newAnonymousFunctionClass(tree.pos) setFlag (FINAL | SYNTHETIC);
-	    anonClass setInfo ClassInfoType(
-	      List(ObjectClass.tpe, tree.tpe, ScalaObjectClass.tpe), new Scope(), anonClass);
-	    val targs = tree.tpe.typeArgs;
-	    val applyMethod = anonClass.newMethod(tree.pos, nme.apply)
-	      setFlag FINAL setInfo MethodType(targs.init, targs.last);
-	    anonClass.info.decls enter applyMethod;
-	    for (val vparam <- vparams)
-	      vparam.symbol.owner = applyMethod;
-	    var members = List(
-	      DefDef(FINAL, nme.apply, List(), List(vparams), TypeTree(targs.last), body)
-		setSymbol applyMethod);
-	    if (tree.tpe.symbol == PartialFunctionClass) {
-	      val isDefinedAtMethod = anonClass.newMethod(tree.pos, nme.isDefinedAt)
-		setFlag FINAL setInfo MethodType(targs.init, BooleanClass.tpe);
-	      anonClass.info.decls enter isDefinedAtMethod;
-	      def idbody(idparam: Symbol) = body match {
-		case Match(_, cases) =>
-		  val substParam = new TreeSymSubstituter(List(vparams.head.symbol), List(idparam));
-		  def transformCase(cdef: CaseDef): CaseDef =
-		    CaseDef(substParam(cdef.pat), substParam(cdef.guard), Literal(true));
-		  def isDefaultCase(cdef: CaseDef) = cdef match {
-		    case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
-		    case CaseDef(Bind(_, Ident(nme.WILDCARD)), EmptyTree, _) => true
-		    case _ => false
-		  }
-		  if (cases exists isDefaultCase) Literal(true)
-		  else Match(
-		    Ident(idparam),
-		    (cases map transformCase) :::
-		      List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
-	      }
-	      members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
-	    }
-	    typed(
-	      atPos(tree.pos)(
-		Block(
-		  List(ClassDef(anonClass, List(List()), List(List()), members)),
-		  New(TypeTree(anonClass.tpe), List(List())))))
-	  }
 
 	case New(tpt) =>
 	  enterReference(tree.pos, tpt.tpe.symbol);

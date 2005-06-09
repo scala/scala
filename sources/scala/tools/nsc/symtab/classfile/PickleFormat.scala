@@ -73,6 +73,7 @@ object PickleFormat {
   final val METHODtpe = 20;
   final val POLYtpe = 21;
   final val IMPLICITMETHODtpe = 22;
+  final val LITERAL = 23;   // base line for literals
   final val LITERALunit = 24;
   final val LITERALboolean = 25;
   final val LITERALbyte = 26;

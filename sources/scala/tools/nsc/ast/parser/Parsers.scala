@@ -120,7 +120,7 @@ abstract class Parsers: SyntaxAnalyzer {
     }
 
     def errorTypeTree = TypeTree().setType(ErrorType).setPos(in.pos);
-    def errorTermTree = Literal(null).setPos(in.pos);
+    def errorTermTree = Literal(Constant(null)).setPos(in.pos);
     def errorPatternTree = Ident(nme.WILDCARD).setPos(in.pos);
 
 /////// TOKEN CLASSES //////////////////////////////////////////////////////
@@ -184,7 +184,7 @@ abstract class Parsers: SyntaxAnalyzer {
 	params
       case Ident(_) | Typed(Ident(_), _) =>
 	List(convertToParam(t));
-      case Literal(x) if x == () => //todo: check with Literal(())
+      case Literal(c) if c.tag == UnitTag => //todo: check with Literal(Constant())
 	Nil
       case _ =>
 	syntaxError(t.pos, "malformed formal parameter list", false);
@@ -395,23 +395,23 @@ abstract class Parsers: SyntaxAnalyzer {
 	Literal(
 	  in.token match {
 	    case CHARLIT =>
-	      in.intVal.asInstanceOf[char]
+	      Constant(in.intVal.asInstanceOf[char])
 	    case INTLIT =>
-	      in.intVal(isNegated).asInstanceOf[int]
+	      Constant(in.intVal(isNegated).asInstanceOf[int])
 	    case LONGLIT =>
-	      in.intVal(isNegated)
+	      Constant(in.intVal(isNegated))
 	    case FLOATLIT =>
-	      in.floatVal(isNegated).asInstanceOf[float]
+	      Constant(in.floatVal(isNegated).asInstanceOf[float])
 	    case DOUBLELIT =>
-	      in.floatVal(isNegated)
+	      Constant(in.floatVal(isNegated))
 	    case STRINGLIT | SYMBOLLIT =>
-	      in.name.toString()
+	      Constant(in.name.toString())
 	    case TRUE =>
-	      true
+	      Constant(true)
 	    case FALSE =>
-	      false
+	      Constant(false)
 	    case NULL =>
-	      null
+	      Constant(null)
 	    case _ =>
 	      syntaxError("illegal literal", true);
 	      null

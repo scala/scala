@@ -225,12 +225,13 @@ abstract class TreePrinters {
         case Ident(name) =>
           print(symName(tree, name))
 
-        case Literal(obj) =>
-          print(obj match {
-            case null => "null"
-            case s: String => "\"" + s + "\""
-            case c: char => "\'" + c + "\'"
-            case _ => obj.toString()
+        case Literal(x) =>
+          print(x.tag match {
+            case NullTag => "null"
+            case StringTag => "\"" + x.stringValue + "\""
+            case CharTag => "\'" + x.charValue + "\'"
+	    case LongTag => x.longValue.toString() + "L";
+            case _ => x.value.toString()
           })
 
         case TypeTree() =>

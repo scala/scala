@@ -902,7 +902,7 @@ case object Nil extends List[All] {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-[SerialVersionUID(0 - 8476791151983527571L)]
+[SerialVersionUID(0L - 8476791151983527571L)]
 final case class ::[+b](hd: b, tl: List[b]) extends List[b] {
   def isEmpty: boolean = false;
   def head: b = hd;

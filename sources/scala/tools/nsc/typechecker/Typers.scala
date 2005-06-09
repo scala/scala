@@ -198,9 +198,9 @@ abstract class Typers: Analyzer {
       else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) // (2)
         errorTree(tree, sym.toString() + " is not a value");
       else if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
-	       (pt.isStable  || (mode & QUALmode) != 0 || sym.isModule)) // (3)
+	       (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant || sym.isModule)) { // (3)
         tree.setType(singleType(pre, sym))
-      else tree
+      } else tree
     }
 
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
@@ -234,7 +234,7 @@ abstract class Typers: Analyzer {
      */
 //    def adapt(tree: Tree, mode: int, pt: Type): Tree = {
     private def adapt(tree: Tree, mode: int, pt: Type): Tree = tree.tpe match {
-      case ct @ ConstantType(base, value) if ((mode & TYPEmode) == 0 && (ct <:< pt)) => // (0)
+      case ct @ ConstantType(value) if ((mode & TYPEmode) == 0 && (ct <:< pt)) => // (0)
 	copy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
 	inferExprAlternative(tree, pt);
@@ -447,8 +447,7 @@ abstract class Typers: Analyzer {
 	  val getter = sym.owner.info.decls.lookup(name).suchThat(.hasFlag(ACCESSOR));
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
-	      if ((mods & DEFERRED) != 0) EmptyTree
-	      else stabilize(gen.mkRef(sym), sym.owner.thisType, EXPRmode, sym.tpe)));
+	      if ((mods & DEFERRED) != 0) EmptyTree else typed(gen.mkRef(sym), EXPRmode, sym.tpe)));
           checkNoEscaping.privates(result.symbol, result.tpt);
           result
 	}
@@ -570,30 +569,94 @@ abstract class Typers: Analyzer {
       copy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
-    def typedFunction(fun: Function, mode: int, pt: Type): Function = {
+    /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
+     *
+     *    class $anon() extends Object() with FunctionN[T_1, .., T_N, R] with ScalaObject {
+     *      def apply(x_1: T_1, ..., x_N: T_n): R = body
+     *    }
+     *    new $anon()
+     *
+     *  transform a function node (x => body) of type PartialFunction[T, R] where
+     *    body = x match { case P_i if G_i => E_i }_i=1..n
+     *  to:
+     *
+     *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
+     *      def apply(x: T): R = body;
+     *      def isDefinedAt(x: T): boolean = x match {
+     *        case P_1 if G_1 => true
+     *        ...
+     *        case P_n if G_n => true
+     *        case _ => false
+     *      }
+     *    }
+     *    new $anon()
+     *
+     *  However, if one of the patterns P_i if G_i is a default pattern, generate instead
+     *
+     *      def isDefinedAt(x: T): boolean = true
+     */
+    def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
       val Triple(clazz, argpts, respt) =
-        if (isFunctionType(pt)
-            ||
+	if (isFunctionType(pt)
+	    ||
             pt.symbol == PartialFunctionClass &&
             fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
           Triple(pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
         else
           Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType);
       val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
-        vparam match {
-          case ValDef(_, _, tpt, _) =>
-            if (tpt.isEmpty)
-              tpt.tpe =
-                if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
-		else argpt
-        }
+        if (vparam.tpt.isEmpty)
+          vparam.tpt.tpe =
+            if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
+	    else argpt;
         namer.enterSym(vparam);
 	vparam.symbol
       }
-      val vparams1 = List.mapConserve(fun.vparams)(typedValDef);
-      val body1 = typed(fun.body, respt);
-      copy.Function(fun, vparams1, body1)
-	setType typeRef(clazz.tpe.prefix, clazz, (vparamSyms map (.tpe)) ::: List(body1.tpe))
+      val vparams = List.mapConserve(fun.vparams)(typedValDef);
+      val body = typed(fun.body, respt);
+      val formals = vparamSyms map (.tpe);
+      val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(body.tpe));
+      val anonClass = context.owner.newAnonymousFunctionClass(fun.pos) setFlag (FINAL | SYNTHETIC);
+      anonClass setInfo ClassInfoType(
+	List(ObjectClass.tpe, funtpe, ScalaObjectClass.tpe), new Scope(), anonClass);
+      val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
+	setFlag FINAL setInfo MethodType(formals, body.tpe);
+      anonClass.info.decls enter applyMethod;
+      for (val vparam <- vparamSyms) vparam.owner = applyMethod;
+      var members = List(
+	DefDef(FINAL, nme.apply, List(), List(vparams), TypeTree(body.tpe), body)
+	  setSymbol applyMethod);
+      if (pt.symbol == PartialFunctionClass) {
+	val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
+	  setFlag FINAL setInfo MethodType(formals, BooleanClass.tpe);
+	anonClass.info.decls enter isDefinedAtMethod;
+	def idbody(idparam: Symbol) = body match {
+	  case Match(_, cases) =>
+	    val substParam = new TreeSymSubstituter(List(vparams.head.symbol), List(idparam));
+	    def transformCase(cdef: CaseDef): CaseDef =
+	      CaseDef(substParam(cdef.pat.duplicate),
+		      substParam(cdef.guard.duplicate),
+		      Literal(true));
+	    def isDefaultCase(cdef: CaseDef) = cdef match {
+	      case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
+	      case CaseDef(Bind(_, Ident(nme.WILDCARD)), EmptyTree, _) => true
+	      case _ => false
+	    }
+	    if (cases exists isDefaultCase) Literal(true)
+	    else Match(
+	      Ident(idparam),
+	      (cases map transformCase) :::
+		List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
+	}
+	members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
+      }
+      typed(
+	atPos(fun.pos)(
+	  Block(
+	    List(ClassDef(anonClass, List(List()), List(List()), members)),
+	    Typed(
+	      New(TypeTree(anonClass.tpe), List(List())),
+	      TypeTree(funtpe)))))
     }
 
     def typedRefinement(stats: List[Tree]): List[Tree] = {
@@ -916,8 +979,7 @@ abstract class Typers: Analyzer {
           copy.Bind(tree, name, body1) setSymbol vble setType pt
 
         case fun @ Function(_, _) =>
-          newTyper(context.makeNewScope(tree, context.owner))
-            .typedFunction(fun, mode, pt)
+          newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)
 
         case Assign(lhs, rhs) =>
           def isGetter(sym: Symbol) = sym.info match {
@@ -1074,9 +1136,9 @@ abstract class Typers: Analyzer {
 	  else
 	    typedIdent(name);
 
+	// todo: try with case Literal(Constant(()))
         case Literal(value) =>
-          tree setType
-            (if (value == ()) UnitClass.tpe else ConstantType(constfold.literalType(value), value))
+          tree setType (if (value.tag == UnitTag) UnitClass.tpe else ConstantType(value))
 
         case SingletonTypeTree(ref) =>
           val ref1 = checkStable(typed(ref, EXPRmode | QUALmode, AnyRefClass.tpe));
@@ -1119,7 +1181,10 @@ abstract class Typers: Analyzer {
 	  //System.out.println("typing " + tree);//debug
 	}
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt);
-        if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
+	//System.out.println("typed " + tree1 + ":" + tree1.tpe);//DEBUG
+        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt);
+	//System.out.println("adpated " + tree1 + ":" + tree1.tpe + " to " + pt);//DEBUG
+	result
       } catch {
         case ex: TypeError =>
 	  reportTypeError(tree.pos, ex);

@@ -8,5 +8,5 @@
 */
 package scala;
 
-case class SerialVersionUID(uid: long) extends Attribute {}
+case class SerialVersionUID(uid: Long) extends Attribute {}
 

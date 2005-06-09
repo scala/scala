@@ -289,7 +289,7 @@ abstract class Trees: Global {
    *
    *  after TM, cases will satisfy the following constraints:
    *  - all guards are EmptyTree,
-   *  - all patterns will be either Literal(x:Int) or Alternative(lit|...|lit)
+   *  - all patterns will be either Literal(Constant(x:Int)) or Alternative(lit|...|lit)
    *  - except for an "otherwise" branch, which has pattern Ident(nme.WILDCARD)
    */
   case class Match(selector: Tree, cases: List[CaseDef]) extends TermTree;
@@ -374,11 +374,12 @@ abstract class Trees: Global {
   }
 
   /** Literal */
-  case class Literal(value: Any)
-       extends TermTree {
-    // todo: change hashcode generation to make this superfluous
-    override def hashCode(): int = if (value == null) 0 else value.hashCode() * 41 + 17;
+  case class Literal(value: Constant)
+        extends TermTree {
+    assert(value != null)
   }
+
+  def Literal(value: Any): Literal = Literal(Constant(value));
 
   /** General type term, introduced by RefCheck. */
   case class TypeTree() extends TypTree {
@@ -484,7 +485,7 @@ abstract class Trees: Global {
     def This(tree: Tree, qual: Name): This;
     def Select(tree: Tree, qualifier: Tree, selector: Name): Select;
     def Ident(tree: Tree, name: Name): Ident;
-    def Literal(tree: Tree, value: Any): Literal;
+    def Literal(tree: Tree, value: Constant): Literal;
     def TypeTree(tree: Tree): TypeTree;
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree;
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree;
@@ -559,7 +560,7 @@ abstract class Trees: Global {
       new Select(qualifier, selector).copyAttrs(tree);
     def Ident(tree: Tree, name: Name) =
       new Ident(name).copyAttrs(tree);
-    def Literal(tree: Tree, value: Any) =
+    def Literal(tree: Tree, value: Constant) =
       new Literal(value).copyAttrs(tree);
     def TypeTree(tree: Tree) =
       new TypeTree().copyAttrs(tree);
@@ -740,7 +741,7 @@ abstract class Trees: Global {
       if ((name0 == name)) => t
       case _ => copy.Ident(tree, name)
     }
-    def Literal(tree: Tree, value: Any) = tree match {
+    def Literal(tree: Tree, value: Constant) = tree match {
       case t @ Literal(value0)
       if (value0 == value) => t
       case _ => copy.Literal(tree, value)

@@ -141,7 +141,7 @@ abstract class UnPickler {
 	case SINGLEtpe =>
 	  singleType(readTypeRef(), readSymbolRef())
 	case CONSTANTtpe =>
-	  ConstantType(readTypeRef(), readConstantRef().value)
+	  ConstantType(readConstantRef())
 	case TYPEREFtpe =>
 	  // create a type-ref as found, without checks or rebinds
 	  new TypeRef(readTypeRef(), readSymbolRef(), until(end, readTypeRef)) {}

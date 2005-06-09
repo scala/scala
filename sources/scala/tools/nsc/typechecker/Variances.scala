@@ -64,7 +64,7 @@ abstract class Variances {
 
   /** Compute variance of type parameter `tparam' in type `tp'. */
   def varianceInType(tp: Type)(tparam: Symbol): int = tp match {
-    case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_, _) =>
+    case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
       VARIANCES
     case SingleType(pre, sym) =>
       cut(varianceInType(pre)(tparam))

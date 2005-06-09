@@ -34,7 +34,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
   var ent:  Map[String, EntityDecl]  = new HashMap[String, EntityDecl]();
 
   def lookupElemDecl(Label: String): ElemDecl =  {
-    def lookup(xs:List[Decl]): ElemDecl = xs.match {
+    def lookup(xs:List[Decl]): ElemDecl = xs match {
       case (z @ ElemDecl(Label, _)) :: zs => return z;
       case _::zs                        => lookup(zs);
       case _                            => return null

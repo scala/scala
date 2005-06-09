@@ -45,7 +45,7 @@ abstract class Pickler extends SubComponent {
   class Pickle(rootName: Name, rootOwner: Symbol) extends PickleBuffer(new Array[byte](4096), -1, 0) {
     private var entries = new Array[AnyRef](256);
     private var ep = 0;
-    private val index = new HashMap[Any, int];
+    private val index = new HashMap[AnyRef, int];
 
     /** Is root in symbol.owner*? */
     private def isLocal(sym: Symbol): boolean =
@@ -94,8 +94,8 @@ abstract class Pickler extends SubComponent {
 	  putSymbol(sym)
 	case SingleType(pre, sym) =>
 	  putType(pre); putSymbol(sym)
-	case ConstantType(base, value) =>
-	  putType(base); putConstant(value)
+	case ConstantType(value) =>
+	  putConstant(value)
 	case TypeRef(pre, sym, args) =>
 	  putType(pre); putSymbol(sym); putTypes(args)
 	case TypeBounds(lo, hi) =>
@@ -114,20 +114,16 @@ abstract class Pickler extends SubComponent {
     }
     private def putTypes(tps: List[Type]): unit = tps foreach putType;
 
-    private def putConstant(value: Any) = if (putEntry(Constant(value))) {
-      value match {
-	case str: String => putEntry(newTermName(str))
-	case _ =>
-      }
-    }
+    private def putConstant(c: Constant) =
+      if (putEntry(c) && c.tag == StringTag) putEntry(newTermName(c.stringValue));
 
     // Phase 2 methods: Write all entries to byte array ------------------------------
 
     private val buf = new PickleBuffer(new Array[byte](4096), -1, 0);
 
     /** Write a reference to object, i.e., the object's number in the index. */
-    private def writeRef(ref: Any): unit = writeNat(index(ref));
-    private def writeRefs(refs: List[Any]): unit = refs foreach writeRef;
+    private def writeRef(ref: AnyRef): unit = writeNat(index(ref));
+    private def writeRefs(refs: List[AnyRef]): unit = refs foreach writeRef;
 
     /** Write name, owner, flags, and info of a symbol */
     private def writeSymInfo(sym: Symbol): unit = {
@@ -177,8 +173,8 @@ abstract class Pickler extends SubComponent {
 	  writeRef(sym); THIStpe
 	case SingleType(pre, sym) =>
 	  writeRef(pre); writeRef(sym); SINGLEtpe
-	case ConstantType(base, value) =>
-	  writeRef(base); writeRef(Constant(value));
+	case ConstantType(value) =>
+	  writeRef(value);
 	  CONSTANTtpe
 	case TypeRef(pre, sym, args) =>
 	  writeRef(pre); writeRef(sym); writeRefs(args); TYPEREFtpe
@@ -194,28 +190,13 @@ abstract class Pickler extends SubComponent {
 	  else METHODtpe
 	case PolyType(tparams, restpe) =>
 	  writeRef(restpe); writeRefs(tparams); POLYtpe
-	case Constant(null) =>
-	  LITERALnull
-	case Constant(x: unit) =>
-	  LITERALunit
-	case Constant(x: boolean) =>
-	  writeLong(if (x) 1 else 0); LITERALboolean
-	case Constant(x: byte) =>
-	  writeLong(x); LITERALbyte
-	case Constant(x: char) =>
-	  writeLong(x); LITERALchar
-	case Constant(x: short) =>
-	  writeLong(x); LITERALshort
-	case Constant(x: int) =>
-	  writeLong(x); LITERALint
-	case Constant(x: long) =>
-	  writeLong(x); LITERALlong
-	case Constant(x: float) =>
-	  writeLong(Float.floatToIntBits(x)); LITERALfloat
-	case Constant(x: double) =>
-	  writeLong(Double.doubleToLongBits(x)); LITERALdouble
-	case Constant(x: String) =>
-	  writeRef(newTermName(x)); LITERALstring
+	case c @ Constant(_) =>
+	  if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
+          else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
+	  else if (c.tag == FloatTag) writeLong(Float.floatToIntBits(c.floatValue))
+	  else if (c.tag == DoubleTag) writeLong(Double.doubleToLongBits(c.doubleValue));
+	  else if (c.tag == StringTag) writeRef(newTermName(c.stringValue));
+	  LITERAL + c.tag
 	case _ =>
 	  throw new FatalError("bad entry: " + entry + " " + entry.getClass());//debug
       }

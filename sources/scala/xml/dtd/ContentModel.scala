@@ -194,7 +194,7 @@ Console.println("ns = "+ns);
   */
   def toString(sb:StringBuffer): StringBuffer =  {
     sb.append("(#PCDATA|");
-    r.match {
+    r match {
       case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);
     }
     sb.append(")*");

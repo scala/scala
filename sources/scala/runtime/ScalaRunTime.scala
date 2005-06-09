@@ -40,4 +40,41 @@ object ScalaRunTime {
         throw exception;
   }
 
+  def caseFields(x: CaseClass): List[Any] = {
+    val arity = x.caseArity;
+    def fields(from: Int): List[Any] =
+      if (from >= arity) List()
+      else x.caseElement(from) :: fields(from + 1);
+    fields(0)
+  }
+
+  def _toString(x: CaseClass): String = {
+    caseFields(x).mkString(x.caseName + "(", ",", ")")
+  }
+
+  def _hashCode(x: CaseClass): Int = {
+    var code = x.getClass().hashCode();
+    val arity = x.caseArity;
+    var i = 0;
+    while (i < arity) {
+      code = code * 41 + x.caseElement(i).hashCode();
+      i = i + 1
+    }
+    code
+  }
+
+  def _equals(x: CaseClass, y: Any): Boolean = y match {
+    case y1: CaseClass =>
+      (x.getClass() eq y1.getClass()) && {
+	val arity = x.caseArity;
+	var i = 0;
+	while (i < arity && x.caseElement(i) == y1.caseElement(i))
+	  i = i + 1;
+	i == arity
+      }
+    case _ =>
+      false
+  }
+
+  def Seq[a](xs: a*): Seq[a] = null; // interpreted specially by new backend.
 }

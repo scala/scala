@@ -156,6 +156,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val refchecksPhase = new refchecks.Phase(picklePhase);
 
+/*
+  object uncurry extends UnCurry {
+    val global: Global.this.type = Global.this;
+  }
+  val refchecksPhase = new uncurry.Phase(refchecksPhase);
+*/
+
   //object transmatcher extends TransMatcher {
   //  val global: Global.this.type = Global.this;
   //}

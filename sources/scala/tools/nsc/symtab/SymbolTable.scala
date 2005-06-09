@@ -12,6 +12,7 @@ abstract class SymbolTable extends Names
 			      with Types
                               with Scopes
                               with Definitions
+			      with Constants
 			      with InfoTransformers
                               with StdNames {
   def settings: Settings;

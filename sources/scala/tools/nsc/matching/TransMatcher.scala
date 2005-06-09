@@ -7,7 +7,7 @@ package scala.tools.nsc.matching;
 
 /** Translation of pattern matching
  */
-abstract class TransMatcher
+abstract class TransMatcher extends transform.Transform
 with PatternNodes
 with CodeFactory
 with PatternMatchers
@@ -22,11 +22,16 @@ with WordAutoms
 with LeftTracers
 with RightTracers {
 
-  val global: Global;
-
   import global._;
   import definitions._;
   import posAssigner.atPos;
+
+  val phaseName = "transmatcher";
+
+  protected def newTransformer(unit: global.CompilationUnit): global.Transformer = {
+    cunit = unit;
+    new TransMatch
+  }
 
   /** container. classes AlgebraicMatcher and SequenceMatcher get input and
    *  store their results in here. resembles the 'Memento' design pattern,
@@ -116,17 +121,6 @@ with RightTracers {
     traverse(pat);
     generatedVars;
   }
-
-  class TransMatchPhase(prev: Phase) extends StdPhase(prev) {
-    def name = "transmatcher";
-    val global: TransMatcher.this.global.type = TransMatcher.this.global;
-    def apply(unit: CompilationUnit): unit = {
-      TransMatcher.this.cunit = unit;
-      unit.body = newTransMatcher.transform(unit.body);
-    }
-  }
-
-  def newTransMatcher = new TransMatch();
 
   class TransMatch extends Transformer {
 

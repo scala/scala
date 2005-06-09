@@ -144,6 +144,15 @@ abstract class Symbols: SymbolTable {
     /** Is this symbol locally defined? I.e. not accessed from outside `this' instance */
     final def isLocal: boolean = owner.isTerm;
 
+    /** Is this symbol a constant? */
+    final def isConstant: boolean =
+      isStable && (tpe match {
+	case ConstantType(_) => true
+	case PolyType(_, ConstantType(_)) => true
+	case MethodType(_, ConstantType(_)) => true
+	case _ => false
+      });
+
     /** Is this class locally defined?
      *  A class is local, if
      *   - it is anonymous, or

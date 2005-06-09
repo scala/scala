@@ -37,7 +37,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
       val trans = dm.dfa.delta(qCurrent);
       log("advanceDFA(dm): "+dm);
       log("advanceDFA(trans): "+trans);
-      trans.get(ContentModel.ElemName(label)).match {
+      trans.get(ContentModel.ElemName(label)) match {
           case Some(qNew) => qCurrent = qNew
           case _          => reportValidationError(pos, "DTD says, wrong element, expected one of "+trans.keys.toString);
         }
@@ -51,7 +51,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
         reportValidationError(pos, "this element should be "+rootLabel);
     } else {
       log("  checking node");
-      declCurrent.contentModel.match {
+      declCurrent.contentModel match {
         case ANY         =>
 
           case EMPTY       =>

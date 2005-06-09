@@ -13,7 +13,7 @@ import scala.io.Source;
 import java.net._;
 import java.io._;
 
-trait ExternalSources : (MarkupParser with MarkupHandler)  {
+trait ExternalSources : (ExternalSources with MarkupParser with MarkupHandler)  {
 
 
   private def externalSourceFromURL(url:URL): Source = {

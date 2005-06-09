@@ -15,7 +15,7 @@ import Flags._;
   case NoPrefix =>
   case ThisType(_) =>
   case SingleType(pre, sym) =>
-  case ConstantType(base, value) =>
+  case ConstantType(value) =>
   case TypeRef(pre, sym, args) =>
   case TypeBounds(lo, hi) =>
   case RefinedType(parents, defs) =>
@@ -594,14 +594,12 @@ abstract class Types: SymbolTable {
   class PackageClassInfoType(decls: Scope, clazz: Symbol) extends ClassInfoType(List(), decls, clazz);
 
   /** A class representing a constant type */
-  case class ConstantType(base: Type, value: Any) extends SingletonType {
-    assert(base.symbol != UnitClass);
-    override def symbol: Symbol = base.symbol;
-    override def singleDeref: Type = base;
-    override def deconst: Type = base;
-    override def toString(): String = base.toString() + "(" + value + ")";
-    override def hashCode(): int = if (value == null) 0
-				   else base.hashCode() * 41 + value.hashCode();
+  case class ConstantType(value: Constant) extends SingletonType {
+    assert(value.tpe.symbol != UnitClass);
+    override def symbol: Symbol = value.tpe.symbol;
+    override def singleDeref: Type = value.tpe;
+    override def deconst: Type = value.tpe;
+    override def toString(): String = value.tpe.toString() + "(" + value.stringValue + ")";
   }
 
   /** A class for named types of the form <prefix>.<sym.name>[args]
@@ -869,7 +867,7 @@ abstract class Types: SymbolTable {
 
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
-      case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) =>
+      case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
         tp
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
@@ -883,10 +881,6 @@ abstract class Types: SymbolTable {
         val supertp1 = this(supertp);
         if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
         else SuperType(thistp1, supertp1)
-      case ConstantType(base, value) =>
-        val base1 = this(base);
-        if (base1 eq base) tp
-        else ConstantType(base1, value)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre);
 	val args1 = List.mapConserve(args)(this);
@@ -1139,8 +1133,8 @@ abstract class Types: SymbolTable {
 	  pre2 =:= sym1.owner.thisType) =>
         true
         */
-      case Pair(ConstantType(base1, value1), ConstantType(base2, value2)) =>
-	base1 =:= base2 && value1 == value2
+      case Pair(ConstantType(value1), ConstantType(value2)) =>
+	value1 == value2
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
 	sym1 == sym2 && pre1 =:= pre2 && isSameTypes(args1, args2)
       case Pair(RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
@@ -1197,11 +1191,11 @@ abstract class Types: SymbolTable {
       case Pair(_, NoType)   => false
       case Pair(_, NoPrefix) => tp1.symbol.isPackageClass
 
-      case Pair(ThisType(_), ThisType(_))               => tp1 =:= tp2
-      case Pair(ThisType(_), SingleType(_, _))          => tp1 =:= tp2
-      case Pair(SingleType(_, _), ThisType(_))          => tp1 =:= tp2
-      case Pair(SingleType(_, _), SingleType(_, _))     => tp1 =:= tp2
-      case Pair(ConstantType(_, _), ConstantType(_, _)) => tp1 =:= tp2
+      case Pair(ThisType(_), ThisType(_))           => tp1 =:= tp2
+      case Pair(ThisType(_), SingleType(_, _))      => tp1 =:= tp2
+      case Pair(SingleType(_, _), ThisType(_))      => tp1 =:= tp2
+      case Pair(SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
+      case Pair(ConstantType(_), ConstantType(_))   => tp1 =:= tp2
 
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
 	//System.out.println("isSubType " + tp1 + " " + tp2);//DEBUG
@@ -1253,11 +1247,11 @@ abstract class Types: SymbolTable {
       /* todo: replace following with
       case Pair(ThisType(_), _)
          | Pair(SingleType(_, _), _)
-         | Pair(ConstantType(_, _), _) =>
+         | Pair(ConstantType(_), _) =>
 	 once patern matching bug is fixed */
       case Pair(ThisType(_), _) => tp1.singleDeref <:< tp2
       case Pair(SingleType(_, _), _) => tp1.singleDeref <:< tp2
-      case Pair(ConstantType(_, _), _) => tp1.singleDeref <:< tp2
+      case Pair(ConstantType(_), _) => tp1.singleDeref <:< tp2
 
       case Pair(TypeRef(pre1, sym1, args1), _) =>
         sym1 == AllClass && tp2 <:< AnyClass.tpe

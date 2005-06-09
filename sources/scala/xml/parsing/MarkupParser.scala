@@ -650,7 +650,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
   def element1(pscope: NamespaceBinding): NodeSeq = {
     val pos = this.pos;
     val Tuple3(qname, aMap, scope) = xTag(pscope);
-    val Tuple2(pre, local) = Utility.prefix(qname).match {
+    val Tuple2(pre, local) = Utility.prefix(qname) match {
       case Some(p) => Pair(p,qname.substring(p.length()+1, qname.length()));
       case _       => Pair(null,qname);
     }

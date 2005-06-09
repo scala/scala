@@ -149,7 +149,7 @@ abstract class ClassfileParser {
     def getSuperClass(index: int): Symbol =
       if (index == 0) definitions.AnyClass else getClassSymbol(index);
 
-    def getLiteral(index: int): Constant = {
+    def getConstant(index: int): Constant = {
       if (index <= 0 || len <= index) errorBadIndex(index);
       var value = values(index);
       if (value == null) {
@@ -314,21 +314,10 @@ abstract class ClassfileParser {
           sym.setFlag(DEPRECATED);
           in.skip(attrLen)
         case nme.ConstantValueATTR =>
-	  def cast(c: Constant, tp: Type): Any = {
-	    val s = symtype.symbol;
-	    if (s == definitions.ByteClass) c.value.asInstanceOf$erased[int].asInstanceOf$erased[byte]
-	    else if (s == definitions.ShortClass) c.value.asInstanceOf$erased[int].asInstanceOf$erased[short]
-	    else if (s == definitions.CharClass) c.value.asInstanceOf$erased[int].asInstanceOf$erased[char]
-	    else if (s == definitions.IntClass) c.value.asInstanceOf$erased[int]
-	    else if (s == definitions.LongClass) c.value.asInstanceOf$erased[long]
-	    else if (s == definitions.FloatClass) c.value.asInstanceOf$erased[float]
-	    else if (s == definitions.DoubleClass) c.value.asInstanceOf$erased[double]
-	    else if (s == definitions.UnitClass) ()
-	    else if (s == definitions.BooleanClass) c.value.asInstanceOf$erased[int] != 0
-	    else c.value
-	  }
-          val c = pool.getLiteral(in.nextChar());
-          sym.setInfo(ConstantType(symtype, cast(c, symtype)))
+          val c = pool.getConstant(in.nextChar());
+	  val c1 = c convertTo symtype;
+	  assert(c1 != null, "cannot convert " + c + " to " + symtype);
+          sym.setInfo(ConstantType(c1));
         case nme.InnerClassesATTR =>
           parseInnerClasses()
         case nme.ScalaSignatureATTR =>

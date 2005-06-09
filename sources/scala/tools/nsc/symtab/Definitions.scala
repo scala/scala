@@ -72,7 +72,8 @@ abstract class Definitions: SymbolTable {
     var MatchErrorModule: Symbol = _;
       def MatchError_fail = getMember(MatchErrorModule, "fail");
       def MatchError_report = getMember(MatchErrorModule, "report");
-    var CaseOpsModule: Symbol = _;
+    var ScalaRunTimeModule: Symbol = _;
+      def SeqFactory = getMember(ScalaRunTimeModule, "Seq");
     var RepeatedParamClass: Symbol = _;
     var ByNameParamClass: Symbol = _;
 
@@ -271,7 +272,7 @@ abstract class Definitions: SymbolTable {
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
       MatchErrorModule = getModule("scala.MatchError");
-      CaseOpsModule = getModule("scala.runtime.CaseOps");
+      ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime");
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));

@@ -41,6 +41,7 @@ matching/StateSetComparator.scala
 matching/TransMatcher.scala
 matching/WordAutomInScala.scala
 
+symtab/Constants.scala
 symtab/Definitions.scala
 symtab/Flags.scala
 symtab/InfoTransformers.scala
@@ -53,7 +54,6 @@ symtab/Symbols.scala
 symtab/Types.scala
 symtab/classfile/ClassfileConstants.scala
 symtab/classfile/ClassfileParser.scala
-symtab/classfile/Constant.scala
 symtab/classfile/MetaParser.scala
 symtab/classfile/PickleBuffer.scala
 symtab/classfile/PickleFormat.scala
@@ -61,8 +61,10 @@ symtab/classfile/Pickler.scala
 symtab/classfile/SymblfileParser.scala
 symtab/classfile/UnPickler.scala
 
+transform/InfoTransform.scala
 transform/SampleTransform.scala
 transform/Transform.scala
+transform/UnCurry.scala
 
 typechecker/Analyzer.scala
 typechecker/ConstantFolder.scala

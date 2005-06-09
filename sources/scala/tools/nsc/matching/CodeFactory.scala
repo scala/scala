@@ -97,18 +97,18 @@ abstract class CodeFactory: TransMatcher  {
 
 
   def Negate(tree: Tree) = tree match {
-    case Literal(value:Boolean)=>
-      Literal(!value)
+    case Literal(Constant(value:Boolean))=>
+      Literal(Constant(!value))
     case _ =>
       Apply(Select(tree, definitions.Boolean_not), List());
   }
 
   /*protected*/ def And(left: Tree, right: Tree): Tree = left match {
-    case Literal(value:Boolean) =>
+    case Literal(Constant(value:Boolean)) =>
       if(value) right else left;
     case _ =>
       right match {
-        case Literal(true) =>
+        case Literal(Constant(true)) =>
 	  left;
         case _ =>
           Apply(Select(left, definitions.Boolean_and), List(right));
@@ -116,11 +116,11 @@ abstract class CodeFactory: TransMatcher  {
   }
 
   /*protected*/ def Or(left: Tree, right: Tree): Tree = left match {
-      case Literal(value: Boolean)=>
+      case Literal(Constant(value: Boolean))=>
 	if(value) left else right;
       case _ =>
         right match {
-          case Literal(false) =>
+          case Literal(Constant(false)) =>
 	    left;
           case _ =>
             Apply(Select(left, definitions.Boolean_or), List(right));

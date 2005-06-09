@@ -249,7 +249,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
             else
                 pVariablePat(tree.pos, tree);
 
-        case Literal(value) =>
+        case Literal(Constant(value)) =>
             pConstantPat(tree.pos, tree.tpe, value);
 
         case Sequence(ts) =>
