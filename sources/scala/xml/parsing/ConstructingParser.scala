@@ -38,6 +38,5 @@ with     MarkupParser  {
 
   val preserveWS = presWS;
   val input = inp;
-  val handle = this;
 }
 

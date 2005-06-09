@@ -14,6 +14,8 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
 
   final override val isValidating = true;
 
+  override def log(msg:String) = {};
+
   /*
   override def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {
     Console.println("checkChildren()");

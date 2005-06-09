@@ -38,8 +38,8 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
 
   var curInput: Source = input;
 
-  /** the handler of the markup, should return this */
-  val handle: MarkupHandler;
+  /** the handler of the markup, returns this */
+  private val handle: MarkupHandler = this;
 
   /** stack of inputs */
   var inpStack: List[Source] = Nil;

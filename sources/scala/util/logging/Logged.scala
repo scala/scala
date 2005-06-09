@@ -19,5 +19,5 @@ trait Logged {
   /** this method should log the message given as argument somewhere
    * as a side-effect
    */
-  def log(msg:String): Unit;
+  def log(msg:String): Unit = {};
 }
