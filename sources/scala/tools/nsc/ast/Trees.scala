@@ -195,7 +195,14 @@ abstract class Trees: Global {
     }
 
   /** Labelled expression - the symbols in the array (must be Idents!)
-   *  are those the label takes as argument */
+   *  are those the label takes as argument
+   *
+   *  jumps are apply nodes attributed with label symbol, the arguements
+   *    will get assigned to the idents.
+   *
+   * note: on 2005-06-09 Martin, Iuli, Burak agreed to have forward
+   *       jumps within a Block.
+   */
   case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree;
 
@@ -256,11 +263,17 @@ abstract class Trees: Global {
   def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body);
 
   /** Sequence of expression/patterns (comma separated expressions),
-   *  eliminated by TransMatch */
+   *  in patterns, eliminated by TransMatch
+   *  in expressions, seq constructors that need to be translated in backend,
+   *  ideally like this: Sequence(t1,...,tn) = Vector({t1,...,tn}),
+   *  where { ... } is an array.
+   */
   case class Sequence(trees: List[Tree])
        extends TermTree;
 
-  /** Alternatives of patterns, eliminated by TransMatch */
+  /** Alternatives of patterns, eliminated by TransMatch, except for
+   *  occurences in encoded Switch stmt (=remaining Match(CaseDef(...))
+   */
   case class Alternative(trees: List[Tree])
        extends TermTree;
 

@@ -125,7 +125,8 @@ with RightTracers {
   class TransMatch extends Transformer {
 
     def isRegular(pat:Tree): Boolean = pat match {
-      case Alternative(_)          =>  true
+      case Alternative(trees)          =>
+        trees exists { isRegular }
       case Star(_)                 =>  true;
 
       case Ident(_)                =>  false
