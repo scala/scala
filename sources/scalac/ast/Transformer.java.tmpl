@@ -205,11 +205,26 @@ public class GenTransformer {
         case Block(Tree[] stats, Tree value):
             return gen.Block(tree.pos, transform(stats), transform(value));
 
-        // case Sequence(Tree[] trees):
+        case Sequence(Tree[] trees):
+             trees = transform(trees);
+             Tree seq = new Sequence(trees);
+             seq.pos = tree.pos;
+             seq.type = tree.type;
+             return seq;
         // case Alternative(Tree[] trees):
-        // case Bind(Name name, Tree rhs):
         // case Visitor(CaseDef[] cases):
         // case Function(ValDef[] vparams, Tree body):
+
+        case Bind(Name n, Tree pat): // test
+            Symbol sym = getSymbolFor(tree);
+            global.nextPhase();
+            sym.setType(tree.type);
+            global.prevPhase();
+            Tree bind = new ExtBind(sym, transform(pat));
+        bind.type = sym.getType();
+            bind.pos = tree.pos;
+            return bind;
+
 
         case Assign(Tree lhs, Tree rhs):
             return gen.Assign(tree.pos, transform(lhs), transform(rhs));

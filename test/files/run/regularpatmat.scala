@@ -667,8 +667,41 @@ object testMZ {
     case x::xs   => "two"
   }
 
+  def mat406() = {
+    class Type;
+    case class A() extends Type;
+    case class B() extends Type;
+    case class C() extends Type;
+
+    def foo(x: Type, y: Type): String = Pair(x, y) match {
+      case Pair(A(), A())
+      | Pair(A(), B())
+      | Pair(B(), A())
+      | Pair(B(), B()) => "3"
+      case Pair(C(), C()) => "4"
+      case Pair(A(), _)
+      | Pair(B(), _) => "7"
+      case _ => "8"
+    }
+
+    foo(A(), C())
+  }
+
+  def mat441() = {
+    val tata = 1;
+    val titi = 0.8 + Math.random();
+    try {
+      tata match {
+        case 1 if (titi < 0.5) => "a"
+        case 0 | 1             => "b"
+      }
+    } catch {
+      case _ => "c"
+    }
+  }
+
   def main:Unit = {
-                Console.println("testMZ - bugs #132 #133b #180 #195 #196");
+                Console.println("testMZ - bugs #132 #133b #180 #195 #196 #398 #406 #441");
     assertEquals(testFoo( List(Two(),Two(),Two(),Two()) ),"b = Two");
     assertEquals(testFoo( List(Two(),Two(),Two()) ),"a = Two");
     assertEquals(testFoo( List(Two(),Two()) ),"a = Two");
@@ -687,7 +720,9 @@ object testMZ {
     assertEquals(mat196( List(1) ),"default");
     assertEquals(mat196( List() ),"case, b = List()");
     assertEquals(mat398( List(2) ),"two");
-
+    assertEquals(mat398( List(2) ),"two");
+    assertEquals(mat406(), "7");
+    assertEquals(mat441(), "b");
     ()
   }
 

@@ -107,6 +107,11 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
     }
   }
 
+  /** this method is only called if 2 patterns are redundant. In such
+   *  a case, the right body has to be chosen by means of the guards!
+   *    case 3 if false => "x";
+   *    case 3 if true => "y";
+   */
   protected def updateBody(tree: Body, bound: Array[ValDef], guard: Tree , body: Tree): Unit = {
     if (tree.guard(tree.guard.length - 1) == Tree.Empty) {
       //unit.error(body.pos, "unreachable code");
@@ -184,6 +189,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
           env.newBoundVar( tree.symbol(), tree.getType(), header.selector);
         node;
       case Bind(name, pat) =>
+        //if ( tree.getType() == null ) throw new ApplicationError("Bind tpe is null"); // DEBUG
         val node = patternNode(pat, header, env);
         if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD)) {
           val casted = node.symbol();
@@ -261,18 +267,19 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
         case Sequence(ts) =>
             if ( !delegateSequenceMatching ) {
               //throw new ApplicationError("cannot happen:"+tree);
+              //Console.println("PatternMatcher:patternNode:Sequence "+tree.getType());
                 mk.SequencePat(tree.pos, tree.getType(), ts.length);
             } else {
                 mk.SeqContainerPat(tree.pos, tree.getType(), tree);
             }
-        case Alternative(ts) =>
-          if(ts.length < 2)
+        case Alternative(branches) =>
+          if(branches.length < 2)
             throw new ApplicationError("ill-formed Alternative");
           val subroot = mk.ConstrPat(header.pos, header.getTpe());
           subroot.and = mk.Header(header.pos, header.getTpe(), header.selector.duplicate());
             val subenv = new CaseEnv(owner, unit);
-          var i = 0; while(i < ts.length) {
-            val target = enter1(ts(i), -1, subroot, subroot.symbol(), subenv);
+          var i = 0; while(i < branches.length) {
+            val target = enter1(branches(i), -1, subroot, subroot.symbol(), subenv);
             target.and = mk.Body(tree.pos);
             i = i + 1
           }
@@ -289,6 +296,9 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
         enter1(pat, index, target, newCasted, env);
       case SequencePat(newCasted, len) =>
         enter1(pat, index, target, newCasted, env);
+      /* Test
+      case AltPat() =>
+        */
       case _ =>
         enter1(pat, index, target, casted, env);
     }
@@ -616,41 +626,52 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
 
     var node = node1;
     var res = gen.mkBooleanLit(node.pos, false);
-    while (node != null)
-    node match {
-      case _h:Header =>
-        val selector = _h.selector;
-        val next = _h.next;
-        //res = cf.And(mkNegate(res), toTree(node.or, selector));
-        //Console.println("HEADER TYPE = " + selector.type);
-        if (optimize1(node.getTpe(), node.or))
-          res = cf.Or(res, toOptTree(node.or, selector));
-        else
-          res = cf.Or(res, toTree(node.or, selector));
-      node = next;
 
-      case _b:Body =>
-        var bound = _b.bound;
-        val guard = _b.guard;
-        val body  = _b.body;
-        if ((bound.length == 0) &&
-            (guard.length == 0) &&
-            (body.length == 0)) {
-              return gen.mkBooleanLit(node.pos, true); // cf.Or(res, gen.mkBooleanLit(node.pos, true));
-            } else if (!doBinding)
-              bound = Predef.Array[Array[ValDef]]( Predef.Array[ValDef]() );
-        var i = guard.length - 1; while(i >= 0) {
-          val ts = bound(i).asInstanceOf[Array[Tree]];
-          var res0 = gen.mkBlock(gen.Assign(gen.Ident(body(i).pos, resultVar),
-                                            body(i)),
-                                 gen.mkBooleanLit(body(i).pos, true));
-          if (guard(i) != Tree.Empty)
-            res0 = cf.And(guard(i), res0);
-          res = cf.Or(gen.mkBlock(body(i).pos, ts, res0), res);
-          i = i - 1
-        }
-      return res;
-    }
+    while (node != null)
+      node match {
+        case _h:Header =>
+          val selector = _h.selector;
+          val next = _h.next;
+          //res = cf.And(mkNegate(res), toTree(node.or, selector));
+          //Console.println("HEADER TYPE = " + selector.type);
+
+        /* TEST
+         next match {
+         case _b:Body if ((_b.guard.length > 1) ||
+         (_b.guard(0) != Tree.Empty)) =>
+         Console.println("guard! = "+_b.guard(0));
+         case _ =>
+         }
+         */
+
+          if (optimize1(node.getTpe(), node.or))
+            res = cf.Or(res, toOptTree(node.or, selector));
+          else
+            res = cf.Or(res, toTree(node.or, selector));
+          node = next;
+
+        case _b:Body =>
+          var bound = _b.bound;
+          val guard = _b.guard;
+          val body  = _b.body;
+          if ((bound.length == 0) &&
+              (guard.length == 0) &&
+              (body.length == 0)) {
+                return gen.mkBooleanLit(node.pos, true); // cf.Or(res, gen.mkBooleanLit(node.pos, true));
+              } else if (!doBinding)
+                bound = Predef.Array[Array[ValDef]]( Predef.Array[ValDef]() );
+          var i = guard.length - 1; while(i >= 0) {
+            val ts = bound(i).asInstanceOf[Array[Tree]];
+            var res0 = gen.mkBlock(gen.Assign(gen.Ident(body(i).pos, resultVar),
+                                              body(i)),
+                                   gen.mkBooleanLit(body(i).pos, true));
+            if (guard(i) != Tree.Empty)
+              res0 = cf.And(guard(i), res0);
+            res = cf.Or(gen.mkBlock(body(i).pos, ts, res0), res);
+            i = i - 1
+          }
+        return res;
+      }
     return res;
   }
 

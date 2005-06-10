@@ -1743,7 +1743,9 @@ class Parser(unit: CompilationUnit) {
 	var lhs = new myTreeList();
 	do {
 	  s.nextToken();
-	  lhs.append(pattern2());
+          val pat = pattern2();
+          pN.check(pat); // bq: to catch `val y + = 3' bug #371
+	  lhs.append(pat);
 	} while (s.token == COMMA);
 	val tp = typedOpt();
 	val rhs = if (tp == Tree.Empty || s.token == EQUALS) equalsExpr() else Tree.Empty;

@@ -135,7 +135,11 @@ package scala.tools.scalac.ast.parser {
     def check( pat:Tree ):boolean = {
       this.boundVars = new HashMap();
 
+      if(TreeInfo.isSequenceValued( pat ))
+        unit.error( pat.pos, "sequence pattern not allowed here");
+
       //reject top-level sequence patterns
+      /*
       pat match {
         case Tree$Sequence( _ ) =>
           unit.error( pat.pos, "sequences not allowed here"); false;
@@ -151,8 +155,13 @@ package scala.tools.scalac.ast.parser {
             };
             i = i + 1
           }
+
+        case Tree$Bind(_, x) =>
+          if(TreeInfo.isSequenceValued( pat ))
+            unit.error( pat.pos, "sequence pattern not allowed here");
         case _ =>
       }
+      */
       // reject deep binding
       if( TreeInfo.isRegularPattern( pat ) )
         this.seqDepth = 0;

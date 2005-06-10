@@ -147,6 +147,16 @@ package scala.tools.scalac.transformer.matching {
          q match {
            case ConstrPat(_) =>
               q.getTpe().isSubType(this.getTpe());
+           /* TEST
+           case AltPat(subroot) =>
+             var node = subroot.and.or;
+             var res = false;
+             while(node!=null && !false) {
+               res = this subsumes(node);
+               node = node.or;
+             }
+           res
+             */
            case _ =>
              false;
          }
@@ -174,6 +184,16 @@ package scala.tools.scalac.transformer.matching {
            case _ =>
              false;
          }
+       /* TEST
+       case AltPat(subroot) =>
+         var node = subroot.and.or;
+         var res = false;
+         while(node!=null && !false) {
+           res = node subsumes q;
+           node = node.or;
+         }
+         res
+         */
        case _ =>
          false;
      }
