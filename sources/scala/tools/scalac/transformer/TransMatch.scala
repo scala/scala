@@ -218,9 +218,8 @@ class TransMatch( global:scalac_Global )
               return symbol;
               case _ =>
                 if(tree.definesSymbol())
-                  tree.symbol()
-                else
-                  super.getSymbolFor(tree);
+                  tree.symbol();
+                super.getSymbolFor(tree);
               }
 
             }
@@ -282,8 +281,8 @@ class TransMatch( global:scalac_Global )
       val pm = new matching.PatternMatcher( cunit );
       pm.initialize(root, currentOwner, restpe, true );
       try{
-        val ncases = removeAlterns(cases);
-        pm.construct( ncases.asInstanceOf[Array[Tree]] );
+        //val ncases = removeAlterns(cases);
+        pm.construct( cases.asInstanceOf[Array[Tree]] );
       } catch {
         case e:Throwable =>
           e.printStackTrace();
