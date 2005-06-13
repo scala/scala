@@ -38,6 +38,7 @@ package scala.tools.scala4ant {
       var result = true;
       try {
         scala.tools.scalac.Main.main1( false, args );
+
       } catch {
         case e:Throwable => {
           result = false;
@@ -46,6 +47,10 @@ package scala.tools.scala4ant {
         ex.printStackTrace();
         if( !result ) throw new BuildException("exception occurred:"+ex.getClass());
       }
+
+      if( scala.tools.scalac.Main.reporter.errors() > 0 )
+        throw new BuildException("there were compile errors");
+
       result;
     }
 

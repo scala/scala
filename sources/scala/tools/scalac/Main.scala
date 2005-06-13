@@ -6,7 +6,7 @@
 ** $Id$
 \*                                                                      */
 
-import scala.tools.util.ConsoleReporter;
+import scala.tools.util.{AbstractReporter, ConsoleReporter};
 import scalac.{CompilerCommand, Global => scalac_Global};
 import scalac.symtab.classfile.CLRTypes;
 
@@ -27,8 +27,12 @@ object Main {
 
   def main(args: Array[String]): unit = main1( true, args );
 
+  // ant task needs to be aware of reporter.errors
+  var reporter: AbstractReporter = _;
+
   def main1( exitOnError:boolean, args: Array[String] ):unit = {
     val reporter = new ConsoleReporter();
+    this.reporter = reporter;
     val command = new CompilerCommand(
       PRODUCT, VERSION, reporter, new CompilerPhases());
     var ok = true;
