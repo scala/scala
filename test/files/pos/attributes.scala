@@ -42,13 +42,23 @@ object O5 {
   [serializable][volatile] protected def foo3 = x3;
 }
 
-object myAttributes {
+object myAttrs {
   class a1 extends scala.Attribute;
+  class a2(x: Int) extends scala.Attribute;
+  class a3(x: a1) extends scala.Attribute;
 }
 object O6 {
-  class a2 extends scala.Attribute;
-  [myAttributes.a1] class C1;
-  [myAttributes.a1,a2] class C2;
-  [myAttributes.a1][a2] class C3;
+  class a1 extends scala.Attribute;
+  class a2(x: Int) extends scala.Attribute;
+  class a3(x: a1) extends scala.Attribute;
+  final val x = new a1;
+  [a1] class C1;
+  [a1,a2(77)] class C2;
+  [a1][a2(88)] class C3;
+  [a1][a2(88),a3(null)] class C4;
 
+  [myAttrs.a1] class A1;
+  [myAttrs.a1,myAttrs.a2(99)] class A2;
+  [myAttrs.a1][myAttrs.a2(99)] class A3;
+  [myAttrs.a1][myAttrs.a2(99),myAttrs.a3(null)] class A4;
 }
