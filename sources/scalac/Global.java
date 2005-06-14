@@ -424,6 +424,8 @@ public abstract class Global {
      *  @param args - arguments to the attribute constructor
      */
     public void addAttribute(Symbol sym, Symbol aSym, AConstant[] args) {
+        if(aSym.isNone() || aSym.isError())
+            return;
         AttributeInfo attr = getAttributes(sym);
         attr = new AttributeInfo(aSym, args, attr);
         setAttribute(sym, attr);
