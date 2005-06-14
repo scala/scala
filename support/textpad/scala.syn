@@ -83,6 +83,8 @@ while
 
 [Keywords 2] ; new ones added by Scala
 def
+implicit
+match
 object
 val
 var
@@ -589,7 +591,6 @@ Symbol
 length
 main
 println
-match
 toString
 isInstanceOf
 asInstanceOf

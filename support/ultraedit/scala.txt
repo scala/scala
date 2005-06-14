@@ -11,7 +11,8 @@ case catch class
 def do
 else extends
 false final finally for
-if import
+if implicit import
+match
 new null
 object override
 package private protected
