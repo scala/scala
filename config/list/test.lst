@@ -90,6 +90,7 @@ pos/Z.scala
 pos/abstract.scala
 pos/aliases.scala
 pos/arrays2.scala
+pos/attributes.scala
 pos/bug082.scala
 pos/bug1.scala
 pos/bug115.scala
