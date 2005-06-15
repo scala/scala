@@ -116,7 +116,7 @@ trait Namers: Analyzer {
     def enterSym(tree: Tree): Namer = {
 
       def finishWith(tparams: List[AbsTypeDef]): unit = {
-        if (settings.debug.value) log("entered " + tree.symbol + " in " + context.owner);
+        if (settings.debug.value) log("entered " + tree.symbol + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
 	var ltype: LazyType = innerNamer.typeCompleter(tree);
         if (!tparams.isEmpty) {
 	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
@@ -269,6 +269,7 @@ trait Namers: Analyzer {
       val clazz = context.owner;
       val parents = typer.parentTypes(templ) map (.tpe);
       val decls = new Scope();
+      log("members of " + clazz + "=" + decls.hashCode());//debug
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
       ClassInfoType(parents, decls, clazz)
     }

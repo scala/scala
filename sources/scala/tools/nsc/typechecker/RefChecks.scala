@@ -512,6 +512,9 @@ abstract class RefChecks extends Transform {
 	}
 	List(tree1)
 
+      case Import(_, _) =>
+	List()
+
       case _ =>
 	List(transform(tree))
     }

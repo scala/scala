@@ -121,6 +121,15 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
 // Phases ------------------------------------------------------------
 
+  abstract class StdPhase(prev: Phase) extends Phase(prev) {
+    def run: unit = units foreach applyPhase;
+    def apply(unit: CompilationUnit): unit;
+    def applyPhase(unit: CompilationUnit): unit = {
+      if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]");
+      apply(unit)
+    }
+  }
+
   object syntaxAnalyzer extends SyntaxAnalyzer {
     val global: Global.this.type = Global.this
 
@@ -156,12 +165,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val refchecksPhase = new refchecks.Phase(picklePhase);
 
-/*
   object uncurry extends UnCurry {
     val global: Global.this.type = Global.this;
   }
-  val refchecksPhase = new uncurry.Phase(refchecksPhase);
-*/
+  val uncurryPhase = new uncurry.Phase(refchecksPhase);
 
   //object transmatcher extends TransMatcher {
   //  val global: Global.this.type = Global.this;
@@ -174,7 +181,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this;
   }
-  val samplePhase = new sampleTransform.Phase(refchecksPhase);
+  val samplePhase = new sampleTransform.Phase(uncurryPhase);
 
   //val transMatchPhase = new transmatcher.TransMatchPhase(picklePhase);
 /*
@@ -213,6 +220,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   /** A map from compiled top-level symbols to their picklers */
   val symData = new HashMap[Symbol, PickleBuffer];
 
+  var globalPhase: Phase = NoPhase;
+
   def compileSources(sources: List[SourceFile]): unit = {
     val startTime = System.currentTimeMillis();
     unitbuf.clear;
@@ -223,16 +232,17 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     for (val source <- sources)
       addUnit(new CompilationUnit(source));
 
-    phase = NoPhase.next;
-    while (phase != terminalPhase && reporter.errors() == 0) {
-      if (!(settings.skip contains phase.name)) {
+    globalPhase = NoPhase.next;
+    while (globalPhase != terminalPhase && reporter.errors() == 0) {
+      if (!(settings.skip contains globalPhase.name)) {
 	val startTime = System.currentTimeMillis();
-	phase.run;
-	if (settings.print contains phase.name) treePrinter.printAll();
-	informTime(phase.description, startTime);
+	phase = globalPhase;
+	globalPhase.run;
+	if (settings.print contains globalPhase.name) treePrinter.printAll();
+	informTime(globalPhase.description, startTime);
       }
-      phase = if (settings.stop contains phase.name) terminalPhase else phase.next;
-      if (settings.check contains phase.name) checker.checkTrees;
+      globalPhase = if (settings.stop contains globalPhase.name) terminalPhase else globalPhase.next;
+      if (settings.check contains globalPhase.name) checker.checkTrees;
     }
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
@@ -262,8 +272,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     else if (!(fileset contains file)) {
       val unit = new CompilationUnit(getSourceFile(file));
       addUnit(unit);
-      atPhase(parserPhase) { parserPhase(unit) }
-      atPhase(namerPhase) { namerPhase(unit) }
+      var localPhase = parserPhase.asInstanceOf[StdPhase];
+      while (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) {
+	if (!(settings.skip contains localPhase.name))
+	  atPhase(localPhase)(localPhase.applyPhase(unit));
+	localPhase = localPhase.next.asInstanceOf[StdPhase];
+      }
     }
 
   def compileFiles(files: List[AbstractFile]): unit =

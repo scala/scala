@@ -88,7 +88,7 @@ abstract class TreePrinters {
     def print(str: String): unit = out.print(str);
     def print(name: Name): unit = print(name.toString());
 
-    def print(tree: Tree): unit = {
+    def printRaw(tree: Tree): unit = {
       tree match {
         case EmptyTree =>
           print("<empty>");
@@ -169,6 +169,9 @@ abstract class TreePrinters {
 
         case Bind(name, t) =>
           print("("); print(symName(tree, name)); print(" @ "); print(t); print(")");
+
+        case SeqTerm(trees) =>
+          printRow(trees, "[", ", ", "]")
 
         case Function(vparams, body) =>
           print("("); printValueParams(vparams); print(" => "); print(body); print(")")
@@ -254,6 +257,20 @@ abstract class TreePrinters {
         print("{"); print(if (tree.tpe == null) "<null>" else tree.tpe.toString()); print("}")
       }
     }
+
+    def print(tree: Tree): unit =
+      printRaw(
+        if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.hasFlag(INITIALIZED)) {
+          tree match {
+            case ClassDef(_, _, _, _, impl) => ClassDef(tree.symbol, impl)
+            case ModuleDef(_, _, impl)      => ModuleDef(tree.symbol, impl)
+            case ValDef(_, _, _, rhs)       => ValDef(tree.symbol, rhs)
+            case DefDef(_, _, _, _, _, rhs) => DefDef(tree.symbol, vparamss => rhs)
+            case AbsTypeDef(_, _, _, _)     => AbsTypeDef(tree.symbol)
+            case AliasTypeDef(_, _, _, rhs) => AliasTypeDef(tree.symbol, rhs)
+            case _ => tree
+          }
+        } else tree);
 
     def print(unit: CompilationUnit): unit = {
       print("// Scala source: " + unit.source + "\n");

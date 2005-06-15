@@ -56,76 +56,98 @@ abstract class UnCurry extends InfoTransform {
   /** - return symbol's transformed type,
    *  - if symbol is a def parameter with transformed type T, return () => T
    */
-  def transformInfo(sym: Symbol, tp: Type): Type = uncurry(tp);
+  def transformInfo(sym: Symbol, tp: Type): Type = if (sym.isType) tp else uncurry(tp);
 
   class UnCurryTransformer(unit: CompilationUnit) extends Transformer {
 
     private var inPattern = false;
 
-    override def transform(tree: Tree): Tree = {
-      def transformArgs(args: List[Tree], formals: List[Type]) = {
-	if (formals.isEmpty) {
-	  assert(args.isEmpty); List()
-	} else {
-	  def mkSequence(args: List[Tree], pt: Type): Tree = typed { atPos(tree.pos) {
-            if (inPattern) Sequence(args) setType pt
-            else Apply(gen.mkRef(SeqFactory), args)
-          }}
-	  val args1 =
-            formals.last match {
-              case TypeRef(pre, sym, List(pt)) if (sym == RepeatedParamClass) =>
-	        if (args.isEmpty) List(mkSequence(args, pt))
-	        else {
-		  val suffix = args.last match {
-		    case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
-		      arg setType seqType(arg.tpe)
-		    case _ =>
-		      mkSequence(args.drop(formals.length - 1), pt)
-		  }
-		  args.take(formals.length - 1) ::: List(suffix)
+    override def transform(tree: Tree): Tree = postTransform(mainTransform(tree));
+
+    /* Is tree a reference `x' to a call by name parameter that neeeds to be converted to
+     * x.apply()? Note that this is not the case if `x' is used as an argument to another
+     * call by name parameter.
+     */
+    def isByNameRef(tree: Tree): boolean =
+      tree.isTerm && tree.hasSymbol &&
+      tree.symbol.tpe.symbol == ByNameParamClass && tree.tpe == tree.symbol.tpe.typeArgs.head;
+
+    /** Uncurry a type of a tree node.
+     *  This function is sensitive to whether or not we are in a pattern -- when in a pattern
+     *  additional parameter sections of a case class are skipped.
+     */
+    def uncurryTreeType(tp: Type): Type = tp match {
+      case MethodType(formals, MethodType(formals1, restpe)) if (inPattern) =>
+	uncurryTreeType(MethodType(formals, restpe))
+      case _ =>
+	uncurry(tp)
+    }
+
+    def transformArgs(pos: int, args: List[Tree], formals: List[Type]) = {
+      if (formals.isEmpty) {
+	assert(args.isEmpty); List()
+      } else {
+	val args1 =
+          formals.last match {
+            case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
+	      def mkSequence(args: List[Tree]) = atPos(pos)(SeqTerm(args) setType formals.last);
+	      if (args.isEmpty) List(mkSequence(args))
+	      else {
+	        val suffix = args.last match {
+		  case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
+		    arg setType seqType(arg.tpe)
+		  case _ =>
+		    mkSequence(args.drop(formals.length - 1))
 	        }
-              case _ => args
-            }
-	  List.map2(formals, args1) ((formal, arg) =>
-	    if (formal.symbol == ByNameParamClass)
-	      arg.tpe match {
-		case TypeRef(pre, sym, List(targ)) if (sym == ByNameParamClass) =>
-		  arg setType functionType(List(), targ)
-		case _ =>
-		  typed(Function(List(), arg) setPos arg.pos)
+	        args.take(formals.length - 1) ::: List(suffix)
 	      }
-	    else arg)
-	}
+            case _ => args
+          }
+	List.map2(formals, args1) ((formal, arg) =>
+	  if (formal.symbol != ByNameParamClass) arg
+	  else if (isByNameRef(arg)) arg setType functionType(List(), arg.tpe)
+	  else typed(Function(List(), arg) setPos arg.pos))
       }
-      val prevtpe = tree.tpe;
-      var result = tree match {
-	case Apply(fn, args) =>
-          copy.Apply(tree, super.transform(fn),
-                     super.transformTrees(transformArgs(args, fn.tpe.paramTypes)))
-        case CaseDef(pat, guard, body) =>
-          inPattern = true;
-          val pat1 = super.transform(pat);
-          inPattern = false;
-          copy.CaseDef(tree, pat1, super.transform(guard), super.transform(body))
-	case _ =>
-          super.transform(tree)
-      } setType uncurry(tree.tpe);
-      result match {
+    }
+
+    def mainTransform(tree: Tree): Tree = (tree match {
+      case Apply(fn, args) =>
+	val formals = fn.tpe.paramTypes;
+        copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
+      case CaseDef(pat, guard, body) =>
+        inPattern = true;
+	val pat1 = transform(pat);
+	inPattern = false;
+	copy.CaseDef(tree, pat1, transform(guard), transform(body))
+      case _ =>
+        val tree1 = super.transform(tree);
+	if (isByNameRef(tree1))
+	  typed(atPos(tree1.pos)(
+	    Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply), List())))
+	else tree1;
+    }) setType uncurryTreeType(tree.tpe);
+
+    def postTransform(tree: Tree): Tree = atPhase(phase.next) {
+      def applyUnary(tree: Tree): Tree =
+        if ((tree.symbol.tpe.isInstanceOf[MethodType] || tree.symbol.tpe.isInstanceOf[PolyType]) &&
+	    (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
+	  if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
+	  atPos(tree.pos)(Apply(tree, List()) setType tree.tpe.resultType)
+	} else tree;
+      tree match {
 	case Apply(Apply(fn, args), args1) =>
-	  result = copy.Apply(result, fn, args ::: args1)
+	  copy.Apply(tree, fn, args ::: args1)
 	case Ident(name) =>
-          if (name == nme.WILDCARD_STAR.toTypeName)
+	  if (name == nme.WILDCARD_STAR.toTypeName)
 	    unit.error(tree.pos, " argument does not correspond to `*'-parameter");
-          else if (prevtpe.symbol == ByNameParamClass)
-	    result = typed(atPos(result.pos)(Select(result, nme.apply)))
+	  applyUnary(tree);
+	case Select(_, _) =>
+	  applyUnary(tree)
+	case TypeApply(_, _) =>
+	  applyUnary(tree)
 	case _ =>
+	  tree
       }
-      result.tpe match {
-	case MethodType(List(), restpe) =>
-	  if (!prevtpe.isInstanceOf[MethodType])
-	    result = typed(atPos(result.pos)(Apply(result, List())))
-      }
-      result
     }
   }
 }

@@ -60,10 +60,12 @@ abstract class Scopes: SymbolTable {
 
     def this(base: Scope) = {
       this(base.elems);
+/*
       if (base.hashtable != null) {
 	this.hashtable = new Array[ScopeEntry](HASHSIZE);
         System.arraycopy(base.hashtable, 0, this.hashtable, 0, HASHSIZE);
       }
+*/
       nestinglevel = base.nestinglevel + 1
     }
 

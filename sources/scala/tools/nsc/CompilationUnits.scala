@@ -26,6 +26,7 @@ abstract class CompilationUnits: Global {
     def error(pos: int, msg: String) = reporter.error(position(pos), msg);
     def warning(pos: int, msg: String) = reporter.warning(position(pos), msg);
     override def toString() = source.toString();
+
   }
 }
 

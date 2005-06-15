@@ -198,8 +198,22 @@ abstract class Typers: Analyzer {
       else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) // (2)
         errorTree(tree, sym.toString() + " is not a value");
       else if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
-	       (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant || sym.isModule)) { // (3)
-        tree.setType(singleType(pre, sym))
+	       (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
+		sym.isModule && !sym.tpe.isInstanceOf[MethodType])) {
+	tree.setType(singleType(pre, sym))
+      } else tree
+    }
+
+    def stabilizeFun(tree: Tree, mode: int, pt: Type): Tree = {
+      val sym = tree.symbol;
+      val pre = tree match {
+	case Select(qual, _) => qual.tpe
+	case _ => NoPrefix
+      }
+      if (tree.tpe.isInstanceOf[MethodType] && pre.isStable &&
+	  (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant || sym.isModule)) {
+	assert(sym.tpe.paramTypes.isEmpty);
+	tree.setType(MethodType(List(), singleType(pre, sym)))
       } else tree
     }
 
@@ -803,7 +817,7 @@ abstract class Typers: Analyzer {
 	      copy.Select(tree, Apply(coercion, List(qual)) setPos qual.pos, name), mode, pt)
 	}
         if (sym.info == NoType) {
-          if (settings.debug.value) log("qual = " + qual + ":" + qual.tpe + "\nmembers = " + qual.tpe.members + "\nfound = " + sym);
+          if (settings.debug.value) log("qual = " + qual + ":" + qual.tpe + "\nSymbol=" + qual.tpe.symbol + "\nsymbol-info = " + qual.tpe.symbol.info + "\nscope-id = " + qual.tpe.symbol.info.decls.hashCode() + "\nmembers = " + qual.tpe.members + "\nfound = " + sym);
           errorTree(tree,
 	    decode(name) + " is not a member of " + qual.tpe.widen +
 	    (if (Position.line(tree.pos) > Position.line(qual.pos))
@@ -978,6 +992,14 @@ abstract class Typers: Analyzer {
           if (vble.name != nme.WILDCARD) namer.enterInScope(vble);
           copy.Bind(tree, name, body1) setSymbol vble setType pt
 
+        case SeqTerm(elems) =>
+	  val elempt = pt.baseType(SeqClass) match {
+	    case TypeRef(pre, seqClass, List(arg)) => arg
+	    case _ => WildcardType
+	  }
+	  val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elempt));
+          copy.SeqTerm(tree, elems1) setType ptOrLub(elems1 map (.tpe))
+
         case fun @ Function(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)
 
@@ -1073,21 +1095,29 @@ abstract class Typers: Analyzer {
           typedTypeApply(typed(fun, funmode | TAPPmode, WildcardType), args1)
 
         case Apply(fun, args) =>
-          val funpt = if ((mode & PATTERNmode) != 0) pt else WildcardType;
-          var fun1 = typed(fun, funmode, funpt);
-          // if function is overloaded, filter all alternatives that match
-	  // number of arguments and expected result type.
-	  // if (settings.debug.value) log("trans app " + fun1 + ":" + fun1.symbol + ":" + fun1.tpe + " " + args);//DEBUG
-	  if (fun1.hasSymbol && fun1.symbol.hasFlag(OVERLOADED)) {
-	    val argtypes = args map (arg => AllClass.tpe);
-	    val pre = fun1.symbol.tpe.prefix;
-            val sym = fun1.symbol filter (alt =>
-	      isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt));
-            if (sym != NoSymbol)
-              fun1 = adapt(fun1 setSymbol sym setType pre.memberType(sym), funmode, WildcardType)
-          }
-	  appcnt = appcnt + 1;
-          typedApply(fun1, args)
+	  val stableApplication =
+	    fun.symbol != null && fun.symbol.tpe.isInstanceOf[MethodType] && fun.symbol.isStable;
+	  if (stableApplication && (mode & PATTERNmode) != 0) {
+	    // treat stable function applications f() as expressions.
+	    typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
+	  } else {
+            val funpt = if ((mode & PATTERNmode) != 0) pt else WildcardType;
+            var fun1 = typed(fun, funmode, funpt);
+	    if (stableApplication) fun1 = stabilizeFun(fun1, mode, pt);
+            // if function is overloaded, filter all alternatives that match
+	    // number of arguments and expected result type.
+	    // if (settings.debug.value) log("trans app " + fun1 + ":" + fun1.symbol + ":" + fun1.tpe + " " + args);//DEBUG
+	    if (fun1.hasSymbol && fun1.symbol.hasFlag(OVERLOADED)) {
+	      val argtypes = args map (arg => AllClass.tpe);
+	      val pre = fun1.symbol.tpe.prefix;
+              val sym = fun1.symbol filter (alt =>
+		isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt));
+              if (sym != NoSymbol)
+		fun1 = adapt(fun1 setSymbol sym setType pre.memberType(sym), funmode, WildcardType)
+            }
+	    appcnt = appcnt + 1;
+            typedApply(fun1, args)
+	  }
 
         case Super(qual, mix) =>
           val clazz = if (tree.symbol != NoSymbol) tree.symbol else qualifyingClass(qual);

@@ -572,6 +572,7 @@ abstract class Types: SymbolTable {
       if (parents.isEmpty) this else parents.head.erasure;
 
     override def toString(): String =
+      "<" + symbol.toString() + ">" + //debug
       parents.mkString("", " with ", "") +
       (if (settings.debug.value || parents.isEmpty || decls.elems != null)
 	decls.mkString("{", "; ", "}") else "")
