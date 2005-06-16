@@ -60,8 +60,6 @@ package scala.tools.scalac.transformer.matching {
 
          traverse( subtree );
 
-         case Select(_,_) => ;
-
          // congruence
          case Apply(fun, args) =>
            traverse1(args);

@@ -65,8 +65,6 @@ extends TracerInScala(dfa, elementType, owner, cf) {
 
           traverse( subtree );
 
-        case Select(_,_) => ;
-
         // congruence cases
         case Apply(fun, args) =>
             traverse1(args);

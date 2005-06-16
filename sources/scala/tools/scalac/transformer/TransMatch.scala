@@ -39,6 +39,13 @@ class TransMatch( global:scalac_Global )
 
   var cunit:CompilationUnit = null;
 
+
+    //def debugLog(s:String) = {
+      //if(currentOwner.toString().indexOf("traverse") != -1) {
+        //Console.println(s);
+      //}
+    //}
+
   override def apply( cunit:CompilationUnit ):unit = {
     this.cunit = cunit;
     super.apply( cunit );
@@ -111,7 +118,11 @@ class TransMatch( global:scalac_Global )
     }
 
 
-    // @pre cases are all nonregular
+    /** removes alternative notes by unfolding them, adding casedefs,
+     *  and duplication righthand sides
+     *
+     *  @pre cases are all nonregular
+     */
     def removeAlterns(cases: Array[CaseDef]) = {
 
       def lst2arr(l:List[Tree]):Array[Tree] = {
@@ -131,6 +142,36 @@ class TransMatch( global:scalac_Global )
           for(val t <- expanded(j);
               val zs <- rest)
             yield t :: zs;
+        }
+      }
+
+      def newCloner() = {
+        val sc = new SymbolCloner();
+        sc.owners.put(currentOwner,currentOwner);
+
+        new GenTreeCloner(global, Type.IdMap, sc) {
+
+          override def getSymbolFor(tree:Tree): Symbol = {
+            //Console.println("getSymbolFor "+tree.getClass());
+            tree match {
+              case Bind(_,_) =>
+                val symbol = cloner.cloneSymbol(tree.symbol());
+
+              //System.out.println("TreeCloner: Bind"+symbol);
+              //System.out.println("TreeCloner: Bind - old owner "+tree.symbol().owner());
+              //System.out.println("TreeCloner: Bind - new owner "+symbol.owner());
+              //Console.println("in TreeCloner: type = "+symbol.getType());
+              symbol.setType(transform(symbol.getType()));
+              //Console.println("in TreeCloner: type (post) = "+symbol.getType());
+              //System.out.println("done TreeCloner: Bind"+symbol);
+              return symbol;
+              case _ =>
+                //if(tree.definesSymbol())
+                //  tree.symbol();
+                super.getSymbolFor(tree);
+            }
+
+          }
         }
       }
 
@@ -182,7 +223,8 @@ class TransMatch( global:scalac_Global )
         case Ident(_)          => List(pat);
         case Literal(_)        => List(pat);
         case Select(_,_)       => List(pat);
-        case Typed(_,_)        => List(pat);
+        case Typed(_,_)        =>
+          List(pat);
         case _ => error("in TransMatch.nilVariables: unknown node"+pat.getClass());
 
 
@@ -197,41 +239,25 @@ class TransMatch( global:scalac_Global )
         case CaseDef(pat,guard,body) =>
 
           //Console.println("removeAlterns - ("+x+"), currentOwner = "+currentOwner);
-          val sc = new SymbolCloner();
-
-          sc.owners.put(currentOwner,currentOwner);
-
-          val tc = new GenTreeCloner(global, Type.IdMap, sc) {
-
-            override def getSymbolFor(tree:Tree): Symbol = {
-              tree match {
-              case Bind(_,_) =>
-                val symbol = cloner.cloneSymbol(tree.symbol());
-
-              //System.out.println("TreeCloner: Bind"+symbol);
-              //System.out.println("TreeCloner: Bind - old owner "+tree.symbol().owner());
-              //System.out.println("TreeCloner: Bind - new owner "+symbol.owner());
-              //Console.println("in TreeCloner: type = "+symbol.getType());
-              symbol.setType(transform(symbol.getType()));
-              //Console.println("in TreeCloner: type (post) = "+symbol.getType());
-              //System.out.println("done TreeCloner: Bind"+symbol);
-              return symbol;
-              case _ =>
-                if(tree.definesSymbol())
-                  tree.symbol();
-                super.getSymbolFor(tree);
-              }
-
-            }
-          }
-          remove(pat) map { x =>
-            val res = tc.transform(new CaseDef(x,guard,body));
-                           /*Console.println(sc.owners);*/res}
+          remove(pat) match {
+            case List(p) => List(x);
+            case pats =>
+              //debugLog("removal yields patterns (before trans) in "+cunit);
+            //debugLog( pats.mkString("","\n","") );
+            pats map {
+              npat =>
+                val tc = newCloner();
+                //Console.println("start cloning! casedef in "+cunit);
+                val res = tc.transform(new CaseDef(npat,
+                                                   guard.duplicate(),
+                                                   body.duplicate()));
+              /*Console.println(sc.owners);*/res}
           }
         }
+      }
 
       lst2arr(List.flatten(ncases));
-      }
+    }
 
     //val bsf = new scala.util.automaton.BerrySethi[ matching.PatternTest ]( pe );
 
@@ -272,6 +298,7 @@ class TransMatch( global:scalac_Global )
         j = j + 1;
       } // TEST
       */
+      //debugLog("containsReg!");
       val am = new matching.AlgebraicMatcher( cunit );
       val matcher = new PartialMatcher( currentOwner, root, restpe );
       am.construct( matcher, cases.asInstanceOf[ Array[Tree] ] );
@@ -281,8 +308,17 @@ class TransMatch( global:scalac_Global )
       val pm = new matching.PatternMatcher( cunit );
       pm.initialize(root, currentOwner, restpe, true );
       try{
-        //val ncases = removeAlterns(cases);
-        pm.construct( cases.asInstanceOf[Array[Tree]] );
+        val ncases = removeAlterns(cases);
+        if(ncases.length > cases.length) {
+          //debugLog("did some removal!");
+          var kk = 0; while (kk<ncases.length) {
+            //debugLog(ncases(kk).toString());
+            kk = kk + 1;
+          }
+        }
+        else
+          //debugLog("did NOT do removal!");
+        pm.construct( ncases.asInstanceOf[Array[Tree]] );
       } catch {
         case e:Throwable =>
           e.printStackTrace();

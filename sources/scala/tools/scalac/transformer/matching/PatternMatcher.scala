@@ -82,6 +82,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
   /** enters a sequence of cases into the pattern matcher
    */
   def construct(cases: Array[Tree]): Unit = {
+    //Console.println("pattern matcher.construct "+cases);
     var i = 0; while(i < cases.length) {
       enter(cases(i));
       i = i + 1
@@ -102,8 +103,13 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
               target.and = mk.Body(caseDef.pos, env.getBoundVars(), guard, body);
             else if (target.and.isInstanceOf[Body])
               updateBody(target.and.asInstanceOf[Body], env.getBoundVars(), guard, body);
-            else
+            else {
+              //Console.println("target is "+target.getClass());
+              //Console.println("target.and is "+target.and.getClass());
+              //Console.println("target.or is "+target.or.getClass());
+
               unit.error(pat.pos, "duplicate case");
+            }
     }
   }
 
@@ -225,6 +231,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
              mk.ConstrPat(tree.pos, tree.getType());
            }
         case t @ Typed(ident, tpe) =>       // variable pattern
+          //Console.println("typed! header:" + header.getTpe() +" "+tpe.getType());
           val doTest = header.getTpe().isSubType(tpe.getType());
           val node = {
             if(doTest)
