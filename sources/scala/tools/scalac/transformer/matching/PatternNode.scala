@@ -63,8 +63,8 @@ package scala.tools.scalac.transformer.matching {
        case VariablePat(tree) =>
          res = VariablePat(tree);
 
-       case AltPat(subheader) =>
-         res = AltPat(subheader);
+       //case AltPat(subheader) =>
+       //  res = AltPat(subheader);
 
        case _ =>
          throw new ApplicationError();
@@ -147,16 +147,6 @@ package scala.tools.scalac.transformer.matching {
          q match {
            case ConstrPat(_) =>
               q.getTpe().isSubType(this.getTpe());
-           /* TEST
-           case AltPat(subroot) =>
-             var node = subroot.and.or;
-             var res = false;
-             while(node!=null && !false) {
-               res = this subsumes(node);
-               node = node.or;
-             }
-           res
-             */
            case _ =>
              false;
          }
@@ -184,16 +174,6 @@ package scala.tools.scalac.transformer.matching {
            case _ =>
              false;
          }
-       /* TEST
-       case AltPat(subroot) =>
-         var node = subroot.and.or;
-         var res = false;
-         while(node!=null && !false) {
-           res = node subsumes q;
-           node = node.or;
-         }
-         res
-         */
        case _ =>
          false;
      }
@@ -238,7 +218,7 @@ package scala.tools.scalac.transformer.matching {
   case class ConstrPat(casted:Symbol )extends PatternNode;
   case class ConstantPat(value:AConstant )extends PatternNode;
   case class VariablePat(tree:Tree )extends PatternNode;
-  case class AltPat(subheader:Header )extends PatternNode;
+  //case class AltPat(subheader:Header )extends PatternNode;
   case class SequencePat( casted:Symbol,  len:int)extends PatternNode; // only used in PatternMatcher
   case class SeqContainerPat(casted:Symbol ,  seqpat:Tree)extends PatternNode; //   in AlgebraicMatcher
   }

@@ -40,11 +40,11 @@ class TransMatch( global:scalac_Global )
   var cunit:CompilationUnit = null;
 
 
-    def debugLog(s:String) = {
-      //if(currentOwner.toString().indexOf("traverse") != -1) {
-        //Console.println(s);
+    //def debugLog(s:String) = {
+      //if(currentOwner.toString().indexOf("fetchToken") != -1) {
+     //Console.println(s);
       //}
-    }
+    //}
 
   override def apply( cunit:CompilationUnit ):unit = {
     this.cunit = cunit;
@@ -124,6 +124,13 @@ class TransMatch( global:scalac_Global )
      *  @pre cases are all nonregular
      */
     def removeAlterns(cases: Array[CaseDef]) = {
+
+      //debugLog("removeAlterns called![ currentOwner = "+currentOwner+" [");
+      //  var jjj = 0; while (jjj<cases.length) {
+      //  debugLog(cases(jjj).toString());
+      //  jjj = jjj + 1;
+      //}
+      //debugLog("]");
 
       def lst2arr(l:List[Tree]):Array[Tree] = {
         val res = new Array[Tree](l.length);
@@ -233,12 +240,11 @@ class TransMatch( global:scalac_Global )
       res
       }
       val zs:Seq[CaseDef] = cases;
-
       val ncases: List[List[Tree]] = zs.toList map {
         x => x match {
         case CaseDef(pat,guard,body) =>
 
-          //Console.println("removeAlterns - ("+x+"), currentOwner = "+currentOwner);
+          //debugLog("removeAlterns - ("+x+")");
           remove(pat) match {
             case List(p) => List(x);
             case pats =>
@@ -308,19 +314,18 @@ class TransMatch( global:scalac_Global )
       val pm = new matching.PatternMatcher( cunit );
       pm.initialize(root, currentOwner, restpe, true );
       try{
-        /*
+
         val ncases = removeAlterns(cases);
-        if(ncases.length > cases.length) {
-          debugLog("did some removal!");
-          var kk = 0; while (kk<ncases.length) {
-            debugLog(ncases(kk).toString());
-            kk = kk + 1;
-          }
-        }
-        else
-          //debugLog("did NOT do removal!");
-          */
-        pm.construct( cases.asInstanceOf[Array[Tree]] );
+        //if(ncases.length > cases.length) {
+        //  debugLog("did some removal!");
+        //  var kk = 0; while (kk<ncases.length) {
+        //    debugLog(ncases(kk).toString());
+        //    kk = kk + 1;
+        //  }
+        //} else
+          //else debugLog("did NOT do removal!");
+
+        pm.construct( ncases.asInstanceOf[Array[Tree]] );
       } catch {
         case e:Throwable =>
           e.printStackTrace();

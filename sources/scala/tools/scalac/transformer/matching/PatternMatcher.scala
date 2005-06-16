@@ -280,6 +280,8 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
                 mk.SeqContainerPat(tree.pos, tree.getType(), tree);
             }
         case Alternative(branches) =>
+          throw new ApplicationError("kicked out Alternatives");
+      /*
           if(branches.length < 2)
             throw new ApplicationError("ill-formed Alternative");
           val subroot = mk.ConstrPat(header.pos, header.getTpe());
@@ -291,7 +293,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
             i = i + 1
           }
           mk.AltPat(tree.pos, subroot.and.asInstanceOf[Header]);
-
+      */
         case _ =>
           throw new ApplicationError("unit = " + unit + "; tree = "+tree);
     }
