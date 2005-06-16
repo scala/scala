@@ -548,17 +548,22 @@ abstract class Typers: Analyzer {
       copy.AliasTypeDef(tdef, tdef.mods, tdef.name, tparams1, rhs1) setType NoType
     }
 
+    private def enterLabelDef(stat: Tree): unit = stat match {
+      case ldef @ LabelDef(_, _, _) =>
+        if (ldef.symbol == NoSymbol)
+          ldef.symbol = namer.enterInScope(
+            context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), UnitClass.tpe));
+      case _ =>
+    }
+
     def typedLabelDef(ldef: LabelDef): LabelDef = {
-      var lsym = ldef.symbol;
-      if (lsym == NoSymbol)
-        lsym = namer.enterInScope(
-          context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), UnitClass.tpe));
       val rhs1 = typed(ldef.rhs, UnitClass.tpe);
-      copy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setSymbol lsym setType UnitClass.tpe
+      copy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType UnitClass.tpe
     }
 
     def typedBlock(block: Block, mode: int, pt: Type): Block = {
       namer.enterSyms(block.stats);
+      block.stats foreach enterLabelDef;
       val stats1 =
         if ((mode & INCONSTRmode) != 0) {
           val constrCall = typed(block.stats.head, mode, WildcardType);
@@ -952,8 +957,14 @@ abstract class Typers: Analyzer {
         case tdef @ AliasTypeDef(_, _, _, _) =>
           newTyper(context.makeNewScope(tree, sym)).typedAliasTypeDef(tdef)
 
-        case ldef @ LabelDef(_, List(), _) =>
-          newTyper(context.makeNewScope(tree, context.owner)).typedLabelDef(ldef)
+        case ldef @ LabelDef(_, _, _) =>
+          var lsym = ldef.symbol;
+          var typer1 = this;
+          if (lsym == NoSymbol) { // labeldef is part of template
+            typer1 = newTyper(context.makeNewScope(tree, context.owner));
+            typer1.enterLabelDef(ldef);
+          }
+          typer1.typedLabelDef(ldef)
 
         case Attributed(attr, defn) =>
           val attr1 = typed(attr, AttributeClass.tpe);
