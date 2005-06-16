@@ -305,9 +305,6 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
         enter1(pat, index, target, newCasted, env);
       case SequencePat(newCasted, len) =>
         enter1(pat, index, target, newCasted, env);
-      /* Test
-      case AltPat() =>
-        */
       case _ =>
         enter1(pat, index, target, casted, env);
     }
@@ -781,10 +778,12 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
             return gen.If(cf.Equals(selector.duplicate(), tree),
                           toTree(node.and),
                           toTree(node.or, selector.duplicate()));
+          /*
           case AltPat(header) =>
             return gen.If(toTree(header),
                           toTree(node.and),
                           toTree(node.or, selector.duplicate()));
+                          */
         }
     }
 

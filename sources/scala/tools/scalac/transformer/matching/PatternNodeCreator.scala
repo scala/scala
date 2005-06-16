@@ -65,14 +65,14 @@ package scala.tools.scalac.transformer.matching {
       node.setType(tree.getType());
       node;
     }
-
+    /*
     def AltPat(pos: int, header:Header ) = {
       val node = new AltPat(header);
       node.pos = pos;
       node.setType(header.getTpe());
       node;
     }
-
+    */
     // factories
 
     def Header(pos: int, tpe: Type,  selector:Tree) = {

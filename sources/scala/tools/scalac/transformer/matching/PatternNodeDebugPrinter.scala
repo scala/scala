@@ -96,13 +96,14 @@ package scala.tools.scalac.transformer.matching {
             if (patNode.or != null)
               print(patNode.or, indent);
 
+          /*
           case AltPat(header) =>
             Console.println(indent + "-- ALTERNATIVES:");
             print(header, indent + "   * ");
             print(patNode.and, indent + "   * -> ");
             if (patNode.or != null)
               print(patNode.or, indent);
-
+*/
           case _b:Body =>
             if ((_b.guard.length == 0) && (_b.body.length == 0))
               Console.println(indent + "true");
