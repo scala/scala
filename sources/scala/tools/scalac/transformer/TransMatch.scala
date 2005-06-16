@@ -40,11 +40,11 @@ class TransMatch( global:scalac_Global )
   var cunit:CompilationUnit = null;
 
 
-    //def debugLog(s:String) = {
+    def debugLog(s:String) = {
       //if(currentOwner.toString().indexOf("traverse") != -1) {
         //Console.println(s);
       //}
-    //}
+    }
 
   override def apply( cunit:CompilationUnit ):unit = {
     this.cunit = cunit;
@@ -308,17 +308,19 @@ class TransMatch( global:scalac_Global )
       val pm = new matching.PatternMatcher( cunit );
       pm.initialize(root, currentOwner, restpe, true );
       try{
+        /*
         val ncases = removeAlterns(cases);
         if(ncases.length > cases.length) {
-          //debugLog("did some removal!");
+          debugLog("did some removal!");
           var kk = 0; while (kk<ncases.length) {
-            //debugLog(ncases(kk).toString());
+            debugLog(ncases(kk).toString());
             kk = kk + 1;
           }
         }
         else
           //debugLog("did NOT do removal!");
-        pm.construct( ncases.asInstanceOf[Array[Tree]] );
+          */
+        pm.construct( cases.asInstanceOf[Array[Tree]] );
       } catch {
         case e:Throwable =>
           e.printStackTrace();
