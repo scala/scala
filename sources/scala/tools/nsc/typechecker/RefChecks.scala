@@ -149,7 +149,8 @@ abstract class RefChecks extends Transform {
       for (val bc <- clazz.info.baseClasses.tail; val other <- bc.info.decls.toList)
 	if (!other.isClass && !(other hasFlag PRIVATE) && !other.isConstructor) {
 	  val member = clazz.tpe.member(other.name) filter
-	    (sym => sym.isType || (self.memberType(sym) matches self.memberType(other)));
+	    (sym => sym.owner != other.owner &&
+             (sym.isType || (self.memberType(sym) matches self.memberType(other))));
 	  if (member hasFlag OVERLOADED) {
 	    val alt1 = member.alternatives.head;
 	    val alt2 = member.alternatives.tail.head;
@@ -160,7 +161,7 @@ abstract class RefChecks extends Transform {
 	      "ambiguous override: both " + infoString(alt1) +
 	      "\n and " + infoString(alt2) +
 	      "\n override " + infoString(other));
-	  } else if (member != other && !(member hasFlag LOCAL)) {
+	  } else if (member != NoSymbol && !(member hasFlag LOCAL)) {
 	    member.flags = member.flags | ACCESSED;
 	    checkOverride(clazz, member, other);
 	  }

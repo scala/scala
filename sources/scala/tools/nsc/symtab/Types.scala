@@ -57,8 +57,7 @@ abstract class Types: SymbolTable {
 
     /** Map to a this type which is a subtype of this type.
      */
-    def narrow: Type =
-      refinedType(List(this), commonOwner(this), EmptyScope).narrow;
+    def narrow: Type = refinedType(List(this), commonOwner(this), EmptyScope).narrow;
 
     /** Map a constant type to its underlying base type,
      *  identity for all other types */
@@ -215,8 +214,7 @@ abstract class Types: SymbolTable {
      *    - Or phase.erasedTypes is false and both types are neither method nor
      *      poly types.
      */
-    def matches(that: Type): boolean =
-      matchesType(this, that);
+    def matches(that: Type): boolean = matchesType(this, that);
 
     /** The shortest sorted upwards closed array of types that contains
      *  this type as first element.
@@ -313,12 +311,13 @@ abstract class Types: SymbolTable {
       else baseClasses.head.newOverloaded(this, alts)
     }
 
-    //todo: use narrow.memberType?
+    //todo: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
       //System.out.println("find member " + name.decode + " in " + this + ":" + this.baseClasses);//DEBUG
       var members: Scope = null;
       var member: Symbol = NoSymbol;
       var excluded = excludedFlags | DEFERRED;
+      var self: Type = null;
       var continue = true;
       var savedCheckMalformedSwitch = checkMalformedSwitch;
       checkMalformedSwitch = false;
@@ -341,7 +340,9 @@ abstract class Types: SymbolTable {
                   member = sym
                 } else if (members == null) {
                   if (member.name != sym.name ||
-                      member != sym && !memberType(member).matches(memberType(sym)))
+                      member != sym && {
+                        if (self == null) self = this.narrow;
+                        !self.memberType(member).matches(self.memberType(sym))})
                     members = new Scope(List(member, sym));
                 } else {
                   var prevEntry = members lookupEntry sym.name;
@@ -349,8 +350,9 @@ abstract class Types: SymbolTable {
                          !(prevEntry.sym == sym
                            ||
                            !prevEntry.sym.hasFlag(PRIVATE) &&
-                           !entry.sym.hasFlag(PRIVATE) &&
-                           (memberType(prevEntry.sym) matches memberType(sym))))
+                           !entry.sym.hasFlag(PRIVATE) && {
+                             if (self == null) self = this.narrow;
+                             (self.memberType(prevEntry.sym) matches self.memberType(sym))}))
                     prevEntry = members lookupNextEntry prevEntry;
                   if (prevEntry == null) {
                     members enter sym;
@@ -628,10 +630,9 @@ abstract class Types: SymbolTable {
 
     override def parents: List[Type] = sym.info.parents map transform;
 
-    override def typeOfThis = {
-      class bar { val res = transform(sym.typeOfThis) }
-      (new bar).res
-    }
+    override def typeOfThis = transform(sym.typeOfThis);
+
+    override def narrow = if (sym.isModuleClass) transform(sym.thisType) else super.narrow;
 
     override def prefix: Type = pre;
 
