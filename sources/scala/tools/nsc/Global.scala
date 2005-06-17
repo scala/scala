@@ -16,7 +16,7 @@ import util._;
 import ast._;
 import ast.parser._;
 import typechecker._;
-import matching._;
+//import matching._;
 import transform._;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with CompilationUnits {

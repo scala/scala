@@ -137,7 +137,7 @@ trait Namers: Analyzer {
 	  case ClassDef(mods, name, tparams, _, _) =>
 	    if ((mods & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
-		tree.pos, mods & AccessFlags | CASE, name.toTermName)
+		tree.pos, mods & AccessFlags | METHOD | CASE, name.toTermName)
 		setInfo innerNamer.caseFactoryCompleter(tree)
 	    }
 	    tree.symbol = enterClassSymbol(tree.pos, mods, name);

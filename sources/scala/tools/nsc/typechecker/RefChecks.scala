@@ -526,7 +526,7 @@ abstract class RefChecks extends Transform {
 	var tpe = tree.tpe;
 	while (!tpe.symbol.isClass) tpe = tpe.resultType;
 	assert(tpe.symbol hasFlag CASE);
-	typedOperator(atPos(tree.pos)(Select(New(TypeTree(tpe)), tpe.symbol.primaryConstructor)))
+	typedOperator(atPos(tree.pos)(Select(New(TypeTree(tpe)), tpe.symbol.primaryConstructor)));
       }
 
       /* Check whether argument types conform to bounds of type parameters */
@@ -571,6 +571,7 @@ abstract class RefChecks extends Transform {
 
 	case TypeApply(fn, args) =>
 	  checkBounds(fn.tpe.typeParams, args map (.tpe));
+	  if (sym.isMethod && sym.hasFlag(CASE)) result = toConstructor;
 
 	case New(tpt) =>
 	  enterReference(tree.pos, tpt.tpe.symbol);
