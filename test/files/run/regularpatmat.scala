@@ -700,6 +700,18 @@ object testMZ {
     }
   }
 
+  /* this will crash
+  def matSymbolCloning = {
+    2 match {
+      case 3 | 4 =>
+        class Foo extends scala.xml.Atom[Int](3) {
+          def bar = 7;
+        }
+        null
+    }
+  }
+  */
+
   def main:Unit = {
                 Console.println("testMZ - bugs #132 #133b #180 #195 #196 #398 #406 #441");
     assertEquals(testFoo( List(Two(),Two(),Two(),Two()) ),"b = Two");

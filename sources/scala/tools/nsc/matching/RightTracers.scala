@@ -78,8 +78,6 @@ abstract class RightTracerInScala  extends Autom2Scala {
 
           traverse( subtree );
 
-        case Select(_,_) => ;
-
         // congruence cases
         case Apply(fun, args) => args foreach {traverse};
         case Sequence(trees)  => trees foreach {traverse};

@@ -172,9 +172,18 @@ class TransMatch( global:scalac_Global )
               //Console.println("in TreeCloner: type (post) = "+symbol.getType());
               //System.out.println("done TreeCloner: Bind"+symbol);
               return symbol;
+
+              case _ : ClassDef =>
+
+                  throw new ApplicationError("sorry, cannot compile this correctly in this scala version. Move your classes, fundefs etc out of the pattern body, please, and wait for nsc.");
+              case _ : DefDef =>
+                throw new ApplicationError("sorry, cannot compile this correctly in this scala version. Move your classes, fundefs etc out of the pattern body, please, and wait for nsc.");
+              //  tree.symbol();
+
+              case Ident(_) if tree.symbol() == global.definitions.PATTERN_WILDCARD =>
+                tree.symbol()
+
               case _ =>
-                //if(tree.definesSymbol())
-                //  tree.symbol();
                 super.getSymbolFor(tree);
             }
 

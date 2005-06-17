@@ -21,22 +21,26 @@ abstract class Pickler extends SubComponent {
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
     def name = "pickler";
     def apply(unit: CompilationUnit): unit = {
-      def pickle(tree: Tree): unit = tree match {
-	case PackageDef(_, stats) => stats foreach pickle;
-	case ClassDef(_, _, _, _, _) | ModuleDef(_, _, _) =>
-	  val sym = tree.symbol;
-	  val pickle = new Pickle(sym.name.toTermName, sym.owner);
-	  def add(sym: Symbol) = {
-	    if (!sym.isExternal && !symData.contains(sym)) {
-	      if (settings.debug.value) log("pickling " + sym);
-	      pickle.putSymbol(sym);
-	      symData(sym) = pickle;
-	    }
+      def pickle(tree: Tree): unit = {
+
+	def add(sym: Symbol, pickle: Pickle) = {
+	  if (!sym.isExternal && !symData.contains(sym)) {
+	    if (settings.debug.value) log("pickling " + sym);
+	    pickle.putSymbol(sym);
+	    symData(sym) = pickle;
 	  }
-	  add(sym);
-	  add(sym.linkedSym);
-	  pickle.finish
-	case _ =>
+	}
+
+        tree match {
+	  case PackageDef(_, stats) => stats foreach pickle;
+	  case ClassDef(_, _, _, _, _) | ModuleDef(_, _, _) =>
+	    val sym = tree.symbol;
+	    val pickle = new Pickle(sym.name.toTermName, sym.owner);
+	    add(sym, pickle);
+	    add(sym.linkedSym, pickle);
+	    pickle.finish
+	  case _ =>
+        }
       }
       pickle(unit.body);
     }
