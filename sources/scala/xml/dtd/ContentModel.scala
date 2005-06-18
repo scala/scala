@@ -20,6 +20,9 @@ object ContentModel extends WordExp  {
     override def toString() = "ElemName(\""+name+"\")";
   }
 
+  def isMixed(cm: ContentModel) = cm.isInstanceOf[MIXED];
+  def containsText(cm: ContentModel) = (cm == PCDATA) || isMixed(cm);
+
   def parse(s: String): ContentModel = ContentModelParser.parse( s );
 
   def getLabels(r: RegExp): scala.collection.Set[String] = {
@@ -139,35 +142,6 @@ abstract class DFAContentModel extends ContentModel {
     }
     _dfa
   }
-  /*
-  def getIterator(ns:NodeSeq): Iterator[String];
-  def runDFA(ns:NodeSeq): Boolean = {
-    if(null == _dfa) {
-      val nfa = ContentModel.Translator.automatonFrom(r, 1);
-      _dfa = new SubsetConstruction(nfa).determinize;
-    }
-    var q = 0;
-    val it = getIterator(ns);
-    Console.println("it empty from the start? "+(!it.hasNext));
-    while( it.hasNext ) {
-      val e = it.next;
-      Console.println("next = "+e);
-      if(null == e) {
-        return _dfa.isFinal(q)
-      } else {
-        Console.println(" got :"+ElemName(e));
-        Console.println("delta:" + _dfa.delta(q));
-
-        _dfa.delta(q).get(ElemName(e)).match {
-          case Some(p) => q = p;
-          case _       => throw ValidationException("element "+e+" not allowed here")
-        }
-        Console.println("q now " + q);
-      }
-    }
-    _dfa.isFinal(q)
-  }
-  */
 }
 case class MIXED(r:ContentModel.RegExp) extends DFAContentModel {
   import ContentModel.{ Alt, Eps, RegExp };
