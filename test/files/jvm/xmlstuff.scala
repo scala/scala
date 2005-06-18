@@ -122,6 +122,7 @@ val addrBook =
                       case _ => false; },
                true);
 
+
   /* namespaces */
    // begin tmp
   Console.println("namespaces");
@@ -156,4 +157,16 @@ DEPRECATED, don't support namespaces in pattern match anymore
     case _         => false; });
     // end tmp
     */
+	Console.println("validation");
+  val vtor = new scala.xml.dtd.ElementValidator();
+  {
+    import scala.xml.dtd.ELEMENTS;
+    import scala.xml.dtd.ContentModel._;
+    vtor.setContentModel(
+	  ELEMENTS(
+	    Sequ(
+		  Letter(ElemName("bar")),
+		  Star(Letter(ElemName("baz"))) )));
+  }
+  assertEquals( vtor( <foo><bar/><baz/><baz/></foo> ), true );
 }
