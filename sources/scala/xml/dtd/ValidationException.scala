@@ -20,4 +20,9 @@ object MakeValidationException {
                             { if( allKeys.size > 1 ) "s" else "" }+
                             allKeys );
   }
+
+  def fromMissingAttribute( key: String, tpe: String ) = {
+    new ValidationException("missing value for REQUIRED attribute "+key+" of type "+tpe);
+  }
+
 }

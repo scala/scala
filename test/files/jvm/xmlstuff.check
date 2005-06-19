@@ -26,5 +26,14 @@ namespaces
 passed ok
 passed ok
 passed ok
-validation
+validation - elements
+passed ok
+passed ok
+passed ok
+passed ok
+validation - attributes
+passed ok
+passed ok
+passed ok
+passed ok
 passed ok

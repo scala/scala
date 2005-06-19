@@ -157,7 +157,7 @@ DEPRECATED, don't support namespaces in pattern match anymore
     case _         => false; });
     // end tmp
     */
-	Console.println("validation");
+  Console.println("validation - elements");
   val vtor = new scala.xml.dtd.ElementValidator();
   {
     import scala.xml.dtd.ELEMENTS;
@@ -167,6 +167,41 @@ DEPRECATED, don't support namespaces in pattern match anymore
 	    Sequ(
 		  Letter(ElemName("bar")),
 		  Star(Letter(ElemName("baz"))) )));
+
   }
   assertEquals( vtor( <foo><bar/><baz/><baz/></foo> ), true );
+  {
+    import scala.xml.dtd.MIXED;
+    import scala.xml.dtd.ContentModel._;
+
+    vtor.setContentModel(
+      MIXED(
+        Alt(Letter(ElemName("bar")),
+            Letter(ElemName("baz")),
+            Letter(ElemName("bal")))));
+  }
+
+  assertEquals( vtor( <foo><bar/><baz/><baz/></foo> ), true );
+  assertEquals( vtor( <foo>ab<bar/>cd<baz/>ed<baz/>gh</foo> ), true );
+  assertEquals( vtor( <foo> <ugha/> <bugha/> </foo> ), false );
+
+  Console.println("validation - attributes");
+  vtor.setContentModel(null);
+  vtor.setMetaData(List());
+  assertEquals( vtor( <foo bar="hello"/> ), false );
+
+  {
+    import scala.xml.dtd._ ;
+    vtor.setMetaData(List(AttrDecl("bar","CDATA",IMPLIED)));
+  }
+  assertEquals( vtor( <foo href="http://foo.com" bar="hello"/> ), false );
+  assertEquals( vtor( <foo bar="hello"/> ), true );
+
+  {
+    import scala.xml.dtd._ ;
+    vtor.setMetaData(List(AttrDecl("bar","CDATA",REQUIRED)));
+  }
+  assertEquals( vtor( <foo href="http://foo.com" /> ), false );
+  assertEquals( vtor( <foo bar="http://foo.com" /> ), true );
+
 }

@@ -3,50 +3,162 @@ package scala.xml.dtd;
 import ContentModel.ElemName ;
 import scala.util.automata._ ;
 
+/** validate children and/or attributes of an element
+ *  exceptions are created but not thrown.
+ */
 class ElementValidator() extends Function1[Node,Boolean] {
 
-  protected var _dfa: DetWordAutom[ElemName] = _;
+  var exc: List[ValidationException] = Nil;
 
-  def setContentModel(cm:ContentModel) = cm match {
-    //case ANY         => true ;
-    //case EMPTY       => //@todo
-    //case PCDATA      =>
-    //case m@MIXED(r)  =>
-    case ELEMENTS( r ) =>
-      val nfa = ContentModel.Translator.automatonFrom(r, 1);
-      _dfa = new SubsetConstruction(nfa).determinize;
-  }
+  protected var contentModel: ContentModel           = _;
+  protected var dfa:          DetWordAutom[ElemName] = _;
+  protected var adecls:       List[AttrDecl]         = _;
 
-  def getIterator(ns: Seq[Node]): Iterator[ElemName] =
-    ns . toList
-	   . filter { x => x.namespace == null }
-	   . map { x => ElemName(x.label) }
-	   . elements;
- /** @pre _dfa != null
- */
-  def runDFA(ns: Seq[Node]): Boolean = {
-    var q = 0;
-    val it = getIterator(ns);
-    //Console.println("it empty from the start? "+(!it.hasNext));
-    while( it.hasNext ) {
-      val e = it.next;
-      //  Console.println("next = "+e);
-      //  Console.println(" got :"+ElemName(e));
-      //  Console.println("delta:" + _dfa.delta(q));
-
-      _dfa.delta(q).get(e).match {
-         case Some(p) => q = p;
-         case _       => throw ValidationException("element "+e+" not allowed here")
-      }
-        //Console.println("q now " + q);
+  /** set content model, enabling element validation */
+  def setContentModel(cm:ContentModel) = {
+    contentModel = cm; cm match {
+      case ELEMENTS( r ) =>
+        val nfa = ContentModel.Translator.automatonFrom(r, 1);
+        dfa = new SubsetConstruction(nfa).determinize;
+      case _ =>
+        dfa = null;
     }
-    _dfa.isFinal(q)
   }
 
+  /** set meta data, enabling attribute validation */
+  def setMetaData(adecls: List[AttrDecl]) =
+    this.adecls = adecls;
+
+  def getIterator(nodes: Seq[Node], skipPCDATA: Boolean): Iterator[ElemName] =
+    nodes . toList
+	  . filter { x => x match {
+            case y:SpecialNode => y match {
+
+              case a:Atom[String] if a.data match { case t => t.trim().length == 0 } =>
+                false; // always skip all-whitespace nodes
+
+              case _ =>
+                !skipPCDATA
+
+            }
+            case _ =>
+              x.namespace == null
+          }}
+          . map { x => ElemName(x.label) }
+          . elements;
+
+  /** check attributes, return true if md corresponds to attribute declarations in adecls.
+   */
+  def check(md: MetaData): Boolean = {
+    //Console.println("checking md = "+md);
+    //Console.println("adecls = "+adecls);
+    //@todo other exceptions
+    import MakeValidationException._;
+    val len: Int = exc.length;
+    var j = 0;
+    var ok = new scala.collection.mutable.BitSet(adecls.length);
+    def find(Key:String): AttrDecl = {
+      var attr: AttrDecl = _;
+      val jt = adecls.elements; while(j < adecls.length) {
+        jt.next match {
+          case a @ AttrDecl(Key, _, _) => attr = a; ok.set(j); j = adecls.length;
+          case _                       => j = j + 1;
+        }
+      }
+      attr
+    }
+    val it = md.elements; while(it.hasNext) {
+      val attr = it.next;
+      //Console.println("attr:"+attr);
+      j = 0;
+      find(attr.key) match {
+
+        case null =>
+          //Console.println("exc");
+          exc = fromUndefinedAttribute( attr.key ) :: exc;
+
+        case AttrDecl(_, tpe, DEFAULT(true, fixedValue)) if(attr.value != fixedValue) =>
+          exc = fromFixedAttribute( attr.key, fixedValue, attr.value) :: exc;
+
+        case s =>
+          //Console.println("s: "+s);
+
+      }
+    }
+    //Console.println("so far:"+(exc.length == len));
+
+    val missing = ok.toSet( false );
+    j  = 0; var kt = adecls.elements; while(kt.hasNext) {
+      kt.next match {
+        case AttrDecl(key, tpe, REQUIRED) if !ok(j) =>
+          exc = fromMissingAttribute( key, tpe ) :: exc;
+          j = j + 1;
+        case _ =>
+          j = j + 1;
+      }
+    }
+    //Console.println("finish:"+(exc.length == len));
+    (exc.length == len) //- true if no new exception
+  }
+
+  /** check children, return true if conform to content model
+   *  @pre contentModel != null
+   */
+  def check(nodes: Seq[Node]): Boolean = contentModel match {
+
+    case ANY         => true ;
+
+    case EMPTY       => !getIterator(nodes, false).hasNext
+
+    case PCDATA      => !getIterator(nodes, true).hasNext;
+
+    case MIXED(ContentModel.Alt(branches @ _*))  => //@todo
+      val j = exc.length;
+      def find(Key: String): Boolean =  {
+        var res = false;
+        val jt = branches.elements;
+        while(jt.hasNext && !res)
+          jt.next match {
+            case ContentModel.Letter(ElemName(Key)) => res = true;
+            case _                                  =>
+          }
+        res
+      }
+
+      var it = getIterator(nodes, true); while(it.hasNext) {
+        var label = it.next.name;
+        if(!find(label)) {
+          exc = MakeValidationException.fromUndefinedElement(label) :: exc;
+        }
+      }
+
+      (exc.length == j) //- true if no new exception
+
+    case _:ELEMENTS =>
+      var q = 0;
+      val it = getIterator(nodes, false);
+      //Console.println("it empty from the start? "+(!it.hasNext));
+      while( it.hasNext ) {
+        val e = it.next;
+        dfa.delta(q).get(e).match {
+          case Some(p) => q = p;
+          case _       => throw ValidationException("element "+e+" not allowed here")
+        }
+        //Console.println("q now " + q);
+      }
+      dfa.isFinal(q) //- true if arrived in final state
+  }
+
+  /** applies various validations - accumulates error messages in exc
+   *  @todo: fail on first error, ignore other errors (rearranging conditions)
+   */
   def apply(n: Node): Boolean = {
-    var res = (null == _dfa) || runDFA(n.child);
-	 // res = ... // @todo attributes
-	res
-  }
+    //- ? check children
+    var res = (null == contentModel) || check( n.child );
 
+    //- ? check attributes
+    res = ((null == adecls) || check( n.attributes )) && res;
+
+    res
+  }
 }

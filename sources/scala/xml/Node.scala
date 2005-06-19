@@ -34,7 +34,7 @@ abstract class Node extends NodeSeq {
   /** label of this node. I.e. "foo" for &lt;foo/&gt;) */
   def label: String;
 
-  /** used internally. Text = -1 PI = -2 Comment = -3 EntityRef = -5    */
+  /** used internally. Atom/Molecule = -1 PI = -2 Comment = -3 EntityRef = -5  */
   def typeTag$: Int = 0;
 
   /** the namespace bindings */

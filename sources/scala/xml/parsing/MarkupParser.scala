@@ -937,7 +937,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     case _ if isSpace(ch) =>
       xSpace;
     case _ =>
-      reportSyntaxError("markupdecl: unexpected character '"+ch+"'");
+      reportSyntaxError("markupdecl: unexpected character '"+ch+"' #" + ch.asInstanceOf[Int]);
       nextch;
   }
 
