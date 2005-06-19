@@ -38,20 +38,19 @@ package scala.tools.scala4ant {
       var result = true;
       try {
         scala.tools.scalac.Main.main1( false, args );
-
       } catch {
-        case e:Throwable => {
-          result = false;
+        case e:Throwable =>
           ex = e;
-        }
+      }
+      if( null != ex ) {
         ex.printStackTrace();
-        if( !result ) throw new BuildException("exception occurred:"+ex.getClass());
+	    throw new BuildException("internal error of scalac:"+ex.getClass());
       }
 
       if( scala.tools.scalac.Main.reporter.errors() > 0 )
         throw new BuildException("there were compile errors");
 
-      result;
+	  true
     }
 
     def compilerName() = "scalac";
