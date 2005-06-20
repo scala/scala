@@ -1,0 +1,26 @@
+* Version
+
+$Id$
+
+* Description
+
+This directory contains a Scala stylesheet for a2ps (Any to PostScript filter)
+
+You can get more information on a2ps from
+
+  http://www.inf.enst.fr/~demaille/a2ps/
+
+* Instalation
+
+If you have root permissions you can install scala.ssh in the a2ps stylesheets
+directory, usually /usr/share/a2ps/sheets. If you want the stylesheet to be
+automatically selected when you convert scala files you have to update the
+stylesheets map (e.g., /usr/share/a2ps/sheets/sheets.map) with the following
+lines:
+
+# Scala files
+scala:   /*.scala/
+
+You can also skip the installation and specify the stylesheet with
+
+ap2s -Epath/to/scala.ssh foo.scala
