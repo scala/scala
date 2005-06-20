@@ -34,7 +34,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
 	  . filter { x => x match {
             case y:SpecialNode => y match {
 
-              case a:Atom[String] if a.data match { case t => t.trim().length == 0 } =>
+              case a:Atom[String] if (a.data match { case t => t.trim().length == 0 }) =>
                 false; // always skip all-whitespace nodes
 
               case _ =>
@@ -140,7 +140,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
       //Console.println("it empty from the start? "+(!it.hasNext));
       while( it.hasNext ) {
         val e = it.next;
-        dfa.delta(q).get(e).match {
+        dfa.delta(q).get(e) match {
           case Some(p) => q = p;
           case _       => throw ValidationException("element "+e+" not allowed here")
         }
