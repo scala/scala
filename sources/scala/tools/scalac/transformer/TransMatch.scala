@@ -193,7 +193,7 @@ class TransMatch( global:scalac_Global )
 
       def remove(pat:Tree): List[Tree] = {
         //Console.println("remove("+pat+"), currentOwner = "+currentOwner);
-        val res = pat.match {
+        val res = pat match {
         case Alternative( branches  )  =>  // no bind allowed!
           val z: Seq[Tree] = branches;
           List.flatten(z.toList.map( remove ));
