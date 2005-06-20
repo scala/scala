@@ -26,6 +26,8 @@ object Main {
     reporter.error(new Position(PRODUCT),
 		   msg + "\n  " + PRODUCT + " -help  gives more information");
 
+  def errors() = reporter.errors();
+
   def interactive(compiler: Global): unit = {
     val in = new BufferedReader(new InputStreamReader(System.in));
     System.out.print(prompt);

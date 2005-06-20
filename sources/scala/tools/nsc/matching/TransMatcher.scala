@@ -68,9 +68,11 @@ with RightTracers {
 
   }
 
-  var cunit: CompilationUnit;
+  var cunit: CompilationUnit = _;
 
   def fresh = cunit.fresh ;
+
+  var owner: Symbol = _;
 
   def containsBinding(pat: Tree): Boolean = {
     var generatedVars = false;
@@ -215,6 +217,7 @@ with RightTracers {
           val owner = currentOwner;
           val selector = sel ;
         }
+        TransMatcher.this.owner = currentOwner; // @todo: remove from partial matcher
         //new AlgebraicMatcher() {
         //  val tm: TransMatcher.this.type = TransMatcher.this;
         //}.construct( matcher, ncases );
