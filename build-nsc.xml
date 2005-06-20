@@ -1,0 +1,110 @@
+<project name="scala.nsc" default="build">
+
+  <!-- this be your CLASSPATH
+
+     /home/linuxsoft/apps/fjbg/jars/fjbg.jar:/tmp/nsc4ant
+
+     build a scalac (in JAR form) with
+     make
+     make jar target=LIBRARY
+     make jar target=TOOLS
+
+     ant  -lib objects/main/lib -lib /home/linuxsoft/apps/jaco/lib -lib /tmp -f build-nsc.xml (TARGET)
+
+     * if (TARGET) is omitted, "build" is assumed
+     * you can add "-emacs" to get less verbose output
+
+     stick to this order: "build", "nsc4ant", "test"
+
+     normally, ant supports giving multiple targets, but leads to 
+     scalac problems
+   -->
+
+  <property name="pico.output.dir" value="/tmp/picoClasses"/>
+
+  <property name="nsc.dir" value="/tmp/nscClasses"/>
+  <property name="nsc.output.dir" value="/tmp/nscOutputClasses"/>
+
+  <property name="nsc4ant.dir" value="/tmp/nsc4ant"/>
+
+  <property name="nsc.jar" value="/tmp/nsc.jar"/>
+
+  <property name="ant.jar" value="/home/linuxsoft/apps/ant/lib/ant.jar"/>
+
+  <target name="build">
+    <taskdef name="pico"
+             classname="jaco.pizza.AntTask"/>
+
+    <mkdir dir="${pico.output.dir}"/>
+    <pico srcdir="sources" destdir="${pico.output.dir}" source="1.4">
+      <include name="scala/tools/util/*.java"/>
+    </pico> 
+
+    <!-- we do *not* want the ScalaObject.class file,
+         because in nsc's eyes ScalaObject is a scala file. -->
+
+    <delete file="${pico.output.dir}/scala/ScalaObject.class"/>
+
+
+    <taskdef name="scalac"
+             classname="scala.tools.scala4ant.ScalacTask$class"/>
+
+    <mkdir dir="${nsc.dir}"/>
+
+    <!-- always recompile everything, ant is not clever enough to
+         find all source files -->
+
+    <scalac srcdir="sources" destdir="${nsc.dir}" 
+            classpath="${pico.output.dir}" sourcePath="sources" force="true">
+      <include name="scala/tools/nsc/**/*.scala"/>
+    </scalac>
+
+    <jar destfile="${nsc.jar}" basedir="${nsc.dir}"/>
+
+  </target>
+
+
+  <target name="clean">
+    <delete dir="${pico.output.dir}"/>
+    <delete dir="${nsc.dir}"/>
+  </target>
+
+
+  <target name="nsc4ant">
+    <taskdef name="scalac"
+             classname="scala.tools.scala4ant.ScalacTask$class"/>
+    <mkdir dir="${nsc4ant.dir}"/>
+    <scalac srcdir="sources" destdir="${nsc4ant.dir}/" 
+            classpath="${ant.jar}:${nsc.dir}:${pico.output.dir}:objects/main/lib/tools" sourcePath="sources">
+      <include name="scala/tools/scala4ant/AntAdaptor.scala"/>
+      <include name="scala/tools/scala4ant/NscAdaptor.scala"/>
+      <include name="scala/tools/scala4ant/NscTask.scala"/>
+    </scalac>
+  </target>
+
+  <target name="test">
+    <taskdef name="nsc"
+             classname="scala.tools.scala4ant.NscTask$class"/>
+
+    <mkdir dir="${nsc.output.dir}"/>
+
+    <nsc srcdir="sources" destdir="${nsc.output.dir}" nscArgs="-nopredefs;-verbose">
+      <include name="scala/Predef.scala"/>
+      <include name="scala/runtime/ScalaRunTime.scala"/>
+    </nsc>
+
+   <nsc srcdir="sources" destdir="${nsc.output.dir}" >
+      <!-- arg value="-verbose"/>
+      <arg value="-prompt"/>
+      <arg value="-check:term"/ -->
+      <include name="scala/**/*.scala"/>
+
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/runtime/ScalaRunTime.scala"/>
+
+      <exclude name="scala/tools/**"/>
+      <exclude name="scala/io/UTF8String.scala"/>
+    </nsc>
+  </target>
+
+</project>
