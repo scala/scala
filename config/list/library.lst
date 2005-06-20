@@ -220,6 +220,7 @@ xml/Document.scala
 xml/Elem.scala
 xml/EntityRef.scala
 xml/MetaData.scala
+xml/Molecule.scala
 xml/NamespaceBinding.scala
 xml/Node.scala
 xml/NodeBuffer.scala
