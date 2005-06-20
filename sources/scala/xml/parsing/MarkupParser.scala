@@ -458,7 +458,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
       }
   }
 
-  /** '<' content1 ::=  ... */
+  /** '&lt;' content1 ::=  ... */
   def content1(pscope: NamespaceBinding, ts: NodeBuffer): Unit = {
     ch match {
       case '!' =>
