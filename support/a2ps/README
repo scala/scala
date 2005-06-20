@@ -1,7 +1,3 @@
-* Version
-
-$Id$
-
 * Description
 
 This directory contains a Scala stylesheet for a2ps (Any to PostScript filter)
@@ -10,7 +6,7 @@ You can get more information on a2ps from
 
   http://www.inf.enst.fr/~demaille/a2ps/
 
-* Instalation
+* Installation
 
 If you have root permissions you can install scala.ssh in the a2ps stylesheets
 directory, usually /usr/share/a2ps/sheets. If you want the stylesheet to be
@@ -24,3 +20,7 @@ scala:   /*.scala/
 You can also skip the installation and specify the stylesheet with
 
 a2ps -Epath/to/scala.ssh foo.scala
+
+* Version
+
+$Id$
