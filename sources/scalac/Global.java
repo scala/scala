@@ -359,7 +359,8 @@ public abstract class Global {
                 units.add(new CompilationUnit(this, source, console));
 		compiledUnits.add(source);
             } catch (IOException exception) {
-                error(exception.getMessage());
+                error("IO problem (encoding problem?) with file "+files[i]
+                                    +"\n exception was: "+exception.getMessage());
             }
         }
         CompilationUnit[] array = new CompilationUnit[units.size()];
