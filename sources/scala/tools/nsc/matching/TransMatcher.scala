@@ -160,7 +160,7 @@ with RightTracers {
      */
     def removeNilVariables( cd: CaseDef ): CaseDef = {
       var nilVars:List[Symbol] = Nil;
-      def remove(pat: Tree): Tree = pat.match {
+      def remove(pat: Tree): Tree = pat match {
         case Alternative( _ )          => pat /* no bind/var allowed! */
         case Star( _ )                 => pat /* no bind/var allowed! */
         case Bind( id, empt @ Sequence(List())) =>
@@ -183,7 +183,7 @@ with RightTracers {
         case _ => scala.Predef.error("unknown node"+pat.getClass());
       }
 
-      cd.match {
+      cd match {
         case CaseDef(pat, guard, body) =>
           val npat = remove(pat);
           val nbody = {
@@ -204,7 +204,7 @@ with RightTracers {
 
       // 1. is there a regular pattern?
 
-      val containsReg = cases.exists { isRegular };
+      val containsReg = cases.exists { x => isRegular(x.pat) };
 
       // @todo: remove unused variables
 
