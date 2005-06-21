@@ -1,102 +1,157 @@
 <project name="scala.nsc" default="build">
 
-  <!-- this be your CLASSPATH
+  <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-     /home/linuxsoft/apps/fjbg/jars/fjbg.jar:/tmp/nsc4ant
+                                    nsc 
 
-     build a scalac (in JAR form) with
-     make
-     make jar target=LIBRARY
-     make jar target=TOOLS
+                               new scala compiler
 
-     ant  -lib objects/main/lib -lib /home/linuxsoft/apps/jaco/lib -lib /tmp -f build-nsc.xml (TARGET)
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-     * if (TARGET) is omitted, "build" is assumed
-     * you can add "-emacs" to get less verbose output
+       %%%
+       %%%  Preliminaries
+       %%%
 
-     stick to this order: "build", "nsc4ant", "test"
+       You need a working scalac, which is accessible for ant.
+       This means, you should have `fjbg.jar', `scala.jar' and
+       `tools.jar' on your classpath [@todo maybe write a script ...]
 
-     normally, ant supports giving multiple targets, but leads to 
-     scalac problems
-   -->
+       !!! use the script ant-build-nsc.sh !!!
 
-  <property name="pico.output.dir" value="/tmp/picoClasses"/>
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
 
-  <property name="nsc.dir" value="/tmp/nscClasses"/>
-  <property name="nsc.output.dir" value="/tmp/nscOutputClasses"/>
+  <!-- %%% properties and taskdefs %%%-->
 
-  <property name="nsc4ant.dir" value="/tmp/nsc4ant"/>
+  <property name="hacked.pico.dir" value="/tmp/hackedPico"/>
+  <property name="tools.util.dir"  value="/tmp/picoClasses"/>
+  <property name="nsc.dir"         value="/tmp/nscClasses"/>
+  <property name="nsc4ant.dir"     value="/tmp/nsc4antClasses"/>
+  <property name="nsc.output.dir"  value="/tmp/nscOutputClasses"/>
+  <property name="jars.dir"        value="/tmp/jars"/>
+  <property name="ant.jar"     value="/home/linuxsoft/apps/ant/lib/ant.jar"/>
 
-  <property name="nsc.jar" value="/tmp/nsc.jar"/>
+  <!-- taskdefs to call compilers -->
+  
+  <taskdef name="scalac" classname="scala.tools.scala4ant.ScalacTask$class"/>
 
-  <property name="ant.jar" value="/home/linuxsoft/apps/ant/lib/ant.jar"/>
+  <available classname="scala.tools.scala4ant.NscTask$class"
+             property="nsc4ant.present"/>
 
-  <target name="build">
-    <taskdef name="pico"
-             classname="jaco.pizza.AntTask"/>
+  <target name="build.hackedPicoTask">
 
-    <mkdir dir="${pico.output.dir}"/>
-    <pico srcdir="sources" destdir="${pico.output.dir}" source="1.4">
+    <mkdir dir="${hacked.pico.dir}"/>
+    <javac srcdir="newsources" destdir="${hacked.pico.dir}">
+      <include name="HackedPicoTask.java"/>
+      <include name="HackedPicoAdaptor.java"/>
+    </javac>
+  </target>
+
+  <!-- taskdef for nsc comes later, because has to be compiled before -->
+
+  <target name="build.nsc" depends="build.hackedPicoTask">
+    <mkdir dir="${tools.util.dir}"/>
+
+    <taskdef name="pico"   classname="jaco.pizza.HackedPicoTask"/>
+
+    <pico srcdir="sources" destdir="${tools.util.dir}" source="1.4">
+      <include name="scala/*.java"/>
+      <include name="scala/runtime/*.java"/>
+      <include name="scala/runtime/**/*.java"/>
       <include name="scala/tools/util/*.java"/>
+
+      <exclude name="scala/ScalaObject.java"/>
     </pico> 
 
     <!-- we do *not* want the ScalaObject.class file,
          because in nsc's eyes ScalaObject is a scala file. -->
 
-    <delete file="${pico.output.dir}/scala/ScalaObject.class"/>
-
-
-    <taskdef name="scalac"
-             classname="scala.tools.scala4ant.ScalacTask$class"/>
+    <delete file="${tools.util.dir}/scala/ScalaObject.class"/>
 
     <mkdir dir="${nsc.dir}"/>
-
-    <!-- always recompile everything, ant is not clever enough to
-         find all source files -->
-
     <scalac srcdir="sources" destdir="${nsc.dir}" 
-            classpath="${pico.output.dir}" sourcePath="sources" force="true">
+            classpath="${tools.util.dir}" sourcePath="sources" force="true">
+      <!-- force = "true" always recompiles all source files, because 
+           scalac does not always go find the latest source file (*3) -->
+
       <include name="scala/tools/nsc/**/*.scala"/>
     </scalac>
 
-    <jar destfile="${nsc.jar}" basedir="${nsc.dir}"/>
+    <mkdir  dir="${jars.dir}"/>
+    <jar    destfile="${jars.dir}/nsc.jar" basedir="${nsc.dir}"/>
 
   </target>
 
 
   <target name="clean">
-    <delete dir="${pico.output.dir}"/>
+    <delete dir="${tools.util.dir}"/>
     <delete dir="${nsc.dir}"/>
   </target>
 
 
-  <target name="nsc4ant">
-    <taskdef name="scalac"
-             classname="scala.tools.scala4ant.ScalacTask$class"/>
-    <mkdir dir="${nsc4ant.dir}"/>
-    <scalac srcdir="sources" destdir="${nsc4ant.dir}/" 
-            classpath="${ant.jar}:${nsc.dir}:${pico.output.dir}:objects/main/lib/tools" sourcePath="sources">
-      <include name="scala/tools/scala4ant/AntAdaptor.scala"/>
+  <!-- builds NscTask for use in this ant file -->
+
+  <target name="build.nsc4ant">
+
+    <mkdir  dir="${nsc4ant.dir}"/>
+    <scalac srcdir="sources" destdir="${nsc4ant.dir}/" sourcePath="sources"
+            classpath="${ant.jar}:${nsc.dir}:${tools.util.dir}:objects/main/lib/scala" >
       <include name="scala/tools/scala4ant/NscAdaptor.scala"/>
       <include name="scala/tools/scala4ant/NscTask.scala"/>
     </scalac>
+
+    <jar destfile="${jars.dir}/nsc4ant.jar" basedir="${nsc4ant.dir}"/>
   </target>
 
-  <target name="test">
+  <!-- target to define `nsc' task using NscTask$class -->  
+
+  <target name="define.nsc"     if = "nsc4ant.present">
+    <taskdef name="nsc"    classname="scala.tools.scala4ant.NscTask$class"/>
+  </target>
+
+  <!-- if NscTask$class not found, give error message -->  
+
+  <target name="need.nsc"   unless = "nsc4ant.present">
+    <echo message="please build nsc4ant first"/>
+  </target>
+
+  <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+       test                   test nsc compiler 
+
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+  <target name="test" depends="need.nsc, define.nsc">
     <taskdef name="nsc"
              classname="scala.tools.scala4ant.NscTask$class"/>
 
     <mkdir dir="${nsc.output.dir}"/>
+    
+    <!--java classname="scala.tools.nsc.Main"
+          classpath="./objects/main/lib/scala:./objects/main/lib/tools:${jars.dir}/nsc.jar:${tools.util.dir}" >
+      <arg value="-classpath"/>
+      <arg value="sources:newsources:${tools.util.dir}"/>
+      <arg value="-d"/>
+      <arg value="/tmp"/>
+      <arg value="-nopredefs"/>
+      <arg value="sources/scala/Predef.scala"/>
+      <arg value="sources/scala/runtime/ScalaRunTime.scala"/>
+    </java-->
 
-    <nsc srcdir="sources" destdir="${nsc.output.dir}" nscArgs="-nopredefs;-verbose">
+    <nsc srcdir="sources" destdir="${nsc.output.dir}" 
+         classpath="sources:newsources:${tools.util.dir}"
+         nscArgs="-nopredefs">
       <include name="scala/Predef.scala"/>
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </nsc>
 
-   <nsc srcdir="sources" destdir="${nsc.output.dir}" >
+   <nsc srcdir="sources" destdir="${nsc.output.dir}" 
+        classpath="sources:newsources:${tools.util.dir}">
       <!-- arg value="-verbose"/>
       <arg value="-prompt"/>
       <arg value="-check:term"/ -->
+
+      <include name="../sources.nsc/**/*.scala"/>
+
       <include name="scala/**/*.scala"/>
 
       <exclude name="scala/Predef.scala"/>
@@ -106,5 +161,10 @@
       <exclude name="scala/io/UTF8String.scala"/>
     </nsc>
   </target>
-
+  <!--
+    (*3) for Java, and pico, files are only recompiled if the source file is
+    newer than the class file. This would work for scala, but mixin
+    composition sometimes needs additional source files. These can
+    be unavailable for some reason.
+  -->
 </project>
