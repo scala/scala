@@ -51,8 +51,8 @@ class NscTask extends Javac {
 
   override def execute() = {
     System.setProperty("scala.home", ScalaRuntime.home.toString());
-    System.setProperty("scala.product", scala.tools.scalac.Main.PRODUCT);
-    System.setProperty("scala.version", scala.tools.scalac.Main.VERSION);
+    //System.setProperty("scala.product", scala.tools.scalac.Main.PRODUCT);
+    //System.setProperty("scala.version", scala.tools.scalac.Main.VERSION);
     System.setProperty("scala.class.path", ".");
     System.setProperty("scala.boot.class.path", ScalaRuntime.bootclasspath.toString());
 
