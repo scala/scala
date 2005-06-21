@@ -94,6 +94,13 @@ package scala.tools.scala4ant {
       val cmd = new Commandline();
       val cp = new Path( this.project );
 
+      //- encoding?
+      val stask = this.attributes.asInstanceOf[ScalacTask];
+      if(null != stask.getEncoding()) {
+        cmd.createArgument().setValue( "-encoding" );
+        cmd.createArgument().setValue( stask.getEncoding() );
+      }
+
       if( destDir != null ) {
         cmd.createArgument().setValue( "-d" );
         cmd.createArgument().setFile( destDir );
