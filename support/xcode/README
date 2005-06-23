@@ -1,0 +1,25 @@
+* Introduction
+
+This directory contains additional specification files (.pb*spec) for
+Scala programs.
+
+More information about XCode (MacOSX) is available from:
+
+   http://www.apple.com/macosx/features/xcode/
+
+* Installation
+
+Copy the files "Specifications/Scala.*" to the following location:
+
+   /Library/Application support/Apple/Developer Tools/Specifications
+
+From that point on, loading a file whose name ends in ".scala" automatically
+turns Scala mode on.
+
+* Thanks
+
+This feature was contributed by Pascal Perez (pascal.perez@epfl.ch)
+
+* Version
+
+$Id$
