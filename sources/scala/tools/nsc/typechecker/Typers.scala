@@ -557,8 +557,10 @@ abstract class Typers: Analyzer {
     }
 
     def typedLabelDef(ldef: LabelDef): LabelDef = {
-      val rhs1 = typed(ldef.rhs, UnitClass.tpe);
-      copy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType UnitClass.tpe
+      val restpe = ldef.symbol.tpe.resultType;
+      val rhs1 = typed(ldef.rhs, restpe);
+      ldef.params foreach (param => param.tpe = param.symbol.tpe);
+      copy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
     }
 
     def typedBlock(block: Block, mode: int, pt: Type): Block = {
