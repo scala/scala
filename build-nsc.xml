@@ -60,12 +60,14 @@
       <include name="scala/tools/util/*.java"/>
 
       <exclude name="scala/ScalaObject.java"/>
+      <exclude name="scala/Array.java"/>
     </pico> 
 
     <!-- we do *not* want the ScalaObject.class file,
          because in nsc's eyes ScalaObject is a scala file. -->
 
     <delete file="${tools.util.dir}/scala/ScalaObject.class"/>
+    <delete file="${tools.util.dir}/scala/Array.class"/>
 
     <mkdir dir="${nsc.dir}"/>
     <scalac srcdir="sources" destdir="${nsc.dir}" 
@@ -135,11 +137,14 @@
       <arg value="-nopredefs"/>
       <arg value="sources/scala/Predef.scala"/>
       <arg value="sources/scala/runtime/ScalaRunTime.scala"/>
+
+
     </java-->
 
     <nsc srcdir="sources" destdir="${nsc.output.dir}" 
-         classpath="sources:newsources:${tools.util.dir}"
-         nscArgs="-nopredefs">
+         classpath=".:sources:newsources:../newsources:${tools.util.dir}"
+         nscArgs="-nopredefs;-check:term;-check:transmatch;-debug">
+
       <include name="scala/Predef.scala"/>
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </nsc>
