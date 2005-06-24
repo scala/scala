@@ -72,7 +72,9 @@ with RightTracers {
 
   def fresh = cunit.fresh ;
 
-  var owner: Symbol = _;
+  var currentOwner: Symbol = _;
+
+  var resultType: Type = _;
 
   def containsBinding(pat: Tree): Boolean = {
     var generatedVars = false;
@@ -147,6 +149,13 @@ with RightTracers {
       case Literal(_)              => false;
       case Select(_,_)             => false;
       case Typed(_,_)              => false;
+
+      //case _   =>
+      //  Console.println(pat);
+      //  Console.println(pat.getClass());
+      //  scala.Predef.error(" what is this ? ")
+
+
     }
 
 
@@ -202,6 +211,7 @@ with RightTracers {
 
     def handle(sel:Tree, cases:List[CaseDef]): Tree = {
 
+
       // 1. is there a regular pattern?
 
       val containsReg = cases.exists { x => isRegular(x.pat) };
@@ -217,7 +227,6 @@ with RightTracers {
           val owner = currentOwner;
           val selector = sel ;
         }
-        TransMatcher.this.owner = currentOwner; // @todo: remove from partial matcher
         //new AlgebraicMatcher() {
         //  val tm: TransMatcher.this.type = TransMatcher.this;
         //}.construct( matcher, ncases );
@@ -238,7 +247,12 @@ with RightTracers {
     override def transform(tree: Tree): Tree = tree match {
       case Match(selector, cases) =>
         val ts = cases map { transform };
-        handle(transform(selector), ts.asInstanceOf[List[CaseDef]]);
+      // @todo: remove from partial matcher
+        TransMatcher.this.currentOwner = currentOwner;
+        TransMatcher.this.resultType   = tree.tpe;
+      //Console.println("TransMatcher selector.tpe ="+selector.tpe+")");
+        handle(transform(selector).setType(selector.tpe),
+               ts.asInstanceOf[List[CaseDef]]);
       case _ =>
         super.transform(tree);
     }
