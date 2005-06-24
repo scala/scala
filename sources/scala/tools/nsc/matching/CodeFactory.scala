@@ -142,32 +142,44 @@ abstract class CodeFactory: TransMatcher  {
 
   // used by Equals
   private def getEqEq(left: Type, right: Type): Symbol = {
+    //Console.println("getEqeq of left  ==  "+left);
     val sym = left.nonPrivateMember( nme.EQEQ );
 
-    //assert sym != Symbol.NONE
+
+    //if (sym == NoSymbol)
+    //  error("no eqeq for "+left);
     //    : Debug.show(left) + "::" + Debug.show(left.members());
 
     var fun: Symbol  = null;
-    var ftype:Type  = definitions.AnyClass.info;
-
+    var ftype:Type  = null; // faster than `definitions.AnyClass.tpe'
     sym.alternatives.foreach {
       x =>
+        //Console.println("getEqEq: "+x);
         val vparams = x.info.paramTypes;
+        //Console.println("vparams.length ==  "+vparams.length);
+
         if (vparams.length == 1) {
           val vptype = vparams(0);
-          if (isSubType(right, vptype) && isSubType(vptype, ftype)) {
+          //Console.println("vptype ==  "+vptype);
+          //Console.println("   ftype ==  "+ftype);
+          //Console.println("   cond1 ==  "+isSubType(right, vptype));
+          //Console.println("   cond2("+vptype+","+ftype+") ==  "+(ftype == null || isSubType(vptype, ftype)));
+          //Console.println("vptype.getClass "+vptype.getClass());
+          if (isSubType(right, vptype) && (ftype == null || isSubType(vptype, ftype)) ) {
             fun = x;
             ftype = vptype;
+            //Console.println("fun now: "+fun+"  ftype now "+ftype);
           }
         }
     }
-    //assert fun != null : Debug.show(sym.info());
+    //if (fun == null) scala.Predef.error("couldn't find eqeq for left"+left);
     fun;
   }
 
   def  Equals(left1:Tree , right1:Tree ): Tree = {
     var left = left1;
     var right = right1;
+    //Console.println("CodeFactory:: left.tpe =" + left.tpe + " right.tpe "+right.tpe+")");
     val ltype = left.tpe.widen;
     var rtype = right.tpe.widen;
     if (isSameType(ltype, rtype)
@@ -175,10 +187,14 @@ abstract class CodeFactory: TransMatcher  {
             || isSameType(ltype,definitions.ByteClass.info)
             || isSameType(ltype,definitions.ShortClass.info)))
       {
+        //Console.println("getcoerce"+getCoerceToInt(rtype));
+        //Console.println("getcoerce.tpe"+getCoerceToInt(rtype).tpe);
         right = Apply(Select(right, getCoerceToInt(rtype)), List());
         rtype = definitions.IntClass.info;
       }
     val eqsym = getEqEq(ltype, rtype);
+    //Console.println("eqsym "+eqsym);
+    //Console.println("eqsym.tpe "+eqsym.tpe);
     Apply(Select(left, eqsym), List(right));
   }
 
