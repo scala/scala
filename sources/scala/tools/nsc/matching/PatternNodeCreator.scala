@@ -10,19 +10,19 @@ trait PatternNodeCreator: (TransMatcher with PatternNodes) {
 
   import global._;
 
-  def owner:Symbol;
-  /** the owner of the variable symbols that might be created */
-  //Symbol owner;
-
   def pSequencePat(pos: Int , tpe:Type ,  len:int) = {
+    //assert (tpe != null);
     val sym = newVar(Position.FIRSTPOS, tpe);
+    //Console.println("pncrea::sequencePat sym.pos = "+sym.pos);
     val node = new SequencePat(sym, len);
     node.pos = pos;
     node.tpe = tpe;
+    //Console.println("pncrea::sequencePat sym.pos = "+sym.pos);
     node;
   }
 
   def pSeqContainerPat(pos: int, tpe: Type, seqpat:Tree ) = {
+    //assert (tpe != null);
     val sym = newVar(Position.NOPOS, tpe);
     val node = new SeqContainerPat(sym, seqpat);
     node.pos = pos;
@@ -31,6 +31,7 @@ trait PatternNodeCreator: (TransMatcher with PatternNodes) {
   }
 
   def pDefaultPat(pos: int, tpe: Type) = {
+    //assert (tpe != null);
     val node = new DefaultPat();
     node.pos = pos;
     node.setType(tpe);
@@ -38,6 +39,7 @@ trait PatternNodeCreator: (TransMatcher with PatternNodes) {
   }
 
   def pConstrPat(pos: int, tpe: Type) = {
+    //assert (tpe != null);
     val node = new ConstrPat(newVar(pos, tpe));
     node.pos = pos;
     node.setType(tpe);
@@ -45,6 +47,7 @@ trait PatternNodeCreator: (TransMatcher with PatternNodes) {
   }
 
   def pConstantPat(pos: int, tpe: Type, value: Any /*AConstant*/ ) = {
+    //assert (tpe != null);
     val node = new ConstantPat( value );
     node.pos = pos;
     node.setType(tpe);
@@ -52,6 +55,7 @@ trait PatternNodeCreator: (TransMatcher with PatternNodes) {
   }
 
   def pVariablePat(pos: int,  tree:Tree) = {
+    //assert (tree.tpe != null);
     val node = new VariablePat( tree );
     node.pos = pos;
     node.setType(tree.tpe);
@@ -68,6 +72,7 @@ trait PatternNodeCreator: (TransMatcher with PatternNodes) {
   // factories
 
   def pHeader(pos: int, tpe: Type,  selector:Tree) = {
+    //assert (tpe != null);
     val node = new Header(selector, null);
     node.pos = pos;
     node.setType(tpe);
@@ -87,7 +92,9 @@ trait PatternNodeCreator: (TransMatcher with PatternNodes) {
   }
 
   def newVar(pos: int, name: Name, tpe: Type): Symbol= {
-    val sym = owner.newVariable(0, name);
+    /** hack: pos has special meaning*/
+    val sym = currentOwner.newVariable(pos, name);
+    //Console.println("patnodcre::newVar sym = "+sym+ "tpe = "+tpe);
     sym.setInfo(tpe);
     //System.out.println("PatternNodeCreator::newVar creates symbol "+sym);
     //System.out.println("owner: "+sym.owner());
