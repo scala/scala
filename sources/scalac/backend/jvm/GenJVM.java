@@ -87,8 +87,6 @@ public class GenJVM {
 
     protected final Symbol JAVA_RMI_REMOTE_CLASS;
     protected final Symbol SCALA_SERIAL_VERSION_UID_CONSTR;
-    protected final Symbol SCALA_TRANSIENT_CONSTR;
-    protected final Symbol SCALA_VOLATILE_CONSTR;
 
     protected final Global global;
     protected final Definitions defs;
@@ -118,10 +116,6 @@ public class GenJVM {
         JAVA_RMI_REMOTE_CLASS = defs.getClass(JAVA_RMI_REMOTE);
         SCALA_SERIAL_VERSION_UID_CONSTR =
             defs.getClass("scala.SerialVersionUID") .primaryConstructor();
-        SCALA_TRANSIENT_CONSTR =
-            defs.getClass("scala.transient").primaryConstructor();
-        SCALA_VOLATILE_CONSTR =
-            defs.getClass("scala.volatile").primaryConstructor();
     }
 
     /// Code generation
@@ -1634,6 +1628,9 @@ public class GenJVM {
         boolean serializable =
             global.getAttrArguments(cSym, defs.SCALA_SERIALIZABLE_CONSTR) != null;
 
+        boolean cloneable =
+            global.getAttrArguments(cSym, defs.SCALA_CLONEABLE_CONSTR) != null;
+
         scalac.symtab.Type[] baseTps = cSym.info().parents();
         assert baseTps.length > 0 : Debug.show(cSym);
 
@@ -1647,14 +1644,18 @@ public class GenJVM {
             superClassName = javaName(baseTps[0].symbol());
         }
         String[] interfaceNames = new String[baseTps.length - offset
-                                             + (serializable ? 1 : 0)];
+                                             + (serializable ? 1 : 0)
+                                             + (cloneable ? 1 : 0)];
         for (int i = offset; i < baseTps.length; ++i) {
             Symbol baseSym = baseTps[i].symbol();
             assert baseSym.isInterface() : cSym + " implements " + baseSym;
             interfaceNames[i - offset] = javaName(baseSym);
         }
         if (serializable)
-            interfaceNames[interfaceNames.length - 1] = "java.io.Serializable";
+            interfaceNames[interfaceNames.length - 1 - (cloneable ? 1 : 0)] =
+                "java.io.Serializable";
+        if (cloneable)
+            interfaceNames[interfaceNames.length - 1] = "java.lang.Cloneable";
 
         JClass cls = fjbgContext.JClass(javaModifiers(cSym)
                                         & ~JAccessFlags.ACC_STATIC
@@ -1788,9 +1789,11 @@ public class GenJVM {
             Symbol member = memberIt.next();
             if (member.isTerm() && !member.isMethod()) {
                 int flags = javaModifiers(member);
-                if (global.getAttrArguments(member,SCALA_TRANSIENT_CONSTR)!=null)
+                if (global.getAttrArguments(member,defs.SCALA_TRANSIENT_CONSTR)
+                    != null)
                     flags |= JAccessFlags.ACC_TRANSIENT;
-                if (global.getAttrArguments(member,SCALA_VOLATILE_CONSTR)!=null)
+                if (global.getAttrArguments(member,defs.SCALA_VOLATILE_CONSTR)
+                    != null)
                     flags |= JAccessFlags.ACC_VOLATILE;
                 ctx.clazz.addNewField(flags,
                                       member.name.toString(),

@@ -13,6 +13,7 @@ Byte.java
 CaseClass.scala
 Cell.scala
 Char.java
+cloneable.scala
 Console.scala
 Double.java
 Enumeration.scala

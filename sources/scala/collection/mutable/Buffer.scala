@@ -17,7 +17,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 02/03/2004
  */
-trait Buffer[A] extends AnyRef with Seq[A] with Scriptable[Message[Pair[Location, A]]] with Cloneable {
+[cloneable]
+trait Buffer[A] extends AnyRef with Seq[A] with Scriptable[Message[Pair[Location, A]]] {
 
     /** Append a single element to this buffer and return
      *  the identity of the buffer.

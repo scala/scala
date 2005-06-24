@@ -253,6 +253,9 @@ public class Definitions {
     // attributes
 
     public final Symbol SCALA_SERIALIZABLE_CONSTR;
+    public final Symbol SCALA_TRANSIENT_CONSTR;
+    public final Symbol SCALA_VOLATILE_CONSTR;
+    public final Symbol SCALA_CLONEABLE_CONSTR;
 
     //########################################################################
     // Public Fields & Methods - Scala primitive types
@@ -337,6 +340,7 @@ public class Definitions {
     /** Some java.lang.Object methods */
     public final Symbol OBJECT_EQ;
     public final Symbol OBJECT_NE;
+    public final Symbol OBJECT_CLONE;
     public final Symbol OBJECT_SYNCHRONIZED;
 
     /** Some java.lang.String methods */
@@ -835,6 +839,12 @@ public class Definitions {
 
         SCALA_SERIALIZABLE_CONSTR = getClass("scala.serializable")
             .primaryConstructor();
+        SCALA_TRANSIENT_CONSTR = getClass("scala.transient")
+            .primaryConstructor();
+        SCALA_VOLATILE_CONSTR = getClass("scala.volatile")
+            .primaryConstructor();
+        SCALA_CLONEABLE_CONSTR = getClass("scala.cloneable")
+            .primaryConstructor();
 
         // initialize generated classes and aliases
         initClass(ANY_CLASS, Type.EMPTY_ARRAY);
@@ -924,6 +934,9 @@ public class Definitions {
                     OBJECT_SYNCHRONIZED_TPARAM.type())));
 
 	if (forMSIL) {
+	    OBJECT_CLONE = newMethod(OBJECT_CLASS, Names.clone, Modifiers.PROTECTED);
+	    initMethod(OBJECT_CLONE, Type.EMPTY_ARRAY, ANYREF_TYPE());
+
 	    Symbol WAIT0 = newMethod(OBJECT_CLASS, Names.wait, Modifiers.FINAL);
 	    initMethod(WAIT0, Type.EMPTY_ARRAY, UNIT_TYPE());
 
@@ -943,7 +956,9 @@ public class Definitions {
 
 	    Symbol JLOA = newAlias(JAVALANG, Names.Object, 0);
 	    initAlias(JLOA, OBJECT_TYPE());
-	}
+	} else {
+            OBJECT_CLONE = null;
+        }
 
         // add members to java.lang.String
         STRING_PLUS = newMethod(STRING_CLASS, Names.PLUS, Modifiers.FINAL);

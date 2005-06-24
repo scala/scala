@@ -16,8 +16,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-[serializable]
-class Queue[A] extends MutableList[A] with Cloneable {
+[serializable, cloneable]
+class Queue[A] extends MutableList[A] {
 
     /** Checks if the queue is empty.
      *
@@ -81,7 +81,7 @@ class Queue[A] extends MutableList[A] with Cloneable {
     	if (first == null)
 			None
 		else if (p(first.elem)) {
-			val res = Some(first.elem);
+			val res: Option[A] = Some(first.elem);
 			first = first.next;
 			len = len - 1;
 			if (first == null) {
@@ -136,7 +136,7 @@ class Queue[A] extends MutableList[A] with Cloneable {
 		if (cell.next == null)
 			None
 		else {
-			val res = Some(cell.next);
+			val res: Option[LinkedList[A]] = Some(cell.next);
 			cell.next = cell.next.next;
 			if (cell.next == null)
 				last = cell;

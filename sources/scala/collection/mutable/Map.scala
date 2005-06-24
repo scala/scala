@@ -17,7 +17,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 09/05/2004
  */
-trait Map[A, B] extends AnyRef with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, B]]] with Cloneable {
+[cloneable]
+trait Map[A, B] extends AnyRef with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, B]]] {
 
   /** This method allows one to add a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a
