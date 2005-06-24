@@ -287,11 +287,9 @@ abstract class Trees: Global {
   case class Bind(name: Name, body: Tree)
        extends DefTree;
 
-  /** Sequence of expressions, needs to be translated in backend,
-   *  ideally like this: SeqTerm(t1,...,tn) = Vector({t1,...,tn}),
-   *  where { ... } is an array.
+  /** Array of expressions, needs to be translated in backend,
    */
-  case class SeqTerm(trees: List[Tree])
+  case class ArrayValue(elemtpt: Tree, elems: List[Tree])
        extends TermTree;
 
   /** Anonymous function, eliminated by analyzer */
@@ -450,7 +448,7 @@ abstract class Trees: Global {
   case Alternative(trees) =>                                      (eliminated by transmatch)
   case Star(elem) =>                                              (eliminated by transmatch)
   case Bind(name, body) =>                                        (eliminated by transmatch)
-  case SeqTerm(trees) =>
+  case ArrayValue(elemtpt, trees) =>                              (introduced by uncurry)
   case Function(vparams, body) =>                                 (eliminated by typecheck)
   case Assign(lhs, rhs) =>
   case If(cond, thenp, elsep) =>
@@ -493,7 +491,7 @@ abstract class Trees: Global {
     def Alternative(tree: Tree, trees: List[Tree]): Alternative;
     def Star(tree: Tree, elem: Tree): Star;
     def Bind(tree: Tree, name: Name, body: Tree): Bind;
-    def SeqTerm(tree: Tree, trees: List[Tree]): SeqTerm;
+    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue;
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function;
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign;
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If;
@@ -554,8 +552,8 @@ abstract class Trees: Global {
       new Star(elem).copyAttrs(tree);
     def Bind(tree: Tree, name: Name, body: Tree) =
       new Bind(name, body).copyAttrs(tree);
-    def SeqTerm(tree: Tree, trees: List[Tree]) =
-      new SeqTerm(trees).copyAttrs(tree);
+    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]) =
+      new ArrayValue(elemtpt, trees).copyAttrs(tree);
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
       new Function(vparams, body).copyAttrs(tree);
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) =
@@ -692,10 +690,10 @@ abstract class Trees: Global {
       if ((name0 == name) && (body0 == body)) => t
       case _ => copy.Bind(tree, name, body)
     }
-    def SeqTerm(tree: Tree, trees: List[Tree]) = tree match {
-      case t @ SeqTerm(trees0)
-      if ((trees0 == trees)) => t
-      case _ => copy.SeqTerm(tree, trees)
+    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]) = tree match {
+      case t @ ArrayValue(elemtpt0, trees0)
+      if ((elemtpt0 == elemtpt) && (trees0 == trees)) => t
+      case _ => copy.ArrayValue(tree, elemtpt, trees)
     }
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) = tree match {
       case t @ Function(vparams0, body0)
@@ -860,8 +858,8 @@ abstract class Trees: Global {
         copy.Star(tree, transform(elem))
       case Bind(name, body) =>
         copy.Bind(tree, name, transform(body))
-      case SeqTerm(trees) =>
-        copy.SeqTerm(tree, transformTrees(trees))
+      case ArrayValue(elemtpt, trees) =>
+        copy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
       case Function(vparams, body) =>
         copy.Function(tree, transformValDefs(vparams), transform(body))
       case Assign(lhs, rhs) =>
@@ -988,8 +986,8 @@ abstract class Trees: Global {
         traverse(elem)
       case Bind(name, body) =>
         traverse(body)
-      case SeqTerm(trees) =>
-        traverseTrees(trees)
+      case ArrayValue(elemtpt, trees) =>
+        traverse(elemtpt); traverseTrees(trees)
       case Function(vparams, body) =>
         traverseTrees(vparams); traverse(body)
       case Assign(lhs, rhs) =>

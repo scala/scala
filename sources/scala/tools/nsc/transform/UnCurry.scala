@@ -20,7 +20,7 @@ package scala.tools.nsc.transform;
  *  - for every argument list that corresponds to a repeated parameter
  *       (a_1, ..., a_n) => (Seq(a_1, ..., a_n))
  *  - for every argument list that is an escaped sequence
- *       (a_1:_*) => (a_1)
+ *       (a_1:_*) => (a_1)g
  *  - convert implicit method types to method types
  *  - todo: check-no-double-def in erasure
  */
@@ -90,7 +90,8 @@ abstract class UnCurry extends InfoTransform {
 	val args1 =
           formals.last match {
             case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
-	      def mkSequence(args: List[Tree]) = atPos(pos)(SeqTerm(args) setType formals.last);
+	      def mkSequence(args: List[Tree]) = atPos(pos)(
+                ArrayValue(TypeTree(elempt), args) setType formals.last);
 	      if (args.isEmpty) List(mkSequence(args))
 	      else {
 	        val suffix = args.last match {

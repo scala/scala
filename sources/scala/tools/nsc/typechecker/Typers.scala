@@ -1005,13 +1005,12 @@ abstract class Typers: Analyzer {
           if (vble.name != nme.WILDCARD) namer.enterInScope(vble);
           copy.Bind(tree, name, body1) setSymbol vble setType pt
 
-        case SeqTerm(elems) =>
-	  val elempt = pt.baseType(SeqClass) match {
-	    case TypeRef(pre, seqClass, List(arg)) => arg
-	    case _ => WildcardType
-	  }
-	  val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elempt));
-          copy.SeqTerm(tree, elems1) setType ptOrLub(elems1 map (.tpe))
+        case ArrayValue(elemtpt, elems) =>
+	  val elemtpt1 = typedType(elemtpt);
+	  val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elemtpt1.tpe));
+          copy.ArrayValue(tree, elemtpt1, elems1)
+            setType (if (isFullyDefined(pt)) pt
+                     else appliedType(ArrayClass.tpe, List(elemtpt1.tpe)))
 
         case fun @ Function(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)

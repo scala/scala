@@ -143,6 +143,10 @@ abstract class Definitions: SymbolTable {
     // pattern wildcard
     var PatternWildcard: Symbol = _;
 
+    // boxed classes
+    var BoxedArrayClass: Symbol = _;
+    var BoxedUnitClass: Symbol = _;
+
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname, true);
 
@@ -311,11 +315,10 @@ abstract class Definitions: SymbolTable {
       String_+ = newMethod(
         StringClass, "+", List(AnyClass.typeConstructor), StringClass.typeConstructor) setFlag FINAL;
 
-      //Iterator_next =    //??
-      //Iterator_hasNext = //??
+      PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor);
 
-      // pattern wildcard
-      PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor)
+      BoxedArrayClass = getClass("scala.runtime.BoxedArray");
+      BoxedUnitClass = getClass("scala.runtime.BoxedUnit");
     }
   }
 }

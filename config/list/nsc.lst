@@ -23,20 +23,20 @@ ast/parser/SyntaxAnalyzer.scala
 ast/parser/Tokens.scala
 ast/parser/TreeBuilder.scala
 
-matching/AlgebraicMatcher.scala
+matching/AlgebraicMatchers.scala
 matching/Autom2Scala.scala
-matching/BerrySethi.scala
+matching/BerrySethis.scala
 matching/CodeFactory.scala
-matching/DetWordAutom.scala
+matching/DetWordAutoms.scala
 matching/LeftTracerInScala.scala
 matching/MatcherLabels.scala
-matching/NondetWordAutom.scala
+matching/NondetWordAutoms.scala
 matching/Npair.scala
-matching/PatternMatcher.scala
+matching/PatternMatchers.scala
 matching/PatternNodeCreator.scala
 matching/PatternNodes.scala
 matching/RightTracerInScala.scala
-matching/SequenceMatcher.scala
+matching/SequenceMatchers.scala
 matching/StateSetComparator.scala
 matching/TransMatcher.scala
 matching/WordAutomInScala.scala

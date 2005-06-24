@@ -170,8 +170,8 @@ abstract class TreePrinters {
         case Bind(name, t) =>
           print("("); print(symName(tree, name)); print(" @ "); print(t); print(")");
 
-        case SeqTerm(trees) =>
-          printRow(trees, "[", ", ", "]")
+        case ArrayValue(elemtpt, trees) =>
+	  print("Array["); print(elemtpt); printRow(trees, "]{", ", ", "}")
 
         case Function(vparams, body) =>
           print("("); printValueParams(vparams); print(" => "); print(body); print(")")
