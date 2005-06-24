@@ -10,7 +10,9 @@ import scala.tools.util.Position;
 
 trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator {
 
+
   import global._;
+  import typer.typed ;
   import symtab.Flags;
 
  class PatternMatcher  {
@@ -42,6 +44,8 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
    */
   def initialize(selector: Tree, owner: Symbol, doBinding: Boolean): Unit = {
 
+    //Console.println("pm.initialize selector.tpe = "+selector.tpe);
+
     /*
     this.mk = new PatternNodeCreator {
       val global = PatternMatcher.this.global;
@@ -57,14 +61,20 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
     }
     */
     this.root = pConstrPat(selector.pos, selector.tpe.widen);
+    //Console.println("selector.tpe "+selector.tpe);
+    //Console.println("selector.tpe.widen "+selector.tpe.widen);
+    //Console.println("root.symbol "+root.symbol);
+    //Console.println("root.symbol.tpe "+root.symbol.tpe);
     this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
-                              Ident(root.symbol));
+                              Ident(root.symbol).setType(root.tpe));
     this.resultVar = owner.newVariable(Flags.MUTABLE,
-                                       "result");
+                                       "result").setInfo( resultType );
+    //Console.println("resultType =  "+resultType);
     this.owner = owner;
     this.selector = selector;
-    this.optimize = this.optimize & (settings.target == "jvm");
+
+    this.optimize = this.optimize && (settings.target.value == "jvm");
     this.doBinding = doBinding;
   }
 
@@ -156,7 +166,8 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //Console.println("patternNode("+tree+","+header+")");
-    //Console.println("tree.tpe"+tree.tpe);
+    //Console.println("tree.tpe "+tree.tpe);
+    //Console.println("tree.getClass() "+tree.getClass());
     tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
         if (isSubType(header.getTpe(),tpe.tpe)) {
@@ -165,7 +176,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
           node;
         } else {
           val node = pConstrPat(tree.pos, tpe.tpe);
-          env.newBoundVar( tree.symbol, tree.tpe, Ident( node.casted ));
+          env.newBoundVar( tree.symbol, tree.tpe, typed(Ident( node.casted )));
           node;
         }
 
@@ -179,19 +190,27 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
         val node = patternNode(pat, header, env);
         if ((env != null) && (tree.symbol != defs.PatternWildcard)) {
           val casted = node.symbol;
-          val theValue =  if (casted == NoSymbol) header.selector else Ident( casted);
+          val theValue =  if (casted == NoSymbol) header.selector else Ident( casted).setType(casted.tpe);
           env.newBoundVar(tree.symbol, tree.tpe, theValue);
         }
        node;
 
       case t @ Apply(fn, args) =>             // pattern with args
+        //Console.println("Apply!");
+        //Console.println("isSeqApply "+isSeqApply(t));
+        //Console.println("delegateSequenceMatching "+delegateSequenceMatching);
         if (isSeqApply(t)) {
           if (!delegateSequenceMatching) {
             args(0) match {
               case Sequence(ts)=>
-                pSequencePat(tree.pos, tree.tpe, ts.length);
+                //Console.println("doing pSeqpat ");
+                val res =  pSequencePat(tree.pos, tree.tpe, ts.length);
+                //Console.println("pSeqpat.casted =  "+res.casted);
+                //Console.println("pSeqpat.casted.pos =  "+res.casted.pos);
+                res
             }
           } else {
+            //Console.println("delegating ... ");
             val res = pConstrPat(tree.pos, tree.tpe);
             res.and = pHeader(tree.pos, header.getTpe(), header.selector);
             res.and.and = pSeqContainerPat(tree.pos, tree.tpe, args(0));
@@ -224,24 +243,48 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
               case ConstrPat(casted) =>
                 env.newBoundVar(t.expr.symbol,
                                 tpe.tpe,
-                                Ident( casted ));
+                                Ident( casted ).setType(casted.tpe));
               case _ =>
                 env.newBoundVar(t.expr.symbol,
                                 tpe.tpe,
-                                {if(doTest) header.selector else Ident(node.asInstanceOf[ConstrPat].casted)});
+                                {if(doTest)
+                                  header.selector
+                                 else
+                                   typed(Ident(node
+                                               .asInstanceOf[ConstrPat]
+                                               .casted))});
             }
           node;
 
-        case Ident(name) =>               // pattern without args or variable
-            if (tree.symbol == defs.PatternWildcard)
+        case Ident(nme.WILDCARD) =>
               pDefaultPat(tree.pos, header.getTpe());
-            else if (tree.symbol.isPrimaryConstructor) {
-              scala.Predef.error("error may not happen"); // Burak
+
+        case Ident(name) =>               // pattern without args or variable
+
+          // nsc: wildcard's don't have symbols anymore!
+            //if (tree.symbol == defs.PatternWildcard)
+            //  pDefaultPat(tree.pos, header.getTpe());
+            //else
+
+          if (tree.symbol.isPrimaryConstructor) {
+              scala.Predef.error("error may not happen: ident is primary constructor"+tree.symbol); // Burak
 
             } else if (treeInfo.isVariableName(name)) {//  Burak
+              //old scalac
               scala.Predef.error("this may not happen"); // Burak
+
+              //nsc: desugarize (in case nsc does not do it)
+              /*
+              Console.println("Ident("+name+") in unit"+cunit);
+              Console.println("tree.symbol = "+tree.symbol);
+              //     = treat the same as Bind(name, _)
+              val node = pDefaultPat(tree.pos, header.getTpe());
+              if ((env != null) && (tree.symbol != defs.PatternWildcard))
+                env.newBoundVar( tree.symbol, tree.tpe, header.selector);
+              node;
+              */
             } else
-              pVariablePat(tree.pos, tree);
+              pVariablePat(tree.pos, tree); // a named constant Foo
 
         case Select(_, name) =>                                  // variable
             if (tree.symbol.isPrimaryConstructor)
@@ -290,26 +333,44 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
   private def newHeader(pos: Int, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+","+index+")");
     //Console.println("  casted.tpe"+casted.tpe);
-    val ident = Ident(casted);
+    //Console.println("  casted.pos "+casted.pos+"  equals firstpos?"+(casted.pos == Position.FIRSTPOS));
+    val ident = typed(Ident(casted));
     if (casted.pos == Position.FIRSTPOS) {
       //Console.println("FIRSTPOS");
-      val t = Apply(Select( ident, defs.functionApply( 1 )),
-                    List( Literal( index ) ));
+
+      //Console.println("DEBUG");
+      //Console.println();
+
+      val t = typed(
+        Apply(Select( ident, ident.tpe.member(nme.apply)/* scalac: defs.functionApply( 1 )*/),
+              List( Literal( Constant(index) ) )));
       val seqType = t.tpe;
       pHeader( pos, seqType, t );
     } else {
       //Console.println("NOT FIRSTPOS");
+      //Console.println("newHeader :: casted="+casted);
+      //Console.println("newHeader :: casted.tpe="+casted.tpe);
+      //Console.println("newHeader :: ");
       val ts = casted.tpe.symbol.asInstanceOf[ClassSymbol]
         .caseFieldAccessors(index);
-      //Console.println("ts="+ts);
-      val accType = casted.tpe.memberType(ts);
-      val accTree = Select(ident, ts); // !!!
+      //Console.println("newHeader :: ts="+ts);
+      //val accType = casted.tpe.memberType(ts); // old scalac
+      //val accTree = global.typer.typed(Select(ident, ts)); // !
+
+      val accTree = typed(Apply(Select(ident, ts), List())); // nsc !
+      val accType = accTree.tpe;
+      //Console.println("newHeader :: accType="+accType);
+      //Console.println("newHeader :: accType.resultType ="+accType.resultType);
+      //Console.println("accTree.tpe =="+accTree.tpe);
+
       accType match {
         // scala case accessor
         case MethodType(_, _) =>
+          //Console.println("Hello?!");
           pHeader(pos, accType.resultType, Apply(accTree, List()));
         // jaco case accessor
         case _ =>
+          //Console.println("Hola?!");
           pHeader(pos, accType, accTree);
       }
     }
@@ -343,7 +404,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
           // substitute... !!!
           patNode match {
             case ConstrPat(ocasted) =>
-              env.substitute(ocasted, Ident(next.asInstanceOf[ConstrPat].casted));
+              env.substitute(ocasted, typed(Ident(next.asInstanceOf[ConstrPat].casted)));
             case _ =>
           }
           return enter(patArgs, next, casted, env);
@@ -418,7 +479,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
 
     //////////// generator methods
 
-  def toTree(): global.Tree = {
+  def toTree(): Tree = {
       if (optimize && isSimpleIntSwitch())
         intSwitchToTree();
 
@@ -488,7 +549,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
     }
 
   protected def isSimpleIntSwitch(): Boolean = {
-    if (isSameType(selector.tpe.widen, defs.IntClass.info)) {
+    if (isSameType(selector.tpe.widen, defs.IntClass.tpe)) {
       var patNode = root.and;
       while (patNode != null) {
         var node = patNode;
@@ -649,7 +710,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
   /*protected*/ def toTree(node1: PatternNode): Tree = {
     def optimize1(selType:Type, alternatives1: PatternNode ): Boolean = {
       var alts = alternatives1;
-      if (!optimize || !isSubType(selType, defs.ScalaObjectClass.info))
+      if (!optimize || !isSubType(selType, defs.ScalaObjectClass.tpe))
         return false;
       var cases = 0;
       while (alts != null) {
@@ -671,7 +732,9 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
     } // def optimize
 
     var node = node1;
-    var res: Tree = Literal(false);
+
+    var res: Tree = typed(Literal(Constant(false))); //.setInfo(defs.BooleanClass);
+    //Console.println("pm.toTree  res.tpe "+res.tpe);
     while (node != null)
     node match {
       case _h:Header =>
@@ -692,7 +755,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
           if ((bound.length == 0) &&
               (guard.length == 0) &&
               (body.length == 0)) {
-                return Literal(true);
+                return Literal(Constant(true));
               } else if (!doBinding)
                 bound = Predef.Array[Array[ValDef]]( Predef.Array[ValDef]() );
                 var i = guard.length - 1; while(i >= 0) {
@@ -700,7 +763,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
                   var res0: Tree =
                     Block(
                       List(Assign(Ident(resultVar), body(i))),
-                      Literal(true));
+                      Literal(Constant(true)));
                   if (guard(i) != EmptyTree)
                     res0 = And(guard(i), res0);
                   res = Or(Block(ts.toList, res0), res);
@@ -787,13 +850,13 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
                         */
       var nCases: List[CaseDef] = Nil;
       while (cases != null) {
-        nCases = CaseDef(Literal(cases.tag),
+        nCases = CaseDef(Literal(Constant(cases.tag)),
                          toTree(cases.node, selector)) :: nCases;
         cases = cases.next;
       }
 
       val defBody = if (defaultCase == null)
-                      Literal(false)
+                      Literal(Constant(false))
                     else
                       toTree(defaultCase.and);
 
@@ -804,9 +867,12 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
     }
 
     protected def toTree(node:PatternNode , selector:Tree ): Tree = {
-      //System.err.println("pm.toTree("+node+","+selector+")");
+      //Console.println("pm.toTree("+node+","+selector+")");
+      //Console.println("pm.toTree selector.tpe = "+selector.tpe+")");
+      if(selector.tpe == null)
+        scala.Predef.error("cannot go on");
       if (node == null)
-        return Literal(false);
+        return Literal(Constant(false));
       else
         node match {
           case DefaultPat() =>
@@ -825,14 +891,18 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
             And(
               And(gen.mkIsInstanceOf(selector.duplicate, node.getTpe()),
                      Equals(
-                       Apply(
-                         Select(
-                           gen.mkAsInstanceOf(selector.duplicate,
-                                              node.getTpe(),
-                                              true),
-                           defs.Seq_length),
-                         List()),
-                       Literal(len))),
+                       typed(
+                         Apply(
+                           Select(
+                             gen.mkAsInstanceOf(selector.duplicate,
+                                                node.getTpe(),
+                                                true),
+                             node.getTpe().member(nme.length) /*defs.Seq_length*/),
+                           List())
+                       ),
+                       typed(
+                         Literal(Constant(len))
+                       ))),
               Block(
                 List(
                   ValDef(casted,
@@ -840,8 +910,10 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
                   toTree(node.and))),
             toTree(node.or, selector.duplicate));
           case ConstantPat(value) =>
+            //Console.println("selector = "+selector);
+            //Console.println("selector.tpe = "+selector.tpe);
             return If(Equals(selector.duplicate,
-                                Literal(value)),
+                             typed(Literal(Constant(value))).setType(node.tpe)),
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
           case VariablePat(tree) =>
