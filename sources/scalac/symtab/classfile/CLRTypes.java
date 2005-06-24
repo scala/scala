@@ -70,6 +70,8 @@ public final class CLRTypes {
     public final Type STRING;
     public final Type STRING_ARRAY;
 
+    public final MethodInfo MEMBERWISE_CLONE;
+
     public final Type PICO_META_ATTR;
 
     public final Type SCALA_SYMTAB_ATTR;
@@ -111,6 +113,8 @@ public final class CLRTypes {
 	OBJECT = getType("System.Object");
 	STRING = getType("System.String");
 	STRING_ARRAY = getType("System.String[]");
+
+        MEMBERWISE_CLONE = OBJECT.GetMethod("MemberwiseClone", Type.EmptyTypes);
 
         PICO_META_ATTR = Type.GetType("scala.runtime.MetaAttribute");
 	SCALA_SYMTAB_ATTR = Type.GetType("scala.runtime.SymtabAttribute");
