@@ -19,4 +19,6 @@ object Platform {
   def split(str: String, separator: Char): Array[String] = {
     str.split(separator.toString());
   }
+  def parseFloat(s: String): Float = java.lang.Float.parseFloat(s);
+  def parseDouble(s: String): Double = java.lang.Double.parseDouble(s);
 }
