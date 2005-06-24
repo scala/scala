@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.io.IOException;
 
 /**
  * Generates MS IL code via Reflection.Emit-like API
@@ -209,9 +208,6 @@ public final class GenMSIL {
      * Generate the code for a class definition
      */
     private void genClass(Symbol clazz, Tree[] body) {
-//         AttrInfo attrs = global.getAttributes(clazz);
-//         if (attrs != null)
-//             System.out.println("" + attrs + Debug.show(clazz));
 	Symbol outerClass = currentClass;
 	currentClass = clazz;
 	if (clazz.isModuleClass()) {
@@ -253,6 +249,20 @@ public final class GenMSIL {
 		    + Debug.show(body[i]);
 	    }
 	}
+        if (tc.isCloneable(clazz)) {
+            Symbol cloneSym = clazz.lookup(Names.clone);
+            if (cloneSym.isNone()) {
+                short mods = MethodAttributes.Public
+                    | MethodAttributes.Virtual
+                    | MethodAttributes.HideBySig;
+                ILGenerator code =
+                    type.DefineMethod("Clone", mods, tc.OBJECT, Type.EmptyTypes)
+                    .GetILGenerator();
+                code.Emit(OpCodes.Ldarg_0);
+                code.Emit(OpCodes.Call, tc.MEMBERWISE_CLONE);
+                code.Emit(OpCodes.Ret);
+            }
+        }
 	currentClass = outerClass;
     } //genClass()
 
@@ -278,9 +288,6 @@ public final class GenMSIL {
      * Generate code for constructors and methods.
      */
     private void genDef(Symbol sym, ValDef[] parameters, Tree rhs, MSILType toType) {
-//         AttrInfo attrs = global.getAttributes(sym);
-//         if (attrs != null)
-//             System.out.println("" + attrs + Debug.show(sym));
 	MethodBase method = tc.getMethod(sym);
 
 	params.clear();

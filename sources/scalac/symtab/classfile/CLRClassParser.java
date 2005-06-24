@@ -300,6 +300,9 @@ public class CLRClassParser extends SymbolLoader {
 	if (name.equals("Equals") && params.length == 1
             && params[0].ParameterType == clrTypes.OBJECT)
             return Names.equals;
+        // TODO: check if the type implements ICloneable?
+        if (name.equals("Clone") && params.length == 0)
+            return Names.clone;
 	return Name.fromString(name);
     }
 
