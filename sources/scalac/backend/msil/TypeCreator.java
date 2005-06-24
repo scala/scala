@@ -85,6 +85,7 @@ final class TypeCreator {
     public final Type OBJECT;
     public final Type STRING;
     public final Type STRING_ARRAY;
+    public final Type ICLONEABLE;
 
     private final Type MONITOR;
 
@@ -92,7 +93,7 @@ final class TypeCreator {
     public final MethodInfo OBJECT_EQUALS;
     public final MethodInfo MONITOR_ENTER;
     public final MethodInfo MONITOR_EXIT;
-
+    public final MethodInfo MEMBERWISE_CLONE;
 //     private final MethodInfo MONITOR_PULSE;
 //     private final MethodInfo MONITOR_PULSE_ALL;
 //     private final MethodInfo MONITOR_WAIT;
@@ -153,7 +154,7 @@ final class TypeCreator {
 	OBJECT = ti.OBJECT;
 	STRING = ti.STRING;
 	STRING_ARRAY = Type.GetType("System.String[]");
-
+        ICLONEABLE = Type.GetType("System.ICloneable");
 	MONITOR = Type.GetType("System.Threading.Monitor");
 
 	final Type[] sObject1 = new Type[] {OBJECT};
@@ -169,6 +170,7 @@ final class TypeCreator {
 // 	MONITOR_WAIT_TIMEOUT = MONITOR.GetMethod("Wait", new Type[] {OBJECT, INT});
 	MONITOR_ENTER = MONITOR.GetMethod("Enter", sObject1);
 	MONITOR_EXIT = MONITOR.GetMethod("Exit", sObject1);
+        MEMBERWISE_CLONE = ti.MEMBERWISE_CLONE;
 
 	SCALA_BYTE    = getType("scala.Byte");
 	SCALA_SHORT   = getType("scala.Short");
@@ -182,6 +184,7 @@ final class TypeCreator {
 
  	RUNTIME_BOX_UNIT = getType("scala.runtime.RunTime")
  	    .GetMethod("box_uvalue", Type.EmptyTypes);
+        ti.map(defs.OBJECT_CLONE, MEMBERWISE_CLONE);
     }
 
     private boolean initialized = false;
@@ -752,11 +755,14 @@ final class TypeCreator {
 		    interfaces[i] = getType(baseTypes[i + baseIndex].symbol());
 		}
 	    } else {
+                boolean cloneable = isCloneable(clazz);
 		superType = getType(baseTypes[0].symbol());
 		assert inum > 0;
-		interfaces = new Type[inum - 1];
+		interfaces = new Type[inum - 1 + (cloneable ? 1 : 0)];
 		for (int i = 1; i < inum; i++)
 		    interfaces[i - 1] = getType(baseTypes[i].symbol());
+                if (cloneable)
+                    interfaces[inum - 1] = ICLONEABLE;
 	    }
 
 	    type = (TypeBuilder) symbols2types.get(clazz);
@@ -765,7 +771,7 @@ final class TypeCreator {
 
 	    if (owner.isPackageClass()) {  // i.e. top level class
 		type = msilModule.DefineType
-		    (typeName, translateTypeAttributes(clazz.flags, false),
+		    (typeName, translateTypeAttributes(clazz, false),
 		     superType, interfaces);
 		if (clazz.isModuleClass()) {
 		    Symbol module = owner.members().lookup(clazz.name.toTermName());
@@ -774,7 +780,7 @@ final class TypeCreator {
  		    if (linkedClass == null || linkedClass.info().isError()) {
 			staticType = msilModule.DefineType
  			    (staticTypeName,
- 			     translateTypeAttributes(clazz.flags, false),
+ 			     translateTypeAttributes(clazz, false),
  			     OBJECT, Type.EmptyTypes);
  		    }
 		}
@@ -788,7 +794,7 @@ final class TypeCreator {
 
 		assert outerType instanceof TypeBuilder : Debug.show(clazz);
 		type = ((TypeBuilder)outerType).DefineNestedType
-		    (typeName, translateTypeAttributes(clazz.flags, true),
+		    (typeName, translateTypeAttributes(clazz, true),
 		     superType, interfaces);
 	    }
 	    break;
@@ -870,6 +876,11 @@ final class TypeCreator {
         return set;
     }
 
+    public boolean isCloneable(Symbol clazz) {
+        return global.getAttrArguments(clazz, defs.SCALA_CLONEABLE_CONSTR)
+            != null;
+    }
+
     //##########################################################################
     // find/create methods
 
@@ -948,6 +959,7 @@ final class TypeCreator {
 		: Debug.show(owner) + " => Cannot find method: " + methodSignature(sym);
 	}
 	symbols2methods.put(sym, method);
+
 	return method;
     }
 
@@ -960,6 +972,8 @@ final class TypeCreator {
             return "GetHashCode";
         if (name == Names.equals && params.length == 1 && params[0] == OBJECT)
             return "Equals";
+        if (name == Names.clone && params.length == 0)
+            return "Clone";
         return name.toString();
     }
 
@@ -1182,7 +1196,8 @@ final class TypeCreator {
 
     /** Translates Scala modifiers into TypeAttributes
      */
-    private static int translateTypeAttributes(int mods, boolean nested) {
+    private int translateTypeAttributes(Symbol clazz, boolean nested) {
+        int mods = clazz.flags;
 	int attr = TypeAttributes.AutoLayout | TypeAttributes.AnsiClass;
 
 	if (Modifiers.Helper.isInterface(mods))
@@ -1212,14 +1227,17 @@ final class TypeCreator {
 	    else
 		attr |= TypeAttributes.Public;
 	}
-
+        boolean serializable =
+            global.getAttrArguments(clazz, defs.SCALA_SERIALIZABLE_CONSTR) != null;
+        if (serializable)
+            attr |= TypeAttributes.Serializable;
 	return attr;
     }
 
     /*
      * Translates Scala modifiers into FieldAttributes
      */
-    private static short translateFieldAttributes(Symbol field) {
+    private short translateFieldAttributes(Symbol field) {
 	int mods = field.flags;
 	int attr = 0;
 
@@ -1234,6 +1252,10 @@ final class TypeCreator {
 
 	if (field.owner().isJava() && field.owner().isModuleClass())
 	    attr |= FieldAttributes.Static;
+        boolean tranzient =
+            global.getAttrArguments(field, defs.SCALA_TRANSIENT_CONSTR) != null;
+        if (tranzient)
+            attr |= FieldAttributes.NotSerialized;
 
 	return (short)attr;
     }
