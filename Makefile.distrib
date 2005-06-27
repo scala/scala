@@ -54,6 +54,13 @@ ULTRAEDIT_LIST		+= scala.txt
 ULTRAEDIT_LIST		+= README
 ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 
+# xcode scala-mode
+XCODE_ROOT		 = $(PROJECT_SUPPORTDIR)/xcode
+XCODE_LIST		+= README
+XCODE_LIST		+= Specifications/Scala.pbfilespec
+XCODE_LIST		+= Specifications/Scala.pblangspec
+XCODE_FILES		 = $(XCODE_LIST:%=$(XCODE_ROOT)/%)
+
 # scala man pages
 MANPAGES_ROOT		 = $(PROJECT_SUPPORTDIR)/man/man1
 MANPAGES_LIST		+= scala.1
@@ -170,6 +177,9 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/ultraedit
 	$(strip $(MIRROR) -m 644 -p -C $(ULTRAEDIT_ROOT) $(ULTRAEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/ultraedit)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/xcode
+	$(strip $(MIRROR) -m 644 -p -C $(XCODE_ROOT) $(XCODE_LIST) \
+	    $(INSTALL_SUPPORTDIR)/xcode)
 	$(INSTALL) -m 755 -d $(INSTALL_TESTDIR)
 	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) $(TEST_LIST) \
 	    $(INSTALL_TESTDIR))
