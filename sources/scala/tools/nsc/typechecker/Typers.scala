@@ -782,6 +782,8 @@ abstract class Typers: Analyzer {
           }
         case ErrorType =>
           setError(tree)
+        case _ =>
+          throw new Error("Matcherror at " + phase);//debug
       }
 
       /** The qualifying class of a this or super with prefix `qual' */

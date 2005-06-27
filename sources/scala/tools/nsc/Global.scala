@@ -136,6 +136,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val parserPhase = new syntaxAnalyzer.ParserPhase(NoPhase);
   val firstPhase = parserPhase;
+  phase = parserPhase;
 
   definitions.init; // needs firstPhase to be defined, that's why it is placed here.
 
@@ -244,7 +245,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	informTime(globalPhase.description, startTime);
       }
       globalPhase = if (settings.stop contains globalPhase.name) terminalPhase else globalPhase.next;
-      if (settings.check contains globalPhase.name) { phase = globalPhase; checker.checkTrees; }
+      if (settings.check contains globalPhase.name) {
+        phase = globalPhase;
+        checker.checkTrees;
+      }
     }
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);

@@ -232,8 +232,13 @@ abstract class Symbols: SymbolTable {
 
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
-      infos = new TypeHistory(phase, info, null);
-      limit = phase;
+      if (limit == NoPhase) {
+        assert(phase != NoPhase);
+        infos = new TypeHistory(phase, info, null);
+        limit = phase;
+      } else {
+        infos = new TypeHistory(infos.start, info, null);
+      }
       assert(info != null);
       rawflags = if (info.isComplete) rawflags | INITIALIZED & ~LOCKED;
 		 else rawflags & ~INITIALIZED & ~LOCKED;

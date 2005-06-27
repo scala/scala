@@ -15,8 +15,9 @@ abstract class Transform extends SubComponent {
 
   class Phase(prev: scala.tools.nsc.Phase) extends global.StdPhase(prev) {
     def name: String = phaseName;
-    def apply(unit: global.CompilationUnit): unit =
+    def apply(unit: global.CompilationUnit): unit = {
       unit.body = newTransformer(unit).transform(unit.body);
+    }
   }
 }
 
