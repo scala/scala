@@ -171,12 +171,16 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
     tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
         if (isSubType(header.getTpe(),tpe.tpe)) {
+          //Console.println("U");
           val node = pDefaultPat(tree.pos, tpe.tpe);
           env.newBoundVar( tree.symbol, tree.tpe, header.selector );
           node;
         } else {
+          //Console.println("X");
           val node = pConstrPat(tree.pos, tpe.tpe);
-          env.newBoundVar( tree.symbol, tree.tpe, typed(Ident( node.casted )));
+          env.newBoundVar( tree.symbol,
+                           tpe.tpe /*scalac: tree.tpe */,
+                           typed(Ident( node.casted )));
           node;
         }
 
@@ -231,6 +235,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
              pConstrPat(tree.pos, tree.tpe);
            }
         case t @ Typed(ident, tpe) =>       // variable pattern
+          //Console.println("Z");
           val doTest = isSubType(header.getTpe(),tpe.tpe);
           val node = {
             if(doTest)
@@ -629,7 +634,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
 
     //print();
     val ncases = numCases(root.and);
-    val matchError = ThrowMatchError(selector.pos);
+    val matchError = ThrowMatchError(selector.pos, resultVar.tpe);
     // without a case, we return a match error if there is no default case
     if (ncases == 0)
       return defaultBody(root.and, matchError);
@@ -702,7 +707,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator 
       ValDef(resultVar, EmptyTree /* DefaultValue */));
     val res = If(toTree(root.and),
                  Ident(resultVar),
-                 ThrowMatchError(selector.pos /* ,
+                 ThrowMatchError(selector.pos,  resultVar.tpe /* ,
                                     Ident(root.symbol) */));
     return Block(ts, res);
   }

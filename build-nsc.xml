@@ -1,4 +1,4 @@
-<project name="scala.nsc" default="build">
+<project name="scala.nsc" default="build.nsc">
 
   <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -12,11 +12,15 @@
        %%%  Preliminaries
        %%%
 
+
+       make jar target=LIBRARY
+       make jar target=TOOLS
+
        You need a working scalac, which is accessible for ant.
        This means, you should have `fjbg.jar', `scala.jar' and
-       `tools.jar' on your classpath [@todo maybe write a script ...]
+       `tools.jar' on your classpath 
 
-       !!! use the script ant-build-nsc.sh !!!
+       check the ant-build-nsc  script! adjust to your paths if necessary.
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
 
@@ -139,21 +143,39 @@
       <arg value="sources/scala/runtime/ScalaRunTime.scala"/>
 
 
-    </java-->
+    </java
 
-    <nsc srcdir="sources" destdir="${nsc.output.dir}" 
          classpath=".:sources:newsources:../newsources:${tools.util.dir}"
+
+-->
+    <echo>Compiling predef and runtime</echo>
+    <nsc srcdir="sources" destdir="${nsc.output.dir}" 
+         classpath="sources:newsources:${tools.util.dir}"
          nscArgs="-nopredefs;-check:term;-check:transmatch;-debug">
 
       <include name="scala/Predef.scala"/>
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </nsc>
 
+    <echo>Compiling rest</echo>
+    <nsc srcdir="sources" destdir="${nsc.output.dir}" 
+         classpath="sources:newsources:${tools.util.dir}:${nsc.output.dir}"
+         nscArgs="-check:term;-check:transmatch;-debug">
+
+      <include name="scala/**.scala"/>
+      <include name="../newsources/**.scala"/>
+
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/runtime/ScalaRunTime.scala"/>
+
+      <exclude name="scala/tools/**"/>
+      <exclude name="scala/io/UTF8String.scala"/>
+    </nsc>
+
+ <!--
+    <echo>Compiling rest</echo>
    <nsc srcdir="sources" destdir="${nsc.output.dir}" 
         classpath="sources:newsources:${tools.util.dir}">
-      <!-- arg value="-verbose"/>
-      <arg value="-prompt"/>
-      <arg value="-check:term"/ -->
 
       <include name="../sources.nsc/**/*.scala"/>
 
@@ -165,6 +187,7 @@
       <exclude name="scala/tools/**"/>
       <exclude name="scala/io/UTF8String.scala"/>
     </nsc>
+-->
   </target>
   <!--
     (*3) for Java, and pico, files are only recompiled if the source file is

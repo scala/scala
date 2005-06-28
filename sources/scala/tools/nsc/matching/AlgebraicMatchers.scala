@@ -67,7 +67,7 @@ trait AlgebraicMatchers : TransMatcher {
       ),
       If( super.toTree(root.and),
          Ident(resultVar ),
-         ThrowMatchError( _m.pos ))
+         ThrowMatchError( _m.pos, resultVar.tpe ))
     );
   }
 

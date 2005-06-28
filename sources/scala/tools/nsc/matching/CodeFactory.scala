@@ -198,9 +198,12 @@ abstract class CodeFactory: TransMatcher  {
     Apply(Select(left, eqsym), List(right));
   }
 
-  def ThrowMatchError(pos: Int ) =
+  def ThrowMatchError(pos: Int, tpe: Type ) =
     Apply(
-      gen.mkRef(definitions.MatchError_fail),
+      TypeApply(
+        gen.mkRef(definitions.MatchError_fail),
+        List(TypeTree(tpe))
+      ),
       List(
         Literal(cunit.toString()),
         Literal(Position.line(pos))
@@ -218,8 +221,10 @@ abstract class CodeFactory: TransMatcher  {
      )
    );
   */
-  def Error(pos: Int) =
-    ThrowMatchError(pos);
+
+//  def Error(pos: Int) =
+//    ThrowMatchError(pos);
+
 
   /*
   def newPair(left: Tree, right: Tree) =
