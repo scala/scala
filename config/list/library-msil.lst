@@ -149,6 +149,27 @@ io/Position.scala
 #mobile/Location.scala
 
 #runtime/AtomicReference.java
+# runtime/BoxedBoolean.java
+# runtime/BoxedByte.java
+# runtime/BoxedChar.java
+# runtime/BoxedDouble.java
+# runtime/BoxedFloat.java
+# runtime/BoxedInt.java
+# runtime/BoxedLong.java
+# runtime/BoxedNumber.java
+# runtime/BoxedShort.java
+# runtime/BoxedUnit.java
+# runtime/BoxedAnyArray.scala
+# runtime/BoxedArray.scala
+# runtime/BoxedBooleanArray.scala
+# runtime/BoxedByteArray.scala
+# runtime/BoxedCharArray.scala
+# runtime/BoxedDoubleArray.scala
+# runtime/BoxedFloatArray.scala
+# runtime/BoxedIntArray.scala
+# runtime/BoxedLongArray.scala
+# runtime/BoxedObjectArray.scala
+# runtime/BoxedShortArray.scala
 #runtime/FNV_Hash.java
 #runtime/IOMap.java
 #runtime/InterpreterSupport.java
