@@ -25,12 +25,12 @@ ast/parser/TreeBuilder.scala
 
 matching/AlgebraicMatchers.scala
 matching/Autom2Scala.scala
-matching/BerrySethis.scala
+matching/BerrySethi.scala
 matching/CodeFactory.scala
-matching/DetWordAutoms.scala
+matching/DetWordAutom.scala
 matching/LeftTracerInScala.scala
 matching/MatcherLabels.scala
-matching/NondetWordAutoms.scala
+matching/NondetWordAutom.scala
 matching/Npair.scala
 matching/PatternMatchers.scala
 matching/PatternNodeCreator.scala
@@ -82,5 +82,15 @@ util/LinkedList.scala
 util/ListBuffer.scala
 util/NameTransformer.scala
 util/ShowPickled.scala
+
+transform/TailCalls.scala
+
+# backend/icode/BasicBlocks.scala
+# backend/icode/Constants.scala
+# backend/icode/ICodePrinter.scala
+# backend/icode/Opcodes.scala
+# backend/icode/TypeStacks.scala
+# backend/icode/TestOp.scala
+# backend/icode/Codes.scala
 
 ##############################################################################
