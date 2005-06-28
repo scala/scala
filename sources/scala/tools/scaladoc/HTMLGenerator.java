@@ -1049,15 +1049,8 @@ public abstract class HTMLGenerator {
 		symtab.print(']');
 	    }
 	    // value parameters
-	    Symbol[] vparams = symbol.valueParams();
-	    symtab.print('(');
-	    for (int i = 0; i < vparams.length; i++) {
-		if (i > 0) symtab.print(", ");
-		if (vparams[i].isDefParameter()) symtab.print("def ");
-		symtab.defString(vparams[i], false);
-	    }
-	    symtab.print(')');
-	}
+            symtab.printValueParams(symbol.valueParams());
+        }
 
         // parents
         Type[] parts = (symbol.isModule() ? symbol.moduleClass() : symbol).parents();

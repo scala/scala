@@ -311,7 +311,8 @@ public class SymbolTablePrinter {
         case Kinds.ALIAS: return "=";
         case Kinds.CLASS: return "extends";
         case Kinds.TYPE : return "<:";
-        case Kinds.VAL  : return symbol.isModule() ? "extends" : ":";
+        case Kinds.VAL  : return symbol.isModule() ? "extends" :
+            symbol.isDefParameter() ? ": =>" : ":";
         default         : throw Debug.abort("unknown kind " + symbol.kind);
         }
     }
@@ -383,8 +384,8 @@ public class SymbolTablePrinter {
         print('(');
         for (int i = 0; i < vparams.length; i++) {
             if (i > 0) print(",");
-            if (vparams[i].isDefParameter()) print("def ");
-            printSymbolType(vparams[i], null);
+            printSymbolType(vparams[i],
+                            vparams[i].isDefParameter() ? "=>" : null);
         }
         return print(')');
     }

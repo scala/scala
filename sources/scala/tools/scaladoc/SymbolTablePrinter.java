@@ -128,7 +128,6 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
         print('(');
         for (int i = 0; i < vparams.length; i++) {
             if (i > 0) print(", ");
-            if (vparams[i].isDefParameter()) print("def ");
             defString(vparams[i], false);
         }
         return print(')');
