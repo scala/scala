@@ -222,7 +222,8 @@ public class GenJVM {
                     break;
                 } catch (JCode.OffsetTooBigException e) {
                     ctx1.clazz.removeMethod(ctx1.method);
-                    assert !retry;
+                    if (retry)
+                        throw Debug.abort("method too big", sym, e);
                     retry = true;
                 }
             } while (retry);
