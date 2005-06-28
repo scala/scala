@@ -48,9 +48,18 @@ object Main {
         val timer = scalac_Global.getTimer(reporter);
         timer.start();
 	val global = new Global(command, timer, false);
-	val units = global.compile(command.files.toArray(), false);
-	if (reporter.errors() == 0)
-          if (!global.PHASE.CODEGEN.hasSkipFlag()) global.dump(units);
+        try {
+	  val units = global.compile(command.files.toArray(), false);
+	  if (reporter.errors() == 0)
+            if (!global.PHASE.CODEGEN.hasSkipFlag()) global.dump(units);
+        } catch {
+          case e: scala.tools.util.debug.AbortError =>
+            if (global.debug)
+              e.printStackTrace();
+            else
+              global.error("Internal compiler error: " + e.getMessage()
+                           + "; use -debug to see a stack trace");
+        }
         timer.stop("total");
 	reporter.printSummary();
       }
