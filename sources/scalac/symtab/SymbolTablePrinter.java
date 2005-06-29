@@ -469,7 +469,6 @@ public class SymbolTablePrinter {
             return printValueParams(vparams).printType(result, inner);
         default:
             if (inner != null) {
-                if (!inner.startsWith(":")) space();
                 print(inner).space();
             }
             return printType0(type);
