@@ -124,7 +124,6 @@ abstract class TailCalls extends Transform {
           newCtx.makeLabel();
           newCtx.label.setInfo(tree.symbol.info);
           newCtx.tailPos = true;
-          log("Label type is: " + newCtx.label.info);
 
           if (newCtx.currentMethod.isFinal) {
             newCtx.types = Nil;
@@ -138,10 +137,12 @@ abstract class TailCalls extends Transform {
             var newRHS = transform(rhs, newCtx);
             if (newCtx.accessed) {
               log("Rewrote def " + newCtx.currentMethod);
-              vparams.head map ((v) => log(v.symbol));
+
               newRHS =
                   typed(atPos(tree.pos)(
-                    LabelDef(newCtx.label, vparams.head map (.symbol), newRHS)));
+                    LabelDef(newCtx.label,
+                             List.flatten(vparams) map (.symbol),
+                             newRHS)));
               copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
             } else
               copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
@@ -190,13 +191,21 @@ abstract class TailCalls extends Transform {
         case New(tpt) => super.transform(tree);
         case Typed(expr, tpt) => super.transform(tree);
 
+        case Apply(tapply @ TypeApply(fun, targs), vargs) =>
+          if ( ctx.tailPos &&
+               isSameTypes(ctx.types, targs map (.tpe)) &&
+               isRecursiveCall(fun))
+                rewriteTailCall(fun, transformTrees(vargs, mkContext(ctx, false)));
+            else
+              copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)));
+
         case TypeApply(fun, args) =>
-          throw new RuntimeException("Lonely TypeApply found -- we can only handle them inside Apply(TypeApply())");
+          super.transform(tree);
+//          throw new RuntimeException("Lonely TypeApply found -- we can only handle them inside Apply(TypeApply()): " + tree + " at: " + unit);
 
         case Apply(fun, args) =>
-          log("entering Apply: " + ctx);
-          if ((fun.symbol eq ctx.currentMethod) && ctx.tailPos)
-            rewriteTailCall(tree, transformTrees(args, mkContext(ctx, false)));
+          if (ctx.tailPos && isRecursiveCall(fun))
+            rewriteTailCall(fun, transformTrees(args, mkContext(ctx, false)));
           else
             copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)));
 
@@ -212,19 +221,6 @@ abstract class TailCalls extends Transform {
           tree;
         case TypeTree() =>  tree;
 
-//         case Block(List(), expr) =>           // a simple optimization
-//           expr
-//         case Block(defs, sup @ Super(qual, mix)) => // A hypthothetic transformation, which replaces
-//                                                     // {super} by {super.sample}
-//           copy.Block(                           // `copy' is the usual lazy tree copier
-//             tree, defs,
-//             typed(                              // `typed' assigns types to its tree argument
-//               atPos(tree.pos)(                 // `atPos' fills in position of its tree argument
-//                 Select(                         // The `Select' factory method is defined in class `Trees'
-//                   sup,
-//                   currentOwner.newValue(        // creates a new term symbol owned by `currentowner'
-//                     tree.pos,
-//                     newTermName("sample"))))))  // The standard term name creator
         case _ =>
           tree
       }
@@ -233,11 +229,29 @@ abstract class TailCalls extends Transform {
     def transformTrees(trees: List[Tree], nctx: Context): List[Tree] =
       trees map ((tree) => transform(tree, nctx));
 
-    private def rewriteTailCall(tree: Tree, args: List[Tree]): Tree = {
-      log("Rewriting..");
+    private def rewriteTailCall(fun: Tree, args: List[Tree]): Tree = {
+      log("Rewriting tail recursive method call.");
       ctx.accessed = true;
-        typed(atPos(tree.pos)(
-          Apply(Ident(ctx.label), args)));
+      typed(atPos(fun.pos)(
+        Apply(Ident(ctx.label), args)));
     }
+
+    /** Return true if the fun tree refers to the same method as the one
+      * saved in ctx. If it is a method call, we check that it is applied to
+      * "this"
+      */
+    private def isRecursiveCall(fun: Tree): Boolean =
+      if (fun.symbol eq ctx.currentMethod)
+        fun match {
+          case Select(t @ This(_), _) =>
+            assert(t.symbol == ctx.currentMethod.owner, "This refers to other class: " +
+                   t.symbol + ": " + ctx.currentMethod.owner);
+            true;
+
+          case Ident(_) => true;
+          case _ => false;
+        }
+    else
+      false;
   }
 }

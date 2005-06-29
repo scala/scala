@@ -171,12 +171,18 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val uncurryPhase = new uncurry.Phase(refchecksPhase);
 
+  object tailCalls extends TailCalls {
+    val global: Global.this.type = Global.this;
+  }
+  val tailCallPhase = new tailCalls.Phase(uncurryPhase);
+
+
   object transmatcher extends TransMatcher {
     val global: Global.this.type = Global.this;
 
   }
 
-  val transMatchPhase = new transmatcher.Phase(uncurryPhase);
+  val transMatchPhase = new transmatcher.Phase(tailCallPhase);
   //object typesAsValues extends TypesAsValues {
   //  val global: Global.this.type = Global.this;
   //}
@@ -186,10 +192,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val samplePhase = new sampleTransform.Phase(transMatchPhase);
 
-  object tailCalls extends TailCalls {
-    val global: Global.this.type = Global.this;
-  }
-  val tailCallPhase = new tailCalls.Phase(samplePhase);
 
   //val transMatchPhase = new transmatcher.TransMatchPhase(picklePhase);
 /*
@@ -204,7 +206,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   }
 */
-  val terminalPhase = new Phase(tailCallPhase) {
+  val terminalPhase = new Phase(samplePhase) {
     def name = "terminal";
     def run: unit = {}
   }
