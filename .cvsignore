@@ -9,3 +9,4 @@ distribs
 lib
 objects
 tmp
+build-nsc.properties
