@@ -154,9 +154,9 @@
     <echo>Compiling rest</echo>
     <nsc srcdir="sources" destdir="${nsc_output_dir}" 
          classpath="sources:newsources:${tools_util_dir}:${nsc_output_dir}"
-         nscArgs="-check:term;-check:transmatch;-debug">
+         nscArgs="-check:term;-Nscheck:transmatch;-debug" force="true"> 
 
-      <include name="scala/**.scala"/>
+      <include name="scala/**/*.scala"/>
       <include name="../newsources/**.scala"/>
 
       <exclude name="scala/Predef.scala"/>
