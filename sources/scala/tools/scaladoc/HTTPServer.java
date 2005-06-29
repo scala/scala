@@ -170,6 +170,20 @@ public class HTTPServer extends Thread {
 
 class RequestProcessor implements Runnable {
 
+    private static final String MIME_APPLICATION_OCTET_STREAM =
+        "application/octet-stream";
+    private static final String MIME_APPLICATION_PDF =
+        "application/pdf";
+    private static final String MIME_APPLICATION_POSTSCRIPT =
+        "application/postscript";
+
+    private static final String MIME_IMAGE_GIF  = "image/gif";
+    private static final String MIME_IMAGE_JPEG = "image/jpeg";
+    private static final String MIME_IMAGE_PNG  = "image/png";
+
+    private static final String MIME_TEXT_HTML  = "text/html";
+    private static final String MIME_TEXT_PLAIN = "text/plain";
+
     private final static String ENCODING_SCHEME = "iso-8859-1"; // "UTF-8"
 
     private static List pool = new LinkedList();
@@ -228,28 +242,80 @@ class RequestProcessor implements Runnable {
         return map;
     }
 
-    public static void fileNotFound(String version, Writer out) {
+    private static String mkMIMEHeader(int statusCode, String statusMessage,
+                                       String contentType, int contentLength) {
+        StringBuffer buf = new StringBuffer();
+        buf.append("HTTP/1.0 " + statusCode + " " + statusMessage + "\r\n");
+        buf.append("Date: " + new Date() + "\r\n");
+        buf.append("Server: HTTPServer 1.0\r\n");
+        buf.append("Content-length: " + contentLength + "\r\n");
+        buf.append("Content-type: " + contentType + "\r\n\r\n");
+        return buf.toString();
+    }
+
+    private static void write(Writer out, String version,
+                              int statusCode, String statusMessage,
+                              String contentType, String contentData) {
         try {
             if (version.startsWith("HTTP/")) {  // send a MIME header
-                out.write("HTTP/1.0 404 File Not Found\r\n");
-                Date now = new Date();
-                out.write("Date: " + now + "\r\n");
-                out.write("Server: HTTPServer 1.0\r\n");
-                out.write("Content-type: text/html\r\n\r\n");
+                String header = mkMIMEHeader(statusCode, statusMessage,
+                                             contentType, contentData.length());
+                out.write(header);
             }
-            out.write("<html>\r\n");
-            out.write("<head><title>File Not Found</title>\r\n");
-            out.write("</head>\r\n");
-            out.write("<body>");
-            out.write("<h1>HTTP Error 404: File Not Found</h1>\r\n");
-            out.write("</body></html>\r\n");
+            out.write(contentData);
             out.flush();
         }
         catch (IOException e) {
-
         }
     }
 
+    private static void writeData(OutputStream out, String version,
+                              int statusCode, String statusMessage,
+                              String contentType, File theFile) {
+        try {
+            DataInputStream fis = new DataInputStream(new FileInputStream(theFile));
+            byte[] theData = new byte[(int) theFile.length()];
+            fis.readFully(theData);
+            fis.close();
+            if (version.startsWith("HTTP/")) {  // send a MIME header
+                String header = mkMIMEHeader(statusCode, statusMessage,
+                                             contentType, theData.length);
+                out.write(header.getBytes());
+            }
+            out.write(theData);
+            out.flush();
+        }
+        catch (IOException e) {
+        }
+    }
+
+    private static void writeError(Writer out, String version,
+                                   int statusCode, String statusMessage) {
+        StringBuffer buf = new StringBuffer();
+        buf.append("<html>\r\n");
+        buf.append("<head><title>" + statusMessage + "</title>\r\n");
+        buf.append("</head>\r\n");
+        buf.append("<body>");
+        buf.append("<h1>HTTP Error " + statusCode + ": " + statusMessage + "</h1>\r\n");
+        buf.append("</body></html>\r\n");
+        write(out, version, statusCode, statusMessage, MIME_TEXT_HTML, buf.toString());
+    }
+
+    private static void writeServlet(Writer out, String version,
+                                     Servlet servlet, URI uri) {
+        String query = uri.getRawQuery();
+        Map map = (query != null) ? parseQuery(query) : new HashMap();
+        write(out, version, 200, "OK", MIME_TEXT_HTML, "<!-- generated with Scala Servlet -->\r\n");
+        servlet.apply(map, out);
+        try {
+            out.write("\n");
+            out.flush();
+        }
+        catch (IOException e) {
+        }
+    }
+
+    // See http://www.oreilly.com/catalog/javanp2/chapter/ch11.html
     public void run() {
 
         // for security checks
@@ -302,15 +368,9 @@ class RequestProcessor implements Runnable {
                     String resource = uri.getPath();
                     Servlet servlet = (Servlet) servletNamed.get(resource);
 
-                    if (servlet != null) { // servlet invokation
-                        String query = uri.getRawQuery();
-                        Map map =
-                            (query != null) ?
-                            parseQuery(query) :
-                            new HashMap();
-                            servlet.apply(map, out);
-                            out.write("\n");
-                            out.flush();
+                    if (servlet != null) {
+                        // servlet invokation
+                        writeServlet(out, "HTTP/", servlet, uri);
                     }
                     else { // not a query
                         if (filename.endsWith("/")) filename += indexFileName;
@@ -324,49 +384,17 @@ class RequestProcessor implements Runnable {
                         if (theFile.canRead()
                             // Don't let clients outside the document root
                             && theFile.getCanonicalPath().startsWith(root)) {
-                            DataInputStream fis =
-                                new DataInputStream(
-                                                    new BufferedInputStream(
-                                                                            new FileInputStream(theFile)));
-                            byte[] theData = new byte[(int) theFile.length()];
-                            fis.readFully(theData);
-                            fis.close();
-                            if (version.startsWith("HTTP/")) {  // send a MIME header
-                                out.write("HTTP/1.0 200 OK\r\n");
-                                Date now = new Date();
-                                out.write("Date: " + now + "\r\n");
-                                out.write("Server: HTTPServer 1.0\r\n");
-                                out.write("Content-length: " + theData.length + "\r\n");
-                                out.write("Content-type: " + contentType + "\r\n\r\n");
-                                out.flush();
-                            }  // end try
-
-                            // send the file; it may be an image or other binary data
-                            // so use the underlying output stream
-                            // instead of the writer
-                            raw.write(theData);
-                            raw.flush();
-                        }  // end if
-                        else {  // can't find the file
-                            fileNotFound(version, out);
+                            writeData(raw, version, 200, "OK", contentType, theFile);
+                        }
+                        else {
+                            // can't find the file
+                            writeError(out, version, 404, "File Not Found");
                         }
                     }
                 }
-                else {  // method does not equal "GET"
-                    if (version.startsWith("HTTP/")) {  // send a MIME header
-                        out.write("HTTP/1.0 501 Not Implemented\r\n");
-                        Date now = new Date();
-                        out.write("Date: " + now + "\r\n");
-                        out.write("Server: HTTPServer 1.0\r\n");
-                        out.write("Content-type: text/html\r\n\r\n");
-                    }
-                    out.write("<html>\r\n");
-                    out.write("<head><title>Not Implemented</title>\r\n");
-                    out.write("</head>\r\n");
-                    out.write("<body>");
-                    out.write("<h1>HTTP Error 501: Not Implemented</h1>\r\n");
-                    out.write("</body></html>\r\n");
-                    out.flush();
+                else {
+                    // method does not equal "GET"
+                    writeError(out, version, 501, "Not Implemented");
                 }
             }
             catch (URISyntaxException e) {
@@ -387,27 +415,39 @@ class RequestProcessor implements Runnable {
     } // end run
 
     public static String guessContentTypeFromName(String name) {
-        if (name.endsWith(".html") || name.endsWith(".htm")) {
-            return "text/html";
+        int pos = name.lastIndexOf('.');
+        if (pos >= 0) {
+            String suffix = name.substring(pos + 1).toLowerCase();
+            String mime = (String) mimes.get(suffix);
+            return (mime == null) ? MIME_TEXT_PLAIN : mime;
         }
-        else if (name.endsWith(".txt") ||
-                 name.endsWith(".java") ||
-                 name.endsWith(".scala")) {
-            return "text/plain";
-        }
-        else if (name.endsWith(".gif")) {
-            return "image/gif";
-        }
-        else if (name.endsWith(".class")) {
-            return "application/octet-stream";
-        }
-        else if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
-            return "image/jpeg";
-        }
-        else if (name.endsWith(".png")) {
-            return "image/png";
-        }
-        else return "text/plain";
+        return MIME_TEXT_PLAIN;
+    }
+
+    private static final Hashtable/*<String,String>*/ mimes = new Hashtable();
+
+    static {
+        // See http://www.webmaster-toolkit.com/mime-types.shtml
+        mimes.put("c"    , MIME_TEXT_PLAIN);
+        mimes.put("cc"   , MIME_TEXT_PLAIN);
+        mimes.put("cpp"  , MIME_TEXT_PLAIN);
+        mimes.put("class", MIME_APPLICATION_OCTET_STREAM);
+        mimes.put("gif"  , MIME_IMAGE_GIF);
+        mimes.put("h"    , MIME_TEXT_PLAIN);
+        mimes.put("htm"  , MIME_TEXT_HTML);
+        mimes.put("html" , MIME_TEXT_HTML);
+        mimes.put("lst"  , MIME_TEXT_PLAIN);
+        mimes.put("java" , MIME_TEXT_PLAIN);
+        mimes.put("jpe"  , MIME_IMAGE_JPEG);
+        mimes.put("jpg"  , MIME_IMAGE_JPEG);
+        mimes.put("jpeg" , MIME_IMAGE_JPEG);
+        mimes.put("pdf"  , MIME_APPLICATION_PDF);
+        mimes.put("pl"   , MIME_TEXT_PLAIN);
+        mimes.put("ps"   , MIME_APPLICATION_POSTSCRIPT);
+        mimes.put("png"  , MIME_IMAGE_PNG);
+        mimes.put("scala", MIME_TEXT_PLAIN);
+        mimes.put("text" , MIME_TEXT_PLAIN);
+        mimes.put("txt"  , MIME_TEXT_PLAIN);
     }
 
 } // end RequestProcessor
