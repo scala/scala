@@ -10,3 +10,4 @@ lib
 objects
 tmp
 build-nsc.properties
+env.sh
