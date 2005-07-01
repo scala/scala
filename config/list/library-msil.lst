@@ -4,6 +4,7 @@
 # $Id$
 
 AnyVal.java
+Application.scala
 Array.java
 Attribute.scala
 Boolean.java
@@ -12,9 +13,9 @@ Byte.java
 CaseClass.scala
 Cell.scala
 Char.java
+cloneable.scala
 Console.scala
 Double.java
-Application.scala
 Enumeration.scala
 Float.java
 Function0.scala
@@ -37,8 +38,8 @@ MatchError.java
 None.scala
 Option.scala
 Ordered.scala
-PartiallyOrdered.scala
 PartialFunction.scala
+PartiallyOrdered.scala
 ../msil/scala/Predef.scala
 Proxy.scala
 Ref.java
@@ -46,7 +47,7 @@ ScalaObject.java
 Seq.scala
 SeqProxy.scala
 SerialVersionUID.scala
-Serializable.scala
+serializable.scala
 Short.java
 Some.scala
 Stream.scala
@@ -186,25 +187,32 @@ runtime/matching/PatternTests.scala
 runtime/matching/Rule.scala
 runtime/matching/TestAlphabet.scala
 
-text/Document.scala
+#text/Document.scala
 
-#runtime/types/ClassType.java
-#runtime/types/JavaClassType.java
-#runtime/types/ScalaClassType.java
-#runtime/types/CompoundType.java
-#runtime/types/SingleType.java
-#runtime/types/BasicType.java
-#runtime/types/TypeBoolean.java
-#runtime/types/TypeByte.java
-#runtime/types/TypeChar.java
-#runtime/types/TypeConstructor.java
-#runtime/types/TypeDouble.java
-#runtime/types/TypeFloat.java
-#runtime/types/TypeInt.java
-#runtime/types/TypeLong.java
-#runtime/types/TypeShort.java
-#runtime/types/Refinement.java
-#runtime/types/MethodType.java
+# runtime/types/ClassType.java
+# runtime/types/JavaClassType.java
+# runtime/types/JavaRefArrayType.java
+# runtime/types/ScalaClassType.java
+# runtime/types/LazyParents.java
+# runtime/types/CompoundType.java
+# runtime/types/SingleType.java
+# runtime/types/ValueType.java
+# runtime/types/TypeBoolean.java
+# runtime/types/TypeByte.java
+# runtime/types/TypeChar.java
+# runtime/types/TypeConstructor.java
+# runtime/types/TypeDouble.java
+# runtime/types/TypeFloat.java
+# runtime/types/TypeInt.java
+# runtime/types/TypeLong.java
+# runtime/types/TypeShort.java
+# runtime/types/TypeUnit.java
+# runtime/types/SpecialType.java
+# runtime/types/TypeAll.java
+# runtime/types/TypeAllRef.java
+# runtime/types/TypeAny.java
+# runtime/types/TypeAnyVal.java
+# runtime/types/Statistics.java
 
 testing/UnitTest.scala
 #testing/SUnit.scala
@@ -224,58 +232,68 @@ util/grammar/TreeRHS.scala
 util/regexp/Base.scala
 util/regexp/PointedHedgeExp.scala
 util/regexp/SyntaxError.scala
-util/regexp/WildcardBase.scala
 util/regexp/WordExp.scala
 util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
 
-# xml/Attribute.scala
-# xml/AttributeSeq.scala
-# xml/BindingFactoryAdapter.scala
-# xml/CharData.scala
+# xml/Atom.scala
 # xml/Comment.scala
-# xml/DocType.scala
+# xml/Document.scala
 # xml/Elem.scala
-# xml/ExternalID.scala
 # xml/EntityRef.scala
-# xml/FactoryAdapter.scala
-# #xml/LoggedNodeFactory.scala
+# xml/MetaData.scala
+# xml/Molecule.scala
+# xml/NamespaceBinding.scala
 # xml/Node.scala
 # xml/NodeBuffer.scala
-# xml/NodeFactory.scala
 # xml/NodeSeq.scala
+# xml/Null.scala
 # xml/NodeTraverser.scala
 # xml/Parsing.scala
 # xml/PrettyPrinter.scala
+# xml/PrefixedAttribute.scala
 # xml/ProcInstr.scala
 # xml/SpecialNode.scala
 # xml/Text.scala
 # xml/TextBuffer.scala
-# xml/UName.scala
+# xml/TopScope.scala
+# xml/TypeSymbol.scala
+# xml/UnprefixedAttribute.scala
 # xml/Utility.scala
+# xml/XML.scala
 
 # xml/dtd/ContentModel.scala
+# xml/dtd/DocType.scala
+# xml/dtd/DTD.scala
 # xml/dtd/Decl.scala
-# xml/dtd/Parser.scala
+# xml/dtd/ElementValidator.scala
+# xml/dtd/ExternalID.scala
+# xml/dtd/ContentModelParser.scala
 # xml/dtd/Scanner.scala
 # xml/dtd/Tokens.scala
-# xml/dtd/Validation.scala
+# xml/dtd/DtdTypeSymbol.scala
+# #xml/dtd/Validation.scala
 # xml/dtd/ValidationException.scala
 
-# xml/nobinding/NoBindingFactoryAdapter.scala
-# xml/nobinding/XML.scala
+# xml/factory/NodeFactory.scala
+# xml/factory/LoggedNodeFactory.scala
 
-# xml/parsing/AttribValue.scala
 # xml/parsing/ConstructingHandler.scala
 # xml/parsing/ConstructingParser.scala
+# xml/parsing/DefaultMarkupHandler.scala
+# xml/parsing/ExternalSources.scala
 # xml/parsing/FatalError.scala
 # xml/parsing/MarkupHandler.scala
 # xml/parsing/MarkupParser.scala
-# xml/parsing/XSDHandler.scala
+# xml/parsing/FactoryAdapter.scala
+# xml/parsing/NoBindingFactoryAdapter.scala
+# xml/parsing/TokenTests.scala
+# xml/parsing/ValidatingMarkupHandler.scala
+
 # xml/path/Expression.scala
 
-#xml/transform/BasicTransformer.scala
-#xml/transform/RewriteRule.scala
-#xml/transform/RuleTransformer.scala
+# xml/transform/BasicTransformer.scala
+# xml/transform/RewriteRule.scala
+# xml/transform/RuleTransformer.scala
 
 ##############################################################################
