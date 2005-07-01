@@ -157,7 +157,7 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
         else if (symbol.variance() < 0)
             print("-");
 	printSymbol(symbol, addLink);
-        return printType(symbol.loBound(), ">:");
+        return printType(symbol.loBound(), " >: ");
     }
 
     /**

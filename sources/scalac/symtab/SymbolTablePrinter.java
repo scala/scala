@@ -307,12 +307,12 @@ public class SymbolTablePrinter {
     /** Returns the inner string of the given symbol. */
     public String getSymbolInnerString(Symbol symbol) {
         switch (symbol.kind) {
-        case Kinds.NONE : return ":";
-        case Kinds.ALIAS: return "=";
-        case Kinds.CLASS: return "extends";
-        case Kinds.TYPE : return "<:";
-        case Kinds.VAL  : return symbol.isModule() ? "extends" :
-            symbol.isDefParameter() ? ": =>" : ":";
+        case Kinds.NONE : return ": ";
+        case Kinds.ALIAS: return " = ";
+        case Kinds.CLASS: return " extends ";
+        case Kinds.TYPE : return " <: ";
+        case Kinds.VAL  : return symbol.isModule() ? " extends " :
+            symbol.isDefParameter() ? ": => " : ": ";
         default         : throw Debug.abort("unknown kind " + symbol.kind);
         }
     }
@@ -364,7 +364,7 @@ public class SymbolTablePrinter {
         if (keyword != null) print(keyword).space();
         String inner = getSymbolInnerString(symbol);
         return printSymbolName(symbol)
-            .printType(symbol.loBound(), ">:")
+            .printType(symbol.loBound(), " >: ")
             .printSymbolType(symbol, inner);
     }
 
@@ -385,7 +385,7 @@ public class SymbolTablePrinter {
         for (int i = 0; i < vparams.length; i++) {
             if (i > 0) print(",");
             printSymbolType(vparams[i],
-                            vparams[i].isDefParameter() ? "=>" : null);
+                            vparams[i].isDefParameter() ? "=> " : "");
         }
         return print(')');
     }
@@ -454,8 +454,8 @@ public class SymbolTablePrinter {
 
     /** Prints the given type with the given inner string. */
     public SymbolTablePrinter printType(Type type, String inner) {
-        if ("<:".equals(inner) && type.symbol() == global.definitions.ANY_CLASS ||
-            ">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS)
+        if (" <: ".equals(inner) && type.symbol() == global.definitions.ANY_CLASS ||
+            " >: ".equals(inner) && type.symbol() == global.definitions.ALL_CLASS)
             return this;
         else
             return printType0(getTypeToPrintForType(type), inner);
@@ -468,9 +468,7 @@ public class SymbolTablePrinter {
         case MethodType(Symbol[] vparams, Type result):
             return printValueParams(vparams).printType(result, inner);
         default:
-            if (inner != null) {
-                print(inner).space();
-            }
+            print(inner);
             return printType0(type);
         }
     }
@@ -525,9 +523,9 @@ public class SymbolTablePrinter {
                 .printScope(members,true)
                 .printSymbolUniqueId(type.symbol());
         case MethodType(_, _):
-            return printType0(type, null);
+            return printType0(type, "" /*null*/);
         case PolyType(_, _):
-            return printType0(type, null);
+            return printType0(type, "" /*null*/);
         case OverloadedType(Symbol[] alts, Type[] alttypes):
             return printTypes(alttypes, " <and> ");
         case TypeVar(Type origin, Constraint constr):

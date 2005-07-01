@@ -72,7 +72,7 @@ class SymbolTablePrinterFactory {
 
 		public SymbolTablePrinter printType(Type type, String inner) {
 		    if ((INNER_LT.equals(inner) && type.symbol() == global.definitions.ANY_CLASS) ||
-			(">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS))
+			(" >: ".equals(inner) && type.symbol() == global.definitions.ALL_CLASS))
 			return this;
 		    else {
 			printType0(getTypeToPrintForType(type), inner);
