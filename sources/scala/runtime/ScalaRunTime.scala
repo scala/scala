@@ -12,6 +12,8 @@ package scala.runtime;
 
 object ScalaRunTime {
 
+  import compat.Platform.getClass;
+
   trait Try[a] {
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b;
     def Finally(handler: Unit): a;
@@ -53,7 +55,7 @@ object ScalaRunTime {
   }
 
   def _hashCode(x: CaseClass): Int = {
-    var code = x.getClass().hashCode();
+    var code = getClass(x).hashCode();
     val arity = x.caseArity;
     var i = 0;
     while (i < arity) {
@@ -65,7 +67,7 @@ object ScalaRunTime {
 
   def _equals(x: CaseClass, y: Any): Boolean = y match {
     case y1: CaseClass =>
-      (x.getClass() eq y1.getClass()) && {
+      (getClass(x) eq getClass(y1)) && {
 	val arity = x.caseArity;
 	var i = 0;
 	while (i < arity && x.caseElement(i) == y1.caseElement(i))
