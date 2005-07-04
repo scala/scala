@@ -10,8 +10,7 @@
 
 package scala;
 
-/** @meta class [?T] extends scala.AnyRef with java.lang.Cloneable with java.io.Serializable; */
-abstract class Array[T](val length: Int) extends Cloneable with java.io.Serializable with Seq[T] {
+final class Array[T](val length: Int) extends Cloneable with java.io.Serializable with Seq[T] {
 
   def apply(i: Int): T;
   def update(i: Int, x: T): Unit;

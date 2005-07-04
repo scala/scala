@@ -840,11 +840,8 @@ abstract class Types: SymbolTable {
   /** A creator for type applications */
   def appliedType(tycon: Type, args: List[Type]): Type = tycon match {
     case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
-    case _ =>
-      tycon match {
-	case PolyType(tparams, restpe) => restpe.subst(tparams, args)
-	case ErrorType => tycon
-      }
+    case PolyType(tparams, restpe) => restpe.subst(tparams, args)
+    case ErrorType => tycon
   }
 
 // Helper Classes ---------------------------------------------------------

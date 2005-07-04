@@ -17,7 +17,7 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
     value(index) = elem.asInstanceOf[BoxedNumber].doubleValue()
   }
 
-  def unbox(elemClass: Class): Object = value;
+  def unbox(elemTag: String): Object = value;
 
   override def equals(other: Any) =
     value == other ||

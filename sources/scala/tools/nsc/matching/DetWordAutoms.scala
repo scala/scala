@@ -10,7 +10,7 @@ import java.util._ ;
 trait DetWordAutoms: TransMatcher  {
 
 import global._;
-class DetWordAutom  {
+class DetWordAutom {
 
     /** determinization -- standard algorithm considering only
      *                    reachable states
@@ -150,7 +150,7 @@ class DetWordAutom  {
 
   // TEMPORARY VAR used only during determinization and debug printing
   // Q -> (Label -> Q )
-  var  delta: HashMap = _;
+  var  deltaMap: HashMap = _;
   // Q -> Integer;
   var indexMap: HashMap = _;
 
@@ -183,7 +183,7 @@ class DetWordAutom  {
 
     this._labels = nfa.labels;
     ////System.out.println("Labels: "+labels);
-    this.delta = new HashMap();
+    this.deltaMap = new HashMap();
     //this.dead = -1;
 
     states = new TreeSet( new StateSetComparator() );
@@ -222,7 +222,7 @@ class DetWordAutom  {
       invIndexMap.put( new Integer( ix ), P1 );
       indexMap.put( P1, new Integer( ix ));
       ix = ix + 1;
-      delta.put( P1, {trans = new HashMap(); trans});
+      deltaMap.put( P1, {trans = new HashMap(); trans});
 
       //Console.println("...beginning 4" );
       // labelled transitions
@@ -310,7 +310,7 @@ class DetWordAutom  {
       ////System.out.print(state.toString() + " --> " + state_x);
       //System.out.println(" deftarget " + defTarget + " --> "+defTarget_x);
 
-      trans = delta.get( state ).asInstanceOf[HashMap];
+      trans = deltaMap.get( state ).asInstanceOf[HashMap];
       val newTrans = new HashMap();
       val labs = _labels.iterator();
       while(labs.hasNext()) {
@@ -333,7 +333,7 @@ class DetWordAutom  {
       _deltaq( state_x.intValue() ) = newTrans;
       _defaultq( state_x.intValue() ) = defTarget_x;
 
-      delta.remove( state );
+      deltaMap.remove( state );
       deftrans.remove( state );
 
     }
@@ -866,7 +866,7 @@ class DetWordAutom  {
     while (it.hasNext()) {
       val state = it.next().asInstanceOf[TreeSet];
       Console.print("state:" + state.toString() + " transitions ");
-      trans = delta.get( state ).asInstanceOf[HashMap];
+      trans = deltaMap.get( state ).asInstanceOf[HashMap];
       val labs = _labels.iterator();
       while(labs.hasNext()) {
 	val label = labs.next();

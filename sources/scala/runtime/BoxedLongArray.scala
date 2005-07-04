@@ -17,7 +17,7 @@ final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
     value(index) = elem.asInstanceOf[BoxedNumber].longValue()
   }
 
-  def unbox(elemClass: Class): Object = value;
+  def unbox(elemTag: String): Object = value;
 
   override def equals(other: Any) =
     value == other ||

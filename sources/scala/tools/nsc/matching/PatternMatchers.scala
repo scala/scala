@@ -8,7 +8,7 @@ package scala.tools.nsc.matching ;
 
 import scala.tools.util.Position;
 
-trait PatternMatchers: (TransMatcher with PatternNodes) with PatternNodeCreator {
+trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with PatternNodeCreator {
 
 
   import global._;

@@ -10,7 +10,18 @@
 
 package scala.runtime;
 
+
 object ScalaRunTime {
+
+  /** Names for primitive typesm, used by array unboxing */
+  val ByteTag = ".Byte";
+  val ShortTag = ".Short";
+  val CharTag = ".Char";
+  val IntTag = ".Int";
+  val LongTag = ".Long";
+  val FloatTag = ".Float";
+  val DoubleTag = ".Double";
+  val BooleanTag = ".Boolean";
 
   import compat.Platform.getClass;
 

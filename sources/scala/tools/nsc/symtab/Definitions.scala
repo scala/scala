@@ -145,6 +145,7 @@ abstract class Definitions: SymbolTable {
 
     // boxed classes
     var BoxedArrayClass: Symbol = _;
+    var BoxedObjectArrayClass: Symbol = _;
     var BoxedUnitClass: Symbol = _;
 
     def getModule(fullname: Name): Symbol =
@@ -318,6 +319,7 @@ abstract class Definitions: SymbolTable {
       PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor);
 
       BoxedArrayClass = getClass("scala.runtime.BoxedArray");
+      BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray");
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit");
     }
   }

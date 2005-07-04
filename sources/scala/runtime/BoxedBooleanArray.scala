@@ -17,7 +17,7 @@ final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {
     value(index) = elem.asInstanceOf[BoxedBoolean].value
   }
 
-  def unbox(elemClass: Class): Object = value;
+  def unbox(elemTag: String): Object = value;
 
   override def equals(other: Any) =
     value == other ||

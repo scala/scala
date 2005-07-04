@@ -17,7 +17,7 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
     value(index) = elem.asInstanceOf[BoxedNumber].byteValue()
   }
 
-  def unbox(elemClass: Class): Object = value;
+  def unbox(elemTag: String): Object = value;
 
   override def equals(other: Any) =
     value == other ||

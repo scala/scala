@@ -10,10 +10,20 @@ package scala.runtime;
 /** A class representing Array[T]
  */
 abstract class BoxedArray() extends PartialFunction[Int, Object] with Seq[Object] {
+  /** The length of the array */
   def length: Int;
+
+  /** The element at given index */
   def apply(index: Int): Object;
+
+  /** Update element at given index */
   def update(index: Int, elem: Object): Unit;
-  def unbox(elemClass: Class): Object;
+
+  /** Convert to Java array.
+   *  @param elemTag    Either one of the tags ".N" where N is the name of a primitive type
+   *                    (@see ScalaRunTime), or a full class name.
+   */
+  def unbox(elemTag: String): Object;
 
   override def isDefinedAt(x: Int): Boolean   =  0 <= x && x < length;
 

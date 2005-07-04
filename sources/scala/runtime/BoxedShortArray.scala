@@ -17,7 +17,7 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
     value(index) = elem.asInstanceOf[BoxedNumber].shortValue()
   }
 
-  def unbox(elemClass: Class): Object = value;
+  def unbox(elemTag: String): Object = value;
 
   override def equals(other: Any) =
     value == other ||

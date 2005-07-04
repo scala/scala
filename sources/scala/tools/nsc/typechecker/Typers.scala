@@ -459,6 +459,7 @@ abstract class Typers: Analyzer {
 	val getter: DefDef = {
 	  val sym = vdef.symbol;
 	  val getter = sym.owner.info.decls.lookup(name).suchThat(.hasFlag(ACCESSOR));
+	  assert(getter != NoSymbol, vdef);
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree else typed(gen.mkRef(sym), EXPRmode, sym.tpe)));
@@ -1012,7 +1013,7 @@ abstract class Typers: Analyzer {
 	  val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elemtpt1.tpe));
           copy.ArrayValue(tree, elemtpt1, elems1)
             setType (if (isFullyDefined(pt)) pt
-                     else appliedType(ArrayClass.tpe, List(elemtpt1.tpe)))
+                     else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe)))
 
         case fun @ Function(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)

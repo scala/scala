@@ -17,7 +17,7 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
     value(index) = elem.asInstanceOf[BoxedNumber].floatValue()
   }
 
-  def unbox(elemClass: Class): Object = value;
+  def unbox(elemTag: String): Object = value;
 
   override def equals(other: Any) =
     value == other ||

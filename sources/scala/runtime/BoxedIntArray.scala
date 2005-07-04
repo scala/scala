@@ -17,7 +17,7 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
     value(index) = elem.asInstanceOf[BoxedNumber].intValue()
   }
 
-  def unbox(elemClass: Class): Object = value;
+  def unbox(elemTag: String): Object = value;
 
   override def equals(other: Any) =
     value == other ||

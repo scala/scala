@@ -176,7 +176,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val tailCallPhase = new tailCalls.Phase(uncurryPhase);
 
-
   object transmatcher extends TransMatcher {
     val global: Global.this.type = Global.this;
 

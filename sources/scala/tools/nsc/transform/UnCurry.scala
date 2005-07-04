@@ -91,12 +91,7 @@ abstract class UnCurry extends InfoTransform {
           formals.last match {
             case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
 	      def mkSequence(args: List[Tree]) =
-                if(inPattern)                           /* buraq adds TEMPORARILY */
-                  atPos(pos)(Sequence(args) setType formals.last); /* eventually */
-                else                                               /* recognize ArrayValue*/
-                  atPos(pos)(
-                    ArrayValue(TypeTree(elempt), args) setType formals.last);
-
+                atPos(pos)(ArrayValue(TypeTree(elempt), args) setType formals.last);
 	      if (args.isEmpty) List(mkSequence(args))
 	      else {
 	        val suffix = args.last match {
