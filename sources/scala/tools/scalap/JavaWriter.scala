@@ -148,6 +148,20 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
                     print(getType(tpe) + ";").newline;
             }
         }
+        attribs find {
+            case cf.Attribute(name, _) => getName(name) == "Exceptions"
+        } match {
+            case Some(cf.Attribute(_, data)) =>
+                val n = ((data(0) & 0xff) << 8) + (data(1) & 0xff);
+                indent.print("throws ");
+                for (val i <- Iterator.range(0, n) map {x => 2 * (x + 1)}) {
+                    val inx = ((data(i) & 0xff) << 8) + (data(i+1) & 0xff);
+                    if (i > 2) print(", ");
+                    print(getClassName(inx).trim());
+                }
+                undent.newline;
+            case None =>
+        }
     }
 
     def printClassHeader = {
