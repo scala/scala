@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -19,10 +19,10 @@ import scalac.Global;
 import scalac.Phase;
 import scalac.framework.History;
 import scalac.util.ArrayApply;
+import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.NameTransformer;
-import scalac.util.Debug;
 
 
 public abstract class Symbol implements Modifiers, Kinds {
@@ -351,13 +351,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Copying & cloning ------------------------------------------------------
 
-    /** Return a fresh symbol with the same fields as this one.
+    /** Returns a fresh symbol with the same fields as this one.
      */
     public final Symbol cloneSymbol() {
         return cloneSymbol(owner);
     }
 
-    /** Return a fresh symbol with the same fields as this one and the
+    /** Returns a fresh symbol with the same fields as this one and the
      * given owner.
      */
     public final Symbol cloneSymbol(Symbol owner) {
@@ -552,6 +552,11 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol have the STABLE flag? */
     public final boolean hasStableFlag() {
         return (flags & STABLE) != 0;
+    }
+
+    /** Is this symbol captured? */
+    public final boolean isCaptured() {
+        return (flags & CAPTURED) != 0;
     }
 
     /** Is this symbol static (i.e. with no outer instance)? */
@@ -799,6 +804,12 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public final boolean isParameter() {
         return (flags & PARAM) != 0;
+    }
+
+    /** Is this symbol a type parameter?
+     */
+    public final boolean isTypeParameter() {
+        return kind == TYPE && (flags & PARAM) != 0;
     }
 
     /** Is this symbol a def parameter?
