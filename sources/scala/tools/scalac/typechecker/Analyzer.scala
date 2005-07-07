@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -13,24 +13,28 @@
 // todo: synchronize on module instantiation.
 // todo: empty package
 
+
+import java.lang.{Boolean => JBoolean, Integer, Object => JObject}
+import java.util.HashMap;
+
 import ch.epfl.lamp.util.Pair;
-import scala.tools.util.Position;
+
 import scalac._;
-import scalac.util._;
+import scalac.{Global => scalac_Global}
 import scalac.ast._;
 import scalac.atree.AConstant;
 import scalac.atree.AConstant$CHAR;
 import scalac.atree.AConstant$INT;
 import scalac.symtab.classfile._;
 import scalac.symtab._;
+import scalac.util._;
 import Tree._;
-import java.util.HashMap;
+
 import scala.tools.scalac.util.NewArray;
-import scalac.{Global => scalac_Global}
+import scala.tools.util.Position;
 
 package scala.tools.scalac.typechecker {
 
-import java.lang.{Boolean, Byte, Short, Character, Integer, Object}
 
 /** The main attribution phase.
  */
@@ -41,10 +45,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   private var context: Context = _;
   private var pt: Type = _;
-  private var mode: int = _;
+  private var mode: Int = _;
 
-  private var inAlternative: boolean = _;
-  private val patternVars = new HashMap();   // for pattern matching; maps x to {true,false}
+  private var inAlternative: Boolean = _;
+  // for pattern matching; maps x to {true,false}
+  private val patternVars = new HashMap/*<Symbol,JBoolean>*/();
 
   val definitions = global.definitions;
   val infer = new scala.tools.scalac.typechecker.Infer(this) {
@@ -63,7 +68,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if (unit.console) descr.consoleContext else descr.startContext),
       unit);
 
-  def enter(context: Context, unit: CompilationUnit): unit = {
+  def enter(context: Context, unit: CompilationUnit): Unit = {
     assert(this.unit == null, "start unit non null for " + unit);
     context.infer = infer;
     this.unit = unit;
@@ -135,7 +140,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Mode constants
-  */
+   */
   val NOmode        = 0x000;
   val EXPRmode      = 0x001;  // these 4 modes are mutually exclusive.
   val PATTERNmode   = 0x002;
@@ -228,25 +233,24 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   def decode(name: Name): String =
-    if (name.isTypeName()) "type " + NameTransformer.decode(name);
-    else "value " + NameTransformer.decode(name);
+    (if (name.isTypeName()) "type " else "value ") + NameTransformer.decode(name);
 
 // Checking methods ----------------------------------------------------------
 
   /** Check that symbol's definition is well-formed. This means:
-  *   - no conflicting modifiers
-  *   - `abstract' modifier only for classes
-  *   - `override' modifier never for classes
-  *   - `def' modifier never for parameters of case classes
-  *   - declarations only in traits or abstract classes
-  *   - symbols with `override' modifier override some other symbol.
-  */
+   *  - no conflicting modifiers
+   *  - `abstract' modifier only for classes
+   *  - `override' modifier never for classes
+   *  - `def' modifier never for parameters of case classes
+   *  - declarations only in traits or abstract classes
+   *  - symbols with `override' modifier override some other symbol.
+   */
   def validate(sym: Symbol): unit = {
     if ((sym.flags & (ABSTRACT | OVERRIDE)) == ABSTRACT && sym.kind != CLASS) {
       error(sym.pos, "`abstract' modifier can be used only for classes; " +
 	      "\nit should be omitted for abstract members");
     }
-    if ((sym.flags & OVERRIDE) != 0 && sym.kind == CLASS) {
+    if (sym.isOverride() && sym.kind == CLASS) {
       error(sym.pos, "`override' modifier not allowed for classes");
     }
     if ((sym.flags & DEF) != 0 && sym.owner().isPrimaryConstructor() &&
@@ -258,7 +262,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       error(sym.pos, "`*' modifier not allowed for class parameters");
     }
     */
-    if ((sym.flags & DEFERRED) != 0) {
+    if (sym.isDeferred()) {
       if (sym.owner().kind != CLASS || (sym.owner().flags & MODUL) != 0 || sym.owner().isAnonymousClass()) {
 	error(sym.pos,
 	      "only classes can have declared but undefined members" +
@@ -276,16 +280,19 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Check that
-  *  - all parents are class types
-  *  - supertype conforms to supertypes of all mixin types.
-  *  - final classes are only inherited by classes which are
-  *    nested within definition of base class, or that occur within same
-  *    statement sequence.
-  *  - self-type of current class is a subtype of self-type of each parent class.
-  *  - parent constructors do not refer to value parameters of class.
-  *  - no two parents define same symbol.
-  */
-  def validateParentClasses(constrs: Array[Tree], parents: Array[Type], selfType: Type): unit = {
+   *  - all parents are class types
+   *  - supertype conforms to supertypes of all mixin types.
+   *  - final classes are only inherited by classes which are
+   *    nested within definition of base class, or that occur within same
+   *    statement sequence.
+   *  - self-type of current class is a subtype of self-type of each parent class.
+   *  - parent constructors do not refer to value parameters of class.
+   *  - no two parents define same symbol.
+   *
+   *  @param constrs
+   *  @param parents
+   */
+  def validateParentClasses(constrs: Array[Tree], parents: Array[Type], selfType: Type): Unit = {
     var i = 0;
     while (i < parents.length) {
       if (!checkClassType(constrs(i).pos, parents(i))) return;
@@ -330,8 +337,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Check that type is a class type.
-  */
-  private def checkClassType(pos: int, tp: Type): boolean = {
+   *
+   *  @param pos
+   *  @param tp
+   *  @return
+   */
+  private def checkClassType(pos: Int, tp: Type): Boolean = {
     tp.unalias() match {
       case Type$TypeRef(_, sym, _) =>
 	if (sym.kind == CLASS) return true;
@@ -342,8 +353,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Check that type is an object type
-  */
-  private def checkObjectType(pos: int, tp: Type): Type =
+   *
+   *  @param pos
+   *  @param tp
+   *  @return
+   */
+  private def checkObjectType(pos: Int, tp: Type): Type =
     if (tp.isObjectType()) tp
     else {
       if (!tp.isError()) error(pos, "object type expected");
@@ -351,8 +366,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
 
   /** Check that type is eta-expandable (i.e. no `def' or `*' parameters)
-  */
-  def checkEtaExpandable(pos: int, tp: Type): unit = tp match {
+   *
+   *  @param pos
+   *  @param tp
+   */
+  def checkEtaExpandable(pos: Int, tp: Type): Unit = tp match {
     case Type$MethodType(params, restype) =>
       var i = 0; while (i < params.length) {
 	if ((params(i).flags & DEF) != 0)
@@ -365,9 +383,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     case _ =>
   }
 
-  /** Check that `sym' does not contain both `flag1' and `flag2'
-  */
-  def checkNoConflict(sym: Symbol, flag1: int, flag2: int): unit = {
+  /** Check that `sym' does not contain both `flag1' and `flag2'.
+   *
+   *  @param sym
+   *  @param flag1
+   *  @param flag2
+   */
+  def checkNoConflict(sym: Symbol, flag1: Int, flag2: Int): Unit = {
     if ((sym.flags & (flag1 | flag2)) == (flag1 | flag2)) {
       if (flag1 == DEFERRED)
 	error(sym.pos, "abstract member may not have " +
@@ -384,7 +406,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   def checkNonCyclic(pos: int, tp: Type): unit = tp match {
     case Type$TypeRef(pre, sym, args) =>
       sym.initialize();
-      if ((sym.flags & LOCKED) != 0) {
+      if (sym.isLocked()) {
 	error(pos, "cyclic aliasing or subtyping involving " + sym);
       } else if (sym.kind == ALIAS || sym.kind == TYPE) {
 	sym.flags = sym.flags | LOCKED;
@@ -408,7 +430,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
     case Type$SingleType(pre, sym) =>
       sym.initialize();
-      if ((sym.flags & LOCKED) != 0) {
+      if (sym.isLocked()) {
 	error(pos, "cyclic aliasing or subtyping involving " + sym);
       }
 
@@ -416,8 +438,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Check that type does not refer to components defined in current scope.
-  */
-  def checkNoEscape(pos: int, tp: Type): Type = {
+   *
+   *  @param pos
+   *  @param tp
+   *  @return
+   */
+  def checkNoEscape(pos: Int, tp: Type): Type = {
 
     val checkNoEscapeMap = new Type$Map() {
       override def apply(t: Type): Type = {
@@ -433,7 +459,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       private def checkNoEscape(t: Type, sym: Symbol): unit = {
 	val e: Scope$Entry = context.scope.lookupEntry(sym.name);
 	if (e.sym == sym && e.owner == context.scope &&
-	    !(e.sym.kind == TYPE && (e.sym.flags & PARAM) != 0)) {
+	    !e.sym.isTypeParameter()) {
 	      throw new Type$Error(
 		"type " + t + " escapes its defining scope");
 	    }
@@ -452,9 +478,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
   }
 
-  /** Check that there are no dependent parameter types among parameters
-  */
-  def checkNoEscapeParams(vparams: Array[Array[Tree.ValDef]]): unit = {
+  /** Check that there are no dependent parameter types among parameters.
+   *
+   *  @param vparams
+   */
+  def checkNoEscapeParams(vparams: Array[Array[Tree.ValDef]]): Unit = {
     var i = 0; while (i < vparams.length) {
       var j = 0; while (j < vparams(i).length) {
 	checkNoEscape(vparams(i)(j).pos, vparams(i)(j).tpe.getType());
@@ -465,12 +493,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Check that tree represents a legal trait definition.
-  */
-  def checkTraitDef(pos: int, clazz: Symbol, templ: Tree.Template) = {
+   *
+   *  @param pos
+   *  @param clazz
+   *  @param templ
+   */
+  def checkTraitDef(pos: Int, clazz: Symbol, templ: Tree.Template): Unit = {
 
     /** Check that type does not have value parameters
      */
-    def checkNoParams(tpe: Type): unit = tpe match {
+    def checkNoParams(tpe: Type): Unit = tpe match {
       case Type$MethodType(vparams, _) =>
 	if (vparams.length > 0)
 	  error(pos, "trait may not have value parameters")
@@ -481,14 +513,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
     /** Check that tree represents a pure constructor.
      */
-    def checkPureConstr(tree: Tree): unit = {
+    def checkPureConstr(tree: Tree): Unit = {
       if (!TreeInfo.isPureConstr(tree) && !tree.getType().isError())
 	error(tree.pos, "" + clazz + " may invoke only pure superclass constructors");
     }
 
     /** Check that tree refers to a trait
      */
-    def checkTraitRef(tree: Tree): unit = {
+    def checkTraitRef(tree: Tree): Unit = {
       if (!tree.getType().symbol().isTrait() && !tree.getType().isError())
 	error(tree.pos, " " + clazz + " may inherit only traits as mixins");
     }
@@ -513,7 +545,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Check that tree is a stable expression .p
-  */
+   *
+   *  @param tree
+   *  @return the validated tree
+   */
   def checkStable(tree: Tree): Tree =
     if (TreeInfo.isPureExpr(tree) || tree.getType().isError()) tree;
     else {
@@ -522,8 +557,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
 
   /** Check that class can be instantiated.
-  */
-  def checkInstantiatable(pos: int, tp: Type): unit = {
+   *
+   *  @param pos
+   *  @param tp
+   */
+  def checkInstantiatable(pos: Int, tp: Type): Unit = {
     val clazz: Symbol = tp.symbol();
     if (clazz.kind == CLASS) {
       if (clazz.isAbstractClass())
@@ -535,8 +573,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Check that all subtrees have their types defined.
-  *  Used for asserting an internal invariant
-  */
+   *  Used for asserting an internal invariant
+   */
   private class CheckDefined extends Traverser {
     var all: Tree = null;
     override def traverse(tree: Tree): unit = {
@@ -597,7 +635,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     } else vapp
   }
 
-// Contexts -------------------------------------------------------------------
+// Contexts ------------------------------------------------------------------
 
   /** Push new context associated with given tree, owner, and scope on stack.
    */
@@ -607,14 +645,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     prevContext
   }
 
-// Lazy Types ------------------------------------------------------------------
+// Lazy Types ----------------------------------------------------------------
 
   /** A lazy type which, when forced returns the type of a symbol defined
-  *  in `tree'.
-  */
+   *  in `tree'.
+   */
   class LazyTreeType(_tree: Tree) extends Type$LazyType {
     val tree: Tree  = _tree;
-    val u: CompilationUnit     = unit;
+    val u: CompilationUnit = unit;
     val c: Context  = context;
 
     override def complete(sym: Symbol): unit = {
@@ -767,9 +805,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Enter symbol `sym' in current scope. Check for double definitions.
-  *  Handle overloading.
-  */
-  def enterInScope(sym: Symbol): unit = {
+   *  Handle overloading.
+   *
+   *  @param sym
+   */
+  def enterInScope(sym: Symbol): Unit = {
 
     def covers(presym: Symbol, newsym: Symbol) = {
       if (presym == newsym) true
@@ -853,6 +893,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
     /** Make `sym' the symbol of import `tree' and push an
      *  import context.
+     *
+     *  @param tree
+     *  @param sym
+     *  @return
      */
     def enterImport(tree: Tree, sym: Symbol): Symbol = {
       sym.setInfo(new LazyTreeType(tree));
@@ -1009,7 +1053,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Re-enter type parameters in current scope.
-  */
+   *
+   *
+   */
   def reenterParams(tparams: Array[Tree.AbsTypeDef], tsyms: Array[Symbol]): unit = {
     var i = 0; while (i < tparams.length) {
       tsyms(i).pos = tparams(i).pos;
@@ -1142,7 +1188,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    restype = context.enclClass.owner.getType();/*.subst(
 	      context.enclClass.owner.typeParams(), tparamSyms)*/;
 	  } else {
-	    if ((sym.flags & PARAMACCESSOR) != 0) {
+	    if (sym.hasParamAccessorFlag()) {
 	      rhs.setType(rhs.symbol().getType());
 	    } else {
 	      rhs = transform(rhs, EXPRmode);
@@ -1173,9 +1219,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  } else {
 	    val prevContext = pushContext(tree, sym, context.scope);
 	    if (rhs == Tree.Empty) {
-	      if ((sym.owner().flags & ACCESSOR) != 0) {
+	      if (sym.owner().isAccessor()) {
 		// this is the parameter of a variable setter method.
-		assert((sym.flags & PARAM) != 0);
+		assert(sym.isParameter());
 		owntype = sym.owner().accessed().getType();
 	      } else {
 		error(tree.pos, "missing parameter type");
@@ -1194,7 +1240,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree.AliasTypeDef(mods, name, tparams, _rhs) =>
 	  var rhs = _rhs;
-	  val prevContext = pushContext(tree, sym.primaryConstructor(), new Scope(context.scope));
+	  val prevContext =
+            pushContext(tree, sym.primaryConstructor(), new Scope(context.scope));
 	  val tparamSyms = enterParams(tparams);
 	  rhs = transform(rhs, TYPEmode);
 	  (tree.asInstanceOf[Tree.AliasTypeDef]).rhs = rhs;
@@ -1221,7 +1268,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  owntype.symbol().initialize();//to detect cycles todo: needed?
 
 	case Tree.Import(_expr, selectors) =>
-	  val expr  = transform(_expr, EXPRmode | QUALmode);
+	  val expr = transform(_expr, EXPRmode | QUALmode);
 	  tree.asInstanceOf[Tree.Import].expr = expr;
 	  checkStable(expr);
 	  owntype = expr.getType();
@@ -1257,7 +1304,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   /** Definition phase for a template. This enters all symbols in template
   *  into symbol table.
   */
-  def defineTemplate(templ: Tree.Template, clazz: Symbol, members: Scope): unit = {
+  def defineTemplate(templ: Tree.Template, clazz: Symbol, members: Scope): Unit = {
     // attribute parent constructors
     templ.parents = transformConstrInvocations(templ.pos, templ.parents);
     if (templ.parents.length > 0 &&
@@ -1295,9 +1342,15 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
 
   /** Define self type of class or module `sym'
-  *  associated with `tree' using given `unit' and `context'.
-  */
-  def defineSelfType(sym: Symbol, clazz: Symbol, tree: Tree, unit: CompilationUnit, curcontext: Context): unit = {
+   *  associated with `tree' using given `unit' and `context'.
+   *
+   *  @param sym
+   *  @param clazz
+   *  @param tree
+   *  @param unit
+   *  @param curcontext
+   */
+  def defineSelfType(sym: Symbol, clazz: Symbol, tree: Tree, unit: CompilationUnit, curcontext: Context): Unit = {
     val savedUnit: CompilationUnit = this.unit;
     this.unit = unit;
     val savedContext: Context = this.context;
@@ -1401,9 +1454,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
   }
 
-  /** Adapt tree to given mode and given prototype
-  */
-  def adapt(tree: Tree, mode: int, pt: Type): Tree = {
+  /** Adapt tree to given mode and given prototype.
+   *
+   * @param tree
+   * @param mode
+   * @param pt
+   * @return
+   */
+  def adapt(tree: Tree, mode: Int, pt: Type): Tree = {
     //System.out.println(tree + ":" + tree.getType() + " adapt " + pt + " " + mode);//DEBUG
     tree.getType() match {
       case Type$OverloadedType(alts, alttypes) =>
@@ -1860,16 +1918,20 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Attribute a sequence of constructor invocations.
-  */
-  def transformConstrInvocations(pos: int, constrs: Array[Tree]): Array[Tree] = {
+   *
+   *  @param pos
+   *  @param constrs
+   *  @return
+   */
+  def transformConstrInvocations(pos: Int, constrs: Array[Tree]): Array[Tree] = {
     var i = 0; while (i < constrs.length) {
       constrs(i) = transform(constrs(i), CONSTRmode | SUPERmode, Type.AnyType);
       val f: Symbol = TreeInfo.methSymbol(constrs(i));
       if (f != null) {
-	val c: Symbol = f.constructorClass();
-	if (c.kind == CLASS) {
-	  c.initialize();//to detect cycles
-	  if (i > 0 && (c.flags & JAVA) == 0) loadMixinCode(pos, c);
+	val cSym: Symbol = f.constructorClass();
+	if (cSym.kind == CLASS) {
+	  cSym.initialize();//to detect cycles
+	  if (i > 0 && (cSym.flags & JAVA) == 0) loadMixinCode(pos, cSym);
 	}
       }
       i = i + 1
@@ -1877,7 +1939,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     constrs
   }
 
-  def transformConstrInvocationArgs(constrs: Array[Tree]): unit = {
+  def transformConstrInvocationArgs(constrs: Array[Tree]): Unit = {
     var i = 0; while (i < constrs.length) {
       constrs(i) match {
 	case Tree.Apply(fn, args) =>
@@ -2089,12 +2151,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   /** Transform expression or type with a given mode.
-  */
-  def transform(tree: Tree, mode: int): Tree = {
+   *
+   *  @param tree
+   *  @param mode
+   *  @return
+   */
+  def transform(tree: Tree, mode: Int): Tree = {
     if ((mode & (EXPRmode | PATTERNmode | CONSTRmode)) != 0)
       return transform(tree, mode, Type.AnyType);
 
-    val savedMode: int = this.mode;
+    val savedMode: Int = this.mode;
     this.mode = mode;
     val tree1: Tree = transform(tree);
     this.mode = savedMode;
@@ -2120,7 +2186,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     tree1
   }
 
-  def transform(trees: Array[Tree], mode: int): Array[Tree] = {
+  def transform(trees: Array[Tree], mode: Int): Array[Tree] = {
     var i = 0; while (i < trees.length) {
       trees(i) = transform(trees(i), mode);
       i = i + 1
@@ -2144,7 +2210,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     super.transform(trees);
 
   /** The main attribution function
-  */
+   *
+   *  @param tree
+   *  @return
+   */
   override def transform(tree: Tree): Tree = {
     //System.out.println("transforming " + tree + ":" + pt);//DEBUG
     if (tree.getType() != null) {
@@ -2153,7 +2222,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
     val sym: Symbol = tree.symbol();
     if (sym != null && !sym.isInitialized()) sym.initialize();
-    if (global.debug && TreeInfo.isDefinition(tree)) global.log("transforming definition of " + sym);
+    if (global.debug && TreeInfo.isDefinition(tree))
+      global.log("transforming definition of " + sym);
     try {
       tree match {
 	case Tree.Empty =>
@@ -2395,16 +2465,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree.Bind(name, body) =>
           var vble: Symbol = null;
-          if(name != Names.PATTERN_WILDCARD) {
+          if (name != Names.PATTERN_WILDCARD) {
             vble = context.owner.newPatternVariable(tree.pos, name).setType(pt);
             enterInScope(vble);
             //System.out.println("Bind("+name+",...) enters in scope:"+Debug.show(vble));
 
-            patternVars.put(vble, new Boolean(this.inAlternative));
+            patternVars.put(vble, new JBoolean(this.inAlternative));
             //System.out.println("case Bind.. put symbol vble="+vble+" in scope and patternVars.");
           }
 	  val body1: Tree = transform(body);
-          if(name == Names.PATTERN_WILDCARD) body1
+          if (name == Names.PATTERN_WILDCARD) body1
 	  else {
             //assert body1.getType() != null;
             if(TreeInfo.isSequenceValued(body1)) {
@@ -2751,8 +2821,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
               { var i = 0; while (i < argtypes.length) {
                 argtypes(i) = definitions.ALL_TYPE(); i = i + 1
               }}
-	      var matching1: int = -1;
-	      var matching2: int = -1;
+	      var matching1: Int = -1;
+	      var matching2: Int = -1;
 	      { var i = 0; while (i < alttypes.length) {
                 if (infer.isApplicable(alttypes(i), argtypes, pt)) {
                   //System.out.println("matches: " + alttypes(i) + " with " + pt);//debug
@@ -3044,7 +3114,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
         errorTree(tree)
     }
   }
+
 }
+
 }
 
 //  LocalWords:  SOcos
