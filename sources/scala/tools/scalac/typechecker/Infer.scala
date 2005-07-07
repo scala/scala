@@ -1395,7 +1395,16 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     if (best != null) {
       viewMeths = availableViews(tp);
       while (!viewMeths.isEmpty) {
-	if (viewMeths.head != best &&
+        // Ugly hack necessary for MSIL delegate support
+        // Used to be just:
+        // if (viewMeths.head != best &&
+        //    isApplicable(viewMeths.head.symtype, argtypes, pt, name, false) &&
+        //    !(specializesView(best.symtype, viewMeths.head.symtype) &&
+        //     !specializesView(viewMeths.head.symtype, best.symtype))) {
+        if ((if (global.target == scalac_Global.TARGET_MSIL)
+               viewMeths.head.sym != best.sym
+             else
+               viewMeths.head != best) &&
 	    isApplicable(viewMeths.head.symtype, argtypes, pt, name, false) &&
 	    !(specializesView(best.symtype, viewMeths.head.symtype) &&
 	      !specializesView(viewMeths.head.symtype, best.symtype))) {

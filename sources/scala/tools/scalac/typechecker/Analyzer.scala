@@ -616,6 +616,20 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     sym.getType().isInstanceOf[Type$PolyType] &&
     sym.typeParams().length == 0;
 
+  /**
+   * Returns true if the adaption 'from => to' corresponds to a delegate
+   * forward view.
+   *
+   * TODO: The check should probably be deeper than just for a function type
+   * because the user might introduce a view from a delegate type to a
+   * function type himself, which is okay as long as it doesn't collide with
+   * the forward view.
+   */
+  private def isDelegateForwardView(from: Type, to: Type): boolean =
+    definitions.DELEGATE_TYPE() != null &&
+    from.isSubType(definitions.DELEGATE_TYPE()) &&
+    to.isFunctionType();
+
 // Views -----------------------------------------------------------------------
 
   private def applyView(v: View, tree: Tree, mode: int, pt: Type): Tree = {
@@ -1646,6 +1660,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
             case _ =>
           }
 	  val v = infer.bestView(tree.getType(), pt, Names.EMPTY);
+          // Convert views of delegate types to closures wrapped around
+          // the expression's apply method.
+	  if(global.target == scalac_Global.TARGET_MSIL &&
+               v != null && isDelegateForwardView(tree.getType(), pt)) {
+	    val meth: Symbol = tree.symbol().lookup(Names.apply);
+	    return adapt(gen.Select(tree, meth), mode, pt);
+	  }
 	  if (v != null) return applyView(v, tree, mode, pt);
 	  // todo: remove
  	  val coerceMeth: Symbol = tree.getType().lookup(Names.coerce);
@@ -1814,6 +1835,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
       }
     }
+    // MSIL: Forbid chaining of non-variable delegate objects using += and -=
+    if(global.target == scalac_Global.TARGET_MSIL &&
+        qual.getType().isSubType(definitions.DELEGATE_TYPE()) &&
+        (sym.name == Names.PLUSEQ || sym.name == Names.MINUSEQ) &&
+        !qual.symbol().isVariable())
+      error(tree.pos, "illegal modification of non-variable delegate");
     val qualtype =
       if (qual.isInstanceOf[Tree.Super]) context.enclClass.owner.thisType()
       else qual.getType();

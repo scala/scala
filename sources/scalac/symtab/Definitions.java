@@ -742,6 +742,12 @@ public class Definitions {
         return JAVAREFARRAYTYPE_JAVAREFARRAYTYPE;
     }
 
+    // MSIL delegate types
+    public final Symbol DELEGATE_CLASS;
+    public final Type   DELEGATE_TYPE() {
+        return DELEGATE_CLASS != null ? DELEGATE_CLASS.staticType() : null;
+    }
+
     //########################################################################
     // Public Fields - Global values
 
@@ -794,6 +800,8 @@ public class Definitions {
 	STRING_CLASS = getClass(forMSIL ? "System.String" : "java.lang.String");
         THROWABLE_CLASS =
             getClass(forMSIL ? "System.Exception" : "java.lang.Throwable");
+        // .NET delegate class
+        DELEGATE_CLASS = forMSIL ? getClass("System.MulticastDelegate") : null;
 
         // the scala value classes
         UNIT_CLASS = getClass("scala.Unit");

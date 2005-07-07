@@ -133,7 +133,6 @@ public class CLRClassParser extends SymbolLoader {
 		continue;
 	    assert props[i].PropertyType == getter.ReturnType;
 	    Name n;
-	    Symbol method;
 	    scalac.symtab.Type mtype;
 
 	    ParameterInfo[] gparams = getter.GetParameters();
@@ -145,13 +144,8 @@ public class CLRClassParser extends SymbolLoader {
 		n = Names.apply;
 		mtype = methodType(getter, getter.ReturnType);
 	    }
-	    Symbol owner = getter.IsStatic() ? staticsClass : clazz;
 	    int mods = translateAttributes(getter);
-	    method = owner.newMethod(Position.NOPOS, mods, n);
-	    setParamOwners(mtype, method);
-	    method.setInfo(mtype);
-	    (getter.IsStatic() ? statics : members).enterOrOverload(method);
-	    clrTypes.map(method, getter);
+            createMethod(n, mods, mtype, getter, getter.IsStatic());
 	    assert methodsSet.contains(getter) : "" + getter;
 	    methodsSet.remove(getter);
 
@@ -168,12 +162,8 @@ public class CLRClassParser extends SymbolLoader {
 	    else n = Names.update;
 
 	    mods = translateAttributes(setter);
-	    method = owner.newMethod(Position.NOPOS, mods, n);
 	    mtype = methodType(setter, global.definitions.UNIT_TYPE());
-	    setParamOwners(mtype, method);
-	    method.setInfo(mtype);
-	    (setter.IsStatic() ? statics : members).enterOrOverload(method);
-	    clrTypes.map(method, setter);
+            createMethod(n, mods, mtype, setter, setter.IsStatic());
 	    assert methodsSet.contains(setter) : "" + setter;
 	    methodsSet.remove(setter);
 	}
@@ -184,6 +174,12 @@ public class CLRClassParser extends SymbolLoader {
 		|| method.IsAssembly() || method.IsFamilyAndAssembly())
 		continue;
 	    createMethod(method);
+	}
+
+	// Create symbols related to delegate types
+	if(clrTypes.isDelegateType(type)) {
+	    createDelegateView();
+	    createDelegateChainers();
 	}
 
 	// for enumerations introduce comparison and bitwise logical operations;
@@ -197,20 +193,13 @@ public class CLRClassParser extends SymbolLoader {
 		    make.methodType(argTypes,
 				    global.definitions.boolean_TYPE(),
 				    scalac.symtab.Type.EMPTY_ARRAY);
-		Symbol enumCmp = clazz.newMethod
-		    (Position.NOPOS, mods, ENUM_CMP_NAMES[i]);
-		setParamOwners(enumCmpType, enumCmp);
-		enumCmp.setInfo(enumCmpType);
-		members.enterOrOverload(enumCmp);
+                createMethod(ENUM_CMP_NAMES[i], mods, enumCmpType, null, false);
 	    }
 	    for (int i = 0; i < ENUM_BIT_LOG_NAMES.length; i++) {
 		scalac.symtab.Type enumBitLogType = make.methodType
 		    (argTypes, clazzType, scalac.symtab.Type.EMPTY_ARRAY);
-		Symbol enumBitLog = clazz.newMethod
-		    (Position.NOPOS, mods, ENUM_BIT_LOG_NAMES[i]);
-		setParamOwners(enumBitLogType, enumBitLog);
-		enumBitLog.setInfo(enumBitLogType);
-		members.enterOrOverload(enumBitLog);
+                createMethod
+                    (ENUM_BIT_LOG_NAMES[i], mods, enumBitLogType, null, false);
 	    }
 	}
 
@@ -239,20 +228,17 @@ public class CLRClassParser extends SymbolLoader {
                                          ICustomAttributeProvider member,
                                          scalac.symtab.Type defaultType)
     {
-        scalac.symtab.Type symbolType = null;
-        if (!member.IsDefined(clrTypes.PICO_META_ATTR, false)) {
-            symbolType = defaultType;
-        } else {
+        if (member !=null && member.IsDefined(clrTypes.PICO_META_ATTR, false)) {
             Object[] attrs =
                 member.GetCustomAttributes(clrTypes.PICO_META_ATTR, false);
             assert attrs.length == 1 : "attrs.length = " + attrs.length;
             String meta =
                 (String)((Attribute)attrs[0]).getConstructorArguments()[0];
-            symbolType = new MetaParser
+            defaultType = new MetaParser
                 (meta, tvars, sym, defaultType, clazz, clazzType, make).parse();
         }
-        sym.setInfo(symbolType);
-        return symbolType;
+        sym.setInfo(defaultType);
+        return defaultType;
     }
 
     private void createConstructor(ConstructorInfo constr) {
@@ -278,13 +264,85 @@ public class CLRClassParser extends SymbolLoader {
 	if (mtype == null)
 	    return;
 	int mods = translateAttributes(method);
-	Symbol owner = method.IsStatic() ? staticsClass : clazz;
-	Symbol methodSym =
-	    owner.newMethod(Position.NOPOS, mods, getName(method));
+        createMethod(getName(method), mods, mtype, method, method.IsStatic());
+    }
+
+    // Create static view methods within the delegate and the function type
+    // with the following signatures:
+    // def MyDelegate.view(MyDelegate): FunctionX[InvokeArgs..., InvokeRet];
+    // def FunctionX.view(FunctionX[InvokeArgs..., InvokeRet]): MyDelegate;
+    private void createDelegateView() {
+	// Extract the parameter and return types of the Invoke method
+	MethodInfo invoke = (MethodInfo)type.GetMember("Invoke")[0];
+	scalac.symtab.Type invokeRetType = getCLRType(invoke.ReturnType);
+	scalac.symtab.Type invokeParamTypes[] =
+	    new scalac.symtab.Type[invoke.GetParameters().length];
+	for(int j = 0; j < invoke.GetParameters().length; j++)
+	    invokeParamTypes[j] =
+		getCLRType(invoke.GetParameters()[j].ParameterType);
+	scalac.symtab.Type funType =
+	    global.definitions.FUNCTION_TYPE(invokeParamTypes, invokeRetType);
+
+	// FORWARD MAPPING (Delegate => Function)
+	scalac.symtab.Type viewParamTypes[] = { getCLRType(type) };
+	scalac.symtab.Type viewRetType = funType;
+	scalac.symtab.Type viewMethodType = make.methodType(
+		viewParamTypes,
+		viewRetType,
+		scalac.symtab.Type.EMPTY_ARRAY);
+
+        createMethod(Names.view, Modifiers.JAVA, viewMethodType, null, true);
+
+	// REVERSE MAPPING (Function => Delegate)
+	viewParamTypes = new scalac.symtab.Type[]{ funType };
+	viewRetType = getCLRType(type);
+	viewMethodType = make.methodType(
+		viewParamTypes,
+		viewRetType,
+		scalac.symtab.Type.EMPTY_ARRAY);
+
+        createMethod(Names.view, Modifiers.JAVA, viewMethodType, null, true);
+    }
+
+    private void createDelegateChainers() {
+        int mods = Modifiers.JAVA | Modifiers.FINAL;
+        Type[] args = new Type[]{type};
+
+        createMethod(Names.PLUSEQ, mods, args, clrTypes.VOID,
+                     clrTypes.DELEGATE_COMBINE, false);
+        createMethod(Names.MINUSEQ, mods, args, clrTypes.VOID,
+                     clrTypes.DELEGATE_REMOVE, false);
+        createMethod
+            (Names.PLUS, mods, args, type, clrTypes.DELEGATE_COMBINE, false);
+        createMethod
+            (Names.MINUS, mods, args, type, clrTypes.DELEGATE_REMOVE, false);
+    }
+
+    private Symbol createMethod(Name name, int mods, Type[] args,
+                                Type retType, MethodInfo method, boolean statik)
+    {
+        return createMethod(name, mods, args, getCLSType(retType), method, statik);
+    }
+    private Symbol createMethod(Name name, int mods, Type[] args,
+                                scalac.symtab.Type retType,
+                                MethodInfo method,
+                                boolean statik)
+    {
+	scalac.symtab.Type mtype = methodType(args, retType);
+ 	assert mtype != null : name;
+        return createMethod(name, mods, mtype, method, statik);
+    }
+    private Symbol createMethod(Name name, int mods, scalac.symtab.Type mtype,
+                                MethodInfo method, boolean statik)
+    {
+	Symbol methodSym = (statik ? staticsClass: clazz)
+            .newMethod(Position.NOPOS, mods, name);
 	setParamOwners(mtype, methodSym);
-        parseMeta(methodSym, method, mtype);
-	(method.IsStatic() ? statics : members).enterOrOverload(methodSym);
-	clrTypes.map(methodSym, method);
+        parseMeta(methodSym, method, mtype); // sets the type to mtype if no meta
+	(statik ? statics : members).enterOrOverload(methodSym);
+        if (method != null)
+            clrTypes.map(methodSym, method);
+        return methodSym;
     }
 
     private Name getName(MethodInfo method) {
@@ -303,6 +361,12 @@ public class CLRClassParser extends SymbolLoader {
         // TODO: check if the type implements ICloneable?
         if (name.equals("Clone") && params.length == 0)
             return Names.clone;
+	// Pretend that delegates have a 'apply' method instead of the 'Invoke'
+	// method. This is harmless because the latter one can't be called
+	// directly anyway.
+	if (name.equals("Invoke")
+            && clrTypes.isDelegateType(method.DeclaringType))
+	    return Names.apply;
 	return Name.fromString(name);
     }
 

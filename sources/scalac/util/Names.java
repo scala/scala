@@ -118,6 +118,8 @@ public class Names {
     public static final Name AMPAMP = encode("&&");
     public static final Name COLONCOLON = encode("::");
     public static final Name PERCENT = encode("%");
+    public static final Name PLUSEQ = encode("+=");
+    public static final Name MINUSEQ = encode("-=");
 
     public static final Name All = Name.fromString("All");
     public static final Name AllRef = Name.fromString("AllRef");

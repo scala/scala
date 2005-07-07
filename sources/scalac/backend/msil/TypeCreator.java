@@ -714,6 +714,10 @@ final class TypeCreator {
 	}
     }
 
+    public Symbol getSymbol(Type type) {
+	return (Symbol) types2symbols.get(type);
+    }
+
     public Type createType(Symbol clazz) {
 	try { return createType0(clazz); }
 	catch (Error e) {
@@ -961,6 +965,82 @@ final class TypeCreator {
 	symbols2methods.put(sym, method);
 
 	return method;
+    }
+
+    /**
+     * Returns all MethodBase objects corresponding to the symbol.
+     */
+    private MethodBase[] getMethods(Symbol sym) {
+	MethodBase method = (MethodBase) symbols2methods.get(sym);
+	if (method != null)
+	    return new MethodBase[]{method};
+	MemberInfo m = ti.getMember(sym);
+	if (m != null && m instanceof MethodBase) {
+	    method = (MethodBase) m;
+	} else {
+	    // force the creation of the declaring type
+	    Type owner = getType(sym.owner());
+	    assert owner != null : Debug.show(sym);
+	    method = (MethodBase) symbols2methods.get(sym);
+	    if (method != null)
+                return new MethodBase[]{method};
+	    switch (sym.info()) {
+	    case MethodType(Symbol[] vparams, scalac.symtab.Type result):
+		Type[] params = new Type[vparams.length];
+                Type resType = getType(result);
+		for (int i = 0; i < params.length; i++)
+		    params[i] = getType(vparams[i]);
+		if (sym.isInitializer()) {
+		    // The owner of a constructor is the outer class
+		    // so get the result type of the constructor
+		    method = owner.GetConstructor(params);
+		    assert method != null : "cannot find " + owner
+			+ "::.ctor" + methodSignature(params);
+		} else {
+		    method = owner instanceof TypeBuilder
+			? findMethod(sym.owner(), sym)
+			: owner.GetMethod
+                        (getMethodName(sym.name, params), params, resType);
+		}
+		break;
+	    case OverloadedType(Symbol[] alts, scalac.symtab.Type[] alttypes):
+                MethodBase[] methods = new MethodBase[alts.length];
+		for (int i = 0; i < alts.length; i++)
+                    methods[i] = getMethod(alts[i]);
+		return methods;
+
+	    default:
+		throw Debug.abort("Symbol doesn't have a method type", sym);
+	    }
+	    assert method != null
+		: Debug.show(owner) + " => Cannot find method: " + methodSignature(sym);
+	}
+	symbols2methods.put(sym, method);
+        return new MethodBase[]{method};
+    }
+
+    /**
+     * Returns the exactest apply method.
+     * The exactest method is taken to be the first method that doesn't have
+     * an 'object' return type and all 'object' parameter types.
+     */
+    public MethodBase getDelegateApplyMethod(Symbol sym) {
+	MethodBase methods[] = getMethods(sym);
+	if(methods.length > 1) {
+	    assert methods.length == 2;
+	    for (int i = 0; i < methods.length; i++) {
+		if(((MethodInfo)methods[i]).ReturnType != OBJECT)
+		    return methods[i];
+		ParameterInfo pi[] = methods[i].GetParameters();
+		for (int j = 0; j < pi.length; j++) {
+		    if(pi[j].ParameterType != OBJECT)
+			return methods[i];
+		}
+	    }
+	    throw Debug.abort("Expected apply method not found", sym);
+	} else {
+	    return methods[0];
+	}
     }
 
     private String getMethodName(Name name, Type[] params) {

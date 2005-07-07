@@ -65,6 +65,7 @@ public final class CLRTypes {
     public final Type BOOLEAN;
     public final Type VOID;
     public final Type ENUM;
+    public final Type DELEGATE;
 
     public final Type OBJECT;
     public final Type STRING;
@@ -77,6 +78,9 @@ public final class CLRTypes {
     public final Type SCALA_SYMTAB_ATTR;
     public final ConstructorInfo SYMTAB_CONSTR;
     public final ConstructorInfo SYMTAB_DEFAULT_CONSTR;
+
+    public final MethodInfo DELEGATE_COMBINE;
+    public final MethodInfo DELEGATE_REMOVE;
 
     private final SymbolNameWriter snw = new SymbolNameWriter();
 
@@ -109,6 +113,7 @@ public final class CLRTypes {
 	BOOLEAN = getType("System.Boolean");
 	VOID    = getType("System.Void");
 	ENUM    = getType("System.Enum");
+	DELEGATE = getType("System.MulticastDelegate");
 
 	OBJECT = getType("System.Object");
 	STRING = getType("System.String");
@@ -123,8 +128,15 @@ public final class CLRTypes {
         SYMTAB_DEFAULT_CONSTR =
             SCALA_SYMTAB_ATTR.GetConstructor(Type.EmptyTypes);
 
+        Type delegate = Type.GetType("System.Delegate");
+        Type[] dargs = new Type[]{delegate, delegate};
+        DELEGATE_COMBINE = delegate.GetMethod("Combine", dargs);
+        DELEGATE_REMOVE = delegate.GetMethod("Remove", dargs);
+
         assert PICO_META_ATTR != null;
         assert SCALA_SYMTAB_ATTR != null;
+        assert DELEGATE_COMBINE != null;
+        assert DELEGATE_REMOVE != null;
 
 	Type[] types = Type.EmptyTypes;
 	Iterator as = assemblies.iterator();
@@ -181,6 +193,11 @@ public final class CLRTypes {
 
     public Type mkArrayType(Type elemType) {
 	return getType(elemType.FullName + "[]");
+    }
+
+    // Returns true if the given type is a delegate type.
+    public boolean isDelegateType(Type t) {
+	return t.BaseType() == DELEGATE;
     }
 
     //##########################################################################

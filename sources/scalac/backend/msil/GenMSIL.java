@@ -850,10 +850,50 @@ public final class GenMSIL {
 		genLoad(args[0], convTo);
 		return items.StackItem(convTo);
 	    }
+	    // Generate delegate's reverse view
+	    if (sym.name == Names.view &&
+                CLRTypes.instance().isDelegateType(resType.toType()))
+                {
+                    assert args.length == 1 : Debug.show(sym);
+                    return createDelegateFromFunction(args[0], resType);
+                }
 
 	    return check(invokeMethod(sym, args, resType, true));
 
 	case Select(Tree qualifier, _):
+	    // Treat delegate chaining methods += and -= in a special way
+	    if(CLRTypes.instance().isDelegateType(tc.getType(qualifier.type())) &&
+		(sym.name == Names.PLUSEQ || sym.name == Names.MINUSEQ)) {
+                Type delegate = tc.getType(qualifier.type());
+		MSILType delegateType = msilType(delegate);
+                MethodBase chainer = tc.getMethod(sym);
+
+		switch(qualifier) {
+		case Apply(Tree f, _):
+		    Symbol setterSym = f.symbol().owner().lookup(
+			Name.fromString(f.symbol().name.toString() +
+			Names._EQ));
+		    assert !setterSym.isNone() : "Setter method not found";
+		    MethodInfo setter = (MethodInfo)tc.getMethod(setterSym);
+
+		    // Generate object and argument for the setter call
+		    emitThis(); // FIXME: doesn't work if the variable is
+                                // is a member of another class
+                    genLoad(qualifier, delegateType);
+                    invokeMethod(sym, args, delegateType, false);
+                    code.Emit(OpCodes.Castclass, delegate);
+		    code.Emit(OpCodes.Callvirt, setter);
+		    return items.VoidItem();
+
+		case Ident(_):
+		    // Prepare the left-hand side for the store
+		    Item var = gen(qualifier, delegateType);
+                    load(var);
+                    invokeMethod(sym, args, delegateType, false);
+                    code.Emit(OpCodes.Castclass, delegate);
+		    return check(store(var));
+		}
+	    }
 	    // scala.Any.==
 	    if (sym == defs.ANY_EQEQ) {
 		return genEq(qualifier, args[0]);
@@ -1328,10 +1368,37 @@ public final class GenMSIL {
 		      (MethodInfo)method);
 	    res = returnsVoid(method) ? items.VoidItem() : items.StackItem(resType);
 	}
-        if (returnsVoid(fun) && !returnsVoid(method)) {
-            res = drop(res);
-        }
+        CLRTypes clrt = CLRTypes.instance();
+        if (returnsVoid(fun) && !returnsVoid(method)
+            && method != clrt.DELEGATE_COMBINE
+            && method != clrt.DELEGATE_REMOVE)
+            {
+                res = drop(res);
+            }
 	return res;
+    }
+
+    private Item createDelegateFromFunction(Tree fun, MSILType type) {
+        Item ifun = genLoad(fun, msilType(fun.type));
+	// Get the apply function of the delegate object
+	Symbol funSym = tc.getSymbol(ifun.type.toType());
+	Symbol applySym = funSym.lookup(Names.apply);
+	MethodInfo apply = (MethodInfo) tc.getDelegateApplyMethod(applySym);
+
+	// Get the (object, native int) constructor of the delegate type
+	Type delegateType = type.toType();
+	ConstructorInfo delegCtor = delegateType.GetConstructor(
+		new Type[]{tc.OBJECT, Type.GetType("System.IntPtr")});
+
+	// Duplicate the object on the stack; we need its apply method
+	// and Ldvirtftn uses one element.
+	code.Emit(OpCodes.Dup);
+	code.Emit(OpCodes.Ldvirtftn, apply);
+
+	// Create a new delegate; this uses up the element duplicated above.
+	code.Emit(OpCodes.Newobj, delegCtor);
+
+        return items.StackItem(type);
     }
 
     /*
