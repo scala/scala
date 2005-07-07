@@ -81,9 +81,13 @@ abstract class Types: SymbolTable {
     /** For a typeref, its arguments. The empty list for all other types */
     def typeArgs: List[Type] = List();
 
-    /** For a method or poly type, its result type,
+    /** For a method or poly type, its direct result type,
      *  the type itself for all other types */
     def resultType: Type = this;
+
+    /** For a curried method or poly type its non-method result type,
+     *  the type itself for all other types */
+    def finalResultType: Type = this;
 
     /** For a method or poly type, the number of its value parameter sections,
      *  0 for all other types */
@@ -688,6 +692,8 @@ abstract class Types: SymbolTable {
 
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
 
+    override def finalResultType: Type = resultType.finalResultType;
+
     override def erasure = {
       val pts = List.mapConserve(paramTypes)(.erasure);
       val res = resultType.erasure;
@@ -710,6 +716,8 @@ abstract class Types: SymbolTable {
 
     override def paramSectionCount: int = resultType.paramSectionCount;
     override def paramTypes: List[Type] = resultType.paramTypes;
+
+    override def finalResultType: Type = resultType.finalResultType;
 
     override def parents: List[Type] = resultType.parents;
     override def decls: Scope = resultType.decls;

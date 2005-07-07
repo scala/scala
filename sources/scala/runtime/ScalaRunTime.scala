@@ -10,7 +10,6 @@
 
 package scala.runtime;
 
-
 object ScalaRunTime {
 
   /** Names for primitive typesm, used by array unboxing */
@@ -22,8 +21,6 @@ object ScalaRunTime {
   val FloatTag = ".Float";
   val DoubleTag = ".Double";
   val BooleanTag = ".Boolean";
-
-  import compat.Platform.getClass;
 
   trait Try[a] {
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b;
@@ -66,7 +63,7 @@ object ScalaRunTime {
   }
 
   def _hashCode(x: CaseClass): Int = {
-    var code = getClass(x).hashCode();
+    var code = x.getClass().hashCode();
     val arity = x.caseArity;
     var i = 0;
     while (i < arity) {
@@ -78,7 +75,7 @@ object ScalaRunTime {
 
   def _equals(x: CaseClass, y: Any): Boolean = y match {
     case y1: CaseClass =>
-      (getClass(x) eq getClass(y1)) && {
+      (x.getClass() eq y1.getClass()) && {
 	val arity = x.caseArity;
 	var i = 0;
 	while (i < arity && x.caseElement(i) == y1.caseElement(i))

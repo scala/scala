@@ -247,7 +247,7 @@ abstract class Typers: Analyzer {
      *  If all this fails, error
      */
 //    def adapt(tree: Tree, mode: int, pt: Type): Tree = {
-    private def adapt(tree: Tree, mode: int, pt: Type): Tree = tree.tpe match {
+    protected def adapt(tree: Tree, mode: int, pt: Type): Tree = tree.tpe match {
       case ct @ ConstantType(value) if ((mode & TYPEmode) == 0 && (ct <:< pt)) => // (0)
 	copy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
@@ -458,8 +458,11 @@ abstract class Typers: Analyzer {
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.LOCAL_NAME(name), tpe, rhs);
 	val getter: DefDef = {
 	  val sym = vdef.symbol;
-	  val getter = sym.owner.info.decls.lookup(name).suchThat(.hasFlag(ACCESSOR));
-	  assert(getter != NoSymbol, vdef);
+	  val decls = sym.owner.info.decls;
+	  var getterEntry = decls.lookupEntry(name);
+	  while (!(getterEntry.sym hasFlag ACCESSOR))
+	    getterEntry = decls.lookupNextEntry(getterEntry);
+	  val getter = getterEntry.sym;
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree else typed(gen.mkRef(sym), EXPRmode, sym.tpe)));
@@ -1065,7 +1068,7 @@ abstract class Typers: Analyzer {
           else if (!context.owner.hasFlag(INITIALIZED))
             errorTree(tree, "method " + context.owner + " has return statement; needs result type")
           else {
-            val expr1: Tree = typed(expr, enclFun.tpe.resultType);
+            val expr1: Tree = typed(expr, enclFun.tpe.finalResultType);
             copy.Return(tree, expr1) setSymbol enclFun setType AllClass.tpe;
           }
 

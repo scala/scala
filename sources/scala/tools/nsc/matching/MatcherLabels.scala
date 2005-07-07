@@ -1,6 +1,6 @@
 package scala.tools.nsc.matching ;
 
-class MatcherLabels: TransMatcher {
+abstract class MatcherLabels: TransMatcher {
 
   import global._ ;
 

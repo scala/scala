@@ -150,7 +150,7 @@ class DetWordAutom {
 
   // TEMPORARY VAR used only during determinization and debug printing
   // Q -> (Label -> Q )
-  var  deltaMap: HashMap = _;
+  var  delta/*Map*/: HashMap = _;
   // Q -> Integer;
   var indexMap: HashMap = _;
 
@@ -183,7 +183,7 @@ class DetWordAutom {
 
     this._labels = nfa.labels;
     ////System.out.println("Labels: "+labels);
-    this.deltaMap = new HashMap();
+    this.delta/*Map*/ = new HashMap();
     //this.dead = -1;
 
     states = new TreeSet( new StateSetComparator() );
@@ -222,7 +222,7 @@ class DetWordAutom {
       invIndexMap.put( new Integer( ix ), P1 );
       indexMap.put( P1, new Integer( ix ));
       ix = ix + 1;
-      deltaMap.put( P1, {trans = new HashMap(); trans});
+      delta/*Map*/.put( P1, {trans = new HashMap(); trans});
 
       //Console.println("...beginning 4" );
       // labelled transitions
@@ -310,7 +310,7 @@ class DetWordAutom {
       ////System.out.print(state.toString() + " --> " + state_x);
       //System.out.println(" deftarget " + defTarget + " --> "+defTarget_x);
 
-      trans = deltaMap.get( state ).asInstanceOf[HashMap];
+      trans = delta/*Map*/.get( state ).asInstanceOf[HashMap];
       val newTrans = new HashMap();
       val labs = _labels.iterator();
       while(labs.hasNext()) {
@@ -333,7 +333,7 @@ class DetWordAutom {
       _deltaq( state_x.intValue() ) = newTrans;
       _defaultq( state_x.intValue() ) = defTarget_x;
 
-      deltaMap.remove( state );
+      delta/*Map*/.remove( state );
       deftrans.remove( state );
 
     }
@@ -866,7 +866,7 @@ class DetWordAutom {
     while (it.hasNext()) {
       val state = it.next().asInstanceOf[TreeSet];
       Console.print("state:" + state.toString() + " transitions ");
-      trans = deltaMap.get( state ).asInstanceOf[HashMap];
+      trans = delta/*Map*/.get( state ).asInstanceOf[HashMap];
       val labs = _labels.iterator();
       while(labs.hasNext()) {
 	val label = labs.next();

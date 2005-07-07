@@ -11,13 +11,7 @@
 package scala;
 
 final class Array[T](val length: Int) extends Cloneable with java.io.Serializable with Seq[T] {
-
-  def apply(i: Int): T;
-  def update(i: Int, x: T): Unit;
-
-  def elements = new Iterator[T] {
-    var index = 0;
-    def hasNext: Boolean = index < length;
-    def next: T = { val i = index; index = i + 1; apply(i) }
-  }
+  def apply(i: Int): T = throw new Error();
+  def update(i: Int, x: T): Unit = throw new Error();
+  def elements: Iterator[T] = throw new Error();
 }
