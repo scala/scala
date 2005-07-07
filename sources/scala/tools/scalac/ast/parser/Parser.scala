@@ -1,28 +1,31 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
 ** $Id$
 \*                                                                      */
 
-import scalac.symtab.Modifiers;
-import scalac.symtab._;
+
+import java.lang.{Integer, Long, Float, Double};
+import java.util.{Map, Stack};
+
 import scalac.ast._;
 import scalac.atree.AConstant;
+import scalac.symtab.Modifiers;
+import scalac.symtab._;
 import scalac._;
 import scalac.util._;
-import scala.tools.util.Position;
-import java.util.{Map, Stack};
-import java.lang.{Integer, Long, Float, Double};
+
 import scala.Iterator;
-import scala.tools.scalac.util.NewArray;
-import scala.collection.immutable.ListMap ;
+import scala.collection.immutable.ListMap;
 import scala.collection.mutable;
 import scala.collection.mutable.ListBuffer;
+import scala.tools.scalac.util.NewArray;
+import scala.tools.util.Position;
+
 
 package scala.tools.scalac.ast.parser {
-
 
 
 /** A recursive descent parser for the programming language Scala.
@@ -41,7 +44,7 @@ class Parser(unit: CompilationUnit) {
 
   /** the markup parser
   */
-  val xmlp = new MarkupParser( unit, s, this, unit.global.xmlPreserveWS );
+  val xmlp = new MarkupParser(unit, s, this, unit.global.xmlPreserveWS);
 
   /** the tree factory
    */
@@ -67,7 +70,7 @@ class Parser(unit: CompilationUnit) {
     ts
   }
 
-/////// ERROR HANDLING //////////////////////////////////////////////////////
+/////// ERROR HANDLING ///////////////////////////////////////////////////////
 
   private def skip(): Unit = {
     //System.out.println("<skipping> " + s.token2string(s.token));//DEBUG
@@ -95,10 +98,10 @@ class Parser(unit: CompilationUnit) {
     }
   }
 
-  def syntaxError(msg: String, skipIt: boolean): unit =
+  def syntaxError(msg: String, skipIt: boolean): Unit =
     syntaxError(s.pos, msg, skipIt);
 
-  def syntaxError(pos: Int, msg: String, skipIt: boolean): unit = {
+  def syntaxError(pos: Int, msg: String, skipIt: boolean): Unit = {
     if (pos != s.errpos) {
       s.unit.error(pos, msg);
       s.errpos = pos;
@@ -119,9 +122,9 @@ class Parser(unit: CompilationUnit) {
     pos
   }
 
-/////// TOKEN CLASSES //////////////////////////////////////////////////////
+/////// TOKEN CLASSES ////////////////////////////////////////////////////////
 
-  def isModifier(): boolean =
+  def isModifier(): Boolean =
     (s.token == ABSTRACT)
     || (s.token == FINAL)
     || (s.token == SEALED)
@@ -130,26 +133,26 @@ class Parser(unit: CompilationUnit) {
     || (s.token == IMPLICIT)
     || (s.token == OVERRIDE);
 
-  def isLocalModifier(): boolean =
+  def isLocalModifier(): Boolean =
     (s.token == ABSTRACT)
     || (s.token == FINAL)
     || (s.token == SEALED);
 
-  def isDefIntro(): boolean = s.token match {
+  def isDefIntro(): Boolean = s.token match {
     case VAL | VAR | DEF | TYPE | OBJECT | CASEOBJECT | CLASS | CASECLASS | TRAIT =>
       true
     case _ =>
       false
   }
 
-  def isDclIntro(): boolean = s.token match {
+  def isDclIntro(): Boolean = s.token match {
     case VAL | VAR | DEF | TYPE =>
       true;
     case _ =>
       false
   }
 
-  def isExprIntro(): boolean = s.token match {
+  def isExprIntro(): Boolean = s.token match {
     case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
          STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
          THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
@@ -159,7 +162,7 @@ class Parser(unit: CompilationUnit) {
       false;
   }
 
-/////// COMMENT AND ATTRIBUTE COLLECTION //////////////////////////////////////
+/////// COMMENT AND ATTRIBUTE COLLECTION /////////////////////////////////////
 
   /** Stack of comments
   */
@@ -208,7 +211,7 @@ class Parser(unit: CompilationUnit) {
 
   /** Create tree representing binary operation expression or pattern.
   */
-  def makeBinop(isExpr: boolean, pos: Int, left: Tree, op: Name, right: Tree): Tree =
+  def makeBinop(isExpr: Boolean, pos: Int, left: Tree, op: Name, right: Tree): Tree =
     if (isExpr) {
       if (isLeftAssoc(op)) {
         make.Apply(
@@ -262,7 +265,8 @@ class Parser(unit: CompilationUnit) {
   *   <for (enums) yield body> where mapName and flatmapName are chosen
   *  corresponding to whether this is a for-do or a for-yield.
   */
-  def makeFor(pos: Int, enums: Array[Tree], mapName: Name, flatmapName: Name, body: Tree): Tree = {
+  def makeFor(pos: Int, enums: Array[Tree], mapName: Name,
+              flatmapName: Name, body: Tree): Tree = {
 
     def makeFor1(pos: Int, name: Name, pat: Tree, rhs: Tree, body: Tree): Tree =
       make.Apply(
@@ -330,6 +334,18 @@ class Parser(unit: CompilationUnit) {
     t
   }
 
+  /** Create tree for a while loop using a label/if construct, e.g.
+   *                             "label(<args>)":
+   *    while (cond)               if (cond) {
+   *      body             ===>      body; "goto label(<args>)"
+   *                               }
+   *
+   *  @param pos   the source position
+   *  @param lname the label name
+   *  @param cond  the tree representing the while condition
+   *  @param body  the tree representing the while body
+   *  @return a label tree representing the while loop
+   */
   def makeWhile(pos: Int, lname: Name, cond: Tree, body: Tree): Tree = {
     val continu = make.Apply(
       pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
@@ -357,7 +373,10 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Convert tree to formal parameter list
-  */
+   *
+   *  @param t
+   *  @return a list of formal parameters
+   */
   def convertToParams(t: Tree): Array[Tree$ValDef] = t match {
     case Tree$Function(params, Tree.Empty) =>
       params
@@ -371,16 +390,22 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Convert list of trees to formal parameter list
-  */
-  def convertToParams(ts: Array[Tree]): Array[Tree$ValDef] = {
-    val res = new Array[Tree$ValDef](ts.length);
+   *
+   *  @param trees
+   *  @return
+   */
+  def convertToParams(trees: Array[Tree]): Array[Tree$ValDef] = {
+    val res = new Array[Tree$ValDef](trees.length);
     for (val i <- Iterator.range(0, res.length))
-      res(i) = convertToParam(ts(i));
+      res(i) = convertToParam(trees(i));
     res;
   }
 
   /** Convert tree to formal parameter
-  */
+   *
+   *  @param tree
+   *  @return
+   */
   def convertToParam(tree: Tree): Tree$ValDef = tree match {
     case Tree$Ident(name) =>
       make.ValDef(
@@ -396,39 +421,53 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Convert (qual)ident to type identifier
-  */
-  def convertToTypeId(t: Tree): Tree = t match {
+   *
+   *  @param tree
+   *  @return
+   */
+  def convertToTypeId(tree: Tree): Tree = tree match {
     case Tree$Ident(name) =>
-      make.Ident(t.pos, name.toTypeName())
+      make.Ident(tree.pos, name.toTypeName())
     case Tree$Select(qual, name) =>
-      make.Select(t.pos, qual, name.toTypeName())
+      make.Select(tree.pos, qual, name.toTypeName())
     case _ =>
-      t
+      tree
   }
 
   /** Convert (qual)ident to constructor identifier
-  */
-  def convertToConstr(t: Tree): Tree = t match {
+   *
+   *  @param tree
+   *  @return
+   */
+  def convertToConstr(tree: Tree): Tree = tree match {
     case Tree$Ident(name) =>
-      make.Ident(t.pos, name.toTypeName())
+      make.Ident(tree.pos, name.toTypeName())
     case Tree$Select(qual, name) =>
-      make.Select(t.pos, qual, name.toTypeName())
+      make.Select(tree.pos, qual, name.toTypeName())
     case _ =>
-      Console.println( "class instead "+t.getClass() );
-      syntaxError(t.pos, "class constructor expected", false);
-      gen.mkType(t.pos, Type.ErrorType)
+      Console.println("class instead " + tree.getClass());
+      syntaxError(tree.pos, "class constructor expected", false);
+      gen.mkType(tree.pos, Type.ErrorType)
   }
 
   /** Complete unapplied constructor with `()' arguments
-  */
-  def applyConstr(t: Tree): Tree = t match {
+   *
+   *  @param tree
+   *  @return
+   */
+  def applyConstr(tree: Tree): Tree = tree match {
     case Tree$Apply(_, _) =>
-      t
+      tree
     case _ =>
-      make.Apply(t.pos, t, Tree.EMPTY_ARRAY)
+      make.Apply(tree.pos, tree, Tree.EMPTY_ARRAY)
   }
 
-  /** make closure from tree */
+  /** Make closure from tree
+   *
+   *  @param pos
+   *  @param tree
+   *  @return
+   */
   def makeClosure(pos: Int, tree: Tree): Tree = {
     val pname = fresh();
     def insertParam(tree: Tree): Tree = tree match {
@@ -451,10 +490,10 @@ class Parser(unit: CompilationUnit) {
       insertParam(tree))
   }
 
-/////// OPERAND/OPERATOR STACK /////////////////////////////////////////////////
+/////// OPERAND/OPERATOR STACK ///////////////////////////////////////////////
 
-  var operands = new Array[Tree](8);
-  var positions = new Array[Int](8);
+  var operands  = new Array[Tree](8);
+  var positions = new Array[Int ](8);
   var operators = new Array[Name](8);
   var sp = 0;
 
@@ -479,7 +518,7 @@ class Parser(unit: CompilationUnit) {
         }
     }
 
-  def isLeftAssoc(operator: Name): boolean =
+  def isLeftAssoc(operator: Name): Boolean =
     operator.length() > 0 && operator.charAt(operator.length() - 1) != ':';
 
   def push(od: Tree, pos: Int, op: Name): unit = {
@@ -500,7 +539,8 @@ class Parser(unit: CompilationUnit) {
     sp = sp + 1;
   }
 
-  def reduceStack(isExpr: boolean, base: Int, _top: Tree, prec: Int, leftAssoc: boolean): Tree = {
+  def reduceStack(isExpr: Boolean, base: Int, _top: Tree,
+                  prec: Int, leftAssoc: Boolean): Tree = {
     var top = _top;
     if (sp != base &&
         precedence(operators(sp-1)) == prec &&
@@ -519,16 +559,16 @@ class Parser(unit: CompilationUnit) {
     top
   }
 
-/////// IDENTIFIERS AND LITERALS ////////////////////////////////////////////////////////////
+/////// IDENTIFIERS AND LITERALS /////////////////////////////////////////////
 
   final val MINUS = Name.fromString("-");
-  final val PLUS = Name.fromString("+");
-  final val BANG = Name.fromString("!");
+  final val PLUS  = Name.fromString("+");
+  final val BANG  = Name.fromString("!");
   final val TILDE = Name.fromString("~");
-  final val STAR = Name.fromString("*");
-  final val BAR  = Name.fromString("|");
-  final val OPT  = Name.fromString("?");
-  final val LT   = Name.fromString("<");
+  final val STAR  = Name.fromString("*");
+  final val BAR   = Name.fromString("|");
+  final val OPT   = Name.fromString("?");
+  final val LT    = Name.fromString("<");
 
   def ident(): Name =
     if (s.token == IDENTIFIER) {
@@ -541,10 +581,14 @@ class Parser(unit: CompilationUnit) {
     }
 
   /** StableRef  ::= StableId
-  *              |  [Ident `.'] this
-  *  SimpleType ::=  StableRef [`.' type]
-  */
-  def stableRef(thisOK: boolean, typeOK: boolean): Tree = {
+   *               | [Ident `.'] this
+   *  SimpleType ::= StableRef [`.' type]
+   *
+   *  @param thisOK
+   *  @param typeOK
+   *  @return
+   */
+  def stableRef(thisOK: Boolean, typeOK: Boolean): Tree = {
     var t: Tree = null;
     if (s.token == THIS) {
       t = make.This(s.skipToken(), TypeNames.EMPTY);
@@ -581,7 +625,7 @@ class Parser(unit: CompilationUnit) {
     t
   }
 
-  def selectors(pos: Int, t: Tree, typeOK: boolean): Tree =
+  def selectors(pos: Int, t: Tree, typeOK: Boolean): Tree =
     if (typeOK && s.token == TYPE) {
       s.nextToken();
       make.SingletonType(pos, t);
@@ -592,7 +636,7 @@ class Parser(unit: CompilationUnit) {
     }
 
   /** MixinQualifier ::= `[' Id `]'
-  */
+   */
   def mixinQualifierOpt(): Name =
     if (s.token == LBRACKET) {
       s.nextToken();
@@ -603,26 +647,30 @@ class Parser(unit: CompilationUnit) {
       TypeNames.EMPTY
     }
 
-  /** StableId ::= Id
-  *            |  StableRef `.' Id
-  *            |  [Id '.'] super [MixinQualifier] ` `.' Id
-  */
+  /** StableId       ::= Id
+   *                   | StableRef `.' Id
+   *                   | [Id '.'] super [MixinQualifier] ` `.' Id
+   */
   def stableId(): Tree =
     stableRef(false, false);
 
-  /** QualId ::= Id {`.' Id}
-  */
+  /** QualId         ::= Id {`.' Id}
+   */
   def qualId(): Tree = {
     val id = make.Ident(s.pos, ident());
     if (s.token == DOT) selectors(s.skipToken(), id, false)
     else id
   }
 
-  /** SimpleExpr    ::= literal
-  *                  | symbol [ArgumentExprs]
-  *                  | null
-  */
-  def literal(isPattern: boolean, isNegated: boolean): Tree = {
+  /** SimpleExpr     ::= literal
+   *                   | symbol [ArgumentExprs]
+   *                   | null
+   *
+   *  @param isPattern
+   *  @param isNegated
+   *  @return
+   */
+  def literal(isPattern: Boolean, isNegated: Boolean): Tree = {
     def litToTree() = s.token match {
       case CHARLIT =>
         gen.mkCharLit(s.pos, s.intVal.asInstanceOf[Char])
@@ -668,7 +716,7 @@ class Parser(unit: CompilationUnit) {
 //////// TYPES ///////////////////////////////////////////////////////////////
 
   /** TypedOpt ::= [`:' Type]
-  */
+   */
   def typedOpt(): Tree =
     if (s.token == COLON) {
       s.nextToken();
@@ -678,7 +726,7 @@ class Parser(unit: CompilationUnit) {
     }
 
   /** SimpleTypedOpt ::= [`:' SimpleType]
-  */
+   */
   def simpleTypedOpt(): Tree =
     if (s.token == COLON) {
       s.nextToken();
@@ -688,7 +736,7 @@ class Parser(unit: CompilationUnit) {
     }
 
   /** Types ::= Type {`,' Type}
-  */
+   */
   def types(): Array[Tree] = {
     val ts = new myTreeList();
     ts.append(typ());
@@ -699,10 +747,10 @@ class Parser(unit: CompilationUnit) {
     ts.toArray()
   }
 
-  /** Type ::= Type1 `=>' Type
-  *         | `(' [Types] `)' `=>' Type
-  *         | Type1
-  */
+  /** Type ::= Type1 '=>' Type
+   *         | '(' [Types] ')' '=>' Type
+   *         | Type1
+   */
   def typ(): Tree = {
     var t: Tree = _;
     if (s.token == LPAREN) {
@@ -734,8 +782,8 @@ class Parser(unit: CompilationUnit) {
       t
   }
 
-  /** Type1 ::= SimpleType {with SimpleType} [Refinement]
-  */
+  /** Type1 ::= SimpleType {'with' SimpleType} [Refinement]
+   */
   def type1(): Tree = {
     val pos = s.pos;
     val t = simpleType();
@@ -754,11 +802,11 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** SimpleType ::= SimpleType TypeArgs
-  *               | SimpleType `#' Id
-  *               | StableId
-  *               | StableRef `.' type
-  *               | `(' Type `)'
-  */
+   *               | SimpleType `#' Id
+   *               | StableId
+   *               | StableRef `.' type
+   *               | `(' Type `)'
+   */
   def simpleType(): Tree = {
     val pos = s.pos;
     var t: Tree =
@@ -782,7 +830,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** TypeArgs ::= `[' Types `]'
-  */
+   */
   def typeArgs(): Array[Tree] = {
     accept(LBRACKET);
     val ts = types();
@@ -793,14 +841,14 @@ class Parser(unit: CompilationUnit) {
 //////// EXPRESSIONS ////////////////////////////////////////////////////////
 
   /** EqualsExpr ::= `=' Expr
-  */
+   */
   def equalsExpr(): Tree = {
     accept(EQUALS);
     expr()
   }
 
   /** Exprs ::= Expr {`,' Expr}
-  *          | Expr `:' `_' `*'
+   *          | Expr `:' `_' `*'
   def exprs(): Array[Tree] = {    val ts = new myTreeList();
     ts.append(expr(true, false));
     while (s.token == COMMA) {
@@ -980,7 +1028,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** PrefixExpr   ::= [`-' | `+' | `~' | `!'] SimpleExpr
-  */
+   */
   def prefixExpr(): Tree =
     if (s.token == IDENTIFIER && s.name == MINUS) {
       val name = ident();
@@ -1000,16 +1048,16 @@ class Parser(unit: CompilationUnit) {
       simpleExpr()
     }
 
-  /* SimpleExpr    ::= literal
-  *                 | xLiteral
-  *                 | StableRef
-  *                 | `(' [Expr] `)'
-  *                 | BlockExpr
-  *                 | new Template
-  *                 | SimpleExpr `.' Id
-  *                 | SimpleExpr TypeArgs
-  *                 | SimpleExpr ArgumentExprs
-  */
+  /** SimpleExpr    ::= literal
+   *                  | xLiteral
+   *                  | StableRef
+   *                  | `(' [Expr] `)'
+   *                  | BlockExpr
+   *                  | new Template
+   *                  | SimpleExpr `.' Id
+   *                  | SimpleExpr TypeArgs
+   *                  | SimpleExpr ArgumentExprs
+   */
   def simpleExpr(): Tree = {
     var t: Tree = null;
     //Console.println("simpleExpr, s.lastch="+s.lastch+" token = "+token2string(s.token));
@@ -1129,7 +1177,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Block ::= BlockStatSeq
-  */
+   */
   def block(pos: Int): Tree = {
     block(pos, blockStatSeq(new myTreeList()));
   }
@@ -1159,9 +1207,9 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Enumerators ::= Generator {`;' Enumerator}
-  *  Enumerator  ::= Generator
-  *                | Expr
-  */
+   *  Enumerator  ::= Generator
+   *                | Expr
+   */
   def enumerators(): Array[Tree] = {
     val enums = new myTreeList();
     enums.append(generator());
@@ -1174,7 +1222,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Generator ::= val Pattern1 `<-' Expr
-  */
+   */
   def generator(): Tree = {
     val pos = accept(VAL);
     val pat = validPattern1();
@@ -1200,7 +1248,7 @@ class Parser(unit: CompilationUnit) {
 //////// PATTERNS ////////////////////////////////////////////////////////////
 
   /**  Pattern ( see pattern() ) which is checked for validity
-  */
+   */
   def validPattern(): Tree = {
     val pos = s.pos;
     val pat = pattern();
@@ -1224,8 +1272,8 @@ class Parser(unit: CompilationUnit) {
     }
   }
 
-  /** Patterns ::= Pattern {`,' Pattern}
-  */
+  /**  Patterns ::= Pattern {`,' Pattern}
+   */
   def patterns(): Array[Tree] = {
     val ts = new myTreeList();
     ts.append(pattern());
@@ -1236,8 +1284,8 @@ class Parser(unit: CompilationUnit) {
     ts.toArray()
   }
 
-  /**   Pattern  ::=  Pattern1 { `|' Pattern1 }
-  */
+  /**   Pattern  ::= Pattern1 { `|' Pattern1 }
+   */
   def pattern(): Tree = {
     val pos = s.pos;
     val first = pattern1();
@@ -1255,10 +1303,10 @@ class Parser(unit: CompilationUnit) {
     first
   }
 
-  /**   Pattern1  ::=  varid `:' Type1
-  *                |  `_' `:' Type1
-  *                |  Pattern2
-  */
+  /**   Pattern1  ::= varid `:' Type1
+   *                | `_' `:' Type1
+   *                | Pattern2
+   */
   def pattern1(): Tree = {
     val p = pattern2();
     if (s.token == COLON && TreeInfo.isVarPattern(p))
@@ -1266,9 +1314,9 @@ class Parser(unit: CompilationUnit) {
     else p
   }
 
-  /*   Pattern2  ::=  varid [ @ Pattern3 ]
-  *                |  Pattern3
-  */
+  /**  Pattern2   ::= varid [ @ Pattern3 ]
+   *                | Pattern3
+   */
   def pattern2(): Tree = {
     val p = pattern3();
     if (s.token == AT && TreeInfo.isVarPattern(p)) {
@@ -1284,8 +1332,8 @@ class Parser(unit: CompilationUnit) {
   }
 
   /*   Pattern3  ::=  SimplePattern [ '*' | '?' | '+' ]
-  *               |  SimplePattern {Id SimplePattern}    // op2 must not be empty
-  */
+   *               |  SimplePattern {Id SimplePattern}    // op2 must not be empty
+   */
   def pattern3(): Tree = {
     val base = sp;
     var top = simplePattern();
@@ -1333,13 +1381,13 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** simplePattern ::= varid
-  *                 | `_'
-  *                 | literal
-  *                 | `<' xLiteralPattern
-  *                 | StableId [ `(' [Patterns] `)' ]
-  *                 | `(' [Patterns] `)'
-  *                 |                     (word: empty - nothing)
-  */
+   *                  | `_'
+   *                  | literal
+   *                  | `<' xLiteralPattern
+   *                  | StableId [ `(' [Patterns] `)' ]
+   *                  | `(' [Patterns] `)'
+   *                  |                     (word: empty - nothing)
+   */
   def simplePattern(): Tree = s.token match {
     case RPAREN | COMMA =>
       make.Sequence(s.pos, Tree.EMPTY_ARRAY) // ((nothing))
@@ -1371,7 +1419,8 @@ class Parser(unit: CompilationUnit) {
       }
     case USCORE =>
       make.Ident(s.skipToken(), Names.PATTERN_WILDCARD)
-    case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL =>
+    case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
+         STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL =>
       literal(true, false)
     case LPAREN =>
       val p = s.pos;
@@ -1394,12 +1443,12 @@ class Parser(unit: CompilationUnit) {
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
 
   /** Modifiers ::= {Modifier}
-  *  Modifier  ::= final
-  *              | private
-  *              | protected
-  *              | override
-  *              | abstract
-  */
+   *  Modifier  ::= final
+   *              | private
+   *              | protected
+   *              | override
+   *              | abstract
+   */
   def modifiers(): Int = {
 //    pushComment();
     var mods = 0;
@@ -1432,9 +1481,9 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** LocalModifiers ::= {LocalModifier}
-  *  LocalModifier  ::= final
-  *                   | private
-  */
+   *  LocalModifier  ::= final
+   *                   | private
+   */
   def localClassModifiers(): Int = {
     var mods = 0;
     while (true) {
@@ -1463,7 +1512,7 @@ class Parser(unit: CompilationUnit) {
   var paramClauses_buffer = new mutable.ArrayBuffer[Array[Tree.ValDef]]();
 
   /** ParamClauses ::= {ParamClause}
-  */
+   */
   def paramClauses(): Array[Array[Tree.ValDef]] = { //pre:  buffer empty
     while (s.token == LPAREN)
       paramClauses_buffer += paramClause(false);
@@ -1475,12 +1524,12 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** ParamClauseOpt ::= [ParamClause]
-  */
+   */
   def paramClauseOpt(ofPrimaryConstructor: boolean): Array[Array[Tree.ValDef]] =
     if (s.token == LPAREN) NewArray.ValDefArray(paramClause(ofPrimaryConstructor))
     else Tree.ValDef_EMPTY_ARRAY_ARRAY;
 
-  /** ParamClause ::= `(' [Param {`,' Param}] `)'
+  /** ParamClause      ::= `(' [Param {`,' Param}] `)'
    *  ClassParamClause ::= `(' [ClassParam {`,' ClassParam}] `)'
    */
   def paramClause(ofPrimaryConstructor: boolean): Array[Tree.ValDef] = {
@@ -1497,8 +1546,8 @@ class Parser(unit: CompilationUnit) {
     params.copyTo(new Array[Tree.ValDef](params.length()))
   }
 
-  /** Param ::= Id `:' ParamType
-   *  ParamType ::= Type | Type `*' | `=>' Type
+  /** Param      ::= Id `:' ParamType
+   *  ParamType  ::= Type | Type `*' | `=>' Type
    *  ClassParam ::= [[modifiers] val] Param
    */
   def param(ofPrimaryConstructor: boolean): Tree.ValDef = {
@@ -1949,7 +1998,7 @@ class Parser(unit: CompilationUnit) {
     ts.toArray()
   }
 
-  /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
+  /** ClassTemplate ::= ['extends' Constr] {'with' Constr} [TemplateBody]
    */
   def classTemplate(isCaseClass: Boolean): Tree.Template = {
     val pos = s.pos;
@@ -1980,8 +2029,8 @@ class Parser(unit: CompilationUnit) {
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 
 
-  /** Template  ::= Constr {`with' Constr} [TemplateBody]
-  */
+  /** Template  ::= Constr {'with' Constr} [TemplateBody]
+   */
   def template(): Tree.Template =
     template(new myTreeList());
 
@@ -1997,7 +2046,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Constr ::= StableId [TypeArgs] [`(' [Exprs] `)']
-  */
+   */
   def constr(): Tree = {
     var t: Tree = convertToConstr(stableId());
     if (s.token == LBRACKET)
@@ -2008,7 +2057,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** TemplateBody ::= `{' [TemplateStat {`;' TemplateStat}] `}'
-  */
+   */
   def templateBody(): Array[Tree] = {
     accept(LBRACE);
     var body = templateStatSeq();
@@ -2019,7 +2068,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Refinement ::= `{' [RefineStat {`;' RefineStat}] `}'
-  */
+   */
   def refinement(): Array[Tree] = {
     accept(LBRACE);
     val body = refineStatSeq();
@@ -2182,7 +2231,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** CompilationUnit ::= [ package QualId ( `;' | `{' TopStatSeq `}' ) ] TopStatSeq .
-  */
+   */
   def compilationUnit(): Array[Tree] = {
     if (s.token == PACKAGE) {
       val pos = s.skipToken();
@@ -2202,7 +2251,7 @@ class Parser(unit: CompilationUnit) {
       topStatSeq()
     }
   }
-}
-}
 
-//  LocalWords:  SOcos
+} // class Parser
+
+}
