@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -76,7 +76,11 @@ public class AddInterfaces extends GenTransformer {
     //#########################################################################
     // Public Methods
 
-    /** Transforms the given symbol. */
+    /** Transforms the given symbol.
+     *
+     *  @param tree
+     *  @return
+     */
     public Symbol getSymbolFor(Tree tree) {
         switch (tree) {
         case Create(_, _):
@@ -151,7 +155,11 @@ public class AddInterfaces extends GenTransformer {
     //#########################################################################
     // Private Methods
 
-    /** Transforms the given template and adds it to given list. */
+    /** Transforms the given template and adds it to given list.
+     *
+     *  @param trees
+     *  @param tree
+     */
     private void template(TreeList trees, Tree tree) {
         switch (tree) {
         case Empty:
@@ -190,6 +198,9 @@ public class AddInterfaces extends GenTransformer {
      * Transforms the given class member. Methods with a non-empty
      * body are added to the given method map. All other members are
      * dropped.
+     *
+     * @param methods
+     * @param tree
      */
     private void member(Map methods, Tree tree) {
         switch (tree) {
@@ -225,6 +236,11 @@ public class AddInterfaces extends GenTransformer {
      * adding its members to the provided body. Non-abstract methods
      * are removed from the provided method map. All other members are
      * generated from their symbol.
+     *
+     * @param clasz
+     * @param body
+     * @param methods
+     * @return
      */
     private Tree getClassTree(Symbol clasz, TreeList body, Map methods) {
         Scope members = clasz.nextInfo().members();
@@ -242,6 +258,11 @@ public class AddInterfaces extends GenTransformer {
      * Returns the tree of the given member. Non-abstract methods are
      * removed from the given method map. All other members are
      * generated from their symbol.
+     *
+     * @param clasz
+     * @param member
+     * @param methods
+     * @return
      */
     private Tree getMemberTree(Symbol clasz, Symbol member, Map methods) {
         if (!member.isMethod()) return gen.ValDef(member, Tree.Empty);
@@ -251,7 +272,11 @@ public class AddInterfaces extends GenTransformer {
         return method;
     }
 
-    /** Returns the symbol of given parameter in current class. */
+    /** Returns the symbol of given parameter in current class.
+     *
+     * @param vparam
+     * @return
+     */
     private Symbol getClassVParam(Symbol vparam) {
         if (paramSubst == null) return vparam;
         Symbol clone = (Symbol)paramSubst.lookupSymbol(vparam);
