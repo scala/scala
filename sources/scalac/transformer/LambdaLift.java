@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -10,11 +10,13 @@ package scalac.transformer;
 
 import java.io.*;
 import java.util.HashMap;
+
 import scalac.*;
-import scalac.util.*;
 import scalac.ast.*;
 import scalac.symtab.*;
+import scalac.util.*;
 import Tree.*;
+
 
 /** A lambda lifting transformer
  *
@@ -58,6 +60,9 @@ public class LambdaLift extends OwnerTransformer
 
     /** If `sym' is a class, return its primary constructor;
      *  otherwise current symbol itself
+     *
+     *  @param sym
+     *  @return
      */
     static Symbol asFunction(Symbol sym) {
 	return sym.kind == CLASS ? sym.primaryConstructor() : sym;
@@ -66,12 +71,17 @@ public class LambdaLift extends OwnerTransformer
     /** Is symbol local relative to owner?
      *  Primary constructor parameters are local iff owner (contained in)
      *  the primary constructor.
+     *
+     *  @param sym
+     *  @param owner
+     *  @return <code>true</code> if the symbol <code>sym</code>
+     *          is local relative to <code>owner</code>
      */
     static boolean isLocal(Symbol sym, Symbol owner) {
-	if ((sym.flags & PARAM) != 0 &&
+	if (sym.isParameter() &&
 	    sym.owner().isPrimaryConstructor() &&
 	    sym.owner().constructorClass().kind == CLASS &&
-	    !((owner.flags & PARAM) != 0 && owner.owner() == sym)) {
+	    !(owner.isParameter() && owner.owner() == sym)) {
 	    Symbol encl = sym.owner().owner();
 	    Symbol clazz = sym.owner().constructorClass();
 	    //System.out.println("isLocal " + sym + " " + encl + " " + clazz + " " + owner);//DEBUG
@@ -86,7 +96,11 @@ public class LambdaLift extends OwnerTransformer
 	return sym.isLocal();
     }
 
-    /** Propagate free fariables from all called functions.    /** `asFunction' applied to the next enclosing function or class owner.
+    /** Propagate free variables from all called functions.
+     *  `asFunction' applied to the next enclosing function or class owner.
+     *
+     *  @param owner
+     *  @return
      */
     static Symbol enclFun(Symbol owner) {
 	Symbol sym = owner;
@@ -95,6 +109,10 @@ public class LambdaLift extends OwnerTransformer
     }
 
     /** Return SymSet from a hashmap.
+     *
+     *  @param f
+     *  @param sym
+     *  @return
      */
     private static SymSet get(HashMap f, Symbol sym) {
 	SymSet ss = (SymSet) f.get(sym);
@@ -145,6 +163,9 @@ public class LambdaLift extends OwnerTransformer
 	private boolean propagatePhase;
 
 	/** Insert `sym' into the set of free variables of `owner'
+         *
+         *  @param owner
+         *  @param sym
 	 */
 	private void putFree(Symbol owner, Symbol sym) {
 	    assert owner.isLocal();
@@ -158,6 +179,9 @@ public class LambdaLift extends OwnerTransformer
 	}
 
 	/** Insert `to' into the set of functions called by `from'
+         *
+         *  @param from
+         *  @param to
 	 */
 	private void putCall(Symbol from, Symbol to) {
 	    SymSet ss = get(called, from);
@@ -171,9 +195,15 @@ public class LambdaLift extends OwnerTransformer
 	 *  and the owner of `sym'.
 	 *  Return `true' if there is no class between `owner' and
 	 *  the owner of sym.
+         *
+         *  @param sym
+         *  @param owner
+         *  @return
 	 */
 	private boolean markFree(Symbol sym, Symbol owner) {
-	    if (global.debug) global.log("mark " + sym + " of " + sym.owner() + " free in " + owner);//debug
+	    if (global.debug)
+                global.log("mark " + sym + " of " + sym.owner() +
+                           " free in " + owner);//debug
 	    if (owner.kind == NONE) {
 		assert propagatePhase : sym + " in " + sym.owner();
 		return false;
@@ -274,6 +304,8 @@ public class LambdaLift extends OwnerTransformer
 	}
 
 	/** Propagate free fariables from all called functions.
+         *
+         *  @param fvs
 	 */
 	void propagateFvs(HashMap fvs) {
 	    Object[] fs = called.keySet().toArray();
@@ -290,11 +322,13 @@ public class LambdaLift extends OwnerTransformer
 	    }
 	}
 
-	/** This method re-enters all free variables into their free variable sets
-	 *  This is necessary because the names of these variables (and therefore their
-	 *  `isLess' order have changed.
+	/** This method re-enters all free variables into their free variable
+         *  sets. This is necessary because the names of these variables (and
+         *  therefore their `isLess' order have changed.
+         *
+         *  @param fvs
 	 */
-	void restoreFvs(HashMap fvs) {
+	private void restoreFvs(HashMap fvs) {
 	    Object[] fs = fvs.keySet().toArray();
 	    for (int i = 0; i < fs.length; i++) {
 		Symbol f = (Symbol) fs[i];
@@ -308,6 +342,8 @@ public class LambdaLift extends OwnerTransformer
 
 	/** Compute a mapping from symbols to their free variables
 	 *  in hashtable `fvs'. Also rename all variables that need it.
+         *
+         *  @param unit
 	 */
 	public void initialize(CompilationUnit unit) {
 	    this.unit = unit;
@@ -338,6 +374,10 @@ public class LambdaLift extends OwnerTransformer
     private TreeList liftedDefs;
 
     /** Transform template and add lifted definitions to it.
+     *
+     *  @param stats
+     *  @param tsym
+     *  @return
      */
     public Tree[] transformTemplateStats(Tree[] stats, Symbol tsym) {
 	TreeList prevLiftedDefs = liftedDefs;
@@ -348,6 +388,10 @@ public class LambdaLift extends OwnerTransformer
 	return stats1.toArray();
     }
 
+    /** ...
+     *
+     *  @param tree
+     */
     public Tree transform(Tree tree) {
 	//global.debugPrinter.print("lifting ").print(tree).println().end();//DEBUG
 	//System.out.print(tree.type + " --> ");//DEBUG
@@ -424,7 +468,7 @@ public class LambdaLift extends OwnerTransformer
 	case ValDef(_, _, _, Tree rhs):
 	    Symbol sym = tree.symbol();
 	    rhs = transform(rhs, sym);
-	    if ((sym.flags & CAPTURED) != 0) {
+	    if (sym.isCaptured()) {
 		assert sym.isLocal();
                 switch (sym.nextType()) {
                 case TypeRef(_, Symbol clasz, Type[] args):
@@ -454,6 +498,7 @@ public class LambdaLift extends OwnerTransformer
 		unit.error(tree.pos, "non-local return not yet implemented");
 	    }
 	    return super.transform(tree);
+
 	case Apply(Tree fn, Tree[] args):
 	    Symbol fsym = TreeInfo.methSymbol(fn);
 	    Tree fn1 = transform(fn);
@@ -500,15 +545,17 @@ public class LambdaLift extends OwnerTransformer
 		sym = descr.proxy(sym, currentOwner);
 	    }
 	    Tree tree1 = gen.mkLocalRef(tree.pos, sym);
-	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, definitions.REF_ELEM());
-	    else return tree1;
+	    if (sym.isCaptured())
+                return gen.Select(tree1, definitions.REF_ELEM());
+	    else
+                return tree1;
 
 	default:
 	    return super.transform(tree);
         }
     }
 
-    Symbol[] ftvsParams(Symbol owner) {
+    private Symbol[] ftvsParams(Symbol owner) {
 	Symbol[] freevars = get(free.ftvs, owner).toArray();
 	Symbol[] params = new Symbol[freevars.length];
 	for (int i = 0; i < params.length; i++) {
@@ -521,7 +568,7 @@ public class LambdaLift extends OwnerTransformer
 	return params;
     }
 
-    Symbol[] fvsParams(Symbol owner) {
+    private Symbol[] fvsParams(Symbol owner) {
 	Symbol[] freevars = get(free.fvs, owner).toArray();
 	Symbol[] params = new Symbol[freevars.length];
 	for (int i = 0; i < params.length; i++) {
@@ -534,7 +581,7 @@ public class LambdaLift extends OwnerTransformer
 	return params;
     }
 
-    Symbol[] newtparams(Symbol owner) {
+    private Symbol[] newtparams(Symbol owner) {
 	Symbol[] tparams = owner.nextType().typeParams();
 	int nfree = get(free.ftvs, owner).size();
 	assert nfree == tparams.length - owner.type().typeParams().length
@@ -544,7 +591,7 @@ public class LambdaLift extends OwnerTransformer
 	return newtparams;
     }
 
-    Symbol[] newparams(Symbol owner) {
+    private Symbol[] newparams(Symbol owner) {
 	Symbol[] params = owner.nextType().firstParams();
 	int nfree = get(free.fvs, owner).size();
 	assert nfree == params.length - owner.type().firstParams().length;
@@ -562,7 +609,7 @@ public class LambdaLift extends OwnerTransformer
      *  change symbol of tree so that
      *  owner = currentMember
      */
-    void liftSymbol(Tree tree) {
+    private void liftSymbol(Tree tree) {
 	switch (tree) {
 	case ClassDef(_, _, _, _, _, _):
 	    ((ClassDef) tree).mods |= LIFTED;
@@ -604,9 +651,9 @@ public class LambdaLift extends OwnerTransformer
             return sym.isConstructor() || sym.owner().isClass();
         }
 
-    void liftSymbol(Symbol sym, Symbol[] oldtparams,
-		    Symbol[] newtparams, Symbol[] newparams) {
-	Symbol enclClass = sym.owner();
+    private void liftSymbol(Symbol sym, Symbol[] oldtparams,
+                    Symbol[] newtparams, Symbol[] newparams) {
+        Symbol enclClass = sym.owner();
         while (!enclClass.isClassType()) {
             enclClass = enclClass.isConstructor() && !enclClass.isPrimaryConstructor()
                 ? enclClass.constructorClass()
@@ -634,7 +681,7 @@ public class LambdaLift extends OwnerTransformer
 	}
     }
 
-    Type addTypeParams(Type tp, Symbol[] oldtparams, Symbol[] newtparams) {
+    private Type addTypeParams(Type tp, Symbol[] oldtparams, Symbol[] newtparams) {
 	if (newtparams.length == 0) return tp;
 	switch (tp) {
 	case MethodType(_, _):
@@ -653,7 +700,7 @@ public class LambdaLift extends OwnerTransformer
 	}
     }
 
-    Type addParams(Type tp, Symbol[] newparams) {
+    private Type addParams(Type tp, Symbol[] newparams) {
 	if (newparams.length == 0) return tp;
 	switch (tp) {
 	case MethodType(Symbol[] params, Type restpe):
@@ -668,7 +715,7 @@ public class LambdaLift extends OwnerTransformer
 	}
     }
 
-    AbsTypeDef[] addTypeParams(AbsTypeDef[] tparams, Symbol[] newtparams) {
+    private AbsTypeDef[] addTypeParams(AbsTypeDef[] tparams, Symbol[] newtparams) {
 	if (newtparams.length == 0) return tparams;
 	AbsTypeDef[] tparams1 = new AbsTypeDef[tparams.length + newtparams.length];
 	System.arraycopy(tparams, 0, tparams1, 0, tparams.length);
@@ -678,7 +725,7 @@ public class LambdaLift extends OwnerTransformer
 	return tparams1;
     }
 
-    ValDef[] addParams(ValDef[] params, Symbol[] newparams) {
+    private ValDef[] addParams(ValDef[] params, Symbol[] newparams) {
 	if (newparams.length == 0) return params;
 	ValDef[] params1 = new ValDef[params.length + newparams.length];
 	System.arraycopy(params, 0, params1, 0, params.length);
@@ -690,8 +737,14 @@ public class LambdaLift extends OwnerTransformer
 
     /** For all variables or type variables in `fvs',
      *  append proxies to argument array `args'.
+     *
+     *  @param pos
+     *  @param fvs
+     *  @param args
+     *  @param types
+     *  @return
      */
-    Tree[] addFreeArgs(int pos, SymSet fvs, Tree[] args, boolean types) {
+    private Tree[] addFreeArgs(int pos, SymSet fvs, Tree[] args, boolean types) {
 	if (fvs != SymSet.EMPTY) {
 	    Symbol[] fparams = fvs.toArray();
 	    Tree[] args1 = new Tree[args.length + fparams.length];
