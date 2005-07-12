@@ -45,14 +45,19 @@ abstract class Node extends NodeSeq {
   def getNamespace(_pre: String) =
     if(scope == null) null else scope.getURI(_pre);
 
-  /** returns value of a MetaData instance with the same key. For
-   *  efficiency, the namespace is not checked.
+  /**  looks up an unprefixed attribute in attributes of this node.
+   *   @param  key of queried attribute.
+   *   @return value of UnprefixedAttribute with given key in attributes, if
+   *            it exists, otherwise null.
    */
   final def attribute(key: String) =
     attributes.getValue(key);
 
-  /** returns value of a MetaData instance with the given namespace and the
-   *  given key. Note that unqualified attributes have namespace null.
+  /**  looks up a prefixed attribute in attributes of this node.
+   *   @param  uri namespace of queried attribute (may not be null).
+   *   @param  key of queried attribute.
+   *   @return value of PrefixedAttribute with given namespace and
+   *           given key, otherwise null.
    */
   final def attribute(uri:String, key: String) =
     attributes.getValue(uri, this, key);
@@ -65,11 +70,11 @@ abstract class Node extends NodeSeq {
   /** child axis (all children of this node) */
   def child:      Seq[Node];
 
-  /** descendant axis (all descendants of this node) */
+  /** descendant axis (all descendants of this node, not including not itself) */
   def descendant: List[Node] =
     child.toList.flatMap { x => x::x.descendant } ;
 
-  /** descendant axis (all descendants of this node) */
+  /** descendant axis (all descendants of this node, including this node) */
   def descendant_or_self: List[Node] = this :: descendant;
 
   /** structural equality */
@@ -97,12 +102,14 @@ abstract class Node extends NodeSeq {
   def toString(stripComment: Boolean): String  =
     Utility.toXML(this, stripComment);
 
-  /**
+  /** same as toString(false).
    * @see "toString(Boolean)"
    */
   override def toString(): String =
     toString(false);
 
+  /** appends qualified name of this node to StringBuffer
+   */
   def nameToString(sb: StringBuffer): StringBuffer  = {
     if(null != prefix) {
       sb.append(prefix);
