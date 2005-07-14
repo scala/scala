@@ -199,7 +199,7 @@ abstract class Typers: Analyzer {
         errorTree(tree, sym.toString() + " is not a value");
       else if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
 	       (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
-		sym.isModule && !sym.tpe.isInstanceOf[MethodType])) {
+		sym.isModule && !sym.isMethod)) {
 	tree.setType(singleType(pre, sym))
       } else tree
     }
@@ -458,11 +458,7 @@ abstract class Typers: Analyzer {
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.LOCAL_NAME(name), tpe, rhs);
 	val getter: DefDef = {
 	  val sym = vdef.symbol;
-	  val decls = sym.owner.info.decls;
-	  var getterEntry = decls.lookupEntry(name);
-	  while (!(getterEntry.sym hasFlag ACCESSOR))
-	    getterEntry = decls.lookupNextEntry(getterEntry);
-	  val getter = getterEntry.sym;
+	  val getter = sym.owner.info.decl(name).suchThat(.hasFlag(ACCESSOR));
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree else typed(gen.mkRef(sym), EXPRmode, sym.tpe)));
@@ -471,7 +467,7 @@ abstract class Typers: Analyzer {
 	}
 	def setter: DefDef = {
 	  val sym = vdef.symbol;
-	  val setter = sym.owner.info.decls.lookup(nme.SETTER_NAME(name)).suchThat(.hasFlag(ACCESSOR));
+	  val setter = sym.owner.info.decl(nme.SETTER_NAME(name)).suchThat(.hasFlag(ACCESSOR));
           atPos(vdef.pos)(
 	    DefDef(setter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
@@ -704,7 +700,7 @@ abstract class Typers: Analyzer {
 	}
       }
 
-    private def typed1(tree: Tree, mode: int, pt: Type): Tree = {
+    protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
 
       def funmode = mode & stickyModes | FUNmode | POLYmode;
 
@@ -1113,8 +1109,7 @@ abstract class Typers: Analyzer {
           typedTypeApply(typed(fun, funmode | TAPPmode, WildcardType), args1)
 
         case Apply(fun, args) =>
-	  val stableApplication =
-	    fun.symbol != null && fun.symbol.tpe.isInstanceOf[MethodType] && fun.symbol.isStable;
+	  val stableApplication = fun.symbol != null && fun.symbol.isMethod && fun.symbol.isStable;
 	  if (stableApplication && (mode & PATTERNmode) != 0) {
 	    // treat stable function applications f() as expressions.
 	    typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
@@ -1226,7 +1221,7 @@ abstract class Typers: Analyzer {
       try {
         if (settings.debug.value) {
           assert(pt != null, tree);//debug
-	  //System.out.println("typing " + tree);//debug
+	  //System.out.println("typing " + tree);//DEBUG
 	}
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt);
 	//System.out.println("typed " + tree1 + ":" + tree1.tpe);//DEBUG

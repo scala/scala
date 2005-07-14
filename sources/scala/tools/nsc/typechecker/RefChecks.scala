@@ -572,13 +572,13 @@ abstract class RefChecks extends Transform {
 
 	case TypeApply(fn, args) =>
 	  checkBounds(fn.tpe.typeParams, args map (.tpe));
-	  if (sym.isMethod && sym.hasFlag(CASE)) result = toConstructor;
+	  if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor;
 
 	case New(tpt) =>
 	  enterReference(tree.pos, tpt.tpe.symbol);
 
 	case Ident(name) =>
-	  if (sym.isMethod && sym.hasFlag(CASE))
+	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
 	  else if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
 	    sym setFlag ACCESSED;
@@ -587,7 +587,7 @@ abstract class RefChecks extends Transform {
 	  }
 
 	case Select(qual, name) =>
-	  if (sym.isMethod && sym.hasFlag(CASE))
+	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
 	  else {
 	    sym setFlag ACCESSED;

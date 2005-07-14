@@ -75,7 +75,7 @@ abstract class WordAutomInScala extends Autom2Scala {
       this.resultSym = owner.newVariable( pos, fresh.newName("swRes"))
       .setInfo( definitions.IntClass.info ) ;
 
-      this.funSym.setInfo( new MethodType(scala.List (definitions.IntClass.info),
+      this.funSym.setInfo( MethodType(scala.List (definitions.IntClass.info),
                                           definitions.IntClass.info ));
 
       this.curSym = owner.newVariable( pos, "cur" /*Names.cur*/ )

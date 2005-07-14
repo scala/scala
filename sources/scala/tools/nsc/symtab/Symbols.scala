@@ -97,7 +97,8 @@ abstract class Symbols: SymbolTable {
     final def isSetter = isTerm && hasFlag(ACCESSOR) && name.endsWith(nme._EQ);
     final def isValueParameter = isTerm && hasFlag(PARAM);
     final def isLocalDummy = isTerm && (name startsWith nme.LOCAL_PREFIX);
-    final def isMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD;
+    final def isMethod = isTerm && hasFlag(METHOD);
+    final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD;
     final def isLabel = isTerm && hasFlag(LABEL);
     final def isConstructor = isTerm && name == nme.CONSTRUCTOR;
     final def isModule = isTerm && hasFlag(MODULE);
@@ -139,7 +140,7 @@ abstract class Symbols: SymbolTable {
 
     /** Is this symbol a sealed class?*/
     final def isSealed: boolean =
-      isClass && (hasFlag(SEALED) || isSubClass(AnyValClass) || isSubClass(ArrayClass));
+      isClass && (hasFlag(SEALED) || isUnboxedClass(this));
 
     /** Is this symbol locally defined? I.e. not accessed from outside `this' instance */
     final def isLocal: boolean = owner.isTerm;
@@ -360,6 +361,7 @@ abstract class Symbols: SymbolTable {
 
     def filter(cond: Symbol => boolean): Symbol =
       if (hasFlag(OVERLOADED)) {
+        //assert(info.isInstanceOf[OverloadedType], "" + this + ":" + info);//DEBUG
 	val alts = alternatives;
 	val alts1 = alts filter cond;
 	if (alts1 eq alts) this
@@ -395,7 +397,7 @@ abstract class Symbols: SymbolTable {
     def enclClass: Symbol = if (isClass) this else owner.enclClass;
 
     /** The next enclosing method */
-    def enclMethod: Symbol = if (isMethod) this else owner.enclMethod;
+    def enclMethod: Symbol = if (isSourceMethod) this else owner.enclMethod;
 
     /** The primary constructor of a class */
     def primaryConstructor: Symbol = info.decl(nme.CONSTRUCTOR).alternatives.head;
@@ -526,7 +528,7 @@ abstract class Symbols: SymbolTable {
       else if (isPackage) "package"
       else if (isModule) "object"
       else if (isConstructor) "constructor"
-      else if (isMethod) "method"
+      else if (isSourceMethod) "method"
       else if (isTerm) "value"
       else "";
 

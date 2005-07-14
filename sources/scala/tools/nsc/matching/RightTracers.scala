@@ -185,7 +185,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
     .setInfo( definitions.IntClass.info ) ;
 
     funSym.setInfo(
-      new MethodType( scala.List (  // dummy symbol MethodType
+      MethodType( scala.List (  // dummy symbol MethodType
         SeqTraceType(elementType),
         //funSym.newValueParameter( pos, fresh.newName("iter") /*, SeqTraceType elementType */),
         definitions.IntClass.info),

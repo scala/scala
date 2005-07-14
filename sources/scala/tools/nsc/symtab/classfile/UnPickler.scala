@@ -143,10 +143,9 @@ abstract class UnPickler {
 	case CONSTANTtpe =>
 	  ConstantType(readConstantRef())
 	case TYPEREFtpe =>
-	  // create a type-ref as found, without checks or rebinds
-	  new TypeRef(readTypeRef(), readSymbolRef(), until(end, readTypeRef)) {}
+	  rawTypeRef(readTypeRef(), readSymbolRef(), until(end, readTypeRef))
         case TYPEBOUNDStpe =>
-          new TypeBounds(readTypeRef(), readTypeRef())
+          TypeBounds(readTypeRef(), readTypeRef())
 	case REFINEDtpe =>
 	  val clazz = readSymbolRef();
 	  new RefinedType(until(end, readTypeRef), symScope(clazz)) { override def symbol = clazz }
@@ -158,7 +157,7 @@ abstract class UnPickler {
 	  MethodType(until(end, readTypeRef), restpe)
 	case IMPLICITMETHODtpe =>
 	  val restpe = readTypeRef();
-	  new ImplicitMethodType(until(end, readTypeRef), restpe)
+	  ImplicitMethodType(until(end, readTypeRef), restpe)
 	case POLYtpe =>
 	  val restpe = readTypeRef();
 	  PolyType(until(end, readSymbolRef), restpe)

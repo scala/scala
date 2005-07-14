@@ -59,15 +59,15 @@ abstract class Trees: Global {
   }
 
   abstract class DefTree extends SymTree {
-    override def isDef = true;
+    override def isDef = true
   }
 
   abstract class TermTree extends Tree {
-    override def isTerm = true;
+    override def isTerm = true
   }
 
   abstract class TypTree extends Tree {
-    override def isType = true;
+    override def isType = true
   }
 
 // ----- auxiliary objects and methods ------------------------------
@@ -920,8 +920,7 @@ abstract class Trees: Global {
       List.mapConserve(trees)(tree => transform(tree).asInstanceOf[Ident]);
     def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       List.mapConserve(stats)(stat =>
-	if (exprOwner != currentOwner && (!stat.isDef || stat.isInstanceOf[LabelDef]))
-	  atOwner(exprOwner)(transform(stat))
+	if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
 	else transform(stat));
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
@@ -1030,8 +1029,7 @@ abstract class Trees: Global {
       treess foreach traverseTrees;
     def traverseStats(stats: List[Tree], exprOwner: Symbol): unit =
       stats foreach (stat =>
-	if (exprOwner != currentOwner && (!stat.isDef || stat.isInstanceOf[LabelDef]))
-	  atOwner(exprOwner)(traverse(stat))
+	if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(traverse(stat))
 	else traverse(stat));
 
     def atOwner(owner: Symbol)(traverse: => unit): unit = {

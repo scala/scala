@@ -47,7 +47,7 @@ abstract class UnCurry extends InfoTransform {
       case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
 	apply(functionType(List(), arg))
       case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
-	apply(TypeRef(pre, SeqClass, args));
+	apply(rawTypeRef(pre, SeqClass, args));
       case _ =>
 	mapOver(tp)
     }
@@ -130,8 +130,7 @@ abstract class UnCurry extends InfoTransform {
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
       def applyUnary(tree: Tree): Tree =
-        if ((tree.symbol.tpe.isInstanceOf[MethodType] || tree.symbol.tpe.isInstanceOf[PolyType]) &&
-	    (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
+        if (tree.symbol.isMethod && (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
 	  if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
 	  atPos(tree.pos)(Apply(tree, List()) setType tree.tpe.resultType)
 	} else tree;

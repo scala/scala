@@ -16,7 +16,7 @@ import util._;
 import ast._;
 import ast.parser._;
 import typechecker._;
-import matching.TransMatcher;
+//import matching.TransMatcher;
 import transform._;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with CompilationUnits {
@@ -124,6 +124,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   abstract class StdPhase(prev: Phase) extends Phase(prev) {
     def run: unit = units foreach applyPhase;
     def apply(unit: CompilationUnit): unit;
+    private val isErased = /*prev == erasurePhase ||*/ prev.erasedTypes;
+    override def erasedTypes: boolean = isErased;
     def applyPhase(unit: CompilationUnit): unit = {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]");
       apply(unit)
@@ -176,20 +178,17 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val tailCallPhase = new tailCalls.Phase(uncurryPhase);
 
+/*
   object transmatcher extends TransMatcher {
     val global: Global.this.type = Global.this;
-
   }
-
   val transMatchPhase = new transmatcher.Phase(tailCallPhase);
-  //object typesAsValues extends TypesAsValues {
-  //  val global: Global.this.type = Global.this;
-  //}
+*/
 
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this;
   }
-  val samplePhase = new sampleTransform.Phase(transMatchPhase);
+  val samplePhase = new sampleTransform.Phase(tailCallPhase);
 
 
   //val transMatchPhase = new transmatcher.TransMatchPhase(picklePhase);

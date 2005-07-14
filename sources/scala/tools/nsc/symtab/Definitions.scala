@@ -6,6 +6,7 @@
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.Position;
+import collection.mutable.HashMap;
 import Flags._;
 
 abstract class Definitions: SymbolTable {
@@ -145,8 +146,10 @@ abstract class Definitions: SymbolTable {
 
     // boxed classes
     var BoxedArrayClass: Symbol = _;
-    var BoxedObjectArrayClass: Symbol = _;
+    var BoxedNumberClass: Symbol = _;
     var BoxedUnitClass: Symbol = _;
+    var BoxedUnitModule: Symbol = _;
+      def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT");
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname, true);
@@ -220,6 +223,34 @@ abstract class Definitions: SymbolTable {
       owner.newTypeParameter(Position.NOPOS, "T" + index)
         .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor));
 
+    val boxedSym = new HashMap[Symbol, Symbol];
+    val boxedArraySym = new HashMap[Symbol, Symbol];
+    private val abbrvTag = new HashMap[Symbol, char];
+
+    private def getValueClass(name: String, tag: char): Symbol = {
+      val result = getClass("scala." + name);
+      boxedSym(result) = getClass("scala.runtime.Boxed" + name);
+      if (name != "Unit") boxedArraySym(result) = getClass("scala.runtime.Boxed" + name + "Array");
+      abbrvTag(result) = tag;
+      result
+    }
+
+    /** Is symbol a value class? */
+    def isValueClass(sym: Symbol): boolean = boxedSym contains sym;
+
+    /** Is symbol a value or array class? */
+    def isUnboxedClass(sym: Symbol): boolean = isValueClass(sym) || sym == ArrayClass;
+
+    def signature(tp: Type): String = {
+      def signature1(tp: Type): String = {
+        if (tp.symbol == ArrayClass) "[" + signature1(tp.typeArgs.head);
+        else if (isValueClass(tp.symbol)) String.valueOf(abbrvTag(tp.symbol))
+        else "L" + tp.symbol.fullNameString + ";"
+      }
+      if (tp.symbol == ArrayClass) signature1(tp);
+      else tp.symbol.fullNameString
+    }
+
     def init = {
       RootClass =
 	NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
@@ -252,15 +283,15 @@ abstract class Definitions: SymbolTable {
       ThrowableClass = getClass("java.lang.Throwable");
 
       // the scala value classes
-      UnitClass = getClass("scala.Unit");
-      BooleanClass = getClass("scala.Boolean");
-      ByteClass = getClass("scala.Byte");
-      ShortClass = getClass("scala.Short");
-      CharClass = getClass("scala.Char");
-      IntClass = getClass("scala.Int");
-      LongClass = getClass("scala.Long");
-      FloatClass = getClass("scala.Float");
-      DoubleClass = getClass("scala.Double");
+      UnitClass = getValueClass("Unit", 'V');
+      BooleanClass = getValueClass("Boolean", 'Z');
+      ByteClass = getValueClass("Byte", 'B');
+      ShortClass = getValueClass("Short", 'S');
+      CharClass = getValueClass("Char", 'C');
+      IntClass = getValueClass("Int", 'I');
+      LongClass = getValueClass("Long", 'L');
+      FloatClass = getValueClass("Float", 'F');
+      DoubleClass = getValueClass("Double", 'D');
 
       // the scala reference classes
       ScalaObjectClass = getClass("scala.ScalaObject");
@@ -319,8 +350,9 @@ abstract class Definitions: SymbolTable {
       PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor);
 
       BoxedArrayClass = getClass("scala.runtime.BoxedArray");
-      BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray");
+      BoxedNumberClass = getClass("scala.runtime.BoxedNumber");
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit");
+      BoxedUnitModule = getModule("scala.runtime.BoxedUnit");
     }
   }
 }

@@ -50,7 +50,7 @@ abstract class LeftTracerInScala extends Autom2Scala {
       //                                   accumType));
 
       this.funSym.setInfo(
-        new MethodType(
+        MethodType(
           scala.List (  // dummy symbol MethodType
             definitions.IntClass.info,
             accumType

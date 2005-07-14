@@ -56,9 +56,9 @@ trait Namers: Analyzer {
     }
 
     def enterInScope(sym: Symbol): Symbol = {
-      if (!(sym.isMethod && sym.owner.isClass)) {
+      if (!(sym.isSourceMethod && sym.owner.isClass)) {
 	val prev = context.scope.lookupEntry(sym.name);
-	if (prev != null && prev.owner == context.scope && !prev.sym.isMethod)
+	if (prev != null && prev.owner == context.scope && !prev.sym.isSourceMethod)
 	  doubleDefError(sym.pos, prev.sym);
       }
       context.scope enter sym;
@@ -294,8 +294,7 @@ trait Namers: Analyzer {
 	} else typer.typedType(tpt).tpe;
       def mkMethodType(vparams: List[Symbol], restpe: Type) = {
 	val formals = vparams map (.tpe);
-	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))
-	  new ImplicitMethodType(formals, restpe)
+	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT)) ImplicitMethodType(formals, restpe)
 	else MethodType(formals, restpe);
       }
       makePolyType(

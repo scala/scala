@@ -383,8 +383,9 @@ abstract class Types: SymbolTable {
   /** A base class for types that defer some operations
    *  to their immediate supertype
    */
-  abstract trait SubType extends Type {
-    protected def supertype: Type;
+  abstract class SubType extends Type {
+    assert(!phase.erasedTypes, this);
+    def supertype: Type;
     override def parents: List[Type] = supertype.parents;
     override def decls: Scope = supertype.decls;
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz);
@@ -396,9 +397,9 @@ abstract class Types: SymbolTable {
   /** A base class for types that represent a single value
    *  (single-types and this-types)
    */
-  abstract trait SingletonType extends SubType {
+  abstract class SingletonType extends SubType {
     override def singleDeref: Type;
-    protected def supertype: Type = singleDeref;
+    def supertype: Type = singleDeref;
     override def isStable: boolean = true;
     override def widen: Type = singleDeref.widen;
     override def closure: Array[Type] = addClosure(this, supertype.closure);
@@ -442,7 +443,7 @@ abstract class Types: SymbolTable {
 
   /** A class for this-types of the form <sym>.this.type
    */
-  case class ThisType(sym: Symbol) extends SingletonType {
+  abstract case class ThisType(sym: Symbol) extends SingletonType {
     assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym);
     override def symbol = sym;
     override def singleDeref: Type = sym.typeOfThis;
@@ -450,7 +451,7 @@ abstract class Types: SymbolTable {
       if (settings.debug.value) sym.nameString + ".this.";
       else if (sym.isRoot || sym.isEmptyPackageClass) ""
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
-      else if (sym.isPackageClass) sym.fullNameString('.') + "."
+      else if (sym.isPackageClass) sym.fullNameString + "."
       else sym.nameString + ".this.";
     override def narrow: Type = this;
   }
@@ -476,7 +477,7 @@ abstract class Types: SymbolTable {
       else pre.prefixString + sym.nameString + ".";
   }
 
-  case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
+  abstract case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
     override def symbol = thistpe.symbol;
     override def singleDeref = supertp;
     override def prefixString =
@@ -488,8 +489,8 @@ abstract class Types: SymbolTable {
 
   /** A class for the bounds of abstract types and type parameters
    */
-  case class TypeBounds(lo: Type, hi: Type) extends SubType {
-    protected def supertype: Type = hi;
+  abstract case class TypeBounds(lo: Type, hi: Type) extends SubType {
+    def supertype: Type = hi;
     override def bounds: TypeBounds = this;
     def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
     override def toString() = ">: " + lo + " <: " + hi;
@@ -511,6 +512,7 @@ abstract class Types: SymbolTable {
     override def closure: Array[Type] = {
       def computeClosure: Array[Type] =
 	try {
+          //System.out.println("computing closure of " + symbol.tpe + " " + parents);//DEBUG
           addClosure(symbol.tpe, glbArray(parents map (.closure)));
 	} catch {
           case ex: MalformedClosure =>
@@ -601,7 +603,7 @@ abstract class Types: SymbolTable {
   class PackageClassInfoType(decls: Scope, clazz: Symbol) extends ClassInfoType(List(), decls, clazz);
 
   /** A class representing a constant type */
-  case class ConstantType(value: Constant) extends SingletonType {
+  abstract case class ConstantType(value: Constant) extends SingletonType {
     assert(value.tpe.symbol != UnitClass);
     override def symbol: Symbol = value.tpe.symbol;
     override def singleDeref: Type = value.tpe;
@@ -612,7 +614,7 @@ abstract class Types: SymbolTable {
   /** A class for named types of the form <prefix>.<sym.name>[args]
    *  Cannot be created directly; one should always use `typeRef' for creation.
    */
-  case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
+  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
     assert(!sym.isAbstractType || pre.isStable || pre.isError);
     assert(!pre.isInstanceOf[ClassInfoType], this);
 
@@ -683,11 +685,18 @@ abstract class Types: SymbolTable {
       pre.prefixString + sym.nameString +
 	(if (args.isEmpty) "" else args.mkString("[", ",", "]"))
     }
+
+    override def prefixString =
+      if (settings.debug.value) super.prefixString
+      else if (sym.isRoot || sym.isEmptyPackageClass ||
+               sym.isAnonymousClass || sym.isRefinementClass) ""
+      else if (sym.isPackageClass) sym.fullNameString + "."
+      else super.prefixString;
   }
 
   /** A class representing a method type with parameters.
    */
-  case class MethodType(override val paramTypes: List[Type],
+  abstract case class MethodType(override val paramTypes: List[Type],
                         override val resultType: Type) extends Type {
 
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
@@ -791,12 +800,43 @@ abstract class Types: SymbolTable {
     } else sym
   }
 
+  /** The canonical creator for this-types */
+  def ThisType(sym: Symbol): Type =
+    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym){});
+
   /** The canonical creator for single-types */
-  def singleType(pre: Type, sym: Symbol): SingleType = {
-    if (checkMalformedSwitch && !pre.isStable && !pre.isError)
+  def singleType(pre: Type, sym: Symbol): Type = {
+    if (phase.erasedTypes)
+      sym.tpe
+    else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString());
-    new SingleType(pre, rebind(pre, sym)) {}
+    else
+      unique(new SingleType(pre, rebind(pre, sym)) {})
   }
+
+  /** The canonical creator for super-types */
+  def SuperType(thistp: Type, supertp: Type): Type =
+    if (phase.erasedTypes) supertp else unique(new SuperType(thistp, supertp){});
+
+  /** The canonical creator for type bounds */
+  def TypeBounds(lo: Type, hi: Type): TypeBounds =
+    unique(new TypeBounds(lo, hi) {});
+
+  /** the canonical creator for a refined type with a given scope */
+  def refinedType(parents: List[Type], owner: Symbol, decls: Scope): RefinedType = {
+    val clazz = owner.newRefinementClass(Position.NOPOS);
+    val result = new RefinedType(parents, decls) { override def symbol: Symbol = clazz }
+    clazz.setInfo(result);
+    result
+  }
+
+  /** the canonical creator for a refined type with an initially empty scope */
+  def refinedType(parents: List[Type], owner: Symbol): RefinedType =
+    refinedType(parents, owner, new Scope);
+
+  /** the canonical creator for a constant type */
+  def ConstantType(value: Constant): ConstantType =
+    unique(new ConstantType(value) {});
 
   /** The canonical creator for typerefs */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
@@ -813,23 +853,22 @@ abstract class Types: SymbolTable {
       sym1.resetFlag(LOCKED);
       result
     } else {
-      new TypeRef(pre, sym1, args) {}
+      rawTypeRef(pre, sym1, args)
     }
   }
 
-  /** the canonical creator for a refined type with a given scope */
-  def refinedType(parents: List[Type], owner: Symbol, decls: Scope): RefinedType = {
-    val clazz = owner.newRefinementClass(Position.NOPOS);
-    val result = new RefinedType(parents, decls) {
-      override def symbol: Symbol = clazz
-    }
-    clazz.setInfo(result);
-    result
+  /** create a type-ref as found, without checks or rebinds */
+  def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
+    unique(new TypeRef(pre, sym, args) {})
   }
 
-  /** the canonical creator for a refined type with an initially empty scope */
-  def refinedType(parents: List[Type], owner: Symbol): RefinedType =
-    refinedType(parents, owner, new Scope);
+  /** The canonical creator for method types */
+  def MethodType(paramTypes: List[Type], resultType: Type): MethodType =
+    unique(new MethodType(paramTypes, resultType) {});
+
+  /** The canonical creator for implicit method types */
+  def ImplicitMethodType(paramTypes: List[Type], resultType: Type): ImplicitMethodType =
+    new ImplicitMethodType(paramTypes, resultType); // don't unique this!
 
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself. */
@@ -850,6 +889,53 @@ abstract class Types: SymbolTable {
     case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
     case PolyType(tparams, restpe) => restpe.subst(tparams, args)
     case ErrorType => tycon
+  }
+
+// Hash consing --------------------------------------------------------------
+
+  private var size = 20000;
+  private var used = 0;
+  private var table = new Array[Type](size);
+
+  private def findEntry(tp: Type): Type = {
+    var h = tp.hashCode() % size;
+    var entry = table(h);
+    while (entry != null && entry != tp) {
+      h = (h + 1) % size;
+      entry = table(h)
+    }
+    entry
+  }
+
+  private def addEntry(tp: Type): unit = {
+    if (used >= (size >> 2)) growTable;
+    used = used + 1;
+    var h = tp.hashCode() % size;
+    while (table(h) != null) {
+      h = (h + 1) % size
+    }
+    table(h) = tp
+  }
+
+  private def growTable: unit = {
+    val oldtable = table;
+    size = size * 2;
+    table = new Array[Type](size);
+    var i = 0;
+    while (i < oldtable.length) {
+      val entry = oldtable(i);
+      if (entry != null) addEntry(entry);
+      i = i + 1
+    }
+  }
+
+  private def unique[T <: Type](tp: T): T = {
+    tp
+/*
+    val tp1 = findEntry(tp);
+    if (tp1 == null) { addEntry(tp); tp }
+    else { System.out.println("sharing " + tp1.getClass()); tp1.asInstanceOf[T] }
+*/
   }
 
 // Helper Classes ---------------------------------------------------------
@@ -917,7 +1003,7 @@ abstract class Types: SymbolTable {
         val paramtypes1 = List.mapConserve(paramtypes)(this);
         val result1 = this(result);
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
-        else if (tp.isInstanceOf[ImplicitMethodType]) new ImplicitMethodType(paramtypes1, result1)
+        else if (tp.isInstanceOf[ImplicitMethodType]) ImplicitMethodType(paramtypes1, result1)
         else MethodType(paramtypes1, result1)
       case PolyType(tparams, result) =>
         val tparams1 = mapOver(tparams);
@@ -1282,7 +1368,7 @@ abstract class Types: SymbolTable {
     tp.symbol == AllClass ||
     tp.symbol == AllRefClass && (sym.owner isSubClass AnyRefClass) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
-      (alt => sym == alt || specializesSym(tp.narrow, alt, ThisType(sym.owner), sym)));
+      (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)));
 
   /** Does member `sym1' of `tp1' have a stronger type than member `sym2' of `tp2'? */
   private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): boolean = {
