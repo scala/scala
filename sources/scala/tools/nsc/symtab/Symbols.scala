@@ -642,16 +642,18 @@ abstract class Symbols: SymbolTable {
     override def isType = true;
     private var tyconCache: Type = null;
     private var tpeCache: Type = _;
-    private var valid: Phase = null;
+    private var tpePhase: Phase = null;
     override def tpe: Type = {
       assert(tpeCache != NoType, this);
-      if (valid != phase) {
-        if (hasFlag(INITIALIZED)) valid = phase;
-        tpeCache = NoType;
-        tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
-                           this, unsafeTypeParams map (.tpe))
-      }
-      assert(tpeCache != null/*, "" + this + " " + phase*/);
+      if (tpePhase != phase)
+        if (isValid(tpePhase)) tpePhase = phase
+        else {
+          if (hasFlag(INITIALIZED)) tpePhase = phase;
+          tpeCache = NoType;
+          tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
+                             this, unsafeTypeParams map (.tpe))
+        }
+     assert(tpeCache != null/*, "" + this + " " + phase*/);//debug
       tpeCache
     }
     override def typeConstructor: Type = {
@@ -661,14 +663,14 @@ abstract class Symbols: SymbolTable {
       tyconCache;
     }
     override def setInfo(tp: Type): this.type = {
-      valid = null;
+      tpePhase = null;
       tyconCache = null;
       super.setInfo(tp);
       this
     }
     override def reset(completer: Type): unit = {
       super.reset(completer);
-      valid = null;
+      tpePhase = null;
       tyconCache = null;
     }
     def cloneSymbolImpl(owner: Symbol): Symbol =

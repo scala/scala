@@ -257,22 +257,6 @@ abstract class Types: SymbolTable {
       -1
     }
 
-    /** The erasure of this type. This is:
-     *   - For a singleton or constant type,
-     *     the erasure of its underlying base type
-     *   - For a non-empty type intersection,
-     *     the erasure of its first parent
-     *   - For a polymorphic type, the erasure of its result type
-     *   - for types Object, All, Any: AnyRef
-     *   - for an abstract type or TypeBounds type,
-     *     the erasure of its upper bound
-     *   - for all other typerefs, the type without prefix or arguments
-     *   - for a method type, the method type consistsing of
-     *     erased parameter and result types.
-     *   - for all other types, the type itself.
-     */
-    def erasure: Type = this;
-
     /** If this is a polytype, a copy with cloned type parameters owned
      *  by `owner'. Identity for all other types. */
     def cloneInfo(owner: Symbol) = this;
@@ -380,6 +364,12 @@ abstract class Types: SymbolTable {
 
 // Subclasses ------------------------------------------------------------
 
+
+  abstract class UniqueType {
+    private val hashcode = { val h = super.hashCode(); if (h < 0) -h else h }
+    override def hashCode() = hashcode;
+  }
+
   /** A base class for types that defer some operations
    *  to their immediate supertype
    */
@@ -391,7 +381,6 @@ abstract class Types: SymbolTable {
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz);
     override def closure: Array[Type] = supertype.closure;
     override def baseClasses: List[Symbol] = supertype.baseClasses;
-    override def erasure: Type = supertype.erasure;
   }
 
   /** A base class for types that represent a single value
@@ -462,11 +451,14 @@ abstract class Types: SymbolTable {
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     private var singleDerefCache: Type = _;
-    private var valid: Phase = null;
+    private var singleDerefPhase: Phase = null;
     override def singleDeref: Type = {
-      if (valid != phase) {
-        valid = phase;
-        singleDerefCache = pre.memberType(sym).resultType;
+      val p = singleDerefPhase;
+      if (p != phase) {
+        singleDerefPhase = phase;
+        if (!isValid(p)) {
+          singleDerefCache = pre.memberType(sym).resultType;
+        }
       }
       singleDerefCache
     }
@@ -505,9 +497,9 @@ abstract class Types: SymbolTable {
     assert(!parents.exists (.isInstanceOf[TypeBounds]), this);//debug
 
     private var closureCache: Array[Type] = _;
-    private var baseClassCache: List[Symbol] = _;
-    private var validClosure: Phase = null;
-    private var validBaseClasses: Phase = null;
+    private var closurePhase: Phase = null;
+    private var baseClassesCache: List[Symbol] = _;
+    private var baseClassesPhase: Phase = null;
 
     override def closure: Array[Type] = {
       def computeClosure: Array[Type] =
@@ -520,10 +512,13 @@ abstract class Types: SymbolTable {
 	      "the type intersection " + this + " is malformed" +
               "\n --- because ---\n" + ex.getMessage())
 	}
-      if (validClosure != phase) {
-        validClosure = phase;
-        closureCache = null;
-        closureCache = computeClosure;
+      val p = closurePhase;
+      if (p != phase) {
+        closurePhase = phase;
+        if (!isValid(p)) {
+          closureCache = null;
+          closureCache = computeClosure
+        }
 	//System.out.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
       }
       if (closureCache == null)
@@ -557,16 +552,17 @@ abstract class Types: SymbolTable {
 	  }
 	  symbol :: bcs
 	}
-      if (validBaseClasses == null ||
-          validBaseClasses != phase &&
-          infoTransformers.nextFrom(validBaseClasses).phase.id >= phase.id) {
-	validBaseClasses = phase;
-	baseClassCache = null;
-	baseClassCache = computeBaseClasses;
+      val p = baseClassesPhase;
+      if (p != phase) {
+	baseClassesPhase = phase;
+        if (!isValid(p)) {
+	  baseClassesCache = null;
+	  baseClassesCache = computeBaseClasses;
+        }
       }
-      if (baseClassCache == null)
+      if (baseClassesCache == null)
         throw new TypeError("illegal cyclic reference involving " + symbol);
-      baseClassCache
+      baseClassesCache
     }
 
     override def baseType(sym: Symbol): Type = {
@@ -575,9 +571,6 @@ abstract class Types: SymbolTable {
     }
 
     override def narrow: Type = symbol.thisType;
-
-    override def erasure: Type =
-      if (parents.isEmpty) this else parents.head.erasure;
 
     override def toString(): String =
       "<" + symbol.toString() + ">" + //debug
@@ -618,6 +611,11 @@ abstract class Types: SymbolTable {
     assert(!sym.isAbstractType || pre.isStable || pre.isError);
     assert(!pre.isInstanceOf[ClassInfoType], this);
 
+    private var parentsCache: List[Type] = _;
+    private var parentsPhase: Phase = null;
+    private var closureCache: Array[Type] = _;
+    private var closurePhase: Phase = null;
+
     def transform(tp: Type): Type =
       tp.asSeenFrom(pre, sym.owner).subst(sym.typeParams, args);
 
@@ -634,7 +632,16 @@ abstract class Types: SymbolTable {
       if (sym.isAbstractType) transform(sym.info.bounds).asInstanceOf[TypeBounds]
       else super.bounds;
 
-    override def parents: List[Type] = sym.info.parents map transform;
+    override def parents: List[Type] = {
+      val p = parentsPhase;
+      if (p != phase) {
+        parentsPhase = phase;
+        if (!isValid(p)) {
+          parentsCache = sym.info.parents map transform
+        }
+      }
+      parentsCache
+    }
 
     override def typeOfThis = transform(sym.typeOfThis);
 
@@ -654,24 +661,20 @@ abstract class Types: SymbolTable {
       else if (sym.isClass) transform(sym.info.baseType(clazz))
       else pre.memberInfo(sym).baseType(clazz);
 
-    override def closure: Array[Type] =
-      if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
-      else {
-        val result = transform(sym.info.closure);
-        //System.out.println("closure[" + this + "] = " + List.fromArray(sym.info.closure) + " => " + result);//DEBUG
-        result
+    override def closure: Array[Type] = {
+      val p = closurePhase;
+      if (p != phase) {
+        closurePhase = phase;
+        if (!isValid(p)) {
+          closureCache =
+            if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
+            else transform(sym.info.closure);
+        }
       }
-
+      closureCache
+    }
 
     override def baseClasses: List[Symbol] = sym.info.baseClasses;
-
-    override def erasure: Type =
-      if (sym.isAbstractType || sym.isAliasType) sym.info.erasure
-      else if (sym == ObjectClass ||
-	       sym == AllClass ||
-	       sym == AllRefClass ||
-	       sym == AnyRefClass) AnyClass.tpe
-      else typeRef(NoPrefix, sym, List());
 
     override def toString(): String = {
       if (!settings.debug.value) {
@@ -696,19 +699,12 @@ abstract class Types: SymbolTable {
 
   /** A class representing a method type with parameters.
    */
-  abstract case class MethodType(override val paramTypes: List[Type],
+  case class MethodType(override val paramTypes: List[Type],
                         override val resultType: Type) extends Type {
 
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
 
     override def finalResultType: Type = resultType.finalResultType;
-
-    override def erasure = {
-      val pts = List.mapConserve(paramTypes)(.erasure);
-      val res = resultType.erasure;
-      if ((pts eq paramTypes) && (res eq resultType)) this
-      else MethodType(pts, res)
-    }
 
     override def toString(): String = paramTypes.mkString("(", ",", ")") + resultType;
   }
@@ -735,7 +731,6 @@ abstract class Types: SymbolTable {
     override def baseClasses: List[Symbol] = resultType.baseClasses;
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz);
     override def narrow: Type = resultType.narrow;
-    override def erasure = resultType.erasure;
 
     override def toString(): String =
       (if (typeParams.isEmpty) "=>! "
@@ -802,7 +797,7 @@ abstract class Types: SymbolTable {
 
   /** The canonical creator for this-types */
   def ThisType(sym: Symbol): Type =
-    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym){});
+    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType {});
 
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): Type = {
@@ -811,16 +806,16 @@ abstract class Types: SymbolTable {
     else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString());
     else
-      unique(new SingleType(pre, rebind(pre, sym)) {})
+      unique(new SingleType(pre, rebind(pre, sym)) with UniqueType {})
   }
 
   /** The canonical creator for super-types */
   def SuperType(thistp: Type, supertp: Type): Type =
-    if (phase.erasedTypes) supertp else unique(new SuperType(thistp, supertp){});
+    if (phase.erasedTypes) supertp else unique(new SuperType(thistp, supertp) with UniqueType {});
 
   /** The canonical creator for type bounds */
   def TypeBounds(lo: Type, hi: Type): TypeBounds =
-    unique(new TypeBounds(lo, hi) {});
+    unique(new TypeBounds(lo, hi) with UniqueType {});
 
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope): RefinedType = {
@@ -836,7 +831,7 @@ abstract class Types: SymbolTable {
 
   /** the canonical creator for a constant type */
   def ConstantType(value: Constant): ConstantType =
-    unique(new ConstantType(value) {});
+    unique(new ConstantType(value) with UniqueType {});
 
   /** The canonical creator for typerefs */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
@@ -859,12 +854,13 @@ abstract class Types: SymbolTable {
 
   /** create a type-ref as found, without checks or rebinds */
   def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
-    unique(new TypeRef(pre, sym, args) {})
+    unique(new TypeRef(pre, sym, args) with UniqueType {})
   }
 
-  /** The canonical creator for method types */
+  /** The canonical creator for method types
   def MethodType(paramTypes: List[Type], resultType: Type): MethodType =
-    unique(new MethodType(paramTypes, resultType) {});
+    unique(new MethodType(paramTypes, resultType) with UniqueType {});
+*/
 
   /** The canonical creator for implicit method types */
   def ImplicitMethodType(paramTypes: List[Type], resultType: Type): ImplicitMethodType =
@@ -897,10 +893,38 @@ abstract class Types: SymbolTable {
   private var used = 0;
   private var table = new Array[Type](size);
 
+  var uniques = 0;
+  var accesses = 0;
+  var collisions = 0;
+
+/* statistics
+  var uniqueThis = 0;
+  var uniqueSingle = 0;
+  var uniqueSuper = 0;
+  var uniqueTypeRef = 0;
+  var uniqueTypeBounds = 0;
+  var uniqueConstant = 0;
+  var uniqueMethod = 0;
+  var duplicateThis = 0;
+  var duplicateSingle = 0;
+  var duplicateSuper = 0;
+  var duplicateTypeRef = 0;
+  var duplicateTypeBounds = 0;
+  var duplicateConstant = 0;
+  var duplicateMethod = 0;
+
+  def allTypes = new Iterator[Type] {
+    var i = 0;
+    def hasNext: boolean = { while (i < size && table(i) == null) { i = i + 1 }; i < size }
+    def next: Type = if (hasNext) { val r = table(i); i = i + 1; r } else null;
+  }
+*/
   private def findEntry(tp: Type): Type = {
     var h = tp.hashCode() % size;
+    accesses = accesses + 1;
     var entry = table(h);
     while (entry != null && entry != tp) {
+      collisions = collisions + 1;
       h = (h + 1) % size;
       entry = table(h)
     }
@@ -930,12 +954,35 @@ abstract class Types: SymbolTable {
   }
 
   private def unique[T <: Type](tp: T): T = {
-    tp
-/*
     val tp1 = findEntry(tp);
-    if (tp1 == null) { addEntry(tp); tp }
-    else { System.out.println("sharing " + tp1.getClass()); tp1.asInstanceOf[T] }
+    if (tp1 == null) {
+/*
+      tp.asInstanceOf[Type] match {
+        case ThisType(_) => uniqueThis = uniqueThis + 1
+        case SingleType(_, _) => uniqueSingle = uniqueSingle + 1
+        case SuperType(_, _) => uniqueSuper = uniqueSuper + 1
+        case TypeRef(_, _, _) => uniqueTypeRef = uniqueTypeRef + 1
+        case TypeBounds(_, _) => uniqueTypeBounds = uniqueTypeBounds + 1
+        case ConstantType(_) => uniqueConstant = uniqueConstant + 1
+        case MethodType(_, _) => uniqueMethod = uniqueMethod + 1
+      }
 */
+      uniques = uniques + 1;
+      addEntry(tp); tp
+    } else {
+/*
+      tp.asInstanceOf[Type] match {
+        case ThisType(_) => duplicateThis = duplicateThis + 1
+        case SingleType(_, _) => duplicateSingle = duplicateSingle + 1
+        case SuperType(_, _) => duplicateSuper = duplicateSuper + 1
+        case TypeRef(_, _, _) => duplicateTypeRef = duplicateTypeRef + 1
+        case TypeBounds(_, _) => duplicateTypeBounds = duplicateTypeBounds + 1
+        case ConstantType(_) => duplicateConstant = duplicateConstant + 1
+        case MethodType(_, _) => duplicateMethod = duplicateMethod + 1
+      }
+*/
+      tp1.asInstanceOf[T]
+    }
   }
 
 // Helper Classes ---------------------------------------------------------
@@ -1195,6 +1242,9 @@ abstract class Types: SymbolTable {
   }
 
 // Helper Methods  -------------------------------------------------------------
+
+  final def isValid(p: Phase): boolean =
+    p != null && infoTransformers.nextFrom(p).phase.id >= phase.id;
 
   /** Do tp1 and tp2 denote equivalent types? */
   def isSameType(tp1: Type, tp2: Type): boolean = (tp1 eq tp2) || {

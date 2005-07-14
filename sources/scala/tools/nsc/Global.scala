@@ -358,5 +358,25 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     inform("#selections  : " + analyzer.selcnt);
     inform("#applications: " + analyzer.appcnt);
     inform("#implicits   : " + analyzer.implcnt);
+    inform("#typecreates : " + accesses);
+    inform("#uniquetypes : " + uniques);
+    inform("#collisions  : " + collisions);
+/*
+    inform("#uniqueThis          : " + uniqueThis) ;
+    inform("#uniqueSingle        : " + uniqueSingle) ;
+    inform("#uniqueSuper         : " + uniqueSuper) ;
+    inform("#uniqueTypeRef       : " + uniqueTypeRef) ;
+    inform("#uniqueTypeBounds    : " + uniqueTypeBounds) ;
+    inform("#uniqueConstant      : " + uniqueConstant) ;
+    inform("#uniqueMethod        : " + uniqueMethod) ;
+    inform("#duplicateThis       : " + duplicateThis) ;
+    inform("#duplicateSingle     : " + duplicateSingle) ;
+    inform("#duplicateSuper      : " + duplicateSuper) ;
+    inform("#duplicateTypeRef    : " + duplicateTypeRef) ;
+    inform("#duplicateTypeBounds : " + duplicateTypeBounds) ;
+    inform("#duplicateConstant   : " + duplicateConstant) ;
+    inform("#duplicateMethod     : " + duplicateMethod) ;
+*/
+    //for (val tp <- allTypes) System.out.println("unique: " + tp)
   }
 }
