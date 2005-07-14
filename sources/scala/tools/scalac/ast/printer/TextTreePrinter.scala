@@ -1,26 +1,26 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
 \*                                                                      */
 
 // $Id$
 
-import scalac.ast.printer._;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+
+import scalac.CompilationUnit;
+import scalac.{Global => scalac_Global, Phase};
 import scalac.ast._;
+import scalac.ast.printer._;
 import scalac.symtab._;
 import scalac.util.Debug;
-import scalac.{Global => scalac_Global, Phase};
-import scalac.CompilationUnit;
 import scalac.util.Name;
 import scalac.util.TypeNames;
 
 package scala.tools.scalac.ast.printer {
-
-
-import java.io._;
-import java.util.ArrayList;
 
 /**
  * Text pretty printer for Scala abstract syntax trees.
@@ -135,20 +135,22 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   protected final val KW_ELSE      = Keyword("else");
   protected final val KW_EXTENDS   = Keyword("extends");
   protected final val KW_FINAL     = Keyword("final");
-  protected final val KW_SEALED    = Keyword("sealed");
   protected final val KW_FOR       = Keyword("for");
   protected final val KW_IF        = Keyword("if");
+  protected final val KW_IMPLICIT  = Keyword("implicit");
   protected final val KW_IMPORT    = Keyword("import");
   protected final val KW_INTERFACE = Keyword("interface");
-  protected final val KW_OBJECT    = Keyword("object");
+  protected final val KW_MATCH     = Keyword("match");
   protected final val KW_NEW       = Keyword("new");
   protected final val KW_NULL      = Keyword("null");
+  protected final val KW_OBJECT    = Keyword("object");
   protected final val KW_OUTER     = Keyword("outer");
   protected final val KW_OVERRIDE  = Keyword("override");
   protected final val KW_PACKAGE   = Keyword("package");
   protected final val KW_PRIVATE   = Keyword("private");
   protected final val KW_PROTECTED = Keyword("protected");
   protected final val KW_RETURN    = Keyword("return");
+  protected final val KW_SEALED    = Keyword("sealed");
   protected final val KW_STATIC    = Keyword("static");
   protected final val KW_SUPER     = Keyword("super");
   protected final val KW_THIS      = Keyword("this");
@@ -206,7 +208,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
   def printUnits(units: Array[CompilationUnit]): Unit = {
     val phase: Phase = global.currentPhase;
-    beginSection(1, "syntax trees at "+phase+" (after "+phase.prev+")");
+    beginSection(1, "syntax trees at " + phase + " (after " + phase.prev + ")");
     for (val i <- Iterator.range(0, units.length))
       printUnit(units(i));
   }
@@ -280,8 +282,8 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       print(if (symbol.isVariable()) KW_VAR else KW_VAL);
       print(Space);
       printSymbol(symbol, Definition);
-      print(Space);
       print(TXT_COLON);
+      print(Space);
       printType(symbol.info());
       if (rhs != Tree.Empty || !symbol.isDeferred()) {
         print(Space); print(TXT_EQUAL); print(Space);
