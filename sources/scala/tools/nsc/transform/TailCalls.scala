@@ -7,7 +7,8 @@ package scala.tools.nsc.transform;
 
 /** Perform tail recursive call elimination.
  */
-abstract class TailCalls extends Transform {
+abstract class TailCalls extends Transform
+                         /* with JavaLogging() */ {
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._;                  // the global environment
@@ -88,6 +89,7 @@ abstract class TailCalls extends Transform {
         */
       def makeLabel(): Unit = {
         label = currentMethod.newLabel(currentMethod.pos, "_" + currentMethod.name);
+        accessed = false;
       }
 
       override def toString(): String = {
@@ -125,7 +127,7 @@ abstract class TailCalls extends Transform {
           newCtx.label.setInfo(tree.symbol.info);
           newCtx.tailPos = true;
 
-          if (newCtx.currentMethod.isFinal) {
+          val t1 = if (newCtx.currentMethod.isFinal) {
             newCtx.types = Nil;
 
             newCtx.currentMethod.tpe match {
@@ -150,11 +152,17 @@ abstract class TailCalls extends Transform {
             log("Non-final method: " + name);
             DefDef(newCtx.currentMethod, (x) => transform(rhs, newCtx));
           }
+          log("Leaving DefDef: " + name);
+          t1;
 
         case EmptyTree => tree;
 
         case PackageDef(name, stats) => super.transform(tree);
-        case ClassDef(mods, name, tparams, tpt, impl) => super.transform(tree);
+        case ClassDef(mods, name, tparams, tpt, impl) =>
+          log("Entering class " + name);
+          val res = super.transform(tree);
+          log("Leaving class " + name);
+          res
 
         case ValDef(mods, name, tpt, rhs) => tree;
         case AbsTypeDef(mods, name, lo, hi) => tree; //  (eliminated by erasure)
@@ -180,7 +188,6 @@ abstract class TailCalls extends Transform {
 
         case Assign(lhs, rhs) => super.transform(tree);
         case If(cond, thenp, elsep) =>
-          log("entering If: " + ctx);
           copy.If(tree, cond, transform(thenp), transform(elsep));
 
         case Match(selector, cases) => super.transform(tree);
@@ -192,7 +199,8 @@ abstract class TailCalls extends Transform {
         case Typed(expr, tpt) => super.transform(tree);
 
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
-          if ( ctx.tailPos &&
+          if ( ctx.currentMethod.isFinal &&
+               ctx.tailPos &&
                isSameTypes(ctx.types, targs map (.tpe)) &&
                isRecursiveCall(fun))
                 rewriteTailCall(fun, transformTrees(vargs, mkContext(ctx, false)));
@@ -204,7 +212,9 @@ abstract class TailCalls extends Transform {
 //          throw new RuntimeException("Lonely TypeApply found -- we can only handle them inside Apply(TypeApply()): " + tree + " at: " + unit);
 
         case Apply(fun, args) =>
-          if (ctx.tailPos && isRecursiveCall(fun))
+          if (ctx.currentMethod.isFinal &&
+              ctx.tailPos &&
+              isRecursiveCall(fun))
             rewriteTailCall(fun, transformTrees(args, mkContext(ctx, false)));
           else
             copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)));
@@ -230,7 +240,8 @@ abstract class TailCalls extends Transform {
       trees map ((tree) => transform(tree, nctx));
 
     private def rewriteTailCall(fun: Tree, args: List[Tree]): Tree = {
-      log("Rewriting tail recursive method call.");
+      log("Rewriting tail recursive method call at: " +
+                      unit.position(fun.pos));
       ctx.accessed = true;
       typed(atPos(fun.pos)(
         Apply(Ident(ctx.label), args)));
@@ -254,4 +265,38 @@ abstract class TailCalls extends Transform {
     else
       false;
   }
+
+  import java.util.logging._;
+
+  // initialize logger
+  val logger = Logger.getLogger("nsc");
+
+  logger.setUseParentHandlers(false);
+  logger.addHandler(new ConsoleHandler() {
+    override def publish(rec: LogRecord) =
+      System.err.println(rec.getMessage());
+  });
+
+  // debug
+  private def log(s: String): Unit = logger.info(s);
 }
+
+/*
+
+trait JavaLogging {
+
+  import java.util.logging._;
+
+  // initialize logger
+  val logger = Logger.getLogger("nsc");
+
+  logger.setUseParentHandlers(false);
+  logger.addHandler(new ConsoleHandler() {
+    override def publish(rec: LogRecord) =
+      System.err.println(rec.getMessage());
+  });
+
+  // debug
+  private def log(s: String): Unit = logger.info(s);
+}
+*/
