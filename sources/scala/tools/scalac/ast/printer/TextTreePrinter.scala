@@ -257,6 +257,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
   def printATree(tree: Tree, symbol: Symbol): Unit = tree match {
     case Tree.ClassDef(_, _, _, _, _, impl) =>
+      printAttributes(symbol);
       printAModifiers(symbol);
       print(if (symbol.isInterface()) KW_INTERFACE else KW_CLASS);
       print(Space);
@@ -267,6 +268,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       printTemplate(symbol, impl);
 
     case Tree.ModuleDef(_, _, _, impl) =>
+      printAttributes(symbol);
       printAModifiers(symbol);
       print(KW_OBJECT);
       print(Space);
@@ -277,6 +279,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       printTemplate(clasz, impl);
 
     case Tree.ValDef(_, _, _, rhs) =>
+      printAttributes(symbol);
       printAModifiers(symbol);
       if (symbol.isModule()) print(TXT_OBJECT_COMMENT);
       print(if (symbol.isVariable()) KW_VAR else KW_VAL);
@@ -291,6 +294,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       }
 
     case Tree.DefDef(_, _, _, _, _, rhs) =>
+      printAttributes(symbol);
       printAModifiers(symbol);
       print(KW_DEF);
       print(Space);
@@ -305,6 +309,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       printOpt(TXT_EQUAL, rhs, true);
 
     case Tree.AbsTypeDef(_, _, _, _) =>
+      printAttributes(symbol);
       printAModifiers(symbol);
       print(KW_TYPE);
       print(Space);
@@ -312,6 +317,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       printABoundsOf(symbol);
 
     case Tree.AliasTypeDef(_, _, _, _) =>
+      printAttributes(symbol);
       printAModifiers(symbol);
       print(KW_TYPE);
       print(Space);
@@ -783,6 +789,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     if (symbol.isDefParameter()) {
       print(KW_DEF);
       print(Space);
+    }
+  }
+
+  def printAttributes(symbol: Symbol): Unit = {
+    val attrs = global.getAttributes(symbol);
+    if (attrs != null) {
+        print(attrs.toString());
+        print(Space);
     }
   }
 
