@@ -1,3 +1,11 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
 package scalac.symtab;
 
 import scalac.atree.AConstant;
@@ -24,16 +32,24 @@ public class AttributeInfo {
     }
 
     public String toString() {
-        StringBuffer str = new StringBuffer();
+        StringBuffer str = new StringBuffer("[");
         for (AttributeInfo attr = this; attr != null; attr = attr.next) {
-            str.append('['); str.append(Debug.show(attr.constr.constructorClass()));
-            str.append('(');
-            for (int i = 0; i < attr.args.length; i++) {
-                if (i > 0) str.append(", ");
-                str.append(attr.args[i]);
+            str.append(Debug.show(attr.constr.constructorClass()));
+            int n = attr.args.length;
+            if (n > 0) {
+                str.append('(');
+                for (int i = 0; i < n; i++) {
+                    if (i > 0) str.append(", ");
+                    str.append(attr.args[i]);
+                }
+                str.append(')');
             }
-            str.append(")]\n");
+            if (attr.next != null) {
+                str.append(", ");
+            }
         }
+        str.append(']');
         return str.toString();
     }
+
 }
