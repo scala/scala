@@ -796,7 +796,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     val attrs = global.getAttributes(symbol);
     if (attrs != null) {
         print(attrs.toString());
-        print(Space);
+        print(Newline);
     }
   }
 
