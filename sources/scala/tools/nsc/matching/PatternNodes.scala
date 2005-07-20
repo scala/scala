@@ -335,7 +335,8 @@ trait PatternNodes: TransMatcher {
       System.arraycopy(boundVars, 0, newVars, 0, numVars);
       this.boundVars = newVars;
     }
-    sym.setInfo(tpe);
+    //sym.setInfo(tpe);
+    sym.setType(tpe);
     this.boundVars(numVars) = ValDef(sym, init.duplicate);
     numVars = numVars + 1;
   }

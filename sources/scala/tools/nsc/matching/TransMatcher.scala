@@ -139,6 +139,9 @@ with RightTracers {
       case Sequence( trees )       =>
         ( trees.length == 0 ) || (trees exists { isRegular });
 
+      case ArrayValue( _, trees )       =>
+        ( trees.length == 0 ) || (trees exists { isRegular });
+
       case Apply( fn, List(Sequence(List())))      =>
         false;
 
@@ -180,6 +183,9 @@ with RightTracers {
 
 	case Sequence( trees ) =>
           copy.Sequence( pat, trees map remove )
+
+	case ArrayValue( tt, trees ) =>
+          copy.ArrayValue( pat, tt, trees map remove )
 
         case Apply( fn,  args ) =>
           copy.Apply( pat, fn, args map remove )

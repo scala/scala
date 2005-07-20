@@ -135,13 +135,17 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
       case Apply(_, args) =>
         if ( isSeqApply(tree.asInstanceOf[Apply])  && !delegateSequenceMatching)
           args(0) match {
-            case Sequence(ts) =>
+            case ArrayValue(_, ts) => // test array values
               ts;
+            //case Sequence(ts) =>
+            //  ts;
             case _ =>
               args;
           }
         else args
       case Sequence(ts) if (!delegateSequenceMatching) =>
+        ts;
+      case ArrayValue(_, ts) => // test array values
         ts;
       case _ =>
         List();
@@ -161,7 +165,8 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
    *     but fails
    */
   protected def isSeqApply( tree: Apply  ): Boolean =
-    (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
+    (( tree.args.length == 1 ) && //tree.args(0).isInstanceOf[Sequence])
+	tree.args(0).isInstanceOf[ArrayValue])
     && (tree.tpe.symbol.flags & Flags.CASE) == 0;
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
@@ -206,7 +211,8 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
         if (isSeqApply(t)) {
           if (!delegateSequenceMatching) {
             args(0) match {
-              case Sequence(ts)=>
+            //  case Sequence(ts)=>
+              case ArrayValue(_, ts)=>
                 //Console.println("doing pSeqpat ");
                 val res =  pSequencePat(tree.pos, tree.tpe, ts.length);
                 //Console.println("pSeqpat.casted =  "+res.casted);
