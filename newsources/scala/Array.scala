@@ -10,8 +10,8 @@
 
 package scala;
 
-final class Array[T](val length: Int) extends Cloneable with java.io.Serializable with Seq[T] {
-  def apply(i: Int): T = throw new Error();
-  def update(i: Int, x: T): Unit = throw new Error();
-  def elements: Iterator[T] = throw new Error();
+final class Array[A](val length: Int) extends Cloneable with java.io.Serializable with Seq[A] {
+  def apply(i: Int): A = throw new Error();
+  def update(i: Int, x: A): Unit = throw new Error();
+  def elements: Iterator[A] = throw new Error();
 }

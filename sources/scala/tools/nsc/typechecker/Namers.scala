@@ -14,12 +14,6 @@ trait Namers: Analyzer {
   import global._;
   import definitions._;
 
-  class NamerPhase(prev: Phase) extends StdPhase(prev) {
-    def name = "namer";
-    def apply(unit: CompilationUnit): unit =
-      new Namer(startContext.make(unit)).enterSym(unit.body);
-  }
-
   class Namer(val context: Context) {
 
     private def isTemplateContext(context: Context): boolean = context.tree match {

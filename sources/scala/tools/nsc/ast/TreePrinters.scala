@@ -197,8 +197,8 @@ abstract class TreePrinters {
         case Throw(expr) =>
           print("throw "); print(expr)
 
-        case New(init) =>
-          print("new "); print(init)
+        case New(tpe) =>
+          print("new "); print(tpe)
 
         case Typed(expr, tp) =>
           print("("); print(expr); print(") : "); print(tp);
@@ -220,7 +220,7 @@ abstract class TreePrinters {
 
         case Select(qualifier, name) =>
           if (global.settings.debug.value || qualifier.symbol == null ||
-	      (!qualifier.symbol.isRoot && !qualifier.symbol.isEmptyPackageClass)) {
+	      (!qualifier.symbol.isRoot && !qualifier.symbol.isEmptyPackage)) {
             print(qualifier); print(".");
           }
           print(symName(tree, name))

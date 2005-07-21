@@ -94,7 +94,7 @@ abstract class TreeBuilder {
     if (parents.tail.isEmpty && stats.isEmpty)
       New(parents.head, argss)
     else {
-      val x = freshName(nme.ANON_CLASS_NAME.toString());
+      val x = freshName(nme.ANON_CLASS_NAME.toString()).toTypeName;
       Block(
         List(ClassDef(
           FINAL | SYNTHETIC, x, List(), TypeTree(),

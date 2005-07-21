@@ -31,8 +31,8 @@ abstract class UnCurry extends InfoTransform {
   import typer.{typed};             // methods to type trees
   import posAssigner.atPos;         // for filling in tree positions
 
-  protected val phaseName: String = "uncurry";
-  protected def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit);
+  val phaseName: String = "uncurry";
+  def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit);
 
   private val uncurry = new TypeMap {
     def apply(tp: Type): Type = tp match {
@@ -133,7 +133,11 @@ abstract class UnCurry extends InfoTransform {
         if (tree.symbol.isMethod && (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
 	  if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
 	  atPos(tree.pos)(Apply(tree, List()) setType tree.tpe.resultType)
-	} else tree;
+	} else if (tree.isType) {
+	  TypeTree(tree.tpe)
+	} else {
+	  tree
+	}
       tree match {
 	case Apply(Apply(fn, args), args1) =>
 	  copy.Apply(tree, fn, args ::: args1)

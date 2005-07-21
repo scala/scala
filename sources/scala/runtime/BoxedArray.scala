@@ -9,7 +9,7 @@ package scala.runtime;
 
 /** A class representing Array[T]
  */
-abstract class BoxedArray() extends PartialFunction[Int, Object] with Seq[Object] {
+abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] {
   /** The length of the array */
   def length: Int;
 

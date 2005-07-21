@@ -44,8 +44,7 @@ object Flags {
 
   final val ACCESSED      = 0x01000000;   // symbol was accessed at least once
   final val SELECTOR      = 0x02000000;   // symbol was used as selector in Select
-
-  final val CAPTURED      = 0x04000000;   // variable is accessed from nested function. Set by LambdaLift
+  final val BRIDGE        = 0x04000000;  // function is a bridge method. Set by Erasure
   final val ACCESSOR      = 0x08000000;   // a value or variable accessor
 
   final val ACCESS_METHOD = 0x10000000;   // function is an access function for a method in some
@@ -54,7 +53,7 @@ object Flags {
                                     // for parameters: is a val parameter
 
   final val LABEL         = 0x40000000;   // symbol is a label. Set by TailCall
-  final val BRIDGE        = 0x80000000;   // function is a bridge method. Set by Erasure
+  final val CAPTURED      = 0x80000000l;   // variable is accessed from nested function. Set by LambdaLift
 
   final val INTERFACE     = 0x100000000l; // symbol is an interface
   final val IS_ERROR      = 0x200000000l; // symbol is an error symbol
@@ -94,10 +93,11 @@ object Flags {
       .filter("" !=).mkString("", " ", "");
 
   private def flagToString(flag: long): String = {
-    if (flag == INTERFACE) "<interface>"
-    else if (flag == IS_ERROR) "<is_error>"
+    if (flag == CAPTURED) "<captured>"
+    else if (flag == INTERFACE) "<interface>"
+    else if (flag == IS_ERROR) "<is-error>"
     else if (flag == OVERLOADED) "<overloaded>"
-    else if (flag == TRANS_FLAG) "<transient>"
+    else if (flag == TRANS_FLAG) "<trans-flag>"
     else if (flag == INITIALIZED) "<initialized>"
     else if (flag == LOCKED) "<locked>"
     else flag.asInstanceOf[int] match {
@@ -133,7 +133,6 @@ object Flags {
 
       case ACCESSED      => "<accessed>"
       case SELECTOR      => "<selector>"
-      case CAPTURED      => "<captured>"
       case ACCESSOR      => "<accessor>"
 
       case ACCESS_METHOD => "<access>"

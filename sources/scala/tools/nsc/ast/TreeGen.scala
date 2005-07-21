@@ -18,7 +18,7 @@ abstract class TreeGen {
 
   /** Builds a reference to value whose type is given stable prefix.
    */
-  def mkQualifier(stable: Type): Tree = stable match {
+  def mkQualifier(tpe: Type): Tree = tpe match {
     case NoPrefix =>
       EmptyTree
     case ThisType(clazz) =>
@@ -31,6 +31,11 @@ abstract class TreeGen {
         case _ =>
           qual
       }
+    case TypeRef(pre, sym, args) =>
+      assert(phase.erasedTypes);
+      (if (sym.isModuleClass && !sym.isRoot)
+	Select(mkQualifier(sym.owner.tpe), sym.sourceModule)
+       else This(sym)) setType sym.tpe
   }
 
   /** Builds a reference to given symbol with given stable prefix. */

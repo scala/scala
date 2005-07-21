@@ -233,6 +233,7 @@ abstract class Symbols: SymbolTable {
 
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
+      if (name == newTypeName("Array") && info.isInstanceOf[PolyType]) assert(info.typeParams.length == 1, info);
       if (limit == NoPhase) {
         assert(phase != NoPhase);
         infos = new TypeHistory(phase, info, null);
@@ -316,6 +317,7 @@ abstract class Symbols: SymbolTable {
       resetFlags;
       pos = Position.NOPOS;
       infos = null;
+      limit = NoPhase;
       setInfo(completer)
     }
 
@@ -385,7 +387,7 @@ abstract class Symbols: SymbolTable {
 
     /** A clone of this symbol, but with given owner */
     final def cloneSymbol(owner: Symbol): Symbol =
-      cloneSymbolImpl(owner).setInfo(info.cloneInfo(owner)).setFlag(flags);
+      cloneSymbolImpl(owner).setInfo(info.cloneInfo(owner)).setFlag(this.rawflags);
 
     /** Internal method to clone a symbol's implementation without flags or type
      */
@@ -498,9 +500,11 @@ abstract class Symbols: SymbolTable {
     final def tag: int = fullNameString.hashCode();
 
     /** The simple name of this Symbol (this is always a term name) */
-    final def simpleName: Name =
-      if (isConstructor && !settings.debug.value) owner.name.toTermName else name;
-
+    final def simpleName: Name = name;
+/*
+      if (isConstructor && !settings.debug.value)
+	newTermName("<init owner.name.toTermName else name;
+*/
     /** String representation of symbol's definition key word */
     final def keyString: String =
       if (isTrait)
@@ -645,7 +649,7 @@ abstract class Symbols: SymbolTable {
     private var tpePhase: Phase = null;
     override def tpe: Type = {
       assert(tpeCache != NoType, this);
-      if (tpePhase != phase)
+      if (tpePhase != phase) {
         if (isValid(tpePhase)) tpePhase = phase
         else {
           if (hasFlag(INITIALIZED)) tpePhase = phase;
@@ -653,7 +657,8 @@ abstract class Symbols: SymbolTable {
           tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
                              this, unsafeTypeParams map (.tpe))
         }
-     assert(tpeCache != null/*, "" + this + " " + phase*/);//debug
+      }
+      assert(tpeCache != null/*, "" + this + " " + phase*/);//debug
       tpeCache
     }
     override def typeConstructor: Type = {
@@ -678,8 +683,7 @@ abstract class Symbols: SymbolTable {
   }
 
   /** A class for class symbols */
-  class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name)
-   extends TypeSymbol(initOwner, initPos, initName) {
+  class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
     var sourceFile: AbstractFile = null;
     private var thissym: Symbol = this;
     override def isClass: boolean = true;
@@ -688,16 +692,21 @@ abstract class Symbols: SymbolTable {
       thissym = this;
     }
 
-    private var thisTypeCache: Type = null;
+    private var thisTypeCache: Type = _;
+    private var thisTypePhase: Phase = null;
 
     /** the type this.type in this class */
     override def thisType: Type = {
-      if (thisTypeCache == null) {
-	thisTypeCache =
-	  if (isModuleClass && !isRoot) {
-	    assert(sourceModule != NoSymbol);
-	    singleType(owner.thisType, sourceModule);
-	  } else ThisType(this);
+      val p = thisTypePhase;
+      if (p != phase) {
+        thisTypePhase = phase;
+        if (!isValid(p)) {
+	  thisTypeCache =
+	    if (isModuleClass && !isRoot) {
+	      assert(sourceModule != NoSymbol);
+	      singleType(owner.thisType, sourceModule);
+	    } else ThisType(this);
+        }
       }
       thisTypeCache
     }

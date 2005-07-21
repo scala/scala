@@ -30,6 +30,12 @@ public abstract class Int     extends AnyVal implements java.io.Serializable {
         return String.valueOf(value);
     }
 
+    /** @meta method [?T]scala.Boolean; */
+    public boolean isInstanceOf() { return false; }
+
+    /** @meta method [?T]?T; */
+    public Object asInstanceOf() { return this; }
+
     /** @meta method (scala.Any)scala.Boolean; */
     public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
     /** @meta method (scala.Any)scala.Boolean; */
@@ -114,5 +120,4 @@ public abstract class Int     extends AnyVal implements java.io.Serializable {
     public int     $bar       (int     that) { return  value |  that; }
     public int     $amp       (int     that) { return  value &  that; }
     public int     $up        (int     that) { return  value ^  that; }
-
 }

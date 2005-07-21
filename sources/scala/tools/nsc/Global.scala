@@ -16,7 +16,7 @@ import util._;
 import ast._;
 import ast.parser._;
 import typechecker._;
-//import matching.TransMatcher;
+import matching.TransMatcher;
 import transform._;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with CompilationUnits {
@@ -121,10 +121,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
 // Phases ------------------------------------------------------------
 
-  abstract class StdPhase(prev: Phase) extends Phase(prev) {
+  abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     def run: unit = units foreach applyPhase;
     def apply(unit: CompilationUnit): unit;
-    private val isErased = /*prev == erasurePhase ||*/ prev.erasedTypes;
+    private val isErased = prev.name == "erasure" || prev.erasedTypes;
     override def erasedTypes: boolean = isErased;
     def applyPhase(unit: CompilationUnit): unit = {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]");
@@ -134,17 +134,73 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   object syntaxAnalyzer extends SyntaxAnalyzer {
     val global: Global.this.type = Global.this
-
   }
-  val parserPhase = new syntaxAnalyzer.ParserPhase(NoPhase);
-  val firstPhase = parserPhase;
-  phase = parserPhase;
-
-  definitions.init; // needs firstPhase to be defined, that's why it is placed here.
 
   object analyzer extends Analyzer {
     val global: Global.this.type = Global.this;
   }
+
+  object pickler extends Pickler {
+    val global: Global.this.type = Global.this
+  }
+
+  object refchecks extends RefChecks {
+    val global: Global.this.type = Global.this;
+  }
+
+  object uncurry extends UnCurry {
+    val global: Global.this.type = Global.this;
+  }
+
+  object tailCalls extends TailCalls {
+    val global: Global.this.type = Global.this;
+  }
+
+  object transMatcher extends TransMatcher {
+    val global: Global.this.type = Global.this;
+  }
+  object erasure extends Erasure {
+    val global: Global.this.type = Global.this;
+  }
+
+  object sampleTransform extends SampleTransform {
+    val global: Global.this.type = Global.this;
+  }
+
+  def phaseDescriptors: List[SubComponent] = List(
+    analyzer.namerFactory, // needs to be first
+    analyzer.typerFactory, // needs to be second
+    pickler,
+    refchecks,
+    uncurry,
+    tailCalls,
+    transMatcher,
+    erasure,
+    sampleTransform);
+
+  val parserPhase = syntaxAnalyzer.newPhase(NoPhase);
+  val firstPhase = parserPhase;
+  phase = parserPhase;
+  definitions.init; // needs firstPhase and phase to be defined != NoPhase,
+	            // that's why it is placed here.
+
+  private var p = phase;
+  private var stopped = false;
+  for (val pd <- phaseDescriptors) {
+    if (!stopped) {
+      if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p);
+      stopped = settings.stop contains pd.phaseName;
+    }
+  }
+
+  val terminalPhase = new GlobalPhase(p) {
+    def name = "terminal";
+    def apply(unit: CompilationUnit): unit = {}
+  }
+
+  val namerPhase = parserPhase.next;
+  val typerPhase = namerPhase.next;
+
   val typer = new analyzer.Typer(analyzer.NoContext.make(EmptyTree, definitions.RootClass, new Scope())) {
     override def typed(tree: Tree, mode: int, pt: Type): Tree = {
       if (settings.debug.value) log("typing [[" + tree + "]]");
@@ -154,61 +210,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
   }
   val infer = typer.infer;
-
-  val namerPhase = new analyzer.NamerPhase(parserPhase);
-  val typerPhase = new analyzer.TyperPhase(namerPhase);
-
-  object pickler extends Pickler {
-    val global: Global.this.type = Global.this
-  }
-  val picklePhase = new pickler.PicklePhase(typerPhase);
-
-  object refchecks extends RefChecks {
-    val global: Global.this.type = Global.this;
-  }
-  val refchecksPhase = new refchecks.Phase(picklePhase);
-
-  object uncurry extends UnCurry {
-    val global: Global.this.type = Global.this;
-  }
-  val uncurryPhase = new uncurry.Phase(refchecksPhase);
-
-  object tailCalls extends TailCalls {
-    val global: Global.this.type = Global.this;
-  }
-  val tailCallPhase = new tailCalls.Phase(uncurryPhase);
-
-/*
-  object transmatcher extends TransMatcher {
-    val global: Global.this.type = Global.this;
-  }
-  val transMatchPhase = new transmatcher.Phase(tailCallPhase);
-*/
-
-  object sampleTransform extends SampleTransform {
-    val global: Global.this.type = Global.this;
-  }
-  val samplePhase = new sampleTransform.Phase(tailCallPhase);
-
-
-  //val transMatchPhase = new transmatcher.TransMatchPhase(picklePhase);
-/*
-  object icode extends ICode {
-    val symtab: Global.this.type = Global.this
-  }
-  val codegenPhase = new icode.CodeGenPhase(erasurePhase)
-
-  abstract class CodeGenPhase(prev: Phase) extends StdPhase(prev) {
-    import global._;
-    ...
-
-  }
-*/
-  val terminalPhase = new Phase(samplePhase) {
-    def name = "terminal";
-    def run: unit = {}
-  }
-
 
 // Units and how to compile them -------------------------------------
 
@@ -242,14 +243,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     globalPhase = NoPhase.next;
     while (globalPhase != terminalPhase && reporter.errors() == 0) {
-      if (!(settings.skip contains globalPhase.name)) {
-	val startTime = System.currentTimeMillis();
-	phase = globalPhase;
-	globalPhase.run;
-	if (settings.print contains globalPhase.name) treePrinter.printAll();
-	informTime(globalPhase.description, startTime);
-      }
-      globalPhase = if (settings.stop contains globalPhase.name) terminalPhase else globalPhase.next;
+      val startTime = System.currentTimeMillis();
+      phase = globalPhase;
+      globalPhase.run;
+      if (settings.print contains globalPhase.name) treePrinter.printAll();
+      informTime(globalPhase.description, startTime);
+      globalPhase = globalPhase.next;
       if (settings.check contains globalPhase.name) {
         phase = globalPhase;
         checker.checkTrees;
@@ -283,11 +282,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     else if (!(fileset contains file)) {
       val unit = new CompilationUnit(getSourceFile(file));
       addUnit(unit);
-      var localPhase = parserPhase.asInstanceOf[StdPhase];
-      while (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) {
-	if (!(settings.skip contains localPhase.name))
-	  atPhase(localPhase)(localPhase.applyPhase(unit));
-	localPhase = localPhase.next.asInstanceOf[StdPhase];
+      var localPhase = parserPhase.asInstanceOf[GlobalPhase];
+      while (localPhase.id < globalPhase.id || localPhase.id <= parserPhase.next.id) {
+	atPhase(localPhase)(localPhase.applyPhase(unit));
+	localPhase = localPhase.next.asInstanceOf[GlobalPhase];
       }
     }
 
@@ -361,22 +359,5 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     inform("#typecreates : " + accesses);
     inform("#uniquetypes : " + uniques);
     inform("#collisions  : " + collisions);
-/*
-    inform("#uniqueThis          : " + uniqueThis) ;
-    inform("#uniqueSingle        : " + uniqueSingle) ;
-    inform("#uniqueSuper         : " + uniqueSuper) ;
-    inform("#uniqueTypeRef       : " + uniqueTypeRef) ;
-    inform("#uniqueTypeBounds    : " + uniqueTypeBounds) ;
-    inform("#uniqueConstant      : " + uniqueConstant) ;
-    inform("#uniqueMethod        : " + uniqueMethod) ;
-    inform("#duplicateThis       : " + duplicateThis) ;
-    inform("#duplicateSingle     : " + duplicateSingle) ;
-    inform("#duplicateSuper      : " + duplicateSuper) ;
-    inform("#duplicateTypeRef    : " + duplicateTypeRef) ;
-    inform("#duplicateTypeBounds : " + duplicateTypeBounds) ;
-    inform("#duplicateConstant   : " + duplicateConstant) ;
-    inform("#duplicateMethod     : " + duplicateMethod) ;
-*/
-    //for (val tp <- allTypes) System.out.println("unique: " + tp)
   }
 }

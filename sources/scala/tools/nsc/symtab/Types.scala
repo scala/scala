@@ -57,7 +57,9 @@ abstract class Types: SymbolTable {
 
     /** Map to a this type which is a subtype of this type.
      */
-    def narrow: Type = refinedType(List(this), commonOwner(this), EmptyScope).narrow;
+    def narrow: Type =
+      if (phase.erasedTypes) this
+      else refinedType(List(this), commonOwner(this), EmptyScope).narrow;
 
     /** Map a constant type to its underlying base type,
      *  identity for all other types */
@@ -374,7 +376,6 @@ abstract class Types: SymbolTable {
    *  to their immediate supertype
    */
   abstract class SubType extends Type {
-    assert(!phase.erasedTypes, this);
     def supertype: Type;
     override def parents: List[Type] = supertype.parents;
     override def decls: Scope = supertype.decls;
@@ -804,34 +805,39 @@ abstract class Types: SymbolTable {
     if (phase.erasedTypes)
       sym.tpe
     else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
-      throw new MalformedType(pre, sym.name.toString());
+      throw new MalformedType(pre, sym.name.toString())
     else
       unique(new SingleType(pre, rebind(pre, sym)) with UniqueType {})
   }
 
   /** The canonical creator for super-types */
   def SuperType(thistp: Type, supertp: Type): Type =
-    if (phase.erasedTypes) supertp else unique(new SuperType(thistp, supertp) with UniqueType {});
+    if (phase.erasedTypes) supertp
+    else unique(new SuperType(thistp, supertp) with UniqueType);
 
   /** The canonical creator for type bounds */
   def TypeBounds(lo: Type, hi: Type): TypeBounds =
-    unique(new TypeBounds(lo, hi) with UniqueType {});
+    unique(new TypeBounds(lo, hi) with UniqueType);
 
   /** the canonical creator for a refined type with a given scope */
-  def refinedType(parents: List[Type], owner: Symbol, decls: Scope): RefinedType = {
-    val clazz = owner.newRefinementClass(Position.NOPOS);
-    val result = new RefinedType(parents, decls) { override def symbol: Symbol = clazz }
-    clazz.setInfo(result);
-    result
+  def refinedType(parents: List[Type], owner: Symbol, decls: Scope): Type = {
+    if (phase.erasedTypes)
+      if (parents.isEmpty) ObjectClass.tpe else parents.head
+    else {
+      val clazz = owner.newRefinementClass(Position.NOPOS);
+      val result = new RefinedType(parents, decls) { override def symbol: Symbol = clazz }
+      clazz.setInfo(result);
+      result
+    }
   }
 
   /** the canonical creator for a refined type with an initially empty scope */
-  def refinedType(parents: List[Type], owner: Symbol): RefinedType =
+  def refinedType(parents: List[Type], owner: Symbol): Type =
     refinedType(parents, owner, new Scope);
 
   /** the canonical creator for a constant type */
   def ConstantType(value: Constant): ConstantType =
-    unique(new ConstantType(value) with UniqueType {});
+    unique(new ConstantType(value) with UniqueType);
 
   /** The canonical creator for typerefs */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
@@ -854,13 +860,8 @@ abstract class Types: SymbolTable {
 
   /** create a type-ref as found, without checks or rebinds */
   def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
-    unique(new TypeRef(pre, sym, args) with UniqueType {})
+    unique(new TypeRef(pre, sym, args) with UniqueType)
   }
-
-  /** The canonical creator for method types
-  def MethodType(paramTypes: List[Type], resultType: Type): MethodType =
-    unique(new MethodType(paramTypes, resultType) with UniqueType {});
-*/
 
   /** The canonical creator for implicit method types */
   def ImplicitMethodType(paramTypes: List[Type], resultType: Type): ImplicitMethodType =
@@ -1611,45 +1612,49 @@ abstract class Types: SymbolTable {
         val lubParents = spanningTypes(List.fromArray(lubBaseTypes));
 	val lubOwner = commonOwner(ts);
 	val lubBase = intersectionType(lubParents, lubOwner);
-        val lubType = refinedType(lubParents, lubOwner);
-        val lubThisType = lubType.symbol.thisType;
-        val narrowts = ts map (.narrow);
-        def lubsym(proto: Symbol): Symbol = {
-          val prototp = lubThisType.memberInfo(proto);
-          val syms = narrowts map (t =>
-	    t.nonPrivateMember(proto.name).suchThat(sym =>
-	      sym.tpe matches prototp.substThis(lubThisType.symbol, t)));
-          if (syms contains NoSymbol) NoSymbol
-	  else {
-            val symtypes = List.map2(narrowts, syms)
+        if (phase.erasedTypes) lubBase
+        else {
+          val lubType = refinedType(lubParents, lubOwner);
+          val lubThisType = lubType.symbol.thisType;
+          val narrowts = ts map (.narrow);
+          def lubsym(proto: Symbol): Symbol = {
+            val prototp = lubThisType.memberInfo(proto);
+            val syms = narrowts map (t =>
+	      t.nonPrivateMember(proto.name).suchThat(sym =>
+	        sym.tpe matches prototp.substThis(lubThisType.symbol, t)));
+            if (syms contains NoSymbol) NoSymbol
+	    else {
+              val symtypes = List.map2(narrowts, syms)
               ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType));
-	    if (settings.debug.value) log("common symbols: " + syms + ":" + symtypes);//debug
-            if (proto.isTerm)
-              proto.cloneSymbol.setInfo(lub(symtypes))
-            else if (symtypes.tail forall (symtypes.head =:=))
-              proto.cloneSymbol.setInfo(symtypes.head)
-            else {
-              def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-		TypeBounds(glb(bnds map (.lo)), lub(bnds map (.hi)));
-              proto.owner.newAbstractType(proto.pos, proto.name)
-		.setInfo(lubBounds(symtypes map (.bounds)))
-            }
-	  }
+	      if (settings.debug.value) log("common symbols: " + syms + ":" + symtypes);//debug
+              if (proto.isTerm)
+                proto.cloneSymbol.setInfo(lub(symtypes))
+              else if (symtypes.tail forall (symtypes.head =:=))
+                proto.cloneSymbol.setInfo(symtypes.head)
+              else {
+                def lubBounds(bnds: List[TypeBounds]): TypeBounds =
+		  TypeBounds(glb(bnds map (.lo)), lub(bnds map (.hi)));
+                proto.owner.newAbstractType(proto.pos, proto.name)
+		  .setInfo(lubBounds(symtypes map (.bounds)))
+              }
+	    }
+          }
+          def refines(tp: Type, sym: Symbol): boolean = {
+	    val syms = tp.nonPrivateMember(sym.name).alternatives;
+	    !syms.isEmpty && (syms forall (alt =>
+	      // todo alt != sym is strictly speaking not correct, but without it we lose
+	      // efficiency.
+	      alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
+          }
+          for (val sym <- lubBase.nonPrivateMembers)
+            // add a refinement symbol for all non-class members of lubBase
+            // which are refined by every type in ts.
+            if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
+              addMember(lubThisType, lubType, lubsym(sym));
+          if (lubType.decls.isEmpty) lubBase else lubType;
         }
-        def refines(tp: Type, sym: Symbol): boolean = {
-	  val syms = tp.nonPrivateMember(sym.name).alternatives;
-	  !syms.isEmpty && (syms forall (alt =>
-	    // todo alt != sym is strictly speaking not correct, but without it we lose
-	    // efficiency.
-	    alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
-        }
-        for (val sym <- lubBase.nonPrivateMembers)
-          // add a refinement symbol for all non-class members of lubBase
-          // which are refined by every type in ts.
-          if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
-            addMember(lubThisType, lubType, lubsym(sym));
-        if (lubType.decls.isEmpty) lubBase else lubType;
     }
+
     if (settings.debug.value) {
       log(indent + "lub of " + ts);//debug
       indent = indent + "  ";
@@ -1680,44 +1685,47 @@ abstract class Types: SymbolTable {
 	try {
 	  val glbOwner = commonOwner(ts);
           val glbBase = intersectionType(ts, glbOwner);
-          val glbType = refinedType(ts, glbOwner);
-          val glbThisType = glbType.symbol.thisType;
-          def glbsym(proto: Symbol): Symbol = {
-            val prototp = glbThisType.memberInfo(proto);
-            val syms = for (
-	      val t <- ts;
-              val alt <- t.nonPrivateMember(proto.name).alternatives;
-              glbThisType.memberInfo(alt) matches prototp) yield alt;
-            val symtypes = syms map glbThisType.memberInfo;
-            assert(!symtypes.isEmpty);
-            proto.cloneSymbol.setInfo(
-              if (proto.isTerm) glb(symtypes)
-              else {
-                def isTypeBound(tp: Type) = tp match {
-                  case TypeBounds(_, _) => true
-                  case _ => false
-                }
-                def glbBounds(bnds: List[Type]): TypeBounds = {
-                  val lo = lub(bnds map (.bounds.lo));
-                  val hi = glb(bnds map (.bounds.hi));
-                  if (lo <:< hi) TypeBounds(lo, hi)
-                  else throw new MalformedClosure(bnds)
-                }
-                val symbounds = symtypes filter isTypeBound;
-                var result: Type =
-                  if (symbounds.isEmpty)
-                    TypeBounds(AllClass.tpe, AnyClass.tpe)
-                  else glbBounds(symbounds);
-                for (val t <- symtypes; !isTypeBound(t))
-                  if (result.bounds containsType t) result = t
-                  else throw new MalformedClosure(symtypes);
-                result
-              })
+          if (phase.erasedTypes) glbBase
+          else {
+            val glbType = refinedType(ts, glbOwner);
+            val glbThisType = glbType.symbol.thisType;
+            def glbsym(proto: Symbol): Symbol = {
+              val prototp = glbThisType.memberInfo(proto);
+              val syms = for (
+                val t <- ts;
+                val alt <- t.nonPrivateMember(proto.name).alternatives;
+                glbThisType.memberInfo(alt) matches prototp) yield alt;
+              val symtypes = syms map glbThisType.memberInfo;
+              assert(!symtypes.isEmpty);
+              proto.cloneSymbol.setInfo(
+                if (proto.isTerm) glb(symtypes)
+                else {
+                  def isTypeBound(tp: Type) = tp match {
+                    case TypeBounds(_, _) => true
+                    case _ => false
+                  }
+                  def glbBounds(bnds: List[Type]): TypeBounds = {
+                    val lo = lub(bnds map (.bounds.lo));
+                    val hi = glb(bnds map (.bounds.hi));
+                    if (lo <:< hi) TypeBounds(lo, hi)
+                    else throw new MalformedClosure(bnds)
+                  }
+                  val symbounds = symtypes filter isTypeBound;
+                  var result: Type =
+                    if (symbounds.isEmpty)
+                      TypeBounds(AllClass.tpe, AnyClass.tpe)
+                    else glbBounds(symbounds);
+                  for (val t <- symtypes; !isTypeBound(t))
+                    if (result.bounds containsType t) result = t
+                    else throw new MalformedClosure(symtypes);
+                  result
+                })
+            }
+            for (val t <- ts; val sym <- t.nonPrivateMembers)
+              if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
+                addMember(glbThisType, glbType, glbsym(sym));
+            if (glbType.decls.isEmpty) glbBase else glbType
           }
-          for (val t <- ts; val sym <- t.nonPrivateMembers)
-            if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
-	      addMember(glbThisType, glbType, glbsym(sym));
-	  if (glbType.decls.isEmpty) glbBase else glbType;
 	} catch {
           case _: MalformedClosure =>
             if (ts forall (t => t <:< AnyRefClass.tpe)) AllRefClass.tpe

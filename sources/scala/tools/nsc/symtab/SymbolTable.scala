@@ -24,7 +24,7 @@ abstract class SymbolTable extends Names
   def phase: Phase = ph;
   def phase_=(p: Phase): unit = {
     //System.out.println("setting phase to " + p);
-    assert(p != null);
+    assert(p != null && p != NoPhase);
     ph = p
   }
 

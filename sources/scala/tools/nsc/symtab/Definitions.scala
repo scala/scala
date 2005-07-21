@@ -135,6 +135,12 @@ abstract class Definitions: SymbolTable {
     var Object_eq          : Symbol = _;
     var Object_ne          : Symbol = _;
     var Object_synchronized: Symbol = _;
+    var Object_isInstanceOf: Symbol = _;
+    var Object_asInstanceOf: Symbol = _;
+      def Object_equals   = getMember(ObjectClass, nme.equals_);
+      def Object_hashCode = getMember(ObjectClass, nme.hashCode_);
+      def Object_toString = getMember(ObjectClass, nme.toString_);
+
     var String_+           : Symbol = _;
 
     // members of class scala.Iterator
@@ -146,6 +152,8 @@ abstract class Definitions: SymbolTable {
 
     // boxed classes
     var BoxedArrayClass: Symbol = _;
+    var BoxedAnyArrayClass: Symbol = _;
+    var BoxedObjectArrayClass: Symbol = _;
     var BoxedNumberClass: Symbol = _;
     var BoxedUnitClass: Symbol = _;
     var BoxedUnitModule: Symbol = _;
@@ -343,13 +351,20 @@ abstract class Definitions: SymbolTable {
         ObjectClass, "ne", List(AnyRefClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
       Object_synchronized = newPolyMethod(
         ObjectClass, "synchronized", tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL;
-
+      Object_isInstanceOf = newPolyMethod(
+	ObjectClass, "$isInstanceOf",
+        tparam => MethodType(List(), BooleanClass.typeConstructor)) setFlag FINAL;
+      Object_asInstanceOf = newPolyMethod(
+	ObjectClass, "$asInstanceOf",
+        tparam => MethodType(List(), tparam.typeConstructor)) setFlag FINAL;
       String_+ = newMethod(
         StringClass, "+", List(AnyClass.typeConstructor), StringClass.typeConstructor) setFlag FINAL;
 
       PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor);
 
       BoxedArrayClass = getClass("scala.runtime.BoxedArray");
+      BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray");
+      BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray");
       BoxedNumberClass = getClass("scala.runtime.BoxedNumber");
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit");
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit");

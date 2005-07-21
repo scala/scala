@@ -40,8 +40,8 @@ abstract class RefChecks extends Transform {
   import posAssigner.atPos;
 
   /** the following two members override abstract members in Transform */
-  protected val phaseName: String = "refchecks";
-  protected def newTransformer(unit: CompilationUnit): Transformer = new RefCheckTransformer(unit);
+  val phaseName: String = "refchecks";
+  def newTransformer(unit: CompilationUnit): Transformer = new RefCheckTransformer(unit);
 
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 

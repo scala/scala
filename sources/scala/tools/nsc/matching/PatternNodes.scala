@@ -336,7 +336,7 @@ trait PatternNodes: TransMatcher {
       this.boundVars = newVars;
     }
     //sym.setInfo(tpe);
-    sym.setType(tpe);
+    sym.setInfo(tpe);
     this.boundVars(numVars) = ValDef(sym, init.duplicate);
     numVars = numVars + 1;
   }

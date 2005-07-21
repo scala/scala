@@ -16,8 +16,8 @@ abstract class TailCalls extends Transform
   import typer.{typed, atOwner};               // methods to type trees
   import posAssigner.atPos;         // for filling in tree positions
 
-  protected val phaseName: String = "tailcalls";
-  protected def newTransformer(unit: CompilationUnit): Transformer = new TailCallElimination(unit);
+  val phaseName: String = "tailcalls";
+  def newTransformer(unit: CompilationUnit): Transformer = new TailCallElimination(unit);
 
   /**
    * A Tail Call Transformer

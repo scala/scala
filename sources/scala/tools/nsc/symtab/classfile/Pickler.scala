@@ -18,8 +18,10 @@ import PickleFormat._;
 abstract class Pickler extends SubComponent {
   import global._;
 
+  val phaseName = "pickler";
+  def newPhase(prev: Phase): StdPhase = new PicklePhase(prev);
+
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
-    def name = "pickler";
     def apply(unit: CompilationUnit): unit = {
       def pickle(tree: Tree): unit = {
 

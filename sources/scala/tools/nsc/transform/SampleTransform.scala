@@ -16,7 +16,7 @@ abstract class SampleTransform extends Transform {
   import posAssigner.atPos;         // for filling in tree positions
 
   /** the following two members override abstract members in Transform */
-  protected val phaseName: String = "sample-phase";
+  val phaseName: String = "sample-phase";
   protected def newTransformer(unit: CompilationUnit): Transformer = new SampleTransformer(unit);
 
   class SampleTransformer(unit: CompilationUnit) extends Transformer {

@@ -9,12 +9,9 @@ package scala.tools.nsc.transform;
  *  A transform contains a compiler phase which applies a tree transformer.
  */
 abstract class Transform extends SubComponent {
-
-  protected val phaseName: String;
   protected def newTransformer(unit: global.CompilationUnit): global.Transformer;
-
-  class Phase(prev: scala.tools.nsc.Phase) extends global.StdPhase(prev) {
-    def name: String = phaseName;
+  def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new Phase(prev);
+  class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
     def apply(unit: global.CompilationUnit): unit = {
       unit.body = newTransformer(unit).transform(unit.body);
     }

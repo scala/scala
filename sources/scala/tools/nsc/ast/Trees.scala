@@ -330,7 +330,9 @@ abstract class Trees: Global {
    * one should always use factory method below to build a user level new.
    */
   case class New(tpt: Tree)
-       extends TermTree;
+       extends TermTree {
+    assert(tpt.isType)
+  }
 
   /** Factory method for object creation <new tpt(args_1)...(args_n)> */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree = {

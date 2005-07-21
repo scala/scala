@@ -20,13 +20,6 @@ abstract class Typers: Analyzer {
   var selcnt = 0;
   var implcnt = 0;
 
-  class TyperPhase(prev: Phase) extends StdPhase(prev) {
-    def name = "typer";
-    val global: Typers.this.global.type = Typers.this.global;
-    def apply(unit: CompilationUnit): unit =
-      unit.body = newTyper(startContext.make(unit)).typed(unit.body)
-  }
-
   def newTyper(context: Context): Typer = new Typer(context);
 
   class Typer(context0: Context) {
@@ -95,20 +88,22 @@ abstract class Typers: Analyzer {
      *  @param pos    The position where to report the error
      *  @param ex     The exception that caused the error */
     def reportTypeError(pos: int, ex: TypeError): unit = {
-      if (settings.debug.value) ex.printStackTrace();
-      ex match {
+      val msg = ex match {
 	case CyclicReference(sym, info: TypeCompleter) =>
 	  info.tree match {
 	    case ValDef(_, _, tpt, _) if (tpt.tpe == null) =>
-	      error(pos, "recursive " + sym + " needs type")
+	      "recursive " + sym + " needs type"
 	    case DefDef(_, _, _, _, tpt, _) if (tpt.tpe == null) =>
-	      error(pos, "recursive " + sym + " needs result type")
+	      "recursive " + sym + " needs result type"
 	    case _ =>
-	      error(pos, ex.getMessage())
+	      ex.getMessage()
 	  }
 	case _ =>
-	  error(pos, ex.getMessage())
+	  ex.getMessage()
       }
+      if (settings.debug.value) ex.printStackTrace();
+      if (context.reportGeneralErrors) error(pos, msg)
+      else throw new Error(msg)
     }
 
     /** Check that tree is a stable expression.
@@ -193,11 +188,11 @@ abstract class Typers: Analyzer {
       if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
 	inferExprAlternative(tree, pt);
       val sym = tree.symbol;
-      if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) // (1)
+      if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         checkStable(tree)
-      else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) // (2)
+      } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
         errorTree(tree, sym.toString() + " is not a value");
-      else if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
+      } else if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
 	       (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
 		sym.isModule && !sym.isMethod)) {
 	tree.setType(singleType(pre, sym))
@@ -488,7 +483,7 @@ abstract class Typers: Analyzer {
 	templ setSymbol context.owner.newLocalDummy(templ.pos);
       val parents1 = parentTypes(templ);
       val selfType =
-        if (context.owner.isAnonymousClass)
+        if (context.owner.isAnonymousClass && !phase.erasedTypes)
           intersectionType(context.owner.info.parents, context.owner.owner)
         else context.owner.typeOfThis;
       // the following is necessary for templates generated later
@@ -813,13 +808,14 @@ abstract class Typers: Analyzer {
 	val sym =
 	  if (tree.symbol != NoSymbol) {
 	    val alts = qual.tpe.member(name).alternatives;
-	    if (alts.filter(tree.symbol.==).isEmpty)
-	      assert(false, "symbol " + tree.symbol + " not in " + alts);
+	    if (!(alts exists (alt =>
+              alt == tree.symbol || alt.isTerm && (alt.tpe matches tree.symbol.tpe))))
+	      assert(false, "symbol " + tree.symbol + " not in " + alts + " of " + qual.tpe);
 	    tree.symbol;
 	  } else {
 	    qual.tpe.member(name)
 	  }
-	if (sym == NoSymbol && qual.isTerm && (qual.symbol == null || qual.symbol.isValue)) {
+	if (sym == NoSymbol && qual.isTerm && (qual.symbol == null || qual.symbol.isValue) && !phase.erasedTypes) {
 	  val coercion = inferView(qual.pos, qual.tpe, name, true);
 	  if (coercion != EmptyTree)
 	    return typed(
@@ -1167,7 +1163,6 @@ abstract class Typers: Analyzer {
 
         case Select(qual, name) =>
 	  selcnt = selcnt + 1;
-	  assert (name != nme.CONSTRUCTOR || !qual.isInstanceOf[Super], tree);//debug
           var qual1 = typedQualifier(qual);
           if (name.isTypeName) qual1 = checkStable(qual1);
           typedSelect(qual1, name);
@@ -1212,8 +1207,10 @@ abstract class Typers: Analyzer {
             TypeTree() setPos tree.pos setType appliedType(tpt1.tpe, args1 map (.tpe))
           else if (tparams.length == 0)
             errorTree(tree, "" + tpt1.tpe + " does not take type parameters")
-          else
-            errorTree(tree, "wrong number of type arguments for " + tpt1.tpe)
+          else {
+	    System.out.println(tpt1.tpe.symbol.rawInfo);//debug
+            errorTree(tree, "wrong number of type arguments for " + tpt1.tpe + ", should be " + tparams.length)
+	  }
       }
     }
 
@@ -1271,7 +1268,12 @@ abstract class Typers: Analyzer {
     /** Types a type or type constructor tree */
     def typedTypeConstructor(tree: Tree): Tree =
       typed(tree, TYPEmode | FUNmode, WildcardType);
-
+/*
+    def convertToTypeTree(tree: Tree): Tree = tree match {
+      case TypeTree() => tree
+      case _ => TypeTree(tree.tpe)
+    }
+*/
     /* -- Views --------------------------------------------------------------- */
 
     private def depoly(tp: Type): Type = tp match {
