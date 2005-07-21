@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -8,12 +8,11 @@
 
 package scalac.transformer;
 
-import java.io.*;
-import java.util.*;
 import scalac.*;
-import scalac.util.*;
 import scalac.ast.*;
-import scalac.symtab.*;
+import scalac.symtab.Kinds;
+import scalac.symtab.Symbol;
+import scalac.util.Name;
 import Tree.*;
 
 
@@ -35,6 +34,12 @@ public class OwnerTransformer extends Transformer {
         unit.body = transform(unit.body);
     }
 
+    /** ..
+     *
+     *  @param tree
+     *  @param owner
+     *  @return
+     */
     public Tree transform(Tree tree, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	currentOwner = owner;
@@ -43,6 +48,12 @@ public class OwnerTransformer extends Transformer {
 	return tree1;
     }
 
+    /** ..
+     *
+     *  @param params
+     *  @param owner
+     *  @return
+     */
     public AbsTypeDef[] transform(AbsTypeDef[] params, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	currentOwner = owner;
@@ -51,6 +62,12 @@ public class OwnerTransformer extends Transformer {
 	return res;
     }
 
+    /** ..
+     *
+     *  @param params
+     *  @param owner
+     *  @return
+     */
     public ValDef[][] transform(ValDef[][] params, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	currentOwner = owner;
@@ -59,6 +76,12 @@ public class OwnerTransformer extends Transformer {
 	return res;
     }
 
+    /**  ..
+     *
+     *  @param templ
+     *  @param owner
+     *  @return
+     */
     public Template transform(Template templ, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	if (owner.kind == Kinds.CLASS)
@@ -70,6 +93,12 @@ public class OwnerTransformer extends Transformer {
 	return copy.Template(templ, parents1, body1);
     }
 
+    /** ..
+     *
+     *  @param ts
+     *  @param tsym
+     *  @return
+     */
     public Tree[] transformTemplateStats(Tree[] ts, Symbol tsym) {
 	Tree[] ts1 = ts;
 	for (int i = 0; i < ts.length; i++) {
@@ -83,10 +112,21 @@ public class OwnerTransformer extends Transformer {
         return ts1;
     }
 
+    /** ..
+     *
+     *  @param stat
+     *  @param tsym
+     *  @return
+     */
     public Tree transformTemplateStat(Tree stat, Symbol tsym) {
 	return transform(stat, tsym);
     }
 
+    /** ..
+     *
+     *  @param tree
+     *  @return
+     */
     public Tree transform(Tree tree) {
 	switch(tree) {
 	case PackageDef(Tree packaged, Template impl):
@@ -145,4 +185,5 @@ public class OwnerTransformer extends Transformer {
 	    return super.transform(tree);
 	}
     }
+
 }
