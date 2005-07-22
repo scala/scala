@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -29,12 +29,6 @@ public abstract class Int     extends AnyVal implements java.io.Serializable {
     public String toString() {
         return String.valueOf(value);
     }
-
-    /** @meta method [?T]scala.Boolean; */
-    public boolean isInstanceOf() { return false; }
-
-    /** @meta method [?T]?T; */
-    public Object asInstanceOf() { return this; }
 
     /** @meta method (scala.Any)scala.Boolean; */
     public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
