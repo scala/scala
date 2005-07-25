@@ -18,8 +18,12 @@ import ast.parser._;
 import typechecker._;
 import matching.TransMatcher;
 import transform._;
+import backend.icode.{ICodes, GenICode};
 
-class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with CompilationUnits {
+class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
+                                                             with Trees
+                                                             with CompilationUnits
+                                                             with ICodes {
 
 // sub-components --------------------------------------------------
 
@@ -63,6 +67,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def log(msg: Object): unit =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
+
+  def abort(msg: String) = throw new Error(msg);
 
 // file interface -------------------------------------------------------
 
@@ -167,6 +173,14 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object genicode extends GenICode {
+    val global: Global.this.type = Global.this;
+  }
+
+  object icodePrinter extends backend.icode.Printers {
+    val global: Global.this.type = Global.this;
+  }
+
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory, // needs to be first
     analyzer.typerFactory, // needs to be second
@@ -192,6 +206,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       stopped = settings.stop contains pd.phaseName;
     }
   }
+
+  // temporary: icode is turned on explicitely
+  if (settings.Xshowicode.value)
+    p = genicode.newPhase(p);
 
   val terminalPhase = new GlobalPhase(p) {
     def name = "terminal";
@@ -256,6 +274,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
+    if (settings.Xshowicode.value) printICode();
 
     if (reporter.errors() == 0) {
       for (val Pair(sym, pickled) <- symData.elements.toList) {
@@ -349,6 +368,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (settings.debug.value) ex.printStackTrace();
       error("could not write file " + file);
     }
+  }
+
+  private def printICode(): Unit = {
+    val printer = new icodePrinter.TextPrinter(new PrintWriter(System.out, true));
+    classes.foreach(printer.printClass);
   }
 
   private def informStatistics = {

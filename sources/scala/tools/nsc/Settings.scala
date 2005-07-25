@@ -47,6 +47,7 @@ class Settings(error: String => unit) {
 
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "");
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "");
+  val Xshowicode    = BooleanSetting("-Xshowicode", "Print the generated ICode");
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse;
