@@ -32,6 +32,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val treePrinter = treePrinters.create();
 
+  object treeBrowsers extends TreeBrowsers {
+    val global: Global.this.type = Global.this
+  }
+  val treeBrowser = treeBrowsers.create();
+
   object treeInfo extends TreeInfo {
     val global: Global.this.type = Global.this
   }
@@ -265,6 +270,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       phase = globalPhase;
       globalPhase.run;
       if (settings.print contains globalPhase.name) treePrinter.printAll();
+      if (settings.browse contains globalPhase.name) treeBrowser.browse(units);
       informTime(globalPhase.description, startTime);
       globalPhase = globalPhase.next;
       if (settings.check contains globalPhase.name) {
