@@ -81,7 +81,7 @@ object Test {
     ys1.length + ys2.length
   }
 
-  def check_success[A](name: String, def closure: A, expected: A): Unit = {
+  def check_success[A](name: String, closure: => A, expected: A): Unit = {
     System.out.print("test " + name);
     try {
       val actual: A = closure;
