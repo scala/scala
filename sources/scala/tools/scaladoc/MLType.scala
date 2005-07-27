@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -502,7 +502,7 @@ package scala.tools.scaladoc {
       buf.toString()
     }
 
-    def foreach(a: Array[Symbol])(def f: Symbol => Symbol): Array[Symbol] = {
+    def foreach(a: Array[Symbol])(f: Symbol => Symbol): Array[Symbol] = {
       val b = new Array[Symbol](a.length);
       for(val i <- List.range(0, a.length)) b(i) = f(a(i));
       b
