@@ -19,8 +19,9 @@
     }
 \fi
 
-\renewcommand{\doctitle}{A Scala Tutorial}
-\renewcommand{\docsubtitle}{for Java programmers}
+\renewcommand{\doctitle}{A Scala Tutorial \\
+\large  for Java programmers \ }
+\renewcommand{\docsubtitle}{Version 1.0}
 \renewcommand{\docauthor}{Michel Schinz\\[65mm]}
 
 \newcommand{\langname}[1]{#1\xspace}
@@ -375,7 +376,7 @@ class Complex(real: double, imaginary: double) {
   def re = real;
   def im = imaginary;
   override def toString() =
-    "" + re + (if (im < 0) "-" else "+") + im + "i";
+    "" + re + (if (im < 0) "" else "+") + im + "i";
 }
 \end{scalaprogram}
 
