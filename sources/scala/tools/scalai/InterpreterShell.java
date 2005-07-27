@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -8,23 +8,23 @@
 
 package scala.tools.scalai;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
-import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.PushbackReader;
 import java.io.StringReader;
-import java.io.PrintWriter;
-import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import scala.runtime.InterpreterSupport;
 
-import scalac.util.Debug;
-import scalac.util.Strings;
-import scalac.util.PrefixMatcher;
-
 import scalac.Global;
+import scalac.util.Debug;
+import scalac.util.PrefixMatcher;
+import scalac.util.Strings;
+
 
 public class InterpreterShell {
 
@@ -33,7 +33,7 @@ public class InterpreterShell {
 
     public static final String PRODUCT   = Main.PRODUCT;
     public static final String VERSION   = Main.VERSION;
-    public static final String COPYRIGHT = "(c) 2002-04, LAMP/EPFL";
+    public static final String COPYRIGHT = "(c) 2002-05, LAMP/EPFL";
 
     //########################################################################
     // Private Constants

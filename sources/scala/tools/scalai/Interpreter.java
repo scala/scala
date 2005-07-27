@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -9,22 +9,22 @@
 
 package scala.tools.scalai;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
+import scala.runtime.InterpreterSupport;
+import scala.runtime.InterpreterSupport.EvaluationResult;
 import scala.tools.util.Position;
 
 import scalac.CompilationUnit;
 import scalac.Global;
 import scalac.Phase;
 import scalac.symtab.Definitions;
+import scalac.symtab.Modifiers;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.symtab.Modifiers;
 import scalac.util.Name;
 
-import scala.runtime.InterpreterSupport;
-import scala.runtime.InterpreterSupport.EvaluationResult;
 
 public class Interpreter {
 
@@ -46,7 +46,7 @@ public class Interpreter {
 
     public Interpreter(Global global) {
         this.global = global;
-        Map templates = new HashMap();
+        Map/*<Class,Set<ScalaTemplate>>*/ templates = new HashMap();
         this.evaluator = new Evaluator(templates);
         this.compiler = new Compiler(global, templates, evaluator); // !!!
     }
