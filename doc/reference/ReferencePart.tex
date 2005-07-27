@@ -3180,8 +3180,8 @@ evaluated as if it was an application of ~\lstinline@whileLoop ($e_1$) ($e_2$)@~
 the hypothetical function \code{whileLoop} is defined as follows.
 
 \begin{lstlisting}
-  def whileLoop(def c: boolean)(def s: unit): unit  =
-    if (c) { s ; while(c)(s) } else {}
+  def whileLoop(cond: => Boolean)(body: => Unit): Unit  =
+    if (cond) { body ; while(cond)(body) } else {}
 \end{lstlisting}
 
 \example The loop 

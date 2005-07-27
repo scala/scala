@@ -4482,7 +4482,7 @@ command need to be passed by-name, so that they are evaluated
 repeatedly for each loop iteration.  This leads to the following
 definition of \code{whileLoop}.
 \begin{lstlisting}
-def whileLoop(def condition: boolean)(def command: unit): unit = 
+def whileLoop(condition: => boolean)(command: => unit): unit = 
   if (condition) {
     command; whileLoop(condition)(command)
   } else {}
