@@ -524,7 +524,7 @@ abstract class TreeBrowsers {
 
     ///////////////// Document pretty printer ////////////////
 
-    def view(n: String): Document = DocText(n);
+    implicit def view(n: String): Document = DocText(n);
 
     def toDocument(sym: Symbol): Document =
       toDocument(sym.info);

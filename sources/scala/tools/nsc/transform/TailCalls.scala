@@ -267,23 +267,3 @@ abstract class TailCalls extends Transform
   }
 
 }
-
-/*
-
-trait JavaLogging {
-
-  import java.util.logging._;
-
-  // initialize logger
-  val logger = Logger.getLogger("nsc");
-
-  logger.setUseParentHandlers(false);
-  logger.addHandler(new ConsoleHandler() {
-    override def publish(rec: LogRecord) =
-      System.err.println(rec.getMessage());
-  });
-
-  // debug
-  private def log(s: String): Unit = logger.info(s);
-}
-*/
