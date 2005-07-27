@@ -15,7 +15,10 @@ import scalac.atree.AConstant;
 import scalac.symtab.Modifiers;
 import scalac.symtab._;
 import scalac._;
-import scalac.util._;
+import scalac.util.Name;
+import scalac.util.Names;
+import scalac.util.NameTransformer;
+import scalac.util.TypeNames;
 
 import scala.Iterator;
 import scala.collection.immutable.ListMap;
@@ -139,7 +142,8 @@ class Parser(unit: CompilationUnit) {
     || (s.token == SEALED);
 
   def isDefIntro(): Boolean = s.token match {
-    case VAL | VAR | DEF | TYPE | OBJECT | CASEOBJECT | CLASS | CASECLASS | TRAIT =>
+    case VAL | VAR | DEF | TYPE | OBJECT |
+         CASEOBJECT | CLASS | CASECLASS | TRAIT =>
       true
     case _ =>
       false
@@ -147,7 +151,7 @@ class Parser(unit: CompilationUnit) {
 
   def isDclIntro(): Boolean = s.token match {
     case VAL | VAR | DEF | TYPE =>
-      true;
+      true
     case _ =>
       false
   }
@@ -157,9 +161,9 @@ class Parser(unit: CompilationUnit) {
          STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
          THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
          DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART =>
-      true;
+      true
     case _ =>
-      false;
+      false
   }
 
 /////// COMMENT AND ATTRIBUTE COLLECTION /////////////////////////////////////
@@ -169,7 +173,10 @@ class Parser(unit: CompilationUnit) {
   protected val commentStack = new Stack();
 
   /** Join the comment associated with a definition
-  */
+   *
+   *  @param trees
+   *  @return
+   */
   def joinComment(trees: => Array[Tree]): Array[Tree] = {
     // push comment
     commentStack.push(if (s.docBuffer == null) null else s.docBuffer.toString());
@@ -191,7 +198,12 @@ class Parser(unit: CompilationUnit) {
   def fresh(): Name = unit.fresh.newName("x");
 
   /** Create a tree representing a packaging
-  */
+   *
+   *  @param pos
+   *  @param pkg0
+   *  @param stats0
+   *  @return
+   */
   def makePackaging(pos: Int, pkg0: Tree, stats0: Array[Tree]): Tree = {
     var pkg = pkg0;
     var stats = stats0;
@@ -210,7 +222,14 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** Create tree representing binary operation expression or pattern.
-  */
+   *
+   *  @param isExpr
+   *  @param pos
+   *  @param left
+   *  @param op
+   *  @param right
+   *  @return
+   */
   def makeBinop(isExpr: Boolean, pos: Int, left: Tree, op: Name, right: Tree): Tree =
     if (isExpr) {
       if (isLeftAssoc(op)) {
@@ -262,9 +281,16 @@ class Parser(unit: CompilationUnit) {
       pos, scalaDot(pos, Names.CaseClass.toTypeName()), Tree.EMPTY_ARRAY);
 
   /** Create tree for for-comprehension <for (enums) do body> or
-  *   <for (enums) yield body> where mapName and flatmapName are chosen
-  *  corresponding to whether this is a for-do or a for-yield.
-  */
+   *  <for (enums) yield body> where mapName and flatmapName are chosen
+   *  corresponding to whether this is a for-do or a for-yield.
+   *
+   *  @param pos
+   *  @param enums
+   *  @param mapName
+   *  @param flatmapName
+   *  @param body
+   *  @return
+   */
   def makeFor(pos: Int, enums: Array[Tree], mapName: Name,
               flatmapName: Name, body: Tree): Tree = {
 
@@ -311,6 +337,14 @@ class Parser(unit: CompilationUnit) {
     }
   }
 
+  /** ..
+   *
+   *  @param pos
+   *  @param body
+   *  @param catcher
+   *  @param finalizer
+   *  @return
+   */
   def makeTry(pos: Int, body: Tree, catcher: Tree, finalizer: Tree): Tree = {
     var t = body;
     if (catcher != Tree.Empty)
@@ -357,6 +391,14 @@ class Parser(unit: CompilationUnit) {
     make.LabelDef(pos, lname, new Array[Tree$Ident](0), rhs);
   }
 
+  /** ..
+   *
+   *  @param pos
+   *  @param lname
+   *  @param body
+   *  @param cond
+   *  @return a label tree representing the do-while loop
+   */
   def makeDoWhile(pos: Int, lname: Name, body: Tree, cond: Tree): Tree = {
     val continu = make.Apply(
       pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
@@ -521,7 +563,13 @@ class Parser(unit: CompilationUnit) {
   def isLeftAssoc(operator: Name): Boolean =
     operator.length() > 0 && operator.charAt(operator.length() - 1) != ':';
 
-  def push(od: Tree, pos: Int, op: Name): unit = {
+  /** ..
+   *
+   *  @param od
+   *  @param pos
+   *  @param op
+   */
+  def push(od: Tree, pos: Int, op: Name): Unit = {
     if (sp == operands.length) {
       val operands1 = new Array[Tree](sp * 2);
       System.arraycopy(operands, 0, operands1, 0, sp);
@@ -539,6 +587,15 @@ class Parser(unit: CompilationUnit) {
     sp = sp + 1;
   }
 
+  /** ..
+   *
+   *  @param isExpr
+   *  @param base
+   *  @param _top
+   *  @param prec
+   *  @param leftAssoc
+   *  @return
+   */
   def reduceStack(isExpr: Boolean, base: Int, _top: Tree,
                   prec: Int, leftAssoc: Boolean): Tree = {
     var top = _top;
@@ -704,9 +761,9 @@ class Parser(unit: CompilationUnit) {
       if (s.token == LPAREN || s.token == LBRACE)
         xmlp.mkXML( pos, isPattern, t, argumentExprs() ); // xml shorthand
       else { // Symbol("name")        */
-        var symT = scalaDot( pos, Names.Symbol );
-        if( isPattern ) { symT = convertToTypeId( symT ) };
-        make.Apply( pos, symT, Predef.Array[Tree]( t ) )
+        var symT = scalaDot(pos, Names.Symbol);
+        if (isPattern) { symT = convertToTypeId(symT) };
+        make.Apply(pos, symT, Predef.Array[Tree](t))
       /*} */
     } else {
       t
@@ -980,7 +1037,7 @@ class Parser(unit: CompilationUnit) {
           if (s.token == IDENTIFIER && s.name == Names.STAR) {
             s.nextToken();
             /*
-            if( s.token != RPAREN )
+            if (s.token != RPAREN)
               syntaxError(s.pos, " escaping sequences only allowed for last argument", true);
             */
             t = make.Typed(
@@ -1265,7 +1322,7 @@ class Parser(unit: CompilationUnit) {
   def validPattern1(): Tree = {
     val pos = s.pos;
     val pat = pattern1();
-    if(this.pN.check(pat)) { // reports syntax errors as side effect
+    if (this.pN.check(pat)) { // reports syntax errors as side effect
       pN.wrapAlternative(pN.elimSequence(pN.flattenSequence(pat)))
     } else {
       make.Ident(pos, Names.PATTERN_WILDCARD)
@@ -1291,7 +1348,7 @@ class Parser(unit: CompilationUnit) {
     val first = pattern1();
     if (s.token == IDENTIFIER && s.name == BAR) {
       val choices = new myTreeList();
-      choices.append( first );
+      choices.append(first);
       while (s.token == IDENTIFIER && s.name == BAR) {
         s.nextToken();
         choices.append(pattern1());
@@ -1553,7 +1610,7 @@ class Parser(unit: CompilationUnit) {
   def param(ofPrimaryConstructor: boolean): Tree.ValDef = {
     val pos = s.pos;
     var mods = if (ofPrimaryConstructor) modifiers() | Modifiers.PARAM else Modifiers.PARAM;
-    if(ofPrimaryConstructor) {
+    if (ofPrimaryConstructor) {
       if (s.token == VAL) {
         s.nextToken(); mods = mods | Modifiers.PARAMACCESSOR;
       } else if (mods != Modifiers.PARAM) {
@@ -1562,7 +1619,7 @@ class Parser(unit: CompilationUnit) {
     }
     if (s.token == DEF) {
       mods = mods | Modifiers.DEF;
-      if(ofPrimaryConstructor)
+      //if (ofPrimaryConstructor)
         s.unit.warning(s.pos, "def-parameter syntax  `def x: T'  is deprecated \n" +
                        "use `x: => T' instead");
       s.nextToken();
@@ -1966,7 +2023,7 @@ class Parser(unit: CompilationUnit) {
 		        paramClauseOpt(true)));
     } while (s.token == COMMA);
     val thistpe = simpleTypedOpt();
-    val template = classTemplate( (mods & Modifiers.CASE)!= 0 );
+    val template = classTemplate((mods & Modifiers.CASE) != 0);
 
     val ts = new myTreeList();
 	lhs foreach { case Tuple4(p, n, tp, vp) =>
@@ -1987,7 +2044,7 @@ class Parser(unit: CompilationUnit) {
 	  lhs.append(Pair(s.pos, ident()));
     } while (s.token == COMMA);
     val thistpe = simpleTypedOpt();
-    val template = classTemplate( (mods & Modifiers.CASE)!= 0 );
+    val template = classTemplate((mods & Modifiers.CASE) != 0);
     val ts = new myTreeList();
     lhs foreach { case Pair(p, n) =>
       ts.append(
@@ -2010,7 +2067,7 @@ class Parser(unit: CompilationUnit) {
       parents.append(scalaAnyRefConstr(pos));
     }
     parents.append(scalaObjectConstr(pos));
-    if( isCaseClass ) {
+    if (isCaseClass) {
       parents.append(caseClassConstr(pos));
     }
     if (s.token == WITH) {
