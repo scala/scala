@@ -234,6 +234,7 @@ run/NestedClasses.scala
 run/arrays.scala
 run/bridges.scala
 run/bugs.scala
+run/boolexprs.scala
 run/constructors.scala
 run/enums.scala
 run/exceptions.scala
