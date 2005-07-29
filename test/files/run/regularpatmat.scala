@@ -6,7 +6,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     Console.println("pretest");
     val L = List(1,2,3);
-    scala.testing.UnitTest.assertEquals( L, L.match { case List(xs@_*) => xs; } ) ;
+    scala.testing.UnitTest.assertEquals( L, L match { case List(xs@_*) => xs; } ) ;
 
     testWR.main( args );
     testWS.main( args );
@@ -29,7 +29,7 @@ object Test {
 // analyzer related (no execution)
 object bug179 {
   case class One();
-  object Foo with Application {
+  object Foo {
     def test(xs: List[Any]) = xs match {
       case List(((((One(), One())*) | (One(), One())), One())) =>
 	Console.println("case")
@@ -72,7 +72,7 @@ object testBK  {
 
         import scala.testing.UnitTest._ ;
 
-    def doit1(e: List[Char]):Int = e.match {
+    def doit1(e: List[Char]):Int = e match {
 
                 case List( 'a'*, x @ ( 'a',('a', 'b')* ), y @ ('b'*) )   => { 100 }
 
@@ -105,7 +105,7 @@ object testBL {
 
   def preTest(a:String,b:String):boolean = (a==b);
 
-  def doit( x:List[String] ):String = x.match {
+  def doit( x:List[String] ):String = x match {
 
     case List( z @ "John" ) => z
 
@@ -129,15 +129,15 @@ object testBM  {
     import scala.testing.UnitTest._ ;
     import values._ ;
 
-    def doit1(e: List[Char]):List[Char] = e.match {
+    def doit1(e: List[Char]):List[Char] = e match {
 
                 case List( 'a'*, x @ ( 'a',('a', 'b')* ), y @ ('b'*) )
 
-                        => { x }
+                        => { x.toList }
 
                 case List( 'a'*, x @ (('a', 'b')*) , y @ (('a','b','c') *) )
 
-                        => { y }
+                        => { y.toList }
 
                 case List( _ * )
 
@@ -175,7 +175,7 @@ object testBN {
 
         case class testA( arg:List[Char] ) extends testClass;
 
-    def doit1(e: testClass):List[Char] = e.match {
+    def doit1(e: testClass):List[Char] = e match {
                 case testA(List( 'a', x, y ))   => x::y::Nil
                 case _                      => Nil
         };
@@ -227,7 +227,7 @@ object testBO  {
 
         def onlyJohn( db:List[ Person ] ):List[ String ] = {
 
-           db.match {
+           db match {
 
                 case List( Person( "John", lastname  ) )
 
@@ -245,7 +245,7 @@ object testBO  {
 
         def searchFirstJohn( db:List[ Person ] ):String = {
 
-           db.match {
+           db match {
 
                 case List( _ *, Person( "John", lastname  ), _ * )
                         => lastname
@@ -262,11 +262,11 @@ object testBO  {
 
         def searchJohns( db:List[Person]):List[String] = {
 
-           db.match {
+           db match {
 
                 case List( _ *, Person( "John", lastname  ), rest@(_ *) )
                         => { //Console.print("before is : "+before );
-                             lastname::searchJohns( rest )
+                             lastname::searchJohns( rest.toList )
                                 }
 
                 case _
@@ -318,7 +318,7 @@ object testWR  {
 
         import scala.testing.UnitTest._ ;
 
-    def doit1(e: List[Char]):Int = e.match {
+    def doit1(e: List[Char]):Int = e match {
                 case List( 'a', 'b', 'c' ) => 100
                 case _                     => 321
         };
@@ -334,7 +334,7 @@ object testWR  {
                 assertEquals( doit1( s6 ),321)
     };
 
-    def doit2(e: List[Char]):Int = e.match {
+    def doit2(e: List[Char]):Int = e match {
                 case List( ('a', 'b','c')? ) => 1000
                 case _                       => 321
 	}
@@ -351,7 +351,7 @@ object testWR  {
     }
 
 
-    def doit3(e: List[Char]):String = e.match {
+    def doit3(e: List[Char]):String = e match {
                 case List( ('a', 'a','a')? ) => "ok"
                 case _                   => "fail"
 	}
@@ -367,7 +367,7 @@ object testWR  {
                 assertEquals( doit3( s6 ),"fail");
     }
 
-    def doit4(e: List[Char]):String = e.match {
+    def doit4(e: List[Char]):String = e match {
                 case List( ('a'|'b')*,('a'|'b'|'c')+ ) => "ga!!!!"
                 case _                             => "gu"
 	}
@@ -383,7 +383,7 @@ object testWR  {
                 assertEquals( doit4( s6 ), "ga!!!!");
     }
 
-    def doit5(e: List[Int]):String = e.match {
+    def doit5(e: List[Int]):String = e match {
                 case List( (0|1)+ )               => "binary"
                 case _                        => "not binary"
 	}
@@ -396,7 +396,7 @@ object testWR  {
     }
 
     //  { ('0'..'9')*;'.';('0'..'9');('0'..'9')* ]
-    def doit6(e: List[Char]):String = e.match {
+    def doit6(e: List[Char]):String = e match {
                 case List( ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9')*,
                        '.',
                        ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'),
@@ -415,7 +415,7 @@ object testWR  {
     def  test8: Unit = {
       Console.println("testWR_8");
 
-      assertTrue( List('d','c').match {
+      assertTrue( List('d','c') match {
         case List('a'*, 'd'|'e', 'c'*) => true
         case _                         => false
       });
@@ -494,7 +494,7 @@ object testWS {
                        assume order on variables, enviroment is a tuple/sequence
         */
 
-    def doit1(e: List[Char]):Int = e.match {
+    def doit1(e: List[Char]):Int = e match {
                 case List( 'a', 'b', 'c' )        => 100
                 case List( ('a', 'b','c')? )      => 1004
                 case List( ('a', 'a','a')? )      => 50
@@ -526,7 +526,7 @@ object testWT  {
 
         import scala.testing.UnitTest._ ;
 
-    def doit1(e: List[Char]):Int = e.match {
+    def doit1(e: List[Char]):Int = e match {
                 case List( 'a', _, _ )   => 100
                 case List( _ * )         => 321
                 case _               => 20022 // this never happens
@@ -558,7 +558,7 @@ object testWV {
 
         case class testA( arg:List[Char] ) extends testClass;
 
-    def doit1( e: testClass ):Int = e.match {
+    def doit1( e: testClass ):Int = e match {
 
                 case testA( List( 'a', 'b', 'c' ))        => 100
                 case testA( List( ('a', 'b','c')? ))      => 1004
@@ -597,7 +597,7 @@ object testWW {
         class testClass;
         case class testA( arg:List[Char] ) extends testClass;
 
-        def doit1(e: List[testClass]):Int = e.match {
+        def doit1(e: List[testClass]):Int = e match {
 
                 case List( testA(List()), testA( List( 'a', 'b' )) )        => 100
                 case _                                                      => 321
@@ -746,7 +746,7 @@ object testNN {
   case class F(x:K*) extends K;
   case class G() extends K;
 
-  def mtch(k:K):boolean = k.match {
+  def mtch(k:K):boolean = k match {
       case F(F(G()*),G(),F(G()*)) => true;
       case _ => false;
   }
@@ -763,17 +763,17 @@ object testNN {
 object testNO {   // this does not need to be run, only compiled
 
   trait Operator;
-  case class Increment extends Operator;
-  case class Decrement extends Operator;
+  case class Increment() extends Operator;
+  case class Decrement() extends Operator;
 
   trait Expression {
-    def eval = match {
+    def eval = this match {
       case Operation (v: Value, o: Increment) => v
       case Operation (v: Value, d: Decrement) => v
     }
   }
 
-  case class Value extends Expression;
+  case class Value() extends Expression;
   case class Operation (e: Expression, o: Operator) extends Expression;
 
 
@@ -797,11 +797,11 @@ object testBugSequenceApply {
   def main:Unit = {
     Console.print("testBugSequenceApply ");
     val z: Seq[Int] = new ThreeBars();
-    Console.print(z.match {
+    Console.print(z match {
       case Seq(1,2,3) => "hello" // but ThreeBars is a case class...
     });
 
-    Console.print(ThreeBars().match {
+    Console.print(ThreeBars() match {
       case Seq(1,2,3) => " hello" // but ThreeBars is a case class...
     });
   }
