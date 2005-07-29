@@ -5,7 +5,8 @@ import scala.util.logging._;
 
 import scala.testing.UnitTest._ ;
 
-object Test with Application {
+object Test {
+  def main(args:Array[String]) = {
   val e:  scala.xml.MetaData         = Null; //Node.NoAttributes;
   val sc: scala.xml.NamespaceBinding = TopScope;
 
@@ -171,4 +172,5 @@ object Test with Application {
         Elem(null,"title",e,sc,Text("Data on ze web")),
         Elem(null,"title",e,sc,Text("Foundations of Programming Languages")))
   );
+  }
 }

@@ -3,7 +3,8 @@ import org.xml.sax.InputSource;
 import scala.testing.UnitTest._ ;
 import scala.xml.{Node, NodeSeq, Elem, Text, XML};
 
-object Test with Application {
+object Test {
+  def main(args:Array[String]) = {
 
   //val e:  scala.xml.MetaData         = null; //Node.NoAttributes;
   //val sc: scala.xml.NamespaceBinding = null;
@@ -204,4 +205,5 @@ DEPRECATED, don't support namespaces in pattern match anymore
   assertEquals( vtor( <foo href="http://foo.com" /> ), false );
   assertEquals( vtor( <foo bar="http://foo.com" /> ), true );
 
+  }
 }
