@@ -63,8 +63,10 @@ package scala.tools.scala4ant {
       //- attribute @nscArgs in order to pass anything you like
       val moreargs = this.attributes.asInstanceOf[NscTask].moreArgs();
       for(val a <- moreargs) {
-        Console.println("NscAdaptor adds argument '"+a+"'");
-        cmd.createArgument().setValue(a);
+	    if(a.length() > 0) {
+          Console.println("NscAdaptor adds argument '"+a+"'");
+          cmd.createArgument().setValue(a);
+		}
       }
 
 
