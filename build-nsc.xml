@@ -1,3 +1,7 @@
+<!DOCTYPE project [
+  <!ENTITY userExcludes "">
+]>
+
 <project name="scala.nsc" default="build.nsc">
 
   <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,11 +43,11 @@
   <!-- taskdef for nsc comes later, because has to be compiled before -->
 
   <target name="build.nsc">
-    <mkdir dir="${tools_util_dir}"/>
+    <mkdir dir="${tools_util_runtime_dir}"/>
 
     <taskdef name="pico"   classname="jaco.pizza.AntTask"/>
 
-    <pico srcdir="sources" destdir="${tools_util_dir}" source="1.4" scalaHack="true">
+    <pico srcdir="sources" destdir="${tools_util_runtime_dir}" source="1.4" scalaHack="true">
       <include name="scala/*.java"/>
       <include name="scala/runtime/*.java"/>
       <include name="scala/runtime/**/*.java"/>
@@ -56,17 +60,17 @@
     <!-- we do *not* want the ScalaObject.class file,
          because in nsc's eyes ScalaObject is a scala file. -->
 
-    <delete file="${tools_util_dir}/scala/ScalaObject.class"/>
-    <delete file="${tools_util_dir}/scala/Array.class"/>
+    <delete file="${tools_util_runtime_dir}/scala/ScalaObject.class"/>
+    <delete file="${tools_util_runtime_dir}/scala/Array.class"/>
 
     <mkdir dir="${nsc_dir}"/>
     <scalac srcdir="sources" destdir="${nsc_dir}" 
-            classpath="${tools_util_dir}" sourcePath="sources" force="true">
+            classpath="${tools_util_runtime_dir}" sourcePath="sources" force="true">
       <!-- force = "true" always recompiles all source files, because 
            scalac does not always go find the latest source file (*3) -->
 
       <include name="scala/tools/nsc/**/*.scala"/>
-	  <exclude name="scala/tools/nsc/backend/**"/>
+	  &userExcludes;
     </scalac>
 
     <mkdir  dir="${jars_dir}"/>
@@ -76,7 +80,7 @@
 
 
   <target name="clean">
-    <delete dir="${tools_util_dir}"/>
+    <delete dir="${tools_util_runtime_dir}"/>
     <delete dir="${nsc_dir}"/>
   </target>
 
@@ -87,7 +91,7 @@
 
     <mkdir  dir="${nsc4ant_dir}"/>
     <scalac srcdir="sources" destdir="${nsc4ant_dir}/" sourcePath="sources"
-            classpath="${ant_jar}:${nsc_dir}:${tools_util_dir}:objects/main/lib/scala" >
+            classpath="${ant_jar}:${nsc_dir}:${tools_util_runtime_dir}:${scala_jar}" >
       <include name="scala/tools/scala4ant/NscAdaptor.scala"/>
       <include name="scala/tools/scala4ant/NscTask.scala"/>
     </scalac>
@@ -95,55 +99,6 @@
     <jar destfile="${jars_dir}/nsc4ant.jar" basedir="${nsc4ant_dir}"/>
   </target>
 
-  <!-- target to define `nsc' task using NscTask$class -->  
-
-  <target name="define.nsc"     if = "nsc4ant.present">
-    <taskdef name="nsc"    classname="scala.tools.scala4ant.NscTask$class"/>
-  </target>
-
-  <!-- if NscTask$class not found, give error message -->  
-
-  <target name="need.nsc"   unless = "nsc4ant.present">
-    <echo message="please call build.nsc4ant in a separate run"/>
-  </target>
-
-  <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-       test                   test nsc compiler 
-
-       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
-
-  <target name="test" depends="need.nsc, define.nsc">
-    <taskdef name="nsc"
-             classname="scala.tools.scala4ant.NscTask$class"/>
-
-    <mkdir dir="${nsc_output_dir}"/>
-    
-    <echo>Compiling predef and runtime</echo>
-    <nsc srcdir="sources" destdir="${nsc_output_dir}" 
-         classpath="sources:newsources:${tools_util_dir}"
-         nscArgs="-nopredefs;-check:term;-check:transmatch;-debug">
-
-      <include name="scala/Predef.scala"/>
-      <include name="scala/runtime/ScalaRunTime.scala"/>
-    </nsc>
-
-    <echo>Compiling rest</echo>
-    <nsc srcdir="sources" destdir="${nsc_output_dir}" 
-         classpath="sources:newsources:${tools_util_dir}:${nsc_output_dir}"
-         nscArgs="-check:term;-check:transmatch;-debug" force="true"> 
-
-      <include name="scala/**/*.scala"/>
-      <include name="../newsources/**.scala"/>
-
-      <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/runtime/ScalaRunTime.scala"/>
-
-      <exclude name="scala/tools/**"/>
-      <exclude name="scala/io/UTF8String.scala"/>
-    </nsc>
-
-  </target>
   <!--
     (*3) for Java, and pico, files are only recompiled if the source file is
     newer than the class file. This would work for scala, but mixin
