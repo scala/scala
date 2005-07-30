@@ -1,24 +1,18 @@
 #!/bin/sh
 
-export ANT_OPTS=-Xmx256m
+. ant-common.sh
 
-awk '/^$/ {next;} /^#/ {next;} {print "export " $1 $2 $3}' build-nsc.properties > env.sh
+# jars for `scalac' task MUST EXIST
+if ! addJar $fjbg_jar fjbg_jar;  then exit -1; fi
+if ! addJar $scala_jar scala_jar; then echo "try: make jar target=LIBRARY" && exit -1; fi
+if ! addJar $tools_jar tools_jar; then echo "try: make jar target=TOOLS" && exit -1; fi
 
-. env.sh
-
-# ------- don't change these, change build-nsc.properties instead
-
-# jars for `scalac' task
-CLASSPATH=${fjbg_jar}
-CLASSPATH=$CLASSPATH:${scala_jar}
-CLASSPATH=$CLASSPATH:${tools_jar}
-
-# jars for `pico' task including the `-scala-hacks' enableda
-CLASSPATH=$CLASSPATH:${jaco_jar}
-CLASSPATH=$CLASSPATH:${hacked_pico_dir}
+# jars for `pico' task MUST EXIST including the `-scala-hacks' enabled
+if ! addJar $jaco_jar jaco_jar;  then exit -1; fi 
 
 # jars for `nsc' task (once its compiled)
-CLASSPATH=$CLASSPATH:${jars_dir}/nsc4ant.jar:${jars_dir}/nsc.jar
+if ! addJar $jars_dir/nsc4ant.jar;   then echo "{ *** WARNING: $jars_dir/nsc4ant.jar doesn't exist}"; fi
+if ! addJar $jars_dir/nsc.jar;       then echo "{ *** WARNING: $jars_dir/nsc.jar doesn't exist}"; fi
 
 export CLASSPATH
 

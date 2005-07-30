@@ -12,15 +12,16 @@
        %%%  Preliminaries
        %%%
 
+	   1) working scala compiler ($fjbg.jar, $scala.jar and $tools.jar)
+
+	   if you want to use the latest CVS one, type 
 
        make jar target=LIBRARY
        make jar target=TOOLS
 
-       You need a working scalac, which is accessible for ant.
-       This means, you should have `fjbg.jar', `scala.jar' and
-       `tools.jar' on your classpath 
+	   and set the variables to the places in your projectoutputdir
 
-       check the ant-build-nsc  script! adjust to your paths if necessary.
+	   2) working pizza compiler ($jaco.jar)
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
 
@@ -35,23 +36,14 @@
   <available classname="scala.tools.scala4ant.NscTask$class"
              property="nsc4ant.present"/>
 
-  <target name="build.hackedPicoTask">
-
-    <mkdir dir="${hacked_pico_dir}"/>
-    <javac srcdir="newsources" destdir="${hacked_pico_dir}">
-      <include name="jaco/pizza/HackedPicoTask.java"/>
-      <include name="jaco/pizza/HackedPicoAdaptor.java"/>
-    </javac>
-  </target>
-
   <!-- taskdef for nsc comes later, because has to be compiled before -->
 
-  <target name="build.nsc" depends="build.hackedPicoTask">
+  <target name="build.nsc">
     <mkdir dir="${tools_util_dir}"/>
 
-    <taskdef name="pico"   classname="jaco.pizza.HackedPicoTask"/>
+    <taskdef name="pico"   classname="jaco.pizza.AntTask"/>
 
-    <pico srcdir="sources" destdir="${tools_util_dir}" source="1.4">
+    <pico srcdir="sources" destdir="${tools_util_dir}" source="1.4" scalaHack="true">
       <include name="scala/*.java"/>
       <include name="scala/runtime/*.java"/>
       <include name="scala/runtime/**/*.java"/>
@@ -74,6 +66,7 @@
            scalac does not always go find the latest source file (*3) -->
 
       <include name="scala/tools/nsc/**/*.scala"/>
+	  <exclude name="scala/tools/nsc/backend/**"/>
     </scalac>
 
     <mkdir  dir="${jars_dir}"/>
@@ -111,7 +104,7 @@
   <!-- if NscTask$class not found, give error message -->  
 
   <target name="need.nsc"   unless = "nsc4ant.present">
-    <echo message="please build nsc4ant first"/>
+    <echo message="please call build.nsc4ant in a separate run"/>
   </target>
 
   <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,22 +119,6 @@
 
     <mkdir dir="${nsc_output_dir}"/>
     
-    <!--java classname="scala.tools.nsc.Main"
-          classpath="./objects/main/lib/scala:./objects/main/lib/tools:${jars.dir}/nsc.jar:${tools.util.dir}" >
-      <arg value="-classpath"/>
-      <arg value="sources:newsources:${tools.util.dir}"/>
-      <arg value="-d"/>
-      <arg value="/tmp"/>
-      <arg value="-nopredefs"/>
-      <arg value="sources/scala/Predef.scala"/>
-      <arg value="sources/scala/runtime/ScalaRunTime.scala"/>
-
-
-    </java
-
-         classpath=".:sources:newsources:../newsources:${tools.util.dir}"
-
--->
     <echo>Compiling predef and runtime</echo>
     <nsc srcdir="sources" destdir="${nsc_output_dir}" 
          classpath="sources:newsources:${tools_util_dir}"

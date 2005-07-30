@@ -1,35 +1,24 @@
-# this file serves two purposes,
+# this file serves two purposes 
 #
 # 1. properties file for ant
-# 2. environment variables for ant-build-nsc.sh script
+# 2. environment variables for shell-scripts (e.g. ant-build-nsc.sh)
 #
+# don't use characters like '.' in variable names, and
+# don't run commands here
 #
 scala_jar = /localhome/buraq/scala/objects/main/lib/scala.jar
-
-#
 tools_jar = /localhome/buraq/scala/objects/main/lib/tools.jar
-
+fjbg_jar  = /home/linuxsoft/apps/fjbg/jars/fjbg.jar
 #
 jaco_jar = /home/linuxsoft/apps/jaco/lib/jaco.jar
-
 #
-fjbg_jar = /home/linuxsoft/apps/fjbg/jars/fjbg.jar
-
+tools_util_dir = /tmp/classes_tools_util
 #
-hacked_pico_dir = /tmp/hackedPicoB
-
+nsc_dir = /tmp/classes_nsc
 #
-tools_util_dir = /tmp/picoClassesB
-
+nsc4ant_dir = /tmp/classes_nsc4ant
 #
-nsc_dir = /tmp/nscClassesB
-
+nsc_output_dir = /tmp/classes_nsc_output
 #
-nsc4ant_dir = /tmp/nsc4antClassesB
-
-#
-nsc_output_dir = /tmp/nscOutputClassesB
-
-#
-jars_dir = /tmp/jarsB
+jars_dir = /tmp/jars_nsc
 ant_jar = /home/linuxsoft/apps/ant/lib/ant.jar
