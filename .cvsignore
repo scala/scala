@@ -11,3 +11,5 @@ objects
 tmp
 build-nsc.properties
 env.sh
+concrete-build-nsc.xml
+concrete-test-nsc.xml

@@ -1,0 +1,86 @@
+<!DOCTYPE project [
+  <!ENTITY userExcludes "">
+]>
+<project name="scala.nsc" default="test">
+
+  <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                                    nsc 
+
+                               new scala compiler
+
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+       %%%
+       %%%  Preliminaries
+       %%%
+
+	   1) working nsc compiler (see build-nsc.xml)
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+  <!-- %%% properties and taskdefs %%%-->
+
+  <property file="build-nsc.properties"/>
+
+  <!-- taskdefs to call compilers -->
+  
+  <taskdef name="nsc"    classname="scala.tools.scala4ant.NscTask$class"/>
+
+  <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+       test                   test nsc compiler 
+
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+	   <property file="developer/${user.name}/custom.properties"/>
+
+	   <target name="init.args" if="nscArgs">
+	      <property name="moreNscArgs" value="${nscArgs}"/>
+	   </target>
+
+	   <target name="init.noargs">
+         <property name="moreNscArgs" value=""/>
+	   </target>
+
+	   <target name="init" depends="init.args, init.noargs">
+	     <echo> Hi, I am your helpful test script. Passing options to nsc?</echo>
+	     <echo> Either, add a line to developer/${user.name}/custom.properties</echo>
+	     <echo>   nscArgs = -check:term;-debug </echo>
+         <echo> or set a property nscArgs on the cmd line</echo>
+	     <echo>   sh ant-test-nsc.sh -DnscArgs="-check:term;-debug" </echo>
+         <echo/>
+         <echo> Note the hyphens, the quotes on the cmd line, no spaces between options, the ';' separator</echo>
+	   </target>
+
+  <target name="test" depends="init">
+
+    <mkdir dir="${nsc_output_dir}"/>
+    
+    <echo>==== running nsc on predef and runtime</echo>
+    <nsc srcdir="sources" destdir="${nsc_output_dir}" 
+         classpath="sources:newsources:${tools_util_runtime_dir}"
+		 nscArgs="-nopredefs;${moreNscArgs}">
+
+      <include name="scala/Predef.scala"/>
+      <include name="scala/runtime/ScalaRunTime.scala"/>
+    </nsc>
+
+    <echo>===== running nsc on the rest</echo>
+    <nsc srcdir="sources" destdir="${nsc_output_dir}" 
+         classpath="sources:newsources:${tools_util_runtime_dir}:${nsc_output_dir}"
+         nscArgs="${moreNscArgs}" force="true"> 
+
+      <include name="scala/**/*.scala"/>
+      <include name="../newsources/**.scala"/>
+
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/runtime/ScalaRunTime.scala"/>
+
+      <exclude name="scala/tools/**"/>
+	  &userExcludes;
+    </nsc>
+
+  </target>
+
+</project>

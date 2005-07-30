@@ -14,5 +14,11 @@ export CLASSPATH
 
 # for debugging your classpath
 #echo $CLASSPATH
+if [ -f developer/${USER}/build-nsc-excludes.xml ]; then
+  sed -e "s/userExcludes\ \"\"/userExcludes\ SYSTEM\ \"developer\/${USER}\/build-nsc-excludes.xml\"/" < build-nsc.xml > concrete-build-nsc.xml;
+ else
+  ln -s build-nsc.xml concrete-build-nsc.xml;
+fi
 
-ant -f build-nsc.xml $*
+ant -f concrete-build-nsc.xml $*
+rm -f concrete-build-nsc.xml
