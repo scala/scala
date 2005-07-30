@@ -1,0 +1,2 @@
+<exclude name="scala/io/UTF8String"/>
+<exclude name="scala/tools/nsc/backend/**"/>
