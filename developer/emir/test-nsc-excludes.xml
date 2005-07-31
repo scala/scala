@@ -1,1 +1,12 @@
 <exclude name="scala/io/UTF8String"/>
+<!--
+<exclude name="scala/io/**"/>
+<exclude name="scala/*.scala"/>
+<exclude name="scala/text/**"/>
+<exclude name="scala/util/**"/>
+<exclude name="scala/collection/**"/>
+<exclude name="scala/runtime/**"/>
+<exclude name="scala/testing/**"/>
+<exclude name="scala/concurrent/**"/>
+<exclude name="scala/mobile/**"/>
+-->
