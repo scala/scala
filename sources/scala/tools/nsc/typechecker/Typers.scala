@@ -1001,7 +1001,7 @@ abstract class Typers: Analyzer {
           val body1 = typed(body, mode, pt);
           vble.setInfo(if (treeInfo.isSequenceValued(body)) seqType(body1.tpe) else body1.tpe);
           if (vble.name != nme.WILDCARD) namer.enterInScope(vble);
-          copy.Bind(tree, name, body1) setSymbol vble setType pt
+          copy.Bind(tree, name, body1) setSymbol vble setType body1.tpe; // buraq, was: pt
 
         case ArrayValue(elemtpt, elems) =>
 	  val elemtpt1 = typedType(elemtpt);
