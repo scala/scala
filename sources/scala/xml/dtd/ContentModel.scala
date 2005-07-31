@@ -168,9 +168,10 @@ Console.println("ns = "+ns);
   */
   def toString(sb:StringBuffer): StringBuffer =  {
     sb.append("(#PCDATA|");
-    r match {
-      case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);
-    }
+    //r match {
+    //  case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);
+    //}
+	ContentModel.toString(Alt(r.asInstanceOf[Alt].rs.toList.drop(1):_*):RegExp, sb);
     sb.append(")*");
   }
 }
