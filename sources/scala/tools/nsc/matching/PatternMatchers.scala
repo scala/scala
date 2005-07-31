@@ -69,6 +69,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
                               selector.tpe.widen,
                               Ident(root.symbol).setType(root.tpe));
     this.resultVar = owner.newVariable(Flags.MUTABLE,
+                                       //"result").setType( resultType );
                                        "result").setInfo( resultType );
     //Console.println("resultType =  "+resultType);
     this.owner = owner;
@@ -164,13 +165,20 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
    *     (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
    *     but fails
    */
-  protected def isSeqApply( tree: Apply  ): Boolean =
-    (( tree.args.length == 1 ) && //tree.args(0).isInstanceOf[Sequence])
-	tree.args(0).isInstanceOf[ArrayValue])
-    && (tree.tpe.symbol.flags & Flags.CASE) == 0;
+  protected def isSeqApply( tree: Apply  ): Boolean =  {
+   // Console.print("isSeqApply? "+tree.toString());
+   // val res =
+	tree match {
+	  case Apply(_, List(ArrayValue(_,_))) => (tree.tpe.symbol.flags & Flags.CASE) == 0
+	  case _ => false;
+	}
+	//Console.println(res);
+	//res;
+  }
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
-    //Console.println("patternNode("+tree+","+header+")");
+    //if(tree!=null) Console.println("patternNode("+tree+","+header+")");
+	//else scala.Predef.error("got null tree in patternNode");
     //Console.println("tree.tpe "+tree.tpe);
     //Console.println("tree.getClass() "+tree.getClass());
     tree match {
@@ -223,7 +231,8 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
             //Console.println("delegating ... ");
             val res = pConstrPat(tree.pos, tree.tpe);
             res.and = pHeader(tree.pos, header.getTpe(), header.selector);
-            res.and.and = pSeqContainerPat(tree.pos, tree.tpe, args(0));
+            //res.and.and = pSeqContainerPat(tree.pos, tree.tpe, args(0));
+            res.and.and = pSeqContainerPat(tree.pos, tree.tpe, Sequence(args(0).asInstanceOf[ArrayValue].elems));
             res;
           }
         } else if ((fn.symbol != null) &&
@@ -240,6 +249,13 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
              */
              pConstrPat(tree.pos, tree.tpe);
            }
+        case Typed(Ident( nme.WILDCARD ), tpe) => // x@_:Type
+          val doTest = isSubType(header.getTpe(),tpe.tpe);
+          if(doTest)
+            pDefaultPat(tree.pos, tpe.tpe)
+          else
+            pConstrPat(tree.pos, tpe.tpe);
+
         case t @ Typed(ident, tpe) =>       // variable pattern
           //Console.println("Z");
           val doTest = isSubType(header.getTpe(),tpe.tpe);
@@ -249,7 +265,11 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
             else
               pConstrPat(tree.pos, tpe.tpe);
           }
-          if ((null != env) && (ident.symbol != defs.PatternWildcard))
+		  //if(t.expr.symbol == NoSymbol) {
+		  //  Console.println(t.toString());
+		 //   scala.Predef.error("go typed pattern with no symbol in "+cunit.toString());
+		 // }
+          if ((null != env) /* && (ident.symbol != defs.PatternWildcard) */)
             node match {
               case ConstrPat(casted) =>
                 env.newBoundVar(t.expr.symbol,
@@ -306,7 +326,8 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
         case Literal(Constant(value)) =>
             pConstantPat(tree.pos, tree.tpe, value);
 
-        case Sequence(ts) =>
+        //case Sequence(ts) =>
+        case ArrayValue(_, ts) =>
             if ( !delegateSequenceMatching ) {
                 pSequencePat(tree.pos, tree.tpe, ts.length);
             } else {
@@ -326,7 +347,10 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
           pAltPat(tree.pos, subroot.and.asInstanceOf[Header]);
 
         case _ =>
-          scala.Predef.error("unit = " + cunit + "; tree = "+tree);
+          if(tree == null)
+		    scala.Predef.error("unit = " + cunit + "; tree = null");
+          else
+		    scala.Predef.error("unit = " + cunit + "; tree = "+tree);
     }
   }
 
@@ -359,8 +383,8 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
       pHeader( pos, seqType, t );
     } else {
       //Console.println("NOT FIRSTPOS");
-      //Console.println("newHeader :: casted="+casted);
-      //Console.println("newHeader :: casted.tpe="+casted.tpe);
+     // Console.println("newHeader :: casted="+casted);
+     // Console.println("newHeader :: casted.tpe="+casted.tpe);
       //Console.println("newHeader :: ");
       val ts = casted.tpe.symbol.asInstanceOf[ClassSymbol]
         .caseFieldAccessors(index);

@@ -328,6 +328,9 @@ trait PatternNodes: TransMatcher {
    }
 
   def newBoundVar(sym:Symbol, tpe: Type, init:Tree ): Unit = {
+    //if(sym == Symbol.NoSymbol ) {
+//		scala.Predef.Error("can't add variable with NoSymbol");
+//	}
     //    sym.setOwner( owner ); // FIXME should be corrected earlier
     // @maybe is corrected now? bq
     if (numVars == boundVars.length) {
@@ -335,7 +338,6 @@ trait PatternNodes: TransMatcher {
       System.arraycopy(boundVars, 0, newVars, 0, numVars);
       this.boundVars = newVars;
     }
-    //sym.setInfo(tpe);
     sym.setInfo(tpe);
     this.boundVars(numVars) = ValDef(sym, init.duplicate);
     numVars = numVars + 1;

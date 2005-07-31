@@ -33,8 +33,16 @@ trait AlgebraicMatchers : TransMatcher {
     super.initialize( _m.selector, _m.owner, doBinding );
 
     val it = cases.elements;
-    while (it.hasNext)
-    enter(it.next);
+    while (it.hasNext) {
+	  val cdef = it.next;
+	  /*
+	  if(cdef != null)
+	  Console.println("algebraic matcher: "+cdef.toString()); // DEBUG
+	  else
+	  scala.Predef.error("got CaseDef null in alg matcher!");
+	  */
+      enter(cdef);
+	}
 
     //if (unit.global.log()) {
     //  unit.global.log("internal pattern matching structure");
