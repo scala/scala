@@ -4129,7 +4129,7 @@ three functions again, this time implemented using for-comprehensions.
 \begin{lstlisting}
 object Demo {
   def map[a, b](xs: List[a], f: a => b): List[b] = 
-    for (val x <- cs) yield f(x);
+    for (val x <- xs) yield f(x);
 
   def flatMap[a, b](xs: List[a], f: a => List[b]): List[b] = 
     for (val x <- xs; val y <- f(x)) yield y;
