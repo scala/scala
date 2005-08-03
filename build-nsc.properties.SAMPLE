@@ -22,3 +22,6 @@ nsc_output_dir = /tmp/classes_nsc_output
 #
 jars_dir = /tmp/jars_nsc
 ant_jar = /home/linuxsoft/apps/ant/lib/ant.jar
+
+#
+tools_util_runtime_dir=/tmp/classes_runtime
