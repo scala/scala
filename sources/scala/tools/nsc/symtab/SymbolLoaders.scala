@@ -78,6 +78,10 @@ abstract class SymbolLoaders {
       assert(root.isPackageClass, root);
       root.setInfo(new PackageClassInfoType(new Scope(), root));
 
+      /** Is the given name a valid input file base name? */
+      def isValid(name: String): boolean =
+        name.length() > 0 && !name.endsWith("$class") && name.indexOf("$$anon") == -1;
+
       def enterPackage(str: String, completer: SymbolLoader): unit = {
         val pkg = root.newPackage(Position.NOPOS, newTermName(str));
         pkg.moduleClass.setInfo(completer);
@@ -110,14 +114,17 @@ abstract class SymbolLoaders {
           if (filename != "META_INF" && !packages.isDefinedAt(filename)) packages(filename) = file;
         } else if (filename.endsWith(".symbl")) {
           val name = filename.substring(0, filename.length() - 6);
-          if (!classes.isDefinedAt(name) ||
-	      classes(name).getName().endsWith(".class")) classes(name) = file;
+          if (isValid(name) &&
+	      (!classes.isDefinedAt(name) || classes(name).getName().endsWith(".class")))
+	    classes(name) = file;
         } else if (filename.endsWith(".class")) {
           val name = filename.substring(0, filename.length() - 6);
-          if (!classes.isDefinedAt(name)) classes(name) = file;
+	  if (isValid(name) && !classes.isDefinedAt(name))
+	    classes(name) = file;
         } else if (filename.endsWith(".scala")) {
           val name = filename.substring(0, filename.length() - 6);
-          if (!sources.isDefinedAt(name)) sources(name) = file;
+	  if (isValid(name) && !sources.isDefinedAt(name))
+	    sources(name) = file;
         }
       }
       for (val Pair(name, sfile) <- sources.elements) {

@@ -79,7 +79,14 @@ abstract class TreePrinters {
     def printOpt(prefix: String, tree: Tree): unit =
       if (!tree.isEmpty) { print(prefix); print(tree) }
 
-    def printModifiers(flags: int): unit = {
+    def printFlags(tree: Tree, flags: long): unit =
+      printModifiers(
+	if (tree.symbol == NoSymbol) flags
+	else if (settings.debug.value) tree.symbol.flags
+	else tree.symbol.flags & SourceFlags.asInstanceOf[long]);
+	  //todo: check codegen so that we can remove this
+
+    def printModifiers(flags: long): unit = {
       val mask = if (settings.debug.value) -1 else PrintableFlags;
       val s = flagsToString(flags & mask);
       if (s.length() != 0) print(s + " ")
@@ -94,7 +101,7 @@ abstract class TreePrinters {
           print("<empty>");
 
         case ClassDef(mods, name, tparams, tp, impl) =>
-          printModifiers(mods); print("class " + symName(tree, name));
+          printFlags(tree, mods); print("class " + symName(tree, name));
           printTypeParams(tparams);
           printOpt(": ", tp); print(" extends "); print(impl);
 
@@ -102,11 +109,11 @@ abstract class TreePrinters {
           print("package "); print(packaged); printColumn(stats, " {", ";", "}")
 
         case ModuleDef(mods, name, impl) =>
-          printModifiers(mods); print("object " + symName(tree, name));
+          printFlags(tree, mods); print("object " + symName(tree, name));
           print(" extends "); print(impl);
 
         case ValDef(mods, name, tp, rhs) =>
-          printModifiers(mods);
+          printFlags(tree, mods);
           print(if ((mods & MUTABLE) != 0) "var " else "val ");
           print(symName(tree, name));
           printOpt(": ", tp);
@@ -116,16 +123,16 @@ abstract class TreePrinters {
           }
 
         case DefDef(mods, name, tparams, vparamss, tp, rhs) =>
-          printModifiers(mods);
+          printFlags(tree, mods);
           print("def " + symName(tree, name));
           printTypeParams(tparams); vparamss foreach printValueParams;
           printOpt(": ", tp); printOpt(" = ", rhs);
 
         case AbsTypeDef(mods, name, lo, hi) =>
-          printModifiers(mods); print("type "); printParam(tree);
+          printFlags(tree, mods); print("type "); printParam(tree);
 
         case AliasTypeDef(mods, name, tparams, rhs) =>
-          printModifiers(mods); print("type " + symName(tree, name));
+          printFlags(tree, mods); print("type " + symName(tree, name));
           printTypeParams(tparams); printOpt(" = ", rhs);
 
         case LabelDef(name, params, rhs) =>
@@ -265,7 +272,7 @@ abstract class TreePrinters {
             case ClassDef(_, _, _, _, impl) => ClassDef(tree.symbol, impl)
             case ModuleDef(_, _, impl)      => ModuleDef(tree.symbol, impl)
             case ValDef(_, _, _, rhs)       => ValDef(tree.symbol, rhs)
-            case DefDef(_, _, _, _, _, rhs) => DefDef(tree.symbol, vparamss => rhs)
+            case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss => rhs)
             case AbsTypeDef(_, _, _, _)     => AbsTypeDef(tree.symbol)
             case AliasTypeDef(_, _, _, rhs) => AliasTypeDef(tree.symbol, rhs)
             case _ => tree

@@ -3,6 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id$
+//todo: rewrite or disallow new T where T is a trait (currently: <init> not a member of T)
 package scala.tools.nsc.typechecker;
 
 import nsc.util.ListBuffer;
@@ -193,8 +194,8 @@ abstract class Typers: Analyzer {
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
         errorTree(tree, sym.toString() + " is not a value");
       } else if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
-	       (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
-		sym.isModule && !sym.isMethod)) {
+	         (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
+		  sym.isModule && !sym.isMethod)) {
 	tree.setType(singleType(pre, sym))
       } else tree
     }
@@ -403,17 +404,17 @@ abstract class Typers: Analyzer {
 	    error(parent.pos, "" + psym + " is not a trait; cannot be used as mixin");
 	  else if (psym.hasFlag(FINAL))
 	    error(parent.pos, "illegal inheritance from final class");
-	  else if (psym.isSealed) {
+	  else if (psym.isSealed && !phase.erasedTypes) {
 	    // are we in same scope as base type definition?
 	    val e = defscope.lookupEntry(psym.name);
 	    if (!(e.sym == psym && e.owner == defscope)) {
 	      // we are not within same statement sequence
 	      var c = context;
 	      while (c != NoContext && c.owner !=  psym) c = c.outer.enclClass;
-	      if (c == NoContext) error(parent.pos, "illegal inheritance from sealed class")
+	      if (c == NoContext) error(parent.pos, "illegal inheritance from sealed " + psym)
 	    }
 	  }
-	  if (!(selfType <:< parent.tpe.typeOfThis)) {
+	  if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) {
 	    System.out.println(context.owner);//debug
 	    System.out.println(context.owner.thisSym);//debug
 	    error(parent.pos, "illegal inheritance;\n self-type " +
@@ -449,14 +450,15 @@ abstract class Typers: Analyzer {
     }
 
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
-      case ValDef(mods, name, tpe, rhs) if (mods & PRIVATE) == 0 =>
+      case ValDef(mods, name, tpe, rhs) if (mods & LOCAL) == 0 =>
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.LOCAL_NAME(name), tpe, rhs);
 	val getter: DefDef = {
 	  val sym = vdef.symbol;
 	  val getter = sym.owner.info.decl(name).suchThat(.hasFlag(ACCESSOR));
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
-	      if ((mods & DEFERRED) != 0) EmptyTree else typed(gen.mkRef(sym), EXPRmode, sym.tpe)));
+	      if ((mods & DEFERRED) != 0) EmptyTree
+	      else typed(Select(This(sym.owner), sym), EXPRmode, sym.tpe)));
           checkNoEscaping.privates(result.symbol, result.tpt);
           result
 	}
@@ -466,7 +468,8 @@ abstract class Typers: Analyzer {
           atPos(vdef.pos)(
 	    DefDef(setter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
-	      else typed(Assign(gen.mkRef(getter.symbol), gen.mkRef(vparamss.head.head)))))
+	      else typed(Assign(Select(This(sym.owner), getter.symbol),
+				Ident(vparamss.head.head)))))
 	}
 	val gs = if ((mods & MUTABLE) != 0) List(getter, setter) else List(getter);
 	if ((mods & DEFERRED) != 0) gs else vdef :: gs
@@ -632,6 +635,7 @@ abstract class Typers: Analyzer {
       val body = typed(fun.body, respt);
       val formals = vparamSyms map (.tpe);
       val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(body.tpe));
+      assert(context.owner != RootClass);//debug
       val anonClass = context.owner.newAnonymousFunctionClass(fun.pos) setFlag (FINAL | SYNTHETIC);
       anonClass setInfo ClassInfoType(
 	List(ObjectClass.tpe, funtpe, ScalaObjectClass.tpe), new Scope(), anonClass);
@@ -807,11 +811,17 @@ abstract class Typers: Analyzer {
       def typedSelect(qual: Tree, name: Name): Tree = {
 	val sym =
 	  if (tree.symbol != NoSymbol) {
-	    val alts = qual.tpe.member(name).alternatives;
-	    if (!(alts exists (alt =>
-              alt == tree.symbol || alt.isTerm && (alt.tpe matches tree.symbol.tpe))))
-	      assert(false, "symbol " + tree.symbol + " not in " + alts + " of " + qual.tpe);
-	    tree.symbol;
+            if (phase.erasedTypes && qual.isInstanceOf[Super]) qual.tpe = tree.symbol.owner.tpe;
+            if (settings.debug.value) { // todo: replace by settings.check.value?
+	      val alts = qual.tpe.member(tree.symbol.name).alternatives;
+	      if (!(alts exists (alt =>
+                alt == tree.symbol || alt.isTerm && (alt.tpe matches tree.symbol.tpe))))
+	        assert(false, "symbol " + tree.symbol + tree.symbol.locationString + " not in " + alts + " of " + qual.tpe +
+		       "\n members = " + qual.tpe.members +
+		       "\n type history = " + qual.tpe.symbol.infosString +
+		       "\n phase = " + phase);
+            }
+	    tree.symbol
 	  } else {
 	    qual.tpe.member(name)
 	  }

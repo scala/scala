@@ -31,6 +31,7 @@ abstract class StdNames: SymbolTable {
     val NEWkw = newTermName("new");
     val NULLkw = newTermName("null");
     val OBJECTkw = newTermName("object");
+    val OUTER = "$outer";
     val OVERRIDEkw = newTermName("override");
     val PACKAGEkw = newTermName("package");
     val PRIVATEkw = newTermName("private");
@@ -89,6 +90,7 @@ abstract class StdNames: SymbolTable {
     val COMPOUND_NAME = newTermName("<ct>");
     val ANON_CLASS_NAME = newTermName("$anon");
     val ANONFUN_CLASS_NAME = newTermName("$anonfun");
+    val IMPL_CLASS_SUFFIX = newTermName("$class");
     val REFINE_CLASS_NAME = newTermName("<refinement>");
     val EMPTY_PACKAGE_NAME = newTermName("<empty>");
     val IMPORT = newTermName("<import>");
@@ -99,6 +101,7 @@ abstract class StdNames: SymbolTable {
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>");
 
     val CONSTRUCTOR = newTermName("<init>");
+    val MIXIN_CONSTRUCTOR = newTermName("$init$");
     val INITIALIZER = newTermName("<init>");
     val INLINED_INITIALIZER = newTermName("$init$");
 

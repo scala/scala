@@ -156,7 +156,8 @@ abstract class Types: SymbolTable {
      *  and instantiate all parameters by arguments of `pre'.
      *  Proceed analogously for thistypes referring to outer classes. */
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
-      new AsSeenFromMap(pre, clazz) apply this;
+      if (!phase.erasedTypes || pre.symbol == ArrayClass) new AsSeenFromMap(pre, clazz) apply this;
+      else this;
 
     /** The info of `sym', seen as a member of this type. */
     def memberInfo(sym: Symbol): Type =
@@ -473,6 +474,7 @@ abstract class Types: SymbolTable {
   abstract case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
     override def symbol = thistpe.symbol;
     override def singleDeref = supertp;
+    override def prefix: Type = supertp.prefix;
     override def prefixString =
       if (thistpe.prefixString.endsWith("this."))
         thistpe.prefixString.substring(0, thistpe.prefixString.length() - 5) + "super."
@@ -803,7 +805,7 @@ abstract class Types: SymbolTable {
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): Type = {
     if (phase.erasedTypes)
-      sym.tpe
+      sym.tpe.resultType
     else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString())
     else
@@ -896,7 +898,7 @@ abstract class Types: SymbolTable {
 
   var uniques = 0;
   var accesses = 0;
-  var collisions = 0;
+  var collisions = 0; //todo: use HashSet!
 
 /* statistics
   var uniqueThis = 0;
@@ -1006,6 +1008,17 @@ abstract class Types: SymbolTable {
   trait TypeMap extends Function1[Type, Type] {
     // deferred inherited: def apply(tp: Type): Type
 
+    private def cloneDecls(result: Type, tp: Type, decls: Scope): Type = {
+      val syms1 = decls.toList;
+      for (val sym <- syms1)
+        result.decls.enter(sym.cloneSymbol(result.symbol));
+      val syms2 = result.decls.toList;
+      val resultThis = result.symbol.thisType;
+      for (val sym <- syms2)
+        sym.setInfo(sym.info.substSym(syms1, syms2).substThis(tp.symbol, resultThis));
+      result
+    }
+
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
       case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
@@ -1032,21 +1045,16 @@ abstract class Types: SymbolTable {
         val hi1 = this(hi);
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
-      case RefinedType(parents, refinement) =>
+      case RefinedType(parents, decls) =>
         val parents1 = List.mapConserve(parents)(this);
-        val refinement1 = mapOver(refinement);
-        if ((parents1 eq parents) && (refinement1 eq refinement)) tp
-        else {
-          val result = refinedType(parents1, tp.symbol.owner);
-          val syms1 = refinement1.toList;
-          for (val sym <- syms1)
-            result.decls.enter(sym.cloneSymbol(result.symbol));
-          val syms2 = result.decls.toList;
-          val resultThis = ThisType(result.symbol);
-          for (val sym <- syms2)
-            sym.setInfo(sym.info.substSym(syms1, syms2).substThis(tp.symbol, resultThis));
-          result
-        }
+        val decls1 = mapOver(decls);
+        if ((parents1 eq parents) && (decls1 eq decls)) tp
+        else cloneDecls(refinedType(parents1, tp.symbol.owner), tp, decls1)
+      case ClassInfoType(parents, decls, clazz) =>
+        val parents1 = List.mapConserve(parents)(this);
+        val decls1 = mapOver(decls);
+        if ((parents1 eq parents) && (decls1 eq decls)) tp
+        else cloneDecls(ClassInfoType(parents1, new Scope(), clazz), tp, decls1)
       case MethodType(paramtypes, result) =>
         val paramtypes1 = List.mapConserve(paramtypes)(this);
         val result1 = this(result);
@@ -1096,7 +1104,7 @@ abstract class Types: SymbolTable {
   }
 
   abstract class TypeTraverser extends TypeMap {
-    def traverse(tp: Type): TypeTraverser;
+    def traverse(tp: Type): TypeTraverser; //todo: return unit instead?
     def apply(tp: Type): Type = { traverse(tp); tp }
   }
 
@@ -1265,7 +1273,6 @@ abstract class Types: SymbolTable {
       case Pair(SingleType(pre1, sym1), SingleType(pre2, sym2))
       if ((sym1 == sym2) && (pre1 =:= pre2)) =>
         true
-      /*
       case Pair(SingleType(pre1, sym1), ThisType(sym2))
       if (sym1.isModule &&
 	  sym1.moduleClass == sym2 &&
@@ -1276,7 +1283,6 @@ abstract class Types: SymbolTable {
 	  sym2.moduleClass == sym1 &&
 	  pre2 =:= sym1.owner.thisType) =>
         true
-        */
       case Pair(ConstantType(value1), ConstantType(value2)) =>
 	value1 == value2
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>

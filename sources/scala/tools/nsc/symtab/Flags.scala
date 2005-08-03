@@ -23,7 +23,7 @@ object Flags {
   final val DEFERRED      = 0x00000100;   // was `abstract' for members
   final val METHOD        = 0x00000200;   // a def parameter
   final val TRAIT         = 0x00000400;   // a trait
-  final val MODULE        = 0x00000800;   // symbol is module or class implementing a module
+  final val INTERFACE     = 0x00000800;   // symbol is an interface
 
   final val MUTABLE       = 0x00001000;   // symbol is a mutable variable.
   final val PARAM         = 0x00002000;   // symbol is a (value or type) parameter to a method
@@ -43,7 +43,7 @@ object Flags {
   final val STATIC        = 0x00800000;   // static field, method or class
 
   final val ACCESSED      = 0x01000000;   // symbol was accessed at least once
-  final val SELECTOR      = 0x02000000;   // symbol was used as selector in Select
+  final val MODULE        = 0x02000000;   // symbol is module or class implementing a module
   final val BRIDGE        = 0x04000000;  // function is a bridge method. Set by Erasure
   final val ACCESSOR      = 0x08000000;   // a value or variable accessor
 
@@ -55,19 +55,30 @@ object Flags {
   final val LABEL         = 0x40000000;   // symbol is a label. Set by TailCall
   final val CAPTURED      = 0x80000000l;   // variable is accessed from nested function. Set by LambdaLift
 
-  final val INTERFACE     = 0x100000000l; // symbol is an interface
-  final val IS_ERROR      = 0x200000000l; // symbol is an error symbol
-  final val OVERLOADED    = 0x400000000l; // symbol is overloaded
+  final val IS_ERROR      = 0x100000000l; // symbol is an error symbol
+  final val OVERLOADED    = 0x200000000l; // symbol is overloaded
 
-  final val TRANS_FLAG    = 0x800000000l; // transient flag guaranteed to be reset after each phase.
+  final val TRANS_FLAG    = 0x400000000l; // transient flag guaranteed to be reset after each phase.
   final val LIFTED        = TRANS_FLAG;   // transient flag for lambdalift
   final val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
 
   final val INITIALIZED   = 0x1000000000l; // symbol's definition is complete
   final val LOCKED        = 0x2000000000l; // temporary flag to catch cyclic dependencies
 
+  final val InitialFlags  = 0x000000FFFFFFFFFFl;       // flags that are enabled from phase 1.
+  final val LateFlags     = 0x000FFF0000000000l;    // flags that override flags in 0xFFF.
+  final val AntiFlags     = 0x7FF0000000000000l; // flags that cancel flags in 0x7FF
+  final val LateShift     = 40l;
+  final val AntiShift     = 52l;
+
+  // late flags (set by a transformer phase)
+  final val lateDEFERRED = (DEFERRED: long) << LateShift;
+  final val lateINTERFACE = (INTERFACE: long) << LateShift;
+  final val notPRIVATE   = (PRIVATE: long) << AntiShift;
+  final val notPROTECTED = (PROTECTED: long) << AntiShift;
+
   // masks
-  final val SourceFlags   = 0x001FFFFF;    // these modifiers can be set in source programs.
+  final val SourceFlags   = 0x002FFFFF;    // these modifiers can be set in source programs.
   final val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
   final val PrintableFlags =               // these modifiers appear in TreePrinter output.
@@ -132,7 +143,6 @@ object Flags {
       case STATIC        => "<static>"
 
       case ACCESSED      => "<accessed>"
-      case SELECTOR      => "<selector>"
       case ACCESSOR      => "<accessor>"
 
       case ACCESS_METHOD => "<access>"

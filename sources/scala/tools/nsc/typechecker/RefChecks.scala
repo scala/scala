@@ -439,13 +439,13 @@ abstract class RefChecks extends Transform {
       if (clazz hasFlag CASE) {
 	ts += tagMethod;
 	if (clazz.isModuleClass) {
-	  ts += moduleToStringMethod;
+	  if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod;
 	  if (clazz.isSubClass(SerializableClass)) {
 	    // If you serialize a singleton and then deserialize it twice,
 	    // you will have two instances of your singleton, unless you implement
 	    // the readResolve() method (see http://www.javaworld.com/javaworld/
 	    // jw-04-2003/jw-0425-designpatterns_p.html)
-	    ts += readResolveMethod;
+	    if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
 	  }
 	} else {
 	  ts += caseElementMethod;
@@ -473,10 +473,11 @@ abstract class RefChecks extends Transform {
     }
 
     def transformStat(tree: Tree, index: int): List[Tree] = tree match {
-      case ModuleDef(_, name, impl) =>
+      case ModuleDef(mods, name, impl) =>
 	val sym = tree.symbol;
-        //val localTyper = typer.atOwner(currentOwner);
-	val cdef = typed(ClassDef(sym.moduleClass, impl));
+        val localTyper = typer.atOwner(currentOwner);
+	val cdef = ClassDef(mods | MODULE, name, List(), EmptyTree, impl)
+	  setSymbol sym.moduleClass setType NoType;
 	if (sym.isStatic) List(transform(cdef))
 	else {
           val moduleType = sym.tpe;
@@ -487,12 +488,13 @@ abstract class RefChecks extends Transform {
 	    mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
 	    sym.owner.info.decls.enter(mvar);
 	  }
-          val vdef = typed(ValDef(mvar, if (sym.isLocal) Literal(Constant(null)) else EmptyTree));
+          val vdef = localTyper.typed(
+	    ValDef(mvar, if (sym.isLocal) Literal(Constant(null)) else EmptyTree));
 
           // def m: T = { if (m$ == null) m$ = new m$class; m$ }
           sym.setFlag(METHOD | STABLE);
           sym.setInfo(PolyType(List(), moduleType));
-          val ddef = typed(
+          val ddef = localTyper.typed(
             DefDef(sym, vparamss =>
               Block(
 		List(
@@ -591,7 +593,6 @@ abstract class RefChecks extends Transform {
 	    result = toConstructor
 	  else {
 	    sym setFlag ACCESSED;
-	    if (!treeInfo.isSelf(qual, currentOwner.enclClass)) sym.flags = sym.flags | SELECTOR;
 	    if (sym hasFlag DEFERRED) {
 	      qual match {
 		case Super(qualifier, mixin) =>

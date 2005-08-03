@@ -19,7 +19,6 @@ abstract class SymbolTable extends Names
   def rootLoader: LazyType;
   def log(msg: Object): unit;
 
-  private var CNT = 0;
   private var ph: Phase = NoPhase;
   def phase: Phase = ph;
   def phase_=(p: Phase): unit = {

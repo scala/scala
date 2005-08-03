@@ -31,13 +31,16 @@ abstract class Infer: Analyzer {
   /** A fresh type varable with given type parameter as origin. */
   def freshVar(tparam: Symbol): TypeVar = new TypeVar(tparam.tpe, new TypeConstraint);
 
-  private class NoInstance(msg: String) extends RuntimeException(msg);
+  //todo: remove comments around following privates; right now they cause an IllegalAccess
+  // error when built with scalac
 
-  private class DeferredNoInstance(getmsg: () => String) extends NoInstance("") {
+  /*private*/ class NoInstance(msg: String) extends RuntimeException(msg);
+
+  /*private*/ class DeferredNoInstance(getmsg: () => String) extends NoInstance("") {
     override def getMessage(): String = getmsg()
   }
 
-  private object instantiateMap extends TypeMap {
+  /*private*/ object instantiateMap extends TypeMap {
     def apply(t: Type): Type = instantiate(t)
   }
 
@@ -209,6 +212,8 @@ abstract class Infer: Analyzer {
       } else {
 	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
 	if (sym1 == NoSymbol) {
+	  if (settings.debug.value) System.out.println(context);
+          System.out.println(tree);
 	  errorTree(tree, sym.toString() + " cannot be accessed in " + pre.widen)
 	} else {
           var owntype = pre.memberType(sym1);
@@ -395,7 +400,7 @@ abstract class Infer: Analyzer {
      *  given two prototypes `strictPt', and `lenientPt'.
      *  `strictPt' is the first attempt prototype where type parameters
      *  are left unchanged. `lenientPt' is the fall-back prototype where type parameters
-     *  are replaced by `AnyType's. We try to instantiate first to `strictPt' and then,
+     *  are replaced by `WildcardType's. We try to instantiate first to `strictPt' and then,
      *  if this fails, to `lenientPt'. If both attempts fail, an error is produced.
      */
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol], strictPt: Type, lenientPt: Type): unit = {

@@ -128,20 +128,21 @@ trait Namers: Analyzer {
 	    val namer = new Namer(
 	      context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls));
 	    namer.enterSyms(stats);
-	  case ClassDef(mods, name, tparams, _, _) =>
+	  case ClassDef(mods, name, tparams, _, impl) =>
 	    if ((mods & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
 		tree.pos, mods & AccessFlags | METHOD | CASE, name.toTermName)
 		setInfo innerNamer.caseFactoryCompleter(tree)
-	    }
-	    tree.symbol = enterClassSymbol(tree.pos, mods, name);
+            }
+	    val mods1: int = if (impl.body forall treeInfo.isInterfaceMember) mods | INTERFACE else mods;
+	    tree.symbol = enterClassSymbol(tree.pos, mods1, name);
 	    finishWith(tparams)
 	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods | MODULE | FINAL, name);
 	    tree.symbol.moduleClass.setInfo(innerNamer.typeCompleter(tree));
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>
-            if (context.owner.isClass & (mods & PRIVATE) == 0) {
+            if (context.owner.isClass & (mods & LOCAL) == 0) {
 	      val accmods = ACCESSOR | (if ((mods & MUTABLE) != 0) mods & ~MUTABLE
                                         else mods | STABLE);
 	      val getter = owner.newMethod(tree.pos, name)

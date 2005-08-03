@@ -107,7 +107,7 @@ abstract class UnCurry extends InfoTransform {
 	List.map2(formals, args1) ((formal, arg) =>
 	  if (formal.symbol != ByNameParamClass) arg
 	  else if (isByNameRef(arg)) arg setType functionType(List(), arg.tpe)
-	  else typed(Function(List(), arg) setPos arg.pos))
+	  else typer.atOwner(currentOwner).typed(Function(List(), arg) setPos arg.pos))
       }
     }
 
@@ -139,6 +139,8 @@ abstract class UnCurry extends InfoTransform {
 	  tree
 	}
       tree match {
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          copy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs);
 	case Apply(Apply(fn, args), args1) =>
 	  copy.Apply(tree, fn, args ::: args1)
 	case Ident(name) =>

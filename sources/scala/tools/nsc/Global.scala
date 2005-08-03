@@ -12,7 +12,7 @@ import scala.collection.mutable.{HashSet,HashMap}
 
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
-import util._;
+import util.ListBuffer;
 import ast._;
 import ast.parser._;
 import typechecker._;
@@ -132,6 +132,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
 // Phases ------------------------------------------------------------
 
+  var globalPhase: Phase = NoPhase;
+
+  override def phase_=(p: Phase): unit = {
+    assert(p.id <= globalPhase.id + 1);
+    super.phase_=(p)
+  }
+
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     def run: unit = units foreach applyPhase;
     def apply(unit: CompilationUnit): unit;
@@ -170,6 +177,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object transMatcher extends TransMatcher {
     val global: Global.this.type = Global.this;
   }
+
+  object explicitOuter extends ExplicitOuter {
+    val global: Global.this.type = Global.this;
+  }
+
   object erasure extends Erasure {
     val global: Global.this.type = Global.this;
   }
@@ -194,8 +206,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     uncurry,
     tailCalls,
     transMatcher,
+    explicitOuter,
     erasure,
-    sampleTransform);
+    if (settings.Xshowicode.value) genicode
+    else sampleTransform);
 
   val parserPhase = syntaxAnalyzer.newPhase(NoPhase);
   val firstPhase = parserPhase;
@@ -212,17 +226,20 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
   }
 
-  // temporary: icode is turned on explicitely
-  if (settings.Xshowicode.value)
-    p = genicode.newPhase(p);
-
   val terminalPhase = new GlobalPhase(p) {
     def name = "terminal";
     def apply(unit: CompilationUnit): unit = {}
   }
 
-  val namerPhase = parserPhase.next;
-  val typerPhase = namerPhase.next;
+  def phaseNamed(name: String): Phase = {
+    var p: Phase = firstPhase;
+    while (p.next != p && p.name != name) p = p.next;
+    if (p.name != name) NoPhase else p
+  }
+
+  val namerPhase = phaseNamed("namer");
+  val typerPhase = phaseNamed("typer");
+  val erasurePhase = phaseNamed("erasure");
 
   val typer = new analyzer.Typer(analyzer.NoContext.make(EmptyTree, definitions.RootClass, new Scope())) {
     override def typed(tree: Tree, mode: int, pt: Type): Tree = {
@@ -251,8 +268,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   /** A map from compiled top-level symbols to their picklers */
   val symData = new HashMap[Symbol, PickleBuffer];
-
-  var globalPhase: Phase = NoPhase;
 
   def compileSources(sources: List[SourceFile]): unit = {
     val startTime = System.currentTimeMillis();

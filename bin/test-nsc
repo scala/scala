@@ -2,19 +2,19 @@
 alias scala      java -Xms16m -ea -classpath /home/linuxsoft/apps/java-1.4.2_08/jre/lib/rt.jar:$HOME/scala/objects/main/lib/scala:$HOME/scala/objects/main/lib/tools:/tmp/classes
 alias scala-debug scala -Djava.compiler=NONE
 alias nsc        "scala scala.tools.nsc.Main -classpath "/tmp/newclasses:$HOME/scala/sources:$HOME/scala/newsources" -d /tmp/newclasses"
-nsc -verbose -prompt -nopredefs Predef.scala runtime/ScalaRunTime.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt *.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt collection/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt collection/mutable/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt collection/immutable/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt concurrent/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt io/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt mobile/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt runtime/*.scala runtime/*/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt text/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt testing/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt util/*/*.scala -skip:tailcalls -skip:transmatch -check:term
-nsc -verbose -prompt xml*.scala xml/*/*.scala -skip:tailcalls -skip:transmatch -check:term
+nsc -verbose -prompt -nopredefs Predef.scala runtime/ScalaRunTime.scala -check:term $*
+nsc -verbose -prompt *.scala -check:term $*
+nsc -verbose -prompt collection/*.scala -check:term $*
+nsc -verbose -prompt collection/mutable/*.scala -check:term $*
+nsc -verbose -prompt collection/immutable/*.scala -check:term $*
+nsc -verbose -prompt concurrent/*.scala -check:term $*
+nsc -verbose -prompt io/*.scala -check:term $*
+nsc -verbose -prompt mobile/*.scala -check:term $*
+nsc -verbose -prompt runtime/*.scala runtime/*/*.scala -check:term $*
+nsc -verbose -prompt text/*.scala -check:term $*
+nsc -verbose -prompt testing/*.scala -check:term $*
+nsc -verbose -prompt util/*/*.scala -check:term $*
+nsc -verbose -prompt xml*.scala xml/*/*.scala -check:term $*
 rm -r /tmp/newclasses/scala/tools/nsc
-nsc -verbose -prompt tools/nsc/*.scala -skip:tailcalls -skip:transmatch -check:term
+nsc -verbose -prompt tools/nsc/*.scala tools/nsc/matching/*.scala -check:term $*
 

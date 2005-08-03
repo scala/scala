@@ -24,6 +24,8 @@ abstract class Symbols: SymbolTable {
     val id = { ids = ids + 1; ids }
     private var rawflags: long = 0;
 
+    def setPos(pos: int): this.type = { this.pos = pos; this }
+
 // Creators -------------------------------------------------------------------
 
     final def newValue(pos: int, name: Name) =
@@ -100,7 +102,8 @@ abstract class Symbols: SymbolTable {
     final def isMethod = isTerm && hasFlag(METHOD);
     final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD;
     final def isLabel = isTerm && hasFlag(LABEL);
-    final def isConstructor = isTerm && name == nme.CONSTRUCTOR;
+    final def isConstructor = isTerm && (name == nme.CONSTRUCTOR);
+    final def isMixinConstructor = isTerm && (name == nme.MIXIN_CONSTRUCTOR);
     final def isModule = isTerm && hasFlag(MODULE);
     final def isPackage = isModule && hasFlag(PACKAGE);
     final def isThisSym = isTerm && name == nme.this_;
@@ -183,12 +186,15 @@ abstract class Symbols: SymbolTable {
 
 // Flags ----------------------------------------------------------------------------
 
-    final def flags = rawflags;
+    final def flags = {
+      val fs = rawflags & phase.flagMask;
+      (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
+    }
     final def flags_=(fs: long) = rawflags = fs;
     final def setFlag(mask: long): this.type = { rawflags = rawflags | mask; this }
     final def resetFlag(mask: long): this.type = { rawflags = rawflags & ~mask; this }
-    final def getFlag(mask: long): long = rawflags & mask;
-    final def hasFlag(mask: long): boolean = (rawflags & mask) != 0;
+    final def getFlag(mask: long): long = flags & mask;
+    final def hasFlag(mask: long): boolean = (flags & mask) != 0;
     final def resetFlags: unit = { rawflags = rawflags & SourceFlags }
 
 // Info and Type -------------------------------------------------------------------
@@ -217,12 +223,14 @@ abstract class Symbols: SymbolTable {
         }
         rawflags = rawflags | LOCKED;
 	val current = phase;
-	phase = infos.start;
-        tp.complete(this);
-	// if (settings.debug.value && (rawflags & INITIALIZED) != 0) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
-
-        rawflags = rawflags & ~LOCKED;
-	phase = current;
+        try {
+	  phase = infos.start;
+          tp.complete(this);
+	  // if (settings.debug.value && (rawflags & INITIALIZED) != 0) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
+          rawflags = rawflags & ~LOCKED
+        } finally {
+	  phase = current
+        }
 	cnt = cnt + 1;
 	// allow for two completions:
 	//   one: sourceCompleter to LazyType, two: LazyType to completed type
@@ -233,7 +241,6 @@ abstract class Symbols: SymbolTable {
 
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
-      if (name == newTypeName("Array") && info.isInstanceOf[PolyType]) assert(info.typeParams.length == 1, info);
       if (limit == NoPhase) {
         assert(phase != NoPhase);
         infos = new TypeHistory(phase, info, null);
@@ -285,7 +292,7 @@ abstract class Symbols: SymbolTable {
     }
 
     /** Initialize the symbol */
-    final def initialize: Symbol = {
+    final def initialize: this.type = {
       if ((rawflags & INITIALIZED) == 0) info;
       this
     }
@@ -403,6 +410,9 @@ abstract class Symbols: SymbolTable {
 
     /** The primary constructor of a class */
     def primaryConstructor: Symbol = info.decl(nme.CONSTRUCTOR).alternatives.head;
+
+    /** The (primary) trait constructor of (the implementation class of) a mixin */
+    def mixinConstructor: Symbol = info.decl(nme.MIXIN_CONSTRUCTOR);
 
     /** The self symbol of a class with explicit self type, or else the symbol itself.
      */
@@ -605,6 +615,8 @@ abstract class Symbols: SymbolTable {
 	}
     }
 
+    def infosString = infos.toString();
+
     /** String representation of symbol's variance */
     private def varianceString: String =
       if (variance == 1) "+"
@@ -702,8 +714,8 @@ abstract class Symbols: SymbolTable {
         thisTypePhase = phase;
         if (!isValid(p)) {
 	  thisTypeCache =
-	    if (isModuleClass && !isRoot) {
-	      assert(sourceModule != NoSymbol);
+	    if (isModuleClass && !isRoot && !phase.erasedTypes) {
+	      assert(sourceModule != NoSymbol, "" + this + " " + phase);
 	      singleType(owner.thisType, sourceModule);
 	    } else ThisType(this);
         }
@@ -765,5 +777,5 @@ abstract class Symbols: SymbolTable {
   case class CyclicReference(sym: Symbol, info: Type) extends TypeError("illegal cyclic reference involving " + sym);
 
   /** A class for type histories */
-  private class TypeHistory(val start: Phase, val info: Type, val prev: TypeHistory);
+  private case class TypeHistory(start: Phase, info: Type, prev: TypeHistory);
 }

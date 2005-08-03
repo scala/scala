@@ -34,6 +34,21 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** Is tree legal as a member definition of an interface?
+   */
+  def isInterfaceMember(tree: Tree): boolean = tree match {
+    case EmptyTree                     => true
+    case Import(_, _)                  => true
+    case AbsTypeDef(_, _, _, _)        => true
+    case AliasTypeDef(_, _, _, _)      => true
+    case DefDef(mods, _, _, _, _, __)  => (mods & DEFERRED) != 0
+    case ValDef(mods, _, _, _)         => (mods & DEFERRED) != 0
+    case DocDef(_, definition)         => isInterfaceMember(definition)
+    case Attributed(_, definition)     => isInterfaceMember(definition)
+    case _ => false
+  }
+
+
   /** Is tree a pure definition?
    */
   def isPureDef(tree: Tree): boolean = tree match {
@@ -43,11 +58,13 @@ abstract class TreeInfo {
        | AbsTypeDef(_, _, _, _)
        | AliasTypeDef(_, _, _, _)
        | Import(_, _)
-       | DefDef(_, nme.CONSTRUCTOR, _, _, _, _) =>
+       | DefDef(_, _, _, _, _, _) =>
       true
     case ValDef(mods, _, _, rhs) =>
       (mods & MUTABLE) == 0 && isPureExpr(rhs)
     case DocDef(_, definition) =>
+      isPureDef(definition)
+    case Attributed(_, definition) =>
       isPureDef(definition)
     case _ =>
       false

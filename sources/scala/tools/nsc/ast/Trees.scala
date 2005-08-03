@@ -38,6 +38,8 @@ abstract class Trees: Global {
       buffer.toString()
     }
 
+    override def hashCode(): int = super.hashCode();
+
     override def equals(that: Any): boolean = that match {
       case t: Tree => this eq t
       case _ => false
@@ -83,6 +85,17 @@ abstract class Trees: Global {
       owner.newValueParameter(owner.pos, freshName()).setInfo(formal);
   }
 
+  private def syntheticParams(owner: Symbol, mtp: Type): List[List[Symbol]] = mtp match {
+    case PolyType(_, restp) =>
+      syntheticParams(owner, restp)
+    case MethodType(formals, restp) =>
+      syntheticParams(owner, formals) :: syntheticParams(owner, restp)
+    case _ =>
+      List()
+  }
+
+//  def nextPhase = if (phase.id > globalPhase.id) phase else phase.next;
+
 // ----- tree node alternatives --------------------------------------
 
   /** The empty tree */
@@ -105,13 +118,11 @@ abstract class Trees: Global {
 
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     posAssigner.atPos(sym.pos) {
-      atPhase(phase.next) {
-        ClassDef(flags2mods(sym.flags),
-                 sym.name,
-                 sym.typeParams map AbsTypeDef,
-                 TypeTree(sym.typeOfThis),
-                 impl) setSymbol sym
-      }
+      ClassDef(flags2mods(sym.flags),
+               sym.name,
+               sym.typeParams map AbsTypeDef,
+               if (sym.thisSym == sym) EmptyTree else TypeTree(sym.typeOfThis),
+               impl) setSymbol sym
     }
 
   /** Construct class definition with given class symbol, value parameters, supercall arguments
@@ -130,9 +141,7 @@ abstract class Trees: Global {
 
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     posAssigner.atPos(sym.pos) {
-      atPhase(phase.next) {
-        ModuleDef(flags2mods(sym.flags), sym.name, impl)
-      }
+      ModuleDef(flags2mods(sym.flags), sym.name, impl)
     }
 
   /** Value definition */
@@ -143,9 +152,7 @@ abstract class Trees: Global {
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
     posAssigner.atPos(sym.pos) {
-      atPhase(phase.next) {
-	ValDef(flags2mods(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
-      }
+      ValDef(flags2mods(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
     }
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree);
@@ -154,29 +161,24 @@ abstract class Trees: Global {
   case class DefDef(mods: int, name: Name, tparams: List[AbsTypeDef],
 		    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
        extends DefTree {
-    assert(tpt.isType); assert(rhs.isTerm);
-  }
+	 assert(tpt.isType);
+	 assert(rhs.isTerm);
+       }
 
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
+  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     posAssigner.atPos(sym.pos) {
-      atPhase(phase.next) {
-        def mk(tparams: List[Symbol], vparamss: List[List[Symbol]], tpe: Type): DefDef = tpe match {
-          case PolyType(tparams, restpe) =>
-            mk(tparams, List(), restpe)
-          case MethodType(formals, restpe) =>
-            mk(tparams, vparamss ::: List(syntheticParams(sym, formals)), restpe)
-          case _ =>
-            DefDef(
-              flags2mods(sym.flags),
-              sym.name,
-              tparams map AbsTypeDef,
-              vparamss map (.map(ValDef)),
-              TypeTree(tpe),
-              rhs(vparamss)) setSymbol sym
-        }
-        mk(List(), List(), sym.tpe)
-      }
+      DefDef(flags2mods(sym.flags),
+             sym.name,
+             sym.typeParams map AbsTypeDef,
+             vparamss,
+             TypeTree(sym.tpe.finalResultType),
+             rhs) setSymbol sym
     }
+
+  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = {
+    val vparamss = syntheticParams(sym, sym.tpe);
+    DefDef(sym, vparamss map (.map(ValDef)), rhs(vparamss));
+  }
 
   /** Abstract type or type parameter */
   case class AbsTypeDef(mods: int, name: Name, lo: Tree, hi: Tree)
@@ -184,10 +186,8 @@ abstract class Trees: Global {
 
   def AbsTypeDef(sym: Symbol): AbsTypeDef =
     posAssigner.atPos(sym.pos) {
-      atPhase(phase.next) {
-        AbsTypeDef(flags2mods(sym.flags), sym.name,
-                   TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi))
-      }
+      AbsTypeDef(flags2mods(sym.flags), sym.name,
+                 TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi))
     }
 
   /** Type alias */
@@ -196,9 +196,7 @@ abstract class Trees: Global {
 
   def AliasTypeDef(sym: Symbol, rhs: Tree): AliasTypeDef =
     posAssigner.atPos(sym.pos) {
-      atPhase(phase.next) {
-        AliasTypeDef(flags2mods(sym.flags), sym.name, sym.typeParams map AbsTypeDef, rhs)
-      }
+      AliasTypeDef(flags2mods(sym.flags), sym.name, sym.typeParams map AbsTypeDef, rhs)
     }
 
   /** Labelled expression - the symbols in the array (must be Idents!)
@@ -211,13 +209,13 @@ abstract class Trees: Global {
    *       jumps within a Block.
    */
   case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
-       extends DefTree with TermTree;
+       extends DefTree with TermTree {
+	 assert(rhs.isTerm);
+       }
 
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
     posAssigner.atPos(sym.pos) {
-      atPhase(phase.next) {
-        LabelDef(sym.name, params map Ident, rhs) setSymbol sym
-      }
+      LabelDef(sym.name, params map Ident, rhs) setSymbol sym
     }
 
   /** Import clause */
@@ -811,7 +809,7 @@ abstract class Trees: Global {
         tree
       case PackageDef(name, stats) =>
 	atOwner(tree.symbol.moduleClass) {
-          copy.PackageDef(tree, name, transformTrees(stats))
+          copy.PackageDef(tree, name, transformStats(stats, currentOwner))
 	}
       case ClassDef(mods, name, tparams, tpt, impl) =>
 	atOwner(tree.symbol) {
@@ -911,7 +909,7 @@ abstract class Trees: Global {
     def transformTemplate(tree: Template): Template =
       transform(tree: Tree).asInstanceOf[Template];
     def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =
-      List.mapConserve(trees)(tree=> transform(tree).asInstanceOf[AbsTypeDef]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[AbsTypeDef]);
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
       List.mapConserve(trees)(tree => transform(tree).asInstanceOf[ValDef]);
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
@@ -937,13 +935,15 @@ abstract class Trees: Global {
   class Traverser {
     protected var currentOwner: Symbol = definitions.RootClass;
     def traverse(tree: Tree): unit = tree match {
-      case ClassDef(mods, name, tparams, tpt, impl) =>
-	atOwner(tree.symbol.moduleClass) {
-          traverseTrees(tparams); traverse(tpt); traverse(impl)
-	}
+      case EmptyTree =>
+        ;
       case PackageDef(name, stats) =>
 	atOwner(tree.symbol) {
           traverseTrees(stats)
+	}
+      case ClassDef(mods, name, tparams, tpt, impl) =>
+	atOwner(tree.symbol.moduleClass) {
+          traverseTrees(tparams); traverse(tpt); traverse(impl)
 	}
       case ModuleDef(mods, name, impl) =>
 	atOwner(tree.symbol.moduleClass) {
@@ -1011,8 +1011,18 @@ abstract class Trees: Global {
         traverse(fun); traverseTrees(args)
       case Apply(fun, args) =>
         traverse(fun); traverseTrees(args)
+      case Super(_, _) =>
+        ;
+      case This(_) =>
+        ;
       case Select(qualifier, selector) =>
         traverse(qualifier)
+      case Ident(_) =>
+        ;
+      case Literal(_) =>
+        ;
+      case TypeTree() =>
+        ;
       case SingletonTypeTree(ref) =>
         traverse(ref)
       case SelectFromTypeTree(qualifier, selector) =>
@@ -1021,8 +1031,6 @@ abstract class Trees: Global {
         traverse(templ)
       case AppliedTypeTree(tpt, args) =>
         traverse(tpt); traverseTrees(args)
-      case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | TypeTree() =>
-	{}
     }
 
     def traverseTrees(trees: List[Tree]): unit =

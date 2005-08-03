@@ -237,7 +237,8 @@ with RightTracers {
         }.construct( matcher, cases );
         matcher.tree
 		*/
-		scala.Predef.error("not yet implemented");
+                System.out.println("" + sel + " match " + ocases);
+		scala.Predef.error("regular expressions not yet implemented");
       } else {
         val pm = new PatternMatcher();
         pm.initialize(sel, currentOwner, true );

@@ -11,7 +11,7 @@ import Flags._;
 import scala.tools.util.Position;
 import util.ListBuffer;
 
-abstract class Erasure extends InfoTransform with typechecker.Analyzer {
+abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   import global._;                  // the global environment
   import definitions._;             // standard classes and methods
   import typer.{typed};             // methods to type trees
@@ -40,14 +40,12 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
    *   - For a polymorphic type, the erasure of its result type
    *   - For the class info type of java.lang.Object, the same type without any parents
    *   - For a class info type of a value class, the same type without any parents
-   *   - For any other class info type with parents Ps, the same type with parents |Ps}, but
+   *   - For any other class info type with parents Ps, the same type with parents |Ps|, but
    *     with duplicate references of Object removed.
    *   - for all other types, the type itself (with any sub-components erased)
    */
   private val erasure = new TypeMap {
     def apply(tp: Type): Type = tp match {
-      case ConstantType(value) =>
-        tp
       case st: SubType =>
 	apply(st.supertype)
       case TypeRef(pre, sym, args) =>
@@ -81,9 +79,10 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
   }
 
   /** Type reference after erasure */
-  private def erasedTypeRef(sym: Symbol): Type = typeRef(erasure(sym.owner.tpe), sym, List());
+  def erasedTypeRef(sym: Symbol): Type = typeRef(erasure(sym.owner.tpe), sym, List());
 
   /** Remove duplicate references to class Object in a list of parent classes
+   * todo: needed?
    */
   private def removeDoubleObject(tps: List[Type]): List[Type] = tps match {
     case List() => List()
@@ -93,26 +92,35 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
   }
 
   /** The symbol's erased info. This is the type's erasure, except for the following symbols
-   *   - For $asInstanceOf      : [T]T
-   *   - For $isInstanceOf      : [T]scala#Boolean
-   *   - For class Array        : [T]C where C is the erased classinfo of the Array class
-   *   - For the Array[T].<init>: {scala#Int)Array[T]
-   *   - For a type parameter   : A type bounds type consisting of the erasures of its bounds.
+   *   - For $asInstanceOf    : [T]T
+   *   - For $isInstanceOf    : [T]scala#Boolean
+   *   - For class Array      : [T]C where C is the erased classinfo of the Array class
+   *   - For Array[T].<init>  : {scala#Int)Array[T]
+   *   - For a type parameter : A type bounds type consisting of the erasures of its bounds.
    */
   def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym == Object_asInstanceOf)
       sym.info
     else if (sym == Object_isInstanceOf || sym == ArrayClass)
       PolyType(sym.info.typeParams, erasure(sym.info.resultType))
-    else if (sym.name == nme.CONSTRUCTOR && sym.owner == ArrayClass)
-      tp match {
-	case MethodType(formals, TypeRef(pre, sym, args)) =>
-	  MethodType(formals map erasure, typeRef(erasure(pre), sym, args))
-      }
     else if (sym.isAbstractType)
-      erasure.mapOver(tp)
-    else
-      erasure(tp);
+      TypeBounds(WildcardType, WildcardType)
+    else if (sym.isTerm && sym.owner == ArrayClass) {
+      if (sym.isConstructor)
+        tp match {
+	  case MethodType(formals, TypeRef(pre, sym, args)) =>
+	    MethodType(formals map erasure, typeRef(erasure(pre), sym, args))
+        }
+      else if (sym.name == nme.apply)
+        tp
+      else if (sym.name == nme.update)
+        tp match {
+          case MethodType(List(index, tvar), restpe) =>
+            MethodType(List(erasure(index), tvar), erasure(restpe))
+        }
+      else erasure(tp)
+    } else
+      transformTraitInfo(erasure(tp));
 
 // -------- boxing/unboxing --------------------------------------------------------
 
@@ -127,7 +135,8 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
 	atPos(tree.pos) {
           val sym = tree.tpe.symbol;
 	  if (sym == UnitClass) {
-            gen.mkRef(BoxedUnit_UNIT)
+            if (treeInfo.isPureExpr(tree)) gen.mkRef(BoxedUnit_UNIT)
+            else Block(List(tree), gen.mkRef(BoxedUnit_UNIT))
           } else if (sym == ArrayClass) {
 	    val elemClass = tree.tpe.typeArgs.head.symbol;
 	    val boxedClass = if (isValueClass(elemClass)) boxedArraySym(elemClass)
@@ -172,7 +181,8 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
 
     /** Cast `tree' to type `pt' */
     private def cast(tree: Tree, pt: Type): Tree = {
-      if (settings.debug.value) log("casting " + tree + " to " + pt);
+      if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt);
+      assert(!tree.tpe.isInstanceOf[MethodType], tree);
       typed {
 	atPos(tree.pos) {
 	  Apply(TypeApply(Select(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
@@ -198,13 +208,21 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
         tree
       else if (isUnboxedClass(tree.tpe.symbol) && !isUnboxedClass(pt.symbol))
         adaptToType(box(tree), pt)
-      else if (pt <:< tree.tpe)
+      else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.paramTypes.isEmpty) {
+        assert(tree.symbol.isStable);
+        adaptToType(Apply(tree, List()) setType tree.tpe.resultType, pt)
+      } else if (pt <:< tree.tpe)
         cast(tree, pt)
       else if (isUnboxedClass(pt.symbol) && !isUnboxedClass(tree.tpe.symbol))
         adaptToType(unbox(tree, pt), pt)
       else
         cast(tree, pt)
     }
+
+    // todo: remove after removing ==, != from value classes
+    private def corresponds(sym: Symbol, anyMember: Symbol): boolean =
+      sym == anyMember ||
+      sym != NoSymbol && isValueClass(sym.owner) && sym.name == anyMember.name && sym.tpe == anyMember.tpe;
 
 
     /** Replace member references as follows:
@@ -226,9 +244,9 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
      */
     private def adaptMember(tree: Tree): Tree = tree match {
       case Apply(sel @ Select(qual, name), args) =>
-	if (sel.symbol == Any_==)
+	if (corresponds(sel.symbol, Any_==))
 	  Apply(Select(qual, Object_equals), args)
-	else if (sel.symbol == Any_!=)
+	else if (corresponds(sel.symbol, Any_!=))
 	  Apply(Select(Apply(Select(qual, Object_equals), args), Boolean_not), List())
 	else qual match {
 	  case New(tpt) =>
@@ -256,11 +274,18 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
                      tree.symbol != NoSymbol && isValueClass(tree.symbol.owner)) {
             qual1 = unbox(qual1, tree.symbol.owner.tpe)
           }
-	  if (tree.symbol != NoSymbol &&
-	      isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
-	    tree.symbol = NoSymbol;
+	  if (tree.symbol != NoSymbol)
+	    if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
+	      tree.symbol = NoSymbol
+            else if (qual.tpe.isInstanceOf[MethodType] && qual.tpe.paramTypes.isEmpty) {
+              assert(qual.symbol.isStable);
+              qual1 = Apply(qual, List()) setType qual.tpe.resultType;
+	    } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
+	      qual1 = cast(qual1, tree.symbol.owner.tpe);
 	  copy.Select(tree, qual1, name)
 	}
+      case Template(parents, body) =>
+	copy.Template(tree, tree.symbol.owner.info.parents map TypeTree, body)
       case _ =>
 	tree
     }
@@ -269,8 +294,9 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
     override protected def adapt(tree: Tree, mode: int, pt: Type): Tree = adaptToType(tree, pt);
 
     /** A replacement for the standard typer's `typed1' method */
-    override protected def typed1(tree: Tree, mode: int, pt: Type): Tree =
-      super.typed1(adaptMember(tree), mode, pt);
+    override protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
+      super.typed1(adaptMember(tree), mode, pt)
+    }
   }
 
   /** The erasure transformer */
@@ -284,7 +310,7 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
      *   - A template inherits two members `m' with different types,
      *     but their erased types are the same.
      */
-    private def checkNoDoubleDefs(root: Symbol): unit = atPhase(phase.next) {
+    private def checkNoDoubleDefs(root: Symbol): unit = {
       def doubleDefError(sym1: Symbol, sym2: Symbol) = {
 	val tpe1 = atPhase(typerPhase.next)(root.tpe.memberType(sym1));
 	val tpe2 = atPhase(typerPhase.next)(root.tpe.memberType(sym2));
@@ -298,16 +324,16 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
 	  sym2 + ":" + tpe2 +
 	    (if (sym2.owner == root) " at line " + Position.line(sym2.pos) else sym2.locationString) +
 	  "\nhave same type" +
-	  (if (tpe1 =:= tpe2) "" else " after erasure: " + sym1.tpe))
+	  (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
       }
 
       val decls = root.info.decls;
       var e = decls.elems;
       while (e != null) {
-        if (e.sym.isTerm && !e.sym.isConstructor) {
+        if (e.sym.isTerm && !e.sym.isConstructor && !e.sym.isMixinConstructor) {
 	  var e1 = decls.lookupNextEntry(e);
 	  while (e1 != null) {
-	    if (e1.sym.info =:= e.sym.info) doubleDefError(e.sym, e1.sym);
+	    if (atPhase(phase.next)(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym);
 	    e1 = decls.lookupNextEntry(e1)
 	  }
         }
@@ -315,12 +341,19 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
       }
 
       for (val bc <- root.info.baseClasses.tail; val other <- bc.info.decls.toList) {
-        if (other.isTerm && !other.isConstructor && !(other hasFlag PRIVATE)) {
+        if (other.isTerm &&
+            !other.isConstructor &&
+            !other.isMixinConstructor &&
+            !(other hasFlag (PRIVATE | BRIDGE))) {
           for (val member <- root.info.nonPrivateMember(other.name).alternatives) {
-            if (member != other && (member.tpe =:= other.tpe) &&
+            if (member != other &&
+		!(member hasFlag BRIDGE) &&
+                atPhase(phase.next)(member.tpe =:= other.tpe) &&
                 !atPhase(typerPhase.next)(
-                  root.tpe.memberType(member) =:= root.tpe.memberType(other)))
+                  root.thisType.memberType(member) matches root.thisType.memberType(other))) {
+	      if (settings.debug.value) log("" + member.locationString + " " + member.infosString + other.locationString + " " + other.infosString);
               doubleDefError(member, other)
+	    }
           }
         }
       }
@@ -336,12 +369,12 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
      *  in the template.
      */
     private def bridgeDefs(owner: Symbol): List[Tree] = {
-      val site = owner.tpe;
+      val site = owner.thisType;
       val bridgesScope = new Scope();
       val bridgeTarget = new HashMap[Symbol, Symbol];
       var bridges: List[Tree] = List();
       for (val bc <- site.baseClasses.tail; val other <- bc.info.members) {
-        if (other.isMethod && !other.isConstructor) {
+        if (other.isMethod && !other.isConstructor && !other.isMixinConstructor) {
 	  for (val member <- site.nonPrivateMember(other.name).alternatives) {
             if (member != other &&
                 !(member hasFlag DEFERRED) &&
@@ -354,17 +387,20 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
                 while (e != null && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
                   e = bridgesScope.lookupNextEntry(e);
                 if (e == null) {
-                  val bridge = other.cloneSymbol(owner).setInfo(otpe).setFlag(BRIDGE);
+                  val bridge = other.cloneSymbolImpl(owner)
+                     setPos(owner.pos) setFlag (member.flags | BRIDGE) setInfo otpe;
 		  if (settings.debug.value)
                     log("generating bridge from " + other + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + "=" + bridge + ":" + bridge.tpe);
                   bridgeTarget(bridge) = member;
                   bridgesScope enter bridge;
                   bridges =
-                    atPos(bridge.pos) {
-                      DefDef(bridge, vparamss =>
-                        ((Select(This(owner), bridgeTarget(bridge)): Tree) /: vparamss)
-                        ((fun, vparams) => Apply(fun, vparams map Ident)))
-                    } :: bridges;
+                    atPhase(phase.next) {
+                      atPos(bridge.pos) {
+                        DefDef(bridge, vparamss =>
+                          ((Select(This(owner), bridgeTarget(bridge)): Tree) /: vparamss)
+                          ((fun, vparams) => Apply(fun, vparams map Ident)))
+                      } :: bridges;
+                    }
                 }
               }
             }
@@ -386,7 +422,6 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
      *    - Reset all other type attributes to `null, thus enforcing a retyping.
      */
     private val preTransformer = new Transformer {
-      def elimEmpty(trees: List[Tree]): List[Tree] = trees filter (EmptyTree !=);
       override def transform(tree: Tree): Tree = {
         val tree1 = tree match {
           case ClassDef(mods, name, tparams, tpt, impl) =>
@@ -400,13 +435,10 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
           case TypeApply(fun, args) if (fun.symbol.owner != AnyClass) =>
             // leave type tests/type casts, remove all other type applications
             fun
-          case PackageDef(name, stats) =>
-            copy.PackageDef(tree, name, elimEmpty(stats))
           case Template(parents, body) =>
+	    //System.out.println("checking no dble defs " + tree);//DEBUG
             checkNoDoubleDefs(tree.symbol.owner);
-            copy.Template(tree, parents, elimEmpty(body) ::: bridgeDefs(currentOwner))
-          case Block(stats, expr) =>
-            copy.Block(tree, elimEmpty(stats), expr)
+            copy.Template(tree, parents, body ::: bridgeDefs(currentOwner));
           case _ =>
             tree
         }
@@ -428,7 +460,11 @@ abstract class Erasure extends InfoTransform with typechecker.Analyzer {
      */
     override def transform(tree: Tree): Tree = {
       val tree1 = preTransformer.transform(tree);
-      atPhase(phase.next) { newTyper(startContext).typed(tree1) }
+      atPhase(phase.next) {
+        val tree2 = traitTransformer.transform(tree1);
+        if (settings.debug.value) log("tree after addinterfaces: \n" + tree2);
+        newTyper(startContext).typed(tree2)
+      }
     }
   }
 }

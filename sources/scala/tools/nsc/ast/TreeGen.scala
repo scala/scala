@@ -33,9 +33,15 @@ abstract class TreeGen {
       }
     case TypeRef(pre, sym, args) =>
       assert(phase.erasedTypes);
-      (if (sym.isModuleClass && !sym.isRoot)
-	Select(mkQualifier(sym.owner.tpe), sym.sourceModule)
-       else This(sym)) setType sym.tpe
+      if (sym.isModuleClass && !sym.isRoot) {
+        val qual = Select(mkQualifier(sym.owner.tpe), sym.sourceModule);
+        qual.tpe match {
+	  case MethodType(List(), restpe) =>
+	    Apply(qual, List()) setType restpe
+          case _ =>
+            qual
+        }
+      } else This(sym)
   }
 
   /** Builds a reference to given symbol with given stable prefix. */
@@ -65,19 +71,19 @@ abstract class TreeGen {
   def mkStableRef(sym: Symbol): Tree  = stabilize(mkRef(sym));
 
   def This(sym: Symbol): Tree =
-    global.This(sym.name) setSymbol sym setType atPhase(phase.next)(sym.thisType);
+    global.This(sym.name) setSymbol sym setType sym.thisType;
 
   def Ident(sym: Symbol) = {
     assert(sym.isTerm);
     sym.setFlag(ACCESSED);
-    global.Ident(sym.name) setSymbol sym setType atPhase(phase.next)(sym.tpe);
+    global.Ident(sym.name) setSymbol sym setType sym.tpe;
   }
 
   def Select(qual: Tree, sym: Symbol) = {
     assert(sym.isTerm);
     sym.setFlag(ACCESSED);
     val result = global.Select(qual, sym.name) setSymbol sym;
-    if (qual.tpe != null) result setType atPhase(phase.next)(qual.tpe.memberType(sym));
+    if (qual.tpe != null) result setType qual.tpe.memberType(sym);
     result
   }
 
@@ -89,7 +95,6 @@ abstract class TreeGen {
         definitions.Any_isInstanceOfErased
       else
         definitions.Any_isInstanceOf;
-
     Apply(
       TypeApply(
         Select(value, sym),

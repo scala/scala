@@ -5,8 +5,15 @@
 // $Id$
 package scala.tools.nsc;
 
+import symtab.Flags;
+
 abstract class Phase(val prev: Phase) {
   val id: int = if (prev == null) 0 else prev.id + 1;
+
+  def newFlags: long = 0l;
+  private var fmask: long =
+    if (prev == null) Flags.InitialFlags else prev.flagMask | newFlags;
+  def flagMask: long = fmask;
 
   private var nx: Phase = this;
   if (prev != null) prev.nx = this;
@@ -16,7 +23,6 @@ abstract class Phase(val prev: Phase) {
   def name: String;
   def description: String = name;
   def erasedTypes: boolean = false;
-
   def run: unit;
 
   override def toString() = name;

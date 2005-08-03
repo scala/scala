@@ -568,10 +568,10 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
                     try {
                       funct(inner)
                     } catch {
-                      case Break(res1) =>
-                        res = res1;
+                      case ex: Break =>
+                        res = ex.res;
                         set = true;
-                      case Break2() =>
+                      case ex: Break2 =>
                     }
                     if(set) return res;
             case _ =>
