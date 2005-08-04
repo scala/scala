@@ -114,7 +114,7 @@ abstract class AddInterfaces extends InfoTransform {
         else {
           assert(!parents.head.symbol.isTrait);
           if (clazz hasFlag INTERFACE) erasedTypeRef(ObjectClass) :: parents.tail
-          else if (isImplClass(clazz)) parents
+          else if (isImplClass(clazz) || clazz == ArrayClass) parents
 	  else traitToImplClass(parents)
         }
       val decls1 = addImplClasses(

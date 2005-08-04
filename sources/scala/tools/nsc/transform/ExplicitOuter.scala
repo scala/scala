@@ -249,7 +249,7 @@ abstract class ExplicitOuter extends InfoTransform {
 		List(vparamss.head ::: List(ValDef(outerParam, EmptyTree)))
 	      }
 	    val rhs1 =
-	      if (sym.isPrimaryConstructor || sym.isMixinConstructor)
+	      if ((sym.isPrimaryConstructor || sym.isMixinConstructor) && sym.owner != ArrayClass)
 		addMixinConstructorCalls(rhs, sym.owner); // (3)
 	      else rhs;
 	    copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1);

@@ -9,6 +9,7 @@
 
 package scala;
 
+import Predef._;
 
 object Iterable {
   def view[A <% Ordered[A]](x: Iterable[A]): Ordered[Iterable[A]] = new Ordered[Iterable[A]] {

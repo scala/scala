@@ -423,6 +423,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private val preTransformer = new Transformer {
       override def transform(tree: Tree): Tree = {
+        if (tree.symbol == ArrayClass) return tree;
         val tree1 = tree match {
           case ClassDef(mods, name, tparams, tpt, impl) =>
             copy.ClassDef(tree, mods, name, List(), tpt, impl)
