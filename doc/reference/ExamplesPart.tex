@@ -205,7 +205,7 @@ For efficiency and better error diagnostics the \code{while} loop is a
 primitive construct in Scala. But in principle, it could have just as
 well been a predefined function. Here is a possible implementation of it:
 \begin{lstlisting}
-def While (def p: boolean) (def s: unit): unit =
+def While (p: => boolean) (s: => unit): unit =
       if (p) { s ; While(p)(s) }
 \end{lstlisting}
 The \code{While} function takes as first parameter a test function,
@@ -543,13 +543,13 @@ $\rightarrow$  first(1, loop)
 $\rightarrow$  ...
 \end{lstlisting}
 Scala uses call-by-value by default, but it switches to call-by-name evaluation
-if the parameter is preceded by \code{def}.
+if the parameter type is preceded by \code{=>}.
 
 \example\ 
  
 \begin{lstlisting}
-> def constOne(x: int, def y: int) = 1
-constOne(x: scala.Int, def y: scala.Int): scala.Int
+> def constOne(x: int, y: => int) = 1
+constOne(x: scala.Int, y: => scala.Int): scala.Int
 
 > constOne(1, loop)
 1: scala.Int
@@ -817,7 +817,7 @@ As a motivating example, consider the following three related tasks:
 Write a function to sum all integers between two given numbers \code{a} and \code{b}:
 \begin{lstlisting}
 def sumInts(a: int, b: int): int =
-  if (a > b) 0 else a + sumInts(a + 1, b)
+  if (a > b) 0 else a + sumInts(a + 1, b);
 \end{lstlisting}
 \item 
 Write a function to sum the squares of all integers between two given numbers 
@@ -825,7 +825,7 @@ Write a function to sum the squares of all integers between two given numbers
 \begin{lstlisting}
 def square(x: int): int = x * x;
 def sumSquares(a: int, b: int): int =
-  if (a > b) 0 else square(a) + sumSquares(a + 1, b)
+  if (a > b) 0 else square(a) + sumSquares(a + 1, b);
 \end{lstlisting}
 \item
 Write a function to sum the powers $2^n$ of all integers $n$ between
@@ -833,7 +833,7 @@ two given numbers \code{a} and \code{b}:
 \begin{lstlisting}
 def powerOfTwo(x: int): int = if (x == 0) 1 else x * powerOfTwo(x - 1);
 def sumPowersOfTwo(a: int, b: int): int =
-  if (a > b) 0 else powerOfTwo(a) + sumPowersOfTwo(a + 1, b)
+  if (a > b) 0 else powerOfTwo(a) + sumPowersOfTwo(a + 1, b);
 \end{lstlisting}
 \end{enumerate}
 These functions are all instances of
@@ -841,7 +841,7 @@ These functions are all instances of
 We can factor out the common pattern by defining a function \code{sum}:
 \begin{lstlisting}
 def sum(f: int => int, a: int, b: int): double =
-  if (a > b) 0 else f(a) + sum(f, a + 1, b)
+  if (a > b) 0 else f(a) + sum(f, a + 1, b);
 \end{lstlisting}
 The type \code{int => int} is the type of functions that
 take arguments of type \code{int} and return results of type
@@ -982,7 +982,7 @@ special syntax for it. For instance, the next definition of \code{sum}
 is equivalent to the previous one, but is shorter:
 \begin{lstlisting}
 def sum(f: int => int)(a: int, b: int): int =
-  if (a > b) 0 else f(a) + sum(f)(a + 1, b)
+  if (a > b) 0 else f(a) + sum(f)(a + 1, b);
 \end{lstlisting}
 Generally, a curried function definition 
 \begin{lstlisting}
@@ -1138,12 +1138,12 @@ Then we made the iteration converge by averaging successive values.
 This technique of {\em average damping} is so general that it
 can be wrapped in another function.
 \begin{lstlisting}
-def averageDamp(f: double => double)(x: double) = (x + f(x)) / 2
+def averageDamp(f: double => double)(x: double) = (x + f(x)) / 2;
 \end{lstlisting}
 Using \code{averageDamp}, we can reformulate the square root function
 as follows.
 \begin{lstlisting}
-def sqrt(x: double) = fixedPoint(averageDamp(y => x/y))(1.0)
+def sqrt(x: double) = fixedPoint(averageDamp(y => x/y))(1.0);
 \end{lstlisting}
 This expresses the elements of the algorithm as clearly as possible.
 
@@ -1650,16 +1650,16 @@ Here is a specification of class \code{Boolean}.
 \begin{lstlisting}
 package scala;
 trait Boolean {
-  def && (def x: Boolean): Boolean;
-  def || (def x: Boolean): Boolean;
-  def !                  : Boolean;
+  def && (x: => Boolean): Boolean;
+  def || (x: => Boolean): Boolean;
+  def !                 : Boolean;
 
-  def == (x: Boolean)    : Boolean
-  def != (x: Boolean)    : Boolean
-  def <  (x: Boolean)    : Boolean
-  def >  (x: Boolean)    : Boolean
-  def <= (x: Boolean)    : Boolean
-  def >= (x: Boolean)    : Boolean
+  def == (x: Boolean)   : Boolean;
+  def != (x: Boolean)   : Boolean;
+  def <  (x: Boolean)   : Boolean;
+  def >  (x: Boolean)   : Boolean;
+  def <= (x: Boolean)   : Boolean;
+  def >= (x: Boolean)   : Boolean;
 }
 \end{lstlisting}
 Booleans can be defined using only classes and objects, without
@@ -1671,24 +1671,24 @@ booleans.
 \begin{lstlisting}
 package scala;
 trait Boolean {
-  def ifThenElse(def thenpart: Boolean, def elsepart: Boolean)
+  def ifThenElse(thenpart: => Boolean, elsepart: => Boolean)
 
-  def && (def x: Boolean): Boolean  =  ifThenElse(x, false);
-  def || (def x: Boolean): Boolean  =  ifThenElse(true, x);
-  def !                  : Boolean  =  ifThenElse(false, true);
+  def && (x: => Boolean): Boolean  =  ifThenElse(x, false);
+  def || (x: => Boolean): Boolean  =  ifThenElse(true, x);
+  def !                 : Boolean  =  ifThenElse(false, true);
 
-  def == (x: Boolean)    : Boolean  =  ifThenElse(x, x.!);
-  def != (x: Boolean)    : Boolean  =  ifThenElse(x.!, x);
-  def <  (x: Boolean)    : Boolean  =  ifThenElse(false, x);
-  def >  (x: Boolean)    : Boolean  =  ifThenElse(x.!, false);
-  def <= (x: Boolean)    : Boolean  =  ifThenElse(x, true);
-  def >= (x: Boolean)    : Boolean  =  ifThenElse(true, x.!);
+  def == (x: Boolean)   : Boolean  =  ifThenElse(x, x.!);
+  def != (x: Boolean)   : Boolean  =  ifThenElse(x.!, x);
+  def <  (x: Boolean)   : Boolean  =  ifThenElse(false, x);
+  def >  (x: Boolean)   : Boolean  =  ifThenElse(x.!, false);
+  def <= (x: Boolean)   : Boolean  =  ifThenElse(x, true);
+  def >= (x: Boolean)   : Boolean  =  ifThenElse(true, x.!);
 }
 case object True extends Boolean {
-  def ifThenElse(def t: Boolean, def e: Boolean) = t
+  def ifThenElse(t: => Boolean, e: => Boolean) = t;
 }
 case object False extends Boolean {
-  def ifThenElse(def t: Boolean, def e: Boolean) = e
+  def ifThenElse(t: => Boolean, e: => Boolean) = e;
 }
 \end{lstlisting}
 Here is a partial specification of class \code{Int}.
@@ -1777,8 +1777,8 @@ guaranteed to happen eventually because of the way numbers are formed).
 The implementation should support all operations of class \code{Nat}
 while adding two methods
 \begin{lstlisting}
-def isPositive: Boolean
-def negate: Integer
+def isPositive: Boolean;
+def negate: Integer;
 \end{lstlisting}
 The first method should return \code{true} if the number is positive. The second method should negate the number.
 Do not use any of Scala's standard numeric classes in your
@@ -2040,7 +2040,7 @@ Case classes implicitly come with nullary accessor methods which
 retrieve the constructor arguments.
 In our example, \code{Number} would obtain an accessor method
 \begin{lstlisting}
-def n: int
+def n: int;
 \end{lstlisting}
 which returns the constructor parameter \code{n}, whereas \code{Sum} would obtain two accessor methods
 \begin{lstlisting}
@@ -2220,7 +2220,7 @@ following class hierarchy:
 \begin{lstlisting}
 trait IntStack {
   def push(x: int): IntStack = new IntNonEmptyStack(x, this);
-  def isEmpty: boolean
+  def isEmpty: boolean;
   def top: int;
   def pop: IntStack;
 }
@@ -2442,7 +2442,7 @@ by a generic class \code{Array}. Here is a partial definition of this
 class.
 \begin{lstlisting}
 class Array[a] {
-  def apply(index: int): a
+  def apply(index: int): a;
   def update(index: int, elem: a): unit;
 }
 \end{lstlisting}
@@ -2607,7 +2607,7 @@ object.
 \begin{lstlisting}
 trait Stack[+a] {
   def push[b >: a](x: b): Stack[b] = new NonEmptyStack(x, this);
-  def isEmpty: boolean
+  def isEmpty: boolean;
   def top: a;
   def pop: Stack[a];
 }
@@ -2616,7 +2616,7 @@ object EmptyStack extends Stack[All] {
   def top = throw new Error("EmptyStack.top");
   def pop = throw new Error("EmptyStack.pop");
 }
-class NonEmptyStack[{a](elem: a, rest: Stack[a]) extends Stack[a] {
+class NonEmptyStack[+a](elem: a, rest: Stack[a]) extends Stack[a] {
   def isEmpty = false;
   def top = elem;
   def pop = rest;
@@ -2635,7 +2635,7 @@ and rest of two given integer arguments.  Of course, one can define a
 class to hold the two results of \code{divmod}, as in:
 \begin{lstlisting}
 case class TwoInts(first: int, second: int);
-def divmod(x: int, y: int): TwoInts = new TwoInts(x / y, x % y)
+def divmod(x: int, y: int): TwoInts = new TwoInts(x / y, x % y);
 \end{lstlisting}
 However, having to define a new class for every possible pair of
 result types is very tedious. In Scala one can use instead a
@@ -2647,7 +2647,7 @@ case class Tuple2[a, b](_1: a, _2: b);
 \end{lstlisting}
 With \code{Tuple2}, the \code{divmod} method can be written as follows.
 \begin{lstlisting}
-def divmod(x: int, y: int) = new Tuple2[int, int](x / y, x % y)
+def divmod(x: int, y: int) = new Tuple2[int, int](x / y, x % y);
 \end{lstlisting}
 As usual, type parameters to constructors can be omitted if they are
 deducible from value arguments. Also, Scala defines an alias
@@ -2655,7 +2655,7 @@ deducible from value arguments. Also, Scala defines an alias
 With these conventions, \code{divmod} can equivalently be written as
 follows.
 \begin{lstlisting}
-def divmod(x: int, y: int) = Pair(x / y, x % y)
+def divmod(x: int, y: int) = Pair(x / y, x % y);
 \end{lstlisting}
 How are elements of tuples accessed? Since tuples are case classes,
 there are two possibilities. One can either access a tuple's fields
@@ -2685,7 +2685,7 @@ The \code{Function1} trait is defined as follows.
 \begin{lstlisting}
 package scala;
 trait Function1[-a, +b] {
-  def apply(x: a): b
+  def apply(x: a): b;
 }
 \end{lstlisting}
 Besides \code{Function1}, there are also definitions of
@@ -2712,7 +2712,7 @@ Functions are an example where a contra-variant type parameter
 declaration is useful. For example, consider the following code:
 \begin{lstlisting} 
 val f: (AnyRef => int)  =  x => x.hashCode();
-val g: (String => int)  =  f
+val g: (String => int)  =  f;
 g("abc")
 \end{lstlisting}
 It's sound to bind the value \code{g} of type \code{String => int} to
@@ -2733,7 +2733,7 @@ plus1(2)
 This is expanded into the following object code.
 \begin{lstlisting}
 val plus1: Function1[int, int] = new Function1[int, int] {
-  def apply(x: int): int = x + 1
+  def apply(x: int): int = x + 1;
 }
 plus1.apply(2)
 \end{lstlisting}
@@ -2745,7 +2745,7 @@ Equivalently, but more verbosely, one could have used a local class:
 \begin{lstlisting}
 val plus1: Function1[int, int] = {
   class Local extends Function1[int, int] {
-    def apply(x: int): int = x + 1
+    def apply(x: int): int = x + 1;
   }
   new Local: Function1[int, int]
 }
@@ -2838,7 +2838,7 @@ empty list. Expressed as Scala code:
 \begin{lstlisting}
 def isort(xs: List[int]): List[int] =
   if (xs.isEmpty) Nil
-  else insert(xs.head, isort(xs.tail))
+  else insert(xs.head, isort(xs.tail));
 \end{lstlisting}
 
 \begin{exercise} Provide an implementation of the missing function
@@ -2943,7 +2943,7 @@ def take(n: int): List[a] =
 def drop(n: int): List[a] = 
   if (n == 0 || isEmpty) this else tail.drop(n-1);
 
-def split(n: int): Pair[List[a], List[a]] = Pair(take(n), drop(n))
+def split(n: int): Pair[List[a], List[a]] = Pair(take(n), drop(n));
 \end{lstlisting}
 \code{(xs take n)} returns the first \code{n} elements of list
 \code{xs}, or the whole list, if its length is smaller than \code{n}.
@@ -3159,7 +3159,7 @@ abstract class List[a] { ...
 Using \code{map}, \code{scaleList} can be more concisely written as follows.
 \begin{lstlisting}
 def scaleList(xs: List[double], factor: double) = 
-  xs map (x => x * factor)
+  xs map (x => x * factor);
 \end{lstlisting}
 
 As another example, consider the problem of returning a given column
@@ -3168,7 +3168,7 @@ again a list. This is done by the following function \code{column}.
 
 \begin{lstlisting}
 def column[a](xs: List[List[a[]], index: int): List[a] = 
-  xs map (row => row at index)
+  xs map (row => row at index);
 \end{lstlisting}
 
 Closely related to \code{map} is the \code{foreach} method, which
@@ -3221,7 +3221,7 @@ Using \code{filter}, \code{posElems} can be more concisely written as
 follows.
 \begin{lstlisting}
 def posElems(xs: List[int]): List[int] = 
-  xs filter (x => x > 0)
+  xs filter (x => x > 0);
 \end{lstlisting}
 
 An operation related to filtering is testing whether all elements of a
@@ -3254,7 +3254,7 @@ generates the list of all integers from 2 up to and excluding $n$.
 The function \code{isPrime} can now simply be defined as follows.
 \begin{lstlisting}
 def isPrime(n: int) = 
-  List.range(2, n) forall (x => n % x != 0)
+  List.range(2, n) forall (x => n % x != 0);
 \end{lstlisting}
 We see that the mathematical definition of prime-ness has been
 translated directly into Scala code. 
@@ -3291,8 +3291,8 @@ List(x$_1$, ..., x$_n$).reduceLeft(op) = (...(x$_1$ op x$_2$) op ... ) op x$_n$
 Using \code{reduceLeft}, we can make the common pattern
 in \code{sum} and \code{product} apparent:
 \begin{lstlisting}
-def sum(xs: List[int])      =  (0 :: xs) reduceLeft {(x, y) => x + y}
-def product(xs: List[int])  =  (1 :: xs) reduceLeft {(x, y) => x * y}
+def sum(xs: List[int])      =  (0 :: xs) reduceLeft {(x, y) => x + y};
+def product(xs: List[int])  =  (1 :: xs) reduceLeft {(x, y) => x * y};
 \end{lstlisting}
 Here is the implementation of \code{reduceLeft}.
 \begin{lstlisting}
@@ -3316,8 +3316,8 @@ when \code{foldLeft} is applied on an empty list. That is,
 The \code{sum} and \code{product} methods can be defined alternatively
 using \code{foldLeft}:
 \begin{lstlisting}
-def sum(xs: List[int])      =  (xs foldLeft 0) {(x, y) => x + y}
-def product(xs: List[int])  =  (xs foldLeft 1) {(x, y) => x * y}
+def sum(xs: List[int])      =  (xs foldLeft 0) {(x, y) => x + y};
+def product(xs: List[int])  =  (xs foldLeft 1) {(x, y) => x * y};
 \end{lstlisting}
 
 \paragraph{FoldRight and ReduceRight}
@@ -3370,7 +3370,7 @@ single list. Here is the an implementation of this method in terms of
 \code{:\\}.
 \begin{lstlisting}
 def flatten[a](xs: List[List[a]]): List[a] = 
-  (xs :\ (Nil: List[a])) {(x, xs) => x ::: xs}
+  (xs :\ (Nil: List[a])) {(x, xs) => x ::: xs};
 \end{lstlisting} 
 Consider replacing the first part of the body of \lstinline@flatten@
 by \lstinline@(Nil /: xs)@. What would be the difference in asymptotoc
@@ -3392,7 +3392,7 @@ which has linear cost.  The idea is to use a \code{foldLeft}
 operation based on the following program scheme.
 \begin{lstlisting}
 class List[+a] { ...
-  def reverse: List[a] = (z? /: this)(op?)
+  def reverse: List[a] = (z? /: this)(op?);
 \end{lstlisting}
 It only remains to fill in the \code{z?} and \code{op?} parts.  Let's
 try to deduce them from examples.
@@ -3418,7 +3418,7 @@ as \code{x :: Nil}. This suggests to take as \code{op} the
 the following implementation for \code{reverse}, which has linear complexity.
 \begin{lstlisting}
 def reverse: List[a] =
-  ((Nil: List[a]) /: this) {(xs, x) => x :: xs}
+  ((Nil: List[a]) /: this) {(xs, x) => x :: xs};
 \end{lstlisting}
 (Remark: The type annotation of \code{Nil} is necessary 
 to make the type inferencer work.)
@@ -3428,10 +3428,10 @@ definitions of some basic list-manipulation operations as fold
 operations.
 \begin{lstlisting}
 def mapFun[a, b](xs: List[a], f: a => b): List[b] = 
-  (xs :\ List[b]()){ ?? }
+  (xs :\ List[b]()){ ?? };
 
 def lengthFun[a](xs: List[a]): int =
-  (0 /: xs){ ?? }
+  (0 /: xs){ ?? };
 \end{lstlisting}
 \end{exercise}
 
@@ -4606,7 +4606,7 @@ signature:
 \begin{lstlisting}
 abstract class Simulation {
   def currentTime: int;
-  def afterDelay(delay: int, def action: Action): unit;
+  def afterDelay(delay: int, action: => Action): unit;
   def run: unit;
 }
 \end{lstlisting}
@@ -4713,7 +4713,7 @@ An application of the method \code{afterDelay(delay, action)}
 inserts the pair \code{(curtime + delay, action)} into the
 \code{agenda} list at the appropriate place.
 \begin{lstlisting}
-  def afterDelay(int delay)(def action: Action): unit = {
+  def afterDelay(int delay)(action: => Action): unit = {
     val actiontime = curtime + delay;
     def insertAction(ag: Agenda): Agenda = ag match {
       case List() => 
@@ -4885,7 +4885,7 @@ methods are \code{isEmpty}, \code{head} and \code{tail}. For instance,
 we can print all elements of a stream as follows.
 \begin{lstlisting}
 def print(xs: Stream[a]): unit = 
-  if (!xs.isEmpty) { System.out.println(xs.head); print(xs.tail) }
+  if (!xs.isEmpty) { System.out.println(xs.head); print(xs.tail) };
 \end{lstlisting}
 Streams also support almost all other methods defined on lists (see
 below for where their methods sets differ). For instance, we can find
@@ -4969,7 +4969,7 @@ iterator transformed by a given function \code{f}.
 \begin{lstlisting}
   def map[b](f: a => b): Iterator[b] = new Iterator[b] {
     def hasNext = Iterator.this.hasNext;
-    def next = f(Iterator.this.next)
+    def next = f(Iterator.this.next);
   }
 \end{lstlisting}
 Method \code{flatMap} is like method \code{map}, except that the
@@ -5024,7 +5024,7 @@ element returned by \code{head} is returned again by the next call to
 \code{BufferedIterator} trait.
 \begin{lstlisting}
 trait BufferedIterator[+a] extends Iterator[a] {
-  def head: a
+  def head: a;
 }
 \end{lstlisting}
 Since \code{map}, \code{flatMap}, \code{filter}, and \code{foreach}
@@ -5252,7 +5252,7 @@ for sequence and alternative:
 \begin{lstlisting}
   /*** p &&& q applies first p, and if that succeeds, then q
    */
-  def &&& (def q: Parser) = new Parser {
+  def &&& (q: => Parser) = new Parser {
     def apply(in: intype): Result = Parser.this.apply(in) match {
       case None => None
       case Some(in1)  => q(in1)
@@ -5261,7 +5261,7 @@ for sequence and alternative:
 
   /*** p ||| q applies first p, and, if that fails, then q.
    */
-  def ||| (def q: Parser) = new Parser {
+  def ||| (q: => Parser) = new Parser {
     def apply(in: intype): Result = Parser.this.apply(in) match {
       case None => q(in)
       case s => s
@@ -5521,14 +5521,14 @@ the current parser and then continues with the resulting parser.  The
 \code{|||} method is essentially defined as before.  The
 \code{&&&} method can now be defined in terms of \code{for}.
 \begin{lstlisting}
-    def ||| (def p: Parser[a]) = new Parser[a] {
+    def ||| (p: => Parser[a]) = new Parser[a] {
       def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => p(in)
         case s => s
       }
     }
 
-    def &&& [b](def p: Parser[b]): Parser[b] = 
+    def &&& [b](p: => Parser[b]): Parser[b] = 
       for (val _ <- this; val x <- p) yield x;
   }// end Parser
 \end{lstlisting}
@@ -5604,13 +5604,13 @@ trees for the Mini-ML are represented by the following data type of
 \begin{lstlisting}
 trait Term {}
 case class Var(x: String) extends Term {
-  override def toString() = x
+  override def toString() = x;
 }
 case class Lam(x: String, e: Term) extends Term {
-  override def toString() = "(\\" + x + "." + e + ")"
+  override def toString() = "(\\" + x + "." + e + ")";
 }
 case class App(f: Term, e: Term) extends Term {
-  override def toString() = "(" + f + " " + e + ")"
+  override def toString() = "(" + f + " " + e + ")";
 }
 case class Let(x: String, e: Term, f: Term) extends Term {
   override def toString() = "let " + x + " = " + e + " in " + f;
@@ -5627,14 +5627,14 @@ computed by the inference system.
 \begin{lstlisting}
 sealed trait Type {}
 case class Tyvar(a: String) extends Type {
-  override def toString() = a
+  override def toString() = a;
 }
 case class Arrow(t1: Type, t2: Type) extends Type {
-  override def toString() = "(" + t1 + "->" + t2 + ")"
+  override def toString() = "(" + t1 + "->" + t2 + ")";
 }
 case class Tycon(k: String, ts: List[Type]) extends Type {
   override def toString() = 
-    k + (if (ts.isEmpty) "" else ts.mkString("[", ",", "]"))
+    k + (if (ts.isEmpty) "" else ts.mkString("[", ",", "]"));
 }
 \end{lstlisting}
 There are three type constructors: \code{Tyvar} for type variables,
@@ -6088,7 +6088,7 @@ The {\em monitor} provides the basic means for mutual exclusion
 of processes in Scala. Every instance of class \code{AnyRef} can be
 used as a monitor by calling one or more of the methods below.
 \begin{lstlisting}
-  def synchronized[a] (def e: a): a;
+  def synchronized[a] (e: => a): a;
   def wait(): unit;
   def wait(msec: long): unit;
   def notify(): unit;
@@ -6149,7 +6149,7 @@ producer and a consumer process.
 \begin{lstlisting}
 import scala.concurrent.ops._;
 ...
-val buf = new BoundedBuffer[String](10)
+val buf = new BoundedBuffer[String](10);
 spawn { while (true) { val s = produceString ; buf.put(s) } }
 spawn { while (true) { val s = buf.get ; consumeString(s) } }
 }
@@ -6158,7 +6158,7 @@ The \code{spawn} method spawns a new thread which executes the
 expression given in the parameter. It is defined in object \code{concurrent.ops}
 as follows.
 \begin{lstlisting}
-def spawn(def p: unit) = {
+def spawn(p: => unit) = {
   val t = new Thread() { override def run() = p; }
   t.start()
 }
@@ -6238,7 +6238,7 @@ val y = f(x()) + g(x());
 The \code{future} method is defined in object
 \code{scala.concurrent.ops} as follows.
 \begin{lstlisting}
-def future[a](def p: a): unit => a = {
+def future[a](p: => a): unit => a = {
   val result = new SyncVar[a];
   fork { result.set(p) }
   (() => result.get)
@@ -6268,7 +6268,7 @@ in another pair. The two computations are performed in parallel.
 The function is defined in object
 \code{scala.concurrent.ops} as follows.
 \begin{lstlisting}
-  def par[a, b](def xp: a, def yp: b): Pair[a, b] = {
+  def par[a, b](xp: => a, yp: => b): Pair[a, b] = {
     val y = new SyncVar[b];
     spawn { y set yp }
     Pair(xp, y.get)
@@ -6482,7 +6482,7 @@ class ComputeServer(n: Int) {
     }
   }
 
-  def future[a](def p: a): () => a = {
+  def future[a](p: => a): () => a = {
     val reply = new SyncVar[a]();
     openJobs.write{
       new Job { 
