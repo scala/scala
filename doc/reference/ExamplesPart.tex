@@ -1671,7 +1671,7 @@ booleans.
 \begin{lstlisting}
 package scala;
 trait Boolean {
-  def ifThenElse(thenpart: => Boolean, elsepart: => Boolean)
+  def ifThenElse(thenpart: => Boolean, elsepart: => Boolean);
 
   def && (x: => Boolean): Boolean  =  ifThenElse(x, false);
   def || (x: => Boolean): Boolean  =  ifThenElse(true, x);
