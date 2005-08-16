@@ -39,37 +39,28 @@
   <xsl:template match="property">
     <xsl:choose>
     <xsl:when test="@name='productVersionMajor'">
-      <xsl:variable
-        name="major"
-        select="substring-before($version,'.')">
-      </xsl:variable>
+      <xsl:variable name="major" select="substring-before($version,'.')" />
       <property name="productVersionMajor">
         <int><xsl:value-of select="$major"/></int>
       </property>
     </xsl:when>
     <xsl:when test="@name='productVersionMinor'">
-      <xsl:variable
-        name="minor"
-        select="substring-before(substring-after($version,'.'),'.')">
-      </xsl:variable>
+      <xsl:variable name="minor"
+        select="substring-before(substring-after($version,'.'),'.')" />
       <property name="productVersionMinor">
         <int><xsl:value-of select="$minor"/></int>
       </property>
     </xsl:when>
     <xsl:when test="@name='productVersionRevision'">
-      <xsl:variable
-        name="revision"
-        select="substring-before(substring-after(substring-after($version,'.'),'.'),'.')">
-      </xsl:variable>
+      <xsl:variable name="revision"
+        select="substring-before(substring-after(substring-after($version,'.'),'.'),'.')" />
       <property name="productVersionRevision">
         <int><xsl:value-of select="$revision"/></int>
       </property>
     </xsl:when>
     <xsl:when test="@name='productVersionSubRevision'">
-      <xsl:variable
-        name="subrevision"
-        select="substring-after(substring-after(substring-after($version,'.'),'.'),'.')">
-      </xsl:variable>
+      <xsl:variable name="subrevision"
+        select="substring-after(substring-after(substring-after($version,'.'),'.'),'.')" />
       <property name="productVersionSubRevision">
         <int><xsl:value-of select="$subrevision"/></int>
       </property>
