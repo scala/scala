@@ -85,12 +85,15 @@ util/ShowPickled.scala
 
 transform/TailCalls.scala
 
-# backend/icode/BasicBlocks.scala
-# backend/icode/Constants.scala
-# backend/icode/ICodePrinter.scala
-# backend/icode/Opcodes.scala
-# backend/icode/TypeStacks.scala
-# backend/icode/TestOp.scala
-# backend/icode/Codes.scala
+backend/icode/BasicBlocks.scala
+backend/icode/GenICode.scala
+backend/icode/ICodes.scala
+backend/icode/Members.scala
+backend/icode/Opcodes.scala
+backend/icode/Primitives.scala
+backend/icode/Printers.scala
+backend/icode/TypeKind.scala
+backend/icode/TypeStacks.scala
+
 
 ##############################################################################
