@@ -8,7 +8,7 @@ object boundedbuffer {
     var in, out, n = 0;
     val elems = new Array[a](N);
 
-    def await(def cond: Boolean) = while (!cond) { wait() }
+    def await(cond: => Boolean) = while (!cond) { wait() }
 
     def put(x: a) = synchronized {
       await (n < N);
