@@ -53,7 +53,7 @@ function install-copy() {
     local dstfile="$1"; shift 1;
     run cp "$srcfile" "$dstfile";
     if [ "$preserve" == "true" ]; then
-        touch --reference="$srcfile" "$dstfile";
+        touch -r "$srcfile" "$dstfile";
     fi;
     install-attr "$dstfile";
 }
