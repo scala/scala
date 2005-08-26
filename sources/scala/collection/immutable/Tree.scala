@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -374,3 +374,4 @@ private case class GBNode[A <% Ordered[A],B](key: A,
   override def hashCode() =
     value.hashCode() + smaller.hashCode() + bigger.hashCode();
 }
+

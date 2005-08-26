@@ -72,3 +72,4 @@ object simpleInterpreter {
     System.out.println(test(term1));
   }
 }
+

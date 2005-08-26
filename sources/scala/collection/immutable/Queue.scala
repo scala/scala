@@ -172,3 +172,4 @@ class Queue[+A](elem: A*) extends Seq[A] {
     }
 
 }
+

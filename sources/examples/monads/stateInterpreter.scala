@@ -83,3 +83,4 @@ object stateInterpreter {
     System.out.println(test(term1));
   }
 }
+

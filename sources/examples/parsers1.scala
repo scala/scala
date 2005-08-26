@@ -14,7 +14,7 @@ object parsers1 {
 
       /*** p &&& q applies first p, and if that succeeds, then q
        */
-      def &&& (def q: Parser) = new Parser {
+      def &&& (q: => Parser) = new Parser {
         def apply(in: inputType): Result = Parser.this.apply(in) match {
           case None => None
           case Some(in1)  => q(in1)
@@ -23,7 +23,7 @@ object parsers1 {
 
       /*** p ||| q applies first p, and, if that fails, then q.
        */
-      def ||| (def q: Parser) = new Parser {
+      def ||| (q: => Parser) = new Parser {
         def apply(in: inputType): Result = Parser.this.apply(in) match {
           case None => q(in)
           case s => s

@@ -83,3 +83,4 @@ object errorInterpreter {
     System.out.println(test(term1));
   }
 }
+

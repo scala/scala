@@ -1,10 +1,13 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
 package scala.runtime;
 
 final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
@@ -23,5 +26,3 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
 
   override def hashCode(): Int = value.hashCode();
 }
-
-
