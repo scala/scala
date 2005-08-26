@@ -1,0 +1,16 @@
+<!-- $Id$ -->
+
+<processing>
+  <job name="scala_symlink">
+    <description>Create symbolic links</description>
+    <os family="unix" />
+    <executefile name="$INSTALL_PATH/bin/.create_wrappers" />
+  </job>
+  <job name="clean">
+    <description>Clean up</description>
+    <os family="unix" />
+    <executefile name="/bin/rm">
+      <arg>$INSTALL_PATH/bin/.create_wrappers</arg>
+    </executefile>
+  </job>
+</processing>
