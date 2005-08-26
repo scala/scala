@@ -50,7 +50,7 @@ object semaphore {
   def main(args: Array[String]): unit = {
     val random = new java.util.Random();
     val sem = new Sem2;
-    def mutex(def p: unit): unit = { sem.get; p; sem.release }
+    def mutex(p: => unit): unit = { sem.get; p; sem.release }
 
     spawn< {
       Thread.sleep(1 + random.nextInt(100));

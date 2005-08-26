@@ -66,7 +66,7 @@ object rwlock {
       }
     }
 
-    def await(def cond: boolean): unit = while (false == cond) (Wait)
+    def await(cond: => boolean): unit = while (false == cond) (Wait)
   }
 
   /*

@@ -339,7 +339,7 @@ As a program using the \code{MapStruct} abstraction, consider a function
 which creates a map from strings to integers and then applies it to a
 key string:
 \begin{lstlisting}
-def mapTest(def mapImpl: MapStruct[String, int]): int = {
+def mapTest(mapImpl: => MapStruct[String, int]): int = {
   val map: mapImpl.Map = mapImpl.empty.extend("ab", 1).extend("bx", 3)
   val x = map("ab")             // returns 1
 }

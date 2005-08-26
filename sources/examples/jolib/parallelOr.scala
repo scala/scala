@@ -35,7 +35,7 @@ object or extends Join {
       r.set(b) })
   );
 
-  def apply(def b1: boolean, def b2: boolean): boolean = {
+  def apply(b1: => boolean, b2: => boolean): boolean = {
     concurrent.ops.spawn(res1(res1.C(b1)));
     concurrent.ops.spawn(res2(res2.C(b2)));
     res(res.C())

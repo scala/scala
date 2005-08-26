@@ -22,7 +22,7 @@ abstract class Parsers {
 
     /*** p &&& q applies first p, and if that succeeds, then q
      */
-    def &&& (def q: Parser) = new Parser {
+    def &&& (q: => Parser) = new Parser {
       def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => None
         case Some(in1)  => q(in1)
@@ -31,7 +31,7 @@ abstract class Parsers {
 
     /*** p ||| q applies first p, and, if that fails, then q.
      */
-    def ||| (def q: Parser) = new Parser {
+    def ||| (q: => Parser) = new Parser {
       def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => q(in)
         case s => s

@@ -20,7 +20,7 @@ class ComputeServer(n: Int) {
     }
   }
 
-  def future[a](def p: a): () => a = {
+  def future[a](p: => a): () => a = {
     val reply = new SyncVar[a]();
     openJobs.write{
       new Job {
