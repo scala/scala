@@ -204,7 +204,7 @@ install			: $(TOOLS_JAR_ARCHIVE)
 
 install-windows		: install
 	@if [ ! -d "$(INSTALL_PREFIX)" ]; then \
-	    echo "Could not find UNIX install '$(INSTALL_PREFIX)'"; \
+	    $(ECHO) "Could not find UNIX install '$(INSTALL_PREFIX)'"; \
 	    exit 1; \
 	fi
 	$(UNIX2DOS) $(INSTALL_DOCDIR)/README
@@ -216,7 +216,7 @@ install-windows		: install
 	    if [ -z "$$name" ]; then continue; fi; \
 	    case "$$name" in scala-info* ) continue;; esac; \
 	    case "$$name" in scalatest* ) continue;; esac; \
-	    echo -n "Generating $$name.bat ... "; \
+	    $(ECHO) -n "Generating $$name.bat ... "; \
 	    srcfile="$(PROJECT_SUPPORTDIR)/windows/scala_wrapper"; \
 	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
 	    winfile="$(INSTALL_PREFIX)/bin/$$name.bat"; \
@@ -233,7 +233,7 @@ install-windows		: install
 	        $(ECHO) "set COMMAND=$$winexec"; \
 	        $(CAT) "$$srcfile-footer.bat"; \
 	    ) | $(UNIX2DOS) >> "$$winfile"; \
-	    echo "done"; \
+	    $(ECHO) "done"; \
 	done; \
 	for name in "" $(SCRIPTS_ALIASES_NAMES); do \
 	    if [ -z "$$name" ]; then continue; fi; \
@@ -374,6 +374,60 @@ ia-build-all		:
 
 ##############################################################################
 
+IZPACK_BUILD_PREFIX	 = /tmp/IzPack_Build_$(PROJECT_NAME)
+IZPACK_BUILD_IMAGESDIR	 = $(IZPACK_BUILD_PREFIX)/images
+IZPACK_BUILD_LOCALESDIR	 = $(IZPACK_BUILD_PREFIX)/locales
+IZPACK_BUILD_PDFDIR	 = $(IZPACK_BUILD_PREFIX)/pdf
+IZPACK_BUILD_UNIXDIR	 = $(IZPACK_BUILD_PREFIX)/unix
+IZPACK_BUILD_WINDIR	 = $(IZPACK_BUILD_PREFIX)/windows
+IZPACK_CONFIG_PREFIX	 = $(PROJECT_CONFIGDIR)/izpack
+IZPACK_OUTPUT_FILE	 = $(DISTRIB_ROOT)/install_$(PROJECT_NAME)-$(INSTALL_VERSION).jar
+IZPACK_SPLASHFILE	 = $(IA_SPLASHFILE)
+
+IZPACK_BUILD_FILE	 = $(IZPACK_BUILD_PREFIX)/izpack_scala.xml
+IZPACK_BUILD_SPLASHFILE	 = $(IZPACK_BUILD_IMAGESDIR)/`$(BASENAME) $(IZPACK_SPLASHFILE)`
+
+izpack-build-all	:
+	$(RM) -r $(IZPACK_BUILD_PREFIX)
+	$(INSTALL) -m 755 -d $(IZPACK_BUILD_LOCALESDIR)
+	@for locale in "" `ls -d $(IA_CONFIG_LOCALESDIR)/?? | $(XARGS) -n 1 $(BASENAME)`; do \
+	    if [ -z "$$locale" ]; then continue; fi; \
+	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_LICENSEFILE).html \
+	        $(IZPACK_BUILD_LOCALESDIR)/$(IA_LICENSEFILE)"_$$locale".html; \
+	done
+	$(INSTALL) -m 644 -p $(IZPACK_CONFIG_PREFIX)/locales/*.html $(IZPACK_BUILD_LOCALESDIR)
+	$(INSTALL) -m 755 -d $(IZPACK_BUILD_IMAGESDIR)
+	$(INSTALL) -m 644 -p $(IZPACK_CONFIG_PREFIX)/images/* $(IZPACK_BUILD_IMAGESDIR)
+	$(CONVERT) $(CONVERT_FLAGS) $(IZPACK_SPLASHFILE) $(IZPACK_BUILD_SPLASHFILE)
+
+	$(INSTALL) -m 755 -d $(IZPACK_BUILD_UNIXDIR)
+	$(TAR) xzf $(INSTALL_PREFIX).tar.gz -C $(IZPACK_BUILD_UNIXDIR)
+	$(strip cd $(IZPACK_BUILD_UNIXDIR)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
+	    $(RM) -r share/$(PROJECT_NAME)-$(INSTALL_VERSION)/lib; \
+	    $(RM) -r share/doc/$(PROJECT_NAME)-$(INSTALL_VERSION)/*.pdf; \
+	    $(MV) * ..)
+	$(RM) -r $(IZPACK_BUILD_UNIXDIR)/$(PROJECT_NAME)-$(INSTALL_VERSION)
+
+	$(INSTALL) -m 755 -d $(IZPACK_BUILD_WINDIR)
+	$(UNZIP) -q $(DISTRIB_ARCHIVE).zip -d $(IZPACK_BUILD_WINDIR)
+	$(strip cd $(IZPACK_BUILD_WINDIR)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
+	    $(MV) * ..)
+	$(RM) -r $(IZPACK_BUILD_WINDIR)/$(PROJECT_NAME)-$(INSTALL_VERSION)
+	$(MV) $(IZPACK_BUILD_WINDIR)/lib $(IZPACK_BUILD_PREFIX)
+
+	$(INSTALL) -m 755 -d $(IZPACK_BUILD_PDFDIR)
+	$(MV) $(IZPACK_BUILD_WINDIR)/doc/*.pdf $(IZPACK_BUILD_PDFDIR)
+
+	$(INSTALL) -m 644 -p $(IZPACK_CONFIG_PREFIX)/*.xml $(IZPACK_BUILD_PREFIX)
+	$(INSTALL) -m 700 -p $(IZPACK_CONFIG_PREFIX)/*.sh $(IZPACK_BUILD_PREFIX)
+	$(IZPACK) $(call CYGWIN_FILE,$(IZPACK_BUILD_FILE)) \
+	  -b $(call CYGWIN_FILE,$(IZPACK_BUILD_PREFIX)) \
+	  -o $(call CYGWIN_FILE,$(IZPACK_OUTPUT_FILE)) -k standard
+
+.PHONY			: izpack-build-all
+
+##############################################################################
+
 DISTRIB_ROOT		 = $(PROJECT_DISTRIBDIR)
 DISTRIB_PACKAGE		 = $(INSTALL_PACKAGE)
 DISTRIB_ARCHIVE		 = $(DISTRIB_ROOT)/$(DISTRIB_PACKAGE)
@@ -414,7 +468,13 @@ distrib-build-windows	: install-windows
 
 distrib-build-ia	: ia-build-all
 
+distrib-build-izpack	: izpack-build-all
+
 distrib-build-addons	: install-addons
+
+distrib-izpack		: distrib-build-unix
+distrib-izpack		: distrib-build-windows
+distrib-izpack		: distrib-build-izpack
 
 distrib-official	: version-update
 	@$(make) -C doc/tutorial distclean
@@ -433,7 +493,9 @@ distrib-official	: version-update
 .PHONY			: distrib-build-unix
 .PHONY			: distrib-build-windows
 .PHONY			: distrib-build-ia
+.PHONY			: distrib-build-izpack
 .PHONY			: distrib-build-website
+.PHONY			: distrib-izpack
 .PHONY			: distrib-official
 
 ##############################################################################
