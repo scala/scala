@@ -66,6 +66,17 @@ abstract class TreeGen {
       tree
   }
 
+  /** Cast `tree' to type `pt' */
+  def cast(tree: Tree, pt: Type): Tree = {
+    if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt);
+    assert(!tree.tpe.isInstanceOf[MethodType], tree);
+    typer.typed {
+      atPos(tree.pos) {
+	Apply(TypeApply(Select(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
+      }
+    }
+  }
+
   /** Builds a reference with stable type to given symbol */
   def mkStableRef(pre: Type, sym: Symbol): Tree  = stabilize(mkRef(pre, sym));
   def mkStableRef(sym: Symbol): Tree  = stabilize(mkRef(sym));
@@ -75,13 +86,11 @@ abstract class TreeGen {
 
   def Ident(sym: Symbol) = {
     assert(sym.isTerm);
-    sym.setFlag(ACCESSED);
     global.Ident(sym.name) setSymbol sym setType sym.tpe;
   }
 
   def Select(qual: Tree, sym: Symbol) = {
     assert(sym.isTerm);
-    sym.setFlag(ACCESSED);
     val result = global.Select(qual, sym.name) setSymbol sym;
     if (qual.tpe != null) result setType qual.tpe.memberType(sym);
     result

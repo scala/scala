@@ -106,7 +106,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     else if (sym.isAbstractType)
       TypeBounds(WildcardType, WildcardType)
     else if (sym.isTerm && sym.owner == ArrayClass) {
-      if (sym.isConstructor)
+      if (sym.isClassConstructor)
         tp match {
 	  case MethodType(formals, TypeRef(pre, sym, args)) =>
 	    MethodType(formals map erasure, typeRef(erasure(pre), sym, args))
@@ -139,11 +139,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             else Block(List(tree), gen.mkRef(BoxedUnit_UNIT))
           } else if (sym == ArrayClass) {
 	    val elemClass = tree.tpe.typeArgs.head.symbol;
-	    val boxedClass = if (isValueClass(elemClass)) boxedArraySym(elemClass)
+	    val boxedClass = if (isValueClass(elemClass)) boxedArrayClass(elemClass)
 			     else BoxedObjectArrayClass;
             Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
           } else {
-            val boxedModule = boxedSym(tree.tpe.symbol).linkedModule;
+            val boxedModule = boxedClass(tree.tpe.symbol).linkedModule;
             Apply(Select(gen.mkRef(boxedModule), nme.box), List(tree))
 	  }
         }
@@ -156,7 +156,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           if (pt.symbol == UnitClass) {
             Literal(())
           } else if (pt.symbol == BooleanClass) {
-            val tree1 = adaptToType(tree, boxedSym(BooleanClass).tpe);
+            val tree1 = adaptToType(tree, boxedClass(BooleanClass).tpe);
             Apply(Select(tree1, "booleanValue"), List())
           } else if (pt.symbol == ArrayClass) {
             val tree1 = adaptToType(tree, BoxedArrayClass.tpe);
@@ -179,17 +179,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
-    /** Cast `tree' to type `pt' */
-    private def cast(tree: Tree, pt: Type): Tree = {
-      if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt);
-      assert(!tree.tpe.isInstanceOf[MethodType], tree);
-      typed {
-	atPos(tree.pos) {
-	  Apply(TypeApply(Select(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
-	}
-      }
-    }
-
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
     private def isUnboxedArrayMember(sym: Symbol) =
       sym.name == nme.apply || sym.name == nme.length || sym.name == nme.update ||
@@ -210,13 +199,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         adaptToType(box(tree), pt)
       else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.paramTypes.isEmpty) {
         assert(tree.symbol.isStable);
-        adaptToType(Apply(tree, List()) setType tree.tpe.resultType, pt)
+        adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
       } else if (pt <:< tree.tpe)
-        cast(tree, pt)
+        gen.cast(tree, pt)
       else if (isUnboxedClass(pt.symbol) && !isUnboxedClass(tree.tpe.symbol))
         adaptToType(unbox(tree, pt), pt)
       else
-        cast(tree, pt)
+        gen.cast(tree, pt)
     }
 
     // todo: remove after removing ==, != from value classes
@@ -242,52 +231,58 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *  - All forms of `x.m' where `x' is a boxed type and `m' is a member of an unboxed class
      *    become `x.m' where `m' is the corresponding member of the boxed class.
      */
-    private def adaptMember(tree: Tree): Tree = tree match {
-      case Apply(sel @ Select(qual, name), args) =>
-	if (corresponds(sel.symbol, Any_==))
-	  Apply(Select(qual, Object_equals), args)
-	else if (corresponds(sel.symbol, Any_!=))
-	  Apply(Select(Apply(Select(qual, Object_equals), args), Boolean_not), List())
-	else qual match {
-	  case New(tpt) =>
-	    assert(tpt.isInstanceOf[TypeTree]);
-	    if (tpt.tpe.symbol == BoxedArrayClass) {
-              assert(name == nme.CONSTRUCTOR);
-              Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
-	    } else tree
-	  case _ =>
-	    tree
-	}
-      case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
-	if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
-	  adaptMember(Select(qual, Object_asInstanceOf))
-	else if (tree.symbol == Any_isInstanceOf || tree.symbol == Any_isInstanceOfErased)
-	  adaptMember(Select(qual, Object_isInstanceOf))
-	else if (tree.symbol != NoSymbol && tree.symbol.owner == AnyClass)
-	  adaptMember(Select(qual, getMember(ObjectClass, name)))
-	else {
-	  var qual1 = typedQualifier(qual);
-	  if ((isValueClass(qual1.tpe.symbol) && isBoxedValueMember(tree.symbol)) ||
-              (qual1.tpe.symbol == ArrayClass && !isUnboxedArrayMember(tree.symbol))) {
-	    qual1 = box(qual1);
-	  } else if (!isValueClass(qual1.tpe.symbol) &&
-                     tree.symbol != NoSymbol && isValueClass(tree.symbol.owner)) {
-            qual1 = unbox(qual1, tree.symbol.owner.tpe)
+    private def adaptMember(tree: Tree): Tree = {
+      tree match {
+        case Apply(sel @ Select(qual, name), args) =>
+	  if (corresponds(sel.symbol, Any_==))
+	    atPos(tree.pos) {
+              Apply(Select(qual, Object_equals), args)
+            }
+	  else if (corresponds(sel.symbol, Any_!=))
+	    atPos(tree.pos) {
+              Apply(Select(Apply(Select(qual, Object_equals), args), Boolean_not), List())
+            }
+	  else qual match {
+	    case New(tpt) =>
+	      assert(tpt.isInstanceOf[TypeTree]);
+	      if (tpt.tpe.symbol == BoxedArrayClass) {
+                assert(name == nme.CONSTRUCTOR);
+                atPos(tree.pos) {
+                  Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
+                }
+	      } else tree
+	    case _ =>
+	      tree
+	  }
+        case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
+          if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
+            adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
+          else if (tree.symbol == Any_isInstanceOf || tree.symbol == Any_isInstanceOfErased)
+            adaptMember(atPos(tree.pos)(Select(qual, Object_isInstanceOf)))
+          else if (tree.symbol != NoSymbol && tree.symbol.owner == AnyClass)
+            adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
+          else {
+            var qual1 = typedQualifier(qual);
+            if ((isValueClass(qual1.tpe.symbol) && isBoxedValueMember(tree.symbol)) ||
+                (qual1.tpe.symbol == ArrayClass && !isUnboxedArrayMember(tree.symbol))) {
+              qual1 = box(qual1);
+            } else if (!isValueClass(qual1.tpe.symbol) &&
+                       tree.symbol != NoSymbol && isValueClass(tree.symbol.owner)) {
+              qual1 = unbox(qual1, tree.symbol.owner.tpe)
+            }
+            if (tree.symbol != NoSymbol)
+              if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
+                tree.symbol = NoSymbol
+              else if (qual.tpe.isInstanceOf[MethodType] && qual.tpe.paramTypes.isEmpty) {
+                assert(qual.symbol.isStable);
+                qual1 = Apply(qual, List()) setPos qual.pos setType qual.tpe.resultType;
+              } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
+                qual1 = gen.cast(qual1, tree.symbol.owner.tpe);
+            copy.Select(tree, qual1, name)
           }
-	  if (tree.symbol != NoSymbol)
-	    if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
-	      tree.symbol = NoSymbol
-            else if (qual.tpe.isInstanceOf[MethodType] && qual.tpe.paramTypes.isEmpty) {
-              assert(qual.symbol.isStable);
-              qual1 = Apply(qual, List()) setType qual.tpe.resultType;
-	    } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
-	      qual1 = cast(qual1, tree.symbol.owner.tpe);
-	  copy.Select(tree, qual1, name)
-	}
-      case Template(parents, body) =>
-	copy.Template(tree, tree.symbol.owner.info.parents map TypeTree, body)
-      case _ =>
-	tree
+        case _ =>
+          tree
+      }
     }
 
     /** A replacement for the standard typer's `adapt' method */
@@ -312,8 +307,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private def checkNoDoubleDefs(root: Symbol): unit = {
       def doubleDefError(sym1: Symbol, sym2: Symbol) = {
-	val tpe1 = atPhase(typerPhase.next)(root.tpe.memberType(sym1));
-	val tpe2 = atPhase(typerPhase.next)(root.tpe.memberType(sym2));
+	val tpe1 = atPhase(refchecksPhase.next)(root.tpe.memberType(sym1));
+	val tpe2 = atPhase(refchecksPhase.next)(root.tpe.memberType(sym2));
 	unit.error(
 	  if (sym1.owner == root) sym1.pos else root.pos,
 	  (if (sym1.owner == sym2.owner) "double definition:\n"
@@ -330,7 +325,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       val decls = root.info.decls;
       var e = decls.elems;
       while (e != null) {
-        if (e.sym.isTerm && !e.sym.isConstructor && !e.sym.isMixinConstructor) {
+        if (e.sym.isTerm && !e.sym.isConstructor) {
 	  var e1 = decls.lookupNextEntry(e);
 	  while (e1 != null) {
 	    if (atPhase(phase.next)(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym);
@@ -341,15 +336,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       }
 
       for (val bc <- root.info.baseClasses.tail; val other <- bc.info.decls.toList) {
-        if (other.isTerm &&
-            !other.isConstructor &&
-            !other.isMixinConstructor &&
-            !(other hasFlag (PRIVATE | BRIDGE))) {
+        if (other.isTerm && !other.isConstructor && !(other hasFlag (PRIVATE | BRIDGE))) {
           for (val member <- root.info.nonPrivateMember(other.name).alternatives) {
             if (member != other &&
 		!(member hasFlag BRIDGE) &&
                 atPhase(phase.next)(member.tpe =:= other.tpe) &&
-                !atPhase(typerPhase.next)(
+                !atPhase(refchecksPhase.next)(
                   root.thisType.memberType(member) matches root.thisType.memberType(other))) {
 	      if (settings.debug.value) log("" + member.locationString + " " + member.infosString + other.locationString + " " + other.infosString);
               doubleDefError(member, other)
@@ -374,7 +366,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       val bridgeTarget = new HashMap[Symbol, Symbol];
       var bridges: List[Tree] = List();
       for (val bc <- site.baseClasses.tail; val other <- bc.info.members) {
-        if (other.isMethod && !other.isConstructor && !other.isMixinConstructor) {
+        if (other.isMethod && !other.isConstructor) {
 	  for (val member <- site.nonPrivateMember(other.name).alternatives) {
             if (member != other &&
                 !(member hasFlag DEFERRED) &&

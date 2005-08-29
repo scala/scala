@@ -56,7 +56,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val copy = new LazyTreeCopier();
 
   type AttrInfo = Pair[Type, List[Any]];
+
+  /** A map from symbols to their attributes */
   val attributes = new HashMap[Symbol, List[AttrInfo]];
+
+  /** A map from parameter accessor symbols to their aliases */
+  val aliases = new HashMap[Symbol, Symbol];
 
 // reporting -------------------------------------------------------
 
@@ -144,6 +149,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     def apply(unit: CompilationUnit): unit;
     private val isErased = prev.name == "erasure" || prev.erasedTypes;
     override def erasedTypes: boolean = isErased;
+    private val isFlat = prev.name == "flatten" || prev.flatClasses;
+    override def flatClasses: boolean = isFlat;
     def applyPhase(unit: CompilationUnit): unit = {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]");
       apply(unit)
@@ -186,6 +193,14 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object lambdaLift extends LambdaLift {
+    val global: Global.this.type = Global.this;
+  }
+
+  object flatten extends Flatten {
+    val global: Global.this.type = Global.this;
+  }
+
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this;
   }
@@ -208,6 +223,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     transMatcher,
     explicitOuter,
     erasure,
+    lambdaLift,
+    flatten,
     if (settings.Xshowicode.value) genicode
     else sampleTransform);
 
@@ -239,6 +256,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   val namerPhase = phaseNamed("namer");
   val typerPhase = phaseNamed("typer");
+  val refchecksPhase = phaseNamed("refchecks");
   val erasurePhase = phaseNamed("erasure");
 
   val typer = new analyzer.Typer(analyzer.NoContext.make(EmptyTree, definitions.RootClass, new Scope())) {

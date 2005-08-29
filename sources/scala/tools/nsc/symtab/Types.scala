@@ -800,7 +800,7 @@ abstract class Types: SymbolTable {
 
   /** The canonical creator for this-types */
   def ThisType(sym: Symbol): Type =
-    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType {});
+    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType);
 
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): Type = {
@@ -809,7 +809,7 @@ abstract class Types: SymbolTable {
     else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString())
     else
-      unique(new SingleType(pre, rebind(pre, sym)) with UniqueType {})
+      unique(new SingleType(pre, rebind(pre, sym)) with UniqueType)
   }
 
   /** The canonical creator for super-types */
@@ -1050,11 +1050,13 @@ abstract class Types: SymbolTable {
         val decls1 = mapOver(decls);
         if ((parents1 eq parents) && (decls1 eq decls)) tp
         else cloneDecls(refinedType(parents1, tp.symbol.owner), tp, decls1)
+/*
       case ClassInfoType(parents, decls, clazz) =>
         val parents1 = List.mapConserve(parents)(this);
         val decls1 = mapOver(decls);
         if ((parents1 eq parents) && (decls1 eq decls)) tp
         else cloneDecls(ClassInfoType(parents1, new Scope(), clazz), tp, decls1)
+*/
       case MethodType(paramtypes, result) =>
         val paramtypes1 = List.mapConserve(paramtypes)(this);
         val result1 = this(result);
@@ -1253,7 +1255,10 @@ abstract class Types: SymbolTable {
 // Helper Methods  -------------------------------------------------------------
 
   final def isValid(p: Phase): boolean =
-    p != null && infoTransformers.nextFrom(p).phase.id >= phase.id;
+    p != null &&
+    (if (phase.id > p.id) infoTransformers.nextFrom(p).phase.id >= phase.id
+     else infoTransformers.nextFrom(phase).phase.id >= p.id);
+
 
   /** Do tp1 and tp2 denote equivalent types? */
   def isSameType(tp1: Type, tp2: Type): boolean = (tp1 eq tp2) || {

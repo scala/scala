@@ -14,6 +14,20 @@ trait Namers: Analyzer {
   import global._;
   import definitions._;
 
+  def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
+    if (settings.debug.value) log("overwriting " + sym);
+    sym.pos = pos;
+    val oldflags = sym.flags & (INITIALIZED | LOCKED);
+    val newflags = mods & ~(INITIALIZED | LOCKED);
+    sym.flags = oldflags | newflags;
+    if (sym.isModule)
+      updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
+    if (sym.owner.isPackageClass && sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader])
+      // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
+      sym.linkedSym.setInfo(NoType);
+    sym
+  }
+
   class Namer(val context: Context) {
 
     private def isTemplateContext(context: Context): boolean = context.tree match {
@@ -34,20 +48,6 @@ trait Namers: Analyzer {
       context.error(pos,
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()));
-
-    private def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
-      if (settings.debug.value) log("overwriting " + sym);
-      sym.pos = pos;
-      val oldflags = sym.flags & (INITIALIZED | LOCKED);
-      val newflags = mods & ~(INITIALIZED | LOCKED);
-      sym.flags = oldflags | newflags;
-      if (sym.isModule)
-        updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
-      if (sym.owner.isPackageClass && sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader])
-        // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
-        sym.linkedSym.setInfo(NoType);
-      sym
-    }
 
     def enterInScope(sym: Symbol): Symbol = {
       if (!(sym.isSourceMethod && sym.owner.isClass)) {
@@ -284,7 +284,7 @@ trait Namers: Analyzer {
       val restype =
 	if (tpt.isEmpty) {
 	  tpt.tpe = if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
-		    else deconstIfNotFinal(meth, typer.typed(rhs).tpe);
+		    else deconstIfNotFinal(meth, typer.computeType(rhs));
 	  tpt.tpe
 	} else typer.typedType(tpt).tpe;
       def mkMethodType(vparams: List[Symbol], restpe: Type) = {
@@ -359,7 +359,7 @@ trait Namers: Analyzer {
 		context.error(tpt.pos, "missing parameter type");
                 ErrorType
               } else {
-                tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).typed(rhs).tpe);
+                tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
                 tpt.tpe
               }
             else typer.typedType(tpt).tpe

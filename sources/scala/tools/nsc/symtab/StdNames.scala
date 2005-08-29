@@ -31,7 +31,7 @@ abstract class StdNames: SymbolTable {
     val NEWkw = newTermName("new");
     val NULLkw = newTermName("null");
     val OBJECTkw = newTermName("object");
-    val OUTER = "$outer";
+    val OUTER = newTermName("$outer");
     val OVERRIDEkw = newTermName("override");
     val PACKAGEkw = newTermName("package");
     val PRIVATEkw = newTermName("private");
@@ -76,8 +76,10 @@ abstract class StdNames: SymbolTable {
 
     def TUPLE_FIELD(index: int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index);
 
+    def LOCAL_NAME(name: Name) = newTermName(name.toString() + " ");
+    def isLocalName(name: Name) = name(name.length - 1) == ' ';
+    def GETTER_NAME(name: Name) = newTermName(name.toString().substring(0, name.length - 1));
     def SETTER_NAME(name: Name) = encode(name.toString() + "_=");
-    def LOCAL_NAME(name: Name) = encode(name.toString() + " ");
 
     val ERROR = newTermName("<error>");
     val ERRORtype = newTypeName("<error>");

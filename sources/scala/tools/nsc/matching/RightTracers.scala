@@ -71,7 +71,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
         case Star(t) =>
           traverse(t);
         case Bind(name, subtree) =>
-          var sym: Symbol = _;
+          var sym: Symbol = null;
           if( isVariableName( name )
              && isVariableSymbol( {sym = tree.symbol; tree.symbol} ))
             handleVariableSymbol( sym );
@@ -136,7 +136,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
     val helpVar = owner.newVariable( pos,
                                     fresh.newName( realVar.name
                                                   .toString()+"RTIS" ));
-    var rhs: Tree = _;
+    var rhs: Tree = null;
 
     //System.out.println("RTiS making helpvar : "+realVar+" -> "+helpVar);
 

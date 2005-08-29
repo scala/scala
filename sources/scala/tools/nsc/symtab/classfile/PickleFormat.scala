@@ -17,7 +17,7 @@ object PickleFormat {
  *                  | 5 ALIASsym len_Nat SymbolInfo
  *                  | 6 CLASSsym len_Nat SymbolInfo [thistype_Ref]
  *                  | 7 MODULEsym len_Nat SymbolInfo
- *                  | 8 VALsym len_Nat SymbolInfo
+ *                  | 8 VALsym len_Nat SymbolInfo [alias_Ref]
  *                  | 9 EXTref len_Nat name_Ref [owner_Ref]
  *                  | 10 EXTMODCLASSref len_Nat name_Ref [owner_Ref]
  *                  | 11 NOtpe len_Nat

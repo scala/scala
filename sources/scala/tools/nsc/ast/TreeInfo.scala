@@ -94,19 +94,6 @@ abstract class TreeInfo {
       false
   }
 
-  /** Is tree a pure constructor?
-   */
-  def isPureConstr(tree: Tree): boolean = tree match {
-    case Ident(_) | Select(_, _) =>
-      tree.symbol.isPrimaryConstructor
-    case TypeApply(fn, _) =>
-      isPureConstr(fn)
-    case Apply(fn, List()) =>
-      isPureConstr(fn)
-    case _ =>
-      false
-  }
-
   /** Is tree a self constructor call?
    */
   def isSelfConstrCall(tree: Tree): boolean = tree match {
@@ -148,6 +135,13 @@ abstract class TreeInfo {
   /** Is tree a this node which belongs to `enclClass'? */
   def isSelf(tree: Tree, enclClass: Symbol): boolean = tree match {
     case This(_) => tree.symbol == enclClass
+    case _ => false
+  }
+
+  /** Is this pattern node a catch-all (wildcard or variable) pattern? */
+  def isDefaultCase(cdef: CaseDef) = cdef match {
+    case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
+    case CaseDef(Bind(_, Ident(nme.WILDCARD)), EmptyTree, _) => true
     case _ => false
   }
 

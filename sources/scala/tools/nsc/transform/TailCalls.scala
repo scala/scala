@@ -150,7 +150,8 @@ abstract class TailCalls extends Transform
               copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
           } else {
             log("Non-final method: " + name);
-            DefDef(newCtx.currentMethod, (x) => transform(rhs, newCtx));
+            // Martin: OK like that?
+            copy.DefDef(tree, mods, name, tparams, vparams, tpt, transform(rhs, newCtx))
           }
           log("Leaving DefDef: " + name);
           t1;

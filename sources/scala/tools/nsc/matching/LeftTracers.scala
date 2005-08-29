@@ -132,12 +132,12 @@ abstract class LeftTracerInScala extends Autom2Scala {
      */
   def code_state(i: Int, elseBody: Tree): Tree = {
 
-    var runFinished: Tree = _; // holds result of the run
+    var runFinished: Tree = null; // holds result of the run
     var finalSwRes: Int = 0;
 
     runFinished = run_finished(i);
 
-    var stateBody: Tree = _ ; // action(delta) for one particular label/test
+    var stateBody: Tree = null ; // action(delta) for one particular label/test
 
     // default action (fail if there is none)
 

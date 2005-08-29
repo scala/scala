@@ -31,9 +31,9 @@ abstract class ExplicitOuter extends InfoTransform {
    *  2. Add a mixin constructor $init$ to all traits except interfaces
    *  Leave all other types unchanged.
    */
-  override def transformInfo(sym: Symbol, tp: Type): Type = tp match {
+  def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
-      if ((sym.isConstructor || sym.isMixinConstructor) && !sym.owner.isStatic)
+      if (sym.isConstructor && !sym.owner.isStatic)
 	MethodType(formals ::: List(sym.owner.owner.enclClass.thisType), restpe)
       else tp;
     case ClassInfoType(parents, decls, clazz) =>
@@ -46,7 +46,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    setFlag (LOCAL | PRIVATE | PARAMACCESSOR)
 	    setInfo outerType);
 	  decls1 enter (clazz.newMethod(clazz.pos, nme.OUTER)
-	    setFlag (PRIVATE | PARAMACCESSOR | ACCESSOR | STABLE | FINAL)
+	    setFlag (PARAMACCESSOR | ACCESSOR | STABLE | FINAL)
 	    setInfo MethodType(List(), outerType));
 	}
 	if (clazz.isTrait) {
@@ -64,6 +64,64 @@ abstract class ExplicitOuter extends InfoTransform {
 
   private def makeMixinConstructor(clazz: Symbol): Symbol =
     clazz.newMethod(clazz.pos, nme.MIXIN_CONSTRUCTOR) setInfo MethodType(List(), UnitClass.tpe);
+
+  /** A base class for transformers that maintain `outerParam' values for
+   *  outer parameters of constructors.
+   *  The class provides methods for referencing via outer.
+   */
+  class OuterPathTransformer extends Transformer {
+
+    /** The directly enclosing outer parameter, if we are in a constructor */
+    protected var outerParam: Symbol = NoSymbol;
+
+    /** The first outer selection from currently transformed tree
+     */
+    protected def outerValue: Tree =
+      if (outerParam != NoSymbol) gen.Ident(outerParam)
+      else outerSelect(gen.This(currentOwner.enclClass));
+
+    /** The path
+     *     `base'.$outer ... .$outer
+     *  which refers to the outer instance `to' of value `base
+     */
+    protected def outerPath(base: Tree, to: Symbol): Tree =
+      if (base.tpe.symbol == to) base else outerPath(outerSelect(base), to);
+
+    /** Select and apply outer accessor from `base'
+     */
+    private def outerSelect(base: Tree): Tree = {
+      assert(base.tpe != null, base);
+      assert(base.tpe.symbol != null, base);
+      val clazz = base.tpe.symbol.owner.enclClass;
+      Apply(
+	Select(base, base.tpe.member(nme.OUTER)) setType MethodType(List(), clazz.thisType),
+	List()) setType clazz.thisType
+    }
+
+    override def transform(tree: Tree): Tree = {
+      try {//debug
+	val savedOuterParam = outerParam;
+	tree match {
+	  case Template(_, _) =>
+            outerParam = NoSymbol;
+	  case DefDef(_, _, _, vparamss, _, _) =>
+	    if (tree.symbol.isConstructor && !(tree.symbol.owner.isStatic)) {
+	      val lastParam = vparamss.head.last;
+	      assert(lastParam.name == nme.OUTER, tree);
+	      outerParam = lastParam.symbol
+	    }
+	  case _ =>
+	}
+	val result = super.transform(tree);
+	outerParam = savedOuterParam;
+	result
+      } catch {//debug
+	case ex: Throwable =>
+	  System.out.println("exception when transforming " + tree);
+	throw ex
+      }
+    }
+  }
 
   class ExplicitOuterTransformer(unit: CompilationUnit) extends Transformer {
 
@@ -107,24 +165,6 @@ abstract class ExplicitOuter extends InfoTransform {
       accessor
     }
 
-    /** The path
-     *     `from'.this.$outer ... .$outer
-     *  which is equivalent to an outer self reference `to'.this from within class `from'
-     */
-    def outerPath(base: Tree, to: Symbol): Tree =
-      if (base.tpe.symbol == to) base else outerPath(outerSelect(base), to);
-
-    /** Select and apply outer accessor from `base'
-     */
-    def outerSelect(base: Tree): Tree = {
-      assert(base.tpe != null, base);
-      assert(base.tpe.symbol != null, base);
-      val clazz = base.tpe.symbol.owner.enclClass;
-      Apply(
-        Select(base, base.tpe.member(nme.OUTER)) setType MethodType(List(), clazz.thisType),
-        List()) setType clazz.thisType;
-    }
-
     /** The first step performs the following transformations:
      *   1. A class which is not an interface and is not static gets an outer link
      *      (@see outerDefs)
@@ -147,19 +187,9 @@ abstract class ExplicitOuter extends InfoTransform {
      *      is augmented to this.<init>(args, OUTER) where OUTER is the last parameter
      *      of the secondary constructor.
      */
-    private val firstTransformer = new Transformer {
+    private val firstTransformer = new OuterPathTransformer {
 
       var localTyper: analyzer.Typer = typer;
-
-      /** The directly enclosing outer parameter, if we are in a constructor
-       */
-      var outerParam: Symbol = NoSymbol;
-
-      /** The first outer selection from currently transformed tree
-       */
-      def outerValue: Tree =
-        if (outerParam != NoSymbol) gen.Ident(outerParam)
-        else outerSelect(gen.This(currentOwner.enclClass));
 
       /** The two definitions
        *    val outer : C.this.type _;
@@ -172,7 +202,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	List(
 	  localTyper.typed {
 	    atPos(clazz.pos) {
-	      ValDef(outerVal, EmptyTree)
+	      ValDef(outerVal)
 	    }
 	  },
 	  localTyper.typed {
@@ -186,7 +216,7 @@ abstract class ExplicitOuter extends InfoTransform {
        *    def $init$(): Unit = ()
        */
       def mixinConstructorDef(clazz: Symbol): Tree = localTyper.typed {
-	DefDef(clazz.mixinConstructor, vparamss => Literal(()))
+	DefDef(clazz.primaryConstructor, vparamss => Literal(()))
       }
 
       /** Add calls to supermixin constructors
@@ -198,7 +228,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	  atPos(tree.pos) {
 	    Apply(
 	      localTyper.typedOperator {
-		Select(Super(clazz, mixin.name), mixin.mixinConstructor)
+		Select(Super(clazz, mixin.name), mixin.primaryConstructor)
 	      },
 	      List()) setType UnitClass.tpe; // don't type this with typed(...),
  	                                     // as constructor arguments might be missing
@@ -216,19 +246,16 @@ abstract class ExplicitOuter extends InfoTransform {
 	  case Block(_, _) =>
 	    assert(false, tree);  tree
 	  case expr =>
-	    Block(mixinConstructorCalls, expr) setType expr.tpe
+	    Block(mixinConstructorCalls, expr) setType expr.tpe setPos expr.pos;
 	}
       }
 
       /** The first-step transformation method */
       override def transform(tree: Tree): Tree = {
-       try {
-	val savedOuterParam = outerParam;
 	val sym = tree.symbol;
 	val tree1 = tree match {
 	  case Template(parents, decls) =>
 	    val savedLocalTyper = localTyper;
-            outerParam = NoSymbol;
 	    localTyper = localTyper.atOwner(tree, currentOwner);
 	    var decls1 = decls;
 	    if (!(currentOwner hasFlag INTERFACE)) {
@@ -240,13 +267,13 @@ abstract class ExplicitOuter extends InfoTransform {
 	    localTyper = savedLocalTyper;
 	    copy.Template(tree, parents, decls1);
 	  case constrDef @ DefDef(mods, name, tparams, vparamss, tpt, rhs)
-	  if (sym.isConstructor || sym.isMixinConstructor) =>
+	  if (sym.isConstructor) =>
 	    val vparamss1 =
 	      if (sym.owner.isStatic) vparamss
 	      else { // (4)
 		val outerField = sym.owner.info.decl(nme.LOCAL_NAME(nme.OUTER));
-		outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
-		List(vparamss.head ::: List(ValDef(outerParam, EmptyTree)))
+		val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
+		List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
 	      }
 	    val rhs1 =
 	      if ((sym.isPrimaryConstructor || sym.isMixinConstructor) && sym.owner != ArrayClass)
@@ -255,34 +282,31 @@ abstract class ExplicitOuter extends InfoTransform {
 	    copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1);
 	  case This(qual) =>
 	    if (sym == currentOwner.enclClass || sym.isStatic) tree
-	    else atPos(tree.pos)(outerPath(outerValue, sym)) // (5)
+	    else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
 	  case Select(qual @ Super(_, mix), name) =>
             val qsym = qual.symbol;
 	    if (!needSuperAccessors || tree.symbol.isType || qsym == currentOwner.enclClass)
 	      tree
 	    else atPos(tree.pos) { // (6)
 	      val accessor = superAccessor(qsym, tree.symbol, mix);
-	      Select(if (qsym.isStatic) This(qsym) else outerPath(outerValue, qsym), accessor)
+	      Select(if (qsym.isStatic) This(qsym)
+		     else outerPath(outerValue, qsym), accessor)
                 setType accessor.tpe
 	    }
 	  case Apply(sel @ Select(qual, name), args)
 	  if ((name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR)
 	      && !sel.symbol.owner.isStatic) =>
 	    val outerVal =
-	      if (qual.isInstanceOf[This]) { assert(outerParam != NoSymbol); outerValue } // (8)
-	      else gen.mkQualifier(qual.tpe.prefix); // (7)
+              atPos(tree.pos) {
+	        if (qual.isInstanceOf[This]) { assert(outerParam != NoSymbol); outerValue } // (8)
+		else if (qual.tpe.prefix == NoPrefix) gen.This(currentOwner.enclClass)
+                else gen.mkQualifier(qual.tpe.prefix); // (7)
+              }
 	    copy.Apply(tree, sel, args ::: List(outerVal))
 	  case _ =>
 	    tree
 	}
-	val result = super.transform(tree1);
-	outerParam = savedOuterParam;
-	result
-       } catch {//debug
-	 case ex: Throwable =>
-	   System.out.println("exception when transforming " + tree);
-	 throw ex
-       }
+	super.transform(tree1)
       }
     }
 

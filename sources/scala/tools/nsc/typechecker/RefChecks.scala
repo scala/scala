@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import symtab.Flags._;
 import collection.mutable.HashMap;
 import util.ListBuffer;
-import transform.Transform;
+import transform.InfoTransform;
 
 /** Post-attribution checking and transformation.
  *  //todo: check whether we always check type parameter bounds.
@@ -32,7 +32,7 @@ import transform.Transform;
  *       different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
  */
-abstract class RefChecks extends Transform {
+abstract class RefChecks extends InfoTransform {
 
   import global._;
   import definitions._;
@@ -42,6 +42,13 @@ abstract class RefChecks extends Transform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks";
   def newTransformer(unit: CompilationUnit): Transformer = new RefCheckTransformer(unit);
+
+  def transformInfo(sym: Symbol, tp: Type): Type = {
+    if (sym.isModule && !sym.isStatic) {
+      sym setFlag (METHOD | STABLE);
+      PolyType(List(), tp)
+    } else tp
+  }
 
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
@@ -162,7 +169,6 @@ abstract class RefChecks extends Transform {
 	      "\n and " + infoString(alt2) +
 	      "\n override " + infoString(other));
 	  } else if (member != NoSymbol && !(member hasFlag LOCAL)) {
-	    member.flags = member.flags | ACCESSED;
 	    checkOverride(clazz, member, other);
 	  }
 	}
@@ -352,7 +358,7 @@ abstract class RefChecks extends Transform {
     }
 
     private def enterReference(pos: int, sym: Symbol): unit =
-      if (sym.isLocal && sym.isTerm) {
+      if (sym.isLocal) {
 	val e = currentLevel.scope.lookupEntry(sym.name);
 	if (e != null && sym == e.sym) {
           var l = currentLevel;
@@ -477,7 +483,9 @@ abstract class RefChecks extends Transform {
 	val sym = tree.symbol;
         val localTyper = typer.atOwner(currentOwner);
 	val cdef = ClassDef(mods | MODULE, name, List(), EmptyTree, impl)
-	  setSymbol sym.moduleClass setType NoType;
+	  setPos tree.pos
+          setSymbol sym.moduleClass
+          setType NoType;
 	if (sym.isStatic) List(transform(cdef))
 	else {
           val moduleType = sym.tpe;
@@ -492,17 +500,19 @@ abstract class RefChecks extends Transform {
 	    ValDef(mvar, if (sym.isLocal) Literal(Constant(null)) else EmptyTree));
 
           // def m: T = { if (m$ == null) m$ = new m$class; m$ }
-          sym.setFlag(METHOD | STABLE);
-          sym.setInfo(PolyType(List(), moduleType));
-          val ddef = localTyper.typed(
-            DefDef(sym, vparamss =>
-              Block(
-		List(
-		  If(
-                    Apply(Select(Ident(mvar), nme.EQ), List(Literal(Constant(null)))),
-                    Assign(Ident(mvar), New(TypeTree(moduleType), List(List()))),
-                    EmptyTree)),
-		Ident(mvar))));
+          val ddef =
+	    atPhase(phase.next) {
+	      localTyper.typed {
+		DefDef(sym, vparamss =>
+		  Block(
+		    List(
+		      If(
+			Apply(Select(Ident(mvar), nme.EQ), List(Literal(Constant(null)))),
+			Assign(Ident(mvar), New(TypeTree(moduleType), List(List()))),
+			EmptyTree)),
+		    Ident(mvar)))
+	      }
+	    }
           transformTrees(List(cdef, vdef, ddef))
 	}
 
@@ -583,7 +593,6 @@ abstract class RefChecks extends Transform {
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
 	  else if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
-	    sym setFlag ACCESSED;
 	    assert(sym != NoSymbol, tree);//debug
 	    enterReference(tree.pos, sym);
 	  }
@@ -592,7 +601,6 @@ abstract class RefChecks extends Transform {
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
 	  else {
-	    sym setFlag ACCESSED;
 	    if (sym hasFlag DEFERRED) {
 	      qual match {
 		case Super(qualifier, mixin) =>

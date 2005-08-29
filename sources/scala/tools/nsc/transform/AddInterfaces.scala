@@ -27,11 +27,8 @@ abstract class AddInterfaces extends InfoTransform {
   private def implClassName(sym: Symbol): Name =
     newTermName(sym.name.toString() + nme.IMPL_CLASS_SUFFIX);
 
-  def isImplClass(sym: Symbol): boolean =
-    sym.name.endsWith(nme.IMPL_CLASS_SUFFIX);
-
   private def needsImplClass(sym: Symbol): boolean =
-    sym.isTrait && (!(sym hasFlag INTERFACE) || (sym hasFlag lateINTERFACE)) && !isImplClass(sym);
+    sym.isTrait && (!(sym hasFlag INTERFACE) || (sym hasFlag lateINTERFACE)) && !sym.isImplClass;
 
   private def needsImplMethod(sym: Symbol): boolean =
     sym.isMethod && isInterfaceMember(sym) &&
@@ -39,7 +36,7 @@ abstract class AddInterfaces extends InfoTransform {
 
   private def isInterfaceMember(sym: Symbol): boolean =
     sym.isType ||
-    sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) && !sym.isMixinConstructor;
+    sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) && !sym.isConstructor;
 
   private def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
     case Some(c) => c
@@ -49,7 +46,8 @@ abstract class AddInterfaces extends InfoTransform {
 	  setFlag (iface.flags & ~(INTERFACE | lateINTERFACE))
 	  setInfo new LazyImplClassType(iface);
         impl.name = implClassName(iface);
-        //impl.typeOfThis = iface.tpe;
+        //includeInTypeOfThis(iface, impl);
+        //includeInTypeOfThis(impl, impl);
         implClassMap(iface) = impl;
         if (settings.debug.value) log("generating impl class " + impl);
         impl
@@ -63,7 +61,6 @@ abstract class AddInterfaces extends InfoTransform {
       for (val sym <- ifaceDecls.elements) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
-            assert(!sym.isMixinConstructor);//debug
 	    val impl = sym.cloneSymbol(implClass).setInfo(sym.info);
 	    if (!impl.isExternal) implMethodMap(sym) = impl;
 	    decls enter impl;
@@ -114,7 +111,7 @@ abstract class AddInterfaces extends InfoTransform {
         else {
           assert(!parents.head.symbol.isTrait);
           if (clazz hasFlag INTERFACE) erasedTypeRef(ObjectClass) :: parents.tail
-          else if (isImplClass(clazz) || clazz == ArrayClass) parents
+          else if (clazz.isImplClass || clazz == ArrayClass) parents
 	  else traitToImplClass(parents)
         }
       val decls1 = addImplClasses(
@@ -127,11 +124,16 @@ abstract class AddInterfaces extends InfoTransform {
 
 // Tree transformation --------------------------------------------------------------
 
-  private def changeOwner(oldowner: Symbol, newowner: Symbol) = new Traverser {
-    override def traverse(tree: Tree): unit =
-      if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
-	tree.symbol.owner = newowner
-      else super.traverse(tree)
+  private class ChangeOwnerAndReturnTraverser(oldowner: Symbol, newowner: Symbol)
+          extends ChangeOwnerTraverser(oldowner, newowner) {
+    override def traverse(tree: Tree): unit = {
+      tree match {
+        case Return(expr) =>
+          if (tree.symbol == oldowner) tree.symbol = newowner;
+        case _ =>
+      }
+      super.traverse(tree)
+    }
   }
 
   private def ifaceMemberDef(tree: Tree): Tree =
@@ -146,7 +148,7 @@ abstract class AddInterfaces extends InfoTransform {
     implMethodMap.get(ifaceMethod) match {
       case Some(implMethod) =>
         tree.symbol = implMethod;
-        changeOwner(ifaceMethod, implMethod).traverse(tree);
+        new ChangeOwnerAndReturnTraverser(ifaceMethod, implMethod).traverse(tree);
         tree
       case None =>
         throw new Error("implMethod missing for " + ifaceMethod + " " + ifaceMethod.isExternal)
@@ -159,9 +161,10 @@ abstract class AddInterfaces extends InfoTransform {
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos){
     val templ1 = Template(templ.parents, templ.body map implMemberDef)
+      setPos templ.pos
       setSymbol clazz.newLocalDummy(templ.pos);
-    changeOwner(templ.symbol.owner, clazz).traverse(templ1);
-    changeOwner(templ.symbol, templ1.symbol).traverse(templ1);
+    new ChangeOwnerTraverser(templ.symbol.owner, clazz).traverse(templ1);
+    new ChangeOwnerTraverser(templ.symbol, templ1.symbol).traverse(templ1);
     templ1
   }
 
@@ -182,7 +185,8 @@ abstract class AddInterfaces extends InfoTransform {
 
   protected val traitTransformer = new Transformer {
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
-      super.transformStats(stats ::: implClassDefs(stats), exprOwner) filter (EmptyTree !=);
+      super.transformStats(stats, exprOwner) :::
+      super.transformStats(implClassDefs(stats), exprOwner);
     override def transform(tree: Tree): Tree = {
       val tree1 = tree match {
 	case ClassDef(mods, name, tparams, tpt, impl) =>
@@ -192,9 +196,16 @@ abstract class AddInterfaces extends InfoTransform {
           }
 	  else tree
 	case Template(parents, body) =>
-	  copy.Template(tree, tree.symbol.owner.info.parents map TypeTree, body)
+          val parents1 = tree.symbol.owner.info.parents map (t => TypeTree(t) setPos tree.pos);
+          copy.Template(tree, parents1, body)
 	case This(_) =>
-	  if (needsImplClass(tree.symbol)) This(implClass(tree.symbol)) else tree
+	  if (needsImplClass(tree.symbol)) {
+            val impl = implClass(tree.symbol);
+            var owner = currentOwner;
+            while (owner != tree.symbol && owner != impl) owner = owner.owner;
+            if (owner == impl) This(impl) setPos tree.pos
+            else tree
+          } else tree
 	case Super(qual, mix) =>
 	  val mix1 =
 	    if (mix == nme.EMPTY.toTypeName) mix
@@ -206,7 +217,7 @@ abstract class AddInterfaces extends InfoTransform {
 	      if (needsImplClass(ps.head.symbol)) implClass(ps.head.symbol).name
 	      else mix
 	    }
-	  if (needsImplClass(tree.symbol)) Super(implClass(tree.symbol), mix1)
+	  if (needsImplClass(tree.symbol)) Super(implClass(tree.symbol), mix1) setPos tree.pos
 	  else copy.Super(tree, qual, mix1)
 	case _ =>
 	  tree

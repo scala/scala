@@ -453,7 +453,7 @@ class BerrySethi {
    def makeTransition(srcI:Integer, destI:Integer, label: Label): Unit = {
     var src  = srcI.intValue() ;
     var dest = destI.intValue() ;
-    var  arrows: Vector = _; //, revArrows;
+    var  arrows: Vector = null; //, revArrows;
     //Label revLabel = new Pair( srcI, label );
     label match {
       case DefaultLabel() =>
@@ -660,8 +660,8 @@ class BindingBerrySethi extends BerrySethi {
   override def makeTransition(srcI: Integer, destI: Integer, label: Label): Unit = {
     val src  = srcI.intValue() ;
     val dest = destI.intValue() ;
-    var arrows: Vector = _;
-    var revArrows: Vector = _;
+    var arrows: Vector = null;
+    var revArrows: Vector = null;
     val revLabel = new LPair(srcI, label);
     label match {
       case DefaultLabel() =>

@@ -23,6 +23,7 @@ abstract class Phase(val prev: Phase) {
   def name: String;
   def description: String = name;
   def erasedTypes: boolean = false;
+  def flatClasses: boolean = false;
   def run: unit;
 
   override def toString() = name;

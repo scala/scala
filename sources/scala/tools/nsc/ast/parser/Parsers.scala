@@ -753,7 +753,7 @@ abstract class Parsers: SyntaxAnalyzer {
      *                | SimpleExpr1 ArgumentExprs
      */
     def simpleExpr(): Tree = {
-      var t: Tree = _;
+      var t: Tree = null;
       var isNew = false;
       in.token match {
 	case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT |
@@ -1111,6 +1111,7 @@ abstract class Parsers: SyntaxAnalyzer {
      */
     def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: boolean): List[List[ValDef]] = {
       var implicitmod = 0;
+      var caseParam = ofCaseClass;
       def param(): ValDef = {
 	atPos(in.pos) {
 	  var mods = Flags.PARAM;
@@ -1119,8 +1120,9 @@ abstract class Parsers: SyntaxAnalyzer {
 	    if (in.token == VAL) in.nextToken()
 	    else {
 	      if (mods != Flags.PARAMACCESSOR) accept(VAL);
-	      if (!ofCaseClass) mods = mods | Flags.PRIVATE | Flags.LOCAL;
+	      if (!(caseParam)) mods = mods | Flags.PRIVATE | Flags.LOCAL;
 	    }
+	    if (caseParam) mods = mods | Flags.CASEACCESSOR;
 	  }
           val name = ident();
           accept(COLON);
@@ -1149,13 +1151,14 @@ abstract class Parsers: SyntaxAnalyzer {
 	in.nextToken();
 	vds += paramClause();
 	accept(RPAREN);
+	caseParam = false
       }
       val result = vds.toList;
       if (owner == nme.CONSTRUCTOR &&
 	  (result.isEmpty || (!result.head.isEmpty &&
 			      (result.head.head.mods & Flags.IMPLICIT) != 0)))
 	syntaxError(pos, "auxiliary constructor needs non-implicit parameter list", false);
-      addImplicitViews(result, implicitViews)
+      addImplicitViews(owner, result, implicitViews)
     }
 
     /** ParamType ::= Type | `=>' Type | Type `*'

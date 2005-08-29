@@ -158,6 +158,7 @@ abstract class Definitions: SymbolTable {
     var BoxedUnitClass: Symbol = _;
     var BoxedUnitModule: Symbol = _;
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT");
+    var ObjectRefClass: Symbol = _;
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname, true);
@@ -231,20 +232,24 @@ abstract class Definitions: SymbolTable {
       owner.newTypeParameter(Position.NOPOS, "T" + index)
         .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor));
 
-    val boxedSym = new HashMap[Symbol, Symbol];
-    val boxedArraySym = new HashMap[Symbol, Symbol];
+    val boxedClass = new HashMap[Symbol, Symbol];
+    val boxedArrayClass = new HashMap[Symbol, Symbol];
+    val refClass = new HashMap[Symbol, Symbol];
     private val abbrvTag = new HashMap[Symbol, char];
 
     private def getValueClass(name: String, tag: char): Symbol = {
       val result = getClass("scala." + name);
-      boxedSym(result) = getClass("scala.runtime.Boxed" + name);
-      if (name != "Unit") boxedArraySym(result) = getClass("scala.runtime.Boxed" + name + "Array");
+      boxedClass(result) = getClass("scala.runtime.Boxed" + name);
+      if (name != "Unit") {
+        boxedArrayClass(result) = getClass("scala.runtime.Boxed" + name + "Array");
+        refClass(result) = getClass("scala.runtime." + name + "Ref");
+      }
       abbrvTag(result) = tag;
       result
     }
 
     /** Is symbol a value class? */
-    def isValueClass(sym: Symbol): boolean = boxedSym contains sym;
+    def isValueClass(sym: Symbol): boolean = boxedClass contains sym;
 
     /** Is symbol a value or array class? */
     def isUnboxedClass(sym: Symbol): boolean = isValueClass(sym) || sym == ArrayClass;
@@ -368,6 +373,7 @@ abstract class Definitions: SymbolTable {
       BoxedNumberClass = getClass("scala.runtime.BoxedNumber");
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit");
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit");
+      ObjectRefClass = getClass("scala.runtime.ObjectRef");
     }
   }
 }

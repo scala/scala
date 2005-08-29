@@ -248,7 +248,7 @@ abstract class GenICode extends SubComponent  {
             // normal method call
 
             var invokeStyle =
-              if (sym.isConstructor)
+              if (sym.isClassConstructor)
                 NewInstance;
               else if (sym.isStatic)
                 Static(false)

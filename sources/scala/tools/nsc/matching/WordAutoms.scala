@@ -34,7 +34,7 @@ abstract class WordAutomInScala extends Autom2Scala {
 
   def getMatcherSwitch(selector: Tree, failTree: Tree, body: scala.List[Tree] /*, resultType: Type*/ ): Tree = {
 
-    var result: Tree = _;
+    var result: Tree = null;
     var ncases: scala.List[CaseDef] = Nil;
     val it = body.reverse.elements;
     //val tags = new Array[int](body.length);

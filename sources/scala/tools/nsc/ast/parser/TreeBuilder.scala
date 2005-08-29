@@ -94,7 +94,7 @@ abstract class TreeBuilder {
     if (parents.tail.isEmpty && stats.isEmpty)
       New(parents.head, argss)
     else {
-      val x = freshName(nme.ANON_CLASS_NAME.toString()).toTypeName;
+      val x = nme.ANON_CLASS_NAME.toTypeName;
       Block(
         List(ClassDef(
           FINAL | SYNTHETIC, x, List(), TypeTree(),
@@ -272,8 +272,9 @@ abstract class TreeBuilder {
       argtpes ::: List(restpe));
 
   /** Append implicit view section if for `implicitViews' if nonempty */
-  def addImplicitViews(vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
-    def makeViewParam(tpt: Tree) = ValDef(PARAM | IMPLICIT | LOCAL | PRIVATE, freshName("view$"), tpt, EmptyTree);
+  def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
+    val mods = if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM;
+    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("view$"), tpt, EmptyTree);
     if (implicitViews.isEmpty) vparamss
     else vparamss ::: List(implicitViews map makeViewParam)
   }

@@ -376,10 +376,8 @@ abstract class Trees: Global {
     override def isType = selector.isTypeName;
   }
 
-  def Select(qualifier: Tree, sym: Symbol): Select = {
-    sym.setFlag(ACCESSED);
-    Select(qualifier, sym.name) setSymbol sym
-  }
+  def Select(qualifier: Tree, sym: Symbol): Select =
+    Select(qualifier, sym.name) setSymbol sym;
 
   /** Identifier */
   case class Ident(name: Name)
@@ -388,10 +386,8 @@ abstract class Trees: Global {
     override def isType = name.isTypeName;
   }
 
-  def Ident(sym: Symbol): Ident = {
-    sym.setFlag(ACCESSED);
-    Ident(sym.name) setSymbol sym
-  }
+  def Ident(sym: Symbol): Ident =
+    Ident(sym.name) setSymbol sym;
 
   /** Literal */
   case class Literal(value: Constant)
@@ -921,7 +917,8 @@ abstract class Trees: Global {
     def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       List.mapConserve(stats)(stat =>
 	if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
-	else transform(stat));
+	else transform(stat)) filter (EmptyTree !=);
+    def transformUnit(unit: CompilationUnit): unit = { unit.body = transform(unit.body) }
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
       val prevOwner = currentOwner;
@@ -938,11 +935,11 @@ abstract class Trees: Global {
       case EmptyTree =>
         ;
       case PackageDef(name, stats) =>
-	atOwner(tree.symbol) {
+	atOwner(tree.symbol.moduleClass) {
           traverseTrees(stats)
 	}
       case ClassDef(mods, name, tparams, tpt, impl) =>
-	atOwner(tree.symbol.moduleClass) {
+	atOwner(tree.symbol) {
           traverseTrees(tparams); traverse(tpt); traverse(impl)
 	}
       case ModuleDef(mods, name, impl) =>
@@ -1072,6 +1069,14 @@ abstract class Trees: Global {
       super.traverse(tree)
     }
     def apply(tree: Tree): Tree = { val tree1 = tree.duplicate; traverse(tree1); tree1 }
+  }
+
+  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
+    override def traverse(tree: Tree): unit = {
+      if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
+	tree.symbol.owner = newowner;
+      super.traverse(tree)
+    }
   }
 
   final class TreeList {

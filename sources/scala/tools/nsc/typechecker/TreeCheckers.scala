@@ -57,12 +57,35 @@ abstract class TreeCheckers extends Analyzer {
     override def typed(tree: Tree) = super.typed(tree); // doto remove for new compiler
 
     object precheck extends Traverser {
-      override def traverse(tree: Tree): unit = {
-	if (tree.pos == Position.NOPOS)
-	  error(tree.pos, "tree without position: " + tree)
-	else if (tree.tpe == null && phase.id >= typerPhase.id)
-	  error(tree.pos, "tree without type: " + tree)
-      }
+      override def traverse(tree: Tree): unit =
+        try {
+          tree match {
+            case Apply(_, args) =>
+              assert(args forall (EmptyTree !=))
+            case _ =>
+          }
+	  if (tree.pos == Position.NOPOS && tree != EmptyTree) {
+	    error(tree.pos, "tree without position: " + tree)
+	  } else if (tree.tpe == null && phase.id >= typerPhase.id) {
+	    error(tree.pos, "tree without type: " + tree);
+          } else if (tree.isDef && tree.symbol.owner != currentOwner) {
+            var owner = currentOwner;
+            while (owner.isTerm && !owner.isMethod && tree.symbol.owner != owner)
+              owner = owner.owner;
+            if (tree.symbol.owner != owner) {
+              error(tree.pos, "" + tree.symbol + " has wrong owner: " + tree.symbol.owner +
+                    tree.symbol.owner.locationString + ", should be: " +
+                    currentOwner + currentOwner.locationString)
+            }
+          } else {
+            super.traverse(tree)
+          }
+        } catch {
+          case ex: Throwable =>
+	    if (settings.debug.value)
+	      System.out.println("exception when traversing " + tree);
+	    throw(ex)
+        }
     }
 
     object postcheck extends Traverser {

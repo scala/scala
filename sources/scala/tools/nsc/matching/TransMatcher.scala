@@ -25,6 +25,7 @@ with RightTracers {
   import global._;
   import definitions._;
   import posAssigner.atPos;
+  import typer.typed;
 
   val phaseName = "transmatcher";
 
@@ -98,7 +99,7 @@ with RightTracers {
             error("shouldn't happen?!");
 
         case Bind(name, subtree) =>
-          var sym: Symbol = _;
+          var sym: Symbol = null;
 
         if (isVariableName(name)
             && isVariableSymbol( {sym = tree.symbol; tree.symbol} ))
@@ -139,7 +140,7 @@ with RightTracers {
     def isRegular(pats:List[CaseDef]): Pair[List[CaseDef],Boolean] = {
 	   var existsReg = false;
 	   var isReg = false;
-      var nilVars:List[Symbol] = _;
+      var nilVars:List[Symbol] = null;
 
 	  def isRegular1(pat: Tree): Tree = pat match {
         case Alternative(trees)          =>
@@ -247,7 +248,7 @@ with RightTracers {
         //  global.log("internal pattern matching structure");
         //  pm.print();
         //}
-        pm.toTree();
+        pm.toTree()
       }
     }
     override def transform(tree: Tree): Tree = tree match {
@@ -261,14 +262,19 @@ with RightTracers {
 	    Console.println("BODY "+t.body.toString());
 	  }
 	  */
-      // @todo: remove from partial matcher
+        // @todo: remove from partial matcher
         TransMatcher.this.currentOwner = currentOwner;
         TransMatcher.this.resultType   = tree.tpe;
-      //Console.println("TransMatcher selector.tpe ="+selector.tpe+")");
-      //Console.println("TransMatcher resultType ="+resultType+")");
-      val t =   handle(nselector, ncases.asInstanceOf[List[CaseDef]]);
-	  //Console.println(t.toString());
-	  t
+        //Console.println("TransMatcher selector.tpe ="+selector.tpe+")");
+        //Console.println("TransMatcher resultType ="+resultType+")");
+        val t =
+          typed {
+            atPos(tree.pos) {
+              handle(nselector, ncases.asInstanceOf[List[CaseDef]])
+            }
+          }
+        //Console.println(t.toString());
+        t
       case _ =>
         super.transform(tree);
     }

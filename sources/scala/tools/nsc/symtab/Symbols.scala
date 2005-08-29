@@ -18,11 +18,11 @@ abstract class Symbols: SymbolTable {
   /** The class for all symbols */
   abstract class Symbol(initOwner: Symbol, initPos: int, initName: Name) {
 
-    var owner = initOwner;
-    var name = initName;
+    var rawowner = initOwner;
+    var rawname = initName;
+    private var rawflags: long = 0;
     var pos = initPos;
     val id = { ids = ids + 1; ids }
-    private var rawflags: long = 0;
 
     def setPos(pos: int): this.type = { this.pos = pos; this }
 
@@ -35,7 +35,7 @@ abstract class Symbols: SymbolTable {
     final def newValueParameter(pos: int, name: Name) =
       newValue(pos, name).setFlag(PARAM);
     final def newLocalDummy(pos: int) =
-      newValue(pos, nme.LOCAL(owner)).setInfo(NoType);
+      newValue(pos, nme.LOCAL(this)).setInfo(NoType);
     final def newMethod(pos: int, name: Name) =
       newValue(pos, name).setFlag(METHOD);
     final def newLabel(pos: int, name: Name) =
@@ -102,8 +102,9 @@ abstract class Symbols: SymbolTable {
     final def isMethod = isTerm && hasFlag(METHOD);
     final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD;
     final def isLabel = isTerm && hasFlag(LABEL);
-    final def isConstructor = isTerm && (name == nme.CONSTRUCTOR);
+    final def isClassConstructor = isTerm && (name == nme.CONSTRUCTOR);
     final def isMixinConstructor = isTerm && (name == nme.MIXIN_CONSTRUCTOR);
+    final def isConstructor = isTerm && (name == nme.CONSTRUCTOR) || (name == nme.MIXIN_CONSTRUCTOR);
     final def isModule = isTerm && hasFlag(MODULE);
     final def isPackage = isModule && hasFlag(PACKAGE);
     final def isThisSym = isTerm && name == nme.this_;
@@ -125,9 +126,13 @@ abstract class Symbols: SymbolTable {
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD) || hasFlag(STABLE));
 
     /** Does this symbol denote the primary constructor
-     * of its enclosing class? */
+     * of its enclosing class or trait? */
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this;
+
+    /** Is this symbol an implementation class for a trait ? */
+    final def isImplClass: boolean =
+      name.endsWith(nme.IMPL_CLASS_SUFFIX);
 
     /** Is this symbol static (i.e. with no outer instance)? */
     final def isStatic: boolean = hasFlag(STATIC) || isRoot || owner.isStaticOwner;
@@ -157,6 +162,10 @@ abstract class Symbols: SymbolTable {
 	case _ => false
       });
 
+    /** Is this class nested in another class or module (not a package)? */
+    final def isNestedClass: boolean =
+      isClass && !isRoot && !owner.isPackageClass;
+
     /** Is this class locally defined?
      *  A class is local, if
      *   - it is anonymous, or
@@ -184,7 +193,13 @@ abstract class Symbols: SymbolTable {
       else if (hasFlag(CONTRAVARIANT)) -1
       else 0;
 
-// Flags ----------------------------------------------------------------------------
+// Flags, owner, and name attributes --------------------------------------------------------------
+
+    def owner: Symbol = rawowner;
+    final def owner_=(owner: Symbol): unit = { rawowner = owner }
+
+    def name: Name = rawname;
+    final def name_=(name: Name): unit = { rawname = name }
 
     final def flags = {
       val fs = rawflags & phase.flagMask;
@@ -254,14 +269,11 @@ abstract class Symbols: SymbolTable {
       this
     }
 
-    /** Set new info valid from start of next phase. */
+    /** Set new info valid from start of this phase. */
     final def updateInfo(info: Type): Symbol = {
-      val current = phase;
-      phase = phase.next;
       assert(infos.start.id <= phase.id);
       if (infos.start == phase) infos = infos.prev;
       infos = new TypeHistory(phase, info, infos);
-      phase = current;
       this
     }
 
@@ -409,10 +421,10 @@ abstract class Symbols: SymbolTable {
     def enclMethod: Symbol = if (isSourceMethod) this else owner.enclMethod;
 
     /** The primary constructor of a class */
-    def primaryConstructor: Symbol = info.decl(nme.CONSTRUCTOR).alternatives.head;
-
-    /** The (primary) trait constructor of (the implementation class of) a mixin */
-    def mixinConstructor: Symbol = info.decl(nme.MIXIN_CONSTRUCTOR);
+    def primaryConstructor: Symbol = {
+      val c = info.decl(if (isTrait || isImplClass) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR);
+      if (c hasFlag OVERLOADED) c.alternatives.head else c
+    }
 
     /** The self symbol of a class with explicit self type, or else the symbol itself.
      */
@@ -427,11 +439,14 @@ abstract class Symbols: SymbolTable {
     /** If symbol is a class, the type this.type in this class, otherwise NoPrefix */
     def thisType: Type = NoPrefix;
 
-    /** Return every accessor of a primary constructor parameter in this case class */
-    final def caseFieldAccessors: List[Symbol] = {
-      assert(isClass && hasFlag(CASE));
-      info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(PARAMACCESSOR))
-    }
+    /** Return every accessor of a primary constructor parameter in this case class
+      * todo: limit to accessors for first constructor parameter section.
+      */
+    final def caseFieldAccessors: List[Symbol] =
+      info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(CASEACCESSOR));
+
+    final def constrParamAccessors: List[Symbol] =
+      info.decls.toList filter (sym => !sym.isMethod && sym.hasFlag(PARAMACCESSOR));
 
     /** The symbol accessed by this accessor function.
      */
@@ -439,8 +454,12 @@ abstract class Symbols: SymbolTable {
       assert(hasFlag(ACCESSOR));
       val name1 = if (name.endsWith(nme._EQ)) name.subName(0, name.length - nme._EQ.length)
 	          else name;
-      owner.info.decl(name1.toString() + "$")
+      owner.info.decl(nme.LOCAL_NAME(name1))
     }
+
+    /** The getter for this symbol */
+    final def getter: Symbol =
+      if (nme.isLocalName(name)) owner.info.decl(nme.GETTER_NAME(name)) else NoSymbol;
 
     /** The class with the same name in the same package as this module or
      *  case class factory
@@ -511,10 +530,7 @@ abstract class Symbols: SymbolTable {
 
     /** The simple name of this Symbol (this is always a term name) */
     final def simpleName: Name = name;
-/*
-      if (isConstructor && !settings.debug.value)
-	newTermName("<init owner.name.toTermName else name;
-*/
+
     /** String representation of symbol's definition key word */
     final def keyString: String =
       if (isTrait)
@@ -541,7 +557,7 @@ abstract class Symbols: SymbolTable {
       else if (isVariable) "variable"
       else if (isPackage) "package"
       else if (isModule) "object"
-      else if (isConstructor) "constructor"
+      else if (isClassConstructor) "constructor"
       else if (isSourceMethod) "method"
       else if (isTerm) "value"
       else "";
@@ -704,6 +720,21 @@ abstract class Symbols: SymbolTable {
       thissym = this;
     }
 
+    override def owner: Symbol =
+      if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) rawowner.owner
+      else rawowner;
+
+    private var flatname = nme.EMPTY;
+
+    override def name: Name =
+      if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
+	if (flatname == nme.EMPTY) {
+	  assert(rawowner.isClass);
+	  flatname = newTypeName(rawowner.name.toString() + "$" + rawname);
+	}
+	flatname
+      } else rawname;
+
     private var thisTypeCache: Type = _;
     private var thisTypePhase: Phase = null;
 
@@ -714,10 +745,9 @@ abstract class Symbols: SymbolTable {
         thisTypePhase = phase;
         if (!isValid(p)) {
 	  thisTypeCache =
-	    if (isModuleClass && !isRoot && !phase.erasedTypes) {
-	      assert(sourceModule != NoSymbol, "" + this + " " + phase);
-	      singleType(owner.thisType, sourceModule);
-	    } else ThisType(this);
+	    if (isModuleClass && !isRoot && !phase.erasedTypes)
+              singleType(owner.thisType, sourceModule);
+	    else ThisType(this);
         }
       }
       thisTypeCache

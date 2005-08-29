@@ -386,8 +386,9 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
      // Console.println("newHeader :: casted="+casted);
      // Console.println("newHeader :: casted.tpe="+casted.tpe);
       //Console.println("newHeader :: ");
-      val ts = casted.tpe.symbol.asInstanceOf[ClassSymbol]
-        .caseFieldAccessors(index);
+      val caseAccs = casted.tpe.symbol.caseFieldAccessors;
+      if (caseAccs.length <= index) System.out.println("selecting " + index + " in case fields of " + casted.tpe.symbol + "=" + casted.tpe.symbol.caseFieldAccessors);//debug
+      val ts = caseAccs(index);
       //Console.println("newHeader :: ts="+ts);
       //val accType = casted.tpe.memberType(ts); // old scalac
       //val accTree = global.typer.typed(Select(ident, ts)); // !

@@ -9,6 +9,7 @@ package scala.tools.nsc.typechecker;
 import nsc.util.ListBuffer;
 import symtab.Flags._;
 import scala.tools.util.Position;
+import collection.mutable.HashMap;
 
 /** Methods to create symbols and to enter them into scopes. */
 abstract class Typers: Analyzer {
@@ -20,6 +21,8 @@ abstract class Typers: Analyzer {
   var idcnt = 0;
   var selcnt = 0;
   var implcnt = 0;
+
+  private var transformed = new HashMap[Tree, Tree];
 
   def newTyper(context: Context): Typer = new Typer(context);
 
@@ -34,8 +37,8 @@ abstract class Typers: Analyzer {
 
     private def inferView(pos: int, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
       if (settings.debug.value) log("infer view from " + from + " to " + to);//debug
-      val res = inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous);
-      res
+      if (phase.erasedTypes) EmptyTree
+      else inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous);
     }
 
     private def inferView(pos: int, from: Type, name: Name, reportAmbiguous: boolean): Tree = {
@@ -502,9 +505,67 @@ abstract class Typers: Analyzer {
       val sym = vdef.symbol;
       var tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt));
       val rhs1 =
-	if (vdef.rhs.isEmpty) vdef.rhs
-	else newTyper(context.make(vdef, sym)).typed(vdef.rhs, tpt1.tpe);
+        if (vdef.rhs.isEmpty) {
+          if ((sym hasFlag MUTABLE) && sym.owner.isTerm && phase.id <= typerPhase.id)
+            error(vdef.pos, "local variables must be initialized");
+          vdef.rhs
+        } else {
+          newTyper(context.make(vdef, sym)).transformedOrTyped(vdef.rhs, tpt1.tpe)
+        }
       copy.ValDef(vdef, vdef.mods, vdef.name, tpt1, rhs1) setType NoType
+    }
+
+    /** Enter in global.aliases all aliases of local parameter accessors. */
+    def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree): unit = {
+      if (settings.debug.value) log("computing param aliases for " + clazz + ":" + clazz.primaryConstructor.tpe + ":" + rhs);//debug
+      def decompose(call: Tree): Pair[Tree, List[Tree]] = call match {
+	case Apply(fn, args) =>
+	  val Pair(superConstr, args1) = decompose(fn);
+	  val formals = fn.tpe.paramTypes;
+	  val args2 = if (formals.isEmpty || formals.last.symbol != RepeatedParamClass) args
+		      else args.take(formals.length - 1) ::: List(EmptyTree);
+	  if (args2.length != formals.length) assert(false, "mismatch " + clazz + " " + formals + " " + args2);//debug
+	  Pair(superConstr, args1 ::: args2)
+	case Block(stats, expr) =>
+	  decompose(stats.head)
+	case _ =>
+	  Pair(call, List())
+      }
+      val Pair(superConstr, superArgs) = decompose(rhs);
+      assert(superConstr.symbol != null, superConstr);//debug
+      if (superConstr.symbol.isPrimaryConstructor) {
+	val superClazz = superConstr.symbol.owner;
+	val superParamAccessors = superClazz.constrParamAccessors;
+	if (superParamAccessors.length != superArgs.length) {
+	  System.out.println("" + superClazz + ":" + superClazz.info.decls.toList.filter(.hasFlag(PARAMACCESSOR)));
+	  assert(false, "mismatch: " + superParamAccessors + ";" + rhs + ";" + superClazz.info.decls); //debug
+	}
+	List.map2(superParamAccessors, superArgs) { (superAcc, superArg) =>
+	  superArg match {
+	    case Ident(name) =>
+	      if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
+		val alias = aliases.get(superAcc.initialize) match {
+		  case Some(getter) =>
+		    getter
+		  case None =>
+		    val getter = superAcc.getter;
+		    if (getter != NoSymbol &&
+			superClazz.info.nonPrivateMember(getter.name) == getter) getter
+		    else NoSymbol
+		}
+		if (alias != NoSymbol) {
+		  var ownAcc = clazz.info.decl(name);
+		  if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed;
+		  assert(ownAcc hasFlag PARAMACCESSOR, clazz.toString() + " " + name);
+		  System.out.println("" + ownAcc + " has alias " + alias + alias.locationString);//debug
+		  aliases(ownAcc) = alias
+		}
+	      }
+	    case _ =>
+	  }
+	}
+	()
+      }
     }
 
     def typedDefDef(ddef: DefDef): DefDef = {
@@ -526,10 +587,10 @@ abstract class Typers: Analyzer {
 	  context.enclClass.owner.setFlag(INCONSTRUCTOR);
 	  val result = typed(ddef.rhs, EXPRmode | INCONSTRmode, UnitClass.tpe);
 	  context.enclClass.owner.resetFlag(INCONSTRUCTOR);
+	  if (meth.isPrimaryConstructor && !phase.erasedTypes)
+	    computeParamAliases(meth.owner, vparamss1, result);
 	  result
-	} else {
-	  typed(ddef.rhs, tpt1.tpe);
-	}
+	} else transformedOrTyped(ddef.rhs, tpt1.tpe);
       copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
@@ -643,6 +704,7 @@ abstract class Typers: Analyzer {
 	setFlag FINAL setInfo MethodType(formals, body.tpe);
       anonClass.info.decls enter applyMethod;
       for (val vparam <- vparamSyms) vparam.owner = applyMethod;
+      new ChangeOwnerTraverser(context.owner, applyMethod).traverse(body);
       var members = List(
 	DefDef(FINAL, nme.apply, List(), List(vparams), TypeTree(body.tpe), body)
 	  setSymbol applyMethod);
@@ -657,16 +719,15 @@ abstract class Typers: Analyzer {
 	      CaseDef(substParam(cdef.pat.duplicate),
 		      substParam(cdef.guard.duplicate),
 		      Literal(true));
-	    def isDefaultCase(cdef: CaseDef) = cdef match {
-	      case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
-	      case CaseDef(Bind(_, Ident(nme.WILDCARD)), EmptyTree, _) => true
-	      case _ => false
-	    }
-	    if (cases exists isDefaultCase) Literal(true)
-	    else Match(
-	      Ident(idparam),
-	      (cases map transformCase) :::
-		List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
+            val result =
+	      if (cases exists treeInfo.isDefaultCase) Literal(true)
+	      else
+                Match(
+	          Ident(idparam),
+	          (cases map transformCase) :::
+		    List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))));
+            new ChangeOwnerTraverser(applyMethod, isDefinedAtMethod).traverse(result);
+            result
 	}
 	members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
       }
@@ -1278,6 +1339,18 @@ abstract class Typers: Analyzer {
     /** Types a type or type constructor tree */
     def typedTypeConstructor(tree: Tree): Tree =
       typed(tree, TYPEmode | FUNmode, WildcardType);
+
+    def computeType(tree: Tree): Type = {
+      val tree1 = typed(tree);
+      transformed(tree) = tree1;
+      tree1.tpe
+    }
+
+    def transformedOrTyped(tree: Tree, pt: Type): Tree = transformed.get(tree) match {
+      case Some(tree1) => transformed -= tree; tree1
+      case None => typed(tree, pt)
+    }
+
 /*
     def convertToTypeTree(tree: Tree): Tree = tree match {
       case TypeTree() => tree

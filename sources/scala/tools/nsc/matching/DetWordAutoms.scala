@@ -175,10 +175,10 @@ class DetWordAutom {
   def determinize( nfa: NondetWordAutom  ): Unit = {
     //Console.println("DetWordAutom:determinize");
     //System.out.println("nfa:");nfa.print();
-    var states:TreeSet = _; // temp: Set[Set[Integer]]
-    var deftrans:HashMap = _; // Set[Integer] -> Int
+    var states:TreeSet = null; // temp: Set[Set[Integer]]
+    var deftrans:HashMap = null; // Set[Integer] -> Int
 
-    var trans: HashMap = _; // always points to a mapping ( Label -> Q )
+    var trans: HashMap = null; // always points to a mapping ( Label -> Q )
     var ix = 0;    // state index
 
     this._labels = nfa.labels;
@@ -300,7 +300,7 @@ class DetWordAutom {
       val state_x = indexMap.get( state ).asInstanceOf[Integer];
 
       val defTarget  = deftrans.get( state ).asInstanceOf[TreeSet];
-      var defTarget_x: Integer  = _;
+      var defTarget_x: Integer  = null;
       if(  null != defTarget) {
 	defTarget_x = indexMap.get( defTarget ).asInstanceOf[Integer];
 	////System.out.println("deftarget" + defTarget);
@@ -316,7 +316,7 @@ class DetWordAutom {
       while(labs.hasNext()) {
 	val label = labs.next();
 	val target   = trans.get( label ).asInstanceOf[TreeSet];
-	var target_x: Integer = _;
+	var target_x: Integer = null;
 	if( null != target  ) {
 	  // //System.out.println("target :"+target);
 	  target_x = indexMap.get( target ).asInstanceOf[Integer];
@@ -375,7 +375,7 @@ class DetWordAutom {
    *  null if no such transition exists.
    */
   def delta(i: Int, label: Label): Integer = {
-    var target:Integer =_;
+    var target:Integer = null;
     label match {
     case DefaultLabel() =>
       if (! hasDefault(i))
@@ -860,7 +860,7 @@ class DetWordAutom {
    *  gets flattened.
    */
   def printBefore(states: TreeSet, deftrans: HashMap): Unit = {
-    var  trans: HashMap = _;
+    var  trans: HashMap = null;
     Console.println(states);
     val  it = states.iterator();
     while (it.hasNext()) {

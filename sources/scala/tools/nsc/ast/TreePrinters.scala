@@ -272,7 +272,7 @@ abstract class TreePrinters {
             case ClassDef(_, _, _, _, impl) => ClassDef(tree.symbol, impl)
             case ModuleDef(_, _, impl)      => ModuleDef(tree.symbol, impl)
             case ValDef(_, _, _, rhs)       => ValDef(tree.symbol, rhs)
-            case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss => rhs)
+            case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss, rhs)
             case AbsTypeDef(_, _, _, _)     => AbsTypeDef(tree.symbol)
             case AliasTypeDef(_, _, _, rhs) => AliasTypeDef(tree.symbol, rhs)
             case _ => tree

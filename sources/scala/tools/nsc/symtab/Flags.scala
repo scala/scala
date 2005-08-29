@@ -42,7 +42,7 @@ object Flags {
 				    // (typically, access methods for valdefs)
   final val STATIC        = 0x00800000;   // static field, method or class
 
-  final val ACCESSED      = 0x01000000;   // symbol was accessed at least once
+  final val CASEACCESSOR  = 0x01000000;   // symbol is a case parameter (or its accessor)
   final val MODULE        = 0x02000000;   // symbol is module or class implementing a module
   final val BRIDGE        = 0x04000000;  // function is a bridge method. Set by Erasure
   final val ACCESSOR      = 0x08000000;   // a value or variable accessor
@@ -50,7 +50,7 @@ object Flags {
   final val ACCESS_METHOD = 0x10000000;   // function is an access function for a method in some
                                     // outer class; set by ExplicitOuter
   final val PARAMACCESSOR = 0x20000000;   // for value definitions: is an access method for a final val parameter
-                                    // for parameters: is a val parameter
+                                          // for parameters: is a val parameter
 
   final val LABEL         = 0x40000000;   // symbol is a label. Set by TailCall
   final val CAPTURED      = 0x80000000l;   // variable is accessed from nested function. Set by LambdaLift
@@ -59,8 +59,8 @@ object Flags {
   final val OVERLOADED    = 0x200000000l; // symbol is overloaded
 
   final val TRANS_FLAG    = 0x400000000l; // transient flag guaranteed to be reset after each phase.
-  final val LIFTED        = TRANS_FLAG;   // transient flag for lambdalift
   final val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
+  final val FLATTENED     = 0x800000000l; // class has been lifted out to package level
 
   final val INITIALIZED   = 0x1000000000l; // symbol's definition is complete
   final val LOCKED        = 0x2000000000l; // temporary flag to catch cyclic dependencies
@@ -82,16 +82,16 @@ object Flags {
   final val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
   final val PrintableFlags =               // these modifiers appear in TreePrinter output.
-    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | ACCESSOR |
+    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | ACCESSOR |
     ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE | STATIC;
   final val GenFlags      =                // these modifiers can be in generated trees
     SourceFlags | PrintableFlags;
-  final val FieldFlags = MUTABLE | ACCESSED | PARAMACCESSOR | STATIC | FINAL;
+  final val FieldFlags = MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL;
 
   final val AccessFlags   = PRIVATE | PROTECTED;
   final val VARIANCES     = COVARIANT | CONTRAVARIANT;
   final val ConstrFlags   = JAVA;
-  final val PickledFlags  = 0xFFFFFFFF & ~LOCKED & ~INITIALIZED;
+  final val PickledFlags  = 0xFFFFFFFF;
 
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags = AccessFlags | PACKAGE;
@@ -142,7 +142,7 @@ object Flags {
       case STABLE        => "<stable>"
       case STATIC        => "<static>"
 
-      case ACCESSED      => "<accessed>"
+      case CASEACCESSOR  => "<caseaccessor>"
       case ACCESSOR      => "<accessor>"
 
       case ACCESS_METHOD => "<access>"

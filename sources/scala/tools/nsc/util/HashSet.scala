@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.util;
 
-class HashSet[T <: AnyRef](capacity: int) {
+class HashSet[T <: AnyRef](capacity: int) extends Set[T] {
 
   private var size = capacity;
   private var used = 0;

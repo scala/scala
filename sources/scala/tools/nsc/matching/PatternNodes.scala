@@ -35,7 +35,7 @@ trait PatternNodes: TransMatcher {
   }
 
   def dup(): PatternNode = {
-    var res: PatternNode = _;
+    var res: PatternNode = null;
     this match {
       case h:Header =>
         res = new Header(h.selector, h.next);

@@ -22,7 +22,7 @@ package scala.tools.nsc.transform;
  *  - for every argument list that is an escaped sequence
  *       (a_1:_*) => (a_1)g
  *  - convert implicit method types to method types
- *  - todo: check-no-double-def in erasure
+ *  - convert non-trivial catches in try statements to matches
  */
 /*</export>*/
 abstract class UnCurry extends InfoTransform {
@@ -120,6 +120,12 @@ abstract class UnCurry extends InfoTransform {
 	val pat1 = transform(pat);
 	inPattern = false;
 	copy.CaseDef(tree, pat1, transform(guard), transform(body))
+/*
+      case Try(body, catches, finally) =>
+	catches1 = catches map {
+	  case cdef @ CaseDef(pat, guard, body) if TreeInfo.isDefaultCase(cdef) =>
+	    CaseDef(TypedTree(Ident(TreeInfo.defaultCaseVar(pat)), TypeTree(ThrowableClass.tpe)))
+*/
       case _ =>
         val tree1 = super.transform(tree);
 	if (isByNameRef(tree1))
@@ -133,8 +139,8 @@ abstract class UnCurry extends InfoTransform {
         if (tree.symbol.isMethod && (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
 	  if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
 	  atPos(tree.pos)(Apply(tree, List()) setType tree.tpe.resultType)
-	} else if (tree.isType) {
-	  TypeTree(tree.tpe)
+	} else if (tree.isType && !tree.isInstanceOf[TypeTree]) {
+	  TypeTree(tree.tpe) setPos tree.pos
 	} else {
 	  tree
 	}
