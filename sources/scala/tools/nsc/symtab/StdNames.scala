@@ -221,7 +221,7 @@ abstract class StdNames: SymbolTable {
     val update = newTermName("update");
     val view_ = newTermName("view");
     val tag = newTermName("$tag");
-    val wait = newTermName("wait");
+    val wait_ = newTermName("wait");
 
     val ZNOT = encode("!");
     val ZAND = encode("&&");

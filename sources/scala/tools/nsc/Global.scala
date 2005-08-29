@@ -169,6 +169,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object syntheticMethods extends SyntheticMethods {
+    val global: Global.this.type = Global.this
+  }
+
   object refchecks extends RefChecks {
     val global: Global.this.type = Global.this;
   }
@@ -217,6 +221,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     analyzer.namerFactory, // needs to be first
     analyzer.typerFactory, // needs to be second
     pickler,
+    syntheticMethods,
     refchecks,
     uncurry,
     tailCalls,
