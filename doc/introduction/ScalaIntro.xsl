@@ -36,7 +36,7 @@
 
   <xsl:template match="csharp">\CSharp</xsl:template>
   <xsl:template match="dotnet">\DotNet</xsl:template>
-  <xsl:template match="scala">\Scala</xsl:template>
+  <xsl:template match="scala">\href{http://scala.epfl.ch/}{\Scala}</xsl:template>
 
 
   <!-- ELEMENT title, h, h3 -->
@@ -46,8 +46,12 @@
     <xsl:variable name="subtitle"><xsl:value-of select="substring-after($_subtitle, ': ')" /></xsl:variable>
 \section{<xsl:value-of select="$subtitle" />}
   </xsl:template>
-  <xsl:template match="h">\subsection*{<xsl:apply-templates />}</xsl:template>
-  <xsl:template match="h3">\subsubsection*{<xsl:apply-templates />}</xsl:template>
+  <xsl:template match="h">
+\subsection*{<xsl:apply-templates />}
+  </xsl:template>
+  <xsl:template match="h3">
+\subsubsection*{<xsl:apply-templates />}
+  </xsl:template>
 
   <!-- ELEMENT a, code, em, i, p, tt -->
 
@@ -101,10 +105,14 @@
 
   <!-- ELEMENT ul, li -->
 
-  <xsl:template match="ul">\begin{list}{-}{\setlength{\topsep}{0.0em}\setlength{\itemsep}{0.0em}}
+  <xsl:template match="ul">
+\begin{list}{-}{\setlength{\topsep}{0.0em}\setlength{\itemsep}{0.0em}}
     <xsl:apply-templates />
-\end{list}</xsl:template>
-  <xsl:template match="li">\item<xsl:apply-templates /></xsl:template>
+\end{list}
+  </xsl:template>
+  <xsl:template match="li">
+\item<xsl:apply-templates />
+  </xsl:template>
 
 
   <!-- ELEMENT pre -->
@@ -139,12 +147,12 @@
 
   <!-- ELEMENT str (string literal) -->
 
-  <xsl:template match="str"><xsl:apply-templates /></xsl:template>
+  <xsl:template match="str">\textcolor{darkgreen}{<xsl:apply-templates />}</xsl:template>
 
 
   <!-- ELEMENT cmt (comment) -->
 
-  <xsl:template match="cmt"><xsl:apply-templates /></xsl:template>
+  <xsl:template match="cmt">\emph{<xsl:apply-templates />}</xsl:template>
 
 
   <!-- ELEMENT div, hidden -->
