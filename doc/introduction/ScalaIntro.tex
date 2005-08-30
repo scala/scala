@@ -3,9 +3,9 @@
 \documentclass[a4paper,12pt,twoside,titlepage]{book}
 
 \usepackage{alltt}% Verbatim extended with the ability to use normal commands
+\usepackage{color}
 \usepackage{scaladoc}
 \usepackage{url}
-\usepackage{xspace}
 
 \newcommand{\docversion}{1.1}
 \renewcommand{\doctitle}{An Introduction \\ to Scala}
@@ -20,7 +20,7 @@ Michel Schinz \\
 Erik Stenman \\
 Matthias Zenger \\[25mm]\ }
 
-\newcommand{\langname}[1]{#1\xspace}
+\newcommand{\langname}[1]{#1{}}
 \newcommand{\CSharp}{\langname{C\#}}
 \newcommand{\DotNet}{\langname{.NET}}
 \newcommand{\Scala}{\langname{Scala}}
@@ -29,6 +29,8 @@ Matthias Zenger \\[25mm]\ }
   \markright{#1}}
 \fancyhead[RE]{An Introduction to \Scala}  % Chapter in the right on even pages
 
+\definecolor{darkgreen}{rgb}{0,0.5,0.3} 
+
 \begin{document}
 \frontmatter
 \makedoctitle
@@ -36,9 +38,9 @@ Matthias Zenger \\[25mm]\ }
 \tableofcontents
 \mainmatter
 
-\begin{center}
-\LARGE\textbf{\\ An Introduction to \Scala}
-\end{center}
+%\begin{center}
+%\LARGE\textbf{\\ An Introduction to \Scala}
+%\end{center}
 
 % disables chapter, section and subsection numbering
 \setcounter{secnumdepth}{-1}
