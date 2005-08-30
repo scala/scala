@@ -17,7 +17,7 @@ object Main {
     System.getProperty("scala.product", "scalac");
   val VERSION: String =
     System.getProperty("scala.version", "unknown version");
-  val versionMsg = PRODUCT + " " + VERSION + " -- (c) 2002-04 LAMP/EPFL";
+  val versionMsg = PRODUCT + " " + VERSION + " -- (c) 2002-05 LAMP/EPFL";
   val prompt = "\nnsc> ";
 
   private var reporter: ConsoleReporter = _;
@@ -73,4 +73,5 @@ object Main {
     process(args);
     System.exit(if (reporter.errors() > 0) 1 else 0);
   }
+
 }
