@@ -1,24 +1,44 @@
-#!/bin/sh
+#!/bin/bash
+########################################################-*-Shell-script-*-####
+# Build nsc
+##############################################################################
+# $Id$
 
 . ant-common.sh
 
+##############################################################################
 # jars for `scalac' task MUST EXIST
-if ! addJar $fjbg_jar fjbg_jar;  then exit -1; fi
-if ! addJar $scala_jar scala_jar; then echo "try: make jar target=LIBRARY" && exit -1; fi
-if ! addJar $tools_jar tools_jar; then echo "try: make jar target=TOOLS" && exit -1; fi
 
+if ! addJar $fjbg_jar fjbg_jar; then exit -1; fi
+if ! addJar $scala_jar scala_jar; then
+  $ECHO "try: make jar target=LIBRARY" && exit -1;
+fi
+if ! addJar $tools_jar tools_jar; then
+  $ECHO "try: make jar target=TOOLS" && exit -1;
+fi
+
+##############################################################################
 # jars for `pico' task MUST EXIST including the `-scala-hacks' enabled
-if ! addJar $jaco_jar jaco_jar;  then exit -1; fi 
 
-export CLASSPATH
+if ! addJar $jaco_jar jaco_jar; then exit -1; fi 
+
+##############################################################################
+# ant build
+
+ANT_CONFIGFILE=build-nsc.xml
+ANT_BUILDFILE=concrete-$ANT_CONFIGFILE
+ANT_EXCLFILE=developer/${USER}/build-nsc-excludes.xml
 
 # for debugging your classpath
 #echo $CLASSPATH
-if [ -f developer/${USER}/build-nsc-excludes.xml ]; then
-  sed -e "s/userExcludes\ \"\"/userExcludes\ SYSTEM\ \"developer\/${USER}\/build-nsc-excludes.xml\"/" < build-nsc.xml > concrete-build-nsc.xml;
+if [ -f "$ANT_EXCLFILE" ]; then
+  $SED -e "s#userExcludes\ \"\"#userExcludes\ SYSTEM\ \"$ANT_EXCLFILE\"#" \
+    < $ANT_CONFIGFILE > $ANT_BUILDFILE;
  else
-  ln -s build-nsc.xml concrete-build-nsc.xml;
+  $CP $ANT_CONFIGFILE $ANT_BUILDFILE;
 fi
 
-ant -f concrete-build-nsc.xml $*
-rm -f concrete-build-nsc.xml
+CLASSPATH="$CLASSPATH" $ANT_CMD $ANT_OPTS -f "$ANT_BUILDFILE" $*
+#$RM "$ANT_BUILDFILE"
+
+##############################################################################
