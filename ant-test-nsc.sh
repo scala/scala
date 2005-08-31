@@ -18,10 +18,10 @@ fi
 ##############################################################################
 # jars for `nsc' task (once its compiled)
 
-if [ ! addJar $nsc4ant_jar nsc4ant_jar ]; then
+if ! addJar $nsc4ant_jar nsc4ant_jar; then
   $ECHO "try 'sh ant-build-nsc.sh build.nsc4'" && exit -1;
 fi
-if [ ! addJar $nsc_jar nsc_jar ]; then
+if ! addJar $nsc_jar nsc_jar; then
   $ECHO "try 'sh ant-build-nsc.sh'" && exit -1;
 fi
 
@@ -35,7 +35,8 @@ ANT_EXCLFILE=developer/${USER}/test-nsc-excludes.xml
 # for debugging your classpath
 #echo $CLASSPATH
 if [ -f "$ANT_EXCLFILE" ]; then
-  $SED -e "s#userExcludes\ \"\"#userExcludes\ SYSTEM\ \"$ANT_EXCLFILE\"#" < $ANT_CONFIGFILE > $ANT_BUILDFILE;
+  $SED -e "s#userExcludes\ \"\"#userExcludes\ SYSTEM\ \"$ANT_EXCLFILE\"#" \
+    < $ANT_CONFIGFILE > $ANT_BUILDFILE;
  else
   $CP $ANT_CONFIGFILE $ANT_BUILDFILE;
 fi
