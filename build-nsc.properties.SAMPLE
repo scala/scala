@@ -1,3 +1,5 @@
+# $Id$
+# 
 # this file serves two purposes 
 #
 # 1. properties file for ant
@@ -6,11 +8,22 @@
 # don't use characters like '.' in variable names, and
 # don't run commands here
 #
-scala_jar = /localhome/buraq/scala/objects/main/lib/scala.jar
-tools_jar = /localhome/buraq/scala/objects/main/lib/tools.jar
-fjbg_jar  = /home/linuxsoft/apps/fjbg/jars/fjbg.jar
+##############################################################################
+# jar archives
 #
-jaco_jar = /home/linuxsoft/apps/jaco/lib/jaco.jar
+scala_jar   = ~/projects/scala/lib/scala.jar
+tools_jar   = ~/projects/scala/lib/tools.jar
+nsc_jar     = ~/projects/scala/lib/nsc.jar
+nsc4ant_jar = ~/projects/scala/lib/nsc4ant.jar
+#
+ant_jar     = /home/linuxsoft/apps/ant/lib/ant.jar
+fjbg_jar    = /home/linuxsoft/apps/fjbg/jars/fjbg.jar
+jaco_jar    = /home/linuxsoft/apps/jaco/lib/jaco.jar
+#
+##############################################################################
+# build directories
+#
+jars_dir = ~/projects/scala/lib
 #
 tools_util_dir = /tmp/classes_tools_util
 #
@@ -20,8 +33,6 @@ nsc4ant_dir = /tmp/classes_nsc4ant
 #
 nsc_output_dir = /tmp/classes_nsc_output
 #
-jars_dir = /tmp/jars_nsc
-ant_jar = /home/linuxsoft/apps/ant/lib/ant.jar
-
-#
 tools_util_runtime_dir=/tmp/classes_runtime
+#
+##############################################################################
