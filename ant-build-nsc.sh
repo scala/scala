@@ -38,7 +38,7 @@ if [ -f "$ANT_EXCLFILE" ]; then
   $CP $ANT_CONFIGFILE $ANT_BUILDFILE;
 fi
 
-CLASSPATH="$CLASSPATH" $ANT_CMD $ANT_OPTS -f "$ANT_BUILDFILE" $*
+CLASSPATH="$CLASSPATH" $ANT_CMD -f "$ANT_BUILDFILE" $*
 #$RM "$ANT_BUILDFILE"
 
 ##############################################################################

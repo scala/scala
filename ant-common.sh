@@ -8,8 +8,7 @@
 # Apache Ant
 
 ANT_CMD=ant
-#ANT_OPTS='-Xmx256m -Xms256M'
-ANT_OPTS=
+export ANT_OPTS='-Xmx256M'
 
 ##############################################################################
 # Shell commands
