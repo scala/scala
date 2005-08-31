@@ -143,6 +143,11 @@ concurrent/TIMEOUT.scala
 concurrent/ops.scala
 concurrent/pilib.scala
 
+#distributed/Channel.scala
+#distributed/ChannelException.scala
+#distributed/RemoteRef.scala
+#distributed/RemoteExecution.scala
+
 io/Position.scala
 io/Source.scala
 
@@ -150,6 +155,7 @@ mobile/Code.scala
 mobile/Location.scala
 
 runtime/AtomicReference.java
+runtime/BooleanRef.java
 runtime/BoxedBoolean.java
 runtime/BoxedByte.java
 runtime/BoxedChar.java
@@ -171,13 +177,26 @@ runtime/BoxedIntArray.scala
 runtime/BoxedLongArray.scala
 runtime/BoxedObjectArray.scala
 runtime/BoxedShortArray.scala
+runtime/ByteRef.java
+runtime/CharRef.java
+runtime/DoubleRef.java
 runtime/FNV_Hash.java
+runtime/FloatRef.java
 runtime/IOMap.java
+runtime/IntRef.java
 runtime/InterpreterSupport.java
+runtime/LongRef.java
+runtime/ObjectRef.java
 runtime/RunTime.java
 runtime/ScalaRunTime.scala
+runtime/ShortRef.java
 
 runtime/compat/Platform.scala
+
+#runtime/distributed/Channel.java
+#runtime/distributed/ChannelImpl.java
+#runtime/distributed/Reference.java
+#runtime/distributed/ReferenceImpl.java
 
 runtime/matching/Address.scala
 #runtime/matching/Matcher.scala 
