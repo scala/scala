@@ -116,7 +116,7 @@ abstract class AddInterfaces extends InfoTransform {
         }
       val decls1 = addImplClasses(
         if (clazz hasFlag INTERFACE) new Scope(decls.toList filter isInterfaceMember)
-        else new Scope(decls));
+        else new Scope(decls.toList));
       ClassInfoType(parents1, decls1, clazz)
     case _ =>
       tp

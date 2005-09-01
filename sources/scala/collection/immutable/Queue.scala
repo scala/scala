@@ -170,6 +170,4 @@ class Queue[+A](elem: A*) extends Seq[A] {
       val q: Pair[A,Queue[A]] = dequeue;
       q._1.hashCode() + q._2.hashCode();
     }
-
 }
-

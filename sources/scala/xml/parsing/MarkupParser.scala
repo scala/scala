@@ -190,7 +190,7 @@ abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef wi
     }
     val children = content(TopScope); // DTD handled as side effect
     var elemCount = 0;
-    var theNode: Node = _;
+    var theNode: Node = null;
     for (val c <- children) c match {
       case _:ProcInstr => ;
       case _:Comment => ;

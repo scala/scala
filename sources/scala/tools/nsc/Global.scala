@@ -60,9 +60,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   /** A map from symbols to their attributes */
   val attributes = new HashMap[Symbol, List[AttrInfo]];
 
-  /** A map from parameter accessor symbols to their aliases */
-  val aliases = new HashMap[Symbol, Symbol];
-
 // reporting -------------------------------------------------------
 
   def error(msg: String) = reporter.error(null, msg);
@@ -205,6 +202,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object constructors extends Constructors {
+    val global: Global.this.type = Global.this;
+  }
+
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this;
   }
@@ -230,6 +231,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     erasure,
     lambdaLift,
     flatten,
+    constructors,
     if (settings.Xshowicode.value) genicode
     else sampleTransform);
 

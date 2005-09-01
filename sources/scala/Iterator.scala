@@ -53,7 +53,6 @@ object Iterator {
     private val cmax = n.caseArity;
     def hasNext = c < cmax;
     def next = { val a = n caseElement c; c = c + 1; a }
-
   }
 
   /** Create an iterator with elements

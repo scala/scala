@@ -58,7 +58,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
     var j = 0;
     var ok = new scala.collection.mutable.BitSet(adecls.length);
     def find(Key:String): AttrDecl = {
-      var attr: AttrDecl = _;
+      var attr: AttrDecl = null;
       val jt = adecls.elements; while(j < adecls.length) {
         jt.next match {
           case a @ AttrDecl(Key, _, _) => attr = a; ok.set(j); j = adecls.length;

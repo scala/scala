@@ -43,13 +43,14 @@ abstract class Symbols: SymbolTable {
     final def newConstructor(pos: int) =
       newMethod(pos, nme.CONSTRUCTOR);
     final def newModule(pos: int, name: Name, clazz: ClassSymbol) =
-      new ModuleSymbol(this, pos, name, clazz);
-    final def newModule(pos: int, name: Name) =
-      new ModuleSymbol(this, pos, name, null);
+      new TermSymbol(this, pos, name).setFlag(MODULE | FINAL).setModuleClass(clazz);
+    final def newModule(pos: int, name: Name) = {
+      val m = new TermSymbol(this, pos, name).setFlag(MODULE | FINAL);
+      m.setModuleClass(new ModuleClassSymbol(m))
+    }
     final def newPackage(pos: int, name: Name) = {
       assert(isPackageClass);
-      val m = newModule(pos, name);
-      m.setFlag(JAVA | PACKAGE);
+      val m = newModule(pos, name).setFlag(JAVA | PACKAGE);
       m.moduleClass.setFlag(JAVA | PACKAGE);
       m
     }
@@ -95,8 +96,8 @@ abstract class Symbols: SymbolTable {
 
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA));
     final def isVariable = isTerm && hasFlag(MUTABLE);
-    final def isGetter = isTerm && hasFlag(ACCESSOR) && !name.endsWith(nme._EQ);
-    final def isSetter = isTerm && hasFlag(ACCESSOR) && name.endsWith(nme._EQ);
+    final def isGetter = isTerm && hasFlag(ACCESSOR) && !originalName.endsWith(nme._EQ);
+    final def isSetter = isTerm && hasFlag(ACCESSOR) && originalName.endsWith(nme._EQ);
     final def isValueParameter = isTerm && hasFlag(PARAM);
     final def isLocalDummy = isTerm && (name startsWith nme.LOCAL_PREFIX);
     final def isMethod = isTerm && hasFlag(METHOD);
@@ -448,18 +449,39 @@ abstract class Symbols: SymbolTable {
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.hasFlag(PARAMACCESSOR));
 
+    final def originalName: Name = name.subName(0, name.pos("$$"));
+
     /** The symbol accessed by this accessor function.
      */
     final def accessed: Symbol = {
       assert(hasFlag(ACCESSOR));
-      val name1 = if (name.endsWith(nme._EQ)) name.subName(0, name.length - nme._EQ.length)
-	          else name;
+      var name1 = originalName;
+      if (name1.endsWith(nme._EQ)) name1 = name1.subName(0, name1.length - nme._EQ.length);
       owner.info.decl(nme.LOCAL_NAME(name1))
     }
 
-    /** The getter for this symbol */
-    final def getter: Symbol =
-      if (nme.isLocalName(name)) owner.info.decl(nme.GETTER_NAME(name)) else NoSymbol;
+    private def findAccessor(p: Symbol => boolean): Symbol = {
+      val accs = owner.info.decls.toList filter (acc => p(acc) && acc.accessed == this);
+      if (accs.isEmpty) NoSymbol
+      else {
+        assert(accs.tail.isEmpty);
+        accs.head
+      }
+    }
+
+    final def getter: Symbol = {
+      val sym = owner.info.decl(nme.GETTER_NAME(name)) filter (.hasFlag(ACCESSOR));
+      if (sym != NoSymbol) sym else findAccessor(.isGetter)
+    }
+
+    final def setter: Symbol = {
+      val sym = owner.info.decl(nme.SETTER_NAME(name)) filter (.hasFlag(ACCESSOR));
+      if (sym != NoSymbol) sym else findAccessor(.isSetter)
+    }
+
+    /** For a paramaccessor: a superclass paramaccessor for which this symbol is
+     *  an alias, NoSymbol for all others */
+    def aliasSym: Symbol = NoSymbol;
 
     /** The class with the same name in the same package as this module or
      *  case class factory
@@ -522,7 +544,13 @@ abstract class Symbols: SymbolTable {
       }
       sym
     }
+/*
+    def referenced: Symbol =
+      throw new Error("referenced inapplicable for " + this);
 
+    def setReferenced(sym: Symbol): Symbol =
+      throw new Error("setReferenced inapplicable for " + this);
+*/
 // ToString -------------------------------------------------------------------
 
     /** A tag which (in the ideal case) uniquely identifies class symbols */
@@ -653,18 +681,32 @@ abstract class Symbols: SymbolTable {
   /** A class for term symbols */
   class TermSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true;
-    def cloneSymbolImpl(owner: Symbol): Symbol =
-      new TermSymbol(owner, pos, name);
-  }
 
-  /** A class for module symbols */
-  class ModuleSymbol(initOwner: Symbol, initPos: int, initName: Name, mclazz: ClassSymbol) extends TermSymbol(initOwner, initPos, initName) {
-    setFlag(MODULE | FINAL);
-    private val clazz: ClassSymbol =
-      if (mclazz != null) mclazz else new ModuleClassSymbol(this);
-    override def moduleClass: ClassSymbol = clazz;
-    override def cloneSymbolImpl(owner: Symbol): Symbol =
-      new ModuleSymbol(owner, pos, name, clazz);
+    private var referenced: Symbol = NoSymbol;
+
+    def cloneSymbolImpl(owner: Symbol): Symbol = {
+      val clone = new TermSymbol(owner, pos, name);
+      clone.referenced = referenced;
+      clone
+    }
+
+    override def aliasSym: Symbol =
+      if (hasFlag(PARAMACCESSOR)) referenced else NoSymbol;
+
+    def setAlias(alias: Symbol): TermSymbol = {
+      assert(hasFlag(PARAMACCESSOR));
+      referenced = alias;
+      this
+    }
+
+    override def moduleClass: Symbol =
+      if (hasFlag(MODULE)) referenced else NoSymbol;
+
+    def setModuleClass(clazz: Symbol): TermSymbol = {
+      assert(hasFlag(MODULE));
+      referenced = clazz;
+      this
+    }
   }
 
   /** A class of type symbols. Alias and abstract types are direct instances
@@ -773,7 +815,7 @@ abstract class Symbols: SymbolTable {
   /** A class for module class symbols
    *  Note: Not all module classes are of this type; when unpickled, we get plain class symbols!
    */
-  class ModuleClassSymbol(module: ModuleSymbol) extends ClassSymbol(module.owner, module.pos, module.name.toTypeName) {
+  class ModuleClassSymbol(module: TermSymbol) extends ClassSymbol(module.owner, module.pos, module.name.toTypeName) {
     setFlag(module.getFlag(ModuleToClassFlags) | MODULE | FINAL);
     override def sourceModule = module;
   }

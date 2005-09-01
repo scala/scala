@@ -33,10 +33,9 @@ abstract class Flatten extends InfoTransform {
 
   def transformInfo(sym: Symbol, tp: Type): Type = flattened(tp);
 
-  protected def newTransformer(unit: CompilationUnit): Transformer =
-    new Flattener(unit);
+  protected def newTransformer(unit: CompilationUnit): Transformer = new Flattener;
 
-  class Flattener(unit: CompilationUnit) extends Transformer {
+  class Flattener extends Transformer {
 
     /** Buffers for lifted out classes */
     private val liftedDefs = new HashMap[Symbol, ListBuffer[Tree]];
@@ -69,7 +68,7 @@ abstract class Flatten extends InfoTransform {
       if (sym != null && sym.isNestedClass && !(sym hasFlag FLATTENED)) {
 	sym setFlag FLATTENED;
 	atPhase(phase.next) {
-	  System.out.println("re-enter " + sym + " in " + sym.owner);//debug
+	  if (settings.debug.value) log("re-enter " + sym + " in " + sym.owner);
 	  val scope = sym.owner.info.decls;
 	  val old = scope lookup sym.name;
 	  if (old != NoSymbol) scope unlink old;

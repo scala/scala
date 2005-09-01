@@ -422,20 +422,18 @@ sealed trait List[+a] extends Seq[a] { // todo make sealed once we figure out ho
    *
    *  @param n the number of elements to take.
    *  @return the <code>n</code> first elements of this list.
-   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   override def take(n: Int): List[a] =
-    if (n == 0) Nil
+    if (n == 0 || isEmpty) Nil
     else head :: (tail take (n-1));
 
   /** Returns the list without its <code>n</code> first elements.
    *
    *  @param n the number of elements to drop.
    *  @return the list without its <code>n</code> first elements.
-   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   override def drop(n: Int): List[a] =
-    if (n == 0) this
+    if (n == 0 || isEmpty) this
     else (tail drop (n-1));
 
   /** Returns the rightmost <code>n</code> elements from this list.

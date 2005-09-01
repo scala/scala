@@ -30,6 +30,8 @@ import transform.InfoTransform;
  *       unless they are defined in the class or a baseclass
  *       different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
+ *   - References to parameter accessors with aliases are replaced by super references to
+ *     these aliases.
  */
 abstract class RefChecks extends InfoTransform {
 
@@ -502,20 +504,29 @@ abstract class RefChecks extends InfoTransform {
 	case Select(qual, name) =>
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
-	  else {
-	    if (sym hasFlag DEFERRED) {
-	      qual match {
-		case Super(qualifier, mixin) =>
-		  val base = currentOwner.enclClass;
-		  val member = sym.overridingSymbol(base);
-		  if (mixin != nme.EMPTY.toTypeName || member == NoSymbol ||
-		      !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(base)))
-		    unit.error(tree.pos, "symbol accessed from super may not be abstract");
-		case _ =>
-	      }
+	  else if (sym hasFlag DEFERRED) {
+	    qual match {
+	      case Super(qualifier, mixin) =>
+		val base = currentOwner.enclClass;
+	        val member = sym.overridingSymbol(base);
+	        if (mixin != nme.EMPTY.toTypeName || member == NoSymbol ||
+		    !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(base)))
+		  unit.error(tree.pos, "symbol accessed from super may not be abstract");
+	      case _ =>
 	    }
-	  }
-
+	  } else if (sym.aliasSym != NoSymbol) {
+            qual match {
+              case This(_) =>
+                result = typed {
+                  Select(
+                    Super(qual.symbol, qual.symbol.info.parents.head.symbol.name) setPos qual.pos,
+                    sym.aliasSym) setPos tree.pos
+                }
+		if (settings.debug.value)
+		  System.out.println("alias replacement: " + tree + " ==> " + result);//debug
+              case _ =>
+            }
+          }
 	case _ =>
       }
       super.transform(result)

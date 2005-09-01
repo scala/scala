@@ -25,7 +25,7 @@ trait ExternalSources : (ExternalSources with MarkupParser with MarkupHandler)  
     //@todo: replace this hack with proper Source implementation
 
     val str = new StringBuffer();
-    var inputLine:String = _;
+    var inputLine:String = null;
 
     //while (inputLine = in.readLine()) != null) {
     while ({inputLine = in.readLine(); inputLine} != null) {

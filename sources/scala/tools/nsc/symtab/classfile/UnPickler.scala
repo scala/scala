@@ -120,8 +120,10 @@ abstract class UnPickler {
 	      errorBadSignature("bad symbol tag: " + tag);
 	  }
 	  sym.setFlag(flags);
-	  val aliasIndex = if ((sym hasFlag PARAMACCESSOR) && readIndex != end) readNat() else 0;
-	  sym.setInfo(new LazyTypeRef(inforef, aliasIndex));
+	  if (readIndex != end) assert(sym hasFlag (ACCESSOR | PARAMACCESSOR));
+	  sym.setInfo(
+	    if (readIndex != end) new LazyTypeRefAndAlias(inforef, readNat())
+	    else new LazyTypeRef(inforef));
 	  if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
               !sym.isModuleClass && !sym.isRefinementClass && !sym.isTypeParameter)
             symScope(sym.owner) enter sym;
@@ -197,13 +199,16 @@ abstract class UnPickler {
     private def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg);
 
-    private class LazyTypeRef(i: int, aliasIndex: int) extends LazyType {
-      def this(i: int) = this(i, 0);
-      override def complete(sym: Symbol): unit = {
-	sym setInfo at(i, readType);
-	if (aliasIndex != 0) aliases(sym) = at(aliasIndex, readSymbol);
-      }
+    private class LazyTypeRef(i: int) extends LazyType {
+      override def complete(sym: Symbol): unit = sym setInfo at(i, readType);
       override def load(sym: Symbol): unit = complete(sym)
+    }
+
+    private class LazyTypeRefAndAlias(i: int, j: int) extends LazyTypeRef(i) {
+      override def complete(sym: Symbol): unit = {
+	super.complete(sym);
+	sym.asInstanceOf[TermSymbol].setAlias(at(j, readSymbol));
+      }
     }
   }
 }

@@ -51,5 +51,4 @@ trait Inclusion[A <: AnyRef] {
     }
     result
   }
-
 }

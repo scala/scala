@@ -66,6 +66,8 @@ object pilib {
     */
   class Chan[a] extends UChan with Function1[a, Product[a]] {
 
+    var defaultValue: a = _;
+
     /** Creates an input guarded process. */
     def input[b](c: a => b) =
       new GP(this, true, (), x => c(x.asInstanceOf[a]));
@@ -76,7 +78,7 @@ object pilib {
 
     /** Blocking read. */
     def read = {
-      var res: a = _;
+      var res: a = defaultValue;
       choice ( input(x => res = x) );
       res
     }

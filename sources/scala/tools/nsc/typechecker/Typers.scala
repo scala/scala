@@ -455,26 +455,26 @@ abstract class Typers: Analyzer {
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpe, rhs) if (mods & LOCAL) == 0 =>
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.LOCAL_NAME(name), tpe, rhs);
-	val getter: DefDef = {
-	  val sym = vdef.symbol;
-	  val getter = sym.owner.info.decl(name).suchThat(.hasFlag(ACCESSOR));
+        val value = vdef.symbol;
+	val getterDef: DefDef = {
+          val getter = if ((mods & DEFERRED) != 0) value else value.getter;
+          assert(getter != NoSymbol, value);
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
-	      else typed(Select(This(sym.owner), sym), EXPRmode, sym.tpe)));
-          checkNoEscaping.privates(result.symbol, result.tpt);
+	      else typed(Select(This(value.owner), value), EXPRmode, value.tpe)));
+          checkNoEscaping.privates(getter, result.tpt);
           result
 	}
-	def setter: DefDef = {
-	  val sym = vdef.symbol;
-	  val setter = sym.owner.info.decl(nme.SETTER_NAME(name)).suchThat(.hasFlag(ACCESSOR));
+	def setterDef: DefDef = {
+	  val setter = value.setter;
           atPos(vdef.pos)(
 	    DefDef(setter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
-	      else typed(Assign(Select(This(sym.owner), getter.symbol),
+	      else typed(Assign(Select(This(value.owner), getterDef.symbol),
 				Ident(vparamss.head.head)))))
 	}
-	val gs = if ((mods & MUTABLE) != 0) List(getter, setter) else List(getter);
+	val gs = if ((mods & MUTABLE) != 0) List(getterDef, setterDef) else List(getterDef);
 	if ((mods & DEFERRED) != 0) gs else vdef :: gs
       case DocDef(comment, defn) =>
 	addGetterSetter(defn) map (stat => DocDef(comment, stat))
@@ -544,21 +544,16 @@ abstract class Typers: Analyzer {
 	  superArg match {
 	    case Ident(name) =>
 	      if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
-		val alias = aliases.get(superAcc.initialize) match {
-		  case Some(getter) =>
-		    getter
-		  case None =>
-		    val getter = superAcc.getter;
-		    if (getter != NoSymbol &&
-			superClazz.info.nonPrivateMember(getter.name) == getter) getter
-		    else NoSymbol
-		}
+		var alias = superAcc.initialize.aliasSym;
+		if (alias == NoSymbol) alias = superAcc.getter;
+		if (alias != NoSymbol &&
+		    superClazz.info.nonPrivateMember(alias.name) != alias)
+		  alias = NoSymbol;
 		if (alias != NoSymbol) {
 		  var ownAcc = clazz.info.decl(name);
 		  if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed;
-		  assert(ownAcc hasFlag PARAMACCESSOR, clazz.toString() + " " + name);
 		  System.out.println("" + ownAcc + " has alias " + alias + alias.locationString);//debug
-		  aliases(ownAcc) = alias
+		  ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
 		}
 	      }
 	    case _ =>
@@ -1099,7 +1094,7 @@ abstract class Typers: Analyzer {
 		    Select(qual, nme.SETTER_NAME(name)) setPos lhs.pos,
 		    List(rhs)) setPos tree.pos, mode, pt)
             }
-          } else if (varsym != null && varsym.isVariable) {
+          } else if (varsym != null && (varsym.isVariable || varsym.isValue && phase.erasedTypes)) {
             val rhs1 = typed(rhs, lhs1.tpe);
             copy.Assign(tree, lhs1, rhs1) setType UnitClass.tpe;
           } else {

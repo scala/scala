@@ -170,17 +170,33 @@ class Names {
      */
     final def apply(i: int): char = chrs(index + i);
 
-    /** return the index of first occurrence of char c in this name, length if not found
-     */
+    /** return the index of first occurrence of char c in this name, length if not found */
     final def pos(c: char): int = pos(c, 0);
 
+    /** return the index of first occurrence of char c in this name, length if not found */
+    final def pos(s: String): int = pos(s, 0);
+
     /** return the index of first occurrence of char c in this name from `start',
-     *  length if not found
-     */
+     *  length if not found */
     final def pos(c: char, start: int): int = {
       var i = start;
       while (i < len && chrs(index + i) != c) i = i + 1;
       i
+    }
+
+    /** return the index of first occurrence of nonempty string s in this name from `start',
+     *  length if not found */
+    final def pos(s: String, start: int): int = {
+      var i = pos(s.charAt(0), start);
+      while (i + s.length() <= len) {
+        var j = 1;
+        while (s.charAt(j) == chrs(index + i + j)) {
+          j = j + 1;
+          if (j == s.length()) return i;
+        }
+        i = pos(s.charAt(0), i + 1)
+      }
+      len
     }
 
     /** return the index of last occurrence of char c in this name, -1 if not found.
