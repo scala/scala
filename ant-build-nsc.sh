@@ -30,7 +30,7 @@ ANT_BUILDFILE=concrete-$ANT_CONFIGFILE
 ANT_EXCLFILE=developer/${USER}/build-nsc-excludes.xml
 
 # for debugging your classpath
-#echo $CLASSPATH
+#echo CLASSPATH=$CLASSPATH
 if [ -f "$ANT_EXCLFILE" ]; then
   $SED -e "s#userExcludes\ \"\"#userExcludes\ SYSTEM\ \"$ANT_EXCLFILE\"#" \
     < $ANT_CONFIGFILE > $ANT_BUILDFILE;
@@ -39,6 +39,6 @@ if [ -f "$ANT_EXCLFILE" ]; then
 fi
 
 CLASSPATH="$CLASSPATH" $ANT_CMD -f "$ANT_BUILDFILE" $*
-#$RM "$ANT_BUILDFILE"
+$RM "$ANT_BUILDFILE"
 
 ##############################################################################
