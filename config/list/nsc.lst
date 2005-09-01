@@ -61,6 +61,7 @@ symtab/classfile/Pickler.scala
 symtab/classfile/SymblfileParser.scala
 symtab/classfile/UnPickler.scala
 
+transform/Constructors.scala
 transform/InfoTransform.scala
 transform/SampleTransform.scala
 transform/Transform.scala
