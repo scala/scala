@@ -11,10 +11,11 @@
 ##############################################################################
 # jar archives
 #
-scala_jar   = ~/projects/scala/lib/scala.jar
-tools_jar   = ~/projects/scala/lib/tools.jar
-nsc_jar     = ~/projects/scala/lib/nsc.jar
-nsc4ant_jar = ~/projects/scala/lib/nsc4ant.jar
+scala_jar   = /home/michelou/projects/scala/lib/scala.jar
+tools_jar   = /home/michelou/projects/scala/lib/tools.jar
+nsc_jar     = /home/michelou/projects/scala/lib/nsc.jar
+nsrt_jar    = /home/michelou/projects/scala/lib/nsrt.jar
+nsc4ant_jar = /home/michelou/projects/scala/lib/nsc4ant.jar
 #
 ant_jar     = /home/linuxsoft/apps/ant/lib/ant.jar
 fjbg_jar    = /home/linuxsoft/apps/fjbg/jars/fjbg.jar
@@ -23,15 +24,15 @@ jaco_jar    = /home/linuxsoft/apps/jaco/lib/jaco.jar
 ##############################################################################
 # build directories
 #
-jars_dir = ~/projects/scala/lib
+jars_dir = /home/michelou/projects/scala/objects/nsc/lib
 #
-tools_util_dir = /tmp/classes_tools_util
+#tools_util_dir = /tmp/classes_tools_util
 #
 nsc_dir = /tmp/classes_nsc
 #
 nsc4ant_dir = /tmp/classes_nsc4ant
 #
-nsc_output_dir = /tmp/classes_nsc_output
+nsc_output_dir = /tmp/classes_new
 #
 tools_util_runtime_dir=/tmp/classes_runtime
 #
