@@ -59,7 +59,7 @@
     
     <echo>==== running nsc on predef and runtime</echo>
     <nsc srcdir="sources" destdir="${nsc_output_dir}" 
-         classpath="sources:newsources:${tools_util_runtime_dir}"
+         classpath="sources:newsources:${nsrt_jar}"
 		 nscArgs="-nopredefs;${moreNscArgs}">
 
       <include name="scala/Predef.scala"/>
@@ -68,7 +68,7 @@
 
     <echo>===== running nsc on the rest</echo>
     <nsc srcdir="sources" destdir="${nsc_output_dir}" 
-         classpath="sources:newsources:${tools_util_runtime_dir}:${nsc_output_dir}"
+         classpath="sources:newsources:${nsrt_jar}:${nsc_output_dir}"
          nscArgs="${moreNscArgs}" force="true"> 
 
       <include name="scala/**/*.scala"/>
@@ -80,6 +80,8 @@
       <exclude name="scala/tools/**"/>
 	  &userExcludes;
     </nsc>
+
+    <jar destfile="${jars_dir}/nsrt.jar" basedir="${nsc_output_dir}" update="true"/>
 
   </target>
 

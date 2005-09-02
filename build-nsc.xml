@@ -64,6 +64,9 @@
     <delete file="${tools_util_runtime_dir}/scala/ScalaObject.class"/>
     <delete file="${tools_util_runtime_dir}/scala/Array.class"/>
 
+    <mkdir  dir="${jars_dir}"/>
+    <jar    destfile="${jars_dir}/nsrt.jar" basedir="${tools_util_runtime_dir}"/>
+
     <mkdir dir="${nsc_dir}"/>
     <scalac srcdir="sources" destdir="${nsc_dir}" 
             classpath="${tools_util_runtime_dir}" sourcePath="sources" force="true">
