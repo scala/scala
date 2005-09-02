@@ -387,6 +387,8 @@ IZPACK_SPLASHFILE	 = $(IA_SPLASHFILE)
 IZPACK_BUILD_FILE	 = $(IZPACK_BUILD_PREFIX)/izpack_scala.xml
 IZPACK_BUILD_SPLASHFILE	 = $(IZPACK_BUILD_IMAGESDIR)/`$(BASENAME) $(IZPACK_SPLASHFILE)`
 
+izpack-build-all	: $(PROJECT_DISTRIBDIR)/$(INSTALL_PACKAGE).zip
+izpack-build-all	: $(PROJECT_DISTRIBDIR)/$(INSTALL_PACKAGE).tar.gz
 izpack-build-all	:
 	$(RM) -r $(IZPACK_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IZPACK_BUILD_LOCALESDIR)
@@ -472,8 +474,6 @@ distrib-build-izpack	: izpack-build-all
 
 distrib-build-addons	: install-addons
 
-distrib-izpack		: distrib-build-unix
-distrib-izpack		: distrib-build-windows
 distrib-izpack		: distrib-build-izpack
 
 distrib-official	: version-update
