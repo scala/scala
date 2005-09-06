@@ -23,9 +23,17 @@ abstract class Flatten extends InfoTransform {
         assert(args.isEmpty);
         typeRef(sym.toplevelClass.owner.thisType, sym, args)
       case ClassInfoType(parents, decls, clazz) =>
-	val parents1 = List.mapConserve(parents)(this);
-	if (parents1 eq parents) tp
-	else ClassInfoType(parents1, decls, clazz)
+        if (clazz.isPackageClass) {
+          val decls1 = new Scope();
+          for (val member <- decls.toList) {
+            atPhase(phase.next)(decls1 enter member)
+          }
+          ClassInfoType(parents, decls1, clazz)
+        } else {
+	  val parents1 = List.mapConserve(parents)(this);
+	  if (parents1 eq parents) tp
+	  else ClassInfoType(parents1, decls, clazz)
+        }
       case _ =>
         mapOver(tp)
     }
