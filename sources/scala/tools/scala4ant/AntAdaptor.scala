@@ -107,6 +107,9 @@ package scala.tools.scala4ant {
         cp.setLocation( destDir );
       }
 
+      if ( debug )
+        cmd.createArgument().setValue( "-g" );
+
       /* cp.addExisting( Path.systemClasspath );*/
       /* cp.addJavaRuntime(); */
 
