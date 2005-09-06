@@ -9,7 +9,35 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
-import scala.tools.nsc.backend.icode.Primitives._;
+
+/*
+  A pattern match
+
+  case THIS(clasz) =>
+  case CONSTANT(const) =>
+  case LOAD_ARRAY_ITEM(kind) =>
+  case LOAD_LOCAL(local, isArg) =>
+  case LOAD_FIELD(field, isStatic) =>
+  case STORE_ARRAY_ITEM(kind) =>
+  case STORE_LOCAL(local, isArg) =>
+  case STORE_FIELD(field, isStatic) =>
+  case CALL_PRIMITIVE(primitive) =>
+  case CALL_METHOD(method, style) =>
+  case NEW(clasz) =>
+  case CREATE_ARRAY(elem) =>
+  case IS_INSTANCE(tpe) =>
+  case CHECK_CAST(tpe) =>
+  case SWITCH(tags, labels) =>
+  case JUMP(where) =>
+  case CJUMP(success, failure, cond) =>
+  case CZJUMP(success, failure, cond, kind) =>
+  case RETURN() =>
+  case THROW() =>
+  case DROP(kind) =>
+  case DUP(kind) =>
+  case MONITOR_ENTER() =>
+  case MONITOR_EXIT() =>
+*/
 
 
 /**
@@ -18,7 +46,8 @@ import scala.tools.nsc.backend.icode.Primitives._;
  * erased types of Scala and references Symbols to refer named entities
  * in the source files.
  */
-abstract class Opcodes: Global {
+abstract class Opcodes: ICodes {
+  import global.{Symbol, Type, Name, Constant};
 
   /** This class represents an instruction of the intermediate code.
    *  Each case subclass will represent a specific operation.
@@ -66,7 +95,7 @@ abstract class Opcodes: Global {
      * Stack: ...:array[a](Ref):index(Int)
      *    ->: ...:element(a)
      */
-    case class LOAD_ARRAY_ITEM() extends Instruction {
+    case class LOAD_ARRAY_ITEM(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String = "LOAD_ARRAY_ITEM";
 
@@ -103,7 +132,7 @@ abstract class Opcodes: Global {
      * Stack: ...:array[a](Ref):index(Int):value(a)
      *    ->: ...
      */
-    case class STORE_ARRAY_ITEM() extends Instruction {
+    case class STORE_ARRAY_ITEM(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String = "STORE_ARRAY_ITEM";
 
@@ -141,7 +170,7 @@ abstract class Opcodes: Global {
      */
     case class CALL_PRIMITIVE(primitive: Primitive) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CALL "+primitive.toString();
+      override def toString(): String ="CALL_PRIMITIVE "+primitive.toString();
 
       override def consumed = primitive match {
         case (Negation(_)) => 1;
@@ -174,7 +203,8 @@ abstract class Opcodes: Global {
      */
     case class CALL_METHOD(method: Symbol, style: InvokeStyle) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CALL_METHOD "+method.toString()+" ("+style.toString()+")";
+      override def toString(): String =
+        "CALL_METHOD " + method.fullNameString +" ("+style.toString()+")";
 
       override def consumed = {
         var result = method.tpe.paramTypes.length;
@@ -241,6 +271,10 @@ abstract class Opcodes: Global {
     /** This class represents a SWITCH instruction
      * Stack: ...:index(int)
      *    ->: ...:
+     *
+     * The tags array contains one entry per label, each entry consisting of
+     * an array of ints, any of which will trigger the jump to the corresponding label.
+     * labels should contain an extra label, which is the 'default' jump.
      */
     case class SWITCH(tags: Array[Array[int]], labels: List[BasicBlock]) extends Instruction {
       /** Returns a string representation of this instruction */
@@ -269,21 +303,26 @@ abstract class Opcodes: Global {
      */
     case class CJUMP(successBlock: BasicBlock,
 		     failureBlock: BasicBlock,
-		     cond: TestOp) extends Instruction {
+		     cond: TestOp,
+                     kind: TypeKind) extends Instruction
+    {
 
-                       /** Returns a string representation of this instruction */
-                       override def toString(): String ="CJUMP "+cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
+      /** Returns a string representation of this instruction */
+      override def toString(): String ="CJUMP "+cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
 
-                       override def consumed = 2;
-                       override def produced = 0;
-                     }
+      override def consumed = 2;
+      override def produced = 0;
+    }
 
     /** This class represents a CZJUMP instruction
      * It compares the one value on the stack and zero with the 'cond' test operator
      * Stack: ...:value:
      *    ->: ...
      */
-    case class CZJUMP(successBlock: BasicBlock, failureBlock: BasicBlock, cond: TestOp) extends Instruction {
+    case class CZJUMP(successBlock: BasicBlock,
+                      failureBlock: BasicBlock,
+                      cond: TestOp,
+                      kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String ="CZJUMP "+cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
 
@@ -320,7 +359,7 @@ abstract class Opcodes: Global {
      * Stack: ...:something
      *    ->: ...
      */
-    case class DROP (typ: Type) extends Instruction {
+    case class DROP (typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String ="DROP "+typ.toString();
 
@@ -332,7 +371,7 @@ abstract class Opcodes: Global {
      * Stack: ...:something
      *    ->: ...:something:something
      */
-    case class DUP (typ: Type) extends Instruction {
+    case class DUP (typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String ="DUP";
 
@@ -407,8 +446,8 @@ abstract class Opcodes: Global {
     case object Dynamic extends InvokeStyle;
 
     /**
-     * Special invoke. Static(true) is used for constructor,
-     * priavate and super calls.
+     * Special invoke. Static(true) is used for calls to private
+     * members.
      */
     case class Static(onInstance: Boolean) extends InvokeStyle;
 

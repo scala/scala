@@ -9,122 +9,87 @@ package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.backend.icode.Primitives;
 
-trait TypeStacks: Global {
+trait TypeStacks: ICodes {
   import opcodes._;
+  import global.{Symbol, Type, definitions};
 
   /* This class simulates the type of the opperand
    * stack of the ICode.
    */
   class TypeStack {
+    type Rep = List[TypeKind];
 
-    private var stack : List[Type] = Nil;
-//    private val definitions = global.definitions;
-    // TODO:
-    //  private val typer = definitions.atyper; // !!! Using atree typer !
+    var types: Rep = Nil;
 
-    private def this(stack : List[Type]) = {
+    def this(stack: Rep) = {
       this();
-      this.stack = stack;
+      this.types = stack;
     }
 
-    /** Simulate the effects of an Instruction
-     *  on the stack. It returns the new stack
+    def this(that: TypeStack) = {
+      this(that.types);
+    }
+
+    def length: Int = types.length;
+
+    /** Push a type on the type stack. UNITs are ignored. */
+    def push(t: TypeKind) =
+      if (t != UNIT)
+        types = t :: types;
+
+    /** Removes the value on top of the stack, and returns it. It assumes
+     *  the stack contains at least one element.
      */
-    def eval(instr: Instruction) : TypeStack = {
-      log(instr.toString());
-      assert(stack.length >= instr.consumed, "Invalid instruction :"+instr+" for stack "+toString());
-
-      val result = new TypeStack(erase(production(instr)):::stack.drop(instr.consumed)); /// !!! Opt
-      log("\t-> "+result.toString());
-      result;
-
+    def pop: TypeKind = {
+      val t = types.head;
+      types = types.tail;
+      t
     }
 
-    // ##################################################
-    // Public methods - Operation on the stack
+    /** Return the topmost two values on the stack. It assumes the stack
+     *  is large enough. Topmost element first.
+     */
+    def pop2: Pair[TypeKind, TypeKind] = Pair(pop, pop);
 
-    /* Push a new type */
-    def push(t: Type) = stack = t::stack;
+    /** Return the topmost three values on the stack. It assumes the stack
+     *  is large enough. Topmost element first.
+     */
+    def pop3: Triple[TypeKind, TypeKind, TypeKind] = Triple(pop, pop, pop);
 
-    /* Returns the topmost type of the stack */
-    def head = stack.head;
+    /**
+     * A TypeStack aggress with another one if they have the same
+     * length and each type kind agrees position-wise. Two
+     * types agree if they are subtypes of one another.
+     */
+    def agreesWith(other: TypeStack): Boolean =
+      (types.length == other.types.length) &&
+      List.forall2(types, other.types) ((t1, t2) => t1 <:< t2 || t2 <:< t1);
 
-    /* Returns the stack without the topmost element */
-    def tail = stack.tail;
-
-    /* Is the stack empty ? */
-    def isEmpty = stack.isEmpty;
-
-    /* Compute what type(s) the instruction produce on the stack */
-    private def production(instr: Instruction) : List[Type] = instr match {
-      case THIS(clasz) => clasz.thisType :: Nil;
-
-      // TODO:
-      //    case CONSTANT(aConstant) => typer.computeType(aConstant)::Nil;
-
-      // TODO:
-      //  case LOAD_ARRAY_ITEM() => typer.getArrayElementType(stack.tail.head)::Nil;
-
-      case LOAD_LOCAL(local, _) => local.tpe :: Nil;
-
-      case LOAD_FIELD(field, _) => stack.head.memberType(field) :: Nil;
-
-      case STORE_ARRAY_ITEM() => Nil;
-
-      case STORE_LOCAL(_,_) => Nil;
-
-      case STORE_FIELD(_,_) => Nil;
-
-      // TODO:
-      //    case CALL_PRIMITIVE(p) => typer.computeType(p)::Nil;
-
-      case CALL_METHOD(method, style) => style match {
-        case NewInstance => method.owner.thisType :: Nil;
-        case _ => method.tpe.resultType :: Nil;
+    def mergeWith(that: TypeStack): TypeStack = {
+      def merge(a: TypeStack, b: TypeStack): TypeStack = {
+        val lst = List.map2(a.types, b.types) ((k1, k2) => k1 match {
+          case REFERENCE(cls1) =>
+            val REFERENCE(cls2) = k2;
+            lub(k1,k2);
+          case _ => k1;
+        });
+        new TypeStack(lst)
       }
-      case NEW(clasz) => clasz.tpe :: Nil;
 
-      case CREATE_ARRAY(element) =>
-        appliedType(definitions.ArrayClass.typeConstructor,
-                    List(element)) :: Nil;
-
-      case IS_INSTANCE(_) => definitions.BooleanClass.tpe :: Nil;
-
-      case CHECK_CAST(typ) => typ::Nil;
-
-      case SWITCH(_,_) => Nil;
-
-      case JUMP(_) => Nil;
-
-      case CJUMP(_,_,_) => Nil;
-
-      case CZJUMP(_,_,_) => Nil;
-
-      case RETURN() => Nil;
-
-      case THROW() => Nil;
-
-      case DROP(_) => Nil;
-
-      case DUP(_) => stack.head::stack.head::Nil;
-
-      case MONITOR_ENTER() => Nil;
-
-      case MONITOR_EXIT() => Nil;
+      assert(this agreesWith that,
+             "Incompatible type stacks: " + this + ", " + that);
+      merge(this, that)
     }
-
-    /* This method kill all the produced *Unit* elements */
-    // !!! Hack
-    private def erase(production : List[Type]) = production.filter(
-      (t: Type) => !(t == definitions.UnitClass.tpe)
-    );
 
     /* This method returns a String representation of the stack */
     override def toString() = {
-      var ret : String = "";
-      stack.foreach((t: Type) => ret=(t.toString()+"::")+ret);
-      ret;
+      (types.foldLeft(new StringBuffer("")) ((buf, k) => buf.append(" ").append(k))).toString();
+    }
 
+    override def equals(other: Any): Boolean = {
+      other.isInstanceOf[TypeStack] &&
+      List.forall2(other.asInstanceOf[TypeStack].types,
+                   types) ((a, b) => a == b);
     }
   }
 

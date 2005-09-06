@@ -6,15 +6,20 @@
 
 package scala.tools.nsc.backend.icode;
 
+import scala.tools.nsc.symtab._;
+
 /** Glue together ICode parts.
  */
-abstract class ICodes: Global extends AnyRef
+abstract class ICodes extends AnyRef
                                  with Members
                                  with BasicBlocks
                                  with Opcodes
                                  with TypeStacks
+                                 with TypeKinds
+                                 with ExceptionHandlers
+                                 with Primitives
 {
-  import opcodes._;
+  val global: Global;
 
   /** The ICode representation of classes */
   var classes: List[IClass] = Nil;

@@ -18,14 +18,15 @@ import ast.parser._;
 import typechecker._;
 import matching.TransMatcher;
 import transform._;
-import backend.icode.{ICodes, GenICode};
+import backend.icode.{ICodes, GenICode, Checkers};
+import backend.ScalaPrimitives;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
                                                              with CompilationUnits
-                                                             with ICodes {
+{
 
-// sub-components --------------------------------------------------
+  // sub-components --------------------------------------------------
 
   object treePrinters extends TreePrinters {
     val global: Global.this.type = Global.this
@@ -52,6 +53,15 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object checker extends TreeCheckers {
     val global: Global.this.type = Global.this
   }
+
+  object icodes extends ICodes {
+    val global: Global.this.type = Global.this
+  }
+
+  object checkers extends Checkers {
+    val global: Global.this.type = Global.this
+  }
+  val icodeChecker = new checkers.ICodeChecker();
 
   val copy = new LazyTreeCopier();
 
@@ -222,6 +232,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object scalaPrimitives extends ScalaPrimitives {
+    val global: Global.this.type = Global.this;
+  }
+
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory, // needs to be first
     analyzer.typerFactory, // needs to be second
@@ -321,9 +335,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       globalPhase = globalPhase.next;
       if (settings.check contains globalPhase.name) {
         phase = globalPhase;
-        checker.checkTrees;
+        if (globalPhase.name == "terminal")
+          icodeChecker.checkICodes;
+        else
+          checker.checkTrees;
       }
     }
+
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
     if (settings.Xshowicode.value) printICode();
@@ -424,7 +442,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   private def printICode(): Unit = {
     val printer = new icodePrinter.TextPrinter(new PrintWriter(System.out, true));
-    classes.foreach(printer.printClass);
+    icodes.classes.foreach(printer.printClass);
   }
 
   private def informStatistics = {

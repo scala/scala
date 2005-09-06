@@ -10,7 +10,8 @@ import java.io.PrintWriter;
 abstract class Printers {
   val global: Global;
   import global._;
-  import opcodes._;
+  import global.icodes.opcodes._;
+  import global.icodes._;
 
   class TextPrinter(out: PrintWriter) {
     var margin = 0;

@@ -9,10 +9,14 @@ package scala.tools.nsc.backend.icode;
 
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
+import scala.{Symbol => scala_Symbol};
 
-trait Members: Global {
+trait Members: ICodes {
+  import global._;
 
-  /** This class represents the intermediate code of a method.
+  /**
+   * This class represents the intermediate code of a method or
+   * other multi-block piece of code, like exception handlers.
    */
   class Code(label: String) {
 
@@ -26,7 +30,6 @@ trait Members: Global {
     var producedStack: TypeStack = null;
 
     private var currentLabel: int = 0;
-    private var aTreeLabels: HashMap[Symbol, BasicBlock] = new HashMap;
 
     // Constructor code
     startBlock = newBlock;
@@ -80,18 +83,18 @@ trait Members: Global {
       });
     }
 
-    def logType = {
-      log ("// Typing " + toString());
-      traverse( (bb: BasicBlock) => {
-        log ("Typing block #" + bb.label);
-        var typer = new TypeStack;
-        bb.traverse((ic: Instruction) => {
-	  typer = typer.eval(ic);
-	  log(ic.toString()+" -> "+typer.toString());
-        });
+//     def logType = {
+//       log ("// Typing " + toString());
+//       traverse( (bb: BasicBlock) => {
+//         log ("Typing block #" + bb.label);
+//         var typer = new TypeStack;
+//         bb.traverse((ic: Instruction) => {
+// 	  typer = typer.eval(ic);
+// 	  log(ic.toString()+" -> "+typer.toString());
+//         });
 
-      });
-    }
+//       });
+//     }
 
     /* Compute a unique new label */
     def nextLabel = {
@@ -101,8 +104,8 @@ trait Members: Global {
 
     /* Create a new block and append it to the list
      */
-    def newBlock : BasicBlock = {
-      val block = new BasicBlock(nextLabel);
+    def newBlock: BasicBlock = {
+      val block = new BasicBlock(nextLabel, this);
       blocks += block;
       block;
     }
@@ -128,6 +131,10 @@ trait Members: Global {
       this.cunit = unit;
       this
     }
+
+    override def toString() = symbol.fullNameString;
+
+    def lookupField(s: Symbol) = fields find ((f) => f.symbol == s);
   }
 
   /** Represent a field in ICode */
@@ -137,6 +144,7 @@ trait Members: Global {
   /** Represent a method in ICode */
   class IMethod(val symbol: Symbol) {
     var code: Code = null;
+    var exh: List[ExceptionHandler] = _;
 
     /** local variables and method parameters */
     var locals: List[Symbol] = Nil;
@@ -157,10 +165,21 @@ trait Members: Global {
       ls foreach addLocal;
 
     def addParam(sym: Symbol): Unit =
-      if (!(params contains sym))
+      if (!(params contains sym)) {
         params = sym :: params;
+        locals = sym :: locals;
+      }
 
     def addParams(as: List[Symbol]): Unit =
-      as.foreach( (a: Symbol) => { addParam(a); addLocal(a); } )
+      as foreach addParam;
+
+    def lookupLocal(n: Name): Option[Symbol] =
+      locals find ((sym) => sym.name == n);
+
+    def addHandler(e: ExceptionHandler): Unit =
+      exh = e :: exh;
+
+
+    override def toString() = symbol.fullNameString;
   }
 }

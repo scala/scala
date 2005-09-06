@@ -1,8 +1,7 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
-** /_____/\____/\___/\____/____/                                        **
-\*                                                                      */
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 
 // $Id$
 
@@ -10,18 +9,10 @@ package scala.tools.nsc.backend.icode;
 
 import java.io.PrintWriter;
 
-object Primitives {
+class Primitives: ICodes {
 
   /** This class represents a primitive operation. */
   class Primitive {
-
-    /** Returns a string representation of this primitive. */
-    override def toString(): String = {
-//       val x: StringBuffer = new StringBuffer();
-//       new PrimitivePrinter(new PrintWriter(x)).printPrimitive(this);
-//       x.toString();
-      ""
-    }
   }
 
 
@@ -170,6 +161,7 @@ object Primitives {
         case MUL => "MUL";
         case DIV => "DIV";
         case REM => "REM";
+        case NOT => "NOT";
         case _   => throw new RuntimeException("ArithmeticOp unknown case");
     }
   }
@@ -188,6 +180,9 @@ object Primitives {
 
   /** An arithmetic remainder operation */
   case object REM extends ArithmeticOp;
+
+  /** Bitwise negation. */
+  case object NOT extends ArithmeticOp;
 
   /** This class represents a shift operation. */
   class ShiftOp {

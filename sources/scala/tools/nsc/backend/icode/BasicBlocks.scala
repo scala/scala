@@ -10,7 +10,7 @@ package scala.tools.nsc.backend.icode;
 import scala.tools.nsc.ast._;
 import scala.collection.mutable.Map;
 
-trait BasicBlocks: Global {
+trait BasicBlocks: ICodes {
   import opcodes._;
 
   /** This class represents a basic block. Each
@@ -18,7 +18,7 @@ trait BasicBlocks: Global {
    *  either executed all, or none. No jumps
    *  to/from the "middle" of the basic block are allowed.
    */
-  class BasicBlock (theLabel: int) {
+  class BasicBlock (theLabel: int, val code: Code) {
 
     /** The type stack at the begining of the block */
     var initialStack : TypeStack = null;
@@ -33,6 +33,7 @@ trait BasicBlocks: Global {
     /** The stack at the end of the block */
     var endStack : TypeStack = null;
 
+    var preds: List[BasicBlock] = null;
 
     /** ICode instructions */
     private var instructionList: List[Instruction] = Nil;
@@ -116,11 +117,11 @@ trait BasicBlocks: Global {
     }
 
     /** Compute the type stack of the block */
-    def typeBlock = {
-      assert(initialStack != null, "Stack not initialized");
-      endStack = initialStack;
-      traverse((ic : Instruction) => endStack = endStack.eval(ic));
-    }
+//     def typeBlock = {
+//       assert(initialStack != null, "Stack not initialized");
+//       endStack = initialStack;
+//       traverse((ic : Instruction) => endStack = endStack.eval(ic));
+//     }
 
     /** Close the block */
     def close = {
@@ -144,13 +145,25 @@ trait BasicBlocks: Global {
     def successors : List[BasicBlock] = // here order will count
       lastInstruction match {
         case JUMP (where) => List(where);
-        case CJUMP(success, failure, _) => failure::success::Nil;
-        case CZJUMP(success, failure, _) => failure::success::Nil;
+        case CJUMP(success, failure, _, _) => failure::success::Nil;
+        case CZJUMP(success, failure, _, _) => failure::success::Nil;
         case SWITCH(_,labels) => labels;
         case RETURN() => Nil;
         case _ =>
-	  abort("The last instruction is not a control flow instruction");
+	  global.abort("The last instruction is not a control flow instruction");
       }
+
+    def predecessors: List[BasicBlock] = {
+      if (preds == null)
+        preds = code.blocks.elements.filter (p => (p.successors contains this)).toList;
+//      global.log("Predecessors of " + this + ": " + preds);
+      preds
+    }
+
+    override def equals(other: Any): Boolean =
+      other.isInstanceOf[BasicBlock] &&
+      other.asInstanceOf[BasicBlock].label == label &&
+      other.asInstanceOf[BasicBlock].code  == code;
 
     // Instead of it, rather use a printer
     def print() : unit = print(System.out);
@@ -164,6 +177,15 @@ trait BasicBlocks: Global {
       out.println();
     }
 
+    def fullString: String = {
+      val buf = new StringBuffer();
+      buf.append("Block ").append(label.toString());
+      buf.append("\nSuccessors: ").append(successors);
+      buf.append("\nPredecessors: ").append(predecessors);
+      buf.toString()
+    }
+
+    override def toString(): String = "" + label;
   }
 
 }

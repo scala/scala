@@ -198,18 +198,24 @@ abstract class TreeBrowsers {
     def update(v: AnyRef): Unit = {
       val t: Tree = v.asInstanceOf[Tree];
       val str = new StringBuffer();
-      val buf = new StringWriter();
+      var buf = new StringWriter();
 
       t match {
-          case ProgramTree(_) => ();
-          case UnitTree(_)    => ();
-          case _ =>
-            str.append("Symbol: ").append(TreeInfo.symbolText(t));
-            str.append("\nSymbol type: \n");
-            TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf);
+        case ProgramTree(_) => ();
+        case UnitTree(_)    => ();
+        case _ =>
+          str.append("Symbol: ").append(TreeInfo.symbolText(t));
+          str.append("\nSymbol info: \n");
+          TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf);
+          str.append(buf.toString());
+          str.append("\nSymbol tpe: \n");
+          if (t.symbol != null) {
+            buf = new StringWriter();
+            TypePrinter.toDocument(t.symbol.tpe).format(getWidth() / getColumnWidth(), buf);
             str.append(buf.toString());
-            str.append("\nSymbol Attributes: \n").append(TreeInfo.symbolAttributes(t));
-            str.append("\nType: \n").append(t.tpe.toString());
+          }
+          str.append("\nSymbol Attributes: \n").append(TreeInfo.symbolAttributes(t));
+          str.append("\nType: \n").append(t.tpe.toString());
         }
       setText(str.toString());
     }
