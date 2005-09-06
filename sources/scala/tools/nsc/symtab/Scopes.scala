@@ -113,6 +113,13 @@ abstract class Scopes: SymbolTable {
      */
     def enter(sym: Symbol): unit = enter(newScopeEntry(sym, this));
 
+    /** enter a symbol
+     */
+    def enterUnique(sym: Symbol): unit = {
+      assert(lookup(sym.name) == NoSymbol);
+      enter(sym);
+    }
+
     private def createHash: unit = {
       hashtable = new Array[ScopeEntry](HASHSIZE);
       enterInHash(elems);

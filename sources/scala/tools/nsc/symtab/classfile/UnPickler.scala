@@ -120,7 +120,7 @@ abstract class UnPickler {
 	      errorBadSignature("bad symbol tag: " + tag);
 	  }
 	  sym.setFlag(flags);
-	  if (readIndex != end) assert(sym hasFlag (ACCESSOR | PARAMACCESSOR));
+	  if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR));
 	  sym.setInfo(
 	    if (readIndex != end) new LazyTypeRefAndAlias(inforef, readNat())
 	    else new LazyTypeRef(inforef));

@@ -313,8 +313,7 @@ abstract class ExplicitOuter extends InfoTransform {
     /** The second step performs the following transformations:
      *   1. Add definitions of superaccessors to the members of a class
      *      (@see makeSuperAccessorDefs)
-     *   2. Remove private modifiers from members M of mixins T that are accessed with a qualifier
-     *      different from T.this. (@see makeNotPrivate)
+     *   2. Remove private modifiers from members M of mixins T. (@see makeNotPrivate)
      *   3. Remove `private' modifier from class members M that are accessed from an inner class.
      *   4. Remove `protected' modifier from class members M that are accessed
      *      without a super qualifier accessed from an inner class. (@see makeNotPrivate)
@@ -340,11 +339,11 @@ abstract class ExplicitOuter extends InfoTransform {
        *  to avoid name clashes.
        */
       def makeNotPrivate(sym: Symbol): unit =
-	if (sym hasFlag PRIVATE) {
-          if (sym.isTerm)
-	    sym.name = newTermName(
-              sym.name.toString() + "$$" + sym.owner.enclClass.fullNameString('$'));
+	if (sym.isTerm && (sym hasFlag PRIVATE)) {
+	  sym.name = newTermName(
+            sym.name.toString() + "$$" + sym.owner.enclClass.fullNameString('$'));
           sym setFlag notPRIVATE;
+          if (!(sym hasFlag DEFERRED)) sym setFlag lateFINAL;
 	}
 
       /** The second-step transformation method */
@@ -356,14 +355,15 @@ abstract class ExplicitOuter extends InfoTransform {
 	    val accessors = makeSuperAccessorDefs(sym.owner, typer.atOwner(tree1, currentOwner));
 	    if (accessors.isEmpty) tree1
 	    else copy.Template(tree1, parents, stats ::: accessors)
+          case DefDef(_, _, _, _, _, _) =>
+            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR))) makeNotPrivate(sym);
+            tree1
 	  case Select(qual, name) =>
-	    if ((sym hasFlag PRIVATE) &&
-		((sym.owner.isTrait && qual.tpe != sym.owner.thisType) ||  // (2)
-		 currentOwner.enclClass != sym.owner)) // (3)
-              makeNotPrivate(sym)
-            else if ((sym hasFlag PROTECTED) &&
-		     !(qual.isInstanceOf[Super] ||
-		       (qual.tpe.widen.symbol isSubClass currentOwner.enclClass)))
+	    if (currentOwner.enclClass != sym.owner) // (3)
+              makeNotPrivate(sym);
+	    if ((sym hasFlag PROTECTED) &&
+		!(qual.isInstanceOf[Super] ||
+		  (qual.tpe.widen.symbol isSubClass currentOwner.enclClass)))
 	      sym setFlag notPROTECTED;
 	    tree1
 	  case _ =>

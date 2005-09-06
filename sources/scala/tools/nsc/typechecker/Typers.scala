@@ -22,7 +22,14 @@ abstract class Typers: Analyzer {
   var selcnt = 0;
   var implcnt = 0;
 
-  private var transformed = new HashMap[Tree, Tree];
+  private val transformed = new HashMap[Tree, Tree];
+
+  private val superDefs = new HashMap[Symbol, ListBuffer[Tree]];
+
+  def init = {
+    transformed.clear;
+    superDefs.clear;
+  }
 
   def newTyper(context: Context): Typer = new Typer(context);
 
@@ -214,6 +221,26 @@ abstract class Typers: Analyzer {
 	assert(sym.tpe.paramTypes.isEmpty);
 	tree.setType(MethodType(List(), singleType(pre, sym)))
       } else tree
+    }
+
+    class AddSuperAccessors(clazz: Symbol) extends Traverser {
+      override def traverse(tree: Tree) = tree match {
+        case Select(Super(_, mix), _) =>
+          if (tree.isTerm && mix == nme.EMPTY.toTypeName) {
+	    if (tree.symbol.superAccessor(clazz) == NoSymbol) {
+	      System.out.println("add super acc " + tree.symbol + tree.symbol.locationString + " to " + clazz);//debug
+              clazz.info.decls enter
+                clazz.newMethod(tree.pos, nme.SUPER_NAME(tree.symbol.name))
+                  .setFlag(SUPERACCESSOR | PRIVATE)
+                  .setAlias(tree.symbol)
+                  .setInfo(clazz.thisType.memberType(tree.symbol))
+	    }
+          }
+        case Template(_, _) =>
+          ;
+        case _ =>
+          super.traverse(tree)
+      }
     }
 
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
@@ -474,7 +501,8 @@ abstract class Typers: Analyzer {
 	      else typed(Assign(Select(This(value.owner), getterDef.symbol),
 				Ident(vparamss.head.head)))))
 	}
-	val gs = if ((mods & MUTABLE) != 0) List(getterDef, setterDef) else List(getterDef);
+	val gs = if ((mods & MUTABLE) != 0) List(getterDef, setterDef)
+                 else List(getterDef);
 	if ((mods & DEFERRED) != 0) gs else vdef :: gs
       case DocDef(comment, defn) =>
 	addGetterSetter(defn) map (stat => DocDef(comment, stat))
@@ -485,20 +513,21 @@ abstract class Typers: Analyzer {
     }
 
     def typedTemplate(templ: Template): Template = {
-      if (templ.symbol == NoSymbol)
-	templ setSymbol context.owner.newLocalDummy(templ.pos);
+      val clazz = context.owner;
+      if (templ.symbol == NoSymbol) templ setSymbol clazz.newLocalDummy(templ.pos);
       val parents1 = parentTypes(templ);
       val selfType =
-        if (context.owner.isAnonymousClass && !phase.erasedTypes)
-          intersectionType(context.owner.info.parents, context.owner.owner)
-        else context.owner.typeOfThis;
+        if (clazz.isAnonymousClass && !phase.erasedTypes)
+          intersectionType(clazz.info.parents, clazz.owner)
+        else clazz.typeOfThis;
       // the following is necessary for templates generated later
-      new Namer(context.outer.make(templ, context.owner, context.owner.info.decls))
-	.enterSyms(templ.body);
+      new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body);
       validateParentClasses(parents1, selfType);
       val body1 = templ.body flatMap addGetterSetter;
       val body2 = typedStats(body1, templ.symbol);
-      copy.Template(templ, parents1, body2) setType context.owner.tpe
+      if (clazz.isTrait && phase.id <= typerPhase.id)
+        new AddSuperAccessors(clazz).traverseTrees(body2);
+      copy.Template(templ, parents1, body2) setType clazz.tpe
     }
 
     def typedValDef(vdef: ValDef): ValDef = {
@@ -544,7 +573,7 @@ abstract class Typers: Analyzer {
 	  superArg match {
 	    case Ident(name) =>
 	      if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
-		var alias = superAcc.initialize.aliasSym;
+		var alias = superAcc.initialize.alias;
 		if (alias == NoSymbol) alias = superAcc.getter;
 		if (alias != NoSymbol &&
 		    superClazz.info.nonPrivateMember(alias.name) != alias)
@@ -1098,7 +1127,7 @@ abstract class Typers: Analyzer {
             val rhs1 = typed(rhs, lhs1.tpe);
             copy.Assign(tree, lhs1, rhs1) setType UnitClass.tpe;
           } else {
-            System.out.println("" + lhs1 + " " + varsym + " " + flagsToString(varsym.flags));//debug
+            System.out.println("" + lhs1 + " " + varsym + " " + varsym.isValue + " " + flagsToString(varsym.flags));//debug
             if (!lhs1.tpe.isError) error(tree.pos, "assignment to non-variable ");
             setError(tree)
           }

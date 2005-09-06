@@ -85,7 +85,7 @@ abstract class Pickler extends SubComponent {
 	putType(sym.info);
 	if (sym.thisSym != sym)
           putType(sym.typeOfThis);
-	putSymbol(sym.aliasSym);
+	putSymbol(sym.alias);
       } else if (sym != NoSymbol) {
 	putEntry(if (sym.isModuleClass) sym.name.toTermName else sym.name);
 	if (!sym.owner.isRoot) putSymbol(sym.owner);
@@ -173,7 +173,7 @@ abstract class Pickler extends SubComponent {
 	  if (sym.isAbstractType) TYPEsym else ALIASsym
 	case sym: TermSymbol =>
 	  writeSymInfo(sym);
-	  if (sym.aliasSym != NoSymbol) writeRef(sym.aliasSym);
+	  if (sym.alias != NoSymbol) writeRef(sym.alias);
           if (sym.isModule) MODULEsym else VALsym
 	case NoType =>
 	  NOtpe

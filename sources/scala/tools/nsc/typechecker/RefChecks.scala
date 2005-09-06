@@ -514,13 +514,13 @@ abstract class RefChecks extends InfoTransform {
 		  unit.error(tree.pos, "symbol accessed from super may not be abstract");
 	      case _ =>
 	    }
-	  } else if (sym.aliasSym != NoSymbol) {
+	  } else if (sym.alias != NoSymbol) {
             qual match {
               case This(_) =>
                 result = typed {
                   Select(
                     Super(qual.symbol, qual.symbol.info.parents.head.symbol.name) setPos qual.pos,
-                    sym.aliasSym) setPos tree.pos
+                    sym.alias) setPos tree.pos
                 }
 		if (settings.debug.value)
 		  System.out.println("alias replacement: " + tree + " ==> " + result);//debug

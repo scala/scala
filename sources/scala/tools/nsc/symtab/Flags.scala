@@ -21,8 +21,8 @@ object Flags {
                                     // Note difference to DEFERRED!
 
   final val DEFERRED      = 0x00000100;   // was `abstract' for members
-  final val METHOD        = 0x00000200;   // a def parameter
-  final val TRAIT         = 0x00000400;   // a trait
+  final val METHOD        = 0x00000200;   // a method
+  final val MODULE        = 0x00000400;   // symbol is module or class implementing a module
   final val INTERFACE     = 0x00000800;   // symbol is an interface
 
   final val MUTABLE       = 0x00001000;   // symbol is a mutable variable.
@@ -43,12 +43,11 @@ object Flags {
   final val STATIC        = 0x00800000;   // static field, method or class
 
   final val CASEACCESSOR  = 0x01000000;   // symbol is a case parameter (or its accessor)
-  final val MODULE        = 0x02000000;   // symbol is module or class implementing a module
+  final val TRAIT         = 0x02000000;   // symbol is a trait
   final val BRIDGE        = 0x04000000;  // function is a bridge method. Set by Erasure
   final val ACCESSOR      = 0x08000000;   // a value or variable accessor
 
-  final val ACCESS_METHOD = 0x10000000;   // function is an access function for a method in some
-                                    // outer class; set by ExplicitOuter
+  final val SUPERACCESSOR = 0x10000000;   // a super accessor
   final val PARAMACCESSOR = 0x20000000;   // for value definitions: is an access method for a final val parameter
                                           // for parameters: is a val parameter
 
@@ -57,16 +56,17 @@ object Flags {
 
   final val IS_ERROR      = 0x100000000l; // symbol is an error symbol
   final val OVERLOADED    = 0x200000000l; // symbol is overloaded
+  final val FLATTENED     = 0x400000000l; // class has been lifted out to package level
+  final val MIXEDIN       = 0x800000000l; // member has been mixed in
 
-  final val TRANS_FLAG    = 0x400000000l; // transient flag guaranteed to be reset after each phase.
+  final val TRANS_FLAG    = 0x1000000000l; // transient flag guaranteed to be reset after each phase.
   final val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
-  final val FLATTENED     = 0x800000000l; // class has been lifted out to package level
 
-  final val INITIALIZED   = 0x1000000000l; // symbol's definition is complete
-  final val LOCKED        = 0x2000000000l; // temporary flag to catch cyclic dependencies
+  final val INITIALIZED   = 0x2000000000l; // symbol's definition is complete
+  final val LOCKED        = 0x4000000000l; // temporary flag to catch cyclic dependencies
 
-  final val InitialFlags  = 0x000000FFFFFFFFFFl;       // flags that are enabled from phase 1.
-  final val LateFlags     = 0x000FFF0000000000l;    // flags that override flags in 0xFFF.
+  final val InitialFlags  = 0x000000FFFFFFFFFFl; // flags that are enabled from phase 1.
+  final val LateFlags     = 0x000FFF0000000000l; // flags that override flags in 0xFFF.
   final val AntiFlags     = 0x7FF0000000000000l; // flags that cancel flags in 0x7FF
   final val LateShift     = 40l;
   final val AntiShift     = 52l;
@@ -74,18 +74,24 @@ object Flags {
   // late flags (set by a transformer phase)
   final val lateDEFERRED = (DEFERRED: long) << LateShift;
   final val lateINTERFACE = (INTERFACE: long) << LateShift;
+  final val lateMODULE   = (MODULE: long) << LateShift;
+  final val lateFINAL    = (FINAL: long) << LateShift;
   final val notPRIVATE   = (PRIVATE: long) << AntiShift;
   final val notPROTECTED = (PROTECTED: long) << AntiShift;
+  final val notFINAL     = (FINAL: long) << AntiShift;
 
   // masks
-  final val SourceFlags   = 0x002FFFFF;    // these modifiers can be set in source programs.
+  /** This flags can be set when class or module symbol is first created. */
+  final val TopLevelCreationFlags =
+    MODULE | PACKAGE | FINAL | JAVA;
+
   final val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
+
   final val PrintableFlags =               // these modifiers appear in TreePrinter output.
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | ACCESSOR |
-    ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE | STATIC;
-  final val GenFlags      =                // these modifiers can be in generated trees
-    SourceFlags | PrintableFlags;
+    SUPERACCESSOR | PARAMACCESSOR | LABEL | BRIDGE | STATIC;
+
   final val FieldFlags = MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL;
 
   final val AccessFlags   = PRIVATE | PROTECTED;
@@ -96,7 +102,7 @@ object Flags {
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags = AccessFlags | PACKAGE;
 
-  def flags2mods(flags: long): int = flags.asInstanceOf[int] & GenFlags;
+  def flags2mods(flags: long): int = flags.asInstanceOf[int];
 
   def flagsToString(flags: long): String =
     List.range(0, 63)
@@ -109,6 +115,7 @@ object Flags {
     else if (flag == IS_ERROR) "<is-error>"
     else if (flag == OVERLOADED) "<overloaded>"
     else if (flag == TRANS_FLAG) "<trans-flag>"
+    else if (flag == MIXEDIN) "<mixedin>"
     else if (flag == INITIALIZED) "<initialized>"
     else if (flag == LOCKED) "<locked>"
     else flag.asInstanceOf[int] match {
@@ -145,7 +152,7 @@ object Flags {
       case CASEACCESSOR  => "<caseaccessor>"
       case ACCESSOR      => "<accessor>"
 
-      case ACCESS_METHOD => "<access>"
+      case SUPERACCESSOR => "<superaccessor>"
       case PARAMACCESSOR => "<paramaccessor>"
       case LABEL         => "<label>"
       case BRIDGE        => "<bridge>"

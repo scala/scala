@@ -15,7 +15,7 @@ abstract class AddInterfaces extends InfoTransform {
   import definitions._;             // standard classes and methods
   import posAssigner.atPos;         // for filling in tree positions
 
-  override def phaseNewFlags: long = lateDEFERRED | lateINTERFACE;
+  override def phaseNewFlags: long = lateDEFERRED | lateINTERFACE | notFINAL;
 
 // Type transformation
 
@@ -25,7 +25,7 @@ abstract class AddInterfaces extends InfoTransform {
   private val implMethodMap = new HashMap[Symbol, Symbol];
 
   private def implClassName(sym: Symbol): Name =
-    newTermName(sym.name.toString() + nme.IMPL_CLASS_SUFFIX);
+    newTypeName(sym.name.toString() + nme.IMPL_CLASS_SUFFIX);
 
   private def needsImplClass(sym: Symbol): boolean =
     sym.isTrait && (!(sym hasFlag INTERFACE) || (sym hasFlag lateINTERFACE)) && !sym.isImplClass;
@@ -64,7 +64,7 @@ abstract class AddInterfaces extends InfoTransform {
 	    val impl = sym.cloneSymbol(implClass).setInfo(sym.info);
 	    if (!impl.isExternal) implMethodMap(sym) = impl;
 	    decls enter impl;
-	    sym setFlag lateDEFERRED
+	    sym setFlag (lateDEFERRED | notFINAL)
           }
         } else {
 	  sym.owner = implClass;

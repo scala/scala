@@ -80,6 +80,7 @@ abstract class StdNames: SymbolTable {
     def isLocalName(name: Name) = name(name.length - 1) == ' ';
     def GETTER_NAME(name: Name) = newTermName(name.toString().substring(0, name.length - 1));
     def SETTER_NAME(name: Name) = encode(name.toString() + "_=");
+    def SUPER_NAME(name: Name) = newTermName("super$" + name);
 
     val ERROR = newTermName("<error>");
     val ERRORtype = newTypeName("<error>");
@@ -101,6 +102,7 @@ abstract class StdNames: SymbolTable {
     val ROOT = newTermName("<root>");
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>");
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>");
+    val SELF = newTermName("$self");
 
     val CONSTRUCTOR = newTermName("<init>");
     val MIXIN_CONSTRUCTOR = newTermName("$init$");

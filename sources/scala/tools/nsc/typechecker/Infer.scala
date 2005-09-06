@@ -207,14 +207,14 @@ abstract class Infer: Analyzer {
 	tree setSymbol sym setType ErrorType
       } else if (sym.owner.hasFlag(INCONSTRUCTOR) &&
 		 !sym.isTypeParameter && !sym.isConstructor &&
-		 site.isInstanceOf[This] && !phase.erasedTypes) {
+		 (site.isInstanceOf[This] || site.isInstanceOf[Super]) && !phase.erasedTypes) {
 	errorTree(tree, "" + sym + " cannot be accessed from constructor");
       } else {
 	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
 	if (sym1 == NoSymbol) {
 	  if (settings.debug.value) System.out.println(context);//debug
           System.out.println(tree);//debug
-          System.out.println("" + pre + " " + sym.owner.thisType + (pre =:= sym.owner.thisType));//debug
+          System.out.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType));//debug
 	  errorTree(tree, sym.toString() + " cannot be accessed in " + pre.widen)
 	} else {
           var owntype = pre.memberType(sym1);

@@ -211,7 +211,7 @@ abstract class Symbols: SymbolTable {
     final def resetFlag(mask: long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: long): long = flags & mask;
     final def hasFlag(mask: long): boolean = (flags & mask) != 0;
-    final def resetFlags: unit = { rawflags = rawflags & SourceFlags }
+    final def resetFlags: unit = { rawflags = rawflags & TopLevelCreationFlags }
 
 // Info and Type -------------------------------------------------------------------
 
@@ -481,7 +481,7 @@ abstract class Symbols: SymbolTable {
 
     /** For a paramaccessor: a superclass paramaccessor for which this symbol is
      *  an alias, NoSymbol for all others */
-    def aliasSym: Symbol = NoSymbol;
+    def alias: Symbol = NoSymbol;
 
     /** The class with the same name in the same package as this module or
      *  case class factory
@@ -531,19 +531,24 @@ abstract class Symbols: SymbolTable {
       base.info.nonPrivateDecl(name).suchThat(sym =>
         !sym.isTerm || (base.thisType.memberType(sym) matches base.thisType.memberType(this)));
 
-    /** The symbol accessed by a super in the definition of `this' when seen from
+    /** The symbol accessed by a super in the definition of this symbol when seen from
      *  class `base'. This symbol is always concrete.
      *  pre: `this.owner' is in the base class sequence of `base'.
      */
     final def superSymbol(base: Symbol): Symbol = {
-      var bcs = base.info.baseClasses.dropWhile(.!=(owner)).tail;
+      var bcs = base.info.baseClasses.dropWhile(owner !=).tail;
       var sym: Symbol = NoSymbol;
       while (!bcs.isEmpty && sym == NoSymbol) {
-	sym = overriddenSymbol(bcs.head).suchThat(sym => !(sym hasFlag DEFERRED));;
+	sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
 	bcs = bcs.tail
       }
       sym
     }
+
+    /** The superaccessor for this symbol in the definition of `base'. */
+    final def superAccessor(base: Symbol): Symbol =
+      base.info.decl(nme.SUPER_NAME(name)) suchThat (.alias.==(this));
+
 /*
     def referenced: Symbol =
       throw new Error("referenced inapplicable for " + this);
@@ -690,11 +695,11 @@ abstract class Symbols: SymbolTable {
       clone
     }
 
-    override def aliasSym: Symbol =
-      if (hasFlag(PARAMACCESSOR)) referenced else NoSymbol;
+    override def alias: Symbol =
+      if (hasFlag(SUPERACCESSOR | PARAMACCESSOR)) referenced else NoSymbol;
 
     def setAlias(alias: Symbol): TermSymbol = {
-      assert(hasFlag(PARAMACCESSOR));
+      assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN));
       referenced = alias;
       this
     }
@@ -809,7 +814,7 @@ abstract class Symbols: SymbolTable {
       clone
     }
 
-    override def sourceModule = if (isModuleClass) owner.linkedModule else NoSymbol;
+    override def sourceModule = if (isModuleClass) linkedModule else NoSymbol;
   }
 
   /** A class for module class symbols

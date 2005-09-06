@@ -206,6 +206,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object mixin extends Mixin {
+    val global: Global.this.type = Global.this;
+  }
+
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this;
   }
@@ -232,6 +236,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     lambdaLift,
     flatten,
     constructors,
+    //mixin,
     if (settings.Xshowicode.value) genicode
     else sampleTransform);
 
@@ -265,6 +270,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val typerPhase = phaseNamed("typer");
   val refchecksPhase = phaseNamed("refchecks");
   val erasurePhase = phaseNamed("erasure");
+  val delegateMixins = phaseNamed("mixin") != NoPhase;
 
   val typer = new analyzer.Typer(analyzer.NoContext.make(EmptyTree, definitions.RootClass, new Scope())) {
     override def typed(tree: Tree, mode: int, pt: Type): Tree = {

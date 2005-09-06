@@ -80,11 +80,7 @@ abstract class TreePrinters {
       if (!tree.isEmpty) { print(prefix); print(tree) }
 
     def printFlags(tree: Tree, flags: long): unit =
-      printModifiers(
-	if (tree.symbol == NoSymbol) flags
-	else if (settings.debug.value) tree.symbol.flags
-	else tree.symbol.flags & SourceFlags.asInstanceOf[long]);
-	  //todo: check codegen so that we can remove this
+      printModifiers(if (tree.symbol == NoSymbol) flags else tree.symbol.flags);
 
     def printModifiers(flags: long): unit = {
       val mask = if (settings.debug.value) -1 else PrintableFlags;
