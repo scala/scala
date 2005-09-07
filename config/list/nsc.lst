@@ -93,7 +93,7 @@ backend/icode/Members.scala
 backend/icode/Opcodes.scala
 backend/icode/Primitives.scala
 backend/icode/Printers.scala
-backend/icode/TypeKind.scala
+backend/icode/TypeKinds.scala
 backend/icode/TypeStacks.scala
 
 
