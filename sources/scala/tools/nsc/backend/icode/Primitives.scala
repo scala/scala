@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode;
 
 import java.io.PrintWriter;
 
-class Primitives: ICodes {
+abstract class Primitives: ICodes {
 
   /** This class represents a primitive operation. */
   class Primitive {

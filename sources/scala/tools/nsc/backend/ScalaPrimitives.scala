@@ -7,7 +7,6 @@
 
 package scala.tools.nsc.backend;
 
-import scala.tools.nsc.Global;
 import scala.tools.nsc.backend.icode._;
 
 import scala.collection.mutable.{Map, HashMap};
@@ -513,7 +512,7 @@ abstract class ScalaPrimitives {
     import definitions._;
     val code = getPrimitive(fun);
 
-    var elem: Type = _;
+    var elem: Type = null;
     tpe match {
       case TypeRef(_, sym, _elem :: Nil)
            if (sym == ArrayClass) => elem = _elem;

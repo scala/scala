@@ -74,6 +74,8 @@ abstract class Symbols: SymbolTable {
       newAbstractType(pos, name).setFlag(PARAM);
     final def newClass(pos: int, name: Name) =
       new ClassSymbol(this, pos, name);
+    final def newModuleClass(pos: int, name: Name) =
+      new ModuleClassSymbol(this, pos, name);
     final def newAnonymousClass(pos: int) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName);
     final def newAnonymousFunctionClass(pos: int) =
@@ -96,8 +98,10 @@ abstract class Symbols: SymbolTable {
 
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA));
     final def isVariable = isTerm && hasFlag(MUTABLE);
-    final def isGetter = isTerm && hasFlag(ACCESSOR) && !originalName.endsWith(nme._EQ);
-    final def isSetter = isTerm && hasFlag(ACCESSOR) && originalName.endsWith(nme._EQ);
+    final def hasGetter = isTerm && nme.isLocalName(name);
+    final def isGetter = isTerm && hasFlag(ACCESSOR) && !nme.originalName(name).endsWith(nme._EQ);
+    //todo: make independent of name, as this can be forged.
+    final def isSetter = isTerm && hasFlag(ACCESSOR) && nme.originalName(name).endsWith(nme._EQ);
     final def isValueParameter = isTerm && hasFlag(PARAM);
     final def isLocalDummy = isTerm && (name startsWith nme.LOCAL_PREFIX);
     final def isMethod = isTerm && hasFlag(METHOD);
@@ -449,34 +453,11 @@ abstract class Symbols: SymbolTable {
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.hasFlag(PARAMACCESSOR));
 
-    final def originalName: Name = name.subName(0, name.pos("$$"));
-
     /** The symbol accessed by this accessor function.
      */
     final def accessed: Symbol = {
       assert(hasFlag(ACCESSOR));
-      var name1 = originalName;
-      if (name1.endsWith(nme._EQ)) name1 = name1.subName(0, name1.length - nme._EQ.length);
-      owner.info.decl(nme.LOCAL_NAME(name1))
-    }
-
-    private def findAccessor(p: Symbol => boolean): Symbol = {
-      val accs = owner.info.decls.toList filter (acc => p(acc) && acc.accessed == this);
-      if (accs.isEmpty) NoSymbol
-      else {
-        assert(accs.tail.isEmpty);
-        accs.head
-      }
-    }
-
-    final def getter: Symbol = {
-      val sym = owner.info.decl(nme.GETTER_NAME(name)) filter (.hasFlag(ACCESSOR));
-      if (sym != NoSymbol) sym else findAccessor(.isGetter)
-    }
-
-    final def setter: Symbol = {
-      val sym = owner.info.decl(nme.SETTER_NAME(name)) filter (.hasFlag(ACCESSOR));
-      if (sym != NoSymbol) sym else findAccessor(.isSetter)
+      owner.info.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name));
     }
 
     /** For a paramaccessor: a superclass paramaccessor for which this symbol is
@@ -547,7 +528,37 @@ abstract class Symbols: SymbolTable {
 
     /** The superaccessor for this symbol in the definition of `base'. */
     final def superAccessor(base: Symbol): Symbol =
-      base.info.decl(nme.SUPER_NAME(name)) suchThat (.alias.==(this));
+      base.info.decl(nme.superName(name)) suchThat (.alias.==(this));
+
+    final def getter: Symbol =
+      owner.info.decl(nme.localToGetter(name)) filter (.hasFlag(ACCESSOR));
+
+    final def setter: Symbol =
+      owner.info.decl(nme.getterToSetter(nme.localToGetter(name))) filter (.hasFlag(ACCESSOR));
+
+    /** Remove private modifier from symbol `sym's definition. If `sym' is a
+     *  term symbol rename it by appending $$<fully-qualified-name-of-enclosing-class
+     *  to avoid name clashes.
+     */
+    final def makeNotPrivate: unit = {
+      def expandName(sym: Symbol): unit =
+        if (sym != NoSymbol && !(sym hasFlag EXPANDEDNAME)) {
+          sym setFlag EXPANDEDNAME;
+          if (sym hasFlag ACCESSOR) {
+            expandName(sym.accessed);
+          } else if (sym.hasGetter) {
+            expandName(sym.setter);
+            expandName(sym.getter)
+          }
+          sym.name = newTermName(
+            sym.name.toString() + "$$" + sym.owner.enclClass.fullNameString('$'))
+        }
+      if (isTerm && (this hasFlag PRIVATE)) {
+        setFlag(notPRIVATE);
+        if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
+	expandName(this)
+      }
+    }
 
 /*
     def referenced: Symbol =
@@ -792,8 +803,10 @@ abstract class Symbols: SymbolTable {
         thisTypePhase = phase;
         if (!isValid(p)) {
 	  thisTypeCache =
-	    if (isModuleClass && !isRoot && !phase.erasedTypes)
+	    if (isModuleClass && !isRoot && !phase.erasedTypes) {
+              assert(sourceModule != NoSymbol, this);
               singleType(owner.thisType, sourceModule);
+            }
 	    else ThisType(this);
         }
       }
@@ -820,9 +833,15 @@ abstract class Symbols: SymbolTable {
   /** A class for module class symbols
    *  Note: Not all module classes are of this type; when unpickled, we get plain class symbols!
    */
-  class ModuleClassSymbol(module: TermSymbol) extends ClassSymbol(module.owner, module.pos, module.name.toTypeName) {
-    setFlag(module.getFlag(ModuleToClassFlags) | MODULE | FINAL);
+  class ModuleClassSymbol(owner: Symbol, pos: int, name: Name) extends ClassSymbol(owner, pos, name) {
+    private var module: Symbol = null;
+    def this(module: TermSymbol) = {
+      this(module.owner, module.pos, module.name.toTypeName);
+      setFlag(module.getFlag(ModuleToClassFlags) | MODULE | FINAL);
+      setSourceModule(module);
+    }
     override def sourceModule = module;
+    def setSourceModule(module: Symbol): unit = this.module = module
   }
 
   /** An object repreesenting a missing symbol */

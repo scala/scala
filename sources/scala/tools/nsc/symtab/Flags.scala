@@ -59,11 +59,12 @@ object Flags {
   final val FLATTENED     = 0x400000000l; // class has been lifted out to package level
   final val MIXEDIN       = 0x800000000l; // member has been mixed in
 
-  final val TRANS_FLAG    = 0x1000000000l; // transient flag guaranteed to be reset after each phase.
+  final val EXPANDEDNAME  = 0x1000000000l; // name has been expanded with class suffix
+  final val TRANS_FLAG    = 0x2000000000l; // transient flag guaranteed to be reset after each phase.
   final val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
 
-  final val INITIALIZED   = 0x2000000000l; // symbol's definition is complete
-  final val LOCKED        = 0x4000000000l; // temporary flag to catch cyclic dependencies
+  final val INITIALIZED   = 0x4000000000l; // symbol's definition is complete
+  final val LOCKED        = 0x8000000000l; // temporary flag to catch cyclic dependencies
 
   final val InitialFlags  = 0x000000FFFFFFFFFFl; // flags that are enabled from phase 1.
   final val LateFlags     = 0x000FFF0000000000l; // flags that override flags in 0xFFF.
@@ -116,6 +117,7 @@ object Flags {
     else if (flag == OVERLOADED) "<overloaded>"
     else if (flag == TRANS_FLAG) "<trans-flag>"
     else if (flag == MIXEDIN) "<mixedin>"
+    else if (flag == EXPANDEDNAME) "<expandedname>"
     else if (flag == INITIALIZED) "<initialized>"
     else if (flag == LOCKED) "<locked>"
     else flag.asInstanceOf[int] match {

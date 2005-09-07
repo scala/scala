@@ -6,6 +6,7 @@
 package scala.tools.nsc.typechecker;
 
 import scala.tools.util.Position;
+import symtab.Flags._;
 
 abstract class TreeCheckers extends Analyzer {
 
@@ -60,6 +61,16 @@ abstract class TreeCheckers extends Analyzer {
       override def traverse(tree: Tree): unit =
         try {
           tree match {
+            case DefDef(_, _, _, _, _, _) =>
+              if (tree.symbol.hasFlag(ACCESSOR) && !tree.symbol.hasFlag(DEFERRED)) {
+                assert(tree.symbol.accessed != NoSymbol);
+                assert(tree.symbol.accessed.getter == tree.symbol ||
+                       tree.symbol.accessed.setter == tree.symbol);
+              }
+            case ValDef(_, _, _, _) =>
+              if (tree.symbol.hasGetter) {
+                assert(tree.symbol.getter != NoSymbol)
+              }
             case Apply(_, args) =>
               assert(args forall (EmptyTree !=))
             case _ =>

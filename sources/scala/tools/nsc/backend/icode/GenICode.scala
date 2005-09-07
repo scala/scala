@@ -702,7 +702,7 @@ abstract class GenICode extends SubComponent  {
      * if (l == null) then r == null else l.equals(r);
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context, thenCtx: Context, elseCtx: Context): Unit = {
-      var eqEqTempVar: Symbol = _;
+      var eqEqTempVar: Symbol = null;
       ctx.method.lookupLocal(eqEqTemp) match {
         case Some(sym) => eqEqTempVar = sym;
         case None =>

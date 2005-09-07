@@ -105,14 +105,21 @@ abstract class UnPickler {
 	    case CLASSsym =>
 	      sym =
                 if (name == classRoot.name && owner == classRoot.owner)
-                  if ((flags & MODULE) != 0) moduleRoot.moduleClass else classRoot
-		else owner.newClass(Position.NOPOS, name);
+                  if ((flags & MODULE) != 0) moduleRoot.moduleClass
+                  else classRoot
+		else
+                  if ((flags & MODULE) != 0) owner.newModuleClass(Position.NOPOS, name)
+                  else owner.newClass(Position.NOPOS, name);
 	      if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
 	    case MODULEsym =>
-	      val mclazz = at(inforef, readType).symbol.asInstanceOf[ClassSymbol];
+	      val mclazz = at(inforef, readType).symbol.asInstanceOf[ModuleClassSymbol];
 	      sym =
                 if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot
-		else owner.newModule(Position.NOPOS, name, mclazz)
+		else {
+                  val m = owner.newModule(Position.NOPOS, name, mclazz);
+                  mclazz.setSourceModule(m);
+                  m
+                }
 	    case VALsym =>
 	      sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
 		    else owner.newValue(Position.NOPOS, name)

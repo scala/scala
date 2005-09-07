@@ -149,14 +149,14 @@ trait Namers: Analyzer {
 	        .setFlag(accmods).setInfo(innerNamer.getterTypeCompleter(tree));
 	      enterInScope(getter);
 	      if ((mods & MUTABLE) != 0) {
-	        val setter = owner.newMethod(tree.pos, nme.SETTER_NAME(name))
+	        val setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
 		  .setFlag(accmods & ~STABLE).setInfo(innerNamer.setterTypeCompleter(tree));
 	        enterInScope(setter)
 	      }
 	      tree.symbol =
 		if ((mods & DEFERRED) == 0)
 		  enterInScope(
-		    owner.newValue(tree.pos, nme.LOCAL_NAME(name))
+		    owner.newValue(tree.pos, nme.getterToLocal(name))
  	              .setFlag(mods & FieldFlags | PRIVATE | LOCAL)
 		      .setInfo(innerNamer.typeCompleter(tree)))
 		else getter;

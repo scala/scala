@@ -273,9 +273,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             if (tree.symbol != NoSymbol)
               if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
                 tree.symbol = NoSymbol
-              else if (qual.tpe.isInstanceOf[MethodType] && qual.tpe.paramTypes.isEmpty) {
-                assert(qual.symbol.isStable);
-                qual1 = Apply(qual, List()) setPos qual.pos setType qual.tpe.resultType;
+              else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.paramTypes.isEmpty) {
+                assert(qual1.symbol.isStable);
+                qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType;
               } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
                 qual1 = gen.cast(qual1, tree.symbol.owner.tpe);
             copy.Select(tree, qual1, name)
@@ -380,7 +380,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                   e = bridgesScope.lookupNextEntry(e);
                 if (e == null) {
                   val bridge = other.cloneSymbolImpl(owner)
-                     setPos(owner.pos) setFlag (member.flags | BRIDGE) setInfo otpe;
+                     setPos(owner.pos)
+                     setFlag (member.flags | BRIDGE)
+                     resetFlag ACCESSOR
+                     setInfo otpe;
 		  if (settings.debug.value)
                     log("generating bridge from " + other + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + "=" + bridge + ":" + bridge.tpe);
                   bridgeTarget(bridge) = member;

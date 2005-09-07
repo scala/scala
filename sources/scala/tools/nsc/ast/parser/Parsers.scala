@@ -169,7 +169,7 @@ abstract class Parsers: SyntaxAnalyzer {
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
 
     def scalaDot(name: Name): Tree =
-      Select(Ident(nme.scala), name);
+      Select(Ident(nme.scala_), name);
     def scalaAnyRefConstr: Tree =
       scalaDot(nme.AnyRef.toTypeName);
     def scalaScalaObjectConstr: Tree =

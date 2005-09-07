@@ -7,7 +7,6 @@
 
 package scala.tools.nsc.backend.icode;
 
-import scala.tools.nsc.Global;
 import scala.collection.mutable.{Buffer, ListBuffer, Map, HashMap};
 import scala.tools.nsc.symtab._;
 

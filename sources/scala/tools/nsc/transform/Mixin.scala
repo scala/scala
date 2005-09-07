@@ -30,7 +30,14 @@ abstract class Mixin extends InfoTransform {
     case Super(_, mix) => mix != nme.EMPTY.toTypeName
     case _ => false
   }
+/*
+  def toImplClass(sym: Symbol): Symbol = {
+    val impl = clazz.owner.info.decl(nme.IMPL_CLASS_NAME(clazz.name));
 
+  }
+
+  def toInterface(sym: Symbol): Symbol;
+*/
   def toInterface(tp: Type): Type =
     if (tp.symbol.isImplClass) {
       val iface = tp.parents.last;
@@ -68,42 +75,30 @@ abstract class Mixin extends InfoTransform {
     case ClassInfoType(parents, decls, clazz) =>
       var parents1 = parents;
       var decls1 = decls;
+      def addMember(member: Symbol): unit = {
+        if (decls1 eq decls) decls1 = new Scope(decls.toList);
+	System.out.println("new member of " + clazz + ":" + member);//debug
+        decls1 enter member
+      }
       if (clazz.isPackageClass) {
         for (val sym <- decls.elements) {
           if (sym.isImplClass) {
             sym setFlag lateMODULE;
-            val sourceModule =
+            addMember(
 	      clazz.newModule(sym.pos, sym.name.toTermName, sym.asInstanceOf[ClassSymbol])
-                setInfo sym.tpe;
-            if (decls1 eq decls) decls1 = new Scope(decls.toList);
-	    System.out.println("new member of " + clazz + ":" + sourceModule);//debug
-            decls1 enter sourceModule;
+                setInfo sym.tpe)
           }
         }
 /*
-      } else if (clazz hasFlag lateINTERFACE) {
-        val impl = clazz.owner.decl(nme.IMPL_CLASS_NAME(clazz.name));
+      } else if (clazz hasFlag lateINTEunPiRFACE) {
+        val impl = clazz.owner.info.decl(nme.IMPL_CLASS_NAME(clazz.name));
         assert(impl != NoSymbol, clazz);
 	for (val member <- impl.info.decls.toList) {
-	  if (!member.isMethod && member.hasFlag(PRIVATE)) {
-            addMember(
-              clazz.newMethod(member.pos, nme.GETTER_NAME(name))
-                setFlag(DEFERRED | ACCESSOR) setInfo member.tpe);
-            addMember(
-              clazz.newmethod(member.pos, nme.SETTER_NAME(name))
-                setFlag(DEFERRED | ACCESSOR) setInfo MethodType(member.tpe, UnitClass.tpe));
-                               }
-
-
-	    if (member.getter == NoSymbol) {
-	      if (decls1 eq decls) decls1 = new Scope(decls.toList);
-	      decls1 enter member.newGetter.notPrivate;
-	    }
-	    if (member.setter == NoSymbol) {
-	      if (decls1 eq decls) decls1 = new Scope(decls.toList);
-	      decls1 enter member.newSetter.notPrivate;
-	    }
-	}
+	  if (!member.isMethod && member.hasFlag(PRIVATE) && !member.tpe.isInstanceOf[ConstantType]) {
+            if (member.getter == NoSymbol) addMember(makeGetter(member));
+            if (member.setter == NoSymbol) addMember(makeSetter(member));
+          }
+        }
 */
       } else if (clazz.isImplClass) {
 	transformInfo(clazz.owner, clazz.owner.info);
@@ -111,25 +106,20 @@ abstract class Mixin extends InfoTransform {
         decls1 = new Scope(decls.toList filter isForwarded)
       } else if (!parents.isEmpty) {
         parents1 = parents.head :: (parents.tail map toInterface);
-        for (val bc <- clazz.info.baseClasses.tail.takeWhile(parents.head.symbol !=))
+        for (val bc <- clazz.info.baseClasses.tail.takeWhile(parents.head.symbol !=)) {
           if (bc.isImplClass) {
             for (val member <- bc.info.decls.toList) {
-              if (!isStatic(member) &&
-                  ((member hasFlag PRIVATE) ||
-                   (clazz.info.member(member.name).alternatives contains member))) {
-                if (decls1 eq decls) decls1 = new Scope(decls.toList);
+              if (!(clazz.info.member(member.name).alternatives contains member)) {
                 val member1 = member.cloneSymbol(clazz) setFlag MIXEDIN;
                 if (isForwarded(member))
 		  member1.asInstanceOf[TermSymbol] setAlias member;
                 else if (member1 hasFlag SUPERACCESSOR)
 		  member1.asInstanceOf[TermSymbol] setAlias rebindSuper(clazz, member.alias, bc);
-		else
-		  makeUnique(decls1, member1);
-		System.out.println("new member of " + clazz + ":" + member1);//debug
-                decls1 enter member1
+                addMember(member1)
               }
             }
           }
+        }
       }
       if ((parents1 eq parents) && (decls1 eq decls)) tp else ClassInfoType(parents, decls1, clazz)
     case MethodType(formals, restp) =>

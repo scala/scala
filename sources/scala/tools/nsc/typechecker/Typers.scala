@@ -230,7 +230,7 @@ abstract class Typers: Analyzer {
 	    if (tree.symbol.superAccessor(clazz) == NoSymbol) {
 	      System.out.println("add super acc " + tree.symbol + tree.symbol.locationString + " to " + clazz);//debug
               clazz.info.decls enter
-                clazz.newMethod(tree.pos, nme.SUPER_NAME(tree.symbol.name))
+                clazz.newMethod(tree.pos, nme.superName(tree.symbol.name))
                   .setFlag(SUPERACCESSOR | PRIVATE)
                   .setAlias(tree.symbol)
                   .setInfo(clazz.thisType.memberType(tree.symbol))
@@ -481,7 +481,7 @@ abstract class Typers: Analyzer {
 
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpe, rhs) if (mods & LOCAL) == 0 =>
-	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.LOCAL_NAME(name), tpe, rhs);
+	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpe, rhs);
         val value = vdef.symbol;
 	val getterDef: DefDef = {
           val getter = if ((mods & DEFERRED) != 0) value else value.getter;
@@ -574,7 +574,8 @@ abstract class Typers: Analyzer {
 	    case Ident(name) =>
 	      if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
 		var alias = superAcc.initialize.alias;
-		if (alias == NoSymbol) alias = superAcc.getter;
+		if (alias == NoSymbol)
+                  alias = if (superAcc.hasGetter) superAcc.getter else superAcc;
 		if (alias != NoSymbol &&
 		    superClazz.info.nonPrivateMember(alias.name) != alias)
 		  alias = NoSymbol;
@@ -1120,7 +1121,7 @@ abstract class Typers: Analyzer {
               case Select(qual, name) =>
                 typed(
 		  Apply(
-		    Select(qual, nme.SETTER_NAME(name)) setPos lhs.pos,
+		    Select(qual, nme.getterToSetter(name)) setPos lhs.pos,
 		    List(rhs)) setPos tree.pos, mode, pt)
             }
           } else if (varsym != null && (varsym.isVariable || varsym.isValue && phase.erasedTypes)) {

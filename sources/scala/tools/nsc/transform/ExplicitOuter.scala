@@ -42,7 +42,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	if (!clazz.isStatic) {
 	  decls1 = new Scope(decls1.toList);
 	  val outerType = clazz.owner.enclClass.thisType;
-	  decls1 enter (clazz.newValue(clazz.pos, nme.LOCAL_NAME(nme.OUTER))
+	  decls1 enter (clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
 	    setFlag (LOCAL | PRIVATE | PARAMACCESSOR)
 	    setInfo outerType);
 	  decls1 enter (clazz.newMethod(clazz.pos, nme.OUTER)
@@ -197,7 +197,7 @@ abstract class ExplicitOuter extends InfoTransform {
        *  Here, C is the class enclosing the class `clazz' containing the two definitions.
        */
       def outerDefs(clazz: Symbol): List[Tree] = {
-	val outerVal = clazz.info.decl(nme.LOCAL_NAME(nme.OUTER));
+	val outerVal = clazz.info.decl(nme.getterToLocal(nme.OUTER));
 	val outerDef = clazz.info.decl(nme.OUTER);
 	List(
 	  localTyper.typed {
@@ -271,7 +271,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    val vparamss1 =
 	      if (sym.owner.isStatic) vparamss
 	      else { // (4)
-		val outerField = sym.owner.info.decl(nme.LOCAL_NAME(nme.OUTER));
+		val outerField = sym.owner.info.decl(nme.getterToLocal(nme.OUTER));
 		val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
 		List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
 	      }
@@ -334,18 +334,6 @@ abstract class ExplicitOuter extends InfoTransform {
 	    }
 	  }).toList;
 
-      /** Remove private modifier from symbol `sym's definition. If `sym' is a
-       *  term symbol rename it by appending $$<fully-qualified-name-of-enclosing-class
-       *  to avoid name clashes.
-       */
-      def makeNotPrivate(sym: Symbol): unit =
-	if (sym.isTerm && (sym hasFlag PRIVATE)) {
-	  sym.name = newTermName(
-            sym.name.toString() + "$$" + sym.owner.enclClass.fullNameString('$'));
-          sym setFlag notPRIVATE;
-          if (!(sym hasFlag DEFERRED)) sym setFlag lateFINAL;
-	}
-
       /** The second-step transformation method */
       override def transform(tree: Tree): Tree = {
 	val sym = tree.symbol;
@@ -356,11 +344,11 @@ abstract class ExplicitOuter extends InfoTransform {
 	    if (accessors.isEmpty) tree1
 	    else copy.Template(tree1, parents, stats ::: accessors)
           case DefDef(_, _, _, _, _, _) =>
-            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR))) makeNotPrivate(sym);
+            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR))) sym.makeNotPrivate;
             tree1
 	  case Select(qual, name) =>
 	    if (currentOwner.enclClass != sym.owner) // (3)
-              makeNotPrivate(sym);
+              sym.makeNotPrivate;
 	    if ((sym hasFlag PROTECTED) &&
 		!(qual.isInstanceOf[Super] ||
 		  (qual.tpe.widen.symbol isSubClass currentOwner.enclClass)))

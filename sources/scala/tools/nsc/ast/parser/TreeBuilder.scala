@@ -60,7 +60,7 @@ abstract class TreeBuilder {
   private def mkTuple(trees: List[Tree]): Tree = trees match {
     case List() => Literal(())
     case List(tree) => tree
-    case _ => Apply(Select(Ident(nme.scala), newTermName("Tuple" + trees.length)), trees)
+    case _ => Apply(Select(Ident(nme.scala_), newTermName("Tuple" + trees.length)), trees)
   }
 
   /** If tree is a variable pattern, return Some("its name and type").
@@ -268,7 +268,7 @@ abstract class TreeBuilder {
   /** Create a tree representing a function type */
   def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(
-      Select(Ident(nme.scala), newTypeName("Function" + argtpes.length)),
+      Select(Ident(nme.scala_), newTypeName("Function" + argtpes.length)),
       argtpes ::: List(restpe));
 
   /** Append implicit view section if for `implicitViews' if nonempty */

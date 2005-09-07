@@ -76,11 +76,38 @@ abstract class StdNames: SymbolTable {
 
     def TUPLE_FIELD(index: int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index);
 
-    def LOCAL_NAME(name: Name) = newTermName(name.toString() + " ");
-    def isLocalName(name: Name) = name(name.length - 1) == ' ';
-    def GETTER_NAME(name: Name) = newTermName(name.toString().substring(0, name.length - 1));
-    def SETTER_NAME(name: Name) = encode(name.toString() + "_=");
-    def SUPER_NAME(name: Name) = newTermName("super$" + name);
+    def isLocalName(name: Name) = originalName(name).endsWith(LOCAL_SUFFIX);
+    def isSetterName(name: Name) = originalName(name).endsWith(_EQ);
+
+    def originalName(name: Name) = name.subName(0, name.pos("$$"));
+
+    def applyToOriginal(name: Name, f: Name => Name): Name = {
+      val oname = originalName(name);
+      if (oname == name) f(name)
+      else newTermName(f(oname).toString() + name.subName(oname.length, name.length))
+    }
+
+    def localToGetter(name: Name): Name = {
+      assert(isLocalName(name));//debug
+      applyToOriginal(name, oname => oname.subName(0, oname.length - LOCAL_SUFFIX.length));
+    }
+
+    def getterToLocal(name: Name): Name = {
+      assert(!isLocalName(name) && !isSetterName(name));//debug
+      applyToOriginal(name, oname => newTermName(oname.toString() + LOCAL_SUFFIX));
+    }
+
+    def getterToSetter(name: Name): Name = {
+      assert(!isLocalName(name) && !isSetterName(name));//debug
+      applyToOriginal(name, oname => newTermName(oname.toString() + SETTER_SUFFIX));
+    }
+
+    def setterToGetter(name: Name): Name = {
+      assert(isSetterName(name));//debug
+      applyToOriginal(name, oname => oname.subName(0, oname.length - SETTER_SUFFIX.length));
+    }
+
+    def superName(name: Name) = newTermName("super$" + name);
 
     val ERROR = newTermName("<error>");
     val ERRORtype = newTypeName("<error>");
@@ -210,7 +237,7 @@ abstract class StdNames: SymbolTable {
     val print = newTermName("print");
     val runtime = newTermName("runtime");
     val readResolve = newTermName("readResolve");
-    val scala = newTermName("scala");
+    val scala_ = newTermName("scala");
     val xml = newTermName("xml");
     val synchronized_ = newTermName("synchronized");
     val tail = newTermName("tail");
@@ -260,6 +287,9 @@ abstract class StdNames: SymbolTable {
     val JacoMetaATTR = newTermName("JacoMeta");
     val ScalaSignatureATTR = newTermName("ScalaSignature");
     val JavaInterfaceATTR = newTermName("JacoInterface");
+
+    val LOCAL_SUFFIX = newTermName(" ");
+    val SETTER_SUFFIX = _EQ;
   }
 
   def encode(str: String): Name = newTermName(NameTransformer.encode(str));
