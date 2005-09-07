@@ -3,6 +3,8 @@
  * @author  Martin Odersky
  */
 
+// $Id$
+
 package scala.tools.nsc.backend.icode;
 
 import java.io.PrintWriter;
