@@ -3,7 +3,7 @@
  * @author  Martin Odersky
  */
 
-/* $Id: */
+// $Id$
 
 package scala.tools.nsc.backend;
 
