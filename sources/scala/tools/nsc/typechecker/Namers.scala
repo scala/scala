@@ -143,8 +143,9 @@ trait Namers: Analyzer {
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>
             if (context.owner.isClass & (mods & LOCAL) == 0) {
-	      val accmods = ACCESSOR | (if ((mods & MUTABLE) != 0) mods & ~MUTABLE
-                                        else mods | STABLE);
+	      val accmods =
+                (if ((mods & MUTABLE) != 0) mods & ~MUTABLE else mods | STABLE) |
+                (if ((mods & DEFERRED) == 0) ACCESSOR else 0);
 	      val getter = owner.newMethod(tree.pos, name)
 	        .setFlag(accmods).setInfo(innerNamer.getterTypeCompleter(tree));
 	      enterInScope(getter);

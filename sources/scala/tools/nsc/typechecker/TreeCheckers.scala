@@ -64,12 +64,12 @@ abstract class TreeCheckers extends Analyzer {
             case DefDef(_, _, _, _, _, _) =>
               if (tree.symbol.hasFlag(ACCESSOR) && !tree.symbol.hasFlag(DEFERRED)) {
                 assert(tree.symbol.accessed != NoSymbol);
-                assert(tree.symbol.accessed.getter == tree.symbol ||
-                       tree.symbol.accessed.setter == tree.symbol);
+                assert(tree.symbol.accessed.getter(tree.symbol.owner) == tree.symbol ||
+                       tree.symbol.accessed.setter(tree.symbol.owner) == tree.symbol);
               }
             case ValDef(_, _, _, _) =>
               if (tree.symbol.hasGetter) {
-                assert(tree.symbol.getter != NoSymbol)
+                assert(tree.symbol.getter(tree.symbol.owner) != NoSymbol)
               }
             case Apply(_, args) =>
               assert(args forall (EmptyTree !=))

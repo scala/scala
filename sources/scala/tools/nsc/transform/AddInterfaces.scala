@@ -24,9 +24,6 @@ abstract class AddInterfaces extends InfoTransform {
   private val implClassMap = new HashMap[Symbol, Symbol];
   private val implMethodMap = new HashMap[Symbol, Symbol];
 
-  private def implClassName(sym: Symbol): Name =
-    newTypeName(sym.name.toString() + nme.IMPL_CLASS_SUFFIX);
-
   private def needsImplClass(sym: Symbol): boolean =
     sym.isTrait && (!(sym hasFlag INTERFACE) || (sym hasFlag lateINTERFACE)) && !sym.isImplClass;
 
@@ -45,7 +42,7 @@ abstract class AddInterfaces extends InfoTransform {
         val impl = iface.cloneSymbolImpl(iface.owner)
 	  setFlag (iface.flags & ~(INTERFACE | lateINTERFACE))
 	  setInfo new LazyImplClassType(iface);
-        impl.name = implClassName(iface);
+        impl.name = nme.implClassName(iface.name);
         //includeInTypeOfThis(iface, impl);
         //includeInTypeOfThis(impl, impl);
         implClassMap(iface) = impl;
@@ -233,7 +230,7 @@ abstract class AddInterfaces extends InfoTransform {
           var o = currentOwner;
           while (o != NoSymbol && o != sym.owner && !o.isLocal && !o.hasFlag(PRIVATE))
           o = o.owner;
-          if (o == sym.owner) makeNotPrivate(sym);
+          if (o == sym.owner) sym.makeNotPrivate(base);
         }
       }
       def traverse(t: Type): TypeTraverser = {

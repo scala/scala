@@ -43,8 +43,7 @@ abstract class Constructors extends Transform {
 
       val paramAccessors = clazz.constrParamAccessors;
       def parameter(acc: Symbol) = {
-        val accname = nme.originalName(
-          if (acc.hasGetter) nme.localToGetter(acc.name) else acc.name);
+        val accname = nme.originalName(nme.getterName(acc.name));
         val ps = constrParams.filter { param => param.name == accname }
         if (ps.isEmpty) assert(false, "" + accname + " not in " + constrParams);
         ps.head

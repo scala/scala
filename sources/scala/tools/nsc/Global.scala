@@ -284,6 +284,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val typerPhase = phaseNamed("typer");
   val refchecksPhase = phaseNamed("refchecks");
   val erasurePhase = phaseNamed("erasure");
+  val flattenPhase = phaseNamed("flatten");
   val delegateMixins = phaseNamed("mixin") != NoPhase;
 
   val typer = new analyzer.Typer(analyzer.NoContext.make(EmptyTree, definitions.RootClass, new Scope())) {
@@ -335,7 +336,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       globalPhase = globalPhase.next;
       if (settings.check contains globalPhase.name) {
         phase = globalPhase;
-        if (globalPhase.name == "terminal")
+        if (globalPhase.name == "terminal" && settings.Xshowicode.value)
           icodeChecker.checkICodes;
         else
           checker.checkTrees;

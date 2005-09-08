@@ -42,12 +42,15 @@ abstract class ExplicitOuter extends InfoTransform {
 	if (!clazz.isStatic) {
 	  decls1 = new Scope(decls1.toList);
 	  val outerType = clazz.owner.enclClass.thisType;
-	  decls1 enter (clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
-	    setFlag (LOCAL | PRIVATE | PARAMACCESSOR)
+	  val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER);
+	  if ((clazz hasFlag TRAIT) || (decls.toList exists (.isClass)))
+            outerAcc.expandName(clazz);
+	  decls1 enter (
+	    outerAcc setFlag (PARAMACCESSOR | ACCESSOR | STABLE | FINAL)
+		     setInfo MethodType(List(), outerType));
+	  decls1 enter (clazz.newValue(clazz.pos, nme.getterToLocal(outerAcc.name))
+	    setFlag (LOCAL | PRIVATE | PARAMACCESSOR | (outerAcc getFlag EXPANDEDNAME))
 	    setInfo outerType);
-	  decls1 enter (clazz.newMethod(clazz.pos, nme.OUTER)
-	    setFlag (PARAMACCESSOR | ACCESSOR | STABLE | FINAL)
-	    setInfo MethodType(List(), outerType));
 	}
 	if (clazz.isTrait) {
 	  decls1 = new Scope(decls1.toList);
@@ -60,6 +63,12 @@ abstract class ExplicitOuter extends InfoTransform {
       if (restp eq restp1) tp else PolyType(tparams, restp1)
     case _ =>
       tp
+  }
+
+  private def outerMember(tp: Type): Symbol = {
+    var e = tp.decls.elems;
+    while (!(e.sym.name.startsWith(nme.OUTER) && (e.sym hasFlag ACCESSOR))) e = e.next;
+    e.sym
   }
 
   private def makeMixinConstructor(clazz: Symbol): Symbol =
@@ -94,7 +103,7 @@ abstract class ExplicitOuter extends InfoTransform {
       assert(base.tpe.symbol != null, base);
       val clazz = base.tpe.symbol.owner.enclClass;
       Apply(
-	Select(base, base.tpe.member(nme.OUTER)) setType MethodType(List(), clazz.thisType),
+	Select(base, outerMember(base.tpe)) setType MethodType(List(), clazz.thisType),
 	List()) setType clazz.thisType
     }
 
@@ -107,7 +116,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	  case DefDef(_, _, _, vparamss, _, _) =>
 	    if (tree.symbol.isConstructor && !(tree.symbol.owner.isStatic)) {
 	      val lastParam = vparamss.head.last;
-	      assert(lastParam.name == nme.OUTER, tree);
+	      assert(lastParam.name.startsWith(nme.OUTER), tree);
 	      outerParam = lastParam.symbol
 	    }
 	  case _ =>
@@ -197,8 +206,8 @@ abstract class ExplicitOuter extends InfoTransform {
        *  Here, C is the class enclosing the class `clazz' containing the two definitions.
        */
       def outerDefs(clazz: Symbol): List[Tree] = {
-	val outerVal = clazz.info.decl(nme.getterToLocal(nme.OUTER));
-	val outerDef = clazz.info.decl(nme.OUTER);
+	val outerDef = outerMember(clazz.info);
+	val outerVal = outerDef.accessed;
 	List(
 	  localTyper.typed {
 	    atPos(clazz.pos) {
@@ -271,7 +280,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    val vparamss1 =
 	      if (sym.owner.isStatic) vparamss
 	      else { // (4)
-		val outerField = sym.owner.info.decl(nme.getterToLocal(nme.OUTER));
+		val outerField = outerMember(sym.owner.info).accessed;
 		val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
 		List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
 	      }
@@ -344,11 +353,12 @@ abstract class ExplicitOuter extends InfoTransform {
 	    if (accessors.isEmpty) tree1
 	    else copy.Template(tree1, parents, stats ::: accessors)
           case DefDef(_, _, _, _, _, _) =>
-            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR))) sym.makeNotPrivate;
+            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
+              sym.makeNotPrivate(sym.owner);
             tree1
 	  case Select(qual, name) =>
 	    if (currentOwner.enclClass != sym.owner) // (3)
-              sym.makeNotPrivate;
+              sym.makeNotPrivate(sym.owner);
 	    if ((sym hasFlag PROTECTED) &&
 		!(qual.isInstanceOf[Super] ||
 		  (qual.tpe.widen.symbol isSubClass currentOwner.enclClass)))

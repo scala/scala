@@ -64,7 +64,6 @@ abstract class StdNames: SymbolTable {
 
     private val LOCAL_PREFIX_STRING = "local$";
     private val MIXIN_PREFIX_STRING = "mixin$";
-    private val OUTER_PREFIX_STRING = "outer$";
     private val SUPER_PREFIX_STRING = "super$";
     private val ACCESS_PREFIX_STRING = "access$";
     private val TUPLE_FIELD_PREFIX_STRING = "_";
@@ -81,7 +80,7 @@ abstract class StdNames: SymbolTable {
 
     def originalName(name: Name) = name.subName(0, name.pos("$$"));
 
-    def applyToOriginal(name: Name, f: Name => Name): Name = {
+    private def applyToOriginal(name: Name, f: Name => Name): Name = {
       val oname = originalName(name);
       if (oname == name) f(name)
       else newTermName(f(oname).toString() + name.subName(oname.length, name.length))
@@ -107,6 +106,12 @@ abstract class StdNames: SymbolTable {
       applyToOriginal(name, oname => oname.subName(0, oname.length - SETTER_SUFFIX.length));
     }
 
+    def getterName(name: Name): Name =
+      if (isLocalName(name)) localToGetter(name) else name;
+
+    def implClassName(name: Name): Name =
+      newTypeName(name.toString() + IMPL_CLASS_SUFFIX);
+
     def superName(name: Name) = newTermName("super$" + name);
 
     val ERROR = newTermName("<error>");
@@ -120,7 +125,6 @@ abstract class StdNames: SymbolTable {
     val COMPOUND_NAME = newTermName("<ct>");
     val ANON_CLASS_NAME = newTermName("$anon");
     val ANONFUN_CLASS_NAME = newTermName("$anonfun");
-    val IMPL_CLASS_SUFFIX = newTermName("$class");
     val REFINE_CLASS_NAME = newTermName("<refinement>");
     val EMPTY_PACKAGE_NAME = newTermName("<empty>");
     val IMPORT = newTermName("<import>");
@@ -290,6 +294,7 @@ abstract class StdNames: SymbolTable {
 
     val LOCAL_SUFFIX = newTermName(" ");
     val SETTER_SUFFIX = _EQ;
+    val IMPL_CLASS_SUFFIX = newTermName("$class");
   }
 
   def encode(str: String): Name = newTermName(NameTransformer.encode(str));

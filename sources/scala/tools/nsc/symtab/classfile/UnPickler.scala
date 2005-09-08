@@ -112,10 +112,12 @@ abstract class UnPickler {
                   else owner.newClass(Position.NOPOS, name);
 	      if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
 	    case MODULEsym =>
-	      val mclazz = at(inforef, readType).symbol.asInstanceOf[ModuleClassSymbol];
+	      val clazz = at(inforef, readType).symbol;
 	      sym =
                 if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot
 		else {
+		  assert(clazz.isInstanceOf[ModuleClassSymbol], clazz);
+		  val mclazz = clazz.asInstanceOf[ModuleClassSymbol];
                   val m = owner.newModule(Position.NOPOS, name, mclazz);
                   mclazz.setSourceModule(m);
                   m

@@ -99,9 +99,6 @@ abstract class Symbols: SymbolTable {
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA));
     final def isVariable = isTerm && hasFlag(MUTABLE);
     final def hasGetter = isTerm && nme.isLocalName(name);
-    final def isGetter = isTerm && hasFlag(ACCESSOR) && !nme.originalName(name).endsWith(nme._EQ);
-    //todo: make independent of name, as this can be forged.
-    final def isSetter = isTerm && hasFlag(ACCESSOR) && nme.originalName(name).endsWith(nme._EQ);
     final def isValueParameter = isTerm && hasFlag(PARAM);
     final def isLocalDummy = isTerm && (name startsWith nme.LOCAL_PREFIX);
     final def isMethod = isTerm && hasFlag(METHOD);
@@ -457,7 +454,9 @@ abstract class Symbols: SymbolTable {
      */
     final def accessed: Symbol = {
       assert(hasFlag(ACCESSOR));
-      owner.info.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name));
+      //todo: make independent of name, as this can be forged.
+      owner.info.decl(
+        nme.getterToLocal(if (nme.isSetterName(name)) nme.setterToGetter(name) else name))
     }
 
     /** For a paramaccessor: a superclass paramaccessor for which this symbol is
@@ -530,35 +529,38 @@ abstract class Symbols: SymbolTable {
     final def superAccessor(base: Symbol): Symbol =
       base.info.decl(nme.superName(name)) suchThat (.alias.==(this));
 
-    final def getter: Symbol =
-      owner.info.decl(nme.localToGetter(name)) filter (.hasFlag(ACCESSOR));
+    /** The getter of this value definition in class `base', or NoSymbol if none exists */
+    final def getter(base: Symbol): Symbol =
+      base.info.decl(nme.localToGetter(name)) filter (.hasFlag(ACCESSOR));
 
-    final def setter: Symbol =
-      owner.info.decl(nme.getterToSetter(nme.localToGetter(name))) filter (.hasFlag(ACCESSOR));
+    /** The setter of this value definition, or NoSymbol if none exists */
+    final def setter(base: Symbol): Symbol =
+      base.info.decl(nme.getterToSetter(nme.localToGetter(name))) filter (.hasFlag(ACCESSOR));
 
     /** Remove private modifier from symbol `sym's definition. If `sym' is a
-     *  term symbol rename it by appending $$<fully-qualified-name-of-enclosing-class
-     *  to avoid name clashes.
+     *  term symbol rename it by expanding its name to avoid name clashes
      */
-    final def makeNotPrivate: unit = {
-      def expandName(sym: Symbol): unit =
-        if (sym != NoSymbol && !(sym hasFlag EXPANDEDNAME)) {
-          sym setFlag EXPANDEDNAME;
-          if (sym hasFlag ACCESSOR) {
-            expandName(sym.accessed);
-          } else if (sym.hasGetter) {
-            expandName(sym.setter);
-            expandName(sym.getter)
-          }
-          sym.name = newTermName(
-            sym.name.toString() + "$$" + sym.owner.enclClass.fullNameString('$'))
-        }
+    final def makeNotPrivate(base: Symbol): unit =
       if (isTerm && (this hasFlag PRIVATE)) {
         setFlag(notPRIVATE);
         if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
-	expandName(this)
+	expandName(base)
       }
-    }
+
+    /** change name by appending $$<fully-qualified-name-of-class `base'>
+     *  Do the same for any accessed symbols or setters/getters
+     */
+    def expandName(base: Symbol): unit =
+      if (this != NoSymbol && !hasFlag(EXPANDEDNAME)) {
+        setFlag(EXPANDEDNAME);
+        if (hasFlag(ACCESSOR)) {
+          accessed.expandName(base);
+        } else if (hasGetter) {
+          getter(owner).expandName(base);
+          setter(owner).expandName(base);
+        }
+        name = newTermName(name.toString() + "$$" + base.fullNameString('$'))
+      }
 
 /*
     def referenced: Symbol =

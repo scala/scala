@@ -484,7 +484,7 @@ abstract class Typers: Analyzer {
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpe, rhs);
         val value = vdef.symbol;
 	val getterDef: DefDef = {
-          val getter = if ((mods & DEFERRED) != 0) value else value.getter;
+          val getter = if ((mods & DEFERRED) != 0) value else value.getter(value.owner);
           assert(getter != NoSymbol, value);
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
@@ -494,7 +494,7 @@ abstract class Typers: Analyzer {
           result
 	}
 	def setterDef: DefDef = {
-	  val setter = value.setter;
+	  val setter = value.setter(value.owner);
           atPos(vdef.pos)(
 	    DefDef(setter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
@@ -575,7 +575,7 @@ abstract class Typers: Analyzer {
 	      if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
 		var alias = superAcc.initialize.alias;
 		if (alias == NoSymbol)
-                  alias = if (superAcc.hasGetter) superAcc.getter else superAcc;
+                  alias = if (superAcc.hasGetter) superAcc.getter(superAcc.owner) else superAcc;
 		if (alias != NoSymbol &&
 		    superClazz.info.nonPrivateMember(alias.name) != alias)
 		  alias = NoSymbol;
@@ -1103,7 +1103,7 @@ abstract class Typers: Analyzer {
 	  val elemtpt1 = typedType(elemtpt);
 	  val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elemtpt1.tpe));
           copy.ArrayValue(tree, elemtpt1, elems1)
-            setType (if (isFullyDefined(pt)) pt
+            setType (if (isFullyDefined(pt) && !phase.erasedTypes) pt
                      else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe)))
 
         case fun @ Function(_, _) =>
