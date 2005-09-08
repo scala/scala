@@ -10,6 +10,15 @@ package scala.tools.nsc.backend.icode;
 import scala.collection.mutable.{Map, HashMap};
 import scala.tools.nsc.symtab._;
 
+
+/**
+ * TODO:
+ *  - conditionals as values
+ *  - record line number info
+ *  - exception handling
+ *  - array creation
+ *  - switch
+ */
 abstract class GenICode extends SubComponent  {
   import global._;
   import icodes._;
@@ -190,8 +199,8 @@ abstract class GenICode extends SubComponent  {
           case Nil =>
             code match {
               case scalaPrimitives.POS => (); // nothing
-              case scalaPrimitives.NEG => ctx.bb.emit(CALL_PRIMITIVE(Negation(resKind)));
-              case scalaPrimitives.NOT => ctx.bb.emit(CALL_PRIMITIVE(Arithmetic(NOT, resKind)));
+              case scalaPrimitives.NEG => ctx1.bb.emit(CALL_PRIMITIVE(Negation(resKind)));
+              case scalaPrimitives.NOT => ctx1.bb.emit(CALL_PRIMITIVE(Arithmetic(NOT, resKind)));
               case _ => abort("Unknown unary operation: " + fun.symbol);
             }
             generatedType = resKind;
@@ -358,8 +367,9 @@ abstract class GenICode extends SubComponent  {
           ctx1
 
         case Try(block, catches, finalizer) =>
-          ctx.bb.close;
           var ctx1 = ctx.newHandler.newBlock;
+          ctx.bb.emit(JUMP(ctx1.bb));
+          ctx.bb.close;
           val currentHandler = ctx.handlers.head;
           ctx1 = genLoad(block, ctx1, toTypeKind(block.tpe));
           assert(ctx1.handlers.head == currentHandler,
@@ -368,16 +378,24 @@ abstract class GenICode extends SubComponent  {
           // TODO: generate code for handlers and finalizer
           ctx1
 
-
-
         case Throw(expr) =>
           val ctx1 = genLoad(expr, ctx, expectedType);
           ctx1.bb.emit(THROW());
           ctx;
 
         case New(tpt) =>
-          ctx.bb.emit(NEW(tree.symbol));
-          generatedType = REFERENCE(tree.symbol);
+          val sym = tree.tpe.symbol;
+          generatedType = toTypeKind(tpt.tpe);
+          generatedType match {
+            case ARRAY(elem) =>
+              ctx.bb.emit(CREATE_ARRAY(elem));
+            case REFERENCE(cls) =>
+              ctx.bb.emit(NEW(cls));
+              assert(sym == cls,
+                     "Symbol " + sym.fullNameString + "is different than " + tpt);
+            case _ =>
+              abort("Cannot instantiate " + tpt + "of kind: " + generatedType);
+          }
           ctx;
 
         case Apply(TypeApply(fun, targs), _) =>
@@ -442,6 +460,19 @@ abstract class GenICode extends SubComponent  {
               generatedType = STRING;
             } else if (scalaPrimitives.isArrayOp(code)) {
               ctx1 = genArrayOp(tree, ctx1, code);
+            } else if (scalaPrimitives.isLogicalOp(code)) {
+              val trueCtx = ctx1.newBlock;
+              val falseCtx = ctx1.newBlock;
+              val afterCtx = ctx1.newBlock;
+              log("Passing " + tree + " to genCond");
+              genCond(tree, ctx1, trueCtx, falseCtx);
+              trueCtx.bb.emit(CONSTANT(Constant(true)));
+              trueCtx.bb.emit(JUMP(afterCtx.bb));
+              trueCtx.bb.close;
+              falseCtx.bb.emit(CONSTANT(Constant(false)));
+              falseCtx.bb.emit(JUMP(afterCtx.bb));
+              falseCtx.bb.close;
+              ctx1 = afterCtx;
             } else
               abort("Primitive operation not handled yet: " +
                     fun.symbol.fullNameString + "(" + fun.symbol.simpleName + ") "
@@ -458,10 +489,12 @@ abstract class GenICode extends SubComponent  {
               else
                 Dynamic;
 
-            var ctx1 = if (invokeStyle.isStatic)
-                         ctx;
-                       else
+            var ctx1 = if (invokeStyle.hasInstance)
                          genLoadQualifier(fun, ctx);
+                       else
+                         ctx;
+            if (sym.isClassConstructor)
+              ctx1.bb.emit(DUP(toTypeKind(fun.symbol.info.resultType))); // hack!
             ctx1 = genLoadArguments(args, fun.symbol.info.paramTypes, ctx1);
 
             ctx1.bb.emit(CALL_METHOD(sym, invokeStyle));
@@ -512,13 +545,34 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = genStat(stats, ctx);
           genLoad(expr, ctx1, expectedType);
 
-        case EmptyTree => ctx;
+        case Typed(expr, _) =>
+          genLoad(expr, ctx, expectedType);
 
         case Assign(_, _) =>
           generatedType = UNIT;
           genStat(tree, ctx);
 
-        case _ => abort("Unexpected tree in genLoad: " + tree);
+        case ArrayValue(tpt @ TypeTree(), elems) =>
+          var ctx1 = ctx;
+          val elmKind = toTypeKind(tpt.tpe);
+          generatedType = ARRAY(elmKind);
+
+          ctx1.bb.emit(CONSTANT(new Constant(elems.length)));
+          ctx1.bb.emit(CREATE_ARRAY(elmKind));
+          // inline array literals
+          var i = 0;
+          while (i < elems.length) {
+            ctx.bb.emit(DUP(generatedType));
+            ctx1.bb.emit(CONSTANT(new Constant(i)));
+            ctx1 = genLoad(elems(i), ctx1, elmKind);
+            ctx1.bb.emit(STORE_ARRAY_ITEM(elmKind));
+            i = i + 1;
+          }
+          ctx1
+
+        case EmptyTree => ctx;
+
+        case _ => abort("Unexpected tree in genLoad: " + tree + " at: " + unit.position(tree.pos));
       }
 
       // emit conversion
@@ -635,7 +689,7 @@ abstract class GenICode extends SubComponent  {
                         ctx: Context,
                         thenCtx: Context,
                         elseCtx: Context): Unit = {
-      log("Entering genCond");
+      log("Entering genCond with tree: " + tree);
 
       tree match {
         case Apply(fun, args)
@@ -644,7 +698,7 @@ abstract class GenICode extends SubComponent  {
                    "Too many arguments for primitive function: " + fun.symbol);
 
             val Select(leftArg, _) = fun;
-            val kind: TypeKind = getMaxType(leftArg.tpe :: (args map (.tpe)));
+            var kind: TypeKind = toTypeKind(leftArg.tpe);
             val code = scalaPrimitives.getPrimitive(fun.symbol);
 
             if (code == scalaPrimitives.ZNOT) {
@@ -665,6 +719,7 @@ abstract class GenICode extends SubComponent  {
                 case _ => abort("Unknown comparison primitive: " + code);
               };
 
+              kind = getMaxType(leftArg.tpe :: (args map (.tpe)));
               var ctx1 = genLoad(leftArg, ctx, kind);
                   ctx1 = genLoad(args.head, ctx1, kind);
               ctx1.bb.emit(CJUMP(thenCtx.bb, elseCtx.bb, op, kind));

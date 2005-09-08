@@ -333,7 +333,7 @@ abstract class TreeBrowsers {
         Pair("Literal", EMPTY);
 
       case TypeTree() =>
-        Pair("TypeTerm", EMPTY);
+        Pair("TypeTree", EMPTY);
 
       case SingletonTypeTree(ref) =>
         Pair("SingletonType", EMPTY);
@@ -352,6 +352,9 @@ abstract class TreeBrowsers {
 
       case EmptyTree =>
         Pair("Empty", EMPTY);
+
+      case ArrayValue(elemtpt, trees) =>
+        Pair("ArrayValue", EMPTY);
     }
 
     /** Return a list of children for the given tree node */
@@ -487,6 +490,9 @@ abstract class TreeBrowsers {
 
       case Try(block, catches, finalizer) =>
         block :: catches ::: List(finalizer);
+
+      case ArrayValue(elemtpt, elems) =>
+        elemtpt :: elems;
 
       case EmptyTree =>
         Nil;

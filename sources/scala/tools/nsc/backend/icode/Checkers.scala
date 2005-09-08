@@ -358,7 +358,8 @@ abstract class Checkers {
             stack.push(REFERENCE(clasz));
 
           case CREATE_ARRAY(elem) =>
-            // ?
+            checkStack(1);
+            stack.push(ARRAY(elem));
 
           case IS_INSTANCE(tpe) =>
             stack.pop;

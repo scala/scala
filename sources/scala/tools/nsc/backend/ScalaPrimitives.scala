@@ -480,6 +480,11 @@ abstract class ScalaPrimitives {
     case _ => false;
   }
 
+  def isLogicalOp(code: Int): Boolean = code match {
+    case ZNOT | ZAND | ZOR => true;
+    case _ => false;
+  }
+
   def isShiftOp(code: Int): Boolean = code match {
     case LSL | LSR | ASR => true;
     case _ => false;

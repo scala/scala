@@ -122,7 +122,8 @@ abstract class Opcodes: ICodes {
      */
     case class LOAD_FIELD(field: Symbol, isStatic: boolean) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "LOAD_FIELD "+field.toString(); //+isStatic?" (static)":"";
+      override def toString(): String =
+        "LOAD_FIELD " + (if (isStatic) field.fullNameString else field.toString());
 
       override def consumed = 1;
       override def produced = 1;
@@ -236,7 +237,7 @@ abstract class Opcodes: ICodes {
      * Stack: ...:size(int)
      *    ->: ...:arrayref
      */
-    case class CREATE_ARRAY(element: Type) extends Instruction {
+    case class CREATE_ARRAY(element: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String ="CREATE_ARRAY "+element.toString();
 
@@ -429,6 +430,7 @@ abstract class Opcodes: ICodes {
       def hasInstance: Boolean = this match {
         case Dynamic => true;
         case Static(onInstance) => onInstance;
+        case NewInstance => true;
         case _ => false;
       }
 

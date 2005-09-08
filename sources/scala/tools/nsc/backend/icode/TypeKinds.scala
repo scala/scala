@@ -208,6 +208,9 @@ abstract class TypeKinds: ICodes {
 
   /** A class type. */
   case class REFERENCE(cls: Symbol) extends TypeKind {
+    assert(cls != null,
+           "REFERENCE to null class symbol.");
+
     override def toString(): String =
       "REFERENCE(" + cls.fullNameString + ")";
 
@@ -240,7 +243,7 @@ abstract class TypeKinds: ICodes {
   }
 
 
-  case class ARRAY(elem: TypeKind) extends TypeKind {
+  case class ARRAY(val elem: TypeKind) extends TypeKind {
     override def toString(): String =
       "ARRAY[" + elem + "]";
 
