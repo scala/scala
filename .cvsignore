@@ -1,7 +1,7 @@
 .emacs.desktop
 .generated
 .latest-*
-Makefile.private
+Makefile.private*
 bootstrap
 boottest
 classes
@@ -10,6 +10,7 @@ lib
 objects
 tmp
 build-nsc.properties
-env.sh
-concrete-build-nsc.xml
-concrete-test-nsc.xml
+env.*
+concrete-*.xml
+*test*.java
+*test*.scala
