@@ -10,6 +10,8 @@ lib
 objects
 tmp
 build-nsc.properties
+build-nsc.properties.unix
+build-nsc.properties.win
 env.*
 concrete-*.xml
 *test*.java
