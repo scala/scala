@@ -2,7 +2,6 @@
 <!DOCTYPE project [
   <!ENTITY userExcludes "">
 ]>
-
 <project name="scala.nsc" default="build.nsc">
 
   <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,23 +31,45 @@
 
   <!-- %%% properties and taskdefs %%%-->
 
-  <property file="build-nsc.properties"/>
+  <property file="build-nsc.properties.${platform}" prefix="nsc." />
 
-  <!-- taskdefs to call compilers -->
-  
-  <taskdef name="scalac" classname="scala.tools.scala4ant.ScalacTask$class"/>
+  <target name="check.env">
+    <fail>
+      <condition><not><available file="${nsc.fjbg_jar}" /></not></condition>
+      Missing library file ${nsc.fjbg_jar}.
+      Check your property file build-nsc.properties.${platform}.
+    </fail>
+    <fail>
+      <condition><not><available file="${nsc.scala_jar}" /></not></condition>
+      Missing library file ${nsc.scala_jar}.
+      Check your property file build-nsc.properties.${platform}.
+    </fail>
+    <fail>
+      <condition><not><available file="${nsc.tools_jar}" /></not></condition>
+      Missing library file ${nsc.tools_jar}.
+      Check your property file build-nsc.properties.${platform}.
+    </fail>
+    <fail>
+      <condition><not><available file="${nsc.jaco_jar}" /></not></condition>
+      Missing library file ${nsc.jaco_jar}.
+      Check your property file build-nsc.properties.${platform}.
+    </fail>
+  </target>
 
-  <available classname="scala.tools.scala4ant.NscTask$class"
-             property="nsc4ant.present"/>
+  <target name="init" depends="check.env">
+    <mkdir dir="${nsc.tools_util_runtime_dir}" />
+    <mkdir dir="${nsc.jars_dir}" />
+    <mkdir dir="${nsc.nsc_dir}" />
+    <mkdir dir="${nsc.nsc4ant_dir}" />
+  </target>
 
   <!-- taskdef for nsc comes later, because has to be compiled before -->
 
-  <target name="build.nsc">
-    <mkdir dir="${tools_util_runtime_dir}"/>
-
+  <target name="build.nsc" depends="init">
+    <taskdef name="scalac" classname="scala.tools.scala4ant.ScalacTask$class"/>
     <taskdef name="pico"   classname="jaco.pizza.AntTask"/>
 
-    <pico srcdir="sources" destdir="${tools_util_runtime_dir}" source="1.4" scalaHack="true">
+    <pico srcdir="sources" destdir="${nsc.tools_util_runtime_dir}" source="1.4" scalaHack="true">
       <include name="scala/*.java"/>
       <include name="scala/runtime/*.java"/>
       <include name="scala/runtime/**/*.java"/>
@@ -61,46 +82,44 @@
     <!-- we do *not* want the ScalaObject.class file,
          because in nsc's eyes ScalaObject is a scala file. -->
 
-    <delete file="${tools_util_runtime_dir}/scala/ScalaObject.class"/>
-    <delete file="${tools_util_runtime_dir}/scala/Array.class"/>
+    <delete file="${nsc.tools_util_runtime_dir}/scala/ScalaObject.class"/>
+    <delete file="${nsc.tools_util_runtime_dir}/scala/Array.class"/>
 
-    <mkdir  dir="${jars_dir}"/>
-    <jar    destfile="${jars_dir}/nsrt.jar" basedir="${tools_util_runtime_dir}"/>
+    <jar destfile="${nsc.nsrt_jar}" basedir="${nsc.tools_util_runtime_dir}"/>
 
-    <mkdir dir="${nsc_dir}"/>
-    <scalac srcdir="sources" destdir="${nsc_dir}" 
-            classpath="${tools_util_runtime_dir}" sourcePath="sources" force="true">
+    <scalac srcdir="sources" destdir="${nsc.nsc_dir}" 
+            classpath="${nsc.tools_util_runtime_dir}" sourcePath="sources" force="true">
       <!-- force = "true" always recompiles all source files, because 
            scalac does not always go find the latest source file (*3) -->
 
       <include name="scala/tools/nsc/**/*.scala"/>
-	  &userExcludes;
+
     </scalac>
 
-    <mkdir  dir="${jars_dir}"/>
-    <jar    destfile="${jars_dir}/nsc.jar" basedir="${nsc_dir}"/>
+    <jar destfile="${nsc.nsc_jar}" basedir="${nsc.nsc_dir}"/>
 
   </target>
 
-
   <target name="clean">
-    <delete dir="${tools_util_runtime_dir}"/>
-    <delete dir="${nsc_dir}"/>
+    <delete dir="${nsc.tools_util_runtime_dir}" />
+    <delete dir="${nsc.jars_dir}" />
+    <delete dir="${nsc.nsc_dir}" />
+    <delete dir="${nsc.nsc4ant_dir}" />
   </target>
 
 
   <!-- builds NscTask for use in this ant file -->
 
-  <target name="build.nsc4ant">
+  <target name="build.nsc4ant" depends="init">
+    <taskdef name="scalac" classname="scala.tools.scala4ant.ScalacTask$class"/>
 
-    <mkdir  dir="${nsc4ant_dir}"/>
-    <scalac srcdir="sources" destdir="${nsc4ant_dir}/" sourcePath="sources"
-            classpath="${ant_jar}:${nsc_dir}:${tools_util_runtime_dir}:${scala_jar}" >
+    <scalac srcdir="sources" destdir="${nsc.nsc4ant_dir}/" sourcePath="sources"
+            classpath="${nsc.ant_jar}:${nsc.nsc_dir}:${nsc.tools_util_runtime_dir}:${nsc.scala_jar}" >
       <include name="scala/tools/scala4ant/NscAdaptor.scala"/>
       <include name="scala/tools/scala4ant/NscTask.scala"/>
     </scalac>
 
-    <jar destfile="${jars_dir}/nsc4ant.jar" basedir="${nsc4ant_dir}"/>
+    <jar destfile="${nsc.nsc4ant_jar}" basedir="${nsc.nsc4ant_dir}"/>
   </target>
 
   <!--
