@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="scala.nsc" default="setenv">
+
+  <target name="setenv">
+
+    <property file="build-nsc.properties.${platform}" prefix="nsc." />
+
+    <echoproperties prefix="nsc." format="xml" destfile="/tmp/env.xml" />
+
+    <!-- generate "env.sh" (Unix) -->
+
+    <xslt in="/tmp/env.xml" out="/tmp/env.sh" style="setenv-sh.xsl" />
+    <copy file="/tmp/env.sh" tofile="env.sh">
+      <filterchain>
+        <tokenfilter>
+          <ignoreblank />
+        </tokenfilter>
+      </filterchain>
+    </copy>
+
+    <!-- generate "env.bat" (Windows) -->
+
+    <xslt in="/tmp/env.xml" out="/tmp/env.bat" style="setenv-bat.xsl" />
+    <copy file="/tmp/env.bat" tofile="env.bat">
+      <filterchain>
+        <tokenfilter>
+          <ignoreblank />
+        </tokenfilter>
+      </filterchain>
+    </copy>
+
+  </target>
+
+</project>
+
