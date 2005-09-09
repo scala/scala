@@ -1,0 +1,41 @@
+# $Id$
+# 
+# this file serves two purposes 
+#
+# 1. properties file for ant
+# 2. environment variables for shell-scripts (e.g. ant-build-sh)
+#
+# don't use characters like '.' in variable names, and
+# don't run commands here
+#
+##############################################################################
+# directories
+#
+apps_dir    = c:\\localhome\\linuxsoft\\apps
+main_dir    = c:\\localhome\\michelou\\projects\\scala\\objects\\main\\lib
+jars_dir    = c:\\localhome\\michelou\\projects\\scala\\objects\\nsc\\lib
+tmp_dir	    = c:\\tmp
+#
+##############################################################################
+# jar archives
+#
+scala_jar   = ${main_dir}\\scala.jar
+tools_jar   = ${main_dir}\\tools.jar
+#
+nsc_jar     = ${jars_dir}\\nsc.jar
+nsrt_jar    = ${jars_dir}\\nsrt.jar
+nsc4ant_jar = ${jars_dir}\\nsc4ant.jar
+#
+ant_jar     = ${apps_dir}\\ant\\lib\\ant.jar
+fjbg_jar    = ${apps_dir}\\fjbg\\jars\\fjbg.jar
+jaco_jar    = ${apps_dir}\\jaco-20050730\\lib\\jaco.jar
+#
+##############################################################################
+# build directories
+#
+nsc_dir	               = ${tmp_dir}\\classes_nsc
+nsc4ant_dir            = ${tmp_dir}\\classes_nsc4ant
+nsc_output_dir         = ${tmp_dir}\\classes_new
+tools_util_runtime_dir = ${tmp_dir}\\classes_runtime
+#
+##############################################################################
