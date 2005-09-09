@@ -13,6 +13,7 @@ Phase.scala
 Settings.scala
 SubComponent.scala
 
+ast/TreeBrowsers.scala
 ast/TreeGen.scala
 ast/TreeInfo.scala
 ast/TreePrinters.scala
@@ -61,9 +62,17 @@ symtab/classfile/Pickler.scala
 symtab/classfile/SymblfileParser.scala
 symtab/classfile/UnPickler.scala
 
+transform/AddInterfaces.scala
 transform/Constructors.scala
+transform/Erasure.scala
+transform/ExplicitOuter.scala
+transform/Flatten.scala
 transform/InfoTransform.scala
+transform/LambdaLift.scala
+transform/Mixin.scala
 transform/SampleTransform.scala
+transform/SyntheticMethods.scala
+transform/TailCalls.scala
 transform/Transform.scala
 transform/UnCurry.scala
 
@@ -79,14 +88,18 @@ typechecker/Variances.scala
 
 util/CharArrayReader.scala
 util/FreshNameCreator.scala
+util/HashSet.scala
 util/LinkedList.scala
 util/ListBuffer.scala
 util/NameTransformer.scala
+util/Set.scala
 util/ShowPickled.scala
-
-transform/TailCalls.scala
+util/TreeSet.scala
 
 backend/icode/BasicBlocks.scala
+backend/icode/CheckerError.scala
+backend/icode/Checkers.scala
+backend/icode/ExceptionHandlers.scala
 backend/icode/GenICode.scala
 backend/icode/ICodes.scala
 backend/icode/Members.scala
