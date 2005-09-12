@@ -16,16 +16,10 @@ shift
 goto setupArgs
 
 :doneStart
-call ant-common.bat
+call ant-common.bat build-nsc
 
 rem ##########################################################################
 rem # ant build
-
-set ANT_CONFIG_BUILDFILE=build-nsc.xml
-set ANT_BUILDFILE=concrete-%ANT_CONFIG_BUILDFILE%
-set ANT_EXCLUDEFILE=developer/%USERNAME%/build-nsc-excludes.xml
-
-%CP% %ANT_CONFIG_BUILDFILE% %ANT_BUILDFILE%
 
 set CLASSPATH=%nsc_fjbg_jar%;%nsc_scala_jar%;%nsc_tools_jar%;%nsc_jaco_jar%
 %_ANTCMD% -Dplatform=win -f %ANT_BUILDFILE% %_ANTCMD_ARGS%
