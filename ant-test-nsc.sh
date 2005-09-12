@@ -11,7 +11,7 @@
 
 ANT_CONFIG_BUILDFILE=test-nsc.xml
 ANT_BUILDFILE=concrete-$ANT_CONFIG_BUILDFILE
-ANT_EXCUDELFILE=developer/${USER}/test-nsc-excludes.xml
+ANT_EXCLUDELFILE=developer/${USER}/test-nsc-excludes.xml
 
 if [ -f "$ANT_EXCLUDEFILE" ]; then
   $SED -e "s#userExcludes\ \"\"#userExcludes\ SYSTEM\ \"$ANT_EXCLUDEFILE\"#" \
