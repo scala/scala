@@ -13,8 +13,8 @@ import collection.mutable.HashMap;
 abstract class LambdaLift extends InfoTransform {
   import global._;
   import definitions._;
-  import typer.{typed};             // methods to type trees
-  import posAssigner.atPos;         // for filling in tree positions
+  import typer.{typed, typedOperator};
+  import posAssigner.atPos;
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "lambdalift";
@@ -127,15 +127,24 @@ abstract class LambdaLift extends InfoTransform {
             liftedDefs(tree.symbol) = new ListBuffer;
 	    if (sym.isLocal) renamable addEntry sym;
 	  case DefDef(_, _, _, _, _, _) =>
-	    if (sym.isLocal) renamable addEntry sym;
-	    if (sym.isPrimaryConstructor) symSet(called, sym) addEntry sym.owner;
+	    if (sym.isLocal) {
+	      renamable addEntry sym;
+	      sym setFlag (PRIVATE | LOCAL | FINAL)
+	    } else if (sym.isPrimaryConstructor) {
+	      symSet(called, sym) addEntry sym.owner
+	    }
 	  case Ident(name) =>
 	    if (sym == NoSymbol) {
 	      assert(name == nme.WILDCARD)
             } else if (sym.isLocal) {
 	      val owner = enclMethOrClass(currentOwner);
-	      if (owner.isMethod && sym.isMethod) symSet(called, owner) addEntry sym;
-	      else if (sym.isTerm) markFree(sym, owner)
+              if (sym.isTerm && !sym.isMethod) markFree(sym, owner)
+              else if (owner.isMethod && sym.isMethod) symSet(called, owner) addEntry sym;
+            }
+	  case Select(_, _) =>
+            if (sym.isConstructor && sym.owner.isLocal) {
+	      val owner = enclMethOrClass(currentOwner);
+              if (owner.isMethod) symSet(called, owner) addEntry sym;
             }
           case _ =>
         }
@@ -203,14 +212,20 @@ abstract class LambdaLift extends InfoTransform {
       else searchIn(currentOwner)
     }
 
+    private def memberRef(sym: Symbol) = {
+      val clazz = sym.owner.enclClass;
+      val qual = if (clazz == currentOwner.enclClass) gen.This(clazz)
+		 else {
+		   sym resetFlag(LOCAL | PRIVATE);
+		   if (clazz.isStaticOwner) gen.mkQualifier(clazz.thisType)
+		   else outerPath(outerValue, clazz)
+		 }
+      Select(qual, sym) setType sym.tpe
+    }
+
     private def proxyRef(sym: Symbol) = {
       val psym = proxy(sym);
-      if (psym.isLocal) gen.Ident(psym)
-      else if (psym.owner == currentOwner.enclClass) gen.mkRef(psym)
-      else {
-	psym resetFlag (PRIVATE | LOCAL);
-	Select(outerPath(outerValue, psym.owner), psym) setType psym.tpe
-      }
+      if (psym.isLocal) gen.Ident(psym) else memberRef(psym)
     }
 
     private def addFreeArgs(pos: int, sym: Symbol, args: List[Tree]) = {
@@ -237,10 +252,12 @@ abstract class LambdaLift extends InfoTransform {
 
     private def liftDef(tree: Tree): Tree = {
       val sym = tree.symbol;
-      if (sym.isMethod) sym setFlag (PRIVATE | LOCAL);
       sym.owner = sym.owner.enclClass;
+      if (sym.isClass) sym.owner = sym.owner.toInterface;
+      if (sym.isMethod) sym setFlag LIFTED;
       liftedDefs(sym.owner) += tree;
       sym.owner.info.decls enter sym;
+      if (settings.debug.value) log("lifted: " + sym + sym.locationString);
       EmptyTree
     }
 
@@ -281,9 +298,12 @@ abstract class LambdaLift extends InfoTransform {
 	  copy.Assign(tree, qual, rhs)
         case Ident(name) =>
 	  val tree1 =
-            if (sym != NoSymbol && sym.isLocal && sym.isTerm && !sym.isMethod &&
-		enclMethOrClass(sym.owner) != enclMethOrClass(currentOwner))
-	      atPos(tree.pos)(proxyRef(sym))
+            if (sym != NoSymbol && sym.isTerm && !sym.isLabel)
+	      if (sym.isMethod)
+		atPos(tree.pos)(memberRef(sym))
+	      else if (sym.isLocal && enclMethOrClass(sym.owner) != enclMethOrClass(currentOwner))
+		atPos(tree.pos)(proxyRef(sym))
+	      else tree
 	    else tree;
           if (sym hasFlag CAPTURED)
             atPos(tree.pos) {

@@ -43,8 +43,8 @@ abstract class Constructors extends Transform {
 
       val paramAccessors = clazz.constrParamAccessors;
       def parameter(acc: Symbol) = {
-        val accname = nme.originalName(nme.getterName(acc.name));
-        val ps = constrParams.filter { param => param.name == accname }
+        val accname = nme.getterName(acc.originalName);
+        val ps = constrParams.filter { param => accname == param.name }
         if (ps.isEmpty) assert(false, "" + accname + " not in " + constrParams);
         ps.head
       }
@@ -79,12 +79,24 @@ abstract class Constructors extends Transform {
       constrBody.stats foreach (constrStatBuf +=);
 
       for (val stat <- stats) stat match {
-	case DefDef(_, _, _, _, _, _) =>
-	  if (!stat.symbol.isPrimaryConstructor) defBuf += stat
+	case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+	  stat.symbol.tpe match {
+	    case MethodType(List(), tp @ ConstantType(c)) =>
+	      defBuf += copy.DefDef(
+		stat, mods, name, tparams, vparamss, tpt,
+		Literal(c) setPos rhs.pos setType tp)
+	    case _ =>
+	      if (!stat.symbol.isPrimaryConstructor) defBuf += stat
+	  }
 	case ValDef(mods, name, tpt, rhs) =>
-	  if (rhs != EmptyTree)
-	    constrStatBuf += mkAssign(stat.symbol, intoConstructor(stat.symbol, rhs));
-	  defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
+	  if (stat.symbol.tpe.isInstanceOf[ConstantType])
+	    assert(stat.symbol.getter != NoSymbol, stat)
+	  else {
+	    if (rhs != EmptyTree) {
+	      constrStatBuf += mkAssign(stat.symbol, intoConstructor(stat.symbol, rhs));
+	    }
+	    defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
+	  }
 	case _ =>
 	  constrStatBuf += intoConstructor(impl.symbol, stat)
       }

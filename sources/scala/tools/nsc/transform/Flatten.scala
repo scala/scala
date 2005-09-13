@@ -17,23 +17,44 @@ abstract class Flatten extends InfoTransform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten";
 
+  private def liftClass(sym: Symbol): unit =
+    if (!(sym hasFlag LIFTED)) {
+      sym setFlag LIFTED;
+      atPhase(phase.next) {
+	if (settings.debug.value) log("re-enter " + sym + " in " + sym.owner);
+	assert(sym.owner.isPackageClass, sym);//debug
+	val scope = sym.owner.info.decls;
+	val old = scope lookup sym.name;
+	if (old != NoSymbol) scope unlink old;
+	scope enter sym;
+      }
+    }
+
   private val flattened = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if (pre.symbol.isClass && !pre.symbol.isPackageClass) =>
         assert(args.isEmpty);
         typeRef(sym.toplevelClass.owner.thisType, sym, args)
       case ClassInfoType(parents, decls, clazz) =>
+	var parents1 = parents;
+	val decls1 = new Scope();
         if (clazz.isPackageClass) {
-          val decls1 = new Scope();
-          for (val member <- decls.toList) {
-            atPhase(phase.next)(decls1 enter member)
-          }
-          ClassInfoType(parents, decls1, clazz)
-        } else {
-	  val parents1 = List.mapConserve(parents)(this);
-	  if (parents1 eq parents) tp
-	  else ClassInfoType(parents1, decls, clazz)
-        }
+	  atPhase(phase.next)(decls.toList foreach (decls1 enter))
+	} else {
+	  atPhase(phase.next)(clazz.owner.info);
+	  parents1 = List.mapConserve(parents)(this);
+	  for (val sym <- decls.toList) {
+	    if (sym.isTerm) decls1 enter sym
+	    else if (sym.isClass) {
+	      liftClass(sym);
+	      if (sym.needsImplClass) liftClass(erasure.implClass(sym))
+	    }
+	  }
+	}
+	ClassInfoType(parents1, decls1, clazz)
+      case PolyType(tparams, restp) =>
+	val restp1 = apply(restp);
+	if (restp1 eq restp) tp else PolyType(tparams, restp1)
       case _ =>
         mapOver(tp)
     }
@@ -73,15 +94,9 @@ abstract class Flatten extends InfoTransform {
           tree
       }
       tree1 setType flattened(tree1.tpe);
-      if (sym != null && sym.isNestedClass && !(sym hasFlag FLATTENED)) {
-	sym setFlag FLATTENED;
-	atPhase(phase.next) {
-	  if (settings.debug.value) log("re-enter " + sym + " in " + sym.owner);
-	  val scope = sym.owner.info.decls;
-	  val old = scope lookup sym.name;
-	  if (old != NoSymbol) scope unlink old;
-	  scope enter sym;
-	}
+      if (sym != null && sym.isNestedClass && !(sym hasFlag LIFTED)) {
+	liftClass(sym);//todo: remove
+	if (sym.implClass != NoSymbol) liftClass(sym.implClass);
       }
       tree1
     }

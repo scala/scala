@@ -130,6 +130,7 @@ abstract class UnPickler {
 	  }
 	  sym.setFlag(flags);
 	  if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR));
+	  if (sym hasFlag SUPERACCESSOR) assert(readIndex != end);
 	  sym.setInfo(
 	    if (readIndex != end) new LazyTypeRefAndAlias(inforef, readNat())
 	    else new LazyTypeRef(inforef));

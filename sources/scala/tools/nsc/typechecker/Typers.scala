@@ -223,17 +223,20 @@ abstract class Typers: Analyzer {
       } else tree
     }
 
-    class AddSuperAccessors(clazz: Symbol) extends Traverser {
+    class AddSuperAccessors(clazz: Symbol, accdefs: ListBuffer[Tree]) extends Traverser {
       override def traverse(tree: Tree) = tree match {
         case Select(Super(_, mix), _) =>
           if (tree.isTerm && mix == nme.EMPTY.toTypeName) {
-	    if (tree.symbol.superAccessor(clazz) == NoSymbol) {
-	      System.out.println("add super acc " + tree.symbol + tree.symbol.locationString + " to " + clazz);//debug
-              clazz.info.decls enter
-                clazz.newMethod(tree.pos, nme.superName(tree.symbol.name))
+	    val supername = nme.superName(tree.symbol.name);
+	    if (clazz.info.decl(supername).suchThat(.alias.==(tree.symbol)) == NoSymbol) {
+	      if (settings.debug.value) log("add super acc " + tree.symbol + tree.symbol.locationString + " to " + clazz);//debug
+              val superAcc =
+                clazz.newMethod(tree.pos, supername)
                   .setFlag(SUPERACCESSOR | PRIVATE)
                   .setAlias(tree.symbol)
-                  .setInfo(clazz.thisType.memberType(tree.symbol))
+                  .setInfo(clazz.thisType.memberType(tree.symbol));
+              clazz.info.decls enter superAcc;
+              accdefs += typed(DefDef(superAcc, vparamss => EmptyTree));
 	    }
           }
         case Template(_, _) =>
@@ -383,32 +386,34 @@ abstract class Typers: Analyzer {
       tree.tpe
     }
 
-    def parentTypes(templ: Template): List[Tree] = {
-      var supertpt = typedTypeConstructor(templ.parents.head);
-      var mixins = templ.parents.tail map typedType;
-      // If first parent is trait, make it first mixin and add its superclass as first parent
-      while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isTrait) {
-	mixins = typedType(supertpt) :: mixins;
-        supertpt = TypeTree(supertpt.tpe.parents.head) setPos supertpt.pos;
+    def parentTypes(templ: Template): List[Tree] =
+      if (templ.parents.isEmpty) List()
+      else {
+	var supertpt = typedTypeConstructor(templ.parents.head);
+	var mixins = templ.parents.tail map typedType;
+	// If first parent is trait, make it first mixin and add its superclass as first parent
+	while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isTrait) {
+	  mixins = typedType(supertpt) :: mixins;
+	  supertpt = TypeTree(supertpt.tpe.parents.head) setPos supertpt.pos;
+	}
+	if (supertpt.hasSymbol) {
+	  val tparams = supertpt.symbol.typeParams;
+	  if (!tparams.isEmpty) {
+	    val constr @ DefDef(_, _, _, vparamss, _, Apply(_, superargs)) =
+	      treeInfo.firstConstructor(templ.body);
+	    val outercontext = context.outer.outer;
+	    supertpt = TypeTree(
+	      newTyper(context.outer.outer.makeNewScope(constr, context.outer.outer.owner))
+		.completeSuperType(
+		  supertpt,
+		  tparams,
+		  vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
+		  superargs map (.duplicate))) setPos supertpt.pos;
+	  }
+	}
+	//System.out.println("parents(" + context.owner + ") = " + supertpt :: mixins);//DEBUG
+	List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(context.owner, tpt))
       }
-      if (supertpt.hasSymbol) {
-        val tparams = supertpt.symbol.typeParams;
-        if (!tparams.isEmpty) {
-          val constr @ DefDef(_, _, _, vparamss, _, Apply(_, superargs)) =
-	    treeInfo.firstConstructor(templ.body);
-	  val outercontext = context.outer.outer;
-          supertpt = TypeTree(
-            newTyper(context.outer.outer.makeNewScope(constr, context.outer.outer.owner))
-              .completeSuperType(
-                supertpt,
-                tparams,
-                vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
-                superargs map (.duplicate))) setPos supertpt.pos;
-        }
-      }
-      //System.out.println("parents(" + context.owner + ") = " + supertpt :: mixins);//DEBUG
-      List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(context.owner, tpt))
-    }
 
     /** Check that
      *  - all parents are class types,
@@ -498,7 +503,7 @@ abstract class Typers: Analyzer {
           atPos(vdef.pos)(
 	    DefDef(setter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
-	      else typed(Assign(Select(This(value.owner), getterDef.symbol),
+	      else typed(Assign(Select(This(value.owner), value),
 				Ident(vparamss.head.head)))))
 	}
 	val gs = if ((mods & MUTABLE) != 0) List(getterDef, setterDef)
@@ -524,9 +529,12 @@ abstract class Typers: Analyzer {
       new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body);
       validateParentClasses(parents1, selfType);
       val body1 = templ.body flatMap addGetterSetter;
-      val body2 = typedStats(body1, templ.symbol);
-      if (clazz.isTrait && phase.id <= typerPhase.id)
-        new AddSuperAccessors(clazz).traverseTrees(body2);
+      var body2 = typedStats(body1, templ.symbol);
+      if (clazz.isTrait && phase.id <= typerPhase.id) {
+        val superAccs = new ListBuffer[Tree];
+        new AddSuperAccessors(clazz, superAccs).traverseTrees(body2);
+        body2 = superAccs.toList ::: body2;
+      }
       copy.Template(templ, parents1, body2) setType clazz.tpe
     }
 
@@ -535,7 +543,7 @@ abstract class Typers: Analyzer {
       var tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt));
       val rhs1 =
         if (vdef.rhs.isEmpty) {
-          if ((sym hasFlag MUTABLE) && sym.owner.isTerm && phase.id <= typerPhase.id)
+          if (sym.isVariable && sym.owner.isTerm && phase.id <= typerPhase.id)
             error(vdef.pos, "local variables must be initialized");
           vdef.rhs
         } else {
@@ -575,14 +583,14 @@ abstract class Typers: Analyzer {
 	      if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
 		var alias = superAcc.initialize.alias;
 		if (alias == NoSymbol)
-                  alias = if (superAcc.hasGetter) superAcc.getter(superAcc.owner) else superAcc;
+                  alias = superAcc.getter(superAcc.owner);
 		if (alias != NoSymbol &&
 		    superClazz.info.nonPrivateMember(alias.name) != alias)
 		  alias = NoSymbol;
 		if (alias != NoSymbol) {
 		  var ownAcc = clazz.info.decl(name);
 		  if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed;
-		  System.out.println("" + ownAcc + " has alias " + alias + alias.locationString);//debug
+		  if (settings.debug.value) log("" + ownAcc + " has alias " + alias + alias.locationString);//debug
 		  ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
 		}
 	      }
@@ -720,18 +728,19 @@ abstract class Typers: Analyzer {
       val vparams = List.mapConserve(fun.vparams)(typedValDef);
       val body = typed(fun.body, respt);
       val formals = vparamSyms map (.tpe);
-      val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(body.tpe));
+      val restpe = body.tpe.deconst;
+      val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe));
       assert(context.owner != RootClass);//debug
       val anonClass = context.owner.newAnonymousFunctionClass(fun.pos) setFlag (FINAL | SYNTHETIC);
       anonClass setInfo ClassInfoType(
 	List(ObjectClass.tpe, funtpe, ScalaObjectClass.tpe), new Scope(), anonClass);
       val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
-	setFlag FINAL setInfo MethodType(formals, body.tpe);
+	setFlag FINAL setInfo MethodType(formals, restpe);
       anonClass.info.decls enter applyMethod;
       for (val vparam <- vparamSyms) vparam.owner = applyMethod;
       new ChangeOwnerTraverser(context.owner, applyMethod).traverse(body);
       var members = List(
-	DefDef(FINAL, nme.apply, List(), List(vparams), TypeTree(body.tpe), body)
+	DefDef(FINAL, nme.apply, List(), List(vparams), TypeTree(restpe), body)
 	  setSymbol applyMethod);
       if (pt.symbol == PartialFunctionClass) {
 	val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)

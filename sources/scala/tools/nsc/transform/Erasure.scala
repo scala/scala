@@ -46,6 +46,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    */
   private val erasure = new TypeMap {
     def apply(tp: Type): Type = tp match {
+      case ConstantType(_) =>
+	tp
       case st: SubType =>
 	apply(st.supertype)
       case TypeRef(pre, sym, args) =>
@@ -192,7 +194,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
     /** Adapt `tree' to expected type `pt' */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
-      if (settings.debug.value && pt != WildcardType) log("adapting " + tree + ":" + tree.tpe + " to " + pt);
+      //if (settings.debug.value && pt != WildcardType) log("adapting " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
       if (tree.tpe <:< pt)
         tree
       else if (isUnboxedClass(tree.tpe.symbol) && !isUnboxedClass(pt.symbol))
@@ -392,10 +394,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                     atPhase(phase.next) {
                       atPos(bridge.pos) {
                         DefDef(bridge, vparamss =>
-                          ((Select(This(owner), bridgeTarget(bridge)): Tree) /: vparamss)
-                          ((fun, vparams) => Apply(fun, vparams map Ident)))
-                      } :: bridges;
-                    }
+			  member.tpe match {
+			    case MethodType(List(), ConstantType(c)) => Literal(c)
+			    case _ =>
+                              ((Select(This(owner), member): Tree) /: vparamss)
+                              ((fun, vparams) => Apply(fun, vparams map Ident))
+			  })
+		      }
+                    } :: bridges;
                 }
               }
             }

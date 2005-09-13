@@ -33,8 +33,9 @@ abstract class ExplicitOuter extends InfoTransform {
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
+      if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED;
       if (sym.isConstructor && !sym.owner.isStatic)
-	MethodType(formals ::: List(sym.owner.owner.enclClass.thisType), restpe)
+	MethodType(formals ::: List(sym.owner.owner.enclClass.toInterface.thisType), restpe)
       else tp;
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls;
@@ -67,7 +68,9 @@ abstract class ExplicitOuter extends InfoTransform {
 
   private def outerMember(tp: Type): Symbol = {
     var e = tp.decls.elems;
-    while (!(e.sym.name.startsWith(nme.OUTER) && (e.sym hasFlag ACCESSOR))) e = e.next;
+    while (e != null && !(e.sym.originalName.startsWith(nme.OUTER) && (e.sym hasFlag ACCESSOR)))
+      e = e.next;
+    assert(e != null, tp);
     e.sym
   }
 
@@ -290,7 +293,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	      else rhs;
 	    copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1);
 	  case This(qual) =>
-	    if (sym == currentOwner.enclClass || sym.isStatic) tree
+	    if (sym == currentOwner.enclClass || (sym hasFlag MODULE) && sym.isStatic) tree
 	    else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
 	  case Select(qual @ Super(_, mix), name) =>
             val qsym = qual.symbol;

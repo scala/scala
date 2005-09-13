@@ -96,7 +96,6 @@ abstract class TreeGen {
     result
   }
 
-
   /** Builds an instance test with given value and type. */
   def mkIsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = {
     val sym =

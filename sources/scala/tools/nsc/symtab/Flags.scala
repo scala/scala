@@ -56,7 +56,8 @@ object Flags {
 
   final val IS_ERROR      = 0x100000000l; // symbol is an error symbol
   final val OVERLOADED    = 0x200000000l; // symbol is overloaded
-  final val FLATTENED     = 0x400000000l; // class has been lifted out to package level
+  final val LIFTED        = 0x400000000l; // class has been lifted out to package level
+					  // local value has been lifted out to class level
   final val MIXEDIN       = 0x800000000l; // member has been mixed in
 
   final val EXPANDEDNAME  = 0x1000000000l; // name has been expanded with class suffix
@@ -79,7 +80,11 @@ object Flags {
   final val lateFINAL    = (FINAL: long) << LateShift;
   final val notPRIVATE   = (PRIVATE: long) << AntiShift;
   final val notPROTECTED = (PROTECTED: long) << AntiShift;
-  final val notFINAL     = (FINAL: long) << AntiShift;
+  final val notABSTRACT  = (ABSTRACT: long) << AntiShift;
+  final val notOVERRIDE  = (OVERRIDE: long) << AntiShift;
+
+  final val STATICMODULE = lateMODULE;
+  final val STATICMEMBER = notOVERRIDE;
 
   // masks
   /** This flags can be set when class or module symbol is first created. */
@@ -115,11 +120,14 @@ object Flags {
     else if (flag == INTERFACE) "<interface>"
     else if (flag == IS_ERROR) "<is-error>"
     else if (flag == OVERLOADED) "<overloaded>"
+    else if (flag == LIFTED) "<lifted>"
     else if (flag == TRANS_FLAG) "<trans-flag>"
     else if (flag == MIXEDIN) "<mixedin>"
     else if (flag == EXPANDEDNAME) "<expandedname>"
     else if (flag == INITIALIZED) "<initialized>"
     else if (flag == LOCKED) "<locked>"
+    else if (flag == STATICMODULE) "<staticobject>"
+    else if (flag == STATICMEMBER) "<staticmember>"
     else flag.asInstanceOf[int] match {
       case IMPLICIT      => "implicit"
       case FINAL         => "final"

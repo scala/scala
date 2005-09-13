@@ -15,7 +15,7 @@ abstract class AddInterfaces extends InfoTransform {
   import definitions._;             // standard classes and methods
   import posAssigner.atPos;         // for filling in tree positions
 
-  override def phaseNewFlags: long = lateDEFERRED | lateINTERFACE | notFINAL;
+  override def phaseNewFlags: long = lateDEFERRED | lateINTERFACE;
 
 // Type transformation
 
@@ -24,18 +24,15 @@ abstract class AddInterfaces extends InfoTransform {
   private val implClassMap = new HashMap[Symbol, Symbol];
   private val implMethodMap = new HashMap[Symbol, Symbol];
 
-  private def needsImplClass(sym: Symbol): boolean =
-    sym.isTrait && (!(sym hasFlag INTERFACE) || (sym hasFlag lateINTERFACE)) && !sym.isImplClass;
-
   private def needsImplMethod(sym: Symbol): boolean =
     sym.isMethod && isInterfaceMember(sym) &&
-    (!(sym hasFlag DEFERRED) || (sym hasFlag lateDEFERRED));
+    (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED));
 
   private def isInterfaceMember(sym: Symbol): boolean =
     sym.isType ||
     sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) && !sym.isConstructor;
 
-  private def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
+  def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
     case Some(c) => c
     case None =>
       atPhase(erasurePhase) {
@@ -45,7 +42,9 @@ abstract class AddInterfaces extends InfoTransform {
         impl.name = nme.implClassName(iface.name);
         //includeInTypeOfThis(iface, impl);
         //includeInTypeOfThis(impl, impl);
+        //todo: use implClassMap only for local impl classes
         implClassMap(iface) = impl;
+        if (iface.owner.isClass) iface.owner.info.decls enter impl;
         if (settings.debug.value) log("generating impl class " + impl);
         impl
       }
@@ -61,7 +60,7 @@ abstract class AddInterfaces extends InfoTransform {
 	    val impl = sym.cloneSymbol(implClass).setInfo(sym.info);
 	    if (!impl.isExternal) implMethodMap(sym) = impl;
 	    decls enter impl;
-	    sym setFlag (lateDEFERRED | notFINAL)
+	    sym setFlag lateDEFERRED
           }
         } else {
 	  sym.owner = implClass;
@@ -74,7 +73,11 @@ abstract class AddInterfaces extends InfoTransform {
     override def complete(sym: Symbol): unit = {
       def implType(tp: Type): Type = tp match {
 	case ClassInfoType(parents, decls, _) =>
-	  ClassInfoType(traitToImplClass(parents) ::: List(iface.tpe), implDecls(sym, decls), sym)
+	  //ClassInfoType(traitToImplClass(parents) ::: List(iface.tpe), implDecls(sym, decls), sym)
+	  ClassInfoType(
+            ObjectClass.tpe :: (parents.tail map traitToImplClass) ::: List(iface.tpe),
+            implDecls(sym, decls),
+            sym)
 	case PolyType(tparams, restpe) =>
 	  PolyType(tparams, implType(restpe))
       }
@@ -85,36 +88,30 @@ abstract class AddInterfaces extends InfoTransform {
   }
 
   private def traitToImplClass(tp: Type): Type = tp match {
-    case TypeRef(pre, sym, args) if (needsImplClass(sym)) =>
+    case TypeRef(pre, sym, args) if (sym.needsImplClass) =>
       typeRef(pre, implClass(sym), args)
     case _ =>
       tp
   }
 
-  private def traitToImplClass(parents: List[Type]): List[Type] =
-    parents.head :: (parents.tail map traitToImplClass);
-
-  private def addImplClasses(decls: Scope): Scope = {
-    for (val sym <- decls.elements)
-      if (needsImplClass(sym)) decls enter implClass(sym);
-    decls
-  }
-
   def transformTraitInfo(tp: Type): Type = tp match {
     case ClassInfoType(parents, decls, clazz) =>
-      if (needsImplClass(clazz)) clazz setFlag lateINTERFACE;
-      var parents1 =
+      if (clazz.needsImplClass) {
+        clazz setFlag lateINTERFACE;
+        implClass(clazz) // generate an impl class
+      }
+      val parents1 =
         if (parents.isEmpty) List()
         else {
-          assert(!parents.head.symbol.isTrait);
+          assert(!parents.head.symbol.isTrait || clazz == RepeatedParamClass, clazz);
           if (clazz hasFlag INTERFACE) erasedTypeRef(ObjectClass) :: parents.tail
           else if (clazz.isImplClass || clazz == ArrayClass) parents
-	  else traitToImplClass(parents)
+	  else parents map traitToImplClass
         }
-      val decls1 = addImplClasses(
-        if (clazz hasFlag INTERFACE) new Scope(decls.toList filter isInterfaceMember)
-        else new Scope(decls.toList));
-      ClassInfoType(parents1, decls1, clazz)
+      val decls1 = if (clazz hasFlag INTERFACE) new Scope(decls.toList filter isInterfaceMember)
+                   else decls;
+      if ((parents1 eq parents) && (decls1 eq decls)) tp
+      else ClassInfoType(parents1, decls1, clazz)
     case _ =>
       tp
   }
@@ -170,7 +167,7 @@ abstract class AddInterfaces extends InfoTransform {
     for (val tree <- trees)
       tree match {
 	case ClassDef(_, _, _, _, impl) =>
-	  if (needsImplClass(tree.symbol))
+	  if (tree.symbol.needsImplClass)
             buf += {
               val clazz = implClass(tree.symbol).initialize;
               ClassDef(clazz, implTemplate(clazz, impl))
@@ -187,7 +184,7 @@ abstract class AddInterfaces extends InfoTransform {
     override def transform(tree: Tree): Tree = {
       val tree1 = tree match {
 	case ClassDef(mods, name, tparams, tpt, impl) =>
-	  if (needsImplClass(tree.symbol)) {
+	  if (tree.symbol.needsImplClass) {
             implClass(tree.symbol).initialize; // to force lateDEFERRED flags
 	    copy.ClassDef(tree, mods | INTERFACE, name, tparams, tpt, ifaceTemplate(impl))
           }
@@ -196,7 +193,7 @@ abstract class AddInterfaces extends InfoTransform {
           val parents1 = tree.symbol.owner.info.parents map (t => TypeTree(t) setPos tree.pos);
           copy.Template(tree, parents1, body)
 	case This(_) =>
-	  if (needsImplClass(tree.symbol)) {
+	  if (tree.symbol.needsImplClass) {
             val impl = implClass(tree.symbol);
             var owner = currentOwner;
             while (owner != tree.symbol && owner != impl) owner = owner.owner;
@@ -211,10 +208,10 @@ abstract class AddInterfaces extends InfoTransform {
                 tree.symbol.info.parents dropWhile (p => p.symbol.name != mix)
               }
 	      assert(!ps.isEmpty, tree);
-	      if (needsImplClass(ps.head.symbol)) implClass(ps.head.symbol).name
+	      if (ps.head.symbol.needsImplClass) implClass(ps.head.symbol).name
 	      else mix
 	    }
-	  if (needsImplClass(tree.symbol)) Super(implClass(tree.symbol), mix1) setPos tree.pos
+	  if (tree.symbol.needsImplClass) Super(implClass(tree.symbol), mix1) setPos tree.pos
 	  else copy.Super(tree, qual, mix1)
 	case _ =>
 	  tree

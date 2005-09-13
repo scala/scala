@@ -166,14 +166,6 @@ abstract class Types: SymbolTable {
     /** The type of `sym', seen as a memeber of this type. */
     def memberType(sym: Symbol): Type = sym.tpe.asSeenFrom(this, sym.owner);
 
-    /*
-    def memberType(sym: Symbol): Type = {
-      if (sym.nameString startsWith "PolyType")
-        System.out.println("" + this + ".memberType(" + sym + ":" + sym.tpe + ") = " + memberType(sym) + ", owner = " + sym.owner);//debug
-      memberType(sym)
-    }
-    */
-
     /** Substitute types `to' for occurrences of references to symbols `from'
      *  in this type. */
     def subst(from: List[Symbol], to: List[Type]): Type =
@@ -576,7 +568,6 @@ abstract class Types: SymbolTable {
     override def narrow: Type = symbol.thisType;
 
     override def toString(): String =
-      "<" + symbol.toString() + ">" + //debug
       parents.mkString("", " with ", "") +
       (if (settings.debug.value || parents.isEmpty || decls.elems != null)
 	decls.mkString("{", "; ", "}") else "")
@@ -704,7 +695,7 @@ abstract class Types: SymbolTable {
    */
   case class MethodType(override val paramTypes: List[Type],
                         override val resultType: Type) extends Type {
-
+    assert(paramTypes forall (pt => !pt.symbol.isImplClass));//debug
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
 
     override def finalResultType: Type = resultType.finalResultType;

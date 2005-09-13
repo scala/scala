@@ -62,7 +62,9 @@ abstract class TreeCheckers extends Analyzer {
         try {
           tree match {
             case DefDef(_, _, _, _, _, _) =>
-              if (tree.symbol.hasFlag(ACCESSOR) && !tree.symbol.hasFlag(DEFERRED)) {
+              if (tree.symbol.hasFlag(ACCESSOR) &&
+		  !tree.symbol.hasFlag(DEFERRED) &&
+		  !tree.symbol.tpe.resultType.isInstanceOf[ConstantType]) {
                 assert(tree.symbol.accessed != NoSymbol);
                 assert(tree.symbol.accessed.getter(tree.symbol.owner) == tree.symbol ||
                        tree.symbol.accessed.setter(tree.symbol.owner) == tree.symbol);
@@ -73,6 +75,16 @@ abstract class TreeCheckers extends Analyzer {
               }
             case Apply(_, args) =>
               assert(args forall (EmptyTree !=))
+            case Select(_, _) =>
+              assert(tree.symbol != NoSymbol, tree);
+	    case This(_) =>
+	      if (!(tree.symbol.isStatic && (tree.symbol hasFlag MODULE))) {
+		var o = currentOwner;
+		while (o != tree.symbol) {
+		  o = o.owner;
+		  assert(o != NoSymbol, tree)
+		}
+	      }
             case _ =>
           }
 	  if (tree.pos == Position.NOPOS && tree != EmptyTree) {

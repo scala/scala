@@ -51,6 +51,31 @@ abstract class RefChecks extends InfoTransform {
     } else tp
   }
 
+  // var m$: T = null; or, if class member: local var m$: T = _;
+  def newModuleVarDef(accessor: Symbol) = {
+    val mvar = accessor.owner.newVariable(accessor.pos, nme.moduleVarName(accessor.name))
+      setInfo accessor.tpe.finalResultType;
+    if (mvar.owner.isClass) {
+      mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
+      mvar.owner.info.decls.enter(mvar);
+    }
+    ValDef(mvar, if (mvar.owner.isClass) EmptyTree else Literal(Constant(null)))
+  }
+
+  // def m: T = { if (m$ == null) m$ = new m$class; m$ }
+  def newModuleAccessDef(accessor: Symbol, mvar: Symbol) =
+    DefDef(accessor, vparamss =>
+      Block(
+	List(
+	  If(
+	    Apply(Select(Ident(mvar), nme.eq), List(Literal(Constant(null)))),
+	    Assign(Ident(mvar),
+                   New(TypeTree(mvar.tpe),
+                       List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
+                            yield This(accessor.owner.enclClass)))),//???
+	    EmptyTree)),
+	Ident(mvar)));
+
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
 // Override checking ------------------------------------------------------------
@@ -186,7 +211,7 @@ abstract class RefChecks extends InfoTransform {
 	  if (member hasFlag DEFERRED) {
 	    abstractClassError(
 	      infoString(member) + " is not defined" +
-	      (if (member hasFlag MUTABLE)
+	      (if (member.isVariable)
 		"\n(Note that variables need to be initialized to be defined)" else ""))
 	  } else if (member.isIncompleteIn(clazz)) {
 	    val other = member.superSymbol(clazz);
@@ -394,31 +419,20 @@ abstract class RefChecks extends InfoTransform {
           setType NoType;
 	if (sym.isStatic) List(transform(cdef))
 	else {
-          val moduleType = sym.tpe;
+          val vdef =
+            localTyper.typed {
+              atPos(tree.pos) {
+                newModuleVarDef(sym)
+              }
+            }
 
-          // var m$: T = null; or, if class member: local var m$: T = _;
-          val mvar = currentOwner.newVariable(sym.pos, name.toString() + "$") setInfo moduleType;
-          if (currentOwner.isClass) {
-	    mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
-	    sym.owner.info.decls.enter(mvar);
-	  }
-          val vdef = localTyper.typed(
-	    ValDef(mvar, if (sym.isLocal) Literal(Constant(null)) else EmptyTree));
-
-          // def m: T = { if (m$ == null) m$ = new m$class; m$ }
           val ddef =
 	    atPhase(phase.next) {
 	      localTyper.typed {
-		DefDef(sym, vparamss =>
-		  Block(
-		    List(
-		      If(
-			Apply(Select(Ident(mvar), nme.EQ), List(Literal(Constant(null)))),
-			Assign(Ident(mvar), New(TypeTree(moduleType), List(List()))),
-			EmptyTree)),
-		    Ident(mvar)))
-	      }
-	    }
+                newModuleAccessDef(sym, vdef.symbol)
+              }
+            }
+
           transformTrees(List(cdef, vdef, ddef))
 	}
 
@@ -466,7 +480,7 @@ abstract class RefChecks extends InfoTransform {
 	  validateVariance(sym, sym.tpe, CoVariance);
 
 	case ValDef(_, _, _, _) =>
-	  validateVariance(sym, sym.tpe, if ((sym.flags & MUTABLE) != 0) NoVariance else CoVariance);
+	  validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance);
 
 	case AbsTypeDef(_, _, _, _) =>
 	  validateVariance(sym, sym.info, CoVariance);
@@ -504,19 +518,28 @@ abstract class RefChecks extends InfoTransform {
 	case Select(qual, name) =>
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
-	  else if (sym hasFlag DEFERRED) {
-	    qual match {
-	      case Super(qualifier, mixin) =>
-		val base = currentOwner.enclClass;
+	  else qual match {
+	    case Super(qualifier, mixin) =>
+              val base = currentOwner.enclClass;
+              if (sym hasFlag DEFERRED) {
 	        val member = sym.overridingSymbol(base);
 	        if (mixin != nme.EMPTY.toTypeName || member == NoSymbol ||
 		    !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(base)))
 		  unit.error(tree.pos, "symbol accessed from super may not be abstract");
-	      case _ =>
-	    }
-	  } else if (sym.alias != NoSymbol) {
-            qual match {
-              case This(_) =>
+              }
+              //System.out.println("super: " + tree + " in " + base);//DEBUG
+              if (base.isTrait && mixin == nme.EMPTY.toTypeName) {
+                val superAccName = nme.superName(sym.name);
+	        val superAcc = base.info.decl(superAccName) suchThat (.alias.==(sym));
+	        assert(superAcc != NoSymbol, "" + sym + " " + base + " " + superAccName);//debug
+                val tree1 = Select(This(base), superAcc);
+                if (settings.debug.value) log("super-replacement: " + tree + "=>" + tree1);
+                result = atPos(tree.pos) {
+                  Select(gen.This(base), superAcc) setType superAcc.tpe
+                }
+	      }
+            case This(_) =>
+	      if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
                 result = typed {
                   Select(
                     Super(qual.symbol, qual.symbol.info.parents.head.symbol.name) setPos qual.pos,
@@ -524,8 +547,8 @@ abstract class RefChecks extends InfoTransform {
                 }
 		if (settings.debug.value)
 		  System.out.println("alias replacement: " + tree + " ==> " + result);//debug
-              case _ =>
-            }
+              }
+            case _ =>
           }
 	case _ =>
       }

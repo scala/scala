@@ -62,55 +62,71 @@ abstract class StdNames: SymbolTable {
     val HASHkw = newTermName("#");
     val ATkw = newTermName("@");
 
-    private val LOCAL_PREFIX_STRING = "local$";
-    private val MIXIN_PREFIX_STRING = "mixin$";
-    private val SUPER_PREFIX_STRING = "super$";
-    private val ACCESS_PREFIX_STRING = "access$";
-    private val TUPLE_FIELD_PREFIX_STRING = "_";
-    private val TYPE_PREFIX_STRING = "type$";
+    val LOCALDUMMY_PREFIX_STRING = "local$";
+    val SUPER_PREFIX_STRING = "super$";
+    val EXPAND_SEPARATOR_STRING = "$$";
+    val TUPLE_FIELD_PREFIX_STRING = "_";
 
-    val LOCAL_PREFIX = newTermName(LOCAL_PREFIX_STRING);
-
-    def LOCAL(clazz: Symbol) = newTermName(LOCAL_PREFIX_STRING + clazz.name);
-
+    def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name);
     def TUPLE_FIELD(index: int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index);
 
-    def isLocalName(name: Name) = originalName(name).endsWith(LOCAL_SUFFIX);
-    def isSetterName(name: Name) = originalName(name).endsWith(_EQ);
+    val LOCAL_SUFFIX = newTermName(" ");
+    val SETTER_SUFFIX = encode("_=");
+    val IMPL_CLASS_SUFFIX = newTermName("$class");
+    val MODULE_SUFFIX = newTermName("$module");
+    val LOCALDUMMY_PREFIX = newTermName(LOCALDUMMY_PREFIX_STRING);
 
-    def originalName(name: Name) = name.subName(0, name.pos("$$"));
+    def isLocalName(name: Name) = name.endsWith(LOCAL_SUFFIX);
+    def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX);
+    def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX);
 
-    private def applyToOriginal(name: Name, f: Name => Name): Name = {
-      val oname = originalName(name);
-      if (oname == name) f(name)
-      else newTermName(f(oname).toString() + name.subName(oname.length, name.length))
+//    def originalName(name: Name): Name = {
+    def originalName(name: Name): Name = {
+      var i = name.length;
+      while (i >= 2 && !(name(i - 1) == '$' && name(i - 2) == '$')) i = i - 1;
+      if (i >= 2) {
+        while (i >= 3 && name(i - 3) == '$') i = i - 1;
+        name.subName(i, name.length)
+      } else name
     }
+//    val result = originalName(name);
+//    System.out.println("oroginal " + name + " = " + result);
+//    result
+//    }
 
     def localToGetter(name: Name): Name = {
       assert(isLocalName(name));//debug
-      applyToOriginal(name, oname => oname.subName(0, oname.length - LOCAL_SUFFIX.length));
+      name.subName(0, name.length - LOCAL_SUFFIX.length);
     }
 
     def getterToLocal(name: Name): Name = {
       assert(!isLocalName(name) && !isSetterName(name));//debug
-      applyToOriginal(name, oname => newTermName(oname.toString() + LOCAL_SUFFIX));
+      newTermName(name.toString() + LOCAL_SUFFIX);
     }
 
     def getterToSetter(name: Name): Name = {
       assert(!isLocalName(name) && !isSetterName(name));//debug
-      applyToOriginal(name, oname => newTermName(oname.toString() + SETTER_SUFFIX));
+      newTermName(name.toString() + SETTER_SUFFIX);
     }
 
     def setterToGetter(name: Name): Name = {
-      assert(isSetterName(name));//debug
-      applyToOriginal(name, oname => oname.subName(0, oname.length - SETTER_SUFFIX.length));
+      name.subName(0, name.length - SETTER_SUFFIX.length);
     }
 
     def getterName(name: Name): Name =
       if (isLocalName(name)) localToGetter(name) else name;
 
+    def isImplClassName(name: Name): boolean =
+      name endsWith IMPL_CLASS_SUFFIX;
+
     def implClassName(name: Name): Name =
       newTypeName(name.toString() + IMPL_CLASS_SUFFIX);
+
+    def moduleVarName(name: Name): Name =
+      newTermName(name.toString() + MODULE_SUFFIX);
+
+    def isModuleVarName(name: Name): boolean =
+      name.endsWith(MODULE_SUFFIX); //todo handle also local modules
 
     def superName(name: Name) = newTermName("super$" + name);
 
@@ -133,14 +149,13 @@ abstract class StdNames: SymbolTable {
     val ROOT = newTermName("<root>");
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>");
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>");
-    val SELF = newTermName("$self");
+    val SELF = newTermName("$this");
 
     val CONSTRUCTOR = newTermName("<init>");
     val MIXIN_CONSTRUCTOR = newTermName("$init$");
     val INITIALIZER = newTermName("<init>");
     val INLINED_INITIALIZER = newTermName("$init$");
 
-    val _EQ = encode("_=");
     val MINUS = encode("-");
     val PLUS = encode("+");
     val TILDE = encode("~");
@@ -291,10 +306,6 @@ abstract class StdNames: SymbolTable {
     val JacoMetaATTR = newTermName("JacoMeta");
     val ScalaSignatureATTR = newTermName("ScalaSignature");
     val JavaInterfaceATTR = newTermName("JacoInterface");
-
-    val LOCAL_SUFFIX = newTermName(" ");
-    val SETTER_SUFFIX = _EQ;
-    val IMPL_CLASS_SUFFIX = newTermName("$class");
   }
 
   def encode(str: String): Name = newTermName(NameTransformer.encode(str));

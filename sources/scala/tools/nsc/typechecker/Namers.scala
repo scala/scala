@@ -65,7 +65,7 @@ trait Namers: Analyzer {
         p.pos = pos; p.moduleClass.pos = pos; p
       } else {
         val pkg = context.owner.newPackage(pos, name);
-        pkg.moduleClass.setInfo(new PackageClassInfoType(new Scope(), pkg));
+        pkg.moduleClass.setInfo(new PackageClassInfoType(new Scope(), pkg.moduleClass));
         pkg.setInfo(pkg.moduleClass.tpe);
         enterInScope(pkg)
       }
@@ -240,7 +240,10 @@ trait Namers: Analyzer {
     }
 
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
-      if (sym.isVariable || !(sym hasFlag FINAL)) tpe.deconst else tpe;
+      if (sym.isVariable ||
+	  !(sym hasFlag FINAL) ||
+	  sym.isMethod && !(sym hasFlag ACCESSOR)) tpe.deconst
+      else tpe;
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
