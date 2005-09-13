@@ -61,7 +61,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object checkers extends Checkers {
     val global: Global.this.type = Global.this
   }
-  val icodeChecker = new checkers.ICodeChecker();
 
   val copy = new LazyTreeCopier();
 
@@ -259,6 +258,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   phase = parserPhase;
   definitions.init; // needs firstPhase and phase to be defined != NoPhase,
 	            // that's why it is placed here.
+
+  val icodeChecker = new checkers.ICodeChecker();
 
   private var p = phase;
   private var stopped = false;
