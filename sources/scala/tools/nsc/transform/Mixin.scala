@@ -75,7 +75,7 @@ abstract class Mixin extends InfoTransform {
         val impl = implClass(clazz);
         assert(impl != NoSymbol, "" + clazz + " " + flattenPhase.flatClasses + atPhase(flattenPhase)(clazz.owner.info.decls));
         for (val member <- impl.info.decls.toList) {
-          if (!member.isMethod && !member.isModule && !member.isModuleVar)) {
+          if (!member.isMethod && !member.isModule && !member.isModuleVar) {
             assert(member.isTerm && !member.hasFlag(DEFERRED), member);
 	    if (member.getter(impl) hasFlag PRIVATE) member.makeNotPrivate(clazz);
             var getter = member.getter(clazz);
@@ -120,7 +120,7 @@ abstract class Mixin extends InfoTransform {
                 val member1 = addMember(member.cloneSymbol(clazz)) setFlag MIXEDIN;
                 assert(member1.alias != NoSymbol, member1);
                 member1.asInstanceOf[TermSymbol] setAlias rebindSuper(clazz, member.alias, bc);
-              } else if (member.isMethod && member.sModule && !(member hasFlag LIFTED)) {
+              } else if (member.isMethod && member.isModule && !(member hasFlag LIFTED)) {
                 addMember(member.cloneSymbol(clazz) setFlag MIXEDIN)
               }
             }
