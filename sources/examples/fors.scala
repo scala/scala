@@ -41,45 +41,48 @@ object fors {
 
   type Lst = List[Any];
 
+  val prefix = null;
+  val scope = TopScope;
+
   val books = List(
-    Elem("", "book", e,
-         Elem("", "title", e,
+    Elem(prefix, "book", e, scope,
+         Elem(prefix, "title", e, scope,
               Text("Structure and Interpretation of Computer Programs")),
-         Elem("", "author", e,
+         Elem(prefix, "author", e, scope,
               Text("Abelson, Harald")),
-         Elem("", "author", e,
+         Elem(prefix, "author", e, scope,
               Text("Sussman, Gerald J."))),
-    Elem("", "book", e,
-         Elem("", "title", e,
+    Elem(prefix, "book", e, scope,
+         Elem(prefix, "title", e, scope,
               Text("Principles of Compiler Design")),
-         Elem("", "author", e,
+         Elem(prefix, "author", e, scope,
               Text("Aho, Alfred")),
-         Elem("", "author", e,
+         Elem(prefix, "author", e, scope,
               Text("Ullman, Jeffrey"))),
-    Elem("", "book", e,
-         Elem("", "title", e,
+    Elem(prefix, "book", e, scope,
+         Elem(prefix, "title", e, scope,
               Text("Programming in Modula-2")),
-	 Elem("", "author", e,
+	 Elem(prefix, "author", e, scope,
               Text("Wirth, Niklaus")))
   );
 
   def findAuthor(books: Lst) =
-    for (val Elem(_, "book",_,book @ _*) <- books;
-         val Elem(_, "title",_,Text( title )) <- book;
+    for (val Elem(_, "book", _, scope, book @ _*) <- books;
+         val Elem(_, "title", _, scope, Text(title)) <- book;
          (title indexOf "Program") >= 0;
-         val Elem(_, "author",_,Text( author )) <- book) yield author;
+         val Elem(_, "author", _, scope, Text(author)) <- book) yield author;
 
-  for (val Elem(_, "book", _, b @ _*) <- books;
-       val Elem(_, "author", _, Text( author )) <- b;
+  for (val Elem(_, "book", _, scope, b @ _*) <- books;
+       val Elem(_, "author", _, scope, Text(author)) <- b;
        author startsWith "Ullman";
-       val Elem(_, "title", _,Text( title )) <- b) yield title;
+       val Elem(_, "title", _, scope, Text(title)) <- b) yield title;
 
   removeDuplicates(
-    for (val Elem(_, "book", _, b1 @ _* ) <- books;
-         val Elem(_, "book", _, b2 @ _*) <- books;
+    for (val Elem(_, "book", _, scope, b1 @ _* ) <- books;
+         val Elem(_, "book", _, scope, b2 @ _*) <- books;
 	 b1 != b2;
-	 val Elem(_, "author",_, Text( a1 )) <- b1;
-	 val Elem(_, "author",_, Text( a2 )) <- b2;
+	 val Elem(_, "author", _, scope, Text(a1)) <- b1;
+	 val Elem(_, "author", _, scope, Text(a2)) <- b2;
 	 a1 == a2) yield Pair(a1, a2));
 
   def removeDuplicates[a](xs: List[a]): List[a] =
