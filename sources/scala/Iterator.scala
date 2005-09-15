@@ -1,11 +1,12 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala;
 
@@ -156,140 +157,140 @@ object Iterator {
  */
 trait Iterator[+A] {
 
-    /** Does this iterator provide another element?
-     */
-    def hasNext: Boolean;
+  /** Does this iterator provide another element?
+   */
+  def hasNext: Boolean;
 
-    /** Returns the next element.
-     */
-    def next: A;
+  /** Returns the next element.
+   */
+  def next: A;
 
-    /** Returns a new iterator that iterates only over the first <code>n</code>
-     *  elements.
-     */
-    def take(n: Int) = new Iterator[A] {
-        var remaining = n;
-        def hasNext = remaining > 0 && Iterator.this.hasNext;
-        def next: A =
-            if (hasNext) { remaining = remaining - 1; Iterator.this.next }
-            else Predef.error("next on empty iterator");
-    }
+  /** Returns a new iterator that iterates only over the first <code>n</code>
+   *  elements.
+   */
+  def take(n: Int) = new Iterator[A] {
+    var remaining = n;
+    def hasNext = remaining > 0 && Iterator.this.hasNext;
+    def next: A =
+      if (hasNext) { remaining = remaining - 1; Iterator.this.next }
+      else Predef.error("next on empty iterator");
+  }
 
-    /** Removes the first <code>n</code> elements from this iterator.
-     */
-    def drop(n: Int): Iterator[A] =
-        if (n > 0) { next; drop(n - 1) } else this;
+  /** Removes the first <code>n</code> elements from this iterator.
+   */
+  def drop(n: Int): Iterator[A] =
+    if (n > 0) { next; drop(n - 1) } else this;
 
-    /** Returns a new iterator that maps all elements of this iterator
-     *  to new elements using function <code>f</code>.
-     */
-    def map[B](f: A => B): Iterator[B] = new Iterator[B] {
-        def hasNext = Iterator.this.hasNext;
-        def next = f(Iterator.this.next)
-    }
+  /** Returns a new iterator that maps all elements of this iterator
+   *  to new elements using function <code>f</code>.
+   */
+  def map[B](f: A => B): Iterator[B] = new Iterator[B] {
+    def hasNext = Iterator.this.hasNext;
+    def next = f(Iterator.this.next)
+  }
 
-    /** Returns a new iterator that first yields the elements of this
-     *  iterator followed by the elements provided by iterator <code>that</code>.
-     */
-    def append[B >: A](that: Iterator[B]) = new Iterator[B] {
-        def hasNext = Iterator.this.hasNext || that.hasNext;
-        def next = if (Iterator.this.hasNext) Iterator.this.next else that.next;
-    }
+  /** Returns a new iterator that first yields the elements of this
+   *  iterator followed by the elements provided by iterator <code>that</code>.
+   */
+  def append[B >: A](that: Iterator[B]) = new Iterator[B] {
+    def hasNext = Iterator.this.hasNext || that.hasNext;
+    def next = if (Iterator.this.hasNext) Iterator.this.next else that.next;
+  }
 
-    /** Applies the given function <code>f</code> to each element of
-     *  this iterator, then concatenates the results.
-     *
-     *  @param f the function to apply on each element.
-     *  @return an iterator over <code>f(a0), ... , f(an)</code> if this iterator
-     *          yields the elements <code>a0, ..., an</code>.
-     */
-    def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
-        private var cur: Iterator[B] = Iterator.empty;
-        def hasNext: Boolean =
-            if (cur.hasNext) true
-            else if (Iterator.this.hasNext) {
-              cur = f(Iterator.this.next);
-              hasNext
-            } else false;
-        def next: B =
-            if (cur.hasNext) cur.next
-            else if (Iterator.this.hasNext) {
-                cur = f(Iterator.this.next);
-                next
-            } else Predef.error("next on empty iterator");
-    }
+  /** Applies the given function <code>f</code> to each element of
+   *  this iterator, then concatenates the results.
+   *
+   *  @param f the function to apply on each element.
+   *  @return an iterator over <code>f(a0), ... , f(an)</code> if this iterator
+   *          yields the elements <code>a0, ..., an</code>.
+   */
+  def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
+    private var cur: Iterator[B] = Iterator.empty;
+    def hasNext: Boolean =
+      if (cur.hasNext) true
+      else if (Iterator.this.hasNext) {
+        cur = f(Iterator.this.next);
+        hasNext
+      } else false;
+    def next: B =
+      if (cur.hasNext) cur.next
+      else if (Iterator.this.hasNext) {
+        cur = f(Iterator.this.next);
+        next
+      } else Predef.error("next on empty iterator");
+  }
 
-    /** Returns an iterator over all the elements of this iterator that
-     *  satisfy the predicate <code>p</code>. The order of the elements
-     *  is preserved.
-     *
-     *  @param   p the redicate used to filter the iterator.
-     *  @return  the elements of this iterator satisfying <code>p</code>.
-     */
-    def filter(p: A => Boolean): Iterator[A] = new BufferedIterator[A] {
-        private val source = Iterator.this.buffered;
-        private def skip: Unit =
-            while (source.hasNext && !p(source.head)) { source.next; () }
-        def hasNext: Boolean = { skip; source.hasNext }
-        def next: A = { skip; source.next }
-        def head: A = { skip; source.head; }
-    }
+  /** Returns an iterator over all the elements of this iterator that
+   *  satisfy the predicate <code>p</code>. The order of the elements
+   *  is preserved.
+   *
+   *  @param   p the redicate used to filter the iterator.
+   *  @return  the elements of this iterator satisfying <code>p</code>.
+   */
+  def filter(p: A => Boolean): Iterator[A] = new BufferedIterator[A] {
+    private val source = Iterator.this.buffered;
+    private def skip: Unit =
+      while (source.hasNext && !p(source.head)) { source.next; () }
+    def hasNext: Boolean = { skip; source.hasNext }
+    def next: A = { skip; source.next }
+    def head: A = { skip; source.head; }
+  }
 
-    /** Return an iterator formed from this iterator and the specified iterator
-     *  <code>that</code> by associating each element of the former with
-     *  the element at the same position in the latter.
-     *
-     *  @param   <code>that</code> must have the same number of elements as this
-     *           iterator.
-     *  @return  an iterator yielding <code>(a0,b0), ..., (an,bn)</code> where
-     *           <code>ai</code> are the elements from this iterator and
-     *           <code>bi</code> are the elements from iterator <code>that</code>.
-     */
-    def zip[B](that: Iterator[B]) = new Iterator[Pair[A, B]] {
-        def hasNext = Iterator.this.hasNext && that.hasNext;
-        def next = Pair(Iterator.this.next, that.next);
-    }
+  /** Return an iterator formed from this iterator and the specified iterator
+   *  <code>that</code> by associating each element of the former with
+   *  the element at the same position in the latter.
+   *
+   *  @param   <code>that</code> must have the same number of elements as this
+   *           iterator.
+   *  @return  an iterator yielding <code>(a0,b0), ..., (an,bn)</code> where
+   *           <code>ai</code> are the elements from this iterator and
+   *           <code>bi</code> are the elements from iterator <code>that</code>.
+   */
+  def zip[B](that: Iterator[B]) = new Iterator[Pair[A, B]] {
+    def hasNext = Iterator.this.hasNext && that.hasNext;
+    def next = Pair(Iterator.this.next, that.next);
+  }
 
-    /** Apply a function <code>f</code> to all elements of this
-     *  iterable object.
-     *
-     *  @param  f   a function that is applied to every element.
-     */
-    def foreach(f: A => Unit): Unit = while (hasNext) { f(next) };
+  /** Apply a function <code>f</code> to all elements of this
+   *  iterable object.
+   *
+   *  @param  f   a function that is applied to every element.
+   */
+  def foreach(f: A => Unit): Unit = while (hasNext) { f(next) };
 
-    /** Apply a predicate <code>p</code> to all elements of this
-     *  iterable object and return true, iff the predicate yields
-     *  true for all elements.
-     *
-     *  @param   p     the predicate
-     *  @returns true, iff the predicate yields true for all elements.
-     */
-    def forall(p: A => Boolean): Boolean = {
-        var res = true;
-        while (res && hasNext) { res = p(next) }
-        res
-    }
+  /** Apply a predicate <code>p</code> to all elements of this
+   *  iterable object and return true, iff the predicate yields
+   *  true for all elements.
+   *
+   *  @param   p     the predicate
+   *  @returns true, iff the predicate yields true for all elements.
+   */
+  def forall(p: A => Boolean): Boolean = {
+    var res = true;
+    while (res && hasNext) { res = p(next) }
+    res
+  }
 
-    /** Apply a predicate <code>p</code> to all elements of this
-     *  iterable object and return true, iff there is at least one
-     *  element for which <code>p</code> yields true.
-     *
-     *  @param   p     the predicate
-     *  @returns true, iff the predicate yields true for at least one element.
-     */
-    def exists(p: A => Boolean): Boolean = {
-        var res = false;
-        while (!res && hasNext) { res = p(next) }
-        res
-    }
+  /** Apply a predicate <code>p</code> to all elements of this
+   *  iterable object and return true, iff there is at least one
+   *  element for which <code>p</code> yields true.
+   *
+   *  @param   p     the predicate
+   *  @returns true, iff the predicate yields true for at least one element.
+   */
+  def exists(p: A => Boolean): Boolean = {
+    var res = false;
+    while (!res && hasNext) { res = p(next) }
+    res
+  }
 
-    /** Tests if the given value <code>elem</code> is a member of this list.
-     *
-     *  @param elem element whose membership has to be tested.
-     *  @return True iff there is an element of this list which is
-     *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
-     */
-    def contains(elem: Any): Boolean = exists { x => x == elem };
+  /** Tests if the given value <code>elem</code> is a member of this list.
+   *
+   *  @param elem element whose membership has to be tested.
+   *  @return True iff there is an element of this list which is
+   *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
+   */
+  def contains(elem: Any): Boolean = exists { x => x == elem };
 
     /** Find and return the first element of the iterable object satisfying a
      *  predicate, if any.
@@ -394,32 +395,32 @@ trait Iterator[+A] {
         Pair(ahead, new Partner)
     }
 
-    /** Fills the given array <code>xs</code> with the elements of
-     *  this sequence starting at position <code>start</code>.
-     *
-     *  @param  xs the array to fill.
-     *  @param  start starting index.
-     *  @return the given array <code>xs</code> filled with this list.
-     */
-    def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = {
-        var i = start;
-        while (hasNext) {
-            xs(i) = next;
-            i = i + 1;
-        }
-        xs
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this sequence starting at position <code>start</code>.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @return the given array <code>xs</code> filled with this list.
+   */
+  def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = {
+    var i = start;
+    while (hasNext) {
+      xs(i) = next;
+      i = i + 1;
     }
+    xs
+  }
 
-    /** Transform this iterator into a list of all elements.
-     *
-     *  @return  a list which enumerates all elements of this iterator.
-     */
-    def toList: List[A] = {
-        var res: List[A] = Nil;
-        while (hasNext) {
-            res = next :: res;
-        }
-        res.reverse
+  /** Transform this iterator into a list of all elements.
+   *
+   *  @return  a list which enumerates all elements of this iterator.
+   */
+  def toList: List[A] = {
+    var res: List[A] = Nil;
+    while (hasNext) {
+      res = next :: res;
     }
+    res.reverse
+  }
 
 }
