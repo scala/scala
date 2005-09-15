@@ -1,11 +1,12 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala.xml;
 
@@ -21,12 +22,16 @@ import scala.collection.mutable.ArrayBuffer;
  *  @author  Burak Emir
  */
 // "val" is redundant for non-overriding arguments
-case class Elem(override val prefix:String, val label: String, override val attributes: MetaData, override val scope: NamespaceBinding, val child: Node*) extends Node {
+case class Elem(override val prefix: String,
+                val label: String,
+                override val attributes: MetaData,
+                override val scope: NamespaceBinding,
+                val child: Node*) extends Node {
 
-  if(prefix != null && 0 == prefix.length())
+  if (prefix != null && 0 == prefix.length())
     error("prefix of zero length, use null instead");
 
-  if(null == scope)
+  if (null == scope)
     error("scope is null");
 
   //@todo: copy the children,
@@ -39,7 +44,7 @@ case class Elem(override val prefix:String, val label: String, override val attr
   //final val labelIntern = label$$.intern();
   //final def label       = labelIntern;
 
-  final override def typeTag$:Int = 0;
+  final override def typeTag$: Int = 0;
 
   /** Return a new element with updated attributes
    *
@@ -51,6 +56,6 @@ case class Elem(override val prefix:String, val label: String, override val attr
          label,
          attrs.append(attributes),
          scope,
-         child:_*) ;
+         child:_*);
 
 }
