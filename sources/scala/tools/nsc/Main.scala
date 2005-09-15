@@ -59,8 +59,7 @@ object Main {
 	else
 	  compiler.compile(command.files);
       } catch {
-	case ex: FatalError => // todo: replace with ex @ FatalError(msg)
-          val msg = ex.msg;
+	case ex @ FatalError(msg) =>
 	  if (command.settings.debug.value)
 	    ex.printStackTrace();
 	  reporter.error(null, "fatal error: " + msg);

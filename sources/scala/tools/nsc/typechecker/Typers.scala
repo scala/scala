@@ -682,6 +682,11 @@ abstract class Typers: Analyzer {
       copy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
+    def typedCases(tree: Tree, cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] = {
+      List.mapConserve(cases)(cdef =>
+	newTyper(context.makeNewScope(tree, context.owner)).typedCase(cdef, pattp, pt))
+    }
+
     /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
      *
      *    class $anon() extends Object() with FunctionN[T_1, .., T_N, R] with ScalaObject {
@@ -799,11 +804,6 @@ abstract class Typers: Analyzer {
       def funmode = mode & stickyModes | FUNmode | POLYmode;
 
       def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps);
-
-      def typedCases(cases: List[CaseDef], pattp: Type): List[CaseDef] = {
-        List.mapConserve(cases)(cdef =>
-	  newTyper(context.makeNewScope(tree, context.owner)).typedCase(cdef, pattp, pt))
-      }
 
       def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
 	case OverloadedType(pre, alts) =>
@@ -1155,7 +1155,7 @@ abstract class Typers: Analyzer {
 
         case Match(selector, cases) =>
           val selector1 = typed(selector);
-          val cases1 = typedCases(cases, selector1.tpe);
+          val cases1 = typedCases(tree, cases, selector1.tpe, pt);
           copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
 
         case Return(expr) =>
@@ -1171,7 +1171,7 @@ abstract class Typers: Analyzer {
 
         case Try(block, catches, finalizer) =>
           val block1 = typed(block, pt);
-          val catches1 = typedCases(catches, ThrowableClass.tpe);
+          val catches1 = typedCases(tree, catches, ThrowableClass.tpe, pt);
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe);
           copy.Try(tree, block1, catches1, finalizer1)

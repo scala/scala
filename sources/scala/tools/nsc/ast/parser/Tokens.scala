@@ -80,7 +80,7 @@ object Tokens {
   final val SUPERTYPE = 71;
   final val HASH = 72;
   final val AT = 73;
-  final val VIEWBOUND = 74; //todo: elim
+  final val VIEWBOUND = 74; //todo: elim?
 
   /** parenthesis */
   final val LPAREN = 90;

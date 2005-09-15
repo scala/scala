@@ -126,7 +126,7 @@ abstract class StdNames: SymbolTable {
       newTermName(name.toString() + MODULE_SUFFIX);
 
     def isModuleVarName(name: Name): boolean =
-      name.endsWith(MODULE_SUFFIX); //todo handle also local modules
+      name.endsWith(MODULE_SUFFIX);
 
     def superName(name: Name) = newTermName("super$" + name);
 

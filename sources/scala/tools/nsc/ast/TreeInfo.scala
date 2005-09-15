@@ -145,6 +145,27 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** Is this pattern node a catch-all or type-test pattern? */
+  def isCatchCase(cdef: CaseDef) = cdef match {
+    case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) => isSimple(tpt.tpe)
+    case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) => isSimple(tpt.tpe)
+    case _ => isDefaultCase(cdef)
+  }
+
+  private def isSimple(tp: Type): boolean = true;
+  /* If we have run-time types, and these are used for pattern matching,
+     we should replace this  by something like:
+
+      tp match {
+        case TypeRef(pre, sym, args) =>
+          args.isEmpty && (sym.owner.isPackageClass || isSimple(pre))
+        case NoPrefix =>
+          true
+        case _ =>
+          false
+      }
+*/
+
   /** Is this pattern node a sequence-valued pattern? */
   def isSequenceValued(tree: Tree): boolean = tree match {
     case Bind(_, body) => isSequenceValued(body)

@@ -120,12 +120,6 @@ abstract class UnCurry extends InfoTransform {
 	val pat1 = transform(pat);
 	inPattern = false;
 	copy.CaseDef(tree, pat1, transform(guard), transform(body))
-/*
-      case Try(body, catches, finally) =>
-	catches1 = catches map {
-	  case cdef @ CaseDef(pat, guard, body) if TreeInfo.isDefaultCase(cdef) =>
-	    CaseDef(TypedTree(Ident(TreeInfo.defaultCaseVar(pat)), TypeTree(ThrowableClass.tpe)))
-*/
       case _ =>
         val tree1 = super.transform(tree);
 	if (isByNameRef(tree1))
@@ -147,6 +141,25 @@ abstract class UnCurry extends InfoTransform {
       tree match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           copy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs);
+        case Try(body, catches, finalizer) =>
+          if (catches forall treeInfo.isCatchCase) tree
+          else {
+            val exname = unit.fresh.newName("ex$");
+            val cases =
+              if (catches exists treeInfo.isDefaultCase) catches
+              else catches ::: List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname))));
+            val catchall =
+              atPos(tree.pos) {
+                CaseDef(
+                  Bind(exname, Ident(nme.WILDCARD)),
+                  EmptyTree,
+                  Match(Ident(exname), cases))
+              }
+            System.out.println("rewrote try: " + catches + " ==> " + catchall);
+            val catches1 = typer.atOwner(currentOwner).typedCases(
+              tree, List(catchall), ThrowableClass.tpe, WildcardType);
+            copy.Try(tree, body, catches1, finalizer)
+          }
 	case Apply(Apply(fn, args), args1) =>
 	  copy.Apply(tree, fn, args ::: args1)
 	case Ident(name) =>

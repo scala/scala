@@ -285,6 +285,9 @@ abstract class Trees: Global {
   case class Bind(name: Name, body: Tree)
        extends DefTree;
 
+  def Bind(sym: Symbol, body: Tree): Bind =
+    Bind(sym.name, body) setSymbol sym;
+
   /** Array of expressions, needs to be translated in backend,
    */
   case class ArrayValue(elemtpt: Tree, elems: List[Tree])
