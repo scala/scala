@@ -58,10 +58,10 @@ abstract class Parsers {
 
 class Tokenizer(in: Iterator[char], delimiters: String) extends Iterator[String] {
 
-  val EOI = 0;
+  val EOI: char = 0;
 
   def nextChar() =
-    if (in.hasNext()) in.next() else EOI;
+    if (in.hasNext) in.next else EOI;
 
   private var ch = nextChar();
 
@@ -75,7 +75,7 @@ class Tokenizer(in: Iterator[char], delimiters: String) extends Iterator[String]
 
   private val buf = new StringBuffer;
 
-  def next: String =
+  def next: String = {
     while (ch <= ' ' && ch != EOI) nextChar();
     if (ch == EOI) ""
     else {
@@ -88,6 +88,7 @@ class Tokenizer(in: Iterator[char], delimiters: String) extends Iterator[String]
         buf.toString()
       }
     }
+  }
 }
 
 abstract class TokenParsers extends Parsers {
