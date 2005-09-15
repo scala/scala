@@ -27,6 +27,7 @@ class Settings(error: String => unit) {
   val separate      = ChoiceSetting ("-separate", "Read symbol files for separate compilation", List("yes","no"), "default");
   val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm");
   val debug         = BooleanSetting("-debug", "Output debugging messages");
+  val statistics    = BooleanSetting("-statistics", "Print compiler statistics");
   val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail");
   val interactive   = BooleanSetting("-interactive", "Interactive mode");
   val uniqid        = BooleanSetting("-uniqid", "Print identifiers with unique names (debugging option)");

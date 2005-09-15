@@ -12,7 +12,7 @@ import scala.collection.mutable.{HashSet,HashMap}
 
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
-import util.ListBuffer;
+import util.{ListBuffer, Statistics};
 import ast._;
 import ast.parser._;
 import typechecker._;
@@ -62,6 +62,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object statistics extends Statistics {
+    val global: Global.this.type = Global.this
+  }
+
   val copy = new LazyTreeCopier();
 
   type AttrInfo = Pair[Type, List[Any]];
@@ -73,7 +77,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def error(msg: String) = reporter.error(null, msg);
   def warning(msg: String) = reporter.warning(null, msg);
-  private def inform(msg: String) = reporter.info(null, msg, true);
+  def inform(msg: String) = reporter.info(null, msg, true);
 
   def informProgress(msg: String) =
     if (settings.verbose.value) inform("[" + msg + "]");
@@ -342,6 +346,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
         else
           checker.checkTrees;
       }
+      if (settings.statistics.value) statistics.print(phase);
     }
 
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
@@ -364,7 +369,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       }
     }
     informTime("total", startTime);
-    informStatistics;
   }
 
   def compileLate(file: AbstractFile): unit =
@@ -445,15 +449,5 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   private def printICode(): Unit = {
     val printer = new icodePrinter.TextPrinter(new PrintWriter(System.out, true));
     icodes.classes.foreach(printer.printClass);
-  }
-
-  private def informStatistics = {
-    inform("#identifiers : " + analyzer.idcnt);
-    inform("#selections  : " + analyzer.selcnt);
-    inform("#applications: " + analyzer.appcnt);
-    inform("#implicits   : " + analyzer.implcnt);
-    inform("#typecreates : " + accesses);
-    inform("#uniquetypes : " + uniques);
-    inform("#collisions  : " + collisions);
   }
 }

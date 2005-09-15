@@ -13,6 +13,11 @@ abstract class Symbols: SymbolTable {
 
   private var ids = 0;
 
+  //for statistics:
+  def symbolCount = ids;
+  var typeSymbolCount = 0;
+  var classSymbolCount = 0;
+
   val emptySymbolArray = new Array[Symbol](0);
 
   /** The class for all symbols */
@@ -787,6 +792,7 @@ abstract class Symbols: SymbolTable {
     }
     def cloneSymbolImpl(owner: Symbol): Symbol =
       new TypeSymbol(owner, pos, name);
+    typeSymbolCount = typeSymbolCount + 1;
   }
 
   /** A class for class symbols */
@@ -848,6 +854,8 @@ abstract class Symbols: SymbolTable {
     }
 
     override def sourceModule = if (isModuleClass) linkedModule else NoSymbol;
+
+    classSymbolCount = classSymbolCount + 1;
   }
 
   /** A class for module class symbols

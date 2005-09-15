@@ -41,7 +41,8 @@ abstract class Flatten extends InfoTransform {
         if (clazz.isPackageClass) {
 	  atPhase(phase.next)(decls.toList foreach (decls1 enter))
 	} else {
-	  atPhase(phase.next)(clazz.owner.info);
+          val oldowner = clazz.owner;
+	  atPhase(phase.next)(oldowner.info);
 	  parents1 = List.mapConserve(parents)(this);
 	  for (val sym <- decls.toList) {
 	    if (sym.isTerm) decls1 enter sym

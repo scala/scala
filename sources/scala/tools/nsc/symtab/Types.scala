@@ -31,6 +31,11 @@ import Flags._;
 abstract class Types: SymbolTable {
   import definitions._;
 
+  //staticstics
+  var singletonClosureCount = 0;
+  var compoundClosureCount = 0;
+  var typerefClosureCount = 0;
+
   private var explainSwitch = false;
   private var checkMalformedSwitch = true;
 
@@ -385,7 +390,10 @@ abstract class Types: SymbolTable {
     def supertype: Type = singleDeref;
     override def isStable: boolean = true;
     override def widen: Type = singleDeref.widen;
-    override def closure: Array[Type] = addClosure(this, supertype.closure);
+    override def closure: Array[Type] = {
+      singletonClosureCount = singletonClosureCount + 1;
+      addClosure(this, supertype.closure);
+    }
     override def toString(): String = prefixString + "type";
   }
 
@@ -499,6 +507,7 @@ abstract class Types: SymbolTable {
     override def closure: Array[Type] = {
       def computeClosure: Array[Type] =
 	try {
+          compoundClosureCount = compoundClosureCount + 1;
           //System.out.println("computing closure of " + symbol.tpe + " " + parents);//DEBUG
           addClosure(symbol.tpe, glbArray(parents map (.closure)));
 	} catch {
@@ -660,6 +669,7 @@ abstract class Types: SymbolTable {
       if (p != phase) {
         closurePhase = phase;
         if (!isValid(p)) {
+          typerefClosureCount = typerefClosureCount + 1;
           closureCache =
             if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
             else transform(sym.info.closure);

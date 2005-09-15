@@ -155,7 +155,7 @@ abstract class UnCurry extends InfoTransform {
                   EmptyTree,
                   Match(Ident(exname), cases))
               }
-            System.out.println("rewrote try: " + catches + " ==> " + catchall);
+            if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
             val catches1 = typer.atOwner(currentOwner).typedCases(
               tree, List(catchall), ThrowableClass.tpe, WildcardType);
             copy.Try(tree, body, catches1, finalizer)

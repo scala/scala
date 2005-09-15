@@ -190,7 +190,7 @@ abstract class Mixin extends InfoTransform {
     private def staticRef(sym: Symbol) = {
       sym.owner.info;
       if (sym.owner.sourceModule == NoSymbol)
-	assert(false, "" + sym.owner + " " + sym.owner.owner.info.decls);//debug
+	assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner + " " + sym.owner.owner.info.decls.toList);//debug
       Select(gen.mkRef(sym.owner.sourceModule), sym);
     }
 

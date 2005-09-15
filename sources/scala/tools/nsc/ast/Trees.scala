@@ -12,7 +12,12 @@ import symtab.Flags._;
 
 abstract class Trees: Global {
 
+  //statistics
+  var nodeCount = 0;
+
   abstract class Tree {
+
+    nodeCount = nodeCount + 1;
 
     var pos: int = Position.NOPOS;
     var tpe: Type = _;
