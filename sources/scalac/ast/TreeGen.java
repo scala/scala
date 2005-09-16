@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -12,7 +12,10 @@ import scalac.Global;
 import scalac.ast.Tree.*;
 import scalac.atree.AConstant;
 import scalac.symtab.*;
-import scalac.util.*;
+import scalac.util.Debug;
+import scalac.util.Name;
+import scalac.util.Names;
+import scalac.util.TypeNames;
 
 /**
  * This class provides method to build attributed trees.
@@ -427,33 +430,35 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return TypeApply(fn.pos, fn, targs);
     }
     public TypeApply TypeApply(int pos, Tree fn, Tree[] targs) {
-        switch (fn.type()) {
+        Type fnType = fn.type();
+        switch (fnType) {
         case Type.OverloadedType(_, _):
             // TreeGen only builds trees, names must already be resolved
-            throw Debug.abort("unresolved name", fn + " - " + fn.type);
+            throw Debug.abort("unresolved name", fn + " - " + fnType);
         case Type.PolyType(Symbol[] tparams, Type restpe):
             global.nextPhase();
             restpe = restpe.subst(tparams, Tree.typeOf(targs));
             global.prevPhase();
             return (TypeApply)make.TypeApply(pos, fn, targs).setType(restpe);
         default:
-            throw Debug.abort("illegal case", fn + " - " + fn.type());
+            throw Debug.abort("illegal case", fn + " - " + fnType + " - " + fnType.getClass());
         }
     }
     public TypeApply TypeApply(Tree fn, Tree[] targs) {
-      return TypeApply(fn.pos, fn, targs);
+        return TypeApply(fn.pos, fn, targs);
     }
 
     /** Builds an Apply node with given function and arguments. */
     public Apply Apply(int pos, Tree fn, Tree[] vargs) {
-        switch (fn.type()) {
+        Type fnType = fn.type();
+        switch (fnType) {
         case Type.OverloadedType(_, _):
             // TreeGen only builds trees, names must already be resolved
-            throw Debug.abort("unresolved name", fn + " - " + fn.type());
+            throw Debug.abort("unresolved name", fn + " - " + fnType);
         case Type.MethodType(Symbol[] vparams, Type restpe):
             return (Apply)make.Apply(pos, fn, vargs).setType(restpe);
         default:
-            throw Debug.abort("illegal case", fn + " - " + fn.type());
+            throw Debug.abort("illegal case", fn + " - " + fnType + " - " + fnType.getClass());
         }
     }
     public Apply Apply(Tree fn, Tree[] vargs) {
