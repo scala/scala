@@ -94,6 +94,7 @@ util/ListBuffer.scala
 util/NameTransformer.scala
 util/Set.scala
 util/ShowPickled.scala
+util/Statistics.scala
 util/TreeSet.scala
 
 backend/icode/BasicBlocks.scala
