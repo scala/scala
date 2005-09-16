@@ -7,9 +7,6 @@
 
 package scala.tools.nsc.util;
 
-//import java.io._;
-//import symtab.Flags._;
-
 abstract class Statistics {
 
   val global: Global;
