@@ -43,6 +43,7 @@ abstract class RefChecks extends InfoTransform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks";
   def newTransformer(unit: CompilationUnit): Transformer = new RefCheckTransformer(unit);
+  override def changesBaseClasses = false;
 
   def transformInfo(sym: Symbol, tp: Type): Type = {
     if (sym.isModule && !sym.isStatic) {
@@ -178,6 +179,14 @@ abstract class RefChecks extends InfoTransform {
 	}
       }
 
+      val opc = new overridingPairs.Cursor(clazz);
+      while (opc.hasNext) {
+	//System.out.println("overrides " + opc.overriding/* + ":" + opc.overriding.tpe*/ + opc.overriding.locationString + " " + opc.overridden/* + ":" + opc.overridden.tpe*/ + opc.overridden.locationString + opc.overridden.hasFlag(DEFERRED));//DEBUG
+	if (!opc.overridden.isClass) checkOverride(clazz, opc.overriding, opc.overridden);
+
+	opc.next
+      }
+/*
       // 1. Check all members for overriding conditions.
       for (val bc <- clazz.info.baseClasses.tail; val other <- bc.info.decls.toList)
 	if (!other.isClass && !(other hasFlag PRIVATE) && !other.isConstructor) {
@@ -195,10 +204,11 @@ abstract class RefChecks extends InfoTransform {
 	      "\n and " + infoString(alt2) +
 	      "\n override " + infoString(other));
 	  } else if (member != NoSymbol && !(member hasFlag LOCAL)) {
+	    System.out.println("OVERRIDES " + member + member.locationString + " " + other + other.locationString);//debug
 	    checkOverride(clazz, member, other);
 	  }
 	}
-
+*/
       // 2. Check that only abstract classes have deferred members
       if (clazz.isClass && !(clazz hasFlag ABSTRACT)) {
 	def abstractClassError(msg: String): unit = {

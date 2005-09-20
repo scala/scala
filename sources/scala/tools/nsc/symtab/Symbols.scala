@@ -115,6 +115,7 @@ abstract class Symbols: SymbolTable {
     final def isMixinConstructor = isTerm && (name == nme.MIXIN_CONSTRUCTOR);
     final def isConstructor = isTerm && (name == nme.CONSTRUCTOR) || (name == nme.MIXIN_CONSTRUCTOR);
     final def isModule = isTerm && hasFlag(MODULE);
+    final def isStaticModule = isModule && isStatic && !isMethod;
     final def isPackage = isModule && hasFlag(PACKAGE);
     final def isThisSym = isTerm && name == nme.this_;
     final def isError = hasFlag(IS_ERROR);
@@ -128,6 +129,7 @@ abstract class Symbols: SymbolTable {
     final def isModuleClass = isClass && hasFlag(MODULE);
     final def isPackageClass = isClass && hasFlag(PACKAGE);
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName;
+    final def isRootPackage = isPackage && name == nme.ROOT;
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME;
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName;
 
@@ -483,7 +485,7 @@ abstract class Symbols: SymbolTable {
      */
     final def linkedClass: Symbol = {
       if (owner.isPackageClass)
-	owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo != NoType)
+	owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo ne NoType)
       else NoSymbol;
     }
 
@@ -493,7 +495,7 @@ abstract class Symbols: SymbolTable {
     final def linkedModule: Symbol =
       if (owner.isPackageClass)
 	owner.info.decl(name.toTermName).suchThat(
-          sym => (sym hasFlag MODULE) && (sym.rawInfo != NoType));
+          sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType));
       else NoSymbol;
 
     /** The top-level class containing this symbol */
@@ -504,7 +506,7 @@ abstract class Symbols: SymbolTable {
     final def linkedSym: Symbol =
       if (isTerm) linkedClass
       else if (isClass && owner.isPackageClass)
-        owner.info.decl(name.toTermName).suchThat(sym => sym.rawInfo != NoType)
+        owner.info.decl(name.toTermName).suchThat(sym => sym.rawInfo ne NoType)
       else NoSymbol;
 
     final def toInterface: Symbol =
@@ -723,6 +725,17 @@ abstract class Symbols: SymbolTable {
 
     private var referenced: Symbol = NoSymbol;
 
+    override def owner: Symbol =
+      if (phase.flatClasses && hasFlag(MODULE) && !hasFlag(METHOD) &&
+          rawowner != NoSymbol && !rawowner.isPackageClass) rawowner.owner
+      else rawowner;
+
+    override def name: Name =
+      if (phase.flatClasses && hasFlag(MODULE) && !hasFlag(METHOD) &&
+          rawowner != NoSymbol && !rawowner.isPackageClass)
+        newTermName(rawowner.name.toString() + "$" + rawname);
+      else rawname;
+
     def cloneSymbolImpl(owner: Symbol): Symbol = {
       val clone = new TermSymbol(owner, pos, name);
       clone.referenced = referenced;
@@ -758,7 +771,7 @@ abstract class Symbols: SymbolTable {
     private var tpeCache: Type = _;
     private var tpePhase: Phase = null;
     override def tpe: Type = {
-      assert(tpeCache != NoType, this);
+      assert(tpeCache ne NoType, this);
       if (tpePhase != phase) {
         if (isValid(tpePhase)) {
 	  tpePhase = phase
@@ -805,11 +818,11 @@ abstract class Symbols: SymbolTable {
       thissym = this;
     }
 
+    private var flatname = nme.EMPTY;
+
     override def owner: Symbol =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) rawowner.owner
       else rawowner;
-
-    private var flatname = nme.EMPTY;
 
     override def name: Name =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
@@ -875,7 +888,7 @@ abstract class Symbols: SymbolTable {
   /** An object repreesenting a missing symbol */
   object NoSymbol extends Symbol(null, Position.NOPOS, nme.NOSYMBOL) {
     super.setInfo(NoType);
-    override def setInfo(info: Type): this.type = { assert(info == NoType); this }
+    override def setInfo(info: Type): this.type = { assert(info eq NoType); this }
     override def enclClass: Symbol = this;
     override def toplevelClass: Symbol = this;
     override def enclMethod: Symbol = this;

@@ -33,6 +33,7 @@ abstract class UnCurry extends InfoTransform {
 
   val phaseName: String = "uncurry";
   def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit);
+  override def changesBaseClasses = false;
 
   private val uncurry = new TypeMap {
     def apply(tp: Type): Type = tp match {

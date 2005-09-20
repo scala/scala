@@ -52,16 +52,6 @@ abstract class Mixin extends InfoTransform {
         decls1 enter member;
         member
       }
-      def addPackageClassMembers = {
-        for (val sym <- decls.toList) {
-          if (sym.isImplClass) {
-            sym setFlag lateMODULE | notABSTRACT;
-            addMember(
-	      clazz.newModule(sym.pos, sym.name.toTermName, sym.asInstanceOf[ClassSymbol])
-                setInfo sym.tpe)
-          }
-        }
-      }
       def addLateInterfaceMembers = {
         def newGetter(field: Symbol): Symbol =
           clazz.newMethod(field.pos, nme.getterName(field.name))
@@ -85,7 +75,7 @@ abstract class Mixin extends InfoTransform {
               var setter = member.setter(clazz);
               if (setter == NoSymbol) setter = addMember(newSetter(member));
             }
-	  } else if ((member hasFlag LIFTED) && !(member hasFlag PRIVATE)) {
+	  } else if ((member hasFlag (LIFTED | BRIDGE)) && !(member hasFlag PRIVATE)) {
 	    member.expandName(clazz);
 	    addMember(member.cloneSymbol(clazz));
 	  }
@@ -120,7 +110,7 @@ abstract class Mixin extends InfoTransform {
                 val member1 = addMember(member.cloneSymbol(clazz)) setFlag MIXEDIN;
                 assert(member1.alias != NoSymbol, member1);
                 member1.asInstanceOf[TermSymbol] setAlias rebindSuper(clazz, member.alias, bc);
-              } else if (member.isMethod && member.isModule && !(member hasFlag LIFTED)) {
+              } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
                 addMember(member.cloneSymbol(clazz) setFlag MIXEDIN)
               }
             }
@@ -128,11 +118,14 @@ abstract class Mixin extends InfoTransform {
         }
       }
 
-      if (clazz.isPackageClass) {
-        addPackageClassMembers
-      } else {
+      if (!clazz.isPackageClass) {
 	atPhase(phase.next)(clazz.owner.info);
         if (clazz.isImplClass) {
+	  clazz setFlag lateMODULE;
+          clazz.owner.info.decls.enter(
+	    clazz.owner.newModule(sym.pos, sym.name.toTermName, sym.asInstanceOf[ClassSymbol])
+	      setInfo sym.tpe);
+	  assert(clazz.sourceModule != NoSymbol);//debug
           parents1 = List();
           decls1 = new Scope(decls.toList filter isForwarded)
         } else if (!parents.isEmpty) {
@@ -140,15 +133,16 @@ abstract class Mixin extends InfoTransform {
           if (!(clazz hasFlag INTERFACE)) addMixedinMembers
           else if (clazz hasFlag lateINTERFACE) addLateInterfaceMembers
         }
+	if (settings.debug.value) log("new defs of " + clazz + " = " + decls1);
       }
-      if (settings.debug.value && !clazz.isPackageClass) log("new defs of " + clazz + " = " + decls1);
-      decls1 = atPhase(phase.next)(new Scope(decls1.toList));//debug
+      //decls1 = atPhase(phase.next)(new Scope(decls1.toList));//debug
       if ((parents1 eq parents) && (decls1 eq decls)) tp
       else ClassInfoType(parents1, decls1, clazz);
 
     case MethodType(formals, restp) =>
       if (isForwarded(sym)) MethodType(toInterface(sym.owner.typeOfThis) :: formals, restp)
       else tp
+
     case _ =>
       tp
   }
@@ -189,8 +183,10 @@ abstract class Mixin extends InfoTransform {
 
     private def staticRef(sym: Symbol) = {
       sym.owner.info;
-      if (sym.owner.sourceModule == NoSymbol)
+      sym.owner.owner.info;
+      if (sym.owner.sourceModule == NoSymbol) {
 	assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner + " " + sym.owner.owner.info.decls.toList);//debug
+      }
       Select(gen.mkRef(sym.owner.sourceModule), sym);
     }
 
@@ -298,7 +294,7 @@ abstract class Mixin extends InfoTransform {
           }
         case Select(qual, name) if sym.owner.isImplClass && !isStatic(sym) =>
 	  if (sym.isMethod) {
-	    assert(sym hasFlag LIFTED, sym);
+	    assert(sym hasFlag (LIFTED | BRIDGE), sym);
 	    val sym1 = enclInterface.info.decl(sym.name);
 	    assert(sym1 != NoSymbol && !(sym1 hasFlag OVERLOADED), sym);//debug
 	    tree setSymbol sym1

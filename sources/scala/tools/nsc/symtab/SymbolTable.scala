@@ -37,6 +37,7 @@ abstract class SymbolTable extends Names
 
   var infoTransformers = new InfoTransformer {
     val phase = NoPhase;
+    val changesBaseClasses = true;
     def transform(sym: Symbol, tpe: Type): Type = tpe;
   }
 }

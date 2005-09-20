@@ -8,10 +8,11 @@ package scala.tools.nsc.symtab;
 abstract class InfoTransformers: SymbolTable {
 
   abstract class InfoTransformer {
-    private var prev: InfoTransformer = this;
-    private var next: InfoTransformer = this;
+    var prev: InfoTransformer = this;
+    var next: InfoTransformer = this;
 
     val phase: Phase;
+    val changesBaseClasses: boolean;
     def transform(sym: Symbol, tpe: Type): Type;
 
     def insert(that: InfoTransformer): unit = {

@@ -19,6 +19,7 @@ abstract class ExplicitOuter extends InfoTransform {
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "explicitouter";
+  override def changesBaseClasses = false;
 
   final val needSuperAccessors = false;
 

@@ -222,11 +222,7 @@ abstract class TreePrinters {
           print("this");
 
         case Select(qualifier, name) =>
-          if (global.settings.debug.value || qualifier.symbol == null ||
-	      (!qualifier.symbol.isRoot && !qualifier.symbol.isEmptyPackage)) {
-            print(qualifier); print(".");
-          }
-          print(symName(tree, name))
+          print(qualifier); print("."); print(symName(tree, name))
 
         case Ident(name) =>
           print(symName(tree, name))

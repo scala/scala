@@ -474,7 +474,8 @@ abstract class Typers: Analyzer {
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt));
       val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope()))
         .typedTemplate(cdef.impl);
-      copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl1) setType NoType
+      copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, addSyntheticMethods(impl1, clazz))
+	setType NoType
     }
 
     def typedModuleDef(mdef: ModuleDef): Tree = {
@@ -907,7 +908,7 @@ abstract class Typers: Analyzer {
 	val sym =
 	  if (tree.symbol != NoSymbol) {
             if (phase.erasedTypes && qual.isInstanceOf[Super]) qual.tpe = tree.symbol.owner.tpe;
-            if (settings.debug.value) { // todo: replace by settings.check.value?
+            if (false && settings.debug.value) { // todo: replace by settings.check.value?
 	      val alts = qual.tpe.member(tree.symbol.name).alternatives;
 	      if (!(alts exists (alt =>
                 alt == tree.symbol || alt.isTerm && (alt.tpe matches tree.symbol.tpe))))

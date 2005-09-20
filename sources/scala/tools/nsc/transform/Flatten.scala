@@ -13,6 +13,7 @@ import collection.mutable.HashMap;
 abstract class Flatten extends InfoTransform {
   import global._;
   import definitions._;
+  import posAssigner.atPos;
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten";
@@ -45,8 +46,9 @@ abstract class Flatten extends InfoTransform {
 	  atPhase(phase.next)(oldowner.info);
 	  parents1 = List.mapConserve(parents)(this);
 	  for (val sym <- decls.toList) {
-	    if (sym.isTerm) decls1 enter sym
-	    else if (sym.isClass) {
+	    if (sym.isTerm && !sym.isStaticModule) {
+              decls1 enter sym
+	    } else if (sym.isClass) {
 	      liftClass(sym);
 	      if (sym.needsImplClass) liftClass(erasure.implClass(sym))
 	    }
@@ -91,14 +93,22 @@ abstract class Flatten extends InfoTransform {
 	  val mix1 = if (ps.head.symbol.isNestedClass) atPhase(phase.next)(ps.head.symbol.name)
 		     else mix;
 	  copy.Super(tree, qual, mix1)
+        case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
+          atPhase(phase.next) {
+            atPos(tree.pos) {
+              gen.mkRef(sym)
+            }
+          }
         case _ =>
           tree
       }
       tree1 setType flattened(tree1.tpe);
+/*
       if (sym != null && sym.isNestedClass && !(sym hasFlag LIFTED)) {
 	liftClass(sym);//todo: remove
 	if (sym.implClass != NoSymbol) liftClass(sym.implClass);
       }
+*/
       tree1
     }
 

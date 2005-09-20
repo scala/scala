@@ -7,7 +7,7 @@ package scala.tools.nsc.symtab;
 
 abstract class Scopes: SymbolTable {
 
-  abstract class ScopeEntry(val sym: Symbol, val owner: Scope) {
+  class ScopeEntry(val sym: Symbol, val owner: Scope) {
 
     /** the next entry in the hash bucket
      */
@@ -21,9 +21,11 @@ abstract class Scopes: SymbolTable {
     override def toString(): String = sym.toString();
   }
 
-  def newScopeEntry(sym: Symbol, owner: Scope) = new ScopeEntry(sym, owner) {
-    next = owner.elems;
-    owner.elems = this;
+  def newScopeEntry(sym: Symbol, owner: Scope): ScopeEntry = {
+    val e = new ScopeEntry(sym, owner);
+    e.next = owner.elems;
+    owner.elems = e;
+    e
   }
 
   object NoScopeEntry extends ScopeEntry(NoSymbol, null);
@@ -98,7 +100,6 @@ abstract class Scopes: SymbolTable {
     /** enter a scope entry
      */
     def enter(e: ScopeEntry): unit = {
-      elems = e;
       elemsCache = null;
       if (hashtable != null) {
 	val i = e.sym.name.start & HASHMASK;

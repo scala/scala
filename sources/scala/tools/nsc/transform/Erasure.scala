@@ -337,6 +337,24 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         e = e.next
       }
 
+      val opc = new overridingPairs.Cursor(root) {
+        override def exclude(sym: Symbol): boolean =
+          !sym.isTerm || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym);
+	override def matches(sym1: Symbol, sym2: Symbol): boolean =
+	  atPhase(phase.next)(sym1.tpe =:= sym2.tpe)
+      }
+      while (opc.hasNext) {
+        if (!atPhase(refchecksPhase.next)(
+              root.thisType.memberType(opc.overriding) matches
+	      root.thisType.memberType(opc.overridden))) {
+	  if (settings.debug.value) log("" + opc.overriding.locationString + " " + opc.overriding.infosString + opc.overridden.locationString + " " + opc.overridden.infosString);
+  	  doubleDefError(opc.overriding, opc.overridden)
+	}
+	opc.next
+      }
+    }
+
+/*
       for (val bc <- root.info.baseClasses.tail; val other <- bc.info.decls.toList) {
         if (other.isTerm && !other.isConstructor && !(other hasFlag (PRIVATE | BRIDGE))) {
           for (val member <- root.info.nonPrivateMember(other.name).alternatives) {
@@ -351,7 +369,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           }
         }
       }
-    }
+*/
 
     /** Add bridge definitions to a template. This means:
      *  If there is a concrete member `m' which overrides a member in a base class of the template,
@@ -367,7 +385,19 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       val bridgesScope = new Scope();
       val bridgeTarget = new HashMap[Symbol, Symbol];
       var bridges: List[Tree] = List();
-      for (val bc <- site.baseClasses.tail; val other <- bc.info.members) {
+      val opc = atPhase(phase.prev) { 	// to avoid DEFERRED flags for interfaces
+	new overridingPairs.Cursor(owner) {
+          override def parents: List[Type] = List(owner.info.parents.head);
+          override def exclude(sym: Symbol): boolean =
+            !sym.isMethod || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym);
+        }
+      }
+      while (opc.hasNext) {
+	val member = opc.overriding;
+	val other = opc.overridden;
+	if (!(member hasFlag DEFERRED)) {
+/*
+      for (val bc <- site.baseClasses.tail; val other <- bc.info.decls.toList) {
         if (other.isMethod && !other.isConstructor) {
 	  for (val member <- site.nonPrivateMember(other.name).alternatives) {
             if (member != other &&
@@ -375,6 +405,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 (site.memberType(member) matches site.memberType(other)) &&
                 !(site.parents exists (p =>
                   (p.symbol isSubClass member.owner) && (p.symbol isSubClass other.owner)))) {
+*/
               val otpe = erasure(other.tpe);
               if (!(otpe =:= erasure(member.tpe))) {
                 var e = bridgesScope.lookupEntry(member.name);
@@ -386,30 +417,42 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                      setFlag (member.flags | BRIDGE)
                      resetFlag ACCESSOR
                      setInfo otpe;
-		  if (settings.debug.value)
-                    log("generating bridge from " + other + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + "=" + bridge + ":" + bridge.tpe);
                   bridgeTarget(bridge) = member;
                   bridgesScope enter bridge;
                   bridges =
                     atPhase(phase.next) {
                       atPos(bridge.pos) {
-                        DefDef(bridge, vparamss =>
-			  member.tpe match {
-			    case MethodType(List(), ConstantType(c)) => Literal(c)
-			    case _ =>
-                              ((Select(This(owner), member): Tree) /: vparamss)
-                              ((fun, vparams) => Apply(fun, vparams map Ident))
-			  })
+			val bridgeDef =
+                          DefDef(bridge, vparamss =>
+			    member.tpe match {
+			      case MethodType(List(), ConstantType(c)) => Literal(c)
+			      case _ =>
+				((Select(This(owner), member): Tree) /: vparamss)
+				((fun, vparams) => Apply(fun, vparams map Ident))
+			    });
+			if (settings.debug.value)
+			  log("generating bridge from " + other + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);
+			bridgeDef
 		      }
                     } :: bridges;
                 }
               }
-            }
+/*
+             }
           }
+*/
         }
+	opc.next
       }
       bridges
     }
+
+    def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
+      if (base.isTrait) stats
+      else {
+        val bridges = bridgeDefs(base);
+        if (bridges.isEmpty) stats else stats ::: bridges
+      }
 
     /** Transform tree at phase `erasure' before retyping it. This entails the following:
      *    - Remove all type parameters in class and method definitions.
@@ -438,9 +481,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             // leave type tests/type casts, remove all other type applications
             fun
           case Template(parents, body) =>
+            assert(!currentOwner.isImplClass);
 	    //System.out.println("checking no dble defs " + tree);//DEBUG
             checkNoDoubleDefs(tree.symbol.owner);
-            copy.Template(tree, parents, body ::: bridgeDefs(currentOwner));
+            copy.Template(tree, parents, addBridges(body, currentOwner));
           case _ =>
             tree
         }

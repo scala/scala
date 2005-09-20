@@ -15,9 +15,12 @@ abstract class InfoTransform extends Transform {
 
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new Phase(prev);
 
+  protected def changesBaseClasses = true;
+
   class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
     val infoTransformer = new InfoTransformer {
       val phase = Phase.this;
+      val changesBaseClasses = InfoTransform.this.changesBaseClasses;
       def transform(sym: Symbol, tpe: Type): Type = transformInfo(sym, tpe);
     }
     infoTransformers.insert(infoTransformer)

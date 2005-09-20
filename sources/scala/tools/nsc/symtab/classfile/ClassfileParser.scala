@@ -289,7 +289,7 @@ abstract class ClassfileParser {
       if (name == nme.CONSTRUCTOR)
 	info match {
 	  case MethodType(formals, restpe) =>
-	    assert(restpe == definitions.UnitClass.tpe);
+	    assert(restpe.symbol == definitions.UnitClass);
 	    info = MethodType(formals, clazz.tpe)
 	}
       val sym = getOwner(jflags)

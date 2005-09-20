@@ -194,12 +194,12 @@ abstract class Types: SymbolTable {
     /** Is this type a subtype of that type? */
     def <:<(that: Type): boolean =
       if (explainSwitch) explain("<", isSubType, this, that)
-      else this == that || isSubType(this, that);
+      else (this eq that) || isSubType(this, that);
 
     /** Is this type equivalent to that type? */
     def =:=(that: Type): boolean =
       if (explainSwitch) explain("<", isSameType, this, that)
-      else this == that || isSameType(this, that);
+      else (this eq that) || isSameType(this, that);
 
     /** Does this type implement symbol `sym' with same or stronger type? */
     def specializes(sym: Symbol): boolean =
@@ -494,9 +494,6 @@ abstract class Types: SymbolTable {
   /** A common base class for intersection types and class types
    */
   abstract class CompoundType extends Type {
-    override val parents: List[Type];
-    override val decls: Scope;
-
     assert(!parents.exists (.isInstanceOf[TypeBounds]), this);//debug
 
     private var closureCache: Array[Type] = _;
@@ -519,7 +516,7 @@ abstract class Types: SymbolTable {
       val p = closurePhase;
       if (p != phase) {
         closurePhase = phase;
-        if (!isValid(p)) {
+        if (!isValidForBaseClasses(p)) {
           closureCache = null;
           closureCache = computeClosure
         }
@@ -559,7 +556,7 @@ abstract class Types: SymbolTable {
       val p = baseClassesPhase;
       if (p != phase) {
 	baseClassesPhase = phase;
-        if (!isValid(p)) {
+        if (!isValidForBaseClasses(p)) {
 	  baseClassesCache = null;
 	  baseClassesCache = computeBaseClasses;
         }
@@ -639,7 +636,7 @@ abstract class Types: SymbolTable {
       val p = parentsPhase;
       if (p != phase) {
         parentsPhase = phase;
-        if (!isValid(p)) {
+        if (!isValidForBaseClasses(p)) {
           parentsCache = sym.info.parents map transform
         }
       }
@@ -668,7 +665,7 @@ abstract class Types: SymbolTable {
       val p = closurePhase;
       if (p != phase) {
         closurePhase = phase;
-        if (!isValid(p)) {
+        if (!isValidForBaseClasses(p)) {
           typerefClosureCount = typerefClosureCount + 1;
           closureCache =
             if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
@@ -770,7 +767,7 @@ abstract class Types: SymbolTable {
   case class TypeVar(origin: Type, constr: TypeConstraint) extends Type {
     override def symbol = origin.symbol;
     override def toString(): String =
-      if (constr.inst == NoType) "?" + origin else constr.inst.toString();
+      if (constr.inst eq NoType) "?" + origin else constr.inst.toString();
   }
 
   /** A class representing an as-yet unevaluated type.
@@ -1114,17 +1111,17 @@ abstract class Types: SymbolTable {
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     def apply(tp: Type): Type =
-      if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
+      if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
       else tp match {
         case ThisType(sym) =>
           def toPrefix(pre: Type, clazz: Symbol): Type =
-            if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
+            if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
             else if ((sym isSubClass clazz) && (pre.widen.symbol isSubClass sym)) pre
             else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
 	case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
 	  def toInstance(pre: Type, clazz: Symbol): Type =
-	    if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
+	    if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
 	    else {
 	      val symclazz = sym.owner;
 	      def throwError =
@@ -1256,10 +1253,20 @@ abstract class Types: SymbolTable {
 // Helper Methods  -------------------------------------------------------------
 
   final def isValid(p: Phase): boolean =
-    p != null &&
-    (if (phase.id > p.id) infoTransformers.nextFrom(p).phase.id >= phase.id
-     else infoTransformers.nextFrom(phase).phase.id >= p.id);
+    p != null && {
+      if (phase.id > p.id) infoTransformers.nextFrom(p).phase.id >= phase.id
+      else infoTransformers.nextFrom(phase).phase.id >= p.id
+    }
 
+  final def isValidForBaseClasses(p: Phase): boolean = {
+    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase): boolean =
+      it.phase.id >= limit.id ||
+      !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit);
+    p != null && {
+      if (phase.id > p.id) noChangeInBaseClasses(infoTransformers.nextFrom(p), phase)
+      else noChangeInBaseClasses(infoTransformers.nextFrom(phase), p)
+    }
+  }
 
   /** Do tp1 and tp2 denote equivalent types? */
   def isSameType(tp1: Type, tp2: Type): boolean = (tp1 eq tp2) || {

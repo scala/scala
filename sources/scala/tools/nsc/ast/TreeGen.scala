@@ -84,17 +84,22 @@ abstract class TreeGen {
   def This(sym: Symbol): Tree =
     global.This(sym.name) setSymbol sym setType sym.thisType;
 
-  def Ident(sym: Symbol) = {
+  def Ident(sym: Symbol): Tree = {
     assert(sym.isTerm);
     global.Ident(sym.name) setSymbol sym setType sym.tpe;
   }
 
-  def Select(qual: Tree, sym: Symbol) = {
-    assert(sym.isTerm);
-    val result = global.Select(qual, sym.name) setSymbol sym;
-    if (qual.tpe != null) result setType qual.tpe.memberType(sym);
-    result
-  }
+  def Select(qual: Tree, sym: Symbol): Tree =
+    if (qual.symbol != null &&
+        (qual.symbol.name.toTermName == nme.ROOT ||
+         qual.symbol.name.toTermName == nme.EMPTY_PACKAGE_NAME)) {
+      this.Ident(sym)
+    } else {
+      assert(sym.isTerm);
+      val result = global.Select(qual, sym.name) setSymbol sym;
+      if (qual.tpe != null) result setType qual.tpe.memberType(sym);
+      result
+    }
 
   /** Builds an instance test with given value and type. */
   def mkIsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = {
