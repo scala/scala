@@ -40,7 +40,7 @@ object parsers2 {
   }
 
   class ParseString(s: String) extends Parsers {
-    type intype = int;
+    type inputType = int;
     val input = 0;
     def any = new Parser[char] {
       def apply(in: int): Parser[char]#Result =
@@ -56,7 +56,7 @@ object parsers2 {
           case Some(Pair(list, _)) => Console.println("parsed: " + list);
           case None => "nothing parsed"
         }
-      } else "usage: java examples.parsers2 <expr-string>"
+      } else "usage: scala examples.parsers2 <expr-string>"
     );
 
 }
