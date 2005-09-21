@@ -5,7 +5,7 @@ object oneplacebuffer {
   import scala.concurrent._;
 
   class OnePlaceBuffer {
-    private val m = new MailBox();             // An internal mailbox
+    private val m = new MailBox() {};          // An internal mailbox
     private case class Empty(), Full(x: Int);  // Types of messages we deal with
 
     m send Empty();                            // Initialization
