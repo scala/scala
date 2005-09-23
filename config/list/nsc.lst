@@ -69,9 +69,9 @@ transform/ExplicitOuter.scala
 transform/Flatten.scala
 transform/InfoTransform.scala
 transform/LambdaLift.scala
+transform/OverridingPairs.scala
 transform/Mixin.scala
 transform/SampleTransform.scala
-transform/SyntheticMethods.scala
 transform/TailCalls.scala
 transform/Transform.scala
 transform/UnCurry.scala
