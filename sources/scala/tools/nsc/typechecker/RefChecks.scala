@@ -69,13 +69,13 @@ abstract class RefChecks extends InfoTransform {
       Block(
 	List(
 	  If(
-	    Apply(Select(Ident(mvar), nme.eq), List(Literal(Constant(null)))),
-	    Assign(Ident(mvar),
+	    Apply(Select(gen.mkRef(mvar), nme.eq), List(Literal(Constant(null)))),
+	    Assign(gen.mkRef(mvar),
                    New(TypeTree(mvar.tpe),
                        List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
                             yield This(accessor.owner.enclClass)))),//???
 	    EmptyTree)),
-	Ident(mvar)));
+	gen.mkRef(mvar)));
 
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 

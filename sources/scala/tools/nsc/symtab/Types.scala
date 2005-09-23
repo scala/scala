@@ -294,7 +294,7 @@ abstract class Types: SymbolTable {
     def isComplete: boolean = true;
 
     /** If this is a lazy type, assign a new type to `sym'. */
-    def complete(sym: Symbol): unit = {}
+    def complete(sym: Symbol): unit = {}//sym.setInfo(rebindMap.apply(this));
 
     /** If this is a symbol loader type, load and assign a new type to `sym'. */
     def load(sym: Symbol): unit = {}
@@ -831,7 +831,7 @@ abstract class Types: SymbolTable {
   /** Rebind symbol `sym' to an overriding member in type `pre' */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner;
-    if (owner.isClass && owner != pre.symbol && !sym.isFinal) {
+    if (owner.isClass && (owner != pre.symbol && !sym.isFinal || sym.validForRun != currentRun)) {
       val rebind = pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable);
       if (rebind == NoSymbol) sym else rebind
     } else sym
@@ -1246,6 +1246,14 @@ abstract class Types: SymbolTable {
         result = result.owner;
     }
   }
+/*
+  object rebindMap extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case SingleType(pre, sym) =>
+        val pre1 = apply(pre);
+        if (sym.validForRun != currentRun)
+
+*/
 
 // Helper Methods  -------------------------------------------------------------
 
