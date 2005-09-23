@@ -19,6 +19,7 @@ abstract class ICodes extends AnyRef
                                  with TypeKinds
                                  with ExceptionHandlers
                                  with Primitives
+                                 with Linearizers
 {
   val global: Global;
 

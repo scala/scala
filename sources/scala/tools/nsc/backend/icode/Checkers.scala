@@ -26,10 +26,19 @@ abstract class Checkers {
    *   and the number and type of arguments match the declared type of
    *   the method.
    *
-   * - for object creation: the class exists and can be instantiated.
+   * - for object creation: the constructor can be called.
    *
    * - for load/stores: the field/local/param exists and the type
    *   of the value matches that of the target.
+   *
+   * For a control flow graph it checks that type stacks at entry to
+   * each basic block 'agree':
+   *
+   * - they have the same length
+   * - there exists a lub for all types at the same position in stacks.
+   *
+   * TODO: Better checks for MONITOR_ENTER/EXIT
+   *       Better checks for local var initializations
    */
   class ICodeChecker {
     import icodes._;
@@ -101,6 +110,11 @@ abstract class Checkers {
         in(bl) = (preds map out.apply) reduceLeft meet2;
     }
 
+
+    private var typeStack: TypeStack = null;
+    private var instruction: Instruction = null;
+    private var basicBlock: BasicBlock = null;
+
     /**
      * Check the basic block to be type correct and return the
      * produced type stack.
@@ -108,82 +122,87 @@ abstract class Checkers {
     def check(b: BasicBlock, initial: TypeStack): TypeStack = {
       var stack = new TypeStack(initial);
 
-      def checkStack(len: Int) =
-        if (stack.length < len)
-          ICodeChecker.this.error("Expected at least " + len + " elements on the stack", stack);
-        else
-          ();
-
-      def checkLocal(local: Symbol) =
-        method.lookupLocal(local.name) match {
-          case None => error(" " + local + " is not defined in method " + method);
-          case _ => ()
-        }
-
-      def checkField(obj: TypeKind, field: Symbol) =
-        obj match {
-          case REFERENCE(sym) =>
-             if (sym.info.member(field.name) == NoSymbol)
-              error(" " + field + " is not defined in class " + clasz);
-          case _ =>
-            error(" expected reference type, but " + obj + " found");
-        }
-
-      /** Checks that tpe is a subtype of one of the allowed types */
-      def checkType(tpe: TypeKind, allowed: TypeKind*) =
-        if (isOneOf(tpe, allowed: _*))
-          ()
-        else
-          error(tpe.toString() + " is not one of: " + allowed);
-
-      /** Checks that the 2 topmost elements on stack are of the
-       *  kind TypeKind.
-       */
-      def checkBinop(kind: TypeKind) = {
-        val Pair(a, b) = stack.pop2;
-        checkType(a, kind);
-        checkType(b, kind);
-      }
-
-      /** Check that arguments on the stack match method params. */
-      def checkMethodArgs(method: Symbol) = {
-        val params = method.info.paramTypes;
-        checkStack(params.length);
-        params.reverse.foreach( (tpe) => checkType(stack.pop, toTypeKind(tpe)));
-      }
-
-      /** Checks that the object on top of the stack has a method
-       *  'method' and that it is callable from the current method.
-       *  The object is popped from the stack.
-       */
-      def checkMethod(method: Symbol) =
-        stack.pop match {
-          case REFERENCE(sym) =>
-            checkBool(sym.info.member(method.name) != NoSymbol,
-                      "Method " + method + " does not exist in " + sym.fullNameString);
-            if (method hasFlag Flags.PRIVATE)
-              checkBool(method.owner == clasz.symbol,
-                        "Cannot call private method of " + method.owner.fullNameString
-                        + " from " + clasz.symbol.fullNameString);
-            else if (method hasFlag Flags.PROTECTED)
-              checkBool(clasz.symbol isSubClass method.owner,
-                        "Cannot call protected method of " + method.owner.fullNameString
-                        + " from " + clasz.symbol.fullNameString);
-          case t =>
-            error("Not a reference type: " + t);
-        }
-
-      def checkBool(cond: Boolean, msg: String) =
-        if (cond) () else error(msg);
-
-      def error(msg: String): Unit = ICodeChecker.this.error(msg, stack);
+      this.typeStack = stack;
+      this.basicBlock = b;
 
       def typeError(k1: TypeKind, k2: TypeKind): Unit =
         error(" expected: " + k1 + " but " + k2 + " found");
 
       b traverse (instr => {
 
-        def error(msg: String): Unit = ICodeChecker.this.error(instr.toString() + ": " + msg, stack);
+        def checkStack(len: Int) =
+          if (stack.length < len)
+            ICodeChecker.this.error("Expected at least " + len + " elements on the stack", stack);
+          else
+            ();
+
+        def checkLocal(local: Symbol) =
+          method.lookupLocal(local.name) match {
+            case None => error(" " + local + " is not defined in method " + method);
+            case _ => ()
+          }
+
+        def checkField(obj: TypeKind, field: Symbol) =
+          obj match {
+            case REFERENCE(sym) =>
+              if (sym.info.member(field.name) == NoSymbol)
+                error(" " + field + " is not defined in class " + clasz);
+            case _ =>
+              error(" expected reference type, but " + obj + " found");
+          }
+
+        /** Checks that tpe is a subtype of one of the allowed types */
+        def checkType(tpe: TypeKind, allowed: TypeKind*) =
+          if (isOneOf(tpe, allowed: _*))
+            ()
+          else
+            error(tpe.toString() + " is not one of: " + allowed);
+
+        /** Checks that the 2 topmost elements on stack are of the
+         *  kind TypeKind.
+         */
+        def checkBinop(kind: TypeKind) = {
+          val Pair(a, b) = stack.pop2;
+          checkType(a, kind);
+          checkType(b, kind);
+        }
+
+        /** Check that arguments on the stack match method params. */
+        def checkMethodArgs(method: Symbol) = {
+          val params = method.info.paramTypes;
+          checkStack(params.length);
+          params.reverse.foreach( (tpe) => checkType(stack.pop, toTypeKind(tpe)));
+        }
+
+        /** Checks that the object passed as receiver has a method
+         *  'method' and that it is callable from the current method.
+         */
+        def checkMethod(receiver: TypeKind, method: Symbol) =
+          receiver match {
+            case REFERENCE(sym) =>
+              checkBool(sym.info.member(method.name) != NoSymbol,
+                        "Method " + method + " does not exist in " + sym.fullNameString);
+              if (method hasFlag Flags.PRIVATE)
+                checkBool(method.owner == clasz.symbol,
+                          "Cannot call private method of " + method.owner.fullNameString
+                          + " from " + clasz.symbol.fullNameString);
+              else if (method hasFlag Flags.PROTECTED)
+                checkBool(clasz.symbol isSubClass method.owner,
+                          "Cannot call protected method of " + method.owner.fullNameString
+                          + " from " + clasz.symbol.fullNameString);
+
+            case ARRAY(_) =>
+              checkBool(receiver.toType.member(method.name) != NoSymbol,
+                        "Method " + method + " does not exist in " + receiver);
+
+            case t =>
+              error("Not a reference type: " + t);
+          }
+
+        def checkBool(cond: Boolean, msg: String) =
+          if (cond) () else error(msg);
+
+        this.instruction = instr;
 
         log("PC: " + instr);
         log("stack: " + stack);
@@ -199,8 +218,9 @@ abstract class Checkers {
             checkStack(2);
             stack.pop2 match {
               case Pair(INT, ARRAY(elem)) =>
-                if (kind != elem)
+                if (!(elem <:< kind))
                   typeError(kind, elem);
+                stack.push(elem);
               case Pair(a, b) =>
                 error(" expected and INT and a array reference, but " +
                     a + ", " + b + " found");
@@ -222,14 +242,17 @@ abstract class Checkers {
            }
            stack.push(toTypeKind(field.info));
 
+         case LOAD_MODULE(module) =>
+           stack.push(toTypeKind(module.tpe));
+
          case STORE_ARRAY_ITEM(kind) =>
            checkStack(3);
            stack.pop3 match {
-             case Triple(ARRAY(elem), INT, k) =>
+             case Triple(k, INT, ARRAY(elem)) =>
                 if (!(k <:< kind))
                   typeError(kind, k);
-                if (kind != elem)
-                  typeError(kind, elem);
+                if (!(k <:< elem))
+                  typeError(elem, k);
              case Triple(a, b, c) =>
                 error(" expected and array reference, and int and " + kind +
                       " but " + a + ", " + b + ", " + c + " found");
@@ -284,7 +307,10 @@ abstract class Checkers {
 
              case Arithmetic(op, kind) =>
                checkType(kind, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE);
-               checkBinop(kind);
+               if (op == NOT)
+                 checkType(stack.pop, kind)
+               else
+                 checkBinop(kind);
                stack push kind;
 
              case Logical(op, kind) =>
@@ -322,17 +348,10 @@ abstract class Checkers {
 
          case CALL_METHOD(method, style) =>
            style match {
-             case NewInstance =>
-               checkStack(1);
-               checkBool(method.name == nme.CONSTRUCTOR,
-                         "NewInstance invoke style to non-constructor method");
-               checkMethodArgs(method);
-               checkMethod(method);
-
              case Dynamic =>
                checkStack(1 + method.info.paramTypes.length);
                checkMethodArgs(method);
-               checkMethod(method);
+               checkMethod(stack.pop, method);
                stack.push(toTypeKind(method.info.resultType));
 
              case Static(onInstance) =>
@@ -341,7 +360,7 @@ abstract class Checkers {
                  checkBool(method.hasFlag(Flags.PRIVATE) || method.isConstructor,
                            "Static call to non-private method.");
                  checkMethodArgs(method);
-                 checkMethod(method);
+                 checkMethod(stack.pop, method);
                  stack.push(toTypeKind(method.info.resultType));
                } else {
                  checkStack(method.info.paramTypes.length);
@@ -350,15 +369,23 @@ abstract class Checkers {
                }
 
              case SuperCall(mixin) =>
-               // we're not supposed to have such things!
-               //error("Invalid SuperCall");
+               checkStack(1 + method.info.paramTypes.length);
+               checkMethodArgs(method);
+               checkMethod(stack.pop, method);
+               stack.push(toTypeKind(method.info.resultType));
+
            }
 
-          case NEW(clasz) =>
-            stack.push(REFERENCE(clasz));
+          case NEW(ctor) =>
+            checkBool(ctor.isConstructor,
+                      "'new' call to non-constructor method");
+            checkMethodArgs(ctor);
+            checkMethod(REFERENCE(ctor.owner), ctor);
+            stack.push(REFERENCE(ctor.owner));
 
           case CREATE_ARRAY(elem) =>
             checkStack(1);
+            checkType(stack.pop, INT);
             stack.push(ARRAY(elem));
 
           case IS_INSTANCE(tpe) =>
@@ -371,7 +398,7 @@ abstract class Checkers {
 
           case SWITCH(tags, labels) =>
             checkType(stack.pop, INT);
-            checkBool(tags.length == labels.length + 1,
+            checkBool(tags.length == labels.length - 1,
                       "The number of tags and labels does not coincide.");
             checkBool(labels forall (b => code.blocks contains b),
                       "Switch target cannot be found in code.");
@@ -398,7 +425,7 @@ abstract class Checkers {
 
           case THROW() =>
             val thrown = stack.pop;
-            checkBool(thrown.toType <:<definitions.ThrowableClass.info,
+            checkBool(thrown.toType <:< definitions.ThrowableClass.tpe,
                       "Element on top of stack should implement 'Throwable': " + thrown);
 
           case DROP(kind) =>
@@ -410,8 +437,15 @@ abstract class Checkers {
             stack.push(top);
             stack.push(top);
 
-          case MONITOR_ENTER() => ();
-          case MONITOR_EXIT() =>  ();
+          case MONITOR_ENTER() =>
+            checkStack(1);
+            checkBool(stack.pop.isReferenceType,
+                      "MONITOR_ENTER on non-reference type");
+
+          case MONITOR_EXIT() =>
+            checkStack(1);
+            checkBool(stack.pop.isReferenceType,
+                      "MONITOR_EXIT on non-reference type");
 
           case _ => abort("Unknown instruction: " + instr);
         }
@@ -421,8 +455,25 @@ abstract class Checkers {
 
     //////////////// Error reporting /////////////////////////
 
-    def error(msg: String): Unit =
+    def error(msg: String): Unit = {
+      System.out.println(method.toString() + " in block: " + basicBlock.label);
+      printLastIntructions;
+
       Checkers.this.global.error("ICode checker: " + method + ": " + msg);
+    }
+
+    /** Prints the last 4 instructions. */
+    def printLastIntructions = {
+      var printed = 0;
+      var buf: List[Instruction] = Nil;
+
+      basicBlock.traverseBackwards( (i) =>
+        if (i == instruction || (printed > 0 && printed < 3)) {
+          buf = i :: buf;
+          printed = printed + 1;
+        });
+      buf foreach System.out.println;
+    }
 
     def error(msg: String, stack: TypeStack): Unit = {
       error(msg + "\n type stack: " + stack);

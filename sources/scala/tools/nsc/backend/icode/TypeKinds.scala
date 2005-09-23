@@ -210,6 +210,8 @@ abstract class TypeKinds: ICodes {
   case class REFERENCE(cls: Symbol) extends TypeKind {
     assert(cls != null,
            "REFERENCE to null class symbol.");
+    assert(cls != definitions.ArrayClass,
+           "REFERENCE to Array is not allowed, should be ARRAY[..] instead");
 
     override def toString(): String =
       "REFERENCE(" + cls.fullNameString + ")";
@@ -228,7 +230,9 @@ abstract class TypeKinds: ICodes {
 
     /** Checks subtyping relationship. */
     override def <:<(other: TypeKind): Boolean =
-      other match {
+      if (cls == definitions.AllClass)
+        true
+      else other match {
         case REFERENCE(cls2) =>
           cls.tpe <:< cls2.tpe;
         case _ => false;
@@ -267,6 +271,10 @@ abstract class TypeKinds: ICodes {
       other match {
         case ARRAY(elem2) =>
           elem <:< elem2;
+        case REFERENCE(sym) =>
+          sym == definitions.AnyRefClass ||
+          sym == definitions.ObjectClass; // TODO: platform dependent!
+
         case _ => false;
       }
 
@@ -303,7 +311,7 @@ abstract class TypeKinds: ICodes {
             REFERENCE(sym);
       }
 
-    case _ => abort("Unknown type");
+    case _ => abort("Unknown type: " + t);
   }
 
   /** A map from scala primitive Types to ICode TypeKinds */

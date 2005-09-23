@@ -200,7 +200,7 @@ abstract class ScalaPrimitives {
   private var primitives: Map[Symbol, Int] = _;
 
   /** Initialize the primitive map */
-  def initPrimitives: Unit = {
+  def init: Unit = {
     primitives = new HashMap();
 
     // scala.Any
@@ -254,7 +254,7 @@ abstract class ScalaPrimitives {
     addPrimitives(BooleanClass, nme.ADD, CONCAT);
 
     // scala.Byte
-    addPrimitives(ByteClass, nme.coerce, COERCE);
+    addCoercions(ByteClass);
     addPrimitives(ByteClass, nme.EQ, EQ);
     addPrimitives(ByteClass, nme.NE, NE);
     addPrimitives(ByteClass, nme.equals_, EQUALS);
@@ -278,7 +278,7 @@ abstract class ScalaPrimitives {
     addPrimitives(ByteClass, nme.ASR, ASR);
 
     // scala.Short
-    addPrimitives(ShortClass, nme.coerce, COERCE);
+    addCoercions(ShortClass);
     addPrimitives(ShortClass, nme.EQ, EQ);
     addPrimitives(ShortClass, nme.NE, NE);
     addPrimitives(ShortClass, nme.equals_, EQUALS);
@@ -302,7 +302,7 @@ abstract class ScalaPrimitives {
     addPrimitives(ShortClass, nme.ASR, ASR);
 
     // scala.Char
-    addPrimitives(CharClass, nme.coerce, COERCE);
+    addCoercions(CharClass);
     addPrimitives(CharClass, nme.EQ, EQ);
     addPrimitives(CharClass, nme.NE, NE);
     addPrimitives(CharClass, nme.equals_, EQUALS);
@@ -326,7 +326,7 @@ abstract class ScalaPrimitives {
     addPrimitives(CharClass, nme.ASR, ASR);
 
     // scala.Int
-    addPrimitives(IntClass, nme.coerce, COERCE);
+    addCoercions(IntClass);
     addPrimitives(IntClass, nme.EQ, EQ);
     addPrimitives(IntClass, nme.NE, NE);
     addPrimitives(IntClass, nme.equals_, EQUALS);
@@ -350,7 +350,7 @@ abstract class ScalaPrimitives {
     addPrimitives(IntClass, nme.ASR, ASR);
 
     // scala.Long
-    addPrimitives(LongClass, nme.coerce, COERCE);
+    addCoercions(LongClass);
     addPrimitives(LongClass, nme.EQ, EQ);
     addPrimitives(LongClass, nme.NE, NE);
     addPrimitives(LongClass, nme.equals_, EQUALS);
@@ -374,7 +374,7 @@ abstract class ScalaPrimitives {
     addPrimitives(LongClass, nme.ASR, ASR);
 
     // scala.Float
-    addPrimitives(FloatClass, nme.coerce, COERCE);
+    addCoercion(FloatClass);
     addPrimitives(FloatClass, nme.EQ, EQ);
     addPrimitives(FloatClass, nme.NE, NE);
     addPrimitives(FloatClass, nme.equals_, EQUALS);
@@ -391,7 +391,6 @@ abstract class ScalaPrimitives {
     addPrimitives(FloatClass, nme.GE, GE);
 
     // scala.Double
-    addPrimitives(DoubleClass, nme.coerce, COERCE);
     addPrimitives(DoubleClass, nme.EQ, EQ);
     addPrimitives(DoubleClass, nme.NE, NE);
     addPrimitives(DoubleClass, nme.equals_, EQUALS);
@@ -423,12 +422,121 @@ abstract class ScalaPrimitives {
     sym.info match {
       case OverloadedType(pre, alternatives) =>
         log("Adding " + alternatives.length + " overloads for " + sym.fullNameString);
-        alternatives foreach ((s) => addPrimitive(s, code));
+        code match {
+          case SUB =>
+            alternatives foreach ((s) =>
+              if (s.info.paramTypes.length == 0)
+                addPrimitive(s, NEG); // unary
+              else
+                addPrimitive(s, code));
+
+          case ADD =>
+            alternatives foreach ((s) =>
+              if (s.info.paramTypes.length == 0)
+                addPrimitive(s, POS);    // unary
+              else if (s.info.paramTypes.head == definitions.StringClass.tpe)
+                addPrimitive(s, CONCAT); // string concatenation
+              else
+                addPrimitive(s, code));
+
+          case _ =>
+            alternatives foreach ((s) => addPrimitive(s, code));
+        }
 
       case _ =>
         addPrimitive(sym, code);
     }
+  }
 
+  def addCoercion(cls: Symbol) = {
+    assert(cls == FloatClass,
+           "Only scala.Double has non-overloaded 'coerce'");
+    val method = cls.info.member(nme.coerce);
+    addPrimitive(method, F2D);
+  }
+
+  def addCoercions(cls: Symbol): Unit = {
+    val OverloadedType(_, coercions) = cls.info.member(nme.coerce).info;
+    if (cls == ByteClass)
+      coercions foreach ((m) =>
+        if (m.info.resultType == ShortClass.tpe)
+          addPrimitive(m, B2S)
+        else if (m.info.resultType == IntClass.tpe)
+          addPrimitive(m, B2I)
+        else if (m.info.resultType == LongClass.tpe)
+          addPrimitive(m, B2L)
+        else if (m.info.resultType == FloatClass.tpe)
+          addPrimitive(m, B2F)
+        else if (m.info.resultType == DoubleClass.tpe)
+          addPrimitive(m, B2D)
+        else
+          abort("Unknown coercion method: " + m.info)
+      )
+    else if (cls == ShortClass)
+        coercions foreach ((m) =>
+          if (m.info.resultType == IntClass.tpe)
+            addPrimitive(m, S2I)
+          else if (m.info.resultType == LongClass.tpe)
+            addPrimitive(m, S2L)
+          else if (m.info.resultType == FloatClass.tpe)
+            addPrimitive(m, S2F)
+          else if (m.info.resultType == DoubleClass.tpe)
+            addPrimitive(m, S2D)
+          else
+            abort("Unknown coercion method: " + m.fullNameString)
+        )
+    else if (cls == CharClass)
+        coercions foreach ((m) =>
+          if (m.info.resultType == IntClass.tpe)
+            addPrimitive(m, C2I)
+          else if (m.info.resultType == LongClass.tpe)
+            addPrimitive(m, C2L)
+          else if (m.info.resultType == FloatClass.tpe)
+            addPrimitive(m, C2F)
+          else if (m.info.resultType == DoubleClass.tpe)
+            addPrimitive(m, C2D)
+          else
+            abort("Unknown coercion method: " + m.fullNameString)
+        )
+    else if (cls == IntClass)
+        coercions foreach ((m) =>
+          if (m.info.resultType == LongClass.tpe)
+            addPrimitive(m, I2L)
+          else if (m.info.resultType == FloatClass.tpe)
+            addPrimitive(m, I2F)
+          else if (m.info.resultType == DoubleClass.tpe)
+            addPrimitive(m, I2D)
+          else
+            abort("Unknown coercion method: " + m.fullNameString)
+        )
+    else if (cls == LongClass)
+        coercions foreach ((m) =>
+          if (m.info.resultType == FloatClass.tpe)
+            addPrimitive(m, L2F)
+          else if (m.info.resultType == DoubleClass.tpe)
+            addPrimitive(m, L2D)
+          else
+            abort("Unknown coercion method: " + m.fullNameString)
+        )
+    else if (cls == FloatClass)
+        coercions foreach ((m) =>
+          if (m.info.resultType == DoubleClass.tpe)
+            addPrimitive(m, F2D)
+          else
+            abort("Unknown coercion method: " + m.fullNameString)
+        )
+    else
+        abort("Unknown value type: " + cls.fullNameString);
+  }
+
+  def isCoercion(code: Int): Boolean = code match {
+    case B2S | B2I | B2L | B2F | B2D |
+               S2I | S2L | S2F | S2D |
+               C2I | C2L | C2F | C2D |
+                     I2L | I2F | I2D |
+                           L2F | L2D |
+                                 F2D   => true;
+    case _ => false;
   }
 
   /** Check whether the given operation code is an array operation. */
@@ -502,7 +610,6 @@ abstract class ScalaPrimitives {
     assert(isPrimitive(sym), "Unkown primitive " + sym);
     primitives(sym);
   }
-
 
   /**
    * Return the primitive code of the given operation. If the

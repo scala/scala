@@ -18,6 +18,7 @@ import scala.tools.nsc.ast._;
   case LOAD_ARRAY_ITEM(kind) =>
   case LOAD_LOCAL(local, isArg) =>
   case LOAD_FIELD(field, isStatic) =>
+  case LOAD_MODULE(module) =>
   case STORE_ARRAY_ITEM(kind) =>
   case STORE_LOCAL(local, isArg) =>
   case STORE_FIELD(field, isStatic) =>
@@ -47,7 +48,7 @@ import scala.tools.nsc.ast._;
  * in the source files.
  */
 abstract class Opcodes: ICodes {
-  import global.{Symbol, Type, Name, Constant};
+  import global.{Symbol, NoSymbol, Type, Name, Constant};
 
   /** This class represents an instruction of the intermediate code.
    *  Each case subclass will represent a specific operation.
@@ -97,7 +98,7 @@ abstract class Opcodes: ICodes {
      */
     case class LOAD_ARRAY_ITEM(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "LOAD_ARRAY_ITEM";
+      override def toString(): String = "LOAD_ARRAY_ITEM (" + kind + ")";
 
       override def consumed = 2;
       override def produced = 1;
@@ -129,13 +130,24 @@ abstract class Opcodes: ICodes {
       override def produced = 1;
     }
 
+    case class LOAD_MODULE(module: Symbol) extends Instruction {
+      assert(module != NoSymbol,
+             "Invalid module symbol");
+      /** Returns a string representation of this instruction */
+      override def toString(): String =
+        "LOAD_MODULE " + module.toString();
+
+      override def consumed = 0;
+      override def produced = 1;
+    }
+
     /** Store a value into an array at a specified index.
      * Stack: ...:array[a](Ref):index(Int):value(a)
      *    ->: ...
      */
     case class STORE_ARRAY_ITEM(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "STORE_ARRAY_ITEM";
+      override def toString(): String = "STORE_ARRAY_ITEM (" + kind + ")";
 
       override def consumed = 3;
       override def produced = 0;
@@ -193,10 +205,6 @@ abstract class Opcodes: ICodes {
      * Stack: ...:ref:arg1:arg2:...:argn
      *    ->: ...:result
      *
-     * STYLE: new - unused by jvm
-     * Stack: ...:arg1:arg2:...:argn
-     *    ->: ...:ref
-     *
      * STYLE: static(StaticClass)
      * Stack: ...:arg1:arg2:...:argn
      *    ->: ...:result
@@ -220,13 +228,13 @@ abstract class Opcodes: ICodes {
       override def produced = 1;
     }
 
-    /** Create a new instance of a class.
-     * Stack: ...:
+    /** Create a new instance of a class through the specified constructor
+     * Stack: ...:arg1:arg2:...:argn
      *    ->: ...:ref
      */
-    case class NEW(clasz: Symbol) extends Instruction {
+    case class NEW(ctor: Symbol) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "NEW "+clasz.toString();
+      override def toString(): String = "NEW "+ctor.fullNameString;
 
       override def consumed = 0;
       override def produced = 1;
@@ -277,7 +285,7 @@ abstract class Opcodes: ICodes {
      * an array of ints, any of which will trigger the jump to the corresponding label.
      * labels should contain an extra label, which is the 'default' jump.
      */
-    case class SWITCH(tags: Array[Array[int]], labels: List[BasicBlock]) extends Instruction {
+    case class SWITCH(tags: List[List[Int]], labels: List[BasicBlock]) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String ="SWITCH ...";
 
@@ -408,11 +416,6 @@ abstract class Opcodes: ICodes {
 
     /** This class represents a method invocation style. */
     trait InvokeStyle {
-      /** Is this a new object creation? */
-      def isNew: Boolean = this match {
-        case NewInstance =>  true;
-        case _   =>  false;
-      }
 
       /** Is this a dynamic method call? */
       def isDynamic: Boolean = this match {
@@ -430,13 +433,12 @@ abstract class Opcodes: ICodes {
       def hasInstance: Boolean = this match {
         case Dynamic => true;
         case Static(onInstance) => onInstance;
-        case NewInstance => true;
+        case SuperCall(_) => true;
         case _ => false;
       }
 
       /** Returns a string representation of this style. */
       override def toString(): String = this match {
-        case NewInstance =>  "new";
         case Dynamic =>  "dynamic";
         case Static(false) => "static-class";
         case Static(true) =>  "static-instance";
@@ -444,7 +446,6 @@ abstract class Opcodes: ICodes {
       }
     }
 
-    case object NewInstance extends InvokeStyle;
     case object Dynamic extends InvokeStyle;
 
     /**

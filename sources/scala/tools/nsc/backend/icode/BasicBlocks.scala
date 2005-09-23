@@ -35,10 +35,12 @@ trait BasicBlocks: ICodes {
 
     var preds: List[BasicBlock] = null;
 
-    /** ICode instructions */
+    /** ICode instructions, used as temporary storage while emitting code.
+     * Once closed is called, only the `instrs' array should be used.
+     */
     private var instructionList: List[Instruction] = Nil;
 
-    private var lastInstruction: Instruction = null;
+    private var _lastInstruction: Instruction = null;
 
     private var closed: boolean = false;
 
@@ -49,12 +51,22 @@ trait BasicBlocks: ICodes {
     /** Compute an hashCode for the block */
     override def hashCode() = label;
 
-    /** Apply a function to all the instructions of the block*/
-    def traverse(f: Instruction => unit) =
-      instructionList.reverse.foreach(f);
+    /** Apply a function to all the instructions of the block. */
+    def traverse(f: Instruction => unit) = {
+      assert(closed, "Traversing an open block!: ");
+      instrs foreach f;
+    }
+
+    def traverseBackwards(f: Instruction => Unit) = {
+      var i = instrs.length - 1;
+      while (i >= 0) {
+        f(instrs(i));
+        i = i - 1
+      }
+    }
 
     /** The number of instructions in this basic block so far. */
-    def size: Int = instructionList.length;
+    def size: Int = instrs.length;
 
     /** Initialize the stack of the block, must be done before evaluation
      *  the type stack  */
@@ -87,7 +99,7 @@ trait BasicBlocks: ICodes {
 
       var i = 0;
       var changed = false;
-      while (i < instrs.length) {
+      while (i < instrs.length && !changed) {
         if (instrs(i) == oldInstr) {
           instrs(i) = newInstr;
           changed = true;
@@ -113,21 +125,21 @@ trait BasicBlocks: ICodes {
     def emit(instr: Instruction) = {
       assert (!closed, "BasicBlock closed.");
       instructionList = instr :: instructionList;
-      lastInstruction = instr;
+      _lastInstruction = instr;
     }
-
-    /** Compute the type stack of the block */
-//     def typeBlock = {
-//       assert(initialStack != null, "Stack not initialized");
-//       endStack = initialStack;
-//       traverse((ic : Instruction) => endStack = endStack.eval(ic));
-//     }
 
     /** Close the block */
     def close = {
       closed = true;
-      instrs = toInstructionArray(instructionList);
+      instrs = toInstructionArray(instructionList.reverse);
     }
+
+    /** Return the last instruction of this basic block. */
+    def lastInstruction =
+      if (closed)
+        instrs(instrs.length - 1)
+      else
+        instructionList.head;
 
     /** Convert the list to an array */
     def toInstructionArray(l: List[Instruction]): Array[Instruction] = {
@@ -139,8 +151,6 @@ trait BasicBlocks: ICodes {
     }
 
     def isClosed = closed;
-
-    def getLastInstruction = lastInstruction;
 
     def successors : List[BasicBlock] = // here order will count
       lastInstruction match {

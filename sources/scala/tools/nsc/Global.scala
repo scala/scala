@@ -153,6 +153,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   var globalPhase: Phase = NoPhase;
 
+
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     def run: unit = units foreach applyPhase;
     def apply(unit: CompilationUnit): unit;
@@ -254,8 +255,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     flatten,
     constructors,
     mixin,
-    if (settings.Xshowicode.value) genicode
-    else sampleTransform);
+    genicode,
+    sampleTransform);
 
   val parserPhase = syntaxAnalyzer.newPhase(NoPhase);
   val firstPhase = parserPhase;
@@ -345,7 +346,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       globalPhase = globalPhase.next;
       if (settings.check contains globalPhase.name) {
         phase = globalPhase;
-        if (globalPhase.name == "terminal" && settings.Xshowicode.value)
+        if (globalPhase.name == "terminal")
           icodeChecker.checkICodes;
         else
           checker.checkTrees;
@@ -355,7 +356,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
-    if (settings.Xshowicode.value) printICode();
+    if (settings.Xshowicode.value) writeICode();
 
     if (reporter.errors() == 0) {
       for (val Pair(sym, pickled) <- symData.elements.toList) {
@@ -451,8 +452,21 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
   }
 
-  private def printICode(): Unit = {
+  private def writeICode(): Unit = {
     val printer = new icodePrinter.TextPrinter(new PrintWriter(System.out, true));
-    icodes.classes.foreach(printer.printClass);
+    icodes.classes.foreach((cls) => {
+      val file = getFile(cls.symbol, ".icode");
+      try {
+        val stream = new FileOutputStream(file);
+        printer.setWriter(new PrintWriter(stream, true));
+        printer.printClass(cls);
+        informProgress("wrote " + file);
+      } catch {
+        case ex: IOException =>
+          if (settings.debug.value) ex.printStackTrace();
+        error("could not write file " + file);
+      }
+
+    });
   }
 }

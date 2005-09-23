@@ -15,10 +15,14 @@ abstract class Printers {
   import global.icodes.opcodes._;
   import global.icodes._;
 
-  class TextPrinter(out: PrintWriter) {
+  class TextPrinter(writer: PrintWriter) {
     var margin = 0;
+    var out = writer;
+    val linearizer = new NormalLinearizer();
 
     final val TAB = 2;
+
+    def setWriter(w: PrintWriter) = (out = w);
 
     def indent = margin = margin + TAB;
     def undent = margin = margin - TAB;
@@ -84,7 +88,8 @@ abstract class Printers {
     }
 
     def printCode(code: Code): Unit = {
-      code traverse printBlock;
+//      code traverse printBlock;
+      linearizer.linearize(code) foreach printBlock;
     }
 
     def printBlock(bb: BasicBlock): Unit = {
