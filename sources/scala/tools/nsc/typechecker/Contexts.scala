@@ -216,7 +216,7 @@ abstract class Contexts: Analyzer {
       if (implicitsCache == null) {
 	val newImplicits: List[ImplicitInfo] =
 	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
-            if (!owner.isInitialized) return outer.implicitss;
+            if (!owner.hasFlag(INITIALIZED)) return outer.implicitss;
 	    if (settings.debug.value) log("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers);//debug
 	    collectImplicits(owner.thisType.implicitMembers, owner.thisType)
 	  } else if (scope != outer.scope && !owner.isPackageClass) {

@@ -259,7 +259,7 @@ abstract class TreePrinters {
 
     def print(tree: Tree): unit =
       printRaw(
-        if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
+        if (tree.isDef && tree.symbol != NoSymbol && !tree.symbol.hasFlag(INITIALIZED)) {
           tree match {
             case ClassDef(_, _, _, _, impl) => ClassDef(tree.symbol, impl)
             case ModuleDef(_, _, impl)      => ModuleDef(tree.symbol, impl)

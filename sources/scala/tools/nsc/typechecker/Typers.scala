@@ -488,7 +488,7 @@ abstract class Typers: Analyzer {
     }
 
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
-      case ValDef(mods, name, tpe, rhs) if (mods & LOCAL) == 0 =>
+      case ValDef(mods, name, tpe, rhs) if (mods & LOCAL) == 0 && !stat.symbol.isModuleVar =>
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpe, rhs);
         val value = vdef.symbol;
 	val getterDef: DefDef = {
@@ -1166,7 +1166,7 @@ abstract class Typers: Analyzer {
           val enclFun = if (tree.symbol != NoSymbol) tree.symbol else context.owner.enclMethod;
           if (!enclFun.isMethod || enclFun.isConstructor)
             errorTree(tree, "return outside method definition")
-          else if (!context.owner.isInitialized)
+          else if (!context.owner.hasFlag(INITIALIZED))
             errorTree(tree, "method " + context.owner + " has return statement; needs result type")
           else {
             val expr1: Tree = typed(expr, enclFun.tpe.finalResultType);

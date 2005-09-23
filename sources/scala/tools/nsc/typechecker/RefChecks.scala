@@ -65,20 +65,23 @@ abstract class RefChecks extends InfoTransform {
 
   // def m: T = { if (m$ == null) m$ = new m$class; m$ }
   def newModuleAccessDef(accessor: Symbol, mvar: Symbol) = {
+    var mvarRef = if (mvar.owner.isClass) Select(This(mvar.owner), mvar) else Ident(mvar);
     DefDef(accessor, vparamss =>
       Block(
 	List(
 	  If(
-	    Apply(Select(Ident(mvar), nme.eq), List(Literal(Constant(null)))),
-	    Assign(Ident(mvar),
+	    Apply(Select(mvarRef, nme.eq), List(Literal(Constant(null)))),
+	    Assign(mvarRef,
                    New(TypeTree(mvar.tpe),
                        List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
                             yield This(accessor.owner.enclClass)))),//???
 	    EmptyTree)),
-	Ident(mvar)))
+	mvarRef))
   }
 
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
+
+    var localTyper: analyzer.Typer = typer;
 
 // Override checking ------------------------------------------------------------
 
@@ -423,7 +426,6 @@ abstract class RefChecks extends InfoTransform {
     def transformStat(tree: Tree, index: int): List[Tree] = tree match {
       case ModuleDef(mods, name, impl) =>
 	val sym = tree.symbol;
-        val localTyper = typer.atOwner(currentOwner);
 	val cdef = ClassDef(mods | MODULE, name, List(), EmptyTree, impl)
 	  setPos tree.pos
           setSymbol sym.moduleClass
@@ -443,8 +445,8 @@ abstract class RefChecks extends InfoTransform {
                 newModuleAccessDef(sym, vdef.symbol)
               }
             }
-
-          transformTrees(List(cdef, vdef, ddef))
+          if (sym.owner.isTrait) List(transform(cdef))
+          else transformTrees(List(cdef, vdef, ddef))
 	}
 
       case ValDef(_, _, _, _) =>
@@ -480,6 +482,7 @@ abstract class RefChecks extends InfoTransform {
 	case ex: TypeError => unit.error(tree.pos, ex.getMessage());
       }
 
+      val savedLocalTyper = localTyper;
       val sym = tree.symbol;
       var result = tree;
       tree match {
@@ -500,6 +503,7 @@ abstract class RefChecks extends InfoTransform {
 	  validateVariance(sym, sym.info, CoVariance);
 
 	case Template(_, _) =>
+	  localTyper = localTyper.atOwner(tree, currentOwner);
 	  validateBaseTypes(currentOwner);
 	  checkAllOverrides(currentOwner);
 
@@ -563,7 +567,9 @@ abstract class RefChecks extends InfoTransform {
           }
 	case _ =>
       }
-      super.transform(result)
+      result = super.transform(result);
+      localTyper = savedLocalTyper;
+      result
     } catch {
       case ex: TypeError =>
 	if (settings.debug.value) ex.printStackTrace();

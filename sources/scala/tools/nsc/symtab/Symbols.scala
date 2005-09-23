@@ -28,7 +28,6 @@ abstract class Symbols: SymbolTable {
     private var rawflags: long = 0;
     var pos = initPos;
     val id = { ids = ids + 1; ids }
-    var validForRun: int = NoRun;
 
     def setPos(pos: int): this.type = { this.pos = pos; this }
 
@@ -195,7 +194,7 @@ abstract class Symbols: SymbolTable {
                   !owner.isPackageClass && owner.isLocalClass);
 
     /** Symbol was preloaded from package */
-    final def isExternal: boolean = pos == Position.NOPOS/* || validForRun < currentRun - 1*/;
+    final def isExternal: boolean = pos == Position.NOPOS;
 
     /** A a member of class `base' is incomplete if (1) it is declared deferred or
      *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.
@@ -204,9 +203,6 @@ abstract class Symbols: SymbolTable {
       (base == NoSymbol) ||
       (this hasFlag DEFERRED) ||
       (this hasFlag ABSOVERRIDE) && isIncompleteIn(superSymbol(base));
-
-    final def isInitialized: boolean =
-      validForRun == currentRun;
 
     /** The variance of this symbol as an integer */
     final def variance: int =
@@ -251,8 +247,8 @@ abstract class Symbols: SymbolTable {
      */
     final def info: Type = {
       var cnt = 0;
-      while (validForRun != currentRun) {
-        //if (settings.debug.value) System.out.println("completing " + this + " in " + this.owner);//debug
+      while ((rawflags & INITIALIZED) == 0) {
+        //if (settings.debug.value) System.out.println("completing " + this + " in " + this.owner);//DEBUG
         assert(infos != null, this.name);
 	val tp = infos.info;
         if ((rawflags & LOCKED) != 0) {
@@ -264,7 +260,7 @@ abstract class Symbols: SymbolTable {
         try {
 	  phase = infos.start;
           tp.complete(this);
-	  // if (settings.debug.value && (validForRun == currentRun) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
+	  // if (settings.debug.value && (rawflags & INITIALIZED) != 0) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
           rawflags = rawflags & ~LOCKED
         } finally {
 	  phase = current
@@ -284,11 +280,11 @@ abstract class Symbols: SymbolTable {
       limit = phase;
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED;
-        validForRun = currentRun
       } else {
-        rawflags = rawflags & ~LOCKED;
-        validForRun = NoRun
+        rawflags = rawflags | INITIALIZED & ~LOCKED;
       }
+      rawflags = if (info.isComplete) rawflags | INITIALIZED & ~LOCKED;
+		 else rawflags & ~INITIALIZED & ~LOCKED;
       this
     }
 
@@ -303,7 +299,7 @@ abstract class Symbols: SymbolTable {
     /** Return info without checking for initialization or completing */
     final def rawInfo: Type = {
       if (limit.id < phase.id) {
-	if (validForRun == currentRun) {
+	if ((rawflags & INITIALIZED) != 0) {
 	  val current = phase;
           var itr = infoTransformers.nextFrom(limit);
           infoTransformers = itr; // caching optimization
@@ -330,7 +326,7 @@ abstract class Symbols: SymbolTable {
 
     /** Initialize the symbol */
     final def initialize: this.type = {
-      if (!isInitialized) info;
+      if ((rawflags & INITIALIZED) == 0) info;
       this
     }
 
@@ -798,7 +794,7 @@ abstract class Symbols: SymbolTable {
         if (isValid(tpePhase)) {
 	  tpePhase = phase
         } else {
-          if (isInitialized) tpePhase = phase;
+          if (hasFlag(INITIALIZED)) tpePhase = phase;
           tpeCache = NoType;
 	  val targs = if (phase.erasedTypes && this != ArrayClass) List()
 		      else unsafeTypeParams map (.tpe);
