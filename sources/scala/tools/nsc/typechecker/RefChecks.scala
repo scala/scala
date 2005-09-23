@@ -64,18 +64,19 @@ abstract class RefChecks extends InfoTransform {
   }
 
   // def m: T = { if (m$ == null) m$ = new m$class; m$ }
-  def newModuleAccessDef(accessor: Symbol, mvar: Symbol) =
+  def newModuleAccessDef(accessor: Symbol, mvar: Symbol) = {
     DefDef(accessor, vparamss =>
       Block(
 	List(
 	  If(
-	    Apply(Select(gen.mkRef(mvar), nme.eq), List(Literal(Constant(null)))),
-	    Assign(gen.mkRef(mvar),
+	    Apply(Select(Ident(mvar), nme.eq), List(Literal(Constant(null)))),
+	    Assign(Ident(mvar),
                    New(TypeTree(mvar.tpe),
                        List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
                             yield This(accessor.owner.enclClass)))),//???
 	    EmptyTree)),
-	gen.mkRef(mvar)));
+	Ident(mvar)))
+  }
 
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 

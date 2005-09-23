@@ -195,7 +195,7 @@ abstract class Symbols: SymbolTable {
                   !owner.isPackageClass && owner.isLocalClass);
 
     /** Symbol was preloaded from package */
-    final def isExternal: boolean = pos == Position.NOPOS;
+    final def isExternal: boolean = pos == Position.NOPOS/* || validForRun < currentRun - 1*/;
 
     /** A a member of class `base' is incomplete if (1) it is declared deferred or
      *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.

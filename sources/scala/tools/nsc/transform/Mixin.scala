@@ -330,6 +330,14 @@ abstract class Mixin extends InfoTransform {
 	      }
             }
 	  }
+/*
+        case Ident(_) =>
+          if (sym.owner.isClass) {
+            assert(sym.isModuleVar, sym);
+            assert(!sym.owner.isImplClass, sym);
+            atPos(tree.pos) {
+              gen.SelectThis(
+*/
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
           localTyper.typed {
             atPos(tree.pos) {
