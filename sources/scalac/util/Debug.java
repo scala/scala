@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -13,6 +13,7 @@ import scala.tools.util.debug.ToStringDebugger;
 
 import scalac.Global;
 import scalac.ast.Tree;
+import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
@@ -69,6 +70,378 @@ public class Debug extends scala.tools.util.debug.Debug {
 
     public static boolean logAll(Object[] args) {
         return Global.instance.log(showAll(args, null));
+    }
+
+    //########################################################################
+    // showTree
+
+    private static void append(StringBuffer buf, Name[] names) {
+        for (int i = 0; i < names.length; i++) {
+            if (i > 0) buf.append(",");
+            append(buf, names[i]);
+        }
+    }
+
+    private static void append(StringBuffer buf, Name name) {
+        buf.append("\"" + name + '"');
+    }
+
+    private static void append(StringBuffer buf, String str) {
+        buf.append("\"" + str + '"');
+    }
+
+    private static void append(StringBuffer buf, Tree[] trees) {
+        buf.append('[');
+        for (int i = 0; i < trees.length; i++) {
+            if (i > 0) buf.append(',');
+            append(buf, trees[i]);
+        }
+        buf.append(']');
+    }
+
+    private static void append(StringBuffer buf, Tree[][] trees) {
+        for (int i = 0; i < trees.length; i++) {
+            buf.append('[');
+            append(buf, trees[i]);
+            buf.append(']');
+        }
+    }
+
+    private static void append(StringBuffer buf, Tree tree) {
+        switch (tree) {
+        case Empty:
+            buf.append("Empty()");
+            break;
+        case Attributed(Tree attribute, Tree definition):
+            buf.append("Attributed(");
+            append(buf, attribute);
+            buf.append(',');
+            append(buf, definition);
+            buf.append(')');
+            break;
+        case DocDef(String comment, Tree definition):
+            buf.append("DocDef(");
+            append(buf, comment);
+            buf.append(',');
+            append(buf, definition);
+            buf.append(')');
+            break;
+        case ClassDef(int mods, Name name, Tree.AbsTypeDef[] tparams,
+                      Tree.ValDef[][] vparams, Tree tpe, Tree.Template impl):
+            buf.append("ClassDef(");
+            Modifiers.Helper.toString(buf, mods);
+            buf.append(',');
+            append(buf, name);
+            buf.append(',');
+            append(buf, tparams);
+            buf.append(',');
+            append(buf, vparams);
+            buf.append(',');
+            append(buf, tpe);
+            buf.append(',');
+            append(buf, impl);
+            buf.append(')');
+            break;
+        case PackageDef(Tree packaged, Tree.Template impl):
+            buf.append("PackageDef(");
+            append(buf, packaged);
+            buf.append(',');
+            append(buf, impl);
+            buf.append(')');
+            break;
+        case ModuleDef(int mods, Name name, Tree tpe, Tree.Template impl):
+            buf.append("ModuleDef(");
+            Modifiers.Helper.toString(buf, mods);
+            buf.append(',');
+            append(buf, name);
+            buf.append(',');
+            append(buf, tpe);
+            buf.append(',');
+            append(buf, impl);
+            buf.append(')');
+            break;
+        case ValDef(int mods, Name name, Tree tpe, Tree rhs):
+            buf.append("ValDef(");
+            Modifiers.Helper.toString(buf, mods);
+            buf.append(',');
+            append(buf, name);
+            buf.append(',');
+            append(buf, tpe);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(')');
+            break;
+        case PatDef(int mods, Tree pat, Tree rhs):
+            buf.append("PatDef(");
+            Modifiers.Helper.toString(buf, mods);
+            buf.append(',');
+            append(buf, pat);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(')');
+            break;
+        case DefDef(int mods, Name name, Tree.AbsTypeDef[] tparams,
+                    Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
+            buf.append("DefDef(");
+            Modifiers.Helper.toString(buf, mods);
+            buf.append(',');
+            append(buf, name);
+            buf.append(',');
+            append(buf, tparams);
+            buf.append(',');
+            append(buf, vparams);
+            buf.append(',');
+            append(buf, tpe);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(')');
+            break;
+        case AbsTypeDef(int mods, Name name, Tree rhs, Tree lobound):
+            buf.append("AbsTypeDef(");
+            Modifiers.Helper.toString(buf, mods);
+            buf.append(',');
+            append(buf, name);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(',');
+            append(buf, lobound);
+            buf.append(')');
+            break;
+        case AliasTypeDef(int mods, Name name, Tree.AbsTypeDef[] tparams, Tree rhs):
+            buf.append("AliasTypeDef(");
+            Modifiers.Helper.toString(buf, mods);
+            buf.append(',');
+            append(buf, name);
+            buf.append(',');
+            append(buf, tparams);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(')');
+            break;
+        case Import(Tree expr, Name[] selectors):
+            buf.append("Import(");
+            append(buf, expr);
+            buf.append(",");
+            append(buf, selectors);
+            buf.append(")");
+            break;
+        case CaseDef(Tree pat, Tree guard, Tree body):
+            buf.append("CaseDef(");
+            buf.append(",");
+            append(buf, pat);
+            buf.append(",");
+            append(buf, guard);
+            buf.append(",");
+            append(buf, body);
+            buf.append(")");
+            break;
+        case Template(Tree[] parents, Tree[] body):
+            buf.append("Template(");
+            append(buf, parents);
+            buf.append(',');
+            append(buf, body);
+            buf.append(')');
+            break;
+        case LabelDef(Name name, Tree.Ident[] params, Tree rhs):
+            buf.append("LabelDef(");
+            buf.append(",");
+            append(buf, name);
+            buf.append(',');
+            append(buf, params);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(')');
+            break;
+        case Block(Tree[] stats, Tree expr):
+            buf.append("Block(");
+            append(buf, stats);
+            buf.append(',');
+            append(buf, expr);
+            buf.append(')');
+            break;
+        case Sequence(Tree[] trees):
+            buf.append("Sequence(");
+            buf.append(',');
+            append(buf, trees);
+            buf.append(")");
+            break;
+        case Alternative(Tree[] trees):
+            buf.append("Alternative(");
+            buf.append(',');
+            append(buf, trees);
+            buf.append(')');
+            break;
+        case Bind(Name name, Tree rhs):
+            buf.append("Bind(");
+            append(buf, name);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(")");
+            break;
+        case Visitor(Tree.CaseDef[] cases):
+            buf.append("ClassDef(");
+            append(buf, cases);
+            buf.append(')');
+            break;
+        case Function(Tree.ValDef[] vparams, Tree body):
+            buf.append("Function(");
+            append(buf, vparams);
+            buf.append(',');
+            append(buf, body);
+            buf.append(')');
+            break;
+        case Assign(Tree lhs, Tree rhs):
+            buf.append("Assign(");
+            append(buf, lhs);
+            buf.append(',');
+            append(buf, rhs);
+            buf.append(')');
+            break;
+        case If(Tree cond, Tree thenp, Tree elsep):
+            buf.append("If(");
+            append(buf, cond);
+            buf.append(',');
+            append(buf, thenp);
+            buf.append(',');
+            append(buf, elsep);
+            buf.append(')');
+            break;
+        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+            buf.append("Switch(");
+            buf.append(',');
+            append(buf, test);
+            buf.append(',');
+            buf.append(tags); // TODO
+            buf.append(',');
+            append(buf, bodies);
+            buf.append(",");
+            append(buf, otherwise);
+            buf.append(')');
+            break;
+        case Return(Tree expr):
+            buf.append("Return(");
+            append(buf, expr);
+            buf.append(')');
+            break;
+        case Throw(Tree expr):
+            buf.append("Throw(");
+            append(buf, expr);
+            buf.append(")");
+            break;
+        case New(Tree init):
+            buf.append("New(");
+            append(buf, init);
+            buf.append(")");
+            break;
+        case Create(Tree qualifier, Tree[] targs):
+            buf.append("Create(");
+            append(buf, qualifier);
+            buf.append(',');
+            append(buf, targs);
+            buf.append(')');
+            break;
+        case Typed(Tree expr, Tree tpe):
+            buf.append("Typed(");
+            append(buf, expr);
+            buf.append(",");
+            append(buf, tpe);
+            buf.append(")");
+            break;
+        case TypeApply(Tree fun, Tree[] args):
+            buf.append("TypeApply(");
+            append(buf, fun);
+            buf.append(',');
+            append(buf, args);
+            buf.append(')');
+            break;
+        case Apply(Tree fun, Tree[] args):
+            buf.append("Apply(");
+            append(buf, fun);
+            buf.append(',');
+            append(buf, args);
+            buf.append(')');
+            break;
+        case Super(Name qualifier, Name mixin):
+            buf.append("Super(");
+            append(buf, qualifier);
+            buf.append(',');
+            append(buf, mixin);
+            buf.append(')');
+            break;
+        case This(Name qualifier):
+            buf.append("This(");
+            append(buf, qualifier);
+            buf.append(')');
+            break;
+        case Select(Tree qualifier, Name selector):
+            buf.append("Select(");
+            append(buf, qualifier);
+            buf.append(',');
+            append(buf, selector);
+            buf.append(')');
+            break;
+        case Ident(Name name):
+            buf.append("Ident(");
+            append(buf, name);
+            buf.append(')');
+            break;
+        case Literal(scalac.atree.AConstant value):
+            buf.append("Literal(" + value + ")");
+            break;
+        case TypeTerm():
+            buf.append("TypeTerm()");
+            break;
+        case SingletonType(Tree ref):
+            buf.append("SingletonType(");
+            append(buf, ref);
+            buf.append(')');
+            break;
+        case SelectFromType(Tree qualifier, Name selector):
+            buf.append("SelectFromType(");
+            append(buf, qualifier);
+            buf.append(',');
+            append(buf, selector);
+            buf.append(')');
+            break;
+        case FunType(Tree[] argtpes, Tree restpe):
+            buf.append("FunType(");
+            append(buf, argtpes);
+            buf.append(',');
+            append(buf, restpe);
+            buf.append(')');
+            break;
+        case CompoundType(Tree[] parents, Tree[] refinements):
+            buf.append("CompoundType(");
+            append(buf, parents);
+            buf.append(',');
+            append(buf, refinements);
+            buf.append(')');
+            break;
+        case AppliedType(Tree tpe, Tree[] args):
+            buf.append("AppliedType(");
+            append(buf, tpe);
+            buf.append(',');
+            append(buf, args);
+            buf.append(')');
+            break;
+        case Try(Tree block, Tree catcher, Tree finalizer):
+            buf.append("Try(");
+            append(buf, block);
+            buf.append(',');
+            append(buf, catcher);
+            buf.append(',');
+            append(buf, finalizer);
+            buf.append(')');
+            break;
+        default:
+            buf.append(tree.getClass().getName() + " ");
+        }
+    }
+
+    public static String showTree(Tree tree) {
+        StringBuffer buf = new StringBuffer();
+        append(buf, tree);
+        return buf.toString();
     }
 
     //########################################################################
