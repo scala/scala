@@ -21,12 +21,14 @@ abstract class Typers: Analyzer {
   var idcnt = 0;
   var selcnt = 0;
   var implcnt = 0;
+  var impltime = 0l;
 
   private val transformed = new HashMap[Tree, Tree];
 
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]];
 
-  def init = {
+  def resetTyper: unit = {
+    resetContexts;
     transformed.clear;
     superDefs.clear;
   }
@@ -1032,6 +1034,7 @@ abstract class Typers: Analyzer {
 	val tree1 = if (qual == EmptyTree) tree
                     else atPos(tree.pos)(Select(qual, name));
 		      // atPos necessary because qualifier might come from startContext
+        //System.out.println("check acc: " + defSym + " " + pre);//DEBUG
 	stabilize(checkAccessible(tree1, defSym, pre, qual), pre, mode, pt)
       }
 
@@ -1163,7 +1166,7 @@ abstract class Typers: Analyzer {
           val enclFun = if (tree.symbol != NoSymbol) tree.symbol else context.owner.enclMethod;
           if (!enclFun.isMethod || enclFun.isConstructor)
             errorTree(tree, "return outside method definition")
-          else if (!context.owner.hasFlag(INITIALIZED))
+          else if (!context.owner.isInitialized)
             errorTree(tree, "method " + context.owner + " has return statement; needs result type")
           else {
             val expr1: Tree = typed(expr, enclFun.tpe.finalResultType);
@@ -1230,7 +1233,7 @@ abstract class Typers: Analyzer {
               if (sym != NoSymbol)
 		fun1 = adapt(fun1 setSymbol sym setType pre.memberType(sym), funmode, WildcardType)
             }
-	    appcnt = appcnt + 1;
+	    if (util.Statistics.enabled) appcnt = appcnt + 1;
             typedApply(fun1, args)
 	  }
 
@@ -1268,7 +1271,7 @@ abstract class Typers: Analyzer {
 	  typedSelect(qual1, nme.CONSTRUCTOR);
 
         case Select(qual, name) =>
-	  selcnt = selcnt + 1;
+	  if (util.Statistics.enabled) selcnt = selcnt + 1;
           var qual1 = typedQualifier(qual);
           if (name.isTypeName) qual1 = checkStable(qual1);
           typedSelect(qual1, name);
@@ -1401,7 +1404,6 @@ abstract class Typers: Analyzer {
 
     private def typedImplicit(pos: int, info: ImplicitInfo, pt: Type, local: boolean): Tree =
       if (isCompatible(depoly(info.tpe), pt)) {
-	implcnt = implcnt + 1;
 	var tree: Tree = EmptyTree;
         def fail(reason: String): Tree = {
           if (settings.debug.value)
@@ -1423,6 +1425,9 @@ abstract class Typers: Analyzer {
       } else EmptyTree;
 
     private def inferImplicit(pos: int, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
+
+      if (util.Statistics.enabled) implcnt = implcnt + 1;
+      val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
 
       def isBetter(sym1: Symbol, tpe1: Type, sym2: Symbol, tpe2: Type): boolean =
         sym2.isError ||
@@ -1478,6 +1483,7 @@ abstract class Typers: Analyzer {
 
       var tree = searchImplicit(context.implicitss, true);
       if (tree == EmptyTree) tree = searchImplicit(implicitsOfType(pt.widen), false);
+      if (util.Statistics.enabled) impltime = impltime + System.currentTimeMillis() - startTime;
       tree
     }
 

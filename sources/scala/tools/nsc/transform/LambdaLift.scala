@@ -256,7 +256,7 @@ abstract class LambdaLift extends InfoTransform {
       if (sym.isClass) sym.owner = sym.owner.toInterface;
       if (sym.isMethod) sym setFlag LIFTED;
       liftedDefs(sym.owner) += tree;
-      sym.owner.info.decls enter sym;
+      sym.owner.info.decls enterUnique sym;
       if (settings.debug.value) log("lifted: " + sym + sym.locationString);
       EmptyTree
     }

@@ -17,7 +17,7 @@ abstract class Trees: Global {
 
   abstract class Tree {
 
-    nodeCount = nodeCount + 1;
+    if (util.Statistics.enabled) nodeCount = nodeCount + 1;
 
     var pos: int = Position.NOPOS;
     var tpe: Type = _;

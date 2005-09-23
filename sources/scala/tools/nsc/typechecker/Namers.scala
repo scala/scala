@@ -17,9 +17,7 @@ trait Namers: Analyzer {
   def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
     if (settings.debug.value) log("overwriting " + sym);
     sym.pos = pos;
-    val oldflags = sym.flags & (INITIALIZED | LOCKED);
-    val newflags = mods & ~(INITIALIZED | LOCKED);
-    sym.flags = oldflags | newflags;
+    sym.flags = mods | sym.flags & LOCKED;
     if (sym.isModule)
       updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
     if (sym.owner.isPackageClass && sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader])

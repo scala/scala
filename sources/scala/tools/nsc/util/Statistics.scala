@@ -7,6 +7,10 @@
 
 package scala.tools.nsc.util;
 
+object Statistics {
+  final val enabled = false;
+}
+
 abstract class Statistics {
 
   val global: Global;
@@ -19,6 +23,7 @@ abstract class Statistics {
     inform("#selections  : " + analyzer.selcnt);
     inform("#applications: " + analyzer.appcnt);
     inform("#implicits   : " + analyzer.implcnt);
+    inform("ms implicits : " + analyzer.impltime);
     inform("#typecreates : " + accesses);
     inform("#uniquetypes : " + uniques);
     inform("#collisions  : " + collisions);
@@ -28,7 +33,15 @@ abstract class Statistics {
     inform("#singleton closures: " + singletonClosureCount);
     inform("#compound closures : " + compoundClosureCount);
     inform("#typeref closures  : " + typerefClosureCount);
+    inform("#findMember     : " + findMemberCount);
+    inform("#notfound member: " + noMemberCount);
+    inform("#mulitple member: " + multMemberCount);
+    inform("time findMember: " + findMemberMillis);
+    inform("#norm meth : " + analyzer.normM);
+    inform("#norm poly : " + analyzer.normP);
+    inform("#norm other: " + analyzer.normO);
+    inform("#subtype  : " + subtypeCount);
+    inform("ms subtype: " + subtypeMillis);
   }
-
 }
 

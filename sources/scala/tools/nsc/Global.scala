@@ -153,11 +153,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   var globalPhase: Phase = NoPhase;
 
-  override def phase_=(p: Phase): unit = {
-    assert(p.id <= globalPhase.id + 1);
-    super.phase_=(p)
-  }
-
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     def run: unit = units foreach applyPhase;
     def apply(unit: CompilationUnit): unit;
@@ -264,6 +259,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   val parserPhase = syntaxAnalyzer.newPhase(NoPhase);
   val firstPhase = parserPhase;
+  currentRun = NoRun + 1;
   phase = parserPhase;
   definitions.init; // needs firstPhase and phase to be defined != NoPhase,
 	            // that's why it is placed here.
@@ -332,10 +328,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     symSource.clear;
     symData.clear;
     reporter.resetCounters();
+    phase = firstPhase;
+    while (phase != terminalPhase) { phase.resetPhase; phase = phase.next }
+
     for (val source <- sources)
       addUnit(new CompilationUnit(source));
 
-    globalPhase = NoPhase.next;
+    globalPhase = firstPhase;
     while (globalPhase != terminalPhase && reporter.errors() == 0) {
       val startTime = System.currentTimeMillis();
       phase = globalPhase;
@@ -367,6 +366,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	  writeSymblFile(sym, pickled)
 	}
       }
+      currentRun = currentRun + 1;
     } else {
       for (val Pair(sym, file) <- symSource.elements) {
 	sym.reset(new loaders.SourcefileLoader(file));

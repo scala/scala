@@ -15,6 +15,8 @@ abstract class Phase(val prev: Phase) {
     if (prev == null) Flags.InitialFlags else prev.flagMask | newFlags;
   def flagMask: long = fmask;
 
+  def resetPhase: unit = {}
+
   private var nx: Phase = this;
   if (prev != null) prev.nx = this;
 

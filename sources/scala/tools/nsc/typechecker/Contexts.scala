@@ -39,6 +39,17 @@ abstract class Contexts: Analyzer {
     sc
   }
 
+  def resetContexts: unit = {
+    var sc = startContext;
+    while (sc != NoContext) {
+      sc.tree match {
+	case Import(qual, _) => qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol)
+	case _ =>
+      }
+      sc = sc.outer
+    }
+  }
+
   class Context {
     var unit: CompilationUnit = _;
     var tree: Tree = _;                     // Tree associated with this context
@@ -205,7 +216,7 @@ abstract class Contexts: Analyzer {
       if (implicitsCache == null) {
 	val newImplicits: List[ImplicitInfo] =
 	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
-            if (!owner.hasFlag(INITIALIZED)) return outer.implicitss;
+            if (!owner.isInitialized) return outer.implicitss;
 	    if (settings.debug.value) log("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers);//debug
 	    collectImplicits(owner.thisType.implicitMembers, owner.thisType)
 	  } else if (scope != outer.scope && !owner.isPackageClass) {

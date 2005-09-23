@@ -18,6 +18,7 @@ abstract class SymbolTable extends Names
   def settings: Settings;
   def rootLoader: LazyType;
   def log(msg: Object): unit;
+  def firstPhase: Phase;
 
   private var ph: Phase = NoPhase;
   def phase: Phase = ph;
@@ -26,6 +27,10 @@ abstract class SymbolTable extends Names
     assert(p != null && p != NoPhase);
     ph = p
   }
+
+  final val NoRun = 0;
+
+  var currentRun: int = NoRun;
 
   def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase;

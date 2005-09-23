@@ -31,10 +31,16 @@ import Flags._;
 abstract class Types: SymbolTable {
   import definitions._;
 
-  //staticstics
+  //statistics
   var singletonClosureCount = 0;
   var compoundClosureCount = 0;
   var typerefClosureCount = 0;
+  var findMemberCount = 0;
+  var noMemberCount = 0;
+  var multMemberCount = 0;
+  var findMemberMillis = 0l;
+  var subtypeCount = 0;
+  var subtypeMillis = 0l;
 
   private var explainSwitch = false;
   private var checkMalformedSwitch = true;
@@ -43,6 +49,8 @@ abstract class Types: SymbolTable {
 
   /** The base class for all types */
   trait Type {
+
+    def isTrivial: boolean = false;
 
     /** The symbol associated with the type */
     def symbol: Symbol = NoSymbol;
@@ -161,15 +169,19 @@ abstract class Types: SymbolTable {
      *  and instantiate all parameters by arguments of `pre'.
      *  Proceed analogously for thistypes referring to outer classes. */
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
-      if (!phase.erasedTypes || pre.symbol == ArrayClass) new AsSeenFromMap(pre, clazz) apply this;
-      else this;
+      if (!isTrivial && (!phase.erasedTypes || pre.symbol == ArrayClass)) {
+	new AsSeenFromMap(pre, clazz) apply this;
+      } else this;
 
     /** The info of `sym', seen as a member of this type. */
     def memberInfo(sym: Symbol): Type =
       sym.info.asSeenFrom(this, sym.owner);
 
     /** The type of `sym', seen as a memeber of this type. */
-    def memberType(sym: Symbol): Type = sym.tpe.asSeenFrom(this, sym.owner);
+    def memberType(sym: Symbol): Type = {
+      //System.out.println("" + this + " memberType " + sym + ":" + sym.tpe);//DEBUG
+      sym.tpe.asSeenFrom(this, sym.owner);
+    }
 
     /** Substitute types `to' for occurrences of references to symbols `from'
      *  in this type. */
@@ -192,14 +204,20 @@ abstract class Types: SymbolTable {
       new ContainsTraverser(sym).traverse(this).result;
 
     /** Is this type a subtype of that type? */
-    def <:<(that: Type): boolean =
-      if (explainSwitch) explain("<", isSubType, this, that)
-      else (this eq that) || isSubType(this, that);
+    def <:<(that: Type): boolean = {
+      if (util.Statistics.enabled) subtypeCount = subtypeCount + 1;
+      val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
+      val result =
+        (this eq that) ||
+        (if (explainSwitch) explain("<", isSubType, this, that) else isSubType(this, that));
+      if (util.Statistics.enabled) subtypeMillis = subtypeMillis + System.currentTimeMillis() - startTime;
+      result
+    }
 
     /** Is this type equivalent to that type? */
     def =:=(that: Type): boolean =
-      if (explainSwitch) explain("<", isSameType, this, that)
-      else (this eq that) || isSameType(this, that);
+      (this eq that) ||
+      (if (explainSwitch) explain("<", isSameType, this, that) else isSameType(this, that));
 
     /** Does this type implement symbol `sym' with same or stronger type? */
     def specializes(sym: Symbol): boolean =
@@ -301,6 +319,9 @@ abstract class Types: SymbolTable {
 
     //todo: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
+      if (util.Statistics.enabled) findMemberCount = findMemberCount + 1;
+      val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
+
       //System.out.println("find member " + name.decode + " in " + this + ":" + this.baseClasses);//DEBUG
       var members: Scope = null;
       var member: Symbol = NoSymbol;
@@ -323,6 +344,7 @@ abstract class Types: SymbolTable {
               if (excl == 0) {
                 if (name.isTypeName) {
                   checkMalformedSwitch = savedCheckMalformedSwitch;
+		  if (util.Statistics.enabled) findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime;
                   return sym
                 } else if (member == NoSymbol) {
                   member = sym
@@ -357,8 +379,14 @@ abstract class Types: SymbolTable {
 	excluded = excludedFlags
       } // while (continue)
       checkMalformedSwitch = savedCheckMalformedSwitch;
-      if (members == null) member
-      else baseClasses.head.newOverloaded(this, members.toList)
+      if (util.Statistics.enabled) findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime;
+      if (members == null) {
+        if (util.Statistics.enabled)	if (member == NoSymbol) noMemberCount = noMemberCount + 1;
+	member
+      } else {
+	if (util.Statistics.enabled) multMemberCount = multMemberCount + 1;
+	baseClasses.head.newOverloaded(this, members.toList)
+      }
     }
   }
 
@@ -391,7 +419,7 @@ abstract class Types: SymbolTable {
     override def isStable: boolean = true;
     override def widen: Type = singleDeref.widen;
     override def closure: Array[Type] = {
-      singletonClosureCount = singletonClosureCount + 1;
+      if (util.Statistics.enabled) singletonClosureCount = singletonClosureCount + 1;
       addClosure(this, supertype.closure);
     }
     override def toString(): String = prefixString + "type";
@@ -422,11 +450,13 @@ abstract class Types: SymbolTable {
 
   /** An object representing a non-existing type */
   case object NoType extends Type {
+    override def isTrivial: boolean = true;
     override def toString(): String = "<notype>"
   }
 
   /** An object representing a non-existing prefix */
   case object NoPrefix extends Type {
+    override def isTrivial: boolean = true;
     override def isStable: boolean = true;
     override def prefixString = "";
     override def toString(): String = "<noprefix>";
@@ -436,6 +466,7 @@ abstract class Types: SymbolTable {
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType {
     assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym);
+    override def isTrivial: boolean = sym.isPackageClass;
     override def symbol = sym;
     override def singleDeref: Type = sym.typeOfThis;
     override def prefixString =
@@ -452,6 +483,7 @@ abstract class Types: SymbolTable {
    *  `singleType' for creation.
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
+    override val isTrivial: boolean = pre.isTrivial;
     private var singleDerefCache: Type = _;
     private var singleDerefPhase: Phase = null;
     override def singleDeref: Type = {
@@ -472,6 +504,7 @@ abstract class Types: SymbolTable {
   }
 
   abstract case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
+    override val isTrivial: boolean = thistpe.isTrivial && supertp.isTrivial;
     override def symbol = thistpe.symbol;
     override def singleDeref = supertp;
     override def prefix: Type = supertp.prefix;
@@ -485,6 +518,7 @@ abstract class Types: SymbolTable {
   /** A class for the bounds of abstract types and type parameters
    */
   abstract case class TypeBounds(lo: Type, hi: Type) extends SubType {
+    override val isTrivial: boolean = lo.isTrivial && hi.isTrivial;
     def supertype: Type = hi;
     override def bounds: TypeBounds = this;
     def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
@@ -504,7 +538,7 @@ abstract class Types: SymbolTable {
     override def closure: Array[Type] = {
       def computeClosure: Array[Type] =
 	try {
-          compoundClosureCount = compoundClosureCount + 1;
+          if (util.Statistics.enabled) compoundClosureCount = compoundClosureCount + 1;
           //System.out.println("computing closure of " + symbol.tpe + " " + parents);//DEBUG
           addClosure(symbol.tpe, glbArray(parents map (.closure)));
 	} catch {
@@ -598,6 +632,7 @@ abstract class Types: SymbolTable {
   /** A class representing a constant type */
   abstract case class ConstantType(value: Constant) extends SingletonType {
     assert(value.tpe.symbol != UnitClass);
+    override def isTrivial: boolean = true;
     override def symbol: Symbol = value.tpe.symbol;
     override def singleDeref: Type = value.tpe;
     override def deconst: Type = value.tpe;
@@ -615,6 +650,9 @@ abstract class Types: SymbolTable {
     private var parentsPhase: Phase = null;
     private var closureCache: Array[Type] = _;
     private var closurePhase: Phase = null;
+
+    override val isTrivial: boolean =
+      pre.isTrivial && !sym.isTypeParameter && args.forall(.isTrivial);
 
     def transform(tp: Type): Type =
       tp.asSeenFrom(pre, sym.owner).subst(sym.typeParams, args);
@@ -666,7 +704,7 @@ abstract class Types: SymbolTable {
       if (p != phase) {
         closurePhase = phase;
         if (!isValidForBaseClasses(p)) {
-          typerefClosureCount = typerefClosureCount + 1;
+          if (util.Statistics.enabled) typerefClosureCount = typerefClosureCount + 1;
           closureCache =
             if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
             else transform(sym.info.closure);
@@ -702,6 +740,9 @@ abstract class Types: SymbolTable {
    */
   case class MethodType(override val paramTypes: List[Type],
                         override val resultType: Type) extends Type {
+    override val isTrivial: boolean =
+      paramTypes.forall(.isTrivial) && resultType.isTrivial;
+
     assert(paramTypes forall (pt => !pt.symbol.isImplClass));//debug
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
 
@@ -898,34 +939,12 @@ abstract class Types: SymbolTable {
   var accesses = 0;
   var collisions = 0; //todo: use HashSet!
 
-/* statistics
-  var uniqueThis = 0;
-  var uniqueSingle = 0;
-  var uniqueSuper = 0;
-  var uniqueTypeRef = 0;
-  var uniqueTypeBounds = 0;
-  var uniqueConstant = 0;
-  var uniqueMethod = 0;
-  var duplicateThis = 0;
-  var duplicateSingle = 0;
-  var duplicateSuper = 0;
-  var duplicateTypeRef = 0;
-  var duplicateTypeBounds = 0;
-  var duplicateConstant = 0;
-  var duplicateMethod = 0;
-
-  def allTypes = new Iterator[Type] {
-    var i = 0;
-    def hasNext: boolean = { while (i < size && table(i) == null) { i = i + 1 }; i < size }
-    def next: Type = if (hasNext) { val r = table(i); i = i + 1; r } else null;
-  }
-*/
   private def findEntry(tp: Type): Type = {
     var h = tp.hashCode() % size;
-    accesses = accesses + 1;
+    if (util.Statistics.enabled) accesses = accesses + 1;
     var entry = table(h);
     while (entry != null && entry != tp) {
-      collisions = collisions + 1;
+      if (util.Statistics.enabled) collisions = collisions + 1;
       h = (h + 1) % size;
       entry = table(h)
     }
@@ -957,31 +976,9 @@ abstract class Types: SymbolTable {
   private def unique[T <: Type](tp: T): T = {
     val tp1 = findEntry(tp);
     if (tp1 == null) {
-/*
-      tp.asInstanceOf[Type] match {
-        case ThisType(_) => uniqueThis = uniqueThis + 1
-        case SingleType(_, _) => uniqueSingle = uniqueSingle + 1
-        case SuperType(_, _) => uniqueSuper = uniqueSuper + 1
-        case TypeRef(_, _, _) => uniqueTypeRef = uniqueTypeRef + 1
-        case TypeBounds(_, _) => uniqueTypeBounds = uniqueTypeBounds + 1
-        case ConstantType(_) => uniqueConstant = uniqueConstant + 1
-        case MethodType(_, _) => uniqueMethod = uniqueMethod + 1
-      }
-*/
-      uniques = uniques + 1;
+      if (util.Statistics.enabled) uniques = uniques + 1;
       addEntry(tp); tp
     } else {
-/*
-      tp.asInstanceOf[Type] match {
-        case ThisType(_) => duplicateThis = duplicateThis + 1
-        case SingleType(_, _) => duplicateSingle = duplicateSingle + 1
-        case SuperType(_, _) => duplicateSuper = duplicateSuper + 1
-        case TypeRef(_, _, _) => duplicateTypeRef = duplicateTypeRef + 1
-        case TypeBounds(_, _) => duplicateTypeBounds = duplicateTypeBounds + 1
-        case ConstantType(_) => duplicateConstant = duplicateConstant + 1
-        case MethodType(_, _) => duplicateMethod = duplicateMethod + 1
-      }
-*/
       tp1.asInstanceOf[T]
     }
   }
@@ -1269,7 +1266,7 @@ abstract class Types: SymbolTable {
   }
 
   /** Do tp1 and tp2 denote equivalent types? */
-  def isSameType(tp1: Type, tp2: Type): boolean = (tp1 eq tp2) || {
+  def isSameType(tp1: Type, tp2: Type): boolean = {
     Pair(tp1, tp2) match {
       case Pair(ErrorType, _) => true
       case Pair(WildcardType, _) => true
@@ -1342,7 +1339,7 @@ abstract class Types: SymbolTable {
     List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2);
 
   /** Does tp1 conform to tp2? */
-  def isSubType(tp1: Type, tp2: Type): boolean = (tp1 eq tp2) || {
+  def isSubType(tp1: Type, tp2: Type): boolean = {
     Pair(tp1, tp2) match {
       case Pair(ErrorType, _)    => true
       case Pair(WildcardType, _) => true

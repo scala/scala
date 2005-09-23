@@ -64,7 +64,6 @@ object Flags {
   final val TRANS_FLAG    = 0x2000000000l; // transient flag guaranteed to be reset after each phase.
   final val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
 
-  final val INITIALIZED   = 0x4000000000l; // symbol's definition is complete
   final val LOCKED        = 0x8000000000l; // temporary flag to catch cyclic dependencies
 
   final val InitialFlags  = 0x000000FFFFFFFFFFl; // flags that are enabled from phase 1.
@@ -124,7 +123,6 @@ object Flags {
     else if (flag == TRANS_FLAG) "<trans-flag>"
     else if (flag == MIXEDIN) "<mixedin>"
     else if (flag == EXPANDEDNAME) "<expandedname>"
-    else if (flag == INITIALIZED) "<initialized>"
     else if (flag == LOCKED) "<locked>"
     else if (flag == STATICMODULE) "<staticobject>"
     else if (flag == STATICMEMBER) "<staticmember>"

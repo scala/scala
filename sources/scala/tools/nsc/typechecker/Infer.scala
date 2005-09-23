@@ -12,6 +12,10 @@ abstract class Infer: Analyzer {
   import posAssigner.atPos;
   import util.ListBuffer;
 
+  var normM = 0;
+  var normP = 0;
+  var normO = 0;
+
 /* -- Type parameter inference utility functions -------------------------------------- */
 
   /** The formal parameter types corresponding to `formals'.
@@ -135,9 +139,15 @@ abstract class Infer: Analyzer {
    *  Implicit parameters are skipped.
    */
   private def normalize(tp: Type): Type = skipImplicit(tp) match {
-    case MethodType(formals, restpe) => functionType(formals, normalize(restpe))
-    case PolyType(List(), restpe) => normalize(restpe);
-    case tp1 => tp1
+    case MethodType(formals, restpe) =>
+      if (util.Statistics.enabled) normM = normM + 1;
+      functionType(formals, normalize(restpe))
+    case PolyType(List(), restpe) =>
+      if (util.Statistics.enabled) normP = normP + 1;
+      normalize(restpe);
+    case tp1 =>
+      if (util.Statistics.enabled) normO = normO + 1;
+      tp1
   }
 
   /** The context-dependent inferencer part */

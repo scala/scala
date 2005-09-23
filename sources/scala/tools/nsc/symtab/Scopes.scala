@@ -114,7 +114,7 @@ abstract class Scopes: SymbolTable {
      */
     def enter(sym: Symbol): unit = enter(newScopeEntry(sym, this));
 
-    /** enter a symbol
+    /** enter a symbol, asserting that no symbol with same name exists in scope
      */
     def enterUnique(sym: Symbol): unit = {
       assert(lookup(sym.name) == NoSymbol);

@@ -10,6 +10,7 @@ import collection.mutable.HashMap;
 import Flags._;
 
 abstract class Definitions: SymbolTable {
+
   object definitions {
 
     // root packages and classes
@@ -80,9 +81,9 @@ abstract class Definitions: SymbolTable {
 
     val MaxTupleArity = 9;
     val MaxFunctionArity = 9;
-    def TupleClass(i: int): Symbol = getClass("scala.Tuple" + i);
+    var TupleClass: Array[Symbol] = _;
       def tupleField(n:int, j:int) = getMember(TupleClass(n), "_" + j);
-    def FunctionClass(i: int): Symbol = getClass("scala.Function" + i);
+    var FunctionClass: Array[Symbol] = _;
       def functionApply(n:int) = getMember(FunctionClass(n), "apply");
 
     def tupleType(elems: List[Type]) =
@@ -327,6 +328,12 @@ abstract class Definitions: SymbolTable {
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
+      TupleClass = new Array(MaxTupleArity + 1);
+      for (val i <- List.range(1, MaxTupleArity + 1))
+	TupleClass(i) = getClass("scala.Tuple" + i);
+      FunctionClass = new Array(MaxFunctionArity + 1);
+      for (val i <- List.range(0, MaxFunctionArity + 1))
+	FunctionClass(i) = getClass("scala.Function" + i);
 
       // members of class scala.Any
       Any_== = newMethod(

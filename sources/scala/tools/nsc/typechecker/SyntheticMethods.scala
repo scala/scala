@@ -81,7 +81,7 @@ abstract class SyntheticMethods: Analyzer {
     }
 
     val ts = new ListBuffer[Tree];
-    if (clazz hasFlag CASE) {
+    if ((clazz hasFlag CASE) && !phase.erasedTypes) {
       if (!hasImplementation(nme.tag)) ts += tagMethod;
       if (clazz.isModuleClass) {
 	if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod;

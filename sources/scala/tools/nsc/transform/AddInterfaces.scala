@@ -24,6 +24,11 @@ abstract class AddInterfaces extends InfoTransform {
   private val implClassMap = new HashMap[Symbol, Symbol];
   private val implMethodMap = new HashMap[Symbol, Symbol];
 
+  override def resetTransform: unit = {
+    implClassMap.clear;
+    implMethodMap.clear
+  }
+
   private def needsImplMethod(sym: Symbol): boolean =
     sym.isMethod && isInterfaceMember(sym) &&
     (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED));
@@ -36,15 +41,17 @@ abstract class AddInterfaces extends InfoTransform {
     case Some(c) => c
     case None =>
       atPhase(erasurePhase) {
-        val impl = iface.cloneSymbolImpl(iface.owner)
-	  setFlag (iface.flags & ~(INTERFACE | lateINTERFACE))
-	  setInfo new LazyImplClassType(iface);
-        impl.name = nme.implClassName(iface.name);
-        //includeInTypeOfThis(iface, impl);
-        //includeInTypeOfThis(impl, impl);
-        //todo: use implClassMap only for local impl classes
+        val implName = nme.implClassName(iface.name);
+        var impl = if (iface.owner.isClass) iface.owner.info.decls.lookup(implName) else NoSymbol;
+        if (impl == NoSymbol) {
+          impl = iface.cloneSymbolImpl(iface.owner);
+          impl.name = implName;
+          if (iface.owner.isClass) iface.owner.info.decls enter impl
+        }
+        impl.pos = iface.pos;
+        impl.flags = iface.flags & ~(INTERFACE | lateINTERFACE);
+	impl setInfo new LazyImplClassType(iface);
         implClassMap(iface) = impl;
-        if (iface.owner.isClass) iface.owner.info.decls enter impl;
         if (settings.debug.value) log("generating impl class " + impl);
         impl
       }
@@ -145,7 +152,7 @@ abstract class AddInterfaces extends InfoTransform {
         new ChangeOwnerAndReturnTraverser(ifaceMethod, implMethod).traverse(tree);
         tree
       case None =>
-        throw new Error("implMethod missing for " + ifaceMethod + " " + ifaceMethod.isExternal)
+        throw new Error("implMethod missing for " + ifaceMethod)
     }
 
   private def implMemberDef(tree: Tree): Tree =
