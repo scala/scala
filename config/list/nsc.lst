@@ -97,12 +97,15 @@ util/ShowPickled.scala
 util/Statistics.scala
 util/TreeSet.scala
 
+backend/ScalaPrimitives.scala
+backend/WorklistAlgorithm.scala
 backend/icode/BasicBlocks.scala
 backend/icode/CheckerError.scala
 backend/icode/Checkers.scala
 backend/icode/ExceptionHandlers.scala
 backend/icode/GenICode.scala
 backend/icode/ICodes.scala
+backend/icode/Linearizers.scala
 backend/icode/Members.scala
 backend/icode/Opcodes.scala
 backend/icode/Primitives.scala
