@@ -240,6 +240,7 @@ run/enums.scala
 run/exceptions.scala
 run/imports.scala
 run/iq.scala
+run/iterators.scala
 run/lisp.scala
 run/lists.scala
 run/literals.scala
