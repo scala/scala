@@ -75,16 +75,19 @@ object Iterator {
    *
    *  @param lo the start value of the iterator
    *  @param end the end value of the iterator
-   *  @param step the increment value of the iterator
+   *  @param step the increment value of the iterator (must be positive or negative)
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int, step: Int): Iterator[Int] = new Iterator[Int] {
-    private var i = lo;
-    def hasNext: Boolean =  i < end;
-    def next: Int =
-      if (i < end) { val j = i; i = i + step; j } else Predef.error("next on empty iterator");
-    def head: Int =
-      if (i < end) i else Predef.error("head on empty iterator");
+  def range(lo: Int, end: Int, step: Int): Iterator[Int] = {
+    assert(step != 0);
+    new Iterator[Int] {
+      private var i = lo;
+      def hasNext: Boolean = if (step > 0) i < end else i > end;
+      def next: Int =
+        if (hasNext) { val j = i; i = i + step; j } else Predef.error("next on empty iterator");
+      def head: Int =
+        if (hasNext) i else Predef.error("head on empty iterator");
+    }
   }
 
   /** Create an iterator with elements

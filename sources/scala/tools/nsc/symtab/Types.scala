@@ -217,7 +217,7 @@ abstract class Types: SymbolTable {
     /** Is this type equivalent to that type? */
     def =:=(that: Type): boolean =
       (this eq that) ||
-      (if (explainSwitch) explain("<", isSameType, this, that) else isSameType(this, that));
+      (if (explainSwitch) explain("=", isSameType, this, that) else isSameType(this, that));
 
     /** Does this type implement symbol `sym' with same or stronger type? */
     def specializes(sym: Symbol): boolean =
@@ -294,7 +294,19 @@ abstract class Types: SymbolTable {
     def isComplete: boolean = true;
 
     /** If this is a lazy type, assign a new type to `sym'. */
-    def complete(sym: Symbol): unit = {}
+    def complete(sym: Symbol): unit = {
+      if (sym == NoSymbol || sym.isPackageClass) sym.validForRun = currentRun
+      else {
+	/*if (sym.owner.isClass) complete(sym.owner);*/
+	val this1 = adaptToNewRunMap(this);
+	System.out.println("adapting " + sym);//debug
+	if (this1 eq this) sym.validForRun = currentRun
+	else {
+	  System.out.println("new type of " + sym + "=" + this1);//debug
+	  sym.setInfo(this1);
+	}
+      }
+    }
 
     /** If this is a symbol loader type, load and assign a new type to `sym'. */
     def load(sym: Symbol): unit = {}
@@ -1016,8 +1028,12 @@ abstract class Types: SymbolTable {
 
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
-      case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
-        tp
+      case ErrorType => tp
+      case WildcardType => tp
+      case NoType => tp
+      case NoPrefix => tp
+      case ThisType(_) => tp
+      case ConstantType(_) => tp
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
         else {
@@ -1244,6 +1260,55 @@ abstract class Types: SymbolTable {
     private def register(sym: Symbol): unit = {
       while (result != NoSymbol && sym != result && !(sym isNestedIn result))
         result = result.owner;
+    }
+  }
+
+  object adaptToNewRunMap extends TypeMap {
+    private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
+      if (sym.isModuleClass) adaptToNewRun(pre, sym.sourceModule).moduleClass;
+      else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) sym
+      else {
+        val rebind0 = pre.nonPrivateMember(sym.name);
+        val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable);
+        if (rebind == NoSymbol) throw new MalformedType(pre, sym.name.toString());
+        rebind
+      }
+    }
+    def apply(tp: Type): Type = tp match {
+      case SingleType(pre, sym) =>
+	if (sym.isPackage) tp
+	else {
+          val pre1 = this(pre);
+          val sym1 = adaptToNewRun(pre1, sym);
+          if ((pre1 eq pre) && (sym1 eq sym)) tp
+          else singleType(pre1, sym1)
+	}
+      case TypeRef(pre, sym, args) =>
+	if (sym.isPackageClass) tp
+        else {
+	  val pre1 = this(pre);
+          val args1 = List.mapConserve(args)(this);
+          val sym1 = adaptToNewRun(pre1, sym);
+          if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args) && sym.isExternal) tp
+          else typeRef(pre1, sym1, args1)
+	}
+      case PolyType(tparams, restp) =>
+        val restp1 = this(restp);
+        if (restp1 eq restp) tp
+        else PolyType(tparams, restp1)
+      case ClassInfoType(parents, decls, clazz) =>
+        val parents1 = List.mapConserve(parents)(this);
+        if (parents1 eq parents) tp
+        else ClassInfoType(parents1, decls, clazz)
+      case RefinedType(parents, decls) =>
+        val parents1 = List.mapConserve(parents)(this);
+        if (parents1 eq parents) tp
+        else refinedType(parents1, tp.symbol.owner, decls)
+      case SuperType(_, _) => mapOver(tp)
+      case TypeBounds(_, _) => mapOver(tp)
+      case MethodType(_, _) => mapOver(tp)
+      case TypeVar(_, _) => mapOver(tp)
+      case _ => tp
     }
   }
 

@@ -30,10 +30,9 @@ abstract class SymbolTable extends Names
 
   final val NoRun = 0;
 
-  /** The number of the current compiler run. Runs start at 2 and increment by 2's.
-    * Odd run numbers in the `validForRun' field of symbols indicate that the type of
-    * the symbol is not yet fully defined.
-    */
+  /** The number of the current compiler run. Runs start at 1 and increment each time
+   *  after Global.compileSources is called.
+   */
   var currentRun: int = NoRun;
 
   def atPhase[T](ph: Phase)(op: => T): T = {

@@ -880,7 +880,7 @@ abstract class Typers: Analyzer {
         case ErrorType =>
           setError(tree)
         case _ =>
-          throw new Error("Matcherror at " + phase);//debug
+          throw new Error("Matcherror at " + phase + " " + fun.tpe);//debug
       }
 
       /** The qualifying class of a this or super with prefix `qual' */
@@ -1166,7 +1166,7 @@ abstract class Typers: Analyzer {
           val enclFun = if (tree.symbol != NoSymbol) tree.symbol else context.owner.enclMethod;
           if (!enclFun.isMethod || enclFun.isConstructor)
             errorTree(tree, "return outside method definition")
-          else if (!context.owner.hasFlag(INITIALIZED))
+          else if (!context.owner.isInitialized)
             errorTree(tree, "method " + context.owner + " has return statement; needs result type")
           else {
             val expr1: Tree = typed(expr, enclFun.tpe.finalResultType);

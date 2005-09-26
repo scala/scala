@@ -48,7 +48,7 @@ abstract class AddInterfaces extends InfoTransform {
           impl.name = implName;
           if (iface.owner.isClass) iface.owner.info.decls enter impl
         }
-        impl.pos = iface.pos;
+        impl setPos iface.pos;
         impl.flags = iface.flags & ~(INTERFACE | lateINTERFACE);
 	impl setInfo new LazyImplClassType(iface);
         implClassMap(iface) = impl;

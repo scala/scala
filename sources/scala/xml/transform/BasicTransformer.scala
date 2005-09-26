@@ -61,9 +61,7 @@ trait BasicTransformer extends Function1[Node,Node] {
       }
       ns
     } catch {
-      case n: NeedsCopy =>
-        // todo: replace with NeedsCopy(n2), once pattern matcher can handle try's
-        val n2 = n.result;
+      case NeedsCopy(n2) =>
 	val nb = buffer(i, ns);
 	nb ++ n2;
 	transform(it, nb);

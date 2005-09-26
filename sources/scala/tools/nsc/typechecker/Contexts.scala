@@ -43,7 +43,9 @@ abstract class Contexts: Analyzer {
     var sc = startContext;
     while (sc != NoContext) {
       sc.tree match {
-	case Import(qual, _) => qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol)
+	case Import(qual, _) =>
+          qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol);
+          System.out.println("resetting " + qual + " to " + qual.tpe)
 	case _ =>
       }
       sc = sc.outer
@@ -216,7 +218,7 @@ abstract class Contexts: Analyzer {
       if (implicitsCache == null) {
 	val newImplicits: List[ImplicitInfo] =
 	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
-            if (!owner.hasFlag(INITIALIZED)) return outer.implicitss;
+            if (!owner.isInitialized) return outer.implicitss;
 	    if (settings.debug.value) log("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers);//debug
 	    collectImplicits(owner.thisType.implicitMembers, owner.thisType)
 	  } else if (scope != outer.scope && !owner.isPackageClass) {
@@ -267,7 +269,7 @@ abstract class Contexts: Analyzer {
     override def toString() = tree.toString();
   }
 
-  case class ImportType(expr: Tree) extends Type;
-
   case class ImplicitInfo(val name: Name, val tpe: Type, val sym: Symbol);
+
+  case class ImportType(expr: Tree) extends Type;
 }

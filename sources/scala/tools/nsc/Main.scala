@@ -32,7 +32,7 @@ object Main {
     val in = new BufferedReader(new InputStreamReader(System.in));
     System.out.print(prompt);
     var line = in.readLine();
-    while (line.length() > 0) {
+    while (line != null && line.length() > 0) {
       val args = List.fromString(line, ' ');
       val command = new CompilerCommand(args, error, true);
       compiler.compile(command.files);

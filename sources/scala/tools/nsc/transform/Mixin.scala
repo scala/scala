@@ -139,7 +139,7 @@ abstract class Mixin extends InfoTransform {
 	  clazz setFlag lateMODULE;
           var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName);
           if (sourceModule != NoSymbol) {
-            sourceModule.pos = sym.pos;
+            sourceModule setPos sym.pos;
             sourceModule.flags = MODULE | FINAL;
           } else {
             sourceModule = clazz.owner.newModule(

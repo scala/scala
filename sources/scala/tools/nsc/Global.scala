@@ -360,7 +360,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     if (reporter.errors() == 0) {
       for (val Pair(sym, pickled) <- symData.elements.toList) {
-	sym.pos = Position.NOPOS;
+	sym setPos Position.NOPOS;
 	if (symData contains sym) {
 	  symData -= sym;
 	  symData -= sym.linkedSym;

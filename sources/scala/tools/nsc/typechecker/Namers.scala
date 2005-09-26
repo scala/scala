@@ -16,7 +16,7 @@ trait Namers: Analyzer {
 
   def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
     if (settings.debug.value) log("overwriting " + sym);
-    sym.pos = pos;
+    sym setPos pos;
     sym.flags = mods | sym.flags & LOCKED;
     if (sym.isModule)
       updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
@@ -60,7 +60,7 @@ trait Namers: Analyzer {
     private def enterPackageSymbol(pos: int, name: Name): Symbol = {
       val p: Symbol = context.scope.lookup(name);
       if (p.isPackage && context.scope == p.owner.info.decls) {
-        p.pos = pos; p.moduleClass.pos = pos; p
+        p
       } else {
         val pkg = context.owner.newPackage(pos, name);
         pkg.moduleClass.setInfo(new PackageClassInfoType(new Scope(), pkg.moduleClass));

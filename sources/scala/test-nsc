@@ -1,0 +1,24 @@
+#! /bin/tcsh
+alias scala      java -Xms16m -ea -classpath /home/linuxsoft/apps/java-1.4.2_08/jre/lib/rt.jar:$HOME/scala/objects/main/lib/scala:$HOME/scala/objects/main/lib/tools:/tmp/classes
+alias scala-debug scala -Djava.compiler=NONE
+alias nsc        "scala scala.tools.nsc.Main -classpath "/tmp/newclasses:$HOME/picoClasses:$HOME/scala/sources:$HOME/scala/newsources" -d /tmp/newclasses"
+nsc -verbose -prompt -nopredefs Predef.scala runtime/ScalaRunTime.scala -check:geni $*
+nsc -verbose -prompt *.scala -check:geni $*
+nsc -verbose -prompt runtime/*.scala runtime/*/*.scala -check:geni $*
+nsc -verbose -prompt collection/*.scala -check:geni $*
+nsc -verbose -prompt collection/mutable/*.scala -check:geni $*
+nsc -verbose -prompt collection/immutable/*.scala -check:geni $*
+nsc -verbose -prompt concurrent/*.scala -check:geni $*
+nsc -verbose -prompt io/*.scala -check:geni $*
+nsc -verbose -prompt mobile/*.scala -check:geni $*
+nsc -verbose -prompt text/*.scala -check:geni $*
+nsc -verbose -prompt testing/*.scala -check:geni $*
+nsc -verbose -prompt util/*/*.scala -check:geni $*
+nsc -verbose -prompt xml*.scala xml/*/*.scala -check:geni $*
+rm -r /tmp/newclasses/scala/tools/nsc
+nsc -verbose -prompt tools/nsc/*.scala tools/nsc/matching/*.scala -check:geni $*
+nsc -verbose -prompt tools/nsc/Global.scala -check:geni $*
+nsc -verbose -prompt tools/nsc/typechecker/Typers.scala -check:geni $*
+nsc -verbose -prompt tools/nsc/symtab/Types.scala -check:geni $*
+nsc -verbose -prompt tools/nsc/symtab/Symbols.scala -check:geni $*
+
