@@ -90,11 +90,11 @@ public class Debug extends scala.tools.util.debug.Debug {
         buf.append("\"" + str + '"');
     }
 
-    private static void append(StringBuffer buf, Tree[] trees) {
+    private static void append(StringBuffer buf, Tree[] trees, boolean showType) {
         buf.append('[');
         for (int i = 0; i < trees.length; i++) {
             if (i > 0) buf.append(',');
-            append(buf, trees[i]);
+            append(buf, trees[i], showType);
         }
         buf.append(']');
     }
@@ -107,24 +107,22 @@ public class Debug extends scala.tools.util.debug.Debug {
         }
     }
 
-    private static void append(StringBuffer buf, Tree tree) {
+    private static void append(StringBuffer buf, Tree tree, boolean showType) {
         switch (tree) {
         case Empty:
-            buf.append("Empty()");
+            buf.append("Empty(");
             break;
         case Attributed(Tree attribute, Tree definition):
             buf.append("Attributed(");
             append(buf, attribute);
             buf.append(',');
             append(buf, definition);
-            buf.append(')');
             break;
         case DocDef(String comment, Tree definition):
             buf.append("DocDef(");
             append(buf, comment);
             buf.append(',');
             append(buf, definition);
-            buf.append(')');
             break;
         case ClassDef(int mods, Name name, Tree.AbsTypeDef[] tparams,
                       Tree.ValDef[][] vparams, Tree tpe, Tree.Template impl):
@@ -140,14 +138,12 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, tpe);
             buf.append(',');
             append(buf, impl);
-            buf.append(')');
             break;
         case PackageDef(Tree packaged, Tree.Template impl):
             buf.append("PackageDef(");
             append(buf, packaged);
             buf.append(',');
             append(buf, impl);
-            buf.append(')');
             break;
         case ModuleDef(int mods, Name name, Tree tpe, Tree.Template impl):
             buf.append("ModuleDef(");
@@ -158,7 +154,6 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, tpe);
             buf.append(',');
             append(buf, impl);
-            buf.append(')');
             break;
         case ValDef(int mods, Name name, Tree tpe, Tree rhs):
             buf.append("ValDef(");
@@ -166,10 +161,9 @@ public class Debug extends scala.tools.util.debug.Debug {
             buf.append(',');
             append(buf, name);
             buf.append(',');
-            append(buf, tpe);
+            append(buf, tpe, showType);
             buf.append(',');
-            append(buf, rhs);
-            buf.append(')');
+            append(buf, rhs, showType);
             break;
         case PatDef(int mods, Tree pat, Tree rhs):
             buf.append("PatDef(");
@@ -178,7 +172,6 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, pat);
             buf.append(',');
             append(buf, rhs);
-            buf.append(')');
             break;
         case DefDef(int mods, Name name, Tree.AbsTypeDef[] tparams,
                     Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
@@ -194,7 +187,6 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, tpe);
             buf.append(',');
             append(buf, rhs);
-            buf.append(')');
             break;
         case AbsTypeDef(int mods, Name name, Tree rhs, Tree lobound):
             buf.append("AbsTypeDef(");
@@ -205,7 +197,6 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, rhs);
             buf.append(',');
             append(buf, lobound);
-            buf.append(')');
             break;
         case AliasTypeDef(int mods, Name name, Tree.AbsTypeDef[] tparams, Tree rhs):
             buf.append("AliasTypeDef(");
@@ -216,14 +207,12 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, tparams);
             buf.append(',');
             append(buf, rhs);
-            buf.append(')');
             break;
         case Import(Tree expr, Name[] selectors):
             buf.append("Import(");
             append(buf, expr);
             buf.append(",");
             append(buf, selectors);
-            buf.append(")");
             break;
         case CaseDef(Tree pat, Tree guard, Tree body):
             buf.append("CaseDef(");
@@ -233,14 +222,12 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, guard);
             buf.append(",");
             append(buf, body);
-            buf.append(")");
             break;
         case Template(Tree[] parents, Tree[] body):
             buf.append("Template(");
             append(buf, parents);
             buf.append(',');
             append(buf, body);
-            buf.append(')');
             break;
         case LabelDef(Name name, Tree.Ident[] params, Tree rhs):
             buf.append("LabelDef(");
@@ -250,52 +237,44 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, params);
             buf.append(',');
             append(buf, rhs);
-            buf.append(')');
             break;
         case Block(Tree[] stats, Tree expr):
             buf.append("Block(");
             append(buf, stats);
             buf.append(',');
             append(buf, expr);
-            buf.append(')');
             break;
         case Sequence(Tree[] trees):
             buf.append("Sequence(");
             buf.append(',');
             append(buf, trees);
-            buf.append(")");
             break;
         case Alternative(Tree[] trees):
             buf.append("Alternative(");
             buf.append(',');
             append(buf, trees);
-            buf.append(')');
             break;
         case Bind(Name name, Tree rhs):
             buf.append("Bind(");
             append(buf, name);
             buf.append(',');
             append(buf, rhs);
-            buf.append(")");
             break;
         case Visitor(Tree.CaseDef[] cases):
             buf.append("ClassDef(");
             append(buf, cases);
-            buf.append(')');
             break;
         case Function(Tree.ValDef[] vparams, Tree body):
             buf.append("Function(");
             append(buf, vparams);
             buf.append(',');
             append(buf, body);
-            buf.append(')');
             break;
         case Assign(Tree lhs, Tree rhs):
             buf.append("Assign(");
             append(buf, lhs);
             buf.append(',');
             append(buf, rhs);
-            buf.append(')');
             break;
         case If(Tree cond, Tree thenp, Tree elsep):
             buf.append("If(");
@@ -304,7 +283,6 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, thenp);
             buf.append(',');
             append(buf, elsep);
-            buf.append(')');
             break;
         case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
             buf.append("Switch(");
@@ -316,113 +294,97 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, bodies);
             buf.append(",");
             append(buf, otherwise);
-            buf.append(')');
             break;
         case Return(Tree expr):
             buf.append("Return(");
-            append(buf, expr);
+            append(buf, expr, showType);
             buf.append(')');
             break;
         case Throw(Tree expr):
             buf.append("Throw(");
-            append(buf, expr);
-            buf.append(")");
+            append(buf, expr, showType);
             break;
         case New(Tree init):
             buf.append("New(");
-            append(buf, init);
-            buf.append(")");
+            append(buf, init, showType);
             break;
         case Create(Tree qualifier, Tree[] targs):
             buf.append("Create(");
             append(buf, qualifier);
             buf.append(',');
             append(buf, targs);
-            buf.append(')');
             break;
         case Typed(Tree expr, Tree tpe):
             buf.append("Typed(");
-            append(buf, expr);
+            append(buf, expr, showType);
             buf.append(",");
-            append(buf, tpe);
-            buf.append(")");
+            append(buf, tpe, showType);
             break;
         case TypeApply(Tree fun, Tree[] args):
             buf.append("TypeApply(");
-            append(buf, fun);
+            append(buf, fun, showType);
             buf.append(',');
-            append(buf, args);
-            buf.append(')');
+            append(buf, args, showType);
             break;
         case Apply(Tree fun, Tree[] args):
             buf.append("Apply(");
-            append(buf, fun);
+            append(buf, fun, showType);
             buf.append(',');
-            append(buf, args);
-            buf.append(')');
+            append(buf, args, showType);
             break;
         case Super(Name qualifier, Name mixin):
             buf.append("Super(");
             append(buf, qualifier);
             buf.append(',');
             append(buf, mixin);
-            buf.append(')');
             break;
         case This(Name qualifier):
             buf.append("This(");
             append(buf, qualifier);
-            buf.append(')');
             break;
         case Select(Tree qualifier, Name selector):
             buf.append("Select(");
-            append(buf, qualifier);
+            append(buf, qualifier, showType);
             buf.append(',');
             append(buf, selector);
-            buf.append(')');
             break;
         case Ident(Name name):
             buf.append("Ident(");
             append(buf, name);
-            buf.append(')');
             break;
         case Literal(scalac.atree.AConstant value):
-            buf.append("Literal(" + value + ")");
+            buf.append("Literal(" + value);
             break;
         case TypeTerm():
-            buf.append("TypeTerm()");
+            buf.append("TypeTerm(");
             break;
         case SingletonType(Tree ref):
             buf.append("SingletonType(");
-            append(buf, ref);
-            buf.append(')');
+            append(buf, ref, showType);
             break;
         case SelectFromType(Tree qualifier, Name selector):
             buf.append("SelectFromType(");
-            append(buf, qualifier);
+            append(buf, qualifier, showType);
             buf.append(',');
             append(buf, selector);
-            buf.append(')');
             break;
         case FunType(Tree[] argtpes, Tree restpe):
             buf.append("FunType(");
             append(buf, argtpes);
             buf.append(',');
             append(buf, restpe);
-            buf.append(')');
             break;
         case CompoundType(Tree[] parents, Tree[] refinements):
             buf.append("CompoundType(");
             append(buf, parents);
             buf.append(',');
             append(buf, refinements);
-            buf.append(')');
             break;
         case AppliedType(Tree tpe, Tree[] args):
             buf.append("AppliedType(");
             append(buf, tpe);
             buf.append(',');
             append(buf, args);
-            buf.append(')');
             break;
         case Try(Tree block, Tree catcher, Tree finalizer):
             buf.append("Try(");
@@ -431,17 +393,22 @@ public class Debug extends scala.tools.util.debug.Debug {
             append(buf, catcher);
             buf.append(',');
             append(buf, finalizer);
-            buf.append(')');
             break;
         default:
-            buf.append(tree.getClass().getName() + " ");
+            buf.append(tree.getClass().getName() + "(");
         }
+        buf.append(')');
+        if (showType) buf.append(":" + tree.type);
+    }
+
+    public static String showTree(Tree tree, boolean showType) {
+        StringBuffer buf = new StringBuffer();
+        append(buf, tree, showType);
+        return buf.toString();
     }
 
     public static String showTree(Tree tree) {
-        StringBuffer buf = new StringBuffer();
-        append(buf, tree);
-        return buf.toString();
+        return showTree(tree, false);
     }
 
     //########################################################################
