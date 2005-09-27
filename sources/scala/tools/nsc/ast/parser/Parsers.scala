@@ -51,10 +51,6 @@ abstract class Parsers: SyntaxAnalyzer {
     val xmlp = new MarkupParser(unit, s, this, false);
      */
 
-    /** The current nesting depths of while and do loops.
-     */
-    var loopNestingDepth = 0;
-
     object treeBuilder extends TreeBuilder {
       val global: Parsers.this.global.type = Parsers.this.global;
       def freshName(prefix: String): Name = unit.fresh.newName(prefix);
@@ -616,18 +612,15 @@ abstract class Parsers: SyntaxAnalyzer {
 	  Try(body, catches, finalizer)
 	}
       } else if (in.token == WHILE) {
-	val lname: Name = "label$" + loopNestingDepth;
-	loopNestingDepth = loopNestingDepth + 1;
+	val lname: Name = unit.fresh.newName("label$");
 	val pos = in.skipToken();
 	accept(LPAREN);
 	val cond = expr();
 	accept(RPAREN);
 	val body = expr();
-	loopNestingDepth = loopNestingDepth - 1;
 	atPos(pos) { makeWhile(lname, cond, body) }
       } else if (in.token == DO) {
-	val lname: Name = "label$" + loopNestingDepth;
-	loopNestingDepth = loopNestingDepth + 1;
+	val lname: Name = unit.fresh.newName("label$");
 	val pos = in.skipToken();
 	val body = expr();
 	if (in.token == SEMI) in.nextToken();
@@ -635,7 +628,6 @@ abstract class Parsers: SyntaxAnalyzer {
 	accept(LPAREN);
 	val cond = expr();
 	accept(RPAREN);
-	loopNestingDepth = loopNestingDepth - 1;
 	atPos(pos) { makeDoWhile(lname, body, cond) }
       } else if (in.token == FOR) {
 	atPos(in.skipToken()) {
