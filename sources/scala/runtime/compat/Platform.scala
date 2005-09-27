@@ -19,6 +19,16 @@ object Platform {
   def split(str: String, separator: Char): Array[String] = {
     str.split(separator.toString());
   }
+  def parseByte(s: String): Byte = java.lang.Byte.parseByte(s);
+  def parseShort(s: String): Short = java.lang.Short.parseShort(s);
+  def parseInt(s: String): Int = java.lang.Integer.parseInt(s);
+  def parseLong(s: String): Long = java.lang.Long.parseLong(s);
   def parseFloat(s: String): Float = java.lang.Float.parseFloat(s);
   def parseDouble(s: String): Double = java.lang.Double.parseDouble(s);
+
+  def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: int): Unit =
+    System.arraycopy(src, srcPos, dest, destPos, length);
+
+  val MAX_INT = java.lang.Integer.MAX_VALUE;
+  def max(x: Int, y: Int): Int = Math.max(x, y);
 }
