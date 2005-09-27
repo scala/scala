@@ -150,7 +150,7 @@ class DetWordAutom {
 
   // TEMPORARY VAR used only during determinization and debug printing
   // Q -> (Label -> Q )
-  var  delta/*Map*/: HashMap = _;
+  var  delta/*Map*/ : HashMap = _;
   // Q -> Integer;
   var indexMap: HashMap = _;
 
