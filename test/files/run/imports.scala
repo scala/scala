@@ -3,18 +3,16 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 //############################################################################
 
 object checker {
   def check(where: String, what: String, value: Any): Unit = {
-    System.out.print("In " + where + ", " + what + ".toString() returns ");
-    System.out.flush();
+    Console.print("In " + where + ", " + what + ".toString() returns ");
+    Console.flush;
     val string: String = if (value == null) "null" else value.toString();
     val test = if (string == where) "ok" else "KO";
-    System.out.println(string + " -> " + test);
-    System.out.flush();
+    Console.println(string + " -> " + test);
+    Console.flush;
   }
 }
 
@@ -34,7 +32,7 @@ class C_ico() {
   check("C_ico", "v_ico ", v_ico);
   check("C_ico", "field ", field);
   check("C_ico", "method", method);
-  System.out.println();
+  Console.println;
 }
 
 object o_ico {
@@ -61,7 +59,7 @@ class C_ioc() {
   check("C_ioc", "v_ioc ", v_ioc);
   check("C_ioc", "field ", field);
   check("C_ioc", "method", method);
-  System.out.println();
+  Console.println;
 }
 
 //############################################################################
@@ -82,7 +80,7 @@ class C_oic() {
   check("C_oic", "v_oic ", v_oic);
   check("C_oic", "field ", field);
   check("C_oic", "method", method);
-  System.out.println();
+  Console.println;
 }
 
 //############################################################################

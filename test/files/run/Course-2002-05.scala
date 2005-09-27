@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 object M0 {
   def partition[a](xs: List[a], pred: a => boolean): Pair[List[a], List[a]] = {
     if (xs.isEmpty)
@@ -29,23 +27,23 @@ object M0 {
   }
 
   def test = {
-    System.out.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
-    System.out.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
-    System.out.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
-    System.out.println();
+    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
+    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
+    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
+    Console.println;
 
-    System.out.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
-    System.out.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
-    System.out.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
-    System.out.println();
+    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
+    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
+    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
+    Console.println;
 
-    System.out.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
-    System.out.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
-    System.out.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
-    System.out.println();
+    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
+    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
+    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
+    Console.println;
 
-    System.out.println(quicksort[int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
-    System.out.println();
+    Console.println(quicksort[int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
+    Console.println;
   }
 }
 
@@ -69,23 +67,23 @@ object M1 {
   }
 
   def test = {
-    System.out.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
-    System.out.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
-    System.out.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
-    System.out.println();
+    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
+    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
+    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
+    Console.println;
 
-    System.out.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
-    System.out.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
-    System.out.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
-    System.out.println();
+    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
+    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
+    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
+    Console.println;
 
-    System.out.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
-    System.out.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
-    System.out.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
-    System.out.println();
+    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
+    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
+    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
+    Console.println;
 
-    System.out.println(quicksort[int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
-    System.out.println();
+    Console.println(quicksort[int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
+    Console.println;
   }
 }
 
@@ -104,12 +102,12 @@ object M2 {
   }
 
   def test = {
-    System.out.println(powerset(List()));
-    System.out.println(powerset(List(1)));
-    System.out.println(powerset(List(1,2)));
-    System.out.println(powerset(List(1,2,3)));
-    System.out.println(powerset(List(1,2,3,4)));
-    System.out.println();
+    Console.println(powerset(List()));
+    Console.println(powerset(List(1)));
+    Console.println(powerset(List(1,2)));
+    Console.println(powerset(List(1,2,3)));
+    Console.println(powerset(List(1,2,3,4)));
+    Console.println;
   }
 }
 
@@ -148,11 +146,11 @@ object M3 {
   }
 
   def test = {
-    System.out.println("queens(1) = " + queens(1));
-    System.out.println("queens(2) = " + queens(2));
-    System.out.println("queens(3) = " + queens(3));
-    System.out.println("queens(4) = " + queens(4));
-    System.out.println();
+    Console.println("queens(1) = " + queens(1));
+    Console.println("queens(2) = " + queens(2));
+    Console.println("queens(3) = " + queens(3));
+    Console.println("queens(4) = " + queens(4));
+    Console.println;
   }
 }
 
@@ -193,11 +191,11 @@ object M4 {
   }
 
   def test = {
-    System.out.println("queens(1) = " + queens(1));
-    System.out.println("queens(2) = " + queens(2));
-    System.out.println("queens(3) = " + queens(3));
-    System.out.println("queens(4) = " + queens(4));
-    System.out.println();
+    Console.println("queens(1) = " + queens(1));
+    Console.println("queens(2) = " + queens(2));
+    Console.println("queens(3) = " + queens(3));
+    Console.println("queens(4) = " + queens(4));
+    Console.println;
   }
 }
 

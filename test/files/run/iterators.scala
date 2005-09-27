@@ -5,8 +5,6 @@
 
 //############################################################################
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 object Test {
 
   def check_range: Int = {
@@ -39,20 +37,20 @@ object Test {
   }
 
   def check_success[A](name: String, closure: => A, expected: A): Unit = {
-    System.out.print("test " + name);
+    Console.print("test " + name);
     try {
       val actual: A = closure;
       if (actual == expected)
-        System.out.print(" was successful");
+        Console.print(" was successful");
       else
-        System.out.print(" failed: expected "+ expected +", found "+ actual);
+        Console.print(" failed: expected "+ expected +", found "+ actual);
     }
     catch {
       case exception: Throwable => {
-        System.out.print(" raised exception " + exception);
+        Console.print(" raised exception " + exception);
       }
     }
-    System.out.println();
+    Console.println;
   }
 
   def main(args: Array[String]): Unit = {
@@ -60,7 +58,7 @@ object Test {
     check_success("check_take",     check_take,     10);
     check_success("check_drop",     check_drop,     12);
     check_success("check_foreach",  check_foreach, 190);
-    System.out.println();
+    Console.println;
   }
 }
 

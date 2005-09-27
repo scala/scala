@@ -188,23 +188,21 @@ class TailCall[S](s: S) {
 // Test code
 
 object Test {
-  import java.lang.System.out;
-
   def check_success(name: String, closure: => Int, expected: Int): Unit = {
-    out.print("test " + name);
+    Console.print("test " + name);
     try {
       val actual: Int = closure;
       if (actual == expected) {
-        out.print(" was successful");
+        Console.print(" was successful");
       } else {
-        out.print(" failed: expected "+ expected +", found "+ actual);
+        Console.print(" failed: expected "+ expected +", found "+ actual);
       }
     } catch {
       case exception: Throwable => {
-        out.print(" raised exception " + exception);
+        Console.print(" raised exception " + exception);
       }
     }
-    out.println();
+    Console.println;
   }
 
   def calibrate: Int = {
@@ -214,7 +212,8 @@ object Test {
     while (!stop) {
       try {
         calibrator.f(n, n);
-        if (n >= Integer.MAX_VALUE / 2) throw new Error("calibration failure");
+        //if (n >= Integer.MAX_VALUE / 2) error("calibration failure");
+        if (n >= scala.runtime.compat.Platform.MAX_INT / 2) error("calibration failure");
         n = 2 * n;
       } catch {
         case exception: StackOverflowError => stop = true
@@ -240,7 +239,7 @@ object Test {
     check_success("SubClass .f", SubClass .f(max, max), max);
     check_success("Sealed   .f", Sealed   .f(max, max), 0);
     check_success("SubSealed.f", SubSealed.f(max, max), max);
-    out.println();
+    Console.println;
 
     // test tail calls in nested classes/objects
     val c: C = new C;
@@ -274,7 +273,7 @@ object Test {
     check_success("c.c.O.c.f", c.c.O.c.f(max, max), 0);
     check_success("c.c.c.O.f", c.c.c.O.f(max, max), 0);
     check_success("c.c.c.c.f", c.c.c.c.f(max, max), 0);
-    out.println();
+    Console.println;
 
     // test tail calls with different signatures
     val TailCall = new TailCall("S");
@@ -285,7 +284,7 @@ object Test {
     check_success("TailCall.g2", TailCall.g2(max, max     ), 0);
     check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0);
     check_success("TailCall.h1", TailCall.h1(max, max     ), 0);
-    out.println();
+    Console.println;
   }
 }
 

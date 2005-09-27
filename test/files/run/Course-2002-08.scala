@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 import List._;
 
 object M0 {
@@ -13,13 +11,13 @@ object M0 {
   var count = 111;
 
   def test = {
-    System.out.println("x     = " + x);
-    System.out.println("count = " + count);
+    Console.println("x     = " + x);
+    Console.println("count = " + count);
     x = "hello";
     count = count + 1;
-    System.out.println("x     = " + x);
-    System.out.println("count = " + count);
-    System.out.println();
+    Console.println("x     = " + x);
+    Console.println("count = " + count);
+    Console.println;
   }
 }
 
@@ -41,48 +39,48 @@ object M1 {
 
   def test0 = {
     val account = new BankAccount();
-    System.out.print("account deposit  50 -> ");
-    System.out.println((account deposit  50).toString()); // !!! .toString
-    System.out.print("account withdraw 20 -> ");
-    System.out.println(account withdraw 20);
-    System.out.print("account withdraw 20 -> ");
-    System.out.println(account withdraw 20);
-    System.out.print("account withdraw 15 -> ");
-    System.out.println(/* !!! account withdraw 15*/);
+    Console.print("account deposit  50 -> ");
+    Console.println((account deposit  50).toString()); // !!! .toString
+    Console.print("account withdraw 20 -> ");
+    Console.println(account withdraw 20);
+    Console.print("account withdraw 20 -> ");
+    Console.println(account withdraw 20);
+    Console.print("account withdraw 15 -> ");
+    Console.println;
   }
 
   def test1 = {
     val x = new BankAccount();
     val y = new BankAccount();
-    System.out.print("x deposit  30 -> ");
-    System.out.println((x deposit  30).toString()); // !!! .toString
-    System.out.print("y withdraw 20 -> ");
-    System.out.println(/* !!! y withdraw 20 */);
+    Console.print("x deposit  30 -> ");
+    Console.println((x deposit  30).toString()); // !!! .toString
+    Console.print("y withdraw 20 -> ");
+    Console.println;
   }
 
   def test2 = {
     val x = new BankAccount();
     val y = new BankAccount();
-    System.out.print("x deposit  30 -> ");
-    System.out.println((x deposit  30).toString()); // !!! .toString
-    System.out.print("x withdraw 20 -> ");
-    System.out.println(x withdraw 20);
+    Console.print("x deposit  30 -> ");
+    Console.println((x deposit  30).toString()); // !!! .toString
+    Console.print("x withdraw 20 -> ");
+    Console.println(x withdraw 20);
   }
 
   def test3 = {
     val x = new BankAccount();
     val y = x;
-    System.out.print("x deposit  30 -> ");
-    System.out.println((x deposit  30).toString()); // !!! .toString
-    System.out.print("y withdraw 20 -> ");
-    System.out.println(y withdraw 20);
+    Console.print("x deposit  30 -> ");
+    Console.println((x deposit  30).toString()); // !!! .toString
+    Console.print("y withdraw 20 -> ");
+    Console.println(y withdraw 20);
   }
 
   def test = {
-    test0; System.out.println();
-    test1; System.out.println();
-    test2; System.out.println();
-    test3; System.out.println();
+    test0; Console.println;
+    test1; Console.println;
+    test2; Console.println;
+    test3; Console.println;
   }
 }
 
@@ -105,11 +103,11 @@ object M2 {
   }
 
   def test = {
-    System.out.println("2^0 = " + power(2,0));
-    System.out.println("2^1 = " + power(2,1));
-    System.out.println("2^2 = " + power(2,2));
-    System.out.println("2^3 = " + power(2,3));
-    System.out.println();
+    Console.println("2^0 = " + power(2,0));
+    Console.println("2^1 = " + power(2,1));
+    Console.println("2^2 = " + power(2,2));
+    Console.println("2^3 = " + power(2,3));
+    Console.println;
   }
 }
 
@@ -125,11 +123,11 @@ object M3 {
   }
 
   def test = {
-    System.out.println("2^0 = " + power(2,0));
-    System.out.println("2^1 = " + power(2,1));
-    System.out.println("2^2 = " + power(2,2));
-    System.out.println("2^3 = " + power(2,3));
-    System.out.println();
+    Console.println("2^0 = " + power(2,0));
+    Console.println("2^1 = " + power(2,1));
+    Console.println("2^2 = " + power(2,2));
+    Console.println("2^3 = " + power(2,3));
+    Console.println;
   }
 }
 
@@ -138,10 +136,10 @@ object M3 {
 object M4 {
 
   def test = {
-    for (val i <- range(1, 4)) { System.out.print(i + " ") };
-    System.out.println();
-    System.out.println(for (val i <- range(1, 4)) yield i);
-    System.out.println();
+    for (val i <- range(1, 4)) { Console.print(i + " ") };
+    Console.println;
+    Console.println(for (val i <- range(1, 4)) yield i);
+    Console.println;
   }
 }
 
@@ -192,7 +190,7 @@ object M5 {
     }
 
     def run: Unit = {
-      afterDelay(0){() => System.out.println("*** simulation started ***"); }
+      afterDelay(0){() => Console.println("*** simulation started ***"); }
       while (!agenda.isEmpty) { next }
     }
   }
@@ -233,7 +231,7 @@ object M5 {
 
     def probe(name: String, wire: Wire): Unit = {
       wire addAction {() =>
-        System.out.println(
+        Console.println(
           name + " " + currentTime + " new-value = " + wire.getSignal);
       }
     }
@@ -276,8 +274,8 @@ object M5 {
       def test(a: Int) = {
         ain setSignal (if (a == 0) false else true);
         run;
-        System.out.println("!" + a + " = " + result);
-        System.out.println();
+        Console.println("!" + a + " = " + result);
+        Console.println;
       }
 
       probe("out  ", cout);
@@ -298,12 +296,12 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
         run;
-        System.out.println(a + " & " + b + " = " + result);
-        System.out.println();
+        Console.println(a + " & " + b + " = " + result);
+        Console.println;
       }
 
       probe("out  ", cout);
-      System.out.println();
+      Console.println;
 
       test(0,0);
       test(0,1);
@@ -323,12 +321,12 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
         run;
-        System.out.println(a + " | " + b + " = " + result);
-        System.out.println();
+        Console.println(a + " | " + b + " = " + result);
+        Console.println;
       }
 
       probe("out  ", cout);
-      System.out.println();
+      Console.println;
 
       test(0,0);
       test(0,1);
@@ -351,13 +349,13 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
         run;
-        System.out.println(a + " + " + b + " = " + result);
-        System.out.println();
+        Console.println(a + " + " + b + " = " + result);
+        Console.println;
       }
 
       probe("sum  ", sout);
       probe("carry", cout);
-      System.out.println();
+      Console.println;
 
       test(0,0);
       test(0,1);
@@ -382,13 +380,13 @@ object M5 {
         bin setSignal (if (b == 0) false else true);
         cin setSignal (if (c == 0) false else true);
         run;
-        System.out.println(a + " + " + b + " + " + c + " = " + result);
-        System.out.println();
+        Console.println(a + " + " + b + " + " + c + " = " + result);
+        Console.println;
       }
 
       probe("sum  ", sout);
       probe("carry", cout);
-      System.out.println();
+      Console.println;
 
       test(0,0,0);
       test(0,0,1);
@@ -444,7 +442,7 @@ class Simulator() {
   protected def currentTime: Int = curtime;
 
   def run = {
-    afterDelay(0){() => System.out.println("*** simulation started ***"); }
+    afterDelay(0){() => Console.println("*** simulation started ***"); }
     while (!agenda.isEmpty) { next }
   }
 }
@@ -468,7 +466,7 @@ abstract class BasicCircuitSimulator() extends Simulator() {
 
   def probe(name: String, wire: Wire): Unit = {
     wire addAction {() =>
-      System.out.println(
+      Console.println(
         name + " " + currentTime + " new-value = " + wire.getSignal);
     }
   }

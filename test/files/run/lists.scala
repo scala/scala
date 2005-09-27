@@ -5,8 +5,6 @@
 
 //############################################################################
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 object Test {
 
   val xs1 = List(1, 2, 3);
@@ -82,20 +80,20 @@ object Test {
   }
 
   def check_success[A](name: String, closure: => A, expected: A): Unit = {
-    System.out.print("test " + name);
+    Console.print("test " + name);
     try {
       val actual: A = closure;
       if (actual == expected)
-        System.out.print(" was successful");
+        Console.print(" was successful");
       else
-        System.out.print(" failed: expected "+ expected +", found "+ actual);
+        Console.print(" failed: expected "+ expected +", found "+ actual);
     }
     catch {
       case exception: Throwable => {
-        System.out.print(" raised exception " + exception);
+        Console.print(" raised exception " + exception);
       }
     }
-    System.out.println();
+    Console.println;
   }
 
   def main(args: Array[String]): Unit = {
@@ -110,7 +108,7 @@ object Test {
     check_success("check_union",     check_union,     10);
     check_success("check_zip",       check_zip,        4);
     check_success("check_zipAll",    check_zipAll,     6);
-    System.out.println();
+    Console.println;
   }
 }
 

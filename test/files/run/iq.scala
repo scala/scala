@@ -13,7 +13,7 @@ object iq {
      * Expected: Empty
      */
     if(q.isEmpty) {
-      java.lang.System.out.println("Empty");
+      Console.println("Empty");
     }
 
     /* Test infix enqueing. */
@@ -24,11 +24,11 @@ object iq {
      */
     val q4 =
       if(q2.isEmpty) {
-        java.lang.System.out.println("Empty");
+        Console.println("Empty");
         q2;
       } else {
 	  val Pair(head,q3) = q2.dequeue;
-	  java.lang.System.out.println("Head: " + head);
+	  Console.println("Head: " + head);
 	  q3;
       };
 
@@ -37,11 +37,11 @@ object iq {
     /* Test toString.
      * Expected: Head: q5: Queue(0,1,2,3,4,5,6,7,8,9)
      */
-    java.lang.System.out.println("q5: " + q5);
+    Console.println("q5: " + q5);
     /* Test apply
      * Expected: q5[5]: 5
      */
-    java.lang.System.out.println("q5[5]: " + q5(5));
+    Console.println("q5[5]: " + q5(5));
 
 
 
@@ -51,8 +51,8 @@ object iq {
      *  Expected: q5 == q9: true
      *            q9 == q5: true
      */
-    java.lang.System.out.println("q5 == q5c: " + (q5 == q5c));
-    java.lang.System.out.println("q5c == q5: " + (q5c == q5));
+    Console.println("q5 == q5c: " + (q5 == q5c));
+    Console.println("q5c == q5: " + (q5c == q5));
 
     val Pair(_,q6) = q5.dequeue;
     val Pair(_,q7) = q6.dequeue;
@@ -60,35 +60,35 @@ object iq {
     /* Test dequeu
      * Expected: q8: Queue(2,3,4,5,6,7,8,9,10,11)
      */
-    java.lang.System.out.println("q8: " + q8);
+    Console.println("q8: " + q8);
     val q9 = new Queue(2,3,4,5,6,7,8,9,10,11);
 
     /* Testing ==
      *  Expected: q8 == q9: true
      */
-    java.lang.System.out.println("q8 == q9: " + (q8 == q9));
+    Console.println("q8 == q9: " + (q8 == q9));
 
     /* Testing elements
      *  Expected: Elements:  1  2  3  4  5  6  7  8  9
      */
-    java.lang.System.out.print("Elements: ");
-    q6.elements.foreach(e => java.lang.System.out.print(" "+ e + " "));
-    java.lang.System.out.println();
+    Console.print("Elements: ");
+    q6.elements.foreach(e => Console.print(" "+ e + " "));
+    Console.println;
 
    /* Testing mkString
      *  Expected: String: <1-2-3-4-5-6-7-8-9>
      */
-    java.lang.System.out.println("String: " + q6.mkString("<","-",">"));
+    Console.println("String: " + q6.mkString("<","-",">"));
 
     /* Testing length
      *  Expected: Length: 9
      */
-    java.lang.System.out.println("Length: " + q6.length);
+    Console.println("Length: " + q6.length);
 
     /* Testing front
      *  Expected: Front: 1
      */
-    java.lang.System.out.println("Front: " + q6.front);
+    Console.println("Front: " + q6.front);
   }
 }
 

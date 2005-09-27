@@ -2,8 +2,6 @@
 
 // Test constructors, including multiple ones.
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 class A(x: Int, y: Int) {
   def this(x: Int) = this(x, x);
   def this() = this(1);
@@ -22,10 +20,10 @@ object Test {
     val a3 = new A();
     val b1 = new a1.B(1,2,"a");
     val b2 = new a2.B("b");
-    System.out.println(a1);
-    System.out.println(a2);
-    System.out.println(a3);
-    System.out.println(b1);
-    System.out.println(b2);
+    Console.println(a1);
+    Console.println(a2);
+    Console.println(a3);
+    Console.println(b1);
+    Console.println(b2);
   }
 }

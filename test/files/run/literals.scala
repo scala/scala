@@ -6,7 +6,6 @@
 //############################################################################
 
 object Test {
-  import java.lang.System.out;
 
   /* I add a couple of Unicode identifier tests here temporarily */
 
@@ -16,20 +15,20 @@ object Test {
     def \u21a1\u21a1( that:GGG ) = that;
   }
   def check_success[a](name: String, closure: => a, expected: a): Unit = {
-    out.print("test " + name);
+    Console.print("test " + name);
     try {
       val actual: a = closure;
       if (actual == expected) {
-        out.print(" was successful");
+        Console.print(" was successful");
       } else {
-        out.print(" failed: expected "+ expected +", found "+ actual);
+        Console.print(" failed: expected "+ expected +", found "+ actual);
       }
     } catch {
       case exception: Throwable => {
-        out.print(" raised exception " + exception);
+        Console.print(" raised exception " + exception);
       }
     }
-    out.println();
+    Console.println;
   }
 
   def main(args: Array[String]) = {
@@ -38,7 +37,7 @@ object Test {
     check_success("'\\u005f' == '_'", '\u005f', '_');
     check_success("65.asInstanceOf[char] == 'A'", 65.asInstanceOf[char], 'A');
 
-    out.println();
+    Console.println;
 
     // int
     check_success("01 == 1", 01, 1);
@@ -71,7 +70,7 @@ object Test {
     check_success("0x80000000 == -2147483648", 0x80000000, -2147483648);
     check_success("0xffffffff == -1", 0xffffffff, -1);
 
-    out.println();
+    Console.println;
 
     // long
     check_success("1l == 1L", 1l, 1L);
@@ -92,7 +91,7 @@ object Test {
     check_success("0xffffffffffffffffL == -1L",
       0xffffffffffffffffL, -1L);
 
-    out.println();
+    Console.println;
 
     // see JLS at address:
     // http://java.sun.com/docs/books/jls/second_edition/html/lexical.doc.html#230798
@@ -108,7 +107,7 @@ object Test {
     check_success("1.asInstanceOf[float] == 1.0", 1.asInstanceOf[float], 1.0f);
     check_success("1l.asInstanceOf[float] == 1.0", 1l.asInstanceOf[float], 1.0f);
 
-    out.println();
+    Console.println;
 
     // double
     check_success("1e1 == 10.0", 1e1, 10.0);
@@ -123,7 +122,7 @@ object Test {
     check_success("1.asInstanceOf[double] == 1.0", 1.asInstanceOf[double], 1.0);
     check_success("1l.asInstanceOf[double] == 1.0", 1l.asInstanceOf[double], 1.0);
 
-    out.println();
+    Console.println;
     check_success("\"\\u001a\".length()", "\u001a".length(), 1);
     val ggg = GGG( 1 ) \u21a1\u21a1 GGG( 2 );
     check_success("ggg == GGG( 2 )", ggg, GGG( 2 ));

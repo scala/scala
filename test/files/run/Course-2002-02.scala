@@ -7,9 +7,9 @@ object M0 {
   def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b);
   def factorial(n: Int): Int = if (n == 0) 1 else n * factorial(n - 1);
 
-  java.lang.System.out.println(gcd(14,21));
-  java.lang.System.out.println(factorial(5));
-  java.lang.System.out.println();
+  Console.println(gcd(14,21));
+  Console.println(factorial(5));
+  Console.println;
 }
 
 //############################################################################
@@ -37,12 +37,12 @@ object M1 {
     4 + sumElements(1,n)
   }
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println;
 }
 
 //############################################################################
@@ -64,12 +64,12 @@ object M2 {
     4 + sum(element, 1, n)
   }
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println;
 }
 
 //############################################################################
@@ -84,12 +84,12 @@ object M3 {
   def sumReciprocals(a: Int, b: Int): Double = sum((x => 1.0/x), a, b);
   def sumPi(n: Int): Double = 4 + sum((x => 4.0/(4*x+1) - 4.0/(4*x-1)), 1, n);
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println;
 }
 
 //############################################################################
@@ -107,12 +107,12 @@ object M4 {
   def sumReciprocals = sum(x => 1.0/x);
   def sumPi = (n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n));
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println;
 }
 
 //############################################################################
@@ -128,12 +128,12 @@ object M5 {
   def sumReciprocals = sum(x => 1.0/x);
   def sumPi = (n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n));
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println;
 }
 
 //############################################################################
@@ -148,12 +148,12 @@ object M6 {
   def sumReciprocals = sum(x => 1.0/x);
   def sumPi = (n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n));
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println;
 }
 
 //############################################################################
@@ -171,12 +171,12 @@ object M7 {
   def sumReciprocals = sum(x => 1.0/x);
   def sumPi = (n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n));
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println;
 }
 
 //############################################################################
@@ -190,9 +190,9 @@ object M8 {
 
   val pi = 2 * product(x => x * x)(2, 2, 40) / product(x => x * x)(1, 2,40)/40;
 
-  java.lang.System.out.println("pi = " + productPi(20));
-  java.lang.System.out.println("pi = " + pi);
-  java.lang.System.out.println();
+  Console.println("pi = " + productPi(20));
+  Console.println("pi = " + pi);
+  Console.println;
 }
 
 //############################################################################
@@ -219,14 +219,14 @@ object M9 {
 
   val pi = 2*product(x => 2*x*2*x)(1,20)/product(x =>(2*x-1)*(2*x-1))(1,20)/40;
 
-  java.lang.System.out.println(sumInts(1,4));
-  java.lang.System.out.println(sumCubes(1,4));
-  java.lang.System.out.println(sumReciprocals(1,4));
-  java.lang.System.out.println(sumCubes(1, 10) + sumReciprocals(10, 20));
-  java.lang.System.out.println("pi = " + sumPi(20));
-  java.lang.System.out.println("pi = " + productPi(20));
-  java.lang.System.out.println("pi = " + pi);
-  java.lang.System.out.println();
+  Console.println(sumInts(1,4));
+  Console.println(sumCubes(1,4));
+  Console.println(sumReciprocals(1,4));
+  Console.println(sumCubes(1, 10) + sumReciprocals(10, 20));
+  Console.println("pi = " + sumPi(20));
+  Console.println("pi = " + productPi(20));
+  Console.println("pi = " + pi);
+  Console.println;
 }
 
 //############################################################################
@@ -238,7 +238,7 @@ object MA {
   def fixedPoint(f: Double => Double)(firstGuess: Double) = {
     def iterate(guess: Double): Double = {
       val next = f(guess);
-      java.lang.System.out.println(next);
+      Console.println(next);
       if (isCloseEnough(guess, next)) next
       else iterate(next)
     }
@@ -246,8 +246,8 @@ object MA {
   }
   def sqrt(x: Double) = fixedPoint(y => (y + x / y) / 2)(1.0);
 
-  java.lang.System.out.println("sqrt(2) = " + sqrt(2));
-  java.lang.System.out.println()
+  Console.println("sqrt(2) = " + sqrt(2));
+  Console.println
 }
 
 //############################################################################
@@ -259,7 +259,7 @@ object MB {
   def fixedPoint(f: Double => Double)(firstGuess: Double) = {
     def iterate(guess: Double): Double = {
       val next = f(guess);
-      java.lang.System.out.println(next);
+      Console.println(next);
       if (isCloseEnough(guess, next)) next
       else iterate(next)
     }
@@ -268,8 +268,8 @@ object MB {
   def averageDamp(f: Double => Double)(x: Double) = (x + f(x)) / 2;
   def sqrt(x: Double) = fixedPoint(averageDamp(y => x/y))(1.0);
 
-  java.lang.System.out.println("sqrt(2) = " + sqrt(2));
-  java.lang.System.out.println()
+  Console.println("sqrt(2) = " + sqrt(2));
+  Console.println
 }
 
 //############################################################################
@@ -293,31 +293,31 @@ object MC {
 
   def factorial(n: Int) = product(x => x)(1 , n);
 
-  java.lang.System.out.println(
+  Console.println(
       "1 + 2 + .. + 5 = " + sum(x => x)(1, 5));
-  java.lang.System.out.println(
+  Console.println(
       "1 * 2 * .. * 5 = " + product(x => x)(1, 5));
-  java.lang.System.out.println();
+  Console.println;
 
-  java.lang.System.out.println(
+  Console.println(
       "1^2 + 2^2 + .. + 5^2 = " + sum(x => x*x)(1, 5));
-  java.lang.System.out.println(
+  Console.println(
       "1^2 * 2^2 * .. * 5^2 = " + product(x => x*x)(1, 5));
-  java.lang.System.out.println();
+  Console.println;
 
-  java.lang.System.out.println(
+  Console.println(
       "factorial(0) = " + factorial(0));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(1) = " + factorial(1));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(2) = " + factorial(2));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(3) = " + factorial(3));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(4) = " + factorial(4));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(5) = " + factorial(5));
-  java.lang.System.out.println();
+  Console.println;
 }
 
 //############################################################################
@@ -337,31 +337,31 @@ object MD {
 
   def factorial(n: Int) = product(x => x)(1 , n);
 
-  java.lang.System.out.println(
+  Console.println(
       "1 + 2 + .. + 5 = " + sum(x => x)(1, 5));
-  java.lang.System.out.println(
+  Console.println(
       "1 * 2 * .. * 5 = " + product(x => x)(1, 5));
-  java.lang.System.out.println();
+  Console.println;
 
-  java.lang.System.out.println(
+  Console.println(
       "1^2 + 2^2 + .. + 5^2 = " + sum(x => x*x)(1, 5));
-  java.lang.System.out.println(
+  Console.println(
       "1^2 * 2^2 * .. * 5^2 = " + product(x => x*x)(1, 5));
-  java.lang.System.out.println();
+  Console.println;
 
-  java.lang.System.out.println(
+  Console.println(
       "factorial(0) = " + factorial(0));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(1) = " + factorial(1));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(2) = " + factorial(2));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(3) = " + factorial(3));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(4) = " + factorial(4));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(5) = " + factorial(5));
-  java.lang.System.out.println();
+  Console.println;
 }
 
 //############################################################################
@@ -381,31 +381,31 @@ object ME {
 
   def factorial(n: Int) = product(x => x)(1 , n);
 
-  java.lang.System.out.println(
+  Console.println(
       "1 + 2 + .. + 5 = " + sum(x => x)(1, 5));
-  java.lang.System.out.println(
+  Console.println(
       "1 * 2 * .. * 5 = " + product(x => x)(1, 5));
-  java.lang.System.out.println();
+  Console.println;
 
-  java.lang.System.out.println(
+  Console.println(
       "1^2 + 2^2 + .. + 5^2 = " + sum(x => x*x)(1, 5));
-  java.lang.System.out.println(
+  Console.println(
       "1^2 * 2^2 * .. * 5^2 = " + product(x => x*x)(1, 5));
-  java.lang.System.out.println();
+  Console.println;
 
-  java.lang.System.out.println(
+  Console.println(
       "factorial(0) = " + factorial(0));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(1) = " + factorial(1));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(2) = " + factorial(2));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(3) = " + factorial(3));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(4) = " + factorial(4));
-  java.lang.System.out.println(
+  Console.println(
       "factorial(5) = " + factorial(5));
-  java.lang.System.out.println();
+  Console.println;
 }
 
 //############################################################################
@@ -415,16 +415,16 @@ object MF {
     if (x <= 1) x
     else fib(x - 2) + fib(x - 1);
 
-  java.lang.System.out.println("fib(0) = " + fib(0));
-  java.lang.System.out.println("fib(1) = " + fib(1));
-  java.lang.System.out.println("fib(2) = " + fib(2));
-  java.lang.System.out.println("fib(3) = " + fib(3));
-  java.lang.System.out.println("fib(4) = " + fib(4));
-  java.lang.System.out.println("fib(5) = " + fib(5));
-  java.lang.System.out.println("fib(6) = " + fib(6));
-  java.lang.System.out.println("fib(7) = " + fib(7));
-  java.lang.System.out.println("fib(8) = " + fib(8));
-  java.lang.System.out.println("fib(9) = " + fib(9));
+  Console.println("fib(0) = " + fib(0));
+  Console.println("fib(1) = " + fib(1));
+  Console.println("fib(2) = " + fib(2));
+  Console.println("fib(3) = " + fib(3));
+  Console.println("fib(4) = " + fib(4));
+  Console.println("fib(5) = " + fib(5));
+  Console.println("fib(6) = " + fib(6));
+  Console.println("fib(7) = " + fib(7));
+  Console.println("fib(8) = " + fib(8));
+  Console.println("fib(9) = " + fib(9));
 }
 
 //############################################################################
@@ -437,16 +437,16 @@ object MG {
     if (x == 0) 0 else loop(1, 0, 1)
   }
 
-  java.lang.System.out.println("fib(0) = " + fib(0));
-  java.lang.System.out.println("fib(1) = " + fib(1));
-  java.lang.System.out.println("fib(2) = " + fib(2));
-  java.lang.System.out.println("fib(3) = " + fib(3));
-  java.lang.System.out.println("fib(4) = " + fib(4));
-  java.lang.System.out.println("fib(5) = " + fib(5));
-  java.lang.System.out.println("fib(6) = " + fib(6));
-  java.lang.System.out.println("fib(7) = " + fib(7));
-  java.lang.System.out.println("fib(8) = " + fib(8));
-  java.lang.System.out.println("fib(9) = " + fib(9));
+  Console.println("fib(0) = " + fib(0));
+  Console.println("fib(1) = " + fib(1));
+  Console.println("fib(2) = " + fib(2));
+  Console.println("fib(3) = " + fib(3));
+  Console.println("fib(4) = " + fib(4));
+  Console.println("fib(5) = " + fib(5));
+  Console.println("fib(6) = " + fib(6));
+  Console.println("fib(7) = " + fib(7));
+  Console.println("fib(8) = " + fib(8));
+  Console.println("fib(9) = " + fib(9));
 }
 
 //############################################################################
@@ -458,71 +458,71 @@ object MH {
     else x * power(x, y - 1);
 
 
-  java.lang.System.out.println("power(0,0) = " + power(0,0));
-  java.lang.System.out.println("power(0,1) = " + power(0,1));
-  java.lang.System.out.println("power(0,2) = " + power(0,2));
-  java.lang.System.out.println("power(0,3) = " + power(0,3));
-  java.lang.System.out.println("power(0,4) = " + power(0,4));
-  java.lang.System.out.println("power(0,5) = " + power(0,5));
-  java.lang.System.out.println("power(0,6) = " + power(0,6));
-  java.lang.System.out.println("power(0,7) = " + power(0,7));
-  java.lang.System.out.println("power(0,8) = " + power(0,8));
-  java.lang.System.out.println();
+  Console.println("power(0,0) = " + power(0,0));
+  Console.println("power(0,1) = " + power(0,1));
+  Console.println("power(0,2) = " + power(0,2));
+  Console.println("power(0,3) = " + power(0,3));
+  Console.println("power(0,4) = " + power(0,4));
+  Console.println("power(0,5) = " + power(0,5));
+  Console.println("power(0,6) = " + power(0,6));
+  Console.println("power(0,7) = " + power(0,7));
+  Console.println("power(0,8) = " + power(0,8));
+  Console.println;
 
-  java.lang.System.out.println("power(1,0) = " + power(1,0));
-  java.lang.System.out.println("power(1,1) = " + power(1,1));
-  java.lang.System.out.println("power(1,2) = " + power(1,2));
-  java.lang.System.out.println("power(1,3) = " + power(1,3));
-  java.lang.System.out.println("power(1,4) = " + power(1,4));
-  java.lang.System.out.println("power(1,5) = " + power(1,5));
-  java.lang.System.out.println("power(1,6) = " + power(1,6));
-  java.lang.System.out.println("power(1,7) = " + power(1,7));
-  java.lang.System.out.println("power(1,8) = " + power(1,8));
-  java.lang.System.out.println();
+  Console.println("power(1,0) = " + power(1,0));
+  Console.println("power(1,1) = " + power(1,1));
+  Console.println("power(1,2) = " + power(1,2));
+  Console.println("power(1,3) = " + power(1,3));
+  Console.println("power(1,4) = " + power(1,4));
+  Console.println("power(1,5) = " + power(1,5));
+  Console.println("power(1,6) = " + power(1,6));
+  Console.println("power(1,7) = " + power(1,7));
+  Console.println("power(1,8) = " + power(1,8));
+  Console.println;
 
-  java.lang.System.out.println("power(2,0) = " + power(2,0));
-  java.lang.System.out.println("power(2,1) = " + power(2,1));
-  java.lang.System.out.println("power(2,2) = " + power(2,2));
-  java.lang.System.out.println("power(2,3) = " + power(2,3));
-  java.lang.System.out.println("power(2,4) = " + power(2,4));
-  java.lang.System.out.println("power(2,5) = " + power(2,5));
-  java.lang.System.out.println("power(2,6) = " + power(2,6));
-  java.lang.System.out.println("power(2,7) = " + power(2,7));
-  java.lang.System.out.println("power(2,8) = " + power(2,8));
-  java.lang.System.out.println();
+  Console.println("power(2,0) = " + power(2,0));
+  Console.println("power(2,1) = " + power(2,1));
+  Console.println("power(2,2) = " + power(2,2));
+  Console.println("power(2,3) = " + power(2,3));
+  Console.println("power(2,4) = " + power(2,4));
+  Console.println("power(2,5) = " + power(2,5));
+  Console.println("power(2,6) = " + power(2,6));
+  Console.println("power(2,7) = " + power(2,7));
+  Console.println("power(2,8) = " + power(2,8));
+  Console.println;
 
-  java.lang.System.out.println("power(3,0) = " + power(3,0));
-  java.lang.System.out.println("power(3,1) = " + power(3,1));
-  java.lang.System.out.println("power(3,2) = " + power(3,2));
-  java.lang.System.out.println("power(3,3) = " + power(3,3));
-  java.lang.System.out.println("power(3,4) = " + power(3,4));
-  java.lang.System.out.println("power(3,5) = " + power(3,5));
-  java.lang.System.out.println("power(3,6) = " + power(3,6));
-  java.lang.System.out.println("power(3,7) = " + power(3,7));
-  java.lang.System.out.println("power(3,8) = " + power(3,8));
-  java.lang.System.out.println();
+  Console.println("power(3,0) = " + power(3,0));
+  Console.println("power(3,1) = " + power(3,1));
+  Console.println("power(3,2) = " + power(3,2));
+  Console.println("power(3,3) = " + power(3,3));
+  Console.println("power(3,4) = " + power(3,4));
+  Console.println("power(3,5) = " + power(3,5));
+  Console.println("power(3,6) = " + power(3,6));
+  Console.println("power(3,7) = " + power(3,7));
+  Console.println("power(3,8) = " + power(3,8));
+  Console.println;
 
-  java.lang.System.out.println("power(4,0) = " + power(4,0));
-  java.lang.System.out.println("power(4,1) = " + power(4,1));
-  java.lang.System.out.println("power(4,2) = " + power(4,2));
-  java.lang.System.out.println("power(4,3) = " + power(4,3));
-  java.lang.System.out.println("power(4,4) = " + power(4,4));
-  java.lang.System.out.println("power(4,5) = " + power(4,5));
-  java.lang.System.out.println("power(4,6) = " + power(4,6));
-  java.lang.System.out.println("power(4,7) = " + power(4,7));
-  java.lang.System.out.println("power(4,8) = " + power(4,8));
-  java.lang.System.out.println();
+  Console.println("power(4,0) = " + power(4,0));
+  Console.println("power(4,1) = " + power(4,1));
+  Console.println("power(4,2) = " + power(4,2));
+  Console.println("power(4,3) = " + power(4,3));
+  Console.println("power(4,4) = " + power(4,4));
+  Console.println("power(4,5) = " + power(4,5));
+  Console.println("power(4,6) = " + power(4,6));
+  Console.println("power(4,7) = " + power(4,7));
+  Console.println("power(4,8) = " + power(4,8));
+  Console.println;
 
-  java.lang.System.out.println("power(5,0) = " + power(5,0));
-  java.lang.System.out.println("power(5,1) = " + power(5,1));
-  java.lang.System.out.println("power(5,2) = " + power(5,2));
-  java.lang.System.out.println("power(5,3) = " + power(5,3));
-  java.lang.System.out.println("power(5,4) = " + power(5,4));
-  java.lang.System.out.println("power(5,5) = " + power(5,5));
-  java.lang.System.out.println("power(5,6) = " + power(5,6));
-  java.lang.System.out.println("power(5,7) = " + power(5,7));
-  java.lang.System.out.println("power(5,8) = " + power(5,8));
-  java.lang.System.out.println();
+  Console.println("power(5,0) = " + power(5,0));
+  Console.println("power(5,1) = " + power(5,1));
+  Console.println("power(5,2) = " + power(5,2));
+  Console.println("power(5,3) = " + power(5,3));
+  Console.println("power(5,4) = " + power(5,4));
+  Console.println("power(5,5) = " + power(5,5));
+  Console.println("power(5,6) = " + power(5,6));
+  Console.println("power(5,7) = " + power(5,7));
+  Console.println("power(5,8) = " + power(5,8));
+  Console.println;
 }
 
 //############################################################################

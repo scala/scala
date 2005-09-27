@@ -69,31 +69,29 @@ class AAA1 extends AAA {
 }
 
 object Test {
-  import java.lang.System; // to avoid name clash with .NET's library
-
   def main(args: Array[String]): Unit = {
     val a = new A1(12);
     val d = new a.D;
     val e = new d.E;
-    System.out.println("e.e1 = " + e.e1);
+    Console.println("e.e1 = " + e.e1);
 
     val aa = new AA;
     val bb = new aa.BB;
     val cc = new bb.CC;
-    System.out.println("cc.m = " + cc.m);
-    System.out.println("cc.am = " + cc.am);
-    System.out.println("cc.bm = " + cc.bm);
+    Console.println("cc.m = " + cc.m);
+    Console.println("cc.am = " + cc.am);
+    Console.println("cc.bm = " + cc.bm);
 
     val aaa = new AAA1;
     val bbb1 = new aaa.BBB1;
     val bbb2 = new aaa.BBB2;
     val bbb3 = new aaa.BBB3;
     val bbb4 = new aaa.BBB4;
-    System.out.println("aaa.f = " + aaa.f);
-    System.out.println("bbb1.f = " + bbb1.f);
-    System.out.println("bbb2.f = " + bbb2.f);
-    System.out.println("bbb3.f = " + bbb3.f);
-    System.out.println("bbb4.f = " + bbb4.f);
+    Console.println("aaa.f = " + aaa.f);
+    Console.println("bbb1.f = " + bbb1.f);
+    Console.println("bbb2.f = " + bbb2.f);
+    Console.println("bbb3.f = " + bbb3.f);
+    Console.println("bbb4.f = " + bbb4.f);
   }
 }
 

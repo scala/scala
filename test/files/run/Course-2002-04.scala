@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 object M0 {
 
   def quicksort[a] (less : (a,a) => Boolean) (xs : List[a]) : List[a] = {
@@ -30,14 +28,14 @@ object M0 {
     val list5 = quicksort[Int]((x,y) => x >= y)(list0);
     val list6 = quicksort[Int]((x,y) => x >= y)(list1);
 
-    System.out.println("list0 = " + list0);
-    System.out.println("list1 = " + list1);
-    System.out.println("list2 = " + list2);
-    System.out.println("list3 = " + list3);
-    System.out.println("list4 = " + list4);
-    System.out.println("list5 = " + list5);
-    System.out.println("list6 = " + list6);
-    System.out.println();
+    Console.println("list0 = " + list0);
+    Console.println("list1 = " + list1);
+    Console.println("list2 = " + list2);
+    Console.println("list3 = " + list3);
+    Console.println("list4 = " + list4);
+    Console.println("list5 = " + list5);
+    Console.println("list6 = " + list6);
+    Console.println;
   }
 }
 
@@ -108,18 +106,18 @@ object M1 {
     val list9 = List(2,1,0);
     val listA = List(6,3,1,8,7,1,2,5,8,4);
 
-    System.out.println("list0: " + list0 + " -> " + isort(list0));
-    System.out.println("list1: " + list1 + " -> " + isort(list1));
-    System.out.println("list2: " + list2 + " -> " + isort(list2));
-    System.out.println("list3: " + list3 + " -> " + isort(list3));
-    System.out.println("list4: " + list4 + " -> " + isort(list4));
-    System.out.println("list5: " + list5 + " -> " + isort(list5));
-    System.out.println("list6: " + list6 + " -> " + isort(list6));
-    System.out.println("list7: " + list7 + " -> " + isort(list7));
-    System.out.println("list8: " + list8 + " -> " + isort(list8));
-    System.out.println("list9: " + list9 + " -> " + isort(list9));
-    System.out.println("listA: " + listA + " -> " + isort(listA));
-    System.out.println();
+    Console.println("list0: " + list0 + " -> " + isort(list0));
+    Console.println("list1: " + list1 + " -> " + isort(list1));
+    Console.println("list2: " + list2 + " -> " + isort(list2));
+    Console.println("list3: " + list3 + " -> " + isort(list3));
+    Console.println("list4: " + list4 + " -> " + isort(list4));
+    Console.println("list5: " + list5 + " -> " + isort(list5));
+    Console.println("list6: " + list6 + " -> " + isort(list6));
+    Console.println("list7: " + list7 + " -> " + isort(list7));
+    Console.println("list8: " + list8 + " -> " + isort(list8));
+    Console.println("list9: " + list9 + " -> " + isort(list9));
+    Console.println("listA: " + listA + " -> " + isort(listA));
+    Console.println;
   }
 
 }
@@ -137,12 +135,12 @@ object M2 {
 
   def test = {
     val poly = List(9.0,5.0,7.0,5.0);
-    System.out.println("f(x) = 5x^3+7x^2+5x+9");
-    System.out.println("f(0) = " + horner(0, poly));
-    System.out.println("f(1) = " + horner(1, poly));
-    System.out.println("f(2) = " + horner(2, poly));
-    System.out.println("f(3) = " + horner(3, poly));
-    System.out.println();
+    Console.println("f(x) = 5x^3+7x^2+5x+9");
+    Console.println("f(0) = " + horner(0, poly));
+    Console.println("f(1) = " + horner(1, poly));
+    Console.println("f(2) = " + horner(2, poly));
+    Console.println("f(3) = " + horner(3, poly));
+    Console.println;
   }
 }
 
@@ -184,51 +182,51 @@ object M3 {
 
     def v = List(2.0,3.0,4.0);
 
-    System.out.println("v1        = " + v1);
-    System.out.println("v2        = " + v2);
-    System.out.println();
+    Console.println("v1        = " + v1);
+    Console.println("v2        = " + v2);
+    Console.println;
 
-    System.out.println("id        = " + id);
-    System.out.println("m1        = " + m1);
-    System.out.println("m2        = " + m2);
-    System.out.println();
+    Console.println("id        = " + id);
+    Console.println("m1        = " + m1);
+    Console.println("m2        = " + m2);
+    Console.println;
 
-    System.out.println("v1 * v1   = " + dotproduct(v1,v1));
-    System.out.println("v1 * v2   = " + dotproduct(v1,v2));
-    System.out.println("v2 * v1   = " + dotproduct(v2,v1));
-    System.out.println("v1 * v2   = " + dotproduct(v1,v2));
-    System.out.println();
+    Console.println("v1 * v1   = " + dotproduct(v1,v1));
+    Console.println("v1 * v2   = " + dotproduct(v1,v2));
+    Console.println("v2 * v1   = " + dotproduct(v2,v1));
+    Console.println("v1 * v2   = " + dotproduct(v1,v2));
+    Console.println;
 
-    System.out.println("id * v1   = " + matrixTimesVector(id,v1));
-    System.out.println("m1 * v1   = " + matrixTimesVector(m1,v1));
-    System.out.println("m2 * v1   = " + matrixTimesVector(m2,v1));
-    System.out.println();
+    Console.println("id * v1   = " + matrixTimesVector(id,v1));
+    Console.println("m1 * v1   = " + matrixTimesVector(m1,v1));
+    Console.println("m2 * v1   = " + matrixTimesVector(m2,v1));
+    Console.println;
 
-    System.out.println("trn(id)   = " + transpose(id));
-    System.out.println("trn(m1)   = " + transpose(m1));
-    System.out.println("trn(m2)   = " + transpose(m2));
-    System.out.println();
+    Console.println("trn(id)   = " + transpose(id));
+    Console.println("trn(m1)   = " + transpose(m1));
+    Console.println("trn(m2)   = " + transpose(m2));
+    Console.println;
 
-    System.out.println("List(v1) * id = " + matrixTimesMatrix(List(v1),id));
-    System.out.println("List(v1) * m1 = " + matrixTimesMatrix(List(v1),m1));
-    System.out.println("List(v1) * m2 = " + matrixTimesMatrix(List(v1),m2));
-    System.out.println();
+    Console.println("List(v1) * id = " + matrixTimesMatrix(List(v1),id));
+    Console.println("List(v1) * m1 = " + matrixTimesMatrix(List(v1),m1));
+    Console.println("List(v1) * m2 = " + matrixTimesMatrix(List(v1),m2));
+    Console.println;
 
-    System.out.println("id * List(v1) = " + matrixTimesMatrix(id,List(v1)));
-    System.out.println("m1 * List(v1) = " + matrixTimesMatrix(m1,List(v1)));
-    System.out.println("m2 * List(v1) = " + matrixTimesMatrix(m2,List(v1)));
-    System.out.println();
+    Console.println("id * List(v1) = " + matrixTimesMatrix(id,List(v1)));
+    Console.println("m1 * List(v1) = " + matrixTimesMatrix(m1,List(v1)));
+    Console.println("m2 * List(v1) = " + matrixTimesMatrix(m2,List(v1)));
+    Console.println;
 
-    System.out.println("id * id   = " + matrixTimesMatrix(id,id));
-    System.out.println("id * m1   = " + matrixTimesMatrix(id,m1));
-    System.out.println("m1 * id   = " + matrixTimesMatrix(m1,id));
-    System.out.println("m1 * m1   = " + matrixTimesMatrix(m1,m1));
-    System.out.println("id * m2   = " + matrixTimesMatrix(id,m2));
-    System.out.println("m2 * id   = " + matrixTimesMatrix(m2,id));
-    System.out.println("m1 * m2   = " + matrixTimesMatrix(m1,m2));
-    System.out.println("m2 * m1   = " + matrixTimesMatrix(m2,m1));
-    System.out.println("m2 * m2   = " + matrixTimesMatrix(m2,m2));
-    System.out.println();
+    Console.println("id * id   = " + matrixTimesMatrix(id,id));
+    Console.println("id * m1   = " + matrixTimesMatrix(id,m1));
+    Console.println("m1 * id   = " + matrixTimesMatrix(m1,id));
+    Console.println("m1 * m1   = " + matrixTimesMatrix(m1,m1));
+    Console.println("id * m2   = " + matrixTimesMatrix(id,m2));
+    Console.println("m2 * id   = " + matrixTimesMatrix(m2,id));
+    Console.println("m1 * m2   = " + matrixTimesMatrix(m1,m2));
+    Console.println("m2 * m1   = " + matrixTimesMatrix(m2,m1));
+    Console.println("m2 * m2   = " + matrixTimesMatrix(m2,m2));
+    Console.println;
   }
 }
 

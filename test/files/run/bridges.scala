@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 class A;
 class B;
 class C;
@@ -28,7 +26,7 @@ object Help {
   }
   def print: Unit = {
     var i = 0;
-    while (i < max) { if (i > 0) System.out.print(", "); System.out.print(vars(i)); i = i + 1; }
+    while (i < max) { if (i > 0) Console.print(", "); Console.print(vars(i)); i = i + 1; }
   }
   def foo = { vars(next) = "foo"; next = next + 1; }
   def bar = { vars(next) = "bar"; next = next + 1; }
@@ -3585,15 +3583,15 @@ object Test {
       Help.init;
       test;
       if (!Help.check(count, value)) {
-        System.out.print(name + " failed: ");
+        Console.print(name + " failed: ");
         Help.print;
-        System.out.println();
+        Console.println;
         errors = errors + 1;
       }
     } catch {
       case exception => {
-        System.out.print(name + " raised exception " + exception);
-        System.out.println();
+        Console.print(name + " raised exception " + exception);
+        Console.println;
         errors = errors + 1;
       }
     }
@@ -7118,8 +7116,8 @@ object Test {
     // */test("S_TZIfwFooXIfwBarYIf", new S_TZIfwFooXIfwBarYIf[D], 4, "mix");
 
     if (errors > 0) {
-      System.out.println();
-      System.out.println(errors + " error" + (if (errors > 1) "s" else ""));
+      Console.println;
+      Console.println(errors + " error" + (if (errors > 1) "s" else ""));
     }
   }
 }

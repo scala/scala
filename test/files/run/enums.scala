@@ -51,30 +51,29 @@ object Test3 {
 // Test code
 
 object Test {
-  import java.lang.System;
 
   def check_success(name: String, closure: => Int, expected: Int): Unit = {
-    System.out.print("test " + name);
+    Console.print("test " + name);
     try {
       val actual: Int = closure;
       if (actual == expected) {
-        System.out.print(" was successful");
+        Console.print(" was successful");
       } else {
-        System.out.print(" failed: expected "+ expected +", found "+ actual);
+        Console.print(" failed: expected "+ expected +", found "+ actual);
       }
     } catch {
       case exception: Throwable => {
-        System.out.print(" raised exception " + exception);
+        Console.print(" raised exception " + exception);
       }
     }
-    System.out.println();
+    Console.println;
   }
 
   def main(args: Array[String]): Unit = {
     check_success("Test1", Test1.run, 5);
     check_success("Test2", Test2.run, 5);
     check_success("Test3", Test3.run, 1);
-    System.out.println();
+    Console.println;
   }
 }
 

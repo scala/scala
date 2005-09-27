@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 //############################################################################
 
 object Ops {
@@ -38,13 +36,13 @@ object overloads {
 
     def check(what: String, actual: Any, expected: Any): Unit = {
         val success: Boolean = actual == expected;
-        System.out.print(if (success) "ok" else "KO");
+        Console.print(if (success) "ok" else "KO");
         var value: String = if (actual == null) "null" else actual.toString();
         if (value == "\u0000") value = "\\u0000";
-        System.out.print(": " + what + " = " + value);
-        if (!success) System.out.print(" != " + expected);
-        System.out.println();
-        System.out.flush();
+        Console.print(": " + what + " = " + value);
+        if (!success) Console.print(" != " + expected);
+        Console.println;
+        Console.flush;
     }
 
     def - = 0;
