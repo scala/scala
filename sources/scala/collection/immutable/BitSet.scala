@@ -23,7 +23,7 @@ package scala.collection.immutable;
  */
 [serializable]
 class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet with Ordered[BitSet] {
-
+  import scala.runtime.compat.Platform.arraycopy;
   /** lexicographic ordering */
   def compareTo [b >: BitSet <% Ordered[b]](other: b): int = other match {
     case that:BitSet =>
@@ -59,7 +59,7 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet wit
   protected val array: Array[Int]  =
     if (copy) {
       val arr = new Array[Int](ba.length);
-      java.lang.System.arraycopy(ba, 0, arr, 0, ba.length);
+      arraycopy(ba, 0, arr, 0, ba.length);
       arr
     }
     else
@@ -110,7 +110,7 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet wit
 
   def toArray: Array[Int] = {
     val arr = new Array[Int](array.length);
-    java.lang.System.arraycopy(arr, 0, array, 0, array.length);
+    arraycopy(arr, 0, array, 0, array.length);
     arr
   }
 }

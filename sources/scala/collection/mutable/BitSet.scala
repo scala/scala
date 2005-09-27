@@ -16,6 +16,7 @@ package scala.collection.mutable ;
  */
 [serializable]
 class BitSet(initSize: Int) extends scala.collection.BitSet {
+  import scala.runtime.compat.Platform.arraycopy;
 
   /** default constructor, initial size of 512 bits */
   def this() = this( 512 );  // ResizableArray.initialSize << 5
@@ -37,7 +38,7 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
     }
     def freeze: Array[Int] = {
       val arr = new Array[Int]( array.length );
-      java.lang.System.arraycopy(array, 0, arr, 0, arr.length);
+      arraycopy(array, 0, arr, 0, arr.length);
       arr
     }
   }
