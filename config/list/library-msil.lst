@@ -3,21 +3,21 @@
 ##############################################################################
 # $Id$
 
-AnyVal.java
+AnyVal.cs
 Application.scala
-Array.java
+Array.cs
 Attribute.scala
-Boolean.java
+Boolean.cs
 BufferedIterator.scala
-Byte.java
+Byte.cs
 CaseClass.scala
 Cell.scala
-Char.java
+Char.cs
 cloneable.scala
-Console.scala
-Double.java
+../msil/scala/Console.scala
+Double.cs
 Enumeration.scala
-Float.java
+Float.cs
 Function0.scala
 Function1.scala
 Function2.scala
@@ -28,13 +28,13 @@ Function6.scala
 Function7.scala
 Function8.scala
 Function9.scala
-Int.java
+Int.cs
 Iterable.scala
 IterableProxy.scala
 Iterator.scala
-List.scala
-Long.java
-MatchError.java
+../msil/scala/List.scala
+Long.cs
+MatchError.cs
 None.scala
 Option.scala
 Ordered.scala
@@ -42,15 +42,15 @@ PartialFunction.scala
 PartiallyOrdered.scala
 ../msil/scala/Predef.scala
 Proxy.scala
-Ref.java
-ScalaObject.java
+Ref.cs
+ScalaObject.cs
 Seq.scala
 SeqProxy.scala
 SerialVersionUID.scala
 serializable.scala
-Short.java
+Short.cs
 Some.scala
-Stream.scala
+../msil/scala/Stream.scala
 Symbol.scala
 Tuple1.scala
 Tuple2.scala
@@ -62,7 +62,7 @@ Tuple7.scala
 Tuple8.scala
 Tuple9.scala
 #Type.java
-Unit.java
+Unit.cs
 transient.scala
 volatile.scala
 
@@ -84,8 +84,8 @@ collection/mutable/HashTable.scala
 collection/mutable/History.scala
 collection/mutable/ImmutableMapAdaptor.scala
 collection/mutable/ImmutableSetAdaptor.scala
-collection/mutable/JavaMapAdaptor.scala
-collection/mutable/JavaSetAdaptor.scala
+#collection/mutable/JavaMapAdaptor.scala
+#collection/mutable/JavaSetAdaptor.scala
 collection/mutable/LinkedList.scala
 collection/mutable/ListBuffer.scala
 collection/mutable/Location.scala
@@ -130,18 +130,18 @@ collection/immutable/Tree.scala
 collection/immutable/TreeMap.scala
 collection/immutable/TreeSet.scala
 
-concurrent/Actor.scala
-concurrent/Channel.scala
-concurrent/Lock.scala
-concurrent/MailBox.scala
-concurrent/NameServer.scala
-concurrent/Process.scala
-concurrent/SyncChannel.scala
-concurrent/SyncVar.scala
-concurrent/TIMEOUT.scala
-# concurrent/jolib.scala
-concurrent/ops.scala
-concurrent/pilib.scala
+# concurrent/Actor.scala
+# concurrent/Channel.scala
+# concurrent/Lock.scala
+# concurrent/MailBox.scala
+# concurrent/NameServer.scala
+# concurrent/Process.scala
+# concurrent/SyncChannel.scala
+# concurrent/SyncVar.scala
+# concurrent/TIMEOUT.scala
+# # concurrent/jolib.scala
+# concurrent/ops.scala
+# concurrent/pilib.scala
 
 #io/Source.scala
 io/Position.scala
@@ -174,9 +174,10 @@ io/Position.scala
 #runtime/FNV_Hash.java
 #runtime/IOMap.java
 #runtime/InterpreterSupport.java
-runtime/RunTime.java
-runtime/ScalaRunTime.scala
-
+runtime/MetaAttribute.cs
+runtime/RunTime.cs
+runtime/SymtabAttribute.cs
+../msil/scala/runtime/ScalaRunTime.scala
 ../msil/scala/runtime/compat/Platform.scala
 
 runtime/matching/Address.scala
@@ -219,9 +220,9 @@ testing/UnitTest.scala
 #testing/Benchmark.scala
 
 util/automata/BaseBerrySethi.scala
-util/automata/DetWordAutom.scala
+../msil/scala/util/automata/DetWordAutom.scala
 util/automata/Inclusion.scala
-util/automata/NondetWordAutom.scala
+../msil/scala/util/automata/NondetWordAutom.scala
 util/automata/SubsetConstruction.scala
 util/automata/WordBerrySethi.scala
 util/grammar/HedgeRHS.scala
@@ -231,7 +232,7 @@ util/grammar/HedgeRHS.scala
 util/grammar/TreeRHS.scala
 util/regexp/Base.scala
 util/regexp/PointedHedgeExp.scala
-util/regexp/SyntaxError.scala
+../msil/scala/util/regexp/SyntaxError.scala
 util/regexp/WordExp.scala
 util/logging/Logged.scala
 util/logging/ConsoleLogger.scala
