@@ -317,7 +317,8 @@ abstract class Opcodes: ICodes {
     {
 
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CJUMP "+cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
+      override def toString(): String ="CJUMP (" + kind + ")" +
+        cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
 
       override def consumed = 2;
       override def produced = 0;
@@ -333,7 +334,8 @@ abstract class Opcodes: ICodes {
                       cond: TestOp,
                       kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CZJUMP "+cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
+      override def toString(): String ="CZJUMP )" + kind + ")" +
+                        cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
 
       override def consumed = 1;
       override def produced = 0;

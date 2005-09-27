@@ -290,7 +290,7 @@ abstract class Checkers {
              case Negation(kind) =>
                checkType(kind, BOOL, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE);
                checkType(stack.pop, kind);
-               stack push BOOL;
+               stack push kind;
 
              case Test(op, kind, zero) =>
                if (zero) {

@@ -123,7 +123,7 @@ trait BasicBlocks: ICodes {
 
     /** Add a new instruction at the end of the block */
     def emit(instr: Instruction) = {
-      assert (!closed, "BasicBlock closed.");
+      assert (!closed, "BasicBlock closed");
       instructionList = instr :: instructionList;
       _lastInstruction = instr;
     }

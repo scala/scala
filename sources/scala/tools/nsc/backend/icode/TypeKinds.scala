@@ -71,7 +71,7 @@ abstract class TypeKinds: ICodes {
     def isArrayType: Boolean = false;
 
     def isIntType: Boolean = this match {
-      case BYTE | SHORT | INT | LONG => true;
+      case BYTE | SHORT | INT | LONG | CHAR => true;
       case _ => false;
     }
 
@@ -235,6 +235,8 @@ abstract class TypeKinds: ICodes {
       else other match {
         case REFERENCE(cls2) =>
           cls.tpe <:< cls2.tpe;
+        case ARRAY(_) =>
+          cls == definitions.AllRefClass;
         case _ => false;
       }
 

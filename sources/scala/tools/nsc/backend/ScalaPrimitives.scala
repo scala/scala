@@ -643,7 +643,7 @@ abstract class ScalaPrimitives {
           case LONG    => LARRAY_GET;
           case FLOAT   => FARRAY_GET;
           case DOUBLE  => DARRAY_GET;
-          case REFERENCE(_)     => OARRAY_GET;
+          case REFERENCE(_) | ARRAY(_)     => OARRAY_GET;
           case _ =>
           abort("Unexpected array element type: " + elem);
         }
@@ -658,7 +658,7 @@ abstract class ScalaPrimitives {
           case LONG    => LARRAY_SET;
           case FLOAT   => FARRAY_SET;
           case DOUBLE  => DARRAY_SET;
-          case REFERENCE(_)     => OARRAY_SET;
+          case REFERENCE(_) | ARRAY(_) => OARRAY_SET;
           case _ =>
           abort("Unexpected array element type: " + elem);
         }
@@ -673,7 +673,7 @@ abstract class ScalaPrimitives {
           case LONG    => LARRAY_LENGTH;
           case FLOAT   => FARRAY_LENGTH;
           case DOUBLE  => DARRAY_LENGTH;
-          case REFERENCE(_)     => OARRAY_LENGTH;
+          case REFERENCE(_) | ARRAY(_)  => OARRAY_LENGTH;
           case _ =>
           abort("Unexpected array element type: " + elem);
         }

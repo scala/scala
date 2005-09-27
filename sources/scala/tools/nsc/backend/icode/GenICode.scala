@@ -240,11 +240,11 @@ abstract class GenICode extends SubComponent  {
               case scalaPrimitives.XOR => ctx1.bb.emit(CALL_PRIMITIVE(Logical(XOR, resKind)));
               case scalaPrimitives.AND => ctx1.bb.emit(CALL_PRIMITIVE(Logical(AND, resKind)));
               case scalaPrimitives.LSL => ctx1.bb.emit(CALL_PRIMITIVE(Shift(LSL, resKind)));
-                                          generatedType = INT;
+                                          generatedType = resKind;
               case scalaPrimitives.LSR => ctx1.bb.emit(CALL_PRIMITIVE(Shift(LSR, resKind)));
-                                          generatedType = INT;
+                                          generatedType = resKind;
               case scalaPrimitives.ASR => ctx1.bb.emit(CALL_PRIMITIVE(Shift(ASR, resKind)));
-                                          generatedType = INT;
+                                          generatedType = resKind;
               case _ => abort("Unknown primitive: " + fun.symbol + "[" + code + "]");
             }
 
@@ -400,7 +400,7 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = genLoad(expr, ctx, THROWABLE);
           ctx1.bb.emit(THROW());
           generatedType = SCALA_ALL;
-          ctx;
+          ctx1;
 
         case New(tpt) =>
           abort("Unexpected New");
@@ -464,7 +464,7 @@ abstract class GenICode extends SubComponent  {
                 scanForLabels(ctx.defdef, ctx);
                 ctx.labels.get(sym) match {
                   case Some(l) => l;
-                  case _       => abort("Unknown label target: " + sym);
+                  case _       => abort("Unknown label target: " + sym + " at: " + unit.position(fun.pos) + ": ctx: " + ctx);
                 }
             }
             val ctx1 = genLoadLabelArguments(args, label, ctx);
@@ -794,14 +794,17 @@ abstract class GenICode extends SubComponent  {
      * Since it is expensive to traverse each method twice, this method is called
      * only when forward jumps really happen, and then it re-traverses the whole
      * method, scanning for LabelDefs.
+     *
+     * TODO: restrict the scanning to smaller subtrees than the whole method.
+     *  It is sufficient to scan the trees of the innermost enclosing block.
      */
     private def scanForLabels(tree: Tree, ctx: Context): Unit =
       new Traverser() {
         override def traverse(tree: Tree): Unit = tree match {
 
-          case LabelDef(name, params, _) =>
-            // TODO: check that previously entered labels survive the scan
+          case LabelDef(name, params, rhs) =>
             ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
+            //super.traverse(rhs);
 
           case _ => super.traverse(tree);
         }
@@ -995,6 +998,17 @@ abstract class GenICode extends SubComponent  {
       var handlers: List[ExceptionHandler] = NoHandler :: Nil;
 
       var handlerCount = 0;
+
+      override def toString(): String = {
+        val buf = new StringBuffer();
+        buf.append("\tpackage: ").append(packg).append('\n');
+        buf.append("\tclazz: ").append(clazz).append('\n');
+        buf.append("\tmethod: ").append(method).append('\n');
+        buf.append("\tbb: ").append(bb).append('\n');
+        buf.append("\tlabels: ").append(labels).append('\n');
+        buf.toString()
+      }
+
 
       def this(other: Context) = {
         this();
