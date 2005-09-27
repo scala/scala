@@ -461,19 +461,69 @@ endif
 LIBRARY_MSIL_ROOT	 = $(LIBRARY_ROOT)
 LIBRARY_MSIL_LIST	+= $(call READLIST,$(PROJECT_LISTDIR)/library-msil.lst)
 LIBRARY_MSIL_SOURCES	+= $(LIBRARY_MSIL_LIST:%=$(LIBRARY_MSIL_ROOT)/%)
+MSIL_SRCDIR		 = $(ROOT)/sources/msil
+
+ASSEMBLY_INFO		 = $(MSIL_SRCDIR)/AssemblyInfo.cs
+ASSEMBLY_INFO_TMPL	 = $(MSIL_SRCDIR)/AssemblyInfo.cs.tmpl
+SCALA_PART1_DLL		 = scala_part1.dll
+SCALA_PART1_IL		 = scala_part1.il
+SCALA_PART2		 = scala_part2
+SCALA_PART2_IL		 = $(SCALA_PART2).il
+SCALA_PART2_IL_DIFF	 = $(MSIL_SRCDIR)/$(SCALA_PART2_IL).diff
+SCALA_PART2_IL_DIFF_TMPL = $(SCALA_PART2_IL_DIFF).tmpl
+SCALA_DLL		 = scala.dll
+SCALA_IL		 = scala.il
+
+LIBRARY_MSIL_CSC_FILES	+= $(filter %.cs,$(LIBRARY_MSIL_SOURCES)) $(ASSEMBLY_INFO)
+LIBRARY_MSIL_CSC_TARGET += library
+LIBRARY_MSIL_CSC_OUTPUTFILE += $(SCALA_PART1_DLL)
+LIBRARY_MSIL_CSC_FLAGS	+= /nologo /warn:0
+
 LIBRARY_MSIL_SC_FILES	+= $(filter %.scala,$(LIBRARY_MSIL_SOURCES))
-LIBRARY_MSIL_SC_FLAGS	+= -r $(MSCORLIB_DLLFILE):$(VJSCOR_DLLFILE):$(VJSLIB_DLLFILE)
-LIBRARY_MSIL_SC_FLAGS	+= -uniqid -o scalalibx -g
+LIBRARY_MSIL_SC_FLAGS	+= -r $(call CYGWIN_PATH,$(SCALA_PART1_DLL):$(ROOT)/lib)
+LIBRARY_MSIL_SC_FLAGS	+= -o $(SCALA_PART2) -g
 LIBRARY_MSIL_SC_TARGET	 = msil
 
 $(latest)library-msil	: $(latest)library-msil-sc
 $(latest)library-msil	:
 	$(TOUCH) $@
 
-$(latest)library-msil-sc: $(LIBRARY_MSIL_SC_FILES)
-	@$(make) sc target=LIBRARY_MSIL \
-	    LIBRARY_MSIL_SC_FILES='$(subst $$,$$$$,$?)'
+$(latest)library-msil-csc: $(LIBRARY_MSIL_CSC_FILES) $(ASSEMBLY_INFO)
+	@$(make) csc target=LIBRARY_MSIL
+	ildasm /lin /out=$(SCALA_PART1_IL).tmp $(SCALA_PART1_DLL)
+	cat $(SCALA_PART1_IL).tmp | dos2unix | \
+	    $(SED) -e "s/\(int16\|int32\|int64\|float32\|float64\)[ ]*dummy//" \
+	    -e "s/__/\$$/g" \
+	    -e "s/box\$$array/box__array/g" \
+	    -e "s/[ \t]*$$//" > $(SCALA_PART1_IL)
+	ilasm /nol /qui /deb /dll /out=$(SCALA_PART1_DLL) $(SCALA_PART1_IL)
 	$(TOUCH) $@
+
+$(ASSEMBLY_INFO)	: $(ASSEMBLY_INFO_TMPL) $(VERSION_FILE)
+	$(SED) s/SCALA_VERSION/$(PROJECT_VERSION)/ $(ASSEMBLY_INFO_TMPL) > $@
+
+$(latest)library-msil-sc: $(SCALA_DLL)
+	$(TOUCH) $@
+
+$(SCALA_DLL)		: $(SCALA_IL)
+	ilasm /qui /nol /deb /dll /out=$(SCALA_DLL) $(SCALA_IL)
+	sn -R $(SCALA_DLL) lamp.key
+
+$(SCALA_IL)		: $(SCALA_PART2_IL)
+	cat $(SCALA_PART1_IL) $(SCALA_PART2_IL) \
+	  $(SED) "e/assembly scala_part1/scala/" > $@
+
+$(SCALA_PART2_IL)	: $(latest)library-msil-csc $(LIBRARY_MSIL_SC_FILES) \
+			  $(SCALA_PART2_IL_DIFF)
+	@$(make) sc target=LIBRARY_MSIL
+	dos2unix $(SCALA_PART2_IL)
+	patch -o $(SCALA_PART2_IL).new $(SCALA_PART2_IL) $(SCALA_PART2_IL_DIFF)
+	$(SED) -e "s/\[scala_part1\]//g" $(SCALA_PART2_IL).new > $@
+
+$(SCALA_PART2_IL_DIFF)	: $(SCALA_PART2_IL_DIFF_TMPL) $(VERSION_FILE)
+	$(SED) "s/SCALA_VERSION/$(subst .,:,$(PROJECT_VERSION))/" \
+	    $(SCALA_PART2_IL_DIFF_TMPL) > $@
+
 
 ##############################################################################
 # Targets - scala tools - util
@@ -747,6 +797,7 @@ include $(PROJECT_SUPPORTDIR)/make/jc.mk
 include $(PROJECT_SUPPORTDIR)/make/jar.mk
 include $(PROJECT_SUPPORTDIR)/make/sc.mk
 include $(PROJECT_SUPPORTDIR)/make/sdc.mk
+include $(PROJECT_SUPPORTDIR)/make/csc.mk
 
 ##############################################################################
 # Beta code
