@@ -510,8 +510,8 @@ $(SCALA_DLL)		: $(SCALA_IL)
 	sn -R $(SCALA_DLL) lamp.key
 
 $(SCALA_IL)		: $(SCALA_PART2_IL)
-	cat $(SCALA_PART1_IL) $(SCALA_PART2_IL) \
-	  $(SED) "e/assembly scala_part1/scala/" > $@
+	cat $(SCALA_PART1_IL) $(SCALA_PART2_IL) |\
+	  $(SED) "s/assembly scala_part1/assembly scala/" > $@
 
 $(SCALA_PART2_IL)	: $(latest)library-msil-csc $(LIBRARY_MSIL_SC_FILES) \
 			  $(SCALA_PART2_IL_DIFF)
