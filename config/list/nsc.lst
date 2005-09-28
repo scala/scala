@@ -115,6 +115,7 @@ backend/icode/Primitives.scala
 backend/icode/Printers.scala
 backend/icode/TypeKinds.scala
 backend/icode/TypeStacks.scala
+backend/jvm/GenJVM.scala
 
 
 ##############################################################################
