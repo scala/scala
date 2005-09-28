@@ -24,11 +24,23 @@ object Main {
 
   def error(msg: String): unit =
     reporter.error(new Position(PRODUCT),
-		   msg + "\n  " + PRODUCT + " -help  gives more information");
+                   msg + "\n  " + PRODUCT + " -help  gives more information");
 
   def errors() = reporter.errors();
 
+  private def loop(action: (String) => Unit): unit = {
+    val in = new BufferedReader(new InputStreamReader(System.in));
+    System.out.print(prompt);
+    var line = in.readLine();
+    while (line != null && line.length() > 0) {
+      action(line);
+      System.out.print(prompt);
+      line = in.readLine();
+    }
+  }
+
   def resident(compiler: Global): unit = {
+/*
     val in = new BufferedReader(new InputStreamReader(System.in));
     System.out.print(prompt);
     var line = in.readLine();
@@ -39,6 +51,19 @@ object Main {
       System.out.print(prompt);
       line = in.readLine();
     }
+*/
+    loop(line => {
+      val args = List.fromString(line, ' ');
+      val command = new CompilerCommand(args, error, true);
+      (new compiler.Run) compile command.files
+    })
+  }
+
+  def interprete(gCompiler: Global): unit = {
+    val interpreter = new Interpreter {
+      val compiler: gCompiler.type = gCompiler
+    };
+    loop(line => interpreter.interpret(line.trim(), reporter))
   }
 
   def process(args: Array[String]): unit = {
@@ -54,6 +79,8 @@ object Main {
 	val compiler = new Global(command.settings, reporter);
 	if (command.settings.resident.value)
 	  resident(compiler);
+	else if (command.settings.interprete.value)
+	  interprete(compiler);
 	else if (command.files.isEmpty)
 	  reporter.info(null, command.usageMsg, true)
 	else
