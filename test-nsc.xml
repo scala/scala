@@ -99,12 +99,24 @@
 	  &userExcludes;
     </nsc>
 
-    <!-- couldn't get parameter "update" to work on Windows (mics) -->
     <jar destfile="${nsc.nsrt_jar}">
       <fileset dir="${nsc.tools_util_runtime_dir}" />
       <fileset dir="${nsc.nsc_output_dir}" />
     </jar>
 
+  </target>
+
+  <target name="nscOnNsc" depends="init,check.env">
+    <taskdef name="nsc" classname="scala.tools.scala4ant.NscTask$class" />
+
+    <echo>===== running nsc on itself</echo>
+    <nsc srcdir="sources" destdir="${nsc.nsc_output_dir}" 
+         classpath="sources:newsources:${nsc.nsrt_jar}:${nsc.fjbg_jar}:${nsc.nsc_output_dir}"
+         nscArgs="${moreNscArgs}" force="true"> 
+
+      <include name="scala/tools/nsc/**/*.scala"/>
+	  &userExcludes;
+    </nsc>
   </target>
 
   <target name="clean">
