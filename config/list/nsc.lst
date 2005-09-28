@@ -83,6 +83,8 @@ typechecker/Contexts.scala
 typechecker/EtaExpansion.scala
 typechecker/Infer.scala
 typechecker/Namers.scala
+typechecker/RefChecks.scala
+typechecker/SyntheticMethods.scala
 typechecker/TreeCheckers.scala
 typechecker/Typers.scala
 typechecker/Variances.scala
