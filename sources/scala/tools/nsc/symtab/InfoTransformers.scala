@@ -11,15 +11,15 @@ abstract class InfoTransformers: SymbolTable {
     var prev: InfoTransformer = this;
     var next: InfoTransformer = this;
 
-    val phase: Phase;
+    val pid: Phase#Id;
     val changesBaseClasses: boolean;
     def transform(sym: Symbol, tpe: Type): Type;
 
     def insert(that: InfoTransformer): unit = {
-      assert(this.phase.id != that.phase.id);
-      if (that.phase.id < this.phase.id) {
+      assert(this.pid != that.pid);
+      if (that.pid < this.pid) {
 	prev insert that
-      } else if (next.phase.id <= that.phase.id && next.phase != NoPhase) {
+      } else if (next.pid <= that.pid && next.pid != NoPhase.id) {
 	next insert that
       } else {
 	that.next = next;
@@ -29,12 +29,12 @@ abstract class InfoTransformers: SymbolTable {
       }
     }
 
-    def nextFrom(from: Phase): InfoTransformer =
-      if (from.id == this.phase.id) this
-      else if (from.id < this.phase.id)
-	if (prev.phase.id < from.id) this
+    def nextFrom(from: Phase#Id): InfoTransformer =
+      if (from == this.pid) this
+      else if (from < this.pid)
+	if (prev.pid < from) this
 	else prev.nextFrom(from);
-      else if (next.phase == NoPhase) next
+      else if (next.pid == NoPhase.id) next
       else next.nextFrom(from);
   }
 }

@@ -33,7 +33,7 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
 	format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString(
 	"Usage: scalac <options | source files>\n" +
-	"where possible options include: \n",
+	"where possible options include: \n  ",
 	"\n  ",
 	"\n");
   }

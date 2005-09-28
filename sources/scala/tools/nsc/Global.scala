@@ -20,7 +20,6 @@ import matching.TransMatcher;
 import transform._;
 import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
-import backend.jvm.BytecodeGenerators;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -72,11 +71,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   val copy = new LazyTreeCopier();
-
-  type AttrInfo = Pair[Type, List[Any]];
-
-  /** A map from symbols to their attributes */
-  val attributes = new HashMap[Symbol, List[AttrInfo]];
 
 // reporting -------------------------------------------------------
 
@@ -154,9 +148,14 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   var globalPhase: Phase = NoPhase;
 
+  val MaxPhases = 64;
+
+  val phaseWithId = new Array[Phase](MaxPhases);
+  { for (val i <- List.range(0, MaxPhases)) phaseWithId(i) = NoPhase }
 
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
-    def run: unit = units foreach applyPhase;
+    phaseWithId(id) = this;
+    def run: unit = currentRun.units foreach applyPhase;
     def apply(unit: CompilationUnit): unit;
     private val isErased = prev.name == "erasure" || prev.erasedTypes;
     override def erasedTypes: boolean = isErased;
@@ -180,11 +179,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-/*
-  object syntheticMethods extends SyntheticMethods {
-    val global: Global.this.type = Global.this
-  }
-*/
   object refchecks extends RefChecks {
     val global: Global.this.type = Global.this;
   }
@@ -241,8 +235,17 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
-  object genJVM extends BytecodeGenerators {
-    val global: Global.this.type = Global.this;
+  object icodeChecker extends checkers.ICodeChecker();
+
+  object typer extends analyzer.Typer(analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope())) {
+    override def typed(tree: Tree, mode: int, pt: Type): Tree = {
+      if (settings.debug.value) log("typing [[" + tree + "]]");
+      val result = super.typed(tree, mode, pt);
+      if (settings.debug.value) log(" ==> " + result + ":" + result.tpe);
+      result
+    }
+    override def typed(tree: Tree): Tree = super.typed(tree);
+    override def typed(tree: Tree, pt: Type): Tree = super.typed(tree, pt);
   }
 
   def phaseDescriptors: List[SubComponent] = List(
@@ -260,155 +263,141 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     flatten,
     constructors,
     mixin,
-    genicode,
-    genJVM,
-    sampleTransform);
+    if (settings.Xshowicode.value) genicode
+    else sampleTransform);
 
-  val parserPhase = syntaxAnalyzer.newPhase(NoPhase);
-  val firstPhase = parserPhase;
-  currentRun = NoRun + 1;
-  phase = parserPhase;
-  definitions.init; // needs firstPhase and phase to be defined != NoPhase,
-	            // that's why it is placed here.
+// Runs ----------------------------------------------------------------
 
-  val icodeChecker = new checkers.ICodeChecker();
+  private var curRun: Run = NoRun;
+  override def currentRun: Run = curRun;
 
-  private var p = phase;
-  private var stopped = false;
-  for (val pd <- phaseDescriptors) {
-    if (!stopped) {
-      if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p);
-      stopped = settings.stop contains pd.phaseName;
-    }
-  }
+  type AttrInfo = Pair[Type, List[Any]];
 
-  val terminalPhase = new GlobalPhase(p) {
-    def name = "terminal";
-    def apply(unit: CompilationUnit): unit = {}
-  }
-
-  def phaseNamed(name: String): Phase = {
-    var p: Phase = firstPhase;
-    while (p.next != p && p.name != name) p = p.next;
-    if (p.name != name) NoPhase else p
-  }
-
-  val namerPhase = phaseNamed("namer");
-  val typerPhase = phaseNamed("typer");
-  val refchecksPhase = phaseNamed("refchecks");
-  val erasurePhase = phaseNamed("erasure");
-  val flattenPhase = phaseNamed("flatten");
-  val delegateMixins = phaseNamed("mixin") != NoPhase;
-
-  val typer = new analyzer.Typer(analyzer.NoContext.make(EmptyTree, definitions.RootClass, new Scope())) {
-    override def typed(tree: Tree, mode: int, pt: Type): Tree = {
-      if (settings.debug.value) log("typing [[" + tree + "]]");
-      val result = super.typed(tree, mode, pt);
-      if (settings.debug.value) log(" ==> " + result + ":" + result.tpe);
-      result
-    }
-  }
-  val infer = typer.infer;
-
-// Units and how to compile them -------------------------------------
-
-  private var unitbuf = new ListBuffer[CompilationUnit];
-  private var fileset = new HashSet[AbstractFile];
-
-  private def addUnit(unit: CompilationUnit): unit = {
-    unitbuf += unit;
-    fileset += unit.source.getFile();
-  }
-
-  def units: Iterator[CompilationUnit] = unitbuf.elements;
-
-  /** A map from compiled top-level symbols to their source files */
-  val symSource = new HashMap[Symbol, AbstractFile];
-
-  /** A map from compiled top-level symbols to their picklers */
-  val symData = new HashMap[Symbol, PickleBuffer];
-
-  def compileSources(sources: List[SourceFile]): unit = {
-    val startTime = System.currentTimeMillis();
-    unitbuf.clear;
-    fileset.clear;
-    symSource.clear;
-    symData.clear;
-    reporter.resetCounters();
+  class Run extends CompilerRun {
+    curRun = this;
+    override val firstPhase = syntaxAnalyzer.newPhase(NoPhase);
     phase = firstPhase;
-    while (phase != terminalPhase) { phase.resetPhase; phase = phase.next }
+    definitions.init; // needs firstPhase and phase to be defined != NoPhase,
+                      // that's why it is placed here.
 
-    for (val source <- sources)
-      addUnit(new CompilationUnit(source));
-
-    globalPhase = firstPhase;
-    while (globalPhase != terminalPhase && reporter.errors() == 0) {
-      val startTime = System.currentTimeMillis();
-      phase = globalPhase;
-      globalPhase.run;
-      if (settings.print contains globalPhase.name) treePrinter.printAll();
-      if (settings.browse contains globalPhase.name) treeBrowser.browse(units);
-      informTime(globalPhase.description, startTime);
-      globalPhase = globalPhase.next;
-      if (settings.check contains globalPhase.name) {
-        phase = globalPhase;
-        if (globalPhase.name == "terminal")
-          icodeChecker.checkICodes;
-        else
-          checker.checkTrees;
+    private var p: Phase = firstPhase;
+    private var stopped = false;
+    for (val pd <- phaseDescriptors) {
+      if (!stopped) {
+        if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p);
+        stopped = settings.stop contains pd.phaseName;
       }
-      if (settings.statistics.value) statistics.print(phase);
     }
 
-    if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
-    if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
-    if (settings.Xshowicode.value) writeICode();
+    override val terminalPhase = new GlobalPhase(p) {
+      def name = "terminal";
+      def apply(unit: CompilationUnit): unit = {}
+    }
 
-    if (reporter.errors() == 0) {
-      for (val Pair(sym, pickled) <- symData.elements.toList) {
-	sym setPos Position.NOPOS;
-	if (symData contains sym) {
-	  symData -= sym;
-	  symData -= sym.linkedSym;
-	  writeSymblFile(sym, pickled)
+    override def phaseNamed(name: String): Phase = {
+      var p: Phase = firstPhase;
+      while (p.next != p && p.name != name) p = p.next;
+      if (p.name != name) NoPhase else p
+    }
+
+    override val namerPhase = phaseNamed("namer");
+    override val typerPhase = phaseNamed("typer");
+    override val refchecksPhase = phaseNamed("refchecks");
+    override val erasurePhase = phaseNamed("erasure");
+    override val flattenPhase = phaseNamed("flatten");
+
+    /** A map from symbols to their attributes */
+    val attributes = new HashMap[Symbol, List[AttrInfo]];
+
+    private var unitbuf = new ListBuffer[CompilationUnit];
+    private var fileset = new HashSet[AbstractFile];
+
+    private def addUnit(unit: CompilationUnit): unit = {
+      unitbuf += unit;
+      fileset += unit.source.getFile();
+    }
+
+    def units: Iterator[CompilationUnit] = unitbuf.elements;
+
+    /** A map from compiled top-level symbols to their source files */
+    val symSource = new HashMap[Symbol, AbstractFile];
+
+    /** A map from compiled top-level symbols to their picklers */
+    val symData = new HashMap[Symbol, PickleBuffer];
+
+    def compileSources(sources: List[SourceFile]): unit = {
+      val startTime = System.currentTimeMillis();
+      reporter.resetCounters();
+
+      for (val source <- sources)
+	addUnit(new CompilationUnit(source));
+
+      globalPhase = firstPhase;
+      while (globalPhase != terminalPhase && reporter.errors() == 0) {
+	val startTime = System.currentTimeMillis();
+	phase = globalPhase;
+	globalPhase.run;
+	if (settings.print contains globalPhase.name) treePrinter.printAll();
+	if (settings.browse contains globalPhase.name) treeBrowser.browse(units);
+	informTime(globalPhase.description, startTime);
+	globalPhase = globalPhase.next;
+	if (settings.check contains globalPhase.name) {
+          phase = globalPhase;
+          if (globalPhase.name == "terminal" && settings.Xshowicode.value) icodeChecker.checkICodes;
+          else checker.checkTrees;
+	}
+	if (settings.statistics.value) statistics.print(phase);
+      }
+
+      if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
+      if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
+      if (settings.Xshowicode.value) printICode();
+
+      if (reporter.errors() == 0) {
+	for (val Pair(sym, pickled) <- symData.elements.toList) {
+	  sym setPos Position.NOPOS;
+	  if (symData contains sym) {
+	    symData -= sym;
+	    symData -= sym.linkedSym;
+	    writeSymblFile(sym, pickled)
+	  }
+	}
+      } else {
+	for (val Pair(sym, file) <- symSource.elements) {
+	  sym.reset(new loaders.SourcefileLoader(file));
+	  if (sym.isTerm) sym.moduleClass.reset(loaders.errorLoader);
 	}
       }
-      currentRun = currentRun + 1;
-    } else {
-      for (val Pair(sym, file) <- symSource.elements) {
-	sym.reset(new loaders.SourcefileLoader(file));
-	if (sym.isTerm) sym.moduleClass.reset(loaders.errorLoader);
-      }
+      informTime("total", startTime);
     }
-    informTime("total", startTime);
+
+    def compileLate(file: AbstractFile): unit =
+      if (fileset == null)
+	throw new FatalError("No symbol file for " + file + " was found\n(This file cannot be loaded as a source file)");
+      else if (!(fileset contains file)) {
+	val unit = new CompilationUnit(getSourceFile(file));
+	addUnit(unit);
+	var localPhase = firstPhase.asInstanceOf[GlobalPhase];
+	while (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) {
+	  atPhase(localPhase)(localPhase.applyPhase(unit));
+	  localPhase = localPhase.next.asInstanceOf[GlobalPhase];
+	}
+      }
+
+    def compileFiles(files: List[AbstractFile]): unit =
+      try {
+	compileSources(files map getSourceFile)
+      } catch {
+	case ex: IOException => error(ex.getMessage());
+      }
+
+    def compile(filenames: List[String]): unit =
+      try {
+	compileSources(filenames map getSourceFile)
+      } catch {
+	case ex: IOException => error(ex.getMessage());
+      }
   }
-
-  def compileLate(file: AbstractFile): unit =
-    if (fileset == null)
-      throw new FatalError("No symbol file for " + file + " was found\n(This file cannot be loaded as a source file)");
-    else if (!(fileset contains file)) {
-      val unit = new CompilationUnit(getSourceFile(file));
-      addUnit(unit);
-      var localPhase = parserPhase.asInstanceOf[GlobalPhase];
-      while (localPhase.id < globalPhase.id || localPhase.id <= parserPhase.next.id) {
-	atPhase(localPhase)(localPhase.applyPhase(unit));
-	localPhase = localPhase.next.asInstanceOf[GlobalPhase];
-      }
-    }
-
-  def compileFiles(files: List[AbstractFile]): unit =
-    try {
-      compileSources(files map getSourceFile)
-    } catch {
-      case ex: IOException => error(ex.getMessage());
-    }
-
-  def compile(filenames: List[String]): unit =
-    try {
-      compileSources(filenames map getSourceFile)
-    } catch {
-      case ex: IOException => error(ex.getMessage());
-    }
 
   def showDef(name: Name, module: boolean): unit = {
     def getSym(name: Name, module: boolean): Symbol = {
@@ -458,21 +447,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
   }
 
-  private def writeICode(): Unit = {
+  private def printICode(): Unit = {
     val printer = new icodePrinter.TextPrinter(new PrintWriter(System.out, true));
-    icodes.classes.foreach((cls) => {
-      val file = getFile(cls.symbol, ".icode");
-      try {
-        val stream = new FileOutputStream(file);
-        printer.setWriter(new PrintWriter(stream, true));
-        printer.printClass(cls);
-        informProgress("wrote " + file);
-      } catch {
-        case ex: IOException =>
-          if (settings.debug.value) ex.printStackTrace();
-        error("could not write file " + file);
-      }
-
-    });
+    icodes.classes.foreach(printer.printClass);
   }
 }

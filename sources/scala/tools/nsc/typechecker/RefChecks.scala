@@ -42,12 +42,14 @@ abstract class RefChecks extends InfoTransform {
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks";
+  override def phaseNewFlags: long = lateMETHOD;
+
   def newTransformer(unit: CompilationUnit): Transformer = new RefCheckTransformer(unit);
   override def changesBaseClasses = false;
 
   def transformInfo(sym: Symbol, tp: Type): Type = {
     if (sym.isModule && !sym.isStatic) {
-      sym setFlag (METHOD | STABLE);
+      sym setFlag (lateMETHOD | STABLE);
       PolyType(List(), tp)
     } else tp
   }
@@ -477,7 +479,7 @@ abstract class RefChecks extends InfoTransform {
 
       /* Check whether argument types conform to bounds of type parameters */
       def checkBounds(tparams: List[Symbol], argtps: List[Type]): unit = try {
-	infer.checkBounds(tree.pos, tparams, argtps, "");
+	typer.infer.checkBounds(tree.pos, tparams, argtps, "");
       } catch {
 	case ex: TypeError => unit.error(tree.pos, ex.getMessage());
       }

@@ -8,14 +8,15 @@ package scala.tools.nsc;
 import symtab.Flags;
 
 abstract class Phase(val prev: Phase) {
-  val id: int = if (prev == null) 0 else prev.id + 1;
+
+  type Id = int;
+
+  val id: Id = if (prev == null) 0 else prev.id + 1;
 
   def newFlags: long = 0l;
   private var fmask: long =
     if (prev == null) Flags.InitialFlags else prev.flagMask | newFlags;
   def flagMask: long = fmask;
-
-  def resetPhase: unit = {}
 
   private var nx: Phase = this;
   if (prev != null) prev.nx = this;

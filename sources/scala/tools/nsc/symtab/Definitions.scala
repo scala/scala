@@ -265,7 +265,11 @@ abstract class Definitions: SymbolTable {
       else tp.symbol.fullNameString
     }
 
-    def init = {
+    private var isInitialized = false;
+
+    def init: unit = {
+      if (isInitialized) return;
+      isInitialized = true;
       RootClass =
 	NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
 	  .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
@@ -274,7 +278,6 @@ abstract class Definitions: SymbolTable {
 	RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
       EmptyPackageClass = EmptyPackage.moduleClass;
       EmptyPackageClass.setInfo(ClassInfoType(List(), new Scope(), EmptyPackageClass));
-
 
       EmptyPackage.setInfo(EmptyPackageClass.tpe);
       RootClass.info.decls.enter(EmptyPackage);

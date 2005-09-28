@@ -533,7 +533,7 @@ abstract class Typers: Analyzer {
       validateParentClasses(parents1, selfType);
       val body1 = templ.body flatMap addGetterSetter;
       var body2 = typedStats(body1, templ.symbol);
-      if (clazz.isTrait && phase.id <= typerPhase.id) {
+      if (clazz.isTrait && phase.id <= currentRun.typerPhase.id) {
         val superAccs = new ListBuffer[Tree];
         new AddSuperAccessors(clazz, superAccs).traverseTrees(body2);
         body2 = superAccs.toList ::: body2;
@@ -546,7 +546,7 @@ abstract class Typers: Analyzer {
       var tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt));
       val rhs1 =
         if (vdef.rhs.isEmpty) {
-          if (sym.isVariable && sym.owner.isTerm && phase.id <= typerPhase.id)
+          if (sym.isVariable && sym.owner.isTerm && phase.id <= currentRun.typerPhase.id)
             error(vdef.pos, "local variables must be initialized");
           vdef.rhs
         } else {
@@ -1078,11 +1078,11 @@ abstract class Typers: Analyzer {
         case Attributed(attr, defn) =>
           val attr1 = typed(attr, AttributeClass.tpe);
           val defn1 = typed(defn, mode, pt);
-          val existing = attributes.get(defn1.symbol) match {
+          val existing = currentRun.attributes.get(defn1.symbol) match {
             case None => List()
             case Some(attrs) => attrs
           }
-          attributes(defn1.symbol) = attrInfo(attr1) :: existing;
+          currentRun.attributes(defn1.symbol) = attrInfo(attr1) :: existing;
           defn1
 
         case DocDef(comment, defn) =>

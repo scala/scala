@@ -38,7 +38,6 @@ abstract class SymbolLoaders {
       try {
         val start = System.currentTimeMillis();
         val currentphase = phase;
-        phase = firstPhase;
         doComplete(root);
         phase = currentphase;
 	def source = kindString + " " + file;
@@ -170,7 +169,7 @@ abstract class SymbolLoaders {
   }
 
   class SourcefileLoader(file: AbstractFile) extends SymbolLoader(file) {
-    protected def doComplete(root: Symbol): unit = global.compileLate(file);
+    protected def doComplete(root: Symbol): unit = global.currentRun.compileLate(file);
     protected def kindString: String = "source file";
   }
 

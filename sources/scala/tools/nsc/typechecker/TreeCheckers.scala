@@ -16,7 +16,7 @@ abstract class TreeCheckers extends Analyzer {
 
   def checkTrees: unit = {
     System.out.println("[consistency check at start of phase " + phase + "]");
-    for (val unit <- units) check(unit);
+    for (val unit <- currentRun.units) check(unit);
   }
 
   def check(unit: CompilationUnit): unit = {
@@ -89,7 +89,7 @@ abstract class TreeCheckers extends Analyzer {
           }
 	  if (tree.pos == Position.NOPOS && tree != EmptyTree) {
 	    error(tree.pos, "tree without position: " + tree)
-	  } else if (tree.tpe == null && phase.id >= typerPhase.id) {
+	  } else if (tree.tpe == null && phase.id >= currentRun.typerPhase.id) {
 	    error(tree.pos, "tree without type: " + tree);
           } else if (tree.isDef && tree.symbol.owner != currentOwner) {
             var owner = currentOwner;

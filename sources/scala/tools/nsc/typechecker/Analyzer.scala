@@ -33,7 +33,7 @@ abstract class Analyzer
     val global: Analyzer.this.global.type = Analyzer.this.global;
     val phaseName = "typer";
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
-      override def resetPhase: unit = resetTyper;
+      resetTyper;
       def apply(unit: CompilationUnit): unit =
 	unit.body = newTyper(startContext.make(unit)).typed(unit.body)
     }

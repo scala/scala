@@ -72,7 +72,7 @@ trait Namers: Analyzer {
     private def enterClassSymbol(pos: int, mods: int, name: Name): Symbol = {
       val c: Symbol = context.scope.lookup(name);
       if (c.isType && c.isExternal && context.scope == c.owner.info.decls) {
-	symSource(c) = context.unit.source.getFile();
+	currentRun.symSource(c) = context.unit.source.getFile();
         updatePosFlags(c, pos, mods);
       } else {
 	enterInScope(context.owner.newClass(pos, name).setFlag(mods))
@@ -82,7 +82,7 @@ trait Namers: Analyzer {
     private def enterModuleSymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
       if (m.isTerm && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
-	symSource(m) = context.unit.source.getFile();
+	currentRun.symSource(m) = context.unit.source.getFile();
         updatePosFlags(m, pos, mods)
       } else {
         val newm = context.owner.newModule(pos, name);
@@ -95,7 +95,7 @@ trait Namers: Analyzer {
     private def enterCaseFactorySymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
       if (m.isTerm && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
-	symSource(m) = context.unit.source.getFile();
+	currentRun.symSource(m) = context.unit.source.getFile();
         updatePosFlags(m, pos, mods)
       } else {
         enterInScope(context.owner.newMethod(pos, name).setFlag(mods))

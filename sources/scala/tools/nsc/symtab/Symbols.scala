@@ -28,7 +28,8 @@ abstract class Symbols: SymbolTable {
     private var rawflags: long = 0;
     private var rawpos = initPos;
     val id = { ids = ids + 1; ids }
-    var validForRun: int = NoRun;
+
+    var validForRun: CompilerRun = NoRun;
 
     def pos = rawpos;
     def setPos(pos: int): this.type = { this.rawpos = pos; this }
@@ -239,7 +240,7 @@ abstract class Symbols: SymbolTable {
 // Info and Type -------------------------------------------------------------------
 
     private var infos: TypeHistory = null;
-    private var limit: Phase = NoPhase;
+    private var limit: Phase#Id = 0;
 
     /** Get type. The type of a symbol is:
      *  for a type symbol, the type corresponding to the symbol itself
@@ -253,6 +254,7 @@ abstract class Symbols: SymbolTable {
     final def info: Type = {
       var cnt = 0;
       while (validForRun != currentRun) {
+	//if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         var ifs = infos;
         assert(ifs != null, this.name);
         while (ifs.prev != null) {
@@ -267,7 +269,7 @@ abstract class Symbols: SymbolTable {
         rawflags = rawflags | LOCKED;
 	val current = phase;
         try {
-	  phase = ifs.start;
+	  phase = phaseWithId(ifs.start);
           tp.complete(this);
 	  // if (settings.debug.value && (validForRun == currentRun) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
           rawflags = rawflags & ~LOCKED
@@ -285,8 +287,8 @@ abstract class Symbols: SymbolTable {
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
       assert(info != null);
-      infos = new TypeHistory(phase, info, null);
-      limit = phase;
+      infos = new TypeHistory(phase.id, info, null);
+      limit = phase.id;
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED;
         validForRun = currentRun
@@ -299,36 +301,36 @@ abstract class Symbols: SymbolTable {
 
     /** Set new info valid from start of this phase. */
     final def updateInfo(info: Type): Symbol = {
-      assert(infos.start.id <= phase.id);
-      if (infos.start == phase) infos = infos.prev;
-      infos = new TypeHistory(phase, info, infos);
+      assert(infos.start <= phase.id);
+      if (infos.start == phase.id) infos = infos.prev;
+      infos = new TypeHistory(phase.id, info, infos);
       this
     }
 
     /** Return info without checking for initialization or completing */
     final def rawInfo: Type = {
-      if (limit.id < phase.id) {
+      if (limit < phase.id) {
 	if (validForRun == currentRun) {
 	  val current = phase;
           var itr = infoTransformers.nextFrom(limit);
           infoTransformers = itr; // caching optimization
-          while (itr.phase != NoPhase && itr.phase.id < current.id) {
-            phase = itr.phase;
+          while (itr.pid != NoPhase.id && itr.pid < current.id) {
+            phase = phaseWithId(itr.pid);
             val info1 = itr.transform(this, infos.info);
+            limit = phase.id + 1;
 	    if (info1 ne infos.info) {
-	      infos = new TypeHistory(phase.next, info1, infos);
+	      infos = new TypeHistory(limit, info1, infos);
             }
-            limit = phase.next;
             itr = itr.nextFrom(limit)
           }
           phase = current;
-          limit = current;
+          limit = current.id;
 	}
 	assert(infos != null, name);
 	infos.info
       } else {
 	var infos = this.infos;
-	while (phase.id < infos.start.id && infos.prev != null) infos = infos.prev;
+	while (phase.id < infos.start && infos.prev != null) infos = infos.prev;
 	infos.info
       }
     }
@@ -340,9 +342,9 @@ abstract class Symbols: SymbolTable {
     }
 
     /** Was symbol's type updated during given phase? */
-    final def isUpdatedAt(phase: Phase): boolean = {
+    final def isUpdatedAt(pid: Phase#Id): boolean = {
       var infos = this.infos;
-      while (infos != null && infos.start != phase.next) infos = infos.prev;
+      while (infos != null && infos.start != pid + 1) infos = infos.prev;
       infos != null
     }
 
@@ -366,7 +368,7 @@ abstract class Symbols: SymbolTable {
       resetFlags;
       rawpos = Position.NOPOS;
       infos = null;
-      limit = NoPhase;
+      limit = NoPhase.id;
       setInfo(completer)
     }
 
@@ -795,6 +797,7 @@ abstract class Symbols: SymbolTable {
   class TypeSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isType = true;
     private var tyconCache: Type = null;
+    private var tyconRun: CompilerRun = null;
     private var tpeCache: Type = _;
     private var tpePhase: Phase = null;
     override def tpe: Type = {
@@ -814,10 +817,12 @@ abstract class Symbols: SymbolTable {
       tpeCache
     }
     override def typeConstructor: Type = {
-      if (tyconCache == null)
-	tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
-			     this, List());
-      tyconCache;
+      if (tyconCache == null || tyconRun != currentRun) {
+	tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List());
+        tyconRun = currentRun;
+      }
+      assert(tyconCache != null);
+      tyconCache
     }
     override def setInfo(tp: Type): this.type = {
       tpePhase = null;
@@ -941,8 +946,8 @@ abstract class Symbols: SymbolTable {
   case class CyclicReference(sym: Symbol, info: Type) extends TypeError("illegal cyclic reference involving " + sym);
 
   /** A class for type histories */
-  private case class TypeHistory(start: Phase, info: Type, prev: TypeHistory) {
-    assert(prev == null || start.id > prev.start.id, this);
-    override def toString() = "TypeHistory" + info.hashCode() + "(" + start + "," + info + "," + prev + ")";
+  private case class TypeHistory(start: Phase#Id, info: Type, prev: TypeHistory) {
+    assert(prev == null || start > prev.start, this);
+    override def toString() = "TypeHistory(" + phaseWithId(start) + "," + info + "," + prev + ")";
   }
 }

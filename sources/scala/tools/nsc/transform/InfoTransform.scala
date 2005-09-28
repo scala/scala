@@ -18,12 +18,14 @@ abstract class InfoTransform extends Transform {
   protected def changesBaseClasses = true;
 
   class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
-    val infoTransformer = new InfoTransformer {
-      val phase = Phase.this;
-      val changesBaseClasses = InfoTransform.this.changesBaseClasses;
-      def transform(sym: Symbol, tpe: Type): Type = transformInfo(sym, tpe);
+    if (infoTransformers.nextFrom(id).pid != id) {
+      val infoTransformer = new InfoTransformer {
+	val pid = id;
+	val changesBaseClasses = InfoTransform.this.changesBaseClasses;
+	def transform(sym: Symbol, tpe: Type): Type = transformInfo(sym, tpe);
+      }
+      infoTransformers.insert(infoTransformer)
     }
-    infoTransformers.insert(infoTransformer)
   }
 }
 

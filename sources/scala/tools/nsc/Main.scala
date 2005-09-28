@@ -24,19 +24,18 @@ object Main {
 
   def error(msg: String): unit =
     reporter.error(new Position(PRODUCT),
-      msg + "\n  " + PRODUCT + " -help  gives more information");
+		   msg + "\n  " + PRODUCT + " -help  gives more information");
 
   def errors() = reporter.errors();
 
-  def interactive(gCompiler: Global): unit = {
+  def resident(compiler: Global): unit = {
     val in = new BufferedReader(new InputStreamReader(System.in));
-    val interpreter = new Interpreter {
-      val compiler: gCompiler.type = gCompiler
-    };
     System.out.print(prompt);
     var line = in.readLine();
     while (line != null && line.length() > 0) {
-      interpreter.interpret(line.trim(), reporter);
+      val args = List.fromString(line, ' ');
+      val command = new CompilerCommand(args, error, true);
+      (new compiler.Run) compile command.files;
       System.out.print(prompt);
       line = in.readLine();
     }
@@ -52,18 +51,18 @@ object Main {
       reporter.info(null, command.usageMsg, true)
     else {
       try {
-        val compiler = new Global(command.settings, reporter);
-        if (command.settings.interactive.value)
-          interactive(compiler);
-        else if (command.files.isEmpty)
-          reporter.info(null, command.usageMsg, true)
-        else
-          compiler.compile(command.files);
+	val compiler = new Global(command.settings, reporter);
+	if (command.settings.resident.value)
+	  resident(compiler);
+	else if (command.files.isEmpty)
+	  reporter.info(null, command.usageMsg, true)
+	else
+	  (new compiler.Run) compile command.files;
       } catch {
-        case ex @ FatalError(msg) =>
-          if (command.settings.debug.value)
-            ex.printStackTrace();
-          reporter.error(null, "fatal error: " + msg);
+	case ex @ FatalError(msg) =>
+	  if (command.settings.debug.value)
+	    ex.printStackTrace();
+	  reporter.error(null, "fatal error: " + msg);
       }
       reporter.printSummary()
     }
@@ -73,4 +72,5 @@ object Main {
     process(args);
     System.exit(if (reporter.errors() > 0) 1 else 0);
   }
+
 }

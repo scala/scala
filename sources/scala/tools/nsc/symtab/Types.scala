@@ -178,10 +178,8 @@ abstract class Types: SymbolTable {
       sym.info.asSeenFrom(this, sym.owner);
 
     /** The type of `sym', seen as a memeber of this type. */
-    def memberType(sym: Symbol): Type = {
-      //System.out.println("" + this + " memberType " + sym + ":" + sym.tpe);//DEBUG
+    def memberType(sym: Symbol): Type =
       sym.tpe.asSeenFrom(this, sym.owner);
-    }
 
     /** Substitute types `to' for occurrences of references to symbols `from'
      *  in this type. */
@@ -299,10 +297,10 @@ abstract class Types: SymbolTable {
       else {
 	/*if (sym.owner.isClass) complete(sym.owner);*/
 	val this1 = adaptToNewRunMap(this);
-	System.out.println("adapting " + sym);//debug
+	//System.out.println("adapting " + sym);//DEBUG
 	if (this1 eq this) sym.validForRun = currentRun
 	else {
-	  System.out.println("new type of " + sym + "=" + this1);//debug
+	  //System.out.println("new type of " + sym + "=" + this1);//DEBUG
 	  sym.setInfo(this1);
 	}
       }
@@ -1268,7 +1266,7 @@ abstract class Types: SymbolTable {
       if (sym.isModuleClass) adaptToNewRun(pre, sym.sourceModule).moduleClass;
       else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) sym
       else {
-        val rebind0 = pre.nonPrivateMember(sym.name);
+        val rebind0 = pre.member(sym.name);
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable);
         if (rebind == NoSymbol) throw new MalformedType(pre, sym.name.toString());
         rebind
@@ -1315,18 +1313,18 @@ abstract class Types: SymbolTable {
 // Helper Methods  -------------------------------------------------------------
 
   final def isValid(p: Phase): boolean =
-    p != null && {
-      if (phase.id > p.id) infoTransformers.nextFrom(p).phase.id >= phase.id
-      else infoTransformers.nextFrom(phase).phase.id >= p.id
+    p != null && phaseWithId(p.id) == p && {
+      if (phase.id > p.id) infoTransformers.nextFrom(p.id).pid >= phase.id
+      else infoTransformers.nextFrom(phase.id).pid >= p.id
     }
 
   final def isValidForBaseClasses(p: Phase): boolean = {
-    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase): boolean =
-      it.phase.id >= limit.id ||
+    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): boolean =
+      it.pid >= limit ||
       !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit);
-    p != null && {
-      if (phase.id > p.id) noChangeInBaseClasses(infoTransformers.nextFrom(p), phase)
-      else noChangeInBaseClasses(infoTransformers.nextFrom(phase), p)
+    p != null && phaseWithId(p.id) == p && {
+      if (phase.id > p.id) noChangeInBaseClasses(infoTransformers.nextFrom(p.id), phase.id)
+      else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), p.id)
     }
   }
 

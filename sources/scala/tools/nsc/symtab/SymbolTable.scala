@@ -18,7 +18,6 @@ abstract class SymbolTable extends Names
   def settings: Settings;
   def rootLoader: LazyType;
   def log(msg: Object): unit;
-  def firstPhase: Phase;
 
   private var ph: Phase = NoPhase;
   def phase: Phase = ph;
@@ -28,12 +27,10 @@ abstract class SymbolTable extends Names
     ph = p
   }
 
-  final val NoRun = 0;
+  final val NoRun = null;
 
-  /** The number of the current compiler run. Runs start at 1 and increment each time
-   *  after Global.compileSources is called.
-   */
-  var currentRun: int = NoRun;
+  /** The current compiler run. */
+  def currentRun: CompilerRun;
 
   def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase;
@@ -44,8 +41,10 @@ abstract class SymbolTable extends Names
   }
 
   var infoTransformers = new InfoTransformer {
-    val phase = NoPhase;
+    val pid = NoPhase.id;
     val changesBaseClasses = true;
     def transform(sym: Symbol, tpe: Type): Type = tpe;
   }
+
+  val phaseWithId: Array[Phase];
 }

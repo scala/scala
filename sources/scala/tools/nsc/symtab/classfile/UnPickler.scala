@@ -210,7 +210,7 @@ abstract class UnPickler {
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg);
 
     private class LazyTypeRef(i: int) extends LazyType {
-      private val definedAtRun: int = currentRun;
+      private val definedAtRun = currentRun;
       override def complete(sym: Symbol): unit = {
 	val tp = at(i, readType);
 	sym setInfo tp;

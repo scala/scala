@@ -309,8 +309,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private def checkNoDoubleDefs(root: Symbol): unit = {
       def doubleDefError(sym1: Symbol, sym2: Symbol) = {
-	val tpe1 = atPhase(refchecksPhase.next)(root.tpe.memberType(sym1));
-	val tpe2 = atPhase(refchecksPhase.next)(root.tpe.memberType(sym2));
+	val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.tpe.memberType(sym1));
+	val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.tpe.memberType(sym2));
 	unit.error(
 	  if (sym1.owner == root) sym1.pos else root.pos,
 	  (if (sym1.owner == sym2.owner) "double definition:\n"
@@ -344,7 +344,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	  atPhase(phase.next)(sym1.tpe =:= sym2.tpe)
       }
       while (opc.hasNext) {
-        if (!atPhase(refchecksPhase.next)(
+        if (!atPhase(currentRun.refchecksPhase.next)(
               root.thisType.memberType(opc.overriding) matches
 	      root.thisType.memberType(opc.overridden))) {
 	  if (settings.debug.value) log("" + opc.overriding.locationString + " " + opc.overriding.infosString + opc.overridden.locationString + " " + opc.overridden.infosString);

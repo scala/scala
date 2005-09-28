@@ -502,7 +502,7 @@ abstract class Infer: Analyzer {
 	     {val tp1 = pre.memberType(sym1);
 	      val tp2 = pre.memberType(sym2);
 	      tp2 == ErrorType ||
-	      !global.infer.isCompatible(tp2, pt) && global.infer.isCompatible(tp1, pt) ||
+	      !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
 	      (tp2.paramSectionCount > 0) && (tp1.paramSectionCount == 0 || specializes(tp1, tp2))
 	     });
 	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>

@@ -77,6 +77,7 @@ object Flags {
   final val lateINTERFACE = (INTERFACE: long) << LateShift;
   final val lateMODULE   = (MODULE: long) << LateShift;
   final val lateFINAL    = (FINAL: long) << LateShift;
+  final val lateMETHOD   = (METHOD: long) << LateShift;
   final val notPRIVATE   = (PRIVATE: long) << AntiShift;
   final val notPROTECTED = (PROTECTED: long) << AntiShift;
   final val notABSTRACT  = (ABSTRACT: long) << AntiShift;

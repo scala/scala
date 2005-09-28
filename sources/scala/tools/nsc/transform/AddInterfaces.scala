@@ -24,23 +24,26 @@ abstract class AddInterfaces extends InfoTransform {
   private val implClassMap = new HashMap[Symbol, Symbol];
   private val implMethodMap = new HashMap[Symbol, Symbol];
 
-  override def resetTransform: unit = {
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
     implClassMap.clear;
-    implMethodMap.clear
+    implMethodMap.clear;
+    super.newPhase(prev)
   }
 
   private def needsImplMethod(sym: Symbol): boolean =
     sym.isMethod && isInterfaceMember(sym) &&
     (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED));
 
-  private def isInterfaceMember(sym: Symbol): boolean =
+  private def isInterfaceMember(sym: Symbol): boolean = {
+    sym.info; // to set lateMETHOD flag if necessary
     sym.isType ||
-    sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) && !sym.isConstructor;
+    sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) && !sym.isConstructor
+  }
 
   def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
     case Some(c) => c
     case None =>
-      atPhase(erasurePhase) {
+      atPhase(currentRun.erasurePhase) {
         val implName = nme.implClassName(iface.name);
         var impl = if (iface.owner.isClass) iface.owner.info.decls.lookup(implName) else NoSymbol;
         if (impl == NoSymbol) {
@@ -64,12 +67,14 @@ abstract class AddInterfaces extends InfoTransform {
       for (val sym <- ifaceDecls.elements) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
-	    val impl = sym.cloneSymbol(implClass).setInfo(sym.info);
+	    val impl = sym.cloneSymbol(implClass).setInfo(sym.info).resetFlag(lateDEFERRED);
 	    if (!impl.isExternal) implMethodMap(sym) = impl;
 	    decls enter impl;
 	    sym setFlag lateDEFERRED
           }
         } else {
+          if (sym.name == newTermName("definitions"))
+            System.out.println("definitions to impl class " + sym.isMethod + " " + sym.getFlag(PRIVATE | BRIDGE | LABEL));
 	  sym.owner = implClass;
           decls enter sym;
 	}
@@ -88,7 +93,7 @@ abstract class AddInterfaces extends InfoTransform {
 	case PolyType(tparams, restpe) =>
 	  PolyType(tparams, implType(restpe))
       }
-      sym.setInfo(atPhase(erasurePhase)(implType(iface.info)));
+      sym.setInfo(atPhase(currentRun.erasurePhase)(implType(iface.info)));
     }
 
     override def load(clazz: Symbol): unit = complete(clazz)
@@ -211,7 +216,7 @@ abstract class AddInterfaces extends InfoTransform {
 	  val mix1 =
 	    if (mix == nme.EMPTY.toTypeName) mix
 	    else {
-	      val ps = atPhase(erasurePhase) {
+	      val ps = atPhase(currentRun.erasurePhase) {
                 tree.symbol.info.parents dropWhile (p => p.symbol.name != mix)
               }
 	      assert(!ps.isEmpty, tree);

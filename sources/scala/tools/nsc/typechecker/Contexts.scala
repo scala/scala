@@ -43,9 +43,7 @@ abstract class Contexts: Analyzer {
     var sc = startContext;
     while (sc != NoContext) {
       sc.tree match {
-	case Import(qual, _) =>
-          qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol);
-          System.out.println("resetting " + qual + " to " + qual.tpe)
+	case Import(qual, _) => qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol);
 	case _ =>
       }
       sc = sc.outer
@@ -192,6 +190,7 @@ abstract class Contexts: Analyzer {
     }
 
     private var implicitsCache: List[List[ImplicitInfo]] = null;
+    private var implicitsRun: CompilerRun = NoRun;
 
     private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
       for (val sym <- syms; sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
@@ -215,7 +214,8 @@ abstract class Contexts: Analyzer {
     }
 
     def implicitss: List[List[ImplicitInfo]] = {
-      if (implicitsCache == null) {
+      if (implicitsRun != currentRun) {
+	implicitsRun = currentRun;
 	val newImplicits: List[ImplicitInfo] =
 	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
             if (!owner.isInitialized) return outer.implicitss;

@@ -283,7 +283,7 @@ abstract class TreePrinters {
 
     def printAll(): unit = {
       print("[[syntax trees at end of " + phase + "]]");
-      for (val unit <- global.units) print(unit)
+      for (val unit <- global.currentRun.units) print(unit)
     }
   }
 

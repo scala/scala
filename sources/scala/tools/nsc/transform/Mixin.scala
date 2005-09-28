@@ -29,9 +29,13 @@ abstract class Mixin extends InfoTransform {
 
   private def rebindSuper(base: Symbol, member: Symbol, prevowner: Symbol): Symbol = {
     var bcs = base.info.baseClasses.dropWhile(prevowner !=).tail;
+    assert(!bcs.isEmpty, "" + prevowner + " " + base.info.baseClasses);//debug
     var sym: Symbol = NoSymbol;
     while (!bcs.isEmpty && sym == NoSymbol) {
-      if (settings.debug.value) log("rebindsuper " + bcs.head + " " + bcs.head.info.nonPrivateDecl(member.name));
+      if (settings.debug.value) {
+	val other = bcs.head.info.nonPrivateDecl(member.name);
+	log("rebindsuper " + bcs.head + " " + other + " " + other.tpe + " " + sym.tpe + " " + other.hasFlag(DEFERRED));
+      }
       sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
       bcs = bcs.tail
     }
