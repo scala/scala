@@ -30,9 +30,9 @@ import scala.tools.nsc.ast._;
   case CHECK_CAST(tpe) =>
   case SWITCH(tags, labels) =>
   case JUMP(where) =>
-  case CJUMP(success, failure, cond) =>
+  case CJUMP(success, failure, cond, kind) =>
   case CZJUMP(success, failure, cond, kind) =>
-  case RETURN() =>
+  case RETURN(kind) =>
   case THROW() =>
   case DROP(kind) =>
   case DUP(kind) =>
@@ -346,9 +346,9 @@ abstract class Opcodes: ICodes {
      * Stack: ...
      *    ->: ...
      */
-    case class RETURN() extends Instruction {
+    case class RETURN(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="RETURN";
+      override def toString(): String ="RETURN (" + kind + ")";
 
       override def consumed = 0;
       override def produced = 0;

@@ -20,6 +20,7 @@ import matching.TransMatcher;
 import transform._;
 import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
+import backend.jvm.BytecodeGenerators;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -240,6 +241,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object genJVM extends BytecodeGenerators {
+    val global: Global.this.type = Global.this;
+  }
+
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory,
     analyzer.typerFactory,
@@ -256,6 +261,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     constructors,
     mixin,
     genicode,
+    genJVM,
     sampleTransform);
 
   val parserPhase = syntaxAnalyzer.newPhase(NoPhase);
@@ -423,7 +429,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   /** Returns the file with the given suffix for the given class. */
-  private def getFile(clazz: Symbol, suffix: String) = {
+  def getFile(clazz: Symbol, suffix: String) = {
     val outdirname = settings.outdir.value;
     var outdir = new File(if (outdirname == "") "." else outdirname);
     val filename = clazz.fullNameString('.');

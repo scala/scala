@@ -99,13 +99,12 @@ abstract class GenICode extends SubComponent  {
         ctx.clazz.addMethod(m);
         var ctx1 = ctx.enterMethod(m, tree.asInstanceOf[DefDef]);
         addMethodParams(ctx1, vparamss);
-        ctx1 = genLoad(rhs,
-                       ctx1,
-                       if (tree.symbol.isConstructor)
-                         UNIT
-                       else
-                         toTypeKind(ctx1.method.symbol.info.resultType));
-        ctx1.bb.emit(RETURN());
+        val resTpe = if (tree.symbol.isConstructor) UNIT
+                     else toTypeKind(ctx1.method.symbol.info.resultType);
+
+        ctx1 = genLoad(rhs, ctx1, resTpe);
+
+        ctx1.bb.emit(RETURN(resTpe));
         ctx1.bb.close;
         ctx1;
 
@@ -379,7 +378,7 @@ abstract class GenICode extends SubComponent  {
 
         case Return(expr) =>
           val ctx1 = genLoad(expr, ctx, expectedType);
-          ctx1.bb.emit(RETURN());
+          ctx1.bb.emit(RETURN(expectedType));
           // although strange, 'return' does not necessarily close a block
           //ctx1.bb.close;
           ctx1

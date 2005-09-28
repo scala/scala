@@ -158,7 +158,7 @@ trait BasicBlocks: ICodes {
         case CJUMP(success, failure, _, _) => failure::success::Nil;
         case CZJUMP(success, failure, _, _) => failure::success::Nil;
         case SWITCH(_,labels) => labels;
-        case RETURN() => Nil;
+        case RETURN(_) => Nil;
         case _ =>
 	  global.abort("The last instruction is not a control flow instruction");
       }

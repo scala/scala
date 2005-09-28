@@ -425,7 +425,11 @@ abstract class Checkers {
                       "Jump to non-existant block " + failure);
             checkType(stack.pop, kind);
 
-          case RETURN() => ();
+          case RETURN(kind) =>
+            kind match {
+              case UNIT => ();
+              case _ => checkStack(1); checkType(stack.pop, kind);
+            }
 
           case THROW() =>
             val thrown = stack.pop;

@@ -50,7 +50,7 @@ trait Linearizers: ICodes {
           add(failure);
         case SWITCH(_, labels) =>
           add(labels);
-        case RETURN() =>
+        case RETURN(_) =>
           ()
       }
 
