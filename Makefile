@@ -139,6 +139,8 @@ $(prefix).library-doc	: $(latest)library-sdc
 $(prefix).util		: $(latest)util
 $(prefix).scalac	: $(latest)scalac
 $(prefix).nsc		: $(latest)nsc
+$(prefix).nsc		: $(latest)nsc4ant
+$(prefix).nsc		: $(latest)nsrt
 $(prefix).scalai	: $(latest)scalai
 $(prefix).scaladoc	: $(latest)scaladoc
 $(prefix).scalap	: $(latest)scalap
@@ -185,6 +187,8 @@ tnsc.%			: ; @$(make) prefix="tnsc" $@;
 .PHONY			: $(prefix).util
 .PHONY			: $(prefix).scalac
 .PHONY			: $(prefix).nsc
+.PHONY			: $(prefix).nsc4ant
+.PHONY			: $(prefix).nsrt
 .PHONY			: $(prefix).scalai
 .PHONY			: $(prefix).scaladoc
 .PHONY			: $(prefix).scalap
@@ -198,7 +202,7 @@ tnsc.%			: ; @$(make) prefix="tnsc" $@;
 
 version-set		:
 	@if [ -z "$(VERSION)" ]; then \
-	    echo "Usage: $(MAKE) version-set VERSION=<version>"; \
+	    $(ECHO) "Usage: $(MAKE) version-set VERSION=<version>"; \
 	    exit 1; \
 	else \
 	    $(call RUN,$(VERSION_SCRIPT) $(VERSION_FILE) set $(VERSION)); \
@@ -329,6 +333,8 @@ $(SCRIPTS_WRAPPER_FILE)	: MACRO_LIBRARY_CLASSES   ?= $(LIBRARY_CLASSDIR)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_TOOLS_CLASSES     ?= $(TOOLS_CLASSDIR)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_FJBG_CLASSES      ?= $(FJBG_JARFILE)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_MSIL_CLASSES      ?= $(MSIL_JARFILE)
+$(SCRIPTS_WRAPPER_FILE)	: MACRO_NSCALA_CLASSES    ?= $(NSCALA_JARFILE)
+$(SCRIPTS_WRAPPER_FILE)	: MACRO_NTOOLS_CLASSES    ?= $(NTOOLS_JARFILE)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_CMD          ?= java
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_ARGS         ?= -enableassertions
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_SCALA_CMD         ?= $($(prefix)_SCALA_CMD)
@@ -352,6 +358,8 @@ $(SCRIPTS_WRAPPER_FILE)	: $(SCRIPTS_TEMPLATE_FILE)
 	    $(call SCRIPTS_MACRO,TOOLS_CLASSES) \
 	    $(call SCRIPTS_MACRO,FJBG_CLASSES) \
 	    $(call SCRIPTS_MACRO,MSIL_CLASSES) \
+	    $(call SCRIPTS_MACRO,NSCALA_CLASSES) \
+	    $(call SCRIPTS_MACRO,NTOOLS_CLASSES) \
 	    $(call SCRIPTS_MACRO,JAVA_CMD) \
 	    $(call SCRIPTS_MACRO,JAVA_ARGS) \
 	    $(call SCRIPTS_MACRO,SCALA_CMD) \
@@ -408,6 +416,7 @@ $(latest)meta-jc	: $(META_JC_FILES)
 PROJECT_SOURCES		+= $(LIBRARY_SOURCES)
 LIBRARY_NAME		 = $(PROJECT_NAME)
 LIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
+LIBRARY_NSC_ROOT	 = $(PROJECT_NSC_SOURCEDIR)/scala
 LIBRARY_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
 LIBRARY_SOURCES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 LIBRARY_CLASSDIR	 = $($(prefix)_LIBRARY_CLASSDIR)
@@ -438,7 +447,7 @@ $(latest)library-jc	: $(LIBRARY_JC_FILES)
 $(latest)library-sc	: $(LIBRARY_SC_FILES)
 	@if [ "$(prefix)" = tnsc ]; then \
 	  $(make) sc target=LIBRARY LIBRARY_SC_FLAGS='$$(SC_FLAGS) -nopredefs'\
-	  LIBRARY_SC_FILES='$(LIBRARY_ROOT)/Predef.scala $(LIBRARY_ROOT)/runtime/ScalaRunTime.scala'; \
+	  LIBRARY_SC_FILES='$(LIBRARY_NSC_ROOT)/ScalaObject.scala $(LIBRARY_ROOT)/Predef.scala $(LIBRARY_ROOT)/runtime/ScalaRunTime.scala'; \
 	fi
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	$(TOUCH) $@
@@ -461,23 +470,24 @@ endif
 LIBRARY_MSIL_ROOT	 = $(LIBRARY_ROOT)
 LIBRARY_MSIL_LIST	+= $(call READLIST,$(PROJECT_LISTDIR)/library-msil.lst)
 LIBRARY_MSIL_SOURCES	+= $(LIBRARY_MSIL_LIST:%=$(LIBRARY_MSIL_ROOT)/%)
-MSIL_SRCDIR		 = $(ROOT)/sources/msil
+MSIL_SRCDIR		 = $(PROJECT_SOURCEDIR)/msil
+MSIL_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/msil
 
 ASSEMBLY_INFO		 = $(MSIL_SRCDIR)/AssemblyInfo.cs
 ASSEMBLY_INFO_TMPL	 = $(MSIL_SRCDIR)/AssemblyInfo.cs.tmpl
-SCALA_PART1_DLL		 = scala_part1.dll
-SCALA_PART1_IL		 = scala_part1.il
+SCALA_PART1_DLL		 = $(MSIL_OBJECTDIR)/scala_part1.dll
+SCALA_PART1_IL		 = $(MSIL_OBJECTDIR)/scala_part1.il
 SCALA_PART2		 = scala_part2
-SCALA_PART2_IL		 = $(SCALA_PART2).il
+SCALA_PART2_IL		 = $(MSIL_OBJECTDIR)/$(SCALA_PART2).il
 SCALA_PART2_IL_DIFF	 = $(MSIL_SRCDIR)/$(SCALA_PART2_IL).diff
-SCALA_PART2_IL_DIFF_TMPL = $(SCALA_PART2_IL_DIFF).tmpl
-SCALA_DLL		 = scala.dll
-SCALA_IL		 = scala.il
+SCALA_PART2_IL_DIFF_TMPL = $(MSIL_OBJECTDIR)/$(SCALA_PART2_IL_DIFF).tmpl
+SCALA_DLL		 = $(MSIL_OBJECTDIR)/scala.dll
+SCALA_IL		 = $(MSIL_OBJECTDIR)scala.il
 
 LIBRARY_MSIL_CSC_FILES	+= $(filter %.cs,$(LIBRARY_MSIL_SOURCES)) $(ASSEMBLY_INFO)
 LIBRARY_MSIL_CSC_TARGET += library
 LIBRARY_MSIL_CSC_OUTPUTFILE += $(SCALA_PART1_DLL)
-LIBRARY_MSIL_CSC_FLAGS	+= /nologo /warn:0
+LIBRARY_MSIL_CSC_KEYFILE = $(MSIL_KEYFILE)
 
 LIBRARY_MSIL_SC_FILES	+= $(filter %.scala,$(LIBRARY_MSIL_SOURCES))
 LIBRARY_MSIL_SC_FLAGS	+= -r $(call CYGWIN_PATH,$(SCALA_PART1_DLL):$(ROOT)/lib)
@@ -489,14 +499,16 @@ $(latest)library-msil	:
 	$(TOUCH) $@
 
 $(latest)library-msil-csc: $(LIBRARY_MSIL_CSC_FILES) $(ASSEMBLY_INFO)
+	@[ -d "$(MSIL_OBJECTDIR)" ] || $(MKDIR) -p "$(MSIL_OBJECTDIR)"
 	@$(make) csc target=LIBRARY_MSIL
-	ildasm /lin /out=$(SCALA_PART1_IL).tmp $(SCALA_PART1_DLL)
-	cat $(SCALA_PART1_IL).tmp | dos2unix | \
+	$(ILDASM) /lin /out=$(SCALA_PART1_IL).tmp $(SCALA_PART1_DLL)
+	$(CAT) $(SCALA_PART1_IL).tmp | $(DOS2UNIX)| \
 	    $(SED) -e "s/\(int16\|int32\|int64\|float32\|float64\)[ ]*dummy//" \
 	    -e "s/__/\$$/g" \
 	    -e "s/box\$$array/box__array/g" \
 	    -e "s/[ \t]*$$//" > $(SCALA_PART1_IL)
-	ilasm /nol /qui /deb /dll /out=$(SCALA_PART1_DLL) $(SCALA_PART1_IL)
+#	$(ILASM) /nol /qui /deb /dll /out=$(SCALA_PART1_DLL) $(SCALA_PART1_IL)
+	$(ILASM) $(ILASM_FLAGS) /out=$(SCALA_PART1_DLL) $(SCALA_PART1_IL)
 	$(TOUCH) $@
 
 $(ASSEMBLY_INFO)	: $(ASSEMBLY_INFO_TMPL) $(VERSION_FILE)
@@ -506,17 +518,17 @@ $(latest)library-msil-sc: $(SCALA_DLL)
 	$(TOUCH) $@
 
 $(SCALA_DLL)		: $(SCALA_IL)
-	ilasm /qui /nol /deb /dll /out=$(SCALA_DLL) $(SCALA_IL)
-	sn -R $(SCALA_DLL) lamp.key
+	$(ILASM) $(ILASM_FLAGS) /out=$(SCALA_DLL) $(SCALA_IL)
+	$(SN) -R $(SCALA_DLL) $(MSIL_KEYFILE)
 
 $(SCALA_IL)		: $(SCALA_PART2_IL)
-	cat $(SCALA_PART1_IL) $(SCALA_PART2_IL) |\
+	$(CAT) $(SCALA_PART1_IL) $(SCALA_PART2_IL) |\
 	  $(SED) "s/assembly scala_part1/assembly scala/" > $@
 
 $(SCALA_PART2_IL)	: $(latest)library-msil-csc $(LIBRARY_MSIL_SC_FILES) \
 			  $(SCALA_PART2_IL_DIFF)
 	@$(make) sc target=LIBRARY_MSIL
-	dos2unix $(SCALA_PART2_IL)
+	$(DOS2UNIX) $(SCALA_PART2_IL)
 	patch -o $(SCALA_PART2_IL).new $(SCALA_PART2_IL) $(SCALA_PART2_IL_DIFF)
 	$(SED) -e "s/\[scala_part1\]//g" $(SCALA_PART2_IL).new > $@
 
@@ -576,19 +588,37 @@ $(latest)scalac-sc	: $(SCALAC_SC_FILES)
 ##############################################################################
 # Targets - scala tools - new compiler
 
-PROJECT_SOURCES		+= $(NSC_SOURCES)
 NSC_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/nsc
 NSC_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/nsc.lst)
+NSC_OUTPUTDIR		 = /tmp/classes_$(NSC_CLASSDIR)
+NSC_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/nsc/lib
 NSC_SOURCES		+= $(NSC_LIST:%=$(NSC_ROOT)/%)
-NSC_JC_FILES		+= $(filter %.java,$(NSC_SOURCES))
-NSC_JC_CLASSPATH	 = $(JC_CLASSPATH):$(MSIL_JARFILE):$(FJBG_JARFILE)
 NSC_SC_FILES		+= $(filter %.scala,$(NSC_SOURCES))
-NSC_SC_CLASSPATH	 = $(NSC_JC_CLASSPATH):$(PROJECT_SOURCEDIR)
+NSC_SC_SOURCEPATH	 = $(PROJECT_SOURCEDIR)
+NSC_SC_CLASSPATH	 = $(SC_CLASSPATH):$(FJBG_JARFILE)
+NSC_SC_OUTPUTDIR	 = $(NSC_OUTPUTDIR)
 
-$(latest)nsc		: $(latest)nsc-jc
-$(latest)nsc		: $(latest)nsc-sc
+NSC_CLASSDIR		 = nsc
+NSC_JARFILE		 = $(NSC_OBJECTDIR)/$(NSC_JAR_ARCHIVE)
+NSC_JAR_ARCHIVE		 = $(NSC_CLASSDIR).jar
+NSC_JAR_INPUTDIR	 = $(NSC_OUTPUTDIR)
+NSC_JAR_FILES		+= .
+
+$(latest)nsc		: $(latest)nsrt
+$(latest)nsc		: $(latest)nsc-jar
 $(latest)nsc		:
-	$(TOUCH) $@
+	@$(TOUCH) $@
+
+ifneq ($(NSC_JC_FILES),)
+$(latest)nsc-jar	: $(latest)nsc-jc
+endif
+$(latest)nsc-jar	: $(latest)nsc-sc
+$(latest)nsc-jar	: $(latest)nsc-new
+$(latest)nsc-jar	:
+	@$(ECHO) "      [jar] Building jar: $(NSC_JARFILE)"
+	@$(make) jar target=NSC \
+	    NSC_JAR=@$(JAR) \
+	    NSC_JAR_ARCHIVE=$(NSC_JARFILE) 
 
 $(latest)nsc-jc		: $(NSC_JC_FILES)
 	@$(make) jc target=NSC NSC_JC_FILES='$?'
@@ -596,7 +626,58 @@ $(latest)nsc-jc		: $(NSC_JC_FILES)
 
 $(latest)nsc-sc		: $(NSC_SC_FILES)
 # !!!	@$(make) sc target=NSC NSC_SC_FILES='$?'
-	@$(make) sc target=NSC
+	@n=`$(ECHO) $? | $(WC) -w`; \
+	$(ECHO) "   [scalac] Compiling $$n source files to $(NSC_SC_OUTPUTDIR)"
+	@$(make) sc target=NSC \
+	    main_SCALAC=@$(main_SCALAC) \
+	    SCALA_JAVA_ARGS='-Xmx512M -Xms256M'
+	@$(TOUCH) $@
+
+$(latest)nsc-new	:
+	@$(TOUCH) $@
+
+##############################################################################
+# Targets - scala library - new compiler
+
+NSRT_ROOT		 = $(PROJECT_SOURCEDIR)/scala
+NSRT_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/library-nsc.lst)
+NSRT_OUTPUTDIR		 = /tmp/classes_$(NSRT_CLASSDIR)
+NSRT_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/nsc/lib
+NSRT_SOURCES		+= $(NSRT_LIST:%=$(NSRT_ROOT)/%)
+NSRT_JC_FILES		+= $(filter %.java,$(NSRT_SOURCES))
+NSRT_JC_CLASSPATH	 = $(JC_CLASSPATH)
+NSRT_JC_FLAGS		+= $(JC_FLAGS) -scala-hack
+NSRT_JC_OUTPUTDIR	 = $(NSRT_OUTPUTDIR)
+
+NSRT_CLASSDIR		 = nsrt
+NSRT_JARFILE		 = $(NSRT_OBJECTDIR)/$(NSRT_JAR_ARCHIVE)
+NSRT_JAR_ARCHIVE	 = $(NSRT_CLASSDIR).jar
+NSRT_JAR_INPUTDIR	 = $(NSRT_OUTPUTDIR)
+NSRT_JAR_FILES		+= .
+
+$(latest)nsrt		: $(latest)nsrt-jar
+$(latest)nsrt		:
+	@$(TOUCH) $@
+
+$(latest)nsrt-jar	: $(latest)nsrt-jc
+ifneq ($(NSRT_SC_FILES),)
+$(latest)nsrt-jar	: $(latest)nsrt-sc
+endif
+$(latest)nsrt-jar	:
+	@$(ECHO) "      [jar] Building jar: $(NSRT_JARFILE)"
+	@$(make) jar target=NSRT \
+	    NSRT_JAR=@$(JAR) \
+	    NSRT_JAR_ARCHIVE=$(NSRT_JARFILE)
+
+$(latest)nsrt-jc	: $(NSRT_JC_FILES)
+	@n=`$(ECHO) '$?' | $(WC) -w`; \
+	$(ECHO) [pico] Compiling $$n source files to $(NSRT_JC_OUTPUTDIR)
+	@$(make) jc target=NSRT \
+	    NSRT_JC_FILES='$?'
+	@$(TOUCH) $@
+
+$(latest)nsrt-sc	: $(NSRT_SC_FILES)
+	@$(make) sc target=NSRT SCALA_JAVA_ARGS='-Xmx512M -Xms256M'
 	$(TOUCH) $@
 
 ##############################################################################
@@ -715,6 +796,47 @@ $(latest)scala4ant-sc	: $(SCALA4ANT_SC_FILES)
 	$(TOUCH) $@
 
 ##############################################################################
+# Targets - scala tools - nsc4ant
+
+PROJECT_SOURCES		+= $(SCALA4ANT_SOURCES)
+NSC4ANT_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scala4ant
+NSC4ANT_OUTPUTDIR	 = /tmp/classes_$(NSC4ANT_CLASSDIR)
+NSC4ANT_OBJECTDIR	 = $(PROJECT_OBJECTDIR)/nsc/lib
+NSC4ANT_LIST		+= NscAdaptor.scala
+NSC4ANT_LIST		+= NscTask.scala
+NSC4ANT_SOURCES		+= $(NSC4ANT_LIST:%=$(NSC4ANT_ROOT)/%)
+NSC4ANT_SC_FILES	+= $(NSC4ANT_SOURCES)
+NSC4ANT_SC_SOURCPATH	 = $(PROJECT_SOURCEDIR)
+NSC4ANT_SC_CLASSPATH	 = $(SC_CLASSPATH):$(NSC_OUTPUTDIR):$(ANT_JARFILE)
+NSC4ANT_SC_OUTPUTDIR	 = $(NSC4ANT_OUTPUTDIR)
+
+NSC4ANT_CLASSDIR	 = nsc4ant
+NSC4ANT_JARFILE		 = $(NSC4ANT_OBJECTDIR)/$(NSC4ANT_JAR_ARCHIVE)
+NSC4ANT_JAR_ARCHIVE	 = $(NSC4ANT_CLASSDIR).jar
+NSC4ANT_JAR_INPUTDIR	 = $(NSC4ANT_OUTPUTDIR)
+NSC4ANT_JAR_FILES	+= .
+
+$(latest)nsc4ant	: $(latest)nsc
+$(latest)nsc4ant	: $(latest)nsc4ant-jar
+$(latest)nsc4ant	:
+	@$(TOUCH) $@
+
+$(latest)nsc4ant-jar	: $(latest)nsc4ant-sc
+$(latest)nsc4ant-jar	:
+	@$(ECHO) "      [jar] Building jar: $(NSC4ANT_JARFILE)"
+	@$(make) jar target=NSC4ANT \
+	    NSC4ANT_JAR=@$(JAR) \
+	    NSC4ANT_JAR_ARCHIVE=$(NSC4ANT_JARFILE)
+
+$(latest)nsc4ant-sc	: $(NSC4ANT_SC_FILES)
+	@n=`$(ECHO) '$?' | $(WC) -w`; \
+	$(ECHO) "   [scalac] Compiling $$n source files to $(NSC4ANT_SC_OUTPUTDIR)"
+	@$(make) sc target=NSC4ANT \
+	    main_SCALAC=@$(main_SCALAC) \
+	    NSC4ANT_SC_FILES='$?'
+	@$(TOUCH) $@
+
+##############################################################################
 # Targets - scala tools - scalatest
 
 PROJECT_SOURCES		+= $(SCALATEST_SOURCES)
@@ -805,7 +927,7 @@ include $(PROJECT_SUPPORTDIR)/make/csc.mk
 show-missing-library	:
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 	@for filename in $(LIBRARY_SOURCES:%='%'); do \
-	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
+	  $(ECHO) $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
 	done
 	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
 	@$(FIND) $(LIBRARY_ROOT) -name "tools" -prune -o \( -name '*.java' -o -name '*.scala' \) -print | $(SORT) > /tmp/check.lst.log
@@ -817,7 +939,7 @@ show-missing-library	:
 show-missing-examples	:
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 	@for filename in $(EXAMPLES_FILES:%='%'); do \
-	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
+	  $(ECHO) $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
 	done
 	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
 	@$(FIND) $(EXAMPLES_ROOT) -name '*.scala' | $(SORT) >/tmp/check.lst.log
@@ -829,7 +951,7 @@ show-missing-examples	:
 show-missing-test	:
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 	@for filename in $(TEST_FILES:%='%'); do \
-	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
+	  $(ECHO) $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
 	done
 	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
 	@$(FIND) $(TEST_ROOT) -name '*.scala' | $(SORT) > /tmp/check.lst.log
