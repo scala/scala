@@ -190,6 +190,7 @@ abstract class Typers: Analyzer {
             value
           case arg =>
             error(arg.pos, "attribute argument needs to be a constant; found: " + arg);
+            null
         })
     }
 
@@ -1078,11 +1079,7 @@ abstract class Typers: Analyzer {
         case Attributed(attr, defn) =>
           val attr1 = typed(attr, AttributeClass.tpe);
           val defn1 = typed(defn, mode, pt);
-          val existing = currentRun.attributes.get(defn1.symbol) match {
-            case None => List()
-            case Some(attrs) => attrs
-          }
-          currentRun.attributes(defn1.symbol) = attrInfo(attr1) :: existing;
+          defn1.symbol.attributes = defn1.symbol.attributes ::: List(attrInfo(attr1));
           defn1
 
         case DocDef(comment, defn) =>

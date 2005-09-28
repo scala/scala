@@ -20,6 +20,7 @@ import matching.TransMatcher;
 import transform._;
 import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
+import backend.jvm.BytecodeGenerators;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -235,6 +236,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object genJVM extends BytecodeGenerators {
+    val global: Global.this.type = Global.this;
+  }
+
   object icodeChecker extends checkers.ICodeChecker();
 
   object typer extends analyzer.Typer(analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope())) {
@@ -263,15 +268,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     flatten,
     constructors,
     mixin,
-    if (settings.Xshowicode.value) genicode
-    else sampleTransform);
-
-// Runs ----------------------------------------------------------------
+    genicode,
+    genJVM,
+    sampleTransform);
 
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;
-
-  type AttrInfo = Pair[Type, List[Any]];
 
   class Run extends CompilerRun {
     curRun = this;
@@ -305,9 +307,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     override val refchecksPhase = phaseNamed("refchecks");
     override val erasurePhase = phaseNamed("erasure");
     override val flattenPhase = phaseNamed("flatten");
-
-    /** A map from symbols to their attributes */
-    val attributes = new HashMap[Symbol, List[AttrInfo]];
 
     private var unitbuf = new ListBuffer[CompilationUnit];
     private var fileset = new HashSet[AbstractFile];
@@ -343,7 +342,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	globalPhase = globalPhase.next;
 	if (settings.check contains globalPhase.name) {
           phase = globalPhase;
-          if (globalPhase.name == "terminal" && settings.Xshowicode.value) icodeChecker.checkICodes;
+          if (globalPhase.name == "terminal") icodeChecker.checkICodes;
           else checker.checkTrees;
 	}
 	if (settings.statistics.value) statistics.print(phase);
@@ -351,7 +350,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
       if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
       if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
-      if (settings.Xshowicode.value) printICode();
+      if (settings.Xshowicode.value) writeICode();
 
       if (reporter.errors() == 0) {
 	for (val Pair(sym, pickled) <- symData.elements.toList) {
@@ -447,7 +446,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
   }
 
-  private def printICode(): Unit = {
+  private def writeICode(): Unit = {
     val printer = new icodePrinter.TextPrinter(new PrintWriter(System.out, true));
     icodes.classes.foreach(printer.printClass);
   }

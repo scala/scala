@@ -18,6 +18,8 @@ abstract class Symbols: SymbolTable {
   var typeSymbolCount = 0;
   var classSymbolCount = 0;
 
+  type AttrInfo = Pair[Type, List[Constant]];
+
   val emptySymbolArray = new Array[Symbol](0);
 
   /** The class for all symbols */
@@ -33,6 +35,8 @@ abstract class Symbols: SymbolTable {
 
     def pos = rawpos;
     def setPos(pos: int): this.type = { this.rawpos = pos; this }
+
+    var attributes: List[AttrInfo] = List();
 
 // Creators -------------------------------------------------------------------
 
