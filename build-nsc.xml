@@ -60,9 +60,10 @@
     <mkdir dir="${nsc.tools_util_runtime_dir}" />
     <mkdir dir="${nsc.jars_dir}" />
     <mkdir dir="${nsc.nsc_dir}" />
-    <mkdir dir="${nsc.nsc4ant_dir}" />
+    <mkdir dir="${nsc.nsc4ant_dir}" />    
   </target>
 
+  
   <!-- taskdef for nsc comes later, because has to be compiled before -->
 
   <target name="build.nsc" depends="init">
@@ -87,8 +88,8 @@
 
     <jar destfile="${nsc.nsrt_jar}" basedir="${nsc.tools_util_runtime_dir}"/>
 
-    <scalac srcdir="sources" destdir="${nsc.nsc_dir}" 
-            classpath="${nsc.tools_util_runtime_dir}" sourcePath="sources" force="true">
+    <scalac srcdir="sources" destdir="${nsc.nsc_dir}" debug="on"
+            classpath="${nsc.tools_util_runtime_dir}:${nsc.fjbg_jar}" sourcePath="sources" force="true">
       <!-- force = "true" always recompiles all source files, because 
            scalac does not always go find the latest source file (*3) -->
 
