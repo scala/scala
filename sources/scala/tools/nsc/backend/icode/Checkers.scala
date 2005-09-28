@@ -209,7 +209,7 @@ abstract class Checkers {
         log("================");
         instr match {
           case THIS(clasz) =>
-            stack push REFERENCE(clasz);
+            stack push toTypeKind(clasz.tpe);
 
           case CONSTANT(const) =>
             stack push toTypeKind(const.tpe);
@@ -389,12 +389,16 @@ abstract class Checkers {
             stack.push(ARRAY(elem));
 
           case IS_INSTANCE(tpe) =>
-            stack.pop;
+            val ref = stack.pop;
+            checkBool(ref.isReferenceType || ref.isArrayType,
+                      "IS_INSTANCE on primitive type: " + ref);
             stack.push(BOOL);
 
           case CHECK_CAST(tpe) =>
-            stack.pop;
-            stack.push(toTypeKind(tpe));
+            val ref = stack.pop;
+            checkBool(ref.isReferenceType || ref.isArrayType,
+                      "IS_INSTANCE on primitive type: " + ref);
+            stack.push(tpe);
 
           case SWITCH(tags, labels) =>
             checkType(stack.pop, INT);

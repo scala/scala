@@ -257,7 +257,7 @@ abstract class Opcodes: ICodes {
      * Stack: ...:ref
      *    ->: ...:result(boolean)
      */
-    case class IS_INSTANCE(typ: Type) extends Instruction {
+    case class IS_INSTANCE(typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String ="IS_INSTANCE "+typ.toString();
 
@@ -269,7 +269,7 @@ abstract class Opcodes: ICodes {
      * Stack: ...:ref(oldtype)
      *    ->: ...:ref(typ <=: oldtype)
      */
-    case class CHECK_CAST(typ: Type) extends Instruction {
+    case class CHECK_CAST(typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String ="CHECK_CAST "+typ.toString();
 

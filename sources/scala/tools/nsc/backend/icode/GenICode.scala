@@ -410,10 +410,10 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = genLoadQualifier(fun, ctx);
 
           if (sym == definitions.Object_isInstanceOf) {
-            ctx1.bb.emit(IS_INSTANCE(targs.head.tpe));
+            ctx1.bb.emit(IS_INSTANCE(toTypeKind(targs.head.tpe)));
             generatedType = BOOL;
           } else if (sym == definitions.Object_asInstanceOf) {
-            ctx1.bb.emit(CHECK_CAST(targs.head.tpe));
+            ctx1.bb.emit(CHECK_CAST(toTypeKind(targs.head.tpe)));
             generatedType = toTypeKind(targs.head.tpe);
           } else
             abort("Unexpected type application " + fun + "[sym: " + sym + "]");
@@ -952,6 +952,7 @@ abstract class GenICode extends SubComponent  {
         case vparams :: Nil =>
           for (val p <- vparams)
             ctx.method.addParam(p.symbol);
+          ctx.method.params = ctx.method.params.reverse;
 
         case _ =>
           abort("Malformed parameter list: " + vparamss);
