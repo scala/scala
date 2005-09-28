@@ -63,6 +63,12 @@ configure() {
     # Location of the MSIL library.
     default_MSIL_CLASSES={#MSIL_CLASSES#};
 
+    # Location of the NSRT library.
+    default_NSCALA_CLASSES={#NSCALA_CLASSES#};
+
+    # Location of the NSC library.
+    default_NTOOLS_CLASSES={#NTOOLS_CLASSES#};
+
     # Command to start the Java VM.
     default_JAVA_CMD={#JAVA_CMD#};
 
@@ -233,7 +239,9 @@ compute_value() {
         LIBRARY_CLASSES | \
         TOOLS_CLASSES   | \
         FJBG_CLASSES    | \
-        MSIL_CLASSES    )
+        MSIL_CLASSES    | \
+        NSCALA_CLASSES  | \
+        NTOOLS_CLASSES  )
             if eval [ -n \"\$SCALA_$1\" ]; then
                 if eval [ -f \"\$SCALA_$1\" -o -d \"\$SCALA_$1\" ]; then
                     eval current_$1=\"\$SCALA_$1\";
@@ -453,6 +461,32 @@ compiler_start() {
 }
 
 ##############################################################################
+# New compiler invocation functions
+
+# Starts a NSC compiler. The first argument is added to the runtime
+# classpath. The following ones are passed to vm_start_scala. They
+# must, at least, contain the name of the main class.
+ncompiler_start() {
+    [ $# -gt 1 ] || abort "internal error";
+    classpath="$1"; shift 1;
+
+    # compute values
+    compute_value FJBG_CLASSES;
+    compute_value MSIL_CLASSES;
+    compute_value NSCALA_CLASSES;
+    compute_value NTOOLS_CLASSES;
+
+    # append FJBG and MSIL libraries to classpath
+    classpath=`append_pathlists "$classpath" "$current_FJBG_CLASSES"`;
+    classpath=`append_pathlists "$classpath" "$current_MSIL_CLASSES"`;
+    classpath=`append_pathlists "$classpath" "$current_NSCALA_CLASSES"`;
+    classpath=`append_pathlists "$classpath" "$current_NTOOLS_CLASSES"`;
+
+    # start Scala VM
+    tool_start0 -classpath "`get_os_pathlist "$classpath"`" "$@";
+}
+
+##############################################################################
 # Implementation of scala-info
 
 # Prints given error message, prints usage and exits with error code 1.
@@ -503,6 +537,8 @@ info_option_x_value() {
         TOOLS_CLASSES       ) value=$2;;
         FJBG_CLASSES        ) value=$2;;
         MSIL_CLASSES        ) value=$2;;
+        NSCALA_CLASSES      ) value=$2;;
+        NTOOLS_CLASSES      ) value=$2;;
         JAVA_CMD            ) value=$2;;
         JAVA_ARGS           ) value=$2;;
         SCALA_CMD           ) value=$2;;
@@ -529,6 +565,8 @@ info_option_help() {
     echo "  TOOLS_CLASSES     Location of the Scala tools";
     echo "  FJBG_CLASSES      Location of the fjbg library";
     echo "  MSIL_CLASSES      Location of the msil library";
+    echo "  NSCALA_CLASSES    Location of the new Scala library";
+    echo "  NTOOLS_CLASSES    Location of the new Scala tools";
     echo "  JAVA_CMD          Command to start the Java VM";
     echo "  JAVA_ARGS         Additional arguments to pass to the Java VM";
     echo "  SCALA_CMD         Command to start the Scala VM";
@@ -1035,7 +1073,7 @@ case "$SCRIPT" in
     scala      ) scala_main "$@";;
     scala-*    ) scala_main "$@";;
     scalac*    ) compiler_start "" scala.tools.scalac.Main "$@";;
-    scalansc*  ) compiler_start "" scala.tools.nsc.Main "$@";;
+    scalansc*  ) ncompiler_start "" scala.tools.nsc.Main "$@";;
     scalarun*  ) compiler_start "" scala.tools.scalai.Main "$@";;
     scalaint*  ) compiler_start "" scala.tools.scalai.Main -interactive "$@";;
     scaladoc*  ) tool_start "" scala.tools.scaladoc.Main "$@";;
