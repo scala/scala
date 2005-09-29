@@ -26,7 +26,7 @@ nsc_jar     = ${jars_dir}\\nsc.jar
 nsrt_jar    = ${jars_dir}\\nsrt.jar
 nsc4ant_jar = ${jars_dir}\\nsc4ant.jar
 #
-ant_jar     = ${apps_dir}\\ant\\lib\\ant.jar
+ant_jar     = ${apps_dir}\\apache-ant-1.6.5\\lib\\ant.jar
 fjbg_jar    = ${apps_dir}\\fjbg\\jars\\fjbg.jar
 jaco_jar    = ${apps_dir}\\jaco-20050730\\lib\\jaco.jar
 #
