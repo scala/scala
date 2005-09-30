@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-abstract class ObservableSet[A, This <: ObservableSet[A, This]]: This
+[_trait_] abstract class ObservableSet[A, This <: ObservableSet[A, This]]: This
                     extends scala.collection.mutable.Set[A]
                     with Publisher[Message[A] with Undoable, This] {
 

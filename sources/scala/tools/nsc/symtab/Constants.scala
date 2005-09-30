@@ -9,7 +9,7 @@ package scala.tools.nsc.symtab;
 
 import classfile.PickleFormat._;
 
-abstract class Constants: SymbolTable {
+[_trait_] abstract class Constants: SymbolTable {
 
   import definitions._;
 

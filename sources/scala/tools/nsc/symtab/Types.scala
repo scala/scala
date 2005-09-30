@@ -28,7 +28,7 @@ import Flags._;
   case TypeVar(_, _) =>
 */
 
-abstract class Types: SymbolTable {
+[_trait_] abstract class Types: SymbolTable {
   import definitions._;
 
   //statistics
@@ -178,8 +178,11 @@ abstract class Types: SymbolTable {
       sym.info.asSeenFrom(this, sym.owner);
 
     /** The type of `sym', seen as a memeber of this type. */
-    def memberType(sym: Symbol): Type =
-      sym.tpe.asSeenFrom(this, sym.owner);
+    def memberType(sym: Symbol): Type = {
+      val result = sym.tpe.asSeenFrom(this, sym.owner);
+      /*System.out.println("" + this + ".memberType(" + sym + ") = " + result);*/
+      result
+    }
 
     /** Substitute types `to' for occurrences of references to symbols `from'
      *  in this type. */
@@ -295,9 +298,7 @@ abstract class Types: SymbolTable {
     def complete(sym: Symbol): unit = {
       if (sym == NoSymbol || sym.isPackageClass) sym.validForRun = currentRun
       else {
-	/*if (sym.owner.isClass) complete(sym.owner);*/
 	val this1 = adaptToNewRunMap(this);
-	//System.out.println("adapting " + sym);//DEBUG
 	if (this1 eq this) sym.validForRun = currentRun
 	else {
 	  //System.out.println("new type of " + sym + "=" + this1);//DEBUG
@@ -403,7 +404,7 @@ abstract class Types: SymbolTable {
 // Subclasses ------------------------------------------------------------
 
 
-  abstract class UniqueType {
+  [_trait_] abstract class UniqueType {
     private val hashcode = { val h = super.hashCode(); if (h < 0) -h else h }
     override def hashCode() = hashcode;
   }
@@ -765,6 +766,8 @@ abstract class Types: SymbolTable {
     override def toString(): String = paramTypes.mkString("(implicit ", ",", ")") + resultType;
   }
 
+  class JavaMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt);
+
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
    */
@@ -917,6 +920,10 @@ abstract class Types: SymbolTable {
   /** The canonical creator for implicit method types */
   def ImplicitMethodType(paramTypes: List[Type], resultType: Type): ImplicitMethodType =
     new ImplicitMethodType(paramTypes, resultType); // don't unique this!
+
+  /** The canonical creator for implicit method types */
+  def JavaMethodType(paramTypes: List[Type], resultType: Type): JavaMethodType =
+    new JavaMethodType(paramTypes, resultType); // don't unique this!
 
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself. */
@@ -1071,6 +1078,7 @@ abstract class Types: SymbolTable {
         val result1 = this(result);
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
         else if (tp.isInstanceOf[ImplicitMethodType]) ImplicitMethodType(paramtypes1, result1)
+        else if (tp.isInstanceOf[JavaMethodType]) JavaMethodType(paramtypes1, result1)
         else MethodType(paramtypes1, result1)
       case PolyType(tparams, result) =>
         val tparams1 = mapOver(tparams);
@@ -1145,7 +1153,8 @@ abstract class Types: SymbolTable {
 	      if (symclazz == clazz && (pre.widen.symbol isSubClass symclazz))
 		pre.baseType(symclazz) match {
 		  case TypeRef(_, basesym, baseargs) =>
-		    assert(basesym.typeParams.length == baseargs.length);//debug
+		    if (basesym.typeParams.length != baseargs.length)
+                      assert(false, "asSeenFrom(" + pre + "," + clazz + ")" + sym + " " + basesym + " " + baseargs); //debug
 		    instParam(basesym.typeParams, baseargs);
 		  case _ =>
                     throwError
@@ -1447,7 +1456,7 @@ abstract class Types: SymbolTable {
         sym1 == AllRefClass && sym2 != AllClass && tp2 <:< AnyRefClass.tpe
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         pts1.length == pts2.length &&
-        isSameTypes(pts1, pts2) &&
+        matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
         (res1 <:< res2) &&
         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
       case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
@@ -1496,7 +1505,7 @@ abstract class Types: SymbolTable {
    *  we might return false negatives */
   def specializesSym(tp: Type, sym: Symbol): boolean =
     tp.symbol == AllClass ||
-    tp.symbol == AllRefClass && (sym.owner isSubClass AnyRefClass) ||
+    tp.symbol == AllRefClass && (sym.owner isSubClass ObjectClass) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)));
 
@@ -1515,7 +1524,7 @@ abstract class Types: SymbolTable {
   /** A function implementing tp1 matches tp2 */
   private def matchesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
     case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
-      isSameTypes(pts1, pts2) && (res1 matches res2) &&
+      matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) && (res1 matches res2) &&
       tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
     case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       tparams1.length == tparams2.length &&
@@ -1529,6 +1538,12 @@ abstract class Types: SymbolTable {
     case _ =>
       !phase.erasedTypes || tp1 =:= tp2
   }
+
+  /** Are tps1 and tps2 lists of pairwise equivalent types? */
+  private def matchingParams(tps1: List[Type], tps2: List[Type], tps2isJava: boolean): boolean =
+    tps1.length == tps2.length &&
+    List.forall2(tps1, tps2)((tp1, tp2) =>
+      (tp1 =:= tp2) || tps2isJava & tp1.symbol == ObjectClass && tp2.symbol == AnyClass);
 
   /** Prepend type `tp' to closure `cl' */
   private def addClosure(tp: Type, cl: Array[Type]): Array[Type] = {

@@ -86,6 +86,7 @@ abstract class Pickler extends SubComponent {
 	if (sym.thisSym != sym)
           putType(sym.typeOfThis);
 	putSymbol(sym.alias);
+        //for (val attr <- sym.attributes) putAttribute(sym, attr);
       } else if (sym != NoSymbol) {
 	putEntry(if (sym.isModuleClass) sym.name.toTermName else sym.name);
 	if (!sym.owner.isRoot) putSymbol(sym.owner);
@@ -125,6 +126,12 @@ abstract class Pickler extends SubComponent {
     private def putConstant(c: Constant) =
       if (putEntry(c) && c.tag == StringTag) putEntry(newTermName(c.stringValue));
 
+/*
+    private def putAttribute(attr: AttrInfo): unit = if (putEntry(attr)) {
+      putType(attr._1);
+      for (val c <- attr._2) putConstant(c);
+    }
+*/
     // Phase 2 methods: Write all entries to byte array ------------------------------
 
     private val buf = new PickleBuffer(new Array[byte](4096), -1, 0);
@@ -207,6 +214,12 @@ abstract class Pickler extends SubComponent {
 	  else if (c.tag == DoubleTag) writeLong(Double.doubleToLongBits(c.doubleValue));
 	  else if (c.tag == StringTag) writeRef(newTermName(c.stringValue));
 	  LITERAL + c.tag
+/*
+        case Pair(tp, cs) =>
+          writeRef(tp);
+          for (val c <- cs) writeRef(cs);
+          ATTRIBUTE
+*/
 	case _ =>
 	  throw new FatalError("bad entry: " + entry + " " + entry.getClass());//debug
       }

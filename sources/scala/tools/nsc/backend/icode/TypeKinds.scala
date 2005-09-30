@@ -25,7 +25,7 @@ package scala.tools.nsc.backend.icode;
 
 import scala.collection.mutable.{Map, HashMap};
 
-abstract class TypeKinds: ICodes {
+[_trait_] abstract class TypeKinds: ICodes {
   import global._;
 
   /** This class represents a type kind. Type kinds

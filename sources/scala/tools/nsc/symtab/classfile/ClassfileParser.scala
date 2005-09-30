@@ -213,7 +213,7 @@ abstract class ClassfileParser {
           while ('0' <= name(index) && name(index) <= '9') index = index + 1;
           appliedType(definitions.ArrayClass.tpe, List(sig2type))
         case '(' =>
-          MethodType(paramsigs2types, sig2type)
+          JavaMethodType(paramsigs2types, sig2type)
       }
     }
     sig2type

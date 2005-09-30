@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-abstract class Infer: Analyzer {
+[_trait_] abstract class Infer: Analyzer {
   import symtab.Flags._;
   import global._;
   import definitions._;
@@ -491,11 +491,12 @@ abstract class Infer: Analyzer {
     /** Assign `tree' the symbol and type of the alternative which matches
      *  prototype `pt', if it exists.
      *  If several alternatives match `pt', take parameterless one.
-     *  Error if no or several such alternatives exist.
+     *  If no alternative matches `pt', take the parameterless one anyway.
      */
     def inferExprAlternative(tree: Tree, pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-	val alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt));
+	var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt));
+        if (alts1.isEmpty) alts1 = alts;
 	def improves(sym1: Symbol, sym2: Symbol): boolean =
 	  sym2 == NoSymbol ||
 	  ((sym1.owner isSubClass sym2.owner) &&

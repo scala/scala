@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-abstract class Scopes: SymbolTable {
+[_trait_] abstract class Scopes: SymbolTable {
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
 

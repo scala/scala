@@ -11,7 +11,7 @@ package scala.concurrent;
 
 
 //class MailBox with Monitor with LinkedListQueueCreator {
-abstract class MailBox extends AnyRef with ListQueueCreator {
+[_trait_] abstract class MailBox extends AnyRef with ListQueueCreator {
 
   type Message = AnyRef;
 

@@ -38,7 +38,7 @@ import Tokens._;
  *  (4) Wraps naked case definitions in a match as follows:
  *        { cases }   ==>   (x => x.match {cases}), except when already argument to match
  */
-abstract class Parsers: SyntaxAnalyzer {
+[_trait_] abstract class Parsers: SyntaxAnalyzer {
 
   import global._;
   import posAssigner.atPos;
@@ -1470,7 +1470,7 @@ abstract class Parsers: SyntaxAnalyzer {
        */
       def tmplDef(mods: int): Tree = in.token match {
         case TRAIT =>
-          classDef(mods | Flags.ABSTRACT);
+          classDef(mods | Flags.TRAIT | Flags.ABSTRACT);
         case CLASS =>
           classDef(mods);
         case CASECLASS =>
@@ -1495,11 +1495,8 @@ abstract class Parsers: SyntaxAnalyzer {
 	if ((mods & Flags.CASE) != 0 && in.token != LPAREN) accept(LPAREN);
 	val vparamss = paramClauses(name, implicitViews.toList, (mods & Flags.CASE) != 0);
 	val thistpe = simpleTypedOpt();
-	val mods1 = if (vparamss.isEmpty && (mods & Flags.ABSTRACT) != 0) {
-	  mods | Flags.TRAIT
-	} else mods;
-	val template = classTemplate(mods1, name, vparamss);
-	ClassDef(mods1, name, tparams, thistpe, template)
+	val template = classTemplate(mods, name, vparamss);
+	ClassDef(mods, name, tparams, thistpe, template)
       }
 
     /** ObjectDef       ::= Id ClassTemplate
@@ -1600,8 +1597,9 @@ abstract class Parsers: SyntaxAnalyzer {
                    in.token == CASEOBJECT ||
                    in.token == LBRACKET ||
                    isModifier) {
+          val attrs = attributeClauses();
           stats ++
-            joinAttributes(attributeClauses(), joinComment(List(tmplDef(modifiers()))))
+            joinAttributes(attrs, joinComment(List(tmplDef(modifiers() | traitAttribute(attrs)))))
         } else if (in.token != SEMI) {
           syntaxError("illegal start of class or object definition", true);
         }
@@ -1625,8 +1623,9 @@ abstract class Parsers: SyntaxAnalyzer {
         } else if (isExprIntro) {
           stats += expr()
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
+          val attrs = attributeClauses();
           stats ++
-            joinAttributes(attributeClauses(), joinComment(defOrDcl(modifiers())))
+            joinAttributes(attrs, joinComment(defOrDcl(modifiers() | traitAttribute(attrs))))
         } else if (in.token != SEMI) {
           syntaxError("illegal start of definition", true);
         }
@@ -1661,6 +1660,16 @@ abstract class Parsers: SyntaxAnalyzer {
         t = atPos(in.pos)(AppliedTypeTree(t, typeArgs()));
       val args = if (in.token == LPAREN) argumentExprs() else List();
       atPos(pos) { New(t, List(args)) }
+    }
+
+    def traitAttribute(attrs: List[Tree]) = {
+      def isTraitAttribute(attr: Tree) = attr match {
+        case Apply(Select(New(Ident(name)), constr), List()) if (name.toString() == "_trait_") =>
+	  true
+	case _ =>
+          false
+      }
+      if (attrs exists isTraitAttribute) Flags.TRAIT else 0
     }
 
     def joinAttributes(attrs: List[Tree], defs: List[Tree]): List[Tree] =

@@ -8,7 +8,7 @@ package scala.tools.nsc;
 import scala.tools.util.{SourceFile, Position};
 import scala.tools.nsc.util.FreshNameCreator;
 
-abstract class CompilationUnits: Global {
+[_trait_] abstract class CompilationUnits: Global {
 
   class CompilationUnit(val source: SourceFile, val mixinOnly: boolean) {
 

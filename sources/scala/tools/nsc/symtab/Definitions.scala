@@ -9,7 +9,7 @@ import scala.tools.util.Position;
 import collection.mutable.HashMap;
 import Flags._;
 
-abstract class Definitions: SymbolTable {
+[_trait_] abstract class Definitions: SymbolTable {
 
   object definitions {
 
@@ -78,6 +78,7 @@ abstract class Definitions: SymbolTable {
       def SeqFactory = getMember(ScalaRunTimeModule, "Seq");
     var RepeatedParamClass: Symbol = _;
     var ByNameParamClass: Symbol = _;
+    var TraitClass: Symbol = _;
 
     val MaxTupleArity = 9;
     val MaxFunctionArity = 9;
@@ -331,6 +332,7 @@ abstract class Definitions: SymbolTable {
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
+      TraitClass = getClass("scala._trait_");
       TupleClass = new Array(MaxTupleArity + 1);
       for (val i <- List.range(1, MaxTupleArity + 1))
 	TupleClass(i) = getClass("scala.Tuple" + i);

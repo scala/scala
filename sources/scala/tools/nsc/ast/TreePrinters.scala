@@ -97,7 +97,8 @@ abstract class TreePrinters {
           print("<empty>");
 
         case ClassDef(mods, name, tparams, tp, impl) =>
-          printFlags(tree, mods); print("class " + symName(tree, name));
+          printFlags(tree, mods);
+	  print((if ((mods & TRAIT) != 0) "trait " else "class ") + symName(tree, name));
           printTypeParams(tparams);
           printOpt(": ", tp); print(" extends "); print(impl);
 

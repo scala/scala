@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-abstract class ObservableBuffer[A, This <: ObservableBuffer[A, This]]: This
+[_trait_] abstract class ObservableBuffer[A, This <: ObservableBuffer[A, This]]: This
                     extends Buffer[A]
                     with Publisher[Message[Pair[Location, A]] with Undoable, This] {
 

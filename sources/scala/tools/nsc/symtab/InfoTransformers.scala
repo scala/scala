@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-abstract class InfoTransformers: SymbolTable {
+[_trait_] abstract class InfoTransformers: SymbolTable {
 
   abstract class InfoTransformer {
     var prev: InfoTransformer = this;

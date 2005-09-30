@@ -10,7 +10,7 @@ import scala.tools.util.{Position, SourceFile}
 import SourceFile.{LF, FF, CR, SU}
 import scala.tools.nsc.util.CharArrayReader;
 
-abstract class Scanners: SyntaxAnalyzer {
+[_trait_] abstract class Scanners: SyntaxAnalyzer {
 
   import global._;
 

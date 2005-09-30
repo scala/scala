@@ -70,36 +70,39 @@ trait Namers: Analyzer {
     }
 
     private def enterClassSymbol(pos: int, mods: int, name: Name): Symbol = {
-      val c: Symbol = context.scope.lookup(name);
+      var c: Symbol = context.scope.lookup(name);
       if (c.isType && c.isExternal && context.scope == c.owner.info.decls) {
-	currentRun.symSource(c) = context.unit.source.getFile();
         updatePosFlags(c, pos, mods);
       } else {
-	enterInScope(context.owner.newClass(pos, name).setFlag(mods))
+	c = enterInScope(context.owner.newClass(pos, name).setFlag(mods))
       }
+      if (c.owner.isPackageClass) currentRun.symSource(c) = context.unit.source.getFile();
+      c
     }
 
     private def enterModuleSymbol(pos: int, mods: int, name: Name): Symbol = {
-      val m: Symbol = context.scope.lookup(name);
+      var m: Symbol = context.scope.lookup(name);
       if (m.isTerm && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
-	currentRun.symSource(m) = context.unit.source.getFile();
         updatePosFlags(m, pos, mods)
       } else {
-        val newm = context.owner.newModule(pos, name);
-        newm.setFlag(mods);
-        newm.moduleClass.setFlag(mods);
-	enterInScope(newm)
+        m = context.owner.newModule(pos, name);
+        m.setFlag(mods);
+        m.moduleClass.setFlag(mods);
+	enterInScope(m)
       }
+      if (m.owner.isPackageClass) currentRun.symSource(m) = context.unit.source.getFile();
+      m
     }
 
     private def enterCaseFactorySymbol(pos: int, mods: int, name: Name): Symbol = {
-      val m: Symbol = context.scope.lookup(name);
+      var m: Symbol = context.scope.lookup(name);
       if (m.isTerm && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
-	currentRun.symSource(m) = context.unit.source.getFile();
         updatePosFlags(m, pos, mods)
       } else {
-        enterInScope(context.owner.newMethod(pos, name).setFlag(mods))
+        m = enterInScope(context.owner.newMethod(pos, name).setFlag(mods))
       }
+      if (m.owner.isPackageClass) currentRun.symSource(m) = context.unit.source.getFile();
+      m
     }
 
     def enterSyms(trees: List[Tree]): Namer =
@@ -177,8 +180,8 @@ trait Namers: Analyzer {
 	  case AliasTypeDef(mods, name, tparams, _) =>
 	    tree.symbol = enterInScope(owner.newAliasType(tree.pos, name)).setFlag(mods);
 	    finishWith(tparams)
-	  case Attributed(_, defn) =>
-	    enterSym(defn)
+	  case Attributed(attr, defn) =>
+	    enterSym(defn);
 	  case DocDef(_, defn) =>
 	    enterSym(defn)
 	  case imp @ Import(_, _) =>
@@ -419,6 +422,8 @@ trait Namers: Analyzer {
 	  "\nit should be omitted for abstract members");
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isClass)
 	context.error(sym.pos, "`override' modifier not allowed for classes");
+      if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
+	context.error(sym.pos, "`abstract override' modifier only allowed for members of traits");
       if (sym.info.symbol == FunctionClass(0) &&
 	  sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
 	context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");

@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import scala.tools.util.Position;
 import symtab.Flags._;
 
-abstract class Trees: Global {
+[_trait_] abstract class Trees: Global {
 
   //statistics
   var nodeCount = 0;
@@ -60,20 +60,20 @@ abstract class Trees: Global {
     }
   }
 
-  abstract class SymTree extends Tree {
+  [_trait_] abstract class SymTree extends Tree {
     override def hasSymbol = true;
     override var symbol: Symbol = NoSymbol;
   }
 
-  abstract class DefTree extends SymTree {
+  trait DefTree extends SymTree {
     override def isDef = true
   }
 
-  abstract class TermTree extends Tree {
+  trait TermTree extends Tree {
     override def isTerm = true
   }
 
-  abstract class TypTree extends Tree {
+  trait TypTree extends Tree {
     override def isType = true
   }
 
@@ -172,6 +172,7 @@ abstract class Trees: Global {
 
   def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     posAssigner.atPos(sym.pos) {
+      assert(sym != NoSymbol);
       DefDef(flags2mods(sym.flags),
              sym.name,
              sym.typeParams map AbsTypeDef,

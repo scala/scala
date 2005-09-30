@@ -12,7 +12,7 @@ package scala.xml.factory;
 import scala.collection.Map ;
 import scala.collection.mutable ;
 
-abstract class NodeFactory[A <: Node] {
+[_trait_] abstract class NodeFactory[A <: Node] {
 
   val ignoreComments  = false;
   val ignoreProcInstr = false;

@@ -7,7 +7,7 @@ package scala.tools.nsc.symtab;
 
 import scala.tools.nsc.util.NameTransformer;
 
-abstract class StdNames: SymbolTable {
+[_trait_] abstract class StdNames: SymbolTable {
 
   object nme {
 

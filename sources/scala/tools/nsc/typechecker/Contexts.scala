@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import symtab.Flags._;
 import scala.tools.util.Position;
 
-abstract class Contexts: Analyzer {
+[_trait_] abstract class Contexts: Analyzer {
   import global._;
 
   val NoContext = new Context {
@@ -153,7 +153,7 @@ abstract class Contexts: Analyzer {
 
     override def toString(): String = {
       if (this == NoContext) "NoContext";
-      else owner.toString() + " @ " + tree.getClass() + " " + tree.toString() + ", scope = " + scope.hashCode() + "\n:: " + outer.toString()
+      else owner.toString() + " @ " + tree.getClass() + " " + tree.toString() + ", scope = " + scope.hashCode() + " " + scope.toList + "\n:: " + outer.toString()
     }
 
     /** Is `sym' accessible as a member of tree `site' with type `pre' in current context?

@@ -5,7 +5,7 @@ package scala.tools.nsc.matching ;
 
 import scala.tools.util.Position;
 
-abstract class CodeFactory: TransMatcher  {
+[_trait_] abstract class CodeFactory: TransMatcher  {
 
   import global._ ;
 

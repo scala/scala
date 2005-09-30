@@ -8,7 +8,7 @@ package scala.tools.nsc.symtab;
 import scala.tools.util.{AbstractFile, Position}
 import Flags._;
 
-abstract class Symbols: SymbolTable {
+[_trait_] abstract class Symbols: SymbolTable {
   import definitions._;
 
   private var ids = 0;
@@ -194,7 +194,7 @@ abstract class Symbols: SymbolTable {
      *  A class is local, if
      *   - it is anonymous, or
      *   - its owner is a value
-     *   - it is defined within a local class
+     *   - it is defined within a local class214
      */
     final def isLocalClass: boolean =
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
@@ -207,9 +207,11 @@ abstract class Symbols: SymbolTable {
      *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.
      */
     final def isIncompleteIn(base: Symbol): boolean =
-      (base == NoSymbol) ||
       (this hasFlag DEFERRED) ||
-      (this hasFlag ABSOVERRIDE) && isIncompleteIn(superSymbol(base));
+      (this hasFlag ABSOVERRIDE) && {
+        val supersym = superSymbol(base);
+        supersym == NoSymbol || supersym.isIncompleteIn(base)
+      }
 
     final def isInitialized: boolean =
       validForRun == currentRun;
@@ -545,7 +547,7 @@ abstract class Symbols: SymbolTable {
     /** The symbol overridden by this symbol in given base class */
     final def overriddenSymbol(base: Symbol): Symbol =
       base.info.nonPrivateDecl(name).suchThat(sym =>
-        !sym.isTerm || (owner.thisType.memberType(sym) matches tpe));
+        !sym.isTerm || (tpe matches owner.thisType.memberType(sym)));
 
     /** The symbol overriding this symbol in given subclass */
     final def overridingSymbol(base: Symbol): Symbol =
@@ -560,7 +562,8 @@ abstract class Symbols: SymbolTable {
       var bcs = base.info.baseClasses.dropWhile(owner !=).tail;
       var sym: Symbol = NoSymbol;
       while (!bcs.isEmpty && sym == NoSymbol) {
-	sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
+        if (!bcs.head.isImplClass)
+	  sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
 	bcs = bcs.tail
       }
       sym

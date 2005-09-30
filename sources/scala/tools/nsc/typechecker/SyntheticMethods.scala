@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import symtab.Flags._;
 import util.ListBuffer;
 
-abstract class SyntheticMethods: Analyzer {
+[_trait_] abstract class SyntheticMethods: Analyzer {
   import global._;                  // the global environment
   import definitions._;             // standard classes and methods
   import typer.{typed};             // methods to type trees

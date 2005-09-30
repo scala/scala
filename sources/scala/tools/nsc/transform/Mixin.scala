@@ -27,21 +27,23 @@ abstract class Mixin extends InfoTransform {
 
   private def toInterface(tp: Type): Type = tp.symbol.toInterface.tpe;
 
-  private def rebindSuper(base: Symbol, member: Symbol, prevowner: Symbol): Symbol = {
-    var bcs = base.info.baseClasses.dropWhile(prevowner !=).tail;
-    assert(!bcs.isEmpty, "" + prevowner + " " + base.info.baseClasses);//debug
-    var sym: Symbol = NoSymbol;
-    while (!bcs.isEmpty && sym == NoSymbol) {
-      if (settings.debug.value) {
-	val other = bcs.head.info.nonPrivateDecl(member.name);
-	log("rebindsuper " + bcs.head + " " + other + " " + other.tpe + " " + sym.tpe + " " + other.hasFlag(DEFERRED));
+  private def rebindSuper(base: Symbol, member: Symbol, prevowner: Symbol): Symbol =
+    atPhase(currentRun.refchecksPhase) {
+      var bcs = base.info.baseClasses.dropWhile(prevowner !=).tail;
+      assert(!bcs.isEmpty/*, "" + prevowner + " " + base.info.baseClasses*/);//DEBUG
+      var sym: Symbol = NoSymbol;
+      if (settings.debug.value) log("starting rebindsuper " + base + " " + member + ":" + member.tpe + " " + prevowner + " " + base.info.baseClasses);
+      while (!bcs.isEmpty && sym == NoSymbol) {
+        if (settings.debug.value) {
+	  val other = bcs.head.info.nonPrivateDecl(member.name);
+	  log("rebindsuper " + bcs.head + " " + other + " " + other.tpe + " " + other.hasFlag(DEFERRED));
+        }
+        sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
+        bcs = bcs.tail
       }
-      sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
-      bcs = bcs.tail
+      assert(sym != NoSymbol, member);
+      sym
     }
-    assert(sym != NoSymbol, member);
-    sym
-  }
 
   private def implClass(iface: Symbol): Symbol = erasure.implClass(iface);
 
@@ -121,7 +123,8 @@ abstract class Mixin extends InfoTransform {
             } else if (member hasFlag SUPERACCESSOR) {
               val member1 = addMember(clazz, member.cloneSymbol(clazz)) setFlag MIXEDIN;
               assert(member1.alias != NoSymbol, member1);
-              member1.asInstanceOf[TermSymbol] setAlias rebindSuper(clazz, member.alias, bc);
+              val alias1 = rebindSuper(clazz, member.alias, bc);
+              member1.asInstanceOf[TermSymbol] setAlias alias1;
             } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
               addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN)
             }
@@ -235,15 +238,17 @@ abstract class Mixin extends InfoTransform {
         if (stat.symbol hasFlag SUPERACCESSOR) =>
           assert(stat.symbol hasFlag MIXEDIN, stat);
           val rhs1 =
-            localTyper.typed {
-              atPos(stat.pos) {
-                Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
-                      vparams map (vparam => Ident(vparam.symbol)))
+            postTransform {
+              localTyper.typed {
+                atPos(stat.pos) {
+                  Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
+                        vparams map (vparam => Ident(vparam.symbol)))
+                }
               }
             }
-          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs1)
+          //System.out.println("complete super acc " + stat.symbol + stat.symbol.locationString + " " + rhs1 + " " + stat.symbol.alias + stat.symbol.alias.locationString);//DEBUG
+          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, localTyper.typed(rhs1))
         case _ =>
-          assert(!(stat.symbol hasFlag SUPERACCESSOR), stat);
           stat
       }
       var stats1 = stats;
@@ -252,6 +257,7 @@ abstract class Mixin extends InfoTransform {
 	  if ((sym hasFlag SYNTHETIC) && (sym hasFlag ACCESSOR))
 	    addDefDef(sym, vparamss => EmptyTree)
 	}
+	if (newDefs.hasNext) stats1 = stats1 ::: newDefs.toList;
       } else if (!clazz.isTrait) {
 	for (val sym <- clazz.info.decls.toList) {
 	  if (sym hasFlag MIXEDIN) {
@@ -268,19 +274,21 @@ abstract class Mixin extends InfoTransform {
               addDef(position(sym), refchecks.newModuleAccessDef(sym, vdef.symbol));
 	    } else if (!sym.isMethod) {
 	      addDef(position(sym), ValDef(sym))
-	    } else if (!(sym hasFlag SUPERACCESSOR)) {
+	    } else if (sym hasFlag SUPERACCESSOR) {
+	      addDefDef(sym, vparams => EmptyTree)
+	    } else {
 	      assert(sym.alias != NoSymbol, sym);
 	      addDefDef(sym, vparams =>
 		Apply(staticRef(sym.alias), gen.This(clazz) :: (vparams map Ident)))
 	    }
 	  }
 	}
-        stats1 = stats map completeSuperAccessor;
+        if (newDefs.hasNext) stats1 = stats1 ::: newDefs.toList;
       }
-      if (newDefs.hasNext) stats1 ::: newDefs.toList else stats1
+      if (clazz.isTrait) stats1 else stats1 map completeSuperAccessor;
     }
 
-    private def postTransform(tree: Tree): Tree = atPhase(phase.next) {
+    private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol;
       tree match {
         case Template(parents, body) =>
@@ -296,7 +304,17 @@ abstract class Mixin extends InfoTransform {
 	        Apply(staticRef(sym), qual :: args)
 	      }
 	    }
-          } else tree
+          } else if (qual.isInstanceOf[Super] && (sym.owner hasFlag lateINTERFACE)) {
+            val sym1 = atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass));
+            assert(sym1 != NoSymbol, sym);
+            localTyper.typed {
+              atPos(tree.pos) {
+                Apply(staticRef(sym1), gen.This(currentOwner.enclClass) :: args)
+              }
+            }
+          } else {
+            tree
+          }
         case This(_) if tree.symbol.isImplClass =>
 	  assert(tree.symbol == currentOwner.enclClass, "" + tree + " " + tree.symbol + " " + currentOwner.enclClass);
           selfRef(tree.pos)
@@ -314,6 +332,7 @@ abstract class Mixin extends InfoTransform {
             } else {
               copy.Select(tree, selfRef(qual.pos), name)
             }
+
           } else {
             if (mix == nme.EMPTY.toTypeName) tree
             else copy.Select(tree, gen.This(currentOwner.enclClass) setPos qual.pos, name)
@@ -355,7 +374,8 @@ abstract class Mixin extends InfoTransform {
 
     override def transform(tree: Tree): Tree = {
       try { //debug
-        postTransform(super.transform(preTransform(tree)))
+        val tree1 = super.transform(preTransform(tree));
+        atPhase(phase.next)(postTransform(tree1))
       } catch {
         case ex: Throwable =>
 	  System.out.println("exception when traversing " + tree);

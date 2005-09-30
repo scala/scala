@@ -163,6 +163,8 @@ abstract class RefChecks extends InfoTransform {
 	  overrideError("cannot override final member");
 	} else if (!(other hasFlag DEFERRED) && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
 	  overrideError("needs `override' modifier");
+	} else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
+	  overrideError("needs `abstract override' modifiers");
 	} else if (other.isStable && !member.isStable) { // (1.4)
 	  overrideError("needs to be an immutable value");
 	} else {
@@ -176,7 +178,7 @@ abstract class RefChecks extends InfoTransform {
 	  } else if (other.isAbstractType) {
 	    if (!member.typeParams.isEmpty) // (1.7)
 	      overrideError("may not be parameterized");
-	    if (!(self.memberInfo(other).bounds containsType self.memberInfo(member))) // (1.7)
+	    if (!(self.memberInfo(other).bounds containsType self.memberType(member))) // (1.7)
 	      overrideTypeError();
 	  } else if (other.isTerm) {
 	    if (!(self.memberInfo(member) <:< (self.memberInfo(other)))) // 8
@@ -216,22 +218,23 @@ abstract class RefChecks extends InfoTransform {
 	}
 */
       // 2. Check that only abstract classes have deferred members
-      if (clazz.isClass && !(clazz hasFlag ABSTRACT)) {
-	def abstractClassError(msg: String): unit = {
+      if (clazz.isClass && !clazz.isTrait) {
+	def abstractClassError(mustBeTrait: boolean, msg: String): unit = {
 	  unit.error(clazz.pos,
 	    (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
+	     else if (mustBeTrait) clazz.toString() + " needs to be a trait"
 	     else clazz.toString() + " needs to be abstract") + ", since " + msg);
 	  clazz.setFlag(ABSTRACT);
 	}
 	for (val member <- clazz.tpe.members)
-	  if (member hasFlag DEFERRED) {
-	    abstractClassError(
+	  if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
+	    abstractClassError(false,
 	      infoString(member) + " is not defined" +
 	      (if (member.isVariable)
 		"\n(Note that variables need to be initialized to be defined)" else ""))
-	  } else if (member.isIncompleteIn(clazz)) {
+	  } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
 	    val other = member.superSymbol(clazz);
-	    abstractClassError(
+	    abstractClassError(true,
 	      infoString(member) + " is marked `abstract' and `override'" +
 	      (if (other != NoSymbol)
 		" and overrides incomplete superclass member " + infoString(other)
@@ -243,7 +246,8 @@ abstract class RefChecks extends InfoTransform {
       for (val member <- clazz.info.decls.toList)
 	if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
 	    (clazz.info.baseClasses.tail forall (bc => member.overriddenSymbol(bc) == NoSymbol))) {
-	  System.out.println(clazz.info.baseClasses.tail);//debug
+          for (val bc <- clazz.info.baseClasses.tail)
+            System.out.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//debug
 	  unit.error(member.pos, member.toString() + " overrides nothing");
 	  member resetFlag OVERRIDE
 	}
@@ -391,9 +395,12 @@ abstract class RefChecks extends InfoTransform {
       for (val stat <- stats) {
 	index = index + 1;
 	stat match {
-          case ClassDef(_, _, _, _, _) | DefDef(_, _, _, _, _, _) if (stat.symbol.isLocal) =>
-	    currentLevel.scope.enter(newScopeEntry(stat.symbol, currentLevel.scope));
-	    symIndex(stat.symbol) = index;
+          case ClassDef(_, _, _, _, _) | DefDef(_, _, _, _, _, _) =>
+            assert(stat.symbol != NoSymbol, stat);//debug
+            if (stat.symbol.isLocal) {
+	      currentLevel.scope.enter(newScopeEntry(stat.symbol, currentLevel.scope));
+	      symIndex(stat.symbol) = index;
+            }
           case _ =>
 	}
       }

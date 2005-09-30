@@ -12,7 +12,7 @@ import scala.tools.util.Position;
 import collection.mutable.HashMap;
 
 /** Methods to create symbols and to enter them into scopes. */
-abstract class Typers: Analyzer {
+[_trait_] abstract class Typers: Analyzer {
   import global._;
   import definitions._;
   import posAssigner.atPos;
@@ -379,8 +379,8 @@ abstract class Typers: Analyzer {
 //      adapt(tree, mode, pt)
 //    }
 
-    private def completeSuperType(supertpt: Tree, tparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
-      tparams foreach context.scope.enter;
+    private def completeSuperType(supertpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
+      enclTparams foreach context.scope.enter;
       namer.enterValueParams(context.owner, vparamss);
       val newTree = New(supertpt) setType
 	PolyType(tparams, appliedType(supertpt.tpe, tparams map (.tpe)));
@@ -404,12 +404,13 @@ abstract class Typers: Analyzer {
 	  if (!tparams.isEmpty) {
 	    val constr @ DefDef(_, _, _, vparamss, _, Apply(_, superargs)) =
 	      treeInfo.firstConstructor(templ.body);
-	    val outercontext = context.outer.outer;
+	    val outercontext = context.outer;
 	    supertpt = TypeTree(
-	      newTyper(context.outer.outer.makeNewScope(constr, context.outer.outer.owner))
+	      newTyper(outercontext.makeNewScope(constr, outercontext.owner/*.newValue(templ.pos, newTermName("<dummy>"))*/))
 		.completeSuperType(
 		  supertpt,
-		  tparams,
+                  tparams,
+		  context.owner.unsafeTypeParams,
 		  vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
 		  superargs map (.duplicate))) setPos supertpt.pos;
 	  }
@@ -476,7 +477,7 @@ abstract class Typers: Analyzer {
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef);
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt));
       val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope()))
-        .typedTemplate(cdef.impl);
+        .typedTemplate(cdef.impl, parentTypes(cdef.impl));
       copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, addSyntheticMethods(impl1, clazz))
 	setType NoType
     }
@@ -484,7 +485,7 @@ abstract class Typers: Analyzer {
     def typedModuleDef(mdef: ModuleDef): Tree = {
       val clazz = mdef.symbol.moduleClass;
       val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope()))
-        .typedTemplate(mdef.impl);
+        .typedTemplate(mdef.impl, parentTypes(mdef.impl));
       copy.ModuleDef(mdef, mdef.mods, mdef.name, impl1) setType NoType
     }
 
@@ -492,9 +493,9 @@ abstract class Typers: Analyzer {
       case ValDef(mods, name, tpe, rhs) if (mods & LOCAL) == 0 && !stat.symbol.isModuleVar =>
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpe, rhs);
         val value = vdef.symbol;
+        val getter = if ((mods & DEFERRED) != 0) value else value.getter(value.owner);
+        assert(getter != NoSymbol, value);//debug
 	val getterDef: DefDef = {
-          val getter = if ((mods & DEFERRED) != 0) value else value.getter(value.owner);
-          assert(getter != NoSymbol, value);
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
@@ -503,7 +504,8 @@ abstract class Typers: Analyzer {
           result
 	}
 	def setterDef: DefDef = {
-	  val setter = value.setter(value.owner);
+	  val setter = value.owner.info.decl(nme.getterToSetter(getter.name));
+          assert(setter != NoSymbol, getter);//debug
           atPos(vdef.pos)(
 	    DefDef(setter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
@@ -521,10 +523,9 @@ abstract class Typers: Analyzer {
 	List(stat)
     }
 
-    def typedTemplate(templ: Template): Template = {
+    def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
       val clazz = context.owner;
       if (templ.symbol == NoSymbol) templ setSymbol clazz.newLocalDummy(templ.pos);
-      val parents1 = parentTypes(templ);
       val selfType =
         if (clazz.isAnonymousClass && !phase.erasedTypes)
           intersectionType(clazz.info.parents, clazz.owner)
@@ -556,7 +557,7 @@ abstract class Typers: Analyzer {
       copy.ValDef(vdef, vdef.mods, vdef.name, tpt1, rhs1) setType NoType
     }
 
-    /** Enter in global.aliases all aliases of local parameter accessors. */
+    /** Enter all aliases of local parameter accessors. */
     def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree): unit = {
       if (settings.debug.value) log("computing param aliases for " + clazz + ":" + clazz.primaryConstructor.tpe + ":" + rhs);//debug
       def decompose(call: Tree): Pair[Tree, List[Tree]] = call match {
@@ -576,32 +577,34 @@ abstract class Typers: Analyzer {
       assert(superConstr.symbol != null, superConstr);//debug
       if (superConstr.symbol.isPrimaryConstructor) {
 	val superClazz = superConstr.symbol.owner;
-	val superParamAccessors = superClazz.constrParamAccessors;
-	if (superParamAccessors.length != superArgs.length) {
-	  System.out.println("" + superClazz + ":" + superClazz.info.decls.toList.filter(.hasFlag(PARAMACCESSOR)));
-	  assert(false, "mismatch: " + superParamAccessors + ";" + rhs + ";" + superClazz.info.decls); //debug
-	}
-	List.map2(superParamAccessors, superArgs) { (superAcc, superArg) =>
-	  superArg match {
-	    case Ident(name) =>
-	      if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
-		var alias = superAcc.initialize.alias;
-		if (alias == NoSymbol)
-                  alias = superAcc.getter(superAcc.owner);
-		if (alias != NoSymbol &&
-		    superClazz.info.nonPrivateMember(alias.name) != alias)
-		  alias = NoSymbol;
-		if (alias != NoSymbol) {
-		  var ownAcc = clazz.info.decl(name);
-		  if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed;
-		  if (settings.debug.value) log("" + ownAcc + " has alias " + alias + alias.locationString);//debug
-		  ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
-		}
-	      }
-	    case _ =>
+        if (!superClazz.hasFlag(JAVA)) {
+	  val superParamAccessors = superClazz.constrParamAccessors;
+	  if (superParamAccessors.length != superArgs.length) {
+	    System.out.println("" + superClazz + ":" + superClazz.info.decls.toList.filter(.hasFlag(PARAMACCESSOR)));
+	    assert(false, "mismatch: " + superParamAccessors + ";" + rhs + ";" + superClazz.info.decls); //debug
 	  }
-	}
-	()
+	  List.map2(superParamAccessors, superArgs) { (superAcc, superArg) =>
+	    superArg match {
+	      case Ident(name) =>
+	        if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
+		  var alias = superAcc.initialize.alias;
+		  if (alias == NoSymbol)
+                    alias = superAcc.getter(superAcc.owner);
+		  if (alias != NoSymbol &&
+		      superClazz.info.nonPrivateMember(alias.name) != alias)
+		    alias = NoSymbol;
+		  if (alias != NoSymbol) {
+		    var ownAcc = clazz.info.decl(name);
+		    if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed;
+		    if (settings.debug.value) log("" + ownAcc + " has alias " + alias + alias.locationString);//debug
+		    ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
+		  }
+	        }
+	      case _ =>
+	    }
+          }
+	  ()
+        }
       }
     }
 
@@ -1053,7 +1056,7 @@ abstract class Typers: Analyzer {
           newTyper(context.makeNewScope(tree, sym)).typedClassDef(cdef)
 
         case mdef @ ModuleDef(_, _, _) =>
-          typedModuleDef(mdef)
+          newTyper(context.make(tree, sym.moduleClass)).typedModuleDef(mdef)
 
         case vdef @ ValDef(_, _, _, _) =>
           typedValDef(vdef)
@@ -1079,7 +1082,8 @@ abstract class Typers: Analyzer {
         case Attributed(attr, defn) =>
           val attr1 = typed(attr, AttributeClass.tpe);
           val defn1 = typed(defn, mode, pt);
-          defn1.symbol.attributes = defn1.symbol.attributes ::: List(attrInfo(attr1));
+	  val ai = attrInfo(attr1);
+	  if (ai != null) defn1.symbol.attributes = defn1.symbol.attributes ::: List(ai);
           defn1
 
         case DocDef(comment, defn) =>
@@ -1156,7 +1160,7 @@ abstract class Typers: Analyzer {
 
         case Match(selector, cases) =>
           val selector1 = typed(selector);
-          val cases1 = typedCases(tree, cases, selector1.tpe, pt);
+          val cases1 = typedCases(tree, cases, selector1.tpe.widen, pt);
           copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
 
         case Return(expr) =>
@@ -1298,7 +1302,7 @@ abstract class Typers: Analyzer {
             else {
               val decls = new Scope();
               val self = refinedType(parents1 map (.tpe), context.enclClass.owner, decls);
-              newTyper(context.make(tree, self.symbol, new Scope())).typedRefinement(templ.body);
+              newTyper(context.make(templ, self.symbol, decls)).typedRefinement(templ.body);
               self
             }
           }
