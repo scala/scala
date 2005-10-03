@@ -192,6 +192,7 @@ runtime/RunTime.java
 runtime/ScalaRunTime.scala
 runtime/ShortRef.java
 
+runtime/compat/Math.scala
 runtime/compat/Platform.scala
 
 #runtime/distributed/Channel.java
