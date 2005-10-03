@@ -27,7 +27,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
 
   def selectTag(Q:BitSet, finals:Array[Int]) = {
     val it = Q.toSet(true).elements;
-    var mintag = java.lang.Integer.MAX_VALUE;
+    var mintag = scala.runtime.compat.Math.MAX_INT;
     while(it.hasNext) {
       val tag = finals(it.next);
       if((0 < tag) && (tag < mintag))

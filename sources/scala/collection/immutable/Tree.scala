@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -37,8 +37,6 @@
 */
 
 package scala.collection.immutable;
-
-import java.lang.Math;
 
 /** General Balanced Trees - highly efficient functional dictionaries.
  *
@@ -212,7 +210,7 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
     balance_p(GBNode(key, value, smaller, t1),smaller);
   protected def balance_p(t:GBTree[A,B],subtree:GBTree[A,B]):InsertTree[A,B] = {
     val Pair(subHeight, subSize) = subtree.count;
-    val totalHeight = 2 * Math.max(height, subHeight);
+    val totalHeight = 2 * scala.runtime.compat.Math.max(height, subHeight);
     val totalSize = size + subSize + 1;
     val BalanceHeight = totalSize * totalSize;
     if(totalHeight > BalanceHeight) ITree(t.balance(totalSize));
@@ -280,7 +278,7 @@ private case class GBNode[A <% Ordered[A],B](key: A,
     if (mySize == 1)
       Pair(1, mySize)
     else
-      Pair(2 * Math.max(sHeight, bHeight), mySize);
+      Pair(2 * scala.runtime.compat.Math.max(sHeight, bHeight), mySize);
   }
 
   def isDefinedAt(sKey:A):Boolean = {
@@ -374,4 +372,3 @@ private case class GBNode[A <% Ordered[A],B](key: A,
   override def hashCode() =
     value.hashCode() + smaller.hashCode() + bigger.hashCode();
 }
-
