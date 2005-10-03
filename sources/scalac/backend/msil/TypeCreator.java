@@ -14,6 +14,7 @@ import scalac.CompilationUnit;
 import scalac.ApplicationError;
 import scalac.ast.Tree;
 import scalac.ast.Traverser;
+import scalac.atree.AConstant;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -24,6 +25,7 @@ import scalac.symtab.Symbol;
 import scalac.symtab.Scope;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Definitions;
+import scalac.symtab.AttributeInfo;
 import scalac.symtab.classfile.CLRTypes;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
@@ -35,6 +37,8 @@ import ch.epfl.lamp.compiler.msil.emit.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -63,11 +67,12 @@ final class TypeCreator {
     // of the accompanying class
     private final Map/*<Symbol, MethodBuilder>*/ syms2staticMethods = new HashMap();
 
-    private final Map types2symbols;
-    private final Map symbols2types;
-    private final Map symbols2fields;
-    private final Map symbols2methods;
-    private final Map symbols2moduleFields;
+    private final Map types2symbols = new HashMap();
+    private final Map symbols2types = new HashMap();
+    private final Map symbols2fields = new HashMap();
+    private final Map symbols2methods = new HashMap();
+    private final Map symbols2moduleFields = new HashMap();
+    private final Set specialAttrs = new HashSet();
 
     public static final String MODULE_S = "$MODULE";
 
@@ -121,6 +126,9 @@ final class TypeCreator {
 
     private scalac.symtab.Type MAIN_METHOD_TYPE;
 
+    private final Symbol SYSTEM_SERIALIZABLE_CONSTR;
+    private final Symbol SYSTEM_NONSERIALIZED_CONSTR;
+
     private final CLRTypes ti;
 
     private final Phase backPhase;
@@ -133,12 +141,6 @@ final class TypeCreator {
         this.backPhase = global.PHASE.ADDINTERFACES.phase();
 
 	ti = CLRTypes.instance();
-
-	types2symbols = new HashMap();
-	symbols2types = new HashMap();
-	symbols2fields = new HashMap();
-	symbols2methods = new HashMap();
-	symbols2moduleFields = new HashMap();
 
 	BYTE    = ti.BYTE;
 	CHAR    = ti.CHAR;
@@ -185,6 +187,12 @@ final class TypeCreator {
  	RUNTIME_BOX_UNIT = getType("scala.runtime.RunTime")
  	    .GetMethod("box_uvalue", Type.EmptyTypes);
         ti.map(defs.OBJECT_CLONE, MEMBERWISE_CLONE);
+
+        SYSTEM_SERIALIZABLE_CONSTR = defs.getClass("System.SerializableAttribute")
+            .primaryConstructor();
+        SYSTEM_NONSERIALIZED_CONSTR = defs.getClass("System.NonSerializedAttribute")
+            .primaryConstructor();
+
     }
 
     private boolean initialized = false;
@@ -302,6 +310,15 @@ final class TypeCreator {
         formal.setInfo(argument);
         MAIN_METHOD_TYPE =
 	    scalac.symtab.Type.MethodType(new Symbol[] {formal}, result);
+
+        specialAttrs.add(defs.SCALA_SERIALIZABLE_CONSTR);
+        specialAttrs.add(defs.SCALA_TRANSIENT_CONSTR);
+        specialAttrs.add(SYSTEM_SERIALIZABLE_CONSTR);
+        specialAttrs.add(SYSTEM_NONSERIALIZED_CONSTR);
+        specialAttrs.add(defs.SCALA_CLONEABLE_CONSTR);
+        specialAttrs.add(defs.SCALA_VOLATILE_CONSTR);
+        specialAttrs.add(defs.getClass("scala.SerialVersionUID")
+                         .primaryConstructor());
     } // init()
 
     /*
@@ -856,10 +873,9 @@ final class TypeCreator {
 		    }
 	    }
 	}
-
+        setAttributes((TypeBuilder)type, global.getAttributes(clazz));
 	return type;
     } // createType()
-
 
     private final Map interfaces/*<Symbol,Set<Symbol>>*/ = new HashMap();
 
@@ -1072,6 +1088,7 @@ final class TypeCreator {
 	MethodBase method =
 	    createMethod((TypeBuilder)getType(sym.owner()), sym, false);
 	symbols2methods.put(sym, method);
+        setAttributes((ICustomAttributeSetter)method, global.getAttributes(sym));
 	return method;
     }
 
@@ -1135,7 +1152,7 @@ final class TypeCreator {
 
 		for (int i = 0; i < vparams.length; i++)
 		    constructor.DefineParameter
-			(i, 0/*ParameterAttributes.In*/, vparams[i].name.toString());
+			(i, ParameterAttributes.None, vparams[i].name.toString());
 		return constructor;
 	    } else {
 		final String sname = getMethodName(name, params);
@@ -1308,7 +1325,8 @@ final class TypeCreator {
 		attr |= TypeAttributes.Public;
 	}
         boolean serializable =
-            global.getAttrArguments(clazz, defs.SCALA_SERIALIZABLE_CONSTR) != null;
+            global.getAttrArguments(clazz, defs.SCALA_SERIALIZABLE_CONSTR) != null
+            || global.getAttrArguments(clazz, SYSTEM_SERIALIZABLE_CONSTR) != null;
         if (serializable)
             attr |= TypeAttributes.Serializable;
 	return attr;
@@ -1333,7 +1351,8 @@ final class TypeCreator {
 	if (field.owner().isJava() && field.owner().isModuleClass())
 	    attr |= FieldAttributes.Static;
         boolean tranzient =
-            global.getAttrArguments(field, defs.SCALA_TRANSIENT_CONSTR) != null;
+            global.getAttrArguments(field, defs.SCALA_TRANSIENT_CONSTR) != null
+            || global.getAttrArguments(field, SYSTEM_NONSERIALIZED_CONSTR) != null;
         if (tranzient)
             attr |= FieldAttributes.NotSerialized;
 
@@ -1368,5 +1387,61 @@ final class TypeCreator {
     }
 
     //##########################################################################
+
+    byte[] attributeArgs(AConstant[] args) {
+        ByteBuffer buf = ByteBuffer.allocate(1024);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        buf.putShort((short)1); // write signature
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+            case BOOLEAN(boolean value): buf.put((byte)(value ? 1 : 0)); break;
+            case BYTE(byte value):     buf.put(value); break;
+            case SHORT(short value):   buf.putShort(value); break;
+            case CHAR(char value):     buf.putChar(value); break;
+            case INT(int value):       buf.putInt(value); break;
+            case LONG(long value):     buf.putLong(value); break;
+            case FLOAT(float value):   buf.putFloat(value); break;
+            case DOUBLE(double value): buf.putDouble(value); break;
+            case STRING(String value):
+                int length = value.length();
+                if (length < 128)
+                    buf.put((byte)length);
+                else if (length < 2<<14) {
+                    buf.put((byte)((length >> 8) | 0x80));
+                    buf.put((byte)(length & 0xff));
+                } else if (length < 2<<29) {
+                    buf.put((byte)((length >> 24) | 0xc0));
+                    buf.put((byte)((length >> 16) & 0xff));
+                    buf.put((byte)((length >>  8) & 0xff));
+                    buf.put((byte)((length      ) & 0xff));
+                } else
+                    throw Debug.abort("String too long: " + length);
+                try {
+                    buf.put(value.getBytes("UTF-8"));
+                } catch (java.io.UnsupportedEncodingException e) {
+                    throw Debug.abort(e);
+                }
+                break;
+            default:
+                throw Debug.abort("Cannot handle attribute argument " + args[i]);
+            }
+        }
+        buf.putShort((short)0); // count of named parameters == 0
+        int length = buf.position();
+        byte[] arr = new byte[length];
+        System.arraycopy(buf.array(), 0, arr, 0, length);
+        return arr;
+    }
+
+    private void setAttributes(ICustomAttributeSetter icas, AttributeInfo attr) {
+        for (; attr != null; attr = attr.next) {
+            if (!specialAttrs.contains(attr.constr)) {
+                ConstructorInfo constr =
+                    (ConstructorInfo)getMethod(attr.constr);
+                byte[] args = attributeArgs(attr.args);
+                icas.SetCustomAttribute(constr, args);
+            }
+        }
+    }
 
 } // class TypeCreator
