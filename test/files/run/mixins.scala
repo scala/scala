@@ -2,8 +2,6 @@
 
 // Test 1: "super" coming from mixins
 
-import java.lang.System.out.println;
-
 object Test1 {
   class A {
     def f = "A::f";
@@ -21,9 +19,9 @@ object Test1 {
     override def f = super[M1].f;
   }
 
-  def main(args: Array[String]): Unit = {
+  def test(): Unit = {
     val c = new C;
-    println(c.f);
+    Console.println(c.f);
   }
 }
 
@@ -46,9 +44,9 @@ object Test2 {
     override def f = super[M1].f + " " + super[M2].f + " " + super[M3].f
   }
 
-  def main(args: Array[String]): Unit = {
+  def test(): Unit = {
     val h = new Host;
-    println(h.f)
+    Console.println(h.f)
   }
 }
 
@@ -57,19 +55,19 @@ object Test2 {
 object Test3 {
 
   class A(x: Unit, y: Unit) {
-    println("A");
+    Console.println("A");
   }
 
   class B(x: Unit) {
-    println("B");
+    Console.println("B");
   }
 
-  class C with A({ println("one"); }, { println("two"); })
-          with B({ println("three"); }) {
-    println("C");
+  class C with A({ Console.println("one"); }, { Console.println("two"); })
+          with B({ Console.println("three"); }) {
+    Console.println("C");
   }
 
-  def main(args: Array[String]) = {
+  def test() = {
     val c = new C();
   }
 }
@@ -78,8 +76,8 @@ object Test3 {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    Test1.main(args);
-    Test2.main(args);
-    Test3.main(args);
+    Test1.test();
+    Test2.test();
+    Test3.test();
   }
 }

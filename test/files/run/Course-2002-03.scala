@@ -19,11 +19,11 @@ object M0 {
 
   val x = new Rational(1, 2);
   val y = new Rational(1, 3);
-  java.lang.System.out.println(x.numer);
-  java.lang.System.out.println(x.denom);
-  java.lang.System.out.println(makeString(x));
-  java.lang.System.out.println(makeString(addRational(x,y)));
-  java.lang.System.out.println();
+  Console.println(x.numer);
+  Console.println(x.denom);
+  Console.println(makeString(x));
+  Console.println(makeString(addRational(x,y)));
+  Console.println;
 }
 
 //############################################################################
@@ -46,11 +46,11 @@ object M1 {
   val x = new Rational(1, 3);
   val y = new Rational(5, 7);
   val z = new Rational(3, 2);
-  java.lang.System.out.println(x);
-  java.lang.System.out.println(y);
-  java.lang.System.out.println(z);
-  java.lang.System.out.println(x.add(y).mul(z));
-  java.lang.System.out.println();
+  Console.println(x);
+  Console.println(y);
+  Console.println(z);
+  Console.println(x.add(y).mul(z));
+  Console.println;
 }
 
 //############################################################################
@@ -83,11 +83,11 @@ object M2 {
   val x = new Rational(1, 3);
   val y = new Rational(5, 7);
   val z = new Rational(3, 2);
-  java.lang.System.out.println(x);
-  java.lang.System.out.println(y);
-  java.lang.System.out.println(z);
-  java.lang.System.out.println(x.add(y).mul(z));
-  java.lang.System.out.println();
+  Console.println(x);
+  Console.println(y);
+  Console.println(z);
+  Console.println(x.add(y).mul(z));
+  Console.println;
 }
 
 //############################################################################
@@ -105,11 +105,11 @@ object M3 {
 
   val x = new Rational(66, 42);
   val y = new Rational(42, 66);
-  java.lang.System.out.println(x);
-  java.lang.System.out.println(y);
-  java.lang.System.out.println(x.max(y));
-  java.lang.System.out.println(y.max(x));
-  java.lang.System.out.println();
+  Console.println(x);
+  Console.println(y);
+  Console.println(x.max(y));
+  Console.println(y.max(x));
+  Console.println;
 }
 
 //############################################################################
@@ -141,8 +141,8 @@ object M4 {
 
   val x = new Rational(1, 2);
   val y = new Rational(1, 3);
-  java.lang.System.out.println(x * x + y * y);
-  java.lang.System.out.println();
+  Console.println(x * x + y * y);
+  Console.println;
 }
 
 //############################################################################
@@ -170,11 +170,11 @@ object M5 {
   }
 
   val x = new Empty incl 1 incl 2;
-  java.lang.System.out.println(x contains 0);
-  java.lang.System.out.println(x contains 1);
-  java.lang.System.out.println(x contains 2);
-  java.lang.System.out.println(x contains 3);
-  java.lang.System.out.println();
+  Console.println(x contains 0);
+  Console.println(x contains 1);
+  Console.println(x contains 2);
+  Console.println(x contains 3);
+  Console.println;
 }
 
 //############################################################################
@@ -296,42 +296,42 @@ object M8 {
     val setx: IntSet = set0 incl -10 incl 5 incl 21 incl -1 incl 0 incl 3;
     val sety: IntSet = set0 incl 3 incl 7 incl -5 incl 0 incl-9 incl 8 incl-1;
 
-    java.lang.System.out.println("set0 = " + set0);
-    java.lang.System.out.println("set1 = " + (set1.toString()));
-    java.lang.System.out.println("set2 = " + set2);
-    java.lang.System.out.println("set3 = " + (set3.toString()));
-    java.lang.System.out.println("set4 = " + set4);
-    java.lang.System.out.println();
+    Console.println("set0 = " + set0);
+    Console.println("set1 = " + (set1.toString()));
+    Console.println("set2 = " + set2);
+    Console.println("set3 = " + (set3.toString()));
+    Console.println("set4 = " + set4);
+    Console.println;
 
-    java.lang.System.out.println("set2 contains the following elements:");
-    set2.foreach(java.lang.System.out.println);
-    java.lang.System.out.println();
+    Console.println("set2 contains the following elements:");
+    set2.foreach(Console.println);
+    Console.println;
 
-    java.lang.System.out.println("set3 contains the following elements:");
-    set3 foreach java.lang.System.out.println;
-    java.lang.System.out.println();
+    Console.println("set3 contains the following elements:");
+    set3 foreach Console.println;
+    Console.println;
 
-    java.lang.System.out.println("set4 contains the following elements:");
+    Console.println("set4 contains the following elements:");
     set4.printOn(java.lang.System.out);
-    java.lang.System.out.println();
+    Console.println;
 
-    java.lang.System.out.println("2 <- set2: " + (set2 contains 2));
-    java.lang.System.out.println("3 <- set2: " + set2.contains(3));
-    java.lang.System.out.println();
+    Console.println("2 <- set2: " + (set2 contains 2));
+    Console.println("3 <- set2: " + set2.contains(3));
+    Console.println;
 
-    java.lang.System.out.println("setx     = " + setx);
-    java.lang.System.out.println("setx * 2 = " + (setx.map(x => 2 * x)));
-    java.lang.System.out.println();
+    Console.println("setx     = " + setx);
+    Console.println("setx * 2 = " + (setx.map(x => 2 * x)));
+    Console.println;
 
-    java.lang.System.out.println("setx        = " + setx);
-    java.lang.System.out.println("sety        = " + sety);
-    java.lang.System.out.println("setx & sety = " + (setx.intersect(sety)));
-    java.lang.System.out.println("sety & setx = " + (sety.intersect(setx)));
-    java.lang.System.out.println("setx > 0    = " + (setx.filter(x => x > 0)));
-    java.lang.System.out.println("sety > 0    = " + (sety.filter(x => x > 0)));
-    java.lang.System.out.println("setx & sety = " + (setx.intersect2(sety)));
-    java.lang.System.out.println("sety & setx = " + (sety.intersect2(setx)));
-    java.lang.System.out.println();
+    Console.println("setx        = " + setx);
+    Console.println("sety        = " + sety);
+    Console.println("setx & sety = " + (setx.intersect(sety)));
+    Console.println("sety & setx = " + (sety.intersect(setx)));
+    Console.println("setx > 0    = " + (setx.filter(x => x > 0)));
+    Console.println("sety > 0    = " + (sety.filter(x => x > 0)));
+    Console.println("setx & sety = " + (setx.intersect2(sety)));
+    Console.println("sety & setx = " + (sety.intersect2(setx)));
+    Console.println;
   }
 }
 
@@ -364,10 +364,10 @@ object M9 {
   }
 
   def test = {
-    java.lang.System.out.println(new Rational(2,2).asString);
-    java.lang.System.out.println(new Rational(2,2).toString());
-    java.lang.System.out.println(new Rational(2,2));
-    java.lang.System.out.println();
+    Console.println(new Rational(2,2).asString);
+    Console.println(new Rational(2,2).toString());
+    Console.println(new Rational(2,2));
+    Console.println;
   }
 }
 

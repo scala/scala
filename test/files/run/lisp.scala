@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 //############################################################################
 // Lisp Scanner
 
@@ -150,15 +148,15 @@ object LispCaseClasses with Lisp {
     val prevexp = curexp;
     curexp = x;
     if (trace) {
-      for (val x <- range(1, indent)) System.out.print(" ");
-      System.out.println("===> " + x);
+      for (val x <- range(1, indent)) Console.print(" ");
+      Console.println("===> " + x);
       indent = indent + 1;
     }
     val result = eval1(x, env);
     if (trace) {
       indent = indent - 1;
-      for (val x <- range(1, indent)) System.out.print(" ");
-      System.out.println("<=== " + result);
+      for (val x <- range(1, indent)) Console.print(" ");
+      Console.println("<=== " + result);
     }
     curexp = prevexp;
     result
@@ -244,7 +242,7 @@ object LispCaseClasses with Lisp {
       if (token == "(") parseList
       else if (token == ")") error("unbalanced parentheses")
       else if ('0' <= token.charAt(0) && token.charAt(0) <= '9')
-        NUM(new java.lang.Integer(token).intValue())
+        NUM(scala.runtime.compat.Platform.parseInt(token))
       else if (token.charAt(0) == '\"' && token.charAt(token.length()-1)=='\"')
         STR(token.substring(1,token.length() - 1))
       else SYM(token)
@@ -301,7 +299,7 @@ object LispAny with Lisp {
   }
 
   def asString(x: Data): String = x match {
-    case y: java.lang.String => y
+    case y: String => y
     case _ => lispError("not a string: " + x)
   }
 
@@ -331,15 +329,15 @@ object LispAny with Lisp {
     val prevexp = curexp;
     curexp = x;
     if (trace) {
-      for (val x <- range(1, indent)) System.out.print(" ");
-      System.out.println("===> " + x);
+      for (val x <- range(1, indent)) Console.print(" ");
+      Console.println("===> " + x);
       indent = indent + 1;
     }
     val result = eval1(x, env);
     if (trace) {
       indent = indent - 1;
-      for (val x <- range(1, indent)) System.out.print(" ");
-      System.out.println("<=== " + result);
+      for (val x <- range(1, indent)) Console.print(" ");
+      Console.println("<=== " + result);
     }
     curexp = prevexp;
     result
@@ -435,7 +433,9 @@ object LispAny with Lisp {
     def parseExpr(token: String): Data = {
       if (token == "(") parseList
       else if (token == ")") error("unbalanced parentheses")
-      else if (Character.isDigit(token.charAt(0))) Integer.parseInt(token)
+      //else if (Character.isDigit(token.charAt(0)))
+      else if (scala.runtime.compat.Platform.isDigit(token.charAt(0)))
+        scala.runtime.compat.Platform.parseInt(token)
       else if (token.charAt(0) == '\"' && token.charAt(token.length()-1)=='\"')
         token.substring(1,token.length() - 1)
       else Symbol(token)
@@ -459,30 +459,30 @@ class LispUser(lisp: Lisp) {
 
   def run = {
 
-    System.out.println(string2lisp("(lambda (x) (+ (* x x) 1))").asInstanceOf[Object]);
-    System.out.println(lisp2string(string2lisp("(lambda (x) (+ (* x x) 1))")));
-    System.out.println();
+    Console.println(string2lisp("(lambda (x) (+ (* x x) 1))").asInstanceOf[Object]);
+    Console.println(lisp2string(string2lisp("(lambda (x) (+ (* x x) 1))")));
+    Console.println;
 
-    System.out.println("(    '(1 2 3)) = " + evaluate("     (quote(1 2 3))"));
-    System.out.println("(car '(1 2 3)) = " + evaluate("(car (quote(1 2 3)))"));
-    System.out.println("(cdr '(1 2 3)) = " + evaluate("(cdr (quote(1 2 3)))"));
-    System.out.println("(null? '(2 3)) = " + evaluate("(null? (quote(2 3)))"));
-    System.out.println("(null?    '()) = " + evaluate("(null?    (quote()))"));
-    System.out.println();
+    Console.println("(    '(1 2 3)) = " + evaluate("     (quote(1 2 3))"));
+    Console.println("(car '(1 2 3)) = " + evaluate("(car (quote(1 2 3)))"));
+    Console.println("(cdr '(1 2 3)) = " + evaluate("(cdr (quote(1 2 3)))"));
+    Console.println("(null? '(2 3)) = " + evaluate("(null? (quote(2 3)))"));
+    Console.println("(null?    '()) = " + evaluate("(null?    (quote()))"));
+    Console.println;
 
-    System.out.println("faculty(10) = " + evaluate(
+    Console.println("faculty(10) = " + evaluate(
       "(def (faculty n) " +
         "(if (= n 0) " +
           "1 " +
           "(* n (faculty (- n 1)))) " +
         "(faculty 10))"));
-    System.out.println("faculty(10) = " + evaluate(
+    Console.println("faculty(10) = " + evaluate(
       "(def (faculty n) " +
         "(cond " +
           "((= n 0) 1) " +
           "(else (* n (faculty (- n 1))))) " +
         "(faculty 10))"));
-    System.out.println("foobar = " + evaluate(
+    Console.println("foobar = " + evaluate(
       "(def (foo n) " +
         "(cond " +
           "((= n 0) \"a\")" +
@@ -504,7 +504,7 @@ class LispUser(lisp: Lisp) {
               "(val v3 (+ (+ (foo 3) (foo 4)) (foo 5)) " +
                 "(val v4 (foo 6) " +
                   "(cons v1 (cons v2 (cons v3 (cons v4 nil))))))))))"));
-    System.out.println();
+    Console.println;
   }
 }
 
