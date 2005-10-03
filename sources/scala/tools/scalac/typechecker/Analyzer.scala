@@ -1835,12 +1835,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
       }
     }
-    // MSIL: Forbid chaining of non-variable delegate objects using += and -=
-    if(global.target == scalac_Global.TARGET_MSIL &&
-        qual.getType().isSubType(definitions.DELEGATE_TYPE()) &&
-        (sym.name == Names.PLUSEQ || sym.name == Names.MINUSEQ) &&
-        !qual.symbol().isVariable())
-      error(tree.pos, "illegal modification of non-variable delegate");
     val qualtype =
       if (qual.isInstanceOf[Tree.Super]) context.enclClass.owner.thisType()
       else qual.getType();
@@ -2942,12 +2936,24 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
             }
 
 	    fn1.getType() match {
-	      case Type$MethodType(params, restp) =>
-                if ((mode & PATTERNmode) != 0) {
+	      case Type$MethodType(params, restp) => {
+                if ((mode & PATTERNmode) != 0)
 	          return copy.Apply(tree, fn1, args).setType(restp);
-                } else {
-		  val formals = infer.formalTypes(params, args.length);
-                  if (formals.length == args.length) {
+                if(global.target == scalac_Global.TARGET_MSIL) {
+                  fn1 match {
+                    case Tree.Select(qual, name) =>
+                      if (qual.getType().isSubType(definitions.DELEGATE_TYPE())
+                          && (name == Names.PLUSEQ || name == Names.MINUSEQ)) {
+                            val n = if (name == Names.PLUSEQ) Names.PLUS else Names.MINUS;
+                            val fun = make.Select(fn1.pos, qual, n);
+                            val rhs = copy.Apply(tree, fun, args);
+                            return transform(make.Assign(fn1.pos, qual, rhs));
+                          }
+                    case _ =>
+                  }
+                }
+	        val formals = infer.formalTypes(params, args.length);
+                if (formals.length == args.length) {
 	            var i = 0; while (i < args.length) {
 		      args(i) = adapt(args(i), argMode, formals(i));
                       args(i) match {
@@ -2965,8 +2971,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	          return constfold.tryToFold(
 		    copy.Apply(tree, fn1, args)
 		    .setType(restp));
-                }
-
+              }
 	      case _ =>
 	    }
 
