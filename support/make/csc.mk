@@ -11,18 +11,17 @@
 ##############################################################################
 # Variables
 #
-# CSC_COMPILER		 = compiler name, for example SCALAC
+# CSC_COMPILER		 = compiler name, for example CSC
 # $(CSC_COMPILER)	 = compiler command
 # $(CSC_COMPILER)_FLAGS	 = compiler-specific compilation flags
 # CSC_FLAGS		+= compilation flags
-# CSC_CLASSPATH		 = location of user class files
-# CSC_SOURCEPATH		 = location of input source files
-# CSC_BOOTCLASSPATH	 = location of bootstrap class files
-# CSC_EXTDIRS		 = location of installed extensions
-# CSC_OUTPUTDIR		 = directory where to place generated class files
+# CSC_OUTPUTFILE	 = name of the generated assembly file
+# CSC_REFERENCE		 = list of referenced assenblies
 # CSC_ENCODING		 = character encoding used by source files
 # CSC_SOURCE		 = version of source code
-# CSC_TARGET		 = version of target bytecode
+# CSC_TARGET		 = compilation target (exe, winexe, library, module)
+# CSC_DEFINE		 = defines the symbols listed by the semicolon
+#                          separated list
 # CSC_FILES		+= files to compile
 #
 # All variables may have target specific values which override the
@@ -55,10 +54,11 @@
 ##############################################################################
 # Defaults
 
-CSC_COMPILER		?= CSC
+CSC_COMPILER		?= $(MSIL_PLATFORM)_CSC
 CYGWIN_PATH		?= $(1)
 CYGWIN_FILE		?= $(1)
-CSC			?= csc
+MONO_CSC		?= mcs
+MSCLR_CSC		?= csc
 
 ##############################################################################
 # Values
@@ -82,7 +82,7 @@ csc			+= $(csc_compiler)
 csc			+= $(csc_compiler_flags)
 csc			+= $(csc_FLAGS)
 csc			+= $(csc_LIBDIR:%=/lib:$(call CYGWIN_PATH,%))
-csc			+= $(csc_REFERENCE:%=/reference:$(call CYGWIN_PATH,%))
+csc			+= $(csc_REFERENCE:%=/r:$(call CYGWIN_PATH,%))
 csc			+= $(csc_OUTPUTFILE:%=/out:$(call CYGWIN_FILE,%))
 csc			+= $(csc_ENCODING:%=/codepage:%)
 csc			+= $(csc_TARGET:%=/target:%)
@@ -97,8 +97,7 @@ CSC_LOOKUP		 = $(if $($(target)_$(1)),$($(target)_$(1)),$($(1)))
 ##############################################################################
 # Rules
 
-csc		:
-#	@[ -d "$(csc_OUTPUTDIR)" ] || $(MKDIR) -p "$(csc_OUTPUTDIR)"
+csc:
 	$(strip $(csc))
 
 .PHONY		: csc
