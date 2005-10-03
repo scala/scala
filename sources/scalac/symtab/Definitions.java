@@ -30,9 +30,6 @@ public class Definitions {
     /** The root class */
     public final Symbol ROOT_CLASS;
 
-    /** The java package */
-    public final Symbol JAVA;
-
     /** The java.lang package */
     public final Symbol JAVALANG;
 
@@ -778,12 +775,13 @@ public class Definitions {
         // create attributed tree typer
         atyper = new ATreeTyper(global, this);
 
+        final boolean forMSIL = global.target == Global.TARGET_MSIL;
+
         // the root class
         ROOT_CLASS = ClassSymbol.newRootClass(global);
 
         // the java, java.lang and scala packages
-        JAVA = getModule("java");
-        JAVALANG = getModule("java.lang");
+        JAVALANG = getModule(forMSIL ? "System" : "java.lang");
         SCALA = getModule("scala");
 
         // the top and bottom classes
@@ -794,7 +792,6 @@ public class Definitions {
         ALLREF_CLASS = newClass(SCALA_CLASS, Names.AllRef, Modifiers.ABSTRACT | Modifiers.FINAL);
         ALL_CLASS = newClass(SCALA_CLASS, Names.All, Modifiers.ABSTRACT | Modifiers.FINAL);
 
-        final boolean forMSIL = global.target == Global.TARGET_MSIL;
         // the java classes
         OBJECT_CLASS = getClass(forMSIL ? "System.Object" : "java.lang.Object");
 	STRING_CLASS = getClass(forMSIL ? "System.String" : "java.lang.String");
@@ -961,9 +958,6 @@ public class Definitions {
 	    Symbol NOTIFY_ALL =
 		newMethod(OBJECT_CLASS, Names.notifyAll, Modifiers.FINAL);
 	    initMethod(NOTIFY_ALL, Type.EMPTY_ARRAY, UNIT_TYPE());
-
-	    Symbol JLOA = newAlias(JAVALANG, Names.Object, 0);
-	    initAlias(JLOA, OBJECT_TYPE());
 	} else {
             OBJECT_CLONE = null;
         }
@@ -1035,9 +1029,6 @@ public class Definitions {
 
 	    s = newMethod(STRING_CLASS, Name.fromString("toCharArray"), 0);
 	    initMethod(s, Type.EMPTY_ARRAY, array_TYPE(CHAR_TYPE()));
-
-	    Symbol JLSA = newAlias(JAVALANG, Names.String, 0);
-	    initAlias(JLSA, STRING_TYPE());
 	}
 
         // add members to java.lang.Throwable
