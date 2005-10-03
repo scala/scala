@@ -1,11 +1,12 @@
 // bug #348
+
 trait Foo {
-  type bar <: this.Bar;
+  type bar <: Bar;
   abstract class Bar;
-  case class Baz(r:bar) extends this.Bar;
-  case object NoBar extends this.Bar;
+  case class Baz(r:bar) extends Bar;
+  case object NoBar extends Bar;
 }
-object Test extends Application {
+object Test with Application {
   object ConcreteFooBar extends Foo { // if moved to toplevel, it works
     type bar = Bar;
   }
