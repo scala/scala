@@ -212,8 +212,7 @@ object Test {
     while (!stop) {
       try {
         calibrator.f(n, n);
-        //if (n >= Integer.MAX_VALUE / 2) error("calibration failure");
-        if (n >= scala.runtime.compat.Platform.MAX_INT / 2) error("calibration failure");
+        if (n >= scala.runtime.compat.Math.MAX_INT / 2) error("calibration failure");
         n = 2 * n;
       } catch {
         case exception: StackOverflowError => stop = true
