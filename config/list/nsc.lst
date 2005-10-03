@@ -5,6 +5,7 @@
 
 CompilationUnits.scala
 CompilerCommand.scala
+CompilerRun.scala
 FatalError.scala
 Global.scala
 Interpreter.scala
@@ -70,8 +71,8 @@ transform/ExplicitOuter.scala
 transform/Flatten.scala
 transform/InfoTransform.scala
 transform/LambdaLift.scala
-transform/OverridingPairs.scala
 transform/Mixin.scala
+transform/OverridingPairs.scala
 transform/SampleTransform.scala
 transform/TailCalls.scala
 transform/Transform.scala
