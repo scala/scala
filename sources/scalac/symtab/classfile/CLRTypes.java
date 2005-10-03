@@ -92,12 +92,14 @@ public final class CLRTypes {
 	this.args = args;
 	scala.tools.util.ClassPath.addFilesInPath(
             assemrefs, args.assemrefs.value);
-	Assembly mscorlib = findAssembly("mscorlib.dll");
+	Assembly mscorlib = findAssembly("mscorlib.dll", true);
 	Type.initMSCORLIB(mscorlib);
-        findAssembly("vjscor.dll");
-	findAssembly("vjslib.dll");
-	findAssembly("scala.dll");
+        findAssembly("scala.dll", false);
 	findAllAssemblies();
+
+        if (getType("scala.Int") == null) {
+            abort("scala.dll");
+        }
 
 	BYTE    = getType("System.SByte");
 	UBYTE   = getType("System.Byte");
@@ -211,7 +213,7 @@ public final class CLRTypes {
 
     /** Load the assembly with the given name
      */
-    private Assembly findAssembly(String name) {
+    private Assembly findAssembly(String name, boolean required) {
 	// see if the assembly is referenced directly
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
 	    File file = (File)assems.next();
@@ -247,10 +249,11 @@ public final class CLRTypes {
 		return assem;
 	    }
 	}
-	//the Global instance is not yet constructed; use the Reporter from args
-	args.reporter().error(null, "cannot find assembly " + name +
-			      "; use the -r option to specify its location");
-	throw Debug.abort();
+
+        if (required)
+            abort(name);
+
+        return null;
     }
 
     /** Load the rest of the assemblies specified with the '-r' option
@@ -267,6 +270,13 @@ public final class CLRTypes {
 	    assems.remove();
 	}
 	assert assemrefs.isEmpty();
+    }
+
+    private void abort(String name) {
+	//the Global instance is not yet constructed; use the Reporter from args
+        args.reporter().error(null, "cannot find assembly " + name +
+                              "; use the -r option to specify its location");
+        throw Debug.abort();
     }
 
     //##########################################################################
