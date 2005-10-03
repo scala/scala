@@ -3,6 +3,7 @@
 ##############################################################################
 # $Id$
 
+_trait_.scala
 AnyVal.java
 Application.scala
 Array.java
