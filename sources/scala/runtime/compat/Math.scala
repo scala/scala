@@ -17,5 +17,5 @@ object Math {
 
   def log(x: Double): Double = Math.log(x);
   def max(x: Int, y: Int): Int = Math.max(x, y);
-  def sqrt(x: Double): Double = Math.sqrt(s);
+  def sqrt(x: Double): Double = Math.sqrt(x);
 }
