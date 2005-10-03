@@ -468,10 +468,11 @@ endif
 # Targets - scala library
 
 LIBRARY_MSIL_ROOT	 = $(LIBRARY_ROOT)
-LIBRARY_MSIL_LIST	+= $(call READLIST,$(PROJECT_LISTDIR)/library-msil.lst)
-LIBRARY_MSIL_SOURCES	+= $(LIBRARY_MSIL_LIST:%=$(LIBRARY_MSIL_ROOT)/%)
+LIBRARY_MSIL_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/library-msil.lst)
+LIBRARY_MSIL_SOURCES	 = $(LIBRARY_MSIL_LIST:%=$(LIBRARY_MSIL_ROOT)/%)
 MSIL_SRCDIR		 = $(PROJECT_SOURCEDIR)/msil
-MSIL_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/msil
+#MSIL_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/msil
+MSIL_OBJECTDIR		 = .
 
 ASSEMBLY_INFO		 = $(MSIL_SRCDIR)/AssemblyInfo.cs
 ASSEMBLY_INFO_TMPL	 = $(MSIL_SRCDIR)/AssemblyInfo.cs.tmpl
@@ -484,31 +485,37 @@ SCALA_PART2_IL_DIFF_TMPL = $(MSIL_OBJECTDIR)/$(SCALA_PART2_IL_DIFF).tmpl
 SCALA_DLL		 = $(MSIL_OBJECTDIR)/scala.dll
 SCALA_IL		 = $(MSIL_OBJECTDIR)scala.il
 
-LIBRARY_MSIL_CSC_FILES	+= $(filter %.cs,$(LIBRARY_MSIL_SOURCES)) $(ASSEMBLY_INFO)
-LIBRARY_MSIL_CSC_TARGET += library
-LIBRARY_MSIL_CSC_OUTPUTFILE += $(SCALA_PART1_DLL)
+LIBRARY_MSIL_CSC_FILES	 = $(filter %.cs,$(LIBRARY_MSIL_SOURCES)) $(ASSEMBLY_INFO)
+LIBRARY_MSIL_CSC_TARGET  = library
+LIBRARY_MSIL_CSC_OUTPUTFILE = $(SCALA_PART1_DLL)
 LIBRARY_MSIL_CSC_KEYFILE = $(MSIL_KEYFILE)
+LIBRARY_MSIL_CSC_FLAGS	 = /nologo /warn:0
 
-LIBRARY_MSIL_SC_FILES	+= $(filter %.scala,$(LIBRARY_MSIL_SOURCES))
-LIBRARY_MSIL_SC_FLAGS	+= -r $(call CYGWIN_PATH,$(SCALA_PART1_DLL):$(ROOT)/lib)
+LIBRARY_MSIL_SC_FILES	 = $(filter %.scala,$(LIBRARY_MSIL_SOURCES))
+LIBRARY_MSIL_SC_FLAGS	 = -r $(call CYGWIN_PATH,$(SCALA_PART1_DLL):$(ROOT)/lib)
 LIBRARY_MSIL_SC_FLAGS	+= -o $(SCALA_PART2) -g
 LIBRARY_MSIL_SC_TARGET	 = msil
+SN			 = sn
 
 $(latest)library-msil	: $(latest)library-msil-sc
 $(latest)library-msil	:
 	$(TOUCH) $@
 
+MSIL_PLATFORM		?= MONO
+
+MSCLR_ILASM_FLAGS	 = /nol /qui /debug
+MSCLR_ILDASM_FLAGS	 = /text /source /lin
+
 $(latest)library-msil-csc: $(LIBRARY_MSIL_CSC_FILES) $(ASSEMBLY_INFO)
 	@[ -d "$(MSIL_OBJECTDIR)" ] || $(MKDIR) -p "$(MSIL_OBJECTDIR)"
 	@$(make) csc target=LIBRARY_MSIL
-	$(ILDASM) /lin /out=$(SCALA_PART1_IL).tmp $(SCALA_PART1_DLL)
+	@$(make) ildasm ILDASM_OUTPUTFILE=$(SCALA_PART1_IL).tmp ILDASM_FILES=$(SCALA_PART1_DLL)
 	$(CAT) $(SCALA_PART1_IL).tmp | $(DOS2UNIX)| \
 	    $(SED) -e "s/\(int16\|int32\|int64\|float32\|float64\)[ ]*dummy//" \
 	    -e "s/__/\$$/g" \
 	    -e "s/box\$$array/box__array/g" \
 	    -e "s/[ \t]*$$//" > $(SCALA_PART1_IL)
-#	$(ILASM) /nol /qui /deb /dll /out=$(SCALA_PART1_DLL) $(SCALA_PART1_IL)
-	$(ILASM) $(ILASM_FLAGS) /out=$(SCALA_PART1_DLL) $(SCALA_PART1_IL)
+	@$(make) ilasm ILASM_FLAGS='/dll' ILASM_OUTPUTFILE=$(SCALA_PART1_DLL) ILASM_FILES=$(SCALA_PART1_IL)
 	$(TOUCH) $@
 
 $(ASSEMBLY_INFO)	: $(ASSEMBLY_INFO_TMPL) $(VERSION_FILE)
@@ -518,18 +525,19 @@ $(latest)library-msil-sc: $(SCALA_DLL)
 	$(TOUCH) $@
 
 $(SCALA_DLL)		: $(SCALA_IL)
-	$(ILASM) $(ILASM_FLAGS) /out=$(SCALA_DLL) $(SCALA_IL)
+	@$(make) ilasm ILASM_FLAGS='/dll' ILASM_OUTPUTFILE=$(SCALA_DLL) ILASM_FILES=$(SCALA_IL)
 	$(SN) -R $(SCALA_DLL) $(MSIL_KEYFILE)
+
 
 $(SCALA_IL)		: $(SCALA_PART2_IL)
 	$(CAT) $(SCALA_PART1_IL) $(SCALA_PART2_IL) |\
-	  $(SED) "s/assembly scala_part1/assembly scala/" > $@
+	    $(SED) "s/assembly scala_part1/assembly scala/" > $@
 
-$(SCALA_PART2_IL)	: $(latest)library-msil-csc $(LIBRARY_MSIL_SC_FILES) \
-			  $(SCALA_PART2_IL_DIFF)
+$(SCALA_PART2_IL)	: $(latest)library-msil-csc $(LIBRARY_MSIL_SC_FILES)
+$(SCALA_PART2_IL)	: $(SCALA_PART2_IL_DIFF)
 	@$(make) sc target=LIBRARY_MSIL
 	$(DOS2UNIX) $(SCALA_PART2_IL)
-	patch -o $(SCALA_PART2_IL).new $(SCALA_PART2_IL) $(SCALA_PART2_IL_DIFF)
+	$(PATCH) -o $(SCALA_PART2_IL).new $(SCALA_PART2_IL) $(SCALA_PART2_IL_DIFF)
 	$(SED) -e "s/\[scala_part1\]//g" $(SCALA_PART2_IL).new > $@
 
 $(SCALA_PART2_IL_DIFF)	: $(SCALA_PART2_IL_DIFF_TMPL) $(VERSION_FILE)
@@ -927,6 +935,8 @@ include $(PROJECT_SUPPORTDIR)/make/jar.mk
 include $(PROJECT_SUPPORTDIR)/make/sc.mk
 include $(PROJECT_SUPPORTDIR)/make/sdc.mk
 include $(PROJECT_SUPPORTDIR)/make/csc.mk
+include $(PROJECT_SUPPORTDIR)/make/ilasm.mk
+include $(PROJECT_SUPPORTDIR)/make/ildasm.mk
 
 ##############################################################################
 # Beta code
