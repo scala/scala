@@ -26,12 +26,12 @@ import org.apache.tools.ant.util.GlobPatternMapper;
 import org.apache.tools.ant.util.SourceFileScanner;
 import org.apache.tools.ant.types.Reference;
 
+import scala.tools.scalac.CompilerPhases$class;
+import scala.tools.scalac.Global$class;
 import scala.tools.util.ConsoleReporter;
 import scala.tools.util.Reporter;
 import scala.tools.util.Timer;
 import scala.tools.util.debug.AbortError;
-import scala.tools.scalac.CompilerPhases$class;
-import scala.tools.scalac.Global$class;
 import scalac.CompilationUnit;
 import scalac.CompilerCommand;
 
