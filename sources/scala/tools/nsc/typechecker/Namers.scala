@@ -16,8 +16,10 @@ trait Namers: Analyzer {
 
   def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
     if (settings.debug.value) log("overwriting " + sym);
+    val lockedFlag = sym.flags & LOCKED;
+    sym.reset(NoType);
     sym setPos pos;
-    sym.flags = mods | sym.flags & LOCKED;
+    sym.flags = mods | lockedFlag;
     if (sym.isModule)
       updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
     if (sym.owner.isPackageClass && sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader])
@@ -352,11 +354,15 @@ trait Namers: Analyzer {
 	  case ModuleDef(_, _, impl) =>
 	    val clazz = sym.moduleClass;
             clazz.setInfo(new Namer(context.make(tree, clazz)).templateSig(impl));
+            //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
             clazz.tpe;
 
 	  case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-	    checkContractive(sym,
-	      new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs))
+	    if (sym.isConstructor) sym.owner.setFlag(INCONSTRUCTOR);
+	    val result =
+	      new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
+	    if (sym.isConstructor) sym.owner.resetFlag(INCONSTRUCTOR);
+	    checkContractive(sym, result)
 
 	  case ValDef(_, _, tpt, rhs) =>
             if (tpt.isEmpty)

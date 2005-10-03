@@ -16,8 +16,9 @@ trait TypeStacks: ICodes {
   /* This class simulates the type of the opperand
    * stack of the ICode.
    */
+  type Rep = List[TypeKind];
+
   class TypeStack {
-    type Rep = List[TypeKind];
 
     var types: Rep = Nil;
 

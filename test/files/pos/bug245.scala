@@ -1,8 +1,8 @@
-class Value {
-  def coerce: Int = 0;
-}
+class Value {}
 
 object Test {
+
+  implicit def view(v: Value): int = 0;
 
   def foo(i: Int): Int = 0;
 

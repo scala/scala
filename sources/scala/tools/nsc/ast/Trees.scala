@@ -50,7 +50,7 @@ import symtab.Flags._;
       case _ => false
     }
 
-    def duplicate: Tree = duplicator transform this;
+    def duplicate: this.type = (duplicator transform this).asInstanceOf[this.type];
 
     def copyAttrs(tree: Tree): this.type = {
       pos = tree.pos;
@@ -1047,6 +1047,7 @@ import symtab.Flags._;
       stats foreach (stat =>
 	if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(traverse(stat))
 	else traverse(stat));
+    def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
 
     def atOwner(owner: Symbol)(traverse: => unit): unit = {
       val prevOwner = currentOwner;
@@ -1062,7 +1063,7 @@ import symtab.Flags._;
       if (tree.tpe != null) tree.tpe = typeSubst(tree.tpe);
       super.traverse(tree)
     }
-    def apply(tree: Tree): Tree = { val tree1 = tree.duplicate; traverse(tree1); tree1 }
+    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
   }
 
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Traverser {
@@ -1077,7 +1078,7 @@ import symtab.Flags._;
       if (tree.hasSymbol) subst(from, to);
       super.traverse(tree)
     }
-    def apply(tree: Tree): Tree = { val tree1 = tree.duplicate; traverse(tree1); tree1 }
+    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {

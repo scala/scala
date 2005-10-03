@@ -6,6 +6,7 @@
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.Position;
+import nsc.util.ListBuffer;
 import Flags._;
 
 /* A standard type pattern match:
@@ -551,7 +552,62 @@ import Flags._;
 	try {
           if (util.Statistics.enabled) compoundClosureCount = compoundClosureCount + 1;
           //System.out.println("computing closure of " + symbol.tpe + " " + parents);//DEBUG
-          addClosure(symbol.tpe, glbArray(parents map (.closure)));
+          val buf = new ListBuffer[Type];
+          buf += symbol.tpe;
+          var clSize = 1;
+          val nparents = parents.length;
+          if (nparents != 0) {
+            val pclosure = new Array[Array[Type]](nparents);
+            val index = new Array[int](nparents);
+            var i = 0;
+            for (val p <- parents) {
+              pclosure(i) = p.closure;
+              index(i) = 0;
+              i = i + 1
+            }
+            val limit = pclosure(0).length;
+            while (index(0) != limit) {
+              var minSym: Symbol = pclosure(0)(index(0)).symbol;
+              i = 1;
+              while (i < nparents) {
+                if (pclosure(i)(index(i)).symbol isLess minSym)
+                  minSym = pclosure(i)(index(i)).symbol;
+                i = i + 1
+              }
+              var minTypes: List[Type] = List();
+              i = 0;
+              while (i < nparents) {
+                val tp = pclosure(i)(index(i));
+                if (tp.symbol == minSym) {
+                  if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes;
+                  index(i) = index(i) + 1
+                }
+                i = i + 1
+              }
+              buf += intersectionType(minTypes);
+              clSize = clSize + 1;
+            }
+            i = 0;
+            while (i < nparents) {
+              assert(index(i) == pclosure(i).length);
+              i = i + 1
+            }
+          }
+          closureCache = new Array[Type](clSize);
+          buf.copyToArray(closureCache, 0);
+          //System.out.println("closureCache of " + symbol.tpe + " = " + List.fromArray(closureCache));//DEBUG
+          var j = 0;
+          while (j < clSize) {
+            closureCache(j) match {
+              case RefinedType(parents, decls) =>
+                assert(decls.isEmpty);
+                closureCache(j) = glb(parents)
+              case _ =>
+            }
+            j = j + 1
+          }
+          //System.out.println("closure of " + symbol.tpe + " = " + List.fromArray(closureCache));//DEBUG
+          closureCache
 	} catch {
           case ex: MalformedClosure =>
             throw new MalformedType(

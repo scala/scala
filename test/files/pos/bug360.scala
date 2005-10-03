@@ -3,7 +3,7 @@
 abstract class Bug360A: Bug360C {
   def f: String = "hello";
 }
-abstract class Bug360B: Bug360C {
+trait Bug360B: Bug360C {
   object d {
     System.out.println(f);
   }

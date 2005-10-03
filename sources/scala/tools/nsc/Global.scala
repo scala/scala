@@ -360,6 +360,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	    symData -= sym.linkedSym;
 	    writeSymblFile(sym, pickled)
 	  }
+	  resetPackageClass(sym.owner);
 	}
       } else {
 	for (val Pair(sym, file) <- symSource.elements) {
@@ -396,6 +397,14 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       } catch {
 	case ex: IOException => error(ex.getMessage());
       }
+
+    private def resetPackageClass(pclazz: Symbol): unit = {
+      assert(pclazz.isPackageClass, pclazz);
+      atPhase(firstPhase) {
+	pclazz.setInfo(atPhase(typerPhase)(pclazz.info))
+      }
+      if (!pclazz.isRoot) resetPackageClass(pclazz.owner);
+    }
   }
 
   def showDef(name: Name, module: boolean): unit = {

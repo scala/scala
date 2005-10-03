@@ -62,10 +62,9 @@ abstract class Constructors extends Transform {
 	}
       }
 
-      def intoConstructor(oldowner: Symbol, tree: Tree) = {
-        new ChangeOwnerTraverser(oldowner, constr.symbol).traverse(tree);
-        intoConstructorTransformer.transform(tree)
-      }
+      def intoConstructor(oldowner: Symbol, tree: Tree) =
+	intoConstructorTransformer.transform(
+          new ChangeOwnerTraverser(oldowner, constr.symbol)(tree));
 
       def mkAssign(to: Symbol, from: Tree): Tree =
 	atPos(to.pos) {

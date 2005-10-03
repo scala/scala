@@ -141,6 +141,8 @@ object Predef {
 
   // views -------------------------------------------------------------
 
+  implicit def identity[a](x: a): a = x;
+
   implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
     def self: Any = x;
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
@@ -294,8 +296,6 @@ object Predef {
     }
   }
   def view(x: String): Ordered[String] = string2ordered(x);
-
-  implicit def ordered2ordered[a <: Ordered[a]](x: a): Ordered[a] = x;
 
   implicit def array2seq[A](xs: Array[A]): Seq[A] = new Seq[A] {
     def length = xs.length;

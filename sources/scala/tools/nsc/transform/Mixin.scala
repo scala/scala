@@ -237,17 +237,12 @@ abstract class Mixin extends InfoTransform {
         case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)
         if (stat.symbol hasFlag SUPERACCESSOR) =>
           assert(stat.symbol hasFlag MIXEDIN, stat);
-          val rhs1 =
-            postTransform {
-              localTyper.typed {
-                atPos(stat.pos) {
-                  Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
-                        vparams map (vparam => Ident(vparam.symbol)))
-                }
-              }
-            }
-          //System.out.println("complete super acc " + stat.symbol + stat.symbol.locationString + " " + rhs1 + " " + stat.symbol.alias + stat.symbol.alias.locationString);//DEBUG
-          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, localTyper.typed(rhs1))
+          val rhs0 =
+            Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
+                  vparams map (vparam => Ident(vparam.symbol)));
+          if (settings.debug.value) log("complete super acc " + stat.symbol + stat.symbol.locationString + " " + rhs0 + " " + stat.symbol.alias + stat.symbol.alias.locationString);//debug
+	  val rhs1 = postTransform(localTyper.typed(atPos(stat.pos)(rhs0)));
+          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs1)
         case _ =>
           stat
       }
@@ -306,7 +301,8 @@ abstract class Mixin extends InfoTransform {
 	    }
           } else if (qual.isInstanceOf[Super] && (sym.owner hasFlag lateINTERFACE)) {
             val sym1 = atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass));
-            assert(sym1 != NoSymbol, sym);
+	    if (sym1 == NoSymbol)
+              assert(false, "" + sym + " " + sym.owner + " " + sym.owner.implClass + " " + sym.owner.owner + atPhase(phase.prev)(sym.owner.owner.info.decls.toList));//debug
             localTyper.typed {
               atPos(tree.pos) {
                 Apply(staticRef(sym1), gen.This(currentOwner.enclClass) :: args)

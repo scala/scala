@@ -4,7 +4,7 @@ abstract class Foo {
   }
   def foo: Inner;
 }
-abstract class Bar {
+trait Bar {
   type Inner;
   def foo: Inner = foo;
 }

@@ -1,6 +1,6 @@
 // $Id$
 
-class Bug361Global with Bug361Trees;
+class Bug361Global extends Bug361Trees;
 
 abstract class Bug361Trees: Bug361Global {
 

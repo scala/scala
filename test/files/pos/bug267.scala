@@ -17,7 +17,7 @@ trait Base {
   }
 }
 
-object testBase extends Base with Application {
+object testBase extends Application with Base {
   type exp = Exp;
   val term = new Num(2);
   System.out.println(term.eval);
@@ -41,7 +41,7 @@ trait Show extends Base {
   trait Exp1 extends Exp {
     def show: String;
   }
-  class Num1(v: int): exp extends Num(v) with Exp1 {
+  class Num1(v: int): (exp with Num1) extends Num(v) with Exp1 {
     def show = value.toString();
   }
 }
@@ -49,7 +49,7 @@ trait Show extends Base {
 /** Operation extension: An extension of `BasePlus' with 'show' methods.
  */
 trait ShowPlus extends BasePlus with Show {
-  class Plus1(l: exp, r: exp): exp extends Plus(l, r) with Exp1 {
+  class Plus1(l: exp, r: exp): (exp with Plus1) extends Plus(l, r) with Exp1 {
     def show = left.show + " + " + right.show
   }
 }

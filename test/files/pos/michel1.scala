@@ -4,6 +4,6 @@ class A[Ta] (a : Ta) {
 
 trait C {}
 
-class B[Tb] (b : Tb) extends C with A[Tb] (b) {
+class B[Tb] (b : Tb) extends A[Tb] (b) with C {
   def g = 2
 }

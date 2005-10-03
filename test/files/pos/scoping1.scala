@@ -1,4 +1,4 @@
-object This with Application {
+object This extends Application {
      trait A {
          def foo(): unit;
      }

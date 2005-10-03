@@ -138,7 +138,7 @@ trait Test3A[T] {
   def fun: T = fun;
 }
 
-class Test3B with Test3A[Test3Foo];
+class Test3B extends Test3A[Test3Foo];
 
 trait Test3M extends Test3A[Test3Foo] {
   override def fun: Test3Foo = super.fun;

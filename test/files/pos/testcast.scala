@@ -15,7 +15,7 @@ class B1 {
 }
 
 object C {
-  def view(x: A): B1 = null;
+  implicit def view(x: A): B1 = null;
 }
 object Test {
   import C.view;

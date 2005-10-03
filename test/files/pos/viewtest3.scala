@@ -10,7 +10,7 @@ object Empty extends Tree[All] {
   def elements: List[All] = List();
 }
 
-class Node[+a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
+class Node[a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
   def insert[b >: a <% Ordered[b]](x: b): Tree[b] =
     if (x == elem) this
     else if (x < elem) new Node(elem, l insert x, r)

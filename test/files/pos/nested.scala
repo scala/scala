@@ -12,11 +12,13 @@ class A(pa : Int) {
   }
 }
 
-class M(x : Int) {
+trait M {
+  val x : Int;
   def m1 = x
 }
 
-class A1(x : Int) extends A(x) with M(x) {
+class A1(x0 : Int) extends A(x0) with M {
+  val x = x0;
   class D() extends B(42) {
     val c2 = new C(66);
     class E() extends C(5) {

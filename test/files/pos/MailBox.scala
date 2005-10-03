@@ -8,7 +8,7 @@ class MailBox {
     var next: LinkedList[a] = null;
   }
 
-  def insert[a](l: LinkedList[a], x: a): LinkedList[a] = {
+  private def insert[a](l: LinkedList[a], x: a): LinkedList[a] = {
     l.next = new LinkedList[a];
     l.next.elem = x;
     l.next.next = l.next;
@@ -32,7 +32,7 @@ class MailBox {
       r = r1; r1 = r1.next;
     }
     if (r1 != null) {
-      r.next = r1.next; r1.elem.msg = msg; r1.elem.notify;
+      r.next = r1.next; r1.elem.msg = msg; r1.elem.notify();
     } else {
       lastSent = insert(lastSent, msg);
     }

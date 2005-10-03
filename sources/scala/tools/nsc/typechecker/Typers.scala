@@ -33,6 +33,17 @@ import collection.mutable.HashMap;
     superDefs.clear;
   }
 
+  val resetAttrs = new Traverser {
+    override def traverse(tree: Tree): unit = tree match {
+      case EmptyTree | TypeTree() =>
+	;
+      case _ =>
+	if (tree.hasSymbol) tree.symbol = NoSymbol;
+	tree.tpe = null;
+	super.traverse(tree)
+    }
+  }
+
   def newTyper(context: Context): Typer = new Typer(context);
 
   class Typer(context0: Context) {
@@ -291,7 +302,6 @@ import collection.mutable.HashMap;
       if ((mode & EXPRmode) != 0 && sym == ByNameParamClass) => // (2)
 	adapt(tree setType arg, mode, pt);
       case PolyType(tparams, restpe) if ((mode & TAPPmode) == 0) => // (3)
-	if (settings.debug.value && tree.symbol != null) log("adapting " + tree + " " + tree.symbol.tpe + " " + tree.symbol.getClass() + " " + tree.symbol.hasFlag(CASE));//debug
 	val tparams1 = cloneSymbols(tparams);
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
@@ -303,7 +313,9 @@ import collection.mutable.HashMap;
       case mt: MethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
 	                      isCompatible(tree.tpe, pt)) => // (4.2)
 	if (tree.symbol.isConstructor) errorTree(tree, "missing arguments for " + tree.symbol)
-	else typed(etaExpand(tree), mode, pt)
+	else {
+	  typed(etaExpand(tree), mode, pt)
+	}
       case _ =>
 	if (tree.isType) {
 	  val clazz = tree.tpe.symbol;
@@ -348,7 +360,7 @@ import collection.mutable.HashMap;
 	    val tparams = context.undetparams;
 	    context.undetparams = List();
 	    inferExprInstance(tree, tparams, pt);
-	    tree
+	    adapt(tree, mode, pt)
 	} else if (tree.tpe <:< pt) {
 	  tree
 	} else {
@@ -366,8 +378,10 @@ import collection.mutable.HashMap;
               }
 	      if (context.reportGeneralErrors) { // (13); the condition prevents chains of views
 	        val coercion = inferView(tree.pos, tree.tpe, pt, true);
-	        if (coercion != EmptyTree)
+	        if (coercion != EmptyTree) {
+		  if (settings.debug.value) log("inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe);
 		  return typed(Apply(coercion, List(tree)) setPos tree.pos, mode, pt);
+		}
 	      }
             }
             if (settings.debug.value) log("error tree = " + tree);
@@ -676,9 +690,12 @@ import collection.mutable.HashMap;
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt);
       val block1 = copy.Block(block, stats1, expr1)
         setType (if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst);
-      if (block1.tpe.symbol.isAnonymousClass)
-	block1 setType intersectionType(block1.tpe.parents, block1.tpe.symbol.owner);
-      if (isFullyDefined(pt)) block1 else checkNoEscaping.locals(context.scope, block1)
+      if (isFullyDefined(pt)) block1
+      else {
+	if (block1.tpe.symbol.isAnonymousClass)
+	  block1 setType intersectionType(block1.tpe.parents, block1.tpe.symbol.owner);
+	checkNoEscaping.locals(context.scope, block1)
+      }
     }
 
     def typedCase(cdef: CaseDef, pattpe: Type, pt: Type): CaseDef = {
@@ -762,18 +779,13 @@ import collection.mutable.HashMap;
 	  case Match(_, cases) =>
 	    val substParam = new TreeSymSubstituter(List(vparams.head.symbol), List(idparam));
 	    def transformCase(cdef: CaseDef): CaseDef =
-	      CaseDef(substParam(cdef.pat.duplicate),
-		      substParam(cdef.guard.duplicate),
-		      Literal(true));
-            val result =
-	      if (cases exists treeInfo.isDefaultCase) Literal(true)
-	      else
-                Match(
-	          Ident(idparam),
-	          (cases map transformCase) :::
-		    List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))));
-            new ChangeOwnerTraverser(applyMethod, isDefinedAtMethod).traverse(result);
-            result
+	      resetAttrs(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)));
+	    if (cases exists treeInfo.isDefaultCase) Literal(true)
+	    else
+              Match(
+	        Ident(idparam),
+	        (cases map transformCase) :::
+		   List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
 	}
 	members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
       }
@@ -820,7 +832,6 @@ import collection.mutable.HashMap;
           if (tparams.length == args.length) {
             val targs = args map (.tpe);
             checkBounds(tree.pos, tparams, targs, "");
-	    if (settings.debug.value) log("type app " + tparams + " => " + targs + " = " + restpe.subst(tparams, targs));//debug
 	    copy.TypeApply(tree, fun, args) setType restpe.subst(tparams, targs);
           } else {
             errorTree(tree, "wrong number of type parameters for " + treeSymTypeMsg(fun))
@@ -935,10 +946,12 @@ import collection.mutable.HashMap;
 	}
         if (sym.info == NoType) {
           if (settings.debug.value) log("qual = " + qual + ":" + qual.tpe + "\nSymbol=" + qual.tpe.symbol + "\nsymbol-info = " + qual.tpe.symbol.info + "\nscope-id = " + qual.tpe.symbol.info.decls.hashCode() + "\nmembers = " + qual.tpe.members + "\nfound = " + sym);
-          errorTree(tree,
-	    decode(name) + " is not a member of " + qual.tpe.widen +
-	    (if (Position.line(tree.pos) > Position.line(qual.pos))
-	      "\npossible cause: maybe a semicolon is missing before `" + name + "'?" else ""))
+          if (!qual.tpe.isError)
+            error(tree.pos,
+	      decode(name) + " is not a member of " + qual.tpe.widen +
+	      (if (Position.line(tree.pos) > Position.line(qual.pos))
+	        "\npossible cause: maybe a semicolon is missing before `" + name + "'?" else ""));
+          setError(tree)
         } else {
 	  val tree1 = tree match {
 	    case Select(_, _) => copy.Select(tree, qual, name)
@@ -1417,7 +1430,7 @@ import collection.mutable.HashMap;
 	  tree = typed1(tree, EXPRmode, pt);
 	  if (settings.debug.value) log("typed implicit " + tree + ":" + tree.tpe + ", pt = " + pt);//debug
 	  val tree1 = adapt(tree, EXPRmode, pt);
-	  if (settings.debug.value) log("adapted implicit " + tree.symbol + ":" + info.sym);//debug
+	  if (settings.debug.value) log("adapted implicit " + tree.symbol + ":" + tree1.tpe + " to " + pt);//debug
 	  if (info.sym == tree.symbol) tree1
           else fail("syms differ: " + tree.symbol + " " + info.sym)
 	} catch {
@@ -1430,10 +1443,11 @@ import collection.mutable.HashMap;
       if (util.Statistics.enabled) implcnt = implcnt + 1;
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
 
-      def isBetter(sym1: Symbol, tpe1: Type, sym2: Symbol, tpe2: Type): boolean =
+      def isBetter(sym1: Symbol, tpe1: Type, sym2: Symbol, tpe2: Type): boolean = {
+	System.out.println("is better " + sym1 + ":" + tpe1 + " than " + sym2 + ":" + tpe2);
         sym2.isError ||
 	(sym1.owner != sym2.owner) && (sym1.owner isSubClass sym2.owner) && (tpe1 matches tpe2);
-
+      }
       val tc = newTyper(context.makeImplicit(reportAmbiguous));
 
       def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], local: boolean): Tree = {
@@ -1458,7 +1472,7 @@ import collection.mutable.HashMap;
 		      pos,
 		      "ambiguous implicit value:\n" +
 		      " both " + is0.head.sym + is0.head.sym.locationString + " of type " + tree.tpe +
-		      "\n and" + is.head.sym + is.head.sym.locationString + " of type " + tree1.tpe +
+		      "\n and " + is.head.sym + is.head.sym.locationString + " of type " + tree1.tpe +
 		      (if (isView)
 			"\n are possible conversion functions from " +
 		       pt.typeArgs(0) + " to " + pt.typeArgs(1)

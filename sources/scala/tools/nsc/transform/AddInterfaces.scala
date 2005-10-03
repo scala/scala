@@ -45,7 +45,7 @@ abstract class AddInterfaces extends InfoTransform {
     case None =>
       atPhase(currentRun.erasurePhase) {
         val implName = nme.implClassName(iface.name);
-        var impl = if (iface.owner.isClass) iface.owner.info.decls.lookup(implName) else NoSymbol;
+        var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol;
         if (impl == NoSymbol) {
           impl = iface.cloneSymbolImpl(iface.owner);
           impl.name = implName;
@@ -55,7 +55,7 @@ abstract class AddInterfaces extends InfoTransform {
         impl.flags = iface.flags & ~(INTERFACE | lateINTERFACE);
 	impl setInfo new LazyImplClassType(iface);
         implClassMap(iface) = impl;
-        if (settings.debug.value) log("generating impl class " + impl);
+        if (settings.debug.value) log("generating impl class " + impl + " in " + iface.owner);//debug
         impl
       }
   }
@@ -154,8 +154,7 @@ abstract class AddInterfaces extends InfoTransform {
     implMethodMap.get(ifaceMethod) match {
       case Some(implMethod) =>
         tree.symbol = implMethod;
-        new ChangeOwnerAndReturnTraverser(ifaceMethod, implMethod).traverse(tree);
-        tree
+        new ChangeOwnerAndReturnTraverser(ifaceMethod, implMethod)(tree)
       case None =>
         throw new Error("implMethod missing for " + ifaceMethod)
     }
@@ -169,9 +168,8 @@ abstract class AddInterfaces extends InfoTransform {
     val templ1 = Template(templ.parents, templ.body map implMemberDef)
       setPos templ.pos
       setSymbol clazz.newLocalDummy(templ.pos);
-    new ChangeOwnerTraverser(templ.symbol.owner, clazz).traverse(templ1);
-    new ChangeOwnerTraverser(templ.symbol, templ1.symbol).traverse(templ1);
-    templ1
+    new ChangeOwnerTraverser(templ.symbol.owner, clazz)(
+      new ChangeOwnerTraverser(templ.symbol, templ1.symbol)(templ1))
   }
 
   def implClassDefs(trees: List[Tree]): List[Tree] = {

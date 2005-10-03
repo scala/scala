@@ -1746,6 +1746,7 @@ import Tokens._;
             accept(LBRACE);
             val t =  makePackaging(pkg, topStatSeq());
             accept(RBRACE);
+	    if (in.token == SEMI) in.nextToken();
 	    t
           }
         } else {

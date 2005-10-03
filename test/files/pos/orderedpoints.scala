@@ -1,3 +1,5 @@
+package test;
+
 class Point1(x: int) extends Object with Ordered[Point1] {
   val xCoord = x;
   def compareTo [b >: Point1 <% Ordered[b]](that: b): int = that match {
@@ -5,7 +7,8 @@ class Point1(x: int) extends Object with Ordered[Point1] {
     case _ => -that.compareTo(this)
   }
 }
-class Point2(x: int, y: int) extends Point1(x) with Ordered[Point2] {
+class Point2(x: int, y: int) extends Point1(x) with Ordered[Point2] {}
+/*
   val yCoord = y;
   override def compareTo [b >: Point2 <% Ordered[b]](that: b): int = that match {
     case that1: Point2 =>
@@ -14,7 +17,7 @@ class Point2(x: int, y: int) extends Point1(x) with Ordered[Point2] {
     case _ => -that.compareTo(this)
   }
 }
-object Test with Application {
+object Test extends Application {
   val p1 = new Point1(1);
   val q1 = new Point1(2);
   System.out.println(p1 < q1);
@@ -24,3 +27,4 @@ object Test with Application {
   System.out.println(p1 < q2);
   System.out.println(p2 < q1);
 }
+*/

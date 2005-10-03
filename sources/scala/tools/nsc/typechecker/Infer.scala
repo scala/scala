@@ -56,6 +56,7 @@ package scala.tools.nsc.typechecker;
     case WildcardType | NoType =>
       throw new NoInstance("undetermined type");
     case TypeVar(origin, constr) =>
+      assert(constr.inst != null);//debug
       if (constr.inst != NoType) instantiate(constr.inst)
       else throw new DeferredNoInstance(() =>
 	"no unique instantiation of type variable " + origin + " could be found");
@@ -108,23 +109,23 @@ package scala.tools.nsc.typechecker;
 	    if (bound.symbol != AnyClass) {
 	      tvar.constr.hibounds =
 		bound.subst(tparams, tvars) :: tvar.constr.hibounds;
-	      for (val tparam2 <- tparams)
-		if (tparam2.info.bounds.lo =:= tparam.tpe)
-		  tvar.constr.hibounds =
-		    tparam2.tpe.subst(tparams, tvars) :: tvar.constr.hibounds;
 	    }
+	    for (val tparam2 <- tparams)
+	      if (tparam2.info.bounds.lo =:= tparam.tpe)
+		tvar.constr.hibounds =
+		  tparam2.tpe.subst(tparams, tvars) :: tvar.constr.hibounds;
 	  } else {
 	    if (bound.symbol != AllClass && bound.symbol != tparam) {
 	      tvar.constr.lobounds =
 		bound.subst(tparams, tvars) :: tvar.constr.lobounds;
-	      for (val tparam2 <- tparams)
-		if (tparam2.info.bounds.hi =:= tparam.tpe)
-		  tvar.constr.lobounds =
-		    tparam2.tpe.subst(tparams, tvars) :: tvar.constr.lobounds;
 	    }
+	    for (val tparam2 <- tparams)
+	      if (tparam2.info.bounds.hi =:= tparam.tpe)
+		tvar.constr.lobounds =
+		  tparam2.tpe.subst(tparams, tvars) :: tvar.constr.lobounds;
 	  }
-	  tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
 	}
+	tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
       }
     }
     for (val Pair(tvar, Pair(tparam, variance)) <- config) solveOne(tvar, tparam, variance);

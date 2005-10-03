@@ -4,4 +4,4 @@ class A {
   object B;
 }
 
-object C with A;
+object C extends A;
