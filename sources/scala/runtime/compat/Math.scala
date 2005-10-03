@@ -15,7 +15,7 @@ object Math {
   val MAX_INT = java.lang.Integer.MAX_VALUE;
   val MIN_INT = java.lang.Integer.MIN_VALUE;
 
-  def log(x: Double): Double = Math.log(x);
-  def max(x: Int, y: Int): Int = Math.max(x, y);
-  def sqrt(x: Double): Double = Math.sqrt(x);
+  def log(x: Double): Double   = java.lang.Math.log(x);
+  def max(x: Int, y: Int): Int = java.lang.Math.max(x, y);
+  def sqrt(x: Double): Double  = java.lang.Math.sqrt(x);
 }
