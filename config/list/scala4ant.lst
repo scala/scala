@@ -3,6 +3,8 @@
 ##############################################################################
 # $Id$
 
+../scalac/ant/Scalac.java
+
 AntAdaptor.scala
 AntTask.scala
 ScalaRuntime.scala

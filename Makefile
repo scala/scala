@@ -784,11 +784,18 @@ PROJECT_SOURCES		+= $(SCALA4ANT_SOURCES)
 SCALA4ANT_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scala4ant
 SCALA4ANT_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scala4ant.lst)
 SCALA4ANT_SOURCES	+= $(SCALA4ANT_LIST:%=$(SCALA4ANT_ROOT)/%)
-SCALA4ANT_SC_FILES	+= $(SCALA4ANT_SOURCES)
+SCALA4ANT_JC_FILES	+= $(filter %.java,$(SCALA4ANT_SOURCES))
+SCALA4ANT_JC_CLASSPATH	 = $(JC_CLASSPATH):$(ANT_JARFILE)
+SCALA4ANT_SC_FILES	+= $(filter %.scala,$(SCALA4ANT_SOURCES))
 SCALA4ANT_SC_CLASSPATH	 = $(SC_CLASSPATH):$(ANT_JARFILE)
 
+$(latest)scala4ant	: $(latest)scala4ant-jc
 $(latest)scala4ant	: $(latest)scala4ant-sc
 $(latest)scala4ant	:
+	$(TOUCH) $@
+
+$(latest)scala4ant-jc	: $(SCALA4ANT_JC_FILES)
+	@$(make) jc target=SCALA4ANT SCALA4ANT_JC_FILES='$?'
 	$(TOUCH) $@
 
 $(latest)scala4ant-sc	: $(SCALA4ANT_SC_FILES)
