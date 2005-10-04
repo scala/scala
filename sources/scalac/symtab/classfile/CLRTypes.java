@@ -94,11 +94,10 @@ public final class CLRTypes {
             assemrefs, args.assemrefs.value);
 	Assembly mscorlib = findAssembly("mscorlib.dll", true);
 	Type.initMSCORLIB(mscorlib);
-        findAssembly("scala.dll", false);
 	findAllAssemblies();
 
         if (getType("scala.Int") == null) {
-            abort("scala.dll");
+            findAssembly("scala.dll", true);
         }
 
 	BYTE    = getType("System.SByte");
