@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 //############################################################################
 // serves as an entry point with the MSIL backend
 
@@ -20,7 +18,7 @@ object TestMain {
 object Bug98Test {
   object MyCase { def name = "mycase" };
   def main(args: Array[String]) = {
-    System.out.println(MyCase.name);
+    Console.println(MyCase.name);
   }
 }
 
@@ -28,19 +26,19 @@ object Bug98Test {
 // Bug 120
 
 class Bug120A(x: Int) {
-  System.out.println("A");
+  Console.println("A");
 }
 class Bug120B(x: Int) {
-  System.out.println("B");
+  Console.println("B");
 }
 class Bug120C(x: Int)
     with Bug120A(Bug120Test.print("one", 1))
     with Bug120B(Bug120Test.print("two", 2)) {
-  System.out.println("C");
+  Console.println("C");
 }
 object Bug120Test {
   def print[A](str: String, res: A): A = {
-    System.out.println(str); res
+    Console.println(str); res
   }
   def main(args: Array[String]) = {
     val c = new Bug120C(1);
@@ -66,13 +64,13 @@ object Bug135Test {
 // Bug 142
 
 abstract class Bug142Foo1 { class Inner; def foo: Inner; foo; }
-abstract class Bug142Foo2 { class Inner; def foo: Inner = {System.out.println("ok"); null};}
+abstract class Bug142Foo2 { class Inner; def foo: Inner = {Console.println("ok"); null};}
 abstract class Bug142Foo3 { type  Inner; def foo: Inner; foo; }
-abstract class Bug142Foo4 { type  Inner; def foo: Inner = {System.out.println("ok"); null.asInstanceOf[Inner]}; }
+abstract class Bug142Foo4 { type  Inner; def foo: Inner = {Console.println("ok"); null.asInstanceOf[Inner]}; }
 
-abstract class Bug142Bar1 { type  Inner; def foo: Inner = {System.out.println("ok"); null.asInstanceOf[Inner]}; }
+abstract class Bug142Bar1 { type  Inner; def foo: Inner = {Console.println("ok"); null.asInstanceOf[Inner]}; }
 abstract class Bug142Bar2 { type  Inner; def foo: Inner; foo; }
-abstract class Bug142Bar3 { class Inner; def foo: Inner = {System.out.println("ok"); null}; }
+abstract class Bug142Bar3 { class Inner; def foo: Inner = {Console.println("ok"); null}; }
 abstract class Bug142Bar4 { class Inner; def foo: Inner; foo; }
 
 object Bug142Test1 extends Bug142Foo1 with Bug142Bar1 {def main(args:Array[String]):Unit=();}
@@ -121,7 +119,7 @@ class Bug167Node(bar:Int) {
 
 object Bug167Test {
   def main(args: Array[String]): Unit = {
-    if (new Bug167Node(0).foo != 1) System.out.println("bug 167");
+    if (new Bug167Node(0).foo != 1) Console.println("bug 167");
   }
 }
 
@@ -192,7 +190,7 @@ class Bug176C with Bug176A with Bug176B {
 object Bug176Test {
   def main(args: Array[String]): Unit = {
     val x: Bug176A = new Bug176C;
-    System.out.println(x.test);
+    Console.println(x.test);
   }
 }
 
@@ -287,7 +285,7 @@ object Bug226Test {
 object Bug233Test {
   val b: Array[String] = null;
   def main(args: Array[String]): Unit =
-    System.out.println(b == null);
+    Console.println(b == null);
 }
 
 //############################################################################
@@ -304,7 +302,7 @@ object Bug250Test {
 // Bug 257
 
 object Bug257Test {
-  def sayhello(): Unit = { System.out.println("hello"); };
+  def sayhello(): Unit = { Console.println("hello"); };
 
   def f1(x: Unit): Unit = ();
   def f2(x: Unit)(y: Unit): Unit = ();
@@ -331,7 +329,7 @@ abstract class Bug266AFoo {
 
 object Bug266ATest extends Bug266AFoo {
   type T = String;
-  class I1 extends I0 { def f(x: String): Unit = { System.out.println("hello"); ();} }
+  class I1 extends I0 { def f(x: String): Unit = { Console.println("hello"); ();} }
   def main(args: Array[String]): Unit = { new I1; () }
 }
 
@@ -352,7 +350,7 @@ abstract class Bug266BA1 extends Bug266BA {
 class Bug266BB extends Bug266BA {
   type t = int;
   class P1 extends Bug266BB.this.P {
-    def f(x: int): unit = System.out.println(x + 1);
+    def f(x: int): unit = Console.println(x + 1);
   }
   def mkP = new P1;
   val in = 3;
@@ -369,21 +367,6 @@ object Bug266Test {
   def main(args: Array[String]): Unit = {
     Bug266ATest.main(args);
     Bug266BTest.main(args);
-  }
-}
-
-//############################################################################
-// Bug 281
-
-class Bug281A extends java.util.Hashtable {
-  class B { def f = rehash() }
-}
-
-object Bug281Test {
-  def main(args: Array[String]): Unit = {
-    val a = new Bug281A;
-    val b = new a.B;
-    b.f
   }
 }
 
@@ -413,17 +396,17 @@ object Bug328Test {
 
 class Bug396A {
   class I {
-    def run = System.out.println("A");
+    def run = Console.println("A");
   }
 }
 class Bug396B extends Bug396A {
   class I extends super.I {
-    override def run = { super.run; System.out.println("B"); }
+    override def run = { super.run; Console.println("B"); }
   }
 }
 class Bug396C extends Bug396A {
   class I extends super.I {
-    override def run = { super.run; System.out.println("C"); }
+    override def run = { super.run; Console.println("C"); }
   }
 }
 object Bug396Test extends Bug396B with Bug396C with Application {
@@ -444,7 +427,7 @@ object Bug399Test {
   }
 
   def main(args: Array[String]): Unit = {
-    System.out.println(f("a"));
+    Console.println(f("a"));
   }
 }
 
@@ -454,19 +437,19 @@ object Bug399Test {
 object Test  {
   var errors: Int = 0;
   def test(bug: Int, test: => Unit): Unit = {
-    System.out.println("<<< bug " + bug);
+    Console.println("<<< bug " + bug);
     try {
       test;
     } catch {
       case exception => {
-        val name: String = Thread.currentThread().getName();
-        System.out.print("Exception in thread \"" + name + "\" " + exception);
-        System.out.println();
+        val curr: String = scala.runtime.compat.Platform.currentThread.toString();
+        Console.print("Exception in thread \"" + curr + "\" " + exception);
+        Console.println;
         errors = errors + 1;
       }
     }
-    System.out.println(">>> bug " + bug);
-    System.out.println();
+    Console.println(">>> bug " + bug);
+    Console.println;
   }
 
   def main(args: Array[String]): Unit = {
@@ -490,16 +473,14 @@ object Test  {
     test(250, Bug250Test.main(args));
     test(257, Bug257Test.main(args));
     test(266, Bug266Test.main(args));
-    test(281, if (args.length > 0 && args(0) == "int") ()
-              else Bug281Test.main(args)); // !!!
     test(316, Bug316Test.main(args));
     test(328, Bug328Test.main(args));
     test(396, Bug396Test.main(args));
     test(399, Bug399Test.main(args));
 
     if (errors > 0) {
-      System.out.println();
-      System.out.println(errors + " error" + (if (errors > 1) "s" else ""));
+      Console.println;
+      Console.println(errors + " error" + (if (errors > 1) "s" else ""));
     }
   }
 }
