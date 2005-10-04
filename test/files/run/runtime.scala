@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 //############################################################################
 // serves as an entry point with the MSIL backend
 
@@ -20,14 +18,14 @@ object TestMain {
 object Test0Test {
   def println[A](xs: Array[A]): Unit = {
     var i = 0;
-    System.out.print("[");
+    Console.print("[");
     while (i < xs.length) {
-      if (i > 0) System.out.print(",");
-      System.out.print(xs(i));
+      if (i > 0) Console.print(",");
+      Console.print(xs(i));
       i = i + 1;
     }
-    System.out.print("]");
-    System.out.println();
+    Console.print("]");
+    Console.println;
   }
 
   def main(args: Array[String]): Unit = {
@@ -63,7 +61,7 @@ package test1.bar {
 
   class PrintStream() {
     def println(): Unit = {
-      java.lang.System.out.println();
+      Console.println;
     }
   }
 
@@ -72,21 +70,21 @@ package test1.bar {
 object Test1Test {
 
   def main(args: Array[String]): Unit = {
-    {System.out.print(10)}; java.lang.System.out.println();
+    {Console.print(10)}; Console.println;
     // {System.out.print(11); java}.lang.System.out.println();
     // {System.out.print(12); java.lang}.System.out.println();
     // {System.out.print(13); java.lang.System}.out.println();
-    {System.out.print(14); java.lang.System.out}.println();
-    {System.out.print(15); java.lang.System.out.println:(() => Unit)}();
-    {System.out.print(16); java.lang.System.out.println()};
+    {Console.print(14); Console}.println;
+    {Console.print(15); (() => Console.println):(() => Unit)}();
+    {Console.print(16); Console.println};
 
-    {System.out.print(20)}; test1.bar.System.out.println();
+    {Console.print(20)}; test1.bar.System.out.println();
     // {System.out.print(21); test1}.bar.System.out.println();
     // {System.out.print(22); test1.bar}.System.out.println();
-    {System.out.print(23); test1.bar.System}.out.println();
-    {System.out.print(24); test1.bar.System.out}.println();
-    {System.out.print(25); test1.bar.System.out.println:(() => Unit)}();
-    {System.out.print(26); test1.bar.System.out.println()};
+    {Console.print(23); test1.bar.System}.out.println();
+    {Console.print(24); test1.bar.System.out}.println();
+    {Console.print(25); test1.bar.System.out.println:(() => Unit)}();
+    {Console.print(26); test1.bar.System.out.println()};
   }
 
 }
@@ -97,23 +95,23 @@ object Test1Test {
 package test2 {
 
   class A {
-    def run = System.out.println("A");
+    def run = Console.println("A");
   }
 
   class M0 extends A {
-    override def run = { super.run; System.out.println("M0"); }
+    override def run = { super.run; Console.println("M0"); }
   }
 
   class M1 extends M0 {
-    override def run = { super.run; System.out.println("M1"); }
+    override def run = { super.run; Console.println("M1"); }
   }
 
   class N0 extends A {
-    override def run = { super.run; System.out.println("N0"); }
+    override def run = { super.run; Console.println("N0"); }
   }
 
   class N1 extends N0 {
-    override def run = { super.run; System.out.println("N1"); }
+    override def run = { super.run; Console.println("N1"); }
   }
 
   object M0N0 extends M0 with N0;
@@ -125,10 +123,10 @@ package test2 {
 
 object Test2Test {
   def main(args: Array[String]): Unit = {
-    test2.M0N0.run; System.out.println();
-    test2.N0M0.run; System.out.println();
-    test2.M1N0.run; System.out.println();
-    test2.N1M0.run; System.out.println();
+    test2.M0N0.run; Console.println;
+    test2.N0M0.run; Console.println;
+    test2.M1N0.run; Console.println;
+    test2.N1M0.run; Console.println;
   }
 }
 
@@ -137,10 +135,10 @@ object Test2Test {
 
 object Test3Test {
 
-  class Foo { override def equals(that: Any) = throw new Error("abort"); }
+  class Foo { override def equals(that: Any) = error("abort"); }
 
   def check(expected: Boolean, actual1: Boolean, actual2: Boolean): Unit =
-    System.out.println(
+    Console.println(
       if ((actual1 == expected) && (actual2 == !expected)) "Ok" else "KO: "
         + "expected: " + expected + " - " + (!expected) + ", "
         + "found: " + actual1 + " - " + actual1);
@@ -179,19 +177,19 @@ object Test3Test {
 object Test  {
   var errors: Int = 0;
   def test(name: String, test: => Unit): Unit = {
-    System.out.println("<<< " + name);
+    Console.println("<<< " + name);
     try {
       test;
     } catch {
       case exception => {
-        val name: String = Thread.currentThread().getName();
-        System.out.print("Exception in thread \"" + name + "\" " + exception);
-        System.out.println();
+        //val name: String = Thread.currentThread().getName();
+        Console.print("Exception in thread \"" + name + "\" " + exception);
+        Console.println;
         errors = errors + 1;
       }
     }
-    System.out.println(">>> " + name);
-    System.out.println();
+    Console.println(">>> " + name);
+    Console.println;
   }
 
   def main(args: Array[String]): Unit = {
@@ -202,8 +200,8 @@ object Test  {
     test("Test3"  , Test3Test.main(args));
 
     if (errors > 0) {
-      System.out.println();
-      System.out.println(errors + " error" + (if (errors > 1) "s" else ""));
+      Console.println;
+      Console.println(errors + " error" + (if (errors > 1) "s" else ""));
     }
   }
 }

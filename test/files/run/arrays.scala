@@ -5,17 +5,15 @@
 
 //############################################################################
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 object Test {
 
   //##########################################################################
   // Types
 
   type Strings = List[String];
-  type Map     = java.util.Map;
-  type HashMap = java.util.HashMap;
-  type TreeMap = java.util.TreeMap;
+  type Map     = scala.collection.Map[Int, Any];
+  type HashMap = scala.collection.mutable.HashMap[Int, Any];
+  type TreeMap = scala.collection.immutable.TreeMap[Int, Any];
 
   //##########################################################################
   // Identity Functions
@@ -110,7 +108,7 @@ object Test {
       val s1 = if (test1) "ok" else "KO";
       val s2 = actual.toString();
       val s3 = expected.toString();
-      throw new Error(s0 + " - " + s1 + ": " + s2 + " != " + s3);
+      error(s0 + " - " + s1 + ": " + s2 + " != " + s3);
     }
     checks = checks + 1;
   }
@@ -164,39 +162,41 @@ object Test {
   //##########################################################################
   // Values
 
+  import scala.runtime.compat.Math._;
+
   val u0: Unit    = ();
   val u1: Unit    = ();
 
   val z0: Boolean = false;
   val z1: Boolean = true;
 
-  val b0: Byte    = java.lang.Byte.MIN_VALUE;
+  val b0: Byte    = MIN_BYTE;
   val b1: Byte    = 1;
-  val b2: Byte    = java.lang.Byte.MAX_VALUE;
+  val b2: Byte    = MAX_BYTE;
 
-  val s0: Short   = java.lang.Short.MIN_VALUE;
+  val s0: Short   = MIN_SHORT;
   val s1: Short   = 2;
-  val s2: Short   = java.lang.Short.MAX_VALUE;
+  val s2: Short   = MAX_SHORT;
 
-  val c0: Char    = java.lang.Character.MIN_VALUE;
+  val c0: Char    = MIN_CHAR;
   val c1: Char    = '3';
-  val c2: Char    = java.lang.Character.MAX_VALUE;
+  val c2: Char    = MAX_CHAR;
 
-  val i0: Int     = java.lang.Integer.MIN_VALUE;
+  val i0: Int     = MIN_INT;
   val i1: Int     = 4;
-  val i2: Int     = java.lang.Integer.MAX_VALUE;
+  val i2: Int     = MAX_INT;
 
-  val l0: Long    = java.lang.Long.MIN_VALUE;
+  val l0: Long    = MIN_LONG;
   val l1: Int     = 5;
-  val l2: Long    = java.lang.Long.MAX_VALUE;
+  val l2: Long    = MAX_LONG;
 
-  val f0: Float   = java.lang.Float.MIN_VALUE;
+  val f0: Float   = MIN_FLOAT;
   val f1: Int     = 6;
-  val f2: Float   = java.lang.Float.MAX_VALUE;
+  val f2: Float   = MAX_FLOAT;
 
-  val d0: Double  = java.lang.Double.MIN_VALUE;
+  val d0: Double  = MIN_DOUBLE;
   val d1: Int     = 7;
-  val d2: Double  = java.lang.Double.MAX_VALUE;
+  val d2: Double  = MAX_DOUBLE;
 
   val a0: Unit    = ();
   val a1: Boolean = false;
@@ -205,7 +205,7 @@ object Test {
   val a4: String  = "a-z";
   val a5: Symbol  = 'token;
   val a6: HashMap = new HashMap();
-  val a7: TreeMap = new TreeMap();
+  val a7: TreeMap = scala.collection.immutable.TreeMap.Empty;
   val a8: Strings = List("a", "z");
 
   val v0: Unit    = ();
@@ -903,7 +903,7 @@ object Test {
 
     //######################################################################
 
-    System.out.println("checks: " + checks);
+    Console.println("checks: " + checks);
 
     //######################################################################
   }

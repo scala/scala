@@ -11,7 +11,7 @@ class Vector (_x: Double, _y: Double) {
   def *(scalar: Double): Vector = new Vector(x * scalar, y * scalar);
   def -(that: Vector): Vector = new Vector(x - that.x, y - that.y);
   def /(scalar: Double): Vector = new Vector(x / scalar, y / scalar);
-  def norm: Double = java.lang.Math.sqrt(x * x + y * y);
+  def norm: Double = scala.runtime.compat.Math.sqrt(x * x + y * y);
 }
 
 //############################################################################
@@ -85,7 +85,10 @@ abstract class Graphics(_width: Double, _height: Double) {
 class PostScript (filename: String, _width: Double, _height: Double)
  extends Graphics(_width, _height) {
   /** Convert mm into 72th of inch.*/
-  def mm2ps(x: Double) : Double = x * 72.0 / 25.4;
+  def mm2ps(x: Double) : Double = round(x * 72.0 / 25.4);
+
+   def round(x: Double): Double =
+     scala.runtime.compat.Math.floor(x * 100.0 + 0.5) / 100.0;
 
   def scaleAndCenter(frm: Frame, ratio:Double): Frame = {
     val currentRatio = frm.edgeX.norm / frm.edgeY.norm;
@@ -119,28 +122,29 @@ class PostScript (filename: String, _width: Double, _height: Double)
     scaleAndCenter(new Frame(origin, edgeX, edgeY), width / height)
   }
 
-  /** File where to print.*/
-  import java.io._;
-  val out : PrintStream = new PrintStream(
-    if (filename == "-") java.lang.System.out
-    else new FileOutputStream(filename));
+//   /** File where to print.*/
+//   import java.io._;
+//   val out : PrintStream = new PrintStream(
+//     if (filename == "-") java.lang.System.out
+//     else new FileOutputStream(filename));
 
   def plotLine(x1: Double, y1: Double, x2: Double, y2: Double): Unit = {
-    out.println(x1 + " " + y1 + " m " + x2 + " " + y2 + " l");
+    Console.println(round(x1) + " " + round(y1) + " m " +
+                    round(x2) + " " + round(y2) + " l");
   }
 
   /** Print the PS header.*/
-  out.println("%!PS-Adobe-3.0 EPSF-3.0\n%%Title: ProgrammationIV");
-  out.println("%%Creator: LAMP");
-  out.println("%%BoundingBox: 0 0 " + mm2ps(psWidth) + " " + mm2ps(psHeight));
-  out.println("%%EndComments\n");
-  out.println("/m {moveto} bind def\n/l {lineto} bind def\n");
-  out.println(mm2ps(line_thickness) + " setlinewidth\nnewpath");
+  Console.println("%!PS-Adobe-3.0 EPSF-3.0\n%%Title: ProgrammationIV");
+  Console.println("%%Creator: LAMP");
+  Console.println("%%BoundingBox: 0 0 " + mm2ps(psWidth) + " " + mm2ps(psHeight));
+  Console.println("%%EndComments\n");
+  Console.println("/m {moveto} bind def\n/l {lineto} bind def\n");
+  Console.println(mm2ps(line_thickness) + " setlinewidth\nnewpath");
 
   /** Terminate the PS document and close the file stream. */
   def close : Unit = {
-    out.println("stroke\nshowpage\n%%EOF");
-    out.close();
+    Console.println("stroke\nshowpage\n%%EOF");
+    Console.flush;
   }
 }
 
