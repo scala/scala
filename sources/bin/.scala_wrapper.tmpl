@@ -714,7 +714,7 @@ test_run_dis() {
 
 # Tests the .NET backend.
 test_run_msil() {
-    assemblies=`get_os_filename {#TEST_ASSEMBLIES#}`;
+    assemblies=`get_os_pathlist {#TEST_ASSEMBLIES#}`;
     rm -f "$dstbase".il &&
     rm -f "$dstbase".EXE &&
     $SOCOS -nowarn -target:msil -o "$os_dstbase" -r $assemblies "$@" \
@@ -726,12 +726,13 @@ test_run_msil() {
 #             peverify /il "$os_dstbase".EXE > /dev/null &&
             "$dstbase".EXE "msil";;
         * )
-            cat "$checkfile";;
+            ilasm /output:"$os_dstbase".EXE "$os_dstbase".il \
+                > /dev/null &&
+            mono "$dstbase".EXE "msil";;
     esac &&
     rm -f "$dstbase".EXE &&
     rm -f "$dstbase".il;
 }
-
 
 # Checks the specified test.
 test_check_test() {
