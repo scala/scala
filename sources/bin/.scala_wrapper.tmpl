@@ -57,17 +57,17 @@ configure() {
     # Location of the Scala tools library.
     default_TOOLS_CLASSES={#TOOLS_CLASSES#};
 
+    # Location of the NSRT library.
+    default_NLIBRARY_CLASSES={#NLIBRARY_CLASSES#};
+
+    # Location of the NSC library.
+    default_NTOOLS_CLASSES={#NTOOLS_CLASSES#};
+
     # Location of the FJBG library.
     default_FJBG_CLASSES={#FJBG_CLASSES#};
 
     # Location of the MSIL library.
     default_MSIL_CLASSES={#MSIL_CLASSES#};
-
-    # Location of the NSRT library.
-    default_NSCALA_CLASSES={#NSCALA_CLASSES#};
-
-    # Location of the NSC library.
-    default_NTOOLS_CLASSES={#NTOOLS_CLASSES#};
 
     # Command to start the Java VM.
     default_JAVA_CMD={#JAVA_CMD#};
@@ -235,13 +235,13 @@ compute_value() {
     eval current_$1=\"\$default_$1\";
     case "$1" in
 
-        LIBRARY_SOURCES | \
-        LIBRARY_CLASSES | \
-        TOOLS_CLASSES   | \
-        FJBG_CLASSES    | \
-        MSIL_CLASSES    | \
-        NSCALA_CLASSES  | \
-        NTOOLS_CLASSES  )
+        LIBRARY_SOURCES  | \
+        LIBRARY_CLASSES  | \
+        TOOLS_CLASSES    | \
+        NLIBRARY_CLASSES | \
+        NTOOLS_CLASSES   | \
+        FJBG_CLASSES     | \
+        MSIL_CLASSES     )
             if eval [ -n \"\$SCALA_$1\" ]; then
                 if eval [ -f \"\$SCALA_$1\" -o -d \"\$SCALA_$1\" ]; then
                     eval current_$1=\"\$SCALA_$1\";
@@ -475,13 +475,13 @@ ncompiler_start() {
     compute_value MSIL_CLASSES;
     compute_value LIBRARY_SOURCES;
     compute_value LIBRARY_CLASSES;
-    compute_value NSCALA_CLASSES;
+    compute_value NLIBRARY_CLASSES;
     compute_value NTOOLS_CLASSES;
 
     # append FJBG and MSIL libraries to classpath
     classpath=`append_pathlists "$classpath" "$current_FJBG_CLASSES"`;
     classpath=`append_pathlists "$classpath" "$current_MSIL_CLASSES"`;
-    classpath=`append_pathlists "$classpath" "$current_NSCALA_CLASSES"`;
+    classpath=`append_pathlists "$classpath" "$current_NLIBRARY_CLASSES"`;
     classpath=`append_pathlists "$classpath" "$current_NTOOLS_CLASSES"`;
 
     # start Scala VM
@@ -537,10 +537,10 @@ info_option_x_value() {
         LIBRARY_SOURCES     ) value=$2;;
         LIBRARY_CLASSES     ) value=$2;;
         TOOLS_CLASSES       ) value=$2;;
+        NLIBRARY_CLASSES    ) value=$2;;
+        NTOOLS_CLASSES      ) value=$2;;
         FJBG_CLASSES        ) value=$2;;
         MSIL_CLASSES        ) value=$2;;
-        NSCALA_CLASSES      ) value=$2;;
-        NTOOLS_CLASSES      ) value=$2;;
         JAVA_CMD            ) value=$2;;
         JAVA_ARGS           ) value=$2;;
         SCALA_CMD           ) value=$2;;
@@ -565,10 +565,10 @@ info_option_help() {
     echo "  LIBRARY_SOURCES   Location of the Scala library sources";
     echo "  LIBRARY_CLASSES   Location of the Scala library";
     echo "  TOOLS_CLASSES     Location of the Scala tools";
+    echo "  NLIBRARY_CLASSES  Location of the new Scala library";
+    echo "  NTOOLS_CLASSES    Location of the new Scala tools";
     echo "  FJBG_CLASSES      Location of the fjbg library";
     echo "  MSIL_CLASSES      Location of the msil library";
-    echo "  NSCALA_CLASSES    Location of the new Scala library";
-    echo "  NTOOLS_CLASSES    Location of the new Scala tools";
     echo "  JAVA_CMD          Command to start the Java VM";
     echo "  JAVA_ARGS         Additional arguments to pass to the Java VM";
     echo "  SCALA_CMD         Command to start the Scala VM";
