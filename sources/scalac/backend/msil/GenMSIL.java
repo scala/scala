@@ -861,39 +861,6 @@ public final class GenMSIL {
 	    return check(invokeMethod(sym, args, resType, true));
 
 	case Select(Tree qualifier, _):
-	    // Treat delegate chaining methods += and -= in a special way
-	    if(CLRTypes.instance().isDelegateType(tc.getType(qualifier.type())) &&
-		(sym.name == Names.PLUSEQ || sym.name == Names.MINUSEQ)) {
-                Type delegate = tc.getType(qualifier.type());
-		MSILType delegateType = msilType(delegate);
-                MethodBase chainer = tc.getMethod(sym);
-
-		switch(qualifier) {
-		case Apply(Tree f, _):
-		    Symbol setterSym = f.symbol().owner().lookup(
-			Name.fromString(f.symbol().name.toString() +
-			Names._EQ));
-		    assert !setterSym.isNone() : "Setter method not found";
-		    MethodInfo setter = (MethodInfo)tc.getMethod(setterSym);
-
-		    // Generate object and argument for the setter call
-		    emitThis(); // FIXME: doesn't work if the variable is
-                                // is a member of another class
-                    genLoad(qualifier, delegateType);
-                    invokeMethod(sym, args, delegateType, false);
-                    code.Emit(OpCodes.Castclass, delegate);
-		    code.Emit(OpCodes.Callvirt, setter);
-		    return items.VoidItem();
-
-		case Ident(_):
-		    // Prepare the left-hand side for the store
-		    Item var = gen(qualifier, delegateType);
-                    load(var);
-                    invokeMethod(sym, args, delegateType, false);
-                    code.Emit(OpCodes.Castclass, delegate);
-		    return check(store(var));
-		}
-	    }
 	    // scala.Any.==
 	    if (sym == defs.ANY_EQEQ) {
 		return genEq(qualifier, args[0]);
@@ -2375,7 +2342,7 @@ final class MSILType {
 	case REF(Type t):
 	    if (t.IsEnum()) return fromType(t.getUnderlyingType());
 	    else return this;
-	case NULL:
+            //case NULL:
 	case ARRAY(_):
 	    throw Debug.abort(this);
 	default: return this;
