@@ -41,6 +41,8 @@ main_LIBRARY_CLASSDIR	 = $(main_OBJECTDIR)/lib/$(LIBRARY_NAME)
 main_TOOLS_CLASSDIR	 = $(main_OBJECTDIR)/lib/$(TOOLS_NAME)
 main_JC_OUTPUTDIR	 = $(main_TOOLS_CLASSDIR)
 main_JC_CLASSPATH	 = $(main_JC_OUTPUTDIR):$(main_LIBRARY_CLASSDIR)
+main_RMIC_OUTPUTDIR	 = $(main_LIBRARY_CLASSDIR)
+main_RMIC_CLASSPATH	 = $(main_RMIC_OUTPUTDIR)
 main_SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
 main_SCALAC		 = $(boot_OBJECTDIR)/bin/scalac
 main_SCALADOC		 = $(main_OBJECTDIR)/bin/scaladoc
@@ -63,6 +65,8 @@ tnsc_LIBRARY_CLASSDIR	 = $(tnsc_OBJECTDIR)/lib/$(LIBRARY_NAME)
 tnsc_TOOLS_CLASSDIR	 = $(tnsc_OBJECTDIR)/lib/$(TOOLS_NAME)
 tnsc_JC_OUTPUTDIR	 = $(tnsc_TOOLS_CLASSDIR)
 tnsc_JC_CLASSPATH	 = $(tnsc_JC_OUTPUTDIR):$(tnsc_LIBRARY_CLASSDIR)
+tnsc_RMIC_OUTPUTDIR	 = $(tnsc_LIBRARY_CLASSDIR)
+tnsc_RMIC_CLASSPATH	 = $(tnsc_RMIC_OUTPUTDIR)
 tnsc_SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
 tnsc_SCALAC		 = $(main_OBJECTDIR)/bin/scalansc
 tnsc_SCALADOC		 = $(tnsc_OBJECTDIR)/bin/scaladoc
@@ -75,6 +79,11 @@ tnsc_SCALA_CMD		 = $(tnsc_OBJECTDIR)/bin/scala
 JC_COMPILER		 = PICO
 JC_OUTPUTDIR		 = $($(prefix)_JC_OUTPUTDIR)
 JC_CLASSPATH		 = $($(prefix)_JC_CLASSPATH)
+
+# rmic compilation defaults
+RMIC_COMPILER		 = RMIC
+RMIC_OUTPUTDIR		 = $($(prefix)_RMIC_OUTPUTDIR)
+RMIC_CLASSPATH		 = $($(prefix)_RMIC_CLASSPATH)
 
 # scala compilation defaults
 SC_COMPILER		 = $(prefix)_SCALAC
@@ -100,7 +109,7 @@ fastclean		:
 clean			:
 	$(RM) -r $(main_OBJECTDIR)
 
-nscclean		:
+clean-nsc		:
 	$(RM) $(LATEST_PREFIX)-main-*nsc*
 #	$(RM) -r $(main_OBJECTDIR)/lib/nsc
 
@@ -433,6 +442,13 @@ LIBRARY_JC_FILES	+= $(filter %.java,$(LIBRARY_SOURCES))
 LIBRARY_JC_FLAGS	+= $(JC_FLAGS) -scala-hack
 LIBRARY_JC_OUTPUTDIR	 = $(LIBRARY_CLASSDIR)
 LIBRARY_JC_CLASSPATH	 = $(LIBRARY_JC_OUTPUTDIR)
+LIBRARY_RMIC_CLASSES	+= scala.runtime.distributed.ChannelImpl
+LIBRARY_RMIC_CLASSES	+= scala.runtime.distributed.ReferenceImpl
+LIBRARY_RMIC_files	+= $(subst .,/,$(LIBRARY_RMIC_CLASSES))
+LIBRARY_RMIC_FILES	+= $(LIBRARY_RMIC_files:%=$(LIBRARY_CLASSDIR)/%.class)
+LIBRARY_RMIC_FLAGS	+= -v1.2
+LIBRARY_RMIC_OUTPUTDIR	 = $(LIBRARY_CLASSDIR)
+LIBRARY_RMIC_CLASSPATH	 = $(LIBRARY_RMIC_OUTPUTDIR)
 LIBRARY_SC_FILES	+= $(filter %.scala,$(LIBRARY_SOURCES))
 LIBRARY_SC_OUTPUTDIR	 = $(LIBRARY_JC_OUTPUTDIR)
 LIBRARY_SC_CLASSPATH	 = $(LIBRARY_JC_CLASSPATH):$(PROJECT_SOURCEDIR)
@@ -445,12 +461,17 @@ LIBRARY_JAR_INPUTDIR	 = $(LIBRARY_CLASSDIR)
 LIBRARY_JAR_FILES	+= .
 
 $(latest)library	: $(latest)library-jc
+#$(latest)library	: $(latest)library-rmic
 $(latest)library	: $(latest)library-sc
 $(latest)library	:
 	$(TOUCH) $@
 
 $(latest)library-jc	: $(LIBRARY_JC_FILES)
 	@$(make) jc target=LIBRARY LIBRARY_JC_FILES='$(subst $$,$$$$,$?)'
+	$(TOUCH) $@
+
+$(latest)library-rmic	: $(LIBRARY_RMIC_FILES)
+	@$(make) rmic target=LIBRARY
 	$(TOUCH) $@
 
 $(latest)library-sc	: $(LIBRARY_SC_FILES)
@@ -698,7 +719,7 @@ $(latest)library-nsc-jc	: $(NLIBRARY_JC_FILES)
 	@n=`$(ECHO) '$?' | $(WC) -w`; \
 	$(ECHO) "     [pico] Compiling $$n source files to $(NLIBRARY_JC_OUTPUTDIR)"
 	@$(make) jc target=NLIBRARY \
-	    jc=@ \
+	    NLIBRARY_JC_PREPEND='@' \
 	    NLIBRARY_JC_FILES='$?'
 	@$(TOUCH) $@
 
@@ -958,6 +979,7 @@ $(TUPLE_FILES)		: $(META_SOURCES) $(TUPLE_TEMPLATE)
 
 include $(PROJECT_ROOT)/Makefile.distrib
 include $(PROJECT_SUPPORTDIR)/make/jc.mk
+include $(PROJECT_SUPPORTDIR)/make/rmic.mk
 include $(PROJECT_SUPPORTDIR)/make/jar.mk
 include $(PROJECT_SUPPORTDIR)/make/sc.mk
 include $(PROJECT_SUPPORTDIR)/make/sdc.mk
