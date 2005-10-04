@@ -319,6 +319,8 @@ final class TypeCreator {
         specialAttrs.add(defs.SCALA_VOLATILE_CONSTR);
         specialAttrs.add(defs.getClass("scala.SerialVersionUID")
                          .primaryConstructor());
+        specialAttrs.add(defs.getClass("scala._trait_")
+                         .primaryConstructor());
     } // init()
 
     /*
@@ -910,7 +912,7 @@ final class TypeCreator {
 	    method = getMethod0(sym);
 	} catch (Throwable e) {
 	    printMapping(sym, symbols2methods);
-	    throw Debug.abort(e);
+	    throw Debug.abort(Debug.show(sym), e);
 	}
 	return method;
     }
