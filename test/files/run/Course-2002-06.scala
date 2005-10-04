@@ -122,12 +122,6 @@ class PostScript (filename: String, _width: Double, _height: Double)
     scaleAndCenter(new Frame(origin, edgeX, edgeY), width / height)
   }
 
-//   /** File where to print.*/
-//   import java.io._;
-//   val out : PrintStream = new PrintStream(
-//     if (filename == "-") java.lang.System.out
-//     else new FileOutputStream(filename));
-
   def plotLine(x1: Double, y1: Double, x2: Double, y2: Double): Unit = {
     Console.println(round(x1) + " " + round(y1) + " m " +
                     round(x2) + " " + round(y2) + " l");

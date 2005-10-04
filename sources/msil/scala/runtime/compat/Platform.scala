@@ -24,6 +24,9 @@ object Platform {
     sep(0) = separator;
     str.Split(sep);
   }
+
+  def currentThread = System.Threading.Thread.CurrentThread;
+
   def parseByte(s: String)  : Byte  = System.Byte.Parse(s);
   def parseShort(s: String) : Short = System.Int16.Parse(s);
   def parseInt(s: String)   : Int   = System.Int32.Parse(s);

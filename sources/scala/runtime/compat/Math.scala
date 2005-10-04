@@ -27,9 +27,10 @@ object Math {
   val MIN_DOUBLE = java.lang.Double.MIN_VALUE;
   val MAX_DOUBLE = java.lang.Double.MAX_VALUE;
 
-  def ceil(x: Double): Double  = java.lang.Math.ceil(x);
-  def floor(x: Double): Double = java.lang.Math.floor(x);
-  def log(x: Double): Double   = java.lang.Math.log(x);
   def max(x: Int, y: Int): Int = java.lang.Math.max(x, y);
-  def sqrt(x: Double): Double  = java.lang.Math.sqrt(x);
+
+  def ceil (x: Double): Double = java.lang.Math.ceil(x);
+  def floor(x: Double): Double = java.lang.Math.floor(x);
+  def log  (x: Double): Double = java.lang.Math.log(x);
+  def sqrt (x: Double): Double = java.lang.Math.sqrt(x);
 }
