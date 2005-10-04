@@ -58,14 +58,14 @@ ilasm_FILES		 = $(call ILASM_LOOKUP,ILASM_FILES)
 
 ##############################################################################
 
-MONO_OUT_FLAG		 = /output:
-MONO_KEY_FLAG		 = /key:
+MONO_ILASM_OUT_FLAG	 = /output:
+MONO_ILASM_KEY_FLAG	 = /key:
 
-MSCLR_OUT_FLAG		 = /out=
-MSCLR_KEY_FLAG		 = /key=
+MSCLR_ILASM_OUT_FLAG	 = /out=
+MSCLR_ILASM_KEY_FLAG	 = /key=
 
-OUT_FLAG		 = $($(MSIL_PLATFORM)_OUT_FLAG)
-KEY_FLAG		 = $($(MSIL_PLATFORM)_KEY_FLAG)
+ILASM_OUT_FLAG		 = $($(MSIL_PLATFORM)_ILASM_OUT_FLAG)
+ILASM_KEY_FLAG		 = $($(MSIL_PLATFORM)_ILASM_KEY_FLAG)
 
 ##############################################################################
 # Command
@@ -73,8 +73,8 @@ KEY_FLAG		 = $($(MSIL_PLATFORM)_KEY_FLAG)
 ilasm			+= $(ilasm_assembler)
 ilasm			+= $(ilasm_assembler_flags)
 ilasm			+= $(ilasm_FLAGS)
-ilasm			+= $(ilasm_OUTPUTFILE:%=$(OUT_FLAG)$(call CYGWIN_FILE,%))
-ilasm			+= $(ilasm_KEYFILE:%=$(KEY_FLAG)$(call CYGWIN_FILE,%))
+ilasm			+= $(ilasm_OUTPUTFILE:%=$(ILASM_OUT_FLAG)$(call CYGWIN_FILE,%))
+ilasm			+= $(ilasm_KEYFILE:%=$(ILASM_KEY_FLAG)$(call CYGWIN_FILE,%))
 ilasm			+= $(ilasm_FILES:%=$(call CYGWIN_FILE,'%'))
 
 ##############################################################################

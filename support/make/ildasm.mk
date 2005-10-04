@@ -55,10 +55,10 @@ ildasm_FILES		 = $(call ILDASM_LOOKUP,ILDASM_FILES)
 
 ##############################################################################
 
-MONO_OUT_FLAG		 = --output=
-MSCLR_OUT_FLAG		 = /out=
+MONO_ILDASM_OUT_FLAG	 = --output=
+MSCLR_ILDASM_OUT_FLAG	 = /out=
 
-OUT_FLAG		 = $($(MSIL_PLATFORM)_OUT_FLAG)
+ILDASM_OUT_FLAG		 = $($(MSIL_PLATFORM)_ILDASM_OUT_FLAG)
 
 ##############################################################################
 # Command
@@ -66,7 +66,7 @@ OUT_FLAG		 = $($(MSIL_PLATFORM)_OUT_FLAG)
 ildasm			+= $(ildasm_disassembler)
 ildasm			+= $(ildasm_disassembler_flags)
 ildasm			+= $(ildasm_FLAGS)
-ildasm			+= $(ildasm_OUTPUTFILE:%=$(OUT_FLAG)$(call CYGWIN_FILE,%))
+ildasm			+= $(ildasm_OUTPUTFILE:%=$(ILDASM_OUT_FLAG)$(call CYGWIN_FILE,%))
 ildasm			+= $(ildasm_FILES:%=$(call CYGWIN_FILE,'%'))
 
 ##############################################################################
