@@ -100,6 +100,10 @@ fastclean		:
 clean			:
 	$(RM) -r $(main_OBJECTDIR)
 
+nscclean		:
+	$(RM) $(LATEST_PREFIX)-main-*nsc*
+#	$(RM) -r $(main_OBJECTDIR)/lib/nsc
+
 distclean		:
 	$(RM) $(LATEST_PREFIX)-*
 	$(RM) -r $(PROJECT_OBJECTDIR)
@@ -118,16 +122,18 @@ lamplib			: main.lamplib
 library			: main.library
 library-msil		: main.library-msil
 library-doc		: main.library-doc
+library-nsc		: main.library-nsc
 util			: main.util
 scalac			: main.scalac
-nsc			: main.nsc
 scalai			: main.scalai
 scaladoc		: main.scaladoc
 scalap			: main.scalap
 #dtd2scala		: main.dtd2scala
 scala4ant		: main.scala4ant
+scala4ant-nsc		: main.scala4ant-nsc
 scalatest		: main.scalatest
 tools			: main.tools
+tools-nsc		: main.tools-nsc
 
 $(prefix).all		: $(latest)all
 $(prefix).scripts	: $(latest)scripts
@@ -136,18 +142,18 @@ $(prefix).meta		: $(latest)meta
 $(prefix).library	: $(latest)library
 $(prefix).library-msil	: $(latest)library-msil
 $(prefix).library-doc	: $(latest)library-sdc
+$(prefix).library-nsc	: $(latest)library-nsc
 $(prefix).util		: $(latest)util
 $(prefix).scalac	: $(latest)scalac
-$(prefix).nsc		: $(latest)nsc
-$(prefix).nsc		: $(latest)nsc4ant
-$(prefix).nsc		: $(latest)nsrt
 $(prefix).scalai	: $(latest)scalai
 $(prefix).scaladoc	: $(latest)scaladoc
 $(prefix).scalap	: $(latest)scalap
 #$(prefix).dtd2scala	: $(latest)dtd2scala
 $(prefix).scala4ant	: $(latest)scala4ant
+$(prefix).scala4ant-nsc	: $(latest)scala4ant-nsc
 $(prefix).scalatest	: $(latest)scalatest
 $(prefix).tools		: $(latest)tools
+$(prefix).tools-nsc	: $(latest)tools-nsc
 
 meta.%			: ; @$(make) prefix="meta" $@;
 boot.% 			: ; @$(make) prefix="boot" $@;
@@ -166,16 +172,18 @@ tnsc.%			: ; @$(make) prefix="tnsc" $@;
 .PHONY			: library
 .PHONY			: library-msil
 .PHONY			: library-doc
+.PHONY			: library-nsc
 .PHONY			: util
 .PHONY			: scalac
-.PHONY			: nsc
 .PHONY			: scalai
 .PHONY			: scaladoc
 .PHONY			: scalap
 #.PHONY			: dtd2scala
 .PHONY			: scala4ant
+.PHONY			: scala4ant-nsc
 .PHONY			: scalatest
 .PHONY			: tools
+.PHONY			: tools-nsc
 
 .PHONY			: $(prefix).all
 .PHONY			: $(prefix).scripts
@@ -184,18 +192,19 @@ tnsc.%			: ; @$(make) prefix="tnsc" $@;
 .PHONY			: $(prefix).library
 .PHONY			: $(prefix).library-msil
 .PHONY			: $(prefix).library-doc
+.PHONY			: $(prefix).library-nsc
 .PHONY			: $(prefix).util
 .PHONY			: $(prefix).scalac
-.PHONY			: $(prefix).nsc
 .PHONY			: $(prefix).nsc4ant
-.PHONY			: $(prefix).nsrt
 .PHONY			: $(prefix).scalai
 .PHONY			: $(prefix).scaladoc
 .PHONY			: $(prefix).scalap
 #.PHONY			: $(prefix).dtd2scala
 .PHONY			: $(prefix).scala4ant
+.PHONY			: $(prefix).scala4ant-nsc
 .PHONY			: $(prefix).scalatest
 .PHONY			: $(prefix).tools
+.PHONY			: $(prefix).tools-nsc
 
 ##############################################################################
 # Commands - version management
@@ -331,10 +340,10 @@ $(SCRIPTS_WRAPPER_FILE)	: MACRO_VERSION           ?= $(PROJECT_VERSION)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_LIBRARY_SOURCES   ?= $(PROJECT_SOURCEDIR)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_LIBRARY_CLASSES   ?= $(LIBRARY_CLASSDIR)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_TOOLS_CLASSES     ?= $(TOOLS_CLASSDIR)
+$(SCRIPTS_WRAPPER_FILE)	: MACRO_NLIBRARY_CLASSES  ?= $(NLIBRARY_JAR_ARCHIVE)
+$(SCRIPTS_WRAPPER_FILE)	: MACRO_NTOOLS_CLASSES    ?= $(NTOOLS_JAR_ARCHIVE)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_FJBG_CLASSES      ?= $(FJBG_JARFILE)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_MSIL_CLASSES      ?= $(MSIL_JARFILE)
-$(SCRIPTS_WRAPPER_FILE)	: MACRO_NSCALA_CLASSES    ?= $(NSCALA_JARFILE)
-$(SCRIPTS_WRAPPER_FILE)	: MACRO_NTOOLS_CLASSES    ?= $(NTOOLS_JARFILE)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_CMD          ?= java
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_ARGS         ?= -enableassertions
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_SCALA_CMD         ?= $($(prefix)_SCALA_CMD)
@@ -356,10 +365,10 @@ $(SCRIPTS_WRAPPER_FILE)	: $(SCRIPTS_TEMPLATE_FILE)
 	    $(call SCRIPTS_MACRO,LIBRARY_SOURCES) \
 	    $(call SCRIPTS_MACRO,LIBRARY_CLASSES) \
 	    $(call SCRIPTS_MACRO,TOOLS_CLASSES) \
+	    $(call SCRIPTS_MACRO,NLIBRARY_CLASSES) \
+	    $(call SCRIPTS_MACRO,NTOOLS_CLASSES) \
 	    $(call SCRIPTS_MACRO,FJBG_CLASSES) \
 	    $(call SCRIPTS_MACRO,MSIL_CLASSES) \
-	    $(call SCRIPTS_MACRO,NSCALA_CLASSES) \
-	    $(call SCRIPTS_MACRO,NTOOLS_CLASSES) \
 	    $(call SCRIPTS_MACRO,JAVA_CMD) \
 	    $(call SCRIPTS_MACRO,JAVA_ARGS) \
 	    $(call SCRIPTS_MACRO,SCALA_CMD) \
@@ -416,7 +425,7 @@ $(latest)meta-jc	: $(META_JC_FILES)
 PROJECT_SOURCES		+= $(LIBRARY_SOURCES)
 LIBRARY_NAME		 = $(PROJECT_NAME)
 LIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
-LIBRARY_NSC_ROOT	 = $(PROJECT_NSC_SOURCEDIR)/scala
+NLIBRARY_ROOT	 	 = $(PROJECT_NSC_SOURCEDIR)/scala
 LIBRARY_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
 LIBRARY_SOURCES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 LIBRARY_CLASSDIR	 = $($(prefix)_LIBRARY_CLASSDIR)
@@ -447,7 +456,7 @@ $(latest)library-jc	: $(LIBRARY_JC_FILES)
 $(latest)library-sc	: $(LIBRARY_SC_FILES)
 	@if [ "$(prefix)" = tnsc ]; then \
 	  $(make) sc target=LIBRARY LIBRARY_SC_FLAGS='$$(SC_FLAGS) -nopredefs'\
-	  LIBRARY_SC_FILES='$(LIBRARY_NSC_ROOT)/ScalaObject.scala $(LIBRARY_ROOT)/Predef.scala $(LIBRARY_ROOT)/runtime/ScalaRunTime.scala'; \
+	  LIBRARY_SC_FILES='$(NLIBRARY_ROOT)/ScalaObject.scala $(LIBRARY_ROOT)/Predef.scala $(LIBRARY_ROOT)/runtime/ScalaRunTime.scala'; \
 	fi
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	$(TOUCH) $@
@@ -460,7 +469,9 @@ ifneq ($(LIBRARY_JAR_ARCHIVE),.jar)
 
 $(LIBRARY_JAR_ARCHIVE)	: $(latest)library
 $(LIBRARY_JAR_ARCHIVE)	:
-	@$(make) jar target=LIBRARY
+	@$(ECHO) "      [jar] Building jar: $(LIBRARY_JAR_ARCHIVE)"
+	@$(make) jar target=LIBRARY \
+	    LIBRARY_JAR=@$(JAR)
 
 endif
 
@@ -596,97 +607,110 @@ $(latest)scalac-sc	: $(SCALAC_SC_FILES)
 ##############################################################################
 # Targets - scala tools - new compiler
 
-NSC_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/nsc
-NSC_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/nsc.lst)
-NSC_OUTPUTDIR		 = /tmp/classes_$(NSC_CLASSDIR)
-NSC_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/nsc/lib
-NSC_SOURCES		+= $(NSC_LIST:%=$(NSC_ROOT)/%)
-NSC_SC_FILES		+= $(filter %.scala,$(NSC_SOURCES))
-NSC_SC_SOURCEPATH	 = $(PROJECT_SOURCEDIR)
-NSC_SC_CLASSPATH	 = $(SC_CLASSPATH):$(FJBG_JARFILE)
-NSC_SC_OUTPUTDIR	 = $(NSC_OUTPUTDIR)
+NTOOLS_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/nsc
+NTOOLS_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/nsc.lst)
+NTOOLS_OUTPUTDIR	 = /tmp/classes_$(NTOOLS_JAR_NAME)
+NTOOLS_OBJECTDIR	 = $(PROJECT_OBJECTDIR)/nsc/lib
+NTOOLS_SOURCES		+= $(NTOOLS_LIST:%=$(NTOOLS_ROOT)/%)
+NTOOLS_SC_FILES		+= $(filter %.scala,$(NTOOLS_SOURCES))
+NTOOLS_SC_SOURCEPATH	 = $(PROJECT_SOURCEDIR)
+NTOOLS_SC_CLASSPATH	 = $(SC_CLASSPATH):$(FJBG_JARFILE)
+NTOOLS_SC_OUTPUTDIR	 = $(NTOOLS_OUTPUTDIR)
 
-NSC_CLASSDIR		 = nsc
-NSC_JARFILE		 = $(NSC_OBJECTDIR)/$(NSC_JAR_ARCHIVE)
-NSC_JAR_ARCHIVE		 = $(NSC_CLASSDIR).jar
-NSC_JAR_INPUTDIR	 = $(NSC_OUTPUTDIR)
-NSC_JAR_FILES		+= .
+NTOOLS_CLASSDIR		 = $(NTOOLS_OBJECTDIR)/$(NTOOLS_JAR_NAME)
+NTOOLS_JAR_NAME		 = nsc
+NTOOLS_JAR_ARCHIVE	 = $(NTOOLS_CLASSDIR).jar
+NTOOLS_JAR_INPUTDIR	 = $(NTOOLS_OUTPUTDIR)
+NTOOLS_JAR_FILES	+= .
 
-$(latest)nsc		: $(latest)nsrt
-$(latest)nsc		: $(latest)nsc-jar
-$(latest)nsc		:
+$(latest)tools-nsc	: $(latest)library-nsc
+$(latest)tools-nsc	: $(latest)tools-nsc-jar
+$(latest)tools-nsc	: $(latest)scala4ant-nsc
+$(latest)tools-nsc	: $(latest)tools-nsc-nsc
+$(latest)tools-nsc	:
 	@$(TOUCH) $@
 
-ifneq ($(NSC_JC_FILES),)
-$(latest)nsc-jar	: $(latest)nsc-jc
-endif
-$(latest)nsc-jar	: $(latest)nsc-sc
-$(latest)nsc-jar	: $(latest)nsc-new
-$(latest)nsc-jar	:
-	@$(ECHO) "      [jar] Building jar: $(NSC_JARFILE)"
-	@$(make) jar target=NSC \
-	    NSC_JAR=@$(JAR) \
-	    NSC_JAR_ARCHIVE=$(NSC_JARFILE) 
+$(latest)tools-nsc-jar	: $(latest)tools-nsc-sc
+$(latest)tools-nsc-jar	:
+	@$(ECHO) "      [jar] Building jar: $(NTOOLS_JAR_ARCHIVE)"
+	@$(make) jar target=NTOOLS \
+	    NTOOLS_JAR=@$(JAR)
+	@$(TOUCH) $@
 
-$(latest)nsc-jc		: $(NSC_JC_FILES)
-	@$(make) jc target=NSC NSC_JC_FILES='$?'
-	$(TOUCH) $@
-
-$(latest)nsc-sc		: $(NSC_SC_FILES)
-# !!!	@$(make) sc target=NSC NSC_SC_FILES='$?'
+$(latest)tools-nsc-sc	: $(NTOOLS_SC_FILES)
+# !!!	@$(make) sc target=NTOOLS NTOOLS_SC_FILES='$?'
 	@n=`$(ECHO) $? | $(WC) -w`; \
-	$(ECHO) "   [scalac] Compiling $$n source files to $(NSC_SC_OUTPUTDIR)"
-	@$(make) sc target=NSC \
+	$(ECHO) "   [scalac] Compiling $$n source files to $(NTOOLS_SC_OUTPUTDIR)"
+	@$(make) sc target=NTOOLS \
 	    main_SCALAC=@$(main_SCALAC) \
 	    SCALA_JAVA_ARGS='-Xmx512M -Xms256M'
 	@$(TOUCH) $@
 
-$(latest)nsc-new	:
+$(latest)tools-nsc-nsc	: $(LIBRARY_JAR_ARCHIVE)
+$(latest)tools-nsc-nsc	: $(TOOLS_JAR_ARCHIVE)
+$(latest)tools-nsc-nsc	:
+# !!! following line is a workaround for non-working dependency 2 (why?) !
+	@$(make) jar target=TOOLS
+	@$(PROJECT_ROOT)/ant-test-nsc.sh
 	@$(TOUCH) $@
+
+ifneq ($(NTOOLS_JAR_ARCHIVE),.jar)
+
+$(NTOOLS_JAR_ARCHIVE)	: $(latest)tools-nsc
+$(NTOOLS_JAR_ARCHIVE)	:
+	@$(ECHO) "      [jar] Building jar: $(NTOOLS_JAR_ARCHIVE)"
+	@$(make) jar target=NTOOLS \
+	    NTOOLS_JAR=@$(JAR)
+
+endif
 
 ##############################################################################
 # Targets - scala library - new compiler
 
-NSRT_ROOT		 = $(PROJECT_SOURCEDIR)/scala
-NSRT_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/library-nsc.lst)
-NSRT_OUTPUTDIR		 = /tmp/classes_$(NSRT_CLASSDIR)
-NSRT_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/nsc/lib
-NSRT_SOURCES		+= $(NSRT_LIST:%=$(NSRT_ROOT)/%)
-NSRT_JC_FILES		+= $(filter %.java,$(NSRT_SOURCES))
-NSRT_JC_CLASSPATH	 = $(JC_CLASSPATH)
-NSRT_JC_FLAGS		+= $(JC_FLAGS) -scala-hack
-NSRT_JC_OUTPUTDIR	 = $(NSRT_OUTPUTDIR)
+NLIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
+NLIBRARY_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/library-nsc.lst)
+NLIBRARY_OUTPUTDIR	 = /tmp/classes_$(NLIBRARY_JAR_NAME)
+NLIBRARY_OBJECTDIR	 = $(PROJECT_OBJECTDIR)/nsc/lib
+NLIBRARY_SOURCES	+= $(NLIBRARY_LIST:%=$(NLIBRARY_ROOT)/%)
+NLIBRARY_JC_FILES	+= $(filter %.java,$(NLIBRARY_SOURCES))
+NLIBRARY_JC_CLASSPATH	 = $(JC_CLASSPATH)
+NLIBRARY_JC_FLAGS	+= $(JC_FLAGS) -scala-hack
+NLIBRARY_JC_OUTPUTDIR	 = $(NLIBRARY_OUTPUTDIR)
 
-NSRT_CLASSDIR		 = nsrt
-NSRT_JARFILE		 = $(NSRT_OBJECTDIR)/$(NSRT_JAR_ARCHIVE)
-NSRT_JAR_ARCHIVE	 = $(NSRT_CLASSDIR).jar
-NSRT_JAR_INPUTDIR	 = $(NSRT_OUTPUTDIR)
-NSRT_JAR_FILES		+= .
+NLIBRARY_CLASSDIR	 = $(NLIBRARY_OBJECTDIR)/$(NLIBRARY_JAR_NAME)
+NLIBRARY_JAR_NAME	 = nsrt
+NLIBRARY_JAR_ARCHIVE	 = $(NLIBRARY_CLASSDIR).jar
+NLIBRARY_JAR_INPUTDIR	 = $(NLIBRARY_OUTPUTDIR)
+NLIBRARY_JAR_FILES	+= .
 
-$(latest)nsrt		: $(latest)nsrt-jar
-$(latest)nsrt		:
+$(latest)library-nsc	: $(latest)library-nsc-jar
+$(latest)library-nsc	:
 	@$(TOUCH) $@
 
-$(latest)nsrt-jar	: $(latest)nsrt-jc
-ifneq ($(NSRT_SC_FILES),)
-$(latest)nsrt-jar	: $(latest)nsrt-sc
-endif
-$(latest)nsrt-jar	:
-	@$(ECHO) "      [jar] Building jar: $(NSRT_JARFILE)"
-	@$(make) jar target=NSRT \
-	    NSRT_JAR=@$(JAR) \
-	    NSRT_JAR_ARCHIVE=$(NSRT_JARFILE)
+$(latest)library-nsc-jar	: $(latest)library-nsc-jc
+$(latest)library-nsc-jar	:
+	@$(ECHO) "      [jar] Building jar: $(NLIBRARY_JAR_ARCHIVE)"
+	@$(make) jar target=NLIBRARY \
+	    NLIBRARY_JAR=@$(JAR)
+	@$(TOUCH) $@
 
-$(latest)nsrt-jc	: $(NSRT_JC_FILES)
+$(latest)library-nsc-jc	: $(NLIBRARY_JC_FILES)
 	@n=`$(ECHO) '$?' | $(WC) -w`; \
-	$(ECHO) [pico] Compiling $$n source files to $(NSRT_JC_OUTPUTDIR)
-	@$(make) jc target=NSRT \
-	    NSRT_JC_FILES='$?'
+	$(ECHO) "     [pico] Compiling $$n source files to $(NLIBRARY_JC_OUTPUTDIR)"
+	@$(make) jc target=NLIBRARY \
+	    jc=@ \
+	    NLIBRARY_JC_FILES='$?'
 	@$(TOUCH) $@
 
-$(latest)nsrt-sc	: $(NSRT_SC_FILES)
-	@$(make) sc target=NSRT SCALA_JAVA_ARGS='-Xmx512M -Xms256M'
-	$(TOUCH) $@
+ifneq ($(NLIBRARY_JAR_ARCHIVE),.jar)
+
+$(NLIBRARY_JAR_ARCHIVE)	: $(latest)library-nsc
+$(NLIBRARY_JAR_ARCHIVE)	:
+	@$(ECHO) "      [jar] Building jar: $(NLIBRARY_JAR_ARCHIVE)"
+	@$(make) jar target=NLIBRARY \
+	    NLIBRARY_JAR=@$(JAR)
+
+endif
 
 ##############################################################################
 # Targets - scala tools - interpreter
@@ -815,35 +839,36 @@ $(latest)scala4ant-sc	: $(SCALA4ANT_SC_FILES)
 
 PROJECT_SOURCES		+= $(SCALA4ANT_SOURCES)
 NSC4ANT_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scala4ant
-NSC4ANT_OUTPUTDIR	 = /tmp/classes_$(NSC4ANT_CLASSDIR)
+NSC4ANT_OUTPUTDIR	 = /tmp/classes_$(NSC4ANT_JAR_NAME)
 NSC4ANT_OBJECTDIR	 = $(PROJECT_OBJECTDIR)/nsc/lib
 NSC4ANT_LIST		+= NscAdaptor.scala
 NSC4ANT_LIST		+= NscTask.scala
+NSC4ANT_LIST		+= ScalaRuntime.scala
 NSC4ANT_SOURCES		+= $(NSC4ANT_LIST:%=$(NSC4ANT_ROOT)/%)
 NSC4ANT_SC_FILES	+= $(NSC4ANT_SOURCES)
 NSC4ANT_SC_SOURCPATH	 = $(PROJECT_SOURCEDIR)
-NSC4ANT_SC_CLASSPATH	 = $(SC_CLASSPATH):$(NSC_OUTPUTDIR):$(ANT_JARFILE)
+NSC4ANT_SC_CLASSPATH	 = $(SC_CLASSPATH):$(NTOOLS_OUTPUTDIR):$(ANT_JARFILE)
 NSC4ANT_SC_OUTPUTDIR	 = $(NSC4ANT_OUTPUTDIR)
 
-NSC4ANT_CLASSDIR	 = nsc4ant
-NSC4ANT_JARFILE		 = $(NSC4ANT_OBJECTDIR)/$(NSC4ANT_JAR_ARCHIVE)
+NSC4ANT_CLASSDIR	 = $(NSC4ANT_OBJECTDIR)/$(NSC4ANT_JAR_NAME)
+NSC4ANT_JAR_NAME	 = nsc4ant
 NSC4ANT_JAR_ARCHIVE	 = $(NSC4ANT_CLASSDIR).jar
 NSC4ANT_JAR_INPUTDIR	 = $(NSC4ANT_OUTPUTDIR)
 NSC4ANT_JAR_FILES	+= .
 
-$(latest)nsc4ant	: $(latest)nsc
-$(latest)nsc4ant	: $(latest)nsc4ant-jar
-$(latest)nsc4ant	:
+$(latest)scala4ant-nsc	: $(latest)tools-nsc-jar
+$(latest)scala4ant-nsc	: $(latest)scala4ant-nsc-jar
+$(latest)scala4ant-nsc	:
 	@$(TOUCH) $@
 
-$(latest)nsc4ant-jar	: $(latest)nsc4ant-sc
-$(latest)nsc4ant-jar	:
-	@$(ECHO) "      [jar] Building jar: $(NSC4ANT_JARFILE)"
+$(latest)scala4ant-nsc-jar	: $(latest)scala4ant-nsc-sc
+$(latest)scala4ant-nsc-jar	:
+	@$(ECHO) "      [jar] Building jar: $(NSC4ANT_JAR_ARCHIVE)"
 	@$(make) jar target=NSC4ANT \
-	    NSC4ANT_JAR=@$(JAR) \
-	    NSC4ANT_JAR_ARCHIVE=$(NSC4ANT_JARFILE)
+	    NSC4ANT_JAR=@$(JAR)
+	@$(TOUCH) $@
 
-$(latest)nsc4ant-sc	: $(NSC4ANT_SC_FILES)
+$(latest)scala4ant-nsc-sc	: $(NSC4ANT_SC_FILES)
 	@n=`$(ECHO) '$?' | $(WC) -w`; \
 	$(ECHO) "   [scalac] Compiling $$n source files to $(NSC4ANT_SC_OUTPUTDIR)"
 	@$(make) sc target=NSC4ANT \
@@ -897,7 +922,9 @@ ifneq ($(TOOLS_JAR_ARCHIVE),.jar)
 
 $(TOOLS_JAR_ARCHIVE)	: $(latest)tools
 $(TOOLS_JAR_ARCHIVE)	:
-	@$(make) jar target=TOOLS
+	@$(ECHO) "      [jar] Building jar: $(TOOLS_JAR_ARCHIVE)"
+	@$(make) jar target=TOOLS \
+	    TOOLS_JAR=@$(JAR)
 
 endif
 
