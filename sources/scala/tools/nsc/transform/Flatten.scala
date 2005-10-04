@@ -87,12 +87,6 @@ abstract class Flatten extends InfoTransform {
         case ClassDef(_, _, _, _, _) if sym.isNestedClass =>
 	  liftedDefs(sym.toplevelClass.owner) += tree;
 	  EmptyTree
-	case Super(qual, mix) if (mix != nme.EMPTY.toTypeName) =>
-	  val ps = tree.symbol.info.parents dropWhile (p => p.symbol.name != mix);
-	  assert(!ps.isEmpty, tree);
-	  val mix1 = if (ps.head.symbol.isNestedClass) atPhase(phase.next)(ps.head.symbol.name)
-		     else mix;
-	  copy.Super(tree, qual, mix1)
         case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
           atPhase(phase.next) {
             atPos(tree.pos) {

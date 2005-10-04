@@ -363,6 +363,9 @@ abstract class Mixin extends InfoTransform {
               Apply(Select(qual, lhs.symbol.setter(enclInterface)) setPos lhs.pos, List(rhs))
             }
           }
+        case TypeApply(fn, List(arg)) =>
+	  if (arg.tpe.symbol.isImplClass) arg.tpe = toInterface(arg.tpe);
+          tree
         case _ =>
           tree
       }

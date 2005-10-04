@@ -47,7 +47,7 @@ abstract class Interpreter {
     // first phase: compile auto-generated file
     val args = List.fromString(filename, ' ');
     val command = new CompilerCommand(args, error, true);
-    compiler.currentRun.compile(command.files);
+    (new compiler.Run).compile(command.files);
 
 /*
     //todo: if no errors in compilation then

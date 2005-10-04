@@ -216,7 +216,8 @@ abstract class TreePrinters {
         case Super(qual, mixin) =>
           if (qual != nme.EMPTY.toTypeName) print(symName(tree, qual) + ".");
           print("super");
-          if (mixin != nme.EMPTY.toTypeName) print("[" + mixin + "]")
+          if (mixin != nme.EMPTY.toTypeName)
+	    print("[" + mixin + "]")
 
         case This(qual) =>
           if (qual != nme.EMPTY.toTypeName) print(symName(tree, qual) + ".");

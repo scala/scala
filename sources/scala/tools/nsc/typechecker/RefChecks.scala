@@ -552,7 +552,7 @@ abstract class RefChecks extends InfoTransform {
 		  unit.error(tree.pos, "symbol accessed from super may not be abstract");
               }
               //System.out.println("super: " + tree + " in " + base);//DEBUG
-              if (base.isTrait && mixin == nme.EMPTY.toTypeName) {
+              if (base.isTrait && sym.isTerm && mixin == nme.EMPTY.toTypeName) {
                 val superAccName = nme.superName(sym.name);
 	        val superAcc = base.info.decl(superAccName) suchThat (.alias.==(sym));
 	        assert(superAcc != NoSymbol, "" + sym + " " + base + " " + superAccName);//debug

@@ -293,8 +293,14 @@ import Flags._;
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
       assert(info != null);
-      infos = new TypeHistory(phase.id, info, null);
-      limit = phase.id;
+      var pid = phase.id;
+      if (pid == 0) {
+        // can happen when we initialize NoSymbol before running the compiler
+        assert(name == nme.NOSYMBOL);
+        pid = 1
+      }
+      infos = new TypeHistory(pid, info, null);
+      limit = pid;
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED;
         validForRun = currentRun
