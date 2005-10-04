@@ -11,6 +11,7 @@
 ##############################################################################
 # Variables
 #
+# JC_PREPEND		 = e.g. '@' to silently run the compiler
 # JC_COMPILER		 = compiler name, for example JAVAC
 # $(JC_COMPILER)	 = compiler command
 # $(JC_COMPILER)_FLAGS	 = compiler-specific compilation flags
@@ -63,6 +64,7 @@ JAVAC			?= javac
 ##############################################################################
 # Values
 
+jc_PREPEND		 = $(call JC_LOOKUP,JC_PREPEND)
 jc_COMPILER		 = $(call JC_LOOKUP,JC_COMPILER)
 jc_compiler		 = $(call JC_LOOKUP,$(jc_COMPILER))
 jc_compiler_flags	 = $(call JC_LOOKUP,$(jc_COMPILER)_FLAGS)
@@ -80,6 +82,7 @@ jc_FILES		 = $(call JC_LOOKUP,JC_FILES)
 ##############################################################################
 # Command
 
+jc			+= $(jc_PREPEND)
 jc			+= $(jc_compiler)
 jc			+= $(jc_compiler_flags)
 jc			+= $(jc_FLAGS)
