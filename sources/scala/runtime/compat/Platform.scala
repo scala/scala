@@ -21,6 +21,9 @@ object Platform {
   def split(str: String, separator: Char): Array[String] = {
     str.split(separator.toString());
   }
+
+  def currentThread = java.lang.Thread.currentThread();
+
   def parseByte(s: String): Byte = java.lang.Byte.parseByte(s);
   def parseShort(s: String): Short = java.lang.Short.parseShort(s);
   def parseInt(s: String): Int = java.lang.Integer.parseInt(s);
