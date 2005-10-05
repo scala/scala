@@ -20,7 +20,7 @@ trait Namers: Analyzer {
     sym.reset(NoType);
     sym setPos pos;
     sym.flags = mods | lockedFlag;
-    if (sym.isModule)
+    if (sym.isModule && sym.moduleClass != NoSymbol)
       updatePosFlags(sym.moduleClass, pos, (mods & ModuleToClassFlags) | MODULE | FINAL);
     if (sym.owner.isPackageClass && sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader])
       // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.

@@ -47,7 +47,8 @@ abstract class Flatten extends InfoTransform {
 	  parents1 = List.mapConserve(parents)(this);
 	  for (val sym <- decls.toList) {
 	    if (sym.isTerm && !sym.isStaticModule) {
-              decls1 enter sym
+              decls1 enter sym;
+              if (sym.isModule) sym.moduleClass setFlag LIFTED;
 	    } else if (sym.isClass) {
 	      liftClass(sym);
 	      if (sym.needsImplClass) liftClass(erasure.implClass(sym))

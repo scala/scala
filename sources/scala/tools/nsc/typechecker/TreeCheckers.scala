@@ -49,7 +49,7 @@ abstract class TreeCheckers extends Analyzer {
             tree.tpe = null
 	  }
           val newtree = super.typed(tree, mode, pt);
-          if (newtree ne tree)
+          if ((newtree ne tree) && !newtree.isInstanceOf[Literal])
             error(tree.pos, "trees differ\n old: " + tree + " [" + tree.getClass() + "]\n new: " +
 		  newtree + " [" + newtree.getClass() + "]");
       }

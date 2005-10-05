@@ -101,7 +101,7 @@ abstract class Mixin extends InfoTransform {
           for (val member <- bc.info.decls.toList) {
             if (isForwarded(member) && !isStatic(member) &&
                 (clazz.info.member(member.name).alternatives contains member)) {
-              val member1 = addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN);
+              val member1 = addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN resetFlag DEFERRED);
               member1.asInstanceOf[TermSymbol] setAlias member;
             }
           }
@@ -177,14 +177,15 @@ abstract class Mixin extends InfoTransform {
 
   class MixinTransformer extends Transformer {
     private var self: Symbol = _;
-    private var localTyper: analyzer.Typer = _;
+    private val rootContext = erasure.NoContext.make(EmptyTree, RootClass, new Scope());
+    private var localTyper: erasure.Typer = _;
     private var enclInterface: Symbol = _;
 
     private def preTransform(tree: Tree): Tree = {
       val sym = tree.symbol;
       tree match {
         case Template(parents, body) =>
-	  localTyper = typer.atOwner(tree, currentOwner);
+	  localTyper = erasure.newTyper(rootContext.make(tree, currentOwner));
 	  atPhase(phase.next)(currentOwner.owner.info);//needed?
           if (!currentOwner.isTrait) addMixedinMembers(currentOwner)
           else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner);
@@ -249,7 +250,7 @@ abstract class Mixin extends InfoTransform {
             Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
                   vparams map (vparam => Ident(vparam.symbol)));
           if (settings.debug.value) log("complete super acc " + stat.symbol + stat.symbol.locationString + " " + rhs0 + " " + stat.symbol.alias + stat.symbol.alias.locationString);//debug
-	  val rhs1 = postTransform(localTyper.typed(atPos(stat.pos)(rhs0)));
+	  val rhs1 = postTransform(localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType));
           copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs1)
         case _ =>
           stat
