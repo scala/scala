@@ -362,17 +362,19 @@ import Flags._;
                   member = sym
                 } else if (members == null) {
                   if (member.name != sym.name ||
-                      member != sym && {
-                        if (self == null) self = this.narrow;
-                        !self.memberType(member).matches(self.memberType(sym))})
+                      member != sym &&
+		      (member.owner == sym.owner || {
+                         if (self == null) self = this.narrow;
+                         !self.memberType(member).matches(self.memberType(sym))}))
                     members = new Scope(List(member, sym));
                 } else {
                   var prevEntry = members lookupEntry sym.name;
                   while (prevEntry != null &&
                          !(prevEntry.sym == sym
                            ||
+			   prevEntry.sym.owner != sym.owner &&
                            !prevEntry.sym.hasFlag(PRIVATE) &&
-                           !entry.sym.hasFlag(PRIVATE) && {
+                           !sym.hasFlag(PRIVATE) && {
                              if (self == null) self = this.narrow;
                              (self.memberType(prevEntry.sym) matches self.memberType(sym))}))
                     prevEntry = members lookupNextEntry prevEntry;

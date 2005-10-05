@@ -365,8 +365,10 @@ package scala.tools.nsc.typechecker;
 	    try {
 	      val uninstantiated = new ListBuffer[Symbol];
 	      val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated);
-	      isWithinBounds(undetparams, targs) &&
-	      exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) != null
+	      val result =
+		exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) != null &&
+		isWithinBounds(undetparams, targs);
+	      result
 	    } catch {
 	      case ex: NoInstance => false
 	    }

@@ -247,6 +247,8 @@ abstract class ClassfileParser {
       }
       statics.setInfo(staticInfo);
       staticModule.setInfo(statics.tpe);
+      staticModule.setFlag(JAVA);
+      staticModule.moduleClass.setFlag(JAVA);
       in.bp = curbp;
       val fieldCount = in.nextChar();
       for (val i <- Iterator.range(0, fieldCount)) parseField();

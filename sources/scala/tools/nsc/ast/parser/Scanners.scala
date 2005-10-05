@@ -289,7 +289,10 @@ import scala.tools.nsc.util.CharArrayReader;
                 return;
               case SU =>
                 if (!in.hasNext) token = EOF;
-                else syntaxError("illegal character");
+                else {
+                  syntaxError("illegal character");
+                  in.next
+                }
                 return;
               case _ =>
 		if (Character.isUnicodeIdentifierStart(in.ch)) {
@@ -448,7 +451,7 @@ import scala.tools.nsc.util.CharArrayReader;
 
     private def getStringLit(delimiter: char): unit = {
       in.next;
-      while (in.ch != delimiter && in.ch != CR && in.ch != LF && in.ch != SU) {
+      while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
 	getlitch();
       }
       if (in.ch == delimiter) {
@@ -505,10 +508,10 @@ import scala.tools.nsc.util.CharArrayReader;
      *  if one is present.
      */
     protected def getFraction = {
+      token = DOUBLELIT;
       while ('0' <= in.ch && in.ch <= '9') {
 	putChar(in.ch);
 	in.next;
-	token = DOUBLELIT;
       }
       if (in.ch == 'e' || in.ch == 'E') {
 	val lookahead = in.copy;
@@ -607,11 +610,17 @@ import scala.tools.nsc.util.CharArrayReader;
         val lookahead = in.copy;
 	lookahead.next;
         lookahead.ch match {
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
+          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
+	       '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
 	    putChar(in.ch);
 	    in.next;
 	    return getFraction
           case _ =>
+	    if (!isIdentStart(lookahead.ch)) {
+	      putChar(in.ch);
+	      in.next;
+	      return getFraction
+	    }
         }
       }
       if (base <= 10 &&

@@ -1295,7 +1295,7 @@ import collection.mutable.HashMap;
 	  if (name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode)
 	    tree setType pt
 	  else
-	    typedIdent(name);
+	    typedIdent(name)
 
 	// todo: try with case Literal(Constant(()))
         case Literal(value) =>
@@ -1321,17 +1321,20 @@ import collection.mutable.HashMap;
           }
 
         case AppliedTypeTree(tpt, args) =>
-          val tpt1 = typed(tpt, mode | FUNmode | TAPPmode, WildcardType);
-          val tparams = tpt1.tpe.symbol.typeParams;
+          val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType);
+          val tparams = tpt1.symbol.typeParams;
           val args1 = List.mapConserve(args)(typedType);
-          if (tpt1.tpe.isError)
+          if (tpt1.tpe.isError) {
             setError(tree)
-          else if (tparams.length == args1.length)
-            TypeTree() setPos tree.pos setType appliedType(tpt1.tpe, args1 map (.tpe))
-          else if (tparams.length == 0)
+          } else if (tparams.length == args1.length) {
+	    val argtypes = args1 map (.tpe);
+	    val owntype = if (tpt1.symbol.isClass) appliedType(tpt1.tpe, argtypes)
+			  else tpt1.tpe.subst(tparams, argtypes);
+            TypeTree() setPos tree.pos setType owntype
+          } else if (tparams.length == 0) {
             errorTree(tree, "" + tpt1.tpe + " does not take type parameters")
-          else {
-	    System.out.println(tpt1.tpe.symbol.rawInfo);//debug
+          } else {
+	    System.out.println("" + tpt1 + ":" + tpt1.symbol + ":" + tpt1.symbol.info);//debug
             errorTree(tree, "wrong number of type arguments for " + tpt1.tpe + ", should be " + tparams.length)
 	  }
       }

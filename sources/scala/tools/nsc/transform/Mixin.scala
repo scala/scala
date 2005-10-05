@@ -201,6 +201,14 @@ abstract class Mixin extends InfoTransform {
           } else {
             EmptyTree
           }
+        case Apply(tapp @ TypeApply(fn, List(arg)), List()) =>
+	  if (arg.tpe.symbol.isImplClass) {
+	    val ifacetpe = toInterface(arg.tpe);
+	    arg.tpe = ifacetpe;
+	    tapp.tpe = MethodType(List(), ifacetpe);
+	    tree.tpe = ifacetpe
+	  }
+          tree
         case ValDef(_, _, _, _) if (currentOwner.isImplClass) =>
 	  EmptyTree
         case _ =>
@@ -363,9 +371,6 @@ abstract class Mixin extends InfoTransform {
               Apply(Select(qual, lhs.symbol.setter(enclInterface)) setPos lhs.pos, List(rhs))
             }
           }
-        case TypeApply(fn, List(arg)) =>
-	  if (arg.tpe.symbol.isImplClass) arg.tpe = toInterface(arg.tpe);
-          tree
         case _ =>
           tree
       }

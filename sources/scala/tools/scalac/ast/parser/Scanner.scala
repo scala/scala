@@ -442,6 +442,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	        token = EOF;
               else
 	        syntaxError("illegal character");
+		nextch();
 	      return;
 	    case _ =>
 
@@ -452,8 +453,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
                   putChar(ch);
                   getOperatorRest;
                 } else {
-	          nextch();
 	          syntaxError("illegal character");
+	          nextch();
                 };
 	      return;
 	  }

@@ -23,6 +23,7 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
   var bp = start;
   var cline: int = _;
   var ccol: int = _;
+  var isUnicode: boolean = _;
   private var nextline = startline;
   private var nextcol = startcol;
 
@@ -32,6 +33,7 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
     cline = nextline;
     ccol = nextcol;
     ch = buf(bp);
+    isUnicode = false;
     bp = bp + 1;
     ch match {
       case '\t' =>
@@ -64,7 +66,8 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
             bp = bp + 1; nextcol = nextcol + 1;
           } while (buf(bp) == 'u');
           val code = udigit << 12 | udigit << 8 | udigit << 4 | udigit;
-          ch = code.asInstanceOf[char]
+          ch = code.asInstanceOf[char];
+          isUnicode = true
         }
       case _ =>
         nextcol = nextcol + 1
