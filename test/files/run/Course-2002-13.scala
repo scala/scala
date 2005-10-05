@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 class Tokenizer(s: String, delimiters: String) extends Iterator[String] {
 
   private var i = 0;
@@ -32,55 +30,6 @@ class Tokenizer(s: String, delimiters: String) extends Iterator[String] {
 	s.substring(start, i)
       }
     } else "";
-
-}
-
-class Interpreter {
-
-  private def read(filename: String) = {
-    import java.io._;
-    try {
-      val stream = new BufferedReader(new FileReader(filename));
-      val buffer = new StringBuffer();
-      def loop: String = {
-        val line = stream.readLine();
-        if (line == null) {
-          buffer.toString();
-        } else {
-          buffer.append(line);
-          loop;
-        }
-      }
-      loop;
-    } catch {
-      case (exception: FileNotFoundException) =>
-        System.out.println("not found: " + filename);
-        "";
-      case (exception: IOException) =>
-        System.out.println("can't read: " + filename);
-        "";
-    }
-  }
-
-  def run(prompt: String)(process: String => Unit): Unit = {
-    var filename = "";
-    var continue = true;
-    val in = new java.io.DataInputStream(System.in);
-    while (continue) {
-      System.out.print(prompt);
-      val line = in.readLine();
-      if (line.startsWith(":q")) {
-	continue = false
-      } else if (line.startsWith(":l")) {
-	filename = line.substring(3);
-	process(read(filename))
-      } else if (line.startsWith(":r")) {
-	process(read(filename))
-      } else {
-	process(line);
-      }
-    }
-  }
 
 }
 
@@ -144,7 +93,7 @@ object Terms {
 
   def unify(x: Term, y: Term, s: Subst): Option[Subst] = {
     val ss = unify1(x, y, s);
-    if (debug) System.out.println("unify " + x + " with " + y + " = " + ss);
+    if (debug) Console.println("unify " + x + " with " + y + " = " + ss);
     ss
   }
 
@@ -200,12 +149,12 @@ object Programs {
 
     def solve1(query: List[Term], s: Subst): Stream[Subst] = {
       val ss = solve2(query, s);
-      if (debug) System.out.println("solved " + query + " = " + ss);
+      if (debug) Console.println("solved " + query + " = " + ss);
       ss
     }
 
     def tryClause(c: Clause, q: Term, s: Subst): Stream[Subst] = {
-      if (debug) System.out.println("trying " + c);
+      if (debug) Console.println("trying " + c);
       for (val s1 <- option2stream(unify(q, c.lhs, s));
 	   val s2 <- solve1(c.rhs, s1)) yield s2;
     }
@@ -281,14 +230,14 @@ object Prolog {
 	      tvs = c.tyvars;
           }
 	  if (solutions.isEmpty) {
-            System.out.println("no")
+            Console.println("no")
 	  } else {
 	    val s: Subst = solutions.head
 	      .filter(b => tvs contains b.name)
 	      .map(b => Binding(b.name, b.term map solutions.head))
               .reverse;
-	    if (s.isEmpty) System.out.println("yes")
-	    else System.out.println(s);
+	    if (s.isEmpty) Console.println("yes")
+	    else Console.println(s);
           }
 	} else {
 	  program = program ::: List(c);
@@ -298,10 +247,6 @@ object Prolog {
   }
 
   def process(code: String) = processor(code);
-
-  def run = {
-    (new Interpreter).run("prolog> ")(processor)
-  }
 }
 
 //############################################################################
@@ -325,7 +270,7 @@ object Test {
 
       "?phrase(S,V,A,D,N).\n" + "?more.\n"
     );
-    System.out.println();
+    Console.println;
 
     Prolog.process(
       "sujet(jean).\n" +
@@ -344,7 +289,7 @@ object Test {
 
       "?phrase(S,V,A,D,N).\n" + "?more.\n"
     );
-    System.out.println();
+    Console.println;
 
     Prolog.process(
       "sujet(jean).\n" +
@@ -370,7 +315,7 @@ object Test {
       "?phrase(jean,mange,le,cons(grand,nil),cheval).\n" +
       "?phrase(jean,mange,le,cons(grand,nil),table).\n"
     );
-    System.out.println();
+    Console.println;
 
     ()
   }
