@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 trait Option[a];
 case class Some[a](value: a) extends Option[a];
 case class None[a]() extends Option[a];
@@ -55,7 +53,8 @@ class Multiplier(m1: Quantity, m2: Quantity, prod: Quantity)
 class Squarer(square: Quantity, root: Quantity) extends Constraint {
   def newValue: Unit = Pair(square.getValue, root.getValue) match {
     case Pair(Some(x), _      )if (x < 0) => error("Square of negative number")
-    case Pair(Some(x), _      )           => root.setValue(Math.sqrt(x), this)
+    case Pair(Some(x), _      )           =>
+      root.setValue(scala.runtime.compat.Math.sqrt(x), this)
     case Pair(_      , Some(x))           => square.setValue(x*x, this)
     case _                                =>
   }
@@ -93,7 +92,7 @@ class Probe(name: String, q: Quantity) extends Constraint {
       case Some(x) => x.toString()
       case None() => "?"
     }
-    System.out.println("Probe: " + name + " = " + vstr);
+    Console.println("Probe: " + name + " = " + vstr);
   }
   q connect this
 }
@@ -193,19 +192,19 @@ object M0 {
 
     c.setValue(0);
     c.forgetValue;
-    System.out.println();
+    Console.println;
 
     c.setValue(100);
     c.forgetValue;
-    System.out.println();
+    Console.println;
 
     f.setValue(32);
     f.forgetValue;
-    System.out.println();
+    Console.println;
 
     f.setValue(212);
     f.forgetValue;
-    System.out.println();
+    Console.println;
   }
 }
 
@@ -227,13 +226,13 @@ object M1 {
 
   def show_c2f(c: Quantity, f: Quantity, v: int) = {
     c.setValue(v);
-    System.out.println(c.str + " Celsius -> " + f.str + " Fahrenheits");
+    Console.println(c.str + " Celsius -> " + f.str + " Fahrenheits");
     c.forgetValue;
   }
 
   def show_f2c(c: Quantity, f: Quantity, v: int) = {
     f.setValue(v);
-    System.out.println(f.str + " Fahrenheits -> " + c.str + " Celsius");
+    Console.println(f.str + " Fahrenheits -> " + c.str + " Celsius");
     f.forgetValue;
   }
 
@@ -246,7 +245,7 @@ object M1 {
     show_c2f(c, f, 100);
     show_f2c(c, f, 32);
     show_f2c(c, f, 212);
-    System.out.println();
+    Console.println;
   }
 }
 
@@ -266,8 +265,8 @@ object M2 {
   }
 
   def show(x: Option[int], y: Option[int], z: Option[int]) = {
-    System.out.print("a = " +set(a,x)+ ", b = " +set(b,y)+ ", c = " +set(c,z));
-    System.out.println(" => " + a.str + " * " + b.str + " = " + c.str);
+    Console.print("a = " +set(a,x)+ ", b = " +set(b,y)+ ", c = " +set(c,z));
+    Console.println(" => " + a.str + " * " + b.str + " = " + c.str);
     a.forgetValue; b.forgetValue; c.forgetValue;
   }
 
@@ -280,7 +279,7 @@ object M2 {
     show(Some(2), None() , Some(6));
     show(None() , Some(3), Some(6));
     show(Some(2), Some(3), Some(6));
-    System.out.println();
+    Console.println;
 
     show(Some(0), None() , None() );
     show(None() , Some(0), None() );
@@ -293,7 +292,7 @@ object M2 {
     show(Some(0), Some(7), Some(0));
     show(Some(7), Some(0), Some(0));
     show(Some(0), Some(0), Some(0));
-    System.out.println();
+    Console.println;
   }
 }
 
@@ -309,18 +308,18 @@ object M3 {
     c === (a.square + b.square).sqrt;
 
     a.setValue(3); b.setValue(4);
-    System.out.println("a = 3, b = 4 => c = " + c.str);
+    Console.println("a = 3, b = 4 => c = " + c.str);
     a.forgetValue; b.forgetValue;
 
     a.setValue(3); c.setValue(5);
-    System.out.println("a = 3, c = 5 => b = " + b.str);
+    Console.println("a = 3, c = 5 => b = " + b.str);
     a.forgetValue; c.forgetValue;
 
     b.setValue(4); c.setValue(5);
-    System.out.println("b = 4, c = 5 => a = " + a.str);
+    Console.println("b = 4, c = 5 => a = " + a.str);
     b.forgetValue; c.forgetValue;
 
-    System.out.println();
+    Console.println;
   }
 }
 
