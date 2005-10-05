@@ -1,3 +1,10 @@
+//############################################################################
+// Immutable maps
+//############################################################################
+// $Id$
+
+//############################################################################
+
 import scala.collection.immutable.Map;
 import scala.collection.immutable.TreeMap;
 import scala.collection.immutable.ListMap;
