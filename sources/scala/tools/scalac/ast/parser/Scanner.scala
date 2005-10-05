@@ -3,8 +3,9 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 import scalac._;
 import scalac.util.{Name, Names};
@@ -65,7 +66,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   */
 
   class SourceIterator(charArray: Array[Char]) extends Iterator[Char] {
-    val buf:Array[Char] = charArray;
+    val buf: Array[Char] = charArray;
     var bp: Int = -1;
     /* inv: true if buf( bp ) is last of an odd number of ASCII '\' */
     var odd = false;
@@ -73,17 +74,17 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     var unicode2: Int = 0;
     def hasMore(i: Int, j: Int) = i + j < buf.length;
     def hasMore(j: Int) = bp + j < buf.length;
-    def hasNext = hasMore( 1 );
+    def hasNext = hasMore(1);
 
     /**
      * Gets next char, handles unicode transform
      */
     def next: Char = {
       bp = bp + 1;
-      val ch = buf( bp );
-      odd = ( ch == '\\' ) && !odd;
-      if( odd && hasNext && 'u' == buf( bp + 1 )) {
-        val Pair( newch, offset ) = nextUnicode( bp + 1 );
+      val ch = buf(bp);
+      odd = (ch == '\\') && !odd;
+      if (odd && hasNext && 'u' == buf(bp + 1)) {
+        val Pair(newch, offset) = nextUnicode(bp + 1);
         bp = bp + offset;
         ccol = ccol + offset;
         odd = false;
@@ -92,7 +93,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
         ch
       }
     }
-    def raw: Char = { bp = bp + 1; buf( bp ) }
+    def raw: Char = { bp = bp + 1; buf(bp) }
 
     /** precondition: hasNext
     */
@@ -114,7 +115,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     def lookahead2 = {
       val j = bp + unicode1 + 1 + 1;
       val ahead2 = buf( j );
-      val even1 = unicode1 > 0 || '\\' != buf( j - 1 ) || odd;
+      val even1 = unicode1 > 0 || '\\' != buf(j - 1) || odd;
       if (ahead2 == '\\' && even1 && hasMore(j, 1) && 'u' == buf(j + 1)) {
         val Pair(newch, offset) = nextUnicode(j + 1);
         unicode2 = offset;
@@ -148,7 +149,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
       if (j + 4 >= buf.length) syntaxError("incomplete unicode escape");
       def munch = {
         val i = digit2int( buf(j), 16 );
-        if( i == -1 ) {
+        if (i == -1) {
           syntaxError("error in unicode escape");
         };
         j = j + 1;
@@ -275,39 +276,39 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           if (ch == LF) {
             ccol = 0;
             nextch();
-	  }
+          }
         case LF | FF =>
           cline = cline + 1;
           ccol = 0;
           nextch();
         case _ =>
-	  pos = Position.encode(cline, ccol);
-	  //index = bp;
-	  ch match {
+          pos = Position.encode(cline, ccol);
+          //index = bp;
+          ch match {
             case '\u21D2' =>
               nextch();
               token = ARROW;
               return;
-	    case 'A' | 'B' | 'C' | 'D' | 'E' |
-		 'F' | 'G' | 'H' | 'I' | 'J' |
-		 'K' | 'L' | 'M' | 'N' | 'O' |
-		 'P' | 'Q' | 'R' | 'S' | 'T' |
-		 'U' | 'V' | 'W' | 'X' | 'Y' |
-		 'Z' | '$' | '_' |
-		 'a' | 'b' | 'c' | 'd' | 'e' |
-		 'f' | 'g' | 'h' | 'i' | 'j' |
-		 'k' | 'l' | 'm' | 'n' | 'o' |
-		 'p' | 'q' | 'r' | 's' | 't' |
-		 'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
-		 'z' =>
+            case 'A' | 'B' | 'C' | 'D' | 'E' |
+                 'F' | 'G' | 'H' | 'I' | 'J' |
+                 'K' | 'L' | 'M' | 'N' | 'O' |
+                 'P' | 'Q' | 'R' | 'S' | 'T' |
+                 'U' | 'V' | 'W' | 'X' | 'Y' |
+                 'Z' | '$' | '_' |
+                 'a' | 'b' | 'c' | 'd' | 'e' |
+                 'f' | 'g' | 'h' | 'i' | 'j' |
+                 'k' | 'l' | 'm' | 'n' | 'o' |
+                 'p' | 'q' | 'r' | 's' | 't' |
+                 'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
+                 'z' =>
               putChar(ch);
 	      nextch();
 	      getIdentRest;  // scala-mode: wrong indent for multi-line case blocks
 	      return;
-            case _ if (java.lang.Character.isUnicodeIdentifierStart(ch)) =>
+            case _ if (Character.isUnicodeIdentifierStart(ch)) =>
               putChar(ch);
-	      nextch();
-	      getIdentRest;
+              nextch();
+              getIdentRest;
               return;
 
             case '<' => // is XMLSTART?
@@ -320,11 +321,11 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
                   putChar('<');
                   getOperatorRest;
               }
-            return;
+              return;
 
 	    case '~' | '!' | '@' | '#' | '%' |
-		 '^' | '*' | '+' | '-' | /* '<' | */
-		 '>' | '?' | ':' | '=' | '&' |
+                 '^' | '*' | '+' | '-' | /* '<' | */
+                 '>' | '?' | ':' | '=' | '&' |
                  '|' | '\\' =>
               putChar( ch );
 	      nextch();
@@ -332,25 +333,25 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	      return;
 	    case '/' =>
 	      nextch();
-	      if (!skipComment()) {
-                putChar( '/' );
-		getOperatorRest;
-		return;
+              if (! skipComment()) {
+                putChar('/');
+                getOperatorRest;
+                return;
 	      }
 	    case '0' =>
               putChar(ch);
 	      nextch();
 	      if (ch == 'x' || ch == 'X') {
-		nextch();
-		base = 16;
-		getNumber;
+                nextch();
+                base = 16;
+                getNumber;
 	      } else {
-		base = 8;
-		getNumber;
+                base = 8;
+                getNumber;
 	      }
 	      return;       // scala-mode: return is a keyword
 	    case '1' | '2' | '3' | '4' |
-		 '5' | '6' | '7' | '8' | '9' =>
+	         '5' | '6' | '7' | '8' | '9' =>
 	      base = 10;
 	      getNumber;
 	      return;
@@ -365,17 +366,17 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	      nextch();
 	      ch match {
 		case 'A' | 'B' | 'C' | 'D' | 'E' |
-		     'F' | 'G' | 'H' | 'I' | 'J' |
-		     'K' | 'L' | 'M' | 'N' | 'O' |
-		     'P' | 'Q' | 'R' | 'S' | 'T' |
-		     'U' | 'V' | 'W' | 'X' | 'Y' |
-		     'Z' | '$' | '_' |
-		     'a' | 'b' | 'c' | 'd' | 'e' |
-		     'f' | 'g' | 'h' | 'i' | 'j' |
-		     'k' | 'l' | 'm' | 'n' | 'o' |
-		     'p' | 'q' | 'r' | 's' | 't' |
-		     'u' | 'v' | 'w' | 'x' | 'y' |
-		     'z' =>
+                     'F' | 'G' | 'H' | 'I' | 'J' |
+                     'K' | 'L' | 'M' | 'N' | 'O' |
+                     'P' | 'Q' | 'R' | 'S' | 'T' |
+                     'U' | 'V' | 'W' | 'X' | 'Y' |
+                     'Z' | '$' | '_' |
+                     'a' | 'b' | 'c' | 'd' | 'e' |
+                     'f' | 'g' | 'h' | 'i' | 'j' |
+                     'k' | 'l' | 'm' | 'n' | 'o' |
+                     'p' | 'q' | 'r' | 's' | 't' |
+                     'u' | 'v' | 'w' | 'x' | 'y' |
+                     'z' =>
                        cbuf.setLength(0);
 		  putChar(ch);
 		  nextch();
@@ -384,26 +385,26 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 		    token = SYMBOLLIT;
 		    return;
 		  }
-                case _ if(java.lang.Character.isUnicodeIdentifierStart(ch)) =>
-                  cbuf.setLength( 0 );
+                case _ if (Character.isUnicodeIdentifierStart(ch)) =>
+                  cbuf.setLength(0);
 		  putChar(ch);
 		  nextch();
 		  if (ch != '\'') {
 		    getIdentRest;
-		    token = SYMBOLLIT;
-		    return;
-		  }
-
-		case _ =>
-		  getlitch();
-		}
+                    token = SYMBOLLIT;
+                    return;
+                  }
+                case _ =>
+                  getlitch();
+              }
 	      if (ch == '\'') {
-		nextch();
-		token = CHARLIT;
-                name = Name.fromString( cbuf.toString() );
+                nextch();
+                token = CHARLIT;
+                name = Name.fromString(cbuf.toString());
                 cbuf.setLength(0);
-	      } else {
-		syntaxError("unclosed character literal");
+	      }
+              else {
+                syntaxError("unclosed character literal");
 	      }
 	      return;
 	    case '.' =>
@@ -413,10 +414,10 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
                 getFraction;
               } else token = DOT;
 	      return;
-	    case ';' =>
-	      nextch(); token = SEMI;
-	      return;
-	    case ',' =>
+            case ';' =>
+              nextch(); token = SEMI;
+              return;
+            case ',' =>
 	      nextch(); token = COMMA;
 	      return;
 	    case '(' =>   //scala-mode: need to understand character quotes
@@ -438,24 +439,27 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	      nextch(); token = RBRACKET;
 	      return;
 	    case SU =>
-              if( !srcIterator.hasNext )
+              if (! srcIterator.hasNext)
 	        token = EOF;
-              else
+              else {
 	        syntaxError("illegal character");
-		nextch();
-	      return;
+                nextch();
+	      }
+              return;
 	    case _ =>
-
-              if( java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
-                case java.lang.Character.MATH_SYMBOL => true;
-                case java.lang.Character.OTHER_SYMBOL => true;
-                case _ => false;}) {
-                  putChar(ch);
-                  getOperatorRest;
-                } else {
-	          syntaxError("illegal character");
-	          nextch();
-                };
+              if (Character.isUnicodeIdentifierStart(ch)) {
+                putChar(ch);
+                nextch();
+                getIdentRest;
+              }
+              else if (isSpecial(ch)) {
+                putChar(ch);
+                getOperatorRest;
+              }
+              else {
+                syntaxError("illegal character");
+                nextch();
+              }
 	      return;
 	  }
       }
@@ -519,35 +523,23 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     }
   }
 
-  def isIdentStart(ch: Char) = ch match {
-    case 'A' | 'B' | 'C' | 'D' | 'E' |
-    'F' | 'G' | 'H' | 'I' | 'J' |
-    'K' | 'L' | 'M' | 'N' | 'O' |
-    'P' | 'Q' | 'R' | 'S' | 'T' |
-    'U' | 'V' | 'W' | 'X' | 'Y' |
-    'Z' | '$' | '_' |
-    'a' | 'b' | 'c' | 'd' | 'e' |
-    'f' | 'g' | 'h' | 'i' | 'j' |
-    'k' | 'l' | 'm' | 'n' | 'o' |
-    'p' | 'q' | 'r' | 's' | 't' |
-    'u' | 'v' | 'w' | 'x' | 'y' |
-    'z'  =>
-      true
-    case _ if (java.lang.Character.isUnicodeIdentifierStart(ch)) =>
-      true
-    case _ =>
-      false
-  }
+// Identifiers ---------------------------------------------------------------
 
-  def isIdentPart(ch: Char) = isIdentStart(ch) || (ch match {
-    case '0' | '1' | '2' | '3' | '4' |
-         '5' | '6' | '7' | '8' | '9' =>
-      true
-    case _ if (java.lang.Character.isUnicodeIdentifierPart(ch)) =>
-      true
-    case _ =>
-      false
-  });
+  def isIdentStart(c: char): boolean =
+    ('A' <= c && c <= 'Z') ||
+    ('a' <= c && c <= 'a') ||
+    (c == '_') || (c == '$') ||
+    Character.isUnicodeIdentifierStart(c);
+
+  def isIdentPart(c: char) =
+    isIdentStart(c) ||
+    ('0' <= c && c <= '9') ||
+    Character.isUnicodeIdentifierPart(c);
+
+  def isSpecial(c: char) = {
+    val chtp = Character.getType(c);
+    chtp == Character.MATH_SYMBOL || chtp == Character.OTHER_SYMBOL;
+  }
 
   private def getIdentRest: Unit = {
     while (true) {
@@ -574,11 +566,11 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           getIdentOrOperatorRest;
           return;
 	case SU =>
-          // true == java.lang.Character.isUnicodeIdentifierPart(SU)
+          // true == Character.isUnicodeIdentifierPart(SU)
           treatIdent;
 	  return;
 
-        case _ if (java.lang.Character.isUnicodeIdentifierPart(ch)) =>
+        case _ if (Character.isUnicodeIdentifierPart(ch)) =>
           putChar(ch);
           nextch();
         case _ =>
@@ -592,11 +584,11 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     while (true) {
       ch match {
         case '~' | '!' | '@' | '#' | '%' |
-	     '^' | '*' | '+' | '-' | '<' |
+             '^' | '*' | '+' | '-' | '<' |
              '>' | '?' | ':' | '=' | '&' |
              '|' | '\\' =>
           putChar(ch);
-	  nextch();
+          nextch();
         case '/' =>
           nextch();
           if (skipComment()) {
@@ -606,11 +598,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
             putChar( '/' );
           }
         case _ =>
-          if (java.lang.Character.getType(ch).asInstanceOf[byte] match {
-            case java.lang.Character.MATH_SYMBOL => true;
-            case java.lang.Character.OTHER_SYMBOL => true;
-            case _ => false;
-          }) {
+          if (isSpecial(ch)) {
             putChar(ch);
             nextch();
           } else {
@@ -631,15 +619,11 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
            '|' | '\\' | '/' =>
         getOperatorRest;
       case _ =>
-         if( java.lang.Character.getType( ch ).asInstanceOf[byte] match {
-            case java.lang.Character.MATH_SYMBOL => true;
-            case java.lang.Character.OTHER_SYMBOL => true;
-            case _ => false;
-          }) {
-            getOperatorRest;
-          } else {
-            treatIdent;
-          }
+        if (isSpecial(ch)) {
+          getOperatorRest;
+        } else {
+          treatIdent;
+        }
     }
   }
 
