@@ -194,6 +194,7 @@ runtime/ShortRef.java
 
 runtime/compat/Math.scala
 runtime/compat/Platform.scala
+runtime/compat/StringBuilder.scala
 
 #runtime/distributed/Channel.java
 #runtime/distributed/ChannelImpl.java

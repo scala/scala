@@ -182,6 +182,7 @@ runtime/SymtabAttribute.cs
 
 ../msil/scala/runtime/compat/Math.scala
 ../msil/scala/runtime/compat/Platform.scala
+../msil/scala/runtime/compat/StringBuilder.scala
 
 runtime/matching/Address.scala
 #runtime/matching/Matcher.scala
