@@ -180,10 +180,10 @@ import Flags._;
     /** Is this symbol a constant? */
     final def isConstant: boolean =
       isStable && (tpe match {
-	case ConstantType(_) => true
-	case PolyType(_, ConstantType(_)) => true
-	case MethodType(_, ConstantType(_)) => true
-	case _ => false
+  case ConstantType(_) => true
+  case PolyType(_, ConstantType(_)) => true
+  case MethodType(_, ConstantType(_)) => true
+  case _ => false
       });
 
     /** Is this class nested in another class or module (not a package)? */
@@ -260,32 +260,32 @@ import Flags._;
     final def info: Type = {
       var cnt = 0;
       while (validForRun != currentRun) {
-	//if (settings.debug.value) System.out.println("completing " + this);//DEBUG
+  //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         var ifs = infos;
         assert(ifs != null, this.name);
         while (ifs.prev != null) {
           ifs = ifs.prev;
         }
-	val tp = ifs.info;
-	//if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
+  val tp = ifs.info;
+  //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
         if ((rawflags & LOCKED) != 0) {
           setInfo(ErrorType);
           throw CyclicReference(this, tp);
         }
         rawflags = rawflags | LOCKED;
-	val current = phase;
+  val current = phase;
         try {
-	  phase = phaseWithId(ifs.start);
+    phase = phaseWithId(ifs.start);
           tp.complete(this);
-	  // if (settings.debug.value && (validForRun == currentRun) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
+    // if (settings.debug.value && (validForRun == currentRun) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
           rawflags = rawflags & ~LOCKED
         } finally {
-	  phase = current
+    phase = current
         }
-	cnt = cnt + 1;
-	// allow for two completions:
-	//   one: sourceCompleter to LazyType, two: LazyType to completed type
-	if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp);
+  cnt = cnt + 1;
+  // allow for two completions:
+  //   one: sourceCompleter to LazyType, two: LazyType to completed type
+  if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp);
       }
       rawInfo
     }
@@ -322,28 +322,28 @@ import Flags._;
     /** Return info without checking for initialization or completing */
     final def rawInfo: Type = {
       if (limit < phase.id) {
-	if (validForRun == currentRun) {
-	  val current = phase;
+  if (validForRun == currentRun) {
+    val current = phase;
           var itr = infoTransformers.nextFrom(limit);
           infoTransformers = itr; // caching optimization
           while (itr.pid != NoPhase.id && itr.pid < current.id) {
             phase = phaseWithId(itr.pid);
             val info1 = itr.transform(this, infos.info);
             limit = phase.id + 1;
-	    if (info1 ne infos.info) {
-	      infos = new TypeHistory(limit, info1, infos);
+      if (info1 ne infos.info) {
+        infos = new TypeHistory(limit, info1, infos);
             }
             itr = itr.nextFrom(limit)
           }
           phase = current;
           limit = current.id;
-	}
-	assert(infos != null, name);
-	infos.info
+  }
+  assert(infos != null, name);
+  infos.info
       } else {
-	var infos = this.infos;
-	while (phase.id < infos.start && infos.prev != null) infos = infos.prev;
-	infos.info
+  var infos = this.infos;
+  while (phase.id < infos.start && infos.prev != null) infos = infos.prev;
+  infos.info
       }
     }
 
@@ -392,14 +392,14 @@ import Flags._;
      */
     final def isLess(that: Symbol): boolean = {
       def closureLength(sym: Symbol) =
-	if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
-	else sym.info.closure.length;
+  if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
+  else sym.info.closure.length;
       if (this.isType)
-	that.isType &&
-	{val diff = closureLength(this) - closureLength(that);
-	 diff > 0 || diff == 0 && this.id < that.id}
+  that.isType &&
+  {val diff = closureLength(this) - closureLength(that);
+   diff > 0 || diff == 0 && this.id < that.id}
       else
-	that.isType || this.id < that.id;
+  that.isType || this.id < that.id;
     }
 
     /** A partial ordering between symbols.
@@ -415,7 +415,7 @@ import Flags._;
       info.closurePos(that) >= 0 ||
       this == AllClass ||
       this == AllRefClass &&
-	(that == AnyClass ||
+  (that == AnyClass ||
          that != AllClass && (that isSubClass AnyRefClass));
 
 // Overloaded Alternatives ---------------------------------------------------------
@@ -427,12 +427,12 @@ import Flags._;
     def filter(cond: Symbol => boolean): Symbol =
       if (hasFlag(OVERLOADED)) {
         //assert(info.isInstanceOf[OverloadedType], "" + this + ":" + info);//DEBUG
-	val alts = alternatives;
-	val alts1 = alts filter cond;
-	if (alts1 eq alts) this
-	else if (alts1.isEmpty) NoSymbol
-	else if (alts1.tail.isEmpty) alts1.head
-	else owner.newOverloaded(info.prefix, alts1)
+  val alts = alternatives;
+  val alts1 = alts filter cond;
+  if (alts1 eq alts) this
+  else if (alts1.isEmpty) NoSymbol
+  else if (alts1.tail.isEmpty) alts1.head
+  else owner.newOverloaded(info.prefix, alts1)
       } else if (cond(this)) this
       else NoSymbol;
 
@@ -510,7 +510,7 @@ import Flags._;
      */
     final def linkedClass: Symbol = {
       if (owner.isPackageClass)
-	owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo ne NoType)
+  owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo ne NoType)
       else NoSymbol;
     }
 
@@ -519,7 +519,7 @@ import Flags._;
      */
     final def linkedModule: Symbol =
       if (owner.isPackageClass)
-	owner.info.decl(name.toTermName).suchThat(
+  owner.info.decl(name.toTermName).suchThat(
           sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType));
       else NoSymbol;
 
@@ -536,9 +536,9 @@ import Flags._;
 
     final def toInterface: Symbol =
       if (isImplClass) {
-	val iface = tpe.parents.last.symbol;
-	assert(nme.implClassName(iface.name) == name, this);
-	iface
+  val iface = tpe.parents.last.symbol;
+  assert(nme.implClassName(iface.name) == name, this);
+  iface
       } else this;
 
     /** The module corresponding to this module class (note that this
@@ -569,8 +569,8 @@ import Flags._;
       var sym: Symbol = NoSymbol;
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (!bcs.head.isImplClass)
-	  sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
-	bcs = bcs.tail
+    sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
+  bcs = bcs.tail
       }
       sym
     }
@@ -590,7 +590,7 @@ import Flags._;
       if (isTerm && (this hasFlag PRIVATE)) {
         setFlag(notPRIVATE);
         if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
-	expandName(base)
+  expandName(base)
       }
 
     /** change name by appending $$<fully-qualified-name-of-class `base'>
@@ -690,40 +690,40 @@ import Flags._;
     final def locationString: String =
       if (owner.isClass &&
           (!owner.isAnonymousClass && !owner.isRefinementClass || settings.debug.value))
-	" in " + (if (owner.isModuleClass) "object " + owner.nameString  else owner)
+  " in " + (if (owner.isModuleClass) "object " + owner.nameString  else owner)
       else "";
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
       def typeParamsString: String = tp match {
-	case PolyType(tparams, _) if (tparams.length != 0) =>
-	  (tparams map (.defString)).mkString("[", ",", "]")
-	case _ =>
-	  ""
+  case PolyType(tparams, _) if (tparams.length != 0) =>
+    (tparams map (.defString)).mkString("[", ",", "]")
+  case _ =>
+    ""
       }
       if (isClass)
-	typeParamsString + " extends " + tp.resultType
+  typeParamsString + " extends " + tp.resultType
       else if (isAliasType)
-	typeParamsString + " = " + tp.resultType
+  typeParamsString + " = " + tp.resultType
       else if (isAbstractType)
-	tp match {
-	  case TypeBounds(lo, hi) =>
-	    (if (lo.symbol == AllClass) "" else " >: " + lo) +
-	    (if (hi.symbol == AnyClass) "" else " <: " + hi)
-	  case _ =>
-	    "<: " + tp;
-	}
+  tp match {
+    case TypeBounds(lo, hi) =>
+      (if (lo.symbol == AllClass) "" else " >: " + lo) +
+      (if (hi.symbol == AnyClass) "" else " <: " + hi)
+    case _ =>
+      "<: " + tp;
+  }
       else if (isModule)
-	moduleClass.infoString(tp)
+  moduleClass.infoString(tp)
       else
-	tp match {
-	  case PolyType(tparams, res) =>
-	    typeParamsString + infoString(res)
-	  case MethodType(pts, res) =>
-	    pts.mkString("(", ",", ")") + infoString(res)
-	  case _ =>
-	    ": " + tp
-	}
+  tp match {
+    case PolyType(tparams, res) =>
+      typeParamsString + infoString(res)
+    case MethodType(pts, res) =>
+      pts.mkString("(", ",", ")") + infoString(res)
+    case _ =>
+      ": " + tp
+  }
     }
 
     def infosString = infos.toString();
@@ -737,8 +737,8 @@ import Flags._;
     /** String representation of symbol's definition */
     final def defString: String =
       compose(List(flagsToString(flags & ExplicitFlags),
-		   keyString,
-		   varianceString + nameString + infoString(rawInfo)));
+       keyString,
+       varianceString + nameString + infoString(rawInfo)));
 
     /** Concatenate strings separated by spaces */
     private def compose(ss: List[String]): String =
@@ -790,11 +790,11 @@ import Flags._;
     override def name: Name =
       if (phase.flatClasses && !hasFlag(METHOD) &&
           rawowner != NoSymbol && !rawowner.isPackageClass) {
-	if (flatname == nme.EMPTY) {
-	  assert(rawowner.isClass);
-	  flatname = newTermName(rawowner.name.toString() + "$" + rawname);
-	}
-	flatname
+  if (flatname == nme.EMPTY) {
+    assert(rawowner.isClass);
+    flatname = newTermName(rawowner.name.toString() + "$" + rawname);
+  }
+  flatname
       } else rawname;
 
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
@@ -817,12 +817,12 @@ import Flags._;
       assert(tpeCache ne NoType, this);
       if (tpePhase != phase) {
         if (isValid(tpePhase)) {
-	  tpePhase = phase
+    tpePhase = phase
         } else {
           if (isInitialized) tpePhase = phase;
           tpeCache = NoType;
-	  val targs = if (phase.erasedTypes && this != ArrayClass) List()
-		      else unsafeTypeParams map (.tpe);
+    val targs = if (phase.erasedTypes && this != ArrayClass) List()
+          else unsafeTypeParams map (.tpe);
           tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, targs)
         }
       }
@@ -831,7 +831,7 @@ import Flags._;
     }
     override def typeConstructor: Type = {
       if (tyconCache == null || tyconRun != currentRun) {
-	tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List());
+  tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List());
         tyconRun = currentRun;
       }
       assert(tyconCache != null);
@@ -871,11 +871,11 @@ import Flags._;
 
     override def name: Name =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
-	if (flatname == nme.EMPTY) {
-	  assert(rawowner.isClass);
-	  flatname = newTypeName(rawowner.name.toString() + "$" + rawname);
-	}
-	flatname
+  if (flatname == nme.EMPTY) {
+    assert(rawowner.isClass);
+    flatname = newTypeName(rawowner.name.toString() + "$" + rawname);
+  }
+  flatname
       } else rawname;
 
     private var thisTypeCache: Type = _;
@@ -887,11 +887,11 @@ import Flags._;
       if (p != phase) {
         thisTypePhase = phase;
         if (!(isValid(p) /*||
-	      thisTypePhase != null && thisTypePhase.erasedTypes && phase.erasedTypes*/)) {
-	  thisTypeCache =
-	    if (isModuleClass && !isRoot && !phase.erasedTypes)
-	      singleType(owner.thisType, sourceModule);
-	    else ThisType(this);
+        thisTypePhase != null && thisTypePhase.erasedTypes && phase.erasedTypes*/)) {
+    thisTypeCache =
+      if (isModuleClass && !isRoot && !phase.erasedTypes)
+        singleType(owner.thisType, sourceModule);
+      else ThisType(this);
         }
       }
       thisTypeCache
@@ -961,6 +961,7 @@ import Flags._;
   /** A class for type histories */
   private case class TypeHistory(start: Phase#Id, info: Type, prev: TypeHistory) {
     assert(prev == null || start > prev.start, this);
+    assert(start != 0);
     override def toString() = "TypeHistory(" + phaseWithId(start) + "," + info + "," + prev + ")";
   }
 }

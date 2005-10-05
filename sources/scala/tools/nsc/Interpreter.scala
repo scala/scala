@@ -41,13 +41,13 @@ abstract class Interpreter {
     val importVars = ivt.importVars;
 
     val lineno = prevDefines.length;
-    val filename = getTempPath().getPath()+java.io.File.separator+"InterpreterTemp.scala";
+    //todo: it is probably nice to include date & time, as well as a process id, in the filename
+    val filename = getTempPath().getPath()+java.io.File.separator+"InterpreterTempLine"+lineno+".scala";
     writeTempScalaFile(filename, line, lineno, definedVars, importVars);
 
     // first phase: compile auto-generated file
-    val args = List.fromString(filename, ' ');
-    val command = new CompilerCommand(args, error, true);
-    (new compiler.Run).compile(command.files);
+    compiler.settings.outdir.value = getTempPath().getPath();
+    (new compiler.Run) compile List(filename);
 
 /*
     //todo: if no errors in compilation then

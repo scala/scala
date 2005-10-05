@@ -29,7 +29,7 @@ class Settings(error: String => unit) {
   val debug         = BooleanSetting("-debug", "Output debugging messages");
   val statistics    = BooleanSetting("-statistics", "Print compiler statistics");
   val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail");
-  val interprete    = BooleanSetting("-interprete", "Run interpreter");
+  val interpret     = BooleanSetting("-interpret", "Run interpreter");
   val resident      = BooleanSetting("-resident", "Compiler stays resident, files to compile are read from standard input");
   val uniqid        = BooleanSetting("-uniqid", "Print identifiers with unique names (debugging option)");
   val printtypes    = BooleanSetting("-printtypes", "Print tree types (debugging option)");
@@ -38,7 +38,7 @@ class Settings(error: String => unit) {
   val nopredefs     = BooleanSetting("-nopredefs", "Compile without any implicit predefined values");
   val skip          = PhasesSetting ("-skip", "Skip");
   val check         = PhasesSetting ("-check", "Check the tree at start of");
-  val print        = PhasesSetting ("-print", "Print out program after");
+  val print         = PhasesSetting ("-print", "Print out program after");
   val printer       = ChoiceSetting ("-printer", "Printer to use", List("text", "html"), "text");
   val printfile     = StringSetting ("-printfile", "file", "Specify file in which to print trees", "-");
   val graph         = PhasesSetting ("-graph", "Graph the program after");
@@ -78,7 +78,7 @@ class Settings(error: String => unit) {
     allsettings = this :: allsettings;
   }
 
-  /** A setting represented by a boolean flag (false, unless set */
+  /** A setting represented by a boolean flag (false, unless set) */
   case class BooleanSetting(name: String, descr: String)
   extends Setting(name, descr) {
     var value: boolean = false;
@@ -97,12 +97,12 @@ class Settings(error: String => unit) {
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) =>
         if (rest.isEmpty) {
-	  error("missing argument");
-	  List()
-	} else {
-	  value = rest.head;
-	  rest.tail
-	}
+    error("missing argument");
+    List()
+  } else {
+    value = rest.head;
+    rest.tail
+  }
       case _ => args
     }
 
@@ -125,11 +125,11 @@ class Settings(error: String => unit) {
           error(
             if (choice == "") "missing " + argument
             else "unknown " + argument + " '" + choice + "'");
-	  List()
-	} else {
+    List()
+  } else {
           value = choice;
           rest
-	}
+  }
       case _ => args
     }
 
@@ -148,12 +148,12 @@ class Settings(error: String => unit) {
       case n :: rest if (n startsWith (name + ":")) =>
         val phase = n.substring(name.length() + 1);
         if (phase == "") {
-	  error("missing phase");
-	  List()
-	} else {
+    error("missing phase");
+    List()
+  } else {
           value = value ::: List(phase);
           rest
-	}
+  }
       case _ => args
     }
 
