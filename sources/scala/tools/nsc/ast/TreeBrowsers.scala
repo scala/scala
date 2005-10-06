@@ -526,7 +526,10 @@ abstract class TreeBrowsers {
       var att = "";
 
       if (s != null) {
-        flagsToString(s.flags);
+        var str = flagsToString(s.flags);
+        if (s.hasFlag(STATIC) || s.hasFlag(STATICMEMBER))
+          str = str + " isStatic ";
+        str
       }
         else "";
     }

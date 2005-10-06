@@ -456,7 +456,19 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   private def writeICode(): Unit = {
-    val printer = new icodePrinter.TextPrinter(new PrintWriter(System.out, true));
-    icodes.classes.foreach(printer.printClass);
+    val printer = new icodePrinter.TextPrinter(null);
+    icodes.classes.foreach((cls) => {
+      val file = getFile(cls.symbol, ".icode");
+      try {
+        val stream = new FileOutputStream(file);
+        printer.setWriter(new PrintWriter(stream, true));
+        printer.printClass(cls);
+        informProgress("wrote " + file);
+      } catch {
+        case ex: IOException =>
+          if (settings.debug.value) ex.printStackTrace();
+        error("could not write file " + file);
+      }
+    });
   }
 }

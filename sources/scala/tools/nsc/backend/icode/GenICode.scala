@@ -102,10 +102,20 @@ abstract class GenICode extends SubComponent  {
         val resTpe = if (tree.symbol.isConstructor) UNIT
                      else toTypeKind(ctx1.method.symbol.info.resultType);
 
-        ctx1 = genLoad(rhs, ctx1, resTpe);
+        if (!m.isDeferred) {
+          ctx1 = genLoad(rhs, ctx1, resTpe);
 
-        ctx1.bb.emit(RETURN(resTpe));
-        ctx1.bb.close;
+          // reverse the order of the local variables, to match the source-order
+          m.locals = m.locals.reverse;
+
+          rhs match {
+            case Block(_, Return(_)) => ();
+            case Return(_) => ();
+            case _ => ctx1.bb.emit(RETURN(resTpe));
+          }
+          ctx1.bb.close;
+        } else
+          ctx1.method.setCode(null);
         ctx1;
 
       case Template(parents, body) =>
@@ -170,7 +180,8 @@ abstract class GenICode extends SubComponent  {
 //          assert(ctx.method.locals.contains(lhs.symbol) | ctx.clazz.fields.contains(lhs.symbol),
 //                 "Assignment to inexistent local or field: " + lhs.symbol);
           val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info));
-          ctx1.bb.emit(STORE_LOCAL(lhs.symbol, lhs.symbol.isValueParameter));
+          val Some(l) = ctx.method.lookupLocal(lhs.symbol);
+          ctx1.bb.emit(STORE_LOCAL(l, lhs.symbol.isValueParameter));
           ctx1
 
         case _ =>
@@ -337,7 +348,7 @@ abstract class GenICode extends SubComponent  {
       // genLoad
       val resCtx: Context = tree match {
         case LabelDef(name, params, rhs) =>
-          ctx.method.addLocals(params map (.symbol));
+          ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
           val ctx1 = ctx.newBlock;
           ctx1.labels.get(tree.symbol) match {
             case Some(label) => label.anchor(ctx1.bb);
@@ -354,10 +365,11 @@ abstract class GenICode extends SubComponent  {
           if (rhs == EmptyTree)
             log("Uninitialized variable " + tree + " at: " + unit.position(tree.pos));
           val sym = tree.symbol;
-          ctx.method.addLocal(sym);
-          val ctx1 = genLoad(rhs, ctx, toTypeKind(sym.info));
+          val local = new Local(sym, toTypeKind(sym.info));
+          ctx.method.addLocal(local);
+          val ctx1 = genLoad(rhs, ctx, local.kind);
           if (rhs != EmptyTree)
-            ctx1.bb.emit(STORE_LOCAL(sym, false));
+            ctx1.bb.emit(STORE_LOCAL(local, false));
           generatedType = UNIT;
           ctx1
 
@@ -434,17 +446,27 @@ abstract class GenICode extends SubComponent  {
         // 'new' constructor call
         case Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val ctor = fun.symbol;
-          assert(fun != null && ctor.isClassConstructor,
+          assert(ctor.isClassConstructor,
                  "'new' call to non-constructor: " + tree);
-          var ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx);
+
           generatedType = toTypeKind(tpt.tpe);
+          assert(generatedType.isReferenceType || generatedType.isArrayType, "Non reference type cannot be instantiated: " + generatedType);
+
+          var ctx1 = ctx;
+
           generatedType match {
             case ARRAY(elem) =>
+              ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx);
               ctx1.bb.emit(CREATE_ARRAY(elem));
+
             case REFERENCE(cls) =>
-              ctx1.bb.emit(NEW(ctor));
               assert(ctor.owner == cls,
                      "Symbol " + ctor.owner.fullNameString + "is different than " + tpt);
+              ctx.bb.emit(NEW(generatedType));
+              ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx);
+
+              ctx1.bb.emit(CALL_METHOD(ctor, Static(true)));
+
             case _ =>
               abort("Cannot instantiate " + tpt + "of kind: " + generatedType);
           }
@@ -539,10 +561,11 @@ abstract class GenICode extends SubComponent  {
           }
 
         case This(qual) =>
-          assert(tree.symbol == ctx.clazz.symbol | tree.symbol.isModuleClass,
+          assert(tree.symbol == ctx.clazz.symbol || tree.symbol.isModuleClass,
                  "Trying to access the this of another class: " +
                  "tree.symbol = " + tree.symbol + ", ctx.clazz.symbol = " + ctx.clazz.symbol);
           if (tree.symbol.isModuleClass && tree.symbol != ctx.clazz.symbol) {
+            log("LOAD_MODULE from 'This'");
             ctx.bb.emit(LOAD_MODULE(tree.symbol));
             generatedType = REFERENCE(tree.symbol);
           } else {
@@ -556,6 +579,7 @@ abstract class GenICode extends SubComponent  {
                  "Selection of non-module from empty package: " + tree.toString() +
                  " sym: " + tree.symbol +
                  " at: " + unit.position(tree.pos));
+          log("LOAD_MODULE from Select(<emptypackage>)");
           ctx.bb.emit(LOAD_MODULE(tree.symbol));
           ctx
 
@@ -564,6 +588,7 @@ abstract class GenICode extends SubComponent  {
           val generatedType = toTypeKind(sym.info);
 
           if (sym.isModule) {
+            log("LOAD_MODULE from Select(qualifier, selector)");
             ctx.bb.emit(LOAD_MODULE(sym));
             ctx
           } else if (isStaticSymbol(sym)) {
@@ -577,11 +602,15 @@ abstract class GenICode extends SubComponent  {
 
         case Ident(name) =>
           if (!tree.symbol.isPackage) {
-            if (tree.symbol.isModule)
+            if (tree.symbol.isModule) {
+              log("LOAD_MODULE from Ident(name)");
               ctx.bb.emit(LOAD_MODULE(tree.symbol));
-            else
-              ctx.bb.emit(LOAD_LOCAL(tree.symbol, tree.symbol.isValueParameter));
-            generatedType = toTypeKind(tree.symbol.info);
+              generatedType = toTypeKind(tree.symbol.info);
+            } else {
+              val Some(l) = ctx.method.lookupLocal(tree.symbol);
+              ctx.bb.emit(LOAD_LOCAL(l, tree.symbol.isValueParameter));
+              generatedType = l.kind;
+            }
           }
           ctx
 
@@ -699,8 +728,9 @@ abstract class GenICode extends SubComponent  {
       var param = label.params;
 
       while (arg != Nil) {
-        ctx1 = genLoad(arg.head, ctx1, toTypeKind(param.head.info));
-        ctx1.bb.emit(STORE_LOCAL(param.head, param.head.isValueParameter));
+        val Some(l) = ctx.method.lookupLocal(param.head);
+        ctx1 = genLoad(arg.head, ctx1, l.kind);
+        ctx1.bb.emit(STORE_LOCAL(l, param.head.isValueParameter));
         arg = arg.tail;
         param = param.tail;
       }
@@ -899,29 +929,32 @@ abstract class GenICode extends SubComponent  {
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context, thenCtx: Context, elseCtx: Context): Unit = {
       var eqEqTempVar: Symbol = null;
+      var eqEqTempLocal: Local = null;
+
       ctx.method.lookupLocal(eqEqTemp) match {
-        case Some(sym) => eqEqTempVar = sym;
+        case Some(local) => eqEqTempVar = local.sym;
         case None =>
           eqEqTempVar = ctx.method.symbol.newVariable(l.pos, eqEqTemp);
           eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor);
-          ctx.method.addLocal(eqEqTempVar);
+          eqEqTempLocal = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass));
+          ctx.method.addLocal(eqEqTempLocal);
       }
 
       var ctx1 = genLoad(l, ctx, ANY_REF_CLASS);
       ctx1 = genLoad(r, ctx1, ANY_REF_CLASS);
       val tmpNullCtx = ctx1.newBlock;
       val tmpNonNullCtx = ctx1.newBlock;
-      ctx1.bb.emit(STORE_LOCAL(eqEqTempVar, false));
+      ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal, false));
       ctx1.bb.emit(DUP(ANY_REF_CLASS));
       ctx1.bb.emit(CZJUMP(tmpNullCtx.bb, tmpNonNullCtx.bb, EQ, ANY_REF_CLASS));
       ctx1.bb.close;
 
       tmpNullCtx.bb.emit(DROP(ANY_REF_CLASS)); // type of AnyRef
-      tmpNullCtx.bb.emit(LOAD_LOCAL(eqEqTempVar, false));
+      tmpNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal, false));
       tmpNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS));
       tmpNullCtx.bb.close;
 
-      tmpNonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempVar, false));
+      tmpNonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal, false));
       tmpNonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic));
       tmpNonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL));
       tmpNonNullCtx.bb.close;
@@ -950,7 +983,7 @@ abstract class GenICode extends SubComponent  {
 
         case vparams :: Nil =>
           for (val p <- vparams)
-            ctx.method.addParam(p.symbol);
+            ctx.method.addParam(new Local(p.symbol, toTypeKind(p.symbol.info)));
           ctx.method.params = ctx.method.params.reverse;
 
         case _ =>

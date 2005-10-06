@@ -9,6 +9,8 @@ package scala.tools.nsc.backend.icode;
 
 import java.io.PrintWriter;
 
+import scala.tools.nsc.symtab.Flags;
+
 abstract class Printers {
   val global: Global;
   import global._;
@@ -78,13 +80,19 @@ abstract class Printers {
     def printMethod(m: IMethod): Unit = {
       print("def "); print(m.symbol.name);
       print("("); printList(printParam)(m.params.reverse, ", "); print(")");
-      print(": "); print(m.symbol.info.resultType); println(" {");
-      printCode(m.code);
-      println("}");
+      print(": "); print(m.symbol.info.resultType);
+
+      if (!m.isDeferred) {
+        println(" {");
+        printCode(m.code);
+        println("}");
+      } else
+        println;
     }
 
-    def printParam(p: Symbol): Unit = {
-      print(p.name); print(": "); print(p.info);
+    def printParam(p: Local): Unit = {
+      print(p.sym.name); print(": "); print(p.sym.info);
+      print(" ("); print(p.kind); print(")");
     }
 
     def printCode(code: Code): Unit = {

@@ -7,6 +7,8 @@
 
 package scala.tools.nsc.backend.jvm;
 
+import java.io.File;
+
 import scala.collection.mutable.{Map, HashMap};
 import scala.tools.nsc.symtab._;
 
@@ -24,7 +26,8 @@ abstract class BytecodeGenerators extends SubComponent {
   /** Create a new phase */
   override def newPhase(p: Phase) = new JvmPhase(p);
 
-  /** JVM code generation phase */
+  /** JVM code generation phase
+   */
   class JvmPhase(prev: Phase) extends GlobalPhase(prev) {
     def name = phaseName;
     override def newFlags = phaseNewFlags;
@@ -39,10 +42,15 @@ abstract class BytecodeGenerators extends SubComponent {
   }
 
   /**
-   * Java bytecode generator
+   * Java bytecode generator.
+   *
+   * TODO: take care of different size in local variables (LOAD/STORE_LOCAL)
    */
   class GenJVM {
     val MIN_SWITCH_DENSITY = 0.7;
+    val MODULE_INSTANCE_NAME = "MODULE$";
+    val JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer";
+    val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER);
 
     var clasz: IClass = _;
     var method: IMethod = _;
@@ -53,11 +61,13 @@ abstract class BytecodeGenerators extends SubComponent {
 
     val fjbgContext = new FJBGContext();
 
+
     def genClass(c: IClass): Unit = {
-      log("Generating class " + c);
+      log("Generating class " + c.symbol + " flags: " + Flags.flagsToString(c.symbol.flags));
       clasz = c;
       var parents = c.symbol.info.parents;
       var ifaces = JClass.NO_INTERFACES;
+      val name = javaName(c.symbol); // + (if (c.symbol.isModuleClass) "$" else "");
 
       if (parents.isEmpty)
         parents = definitions.ObjectClass.tpe :: parents;
@@ -69,7 +79,7 @@ abstract class BytecodeGenerators extends SubComponent {
       }
 
       jclass = fjbgContext.JClass(javaFlags(c.symbol),
-                                  javaName(c.symbol),
+                                  name,
                                   javaName(parents(0).symbol),
                                   ifaces,
                                   c.cunit.source.toString());
@@ -77,7 +87,19 @@ abstract class BytecodeGenerators extends SubComponent {
       clasz.fields foreach genField;
       clasz.methods foreach genMethod;
 
-      jclass.writeTo(getFile(c.symbol, ".class"));
+      if (isTopLevelModule(c.symbol)) {
+        addModuleInstanceField;
+        dumpMirrorClass;
+      }
+
+      jclass.writeTo(getFile(jclass, ".class"));
+    }
+
+    def isTopLevelModule(sym: Symbol): Boolean = {
+      log("Symbol: " + sym + " isNestedClass? " + atPhase(currentRun.erasurePhase)(sym.isNestedClass) +
+          " hasFlag LIFTED? " + sym.hasFlag(Flags.LIFTED));
+
+      sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED) /* && !atPhase(currentRun.erasurePhase)(sym.isNestedClass) */
     }
 
     def genField(f: IField): Unit  = {
@@ -88,8 +110,10 @@ abstract class BytecodeGenerators extends SubComponent {
     }
 
     def genMethod(m: IMethod): Unit = {
-      log("Adding method " + m.symbol.fullNameString + " ctor: " + m.symbol.isClassConstructor);
+      log("Adding method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
+        " owner: " + m.symbol.owner);
       method = m;
+      computeLocalVarsIndex(m);
 
       var resTpe = javaType(toTypeKind(m.symbol.tpe.resultType));
       if (m.symbol.isClassConstructor)
@@ -98,13 +122,81 @@ abstract class BytecodeGenerators extends SubComponent {
       jmethod = jclass.addNewMethod(javaFlags(m.symbol),
                                     javaName(m.symbol),
                                     resTpe,
-                                    javaTypes(m.params map (p => toTypeKind(p.tpe))),
-                                    javaNames(m.params));
+                                    javaTypes(m.params map (.kind)),
+                                    javaNames(m.params map (.sym)));
 
       if (!jmethod.isAbstract()) {
+        for (val local <- m.locals; !local.sym.isValueParameter)
+          jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym));
+
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode];
         genCode(m.code);
       }
+    }
+
+    def addModuleInstanceField: Unit = {
+      import JAccessFlags._;
+      jclass.addNewField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
+                        MODULE_INSTANCE_NAME,
+                        jclass.getType());
+    }
+
+    def addStaticInit(cls: JClass): Unit = {
+      import JAccessFlags._;
+      val clinitMethod = cls.addNewMethod(ACC_PUBLIC | ACC_STATIC,
+                                          "<clinit>",
+                                          JType.VOID,
+                                          JType.EMPTY_ARRAY,
+                                          new Array[String](0));
+      val clinit = clinitMethod.getCode();
+      clinit.emitNEW(cls.getName());
+      clinit.emitDUP();
+      clinit.emitINVOKESPECIAL(cls.getName(),
+                               JMethod.INSTANCE_CONSTRUCTOR_NAME,
+                               JMethodType.ARGLESS_VOID_FUNCTION);
+      clinit.emitPUTSTATIC(cls.getName(),
+                           MODULE_INSTANCE_NAME,
+                           jclass.getType());
+      clinit.emitRETURN();
+    }
+
+    def dumpMirrorClass: Unit = {
+      import JAccessFlags._;
+      assert(clasz.symbol.isModuleClass);
+
+      log("Dumping mirror class for object: " + clasz);
+      val moduleName = javaName(clasz.symbol); // + "$";
+      val mirrorName = moduleName.substring(0, moduleName.length() - 1);
+      val mirrorClass = fjbgContext.JClass(ACC_SUPER | ACC_PUBLIC | ACC_FINAL,
+                                           mirrorName,
+                                           "java.lang.Object",
+                                           JClass.NO_INTERFACES,
+                                           clasz.cunit.source.toString());
+      for (val m <- clasz.methods; !(m.symbol.hasFlag(Flags.PRIVATE)) && !m.symbol.isClassConstructor && !isStaticSymbol(m.symbol) ) {
+        val mirrorMethod = mirrorClass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
+                                               javaName(m.symbol),
+                                               javaType(toTypeKind(m.symbol.tpe.resultType)),
+                                               javaTypes(m.params map (.kind)),
+                                               javaNames(m.params map (.sym)));
+        val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
+        mirrorCode.emitGETSTATIC(moduleName,
+                                 MODULE_INSTANCE_NAME,
+                                 new JObjectType(moduleName));
+        var i = 0;
+        var index = 0;
+        var argTypes = mirrorMethod.getArgumentTypes();
+        while (i < argTypes.length) {
+          mirrorCode.emitLOAD(index, argTypes(i));
+          index = index + argTypes(i).getSize();
+          i = i + 1;
+        }
+
+        mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType]);
+        mirrorCode.emitRETURN(mirrorMethod.getReturnType());
+      }
+
+      addStaticInit(jclass); // should be the current module class
+      mirrorClass.writeTo(getFile(mirrorClass, ".class"));
     }
 
 
@@ -145,39 +237,49 @@ abstract class BytecodeGenerators extends SubComponent {
 
           case LOAD_LOCAL(local, isArg) =>
             if (isArg)
-              jcode.emitLOAD(1 + method.params.indexOf(local), javaType(local));
+              jcode.emitLOAD(indexOf(local), javaType(local.kind));
             else
-              jcode.emitLOAD(1 + method.locals.indexOf(local), javaType(local));
+              jcode.emitLOAD(indexOf(local), javaType(local.kind));
 
           case LOAD_FIELD(field, isStatic) =>
+            var owner = javaName(field.owner);
+//            if (field.owner.hasFlag(Flags.MODULE)) owner = owner + "$";
+
+            log("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags));
             if (isStatic)
-              jcode.emitGETSTATIC(javaName(field.owner),
+              jcode.emitGETSTATIC(owner,
                                   javaName(field),
                                   javaType(field));
             else
-              jcode.emitGETFIELD(javaName(field.owner),
+              jcode.emitGETFIELD(owner,
                                   javaName(field),
                                   javaType(field));
 
           case LOAD_MODULE(module) =>
-            ();
+            assert(module.isModule);
+            log("genearting LOAD_MODULE for: " + module + " flags: " +
+                Flags.flagsToString(module.flags));
+            jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
+                                MODULE_INSTANCE_NAME,
+                                javaType(module));
 
           case STORE_ARRAY_ITEM(kind) =>
             jcode.emitASTORE(javaType(kind));
 
           case STORE_LOCAL(local, isArg) =>
             if (isArg)
-              jcode.emitSTORE(1 + method.params.indexOf(local), javaType(local));
+              jcode.emitSTORE(indexOf(local), javaType(local.kind));
             else
-              jcode.emitSTORE(1 + method.locals.indexOf(local), javaType(local));
+              jcode.emitSTORE(indexOf(local), javaType(local.kind));
 
           case STORE_FIELD(field, isStatic) =>
+            val owner = javaName(field.owner); // + (if (field.owner.hasFlag(Flags.MODULE)) "$" else "");
             if (isStatic)
-              jcode.emitPUTSTATIC(javaName(field.owner),
+              jcode.emitPUTSTATIC(owner,
                                   javaName(field),
                                   javaType(field));
             else
-              jcode.emitPUTFIELD(javaName(field.owner),
+              jcode.emitPUTFIELD(owner,
                                   javaName(field),
                                   javaType(field));
 
@@ -187,40 +289,42 @@ abstract class BytecodeGenerators extends SubComponent {
           // TODO: reference the type of the receiver instead of the
           // method owner.
           case CALL_METHOD(method, style) =>
+            val owner = javaName(method.owner); // + (if (method.owner.isModuleClass) "$" else "");
+
             style match {
               case Dynamic =>
                 if (method.owner.hasFlag(Flags.INTERFACE))
-                  jcode.emitINVOKEINTERFACE(javaName(method.owner),
+                  jcode.emitINVOKEINTERFACE(owner,
                                             javaName(method),
                                             javaType(method).asInstanceOf[JMethodType])
                 else
-                  jcode.emitINVOKEVIRTUAL(javaName(method.owner),
+                  jcode.emitINVOKEVIRTUAL(owner,
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
 
               case Static(instance) =>
                 if (instance) {
-                  jcode.emitINVOKESPECIAL(javaName(method.owner),
+                  jcode.emitINVOKESPECIAL(owner,
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
                 } else
-                  jcode.emitINVOKESTATIC(javaName(method.owner),
+                  jcode.emitINVOKESTATIC(owner,
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
 
               case SuperCall(_) =>
-                  jcode.emitINVOKESPECIAL(javaName(method.owner),
+                  jcode.emitINVOKESPECIAL(owner,
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
             }
 
-          case NEW(ctor) =>
-            val className = javaName(ctor.owner);
+          case NEW(REFERENCE(cls)) =>
+            val className = javaName(cls);
             jcode.emitNEW(className);
             jcode.emitDUP();
-            jcode.emitINVOKESPECIAL(className,
-                                    JMethod.INSTANCE_CONSTRUCTOR_NAME,
-                                    javaType(ctor).asInstanceOf[JMethodType]);
+//             jcode.emitINVOKESPECIAL(className,
+//                                     JMethod.INSTANCE_CONSTRUCTOR_NAME,
+//                                     javaType(ctor).asInstanceOf[JMethodType]);
 
           case CREATE_ARRAY(elem) =>
             jcode.emitNEWARRAY(javaType(elem));
@@ -396,6 +500,18 @@ abstract class BytecodeGenerators extends SubComponent {
         case Conversion(src, dst) =>
           jcode.emitT2T(javaType(src), javaType(dst));
 
+        case StringConcat(lf, rg) =>
+//           jcode.emitNEW(JAVA_LANG_STRINGBUFFER);
+//           jcode.emitDUP();
+//           jcode.emitINVOKESPECIAL(JAVA_LANG_STRINGBUFFER,
+//                                   JMethod.INSTANCE_CONSTRUCTOR_NAME,
+//                                   JMethodType.ARGLESS_VOID_FUNCTION);
+//           jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
+//                                   "append",
+//                                   new JMethodType(stringBufferType,
+//                                                   javaType(lf)));
+
+
         case _ => log("Unimplemented primitive " + primitive);
       }
     }
@@ -415,13 +531,58 @@ abstract class BytecodeGenerators extends SubComponent {
       bs foreach (bb => labels += bb -> jcode.newLabel() );
     }
 
+
+    ////////////////////// local vars ///////////////////////
+
+    def sizeOf(sym: Symbol): Int = sizeOf(toTypeKind(sym.tpe));
+
+
+    def sizeOf(k: TypeKind): Int = k match {
+      case DOUBLE | LONG => 2;
+      case _ => 1;
+    }
+
+    def indexOf(m: IMethod, sym: Symbol): Int = {
+      val Some(local) = m.lookupLocal(sym);
+      assert (local.index >= 0,
+              "Invalid index for: " + local);
+      local.index
+    }
+
+    def indexOf(local: Local): Int = {
+      assert (local.index >= 0,
+              "Invalid index for: " + local);
+      local.index
+    }
+
+    /**
+     * Compute the indexes of each local variable of the given
+     * method.
+     */
+    def computeLocalVarsIndex(m: IMethod): Unit = {
+      var idx = 1;
+      if (isStaticSymbol(m.symbol))
+        idx = 0;
+
+      for (val l <- m.locals) {
+        log("Index value for " + l + ": " + idx);
+        l.index = idx;
+        idx = idx + sizeOf(l.kind);
+      }
+    }
+
     ////////////////////// Utilities ////////////////////////
 
-    def javaName(sym: Symbol) =
-      if (sym.isClass)
+    def javaName(sym: Symbol) = {
+      val suffix = if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
+                        !sym.isImplClass &&
+                        !sym.hasFlag(Flags.JAVA)) "$" else "";
+
+      (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
       else
-        sym.simpleName.toString();
+        sym.simpleName.toString()) + suffix;
+    }
 
     def javaNames(syms: List[Symbol]): Array[String] = {
       val res = new Array[String](syms.length);
@@ -497,6 +658,12 @@ abstract class BytecodeGenerators extends SubComponent {
 //       syms foreach ( s => { res(i) = javaType(toTypeKind(s.tpe)); i = i + 1; } );
 //       res
 //     }
+
+    def getFile(cls: JClass, suffix: String): String = {
+      val path = cls.getName().replace('.', File.separatorChar);
+      settings.outdir.value + File.separatorChar + path + suffix
+    }
+
   }
 
 }

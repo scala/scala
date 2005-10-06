@@ -11,6 +11,8 @@ import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 import scala.{Symbol => scala_Symbol};
 
+import scala.tools.nsc.symtab.Flags;
+
 trait Members: ICodes {
   import global._;
 
@@ -141,45 +143,73 @@ trait Members: ICodes {
   class IField(val symbol: Symbol) {
   }
 
-  /** Represent a method in ICode */
+  /**
+   * Represents a method in ICode. Local variables contain
+   * both locals and parameters, similar to the way the JVM
+   * 'sees' them.
+   *
+   * Locals and parameters are added in reverse order, as they
+   * are kept in cons-lists. The 'builder' is responsible for
+   * reversing them and putting them back, when the generation is
+   * finished (GenICode does that).
+   */
   class IMethod(val symbol: Symbol) {
     var code: Code = null;
     var exh: List[ExceptionHandler] = _;
 
     /** local variables and method parameters */
-    var locals: List[Symbol] = Nil;
+    var locals: List[Local] = Nil;
 
     /** method parameters */
-    var params: List[Symbol] = Nil;
+    var params: List[Local] = Nil;
 
     def setCode(code: Code): IMethod = {
       this.code = code;
       this
     }
 
-    def addLocal(sym: Symbol): Unit =
-      if (!(locals contains sym))
-        locals = sym :: locals;
+    def addLocal(l: Local): Unit =
+      if (!(locals contains l))
+        locals = l :: locals;
 
-    def addLocals(ls: List[Symbol]): Unit =
+    def addLocals(ls: List[Local]): Unit =
       ls foreach addLocal;
 
-    def addParam(sym: Symbol): Unit =
-      if (!(params contains sym)) {
-        params = sym :: params;
-        locals = sym :: locals;
+    def addParam(p: Local): Unit =
+      if (!(params contains p)) {
+        params = p :: params;
+        locals = p :: locals;
       }
 
-    def addParams(as: List[Symbol]): Unit =
+    def addParams(as: List[Local]): Unit =
       as foreach addParam;
 
-    def lookupLocal(n: Name): Option[Symbol] =
-      locals find ((sym) => sym.name == n);
+    def lookupLocal(n: Name): Option[Local] =
+      locals find ((l) => l.sym.name == n);
+
+    def lookupLocal(sym: Symbol): Option[Local] =
+      locals find ((l) => l.sym == sym);
 
     def addHandler(e: ExceptionHandler): Unit =
       exh = e :: exh;
 
+    /** Is this method deferred ('abstract' in Java sense) */
+    def isDeferred =
+      symbol.hasFlag(Flags.DEFERRED) ||
+      symbol.owner.hasFlag(Flags.INTERFACE);
 
     override def toString() = symbol.fullNameString;
   }
+
+  /** Represent local variables and parameters */
+  class Local(val sym: Symbol, val kind: TypeKind) {
+    var index: Int = -1;
+
+    override def equals(other: Any): Boolean =
+      other.isInstanceOf[Local] &&
+      other.asInstanceOf[Local].sym == this.sym;
+
+    override def toString(): String = sym.toString();
+  }
+
 }

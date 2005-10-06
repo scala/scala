@@ -24,7 +24,7 @@ import scala.tools.nsc.ast._;
   case STORE_FIELD(field, isStatic) =>
   case CALL_PRIMITIVE(primitive) =>
   case CALL_METHOD(method, style) =>
-  case NEW(clasz) =>
+  case NEW(kind) =>
   case CREATE_ARRAY(elem) =>
   case IS_INSTANCE(tpe) =>
   case CHECK_CAST(tpe) =>
@@ -108,7 +108,7 @@ import scala.tools.nsc.ast._;
      * Stack: ...
      *    ->: ...:value
      */
-    case class LOAD_LOCAL(local: Symbol, isArgument: boolean) extends Instruction {
+    case class LOAD_LOCAL(local: Local, isArgument: boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String = "LOAD_LOCAL "+local.toString(); //+isArgument?" (argument)":"";
 
@@ -157,7 +157,7 @@ import scala.tools.nsc.ast._;
      * Stack: ...:value
      *    ->: ...
      */
-    case class STORE_LOCAL(local: Symbol, isArgument: boolean) extends Instruction {
+    case class STORE_LOCAL(local: Local, isArgument: boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String = "STORE_LOCAL "+local.toString(); //+isArgument?" (argument)":"";
 
@@ -232,9 +232,9 @@ import scala.tools.nsc.ast._;
      * Stack: ...:arg1:arg2:...:argn
      *    ->: ...:ref
      */
-    case class NEW(ctor: Symbol) extends Instruction {
+    case class NEW(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "NEW "+ctor.fullNameString;
+      override def toString(): String = "NEW "+ kind;
 
       override def consumed = 0;
       override def produced = 1;
@@ -334,7 +334,7 @@ import scala.tools.nsc.ast._;
                       cond: TestOp,
                       kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CZJUMP )" + kind + ")" +
+      override def toString(): String ="CZJUMP (" + kind + ")" +
                         cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label;
 
       override def consumed = 1;

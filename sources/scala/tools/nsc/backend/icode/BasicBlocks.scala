@@ -130,6 +130,8 @@ trait BasicBlocks: ICodes {
 
     /** Close the block */
     def close = {
+      assert(instructionList.length > 0,
+             "Empty block.");
       closed = true;
       instrs = toInstructionArray(instructionList.reverse);
     }

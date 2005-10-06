@@ -54,6 +54,7 @@ abstract class Checkers {
     val emptyStack = new TypeStack();
 
     val STRING = REFERENCE(definitions.StringClass);
+    val SCALA_ALL = REFERENCE(definitions.AllClass);
 
     def checkICodes: Unit = classes foreach check;
 
@@ -66,7 +67,8 @@ abstract class Checkers {
     def check(m: IMethod): Unit = {
       log("Checking method " + m);
       method = m;
-      check(m.code);
+      if (!m.isDeferred)
+        check(m.code);
     }
 
     def check(c: Code): Unit = {
@@ -136,8 +138,8 @@ abstract class Checkers {
           else
             ();
 
-        def checkLocal(local: Symbol) =
-          method.lookupLocal(local.name) match {
+        def checkLocal(local: Local) =
+          method.lookupLocal(local.sym.name) match {
             case None => error(" " + local + " is not defined in method " + method);
             case _ => ()
           }
@@ -228,7 +230,7 @@ abstract class Checkers {
 
          case LOAD_LOCAL(local, isArg) =>
            checkLocal(local);
-           stack.push(toTypeKind(local.info));
+           stack.push(local.kind);
 
          case LOAD_FIELD(field, isStatic) =>
            if (isStatic) {
@@ -261,10 +263,10 @@ abstract class Checkers {
          case STORE_LOCAL(local, isArg) =>
            checkLocal(local);
            checkStack(1);
-           val localType = toTypeKind(local.info);
+
            val actualType = stack.pop;
-           if (!(actualType <:< localType))
-             typeError(localType, actualType);
+           if (!(actualType <:< local.kind))
+             typeError(local.kind, actualType);
 
          case STORE_FIELD(field, isStatic) =>
            if (isStatic) {
@@ -376,12 +378,13 @@ abstract class Checkers {
 
            }
 
-          case NEW(ctor) =>
-            checkBool(ctor.isConstructor,
-                      "'new' call to non-constructor method");
-            checkMethodArgs(ctor);
-            checkMethod(REFERENCE(ctor.owner), ctor);
-            stack.push(REFERENCE(ctor.owner));
+          case NEW(kind) =>
+            kind match {
+              case REFERENCE(cls) =>
+                stack.push(kind);
+
+              case _ => error("NEW call to non-reference type: " + kind);
+            }
 
           case CREATE_ARRAY(elem) =>
             checkStack(1);
@@ -435,6 +438,7 @@ abstract class Checkers {
             val thrown = stack.pop;
             checkBool(thrown.toType <:< definitions.ThrowableClass.tpe,
                       "Element on top of stack should implement 'Throwable': " + thrown);
+            stack.push(SCALA_ALL);
 
           case DROP(kind) =>
             checkType(stack.pop, kind);
