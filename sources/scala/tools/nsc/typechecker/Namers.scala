@@ -84,9 +84,11 @@ trait Namers: Analyzer {
 
     private def enterModuleSymbol(pos: int, mods: int, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name);
-      if (m.isTerm && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
+      if (m.isModule && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
         updatePosFlags(m, pos, mods)
       } else {
+        if (m.isTerm && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls))
+          context.scope.unlink(m);
         m = context.owner.newModule(pos, name);
         m.setFlag(mods);
         m.moduleClass.setFlag(mods);
