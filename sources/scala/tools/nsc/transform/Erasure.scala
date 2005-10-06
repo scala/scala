@@ -235,27 +235,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private def adaptMember(tree: Tree): Tree = {
       tree match {
-        case Apply(sel @ Select(qual, name), args) =>
-	  if (sel.symbol == Any_==)
-	    atPos(tree.pos) {
-              Apply(Select(qual, Object_==), args)
-            }
-	  else if (sel.symbol == Any_!=)
-	    atPos(tree.pos) {
-              Apply(Select(qual, Object_!=), args)
-            }
-	  else qual match {
-	    case New(tpt) =>
-	      assert(tpt.isInstanceOf[TypeTree]);
-	      if (tpt.tpe.symbol == BoxedArrayClass) {
-                assert(name == nme.CONSTRUCTOR);
-                atPos(tree.pos) {
-                  Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
-                }
-	      } else tree
-	    case _ =>
-	      tree
-	  }
+        case Apply(Select(New(tpt), name), args) if (tpt.tpe.symbol == BoxedArrayClass) =>
+          assert(name == nme.CONSTRUCTOR);
+          atPos(tree.pos) {
+            Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
+          }
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
@@ -269,7 +253,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 (qual1.tpe.symbol == ArrayClass && !isUnboxedArrayMember(tree.symbol))) {
               qual1 = box(qual1);
             } else if (!isValueClass(qual1.tpe.symbol) &&
-                       tree.symbol != NoSymbol && isValueClass(tree.symbol.owner)) {
+                       tree.symbol != NoSymbol &&
+                       isValueClass(tree.symbol.owner) &&
+                       !isBoxedValueMember(tree.symbol)) {
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
             }
             if (tree.symbol != NoSymbol)
