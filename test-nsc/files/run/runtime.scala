@@ -98,26 +98,16 @@ package test2 {
     def run = Console.println("A");
   }
 
-<<<<<<< runtime.scala
   trait M0 extends A {
     override def run = { super.run; System.out.println("M0"); }
-=======
-  class M0 extends A {
-    override def run = { super.run; Console.println("M0"); }
->>>>>>> 1.9
   }
 
   class M1 extends M0 {
     override def run = { super.run; Console.println("M1"); }
   }
 
-<<<<<<< runtime.scala
   trait N0 extends A {
     override def run = { super.run; System.out.println("N0"); }
-=======
-  class N0 extends A {
-    override def run = { super.run; Console.println("N0"); }
->>>>>>> 1.9
   }
 
   class N1 extends N0 {

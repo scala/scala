@@ -16,7 +16,7 @@ abstract class M() {
         // module body of M
     }
 }
-trait N {
+abstract class N() {
     val _N: N = this;
     val n: _N.n = new _N.n();
     val _M: M;
@@ -26,5 +26,5 @@ trait N {
     }
 }
 object O {
-    val system = new M() with N {}
+    val system = new M() with N() {}
 }

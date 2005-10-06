@@ -25,6 +25,14 @@ public final class BoxedBoolean {
 
     public final boolean booleanValue() { return value; }
 
+    public final boolean $eq$eq(java.lang.Object other) {
+        return equals(other);
+    }
+
+    public final boolean $bang$eq(java.lang.Object other) {
+        return !equals(other);
+    }
+
     public boolean equals(java.lang.Object other) {
 	return other instanceof BoxedBoolean && value == ((BoxedBoolean) other).value;
     }

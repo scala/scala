@@ -2,6 +2,8 @@
 
 // Test 1: "super" coming from mixins
 
+import Console._;
+
 object Test1 {
   class A {
     def f = "A::f";
@@ -58,24 +60,13 @@ object Test3 {
     Console.println("A");
   }
 
-<<<<<<< mixins.scala
   trait B {
     println("B");
-=======
-  class B(x: Unit) {
-    Console.println("B");
->>>>>>> 1.5
   }
 
-<<<<<<< mixins.scala
   class C extends A({ println("one"); }, { println("two"); })
           with B {
     println("C");
-=======
-  class C with A({ Console.println("one"); }, { Console.println("two"); })
-          with B({ Console.println("three"); }) {
-    Console.println("C");
->>>>>>> 1.5
   }
 
   def test() = {

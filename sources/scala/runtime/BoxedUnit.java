@@ -13,6 +13,14 @@ public final class BoxedUnit {
 
     private BoxedUnit() { }
 
+    public final boolean $eq$eq(java.lang.Object other) {
+        return equals(other);
+    }
+
+    public final boolean $bang$eq(java.lang.Object other) {
+        return !equals(other);
+    }
+
     public boolean equals(java.lang.Object other) {
 	return this == other;
     }

@@ -309,7 +309,14 @@ import collection.mutable.HashMap;
 	context.undetparams = context.undetparams ::: tparams1;
 	adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode) => // (4.1)
-	typed(applyImplicitArgs(tree), mode, pt)
+	val tree1 =
+	  if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
+	    val tparams = context.undetparams;
+	    context.undetparams = List();
+	    inferExprInstance(tree, tparams, pt);
+	    adapt(tree, mode, pt)
+	  } else tree;
+	typed(applyImplicitArgs(tree1), mode, pt)
       case mt: MethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
 	                      isCompatible(tree.tpe, pt)) => // (4.2)
 	if (tree.symbol.isConstructor) errorTree(tree, "missing arguments for " + tree.symbol)

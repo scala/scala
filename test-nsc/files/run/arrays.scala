@@ -205,7 +205,7 @@ object Test {
   val a4: String  = "a-z";
   val a5: Symbol  = 'token;
   val a6: HashMap = new HashMap();
-  val a7: TreeMap = scala.collection.immutable.TreeMap.Empty;
+  val a7: TreeMap = scala.collection.immutable.TreeMap.Empty[Int, Any];
   val a8: Strings = List("a", "z");
 
   val v0: Unit    = ();

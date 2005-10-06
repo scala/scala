@@ -24,20 +24,20 @@ trait Ordered[+a] {
 
 object O {
 
-  implicit def view1(x: String): Ordered[String] = new Ordered[String] {
+  def view (x: String): Ordered[String] = new Ordered[String] {
     def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
       case y1: String => x compareTo y1;
       case _ => -(y compareTo x)
     }
   }
-  implicit def view2(x: char): Ordered[char] = new Ordered[char] {
+  def view (x: char): Ordered[char] = new Ordered[char] {
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char => x - y1;
       case _ => -(y compareTo x)
     }
   }
 
-  implicit def view3[a <% Ordered[a]](x: List[a]): Ordered[List[a]] =
+  def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] =
     new Ordered[List[a]] {
       def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {
 	case y1: List[a] => compareLists(x, y1);
@@ -54,8 +54,6 @@ object O {
 	}
       }
     }
-
-  implicit def view4[a](x: a): a = x;
 }
 
 trait Tree[+a <% Ordered[a]] {
@@ -68,7 +66,7 @@ object Empty extends Tree[All] {
   def elements: List[All] = List();
 }
 
-class Node[a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
+class Node[+a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
   def insert[b >: a <% Ordered[b]](x: b): Tree[b] =
     if (x == elem) this
     else if (x < elem) new Node(elem, l insert x, r)
@@ -85,7 +83,7 @@ case class Str(elem: String) extends Ordered[Str] {
 }
 
 object Test {
-  import O._;
+  import O.view;
 
   private def toCharList(s: String): List[Char] =
     if (s.length() == 0) List()

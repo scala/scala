@@ -27,23 +27,31 @@ public final class BoxedInt extends BoxedNumber {
 
     private BoxedInt(int value) { this.value = value; }
 
-    public byte byteValue() { return (byte)value; }
-    public short shortValue() { return (short)value; }
-    public char charValue() { return (char)value; }
-    public int intValue() { return (int)value; }
-    public long longValue() { return (long)value; }
-    public float floatValue() { return (float)value; }
-    public double doubleValue() { return (double)value; }
+    public final byte byteValue() { return (byte)value; }
+    public final short shortValue() { return (short)value; }
+    public final char charValue() { return (char)value; }
+    public final int intValue() { return (int)value; }
+    public final long longValue() { return (long)value; }
+    public final float floatValue() { return (float)value; }
+    public final double doubleValue() { return (double)value; }
 
-    public boolean equals(java.lang.Object other) {
+    public final boolean $eq$eq(java.lang.Object other) {
+        return equals(other);
+    }
+
+    public final boolean $bang$eq(java.lang.Object other) {
+        return !equals(other);
+    }
+
+    public final boolean equals(java.lang.Object other) {
 	return other instanceof BoxedNumber && value == ((BoxedNumber) other).intValue();
     }
 
-    public int hashCode() {
+    public final int hashCode() {
 	return value;
     }
 
-    public String toString() {
+    public final String toString() {
 	return String.valueOf(value);
     }
 }

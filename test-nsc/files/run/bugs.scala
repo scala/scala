@@ -28,24 +28,14 @@ object Bug98Test {
 class Bug120A(x: Int) {
   Console.println("A");
 }
-<<<<<<< bugs.scala
+
 trait Bug120B {
   System.out.println("B");
-=======
-class Bug120B(x: Int) {
-  Console.println("B");
->>>>>>> 1.25
 }
 class Bug120C(x: Int)
-<<<<<<< bugs.scala
     extends Bug120A(Bug120Test.print("one", 1))
     with Bug120B {
   System.out.println("C");
-=======
-    with Bug120A(Bug120Test.print("one", 1))
-    with Bug120B(Bug120Test.print("two", 2)) {
-  Console.println("C");
->>>>>>> 1.25
 }
 object Bug120Test {
   def print[A](str: String, res: A): A = {
@@ -79,17 +69,10 @@ abstract class Bug142Foo2 { class Inner; def foo: Inner = {Console.println("ok")
 abstract class Bug142Foo3 { type  Inner; def foo: Inner; foo; }
 abstract class Bug142Foo4 { type  Inner; def foo: Inner = {Console.println("ok"); null.asInstanceOf[Inner]}; }
 
-<<<<<<< bugs.scala
 trait Bug142Bar1 { type  Inner; def foo: Inner = {System.out.println("ok"); null.asInstanceOf[Inner]}; }
 trait Bug142Bar2 { type  Inner; def foo: Inner; foo; }
 trait Bug142Bar3 { class Inner; def foo: Inner = {System.out.println("ok"); null}; }
 trait Bug142Bar4 { class Inner; def foo: Inner; foo; }
-=======
-abstract class Bug142Bar1 { type  Inner; def foo: Inner = {Console.println("ok"); null.asInstanceOf[Inner]}; }
-abstract class Bug142Bar2 { type  Inner; def foo: Inner; foo; }
-abstract class Bug142Bar3 { class Inner; def foo: Inner = {Console.println("ok"); null}; }
-abstract class Bug142Bar4 { class Inner; def foo: Inner; foo; }
->>>>>>> 1.25
 
 object Bug142Test1 extends Bug142Foo1 with Bug142Bar1 {def main(args:Array[String]):Unit=();}
 object Bug142Test2 extends Bug142Foo2 with Bug142Bar2 {def main(args:Array[String]):Unit=();}
@@ -422,15 +405,9 @@ trait Bug396B extends Bug396A {
     override def run = { super.run; Console.println("B"); }
   }
 }
-<<<<<<< bugs.scala
 trait Bug396C extends Bug396A {
   trait I extends super.I {
     override def run = { super.run; System.out.println("C"); }
-=======
-class Bug396C extends Bug396A {
-  class I extends super.I {
-    override def run = { super.run; Console.println("C"); }
->>>>>>> 1.25
   }
 }
 object Bug396Test extends Application with Bug396B with Bug396C {

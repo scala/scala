@@ -236,13 +236,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def adaptMember(tree: Tree): Tree = {
       tree match {
         case Apply(sel @ Select(qual, name), args) =>
-	  if (corresponds(sel.symbol, Any_==))
+	  if (sel.symbol == Any_==)
 	    atPos(tree.pos) {
-              Apply(Select(qual, Object_equals), args)
+              Apply(Select(qual, Object_==), args)
             }
-	  else if (corresponds(sel.symbol, Any_!=))
+	  else if (sel.symbol == Any_!=)
 	    atPos(tree.pos) {
-              Apply(Select(Apply(Select(qual, Object_equals), args), Boolean_not), List())
+              Apply(Select(qual, Object_!=), args)
             }
 	  else qual match {
 	    case New(tpt) =>

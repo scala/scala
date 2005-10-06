@@ -136,6 +136,8 @@ import Flags._;
     // members of class java.lang.{Object, String}
     var Object_eq          : Symbol = _;
     var Object_ne          : Symbol = _;
+    var Object_==          : Symbol = _;
+    var Object_!=          : Symbol = _;
     var Object_synchronized: Symbol = _;
     var Object_isInstanceOf: Symbol = _;
     var Object_asInstanceOf: Symbol = _;
@@ -362,6 +364,10 @@ import Flags._;
         AnyClass, "asInstanceOf$erased", tparam => tparam.typeConstructor) setFlag FINAL;
 
       // members of class java.lang.{Object, String}
+      Object_== = newMethod(
+        ObjectClass, "==", List(AnyRefClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
+      Object_!= = newMethod(
+        ObjectClass, "!=", List(AnyRefClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
       Object_eq = newMethod(
         ObjectClass, "eq", List(AnyRefClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
       Object_ne = newMethod(
