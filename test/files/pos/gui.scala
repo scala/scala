@@ -49,7 +49,7 @@ object GUI {
     def enable(b: Boolean): this.type;
   }
 
-  trait MouseCtl extends Ctl {
+  trait MouseCtl with Ctl {
     def mouseDown(p: Geom.Point): unit;
   }
 
