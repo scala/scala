@@ -172,7 +172,7 @@ object SUnit {
         if(!expected.eq(actual)) fail(msg);
     /** reference equality */
     def assertSame(expected: => AnyRef, actual: => AnyRef): Unit  =
-      assertNull("(no message)", actual);
+      assertSame("(no message)", expected, actual);
 
     /** trueness */
     def assertTrue(msg:String, actual: => Boolean): Unit =
