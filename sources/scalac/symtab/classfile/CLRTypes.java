@@ -264,11 +264,10 @@ public final class CLRTypes {
 		Assembly assem = Assembly.LoadFrom(f.getPath());
 		if (assem != null) {
 		    assemblies.add(assem);
+                    assems.remove();
 		}
 	    }
-	    assems.remove();
 	}
-	assert assemrefs.isEmpty();
     }
 
     private void abort(String name) {
