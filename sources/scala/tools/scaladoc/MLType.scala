@@ -29,7 +29,7 @@ package scala.tools.scaladoc {
     type TC <: TypeConstructor[TC];
 
     trait MLType {
-      override def toString(): String = match {
+      override def toString(): String = this match {
         case TypeVar(n) => "x" + n
         case UnitType => "unit"
         case AtomicType(c, args) => c.toString() + "[" + args.mkString("", ", ","") + "]"

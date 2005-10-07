@@ -22,7 +22,7 @@ abstract class VariableTraverser extends Traverser {
   def handleVariableSymbol(sym: Symbol): Unit;
 
   override def traverse(tree: Tree): Unit = {
-    tree.match {
+    tree match {
       case Ident(name)=>
         var sym: Symbol  = _;
 

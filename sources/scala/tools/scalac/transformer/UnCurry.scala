@@ -163,7 +163,7 @@ class UnCurry(global: scalac_Global, descr: UnCurryPhase) extends OwnerTransform
         val args1 = transformArgs(tree.pos, args, ftype);
         inArray   = old;
         if (myInArray) {
-          args1(0).getType().baseType(global.definitions.ARRAY_CLASS).match {
+          args1(0).getType().baseType(global.definitions.ARRAY_CLASS) match {
             case Type.NoType =>
               copy.Apply(tree,fn, Predef.Array[Tree]{args1(0)});
             case _      => fn1 match {
