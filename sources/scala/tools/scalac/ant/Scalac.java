@@ -367,7 +367,6 @@ public class Scalac extends MatchingTask {
 		mapper.setFrom("*.scala");
 		SourceFileScanner scanner = new SourceFileScanner(this);
 		String[] newFiles = scanner.restrict(files, originDir, destination, mapper);
-		log(force+" "+newFiles.length);
 		if (force.compareToIgnoreCase("changed") == 0 && (newFiles.length > 0)) {
 		    addFilesToSourceList(files, originDir, sourceFilesList);
 		} else if (force.compareToIgnoreCase("never") == 0) {
