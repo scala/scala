@@ -6,12 +6,12 @@
 
     <property file="build-nsc.properties.${platform}" prefix="nsc." />
 
-    <echoproperties prefix="nsc." format="xml" destfile="/tmp/env.xml" />
+    <echoproperties prefix="nsc." format="xml" destfile="/tmp/env_${user.name}.xml" />
 
     <!-- generate "env.sh" (Unix) -->
 
-    <xslt in="/tmp/env.xml" out="/tmp/env.sh" style="setenv-sh.xsl" />
-    <copy file="/tmp/env.sh" tofile="env.sh">
+    <xslt in="/tmp/env_${user.name}.xml" out="/tmp/env_${user.name}.sh" style="setenv-sh.xsl" />
+    <copy file="/tmp/env_${user.name}.sh" tofile="env.sh">
       <filterchain>
         <tokenfilter>
           <ignoreblank />
@@ -21,8 +21,8 @@
 
     <!-- generate "env.bat" (Windows) -->
 
-    <xslt in="/tmp/env.xml" out="/tmp/env.bat" style="setenv-bat.xsl" />
-    <copy file="/tmp/env.bat" tofile="env.bat">
+    <xslt in="/tmp/env_${user.name}.xml" out="/tmp/env_${user.name}.bat" style="setenv-bat.xsl" />
+    <copy file="/tmp/env_${user.name}.bat" tofile="env.bat">
       <filterchain>
         <tokenfilter>
           <ignoreblank />
