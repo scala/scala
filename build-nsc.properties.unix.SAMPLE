@@ -33,9 +33,9 @@ jaco_jar    = ${apps_dir}/jaco/lib/jaco.jar
 ##############################################################################
 # build directories
 #
-nsc_dir                = ${tmp_dir}/classes_nsc
-nsc4ant_dir            = ${tmp_dir}/classes_nsc4ant
-nsc_output_dir         = ${tmp_dir}/classes_new
-tools_util_runtime_dir = ${tmp_dir}/classes_nsrt
+nsc_dir                = ${tmp_dir}/classes_nsc_${user.name}
+nsc4ant_dir            = ${tmp_dir}/classes_nsc4ant_${user.name}
+nsc_output_dir         = ${tmp_dir}/classes_new_${user.name}
+tools_util_runtime_dir = ${tmp_dir}/classes_nsrt_${user.name}
 #
 ##############################################################################
