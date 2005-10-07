@@ -933,7 +933,10 @@ test_main() {
 
     case "$SCRIPT" in
         scalanstest* )
-            SOCOS="$PREFIX/bin/scalansc";;
+            SOCOS="$PREFIX/bin/scalansc";
+            TESTROOT={#NTEST_SRCDIR#};
+            SRCDIR={#NTEST_SRCDIR#};
+        ;;
     esac;
 
     case `uname` in
