@@ -1021,6 +1021,8 @@ test_main() {
         fi
     fi
 
+    printf_outline "Source directory is: $SRCDIR\\n\\n";
+
     test_check_all;
 
     if [ $FAILURE_COUNT -eq 0 ]; then
