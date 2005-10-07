@@ -12,7 +12,6 @@ package scala.tools.scalac.ant;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Vector;
 import org.apache.tools.ant.AntClassLoader;
 
@@ -20,6 +19,7 @@ import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.MatchingTask;
+import org.apache.tools.ant.types.EnumeratedAttribute;
 import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.util.FileUtils;
 import org.apache.tools.ant.util.GlobPatternMapper;
@@ -66,6 +66,8 @@ import scalac.CompilerCommand;
  */
 public class Scalac extends MatchingTask {
 
+    private FileUtils fileUtils = FileUtils.newFileUtils();
+
     private String SCALA_PRODUCT =
     System.getProperty("scala.product", "Scalac Ant compiler");
     private String SCALA_VERSION =
@@ -100,8 +102,8 @@ public class Scalac extends MatchingTask {
     private boolean usepredefs = true;
     /** Whether to implicitly import or not. */
     private boolean useimports = true;
-    /** Whether to force compilation of all files or not. */
-    private boolean force = false;
+    /** What type of force compilation to use, if any. */
+    private String force = "never";
 
     // ###################################################################
     // #####                    Properties setters                   #####
@@ -314,8 +316,8 @@ public class Scalac extends MatchingTask {
      * A setter for the force attribute. Used by Ant.
      * @param input The value for <code>force</code>.
      */
-    public void setForce(boolean input) {
-	force = input;
+    public void setForce(ForceMode input) {
+	force = input.getValue();
     }
 
     // ###################################################################
@@ -343,7 +345,6 @@ public class Scalac extends MatchingTask {
 	    error("Attribute 'destdir' does not refer to an existing directory.");
 
 	Vector sourceFilesList = new Vector();
-	FileUtils fileUtils = FileUtils.newFileUtils();
 
 	// Scans source directories to build up a compile lists.
 	// If force is false, only files were the .class file in destination is newer than
@@ -358,24 +359,23 @@ public class Scalac extends MatchingTask {
 	    DirectoryScanner originDirScanner = this.getDirectoryScanner(originDir);
 	    String[] files = originDirScanner.getIncludedFiles();
 
-	    if (force) {
-		for (int j = 0; j < files.length; j++) {
-		    String sourceFile = fileUtils.resolveFile(originDir, files[j]).toString();
-		    log(sourceFile, Project.MSG_VERBOSE);
-		    sourceFilesList.add(sourceFile);
-		}
+	    if (force.compareToIgnoreCase("always") == 0) {
+		addFilesToSourceList(files, originDir, sourceFilesList);
 	    } else {
 		GlobPatternMapper mapper = new GlobPatternMapper();
 		mapper.setTo("*.class");
 		mapper.setFrom("*.scala");
 		SourceFileScanner scanner = new SourceFileScanner(this);
 		String[] newFiles = scanner.restrict(files, originDir, destination, mapper);
-		for (int k = 0; k < newFiles.length; k++) {
-		    String sourceFile = fileUtils.resolveFile(originDir, newFiles[k]).toString();
-		    log(sourceFile, Project.MSG_VERBOSE);
-		    sourceFilesList.add(sourceFile);
+		log(force+" "+newFiles.length);
+		if (force.compareToIgnoreCase("changed") == 0 && (newFiles.length > 0)) {
+		    addFilesToSourceList(files, originDir, sourceFilesList);
+		} else if (force.compareToIgnoreCase("never") == 0) {
+		    addFilesToSourceList(newFiles, originDir, sourceFilesList);
 		}
 	    }
+
+
 	}
 
 	log("Compiling " + sourceFilesList.size() + " source file" + (sourceFilesList.size() == 1 ? "" : "s") + (destination != null ? " to " + destination.toString() : ""));
@@ -453,6 +453,14 @@ public class Scalac extends MatchingTask {
 
     }
 
+    private void addFilesToSourceList (String[] files, File originDir, Vector sourceFilesList) {
+	for (int i = 0; i < files.length; i++) {
+	    String sourceFile = fileUtils.resolveFile(originDir, files[i]).toString();
+	    log(sourceFile, Project.MSG_VERBOSE);
+	    sourceFilesList.add(sourceFile);
+	}
+    }
+
     private String makeAbsolutePath(Path path, String pathName) {
 	String result = "";
 	String[] pathList = path.list();
@@ -489,6 +497,18 @@ public class Scalac extends MatchingTask {
 	    classLoaderClasspath.append(getClassLoaderClasspath(parentClassLoader));
 	}
 	return classLoaderClasspath;
+    }
+
+    /**
+     * Enumerated attribute with the values "never", "always", "changed".
+     */
+    public static class ForceMode extends EnumeratedAttribute {
+        /**
+         * @see EnumeratedAttribute#getValues
+         */
+        public String[] getValues() {
+            return new String[] {"never", "always", "changed"};
+        }
     }
 
 }
