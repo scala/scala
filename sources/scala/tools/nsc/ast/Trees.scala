@@ -301,7 +301,7 @@ import symtab.Flags._;
 
   /** Anonymous function, eliminated by analyzer */
   case class Function(vparams: List[ValDef], body: Tree)
-       extends TermTree;
+       extends TermTree with SymTree;
 
   /** Assignment */
   case class Assign(lhs: Tree, rhs: Tree)
@@ -1083,7 +1083,7 @@ import symtab.Flags._;
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
     override def traverse(tree: Tree): unit = {
-      if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
+      if ((tree.isDef || tree.isInstanceOf[Function]) && tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
 	tree.symbol.owner = newowner;
       super.traverse(tree)
     }

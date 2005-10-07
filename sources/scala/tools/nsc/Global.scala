@@ -242,16 +242,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   object icodeChecker extends checkers.ICodeChecker();
 
-  object typer extends analyzer.Typer(analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope())) {
-    override def typed(tree: Tree, mode: int, pt: Type): Tree = {
-      if (settings.debug.value) log("typing [[" + tree + "]]");
-      val result = super.typed(tree, mode, pt);
-      if (settings.debug.value) log(" ==> " + result + ":" + result.tpe);
-      result
-    }
-    override def typed(tree: Tree): Tree = super.typed(tree);
-    override def typed(tree: Tree, pt: Type): Tree = super.typed(tree, pt);
-  }
+  object typer extends analyzer.Typer(
+    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope()));
 
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory,

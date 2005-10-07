@@ -33,17 +33,6 @@ import collection.mutable.HashMap;
     superDefs.clear;
   }
 
-  val resetAttrs = new Traverser {
-    override def traverse(tree: Tree): unit = tree match {
-      case EmptyTree | TypeTree() =>
-	;
-      case _ =>
-	if (tree.hasSymbol) tree.symbol = NoSymbol;
-	tree.tpe = null;
-	super.traverse(tree)
-    }
-  }
-
   def newTyper(context: Context): Typer = new Typer(context);
 
   class Typer(context0: Context) {
@@ -150,7 +139,8 @@ import collection.mutable.HashMap;
       }
 
       /**  Check that type `tree' does not refer to entities defined in scope `scope'. */
-      def locals[T <: Tree](scope: Scope, tree: T): T = check(NoSymbol, scope, tree);
+      def locals[T <: Tree](scope: Scope, pt: Type, tree: T): T =
+        if (isFullyDefined(pt)) tree setType pt else check(NoSymbol, scope, tree);
 
       def check[T <: Tree](owner: Symbol, scope: Scope, tree: T): T = {
         this.owner = owner;
@@ -638,20 +628,22 @@ import collection.mutable.HashMap;
 	List.mapConserve(vparams1)(typedValDef));
       var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt));
       val rhs1 =
-	if (ddef.name == nme.CONSTRUCTOR) {
-	  if (!meth.hasFlag(SYNTHETIC) &&
-	      !(meth.owner.isClass ||
-		meth.owner.isModuleClass ||
-		meth.owner.isAnonymousClass ||
-		meth.owner.isRefinementClass))
-	    error(ddef.pos, "constructor definition not allowed here " + meth.owner);//debug
-	  context.enclClass.owner.setFlag(INCONSTRUCTOR);
-	  val result = typed(ddef.rhs, EXPRmode | INCONSTRmode, UnitClass.tpe);
-	  context.enclClass.owner.resetFlag(INCONSTRUCTOR);
-	  if (meth.isPrimaryConstructor && !phase.erasedTypes)
-	    computeParamAliases(meth.owner, vparamss1, result);
-	  result
-	} else transformedOrTyped(ddef.rhs, tpt1.tpe);
+        checkNoEscaping.locals(
+          context.scope, tpt1.tpe,
+	  if (ddef.name == nme.CONSTRUCTOR) {
+	    if (!meth.hasFlag(SYNTHETIC) &&
+	        !(meth.owner.isClass ||
+		  meth.owner.isModuleClass ||
+		  meth.owner.isAnonymousClass ||
+		  meth.owner.isRefinementClass))
+	      error(ddef.pos, "constructor definition not allowed here " + meth.owner);//debug
+	    context.enclClass.owner.setFlag(INCONSTRUCTOR);
+	    val result = typed(ddef.rhs, EXPRmode | INCONSTRmode, UnitClass.tpe);
+	    context.enclClass.owner.resetFlag(INCONSTRUCTOR);
+	    if (meth.isPrimaryConstructor && !phase.erasedTypes)
+	      computeParamAliases(meth.owner, vparamss1, result);
+	    result
+	  } else transformedOrTyped(ddef.rhs, tpt1.tpe));
       copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
@@ -701,7 +693,7 @@ import collection.mutable.HashMap;
       else {
 	if (block1.tpe.symbol.isAnonymousClass)
 	  block1 setType intersectionType(block1.tpe.parents, block1.tpe.symbol.owner);
-	checkNoEscaping.locals(context.scope, block1)
+	checkNoEscaping.locals(context.scope, pt, block1)
       }
     }
 
@@ -744,6 +736,7 @@ import collection.mutable.HashMap;
      *
      *      def isDefinedAt(x: T): boolean = true
      */
+/*
     def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
       val Triple(clazz, argpts, respt) =
 	if (isFunctionType(pt)
@@ -803,6 +796,32 @@ import collection.mutable.HashMap;
 	    Typed(
 	      New(TypeTree(anonClass.tpe), List(List())),
 	      TypeTree(funtpe)))))
+    }
+*/
+    def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
+      val Triple(clazz, argpts, respt) =
+	if (isFunctionType(pt)
+	    ||
+            pt.symbol == PartialFunctionClass &&
+            fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
+          Triple(pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
+        else
+          Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType);
+      val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
+        if (vparam.tpt.isEmpty)
+          vparam.tpt.tpe =
+            if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
+	    else argpt;
+        namer.enterSym(vparam);
+	vparam.symbol
+      }
+      val vparams = List.mapConserve(fun.vparams)(typedValDef);
+      val body = typed(fun.body, respt);
+      val formals = vparamSyms map (.tpe);
+      val restpe = body.tpe.deconst;
+      val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe));
+      copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
+        setType funtpe
     }
 
     def typedRefinement(stats: List[Tree]): List[Tree] = {
@@ -1141,7 +1160,11 @@ import collection.mutable.HashMap;
                      else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe)))
 
         case fun @ Function(_, _) =>
+/*
           newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)
+*/
+          tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME) setFlag SYNTHETIC;
+          newTyper(context.makeNewScope(tree, tree.symbol)).typedFunction(fun, mode, pt)
 
         case Assign(lhs, rhs) =>
           def isGetter(sym: Symbol) = sym.info match {

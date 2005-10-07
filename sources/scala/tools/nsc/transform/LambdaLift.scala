@@ -197,7 +197,7 @@ abstract class LambdaLift extends InfoTransform {
 
     private def proxy(sym: Symbol) = {
       def searchIn(owner: Symbol): Symbol = {
-        if (settings.debug.value) log("searching for " + sym + " in " + owner  + " " + enclMethOrClass(owner));//debug
+        if (settings.debug.value) log("searching for " + sym + "(" + sym.owner + ") in " + owner  + " " + enclMethOrClass(owner));//debug
         proxies.get(enclMethOrClass(owner)) match {
           case Some(ps) =>
             ps filter (p => p.name == sym.name) match {

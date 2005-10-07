@@ -91,7 +91,7 @@ import Flags._;
     final def newAnonymousClass(pos: int) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName);
     final def newAnonymousFunctionClass(pos: int) =
-      newClass(pos, nme.ANONFUN_CLASS_NAME.toTypeName);
+      newClass(pos, nme.ANON_FUN_NAME.toTypeName);
     final def newRefinementClass(pos: int) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName);
     final def newErrorClass(name: Name) = {

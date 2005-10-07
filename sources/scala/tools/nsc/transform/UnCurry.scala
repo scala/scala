@@ -63,7 +63,13 @@ abstract class UnCurry extends InfoTransform {
 
     private var inPattern = false;
 
-    override def transform(tree: Tree): Tree = postTransform(mainTransform(tree));
+    override def transform(tree: Tree): Tree = try { //debug
+      postTransform(mainTransform(tree));
+    } catch {
+      case ex: Throwable =>
+	System.out.println("exception when traversing " + tree);
+      throw ex
+    }
 
     /* Is tree a reference `x' to a call by name parameter that neeeds to be converted to
      * x.apply()? Note that this is not the case if `x' is used as an argument to another
@@ -108,7 +114,12 @@ abstract class UnCurry extends InfoTransform {
 	List.map2(formals, args1) ((formal, arg) =>
 	  if (formal.symbol != ByNameParamClass) arg
 	  else if (isByNameRef(arg)) arg setType functionType(List(), arg.tpe)
-	  else typer.atOwner(currentOwner).typed(Function(List(), arg) setPos arg.pos))
+	  else {
+            val fun = typer.atOwner(currentOwner).typed(
+              Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
+            new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
+            refchecks.newTransformer(unit).transformFunction(fun)
+          })
       }
     }
 
@@ -122,6 +133,7 @@ abstract class UnCurry extends InfoTransform {
 	inPattern = false;
 	copy.CaseDef(tree, pat1, transform(guard), transform(body))
       case _ =>
+        assert(!tree.isInstanceOf[Function]);
         val tree1 = super.transform(tree);
 	if (isByNameRef(tree1))
 	  typed(atPos(tree1.pos)(

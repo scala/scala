@@ -140,7 +140,7 @@ import scala.tools.nsc.util.NameTransformer;
     val WILDCARD_STAR = newTermName("_*");
     val COMPOUND_NAME = newTermName("<ct>");
     val ANON_CLASS_NAME = newTermName("$anon");
-    val ANONFUN_CLASS_NAME = newTermName("$anonfun");
+    val ANON_FUN_NAME = newTermName("$anonfun");
     val REFINE_CLASS_NAME = newTermName("<refinement>");
     val EMPTY_PACKAGE_NAME = newTermName("<empty>");
     val IMPORT = newTermName("<import>");
