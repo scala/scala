@@ -1,0 +1,124 @@
+############################################################-*-Makefile-*-####
+# Makefile for the Scala Examples
+##############################################################################
+# $Id$
+
+##############################################################################
+# Configuration
+
+ROOT			 = .
+
+##############################################################################
+# Variables
+
+SCALA_HOME		 = $(ROOT)
+
+PACKAGE_DIR		 = examples
+SOURCE_DIR		 = $(ROOT)/sources
+OUTPUT_DIR		 = $(ROOT)/classes
+
+SCALA_FILES		+= computeserver
+SCALA_FILES		+= auction
+SCALA_FILES		+= boundedbuffer
+SCALA_FILES		+= oneplacebuffer
+SCALA_FILES		+= fors
+SCALA_FILES		+= futures
+SCALA_FILES		+= iterators
+SCALA_FILES		+= maps
+SCALA_FILES		+= Parsers
+SCALA_FILES		+= parsers1
+SCALA_FILES		+= parsers2
+SCALA_FILES		+= patterns
+SCALA_FILES		+= sort
+SCALA_FILES		+= sort1
+SCALA_FILES		+= sort2
+#SCALA_FILES		+= typeinf
+SCALA_FILES		+= expressions/expressions-current
+#SCALA_FILES		+= jolib/Ref
+#SCALA_FILES		+= jolib/parallelOr
+SCALA_FILES		+= pilib/elasticBuffer
+SCALA_FILES		+= pilib/handover
+SCALA_FILES		+= pilib/mobilePhoneProtocol
+SCALA_FILES		+= pilib/rwlock
+SCALA_FILES		+= pilib/scheduler
+SCALA_FILES		+= pilib/semaphore
+SCALA_FILES		+= pilib/twoPlaceBuffer
+SCALA_FILES		+= pilib/piNat
+
+SCALA_SOURCES		+= $(SCALA_FILES:%=$(SOURCE_DIR)/$(PACKAGE_DIR)/%.scala)
+
+SCALAC			?= $(SCALA_HOME)/bin/scalac
+SCALAC_OPTIONS		+= -d $(call CYGWIN_PATH,$(OUTPUT_DIR))
+
+SCALA			?= $(SCALA_HOME)/bin/scala
+SCALA_OPTIONS		+= -cp $(call CYGWIN_PATH,$(OUTPUT_DIR))
+
+SCALAP			?= $(SCALA_HOME)/bin/scalap
+SCALAP_OPTIONS		+= -classpath $(call CYGWIN_PATH,$(OUTPUT_DIR))
+
+##############################################################################
+
+ECHO			 = echo
+FIND			 = find
+GREP			 = grep
+MKDIR			 = mkdir
+RM			 = rm -f
+RUN                      = $(ECHO) '$(1)'; $(1) || exit $$?
+SED			 = sed
+TOUCH			 = touch
+
+CYGWIN_TEST		 = $(filter CYGWIN%,$(shell $(UNAME)))
+CYGWIN_PATH		 = $(if $(CYGWIN_TEST),`$(CYGPATH) -w -p $(1)`,$(1))
+CYGWIN_FILE		 = $(if $(CYGWIN_TEST),`$(CYGPATH) -w    $(1)`,$(1))
+
+##############################################################################
+# Commands
+
+help:
+	@$(ECHO) "Usage: make -f Makefile.examples [ option ]"
+	@$(ECHO) "  all                      generate class files for all examples"
+	@$(ECHO) "  build [ FILES=<files> ]  generate class files for FILES or all"
+	@$(ECHO) "                           examples if parameter FILES is omitted"
+	@$(ECHO) "  clean                    remove all generated class files"
+	@$(ECHO) "  help                     display this usage message"
+	@$(ECHO) "  run [ MAIN=<main> ]      execute the Scala program MAIN or all"
+
+all: .latest-examples-build
+
+build:
+	@if [ -z "$(FILES)" ]; then \
+	    $(MAKE) -f Makefile.examples all; \
+	else \
+	    $(call RUN,$(SCALAC) $(SCALAC_OPTIONS) $(FILES)); \
+	fi
+
+run: build
+	@if [ -z "$(MAIN)" ]; then \
+	    classes=`cd $(OUTPUT_DIR) && $(FIND) . -name "*.class" | $(GREP) -v '\\$$'`; \
+	    classes=`$(ECHO) "$$classes" | $(SED) -e "s#./##" -e "s#.class##g" -e "s#/#.#g"`; \
+	    for class in $$classes; do \
+	        hasMain=`$(SCALAP) $(SCALAP_OPTIONS) $$class | $(GREP) -c "final def main("`; \
+	        [ $$hasMain -gt 0 ] && $(SCALA) $(SCALA_OPTIONS) $$class; \
+	    done; \
+	else \
+	    $(call RUN,$(SCALA) $(SCALA_OPTIONS) $(MAIN)); \
+	fi
+
+clean:
+	$(RM) -r .latest-examples* $(OUTPUT_DIR)/$(PACKAGE_DIR)
+
+.PHONY: all
+.PHONY: build
+.PHONY: clean
+.PHONY: help
+.PHONY: run
+
+##############################################################################
+# Targets
+
+.latest-examples-build: $(SCALA_SOURCES)
+	@[ -d "$(OUTPUT_DIR)/$(PACKAGE_DIR)" ] || $(MKDIR) -p $(OUTPUT_DIR)/$(PACKAGE_DIR)
+	$(SCALAC) $(SCALAC_OPTIONS) $(SCALA_SOURCES)
+	@$(TOUCH) $@
+
+##############################################################################
