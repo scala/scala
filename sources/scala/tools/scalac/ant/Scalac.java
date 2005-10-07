@@ -377,7 +377,11 @@ public class Scalac extends MatchingTask {
 
 	}
 
-	log("Compiling " + sourceFilesList.size() + " source file" + (sourceFilesList.size() == 1 ? "" : "s") + (destination != null ? " to " + destination.toString() : ""));
+	if (sourceFilesList.isEmpty()) {
+	    log("No files selected for compilation");
+	} else {
+	    log("Compiling " + sourceFilesList.size() + " source file" + (sourceFilesList.size() == 1 ? "" : "s") + (destination != null ? " to " + destination.toString() : ""));
+	}
 
 	// Builds-up the compilation settings for Scalac with the existing Ant parameters.
 	Reporter reporter = new ConsoleReporter();
