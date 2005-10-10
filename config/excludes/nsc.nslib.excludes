@@ -1,0 +1,3 @@
+# A list of files to exclude when compiling the Scala library with NSC.
+# All files can be defined using Ant's fileset wildcard notation;
+# one statement per line.

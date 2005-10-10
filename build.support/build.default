@@ -1,0 +1,37 @@
+# These are the default properties for the Scala build script.
+
+# DO NOT CHANGE THIS FILE! Changes should be made in the
+# 'build.properties' file, that will override the properties in
+# this file.
+
+nsc.logging=none
+nsc.stop=
+nsc.skip=
+nsc.check=
+nsc.nslib.excludes=${basedir}/build.support/nsc.nslib.excludes
+nsc.nstools.excludes=${basedir}/build.support/nsc.nstools.excludes
+
+oslib.jar=/usr/local/lib/scala.jar
+ostools.jar=/usr/local/lib/tools.jar
+jaco.jar=/usr/local/lib/jaco.jar
+fjbg.jar=/usr/local/lib/fjbg.jar
+msil.jar=/usr/local/lib/msil.jar
+java.jar=${java.home}/jre/lib/rt.jar
+
+ant.jar=${ant.home}/lib/ant.jar
+
+sources.dir=${basedir}/sources
+newsources.dir=${basedir}/newsources
+
+build.dir=${basedir}/build
+build.nslib.dir=${build.dir}/nslib
+build.osc-nstools.dir=${build.dir}/osc-nstools
+build.nstools.dir=${build.dir}/nstools
+build.oslib.dir=${build.dir}/oslib
+build.ostools.dir=${build.dir}/ostools
+distrib.dir=${basedir}/dist
+distrib.current.prefix=nscala
+
+distrib.nslib.jar=nslib.jar
+distrib.nstools.jar=nstools.jar
+distrib.osc-nstools.jar=osc-nstools.jar
