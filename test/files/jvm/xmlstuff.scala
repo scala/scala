@@ -21,7 +21,9 @@ object Test {
     },
     new NodeSeq { val theSeq = List(Text("38!"),Text("58!")) }
   );
-
+assertSameElements(
+  p \\ "@value", new NodeSeq { val theSeq = List(Text("3"), Text("5")) }
+);
   val books =
     <bks>
       <book><title>Blabla</title></book>
