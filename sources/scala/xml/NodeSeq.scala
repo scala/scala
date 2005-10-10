@@ -14,7 +14,7 @@ object NodeSeq {
   def fromSeq(s:Seq[Node]):NodeSeq = new NodeSeq {
     def theSeq = s;
   }
-  def view(s:Seq[Node]):NodeSeq = fromSeq(s);
+  implicit def view(s:Seq[Node]):NodeSeq = fromSeq(s);
 }
 
 /** a wrapper around Seq[Node] that adds XPath and comprehension methods */
