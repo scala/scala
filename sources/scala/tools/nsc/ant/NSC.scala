@@ -398,9 +398,10 @@ package scala.tools.nsc.ant {
          * @param input The value for <code>force</code>.
          */
         def setStop (input: String) = {
-        	if (CompilerPhase.isPermissible(input))
-            	stop = Some(input);
-            else error("Phase '" + input + "' in stop does not exist.");
+        	if (CompilerPhase.isPermissible(input)) {
+        		if (input != "")
+            		stop = Some(input);
+            } else error("Phase '" + input + "' in stop does not exist.");
         }
 
         /**
@@ -408,10 +409,10 @@ package scala.tools.nsc.ant {
          * @param input The value for <code>force</code>.
          */
         def setSkip (input: String) = {
-            skip = List.fromArray(input.split(",")).map(s:String=>{
+            skip = List.fromArray(input.split(",")).flatMap(s:String=>{
             	val st = s.trim();
-            	if (CompilerPhase.isPermissible(st)) st
-            	else {error("Phase '" + st + "' in skip does not exist."); ""}
+            	if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
+            	else {error("Phase '" + st + "' in skip does not exist."); Nil}
             });
         }
 
@@ -420,10 +421,10 @@ package scala.tools.nsc.ant {
          * @param input The value for <code>force</code>.
          */
         def setCheck (input: String) = {
-            check = List.fromArray(input.split(",")).map(s:String=>{
+            check = List.fromArray(input.split(",")).flatMap(s:String=>{
             	val st = s.trim();
-            	if (CompilerPhase.isPermissible(st)) st
-            	else {error("Phase " + st + " in check does not exist."); ""}
+            	if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
+            	else {error("Phase " + st + " in check does not exist."); Nil}
             });
         }
 
