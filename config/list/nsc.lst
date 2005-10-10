@@ -27,22 +27,22 @@ ast/parser/Tokens.scala
 ast/parser/TreeBuilder.scala
 
 matching/AlgebraicMatchers.scala
-matching/Autom2Scala.scala
+matching/Autom2.scala
 matching/BerrySethis.scala
 matching/CodeFactory.scala
-matching/DetWordAutom.scala
-matching/LeftTracerInScala.scala
+matching/DetWordAutoms.scala
+matching/LeftTracers.scala
 matching/MatcherLabels.scala
 matching/NondetWordAutoms.scala
 matching/Npair.scala
 matching/PatternMatchers.scala
 matching/PatternNodeCreator.scala
 matching/PatternNodes.scala
-matching/RightTracerInScala.scala
+matching/RightTracers.scala
 matching/SequenceMatchers.scala
 matching/StateSetComparator.scala
 matching/TransMatcher.scala
-matching/WordAutomInScala.scala
+matching/WordAutoms.scala
 
 symtab/Constants.scala
 symtab/Definitions.scala
