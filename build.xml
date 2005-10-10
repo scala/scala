@@ -87,7 +87,7 @@
         <mkdir dir="${build.nslib.dir}"/>
         <pico srcdir="${sources.dir}" destdir="${build.nslib.dir}" scalahack="true">
         	<classpath>
-        		<pathelement location="${build.osc-nstools.dir}"/>
+        		<pathelement location="${build.nslib.dir}"/>
         	</classpath>
             <include name="scala/runtime/*.java"/>
             <include name="scala/runtime/**/*.java"/>
@@ -106,6 +106,7 @@
             <classpath>
         		<pathelement location="${build.osc-nstools.dir}"/>
         		<pathelement location="${oslib.jar}"/>
+        		<pathelement location="${fjbg.jar}"/>
         		<pathelement location="${ant.jar}"/>
             </classpath>
             <include name="scala/tools/nsc/**/*.scala"/>
@@ -131,7 +132,6 @@
         		<pathelement location="${build.nslib.dir}"/>
         		<pathelement location="${sources.dir}"/>
         		<pathelement location="${newsources.dir}"/>
-        		<pathelement location="${build.osc-nstools.dir}"/>
         		<pathelement location="${fjbg.jar}"/>
         	</classpath>
 			<include name="scala/**/*.scala"/>
@@ -142,20 +142,6 @@
     </target>
     
     <target name="build.nsc.nstools" depends="init.nsc, build.nsc.nslib" description="Builds the Scala tools (NSC and Scalap) with the new Scala compiler.">
-        <mkdir dir="${build.nstools.dir}"/>
-        <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}" excludesfile="${nsc.nstools.excludes}" stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" logging="${nsc.logging}">
-        	<classpath>
-        		<pathelement location="${build.nslib.dir}"/>
-        		<pathelement location="${build.nstools.dir}"/>
-        		<pathelement location="${fjbg.jar}"/>
-        		<pathelement location="${ant.jar}"/>
-        	</classpath>
-            <include name="scala/tools/nsc/**/*.scala"/>
-            <exclude name="scala/tools/nsc/ant/*.scala"/>
-        </nsc>
-    </target>
-    
-    <target name="build.nsbin" depends="init.nsc, build.nsc.nslib" description="Builds the Scala tools (NSC and Scalap) with the new Scala compiler.">
         <mkdir dir="${build.nstools.dir}"/>
         <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}" excludesfile="${nsc.nstools.excludes}" stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" logging="${nsc.logging}">
         	<classpath>
