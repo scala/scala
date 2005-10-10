@@ -1,16 +1,26 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml;
 
-case object Null extends MetaData  {
+case object Null extends MetaData {
 
   /** appends given MetaData items to this MetaData list */
   override def append(m: MetaData): MetaData = m;
 
-  override def containedIn1(m:MetaData): Boolean = false;
+  override def containedIn1(m: MetaData): Boolean = false;
 
   /** returns its argument */
   def copy(next: MetaData) = next;
 
-  override def filter(f:MetaData => Boolean): MetaData = this;
+  override def filter(f: MetaData => Boolean): MetaData = this;
 
   /** returns null */
   def getNamespace(owner: Node) = null;
@@ -19,13 +29,13 @@ case object Null extends MetaData  {
 
   final override def length = 0;
 
-  final override def length(i:Int) = i;
+  final override def length(i: Int) = i;
 
   def isPrefixed = false;
 
   /** deep equals method */
   override def equals(that: Any) = that match {
-    case m:MetaData => m.length == 0
+    case m: MetaData => m.length == 0
     case _ => false;
   }
 
@@ -58,6 +68,5 @@ case object Null extends MetaData  {
   override def toString(sb: StringBuffer): Unit = {}
 
   override def wellformed(scope: NamespaceBinding) = true;
-
 
 }

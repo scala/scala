@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml;
 
 /** Attribute information item, and linked list of attribute information items.
@@ -16,7 +26,7 @@ abstract class MetaData extends Iterable[MetaData] {
   def append(m: MetaData): MetaData =
     next.append(copy(m));
 
-   def containedIn1(m:MetaData): Boolean =
+   def containedIn1(m: MetaData): Boolean =
      m.equals1(this) || containedIn1(m.next);
 
   /** returns a copy of this MetaData item with next field set to argument */
@@ -29,7 +39,7 @@ abstract class MetaData extends Iterable[MetaData] {
 
   def length: Int = length(1);
 
-  def length(i:Int): Int = next.length(i+1);
+  def length(i: Int): Int = next.length(i + 1);
 
   def isPrefixed: Boolean;
 
@@ -42,7 +52,7 @@ abstract class MetaData extends Iterable[MetaData] {
   /** deep equals method */
   override def equals(that: Any) = {
     that match {
-      case m:MetaData =>
+      case m: MetaData =>
         var res = (this.length == m.length) && (this.hashCode() == m.hashCode());
         val it = this.elements;
         while (res && it.hasNext) { res = it.next.containedIn1(m) }
@@ -65,11 +75,11 @@ abstract class MetaData extends Iterable[MetaData] {
   }
 
   /** shallow equals method */
-  def equals1(that:MetaData): Boolean;
+  def equals1(that: MetaData): Boolean;
 
   /** filters this sequence of meta data */
-  def filter(f:MetaData => Boolean): MetaData = {
-    if(f(this)) copy(next filter f) else next filter f;
+  def filter(f: MetaData => Boolean): MetaData = {
+    if (f(this)) copy(next filter f) else next filter f;
   }
 
   /** returns key of this MetaData item */
