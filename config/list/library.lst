@@ -155,6 +155,11 @@ io/Source.scala
 mobile/Code.scala
 mobile/Location.scala
 
+reflect/Code.scala
+reflect/Symbol.scala
+reflect/Type.scala
+reflect/TypedCode.scala
+
 runtime/AtomicReference.java
 runtime/BooleanRef.java
 runtime/BoxedBoolean.java
