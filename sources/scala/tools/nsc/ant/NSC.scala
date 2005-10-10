@@ -77,14 +77,19 @@ package scala.tools.nsc.ant {
         // #####                      Ant Properties                     #####
         // ###################################################################
 
+        abstract class PermissibleValue {
+        	val values: List[String];
+        	def isPermissible (value: String): Boolean = (value == "") || values.exists(v:String=>(v.compareToIgnoreCase(value) == 0));
+        }
+
         /** Defines valid values for the logging property. */
-        class LoggingLevel extends EnumeratedAttribute {
-        	def getValues () = Predef.Array("", "none", "verbose", "debug");
+        object LoggingLevel extends PermissibleValue {
+        	val values = List("none", "verbose", "debug");
         }
 
         /** Defines valid values for properties that refer to compiler phases. */
-        class CompilerPhase extends EnumeratedAttribute {
-        	def getValues () = Predef.Array("", "namer", "typer", "pickler", "uncurry", "tailcalls", "transmatch", "explicitouter", "erasure", "lambdalift", "flatten", "constructors", "mixin", "icode", "jvm");
+        object CompilerPhase extends PermissibleValue {
+        	val values = List("namer", "typer", "pickler", "uncurry", "tailcalls", "transmatch", "explicitouter", "erasure", "lambdalift", "flatten", "constructors", "mixin", "icode", "jvm");
         }
 
         /** The directories that contain source files to compile. */
@@ -358,8 +363,10 @@ package scala.tools.nsc.ant {
          * Sets the logging level attribute. Used by Ant.
          * @param input The value for <code>logging</code>.
          */
-        def setLogging (input: LoggingLevel) = {
-            logging = Some(input.getValue());
+        def setLogging (input: String) = {
+        	if (LoggingLevel.isPermissible(input))
+            	logging = Some(input);
+            else error("Logging level '" + input + "' does not exist.");
         }
 
         /**
@@ -390,9 +397,10 @@ package scala.tools.nsc.ant {
          * Sets the force attribute. Used by Ant.
          * @param input The value for <code>force</code>.
          */
-        def setStop (input: CompilerPhase) = {
-        	if (input != "")
-            	stop = Some(input.getValue());
+        def setStop (input: String) = {
+        	if (CompilerPhase.isPermissible(input))
+            	stop = Some(input);
+            else error("Phase '" + input + "' in stop does not exist.");
         }
 
         /**
@@ -400,11 +408,10 @@ package scala.tools.nsc.ant {
          * @param input The value for <code>force</code>.
          */
         def setSkip (input: String) = {
-        	val cp = new CompilerPhase();
-            skip = List.fromArray(input.split(",")).flatMap(s:String=>{
+            skip = List.fromArray(input.split(",")).map(s:String=>{
             	val st = s.trim();
-            	if (cp.containsValue(st)) (if (st != "") List(st) else Nil)
-            	else {error("Phase " + st + " in skip does not exist."); Nil}
+            	if (CompilerPhase.isPermissible(st)) st
+            	else {error("Phase '" + st + "' in skip does not exist."); ""}
             });
         }
 
@@ -413,11 +420,10 @@ package scala.tools.nsc.ant {
          * @param input The value for <code>force</code>.
          */
         def setCheck (input: String) = {
-            val cp = new CompilerPhase();
-            check = List.fromArray(input.split(",")).flatMap(s:String=>{
+            check = List.fromArray(input.split(",")).map(s:String=>{
             	val st = s.trim();
-            	if (cp.containsValue(st)) (if (st != "") List(st) else Nil)
-            	else {error("Phase " + st + " in check does not exist."); Nil}
+            	if (CompilerPhase.isPermissible(st)) st
+            	else {error("Phase " + st + " in check does not exist."); ""}
             });
         }
 
