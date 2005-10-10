@@ -60,6 +60,30 @@ tests and type casts are generally not considered good object-oriented
 style. They are rarely efficient, nor easy to use.
 
 
+By contrast, tree transformation is the natural domain of functional
+languages. Their algebraic data types, pattern matching and
+higher-order functions make these languages ideal for the task. It's
+no wonder, then, that specialized languages for transforming XML data
+such as XSLT are functional.
+
+Another reason why functional language constructs are attractive for
+web-services is that mutable state is problematic in this setting.
+Components with mutable state are harder to replicate or to restore
+after a failure. Data with mutable state is harder to cache than
+immutable data. Functional language constructs make it relatively easy
+to construct components without mutable state.
+
+Many web services are constructed by combining different languages.
+For instance, a service might use XSLT to handle document
+transformation, XQuery for database access, and Java for the
+``business logic''.  The downside of this approach is that the
+necessary amount of cross-language glue can make applications
+cumbersome to write, verify, and maintain. A particular problem is
+that cross-language interfaces are usually not statically typed.
+Hence, the benefits of a static type system are missing where they are
+needed most -- at the join points of components written in different
+paradigms.  
+
 Conceivably, the glue problem could be addressed by a ``multi-paradigm''
 language that would express object-oriented, concurrent, as well
 as functional aspects of an application.  But one needs to be careful
@@ -75,7 +99,7 @@ Scala is both an object-oriented and functional language.  It is a
 pure object-oriented language in the sense that every value is an
 object. Types and behavior of objects are described by
 classes. Classes can be composed using mixin composition.  Scala is
-designed work seamlessly with mainstream object-oriented languages,
+designed to work seamlessly with mainstream object-oriented languages,
 in particular Java and C\#.
 
 Scala is also a functional language in the sense that every function
