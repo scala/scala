@@ -28,8 +28,8 @@ object jolib {
     def canMatch(p: Pattern) =
       p forall { s => !s.queue.isEmpty };
 
-    def values(p: Pattern) =
-      p map { s => s.queue.dequeue };
+    def values(p: Pattern): List[Any] =
+      p map { s => s.queue.dequeue: Any };
 
     def rules(rs: Pair[Pattern, Rule]*) =
       ruls = rs.asInstanceOf[List[Pair[Pattern, Rule]]];

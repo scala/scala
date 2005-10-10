@@ -710,35 +710,8 @@ import collection.mutable.HashMap;
 	newTyper(context.makeNewScope(tree, context.owner)).typedCase(cdef, pattp, pt))
     }
 
-    /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
-     *
-     *    class $anon() extends Object() with FunctionN[T_1, .., T_N, R] with ScalaObject {
-     *      def apply(x_1: T_1, ..., x_N: T_n): R = body
-     *    }
-     *    new $anon()
-     *
-     *  transform a function node (x => body) of type PartialFunction[T, R] where
-     *    body = x match { case P_i if G_i => E_i }_i=1..n
-     *  to:
-     *
-     *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
-     *      def apply(x: T): R = body;
-     *      def isDefinedAt(x: T): boolean = x match {
-     *        case P_1 if G_1 => true
-     *        ...
-     *        case P_n if G_n => true
-     *        case _ => false
-     *      }
-     *    }
-     *    new $anon()
-     *
-     *  However, if one of the patterns P_i if G_i is a default pattern, generate instead
-     *
-     *      def isDefinedAt(x: T): boolean = true
-     */
-/*
     def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
-      val Triple(clazz, argpts, respt) =
+      def decompose(tp: Type): Triple[Symbol, List[Type], Type] =
 	if (isFunctionType(pt)
 	    ||
             pt.symbol == PartialFunctionClass &&
@@ -746,6 +719,10 @@ import collection.mutable.HashMap;
           Triple(pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
         else
           Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType);
+
+      val Triple(clazz, argpts, respt) =
+        decompose(if (pt.symbol == TypedCodeClass) pt.typeArgs.head else pt);
+
       val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
         if (vparam.tpt.isEmpty)
           vparam.tpt.tpe =
@@ -759,69 +736,10 @@ import collection.mutable.HashMap;
       val formals = vparamSyms map (.tpe);
       val restpe = body.tpe.deconst;
       val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe));
-      assert(context.owner != RootClass);//debug
-      val anonClass = context.owner.newAnonymousFunctionClass(fun.pos) setFlag (FINAL | SYNTHETIC);
-      anonClass setInfo ClassInfoType(
-	List(ObjectClass.tpe, funtpe, ScalaObjectClass.tpe), new Scope(), anonClass);
-      val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
-	setFlag FINAL setInfo MethodType(formals, restpe);
-      anonClass.info.decls enter applyMethod;
-      for (val vparam <- vparamSyms) vparam.owner = applyMethod;
-      new ChangeOwnerTraverser(context.owner, applyMethod).traverse(body);
-      var members = List(
-	DefDef(FINAL, nme.apply, List(), List(vparams), TypeTree(restpe), body)
-	  setSymbol applyMethod);
-      if (pt.symbol == PartialFunctionClass) {
-	val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
-	  setFlag FINAL setInfo MethodType(formals, BooleanClass.tpe);
-	anonClass.info.decls enter isDefinedAtMethod;
-	def idbody(idparam: Symbol) = body match {
-	  case Match(_, cases) =>
-	    val substParam = new TreeSymSubstituter(List(vparams.head.symbol), List(idparam));
-	    def transformCase(cdef: CaseDef): CaseDef =
-	      resetAttrs(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)));
-	    if (cases exists treeInfo.isDefaultCase) Literal(true)
-	    else
-              Match(
-	        Ident(idparam),
-	        (cases map transformCase) :::
-		   List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
-	}
-	members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
-      }
-      typed(
-	atPos(fun.pos)(
-	  Block(
-	    List(ClassDef(anonClass, List(List()), List(List()), members)),
-	    Typed(
-	      New(TypeTree(anonClass.tpe), List(List())),
-	      TypeTree(funtpe)))))
-    }
-*/
-    def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
-      val Triple(clazz, argpts, respt) =
-	if (isFunctionType(pt)
-	    ||
-            pt.symbol == PartialFunctionClass &&
-            fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
-          Triple(pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
-        else
-          Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType);
-      val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
-        if (vparam.tpt.isEmpty)
-          vparam.tpt.tpe =
-            if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
-	    else argpt;
-        namer.enterSym(vparam);
-	vparam.symbol
-      }
-      val vparams = List.mapConserve(fun.vparams)(typedValDef);
-      val body = typed(fun.body, respt);
-      val formals = vparamSyms map (.tpe);
-      val restpe = body.tpe.deconst;
-      val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe));
-      copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
-        setType funtpe
+      val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
+        setType funtpe;
+      if (pt.symbol == TypedCodeClass) typed(atPos(fun.pos)(codify(fun1)))
+      else fun1
     }
 
     def typedRefinement(stats: List[Tree]): List[Tree] = {
@@ -1477,7 +1395,6 @@ import collection.mutable.HashMap;
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
 
       def isBetter(sym1: Symbol, tpe1: Type, sym2: Symbol, tpe2: Type): boolean = {
-	System.out.println("is better " + sym1 + ":" + tpe1 + " than " + sym2 + ":" + tpe2);
         sym2.isError ||
 	(sym1.owner != sym2.owner) && (sym1.owner isSubClass sym2.owner) && (tpe1 matches tpe2);
       }

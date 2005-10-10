@@ -81,17 +81,6 @@ abstract class RefChecks extends InfoTransform {
 	mvarRef))
   }
 
-  val resetAttrs = new Traverser {
-    override def traverse(tree: Tree): unit = tree match {
-      case EmptyTree | TypeTree() =>
-	;
-      case _ =>
-	if (tree.hasSymbol) tree.symbol = NoSymbol;
-	tree.tpe = null;
-	super.traverse(tree)
-    }
-  }
-
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
@@ -485,49 +474,6 @@ abstract class RefChecks extends InfoTransform {
 	List(transform(tree))
     }
 
-    def transformFunction(fun: Function): Tree = {
-      val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos) setFlag (FINAL | SYNTHETIC);
-      val formals = fun.tpe.typeArgs.init;
-      val restpe = fun.tpe.typeArgs.last;
-      anonClass setInfo ClassInfoType(
-	List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), new Scope(), anonClass);
-      val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
-	setFlag FINAL setInfo MethodType(formals, restpe);
-      anonClass.info.decls enter applyMethod;
-      for (val vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
-      new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
-      var members = List(
-	DefDef(FINAL, nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
-	  setSymbol applyMethod);
-      if (fun.tpe.symbol == PartialFunctionClass) {
-	val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
-	  setFlag FINAL setInfo MethodType(formals, BooleanClass.tpe);
-	anonClass.info.decls enter isDefinedAtMethod;
-	def idbody(idparam: Symbol) = fun.body match {
-	  case Match(_, cases) =>
-	    val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
-	    def transformCase(cdef: CaseDef): CaseDef =
-	      resetAttrs(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)));
-	    if (cases exists treeInfo.isDefaultCase) Literal(true)
-	    else
-              Match(
-	        Ident(idparam),
-	        (cases map transformCase) :::
-		   List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
-	}
-	members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
-      }
-      localTyper.typed {
-	atPos(fun.pos) {
-	  Block(
-	    List(ClassDef(anonClass, List(List()), List(List()), members)),
-	    Typed(
-	      New(TypeTree(anonClass.tpe), List(List())),
-	      TypeTree(fun.tpe)))
-        }
-      }
-    }
-
     override def transform(tree: Tree): Tree = try {
 
       /* Convert a reference of a case factory to a new of the class it produces. */
@@ -577,9 +523,6 @@ abstract class RefChecks extends InfoTransform {
 	      case _ => this
 	    }
 	  } traverse tree.tpe
-
-        case fun @ Function(_, _) =>
-          result = transform(transformFunction(fun));
 
 	case TypeApply(fn, args) =>
 	  checkBounds(fn.tpe.typeParams, args map (.tpe));

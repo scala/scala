@@ -357,9 +357,14 @@ sealed trait List[+a] extends Seq[a] { // todo make sealed once we figure out ho
    *
    *  @return the number of elements in the list.
    */
-  def length: Int = this match {
-    case Nil => 0
-    case _ :: xs => xs.length + 1
+  def length: Int = {
+    var xs = this;
+    var len = 0;
+    while (!xs.isEmpty) {
+      len = len + 1;
+      xs = xs.tail
+    }
+    len
   }
 
   /** Creates a list with all indices in the list. This is

@@ -15,7 +15,8 @@ package scala.tools.nsc.typechecker;
 	    with Infer
 	    with Variances
             with EtaExpansion
-	    with SyntheticMethods {
+	    with SyntheticMethods
+	    with Codification {
 
   val global: Global;
   import global._;

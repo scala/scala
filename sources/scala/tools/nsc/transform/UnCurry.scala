@@ -5,6 +5,8 @@
 // $Id$
 package scala.tools.nsc.transform;
 
+import symtab.Flags._;
+
 /*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
@@ -90,6 +92,75 @@ abstract class UnCurry extends InfoTransform {
 	uncurry(tp)
     }
 
+    /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
+     *
+     *    class $anon() extends Object() with FunctionN[T_1, .., T_N, R] with ScalaObject {
+     *      def apply(x_1: T_1, ..., x_N: T_n): R = body
+     *    }
+     *    new $anon()
+     *
+     *  transform a function node (x => body) of type PartialFunction[T, R] where
+     *    body = x match { case P_i if G_i => E_i }_i=1..n
+     *  to:
+     *
+     *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
+     *      def apply(x: T): R = body;
+     *      def isDefinedAt(x: T): boolean = x match {
+     *        case P_1 if G_1 => true
+     *        ...
+     *        case P_n if G_n => true
+     *        case _ => false
+     *      }
+     *    }
+     *    new $anon()
+     *
+     *  However, if one of the patterns P_i if G_i is a default pattern, generate instead
+     *
+     *      def isDefinedAt(x: T): boolean = true
+     */
+    def transformFunction(fun: Function): Tree = {
+      val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos) setFlag (FINAL | SYNTHETIC);
+      val formals = fun.tpe.typeArgs.init;
+      val restpe = fun.tpe.typeArgs.last;
+      anonClass setInfo ClassInfoType(
+	List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), new Scope(), anonClass);
+      val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
+	setFlag FINAL setInfo MethodType(formals, restpe);
+      anonClass.info.decls enter applyMethod;
+      for (val vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
+      new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
+      var members = List(
+	DefDef(FINAL, nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
+	  setSymbol applyMethod);
+      if (fun.tpe.symbol == PartialFunctionClass) {
+	val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
+	  setFlag FINAL setInfo MethodType(formals, BooleanClass.tpe);
+	anonClass.info.decls enter isDefinedAtMethod;
+	def idbody(idparam: Symbol) = fun.body match {
+	  case Match(_, cases) =>
+	    val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
+	    def transformCase(cdef: CaseDef): CaseDef =
+	      resetAttrs(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)));
+	    if (cases exists treeInfo.isDefaultCase) Literal(true)
+	    else
+              Match(
+	        Ident(idparam),
+	        (cases map transformCase) :::
+		   List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
+	}
+	members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
+      }
+      typer.atOwner(currentOwner).typed {
+	atPos(fun.pos) {
+	  Block(
+	    List(ClassDef(anonClass, List(List()), List(List()), members)),
+	    Typed(
+	      New(TypeTree(anonClass.tpe), List(List())),
+	      TypeTree(fun.tpe)))
+        }
+      }
+    }
+
     def transformArgs(pos: int, args: List[Tree], formals: List[Type]) = {
       if (formals.isEmpty) {
 	assert(args.isEmpty); List()
@@ -118,7 +189,7 @@ abstract class UnCurry extends InfoTransform {
             val fun = typer.atOwner(currentOwner).typed(
               Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
             new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
-            refchecks.newTransformer(unit).transformFunction(fun)
+            transformFunction(fun)
           })
       }
     }
@@ -132,6 +203,8 @@ abstract class UnCurry extends InfoTransform {
 	val pat1 = transform(pat);
 	inPattern = false;
 	copy.CaseDef(tree, pat1, transform(guard), transform(body))
+      case fun @ Function(_, _) =>
+        mainTransform(transformFunction(fun))
       case _ =>
         assert(!tree.isInstanceOf[Function]);
         val tree1 = super.transform(tree);
@@ -186,6 +259,17 @@ abstract class UnCurry extends InfoTransform {
 	case _ =>
 	  tree
       }
+    }
+  }
+
+  private val resetAttrs = new Traverser {
+    override def traverse(tree: Tree): unit = tree match {
+      case EmptyTree | TypeTree() =>
+	;
+      case _ =>
+	if (tree.hasSymbol) tree.symbol = NoSymbol;
+	tree.tpe = null;
+	super.traverse(tree)
     }
   }
 }

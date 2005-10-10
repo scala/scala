@@ -761,7 +761,14 @@ import Flags._;
     override def typeParams: List[Symbol] =
       if (args.isEmpty) symbol.unsafeTypeParams else List();
 
-    override def decls: Scope = sym.info.decls;
+    override def decls: Scope = {
+      sym.info match {
+	case TypeRef(_, sym1, _) =>
+	  assert(sym1 != symbol, this);
+	case _ =>
+      }
+      sym.info.decls
+    }
 
     override def baseType(clazz: Symbol): Type =
       if (sym == clazz) this
