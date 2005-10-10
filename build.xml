@@ -93,11 +93,19 @@
             <include name="scala/runtime/**/*.java"/>
             <include name="scala/tools/util/*.java"/>
             <include name="scala/*.java"/>
-            <exclude name="scala/ScalaObject.java"/>
-            <exclude name="scala/Array.java"/>
+            <not>
+            	<present targetdir="${newsources.dir}" present="both">
+            		<mapper type="glob" from="*.scala" to="*.java"/>
+        		</present>
+        	</not>
         </pico>
-        <delete file="${build.nslib.dir}/scala/ScalaObject.class"/>
-        <delete file="${build.nslib.dir}/scala/Array.class"/>
+        <delete>
+        	<fileset dir="${build.nslib.dir}">
+        		<present targetdir="${newsources.dir}" present="both">
+            		<mapper type="glob" from="*.class" to="*.scala"/>
+        		</present>
+        	</fileset>
+        </delete>
     </target>
     
     <target name="build.osc.nstools" depends="init.osc" description="Builds the new Scala compiler.">
