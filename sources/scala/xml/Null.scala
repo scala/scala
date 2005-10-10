@@ -10,6 +10,8 @@ case object Null extends MetaData  {
   /** returns its argument */
   def copy(next: MetaData) = next;
 
+  override def filter(f:MetaData => Boolean): MetaData = this;
+
   /** returns null */
   def getNamespace(owner: Node) = null;
 
@@ -32,6 +34,8 @@ case object Null extends MetaData  {
   def key = null;
 
   def value = null;
+
+  override def map(f: MetaData => Text): List[Text] = Nil;
 
   def next = null;
 

@@ -67,11 +67,19 @@ abstract class MetaData extends Iterable[MetaData] {
   /** shallow equals method */
   def equals1(that:MetaData): Boolean;
 
+  /** filters this sequence of meta data */
+  def filter(f:MetaData => Boolean): MetaData = {
+    if(f(this)) copy(next filter f) else next filter f;
+  }
+
   /** returns key of this MetaData item */
   def key: String;
 
   /** returns key of this MetaData item */
   def value: String;
+
+  /** maps this sequence of meta data */
+  def map(f: MetaData => Text): List[Text] = f(this)::(next map f);
 
   /** returns Null or the next MetaData item */
   def next: MetaData;

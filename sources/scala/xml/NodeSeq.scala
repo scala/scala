@@ -19,7 +19,7 @@ object NodeSeq {
 
 /** a wrapper around Seq[Node] that adds XPath and comprehension methods */
 abstract class NodeSeq extends Seq[Node] {
-
+  import NodeSeq.view; // import view magic for NodeSeq wrappers
   def theSeq: Seq[Node];
   def length = theSeq.length;
   def elements = theSeq.elements ;
@@ -38,10 +38,17 @@ abstract class NodeSeq extends Seq[Node] {
    */
   def \(that: String):NodeSeq = that match {
     case "_" => for( val x <- this;
-                     val y <- new NodeSeq { val theSeq = x.child; })
-                yield y
+                     val y <- x.child: NodeSeq)
+                yield { y }
+    case _ if that.charAt(0) == '@' =>
+                val attrib = that.substring(1);
+                (for( val x <- this;
+                      val y <- x.child: NodeSeq;
+                      val z <- y.attributes;
+                      z.key == attrib )
+                yield { Text(z.value) }): NodeSeq
     case _   => for( val x <- this;
-                     val y <- new NodeSeq { val theSeq = x.child; };
+                     val y <- x.child: NodeSeq;
                      y.label == that )
                 yield { y }
   }
@@ -51,12 +58,19 @@ abstract class NodeSeq extends Seq[Node] {
    *  Use \ "_" as a wildcard. The document order is preserved.
    */
 
-  def \\ ( that:String ):NodeSeq = that match {
+  def \\ ( that:String ): NodeSeq = that match {
       case "_" => for( val x <- this;
-                       val y <- new NodeSeq { val theSeq = x.descendant_or_self })
+                       val y <- x.descendant_or_self: NodeSeq )
                   yield { y }
+      case _ if that.charAt(0) == '@' =>
+                  val attrib = that.substring(1);
+                  (for( val x <- this;
+                       val y <- x.descendant_or_self: NodeSeq;
+                       val z <- y.attributes;
+                       z.key == attrib )
+                yield { Text(z.value) }): NodeSeq
       case _ => for( val x <- this;
-                     val y <- new NodeSeq { val theSeq =  x.descendant_or_self  };
+                     val y <- x.descendant_or_self: NodeSeq;
                      y.label == that)
                   yield { y }
   }
@@ -71,16 +85,10 @@ abstract class NodeSeq extends Seq[Node] {
     _asList
   }
 
-  def map( f:Node => Node ):NodeSeq = {
-    new NodeSeq{ final def theSeq = NodeSeq.this.asList map f }
-  }
+  def map(f: Node => Node): NodeSeq = { val x = asList map f; x }
 
-  def flatMap( f:Node => NodeSeq ):NodeSeq = {
-    new NodeSeq{ final def theSeq = NodeSeq.this.asList flatMap { x => f(x).asList }}
-  }
+  def flatMap(f:Node => NodeSeq): NodeSeq = { val y = asList flatMap { x => f(x).asList }; y }
 
-  def filter( f:Node => boolean ):NodeSeq = {
-    new NodeSeq{ val theSeq = NodeSeq.this.asList filter f  }
-  }
+  def filter(f:Node => Boolean): NodeSeq = { val x = asList filter f; x }
 
 }
