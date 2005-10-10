@@ -9,7 +9,7 @@
 ##############################################################################
 # ant build
 
-CLASSPATH=$nsc_fjbg_jar:$nsc_scala_jar:$nsc_tools_jar:$nsc_jaco_jar
+CLASSPATH=$nsc_fjbg_jar:$nsc_scala_jar:$nsc_tools_jar:$nsc_jaco_jar:$nsc_ant_jar
 PLATFORM=unix
 
 # For Cygwin, switch paths to appropriate format before running ant

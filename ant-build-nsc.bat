@@ -21,7 +21,7 @@ call ant-common.bat build-nsc
 rem ##########################################################################
 rem # ant build
 
-set CLASSPATH=%nsc_fjbg_jar%;%nsc_scala_jar%;%nsc_tools_jar%;%nsc_jaco_jar%
+set CLASSPATH=%nsc_fjbg_jar%;%nsc_scala_jar%;%nsc_tools_jar%;%nsc_jaco_jar%;%nsc_ant_jar%
 %_ANTCMD% -Dplatform=win -f %ANT_BUILDFILE% %_ANTCMD_ARGS%
 
 %RM% %ANT_BUILDFILE%

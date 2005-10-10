@@ -54,6 +54,11 @@
       Missing library file ${nsc.jaco_jar}.
       Check your property file build-nsc.properties.${platform}.
     </fail>
+    <fail>
+      <condition><not><available file="${nsc.ant_jar}" /></not></condition>
+      Missing library file ${nsc.ant_jar}.
+      Check your property file build-nsc.properties.${platform}.
+    </fail>
   </target>
 
   <target name="init" depends="check.env">
@@ -89,7 +94,8 @@
     <jar destfile="${nsc.nsrt_jar}" basedir="${nsc.tools_util_runtime_dir}"/>
 
     <scalac srcdir="sources" destdir="${nsc.nsc_dir}" debug="on"
-            classpath="${nsc.tools_util_runtime_dir}:${nsc.fjbg_jar}" sourcePath="sources" force="true">
+            classpath="${nsc.tools_util_runtime_dir}:${nsc.fjbg_jar}:${nsc.ant_jar}"
+            sourcePath="sources" force="true">
       <!-- force = "true" always recompiles all source files, because 
            scalac does not always go find the latest source file (*3) -->
 
