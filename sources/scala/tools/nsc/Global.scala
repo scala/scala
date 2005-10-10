@@ -20,7 +20,7 @@ import matching.TransMatcher;
 import transform._;
 import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
-import backend.jvm.BytecodeGenerators;
+import backend.jvm.GenJVM;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -236,7 +236,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
-  object genJVM extends BytecodeGenerators {
+  object genJVM extends GenJVM {
     val global: Global.this.type = Global.this;
   }
 

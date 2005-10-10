@@ -16,7 +16,7 @@ import ch.epfl.lamp.fjbg._;
 
 /**
  */
-abstract class BytecodeGenerators extends SubComponent {
+abstract class GenJVM extends SubComponent {
   import global._;
   import icodes._;
   import icodes.opcodes._;
