@@ -16,9 +16,14 @@ object MakeValidationException {
     new ValidationException("attribute " + key +" not allowed here" );
 
   def fromMissingAttribute( allKeys:scala.collection.Set[String] ) = {
-    new ValidationException("missing value for REQUIRED attribute"+
-                            { if( allKeys.size > 1 ) "s" else "" }+
-                            allKeys );
+    val sb = new StringBuffer();
+    sb.append("missing value for REQUIRED attribute");
+    if( allKeys.size > 1 ) sb.append('s');
+    val it = allKeys.elements;
+    while (it.hasNext) {
+      sb.append('\'').append(it.next).append('\'')
+    }
+    new ValidationException(sb.toString());
   }
 
   def fromMissingAttribute( key: String, tpe: String ) = {
