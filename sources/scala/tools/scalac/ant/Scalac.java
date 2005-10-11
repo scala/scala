@@ -397,9 +397,6 @@ public class Scalac extends MatchingTask {
 	// When no bootclasspath is provided, the classpath of the current classloader is used:
 	// This is where the scala classes should be.
 	// Furthermore, the source files for the library must be available in the bootclasspath too.
-	// To do that, an element ending in 'lib/scala.jar' or 'scala/classes' is looked-up in the bootclasspath.
-	// From there, the sources should be in '../src' or '../sources' respectively.
-	// This means any other configuration will fail at runtime. In this case, the bootclasspath should be set explicitly.
 	// Notice also how the bootclasspath must finish with a ":" for it to work.
 	Path baseBootclasspath;
 	if (bootclasspath != null) {
@@ -408,6 +405,9 @@ public class Scalac extends MatchingTask {
 	    baseBootclasspath = getClassLoaderClasspath(this.getClass().getClassLoader());
 	}
 	command.bootclasspath.value = makeAbsolutePath(baseBootclasspath, "bootclasspath") + ":";
+	if (!containsScala(command.bootclasspath.value)) {
+	    log("Bootclasspath does not contain a recognized Scala distribution. This might cause unexpected errors (Stack Overflow)", Project.MSG_WARN);
+	}
 	if (extpath != null) command.extdirs.value = makeAbsolutePath(extpath, "extpath");
 	if (encoding != null) command.encoding.value = encoding;
 	command.verbose.value = verbose;
@@ -439,7 +439,7 @@ public class Scalac extends MatchingTask {
 
     }
 
-    private void addFilesToSourceList (String[] files, File originDir, Vector sourceFilesList) {
+    private void addFilesToSourceList(String[] files, File originDir, Vector sourceFilesList) {
 	for (int i = 0; i < files.length; i++) {
 	    String sourceFile = fileUtils.resolveFile(originDir, files[i]).toString();
 	    log(sourceFile, Project.MSG_VERBOSE);
@@ -485,16 +485,31 @@ public class Scalac extends MatchingTask {
 	return classLoaderClasspath;
     }
 
+    private boolean containsScala(String path) {
+	boolean containsLibrary = false;
+	boolean containsTools = false;
+	String[] paths = path.split(File.pathSeparator);
+	for (int i = 0; i < paths.length; i++) {
+	    if (paths[i].endsWith("scala.jar") || paths[i].endsWith("scala")) {
+		containsLibrary = true;
+	    }
+	    if (paths[i].endsWith("tools.jar") || paths[i].endsWith("tools")) {
+		containsTools = true;
+	    }
+	}
+	return containsLibrary && containsTools;
+    }
+
     /**
      * Enumerated attribute with the values "never", "always", "changed".
      */
     public static class ForceMode extends EnumeratedAttribute {
-        /**
-         * @see EnumeratedAttribute#getValues
-         */
-        public String[] getValues() {
-            return new String[] {"never", "always", "changed"};
-        }
+	/**
+	 * @see EnumeratedAttribute#getValues
+	 */
+	public String[] getValues() {
+	    return new String[] {"never", "always", "changed"};
+	}
     }
 
 }
