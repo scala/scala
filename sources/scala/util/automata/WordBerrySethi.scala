@@ -37,13 +37,15 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   /** computes first( r ) where the word regexp r */
   protected override def compFirst(r: RegExp): immutable.Set[Int] = r match {
     case x:Letter => emptySet + x.pos ;//posMap(x);  // singleton set
-    case _ => super.compFirst(r);
+    case Eps      => emptySet /*ignore*/
+    case _        => super.compFirst(r);
   }
 
   /** computes last( r ) where the word regexp r */
   protected override def compLast(r: RegExp): immutable.Set[Int] = r match {
     case x:Letter => emptySet + x.pos; //posMap(x) // singleton set
-    case _ => super.compLast(r)
+    case Eps      => emptySet /*ignore*/
+    case _        => super.compLast(r)
   }
 
   /** returns the first set of an expression, setting the follow set along
@@ -57,6 +59,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         val i = x.pos;
         this.follow.update( i, fol1 );
         emptySet + i;
+
+      case Eps      => emptySet /*ignore*/
 
       case _ => super.compFollow1(fol1, r)
 
@@ -89,7 +93,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   // todo: replace global variable pos with acc
   override def traverse(r: RegExp): Unit = r match {
       case a @ Letter( label ) => a.pos = seenLabel( r, label ) ;
-      case _               => super.traverse(r)
+      case Eps                 => /*ignore*/
+      case _                   => super.traverse(r)
   }
 
 
@@ -237,7 +242,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         val delta    = deltaArr;
         val default  = defaultArr;
       }
-      case _ => error("expected Sequ");
+      case z:this.lang._regexpT => automatonFrom(Sequ(z), finalTag);
     }
   }
 
