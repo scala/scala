@@ -401,30 +401,13 @@ public class Scalac extends MatchingTask {
 	// From there, the sources should be in '../src' or '../sources' respectively.
 	// This means any other configuration will fail at runtime. In this case, the bootclasspath should be set explicitly.
 	// Notice also how the bootclasspath must finish with a ":" for it to work.
-	String[] baseBootclasspath;
+	Path baseBootclasspath;
 	if (bootclasspath != null) {
-	    baseBootclasspath = bootclasspath.list();
+	    baseBootclasspath = bootclasspath;
 	} else {
-	    baseBootclasspath = getClassLoaderClasspath(this.getClass().getClassLoader()).list();
+	    baseBootclasspath = getClassLoaderClasspath(this.getClass().getClassLoader());
 	}
-	bootclasspath = new Path(getProject());
-	for (int i = 0; i < baseBootclasspath.length; i++) {
-	    bootclasspath.append(new Path(getProject(), baseBootclasspath[i]));
-	    int scalaJarIndex = baseBootclasspath[i].lastIndexOf("lib" + File.separator + "scala.jar");
-	    int scalaClassesIndex = baseBootclasspath[i].lastIndexOf("scala" + File.separator + "classes");
-	    if (scalaJarIndex > -1) {
-		String libPath = baseBootclasspath[i].substring(0, scalaJarIndex) + "src";
-		bootclasspath.append(new Path(getProject(), libPath));
-		System.setProperty("scala.library.class.path", baseBootclasspath[i]);
-		System.setProperty("scala.library.source.path", libPath);
-	    } else if (scalaClassesIndex > -1) {
-		String libPath = baseBootclasspath[i].substring(0, scalaClassesIndex + 6) + "sources";
-		bootclasspath.append(new Path(getProject(), libPath));
-		System.setProperty("scala.library.class.path", baseBootclasspath[i]);
-		System.setProperty("scala.library.source.path", libPath);
-	    }
-	}
-	command.bootclasspath.value = makeAbsolutePath(bootclasspath, "bootclasspath") + ":";
+	command.bootclasspath.value = makeAbsolutePath(baseBootclasspath, "bootclasspath") + ":";
 	if (extpath != null) command.extdirs.value = makeAbsolutePath(extpath, "extpath");
 	if (encoding != null) command.encoding.value = encoding;
 	command.verbose.value = verbose;
