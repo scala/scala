@@ -4,16 +4,17 @@
 
     <description>
       This build-file builds the Scala NSC compiler as well as various related
-      tools. The 'build.properties' file must be customised for your own
+      tools. The 'build.TEMPLATE.properties' file must be customised for your own
       particular system, no other customisation should be required. The build
       file expects the file structure of a Scala CVS distribution.
     </description>
 
     <!-- The system classpath should not be used -->
     <property name="build.sysclasspath" value="ignore" />
-    
-    <!-- Sets project's properties -->
-    <!-- Properties in 'build.${user.name}.properties' take precedence over properties in 'build.default.properties' -->
+
+    <!-- Properties in 'build.${user.name}.properties' take precedence over
+         properties in 'build.default.properties'.
+    -->
     <echo level="verbose">Loading properties from '${basedir}/build.support/build.${user.name}.properties'</echo>
     <property file="${basedir}/build.support/build.${user.name}.properties"/>
     <echo level="verbose">Loading properties from '${basedir}/build.support/build.default.properties'</echo>
@@ -49,14 +50,22 @@
         <echo level="verbose">ostools.jar=${ostools.jar}</echo>
         <echo level="verbose">fjbg.jar=${fjbg.jar}</echo>
         <echo level="verbose">msil.jar=${msil.jar}</echo>
-        <fail message="Required classes for OSC are missing; check the 'oslib.jar', 'ostools.jar', 'fjbg.jar' and 'msil.jar' properties in 'build.properties'.">
+        <fail message="Required classes for OSC are missing; check the 'oslib.jar', 'ostools.jar' properties in 'build.${user.name}.properties'.">
             <condition><not><and>
-                <available classname="scala.List" classpathref="osc.classpath"/>
-                <available classname="scala.runtime.RunTime" classpathref="osc.classpath"/>
-                <available classname="scala.tools.scalac.Main" classpathref="osc.classpath"/>
-                <available classname="scala.tools.scalac.ant.Scalac" classpathref="osc.classpath"/>
+                <available classname="scala.List" classpathref="osc.classpath" />
+                <available classname="scala.runtime.RunTime" classpathref="osc.classpath" />
+                <available classname="scala.tools.scalac.Main" classpathref="osc.classpath" />
+                <available classname="scala.tools.scalac.ant.Scalac" classpathref="osc.classpath" />
+            </and></not></condition>
+        </fail>
+        <fail message="Required classes for OSC are missing; check the 'fjbg.jar' property in 'build.${user.name}.properties'.">
+            <condition><not><and>
                 <available classname="ch.epfl.lamp.fjbg.JField" classpathref="osc.classpath"/>
                 <available classname="ch.epfl.lamp.util.ByteArray" classpathref="osc.classpath"/>
+            </and></not></condition>
+        </fail>
+        <fail message="Required classes for OSC are missing; check the 'msil.jar' property in 'build.${user.name}.properties'.">
+            <condition><not><and>
                 <available classname="ch.epfl.lamp.compiler.msil.Module" classpathref="osc.classpath"/>
                 <available classname="ch.epfl.lamp.compiler.msil.Type" classpathref="osc.classpath"/>
             </and></not></condition>
