@@ -5,8 +5,8 @@
     <description>
       This build-file builds the Scala NSC compiler as well as various related
       tools. The 'build.TEMPLATE.properties' file must be customised for your own
-      particular system, no other customisation should be required. The build
-      file expects the file structure of a Scala CVS distribution.
+      particular system, no other customisation should be required. 
+      The build file expects the file structure of a Scala CVS distribution.
     </description>
 
     <!-- The system classpath should not be used -->
