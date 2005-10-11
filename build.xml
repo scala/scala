@@ -11,22 +11,23 @@
 
     <!-- The system classpath should not be used -->
     <property name="build.sysclasspath" value="ignore" />
-	
+    
     <!-- Sets project's properties -->
-    <!-- Properties in 'build.properties' take precedence over properties
-         in 'build.default.properties'
-     -->
-    <property file="${basedir}/build.properties" />
-    <property file="${basedir}/build.support/build.default" />
+    <!-- Properties in 'build.${user.name}.properties' take precedence over properties in 'build.default.properties' -->
+    <echo>Loading properties from '${basedir}/build.support/build.${user.name}.properties'</echo>
+    <property file="${basedir}/build.support/build.${user.name}.properties"/>
+    <echo>Loading properties from '${basedir}/build.support/build.default.properties'</echo>
+    <property file="${basedir}/build.support/build.default.properties"/>
     
     <!-- A path containing pre-compiled Scala libraries found typically
          in a Scala distribution.
     -->
     <path id="osc.classpath">
-        <pathelement location="${oslib.jar}" />
-        <pathelement location="${ostools.jar}" />
-        <pathelement location="${fjbg.jar}" />
-        <pathelement location="${msil.jar}" />
+        <pathelement location="${oslib.jar}"/>
+        <pathelement location="${oslib.src}"/>
+        <pathelement location="${ostools.jar}"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
     </path>
 
     <!-- A path containing the Pico library -->
@@ -62,16 +63,16 @@
         </fail>
         <taskdef name="osc" classname="scala.tools.scalac.ant.Scalac" classpathref="osc.classpath"/>
     </target>
-	
+    
     <target name="init.nsc" depends="build.osc.nstools, build.pico.nslib">
         <taskdef name="nsc" classname="scala.tools.nsc.ant.NSC$class">
-        	<classpath>
-        		<pathelement location="${build.osc-nstools.dir}" />
-        		<pathelement location="${build.nslib.dir}" />
-        		<pathelement location="${oslib.jar}" />
-        		<pathelement location="${fjbg.jar}" />
-        		<pathelement location="${msil.jar}" />
-        	</classpath>
+            <classpath>
+                <pathelement location="${build.osc-nstools.dir}" />
+                <pathelement location="${build.nslib.dir}" />
+                <pathelement location="${oslib.jar}" />
+                <pathelement location="${fjbg.jar}" />
+                <pathelement location="${msil.jar}" />
+            </classpath>
         </taskdef>
     </target>
     
@@ -128,10 +129,10 @@
         <osc srcdir="${sources.dir}" destdir="${build.osc-nstools.dir}"
              force="changed">
             <classpath>
-        		<pathelement location="${build.osc-nstools.dir}"/>
-        		<pathelement location="${oslib.jar}"/>
-        		<pathelement location="${fjbg.jar}"/>
-        		<pathelement location="${ant.jar}"/>
+                <pathelement location="${build.osc-nstools.dir}"/>
+                <pathelement location="${oslib.jar}"/>
+                <pathelement location="${fjbg.jar}"/>
+                <pathelement location="${ant.jar}"/>
             </classpath>
             <include name="scala/tools/nsc/**/*.scala"/>
             <include name="scala/runtime/*.scala"/>
@@ -146,14 +147,14 @@
              usepredefs="false"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}"
              logging="${nsc.logging}">
-        	<classpath>
-        		<pathelement location="${build.nslib.dir}"/>
-        		<pathelement location="${sources.dir}"/>
-        		<pathelement location="${newsources.dir}"/>
-        		<pathelement location="${fjbg.jar}"/>
-        	</classpath>
+            <classpath>
+                <pathelement location="${build.nslib.dir}"/>
+                <pathelement location="${sources.dir}"/>
+                <pathelement location="${newsources.dir}"/>
+                <pathelement location="${fjbg.jar}"/>
+            </classpath>
             <include name="scala/Predef.scala"/>
-			<include name="scala/runtime/ScalaRunTime.scala"/>
+            <include name="scala/runtime/ScalaRunTime.scala"/>
         </nsc>
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              excludesfile="${nsc.nslib.excludes}"
@@ -204,11 +205,11 @@
     </condition>
     
     <condition property="os.mac">
-    	<os family="mac"/>
+        <os family="mac"/>
     </condition>
     
     <condition property="os.win">
-    	<os family="windows"/>
+        <os family="windows"/>
     </condition>
     
     <target name="distrib"
@@ -216,8 +217,8 @@
             description="Creates a (simplified) Scala distribution." />
 
     <target name="distrib.unix" depends="build" if="os.unix">
-    	<tstamp prefix="start"/>
-    	<property name="distrib.current.dir" value="${distrib.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+        <tstamp prefix="start"/>
+        <property name="distrib.current.dir" value="${distrib.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <mkdir dir="${distrib.current.dir}/share/scala"/>
         <mkdir dir="${distrib.current.dir}/share/scala/lib"/>
         <symlink resource="${distrib.current.dir}/share/scala/lib/" link="${distrib.current.dir}/lib" />
@@ -259,7 +260,7 @@
     </target>
 
     <target name="distrib.win" depends="build" if="os.win">
-    	<fail>Windows distribution is not supported yet.</fail>
+        <fail>Windows distribution is not supported yet.</fail>
     </target>
 
     <!--
@@ -267,7 +268,7 @@
     TEST
     #####################################################################
     -->
-	
+    
     <target name="test" description="Runs the Scala test suite.">
         <fail>'test' is not implemented yet.</fail>
     </target>
@@ -277,11 +278,11 @@
     DOCS
     #####################################################################
     -->
-	
+    
     <target name="docs" description="Generates all documentation.">
         <fail>'docs' is not implemented yet.</fail>
     </target>
-	
+    
     <!--
     #####################################################################
     CLEAN
