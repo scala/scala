@@ -57,12 +57,6 @@ configure() {
     # Location of the Scala tools library.
     default_TOOLS_CLASSES={#TOOLS_CLASSES#};
 
-    # Location of the NSRT library.
-    default_NLIBRARY_CLASSES={#NLIBRARY_CLASSES#};
-
-    # Location of the NSC library.
-    default_NTOOLS_CLASSES={#NTOOLS_CLASSES#};
-
     # Location of the FJBG library.
     default_FJBG_CLASSES={#FJBG_CLASSES#};
 
@@ -458,34 +452,6 @@ compiler_start() {
 
     # start tool
     tool_start "$classpath" "$@";
-}
-
-##############################################################################
-# New compiler invocation functions
-
-# Starts a NSC compiler. The first argument is added to the runtime
-# classpath. The following ones are passed to vm_start_scala. They
-# must, at least, contain the name of the main class.
-ncompiler_start() {
-    [ $# -gt 1 ] || abort "internal error";
-    classpath="$1"; shift 1;
-
-    # compute values
-    compute_value FJBG_CLASSES;
-    compute_value MSIL_CLASSES;
-    compute_value LIBRARY_SOURCES;
-    compute_value LIBRARY_CLASSES;
-    compute_value NLIBRARY_CLASSES;
-    compute_value NTOOLS_CLASSES;
-
-    # append FJBG and MSIL libraries to classpath
-    classpath=`append_pathlists "$classpath" "$current_FJBG_CLASSES"`;
-    classpath=`append_pathlists "$classpath" "$current_MSIL_CLASSES"`;
-    classpath=`append_pathlists "$classpath" "$current_NLIBRARY_CLASSES"`;
-    classpath=`append_pathlists "$classpath" "$current_NTOOLS_CLASSES"`;
-
-    # start Scala VM
-    tool_start0 -classpath "`get_os_pathlist "$classpath"`" "$@";
 }
 
 ##############################################################################
@@ -931,13 +897,11 @@ test_main() {
     SCALAP="$PREFIX/bin/scalap";
     DIFF="diff";
 
-    case "$SCRIPT" in
-        scalanstest* )
-            SOCOS="$PREFIX/bin/scalansc";
-            TESTROOT={#NTEST_SRCDIR#};
-            SRCDIR={#NTEST_SRCDIR#};
-        ;;
-    esac;
+#   case "$SCRIPT" in
+#       scalanstest* )
+#           SOCOS="$PREFIX/bin/scalansc";
+#       ;;
+#   esac;
 
     case `uname` in
         CYGWIN* )
@@ -1081,7 +1045,7 @@ case "$SCRIPT" in
     scala      ) scala_main "$@";;
     scala-*    ) scala_main "$@";;
     scalac*    ) compiler_start "" scala.tools.scalac.Main "$@";;
-    scalansc*  ) ncompiler_start "" scala.tools.nsc.Main "$@";;
+#   scalansc*  ) ncompiler_start "" scala.tools.nsc.Main "$@";;
     scalarun*  ) compiler_start "" scala.tools.scalai.Main "$@";;
     scalaint*  ) compiler_start "" scala.tools.scalai.Main -interactive "$@";;
     scaladoc*  ) tool_start "" scala.tools.scaladoc.Main "$@";;
