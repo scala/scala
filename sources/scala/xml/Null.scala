@@ -20,6 +20,9 @@ case object Null extends MetaData {
   /** returns its argument */
   def copy(next: MetaData) = next;
 
+
+  override def elements = Iterator.empty[MetaData];
+
   override def filter(f: MetaData => Boolean): MetaData = this;
 
   /** returns null */

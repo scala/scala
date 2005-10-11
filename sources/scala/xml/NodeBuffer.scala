@@ -32,13 +32,13 @@ class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
    *
    * @param n
    */
-  def +(o: Any): NodeBuffer = {
+  def &+(o: Any): NodeBuffer = {
     o match {
       case n:Node     => super.+(n);
       case ns:Iterable[AnyRef] =>
         val it = ns.elements;
         while(it.hasNext) {
-          this.+(it.next)
+          this &+ it.next;
         }
       case _          => super.+(Text(o.toString()));
     }
