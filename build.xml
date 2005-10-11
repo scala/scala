@@ -4,8 +4,8 @@
 
     <description>
       This build-file builds the Scala NSC compiler as well as various related
-      tools. The 'build.TEMPLATE.properties' file must be customised for your own
-      particular system, no other customisation should be required. 
+      tools. The 'build.TEMPLATE.properties' file must be customised for your
+      own particular system, no other customisation should be required. 
       The build file expects the file structure of a Scala CVS distribution.
     </description>
 
@@ -16,19 +16,19 @@
          properties in 'build.default.properties'.
     -->
     <echo level="verbose">Loading properties from '${basedir}/build.support/build.${user.name}.properties'</echo>
-    <property file="${basedir}/build.support/build.${user.name}.properties"/>
+    <property file="${basedir}/build.support/build.${user.name}.properties" />
     <echo level="verbose">Loading properties from '${basedir}/build.support/build.default.properties'</echo>
-    <property file="${basedir}/build.support/build.default.properties"/>
+    <property file="${basedir}/build.support/build.default.properties" />
     
     <!-- A path containing pre-compiled Scala libraries found typically
          in a Scala distribution.
     -->
     <path id="osc.classpath">
-        <pathelement location="${oslib.jar}"/>
-        <pathelement location="${oslib.src}"/>
-        <pathelement location="${ostools.jar}"/>
-        <pathelement location="${fjbg.jar}"/>
-        <pathelement location="${msil.jar}"/>
+        <pathelement location="${oslib.jar}" />
+        <pathelement location="${oslib.src}" />
+        <pathelement location="${ostools.jar}" />
+        <pathelement location="${fjbg.jar}" />
+        <pathelement location="${msil.jar}" />
     </path>
 
     <!-- A path containing the Pico library -->
@@ -47,6 +47,7 @@
     
     <target name="init.osc">
         <echo level="verbose">oslib.jar=${oslib.jar}</echo>
+        <echo level="verbose">oslib.src=${oslib.src}</echo>
         <echo level="verbose">ostools.jar=${ostools.jar}</echo>
         <echo level="verbose">fjbg.jar=${fjbg.jar}</echo>
         <echo level="verbose">msil.jar=${msil.jar}</echo>
@@ -199,39 +200,42 @@
             <exclude name="scala/tools/nsc/ant/*.scala" />
         </nsc>
     </target>
-    
+
     <!--
     #####################################################################
     DISTRIB
     #####################################################################
     -->
-    
+
     <condition property="os.unix">
         <or>
             <os family="unix" />
             <os family="mac" />
         </or>
     </condition>
-    
+
     <condition property="os.mac">
-        <os family="mac"/>
+        <os family="mac" />
     </condition>
-    
+
     <condition property="os.win">
-        <os family="windows"/>
+        <os family="windows" />
     </condition>
-    
+
     <target name="distrib"
             depends="distrib.unix, distrib.mac, distrib.win"
             description="Creates a (simplified) Scala distribution." />
 
     <target name="distrib.unix" depends="build" if="os.unix">
         <tstamp prefix="start"/>
-        <property name="distrib.current.dir" value="${distrib.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+        <property name="distrib.current.dir"
+                  value="${distrib.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <mkdir dir="${distrib.current.dir}/share/scala"/>
         <mkdir dir="${distrib.current.dir}/share/scala/lib"/>
-        <symlink resource="${distrib.current.dir}/share/scala/lib/" link="${distrib.current.dir}/lib" />
-        <jar destfile="${distrib.current.dir}/share/scala/lib/${distrib.osc-nstools.jar}" basedir="${build.osc-nstools.dir}">
+        <symlink resource="${distrib.current.dir}/share/scala/lib/"
+                 link="${distrib.current.dir}/lib" />
+        <jar destfile="${distrib.current.dir}/share/scala/lib/${distrib.osc-nstools.jar}"
+             basedir="${build.osc-nstools.dir}">
             <include name="**" />
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
@@ -246,7 +250,8 @@
                 <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
             </manifest>
         </jar>
-        <jar destfile="${distrib.current.dir}/share/scala/lib/${distrib.nslib.jar}" basedir="${build.nslib.dir}">
+        <jar destfile="${distrib.current.dir}/share/scala/lib/${distrib.nslib.jar}"
+             basedir="${build.nslib.dir}">
             <include name="**" />
             <manifest>
                 <attribute name="Built-By" value="${user.name}" />
