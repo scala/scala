@@ -25,6 +25,8 @@ class ElementValidator() extends Function1[Node,Boolean] {
     }
   }
 
+  def getContentModel = contentModel;
+
   /** set meta data, enabling attribute validation */
   def setMetaData(adecls: List[AttrDecl]) =
     this.adecls = adecls;
