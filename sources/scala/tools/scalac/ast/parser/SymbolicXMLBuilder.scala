@@ -46,7 +46,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
   val _immutable           = Name.fromString("immutable");
   val _mutable             = Name.fromString("mutable");
   val _append              = Name.fromString("append");
-  val _plus                = Name.fromString("$plus");
+  val _plus                = Name.fromString("$amp$plus");
   val _collection          = Name.fromString("collection");
   val _toList              = Name.fromString("toList");
   val _xml                 = Name.fromString("xml");

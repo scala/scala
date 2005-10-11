@@ -451,10 +451,10 @@ import scala.xml.dtd._ ;
   /* todo: move this into the NodeBuffer class */
   def appendText(pos: Int, ts: NodeBuffer, txt: String): Unit = {
     if (preserveWS)
-      ts + handle.text(pos, txt);
+      ts &+ handle.text(pos, txt);
     else
       for (val t <- TextBuffer.fromString(txt).toText) {
-        ts + handle.text(pos, t.text);
+        ts &+ handle.text(pos, t.text);
       }
   }
 
@@ -464,16 +464,16 @@ import scala.xml.dtd._ ;
       case '!' =>
         nextch;
       if ('[' == ch)                 // CDATA
-        ts + xCharData;
+        ts &+ xCharData;
       else if ('D' == ch) // doctypedecl, parse DTD // @todo REMOVE HACK
         parseDTD();
       else // comment
-        ts + xComment;
+        ts &+ xComment;
       case '?' =>                       // PI
         nextch;
-        ts + xProcInstr;
+        ts &+ xProcInstr;
       case _   =>
-        ts + element1(pscope);     // child
+        ts &+ element1(pscope);     // child
     }
   }
 
@@ -515,7 +515,7 @@ import scala.xml.dtd._ ;
                 nextch;
               val theChar = handle.text( tmppos, xCharRef );
               xToken(';');
-              ts + theChar ;
+              ts &+ theChar ;
               case _ => // EntityRef
                 val n = xName ;
                 xToken(';');
