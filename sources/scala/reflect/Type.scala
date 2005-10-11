@@ -13,7 +13,8 @@ abstract class Type;
 case object NoPrefix extends Type;
 case object NoType extends Type;
 
-case class TypeIdent(pre: Type, sym: Symbol) extends Type;
+case class NamedType(fullname: String) extends Type;
+case class PrefixedType(pre: Type, sym: Symbol) extends Type;
 case class SingleType(pre: Type, sym: Symbol) extends Type;
 case class ThisType(clazz: Symbol) extends Type;
 case class AppliedType(tpe: Type, args: List[Type]) extends Type;

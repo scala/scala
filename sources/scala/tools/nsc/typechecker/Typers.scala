@@ -40,7 +40,8 @@ import collection.mutable.HashMap;
 
     val infer = new Inferencer(context0) {
       override def isCoercible(tp: Type, pt: Type): boolean =
-        context0.reportGeneralErrors && // this condition prevents chains of views
+        tp.isError || pt.isError ||
+	context0.reportGeneralErrors && // this condition prevents chains of views
 	inferView(Position.NOPOS, tp, pt, false) != EmptyTree
     }
 
@@ -373,7 +374,8 @@ import collection.mutable.HashMap;
                     return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
                 case _ =>
               }
-	      if (context.reportGeneralErrors) { // (13); the condition prevents chains of views
+	      if (context.reportGeneralErrors && !tree.tpe.isError && !pt.isError) {
+		// (13); the condition prevents chains of views
 	        val coercion = inferView(tree.pos, tree.tpe, pt, true);
 	        if (coercion != EmptyTree) {
 		  if (settings.debug.value) log("inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe);
@@ -711,7 +713,7 @@ import collection.mutable.HashMap;
     }
 
     def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
-      def decompose(tp: Type): Triple[Symbol, List[Type], Type] =
+      def decompose(pt: Type): Triple[Symbol, List[Type], Type] =
 	if (isFunctionType(pt)
 	    ||
             pt.symbol == PartialFunctionClass &&
@@ -882,7 +884,8 @@ import collection.mutable.HashMap;
 	  } else {
 	    qual.tpe.member(name)
 	  }
-	if (sym == NoSymbol && qual.isTerm && (qual.symbol == null || qual.symbol.isValue) && !phase.erasedTypes) {
+	if (sym == NoSymbol && qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
+	    !phase.erasedTypes && !qual.tpe.widen.isError) {
 	  val coercion = inferView(qual.pos, qual.tpe, name, true);
 	  if (coercion != EmptyTree)
 	    return typed(
@@ -890,7 +893,7 @@ import collection.mutable.HashMap;
 	}
         if (sym.info == NoType) {
           if (settings.debug.value) log("qual = " + qual + ":" + qual.tpe + "\nSymbol=" + qual.tpe.symbol + "\nsymbol-info = " + qual.tpe.symbol.info + "\nscope-id = " + qual.tpe.symbol.info.decls.hashCode() + "\nmembers = " + qual.tpe.members + "\nfound = " + sym);
-          if (!qual.tpe.isError)
+          if (!qual.tpe.widen.isError)
             error(tree.pos,
 	      decode(name) + " is not a member of " + qual.tpe.widen +
 	      (if (Position.line(tree.pos) > Position.line(qual.pos))
@@ -1295,9 +1298,9 @@ import collection.mutable.HashMap;
 	  //System.out.println("typing " + tree);//DEBUG
 	}
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt);
-	//System.out.println("typed " + tree1 + ":" + tree1.tpe);//DEBUG
+	//System.out.println("typed " + tree1 + ":" + tree1.tpe);//debug
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt);
-	//System.out.println("adpated " + tree1 + ":" + tree1.tpe + " to " + pt);//DEBUG
+	//System.out.println("adapted " + tree1 + ":" + tree1.tpe + " to " + pt);//debug
 	result
       } catch {
         case ex: TypeError =>

@@ -745,6 +745,7 @@ import scala.tools.nsc.util.CharArrayReader;
       enterKeyword(nme.IMPLICITkw, IMPLICIT);
       enterKeyword(nme.IMPORTkw, IMPORT);
       enterKeyword(nme.MATCHkw, MATCH);
+      enterKeyword(nme.REQUIRESkw, REQUIRES);
       enterKeyword(nme.NEWkw, NEW);
       enterKeyword(nme.NULLkw, NULL);
       enterKeyword(nme.OBJECTkw, OBJECT);

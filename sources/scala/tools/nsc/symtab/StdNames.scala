@@ -37,6 +37,7 @@ import scala.tools.nsc.util.NameTransformer;
     val PRIVATEkw = newTermName("private");
     val PROTECTEDkw = newTermName("protected");
     val RETURNkw = newTermName("return");
+    val REQUIRESkw = newTermName("requires");
     val SEALEDkw = newTermName("sealed");
     val SUPERkw = newTermName("super");
     val THISkw = newTermName("this");

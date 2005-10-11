@@ -840,6 +840,11 @@ import Flags._;
     override def setInfo(tp: Type): this.type = {
       tpePhase = null;
       tyconCache = null;
+      tp match { //debug
+	case TypeRef(_, sym, _) =>
+	  assert(sym != this, this);
+	case _ =>
+      }
       super.setInfo(tp);
       this
     }

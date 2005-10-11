@@ -25,7 +25,7 @@ abstract class GlobalSymbol(val fullname: String) extends Symbol {
 abstract class LocalSymbol extends Symbol {}
 
 case class Class(override val fullname: String) extends GlobalSymbol(fullname) {
-  val tpe = TypeIdent(ThisType(owner), this);
+  val tpe = NamedType(fullname);
 }
 
 case class Method(override val fullname: String, tpe: Type) extends GlobalSymbol(fullname);
@@ -47,5 +47,5 @@ case object NoSymbol extends Symbol {
 case object RootSymbol extends Symbol {
   val owner = NoSymbol;
   val name = "<root>";
-  val tpe = TypeIdent(NoPrefix, this)
+  val tpe = NoPrefix
 }

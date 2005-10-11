@@ -436,10 +436,10 @@ import Tokens._;
       if (in.token == COLON) { in.nextToken(); typ() }
       else TypeTree();
 
-    /** SimpleTypedOpt ::= [`:' SimpleType]
+    /** RequiresTypedOpt ::= [`:' SimpleType | requires SimpleType]
     */
-    def simpleTypedOpt(): Tree =
-      if (in.token == COLON) { in.nextToken(); simpleType() }
+    def requiresTypeOpt(): Tree =
+      if (in.token == COLON | in.token == REQUIRES) { in.nextToken(); simpleType() }
       else TypeTree();
 
     /** Types ::= Type {`,' Type}
@@ -1484,7 +1484,7 @@ import Tokens._;
 	  EmptyTree
       }
 
-    /** ClassDef ::= ClassSig [`:' SimpleType] ClassTemplate
+    /** ClassDef ::= ClassSig RequiresTypeOpt ClassTemplate
      *  ClassSig ::= Id [TypeParamClause] {ClassParamClause}
      */
     def classDef(mods: int): Tree =
@@ -1494,7 +1494,7 @@ import Tokens._;
 	val tparams = typeParamClauseOpt(name, implicitViews);
 	if ((mods & Flags.CASE) != 0 && in.token != LPAREN) accept(LPAREN);
 	val vparamss = paramClauses(name, implicitViews.toList, (mods & Flags.CASE) != 0);
-	val thistpe = simpleTypedOpt();
+	val thistpe = requiresTypeOpt();
 	val template = classTemplate(mods, name, vparamss);
 	ClassDef(mods, name, tparams, thistpe, template)
       }

@@ -13,10 +13,6 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
 
   import global._;
 
-  def codify(tree: Tree): Tree =
-    New(TypeTree(appliedType(definitions.TypedCodeClass.typeConstructor, List(tree.tpe))),
-        List(List(inject(reify(tree)))));
-
   case class FreeValue(tree: Tree) extends reflect.Code;
 
   type ReifyEnvironment = ListMap[Symbol, reflect.Symbol];
@@ -51,19 +47,25 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
         throw new TypeError("cannot reify tree: " + tree)
     }
 
+    private def mkGlobalSymbol(fullname: String, sym: Symbol): reflect.Symbol =
+      if (sym.isClass) reflect.Class(fullname)
+      else if (sym.isType) reflect.TypeField(fullname, reify(sym.info))
+      else if (sym.isMethod) reflect.Method(fullname, reify(sym.info))
+      else reflect.Field(fullname, reify(sym.info));
+
     def reify(sym: Symbol): reflect.Symbol = env.get(sym) match {
       case Some(rsym) =>
         rsym
       case None =>
-        reify(sym.owner) match {
+	if (sym.isRoot || sym.isRootPackage || sym.isEmptyPackageClass || sym.isEmptyPackage)
+	  reflect.RootSymbol
+	else reify(sym.owner) match {
           case reflect.NoSymbol =>
             reflect.NoSymbol;
-          case reflect.Class(ownername) =>
-            val fullname = ownername + "." + sym.name;
-            if (sym.isClass) reflect.Class(fullname)
-            else if (sym.isType) reflect.TypeField(fullname, reify(sym.info))
-            else if (sym.isMethod) reflect.Method(fullname, reify(sym.info))
-            else reflect.Field(fullname, reify(sym.info))
+          case reflect.RootSymbol =>
+	    mkGlobalSymbol(sym.name.toString(), sym)
+	  case reflect.Class(ownername) =>
+	    mkGlobalSymbol(ownername + "." + sym.name, sym)
           case _ =>
             reflect.NoSymbol
         }
@@ -75,8 +77,9 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
       case NoType =>
         reflect.NoType
       case TypeRef(pre, sym, args) =>
-        val tp = reflect.TypeIdent(reify(pre), reify(sym));
-        if (args.isEmpty) tp else reflect.AppliedType(tp, args map reify)
+	val tp = if (sym.owner.isPackageClass) reflect.NamedType(sym.fullNameString);
+		 else reflect.PrefixedType(reify(pre), reify(sym));
+	if (args.isEmpty) tp else reflect.AppliedType(tp, args map reify)
       case SingleType(pre, sym) =>
         reflect.SingleType(reify(pre), reify(sym))
       case ThisType(clazz) =>
@@ -99,35 +102,38 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
 
     // todo replace className by caseName in CaseClass once we have switched to nsc.
     def className(value: CaseClass): String = value match {
-      case reflect.Ident(_) => "Ident"
-      case reflect.Select(_, _) => "Select"
-      case reflect.Literal(_) => "Literal"
-      case reflect.Apply(_, _) => "Apply"
-      case reflect.TypeApply(_, _) => "TypeApply"
-      case reflect.Function(_, _) => "Function"
-      case reflect.Class(_) => "Class"
-      case reflect.Method(_, _) => "Method"
-      case reflect.Field(_, _) => "Field"
-      case reflect.TypeIdent(_, _) => "TypeIdent"
-      case reflect.SingleType(_, _) => "SingleType"
-      case reflect.ThisType(_) => "ThisType"
-      case reflect.AppliedType(_, _) => "AppliedType"
-      case reflect.TypeBounds(_, _) => "TypeBounds"
+      case _ :: _ => "scala.$colon$colon"
+      case reflect.Ident(_) => "scala.reflect.Ident"
+      case reflect.Select(_, _) => "scala.reflect.Select"
+      case reflect.Literal(_) => "scala.reflect.Literal"
+      case reflect.Apply(_, _) => "scala.reflect.Apply"
+      case reflect.TypeApply(_, _) => "scala.reflect.TypeApply"
+      case reflect.Function(_, _) => "scala.reflect.Function"
+      case reflect.Class(_) => "scala.reflect.Class"
+      case reflect.Method(_, _) => "scala.reflect.Method"
+      case reflect.Field(_, _) => "scala.reflect.Field"
+      case reflect.NamedType(_) => "scala.reflect.NamedType"
+      case reflect.PrefixedType(_, _) => "scala.reflect.PrefixedType"
+      case reflect.SingleType(_, _) => "scala.reflect.SingleType"
+      case reflect.ThisType(_) => "scala.reflect.ThisType"
+      case reflect.AppliedType(_, _) => "scala.reflect.AppliedType"
+      case reflect.TypeBounds(_, _) => "scala.reflect.TypeBounds"
       case reflect.MethodType(_, _) =>
-        if (value.isInstanceOf[reflect.ImplicitMethodType]) "ImplicitMethodType" else "MethodType"
+        if (value.isInstanceOf[reflect.ImplicitMethodType]) "scala.reflect.ImplicitMethodType" else "scala.reflect.MethodType"
       case _ =>
         ""
     }
 
     def objectName(value: Any): String = value match {
-      case reflect.NoSymbol => "NoSymbol"
-      case reflect.RootSymbol => "RootSymbol"
-      case reflect.NoPrefix => "NoPrefix"
-      case reflect.NoType => "NoType"
+      case Nil => "scala.Nil"
+      case reflect.NoSymbol => "scala.reflect.NoSymbol"
+      case reflect.RootSymbol => "scala.reflect.RootSymbol"
+      case reflect.NoPrefix => "scala.reflect.NoPrefix"
+      case reflect.NoType => "scala.reflect.NoType"
       case _ => ""
     }
 
-    def injectType(name: String): Tree = TypeTree(definitions.getClass("scala.reflect." + name).tpe);
+    def injectType(name: String): Tree = TypeTree(definitions.getClass(name).initialize.tpe);
 
     def inject(value: Any): Tree = value match {
       case FreeValue(tree) =>
@@ -137,26 +143,34 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
         val vdefs = for (val param <- params) yield {
           val lname = newTermName(fresh.newName());
           env1 = env1.update(param, lname);
-          ValDef(0, lname, injectType("LocalValue"),
-                 New(injectType("LocalValue"),
+          ValDef(0, lname, injectType("scala.reflect.LocalValue"),
+                 New(injectType("scala.reflect.LocalValue"),
                      List(List(inject(param.owner), inject(param.name), inject(param.tpe)))))
         }
         Block(vdefs, new Injector(env1, fresh).inject(body))
       case rsym: reflect.LocalSymbol =>
         Ident(env(rsym))
-      case s: String =>
-        Literal(Constant(s))
+      case x: String => Literal(Constant(x))
+      case x: Boolean => Literal(Constant(x))
+      case x: Byte => Literal(Constant(x))
+      case x: Short => Literal(Constant(x))
+      case x: Char => Literal(Constant(x))
+      case x: Int => Literal(Constant(x))
+      case x: Long => Literal(Constant(x))
+      case x: Float => Literal(Constant(x))
+      case x: Double => Literal(Constant(x))
       case c: CaseClass =>
-        val name = className(c);
-        if (name.length == 0) throw new Error("don't know how to inject " + value);
-        val injectedArgs = new ListBuffer[Tree];
-        for (val i <- Iterator.range(0, c.caseArity))
-          injectedArgs += inject(c.caseElement(i));
-        New(injectType(name), List(injectedArgs.toList))
-      case _ =>
-        val name = objectName(value);
-        if (name.length == 0) throw new Error("don't know how to inject " + value);
-        gen.mkRef(definitions.getModule("scala.reflect." + name))
+        val name = objectName(c);
+        if (name.length() != 0) gen.mkRef(definitions.getModule(name))
+	else {
+          val name = className(c);
+          if (name.length() == 0) throw new Error("don't know how to inject " + value);
+          val injectedArgs = new ListBuffer[Tree];
+          for (val i <- Iterator.range(0, c.caseArity))
+            injectedArgs += inject(c.caseElement(i));
+          New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
+	}
+      case _ => throw new Error("don't know how to inject " + value);
     }
   }
 
@@ -165,4 +179,21 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
 
   def inject(code: reflect.Code): Tree =
     new Injector(ListMap.Empty, new FreshNameCreator).inject(code);
+
+  /** returns
+   *  < new TypedCode[T](tree1) >
+   * where T = tree.tpe
+   *       tree1 = inject(reify(tree))
+   */
+  def codify(tree: Tree): Tree = {
+    val reified = reify(tree);
+    System.out.println("reified = " + reified);
+    val injected = inject(reified);
+    System.out.println("injected = " + injected);
+    New(TypeTree(appliedType(definitions.TypedCodeClass.typeConstructor, List(tree.tpe))),
+        List(List(injected)));
+
+  }
 }
+
+
