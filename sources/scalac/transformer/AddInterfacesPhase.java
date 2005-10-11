@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -11,11 +11,13 @@
 
 package scalac.transformer;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import scalac.*;
 import scalac.symtab.*;
-import scalac.util.Name;
-import java.util.*;
 import scalac.util.Debug;
+import scalac.util.Name;
 
 public class AddInterfacesPhase extends Phase {
 
@@ -146,8 +148,11 @@ public class AddInterfacesPhase extends Phase {
     protected final HashMap/*<Symbol,Tree[]>*/ classToBody = new HashMap();
 
     /** Return the class symbol corresponding to the given interface
-     * symbol. If the class does not need an interface, return the
-     * given symbol.
+     *  symbol. If the class does not need an interface, return the
+     *  given symbol.
+     *
+     *  @param ifaceSym
+     *  @return
      */
     protected Symbol getClassSymbol(Symbol ifaceSym) {
         assert ifaceSym.isClass(): Debug.show(ifaceSym);
