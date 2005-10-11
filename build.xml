@@ -14,9 +14,9 @@
     
     <!-- Sets project's properties -->
     <!-- Properties in 'build.${user.name}.properties' take precedence over properties in 'build.default.properties' -->
-    <echo>Loading properties from '${basedir}/build.support/build.${user.name}.properties'</echo>
+    <echo level="verbose">Loading properties from '${basedir}/build.support/build.${user.name}.properties'</echo>
     <property file="${basedir}/build.support/build.${user.name}.properties"/>
-    <echo>Loading properties from '${basedir}/build.support/build.default.properties'</echo>
+    <echo level="verbose">Loading properties from '${basedir}/build.support/build.default.properties'</echo>
     <property file="${basedir}/build.support/build.default.properties"/>
     
     <!-- A path containing pre-compiled Scala libraries found typically
@@ -293,13 +293,13 @@
             depends="clean.build, clean.distrib"
             description="Deletes all generated files, both build and distribution files." />
 
-    <target name="clean.build" description="Delete all generated build files.">
+    <target name="clean.build" description="Deletes all generated build files.">
         <delete dir="${build.dir}" includeemptydirs="true"
                 quiet="true" failonerror="false" />
     </target>
     
     <target name="clean.distrib"
-            description="Delete all generated distribution files.">
+            description="Deletes all generated distribution files.">
         <delete dir="${distrib.dir}" includeemptydirs="true"
                 quiet="true" failonerror="false">
             <fileset>
@@ -314,8 +314,7 @@
     #####################################################################
     -->
 
-    <target name="help" depends="usage">
-    </target>
+    <target name="help" depends="usage"/>
 
     <target name="usage" description="Display usage information.">
         <echo>Execute 'ant -projecthelp' for build file help.</echo>
