@@ -302,6 +302,7 @@ xml/dtd/DtdTypeSymbol.scala
 #xml/dtd/Validation.scala
 xml/dtd/ValidationException.scala
 
+xml/factory/Binder.scala
 xml/factory/NodeFactory.scala
 xml/factory/LoggedNodeFactory.scala
 
