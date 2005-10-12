@@ -10,8 +10,9 @@
 
 package scala;
 
-/** Temporary class when this appears in the atribute list of an abstract class, the
- *  class is assumed to be a trait. Used to ensure that cold that compiles under old scalac
- *  can also copmpile under nsc.
+/** Temporary class.
+ *  When this appears in the attribute list of an abstract class, the class
+ *  is assumed to be a trait. Used to ensure that code that compiles under
+ *  (old) <code>scalac</code> can also compile under <code>nsc</code>.
  */
 class _trait_ extends Attribute {}
