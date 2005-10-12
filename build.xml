@@ -5,8 +5,8 @@
     <description>
       This build-file builds the Scala NSC compiler as well as various related
       tools. The 'build.TEMPLATE.properties' file must be customised for your
-      own particular system, no other customisation should be required. 
-      The build file expects the file structure of a Scala CVS distribution.
+      own particular system, no other customisation should be required. The
+      build file expects the file structure of a Scala CVS distribution.
     </description>
 
     <!-- The system classpath should not be used -->
@@ -15,14 +15,15 @@
     <!-- Properties in 'build.${user.name}.properties' take precedence over
          properties in 'build.default.properties'.
     -->
-    <echo level="verbose">Loading properties from '${basedir}/build.support/build.${user.name}.properties'</echo>
-    <property file="${basedir}/build.support/build.${user.name}.properties" />
-    <echo level="verbose">Loading properties from '${basedir}/build.support/build.default.properties'</echo>
-    <property file="${basedir}/build.support/build.default.properties" />
+    <echo level="verbose">Loading properties from '${basedir}/build.support/build.base.properties'</echo>
+    <property file="${basedir}/build.support/build.base.properties" />
+    <echo level="verbose">Loading properties from '${build.support.dir}/build.${user.name}.properties'</echo>
+    <property file="${build.support.dir}/build.${user.name}.properties" />
+    <echo level="verbose">Loading properties from '${build.support.dir}/build.default.properties'</echo>
+    <property file="${build.support.dir}/build.default.properties" />
     
     <!-- A path containing pre-compiled Scala libraries found typically
-         in a Scala distribution.
-    -->
+         in a Scala distribution. -->
     <path id="osc.classpath">
         <pathelement location="${oslib.jar}" />
         <pathelement location="${oslib.src}" />
@@ -68,13 +69,13 @@
                 <available classname="scala.tools.scalac.ant.Scalac" classpathref="osc.classpath" />
             </and></not></condition>
         </fail>
-        <fail message="Required classes for OSC are missing; check the 'fjbg.jar' property in 'build.${user.name}.properties'.">
+        <fail message="Required classes for FJBG are missing; check the 'fjbg.jar' property in 'build.${user.name}.properties'.">
             <condition><not><and>
                 <available classname="ch.epfl.lamp.fjbg.JField" classpathref="osc.classpath"/>
                 <available classname="ch.epfl.lamp.util.ByteArray" classpathref="osc.classpath"/>
             </and></not></condition>
         </fail>
-        <fail message="Required classes for OSC are missing; check the 'msil.jar' property in 'build.${user.name}.properties'.">
+        <fail message="Required classes for MSIL are missing; check the 'msil.jar' property in 'build.${user.name}.properties'.">
             <condition><not><and>
                 <available classname="ch.epfl.lamp.compiler.msil.Module" classpathref="osc.classpath"/>
                 <available classname="ch.epfl.lamp.compiler.msil.Type" classpathref="osc.classpath"/>

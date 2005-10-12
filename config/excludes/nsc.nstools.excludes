@@ -1,3 +1,6 @@
-# A list of files to exclude when compiling the Scala tools with NSC.
-# All files can be defined using Ant's fileset wildcard notation;
-# one statement per line.
+################################################################################
+# NSTOOLS EXCLUDED FILES                                                       #
+################################################################################
+# A list of files to exclude when compiling the Scala tools with NSC. All files # can be defined using Ant's fileset wildcard notation; one statement per line.
+# $Id$
+################################################################################
