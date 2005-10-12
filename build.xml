@@ -46,6 +46,13 @@
         <pathelement location="${msil.jar}" />
     </path>
 
+    <!-- The current Scala version -->
+    <loadfile srcfile="${basedir}/VERSION" property="scala.version">
+        <filterchain>
+            <tailfilter lines="1" />
+        </filterchain>
+    </loadfile>
+
     <target name="all"
             description="Builds and tests everything; creates a distribution." />
 
@@ -313,12 +320,16 @@
     -->
     
     <target name="docs" description="Generates all documentation.">
-        <!-- <fail>'docs' is not implemented yet.</fail> -->
         <echo level="verbose">oslib.jar=${oslib.jar}</echo>
+        <echo level="verbose">oslib.src=${oslib.src}</echo>
         <echo level="verbose">ostools.jar=${ostools.jar}</echo>
+        <fileset id="oslib.src.files" dir="${oslib.src}">
+            <include name="scala/**/*.scala" />
+            <exclude name="scala/tools/**" />
+        </fileset>
+        <pathconvert pathsep=" " property="docs.sources" refid="oslib.src.files" />
         <mkdir dir="${build.dir}/doc/api" />
         <java classname="scala.tools.scaladoc.Main" fork="true">
-            <jvmarg value="-Dscala.version=1.4.0.1" />
             <jvmarg value="-Dscala.library.source.path=${oslib.src}" />
             <jvmarg value="-Dscala.library.class.path=${oslib.jar}" />
             <classpath>
@@ -326,9 +337,9 @@
                 <pathelement location="${ostools.jar}" />
             </classpath>
             <arg line="-windowtitle 'Scala Library Documentation'" />
-            <arg line="-doctitle 'Scala&lt;br/&gt;1.4.0.1'" />
+            <arg line="-doctitle 'Scala&lt;br/&gt;${scala.version}'" />
             <arg line="-d ${build.dir}/doc/api" />
-            <arg line="${oslib.src}/scala/List.scala" />
+            <arg line="${docs.sources}" />
             <arg line="-- scala" />
         </java>
     </target>
@@ -343,7 +354,8 @@
             depends="clean.build, clean.distrib"
             description="Deletes all generated files, both build and distribution files." />
 
-    <target name="clean.build" description="Deletes all generated build files.">
+    <target name="clean.build"
+            description="Deletes all generated build files.">
         <delete dir="${build.dir}" includeemptydirs="true"
                 quiet="true" failonerror="false" />
     </target>
