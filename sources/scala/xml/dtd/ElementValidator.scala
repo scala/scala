@@ -36,7 +36,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
 	  . filter { x => x match {
             case y:SpecialNode => y match {
 
-              case a:Atom[String] if (a.data match { case t => t.trim().length == 0 }) =>
+              case a:Atom[String] if (a.data.asInstanceOf[String].trim().length() == 0 ) =>
                 false; // always skip all-whitespace nodes
 
               case _ =>
