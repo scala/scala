@@ -236,9 +236,11 @@
                   value="${distrib.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
         <property name="distrib.scala.dir"
                   value="${distrib.current.dir}/share/scala" />
+        <property name="distrib.doc.dir"
+                  value="${distrib.current.dir}/share/doc/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
         <mkdir dir="${distrib.scala.dir}" />
         <mkdir dir="${distrib.scala.dir}/lib" />
-        <symlink resource="${distrib.scala.dir}/lib/"
+        <symlink resource="${distrib.scala.dir}/lib"
                  link="${distrib.current.dir}/lib" />
         <jar destfile="${distrib.scala.dir}/lib/${distrib.osc-nstools.jar}"
              basedir="${build.osc-nstools.dir}">
@@ -265,14 +267,25 @@
         </jar>
         <!-- Set up bin -->
         <mkdir dir="${distrib.scala.dir}/bin" />
-        <symlink resource="${distrib.scala.dir}/bin/"
+        <symlink resource="${distrib.scala.dir}/bin"
                  link="${distrib.current.dir}/bin" />
         <!-- Set up man -->
         <mkdir dir="${distrib.scala.dir}/man" />
+        <copy todir="${distrib.scala.dir}/man">
+            <fileset dir="${support.dir}/man" includes="**/*.1" />
+        </copy>
         <!-- Set up doc -->
-        <mkdir dir="${distrib.scala.dir}/doc" />
+        <mkdir dir="${distrib.doc.dir}" />
+        <copy todir="${distrib.doc.dir}">
+            <fileset dir="${basedir}" includes="README,LICENSE,VERSION" />
+            <fileset dir="${basedir}/sources" includes="examples/**/*.scala" />
+        </copy>
+        <copy todir="${distrib.doc.dir}">
+            <fileset dir="${doc.dir}/reference" includes="ScalaReference.pdf" />
+            <fileset dir="${doc.dir}/tutorial" includes="*.pdf" />
+        </copy>
         <!-- Set up latest -->
-        <symlink resource="${distrib.current.dir}/"
+        <symlink resource="${distrib.current.dir}"
                  link="${distrib.dir}/latest" />
     </target>
 
@@ -301,15 +314,22 @@
     
     <target name="docs" description="Generates all documentation.">
         <!-- <fail>'docs' is not implemented yet.</fail> -->
-        <mkdir dir="${distrib.dir}/doc/api" />
-        <java classname="scala.tools.scaladoc.Main">
+        <echo level="verbose">oslib.jar=${oslib.jar}</echo>
+        <echo level="verbose">ostools.jar=${ostools.jar}</echo>
+        <mkdir dir="${build.dir}/doc/api" />
+        <java classname="scala.tools.scaladoc.Main" fork="true">
+            <jvmarg value="-Dscala.version=1.4.0.1" />
+            <jvmarg value="-Dscala.library.source.path=${oslib.src}" />
+            <jvmarg value="-Dscala.library.class.path=${oslib.jar}" />
             <classpath>
                 <pathelement location="${oslib.jar}" />
                 <pathelement location="${ostools.jar}" />
             </classpath>
             <arg line="-windowtitle 'Scala Library Documentation'" />
             <arg line="-doctitle 'Scala&lt;br/&gt;1.4.0.1'" />
-            <arg line="-d ${distrib.dir}/doc/api" />
+            <arg line="-d ${build.dir}/doc/api" />
+            <arg line="${oslib.src}/scala/List.scala" />
+            <arg line="-- scala" />
         </java>
     </target>
     
