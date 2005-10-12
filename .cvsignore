@@ -4,9 +4,12 @@
 Makefile.private*
 bootstrap
 boottest
+build
 classes
+dist
 distribs
 lib
+nbproject
 objects
 tmp
 build-nsc.properties
