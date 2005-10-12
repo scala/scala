@@ -237,7 +237,7 @@
             depends="distrib.unix, distrib.mac, distrib.win"
             description="Creates a (simplified) Scala distribution." />
 
-    <target name="distrib.unix" depends="build" if="os.unix">
+    <target name="distrib.unix" depends="build,docs" if="os.unix">
         <tstamp prefix="start" />
         <property name="distrib.current.dir"
                   value="${distrib.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
@@ -286,9 +286,9 @@
         <copy todir="${distrib.doc.dir}">
             <fileset dir="${basedir}" includes="README,LICENSE,VERSION" />
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala" />
-        </copy>
-        <copy todir="${distrib.doc.dir}">
-            <fileset dir="${doc.dir}/reference" includes="ScalaReference.pdf" />
+            <fileset dir="${build.dir}/doc" />
+            <fileset dir="${doc.dir}/reference"
+                     includes="ScalaByExample.pdf,ScalaReference.pdf" />
             <fileset dir="${doc.dir}/tutorial" includes="*.pdf" />
         </copy>
         <!-- Set up latest -->
