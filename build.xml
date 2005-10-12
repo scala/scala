@@ -9,6 +9,9 @@
       build file expects the file structure of a Scala CVS distribution.
     </description>
 
+    <property environment="env" />
+    <echo level="verbose">ANT_OPTS=${env.ANT_OPTS}</echo>
+
     <!-- The system classpath should not be used -->
     <property name="build.sysclasspath" value="ignore" />
 
@@ -239,12 +242,14 @@
 
     <target name="distrib.unix" depends="build,docs" if="os.unix">
         <tstamp prefix="start" />
+        <property name="distrib.package.dir"
+                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
         <property name="distrib.current.dir"
-                  value="${distrib.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
+                  value="${distrib.dir}/unix/${distrib.package.dir}" />
         <property name="distrib.scala.dir"
                   value="${distrib.current.dir}/share/scala" />
         <property name="distrib.doc.dir"
-                  value="${distrib.current.dir}/share/doc/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
+                  value="${distrib.current.dir}/share/doc/${distrib.package.dir}" />
         <mkdir dir="${distrib.scala.dir}" />
         <mkdir dir="${distrib.scala.dir}/lib" />
         <symlink resource="${distrib.scala.dir}/lib"
@@ -284,23 +289,56 @@
         <!-- Set up doc -->
         <mkdir dir="${distrib.doc.dir}" />
         <copy todir="${distrib.doc.dir}">
-            <fileset dir="${basedir}" includes="README,LICENSE,VERSION" />
+            <fileset dir="${basedir}" includes="LICENSE,README,VERSION" />
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala" />
             <fileset dir="${build.dir}/doc" />
             <fileset dir="${doc.dir}/reference"
                      includes="ScalaByExample.pdf,ScalaReference.pdf" />
-            <fileset dir="${doc.dir}/tutorial" includes="*.pdf" />
+            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf" />
         </copy>
         <!-- Set up latest -->
         <symlink resource="${distrib.current.dir}"
-                 link="${distrib.dir}/latest" />
+                 link="${distrib.dir}/unix/latest" />
+        <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.gz"
+             basedir="${distrib.current.dir}" compression="gzip" />
+        <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.bz2"
+             basedir="${distrib.current.dir}" compression="bzip2" />
     </target>
 
-    <target name="distrib.mac" depends="distrib.unix, build" if="os.mac" />
+    <target name="distrib.mac" depends="distrib.unix, build" if="os.mac">
+        <!-- <fixcrlf srcdir="${distrib.doc.dir}" eol="mac" includes="**/*.scala" /> -->
+    </target>
 
-    <target name="distrib.win" depends="build" if="os.win">
+    <target name="distrib.win" depends="build,docs"> <!-- if="os.win"> -->
         <tstamp prefix="start" />
-        <fail>Windows distribution is not supported yet.</fail>
+        <property name="distrib.package.dir"
+                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
+        <property name="distrib.current.dir"
+                  value="${distrib.dir}/win/${distrib.package.dir}" />
+        <mkdir dir="${distrib.current.dir}/bin" />
+        <mkdir dir="${distrib.current.dir}/lib" />
+        <copy todir="${distrib.current.dir}/doc">
+            <fileset dir="${build.dir}/doc" />
+            <fileset dir="${doc.dir}/reference"
+                     includes="ScalaByExample.pdf,ScalaReference.pdf" />
+            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf" />
+        </copy>
+        <fixcrlf srcdir="${distrib.current.dir}/doc" eol="dos"
+                 includes="**/*.css,**/*.html,**/*.js" />
+        <copy todir="${distrib.current.dir}">
+            <fileset dir="${basedir}" includes="LICENSE,README,VERSION" />
+            <fileset dir="${basedir}/sources" includes="examples/**/*.scala" />
+        </copy>
+        <fixcrlf srcdir="${distrib.current.dir}" eol="dos"
+                 includes="LICENSE,README,VERSION,examples/**/*.scala" />
+        <mkdir dir="${distrib.current.dir}/support" />
+        <copy todir="${distrib.current.dir}/support">
+            <fileset dir="${support.dir}"
+                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**" />
+        </copy>
+        <fixcrlf srcdir="${distrib.current.dir}/support" eol="dos" />
+        <zip destfile="${distrib.dir}/win/${distrib.package.dir}.zip"
+             basedir="${distrib.current.dir}" />
     </target>
 
     <!--
@@ -329,6 +367,7 @@
         </fileset>
         <pathconvert pathsep=" " property="docs.sources" refid="oslib.src.files" />
         <mkdir dir="${build.dir}/doc/api" />
+        <echo>Generating API documentation to ${build.dir}/doc/api</echo>
         <java classname="scala.tools.scaladoc.Main" fork="true">
             <jvmarg value="-Dscala.library.source.path=${oslib.src}" />
             <jvmarg value="-Dscala.library.class.path=${oslib.jar}" />
