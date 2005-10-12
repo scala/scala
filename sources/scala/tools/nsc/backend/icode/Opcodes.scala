@@ -9,6 +9,7 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
+import scala.tools.util.Position;
 
 /*
   A pattern match
@@ -63,6 +64,9 @@ import scala.tools.nsc.ast._;
 
     /** This method returns the difference of size of the stack when the instruction is used */
     def difference = produced-consumed;
+
+    /** The corresponding position in the source file */
+    var pos: Int = Position.NOPOS;
   }
 
   object opcodes {
@@ -186,16 +190,18 @@ import scala.tools.nsc.ast._;
       override def toString(): String ="CALL_PRIMITIVE "+primitive.toString();
 
       override def consumed = primitive match {
-        case (Negation(_)) => 1;
-        case (Test(_,_,true)) => 1;
-        case (Test(_,_,false)) => 2;
-        case (Comparison(_,_)) => 2;
-        case (Arithmetic(_,_)) => 2;
-        case (Logical(_,_)) => 2;
-        case (Shift(_,_)) => 2;
-        case (Conversion(_,_)) => 1;
-        case (ArrayLength(_)) => 1;
-        case (StringConcat(_,_)) => 2;
+        case Negation(_) => 1;
+        case Test(_,_,true) => 1;
+        case Test(_,_,false) => 2;
+        case Comparison(_,_) => 2;
+        case Arithmetic(_,_) => 2;
+        case Logical(_,_) => 2;
+        case Shift(_,_) => 2;
+        case Conversion(_,_) => 1;
+        case ArrayLength(_) => 1;
+        case StringConcat(_) => 2;
+        case StartConcat => 0;
+        case EndConcat => 1;
       }
       override def produced = 1;
     }

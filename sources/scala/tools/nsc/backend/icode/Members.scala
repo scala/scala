@@ -156,6 +156,7 @@ trait Members: ICodes {
   class IMethod(val symbol: Symbol) {
     var code: Code = null;
     var exh: List[ExceptionHandler] = _;
+    var sourceFile: String = _;
 
     /** local variables and method parameters */
     var locals: List[Local] = Nil;

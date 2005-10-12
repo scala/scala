@@ -9,6 +9,7 @@ package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
 import scala.collection.mutable.Map;
+import scala.tools.util.Position;
 
 trait BasicBlocks: ICodes {
   import opcodes._;
@@ -32,6 +33,9 @@ trait BasicBlocks: ICodes {
 
     /** The stack at the end of the block */
     var endStack : TypeStack = null;
+
+    /** When set, the 'emit' methods will be ignored. */
+    var ignore: Boolean = false;
 
     var preds: List[BasicBlock] = null;
 
@@ -121,11 +125,24 @@ trait BasicBlocks: ICodes {
       }
     }
 
-    /** Add a new instruction at the end of the block */
-    def emit(instr: Instruction) = {
-      assert (!closed, "BasicBlock closed");
-      instructionList = instr :: instructionList;
-      _lastInstruction = instr;
+    /** Add a new instruction at the end of the block,
+     *  using the same source position as the last emitted instruction
+     */
+    def emit(instr: Instruction): Unit = {
+      if (!instructionList.isEmpty)
+        emit(instr, instructionList.head.pos);
+      else
+        emit(instr, Position.NOPOS);
+    }
+
+    def emit(instr: Instruction, pos: Int) = {
+      assert (!closed || ignore, "BasicBlock closed");
+
+      if (!ignore) {
+        instr.pos = pos;
+        instructionList = instr :: instructionList;
+        _lastInstruction = instr;
+      }
     }
 
     /** Close the block */
@@ -134,6 +151,17 @@ trait BasicBlocks: ICodes {
              "Empty block.");
       closed = true;
       instrs = toInstructionArray(instructionList.reverse);
+    }
+
+    /** Enter ignore mode: new 'emit'ted instructions will not be
+     * added to this basic block. It makes the generation of THROW
+     * and RETURNs easier.
+     */
+    def enterIgnoreMode = ignore = true;
+
+    def exitIgnoreMode = {
+      assert(ignore, "Exit ignore mode when not in ignore mode.");
+      ignore = false;
     }
 
     /** Return the last instruction of this basic block. */
@@ -154,6 +182,7 @@ trait BasicBlocks: ICodes {
 
     def isClosed = closed;
 
+    // TODO: Take care of exception handlers!
     def successors : List[BasicBlock] = // here order will count
       lastInstruction match {
         case JUMP (where) => List(where);
@@ -161,6 +190,7 @@ trait BasicBlocks: ICodes {
         case CZJUMP(success, failure, _, _) => failure::success::Nil;
         case SWITCH(_,labels) => labels;
         case RETURN(_) => Nil;
+        case THROW() => Nil;
         case _ =>
 	  global.abort("The last instruction is not a control flow instruction");
       }
@@ -168,7 +198,6 @@ trait BasicBlocks: ICodes {
     def predecessors: List[BasicBlock] = {
       if (preds == null)
         preds = code.blocks.elements.filter (p => (p.successors contains this)).toList;
-//      global.log("Predecessors of " + this + ": " + preds);
       preds
     }
 

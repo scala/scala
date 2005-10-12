@@ -57,11 +57,21 @@ import java.io.PrintWriter;
   // jvm  : arraylength
   case class ArrayLength(kind: TypeKind) extends Primitive;
 
-  // type : (lf,rg) => STR
+  // type : (buf,el) => buf
   // range: lf,rg <- { BOOL, Ix, Ux, Rx, REF, STR }
-  // jvm  : -
-  case class StringConcat(lf: TypeKind, rg: TypeKind) extends Primitive;
+  // jvm  : It should call the appropiate 'append' method on StringBuffer
+  case class StringConcat(el: TypeKind) extends Primitive;
 
+  /** Signals the beginning of a series of concatenations.
+   *  On the JVM platform, it should create a new StringBuffer
+   */
+  case object StartConcat extends Primitive;
+
+  /**
+   * type: (buf) => STR
+   * jvm : It should turn the StringBuffer into a String.
+   */
+  case object EndConcat extends Primitive;
 
   /** Pretty printer for primitives */
   class PrimitivePrinter(out: PrintWriter) {

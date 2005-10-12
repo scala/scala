@@ -205,6 +205,7 @@ abstract class ScalaPrimitives {
 
     // scala.Any
     addPrimitive(Any_==, EQ);
+    addPrimitive(Any_!=, NE);
     addPrimitive(Any_equals, EQUALS);
     addPrimitive(Any_hashCode, HASHCODE);
     addPrimitive(Any_toString, TOSTRING);
@@ -216,6 +217,8 @@ abstract class ScalaPrimitives {
     // java.lang.Object
     addPrimitive(Object_eq, ID);
     addPrimitive(Object_ne, NI);
+    addPrimitive(Object_==, EQ);
+    addPrimitive(Object_!=, NE);
     addPrimitive(Object_synchronized, SYNCHRONIZED);
     addPrimitive(Object_isInstanceOf, IS);
     addPrimitive(Object_asInstanceOf, AS);

@@ -73,6 +73,13 @@ abstract class Checkers {
 
     def check(c: Code): Unit = {
       var worklist: Buffer[BasicBlock] = new ListBuffer();
+
+      def append(elems: List[BasicBlock]) = elems foreach appendBlock;
+      def appendBlock(bl: BasicBlock) =
+        if ( !worklist.exists(bl.==) )
+          worklist + bl;
+
+      in.clear;  out.clear;
       code = c;
       worklist + c.startBlock;
       c.blocks foreach ( bl => { in  += bl -> emptyStack;
@@ -81,10 +88,11 @@ abstract class Checkers {
       while (worklist.length > 0) {
         val block = worklist(0); worklist.trimStart(1);
         val output = check(block, in(block));
-        if (output != out(block)) {
+        if (output != out(block) ||
+            (out(block) eq emptyStack)) {
           log("Output changed for block: " + block.fullString);
           out(block) = output;
-          worklist ++ block.successors;
+          append(block.successors);
           block.successors foreach meet;
         }
       }
@@ -99,17 +107,19 @@ abstract class Checkers {
       val preds = bl.predecessors;
 
       def meet2(s1: TypeStack, s2: TypeStack): TypeStack = {
-        if (s1 == emptyStack) s2
-        else if (s2 == emptyStack) s1
+        if (s1 eq emptyStack) s2
+        else if (s2 eq emptyStack) s1
         else {
           if (s1.length != s2.length)
-            throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2);
+            throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2 + " in " + method + " at entry to block: " + bl);
           new TypeStack(List.map2(s1.types, s2.types) (lub))
         }
       }
 
-      if (preds != Nil)
+      if (preds != Nil) {
         in(bl) = (preds map out.apply) reduceLeft meet2;
+        log("Input changed for block: " + bl +" to: " + in(bl));
+      }
     }
 
 
@@ -122,6 +132,7 @@ abstract class Checkers {
      * produced type stack.
      */
     def check(b: BasicBlock, initial: TypeStack): TypeStack = {
+      log("** Checking block:\n" + b.fullString + " with initial stack:\n" + initial);
       var stack = new TypeStack(initial);
 
       this.typeStack = stack;
@@ -206,9 +217,11 @@ abstract class Checkers {
 
         this.instruction = instr;
 
-        log("PC: " + instr);
-        log("stack: " + stack);
-        log("================");
+        if (settings.debug.value) {
+          log("PC: " + instr);
+          log("stack: " + stack);
+          log("================");
+        }
         instr match {
           case THIS(clasz) =>
             stack push toTypeKind(clasz.tpe);
@@ -242,9 +255,11 @@ abstract class Checkers {
              val obj = stack.pop;
              checkField(obj, field);
            }
-           stack.push(toTypeKind(field.info));
+           stack.push(toTypeKind(field.tpe));
 
          case LOAD_MODULE(module) =>
+           checkBool((module.isModule || module.isModuleClass),
+                     "Expected module: " + module + " flags: " + Flags.flagsToString(module.flags));
            stack.push(toTypeKind(module.tpe));
 
          case STORE_ARRAY_ITEM(kind) =>
@@ -271,7 +286,7 @@ abstract class Checkers {
          case STORE_FIELD(field, isStatic) =>
            if (isStatic) {
              checkStack(1);
-             val fieldType = toTypeKind(field.info);
+             val fieldType = toTypeKind(field.tpe);
              val actualType = stack.pop;
              if (!(actualType <:< fieldType))
                typeError(fieldType, actualType);
@@ -280,7 +295,7 @@ abstract class Checkers {
              stack.pop2 match {
                case Pair(value, obj) =>
                  checkField(obj, field);
-               val fieldType = toTypeKind(field.info);
+               val fieldType = toTypeKind(field.tpe);
                if (!(value <:< fieldType))
                typeError(fieldType, value);
              }
@@ -343,9 +358,17 @@ abstract class Checkers {
                }
                stack push INT;
 
-             case StringConcat(l, r) =>
-               stack.pop2;
-               stack push STRING;
+             case StartConcat =>
+               stack.push(ConcatClass);
+
+             case EndConcat =>
+               checkType(stack.pop, ConcatClass);
+               stack.push(STRING);
+
+             case StringConcat(el) =>
+               checkType(stack.pop, el);
+               checkType(stack.pop, ConcatClass);
+               stack push ConcatClass;
            }
 
          case CALL_METHOD(method, style) =>
@@ -363,7 +386,8 @@ abstract class Checkers {
                            "Static call to non-private method.");
                  checkMethodArgs(method);
                  checkMethod(stack.pop, method);
-                 stack.push(toTypeKind(method.info.resultType));
+                 if (!method.isConstructor)
+                   stack.push(toTypeKind(method.info.resultType));
                } else {
                  checkStack(method.info.paramTypes.length);
                  checkMethodArgs(method);
@@ -395,12 +419,16 @@ abstract class Checkers {
             val ref = stack.pop;
             checkBool(ref.isReferenceType || ref.isArrayType,
                       "IS_INSTANCE on primitive type: " + ref);
+            checkBool(tpe.isReferenceType || tpe.isArrayType,
+                      "IS_INSTANCE to primitive type: " + tpe);
             stack.push(BOOL);
 
           case CHECK_CAST(tpe) =>
             val ref = stack.pop;
             checkBool(ref.isReferenceType || ref.isArrayType,
-                      "IS_INSTANCE on primitive type: " + ref);
+                      "CHECK_CAST on primitive type: " + ref);
+            checkBool(tpe.isReferenceType || tpe.isArrayType,
+                      "CHECK_CAST to primitive type: " + tpe);
             stack.push(tpe);
 
           case SWITCH(tags, labels) =>
@@ -431,7 +459,16 @@ abstract class Checkers {
           case RETURN(kind) =>
             kind match {
               case UNIT => ();
-              case _ => checkStack(1); checkType(stack.pop, kind);
+
+              case REFERENCE(_) | ARRAY(_) =>
+                checkStack(1);
+                val top = stack.pop;
+                checkBool(top.isReferenceType || top.isArrayType,
+                            "" + kind + " is a reference type, but " + top + " is not");
+              case _ =>
+                checkStack(1);
+                val top = stack.pop;
+                checkType(top, kind);
             }
 
           case THROW() =>
@@ -485,6 +522,7 @@ abstract class Checkers {
           printed = printed + 1;
         });
       buf foreach System.out.println;
+      Console.println("at: " + clasz.cunit.position(buf.head.pos));
     }
 
     def error(msg: String, stack: TypeStack): Unit = {
@@ -497,5 +535,31 @@ abstract class Checkers {
     /** Return true if k1 is a subtype of any of the following types. */
     def isOneOf(k1: TypeKind, kinds: TypeKind*) =
       kinds.exists( k => k1 <:< k);
+
+
+    /**
+     * Dummy TypeKind to represent the ConcatClass in a platform-independent
+     * way. For JVM it would have been a REFERENCE to 'StringBuffer'.
+     */
+    case object ConcatClass extends TypeKind {
+      override def toString() = "ConcatClass";
+
+      /**
+       * Approximate `lub'. The common type of two references is
+       * always AnyRef. For 'real' least upper bound wrt to subclassing
+       * use method 'lub'.
+       */
+      override def maxType(other: TypeKind): TypeKind =
+        other match {
+          case REFERENCE(_) => REFERENCE(definitions.AnyRefClass);
+            case _ =>
+              abort("Uncomparbale type kinds: ConcatClass with " + other);
+        }
+
+      /** Checks subtyping relationship. */
+      override def <:<(other: TypeKind): Boolean = (this eq other);
+
+      override def isReferenceType: Boolean = false;
+    }
   }
 }

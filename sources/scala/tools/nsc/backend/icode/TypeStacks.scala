@@ -19,7 +19,6 @@ trait TypeStacks: ICodes {
   type Rep = List[TypeKind];
 
   class TypeStack {
-
     var types: Rep = Nil;
 
     def this(stack: Rep) = {

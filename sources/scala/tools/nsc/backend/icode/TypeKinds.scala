@@ -69,6 +69,8 @@ import scala.collection.mutable.{Map, HashMap};
 
     def isReferenceType: Boolean = false;
     def isArrayType: Boolean = false;
+    def isValueType: Boolean = !isReferenceType && !isArrayType;
+
 
     def isIntType: Boolean = this match {
       case BYTE | SHORT | INT | LONG | CHAR => true;
@@ -109,6 +111,8 @@ import scala.collection.mutable.{Map, HashMap};
         (b.isReferenceType || b.isArrayType))
       toTypeKind(lub0(a.toType, b.toType))
     else if (a == b) a
+    else if (a == REFERENCE(definitions.AllClass)) b
+    else if (b == REFERENCE(definitions.AllClass)) a
     else throw new CheckerError("Incompatible types: " + a + " with " + b);
   }
 
@@ -133,7 +137,7 @@ import scala.collection.mutable.{Map, HashMap};
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case INT => INT;
-        case SHORT | INT | LONG | FLOAT | DOUBLE => other;
+        case BYTE | SHORT | INT | LONG | FLOAT | DOUBLE => other;
         case _ => abort("Uncomparbale type kinds: BYTE with " + other);
       }
   }
@@ -309,6 +313,17 @@ import scala.collection.mutable.{Map, HashMap};
         case None    =>
           if (sym == definitions.ArrayClass)
             ARRAY(toTypeKind(args.head))
+          else
+            REFERENCE(sym);
+      }
+
+    case ClassInfoType(_, _, sym) =>
+      Console.println("Got a ClassInfoType!");
+      primitiveTypeMap get sym match {
+        case Some(k) => k;
+        case None    =>
+          if (sym == definitions.ArrayClass)
+            abort("ClassInfoType to ArrayClass!");
           else
             REFERENCE(sym);
       }

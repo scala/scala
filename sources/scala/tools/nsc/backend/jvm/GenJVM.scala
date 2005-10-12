@@ -11,6 +11,7 @@ import java.io.File;
 
 import scala.collection.mutable.{Map, HashMap};
 import scala.tools.nsc.symtab._;
+import scala.tools.util.Position;
 
 import ch.epfl.lamp.fjbg._;
 
@@ -32,7 +33,8 @@ abstract class GenJVM extends SubComponent {
     def name = phaseName;
     override def newFlags = phaseNewFlags;
 
-    val codeGenerator = new GenJVM;
+    override def erasedTypes = true;
+    val codeGenerator = new BytecodeGenerator;
 
     override def run: Unit =
       classes foreach codeGenerator.genClass;
@@ -44,13 +46,13 @@ abstract class GenJVM extends SubComponent {
   /**
    * Java bytecode generator.
    *
-   * TODO: take care of different size in local variables (LOAD/STORE_LOCAL)
    */
-  class GenJVM {
+  class BytecodeGenerator {
     val MIN_SWITCH_DENSITY = 0.7;
     val MODULE_INSTANCE_NAME = "MODULE$";
     val JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer";
     val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER);
+    val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY);
 
     var clasz: IClass = _;
     var method: IMethod = _;
@@ -89,16 +91,18 @@ abstract class GenJVM extends SubComponent {
 
       if (isTopLevelModule(c.symbol)) {
         addModuleInstanceField;
-        dumpMirrorClass;
+        addStaticInit(jclass);
+
+        if (c.symbol.linkedClass != NoSymbol)
+          log("No mirror class for module with linked class: " + c.symbol.fullNameString);
+        else
+          dumpMirrorClass;
       }
 
       jclass.writeTo(getFile(jclass, ".class"));
     }
 
     def isTopLevelModule(sym: Symbol): Boolean = {
-      log("Symbol: " + sym + " isNestedClass? " + atPhase(currentRun.erasurePhase)(sym.isNestedClass) +
-          " hasFlag LIFTED? " + sym.hasFlag(Flags.LIFTED));
-
       sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED) /* && !atPhase(currentRun.erasurePhase)(sym.isNestedClass) */
     }
 
@@ -110,7 +114,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def genMethod(m: IMethod): Unit = {
-      log("Adding method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
+      log("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
         " owner: " + m.symbol.owner);
       method = m;
       computeLocalVarsIndex(m);
@@ -119,11 +123,19 @@ abstract class GenJVM extends SubComponent {
       if (m.symbol.isClassConstructor)
         resTpe = JType.VOID;
 
-      jmethod = jclass.addNewMethod(javaFlags(m.symbol),
+      var flags = javaFlags(m.symbol);
+      if (jclass.isInterface())
+        flags = flags | JAccessFlags.ACC_ABSTRACT;
+
+      jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
                                     resTpe,
                                     javaTypes(m.params map (.kind)),
                                     javaNames(m.params map (.sym)));
+
+      if (m.symbol.hasFlag(Flags.BRIDGE))
+        jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
+                                                         new Array[Byte](0)));
 
       if (!jmethod.isAbstract()) {
         for (val local <- m.locals; !local.sym.isValueParameter)
@@ -195,7 +207,6 @@ abstract class GenJVM extends SubComponent {
         mirrorCode.emitRETURN(mirrorMethod.getReturnType());
       }
 
-      addStaticInit(jclass); // should be the current module class
       mirrorClass.writeTo(getFile(mirrorClass, ".class"));
     }
 
@@ -212,6 +223,11 @@ abstract class GenJVM extends SubComponent {
     def genBlock(b: BasicBlock): Unit = {
       labels(b).anchorToNext();
 
+      log("Generating code for block: " + b + " at pc: " + labels(b).getAnchor());
+      var lastMappedPC = 0;
+      var lastLineNr = 0;
+      var crtPC = 0;
+
       b traverse ( instr => {
         instr match {
           case THIS(clasz) =>
@@ -223,6 +239,7 @@ abstract class GenJVM extends SubComponent {
               case BooleanTag => jcode.emitPUSH(const.booleanValue);
               case ByteTag => jcode.emitPUSH(const.byteValue);
               case ShortTag => jcode.emitPUSH(const.shortValue);
+              case CharTag  => jcode.emitPUSH(const.charValue);
               case IntTag => jcode.emitPUSH(const.intValue);
               case LongTag => jcode.emitPUSH(const.longValue);
               case FloatTag => jcode.emitPUSH(const.floatValue);
@@ -256,7 +273,7 @@ abstract class GenJVM extends SubComponent {
                                   javaType(field));
 
           case LOAD_MODULE(module) =>
-            assert(module.isModule);
+            assert(module.isModule || module.isModuleClass, "Expected module: " + module);
             log("genearting LOAD_MODULE for: " + module + " flags: " +
                 Flags.flagsToString(module.flags));
             jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
@@ -321,13 +338,17 @@ abstract class GenJVM extends SubComponent {
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls);
             jcode.emitNEW(className);
-            jcode.emitDUP();
+//            jcode.emitDUP();
 //             jcode.emitINVOKESPECIAL(className,
 //                                     JMethod.INSTANCE_CONSTRUCTOR_NAME,
 //                                     javaType(ctor).asInstanceOf[JMethodType]);
 
-          case CREATE_ARRAY(elem) =>
-            jcode.emitNEWARRAY(javaType(elem));
+          case CREATE_ARRAY(elem) => elem match {
+            case REFERENCE(_) | ARRAY(_) =>
+              jcode.emitANEWARRAY(javaType(elem).asInstanceOf[JReferenceType]);
+            case _ =>
+              jcode.emitNEWARRAY(javaType(elem));
+          }
 
           case IS_INSTANCE(tpe) =>
             tpe match {
@@ -354,6 +375,7 @@ abstract class GenJVM extends SubComponent {
               caze = caze.tail;
             }
             val branchArray = new Array[JCode$Label](tagArray.length);
+            log("Emitting SWITHCH:\ntags: " + tags + "\nbranches: " + branches);
             jcode.emitSWITCH(tagArray,
                              (branches map labels dropRight 1).copyToArray(branchArray, 0),
                              labels(branches.last),
@@ -409,10 +431,10 @@ abstract class GenJVM extends SubComponent {
             jcode.emitATHROW();
 
           case DROP(kind) =>
-//             kind match {
-//               case LONG | DOUBLE => jcode.emitPOP2();
-//               case _ => jcode.emitPOP();
-//             }
+            kind match {
+              case LONG | DOUBLE => jcode.emitPOP2();
+              case _ => jcode.emitPOP();
+            }
 
           case DUP(kind) =>
             kind match {
@@ -427,6 +449,16 @@ abstract class GenJVM extends SubComponent {
           case MONITOR_EXIT() =>
             jcode.emitMONITOREXIT();
         }
+
+        crtPC = jcode.getPC();
+        val crtLine = Position.line(instr.pos);
+        if (crtLine != lastLineNr &&
+            crtPC > lastMappedPC) {
+          jcode.completeLineNumber(lastMappedPC, crtPC, crtLine);
+          lastMappedPC = crtPC;
+          lastLineNr   = crtLine;
+        }
+
       });
     }
 
@@ -497,22 +529,87 @@ abstract class GenJVM extends SubComponent {
             case _ => abort("Unknown arithmetic primitive " + primitive );
           }
 
+        case Logical(op, kind) => Pair(op, kind) match {
+          case Pair(AND, LONG) =>
+            jcode.emitLAND();
+          case Pair(AND, INT) =>
+            jcode.emitIAND();
+          case Pair(AND, _) =>
+            jcode.emitIAND();
+            jcode.emitT2T(javaType(INT), javaType(kind));
+
+          case Pair(OR, LONG) =>
+            jcode.emitLOR();
+          case Pair(OR, INT) =>
+            jcode.emitIOR();
+          case Pair(OR, _) =>
+            jcode.emitIOR();
+            jcode.emitT2T(javaType(INT), javaType(kind));
+
+          case Pair(XOR, LONG) =>
+            jcode.emitLXOR();
+          case Pair(XOR, INT) =>
+            jcode.emitIXOR();
+          case Pair(XOR, _) =>
+            jcode.emitIXOR();
+            jcode.emitT2T(javaType(INT), javaType(kind));
+        }
+
+        case Shift(op, kind) => Pair(op, kind) match {
+          case Pair(LSL, LONG) =>
+            jcode.emitLSHL();
+          case Pair(LSL, INT) =>
+            jcode.emitISHL();
+          case Pair(LSL, _) =>
+            jcode.emitISHL();
+            jcode.emitT2T(javaType(INT), javaType(kind));
+
+          case Pair(ASR, LONG) =>
+            jcode.emitLSHR();
+          case Pair(ASR, INT) =>
+            jcode.emitISHR();
+          case Pair(ASR, _) =>
+            jcode.emitISHR();
+            jcode.emitT2T(javaType(INT), javaType(kind));
+
+          case Pair(LSR, LONG) =>
+            jcode.emitLUSHR();
+          case Pair(LSR, INT) =>
+            jcode.emitIUSHR();
+          case Pair(LSR, _) =>
+            jcode.emitIUSHR();
+            jcode.emitT2T(javaType(INT), javaType(kind));
+        }
+
         case Conversion(src, dst) =>
+          log("Converting from: " + src + " to: " + dst);
           jcode.emitT2T(javaType(src), javaType(dst));
 
-        case StringConcat(lf, rg) =>
-//           jcode.emitNEW(JAVA_LANG_STRINGBUFFER);
-//           jcode.emitDUP();
-//           jcode.emitINVOKESPECIAL(JAVA_LANG_STRINGBUFFER,
-//                                   JMethod.INSTANCE_CONSTRUCTOR_NAME,
-//                                   JMethodType.ARGLESS_VOID_FUNCTION);
-//           jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
-//                                   "append",
-//                                   new JMethodType(stringBufferType,
-//                                                   javaType(lf)));
+        case ArrayLength(_) =>
+          jcode.emitARRAYLENGTH();
 
+        case StartConcat =>
+          jcode.emitNEW(JAVA_LANG_STRINGBUFFER);
+          jcode.emitDUP();
+          jcode.emitINVOKESPECIAL(JAVA_LANG_STRINGBUFFER,
+                                  JMethod.INSTANCE_CONSTRUCTOR_NAME,
+                                  JMethodType.ARGLESS_VOID_FUNCTION);
 
-        case _ => log("Unimplemented primitive " + primitive);
+        case StringConcat(el) =>
+          val jtype = el match {
+            case REFERENCE(_) | ARRAY(_)=> JObjectType.JAVA_LANG_OBJECT;
+            case _ => javaType(el);
+          }
+          jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
+                                  "append",
+                                  new JMethodType(stringBufferType,
+                                                  Predef.Array(jtype)));
+        case EndConcat =>
+          jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
+                                  "toString",
+                                  toStringType);
+
+        case _ => abort("Unimplemented primitive " + primitive);
       }
     }
 
@@ -528,6 +625,7 @@ abstract class GenJVM extends SubComponent {
 
     def makeLabels(bs: List[BasicBlock]) = {
       labels.clear;
+      log("Making labels for: " + method);
       bs foreach (bb => labels += bb -> jcode.newLabel() );
     }
 

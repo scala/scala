@@ -52,6 +52,8 @@ trait Linearizers: ICodes {
           add(labels);
         case RETURN(_) =>
           ()
+        case THROW() =>
+          ()
       }
 
     /**
