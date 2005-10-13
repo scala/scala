@@ -18,11 +18,17 @@
     <!-- Properties in 'build.${user.name}.properties' take precedence over
          properties in 'build.default.properties'.
     -->
-    <echo level="verbose">Loading properties from '${basedir}/build.support/build.base.properties'</echo>
+    <echo level="verbose">
+        Loading properties from '${basedir}/build.support/build.base.properties'
+    </echo>
     <property file="${basedir}/build.support/build.base.properties" />
-    <echo level="verbose">Loading properties from '${build.support.dir}/build.${user.name}.properties'</echo>
+    <echo level="verbose">
+        Loading properties from '${build.support.dir}/build.${user.name}.properties'
+    </echo>
     <property file="${build.support.dir}/build.${user.name}.properties" />
-    <echo level="verbose">Loading properties from '${build.support.dir}/build.default.properties'</echo>
+    <echo level="verbose">
+        Loading properties from '${build.support.dir}/build.default.properties'
+    </echo>
     <property file="${build.support.dir}/build.default.properties" />
     
     <!-- A path containing pre-compiled Scala libraries found typically
@@ -240,7 +246,7 @@
             depends="distrib.unix, distrib.mac, distrib.win"
             description="Creates a (simplified) Scala distribution." />
 
-    <target name="distrib.unix" depends="build,docs" if="os.unix">
+    <target name="distrib.unix" depends="build,docs">
         <tstamp prefix="start" />
         <property name="distrib.package.dir"
                   value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
@@ -277,16 +283,11 @@
                 <attribute name="Built-By" value="${user.name}" />
             </manifest>
         </jar>
-        <!-- Set up bin -->
+        <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.scala.dir}/bin" />
         <symlink resource="${distrib.scala.dir}/bin"
                  link="${distrib.current.dir}/bin" />
-        <!-- Set up man -->
-        <mkdir dir="${distrib.scala.dir}/man" />
-        <copy todir="${distrib.scala.dir}/man">
-            <fileset dir="${support.dir}/man" includes="**/*.1" />
-        </copy>
-        <!-- Set up doc -->
+        <!-- Set up 'doc' directory -->
         <mkdir dir="${distrib.doc.dir}" />
         <copy todir="${distrib.doc.dir}">
             <fileset dir="${basedir}" includes="LICENSE,README,VERSION" />
@@ -296,27 +297,38 @@
                      includes="ScalaByExample.pdf,ScalaReference.pdf" />
             <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf" />
         </copy>
+        <!-- Set up 'man' directory -->
+        <mkdir dir="${distrib.current.dir}/share/man" />
+        <copy todir="${distrib.current.dir}/share/man">
+            <fileset dir="${support.dir}/man" includes="**/*.1" />
+        </copy>
+        <!-- Set up 'support' directory -->
+        <mkdir dir="${distrib.scala.dir}/support" />
+        <copy todir="${distrib.scala.dir}/support">
+            <fileset dir="${support.dir}"
+                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**" />
+        </copy>
         <!-- Set up latest -->
         <symlink resource="${distrib.current.dir}"
                  link="${distrib.dir}/unix/latest" />
+        <!-- Create gz and bz2 compressed tarballs -->
         <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.gz"
              basedir="${distrib.current.dir}" compression="gzip" />
         <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.bz2"
              basedir="${distrib.current.dir}" compression="bzip2" />
     </target>
 
-    <target name="distrib.mac" depends="distrib.unix, build" if="os.mac">
-        <!-- <fixcrlf srcdir="${distrib.doc.dir}" eol="mac" includes="**/*.scala" /> -->
-    </target>
+    <target name="distrib.mac" depends="distrib.unix, build" />
 
-    <target name="distrib.win" depends="build,docs"> <!-- if="os.win"> -->
+    <target name="distrib.win" depends="build,docs">
         <tstamp prefix="start" />
         <property name="distrib.package.dir"
                   value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
         <property name="distrib.current.dir"
                   value="${distrib.dir}/win/${distrib.package.dir}" />
+        <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.current.dir}/bin" />
-        <mkdir dir="${distrib.current.dir}/lib" />
+        <!-- Set up 'doc' directory -->
         <copy todir="${distrib.current.dir}/doc">
             <fileset dir="${build.dir}/doc" />
             <fileset dir="${doc.dir}/reference"
@@ -325,18 +337,23 @@
         </copy>
         <fixcrlf srcdir="${distrib.current.dir}/doc" eol="dos"
                  includes="**/*.css,**/*.html,**/*.js" />
+        <!-- Set up 'examples' directory -->
         <copy todir="${distrib.current.dir}">
             <fileset dir="${basedir}" includes="LICENSE,README,VERSION" />
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala" />
         </copy>
         <fixcrlf srcdir="${distrib.current.dir}" eol="dos"
                  includes="LICENSE,README,VERSION,examples/**/*.scala" />
+        <!-- Set up 'lib' directory -->
+        <mkdir dir="${distrib.current.dir}/lib" />
+        <!-- Set up 'support' directory -->
         <mkdir dir="${distrib.current.dir}/support" />
         <copy todir="${distrib.current.dir}/support">
             <fileset dir="${support.dir}"
                      includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**" />
         </copy>
         <fixcrlf srcdir="${distrib.current.dir}/support" eol="dos" />
+        <!-- Create zip archive -->
         <zip destfile="${distrib.dir}/win/${distrib.package.dir}.zip"
              basedir="${distrib.current.dir}" />
     </target>
