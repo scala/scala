@@ -297,6 +297,8 @@
                      includes="ScalaByExample.pdf,ScalaReference.pdf" />
             <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf" />
         </copy>
+        <fixcrlf srcdir="${distrib.doc.dir}" eol="unix"
+                 includes="LICENSE,README,VERSION,examples/**/*.scala" />
         <!-- Set up 'man' directory -->
         <mkdir dir="${distrib.current.dir}/share/man" />
         <copy todir="${distrib.current.dir}/share/man">
@@ -308,6 +310,7 @@
             <fileset dir="${support.dir}"
                      includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**" />
         </copy>
+        <fixcrlf srcdir="${distrib.scala.dir}/support" eol="unix" />
         <!-- Set up latest -->
         <symlink resource="${distrib.current.dir}"
                  link="${distrib.dir}/unix/latest" />
