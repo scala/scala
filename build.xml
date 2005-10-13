@@ -12,14 +12,14 @@
     
     <echo>This is SABBUS, your helpful build script for new Scala.</echo>
 
-    <property environment="env" />
+    <property environment="env"/>
     <condition property="memory.set">
-    	<contains string="${env.ANT_OPTS}" substring="-Xmx" />
+    	<contains string="${env.ANT_OPTS}" substring="-Xmx"/>
     </condition>
     <fail unless="memory.set">SABBUS requires additional memory. Please set the 'ANT_OPTS' environment property to '-Xmx256M' or more.</fail>
 
     <!-- The system classpath should not be used -->
-    <property name="build.sysclasspath" value="ignore" />
+    <property name="build.sysclasspath" value="ignore"/>
 
     <!-- Properties in 'build.${user.name}.properties' take precedence over
          properties in 'build.default.properties'.
@@ -27,49 +27,49 @@
     <echo level="verbose">
         Loading properties from '${basedir}/build.support/build.base.properties'
     </echo>
-    <property file="${basedir}/build.support/build.base.properties" />
+    <property file="${basedir}/build.support/build.base.properties"/>
     <echo level="verbose">
         Loading properties from '${build.support.dir}/build.${user.name}.properties'
     </echo>
-    <property file="${build.support.dir}/build.${user.name}.properties" />
+    <property file="${build.support.dir}/build.${user.name}.properties"/>
     <echo level="verbose">
         Loading properties from '${build.support.dir}/build.default.properties'
     </echo>
-    <property file="${build.support.dir}/build.default.properties" />
+    <property file="${build.support.dir}/build.default.properties"/>
     
     <!-- A path containing pre-compiled Scala libraries found typically
          in a Scala distribution. -->
     <path id="osc.classpath">
-        <pathelement location="${oslib.jar}" />
-        <pathelement location="${oslib.src}" />
-        <pathelement location="${ostools.jar}" />
-        <pathelement location="${fjbg.jar}" />
-        <pathelement location="${msil.jar}" />
+        <pathelement location="${oslib.jar}"/>
+        <pathelement location="${oslib.src}"/>
+        <pathelement location="${ostools.jar}"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
     </path>
 
     <!-- A path containing the Pico library -->
     <path id="pico.classpath">
-        <pathelement location="${jaco.jar}" />
+        <pathelement location="${jaco.jar}"/>
     </path>
 
     <!-- A path containing the new Scala library -->
     <path id="nsc.classpath">
-        <pathelement location="${build.osc-nstools.dir}" />
-        <pathelement location="${build.nslib.dir}" />
-        <pathelement location="${oslib.jar}" />
-        <pathelement location="${fjbg.jar}" />
-        <pathelement location="${msil.jar}" />
+        <pathelement location="${build.osc-nstools.dir}"/>
+        <pathelement location="${build.nslib.dir}"/>
+        <pathelement location="${oslib.jar}"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
     </path>
 
     <!-- The current Scala version -->
     <loadfile srcfile="${basedir}/VERSION" property="scala.version">
         <filterchain>
-            <tailfilter lines="1" />
+            <tailfilter lines="1"/>
         </filterchain>
     </loadfile>
 
     <target name="all"
-            description="Builds and tests everything; creates a distribution." />
+            description="Builds and tests everything; creates a distribution."/>
 
     <!--
     #####################################################################
@@ -85,10 +85,10 @@
         <echo level="verbose">msil.jar=${msil.jar}</echo>
         <fail message="Required classes for OSC are missing; check the 'oslib.jar', 'ostools.jar' properties in 'build.${user.name}.properties'.">
             <condition><not><and>
-                <available classname="scala.List" classpathref="osc.classpath" />
-                <available classname="scala.runtime.RunTime" classpathref="osc.classpath" />
-                <available classname="scala.tools.scalac.Main" classpathref="osc.classpath" />
-                <available classname="scala.tools.scalac.ant.Scalac" classpathref="osc.classpath" />
+                <available classname="scala.List" classpathref="osc.classpath"/>
+                <available classname="scala.runtime.RunTime" classpathref="osc.classpath"/>
+                <available classname="scala.tools.scalac.Main" classpathref="osc.classpath"/>
+                <available classname="scala.tools.scalac.ant.Scalac" classpathref="osc.classpath"/>
             </and></not></condition>
         </fail>
         <fail message="Required classes for FJBG are missing; check the 'fjbg.jar' property in 'build.${user.name}.properties'.">
@@ -104,12 +104,12 @@
             </and></not></condition>
         </fail>
         <taskdef name="osc" classname="scala.tools.scalac.ant.Scalac"
-                 classpathref="osc.classpath" />
+                 classpathref="osc.classpath"/>
     </target>
 
     <target name="init.nsc" depends="build.osc.nstools, build.pico.nslib">
         <taskdef name="nsc" classname="scala.tools.nsc.ant.NSC$class"
-                 classpathref="nsc.classpath" />
+                 classpathref="nsc.classpath"/>
     </target>
 
     <target name="init.pico">
@@ -130,7 +130,7 @@
     -->
     
     <target name="build" depends="build.nsc.nstools"
-            description="Builds new Scala (compiler and library)." />
+            description="Builds new Scala (compiler and library)."/>
     
     <target name="build.pico.nslib" depends="init.pico"
             description="Builds the runtime and pico libraries of the new Scala library.">
@@ -138,22 +138,22 @@
         <pico srcdir="${sources.dir}" destdir="${build.nslib.dir}"
               scalahack="true">
             <classpath>
-                <pathelement location="${build.nslib.dir}" />
+                <pathelement location="${build.nslib.dir}"/>
             </classpath>
-            <include name="scala/runtime/*.java" />
-            <include name="scala/runtime/**/*.java" />
-            <include name="scala/tools/util/*.java" />
-            <include name="scala/*.java" />
+            <include name="scala/runtime/*.java"/>
+            <include name="scala/runtime/**/*.java"/>
+            <include name="scala/tools/util/*.java"/>
+            <include name="scala/*.java"/>
             <not>
-                <present targetdir="${newsources.dir}" present="both">
-                    <mapper type="glob" from="*.scala" to="*.java" />
+                <present targetdir="${sources.dir}" present="both">
+                    <mapper type="glob" from="*.scala" to="*.java"/>
                 </present>
             </not>
         </pico>
         <delete>
             <fileset dir="${build.nslib.dir}">
-                <present targetdir="${newsources.dir}" present="both">
-                    <mapper type="glob" from="*.class" to="*.scala" />
+                <present targetdir="${sources.dir}" present="both">
+                	<mapper type="glob" from="*.class" to="*.scala"/>
                 </present>
             </fileset>
         </delete>
@@ -161,69 +161,69 @@
 
     <target name="build.osc.nstools" depends="init.osc"
             description="Builds the new Scala compiler.">
-        <mkdir dir="${build.osc-nstools.dir}" />
+        <mkdir dir="${build.osc-nstools.dir}"/>
         <osc srcdir="${sources.dir}" destdir="${build.osc-nstools.dir}"
              force="changed">
             <classpath>
-                <pathelement location="${build.osc-nstools.dir}" />
-                <pathelement location="${oslib.jar}" />
-                <pathelement location="${fjbg.jar}" />
-                <pathelement location="${ant.jar}" />
+                <pathelement location="${build.osc-nstools.dir}"/>
+                <pathelement location="${oslib.jar}"/>
+                <pathelement location="${fjbg.jar}"/>
+                <pathelement location="${ant.jar}"/>
             </classpath>
-            <include name="scala/tools/nsc/**/*.scala" />
-            <include name="scala/runtime/*.scala" />
-            <include name="scala/runtime/**/*.scala" />
+            <include name="scala/tools/nsc/**/*.scala"/>
+            <include name="scala/runtime/*.scala"/>
+            <include name="scala/runtime/**/*.scala"/>
         </osc>
     </target>
     
     <target name="build.nsc.nslib" depends="init.nsc, build.pico.nslib"
             description="Builds the Scala library with the new Scala compiler.">
-        <mkdir dir="${build.nslib.dir}" />
+        <mkdir dir="${build.nslib.dir}"/>
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              usepredefs="false"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}"
              logging="${nsc.logging}">
             <classpath>
-                <pathelement location="${build.nslib.dir}" />
-                <pathelement location="${sources.dir}" />
-                <pathelement location="${newsources.dir}" />
-                <pathelement location="${fjbg.jar}" />
+                <pathelement location="${build.nslib.dir}"/>
+                <pathelement location="${sources.dir}"/>
+                <pathelement location="${newsources.dir}"/>
+                <pathelement location="${fjbg.jar}"/>
             </classpath>
-            <include name="scala/Predef.scala" />
-            <include name="scala/runtime/ScalaRunTime.scala" />
+            <include name="scala/Predef.scala"/>
+            <include name="scala/runtime/ScalaRunTime.scala"/>
         </nsc>
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              excludesfile="${nsc.nslib.excludes}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}"
              logging="${nsc.logging}">
             <classpath>
-                <pathelement location="${build.nslib.dir}" />
-                <pathelement location="${sources.dir}" />
-                <pathelement location="${newsources.dir}" />
-                <pathelement location="${fjbg.jar}" />
+                <pathelement location="${build.nslib.dir}"/>
+                <pathelement location="${sources.dir}"/>
+                <pathelement location="${newsources.dir}"/>
+                <pathelement location="${fjbg.jar}"/>
             </classpath>
-            <include name="scala/**/*.scala" />
-            <exclude name="scala/Predef.scala" />
-            <exclude name="scala/runtime/ScalaRunTime.scala" />
-            <exclude name="scala/tools/**" />
+            <include name="scala/**/*.scala"/>
+            <exclude name="scala/Predef.scala"/>
+            <exclude name="scala/runtime/ScalaRunTime.scala"/>
+            <exclude name="scala/tools/**"/>
         </nsc>
     </target>
     
     <target name="build.nsc.nstools" depends="init.nsc, build.nsc.nslib"
             description="Builds the Scala tools (NSC and Scalap) with the new Scala compiler.">
-        <mkdir dir="${build.nstools.dir}" />
+        <mkdir dir="${build.nstools.dir}"/>
         <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}"
              excludesfile="${nsc.nstools.excludes}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}"
              logging="${nsc.logging}">
             <classpath>
-                <pathelement location="${build.nslib.dir}" />
-                <pathelement location="${build.nstools.dir}" />
-                <pathelement location="${fjbg.jar}" />
-                <pathelement location="${ant.jar}" />
+                <pathelement location="${build.nslib.dir}"/>
+                <pathelement location="${build.nstools.dir}"/>
+                <pathelement location="${fjbg.jar}"/>
+                <pathelement location="${ant.jar}"/>
             </classpath>
-            <include name="scala/tools/nsc/**/*.scala" />
-            <exclude name="scala/tools/nsc/ant/*.scala" />
+            <include name="scala/tools/nsc/**/*.scala"/>
+            <exclude name="scala/tools/nsc/ant/*.scala"/>
         </nsc>
     </target>
 
@@ -235,40 +235,43 @@
 
     <condition property="os.unix">
         <or>
-            <os family="unix" />
-            <os family="mac" />
+            <os family="unix"/>
+            <os family="mac"/>
         </or>
     </condition>
 
     <condition property="os.mac">
-        <os family="mac" />
+        <os family="mac"/>
     </condition>
 
     <condition property="os.win">
-        <os family="windows" />
+        <os family="windows"/>
     </condition>
+    
+    <target name="distrib.init">
+    	<tstamp prefix="start"/>
+    </target>
 
     <target name="distrib"
             depends="distrib.unix, distrib.mac, distrib.win"
-            description="Creates a (simplified) Scala distribution." />
+            description="Creates a (simplified) Scala distribution."/>
 
-    <target name="distrib.unix" depends="build,docs">
-        <tstamp prefix="start" />
+    <target name="distrib.unix" depends="build,docs,distrib.init">
         <property name="distrib.package.dir"
-                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
+                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <property name="distrib.current.dir"
-                  value="${distrib.dir}/unix/${distrib.package.dir}" />
+                  value="${distrib.dir}/unix/${distrib.package.dir}"/>
         <property name="distrib.scala.dir"
-                  value="${distrib.current.dir}/share/scala" />
+                  value="${distrib.current.dir}/share/scala"/>
         <property name="distrib.doc.dir"
-                  value="${distrib.current.dir}/share/doc/${distrib.package.dir}" />
-        <mkdir dir="${distrib.scala.dir}" />
-        <mkdir dir="${distrib.scala.dir}/lib" />
+                  value="${distrib.current.dir}/share/doc/${distrib.package.dir}"/>
+        <mkdir dir="${distrib.scala.dir}"/>
+        <mkdir dir="${distrib.scala.dir}/lib"/>
         <symlink resource="${distrib.scala.dir}/lib"
-                 link="${distrib.current.dir}/lib" />
+                 link="${distrib.current.dir}/lib"/>
         <jar destfile="${distrib.scala.dir}/lib/${distrib.osc-nstools.jar}"
              basedir="${build.osc-nstools.dir}">
-            <include name="**" />
+            <include name="**"/>
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
@@ -276,7 +279,7 @@
         </jar>
         <jar destfile="${distrib.scala.dir}/lib/${distrib.nstools.jar}"
              basedir="${build.nstools.dir}">
-            <include name="**" />
+            <include name="**"/>
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
@@ -284,87 +287,86 @@
         </jar>
         <jar destfile="${distrib.scala.dir}/lib/${distrib.nslib.jar}"
              basedir="${build.nslib.dir}">
-            <include name="**" />
+            <include name="**"/>
             <manifest>
-                <attribute name="Built-By" value="${user.name}" />
+                <attribute name="Built-By" value="${user.name}"/>
             </manifest>
         </jar>
         <!-- Set up 'bin' directory -->
-        <mkdir dir="${distrib.scala.dir}/bin" />
+        <mkdir dir="${distrib.scala.dir}/bin"/>
         <symlink resource="${distrib.scala.dir}/bin"
-                 link="${distrib.current.dir}/bin" />
+                 link="${distrib.current.dir}/bin"/>
         <!-- Set up 'doc' directory -->
-        <mkdir dir="${distrib.doc.dir}" />
+        <mkdir dir="${distrib.doc.dir}"/>
         <copy todir="${distrib.doc.dir}">
-            <fileset dir="${basedir}" includes="LICENSE,README,VERSION" />
-            <fileset dir="${basedir}/sources" includes="examples/**/*.scala" />
-            <fileset dir="${build.dir}/doc" />
+            <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
+            <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
+            <fileset dir="${build.dir}/doc"/>
             <fileset dir="${doc.dir}/reference"
-                     includes="ScalaByExample.pdf,ScalaReference.pdf" />
-            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf" />
+                     includes="ScalaByExample.pdf,ScalaReference.pdf"/>
+            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf"/>
         </copy>
         <fixcrlf srcdir="${distrib.doc.dir}" eol="unix"
-                 includes="LICENSE,README,VERSION,examples/**/*.scala" />
+                 includes="LICENSE,README,VERSION,examples/**/*.scala"/>
         <!-- Set up 'man' directory -->
-        <mkdir dir="${distrib.current.dir}/share/man" />
+        <mkdir dir="${distrib.current.dir}/share/man"/>
         <copy todir="${distrib.current.dir}/share/man">
-            <fileset dir="${support.dir}/man" includes="**/*.1" />
+            <fileset dir="${support.dir}/man" includes="**/*.1"/>
         </copy>
         <!-- Set up 'support' directory -->
-        <mkdir dir="${distrib.scala.dir}/support" />
+        <mkdir dir="${distrib.scala.dir}/support"/>
         <copy todir="${distrib.scala.dir}/support">
             <fileset dir="${support.dir}"
-                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**" />
+                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**"/>
         </copy>
-        <fixcrlf srcdir="${distrib.scala.dir}/support" eol="unix" />
+        <fixcrlf srcdir="${distrib.scala.dir}/support" eol="unix"/>
         <!-- Set up latest -->
         <symlink resource="${distrib.current.dir}"
-                 link="${distrib.dir}/unix/latest" />
+                 link="${distrib.dir}/unix/latest"/>
         <!-- Create gz and bz2 compressed tarballs -->
         <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.gz"
-             basedir="${distrib.current.dir}" compression="gzip" />
+             basedir="${distrib.current.dir}" compression="gzip"/>
         <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.bz2"
-             basedir="${distrib.current.dir}" compression="bzip2" />
+             basedir="${distrib.current.dir}" compression="bzip2"/>
     </target>
 
-    <target name="distrib.mac" depends="distrib.unix, build" />
+    <target name="distrib.mac" depends="distrib.unix, build"/>
 
-    <target name="distrib.win" depends="build,docs">
-        <tstamp prefix="start" />
+    <target name="distrib.win" depends="build, docs, distrib.init">
         <property name="distrib.package.dir"
-                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}" />
+                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <property name="distrib.current.dir"
-                  value="${distrib.dir}/win/${distrib.package.dir}" />
+                  value="${distrib.dir}/win/${distrib.package.dir}"/>
         <!-- Set up 'bin' directory -->
-        <mkdir dir="${distrib.current.dir}/bin" />
+        <mkdir dir="${distrib.current.dir}/bin"/>
         <!-- Set up 'doc' directory -->
         <copy todir="${distrib.current.dir}/doc">
-            <fileset dir="${build.dir}/doc" />
+            <fileset dir="${build.dir}/doc"/>
             <fileset dir="${doc.dir}/reference"
-                     includes="ScalaByExample.pdf,ScalaReference.pdf" />
-            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf" />
+                     includes="ScalaByExample.pdf,ScalaReference.pdf"/>
+            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf"/>
         </copy>
         <fixcrlf srcdir="${distrib.current.dir}/doc" eol="dos"
-                 includes="**/*.css,**/*.html,**/*.js" />
+                 includes="**/*.css,**/*.html,**/*.js"/>
         <!-- Set up 'examples' directory -->
         <copy todir="${distrib.current.dir}">
-            <fileset dir="${basedir}" includes="LICENSE,README,VERSION" />
-            <fileset dir="${basedir}/sources" includes="examples/**/*.scala" />
+            <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
+            <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
         </copy>
         <fixcrlf srcdir="${distrib.current.dir}" eol="dos"
-                 includes="LICENSE,README,VERSION,examples/**/*.scala" />
+                 includes="LICENSE,README,VERSION,examples/**/*.scala"/>
         <!-- Set up 'lib' directory -->
-        <mkdir dir="${distrib.current.dir}/lib" />
+        <mkdir dir="${distrib.current.dir}/lib"/>
         <!-- Set up 'support' directory -->
-        <mkdir dir="${distrib.current.dir}/support" />
+        <mkdir dir="${distrib.current.dir}/support"/>
         <copy todir="${distrib.current.dir}/support">
             <fileset dir="${support.dir}"
-                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**" />
+                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**"/>
         </copy>
-        <fixcrlf srcdir="${distrib.current.dir}/support" eol="dos" />
+        <fixcrlf srcdir="${distrib.current.dir}/support" eol="dos"/>
         <!-- Create zip archive -->
         <zip destfile="${distrib.dir}/win/${distrib.package.dir}.zip"
-             basedir="${distrib.current.dir}" />
+             basedir="${distrib.current.dir}"/>
     </target>
 
     <!--
@@ -388,24 +390,24 @@
         <echo level="verbose">oslib.src=${oslib.src}</echo>
         <echo level="verbose">ostools.jar=${ostools.jar}</echo>
         <fileset id="oslib.src.files" dir="${oslib.src}">
-            <include name="scala/**/*.scala" />
-            <exclude name="scala/tools/**" />
+            <include name="scala/**/*.scala"/>
+            <exclude name="scala/tools/**"/>
         </fileset>
-        <pathconvert pathsep=" " property="docs.sources" refid="oslib.src.files" />
-        <mkdir dir="${build.dir}/doc/api" />
+        <pathconvert pathsep=" " property="docs.sources" refid="oslib.src.files"/>
+        <mkdir dir="${build.dir}/doc/api"/>
         <echo>Generating API documentation to ${build.dir}/doc/api</echo>
         <java classname="scala.tools.scaladoc.Main" fork="true">
-            <jvmarg value="-Dscala.library.source.path=${oslib.src}" />
-            <jvmarg value="-Dscala.library.class.path=${oslib.jar}" />
+            <jvmarg value="-Dscala.library.source.path=${oslib.src}"/>
+            <jvmarg value="-Dscala.library.class.path=${oslib.jar}"/>
             <classpath>
-                <pathelement location="${oslib.jar}" />
-                <pathelement location="${ostools.jar}" />
+                <pathelement location="${oslib.jar}"/>
+                <pathelement location="${ostools.jar}"/>
             </classpath>
-            <arg line="-windowtitle 'Scala Library Documentation'" />
-            <arg line="-doctitle 'Scala&lt;br/&gt;${scala.version}'" />
-            <arg line="-d ${build.dir}/doc/api" />
-            <arg line="${docs.sources}" />
-            <arg line="-- scala" />
+            <arg line="-windowtitle 'Scala Library Documentation'"/>
+            <arg line="-doctitle 'Scala&lt;br/&gt;${scala.version}'"/>
+            <arg line="-d ${build.dir}/doc/api"/>
+            <arg line="${docs.sources}"/>
+            <arg line="-- scala"/>
         </java>
     </target>
     
@@ -417,12 +419,12 @@
     
     <target name="clean"
             depends="clean.build, clean.distrib"
-            description="Deletes all generated files, both build and distribution files." />
+            description="Deletes all generated files, both build and distribution files."/>
 
     <target name="clean.build"
             description="Deletes all generated build files.">
         <delete dir="${build.dir}" includeemptydirs="true"
-                quiet="true" failonerror="false" />
+                quiet="true" failonerror="false"/>
     </target>
     
     <target name="clean.distrib"
@@ -430,7 +432,7 @@
         <delete includeemptydirs="true"
                 quiet="true" failonerror="false">
             <fileset dir="${distrib.dir}">
-                <include name="${distrib.current.prefix}-*" />
+                <include name="${distrib.current.prefix}-*"/>
             </fileset>
         </delete>
     </target>
@@ -441,7 +443,7 @@
     #####################################################################
     -->
 
-    <target name="help" depends="usage" />
+    <target name="help" depends="usage"/>
 
     <target name="usage" description="Display usage information.">
         <echo>Execute 'ant -projecthelp' for build file help.</echo>
