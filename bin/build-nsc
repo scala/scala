@@ -1,2 +1,0 @@
-scalac -d /tmp/classes tools/nsc/*.scala tools/nsc/ast/*.scala tools/nsc/ast/parser/*.scala tools/nsc/symtab/*.scala tools/nsc/symtab/classfile/*.scala tools/nsc/util/*.scala tools/nsc/typechecker/*.scala tools/nsc/transform/*.scala tools/nsc/matching/*.scala $*
-
