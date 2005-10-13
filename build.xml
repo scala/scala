@@ -3,14 +3,20 @@
 <project name="nsc" default="build">
 
     <description>
-      This build-file builds the Scala NSC compiler as well as various related
-      tools. The 'build.TEMPLATE.properties' file must be customised for your
-      own particular system, no other customisation should be required. The
-      build file expects the file structure of a Scala CVS distribution.
+      This is SABBUS, the system to build the Scala NSC compiler as well as
+      various related tools. The 'build.TEMPLATE.properties' file must be
+      customised for your own particular system, no other customisation should
+      be required. The build file expects the file structure of a Scala CVS
+      distribution.
     </description>
+    
+    <echo>This is SABBUS, your helpful build script for new Scala.</echo>
 
     <property environment="env" />
-    <echo level="verbose">ANT_OPTS=${env.ANT_OPTS}</echo>
+    <condition property="memory.set">
+    	<contains string="${env.ANT_OPTS}" substring="-Xmx" />
+    </condition>
+    <fail unless="memory.set">SABBUS requires additional memory. Please set the 'ANT_OPTS' environment property to '-Xmx256M' or more.</fail>
 
     <!-- The system classpath should not be used -->
     <property name="build.sysclasspath" value="ignore" />
@@ -421,9 +427,9 @@
     
     <target name="clean.distrib"
             description="Deletes all generated distribution files.">
-        <delete dir="${distrib.dir}" includeemptydirs="true"
+        <delete includeemptydirs="true"
                 quiet="true" failonerror="false">
-            <fileset>
+            <fileset dir="${distrib.dir}">
                 <include name="${distrib.current.prefix}-*" />
             </fileset>
         </delete>
