@@ -1,6 +1,0 @@
-cd $HOME/scala/sources/scala
-rm -r /tmp/newclasses/*
-pico -scala-hack -source 1.4 -d /tmp/newclasses *.java runtime/*.java runtime/*/*.java tools/util/*.java
-rm /tmp/newclasses/scala/ScalaObject.class
-rm /tmp/newclasses/scala/Array.class
-
