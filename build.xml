@@ -145,14 +145,14 @@
             <include name="scala/tools/util/*.java"/>
             <include name="scala/*.java"/>
             <not>
-                <present targetdir="${sources.dir}" present="both">
+                <present targetdir="${newsources.dir}" present="both">
                     <mapper type="glob" from="*.scala" to="*.java"/>
                 </present>
             </not>
         </pico>
         <delete>
             <fileset dir="${build.nslib.dir}">
-                <present targetdir="${sources.dir}" present="both">
+                <present targetdir="${newsources.dir}" present="both">
                 	<mapper type="glob" from="*.class" to="*.scala"/>
                 </present>
             </fileset>
