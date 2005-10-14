@@ -66,6 +66,7 @@
             <linecontainsregexp>
                 <regexp pattern="[0-9]+\.[0-9]+\.[0-9]+\.[0-9]"/>
             </linecontainsregexp>
+            <striplinebreaks/>
         </filterchain>
     </loadfile>
 
@@ -304,21 +305,23 @@
         <copy file="${oslib.jar}" todir="${distrib.scala.dir}/lib"/>
         <copy file="${msil.jar}" todir="${distrib.scala.dir}/lib"/>
         <copy file="${scala.dll}" todir="${distrib.scala.dir}/lib"/>
-        <!-- Set up 'bin' directory -->
+        <!-- Set up 'bin' directory (unix) -->
         <mkdir dir="${distrib.scala.dir}/bin"/>
-        <copy file="${build.support.dir}/scalac.template"
-              tofile="${distrib.scala.dir}/bin/scalac">
+        <copy file="${bin.dir}/.nsc_wrapper.tmpl"
+              tofile="${distrib.scala.dir}/bin/.nsc_wrapper">
             <filterset>
-                <filter token="PRODUCT" value="scalac"/>
                 <filter token="VERSION" value="${scala.version}"/>
-                <filter token="MAIN" value="scala.tools.nsc.Main"/>
-                <filter token="CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
+                <filter token="CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
-        <chmod dir="${distrib.scala.dir}/bin" perm="ugo+rx" includes="**/*"/>
+        <chmod file="${distrib.scala.dir}/bin/.nsc_wrapper" perm="ugo+rx"/>
+        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
+                 link="${distrib.scala.dir}/bin/scalac"/>
+        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
+                 link="${distrib.scala.dir}/bin/scaladoc"/>
         <symlink resource="${distrib.scala.dir}/bin"
                  link="${distrib.current.dir}/bin"/>
-        <!-- Set up 'doc' directory -->
+        <!-- Set up 'doc' directory (unix) -->
         <mkdir dir="${distrib.doc.dir}"/>
         <copy todir="${distrib.doc.dir}">
             <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
@@ -361,7 +364,7 @@
                   value="${distrib.dir}/win/${distrib.package.dir}"/>
         <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.current.win.dir}/bin"/>
-        <copy file="${build.support.dir}/scalac.bat.template"
+        <copy file="${bin.dir}/.nsc_bat.tmpl"
               tofile="${distrib.current.win.dir}/bin/scalac.bat">
             <filterset>
                 <filter token="PRODUCT" value="scalac"/>
