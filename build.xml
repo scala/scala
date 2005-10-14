@@ -165,6 +165,7 @@
             description="Builds the new Scala compiler.">
         <mkdir dir="${build.osc-nstools.dir}"/>
         <osc srcdir="${sources.dir}" destdir="${build.osc-nstools.dir}"
+             excludesfile="${nsc.osc-nstools.excludes}"
              force="changed">
             <classpath>
                 <pathelement location="${build.osc-nstools.dir}"/>
@@ -173,6 +174,7 @@
                 <pathelement location="${ant.jar}"/>
             </classpath>
             <include name="scala/tools/nsc/**/*.scala"/>
+            <include name="scala/tools/scalap/**/*.scala"/>
             <include name="scala/runtime/*.scala"/>
             <include name="scala/runtime/**/*.scala"/>
         </osc>
@@ -319,6 +321,8 @@
                  link="${distrib.scala.dir}/bin/scalac"/>
         <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
                  link="${distrib.scala.dir}/bin/scaladoc"/>
+        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
+                 link="${distrib.scala.dir}/bin/scalap"/>
         <symlink resource="${distrib.scala.dir}/bin"
                  link="${distrib.current.dir}/bin"/>
         <!-- Set up 'doc' directory (unix) -->
@@ -333,12 +337,12 @@
         </copy>
         <fixcrlf srcdir="${distrib.doc.dir}" eol="unix"
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
-        <!-- Set up 'man' directory -->
+        <!-- Set up 'man' directory (unix) -->
         <mkdir dir="${distrib.current.dir}/share/man"/>
         <copy todir="${distrib.current.dir}/share/man">
             <fileset dir="${support.dir}/man" includes="**/*.1"/>
         </copy>
-        <!-- Set up 'support' directory -->
+        <!-- Set up 'support' directory (unix) -->
         <mkdir dir="${distrib.scala.dir}/support"/>
         <copy todir="${distrib.scala.dir}/support">
             <fileset dir="${support.dir}"
@@ -370,11 +374,11 @@
                 <filter token="PRODUCT" value="scalac"/>
                 <filter token="VERSION" value="${scala.version}"/>
                 <filter token="MAIN" value="scala.tools.nsc.Main"/>
-                <filter token="CPATH" value="%SCALA_HOME%\lib\fjbg.jar;%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.nstools.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
+                <filter token="CPATH" value="%SCALA_HOME%\lib\fjbg.jar;%SCALA_HOME%\lib\msil.jar;%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.nstools.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
         <chmod dir="${distrib.current.win.dir}/bin" perm="ugo+rx" includes="**/*"/>
-        <!-- Set up 'doc' directory -->
+        <!-- Set up 'doc' directory (win) -->
         <copy todir="${distrib.current.win.dir}/doc">
             <fileset dir="${build.dir}/doc"/>
             <fileset dir="${doc.dir}/reference"
@@ -383,14 +387,14 @@
         </copy>
         <fixcrlf srcdir="${distrib.current.win.dir}/doc" eol="dos"
                  includes="**/*.css,**/*.html,**/*.js"/>
-        <!-- Set up 'examples' directory -->
+        <!-- Set up 'examples' directory (win) -->
         <copy todir="${distrib.current.win.dir}">
             <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
         </copy>
         <fixcrlf srcdir="${distrib.current.win.dir}" eol="dos"
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
-        <!-- Set up 'lib' directory -->
+        <!-- Set up 'lib' directory (win) -->
         <mkdir dir="${distrib.current.win.dir}/lib"/>
         <copy file="${fjbg.jar}" todir="${distrib.current.win.dir}/lib"/>
         <copy file="${oslib.jar}" todir="${distrib.current.win.dir}/lib"/>
