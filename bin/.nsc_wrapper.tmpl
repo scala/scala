@@ -48,6 +48,7 @@ main=
 case "$SCRIPT" in
     scalac*    ) main=scala.tools.nsc.Main;;
     scaladoc*  ) main=scala.tools.scaladoc.Main;;
+    scalap*    ) main=scala.tools.scalap.Main;;
     *          ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 
