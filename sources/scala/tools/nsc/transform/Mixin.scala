@@ -101,7 +101,7 @@ abstract class Mixin extends InfoTransform {
           for (val member <- bc.info.decls.toList) {
             if (isForwarded(member) && !isStatic(member) &&
                 (clazz.info.member(member.name).alternatives contains member)) {
-              val member1 = addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN resetFlag DEFERRED);
+              val member1 = addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN resetFlag (DEFERRED | lateDEFERRED));
               member1.asInstanceOf[TermSymbol] setAlias member;
             }
           }
@@ -109,7 +109,7 @@ abstract class Mixin extends InfoTransform {
           for (val member <- bc.info.decls.toList) {
             if (member hasFlag ACCESSOR) {
               val member1 = addMember(clazz,
-                member.cloneSymbol(clazz) setFlag (MIXEDIN | FINAL) resetFlag DEFERRED);
+                member.cloneSymbol(clazz) setFlag (MIXEDIN | FINAL) resetFlag (DEFERRED | lateDEFERRED));
               if (!member.isSetter)
                 member.tpe match {
                   case MethodType(List(), ConstantType(_)) =>
