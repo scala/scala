@@ -349,6 +349,10 @@
                      includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**"/>
         </copy>
         <fixcrlf srcdir="${distrib.scala.dir}/support" eol="unix"/>
+        <!-- Set up 'sources.zip' (unix) -->
+        <zip destfile="${distrib.scala.dir}/sources.zip">
+             basedir="${basedir}" includes="sources/scala/**/*.scala"/>
+        </zip>
         <!-- Set up latest -->
         <symlink resource="${distrib.current.dir}"
                  link="${distrib.dir}/unix/latest"/>
@@ -407,6 +411,9 @@
                      includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**"/>
         </copy>
         <fixcrlf srcdir="${distrib.current.win.dir}/support" eol="dos"/>
+        <!-- Set up 'sources.zip' (win) -->
+        <zip destfile="${distrib.current.win.dir}/sources.zip"
+             basedir="${basedir}" includes="sources/scala/**/*.scala"/>
         <!-- Set up latest -->
         <symlink resource="${distrib.current.win.dir}"
                  link="${distrib.dir}/win/latest"/>
