@@ -40,8 +40,9 @@ abstract class GenICode extends SubComponent  {
     // this depends on the backend! should be changed.
     val ANY_REF_CLASS = REFERENCE(definitions.ObjectClass);
 
-    val SCALA_ALL = REFERENCE(definitions.AllClass);
-    val THROWABLE = REFERENCE(definitions.ThrowableClass);
+    val SCALA_ALL    = REFERENCE(definitions.AllClass);
+    val SCALA_ALLREF = REFERENCE(definitions.AllRefClass);
+    val THROWABLE    = REFERENCE(definitions.ThrowableClass);
 
     ///////////////////////////////////////////////////////////
 
@@ -96,15 +97,15 @@ abstract class GenICode extends SubComponent  {
         log("Entering method " + name);
         val m = new IMethod(tree.symbol);
         m.sourceFile = unit.source.toString();
+        m.returnType = if (tree.symbol.isConstructor) UNIT
+                       else toTypeKind(tree.symbol.info.resultType);
         ctx.clazz.addMethod(m);
 
         var ctx1 = ctx.enterMethod(m, tree.asInstanceOf[DefDef]);
         addMethodParams(ctx1, vparamss);
-        val resTpe = if (tree.symbol.isConstructor) UNIT
-                     else toTypeKind(ctx1.method.symbol.info.resultType);
 
         if (!m.isDeferred) {
-          ctx1 = genLoad(rhs, ctx1, resTpe);
+          ctx1 = genLoad(rhs, ctx1, m.returnType);
 
           // reverse the order of the local variables, to match the source-order
           m.locals = m.locals.reverse;
@@ -112,7 +113,7 @@ abstract class GenICode extends SubComponent  {
           rhs match {
             case Block(_, Return(_)) => ();
             case Return(_) => ();
-            case _ => ctx1.bb.emit(RETURN(resTpe), tree.pos);
+            case _ => ctx1.bb.emit(RETURN(m.returnType), rhs.pos);
           }
           ctx1.bb.close;
         } else
@@ -222,8 +223,8 @@ abstract class GenICode extends SubComponent  {
             ctx1 = genLoad(larg, ctx1, resKind);
             code match {
               case scalaPrimitives.POS => (); // nothing
-              case scalaPrimitives.NEG => ctx1.bb.emit(CALL_PRIMITIVE(Negation(resKind)), tree.pos);
-              case scalaPrimitives.NOT => ctx1.bb.emit(CALL_PRIMITIVE(Arithmetic(NOT, resKind)), tree.pos);
+              case scalaPrimitives.NEG => ctx1.bb.emit(CALL_PRIMITIVE(Negation(resKind)), larg.pos);
+              case scalaPrimitives.NOT => ctx1.bb.emit(CALL_PRIMITIVE(Arithmetic(NOT, resKind)), larg.pos);
               case _ => abort("Unknown unary operation: " + fun.symbol.fullNameString + " code: " + code);
             }
             generatedType = resKind;
@@ -765,8 +766,17 @@ abstract class GenICode extends SubComponent  {
             assert(generatedType != UNIT, "Can't convert from UNIT to " + expectedType);
             resCtx.bb.emit(CALL_PRIMITIVE(Conversion(generatedType, expectedType)), tree.pos);
         }
-      } else if (generatedType == SCALA_ALL && expectedType == UNIT)
+//      } else if (generatedType == SCALA_ALL && expectedType == UNIT)
+//        resCtx.bb.emit(DROP(generatedType));
+      } else if (generatedType == SCALA_ALL) {
         resCtx.bb.emit(DROP(generatedType));
+        resCtx.bb.emit(getZeroOf(ctx.method.returnType));
+        resCtx.bb.emit(RETURN(ctx.method.returnType));
+        resCtx.bb.enterIgnoreMode;
+      } else if (generatedType == SCALA_ALLREF) {
+        resCtx.bb.emit(DROP(generatedType));
+        resCtx.bb.emit(CONSTANT(Constant(null)));
+      }
 
       resCtx;
     }
@@ -857,6 +867,21 @@ abstract class GenICode extends SubComponent  {
       case REFERENCE(cls)  => Literal(null: Any);
       case ARRAY(elem)     => Literal(null: Any);
     }
+
+    def getZeroOf(k: TypeKind): Instruction = k match {
+      case UNIT            => CONSTANT(Constant(()));
+      case BOOL            => CONSTANT(Constant(false));
+      case BYTE            => CONSTANT(Constant(0: Byte));
+      case SHORT           => CONSTANT(Constant(0: Short));
+      case CHAR            => CONSTANT(Constant(0: Char));
+      case INT             => CONSTANT(Constant(0: Int));
+      case LONG            => CONSTANT(Constant(0: Long));
+      case FLOAT           => CONSTANT(Constant(0.0f));
+      case DOUBLE          => CONSTANT(Constant(0.0d));
+      case REFERENCE(cls)  => CONSTANT(Constant(null: Any));
+      case ARRAY(elem)     => CONSTANT(Constant(null: Any));
+    }
+
 
     /** Is the given symbol a primitive operation? */
     def isPrimitive(fun: Symbol): Boolean = {

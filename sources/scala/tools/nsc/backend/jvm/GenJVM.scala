@@ -86,9 +86,6 @@ abstract class GenJVM extends SubComponent {
                                   ifaces,
                                   c.cunit.source.toString());
 
-      clasz.fields foreach genField;
-      clasz.methods foreach genMethod;
-
       if (isTopLevelModule(c.symbol)) {
         addModuleInstanceField;
         addStaticInit(jclass);
@@ -99,11 +96,29 @@ abstract class GenJVM extends SubComponent {
           dumpMirrorClass;
       }
 
+      clasz.fields foreach genField;
+      clasz.methods foreach genMethod;
+
+      addScalaAttribute(c.symbol);
       jclass.writeTo(getFile(jclass, ".class"));
     }
 
     def isTopLevelModule(sym: Symbol): Boolean = {
       sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED) /* && !atPhase(currentRun.erasurePhase)(sym.isNestedClass) */
+    }
+
+    def addScalaAttribute(sym: Symbol): Unit = {
+      currentRun.symData.get(sym) match {
+        case Some(pickle) =>
+          val scalaAttr = fjbgContext.JOtherAttribute(jclass,
+                                                  jclass,
+                                                  nme.ScalaSignatureATTR.toString(),
+                                                  pickle.bytes,
+                                                  pickle.writeIndex);
+          jclass.addAttribute(scalaAttr);
+        case _ =>
+          log("Could not find pickle information for " + sym);
+      }
     }
 
     def genField(f: IField): Unit  = {
@@ -166,9 +181,6 @@ abstract class GenJVM extends SubComponent {
       clinit.emitINVOKESPECIAL(cls.getName(),
                                JMethod.INSTANCE_CONSTRUCTOR_NAME,
                                JMethodType.ARGLESS_VOID_FUNCTION);
-      clinit.emitPUTSTATIC(cls.getName(),
-                           MODULE_INSTANCE_NAME,
-                           jclass.getType());
       clinit.emitRETURN();
     }
 
@@ -324,6 +336,16 @@ abstract class GenJVM extends SubComponent {
                   jcode.emitINVOKESPECIAL(owner,
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
+
+                  // we initialize the MODULE$ field immediately after the super ctor
+                  if (isTopLevelModule(clasz.symbol) &&
+                      jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
+                      javaName(method) == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
+                        jcode.emitALOAD_0();
+                        jcode.emitPUTSTATIC(jclass.getName(),
+                                            MODULE_INSTANCE_NAME,
+                                            jclass.getType());
+                      }
                 } else
                   jcode.emitINVOKESTATIC(owner,
                                           javaName(method),
@@ -338,10 +360,6 @@ abstract class GenJVM extends SubComponent {
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls);
             jcode.emitNEW(className);
-//            jcode.emitDUP();
-//             jcode.emitINVOKESPECIAL(className,
-//                                     JMethod.INSTANCE_CONSTRUCTOR_NAME,
-//                                     javaType(ctor).asInstanceOf[JMethodType]);
 
           case CREATE_ARRAY(elem) => elem match {
             case REFERENCE(_) | ARRAY(_) =>
@@ -583,6 +601,10 @@ abstract class GenJVM extends SubComponent {
 
         case Conversion(src, dst) =>
           log("Converting from: " + src + " to: " + dst);
+          if (dst == BOOL) {
+
+          }
+
           jcode.emitT2T(javaType(src), javaType(dst));
 
         case ArrayLength(_) =>
@@ -671,6 +693,9 @@ abstract class GenJVM extends SubComponent {
 
     ////////////////////// Utilities ////////////////////////
 
+    /** Return the a name of this symbol that can be used on the Java
+     * platform. It removes spaces from names.
+     */
     def javaName(sym: Symbol) = {
       val suffix = if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
                         !sym.isImplClass &&
@@ -679,7 +704,7 @@ abstract class GenJVM extends SubComponent {
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
       else
-        sym.simpleName.toString()) + suffix;
+        sym.simpleName.toString().trim()) + suffix;
     }
 
     def javaNames(syms: List[Symbol]): Array[String] = {

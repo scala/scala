@@ -157,6 +157,7 @@ trait Members: ICodes {
     var code: Code = null;
     var exh: List[ExceptionHandler] = _;
     var sourceFile: String = _;
+    var returnType: TypeKind = _;
 
     /** local variables and method parameters */
     var locals: List[Local] = Nil;
