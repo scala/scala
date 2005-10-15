@@ -168,10 +168,11 @@
              excludesfile="${nsc.osc-nstools.excludes}"
              force="changed">
             <classpath>
-                <pathelement location="${build.osc-nstools.dir}"/>
-                <pathelement location="${oslib.jar}"/>
-                <pathelement location="${fjbg.jar}"/>
-                <pathelement location="${ant.jar}"/>
+                <pathelement location="${build.osc-nstools.dir}" />
+                <pathelement location="${oslib.jar}" />
+                <pathelement location="${oslib.src}" />
+                <pathelement location="${fjbg.jar}" />
+                <pathelement location="${ant.jar}" />
             </classpath>
             <include name="scala/tools/nsc/**/*.scala"/>
             <include name="scala/tools/scalap/**/*.scala"/>
