@@ -351,9 +351,8 @@
         </copy>
         <fixcrlf srcdir="${distrib.scala.dir}/support" eol="unix"/>
         <!-- Set up 'sources.zip' (unix) -->
-        <zip destfile="${distrib.scala.dir}/sources.zip">
+        <zip destfile="${distrib.scala.dir}/sources.zip"
              basedir="${basedir}" includes="sources/scala/**/*.scala"/>
-        </zip>
         <!-- Set up latest -->
         <symlink resource="${distrib.current.dir}"
                  link="${distrib.dir}/unix/latest"/>
