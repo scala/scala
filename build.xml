@@ -168,11 +168,11 @@
              excludesfile="${nsc.osc-nstools.excludes}"
              force="changed">
             <classpath>
-                <pathelement location="${build.osc-nstools.dir}" />
-                <pathelement location="${oslib.jar}" />
-                <pathelement location="${oslib.src}" />
-                <pathelement location="${fjbg.jar}" />
-                <pathelement location="${ant.jar}" />
+                <pathelement location="${build.osc-nstools.dir}"/>
+                <pathelement location="${oslib.jar}"/>
+                <pathelement location="${oslib.src}"/>
+                <pathelement location="${fjbg.jar}"/>
+                <pathelement location="${ant.jar}"/>
             </classpath>
             <include name="scala/tools/nsc/**/*.scala"/>
             <include name="scala/tools/scalap/**/*.scala"/>
@@ -232,6 +232,38 @@
         </nsc>
     </target>
 
+    <target name="build.jars" depends="build"
+            description="">
+        <mkdir dir="${build.dir}/lib"/>
+        <jar destfile="${build.dir}/lib/${distrib.osc-nstools.jar}"
+             basedir="${build.osc-nstools.dir}">
+            <include name="**"/>
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
+            </manifest>
+        </jar>
+        <jar destfile="${build.dir}/lib/${distrib.nstools.jar}"
+             basedir="${build.nstools.dir}">
+            <include name="**"/>
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
+            </manifest>
+        </jar>
+        <jar destfile="${build.dir}/lib/${distrib.nslib.jar}"
+             basedir="${build.nslib.dir}">
+            <include name="**"/>
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+            </manifest>
+        </jar>
+        <copy file="${fjbg.jar}"  todir="${build.dir}/lib"/>
+        <copy file="${oslib.jar}" todir="${build.dir}/lib"/>
+        <copy file="${msil.jar}"  todir="${build.dir}/lib"/>
+        <copy file="${scala.dll}" todir="${build.dir}/lib"/>
+    </target>
+
     <!--
     #####################################################################
     DISTRIB
@@ -267,7 +299,7 @@
             depends="distrib.unix, distrib.mac, distrib.win"
             description="Creates a (simplified) Scala distribution."/>
 
-    <target name="distrib.unix" depends="build,docs,distrib.init">
+    <target name="distrib.unix" depends="build.jars,docs,distrib.init">
         <property name="distrib.package.dir"
                   value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <property name="distrib.current.dir"
@@ -279,35 +311,11 @@
         <mkdir dir="${distrib.scala.dir}"/>
         <!-- Set up 'lib' directory -->
         <mkdir dir="${distrib.scala.dir}/lib"/>
+        <copy todir="${distrib.scala.dir}/lib">
+            <fileset dir="${build.dir}/lib"/>
+        </copy>
         <symlink resource="${distrib.scala.dir}/lib"
                  link="${distrib.current.dir}/lib"/>
-        <jar destfile="${distrib.scala.dir}/lib/${distrib.osc-nstools.jar}"
-             basedir="${build.osc-nstools.dir}">
-            <include name="**"/>
-            <manifest>
-                <attribute name="Built-By" value="${user.name}"/>
-                <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
-            </manifest>
-        </jar>
-        <jar destfile="${distrib.scala.dir}/lib/${distrib.nstools.jar}"
-             basedir="${build.nstools.dir}">
-            <include name="**"/>
-            <manifest>
-                <attribute name="Built-By" value="${user.name}"/>
-                <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
-            </manifest>
-        </jar>
-        <jar destfile="${distrib.scala.dir}/lib/${distrib.nslib.jar}"
-             basedir="${build.nslib.dir}">
-            <include name="**"/>
-            <manifest>
-                <attribute name="Built-By" value="${user.name}"/>
-            </manifest>
-        </jar>
-        <copy file="${fjbg.jar}" todir="${distrib.scala.dir}/lib"/>
-        <copy file="${oslib.jar}" todir="${distrib.scala.dir}/lib"/>
-        <copy file="${msil.jar}" todir="${distrib.scala.dir}/lib"/>
-        <copy file="${scala.dll}" todir="${distrib.scala.dir}/lib"/>
         <!-- Set up 'bin' directory (unix) -->
         <mkdir dir="${distrib.scala.dir}/bin"/>
         <copy file="${bin.dir}/.nsc_wrapper.tmpl"
@@ -400,10 +408,9 @@
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
         <!-- Set up 'lib' directory (win) -->
         <mkdir dir="${distrib.current.win.dir}/lib"/>
-        <copy file="${fjbg.jar}" todir="${distrib.current.win.dir}/lib"/>
-        <copy file="${oslib.jar}" todir="${distrib.current.win.dir}/lib"/>
-        <copy file="${msil.jar}" todir="${distrib.current.win.dir}/lib"/>
-        <copy file="${scala.dll}" todir="${distrib.current.win.dir}/lib"/>
+        <copy todir="${distrib.current.win.dir}/lib">
+            <fileset dir="${build.dir}/lib"/>
+        </copy>
         <!-- Set up 'support' directory -->
         <mkdir dir="${distrib.current.win.dir}/support"/>
         <copy todir="${distrib.current.win.dir}/support">
