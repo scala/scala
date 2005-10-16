@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id$ -->
+
+<project default="izpack">
+
+    <!-- A path containing the IzPack library -->
+    <path id="izpack.classpath">
+        <pathelement location="${izpack.jar}"/>
+    </path>
+
+    <!--
+    #####################################################################
+    IZPACK
+    #####################################################################
+    -->
+    
+    <target name="init.izpack">
+        <echo level="verbose">izpack.jar=${izpack.jar}</echo>
+        <fail message="Missing library ${izpack.jar}; check the 'izpack.jar' property in 'build.${user.name}.properties'.">
+            <condition><not>
+                <available classname="com.izforge.izpack.ant.IzPackTask"
+                           classpathref="izpack.classpath"/>
+            </not></condition>
+        </fail>
+        <taskdef name="izpack"
+                 classname="com.izforge.izpack.ant.IzPackTask"
+                 classpathref="izpack.classpath"/>
+    </target>
+
+    <target name="izpack" depends="izpack.unix"/>
+
+<!--<target name="izpack.unix" depends="init.izpack, distrib.unix" -->
+    <target name="izpack.unix" depends="init.izpack"
+            description="Builds the Scala installer.">
+        <echo>Generating ${distrib.dir}/nscala-install-${scala.version}.jar</echo>
+        <copy file="${config.dir}/izpack/install-nsc.xml"
+              tofile="/tmp/install-nsc-${user.name}.xml"
+              overwrite="true">
+            <filterset>
+                <filter token="VERSION" value="${scala.version}"/>
+            </filterset>
+        </copy>
+        <izpack input="/tmp/install-nsc-${user.name}.xml"
+                output="${distrib.dir}/nscala-install-${scala.version}.jar"
+                installerType="standard" basedir="${basedir}"/>
+    </target>
+
+</project>
