@@ -16,7 +16,7 @@ class Names {
   private val HASH_MASK = 0x7FFF;
   private val NAME_SIZE = 0x20000;
 
-  final val nameDebug = true;
+  final val nameDebug = false;
 
   /** memory to store all names sequentially
    */

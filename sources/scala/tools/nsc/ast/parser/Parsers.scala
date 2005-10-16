@@ -1149,7 +1149,10 @@ import Tokens._;
       if (owner == nme.CONSTRUCTOR &&
 	  (result.isEmpty || (!result.head.isEmpty &&
 			      (result.head.head.mods & Flags.IMPLICIT) != 0)))
-	syntaxError(pos, "auxiliary constructor needs non-implicit parameter list", false);
+	if (in.token == LBRACKET)
+	  syntaxError(pos, "no type parameters allowed here", false);
+	else
+	  syntaxError(pos, "auxiliary constructor needs non-implicit parameter list", false);
       addImplicitViews(owner, result, implicitViews)
     }
 

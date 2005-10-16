@@ -176,7 +176,7 @@ import classfile.PickleFormat._;
     }
 
     def stringValue: String =
-      if (value == null) "<null>" else value.toString();
+      if (value == null) "null" else value.toString();
 
     override def hashCode(): int =
       if (value == null) 0 else value.hashCode() * 41 + 17;

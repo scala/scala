@@ -126,6 +126,37 @@ import collection.mutable.HashMap;
       if (treeInfo.isPureExpr(tree) || tree.tpe.isError) tree;
       else errorTree(tree, "stable identifier required, but " + tree + " found.");
 
+    /** Check that type `tp' is not a subtype of itself.
+     */
+    def checkNonCyclic(pos: int, tp: Type): unit = {
+      def checkNotLocked(sym: Symbol): boolean = {
+	sym.initialize;
+	if (sym hasFlag LOCKED) {
+	  error(pos, "cyclic aliasing or subtyping involving " + sym); false
+	} else true
+      }
+      tp match {
+	case TypeRef(pre, sym, args) =>
+	  if (checkNotLocked(sym) && (sym.isAliasType || sym.isAbstractType)) {
+	    //System.out.println("checking " + sym);//DEBUG
+	    checkNonCyclic(pos, pre.memberInfo(sym).subst(sym.typeParams, args), sym);
+	  }
+	case SingleType(pre, sym) =>
+	  checkNotLocked(sym)
+	case st: SubType =>
+	  checkNonCyclic(pos, st.supertype)
+	case ct: CompoundType =>
+	  for (val p <- ct.parents) checkNonCyclic(pos, p)
+	case _ =>
+      }
+    }
+
+    def checkNonCyclic(pos: int, tp: Type, lockedSym: Symbol): unit = {
+      lockedSym.setFlag(LOCKED);
+      checkNonCyclic(pos, tp);
+      lockedSym.resetFlag(LOCKED)
+    }
+
     /** Check that type of given tree does not contain local or private components
      */
     object checkNoEscaping extends TypeMap {
@@ -338,8 +369,9 @@ import collection.mutable.HashMap;
 			      " does not conform to sequence " + clazz)
 		}
 	      } else {
-		System.out.println("bad: " + clazz + ":" + tree.tpe + " " + flagsToString(clazz.flags) + clazz.hasFlag(CASE));//debug
-		errorTree(tree, clazz.toString() + " is neither a case class nor a sequence class")
+		if (!tree.tpe.isError)
+		  error(tree.pos, clazz.toString() + " is neither a case class nor a sequence class");
+		setError(tree)
 	      }
 	    }
 	  } else if ((mode & FUNmode) != 0) {
@@ -402,7 +434,7 @@ import collection.mutable.HashMap;
       tree.tpe
     }
 
-    def parentTypes(templ: Template): List[Tree] =
+    def parentTypes(templ: Template): List[Tree] = try {
       if (templ.parents.isEmpty) List()
       else {
 	var supertpt = typedTypeConstructor(templ.parents.head);
@@ -431,6 +463,11 @@ import collection.mutable.HashMap;
 	//System.out.println("parents(" + context.owner + ") = " + supertpt :: mixins);//DEBUG
 	List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(context.owner, tpt))
       }
+    } catch {
+      case ex: TypeError =>
+	reportTypeError(templ.pos, ex);
+	List(TypeTree(AnyRefClass.tpe))
+    }
 
     /** Check that
      *  - all parents are class types,
@@ -459,7 +496,7 @@ import collection.mutable.HashMap;
 	  else if (psym.isSealed && !phase.erasedTypes) {
 	    // are we in same scope as base type definition?
 	    val e = defscope.lookupEntry(psym.name);
-	    if (!(e.sym == psym && e.owner == defscope)) {
+	    if (!(e != null && e.sym == psym && e.owner == defscope)) {
 	      // we are not within same statement sequence
 	      var c = context;
 	      while (c != NoContext && c.owner !=  psym) c = c.outer.enclClass;
@@ -559,6 +596,7 @@ import collection.mutable.HashMap;
     def typedValDef(vdef: ValDef): ValDef = {
       val sym = vdef.symbol;
       var tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt));
+      checkNonCyclic(vdef.pos, tpt1.tpe, sym);
       val rhs1 =
         if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && phase.id <= currentRun.typerPhase.id)
@@ -628,7 +666,16 @@ import collection.mutable.HashMap;
       val tparams1 = List.mapConserve(ddef.tparams)(typedAbsTypeDef);
       val vparamss1 = List.mapConserve(ddef.vparamss)(vparams1 =>
 	List.mapConserve(vparams1)(typedValDef));
-      var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt));
+/*
+      for (val vparams <- vparamss1; val vparam <- vparams) {
+	checkNoEscaping.locals(paramScope, WildcardType, vparam.tpt); ()
+      }
+*/
+      var tpt1 =
+//	checkNoEscaping.locals(context.scope, WildcardType,
+	  checkNoEscaping.privates(meth,
+	    typedType(ddef.tpt));
+      checkNonCyclic(ddef.pos, tpt1.tpe, meth);
       val rhs1 =
         checkNoEscaping.locals(
           context.scope, tpt1.tpe,
@@ -642,7 +689,7 @@ import collection.mutable.HashMap;
 	    context.enclClass.owner.setFlag(INCONSTRUCTOR);
 	    val result = typed(ddef.rhs, EXPRmode | INCONSTRmode, UnitClass.tpe);
 	    context.enclClass.owner.resetFlag(INCONSTRUCTOR);
-	    if (meth.isPrimaryConstructor && !phase.erasedTypes)
+	    if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors() == 0)
 	      computeParamAliases(meth.owner, vparamss1, result);
 	    result
 	  } else transformedOrTyped(ddef.rhs, tpt1.tpe));
@@ -652,6 +699,7 @@ import collection.mutable.HashMap;
     def typedAbsTypeDef(tdef: AbsTypeDef): AbsTypeDef = {
       val lo1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.lo));
       val hi1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.hi));
+      checkNonCyclic(tdef.pos, tdef.symbol.tpe);
       copy.AbsTypeDef(tdef, tdef.mods, tdef.name, lo1, hi1) setType NoType
     }
 
@@ -659,6 +707,7 @@ import collection.mutable.HashMap;
       reenterTypeParams(tdef.tparams);
       val tparams1 = List.mapConserve(tdef.tparams)(typedAbsTypeDef);
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs));
+      checkNonCyclic(tdef.pos, tdef.symbol.tpe);
       copy.AliasTypeDef(tdef, tdef.mods, tdef.name, tparams1, rhs1) setType NoType
     }
 
@@ -734,7 +783,10 @@ import collection.mutable.HashMap;
 	vparam.symbol
       }
       val vparams = List.mapConserve(fun.vparams)(typedValDef);
-      val body = typed(fun.body, respt);
+      for (val vparam <- vparams) {
+	checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
+      }
+      val body = checkNoEscaping.locals(context.scope, respt, typed(fun.body, respt));
       val formals = vparamSyms map (.tpe);
       val restpe = body.tpe.deconst;
       val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe));
@@ -757,6 +809,7 @@ import collection.mutable.HashMap;
 	stat match {
 	  case imp @ Import(_, _) =>
 	    context = context.makeNewImport(imp);
+	    stat.symbol.initialize;
 	    EmptyTree
 	  case _ =>
 	    (if (exprOwner != context.owner && (!stat.isDef || stat.isInstanceOf[LabelDef]))
@@ -798,7 +851,7 @@ import collection.mutable.HashMap;
         case MethodType(formals0, restpe) =>
           val formals = formalTypes(formals0, args.length);
           if (formals.length != args.length) {
-	    System.out.println("" + formals.length + " " + args.length);
+	    //System.out.println("" + formals.length + " " + args.length);//DEBUG
             errorTree(tree, "wrong number of arguments for " + treeSymTypeMsg(fun))
           } else {
             val tparams = context.undetparams;
@@ -986,7 +1039,6 @@ import collection.mutable.HashMap;
 	      pre = qual.tpe;
 	    } else {
               if (settings.debug.value) {
-	        log(context);//debug
 	        log(context.imports);//debug
               }
 	      error(tree.pos, "not found: " + decode(name));
@@ -1068,9 +1120,9 @@ import collection.mutable.HashMap;
         case Bind(name, body) =>
           var vble = tree.symbol;
           if (vble == NoSymbol) vble = context.owner.newValue(tree.pos, name);
+          if (vble.name != nme.WILDCARD) namer.enterInScope(vble);
           val body1 = typed(body, mode, pt);
           vble.setInfo(if (treeInfo.isSequenceValued(body)) seqType(body1.tpe) else body1.tpe);
-          if (vble.name != nme.WILDCARD) namer.enterInScope(vble);
           copy.Bind(tree, name, body1) setSymbol vble setType body1.tpe; // buraq, was: pt
 
         case ArrayValue(elemtpt, elems) =>
@@ -1158,6 +1210,7 @@ import collection.mutable.HashMap;
               setPos tpt1.pos
               setType appliedType(tpt1.tpe, context.undetparams map (.tpe));
           }
+	  if (tpt1.tpe.symbol.isTrait) error(tree.pos, "traits cannot be instantiated");
           copy.New(tree, tpt1).setType(tpt1.tpe)
 
         case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
@@ -1342,9 +1395,13 @@ import collection.mutable.HashMap;
     def typedType(tree: Tree): Tree =
       typed(tree, TYPEmode, WildcardType);
 
-    /** Types a type or type constructor tree */
-    def typedTypeConstructor(tree: Tree): Tree =
-      typed(tree, TYPEmode | FUNmode, WildcardType);
+    /** Types a type constructor tree used in a new or supertype */
+    def typedTypeConstructor(tree: Tree): Tree = {
+      val result = typed(tree, TYPEmode | FUNmode, WildcardType);
+      if (!phase.erasedTypes && result.tpe.isInstanceOf[TypeRef] && !result.tpe.prefix.isStable)
+	error(tree.pos, result.tpe.prefix.toString() + " is not a legal prefix for a constructor");
+      result
+    }
 
     def computeType(tree: Tree): Type = {
       val tree1 = typed(tree);
@@ -1427,8 +1484,8 @@ import collection.mutable.HashMap;
 		      " both " + is0.head.sym + is0.head.sym.locationString + " of type " + tree.tpe +
 		      "\n and " + is.head.sym + is.head.sym.locationString + " of type " + tree1.tpe +
 		      (if (isView)
-			"\n are possible conversion functions from " +
-		       pt.typeArgs(0) + " to " + pt.typeArgs(1)
+			  "\n are possible conversion functions from " +
+			 pt.typeArgs(0) + " to " + pt.typeArgs(1)
 		       else
 			 "\n match expected type " + pt));
 		}

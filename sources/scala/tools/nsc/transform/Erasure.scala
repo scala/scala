@@ -156,7 +156,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       typed {
         atPos(tree.pos) {
           if (pt.symbol == UnitClass) {
-            Literal(())
+            if (treeInfo.isPureExpr(tree)) Literal(())
+	    else Block(List(tree), Literal(()))
           } else if (pt.symbol == BooleanClass) {
             val tree1 = adaptToType(tree, boxedClass(BooleanClass).tpe);
             Apply(Select(tree1, "booleanValue"), List())
@@ -279,19 +280,19 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     /** A replacement for the standard typer's `typed1' method */
     override protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
       val tree1 = super.typed1(adaptMember(tree), mode, pt);
+      def adaptCase(cdef: CaseDef): CaseDef = {
+	val body1 = adaptToType(cdef.body, tree1.tpe);
+	copy.CaseDef(cdef, cdef.pat, cdef.guard, body1) setType body1.tpe
+      }
+      def adaptBranch(branch: Tree): Tree =
+	if (branch == EmptyTree) branch else adaptToType(branch, tree1.tpe);
       tree1 match {
 	case If(cond, thenp, elsep) =>
-	  val thenp1 = adaptToType(thenp, tree1.tpe);
-	  val elsep1 = if (elsep.isEmpty) elsep else adaptToType(elsep, tree1.tpe);
-	  copy.If(tree1, cond, thenp1, elsep1);
+	  copy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
 	case Match(selector, cases) =>
-	  val cases1 = cases map {
-	    case cdef @ CaseDef(pat, guard, body) =>
-	      val body1 = adaptToType(body, tree1.tpe);
-	      copy.CaseDef(cdef, pat, guard, body1) setType body1.tpe
-	  }
-	  copy.Match(tree1, selector, cases1)
-	// todo: do same for try
+	  copy.Match(tree1, selector, cases map adaptCase)
+	case Try(block, catches, finalizer) =>
+	  copy.Try(tree1, adaptBranch(block), catches map adaptCase, finalizer)
 	case _ =>
 	  tree1
       }
@@ -311,8 +312,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private def checkNoDoubleDefs(root: Symbol): unit = {
       def doubleDefError(sym1: Symbol, sym2: Symbol) = {
-	val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.tpe.memberType(sym1));
-	val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.tpe.memberType(sym2));
+	val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym1));
+	val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym2));
 	unit.error(
 	  if (sym1.owner == root) sym1.pos else root.pos,
 	  (if (sym1.owner == sym2.owner) "double definition:\n"
@@ -420,6 +421,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                      resetFlag ACCESSOR
                      setInfo otpe;
                   bridgeTarget(bridge) = member;
+		  owner.info.decls.enter(bridge);
                   bridgesScope enter bridge;
                   bridges =
                     atPhase(phase.next) {

@@ -271,7 +271,7 @@ trait Namers: Analyzer {
 
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner;
-      val parents = typer.parentTypes(templ) map (.tpe);
+      val parents = typer.parentTypes(templ) map (p => if (p.tpe.isError) AnyRefClass.tpe else p.tpe);
       val decls = new Scope();
       log("members of " + clazz + "=" + decls.hashCode());//debug
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
@@ -399,6 +399,7 @@ trait Namers: Analyzer {
                 checkSelectors(rest)
               case Nil =>
 	    }
+	    checkSelectors(selectors);
             ImportType(expr1)
         }
       } catch {

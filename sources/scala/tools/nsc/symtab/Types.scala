@@ -147,18 +147,18 @@ import Flags._;
     def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0).alternatives;
 
     /** A list of all non-private members of this type (defined or inherited) */
-    def nonPrivateMembers: List[Symbol] = findMember(nme.ANYNAME, PRIVATE, 0).alternatives;
+    def nonPrivateMembers: List[Symbol] = findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0).alternatives;
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: List[Symbol] = findMember(nme.ANYNAME, 0, IMPLICIT).alternatives;
+    def implicitMembers: List[Symbol] = findMember(nme.ANYNAME, BRIDGE, IMPLICIT).alternatives;
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, 0, 0);
+    def member(name: Name): Symbol = findMember(name, BRIDGE, 0);
 
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE, 0);
+    def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE | BRIDGE, 0);
 
     /** The least type instance of given class which is a supertype
      *  of this type */
@@ -567,19 +567,23 @@ import Flags._;
               index(i) = 0;
               i = i + 1
             }
+	    def nextBaseType(i: int): Type = {
+	      val j = index(i);
+	      val pci = pclosure(i);
+	      if (j < pci.length) pci(j) else AnyClass.tpe
+	    }
             val limit = pclosure(0).length;
             while (index(0) != limit) {
-              var minSym: Symbol = pclosure(0)(index(0)).symbol;
+              var minSym: Symbol = nextBaseType(0).symbol;
               i = 1;
               while (i < nparents) {
-                if (pclosure(i)(index(i)).symbol isLess minSym)
-                  minSym = pclosure(i)(index(i)).symbol;
+                if (nextBaseType(i).symbol isLess minSym) minSym = nextBaseType(i).symbol;
                 i = i + 1
               }
               var minTypes: List[Type] = List();
               i = 0;
               while (i < nparents) {
-                val tp = pclosure(i)(index(i));
+                val tp = nextBaseType(i);
                 if (tp.symbol == minSym) {
                   if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes;
                   index(i) = index(i) + 1
@@ -588,11 +592,6 @@ import Flags._;
               }
               buf += intersectionType(minTypes);
               clSize = clSize + 1;
-            }
-            i = 0;
-            while (i < nparents) {
-              assert(index(i) == pclosure(i).length);
-              i = i + 1
             }
           }
           closureCache = new Array[Type](clSize);
@@ -693,8 +692,8 @@ import Flags._;
   /** A class representing a class info
    */
   case class ClassInfoType(override val parents: List[Type],
-			   override val decls: Scope,
-			   override val symbol: Symbol) extends CompoundType;
+				    override val decls: Scope,
+				    override val symbol: Symbol) extends CompoundType;
 
   class PackageClassInfoType(decls: Scope, clazz: Symbol) extends ClassInfoType(List(), decls, clazz);
 
@@ -853,7 +852,7 @@ import Flags._;
     override def narrow: Type = resultType.narrow;
 
     override def toString(): String =
-      (if (typeParams.isEmpty) "=>! "
+      (if (typeParams.isEmpty) "=> "
        else (typeParams map (.defString)).mkString("[", ",", "]")) + resultType;
 
     override def cloneInfo(owner: Symbol) = {
@@ -963,6 +962,8 @@ import Flags._;
     val sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym;
     if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.nameString);
+//    if (sym1.hasFlag(LOCKED))
+//      throw new TypeError("illegal cyclic reference involving " + sym1);
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
@@ -1475,8 +1476,17 @@ import Flags._;
     tps1.length == tps2.length &&
     List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2);
 
-  /** Does tp1 conform to tp2? */
+  var subtypecount = 0;
   def isSubType(tp1: Type, tp2: Type): boolean = {
+    subtypecount = subtypecount + 1;
+    if (subtypecount == 20) throw new Error("recursive <:<");
+    val result = isSubType0(tp1, tp2);
+    subtypecount = subtypecount - 1;
+    result
+  }
+
+  /** Does tp1 conform to tp2? */
+  def isSubType0(tp1: Type, tp2: Type): boolean = {
     Pair(tp1, tp2) match {
       case Pair(ErrorType, _)    => true
       case Pair(WildcardType, _) => true

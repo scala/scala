@@ -100,7 +100,8 @@ abstract class Mixin extends InfoTransform {
         if (bc.isImplClass) {
           for (val member <- bc.info.decls.toList) {
             if (isForwarded(member) && !isStatic(member) &&
-                (clazz.info.member(member.name).alternatives contains member)) {
+                (clazz.info.findMember(member.name, 0, 0).alternatives contains member)) {
+	      //System.out.println("adding forwarded method " + member + member.locationString + " to " + clazz + " " + clazz.info.member(member.name).alternatives);//DEBUG
               val member1 = addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN resetFlag (DEFERRED | lateDEFERRED));
               member1.asInstanceOf[TermSymbol] setAlias member;
             }

@@ -292,13 +292,16 @@ import Flags._;
       ScalaPackageClass = ScalaPackage.tpe.symbol;
 
       AnyClass = newClass(ScalaPackageClass, "Any", List());
-      AnyValClass = getClass("scala.AnyVal");
+      AnyValClass = getClass("scala.AnyVal") setFlag SEALED;
       ObjectClass = getClass("java.lang.Object");
 
       AnyRefClass = newAlias(ScalaPackageClass, "AnyRef", ObjectClass.typeConstructor);
 
-      AllRefClass = newClass(ScalaPackageClass, "AllRef", List(AnyRefClass.typeConstructor));
-      AllClass = newClass(ScalaPackageClass, "All", List(AnyClass.typeConstructor));
+      AllRefClass = newClass(ScalaPackageClass, "AllRef", List(AnyRefClass.typeConstructor))
+	setFlag (ABSTRACT | TRAIT | FINAL);
+
+      AllClass = newClass(ScalaPackageClass, "All", List(AnyClass.typeConstructor))
+	setFlag (ABSTRACT | TRAIT | FINAL);
 
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");

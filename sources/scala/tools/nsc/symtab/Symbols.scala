@@ -684,7 +684,7 @@ import Flags._;
      *  e.g., "class Foo", "method Bar".
      */
     override def toString(): String =
-      compose(List(kindString, nameString));
+      compose(List(kindString, if (isClassConstructor) owner.nameString else nameString));
 
     /** String representation of location. */
     final def locationString: String =
@@ -814,14 +814,14 @@ import Flags._;
     private var tpeCache: Type = _;
     private var tpePhase: Phase = null;
     override def tpe: Type = {
-      assert(tpeCache ne NoType, this);
+      if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor);
       if (tpePhase != phase) {
         if (isValid(tpePhase)) {
-    tpePhase = phase
+	  tpePhase = phase
         } else {
           if (isInitialized) tpePhase = phase;
           tpeCache = NoType;
-    val targs = if (phase.erasedTypes && this != ArrayClass) List()
+	  val targs = if (phase.erasedTypes && this != ArrayClass) List()
           else unsafeTypeParams map (.tpe);
           tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, targs)
         }

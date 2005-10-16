@@ -223,10 +223,13 @@ package scala.tools.nsc.typechecker;
       } else {
 	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
 	if (sym1 == NoSymbol) {
-	  if (settings.debug.value) System.out.println(context);//debug
-          System.out.println(tree);//debug
-          System.out.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType));//debug
-	  errorTree(tree, sym.toString() + " cannot be accessed in " + pre.widen)
+	  if (settings.debug.value) {
+	    System.out.println(context);//debug
+            System.out.println(tree);//debug
+            System.out.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType));//debug
+	  }
+	  errorTree(tree, sym.toString() + " cannot be accessed in " +
+		    (if (sym.isClassConstructor) context.enclClass.owner else pre.widen))
 	} else {
           var owntype = pre.memberType(sym1);
           if (pre.isInstanceOf[SuperType])
@@ -455,7 +458,6 @@ package scala.tools.nsc.typechecker;
 	  uninstantiated.toList;
 	} catch {
 	  case ex: NoInstance =>
-	    System.out.println("error " + fn.pos + " " + fn);//debug
 	    errorTree(fn,
 	      "no type parameters for " +
 	      applyErrorMsg(
