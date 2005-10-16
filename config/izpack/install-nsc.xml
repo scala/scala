@@ -1,0 +1,99 @@
+<?xml version=1.0" encoding="UTF-8" standalone="yes" ?>
+<!-- $Id$ -->
+
+<installation version="1.0">
+
+  <info>
+    <appname>Scala</appname>
+    <appversion>@VERSION@</appversion>
+<!--
+    <authors>
+      <author name="Martin Odersky"     email="martin.odersky@epfl.ch"/>
+      <author name="Vincent Cremet"     email="vincent.cremet@epfl.ch"/>
+      <author name="Iulian Dragos"      email="Iulian.Dragos@epfl.ch"/>
+      <author name="Gilles Dubochet"    email="gilles.dubochet@epfl.ch"/>
+      <author name="Burak Emir"         email="burak.emir@epfl.ch"/>
+      <author name="Stephane Micheloud" email="stephane.micheloud@epfl.ch"/>
+      <author name="Nikolay Mihaylov"   email="nikolay.mihaylov@epfl.ch"/>
+
+      <author name="Philippe Altherr (past member)" email="philippe.alther@epfl.ch"/>
+      <author name="Michel Schinz (past member)"    email="michel.schinz@epfl.ch"/>
+      <author name="Erik Stenmann (past member)"    email="happi@home.se"/>
+      <author name="Matthias Zenger (past member)"  email="matthias.zenger@google.com"/>
+    </authors>
+-->
+    <url>http://scala.epfl.ch/</url>
+    <javaversion>1.4</javaversion>
+  </info>
+
+  <variables>
+    <variable name="JDKPathPanel.minVersion" value="1.4.0"/>
+    <variable name="JDKPathPanel.maxVersion" value="1.5.0"/>
+    <variable name="JDKPathPanel.skipIfValid" value="yes"/>
+  </variables>
+
+  <native type="izpack" name="ShellLink.dll"/>
+
+  <guiprefs resizable="yes" height="480" width="640">
+    <laf name="metouia">
+      <os family="unix"/>
+    </laf>
+    <laf name="looks">
+      <os family="windows"/>
+      <param name="variant" value="extwin"/>
+    </laf>
+  </guiprefs>
+
+  <locale>
+    <langpack iso3="eng"/>
+    <langpack iso3="fra"/>
+    <langpack iso3="deu"/>
+  </locale>
+
+  <resources>
+    <res id="installer.langsel.img"        src="config/izpack/images/Splash.png"/>
+    <res id="Installer.image"              src="config/izpack/images/install.png"/>
+    <res id="HTMLInfoPanel.info_eng"       src="config/izpack/locales/INFO_en.html"/>
+    <res id="HTMLInfoPanel.info_fra"       src="config/izpack/locales/INFO_fr.html"/>
+    <res id="HTMLInfoPanel.info_deu"       src="config/izpack/locales/INFO_de.html"/>
+    <res id="HTMLLicencePanel.licence_eng" src="config/izpack/locales/LICENSE_en.html"/>
+    <res id="HTMLLicencePanel.licence_fra" src="config/izpack/locales/LICENSE_fr.html"/>
+    <res id="HTMLLicencePanel.licence_deu" src="config/izpack/locales/LICENSE_de.html"/>
+    <res id="TargetPanel.dir.macosx"       src="config/izpack/targets/path_macosx.txt"/>
+    <res id="TargetPanel.dir.unix"         src="config/izpack/targets/path_unix.txt"/>
+    <res id="ProcessPanel.Spec.xml"        src="config/izpack/izpack_process.xml"/>
+    <res id="shortcutSpec.xml"             src="config/izpack/izpack_shortcut.xml"/>
+  </resources>
+
+  <panels>
+    <panel classname="HelloPanel"/>
+    <panel classname="HTMLInfoPanel"/>
+    <panel classname="HTMLLicencePanel"/>
+    <panel classname="JDKPathPanel"/>
+    <!--
+    <panel classname="PacksPanel"/>
+    -->
+    <panel classname="TargetPanel"/>
+    <panel classname="InstallPanel"/>
+    <panel os="unix" classname="ProcessPanel"/>
+    <panel classname="ShortcutPanel"/>
+    <panel classname="SimpleFinishPanel"/>
+  </panels>
+
+  <packs>
+    <pack name="Installing..." required="yes">
+      <description>Installing the Scala software.</description>
+      <fileset os="unix" dir="distribs/unix/nscala-@VERSION@"
+               targetdir="$INSTALL_PATH"/>
+      <fileset os="windows" dir="distribs/win/nscala-@VERSION@"
+               targetdir="$INSTALL_PATH"/>
+      <singlefile os="unix" target="$INSTALL_PATH/bin/.create_wrappers"
+                  src="config/izpack/create_wrappers.sh"/>
+      <executable os="unix"
+                  targetfile="$INSTALL_PATH/bin/.create_wrappers"/>
+      <executable os="unix"
+                  targetfile="$INSTALL_PATH/bin/.scala_wrapper" keep="true"/>
+    </pack>
+  </packs>
+
+</installation>
