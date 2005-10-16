@@ -1,4 +1,4 @@
-<?xml version=1.0" encoding="UTF-8" standalone="yes" ?>
+<?xml version=1.0" encoding="UTF-8" standalone="yes"?>
 <!-- $Id$ -->
 
 <installation version="1.0">
@@ -22,7 +22,7 @@
       <author name="Matthias Zenger (past member)"  email="matthias.zenger@google.com"/>
     </authors>
 -->
-    <url>http://scala.epfl.ch/</url>
+    <url>@URL@</url>
     <javaversion>1.4</javaversion>
   </info>
 
@@ -51,26 +51,26 @@
   </locale>
 
   <resources>
-    <res id="installer.langsel.img"        src="config/izpack/images/Splash.png"/>
-    <res id="Installer.image"              src="config/izpack/images/install.png"/>
-    <res id="HTMLInfoPanel.info_eng"       src="config/izpack/locales/INFO_en.html"/>
-    <res id="HTMLInfoPanel.info_fra"       src="config/izpack/locales/INFO_fr.html"/>
-    <res id="HTMLInfoPanel.info_deu"       src="config/izpack/locales/INFO_de.html"/>
-    <res id="HTMLLicencePanel.licence_eng" src="config/izpack/locales/LICENSE_en.html"/>
-    <res id="HTMLLicencePanel.licence_fra" src="config/izpack/locales/LICENSE_fr.html"/>
-    <res id="HTMLLicencePanel.licence_deu" src="config/izpack/locales/LICENSE_de.html"/>
-    <res id="TargetPanel.dir.macosx"       src="config/izpack/targets/path_macosx.txt"/>
-    <res id="TargetPanel.dir.unix"         src="config/izpack/targets/path_unix.txt"/>
-    <res id="ProcessPanel.Spec.xml"        src="config/izpack/izpack_process.xml"/>
-    <res id="shortcutSpec.xml"             src="config/izpack/izpack_shortcut.xml"/>
+    <res id="installer.langsel.img"        src="@RESOURCEDIR@/images/Splash.png"/>
+    <res id="Installer.image"              src="@RESOURCEDIR@/images/install.png"/>
+    <res id="HTMLInfoPanel.info_eng"       src="@RESOURCEDIR@/locales/INFO_en.html"/>
+    <res id="HTMLInfoPanel.info_fra"       src="@RESOURCEDIR@/locales/INFO_fr.html"/>
+    <res id="HTMLInfoPanel.info_deu"       src="@RESOURCEDIR@/locales/INFO_de.html"/>
+    <res id="HTMLLicencePanel.licence_eng" src="@RESOURCEDIR@/locales/LICENSE_en.html"/>
+    <res id="HTMLLicencePanel.licence_fra" src="@RESOURCEDIR@/locales/LICENSE_fr.html"/>
+    <res id="HTMLLicencePanel.licence_deu" src="@RESOURCEDIR@/locales/LICENSE_de.html"/>
+    <res id="TargetPanel.dir.macosx"       src="@RESOURCEDIR@/targets/path_macosx.txt"/>
+    <res id="TargetPanel.dir.unix"         src="@RESOURCEDIR@/targets/path_unix.txt"/>
+    <res id="ProcessPanel.Spec.xml"        src="@RESOURCEDIR@/izpack_process.xml"/>
+    <res id="shortcutSpec.xml"             src="@RESOURCEDIR@/izpack_shortcut.xml"/>
   </resources>
 
   <panels>
     <panel classname="HelloPanel"/>
     <panel classname="HTMLInfoPanel"/>
     <panel classname="HTMLLicencePanel"/>
-    <panel classname="JDKPathPanel"/>
     <!--
+    <panel classname="JDKPathPanel"/>
     <panel classname="PacksPanel"/>
     -->
     <panel classname="TargetPanel"/>
@@ -83,11 +83,25 @@
   <packs>
     <pack name="Installing..." required="yes">
       <description>Installing the Scala software.</description>
-      <fileset os="unix" dir="distribs/unix/nscala-@VERSION@"
-               targetdir="$INSTALL_PATH"/>
-      <fileset os="windows" dir="distribs/win/nscala-@VERSION@"
-               targetdir="$INSTALL_PATH"/>
-      <singlefile os="unix" target="$INSTALL_PATH/bin/.create_wrappers"
+      <fileset os="unix"
+               dir="distribs/unix/@PREFIX@-@VERSION@"
+               targetdir="$INSTALL_PATH">
+      </fileset>
+      <!-- we share common resources doc/*.pdf and lib/** -->
+      <fileset os="windows"
+               dir="distribs/win/@PREFIX@-@VERSION@"
+               targetdir="$INSTALL_PATH"
+               excludes="doc/*.pdf, lib/**"/>
+      <fileset os="windows"
+               dir="distribs/unix/@PREFIX@-@VERSION@/share/doc/@PREFIX@-@VERSION@"
+               targetdir="$INSTALL_PATH/doc"
+               includes="*.pdf"/>
+      <fileset os="windows"
+               dir="distribs/unix/@PREFIX@-@VERSION@/share/scala"
+               targetdir="$INSTALL_PATH"
+               includes="lib/**"/>
+      <singlefile os="unix"
+                  target="$INSTALL_PATH/bin/.create_wrappers"
                   src="config/izpack/create_wrappers.sh"/>
       <executable os="unix"
                   targetfile="$INSTALL_PATH/bin/.create_wrappers"/>
