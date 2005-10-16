@@ -380,13 +380,22 @@
                   value="${distrib.dir}/win/${distrib.package.dir}"/>
         <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.current.win.dir}/bin"/>
+        <copy file="${bin.dir}/.scala_bat.tmpl"
+              tofile="${distrib.current.win.dir}/bin/scala.bat">
+            <filterset>
+                <filter token="PRODUCT"   value="scala"/>
+                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="COPYRIGHT" value="(c) 2002-05 LAMP/EPFL"/>
+                <filter token="BOOTCPATH" value="%SCALA_HOME%\lib\scala.jar"/>
+            </filterset>
+        </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
               tofile="${distrib.current.win.dir}/bin/scalac.bat">
             <filterset>
                 <filter token="PRODUCT" value="scalac"/>
                 <filter token="VERSION" value="${scala.version}"/>
-                <filter token="MAIN" value="scala.tools.nsc.Main"/>
-                <filter token="CPATH" value="%SCALA_HOME%\lib\fjbg.jar;%SCALA_HOME%\lib\msil.jar;%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.nstools.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
+                <filter token="MAIN"    value="scala.tools.nsc.Main"/>
+                <filter token="CPATH"   value="%SCALA_HOME%\lib\fjbg.jar;%SCALA_HOME%\lib\msil.jar;%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.nstools.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
@@ -394,12 +403,11 @@
             <filterset>
                 <filter token="PRODUCT" value="scalap"/>
                 <filter token="VERSION" value=""/>
-                <filter token="MAIN" value="scala.tools.scalap.Main"/>
-                <filter token="CPATH" value="%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
+                <filter token="MAIN"    value="scala.tools.scalap.Main"/>
+                <filter token="CPATH"   value="%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
         <fixcrlf srcdir="${distrib.current.win.dir}/bin" eol="dos"/>
-        <chmod dir="${distrib.current.win.dir}/bin" perm="ugo+rx" includes="**/*"/>
         <!-- Set up 'doc' directory (win) -->
         <copy todir="${distrib.current.win.dir}/doc">
             <fileset dir="${build.dir}/doc"/>
