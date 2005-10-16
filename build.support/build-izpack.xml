@@ -32,15 +32,24 @@
 <!--<target name="izpack.unix" depends="init.izpack, distrib.unix" -->
     <target name="izpack.unix" depends="init.izpack"
             description="Builds the Scala installer.">
-        <echo>Generating ${distrib.dir}/nscala-install-${scala.version}.jar</echo>
-        <copy file="${config.dir}/izpack/install-nsc.xml"
-              tofile="/tmp/install-nsc-${user.name}.xml"
-              overwrite="true">
+        <property name="resource.dir" value="${build.dir}/izpack"/>
+        <copy todir="${resource.dir}" overwrite="true">
+            <fileset dir="${config.dir}/izpack"
+                     excludes="**/*.html, **/*.xml"/>
+        </copy>
+        <copy todir="${resource.dir}" overwrite="true">
+            <!-- CAUTION! Copy operations using filters will -->
+            <!-- corrupt binary files (see "Core Types").    -->
+            <fileset dir="${config.dir}/izpack"
+                     includes="**/*.html, **/*.xml"/>
             <filterset>
-                <filter token="VERSION" value="${scala.version}"/>
+                <filter token="RESOURCEDIR" value="${resource.dir}"/>
+                <filter token="PREFIX"      value="${distrib.current.prefix}"/>
+                <filter token="VERSION"     value="${scala.version}"/>
+                <filter token="URL"         value="http://scala.epfl.ch/"/>
             </filterset>
         </copy>
-        <izpack input="/tmp/install-nsc-${user.name}.xml"
+        <izpack input="${resource.dir}/install-nsc.xml"
                 output="${distrib.dir}/nscala-install-${scala.version}.jar"
                 installerType="standard" basedir="${basedir}"/>
     </target>
