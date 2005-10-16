@@ -398,6 +398,7 @@
                 <filter token="CPATH" value="%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
+        <fixcrlf srcdir="${distrib.current.win.dir}/bin" eol="dos"/>
         <chmod dir="${distrib.current.win.dir}/bin" perm="ugo+rx" includes="**/*"/>
         <!-- Set up 'doc' directory (win) -->
         <copy todir="${distrib.current.win.dir}/doc">
