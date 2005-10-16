@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##############################################################################
-# Copyright (C) 2002-2005 LAMP/EPFL
+# Copyright @COPYRIGHT@
 #
 # This is free software; see the distribution for copying conditions.
 # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -46,15 +46,29 @@ fi
 
 main=
 case "$SCRIPT" in
+    scala      ) ;;
     scalac*    ) main=scala.tools.nsc.Main;;
     scaladoc*  ) main=scala.tools.scaladoc.Main;;
     scalap*    ) main=scala.tools.scalap.Main;;
     *          ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 
-$_JAVACMD \
-    -Dscala.product="$SCRIPT" \
-    -Dscala.version="@VERSION@" \
-    -Dscala.home="$PREFIX" \
-    -cp "$_CPATH" \
-    $main "$@"
+if [ -z "$main" ]; then
+    for arg in "" "$@"; do
+        [ -z "$arg" ] && continue;
+        if [ "$arg" = "-version" ]; then
+            echo "$SCRIPT @VERSION@ -- @COPYRIGHT@";
+            exit 0
+        fi
+    done;
+    $_JAVACMD \
+        -Xbootclasspath/a:"$_CPATH" \
+        "$@"
+else
+    $_JAVACMD \
+        -Dscala.product="$SCRIPT" \
+        -Dscala.version="@VERSION@" \
+        -Dscala.home="$PREFIX" \
+        -cp "$_CPATH" \
+        $main "$@"
+fi
