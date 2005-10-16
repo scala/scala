@@ -309,23 +309,19 @@
         <property name="distrib.doc.dir"
                   value="${distrib.current.dir}/share/doc/${distrib.package.dir}"/>
         <mkdir dir="${distrib.scala.dir}"/>
-        <!-- Set up 'lib' directory -->
-        <mkdir dir="${distrib.scala.dir}/lib"/>
-        <copy todir="${distrib.scala.dir}/lib">
-            <fileset dir="${build.dir}/lib"/>
-        </copy>
-        <symlink resource="${distrib.scala.dir}/lib"
-                 link="${distrib.current.dir}/lib"/>
         <!-- Set up 'bin' directory (unix) -->
         <mkdir dir="${distrib.scala.dir}/bin"/>
         <copy file="${bin.dir}/.nsc_wrapper.tmpl"
               tofile="${distrib.scala.dir}/bin/.nsc_wrapper">
             <filterset>
-                <filter token="VERSION" value="${scala.version}"/>
-                <filter token="CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
+                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="CPATH"     value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
         <chmod file="${distrib.scala.dir}/bin/.nsc_wrapper" perm="ugo+rx"/>
+        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
+                 link="${distrib.scala.dir}/bin/scala"/>
         <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
                  link="${distrib.scala.dir}/bin/scalac"/>
         <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
@@ -346,6 +342,13 @@
         </copy>
         <fixcrlf srcdir="${distrib.doc.dir}" eol="unix"
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
+        <!-- Set up 'lib' directory -->
+        <mkdir dir="${distrib.scala.dir}/lib"/>
+        <copy todir="${distrib.scala.dir}/lib">
+            <fileset dir="${build.dir}/lib"/>
+        </copy>
+        <symlink resource="${distrib.scala.dir}/lib"
+                 link="${distrib.current.dir}/lib"/>
         <!-- Set up 'man' directory (unix) -->
         <mkdir dir="${distrib.current.dir}/share/man"/>
         <copy todir="${distrib.current.dir}/share/man">
@@ -385,29 +388,35 @@
             <filterset>
                 <filter token="PRODUCT"   value="scala"/>
                 <filter token="VERSION"   value="${scala.version}"/>
-                <filter token="COPYRIGHT" value="(c) 2002-05 LAMP/EPFL"/>
-                <filter token="BOOTCPATH" value="%SCALA_HOME%\lib\scala.jar"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="BOOTCPATH" value="&quot;%SCALA_HOME%&quot;\lib\scala.jar"/>
             </filterset>
         </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
               tofile="${distrib.current.win.dir}/bin/scalac.bat">
             <filterset>
-                <filter token="PRODUCT" value="scalac"/>
-                <filter token="VERSION" value="${scala.version}"/>
-                <filter token="MAIN"    value="scala.tools.nsc.Main"/>
-                <filter token="CPATH"   value="%SCALA_HOME%\lib\fjbg.jar;%SCALA_HOME%\lib\msil.jar;%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.nstools.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
+                <filter token="PRODUCT"   value="scalac"/>
+                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="MAIN"      value="scala.tools.nsc.Main"/>
+                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;&quot;%SCALA_HOME%&quot;\lib\${distrib.nslib.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.nstools.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
               tofile="${distrib.current.win.dir}/bin/scalap.bat">
             <filterset>
-                <filter token="PRODUCT" value="scalap"/>
-                <filter token="VERSION" value=""/>
-                <filter token="MAIN"    value="scala.tools.scalap.Main"/>
-                <filter token="CPATH"   value="%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
+                <filter token="PRODUCT"   value="scalap"/>
+                <filter token="VERSION"   value=""/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="MAIN"      value="scala.tools.scalap.Main"/>
+                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\scala.jar;&quot;%SCALA_HOME%&quot;\lib\${distrib.nslib.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
         <fixcrlf srcdir="${distrib.current.win.dir}/bin" eol="dos"/>
+        <attrib readonly="true">
+            <fileset dir="${distrib.current.win.dir}/bin"
+                     includes="**/*.bat"/>
+        </attrib>
         <!-- Set up 'doc' directory (win) -->
         <copy todir="${distrib.current.win.dir}/doc">
             <fileset dir="${build.dir}/doc"/>
@@ -453,8 +462,23 @@
     #####################################################################
     -->
 
-    <target name="test" description="Runs the Scala test suite.">
+    <target name="init.test">
+        <fail message="Missing library ${junit.jar} in ${ant.home}.">
+            <condition><not><and>
+                <available classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"/>
+            </and></not></condition>
+        </fail>
+    </target>
+
+    <target name="test" depends="init.test, init.nsc"
+            description="Runs the Scala test suite.">
         <fail>'test' is not implemented yet.</fail>
+    <!--
+        <junit printsummary="yes" fork="yes" haltonfailure="yes">
+            <formatter type="plain"/>
+            <test name="my.test.TestCase"/>
+        </junit>
+    -->
     </target>
 
     <!--
