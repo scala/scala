@@ -389,6 +389,15 @@
                 <filter token="CPATH" value="%SCALA_HOME%\lib\fjbg.jar;%SCALA_HOME%\lib\msil.jar;%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.nstools.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
+        <copy file="${bin.dir}/.nsc_bat.tmpl"
+              tofile="${distrib.current.win.dir}/bin/scalap.bat">
+            <filterset>
+                <filter token="PRODUCT" value="scalap"/>
+                <filter token="VERSION" value=""/>
+                <filter token="MAIN" value="scala.tools.scalap.Main"/>
+                <filter token="CPATH" value="%SCALA_HOME%\lib\scala.jar;%SCALA_HOME%\lib\${distrib.nslib.jar};%SCALA_HOME%\lib\${distrib.osc-nstools.jar}"/>
+            </filterset>
+        </copy>
         <chmod dir="${distrib.current.win.dir}/bin" perm="ugo+rx" includes="**/*"/>
         <!-- Set up 'doc' directory (win) -->
         <copy todir="${distrib.current.win.dir}/doc">
