@@ -510,4 +510,11 @@
         <echo>Execute 'ant -help' for Ant help.</echo>
     </target>
 
+    <!--
+    #####################################################################
+    IZPACK
+    #####################################################################
+    -->
+    <import file="${build.support.dir}/build-izpack.xml"/>
+
 </project>
