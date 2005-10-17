@@ -94,7 +94,7 @@ abstract class TailCalls extends Transform
 
       override def toString(): String = {
         "" + currentMethod.name + " types: " + types + " tailPos: " + tailPos +
-        " accessed: " + accessed;
+        " accessed: " + accessed + "\nLabel: " + label + "\nLabel type: " + label.info;
       }
     }
 
@@ -133,6 +133,8 @@ abstract class TailCalls extends Transform
             newCtx.currentMethod.tpe match {
               case PolyType(tparams, result) =>
                 newCtx.types = tparams map (s => s.tpe);
+                newCtx.label.setInfo(result);
+
               case _ => ;
             }
 
