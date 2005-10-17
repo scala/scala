@@ -96,7 +96,7 @@
                includes="lib/**"/>
       <fileset os="windows"
                dir="config/izpack/registry/bin"
-               targetdir="$INSTALL_PATH/tmp"/>
+               targetdir="$INSTALL_PATH/Uninstaller"/>
       <executable os="windows" stage="uninstall"
                   targetfile="$JAVA_HOME\bin\java">
         <arg>-Djava.library.path=$INSTALL_PATH\Uninstaller</arg>
