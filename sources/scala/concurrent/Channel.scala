@@ -15,8 +15,8 @@ class Channel[a] {
     var elem: a = _;
     var next: LinkedList[a] = null;
   }
-  private var written = new LinkedList[a];
-  private var lastWritten = new LinkedList[a];
+  private var written = new LinkedList[a]; // FIFO buffer, realized through
+  private var lastWritten = written;       // aliasing of a linked list
   private var nreaders = 0;
 
   def write(x: a) = synchronized {
