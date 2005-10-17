@@ -610,6 +610,10 @@ When called repeatedly, indent each time one stop further on the right."
   `((,scala-char-re (0 "\"" t nil))
     (scala-search-special-identifier-forward (0 "w" nil nil))))
 
+; define scala-mode-hook
+(defvar scala-mode-hook nil
+  "Hook to run after installing scala mode")
+
 ;; Bug reporting
 
 (defun scala-report-bug ()
@@ -759,5 +763,8 @@ When started, run `scala-mode-hook'.
 (modify-syntax-entry ?\*  ". 23"   scala-mode-syntax-table)
 (modify-syntax-entry ?\n "> b" scala-mode-syntax-table)
 (modify-syntax-entry ?\r "> b" scala-mode-syntax-table)
+
+; run hooks
+(run-hooks 'scala-mode-hook)
 
 (provide 'scala-mode)
