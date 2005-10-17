@@ -306,29 +306,31 @@
                   value="${distrib.dir}/unix/${distrib.package.dir}"/>
         <property name="distrib.scala.dir"
                   value="${distrib.current.dir}/share/scala"/>
+        <property name="distrib.bin.dir"
+                  value="${distrib.scala.dir}/bin"/>
         <property name="distrib.doc.dir"
                   value="${distrib.current.dir}/share/doc/${distrib.package.dir}"/>
         <mkdir dir="${distrib.scala.dir}"/>
         <!-- Set up 'bin' directory (unix) -->
-        <mkdir dir="${distrib.scala.dir}/bin"/>
+        <mkdir dir="${distrib.bin.dir}"/>
         <copy file="${bin.dir}/.nsc_wrapper.tmpl"
-              tofile="${distrib.scala.dir}/bin/.nsc_wrapper">
+              tofile="${distrib.bin.dir}/.nsc_wrapper">
             <filterset>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="CPATH"     value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
             </filterset>
         </copy>
-        <chmod file="${distrib.scala.dir}/bin/.nsc_wrapper" perm="ugo+rx"/>
-        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
-                 link="${distrib.scala.dir}/bin/scala"/>
-        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
-                 link="${distrib.scala.dir}/bin/scalac"/>
-        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
-                 link="${distrib.scala.dir}/bin/scaladoc"/>
-        <symlink resource="${distrib.scala.dir}/bin/.nsc_wrapper"
-                 link="${distrib.scala.dir}/bin/scalap"/>
-        <symlink resource="${distrib.scala.dir}/bin"
+        <chmod file="${distrib.bin.dir}/.nsc_wrapper" perm="ugo+rx"/>
+        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
+                 link="${distrib.bin.dir}/scala"/>
+        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
+                 link="${distrib.bin.dir}/scalac"/>
+        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
+                 link="${distrib.bin.dir}/scaladoc"/>
+        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
+                 link="${distrib.bin.dir}/scalap"/>
+        <symlink resource="${distrib.bin.dir}"
                  link="${distrib.current.dir}/bin"/>
         <!-- Set up 'doc' directory (unix) -->
         <mkdir dir="${distrib.doc.dir}"/>
@@ -347,8 +349,6 @@
         <copy todir="${distrib.scala.dir}/lib">
             <fileset dir="${build.dir}/lib"/>
         </copy>
-        <symlink resource="${distrib.scala.dir}/lib"
-                 link="${distrib.current.dir}/lib"/>
         <!-- Set up 'man' directory (unix) -->
         <mkdir dir="${distrib.current.dir}/share/man"/>
         <copy todir="${distrib.current.dir}/share/man">
