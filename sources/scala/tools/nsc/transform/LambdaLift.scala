@@ -317,17 +317,21 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    override def transform(tree: Tree): Tree =
+    override def transform(tree: Tree): Tree = {
       postTransform(super.transform(tree) setType lifted(tree.tpe));
-
-    /** Transform statements and add lifted definitions to them. */
-    override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
-      val stats1 = super.transformStats(stats, exprOwner);
-      if (currentOwner.isClass && !currentOwner.isPackageClass && liftedDefs(currentOwner).hasNext)
-        stats1 ::: liftedDefs(currentOwner).toList
-      else
-        stats1
     }
+    /** Transform statements and add lifted definitions to them. */
+    override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
+      for (val stat <- super.transformStats(stats, exprOwner)) yield {
+	stat match {
+	  case ClassDef(mods, name, tparams, tpt, impl @ Template(parents, body))
+	  if (liftedDefs(stat.symbol).hasNext) =>
+	    copy.ClassDef(stat, mods, name, tparams, tpt,
+			  copy.Template(impl, parents, body ::: liftedDefs(stat.symbol).toList))
+	  case _ =>
+	    stat
+	}
+      }
 
     override def transformUnit(unit: CompilationUnit): unit = {
       computeFreeVars;

@@ -211,12 +211,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         gen.cast(tree, pt)
     }
 
-    // todo: remove after removing ==, != from value classes
-    private def corresponds(sym: Symbol, anyMember: Symbol): boolean =
-      sym == anyMember ||
-      sym != NoSymbol && isValueClass(sym.owner) && sym.name == anyMember.name && sym.tpe == anyMember.tpe;
-
-
     /** Replace member references as follows:
      *  - `x == y'  for `==' in class Any becomes `x equals y' with `equals' in class Object
      *  - `x != y'  for `!=' in class Any becomes `!(x equals y)' with `equals' in class Object

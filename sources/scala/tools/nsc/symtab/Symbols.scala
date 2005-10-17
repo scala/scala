@@ -427,12 +427,12 @@ import Flags._;
     def filter(cond: Symbol => boolean): Symbol =
       if (hasFlag(OVERLOADED)) {
         //assert(info.isInstanceOf[OverloadedType], "" + this + ":" + info);//DEBUG
-  val alts = alternatives;
-  val alts1 = alts filter cond;
-  if (alts1 eq alts) this
-  else if (alts1.isEmpty) NoSymbol
-  else if (alts1.tail.isEmpty) alts1.head
-  else owner.newOverloaded(info.prefix, alts1)
+	val alts = alternatives;
+	val alts1 = alts filter cond;
+	if (alts1 eq alts) this
+	else if (alts1.isEmpty) NoSymbol
+	else if (alts1.tail.isEmpty) alts1.head
+	else owner.newOverloaded(info.prefix, alts1)
       } else if (cond(this)) this
       else NoSymbol;
 
@@ -519,7 +519,7 @@ import Flags._;
      */
     final def linkedModule: Symbol =
       if (owner.isPackageClass)
-  owner.info.decl(name.toTermName).suchThat(
+	owner.info.decl(name.toTermName).suchThat(
           sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType));
       else NoSymbol;
 
@@ -536,9 +536,10 @@ import Flags._;
 
     final def toInterface: Symbol =
       if (isImplClass) {
-  val iface = tpe.parents.last.symbol;
-  assert(nme.implClassName(iface.name) == name, this);
-  iface
+	assert(!tpe.parents.isEmpty, this);
+	val iface = tpe.parents.last.symbol;
+	assert(nme.implClassName(iface.name) == name, this);
+	iface
       } else this;
 
     /** The module corresponding to this module class (note that this
@@ -569,8 +570,8 @@ import Flags._;
       var sym: Symbol = NoSymbol;
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (!bcs.head.isImplClass)
-    sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
-  bcs = bcs.tail
+	  sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
+	bcs = bcs.tail
       }
       sym
     }
@@ -590,7 +591,7 @@ import Flags._;
       if (isTerm && (this hasFlag PRIVATE)) {
         setFlag(notPRIVATE);
         if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
-  expandName(base)
+	expandName(base)
       }
 
     /** change name by appending $$<fully-qualified-name-of-class `base'>

@@ -188,6 +188,7 @@ import collection.mutable.HashMap;
           setError(tree)
         }
       }
+
       override def apply(t: Type): Type = {
         def checkNoEscape(sym: Symbol): unit = {
           if (sym.hasFlag(PRIVATE)) {
@@ -197,7 +198,7 @@ import collection.mutable.HashMap;
             if (o == sym.owner) badSymbol = sym
           } else if (sym.owner.isTerm) {
             val e = scope.lookupEntry(sym.name);
-            if (e != null && e.sym == sym && e.owner == scope) badSymbol = e.sym
+            if (e != null && e.sym == sym && e.owner == scope && !e.sym.isTypeParameter) badSymbol = e.sym
           }
         }
         if (badSymbol == NoSymbol)
@@ -544,6 +545,7 @@ import collection.mutable.HashMap;
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpe, rhs);
         val value = vdef.symbol;
         val getter = if ((mods & DEFERRED) != 0) value else value.getter(value.owner);
+	if (getter hasFlag OVERLOADED) System.out.println("overloaded getter: " + getter.alternatives + getter.alternatives.map(.tpe));//debug
         assert(getter != NoSymbol, value);//debug
 	val getterDef: DefDef = {
 	  val result = atPos(vdef.pos)(
@@ -666,15 +668,13 @@ import collection.mutable.HashMap;
       val tparams1 = List.mapConserve(ddef.tparams)(typedAbsTypeDef);
       val vparamss1 = List.mapConserve(ddef.vparamss)(vparams1 =>
 	List.mapConserve(vparams1)(typedValDef));
-/*
       for (val vparams <- vparamss1; val vparam <- vparams) {
-	checkNoEscaping.locals(paramScope, WildcardType, vparam.tpt); ()
+	checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
       }
-*/
       var tpt1 =
-//	checkNoEscaping.locals(context.scope, WildcardType,
+	checkNoEscaping.locals(context.scope, WildcardType,
 	  checkNoEscaping.privates(meth,
-	    typedType(ddef.tpt));
+	    typedType(ddef.tpt)));
       checkNonCyclic(ddef.pos, tpt1.tpe, meth);
       val rhs1 =
         checkNoEscaping.locals(
@@ -894,7 +894,7 @@ import collection.mutable.HashMap;
         case ErrorType =>
           setError(tree)
         case _ =>
-          throw new Error("Matcherror at " + phase + " " + fun.tpe);//debug
+	  errorTree(tree, "" + fun + " does not take parameters");
       }
 
       /** The qualifying class of a this or super with prefix `qual' */

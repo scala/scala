@@ -6,7 +6,7 @@
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.Position;
-import nsc.util.ListBuffer;
+import nsc.util.{ListBuffer, HashSet};
 import Flags._;
 
 /* A standard type pattern match:
@@ -1014,53 +1014,14 @@ import Flags._;
 
 // Hash consing --------------------------------------------------------------
 
-  private var size = 20000;
-  private var used = 0;
-  private var table = new Array[Type](size);
+  private val uniques = new HashSet[AnyRef](20000);
 
-  var uniques = 0;
-  var accesses = 0;
-  var collisions = 0; //todo: use HashSet!
+  def uniqueTypeCount = uniques.size; // for statistics
 
-  private def findEntry(tp: Type): Type = {
-    var h = tp.hashCode() % size;
-    if (util.Statistics.enabled) accesses = accesses + 1;
-    var entry = table(h);
-    while (entry != null && entry != tp) {
-      if (util.Statistics.enabled) collisions = collisions + 1;
-      h = (h + 1) % size;
-      entry = table(h)
-    }
-    entry
-  }
-
-  private def addEntry(tp: Type): unit = {
-    if (used >= (size >> 2)) growTable;
-    used = used + 1;
-    var h = tp.hashCode() % size;
-    while (table(h) != null) {
-      h = (h + 1) % size
-    }
-    table(h) = tp
-  }
-
-  private def growTable: unit = {
-    val oldtable = table;
-    size = size * 2;
-    table = new Array[Type](size);
-    var i = 0;
-    while (i < oldtable.length) {
-      val entry = oldtable(i);
-      if (entry != null) addEntry(entry);
-      i = i + 1
-    }
-  }
-
-  private def unique[T <: Type](tp: T): T = {
-    val tp1 = findEntry(tp);
+  private def unique[T <: AnyRef](tp: T): T = {
+    val tp1 = uniques.findEntry(tp);
     if (tp1 == null) {
-      if (util.Statistics.enabled) uniques = uniques + 1;
-      addEntry(tp); tp
+      uniques.addEntry(tp); tp
     } else {
       tp1.asInstanceOf[T]
     }
@@ -1152,7 +1113,7 @@ import Flags._;
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
       case OverloadedType(pre, alts) =>
-        val pre1 = this(pre);
+        val pre1 = if (pre.isInstanceOf[ClassInfoType]) pre else this(pre);
         if (pre1 eq pre) tp
         else OverloadedType(pre1, alts)
       case AntiPolyType(pre, args) =>

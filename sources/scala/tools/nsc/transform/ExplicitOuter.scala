@@ -145,6 +145,7 @@ abstract class ExplicitOuter extends InfoTransform {
      *  to super accessor symbols.
      *  //todo: not clear whether we need to this for all super calls symbols, or just
      *        protected ones (or all calls to protected from inner classes)?
+     *        (controled by switch `needSuperAccessors')
      */
     private val superAccessors = new HashMap[Triple[Symbol, Symbol, Name], Symbol];
 

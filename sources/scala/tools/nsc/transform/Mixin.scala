@@ -25,7 +25,8 @@ abstract class Mixin extends InfoTransform {
 
   private def isStatic(sym: Symbol) = isForwarded(sym) && (sym.hasFlag(PRIVATE) || sym.isConstructor);
 
-  private def toInterface(tp: Type): Type = tp.symbol.toInterface.tpe;
+  private def toInterface(tp: Type): Type =
+    atPhase(currentRun.mixinPhase)(tp.symbol.toInterface).tpe;
 
   private def rebindSuper(base: Symbol, member: Symbol, prevowner: Symbol): Symbol =
     atPhase(currentRun.refchecksPhase) {
@@ -80,6 +81,7 @@ abstract class Mixin extends InfoTransform {
           }
         } else if ((member hasFlag (LIFTED | BRIDGE)) && !(member hasFlag PRIVATE)) {
           member.expandName(clazz);
+	  if (settings.debug.value) log("adding " + member + " to " + clazz);
           addMember(clazz, member.cloneSymbol(clazz));
         }
       }
@@ -346,8 +348,8 @@ abstract class Mixin extends InfoTransform {
         case Select(qual, name) if sym.owner.isImplClass && !isStatic(sym) =>
 	  if (sym.isMethod) {
 	    assert(sym hasFlag (LIFTED | BRIDGE), sym);
-	    val sym1 = enclInterface.info.decl(sym.name);
-	    assert(sym1 != NoSymbol, sym);
+	    val sym1 = toInterface(qual.tpe).member(sym.name);
+	    assert(sym1 != NoSymbol, "" + sym + " " + toInterface(qual.tpe));//debug
             assert(!(sym1 hasFlag OVERLOADED), sym);//debug
 	    tree setSymbol sym1
 	  } else {

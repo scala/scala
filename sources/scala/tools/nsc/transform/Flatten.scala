@@ -97,14 +97,7 @@ abstract class Flatten extends InfoTransform {
         case _ =>
           tree
       }
-      tree1 setType flattened(tree1.tpe);
-/*
-      if (sym != null && sym.isNestedClass && !(sym hasFlag LIFTED)) {
-	liftClass(sym);//todo: remove
-	if (sym.implClass != NoSymbol) liftClass(sym.implClass);
-      }
-*/
-      tree1
+      tree1 setType flattened(tree1.tpe)
     }
 
     /** Transform statements and add lifted definitions to them. */

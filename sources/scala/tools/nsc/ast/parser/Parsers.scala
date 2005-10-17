@@ -180,7 +180,7 @@ import Tokens._;
 	params
       case Ident(_) | Typed(Ident(_), _) =>
 	List(convertToParam(t));
-      case Literal(c) if c.tag == UnitTag => //todo: check with Literal(Constant())
+      case Literal(c) if c.tag == UnitTag =>
 	Nil
       case _ =>
 	syntaxError(t.pos, "malformed formal parameter list", false);

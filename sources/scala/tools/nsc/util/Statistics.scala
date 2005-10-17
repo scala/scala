@@ -24,9 +24,7 @@ abstract class Statistics {
     inform("#applications: " + analyzer.appcnt);
     inform("#implicits   : " + analyzer.implcnt);
     inform("ms implicits : " + analyzer.impltime);
-    inform("#typecreates : " + accesses);
-    inform("#uniquetypes : " + uniques);
-    inform("#collisions  : " + collisions);
+    inform("#uniquetypes : " + uniqueTypeCount);
     inform("#symbols     : " + symbolCount);
     inform("#type symbols: " + typeSymbolCount);
     inform("#class symbols: " + classSymbolCount);

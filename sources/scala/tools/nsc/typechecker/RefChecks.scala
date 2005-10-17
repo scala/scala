@@ -394,7 +394,7 @@ abstract class RefChecks extends InfoTransform {
       for (val stat <- stats) {
 	index = index + 1;
 	stat match {
-          case ClassDef(_, _, _, _, _) | DefDef(_, _, _, _, _, _) =>
+          case ClassDef(_, _, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
             assert(stat.symbol != NoSymbol, stat);//debug
             if (stat.symbol.isLocal) {
 	      currentLevel.scope.enter(newScopeEntry(stat.symbol, currentLevel.scope));
@@ -459,7 +459,6 @@ abstract class RefChecks extends InfoTransform {
 
       case ValDef(_, _, _, _) =>
 	val tree1 = transform(tree); // important to do before forward reference check
-	//todo: handle variables
 	if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
 	  if (settings.debug.value) System.out.println(currentLevel.refsym);
 	  unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);

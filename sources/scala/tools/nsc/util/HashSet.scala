@@ -5,28 +5,30 @@
 // $Id$
 package scala.tools.nsc.util;
 
-class HashSet[T <: AnyRef](capacity: int) extends Set[T] {
+class HashSet[T <: AnyRef](initialCapacity: int) extends Set[T] {
 
-  private var size = capacity;
+  private var capacity = initialCapacity;
   private var used = 0;
-  private var table = new Array[Object](size);
+  private var table = new Array[Object](capacity);
+
+  def size: int = used;
 
   def findEntry(x: T): T = {
-    var h = x.hashCode() % size;
+    var h = x.hashCode() % capacity;
     var entry = table(h);
     while (entry != null && entry != x) {
-      h = (h + 1) % size;
+      h = (h + 1) % capacity;
       entry = table(h)
     }
     entry.asInstanceOf[T]
   }
 
   def addEntry(x: T): unit = {
-    if (used >= (size >> 2)) growTable;
+    if (used >= (capacity >> 2)) growTable;
     used = used + 1;
-    var h = x.hashCode() % size;
+    var h = x.hashCode() % capacity;
     while (table(h) != null) {
-      h = (h + 1) % size
+      h = (h + 1) % capacity
     }
     table(h) = x
   }
@@ -34,8 +36,8 @@ class HashSet[T <: AnyRef](capacity: int) extends Set[T] {
   def elements = new Iterator[T] {
     private var i = 0;
     def hasNext: boolean = {
-      while (i < size && table(i) == null) i = i + 1;
-      i < size
+      while (i < capacity && table(i) == null) i = i + 1;
+      i < capacity
     }
     def next: T =
       if (hasNext) { i = i + 1; table(i - 1).asInstanceOf[T] }
@@ -44,8 +46,8 @@ class HashSet[T <: AnyRef](capacity: int) extends Set[T] {
 
   private def growTable: unit = {
     val oldtable = table;
-    size = size * 2;
-    table = new Array[Object](size);
+    capacity = capacity * 2;
+    table = new Array[Object](capacity);
     var i = 0;
     while (i < oldtable.length) {
       val entry = oldtable(i);
