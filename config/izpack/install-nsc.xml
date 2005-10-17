@@ -6,32 +6,10 @@
   <info>
     <appname>Scala</appname>
     <appversion>@VERSION@</appversion>
-<!--
-    <authors>
-      <author name="Martin Odersky"     email="martin.odersky@epfl.ch"/>
-      <author name="Vincent Cremet"     email="vincent.cremet@epfl.ch"/>
-      <author name="Iulian Dragos"      email="Iulian.Dragos@epfl.ch"/>
-      <author name="Gilles Dubochet"    email="gilles.dubochet@epfl.ch"/>
-      <author name="Burak Emir"         email="burak.emir@epfl.ch"/>
-      <author name="Stephane Micheloud" email="stephane.micheloud@epfl.ch"/>
-      <author name="Nikolay Mihaylov"   email="nikolay.mihaylov@epfl.ch"/>
-
-      <author name="Philippe Altherr (past member)" email="philippe.alther@epfl.ch"/>
-      <author name="Michel Schinz (past member)"    email="michel.schinz@epfl.ch"/>
-      <author name="Erik Stenmann (past member)"    email="happi@home.se"/>
-      <author name="Matthias Zenger (past member)"  email="matthias.zenger@google.com"/>
-    </authors>
--->
     <url>@URL@</url>
     <javaversion>1.4</javaversion>
   </info>
-<!--
-  <variables>
-    <variable name="JDKPathPanel.minVersion" value="1.4.0"/>
-    <variable name="JDKPathPanel.maxVersion" value="1.5.0"/>
-    <variable name="JDKPathPanel.skipIfValid" value="yes"/>
-  </variables>
--->
+
   <native type="izpack" name="ShellLink.dll"/>
 
   <guiprefs resizable="yes" height="400" width="600">
@@ -69,24 +47,40 @@
     <panel classname="HelloPanel"/>
     <panel classname="HTMLInfoPanel"/>
     <panel classname="HTMLLicencePanel"/>
-    <!--
-    <panel classname="JDKPathPanel"/>
-    <panel classname="PacksPanel"/>
-    -->
     <panel classname="TargetPanel"/>
     <panel classname="InstallPanel"/>
-    <panel os="unix" classname="ProcessPanel"/>
+    <panel classname="ProcessPanel"/>
     <panel classname="ShortcutPanel"/>
     <panel classname="SimpleFinishPanel"/>
   </panels>
 
   <packs>
-    <pack name="Installing..." required="yes">
+    <pack name="Package Installation" required="yes">
       <description>Installing the Scala software.</description>
+
+      <!-- unix -->
+
       <fileset os="unix"
                dir="distribs/unix/@PREFIX@-@VERSION@"
-               targetdir="$INSTALL_PATH">
-      </fileset>
+               targetdir="$INSTALL_PATH"
+               includes="share/**"/>
+      <!-- The <singlefile> tag allows the file -->
+      <!-- to be renamed (unlike <file>).       -->
+      <singlefile os="unix"
+                  target="$INSTALL_PATH/bin/.nsc_symlink"
+                  src="bin/.nsc_symlink.tmpl"/>
+      <executable os="unix"
+                  targetfile="$INSTALL_PATH/bin/.nsc_symlink"/>
+      <singlefile os="unix"
+                  target="$INSTALL_PATH/share/scala/bin/.nsc_symlink"
+                  src="bin/.nsc_symlink.tmpl"/>
+      <executable os="unix"
+                  targetfile="$INSTALL_PATH/share/scala/bin/.nsc_symlink"/>
+      <executable os="unix" keep="true"
+                  targetfile="$INSTALL_PATH/share/scala/bin/.nsc_wrapper"/>
+
+      <!-- windows -->
+
       <!-- we share common resources doc/*.pdf and lib/** -->
       <fileset os="windows"
                dir="distribs/win/@PREFIX@-@VERSION@"
@@ -100,13 +94,17 @@
                dir="distribs/unix/@PREFIX@-@VERSION@/share/scala"
                targetdir="$INSTALL_PATH"
                includes="lib/**"/>
-      <singlefile os="unix"
-                  target="$INSTALL_PATH/bin/.create_wrappers"
-                  src="config/izpack/create_wrappers.sh"/>
-      <executable os="unix"
-                  targetfile="$INSTALL_PATH/bin/.create_wrappers"/>
-      <executable os="unix"
-                  targetfile="$INSTALL_PATH/bin/.nsc_wrapper" keep="true"/>
+      <fileset os="windows"
+               dir="config/izpack/registry/bin"
+               targetdir="$INSTALL_PATH/tmp"/>
+      <executable os="windows" stage="uninstall"
+                  targetfile="$JAVA_HOME\bin\java">
+        <arg>-Djava.library.path=$INSTALL_PATH\Uninstaller</arg>
+        <arg>-cp</arg>
+        <arg>$INSTALL_PATH\Uninstaller\registry.jar;$INSTALL_PATH\Uninstaller\setenv.jar</arg>
+        <arg>Main</arg>
+        <arg>@VERSION@</arg>
+      </executable>
     </pack>
   </packs>
 
