@@ -25,16 +25,16 @@
     <url>@URL@</url>
     <javaversion>1.4</javaversion>
   </info>
-
+<!--
   <variables>
     <variable name="JDKPathPanel.minVersion" value="1.4.0"/>
     <variable name="JDKPathPanel.maxVersion" value="1.5.0"/>
     <variable name="JDKPathPanel.skipIfValid" value="yes"/>
   </variables>
-
+-->
   <native type="izpack" name="ShellLink.dll"/>
 
-  <guiprefs resizable="yes" height="480" width="640">
+  <guiprefs resizable="yes" height="400" width="600">
     <laf name="metouia">
       <os family="unix"/>
     </laf>
@@ -106,7 +106,7 @@
       <executable os="unix"
                   targetfile="$INSTALL_PATH/bin/.create_wrappers"/>
       <executable os="unix"
-                  targetfile="$INSTALL_PATH/bin/.scala_wrapper" keep="true"/>
+                  targetfile="$INSTALL_PATH/bin/.nsc_wrapper" keep="true"/>
     </pack>
   </packs>
 
