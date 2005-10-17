@@ -6383,7 +6383,7 @@ the node which conceptually forms the top of the list.
 Empty linked lists start with a dummy node, whose successor is \code{null}.
 
 The channel class uses a linked list to store data that has been sent
-but not read yet. In the opposite direction, a threads that
+but not read yet. At the opposite end, threads that
 wish to read from an empty channel, register their presence by
 incrementing the \code{nreaders} field and waiting to be notified.
 \begin{lstlisting}
@@ -6395,7 +6395,7 @@ class Channel[a] {
     var next: LinkedList[a] = null;
   }
   private var written = new LinkedList[a];
-  private var lastWritten = new LinkedList[a];
+  private var lastWritten = written;
   private var nreaders = 0;
 
   def write(x: a) = synchronized {
