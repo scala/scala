@@ -604,7 +604,7 @@ abstract class GenICode extends SubComponent  {
             var invokeStyle =
               if (isStaticSymbol(sym))
                 Static(false)
-              else if (sym hasFlag Flags.PRIVATE)
+              else if (sym.hasFlag(Flags.PRIVATE) || sym.isClassConstructor)
                 Static(true)
               else
                 Dynamic;
@@ -617,7 +617,7 @@ abstract class GenICode extends SubComponent  {
             ctx1 = genLoadArguments(args, fun.symbol.info.paramTypes, ctx1);
 
             ctx1.bb.emit(CALL_METHOD(sym, invokeStyle), tree.pos);
-            generatedType = toTypeKind(sym.info.resultType);
+            generatedType = if (sym.isClassConstructor) UNIT else toTypeKind(sym.info.resultType);
             ctx1
           }
 

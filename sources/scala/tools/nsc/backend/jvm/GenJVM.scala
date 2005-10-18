@@ -695,11 +695,24 @@ abstract class GenJVM extends SubComponent {
 
     /** Return the a name of this symbol that can be used on the Java
      * platform. It removes spaces from names.
+     *
+     * Special handling: scala.All and scala.AllRef are 'erased' to
+     * scala.All$ and scala.AllRef$. This is needed because they are
+     * not real classes, and they mean 'abrupt termination upon evaluation
+     * of that expression' or 'null' respectively. This handling is
+     * done already in GenICode, but here we need to remove references
+     * from method signatures to these types, because such classes can
+     * not exist in the classpath: the type checker will be very confused.
      */
-    def javaName(sym: Symbol) = {
+    def javaName(sym: Symbol): String = {
       val suffix = if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
                         !sym.isImplClass &&
                         !sym.hasFlag(Flags.JAVA)) "$" else "";
+
+      if (sym == definitions.AllClass)
+        return "scala.All$"
+      else if (sym == definitions.AllRefClass)
+        return "scala.AllRef$";
 
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
