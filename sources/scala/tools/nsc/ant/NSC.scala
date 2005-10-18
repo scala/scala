@@ -51,6 +51,7 @@ package scala.tools.nsc.ant {
      *    <li>force,</li>
      *    <li>stop,</li>
      *    <li>skip,</li>
+     *    <li>log,</li>
      *    <li>check.</li>
      * </ul>
      * It also takes the following parameters as nested elements:<ul>
@@ -126,6 +127,8 @@ package scala.tools.nsc.ant {
       private var stop: Option[String] = None;
       /** Which compilation phases should be skipped during compilation. */
       private var skip: List[String] = Nil;
+      /** Which compilation phases should be logged during compilation. */
+      private var logPhase: List[String] = Nil;
       /** Which compilation phases results should be checked for consistency. */
       private var check: List[String] = Nil;
 
@@ -403,6 +406,18 @@ package scala.tools.nsc.ant {
       }
 
       /**
+       * Sets the log attribute. Used by Ant.
+       * @param input The value for <code>logPhase</code>.
+       */
+      def setLog (input: String) = {
+        logPhase = List.fromArray(input.split(",")).flatMap(s: String => {
+          val st = s.trim();
+          if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
+          else {error("Phase " + st + " in log does not exist."); Nil}
+        });
+      }
+
+      /**
        * Sets the force attribute. Used by Ant.
        * @param input The value for <code>force</code>.
        */
@@ -566,6 +581,7 @@ package scala.tools.nsc.ant {
             if (!stop.isEmpty) settings.stop.value = List(stop.get);
             if (!skip.isEmpty) settings.skip.value = skip;
             if (!check.isEmpty) settings.check.value = check;
+            if (!logPhase.isEmpty) settings.log.value = logPhase;
 
             // Sets path properties to prevent ClassPath from being corrupted.
             // It this isn't done, classpath will contain more than

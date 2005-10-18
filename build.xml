@@ -186,7 +186,7 @@
         <mkdir dir="${build.nslib.dir}"/>
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              usepredefs="false"
-             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}"
+             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
                 <pathelement location="${build.nslib.dir}"/>
@@ -199,7 +199,7 @@
         </nsc>
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              excludesfile="${nsc.nslib.excludes}"
-             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}"
+             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
                 <pathelement location="${build.nslib.dir}"/>
@@ -219,7 +219,7 @@
         <mkdir dir="${build.nstools.dir}"/>
         <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}"
              excludesfile="${nsc.nstools.excludes}"
-             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}"
+             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
                 <pathelement location="${build.nslib.dir}"/>
