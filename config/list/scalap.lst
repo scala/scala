@@ -12,7 +12,7 @@ EntityTable.scala
 Flags.scala
 JavaWriter.scala
 Main.scala
-MetaAttribute.scala
+MetaParser.scala
 Names.scala
 ScalaAttribute.scala
 ScalaWriter.scala
