@@ -180,7 +180,7 @@
             <include name="scala/runtime/**/*.scala"/>
         </osc>
     </target>
-    
+
     <target name="build.nsc.nslib" depends="init.nsc, build.pico.nslib"
             description="Builds the Scala library with the new Scala compiler.">
         <mkdir dir="${build.nslib.dir}"/>
@@ -284,7 +284,7 @@
     <condition property="os.win">
         <os family="windows"/>
     </condition>
-    
+
     <target name="distrib.init">
         <echo level="verbose">scala.dll=${scala.dll}</echo>
         <fail message="Required DLL library is missing; check the 'scala.dll' property in 'build.${user.name}.properties'.">
@@ -295,11 +295,99 @@
     	<tstamp prefix="start"/>
     </target>
 
-    <target name="distrib"
-            depends="distrib.unix, distrib.mac, distrib.win"
-            description="Creates a (simplified) Scala distribution."/>
+    <target name="distrib" depends="distrib.unix, distrib.win"
+            description="Creates a simplified Scala distribution."/>
 
-    <target name="distrib.unix" depends="build.jars,docs,distrib.init">
+    <target name="distrib.unix" if="os.unix"
+            depends="build.jars, distrib.init"
+            description="Creates a simplified Scala distribution for Unix.">
+        <property name="distrib.package.dir"
+                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+        <property name="distrib.current.dir"
+                  value="${distrib.dir}/unix/${distrib.package.dir}"/>
+        <property name="distrib.scala.dir"
+                  value="${distrib.current.dir}/share/scala"/>
+        <property name="distrib.bin.dir"
+                  value="${distrib.scala.dir}/bin"/>
+        <!-- Set up 'bin' directory (unix) -->
+        <mkdir dir="${distrib.bin.dir}"/>
+        <copy file="${bin.dir}/.nsc_wrapper.tmpl"
+              tofile="${distrib.bin.dir}/.nsc_wrapper">
+            <filterset>
+                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="CPATH"     value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
+            </filterset>
+        </copy>
+        <chmod file="${distrib.bin.dir}/.nsc_wrapper" perm="ugo+rx"/>
+        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
+                 link="${distrib.bin.dir}/scala"/>
+        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
+                 link="${distrib.bin.dir}/scalac"/>
+        <symlink resource="${distrib.bin.dir}"
+                 link="${distrib.current.dir}/bin"/>
+        <!-- Set up 'lib' directory -->
+        <mkdir dir="${distrib.scala.dir}/lib"/>
+        <copy todir="${distrib.scala.dir}/lib">
+            <fileset dir="${build.dir}/lib"/>
+        </copy>
+        <!-- Set up latest -->
+        <symlink resource="${distrib.current.dir}"
+                 link="${distrib.dir}/unix/latest"/>
+    </target>
+
+    <target name="distrib.win" if="os.win"
+            depends="build.jars, distrib.init"
+            description="Creates a simplified Scala distribution for Windows.">
+        <property name="distrib.package.dir"
+                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+        <property name="distrib.current.win.dir"
+                  value="${distrib.dir}/win/${distrib.package.dir}"/>
+        <!-- Set up 'bin' directory -->
+        <mkdir dir="${distrib.current.win.dir}/bin"/>
+        <copy file="${bin.dir}/.scala_bat.tmpl"
+              tofile="${distrib.current.win.dir}/bin/scala.bat">
+            <filterset>
+                <filter token="PRODUCT"   value="scala"/>
+                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="BOOTCPATH" value="&quot;%SCALA_HOME%&quot;\lib\scala.jar"/>
+            </filterset>
+        </copy>
+        <copy file="${bin.dir}/.nsc_bat.tmpl"
+              tofile="${distrib.current.win.dir}/bin/scalac.bat">
+            <filterset>
+                <filter token="PRODUCT"   value="scalac"/>
+                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="MAIN"      value="scala.tools.nsc.Main"/>
+                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;&quot;%SCALA_HOME%&quot;\lib\${distrib.nslib.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.nstools.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.osc-nstools.jar}"/>
+            </filterset>
+        </copy>
+        <fixcrlf srcdir="${distrib.current.win.dir}/bin" eol="dos"/>
+        <attrib readonly="true">
+            <fileset dir="${distrib.current.win.dir}/bin"
+                     includes="**/*.bat"/>
+        </attrib>
+        <!-- Set up 'lib' directory (win) -->
+        <mkdir dir="${distrib.current.win.dir}/lib"/>
+        <copy todir="${distrib.current.win.dir}/lib">
+            <fileset dir="${build.dir}/lib"/>
+        </copy>
+    </target>
+
+    <!--
+    #####################################################################
+    FULL DISTRIB
+    #####################################################################
+    -->
+
+    <target name="distrib.all"
+            depends="distrib.unix.all, distrib.win.all"
+            description="Creates a full Scala distribution."/>
+
+    <target name="distrib.unix.all" depends="build.jars,docs,distrib.init"
+            description="Creates a full Scala distribution for Unix.">
         <property name="distrib.package.dir"
                   value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <property name="distrib.current.dir"
@@ -364,9 +452,6 @@
         <!-- Set up 'sources.zip' (unix) -->
         <zip destfile="${distrib.scala.dir}/sources.zip"
              basedir="${basedir}" includes="sources/scala/**/*.scala"/>
-        <!-- Set up latest -->
-        <symlink resource="${distrib.current.dir}"
-                 link="${distrib.dir}/unix/latest"/>
         <!-- Create gz and bz2 compressed tarballs -->
         <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.gz"
              basedir="${distrib.current.dir}" compression="gzip"/>
@@ -374,9 +459,10 @@
              basedir="${distrib.current.dir}" compression="bzip2"/>
     </target>
 
-    <target name="distrib.mac" depends="distrib.unix"/>
+    <target name="distrib.mac.all" depends="distrib.unix.all"/>
 
-    <target name="distrib.win" depends="build, docs, distrib.init">
+    <target name="distrib.win.all" depends="build, docs, distrib.init"
+            description="Creates a full Scala distribution for Windows.">
         <property name="distrib.package.dir"
                   value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <property name="distrib.current.win.dir"
@@ -448,9 +534,6 @@
         <!-- Set up 'sources.zip' (win) -->
         <zip destfile="${distrib.current.win.dir}/sources.zip"
              basedir="${basedir}" includes="sources/scala/**/*.scala"/>
-        <!-- Set up latest -->
-        <symlink resource="${distrib.current.win.dir}"
-                 link="${distrib.dir}/win/latest"/>
         <!-- Create zip archive -->
         <zip destfile="${distrib.dir}/win/${distrib.package.dir}.zip"
              basedir="${distrib.current.win.dir}"/>
