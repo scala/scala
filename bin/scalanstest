@@ -49,7 +49,7 @@
 configure() {
 
     # Location of the Scala library sources.
-    default_LIBRARY_SOURCES="/home/dragos/scala/sources";
+    default_LIBRARY_SOURCES="$PREFIX/sources";
 
     # Location of the Scala library.
     default_LIBRARY_CLASSES="$PREFIX/build/nslib";
@@ -202,362 +202,6 @@ get_unix_pathlist() {
 }
 
 ##############################################################################
-# Path list construction functions
-
-# Prints the concatenation of two path lists.
-append_pathlists() {
-    [ $# = 2 ] || abort "internal error";
-
-    if [ -z "$1" ]; then
-        echo "$2";
-    elif [ -z "$2" ]; then
-        echo "$1";
-    else
-        echo "$1:$2";
-    fi;
-}
-
-##############################################################################
-# Value computation functions
-
-# Computes and stores the value "$1" in the variable "current_$1". If
-# the variable "SCALA_$1" is defined, its content is used. Otherwise,
-# the content of the variable "default_$1" is used.
-compute_value() {
-    [ $# = 1 ] || abort "internal error";
-
-    eval current_$1=\"\$default_$1\";
-    case "$1" in
-
-        LIBRARY_SOURCES  | \
-        LIBRARY_CLASSES  | \
-        TOOLS_CLASSES    | \
-        NLIBRARY_CLASSES | \
-        NTOOLS_CLASSES   | \
-        FJBG_CLASSES     | \
-        MSIL_CLASSES     )
-            if eval [ -n \"\$SCALA_$1\" ]; then
-                if eval [ -f \"\$SCALA_$1\" -o -d \"\$SCALA_$1\" ]; then
-                    eval current_$1=\"\$SCALA_$1\";
-                else
-                    eval warning \""File referred by SCALA_$1 (\$SCALA_$1)" \
-                        "does not exist, using default value instead."\";
-                    unset SCALA_$1;
-                fi;
-            fi;
-            if eval [ -f \"\$current_$1\" -o -d \"\$current_$1\" ]; then
-                :;
-            else
-                eval abort \""File referred by default_$1 (\$default_$1)" \
-                    "does not exist. Please, fix definition of default_$1 in" \
-                    "file $SOURCE or define environment variable SCALA_$1."\";
-            fi;
-            ;;
-
-        JAVA_CMD   | \
-        JAVA_ARGS  | \
-        SCALA_CMD  | \
-        SCALA_ARGS | \
-        EXEC       )
-            if eval [ -n \"\$SCALA_$1\" ]; then
-                eval current_$1=\"\$SCALA_$1\";
-            fi;
-            ;;
-
-        * )
-            abort "internal error: $1";
-            ;;
-
-    esac;
-}
-
-##############################################################################
-# Default paths
-
-# Prints the default scala classpath or nothing if it's unspecified.
-get_scala_classpath() {
-    if [ -n "$SCALA_CLASSPATH" ]; then
-        get_unix_pathlist "$SCALA_CLASSPATH";
-    elif [ -n "$CLASSPATH" ]; then
-        get_unix_pathlist "$CLASSPATH";
-    fi;
-}
-
-# Prints the default scala sourcepath or nothing if it's unspecified.
-get_scala_sourcepath() {
-    if [ -n "$SCALA_SOURCEPATH" ]; then
-        get_unix_pathlist "$SCALA_SOURCEPATH";
-    fi;
-}
-
-# Prints the default scala bootclasspath or nothing if it's unspecified.
-get_scala_bootclasspath() {
-    if [ -n "$SCALA_BOOTCLASSPATH" ]; then
-        get_unix_pathlist "$SCALA_BOOTCLASSPATH";
-    fi;
-}
-
-# Prints the default scala extdirs or nothing if it's unspecified.
-get_scala_extdirs() {
-    if [ -n "$SCALA_EXTDIRS" ]; then
-        get_unix_pathlist "$SCALA_EXTDIRS";
-    fi;
-}
-
-##############################################################################
-# VM invocation functions
-
-# Prints the VM script-suffix-specific arguments.
-vm_get_script_suffix_args() {
-    case "$SCRIPT" in
-        *-debug* ) echo "-Djava.compiler=NONE -ea";;
-    esac;
-}
-
-# Starts a Java VM with the specified arguments.
-vm_start_java() {
-    # compute values
-    compute_value EXEC;
-    compute_value JAVA_CMD;
-    compute_value JAVA_ARGS;
-
-    # start Java VM
-    $current_EXEC $current_JAVA_CMD $current_JAVA_ARGS \
-        `vm_get_script_suffix_args` "$@";
-}
-
-# Starts a Scala VM with the specified arguments.
-vm_start_scala() {
-    # compute values
-    compute_value EXEC;
-    compute_value SCALA_CMD;
-    compute_value SCALA_ARGS;
-
-    # start Java VM
-    $current_EXEC $current_SCALA_CMD $current_SCALA_ARGS \
-        `vm_get_script_suffix_args` "$@";
-}
-
-##############################################################################
-# Scala invocation functions
-
-# Returns true if the given arguments contain a flag -Xbootclasspath.
-scala_has_bootclasspath() {
-    while [ $# != 0 ]; do
-        case "$1" in
-            -Xbootclasspath:* ) return 0;;
-            -cp | -classpath  ) shift 1; [ $# != 0 ] && shift 1;;
-            -jar              ) return 1;;
-            -*                ) shift 1;;
-            *                 ) return 1;;
-        esac;
-    done;
-    return 1;
-}
-
-# Implements "scala [<option>...] <class> [<args>...]".
-scala_main() {
-    if scala_has_bootclasspath "$@"; then
-        vm_start_java "$@";
-    else
-        compute_value LIBRARY_CLASSES;
-        classes="$current_LIBRARY_CLASSES";
-        vm_start_java "-Xbootclasspath/a:`get_os_filename "$classes"`" "$@";
-    fi;
-}
-
-##############################################################################
-# Tool invocation functions
-
-# Starts a Scala tool. The first argument is added to the runtime
-# classpath. The following ones are passed to vm_start_scala. They
-# must, at least, contain the name of the main class.
-tool_start() {
-    [ $# -gt 1 ] || abort "internal error";
-    classpath="$1"; shift 1;
-
-    # compute value
-    compute_value LIBRARY_SOURCES;
-    compute_value LIBRARY_CLASSES;
-    compute_value TOOLS_CLASSES;
-
-    # append tools library to classpath
-    classpath=`append_pathlists "$classpath" "$current_TOOLS_CLASSES"`;
-
-    # start Scala VM
-    tool_start0 -classpath "`get_os_pathlist "$classpath"`" "$@";
-}
-
-tool_start0() {
-    if [ -n "`get_scala_extdirs`" ]; then
-        tool_start1 -Dscala.ext.dirs="`get_scala_extdirs`" "$@";
-    else
-        tool_start1 "$@";
-    fi;
-}
-
-tool_start1() {
-    if [ -n "`get_scala_bootclasspath`" ]; then
-        tool_start2 -Dscala.boot.class.path="`get_scala_bootclasspath`" "$@";
-    else
-        tool_start2 "$@";
-    fi;
-}
-
-tool_start2() {
-    if [ -n "`get_scala_sourcepath`" ]; then
-        tool_start3 -Dscala.source.path="`get_scala_sourcepath`" "$@";
-    else
-        tool_start3 "$@";
-    fi;
-}
-
-tool_start3() {
-    if [ -n "`get_scala_classpath`" ]; then
-        tool_start4 -Dscala.class.path="`get_scala_classpath`" "$@";
-    else
-        tool_start4 "$@";
-    fi;
-}
-
-tool_start4() {
-    sources="$current_LIBRARY_SOURCES";
-    classes="$current_LIBRARY_CLASSES";
-    vm_start_scala \
-        -Dscala.product="$SCRIPT" \
-        -Dscala.version="$VERSION" \
-        -Dscala.home="$PREFIX" \
-        -Dscala.library.source.path="`get_os_filename "$sources"`" \
-        -Dscala.library.class.path="`get_os_filename "$classes"`" \
-        "$@";
-}
-
-##############################################################################
-# Compiler invocation functions
-
-# Starts a Scala compiler. The first argument is added to the runtime
-# classpath. The following ones are passed to vm_start_scala. They
-# must, at least, contain the name of the main class.
-compiler_start() {
-    [ $# -gt 1 ] || abort "internal error";
-    classpath="$1"; shift 1;
-
-    # compute values
-    compute_value FJBG_CLASSES;
-    compute_value MSIL_CLASSES;
-
-    # append FJBG and MSIL libraries to classpath
-    classpath=`append_pathlists "$classpath" "$current_FJBG_CLASSES"`;
-    classpath=`append_pathlists "$classpath" "$current_MSIL_CLASSES"`;
-
-    # start tool
-    tool_start "$classpath" "$@";
-}
-
-##############################################################################
-# Implementation of scala-info
-
-# Prints given error message, prints usage and exits with error code 1.
-info_abort() {
-    error "$@";
-    info_print_usage 1>&2;
-    exit 1;
-}
-
-# Prints value of variable $1.
-info_print_variable() {
-    [ $# = 1 ] || abort "internal error";
-    eval echo \"\$$1\";
-}
-
-# Prints default value of value $1.
-info_print_default_value() {
-    [ $# = 1 ] || abort "internal error";
-    info_print_variable "default_$1";
-}
-
-# Prints current value of value $1.
-info_print_current_value() {
-    [ $# = 1 ] || abort "internal error";
-    compute_value "$1";
-    info_print_variable "current_$1";
-}
-
-# Implements "scala-info --home".
-info_option_home() {
-    [ $# -gt 0 ] && abort "too many arguments";
-    echo "$PREFIX";
-}
-
-# Implements "scala-info --version".
-info_option_version() {
-    [ $# -gt 0 ] && abort "too many arguments";
-    echo "$VERSION";
-}
-
-# Implements "scala-info --$1 <value>"
-info_option_x_value() {
-    [ $# -lt 2 ] && abort "missing value name";
-    [ $# -gt 2 ] && abort "too many arguments";
-    case "$2" in
-        LIBRARY_SOURCES     ) value=$2;;
-        LIBRARY_CLASSES     ) value=$2;;
-        TOOLS_CLASSES       ) value=$2;;
-        NLIBRARY_CLASSES    ) value=$2;;
-        NTOOLS_CLASSES      ) value=$2;;
-        FJBG_CLASSES        ) value=$2;;
-        MSIL_CLASSES        ) value=$2;;
-        JAVA_CMD            ) value=$2;;
-        JAVA_ARGS           ) value=$2;;
-        SCALA_CMD           ) value=$2;;
-        SCALA_ARGS          ) value=$2;;
-        EXEC                ) value=$2;;
-        *                   ) abort "Unknown value \`$2'";;
-    esac;
-    info_print_$1_value $value;
-}
-
-# Implements "scala-info --help".
-info_option_help() {
-    echo "usage: $0 <option>";
-    echo "where possible options include:";
-    echo "  --home            Print Scala home directory";
-    echo "  --version         Print Scala version";
-    echo "  --default <name>  Print default value of value <name>";
-    echo "  --current <name>  Print current value of value <name>";
-    echo "  -? --help         Print this help message";
-    echo "";
-    echo "valid value names include:";
-    echo "  LIBRARY_SOURCES   Location of the Scala library sources";
-    echo "  LIBRARY_CLASSES   Location of the Scala library";
-    echo "  TOOLS_CLASSES     Location of the Scala tools";
-    echo "  NLIBRARY_CLASSES  Location of the new Scala library";
-    echo "  NTOOLS_CLASSES    Location of the new Scala tools";
-    echo "  FJBG_CLASSES      Location of the fjbg library";
-    echo "  MSIL_CLASSES      Location of the msil library";
-    echo "  JAVA_CMD          Command to start the Java VM";
-    echo "  JAVA_ARGS         Additional arguments to pass to the Java VM";
-    echo "  SCALA_CMD         Command to start the Scala VM";
-    echo "  SCALA_ARGS        Additional arguments to pass to the Scala VM";
-    echo "  EXEC              Command to start subprocesses";
-}
-
-# Implements "scala-info <option>".
-info_main() {
-    [ $# = 0 ] && abort "missing option";
-
-    case "$1" in
-        --home      ) shift 1; info_option_home "$@";;
-        --version   ) shift 1; info_option_version "$@";;
-        --default   ) shift 1; info_option_x_value default "$@";;
-        --current   ) shift 1; info_option_x_value current "$@";;
-        -? | --help ) shift 1; info_option_help "$@";;
-        -*          ) abort "unrecognised option \`$1'";;
-        *           ) abort "illegal argument \`$1'";;
-    esac;
-}
-
-##############################################################################
 # Implementation of scalatest
 
 # Prints the scalatest usage.
@@ -574,9 +218,9 @@ test_print_help() {
     echo "--auto          use filenames to select the test to run";
     echo "--run           next files test the interpreter and all backends";
     echo "--jvm           next files test the JVM backend";
-    echo "--int           next files test the interpreter";
-    echo "--shl           next files test the interpreter shell";
-    echo "--dis           next files test the disassembler";
+#    echo "--int           next files test the interpreter";
+#    echo "--shl           next files test the interpreter shell";
+#    echo "--dis           next files test the disassembler";
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
     echo "--msil          next files test the .NET backend";
@@ -809,10 +453,10 @@ test_check_all() {
     [ $# = 0 ] || abort "internal error";
     test_check_kind "Testing JVM backend" \
         "jvm" $FILES_RUN $FILES_JVM;
-    test_check_kind "Testing interpreter shell" \
-        "shl" $FILES_SHL;
-    test_check_kind "Testing disassembler" \
-        "dis" $FILES_DIS;
+#    test_check_kind "Testing interpreter shell" \
+#        "shl" $FILES_SHL;
+#    test_check_kind "Testing disassembler" \
+#        "dis" $FILES_DIS;
     test_check_kind "Testing compiler (on files whose compilation should succeed)" \
         "pos" $FILES_POS;
     test_check_kind "Testing compiler (on files whose compilation should fail)" \
@@ -842,9 +486,9 @@ test_add_file() {
         auto ) ;;
         run  ) FILES_RUN="$FILES_RUN $1"; return;;
         jvm  ) FILES_JVM="$FILES_JVM $1"; return;;
-        int  ) FILES_INT="$FILES_INT $1"; return;;
-        shl  ) FILES_SHL="$FILES_SHL $1"; return;;
-        dis  ) FILES_DIS="$FILES_DIS $1"; return;;
+#        int  ) FILES_INT="$FILES_INT $1"; return;;
+#        shl  ) FILES_SHL="$FILES_SHL $1"; return;;
+#        dis  ) FILES_DIS="$FILES_DIS $1"; return;;
         pos  ) FILES_POS="$FILES_POS $1"; return;;
         neg  ) FILES_NEG="$FILES_NEG $1"; return;;
 	msil ) FILES_MSIL="$FILES_MSIL $1"; return;;
@@ -853,9 +497,9 @@ test_add_file() {
     case "$1" in
         run  | */run  | */run/*  | run/*  ) FILES_RUN="$FILES_RUN $1";;
         jvm  | */jvm  | */jvm/*  | jvm/*  ) FILES_JVM="$FILES_JVM $1";;
-        int  | */int  | */int/*  | int/*  ) FILES_INT="$FILES_INT $1";;
-        shl  | */shl  | */shl/*  | shl/*  ) FILES_SHL="$FILES_SHL $1";;
-        dis  | */dis  | */dis/*  | dis/*  ) FILES_DIS="$FILES_DIS $1";;
+#        int  | */int  | */int/*  | int/*  ) FILES_INT="$FILES_INT $1";;
+#        shl  | */shl  | */shl/*  | shl/*  ) FILES_SHL="$FILES_SHL $1";;
+#        dis  | */dis  | */dis/*  | dis/*  ) FILES_DIS="$FILES_DIS $1";;
         pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
         neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
         msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
@@ -865,10 +509,6 @@ test_add_file() {
 
 # Implements "scalatest ...".
 test_main() {
-    if [ "$SCALATEST" = "java" ]; then
-        tool_start "" scala.tools.scalatest.Main "$@";
-    fi;
-
     NORUN="false";
     SHOWLOG="false";
     SHOWDIFF="false";
@@ -876,8 +516,8 @@ test_main() {
     ERRORS=0;
     SUCCESS_COUNT=0;
     FAILURE_COUNT=0;
-    TESTROOT="/home/dragos/scala/test-nsc/files";
-    SRCDIR="/home/dragos/scala/test-nsc/files";
+    TESTROOT="$PREFIX/test-nsc/files";
+    SRCDIR="$PREFIX/test-nsc/files";
     OBJDIR="""";
 
     TEST_ALL="true";
@@ -891,19 +531,11 @@ test_main() {
     FILES_NEG="";
     FILES_MSIL="";
 
-    SCALA="$PREFIX/bin/scala";
-    SOCOS="$PREFIX/bin/scalac";
+    SCALA="$PREFIX/bin/ns";
+    SOCOS="$PREFIX/bin/nsc";
     SURUS="$PREFIX/bin/scalarun";
-    SCALAP="$PREFIX/bin/scalap";
+    SCALAP="$PREFIX/bin/nsp";
     DIFF="diff";
-
-   case "$SCRIPT" in
-       scalanstest* )
-           SOCOS="$PREFIX/bin/nsc";
-           SCALA="$PREFIX/bin/ns";
-           
-       ;;
-   esac;
 
     case `uname` in
         CYGWIN* )
@@ -916,9 +548,9 @@ test_main() {
             --auto       ) TEST_TYPE="auto"; shift 1;;
             --run        ) TEST_TYPE="run"; shift 1;;
             --jvm        ) TEST_TYPE="jvm"; shift 1;;
-            --int        ) TEST_TYPE="int"; shift 1;;
-            --shl        ) TEST_TYPE="shl"; shift 1;;
-            --dis        ) TEST_TYPE="dis"; shift 1;;
+#            --int        ) TEST_TYPE="int"; shift 1;;
+#            --shl        ) TEST_TYPE="shl"; shift 1;;
+#            --dis        ) TEST_TYPE="dis"; shift 1;;
             --pos        ) TEST_TYPE="pos"; shift 1;;
             --neg        ) TEST_TYPE="neg"; shift 1;;
             --msil       ) TEST_TYPE="msil"; shift 1;;
@@ -959,12 +591,12 @@ test_main() {
         case "$TEST_TYPE" in
             auto | int ) FILES_INT="$FILES_INT $SRCDIR/run";;
         esac;
-        case "$TEST_TYPE" in
-            auto | shl ) FILES_SHL="$FILES_SHL $SRCDIR/shl";;
-        esac;
-        case "$TEST_TYPE" in
-            auto | dis ) FILES_DIS="$FILES_DIS $SRCDIR/dis";;
-        esac;
+#        case "$TEST_TYPE" in
+#            auto | shl ) FILES_SHL="$FILES_SHL $SRCDIR/shl";;
+#        esac;
+#        case "$TEST_TYPE" in
+#            auto | dis ) FILES_DIS="$FILES_DIS $SRCDIR/dis";;
+#        esac;
         case "$TEST_TYPE" in
             auto | pos ) FILES_POS="$FILES_POS $SRCDIR/pos";;
         esac;
@@ -1007,7 +639,7 @@ test_main() {
 }
 
 ##############################################################################
-# Definition of UNAME, SOURCE, SCRIPT, PREFIX and VERSION
+# Definition of UNAME, SOURCE, SCRIPT and PREFIX
 
 unset SCRIPT;
 UNAME=`uname`;
@@ -1027,9 +659,6 @@ PREFIX=`dirname "$SOURCE"`/..;
 prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
-VERSION="1.4.0.1";
-VERSION=${VERSION:-"unknown version"};
-
 ##############################################################################
 # Test of invocation method
 
@@ -1043,18 +672,8 @@ fi;
 configure;
 
 case "$SCRIPT" in
-    scala-info ) info_main "$@";;
-    nsc        ) scala_main "$@";;
-    scala-*    ) scala_main "$@";;
-    scalac*    ) compiler_start "" scala.tools.scalac.Main "$@";;
-#   scalansc*  ) ncompiler_start "" scala.tools.nsc.Main "$@";;
-    scalarun*  ) compiler_start "" scala.tools.scalai.Main "$@";;
-    scalaint*  ) compiler_start "" scala.tools.scalai.Main -interactive "$@";;
-    scaladoc*  ) tool_start "" scala.tools.scaladoc.Main "$@";;
-    scalap*    ) tool_start "" scala.tools.scalap.Main "$@";;
-    scalatest* ) test_main "$@";;
     scalanstest* ) test_main "$@";;
-    *          ) abort "Don't know what to do for $SCRIPT.";;
+    *            ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 
 ##############################################################################
