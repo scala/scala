@@ -1,0 +1,171 @@
+x     = abc
+count = 111
+x     = hello
+count = 112
+
+account deposit  50 -> ()
+account withdraw 20 -> 30
+account withdraw 20 -> 10
+account withdraw 15 -> 
+
+x deposit  30 -> ()
+y withdraw 20 -> 
+
+x deposit  30 -> ()
+x withdraw 20 -> 10
+
+x deposit  30 -> ()
+y withdraw 20 -> 10
+
+2^0 = 1.0
+2^1 = 2.0
+2^2 = 4.0
+2^3 = 8.0
+
+2^0 = 1.0
+2^1 = 2.0
+2^2 = 4.0
+2^3 = 8.0
+
+1 2 3 
+List(1,2,3)
+
+out   0 new-value = false
+*** simulation started ***
+out   1 new-value = true
+!0 = 1
+
+*** simulation started ***
+out   2 new-value = false
+!1 = 0
+
+out   2 new-value = false
+
+*** simulation started ***
+0 & 0 = 0
+
+*** simulation started ***
+0 & 1 = 0
+
+*** simulation started ***
+out   11 new-value = true
+out   11 new-value = false
+1 & 0 = 0
+
+*** simulation started ***
+out   14 new-value = true
+1 & 1 = 1
+
+out   14 new-value = false
+
+*** simulation started ***
+0 | 0 = 0
+
+*** simulation started ***
+out   24 new-value = true
+0 | 1 = 1
+
+*** simulation started ***
+1 | 0 = 1
+
+*** simulation started ***
+1 | 1 = 1
+
+sum   34 new-value = false
+carry 34 new-value = false
+
+*** simulation started ***
+0 + 0 = 0
+
+*** simulation started ***
+sum   47 new-value = true
+0 + 1 = 1
+
+*** simulation started ***
+carry 50 new-value = true
+carry 50 new-value = false
+sum   54 new-value = false
+sum   54 new-value = true
+1 + 0 = 1
+
+*** simulation started ***
+carry 57 new-value = true
+sum   61 new-value = false
+1 + 1 = 2
+
+sum   61 new-value = false
+carry 61 new-value = false
+
+*** simulation started ***
+0 + 0 + 0 = 0
+
+*** simulation started ***
+sum   82 new-value = true
+0 + 0 + 1 = 1
+
+*** simulation started ***
+sum   89 new-value = false
+carry 90 new-value = true
+sum   97 new-value = true
+carry 98 new-value = false
+0 + 1 + 0 = 1
+
+*** simulation started ***
+sum   113 new-value = false
+carry 114 new-value = true
+0 + 1 + 1 = 2
+
+*** simulation started ***
+sum   121 new-value = true
+carry 122 new-value = false
+sum   129 new-value = false
+sum   129 new-value = true
+1 + 0 + 0 = 1
+
+*** simulation started ***
+carry 137 new-value = true
+sum   144 new-value = false
+1 + 0 + 1 = 2
+
+*** simulation started ***
+carry 152 new-value = false
+sum   152 new-value = true
+sum   158 new-value = false
+carry 159 new-value = true
+1 + 1 + 0 = 2
+
+*** simulation started ***
+sum   173 new-value = true
+1 + 1 + 1 = 3
+
+in 0 new-value = false
+ctrl0 0 new-value = false
+ctrl1 0 new-value = false
+ctrl2 0 new-value = false
+out0 0 new-value = false
+out1 0 new-value = false
+out2 0 new-value = false
+out3 0 new-value = false
+out4 0 new-value = false
+out5 0 new-value = false
+out6 0 new-value = false
+out7 0 new-value = false
+in 0 new-value = true
+*** simulation started ***
+out0 10 new-value = true
+ctrl0 10 new-value = true
+*** simulation started ***
+out1 13 new-value = true
+out0 14 new-value = false
+ctrl1 14 new-value = true
+*** simulation started ***
+out3 20 new-value = true
+out1 21 new-value = false
+ctrl2 21 new-value = true
+*** simulation started ***
+out7 30 new-value = true
+out3 31 new-value = false
+ctrl0 31 new-value = false
+*** simulation started ***
+out7 34 new-value = false
+out6 35 new-value = true

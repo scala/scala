@@ -1,0 +1,64 @@
+test '\u0024' == '$' was successful
+test '\u005f' == '_' was successful
+test 65.asInstanceOf[char] == 'A' was successful
+
+test 01 == 1 was successful
+test 010 == 8 was successful
+test 0X01 == 1 was successful
+test 0x01 == 1 was successful
+test 0x10 == 16 was successful
+test 0xa == 10 was successful
+test 0x0a == 10 was successful
+test +01 == 1 was successful
+test +010 == 8 was successful
+test +0x01 == 1 was successful
+test +0x10 == 16 was successful
+test +0xa == 10 was successful
+test +0x0a == 10 was successful
+test -01 == -1 was successful
+test -010 == -8 was successful
+test -0x01 == -1 was successful
+test -0x10 == -16 was successful
+test -0xa == -10 was successful
+test -0x0a == -10 was successful
+test 017777777777 == 2147483647 was successful
+test 020000000000 == -2147483648 was successful
+test 037777777777 == -1 was successful
+test 0x7fffffff == 2147483647 was successful
+test 0x80000000 == -2147483648 was successful
+test 0xffffffff == -1 was successful
+
+test 1l == 1L was successful
+test 1L == 1l was successful
+test 1.asInstanceOf[long] == 1l was successful
+test 0777777777777777777777L == 9223372036854775807L was successful
+test 01000000000000000000000L == -9223372036854775808L was successful
+test 01777777777777777777777L == -1L was successful
+test 0x7fffffffffffffffL == 9223372036854775807L was successful
+test 0x8000000000000000L == -9223372036854775808L was successful
+test 0xffffffffffffffffL == -1L was successful
+
+test 1e1f == 10.0f was successful
+test 2.f == 2.0f was successful
+test .3f == 0.3f was successful
+test 0f == 0.0f was successful
+test 3.14f == 3.14f was successful
+test 6.022e23f == 6.022e23f was successful
+test 09f == 9.0f was successful
+test 1.asInstanceOf[float] == 1.0 was successful
+test 1l.asInstanceOf[float] == 1.0 was successful
+
+test 1e1 == 10.0 was successful
+test 2. == 2.0 was successful
+test 2.d == 2.0 was successful
+test .3 == 0.3 was successful
+test 0.0 == 0.0 was successful
+test 0d == 0.0 was successful
+test 3.14 == 3.14 was successful
+test 1e-9d == 1.0e-9 was successful
+test 1e137 == 1.0e137 was successful
+test 1.asInstanceOf[double] == 1.0 was successful
+test 1l.asInstanceOf[double] == 1.0 was successful
+
+test "\u001a".length() was successful
+test ggg == GGG( 2 ) was successful

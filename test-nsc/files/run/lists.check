@@ -1,0 +1,12 @@
+test check_count was successful
+test check_diff was successful
+test check_exists was successful
+test check_filter was successful
+test check_foldLeft was successful
+test check_forall was successful
+test check_intersect was successful
+test check_remove was successful
+test check_union was successful
+test check_zip was successful
+test check_zipAll was successful
+

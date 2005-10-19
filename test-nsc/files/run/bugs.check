@@ -1,0 +1,94 @@
+<<< bug 98
+mycase
+>>> bug 98
+
+<<< bug 120
+one
+A
+two
+B
+C
+>>> bug 120
+
+<<< bug 135
+Some(The answer)
+>>> bug 135
+
+<<< bug 142
+ok
+ok
+ok
+ok
+ok
+ok
+ok
+ok
+>>> bug 142
+
+<<< bug 166
+>>> bug 166
+
+<<< bug 167
+>>> bug 167
+
+<<< bug 168
+>>> bug 168
+
+<<< bug 174
+>>> bug 174
+
+<<< bug 176
+1
+>>> bug 176
+
+<<< bug 199
+>>> bug 199
+
+<<< bug 213
+>>> bug 213
+
+<<< bug 217
+>>> bug 217
+
+<<< bug 222
+>>> bug 222
+
+<<< bug 225
+>>> bug 225
+
+<<< bug 226
+>>> bug 226
+
+<<< bug 233
+true
+>>> bug 233
+
+<<< bug 250
+>>> bug 250
+
+<<< bug 257
+hello
+hello
+>>> bug 257
+
+<<< bug 266
+hello
+4
+>>> bug 266
+
+<<< bug 316
+>>> bug 316
+
+<<< bug 328
+>>> bug 328
+
+<<< bug 396
+A
+B
+C
+>>> bug 396
+
+<<< bug 399
+a
+>>> bug 399
+

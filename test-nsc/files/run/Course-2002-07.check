@@ -1,0 +1,137 @@
+        0 = 0
+        1 = 1
+    0 + 1 = 1
+    1 + 2 = 3
+2 + 3 + 4 = 9
+
+        0 = 0
+        1 = 1
+    0 + 1 = 1
+    1 + 2 = 3
+2 + 3 + 4 = 9
+
+        0 = 0
+        1 = 1
+    0 + 1 = 1
+    1 + 2 = 3
+2 + 3 + 4 = 9
+
+        0 = 0
+        1 = 1
+    0 + 1 = 1
+    1 + 2 = 3
+2 + 3 + 4 = 9
+
+List() = concat(List())
+List() = concat(List(List()))
+List() = concat(List(List(),List()))
+List() = concat(List(List(),List(),List()))
+List(1,2,3,4,5,6) = concat(List(List(1,2,3,4,5,6)))
+List(1,2,3,4,5,6) = concat(List(List(1,2,3,4,5,6),List()))
+List(1,2,3,4,5,6) = concat(List(List(1,2,3),List(4,5,6)))
+List(1,2,3,4,5,6) = concat(List(List(),List(1,2,3,4,5,6)))
+List(1,2,3,4,5,6) = concat(List(List(1,2,3,4,5,6),List(),List()))
+List(1,2,3,4,5,6) = concat(List(List(1,2,3,4,5),List(6),List()))
+List(1,2,3,4,5,6) = concat(List(List(1,2,3),List(4,5,6),List()))
+List(1,2,3,4,5,6) = concat(List(List(1),List(2,3,4,5,6),List()))
+List(1,2,3,4,5,6) = concat(List(List(),List(1,2,3,4,5,6),List()))
+List(1,2,3,4,5,6) = concat(List(List(),List(1,2,3,4,5),List(6)))
+List(1,2,3,4,5,6) = concat(List(List(),List(1,2,3),List(4,5,6)))
+List(1,2,3,4,5,6) = concat(List(List(),List(1),List(2,3,4,5,6)))
+List(1,2,3,4,5,6) = concat(List(List(),List(),List(1,2,3,4,5,6)))
+List(1,2,3,4,5,6) = concat(List(List(1,2),List(3,4),List(5,6)))
+
+List() = zipFun(List(),List())
+List() = zipFun(List(),List(a,b,c))
+List() = zipFun(List(1,2,3),List())
+List((1,a)) = zipFun(List(1),List(a))
+List((1,a)) = zipFun(List(1),List(a,b,c))
+List((1,a)) = zipFun(List(1,2,3),List(a))
+List((1,a),(2,b)) = zipFun(List(1,2),List(a,b))
+List((1,a),(2,b)) = zipFun(List(1,2),List(a,b,c))
+List((1,a),(2,b)) = zipFun(List(1,2,3),List(a,b))
+List((1,a),(2,b),(3,c)) = zipFun(List(1,2,3),List(a,b,c))
+
+List() = heads(List())
+List() = heads(List(List()))
+List() = heads(List(List(),List()))
+List() = heads(List(List(),List(),List()))
+List(1) = heads(List(List(1,2,3,4,5,6)))
+List(1) = heads(List(List(1,2,3,4,5,6),List()))
+List(1) = heads(List(List(),List(1,2,3,4,5,6)))
+List(1) = heads(List(List(1,2,3,4,5,6),List(),List()))
+List(1) = heads(List(List(),List(1,2,3,4,5,6),List()))
+List(1) = heads(List(List(),List(),List(1,2,3,4,5,6)))
+List(1,2) = heads(List(List(1),List(2,3,4,5,6),List()))
+List(1,2) = heads(List(List(),List(1),List(2,3,4,5,6)))
+List(1,4) = heads(List(List(1,2,3),List(4,5,6)))
+List(1,4) = heads(List(List(1,2,3),List(4,5,6),List()))
+List(1,4) = heads(List(List(),List(1,2,3),List(4,5,6)))
+List(1,6) = heads(List(List(1,2,3,4,5),List(6),List()))
+List(1,6) = heads(List(List(),List(1,2,3,4,5),List(6)))
+List(1,3,5) = heads(List(List(1,2),List(3,4),List(5,6)))
+
+List() = heads(List())
+List() = heads(List(List()))
+List() = heads(List(List(),List()))
+List() = heads(List(List(),List(),List()))
+List(1) = heads(List(List(1,2,3,4,5,6)))
+List(1) = heads(List(List(1,2,3,4,5,6),List()))
+List(1) = heads(List(List(),List(1,2,3,4,5,6)))
+List(1) = heads(List(List(1,2,3,4,5,6),List(),List()))
+List(1) = heads(List(List(),List(1,2,3,4,5,6),List()))
+List(1) = heads(List(List(),List(),List(1,2,3,4,5,6)))
+List(1,2) = heads(List(List(1),List(2,3,4,5,6),List()))
+List(1,2) = heads(List(List(),List(1),List(2,3,4,5,6)))
+List(1,4) = heads(List(List(1,2,3),List(4,5,6)))
+List(1,4) = heads(List(List(1,2,3),List(4,5,6),List()))
+List(1,4) = heads(List(List(),List(1,2,3),List(4,5,6)))
+List(1,6) = heads(List(List(1,2,3,4,5),List(6),List()))
+List(1,6) = heads(List(List(),List(1,2,3,4,5),List(6)))
+List(1,3,5) = heads(List(List(1,2),List(3,4),List(5,6)))
+
+f (x) = Prod(Var(x), Var(x))
+f'(x) = Sum(Prod(Var(x), Number(1)), Prod(Var(x), Number(1)))
+
+f (x) = x * x
+f'(x) = x * 1 + x * 1
+g (x) = 2 * x * x + 3 * x
+g'(x) = 2 * x * 1 + x * (2 * 1 + x * 0) + 3 * 1 + x * 0
+g (3) = 27
+g'(3) = 15
+
+ta(x) = x + 3
+tb(x) = x + 3
+tc(x) = x + 3
+td(x) = x + 3
+te(x) = 2 * x + 3
+tf(x) = 2 * x + 3
+tg(x) = 6 * x
+th(x) = x^6
+
+f4(x) = x^4 + 7 * x^3 + 20 * x^2 + 23 * x + 5
+f3(x) = 4 * x^3 + 21 * x^2 + 40 * x + 23
+f2(x) = 12 * x^2 + 42 * x + 40
+f1(x) = 24 * x + 42
+f0(x) = 24
+
+f4(0) = 5 ok
+f4(1) = 56 ok
+f4(2) = 203 ok
+f4(3) = 524 ok
+f4(4) = 1121 ok
+
+f3(0) = 23 ok
+f3(1) = 88 ok
+f3(2) = 219 ok
+f3(3) = 440 ok
+
+f2(0) = 40 ok
+f2(1) = 94 ok
+f2(2) = 172 ok
+
+f1(0) = 42 ok
+f1(1) = 66 ok
+
+f0(0) = 24 ok
+
