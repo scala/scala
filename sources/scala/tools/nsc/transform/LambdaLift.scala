@@ -321,21 +321,27 @@ abstract class LambdaLift extends InfoTransform {
       postTransform(super.transform(tree) setType lifted(tree.tpe));
     }
     /** Transform statements and add lifted definitions to them. */
-    override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
-      for (val stat <- super.transformStats(stats, exprOwner)) yield {
-	stat match {
-	  case ClassDef(mods, name, tparams, tpt, impl @ Template(parents, body))
-	  if (liftedDefs(stat.symbol).hasNext) =>
-	    copy.ClassDef(stat, mods, name, tparams, tpt,
-			  copy.Template(impl, parents, body ::: liftedDefs(stat.symbol).toList))
-	  case _ =>
-	    stat
-	}
+    override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
+      def addLifted(stat: Tree): Tree = stat match {
+	case ClassDef(mods, name, tparams, tpt, impl @ Template(parents, body)) =>
+	  val result =
+	    if (liftedDefs(stat.symbol).hasNext) {
+	      val lifted = liftedDefs(stat.symbol).toList map addLifted;
+	      copy.ClassDef(stat, mods, name, tparams, tpt,
+			    copy.Template(impl, parents, body ::: lifted))
+	    } else stat;
+	  liftedDefs -= stat.symbol;
+	  result
+	case _ =>
+	  stat
       }
+      super.transformStats(stats, exprOwner) map addLifted
+    }
 
     override def transformUnit(unit: CompilationUnit): unit = {
       computeFreeVars;
-      atPhase(phase.next)(super.transformUnit(unit))
+      atPhase(phase.next)(super.transformUnit(unit));
+      assert(liftedDefs.size == 0, liftedDefs.keys.toList)
     }
   }
 }

@@ -30,6 +30,27 @@ public abstract class Long    extends AnyVal implements java.io.Serializable {
         return String.valueOf(value);
     }
 
+    /** @meta method []scala.Byte; */
+    public byte toByte() { return (byte)value; }
+
+    /** @meta method []scala.Short; */
+    public short toShort() { return (short)value; }
+
+    /** @meta method []scala.Char; */
+    public char toChar() { return (char)value; }
+
+    /** @meta method []scala.Int; */
+    public int toInt() { return (int)value; }
+
+    /** @meta method []scala.Long; */
+    public long toLong() { return (long)value; }
+
+    /** @meta method []scala.Float; */
+    public float toFloat() { return (float)value; }
+
+    /** @meta method []scala.Double; */
+    public double toDouble() { return (double)value; }
+
     /** @meta method (scala.Any)scala.Boolean; */
     public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
     /** @meta method (scala.Any)scala.Boolean; */

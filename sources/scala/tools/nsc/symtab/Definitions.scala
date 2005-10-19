@@ -256,6 +256,10 @@ import Flags._;
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol): boolean = boxedClass contains sym;
 
+    /** Is symbol a value class? */
+    def isNumericValueClass(sym: Symbol): boolean =
+      isValueClass(sym) && sym != BooleanClass && sym != UnitClass;
+
     /** Is symbol a value or array class? */
     def isUnboxedClass(sym: Symbol): boolean = isValueClass(sym) || sym == ArrayClass;
 

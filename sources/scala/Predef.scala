@@ -317,28 +317,28 @@ object Predef {
   }
   def view(x: String): Seq[Char] = string2seq(x);
 
-  implicit def byte2short(x: byte): short = x.coerce;
-  implicit def byte2int(x: byte): int = x.coerce;
-  implicit def byte2long(x: byte): long = x.coerce;
-  implicit def byte2float(x: byte): float = x.coerce;
-  implicit def byte2double(x: byte): double = x.coerce;
+  implicit def byte2short(x: byte): short = x.toShort;
+  implicit def byte2int(x: byte): int = x.toInt;
+  implicit def byte2long(x: byte): long = x.toLong;
+  implicit def byte2float(x: byte): float = x.toFloat;
+  implicit def byte2double(x: byte): double = x.toDouble;
 
-  implicit def short2int(x: short): int = x.coerce;
-  implicit def short2long(x: short): long = x.coerce;
-  implicit def short2float(x: short): float = x.coerce;
-  implicit def short2double(x: short): double = x.coerce;
+  implicit def short2int(x: short): int = x.toInt;
+  implicit def short2long(x: short): long = x.toLong;
+  implicit def short2float(x: short): float = x.toFloat;
+  implicit def short2double(x: short): double = x.toDouble;
 
-  implicit def char2int(x: char): int = x.coerce;
-  implicit def char2long(x: char): long = x.coerce;
-  implicit def char2float(x: char): float = x.coerce;
-  implicit def char2double(x: char): double = x.coerce;
+  implicit def char2int(x: char): int = x.toInt;
+  implicit def char2long(x: char): long = x.toLong;
+  implicit def char2float(x: char): float = x.toFloat;
+  implicit def char2double(x: char): double = x.toDouble;
 
-  implicit def int2long(x: int): long = x.coerce;
-  implicit def int2float(x: int): float = x.coerce;
-  implicit def int2double(x: int): double = x.coerce;
+  implicit def int2long(x: int): long = x.toLong;
+  implicit def int2float(x: int): float = x.toFloat;
+  implicit def int2double(x: int): double = x.toDouble;
 
-  implicit def long2float(x: long): float = x.coerce;
-  implicit def long2double(x: long): double = x.coerce;
+  implicit def long2float(x: long): float = x.toFloat;
+  implicit def long2double(x: long): double = x.toDouble;
 
-  implicit def float2double(x: float): double = x.coerce;
+  implicit def float2double(x: float): double = x.toDouble;
 }

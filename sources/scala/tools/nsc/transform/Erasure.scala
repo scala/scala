@@ -151,6 +151,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
+    /** The method-name xxxValue, where Xxx is a numeric value class name */
+    def unboxOp(tp: Type) = {
+      val clazzName = tp.symbol.name.toString();
+      String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
+      clazzName.substring(1) + "Value"
+    }
+
     /** Unbox `tree' of boxed type to expected type `pt' */
     private def unbox(tree: Tree, pt: Type): Tree =
       typed {
@@ -172,12 +179,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               else Literal(signature(pt));
             Apply(Select(tree1, "unbox"), List(elemTag))
           } else {
+	    assert(isNumericValueClass(pt.symbol));
             val tree1 = adaptToType(tree, BoxedNumberClass.tpe);
-            val unboxedName = pt.symbol.name.toString();
-            val unboxOp =
-              String.valueOf((unboxedName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
-              unboxedName.substring(1) + "Value";
-            Apply(Select(tree1, unboxOp), List())
+            Apply(Select(tree1, unboxOp(pt)), List())
           }
         }
       }
@@ -235,6 +239,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           atPos(tree.pos) {
             Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
           }
+	case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List()) =>
+	  if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased) &&
+	      isValueClass(targ.tpe.symbol)) {
+	    val qual1 = typedQualifier(qual);
+	    if (isNumericValueClass(qual1.tpe.symbol) && isNumericValueClass(targ.tpe.symbol))
+	      // convert numeric type casts
+	      atPos(tree.pos)(Apply(Select(qual1, "to" + targ.tpe.symbol.name), List()))
+	    else unbox(qual1, targ.tpe)
+	  } else tree
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
@@ -476,8 +489,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	  case AliasTypeDef(_, _, _, _) =>
 	    EmptyTree
           case TypeApply(fun, args) if (fun.symbol.owner != AnyClass) =>
-            // leave type tests/type casts, remove all other type applications
-            fun
+	    // leave all other type tests/type casts, remove all other type applications
+	    fun
           case Template(parents, body) =>
             assert(!currentOwner.isImplClass);
 	    //System.out.println("checking no dble defs " + tree);//DEBUG

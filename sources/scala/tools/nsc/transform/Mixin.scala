@@ -349,7 +349,7 @@ abstract class Mixin extends InfoTransform {
 	  if (sym.isMethod) {
 	    assert(sym hasFlag (LIFTED | BRIDGE), sym);
 	    val sym1 = toInterface(qual.tpe).member(sym.name);
-	    assert(sym1 != NoSymbol, "" + sym + " " + toInterface(qual.tpe));//debug
+	    assert(sym1 != NoSymbol, sym);//debug
             assert(!(sym1 hasFlag OVERLOADED), sym);//debug
 	    tree setSymbol sym1
 	  } else {
