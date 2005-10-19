@@ -31,6 +31,10 @@ PREFIX=`dirname "$SOURCE"`/..;
 prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
+if [ -z "$SCRIPT" ]; then
+    abort "Illegal direct invocation; invoke me through a symbolic link.";
+fi;
+
 _JAVACMD=java
 _CPATH=@CPATH@
 
