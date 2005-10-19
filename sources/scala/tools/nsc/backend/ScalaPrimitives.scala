@@ -240,7 +240,6 @@ abstract class ScalaPrimitives {
     addPrimitives(UnitClass, nme.equals_, EQUALS);
     addPrimitives(UnitClass, nme.hashCode_, HASHCODE);
     addPrimitives(UnitClass, nme.toString_, TOSTRING);
-    // what about Unit.value()?
 
     // scala.Boolean
     addPrimitives(BooleanClass, nme.EQ, EQ);
@@ -279,6 +278,14 @@ abstract class ScalaPrimitives {
     addPrimitives(ByteClass, nme.LSL, LSL);
     addPrimitives(ByteClass, nme.LSR, LSR);
     addPrimitives(ByteClass, nme.ASR, ASR);
+      // conversions
+    addPrimitives(ByteClass, nme.toByte,   B2B);
+    addPrimitives(ByteClass, nme.toShort,  B2S);
+    addPrimitives(ByteClass, nme.toChar,   B2C);
+    addPrimitives(ByteClass, nme.toInt,    B2I);
+    addPrimitives(ByteClass, nme.toLong,   B2L);
+    addPrimitives(ByteClass, nme.toFloat,  B2F);
+    addPrimitives(ByteClass, nme.toDouble, B2D);
 
     // scala.Short
     addCoercions(ShortClass);
@@ -303,6 +310,14 @@ abstract class ScalaPrimitives {
     addPrimitives(ShortClass, nme.LSL, LSL);
     addPrimitives(ShortClass, nme.LSR, LSR);
     addPrimitives(ShortClass, nme.ASR, ASR);
+      // conversions
+    addPrimitives(ShortClass, nme.toByte,   S2B);
+    addPrimitives(ShortClass, nme.toShort,  S2S);
+    addPrimitives(ShortClass, nme.toChar,   S2C);
+    addPrimitives(ShortClass, nme.toInt,    S2I);
+    addPrimitives(ShortClass, nme.toLong,   S2L);
+    addPrimitives(ShortClass, nme.toFloat,  S2F);
+    addPrimitives(ShortClass, nme.toDouble, S2D);
 
     // scala.Char
     addCoercions(CharClass);
@@ -327,6 +342,14 @@ abstract class ScalaPrimitives {
     addPrimitives(CharClass, nme.LSL, LSL);
     addPrimitives(CharClass, nme.LSR, LSR);
     addPrimitives(CharClass, nme.ASR, ASR);
+      // conversions
+    addPrimitives(CharClass, nme.toByte,   C2B);
+    addPrimitives(CharClass, nme.toShort,  C2S);
+    addPrimitives(CharClass, nme.toChar,   C2C);
+    addPrimitives(CharClass, nme.toInt,    C2I);
+    addPrimitives(CharClass, nme.toLong,   C2L);
+    addPrimitives(CharClass, nme.toFloat,  C2F);
+    addPrimitives(CharClass, nme.toDouble, C2D);
 
     // scala.Int
     addCoercions(IntClass);
@@ -351,6 +374,14 @@ abstract class ScalaPrimitives {
     addPrimitives(IntClass, nme.LSL, LSL);
     addPrimitives(IntClass, nme.LSR, LSR);
     addPrimitives(IntClass, nme.ASR, ASR);
+      // conversions
+    addPrimitives(IntClass, nme.toByte,   I2B);
+    addPrimitives(IntClass, nme.toShort,  I2S);
+    addPrimitives(IntClass, nme.toChar,   I2C);
+    addPrimitives(IntClass, nme.toInt,    I2I);
+    addPrimitives(IntClass, nme.toLong,   I2L);
+    addPrimitives(IntClass, nme.toFloat,  I2F);
+    addPrimitives(IntClass, nme.toDouble, I2D);
 
     // scala.Long
     addCoercions(LongClass);
@@ -375,6 +406,14 @@ abstract class ScalaPrimitives {
     addPrimitives(LongClass, nme.LSL, LSL);
     addPrimitives(LongClass, nme.LSR, LSR);
     addPrimitives(LongClass, nme.ASR, ASR);
+      // conversions
+    addPrimitives(LongClass, nme.toByte,   L2B);
+    addPrimitives(LongClass, nme.toShort,  L2S);
+    addPrimitives(LongClass, nme.toChar,   L2C);
+    addPrimitives(LongClass, nme.toInt,    L2I);
+    addPrimitives(LongClass, nme.toLong,   L2L);
+    addPrimitives(LongClass, nme.toFloat,  L2F);
+    addPrimitives(LongClass, nme.toDouble, L2D);
 
     // scala.Float
     addCoercion(FloatClass);
@@ -385,13 +424,21 @@ abstract class ScalaPrimitives {
     addPrimitives(FloatClass, nme.toString_, TOSTRING);
     addPrimitives(FloatClass, nme.ADD, ADD);
     addPrimitives(FloatClass, nme.SUB, SUB);
-    addPrimitives(FloatClass, nme.MUL, DIV);
+    addPrimitives(FloatClass, nme.MUL, MUL);
     addPrimitives(FloatClass, nme.DIV, DIV);
     addPrimitives(FloatClass, nme.MOD, MOD);
     addPrimitives(FloatClass, nme.LT, LT);
     addPrimitives(FloatClass, nme.LE, LE);
     addPrimitives(FloatClass, nme.GT, GT);
     addPrimitives(FloatClass, nme.GE, GE);
+      // conversions
+    addPrimitives(FloatClass, nme.toByte,   F2B);
+    addPrimitives(FloatClass, nme.toShort,  F2S);
+    addPrimitives(FloatClass, nme.toChar,   F2C);
+    addPrimitives(FloatClass, nme.toInt,    F2I);
+    addPrimitives(FloatClass, nme.toLong,   F2L);
+    addPrimitives(FloatClass, nme.toFloat,  F2F);
+    addPrimitives(FloatClass, nme.toDouble, F2D);
 
     // scala.Double
     addPrimitives(DoubleClass, nme.EQ, EQ);
@@ -401,13 +448,21 @@ abstract class ScalaPrimitives {
     addPrimitives(DoubleClass, nme.toString_, TOSTRING);
     addPrimitives(DoubleClass, nme.ADD, ADD);
     addPrimitives(DoubleClass, nme.SUB, SUB);
-    addPrimitives(DoubleClass, nme.MUL, DIV);
+    addPrimitives(DoubleClass, nme.MUL, MUL);
     addPrimitives(DoubleClass, nme.DIV, DIV);
     addPrimitives(DoubleClass, nme.MOD, MOD);
     addPrimitives(DoubleClass, nme.LT, LT);
     addPrimitives(DoubleClass, nme.LE, LE);
     addPrimitives(DoubleClass, nme.GT, GT);
     addPrimitives(DoubleClass, nme.GE, GE);
+      // conversions
+    addPrimitives(DoubleClass, nme.toByte,   D2B);
+    addPrimitives(DoubleClass, nme.toShort,  D2S);
+    addPrimitives(DoubleClass, nme.toChar,   D2C);
+    addPrimitives(DoubleClass, nme.toInt,    D2I);
+    addPrimitives(DoubleClass, nme.toLong,   D2L);
+    addPrimitives(DoubleClass, nme.toFloat,  D2F);
+    addPrimitives(DoubleClass, nme.toDouble, D2D);
 
     // and the type map!
     initPrimitiveTypeMap;
@@ -532,15 +587,7 @@ abstract class ScalaPrimitives {
         abort("Unknown value type: " + cls.fullNameString);
   }
 
-  def isCoercion(code: Int): Boolean = code match {
-    case B2S | B2I | B2L | B2F | B2D |
-               S2I | S2L | S2F | S2D |
-               C2I | C2L | C2F | C2D |
-                     I2L | I2F | I2D |
-                           L2F | L2D |
-                                 F2D   => true;
-    case _ => false;
-  }
+  def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D);
 
   /** Check whether the given operation code is an array operation. */
   def isArrayOp(code: Int): Boolean =

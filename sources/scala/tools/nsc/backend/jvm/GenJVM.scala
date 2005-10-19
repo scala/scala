@@ -313,7 +313,7 @@ abstract class GenJVM extends SubComponent {
                                   javaType(field));
 
           case CALL_PRIMITIVE(primitive) =>
-            genPrimitive(primitive);
+            genPrimitive(primitive, instr.pos);
 
           // TODO: reference the type of the receiver instead of the
           // method owner.
@@ -481,7 +481,7 @@ abstract class GenJVM extends SubComponent {
     }
 
 
-    def genPrimitive(primitive: Primitive): Unit = {
+    def genPrimitive(primitive: Primitive, pos: Int): Unit = {
       primitive match {
         case Negation(kind) =>
           kind match {
@@ -554,7 +554,8 @@ abstract class GenJVM extends SubComponent {
             jcode.emitIAND();
           case Pair(AND, _) =>
             jcode.emitIAND();
-            jcode.emitT2T(javaType(INT), javaType(kind));
+            if (kind != BOOL)
+              jcode.emitT2T(javaType(INT), javaType(kind));
 
           case Pair(OR, LONG) =>
             jcode.emitLOR();
@@ -562,7 +563,8 @@ abstract class GenJVM extends SubComponent {
             jcode.emitIOR();
           case Pair(OR, _) =>
             jcode.emitIOR();
-            jcode.emitT2T(javaType(INT), javaType(kind));
+            if (kind != BOOL)
+              jcode.emitT2T(javaType(INT), javaType(kind));
 
           case Pair(XOR, LONG) =>
             jcode.emitLXOR();
@@ -570,7 +572,8 @@ abstract class GenJVM extends SubComponent {
             jcode.emitIXOR();
           case Pair(XOR, _) =>
             jcode.emitIXOR();
-            jcode.emitT2T(javaType(INT), javaType(kind));
+            if (kind != BOOL)
+              jcode.emitT2T(javaType(INT), javaType(kind));
         }
 
         case Shift(op, kind) => Pair(op, kind) match {
@@ -602,10 +605,10 @@ abstract class GenJVM extends SubComponent {
         case Conversion(src, dst) =>
           log("Converting from: " + src + " to: " + dst);
           if (dst == BOOL) {
-
-          }
-
-          jcode.emitT2T(javaType(src), javaType(dst));
+            Console.println("Illegal conversion at: " + clasz +
+                            " at: " + method.sourceFile + ":" + Position.line(pos));
+          } else
+            jcode.emitT2T(javaType(src), javaType(dst));
 
         case ArrayLength(_) =>
           jcode.emitARRAYLENGTH();

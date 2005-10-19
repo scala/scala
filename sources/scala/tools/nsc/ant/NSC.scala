@@ -51,8 +51,9 @@ package scala.tools.nsc.ant {
      *    <li>force,</li>
      *    <li>stop,</li>
      *    <li>skip,</li>
+     *    <li>check,</li>
+     *    <li>showicode.</li>
      *    <li>log,</li>
-     *    <li>check.</li>
      * </ul>
      * It also takes the following parameters as nested elements:<ul>
      *    <li>src (for srcdir),</li>
@@ -82,7 +83,7 @@ package scala.tools.nsc.ant {
         val values: List[String];
         def isPermissible (value: String): Boolean =
           (value == "") ||
-          values.exists(v: String => v.compareToIgnoreCase(value) == 0);
+          values.exists(v: String => v startsWith value);
       }
 
       /** Defines valid values for the logging property. */
@@ -95,7 +96,7 @@ package scala.tools.nsc.ant {
         val values = List(
           "namer", "typer", "pickler", "uncurry", "tailcalls",
           "transmatch", "explicitouter", "erasure", "lambdalift",
-          "flatten", "constructors", "mixin", "icode", "jvm");
+          "flatten", "constructors", "mixin", "icode", "jvm", "terminal");
       }
 
       /** The directories that contain source files to compile. */
@@ -131,6 +132,8 @@ package scala.tools.nsc.ant {
       private var logPhase: List[String] = Nil;
       /** Which compilation phases results should be checked for consistency. */
       private var check: List[String] = Nil;
+      /** Print ICode files along with class files (debug option). */
+      private var showICode: Boolean = false;
 
       // ###################################################################
       // #####                    Properties setters                   #####
@@ -429,6 +432,9 @@ package scala.tools.nsc.ant {
         });
       }
 
+      def setShowicode(input: Boolean): Unit =
+        showICode = input;
+
       // ###################################################################
       // #####             Compilation and support methods             #####
       // ###################################################################
@@ -581,6 +587,7 @@ package scala.tools.nsc.ant {
             if (!stop.isEmpty) settings.stop.value = List(stop.get);
             if (!skip.isEmpty) settings.skip.value = skip;
             if (!check.isEmpty) settings.check.value = check;
+            settings.Xshowicode.value = showICode;
             if (!logPhase.isEmpty) settings.log.value = logPhase;
 
             // Sets path properties to prevent ClassPath from being corrupted.

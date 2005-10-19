@@ -335,7 +335,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	globalPhase = globalPhase.next;
 	if (settings.check contains globalPhase.name) {
           phase = globalPhase;
-          if (globalPhase.name == "terminal") icodeChecker.checkICodes;
+          if (globalPhase.name == "jvm") icodeChecker.checkICodes;
           else checker.checkTrees;
 	}
 	if (settings.statistics.value) statistics.print(phase);

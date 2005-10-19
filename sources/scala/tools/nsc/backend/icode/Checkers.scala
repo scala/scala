@@ -56,7 +56,10 @@ abstract class Checkers {
     val STRING = REFERENCE(definitions.StringClass);
     val SCALA_ALL = REFERENCE(definitions.AllClass);
 
-    def checkICodes: Unit = classes foreach check;
+    def checkICodes: Unit = {
+      Console.println("[[consistency check at beginning of phase " + globalPhase.name + "]]");
+      classes foreach check;
+    }
 
     def check(cls: IClass): Unit = {
       log("Checking class " + cls);
@@ -331,7 +334,7 @@ abstract class Checkers {
                stack push kind;
 
              case Logical(op, kind) =>
-               checkType(kind, BOOL, BYTE, CHAR, SHORT, INT, LONG);
+               checkType(kind,  BOOL, BYTE, CHAR, SHORT, INT, LONG);
                checkBinop(kind);
                stack push kind;
 

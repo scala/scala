@@ -294,6 +294,15 @@ import scala.tools.nsc.util.NameTransformer;
     val LSR  = encode(">>>");
     val ASR  = encode(">>");
 
+    // value-conversion methods
+    val toByte = newTermName("toByte");
+    val toShort = newTermName("toShort");
+    val toChar = newTermName("toChar");
+    val toInt = newTermName("toInt");
+    val toLong = newTermName("toLong");
+    val toFloat = newTermName("toFloat");
+    val toDouble = newTermName("toDouble");
+
     val SourceFileATTR = newTermName("SourceFile");
     val SyntheticATTR = newTermName("Synthetic");
     val BridgeATTR = newTermName("Bridge");
