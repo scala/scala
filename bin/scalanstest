@@ -463,8 +463,8 @@ test_check_all() {
         "neg" $FILES_NEG;
     test_check_kind "Testing .NET backend" \
 	"msil" $FILES_MSIL;
-    test_check_kind "Testing interpreter" \
-        "int" $FILES_RUN $FILES_INT;
+#    test_check_kind "Testing interpreter" \
+#        "int" $FILES_RUN $FILES_INT;
 }
 
 
@@ -524,9 +524,9 @@ test_main() {
     TEST_TYPE="auto";
     FILES_RUN="";
     FILES_JVM="";
-    FILES_INT="";
-    FILES_SHL="";
-    FILES_DIS="";
+#    FILES_INT="";
+#    FILES_SHL="";
+#    FILES_DIS="";
     FILES_POS="";
     FILES_NEG="";
     FILES_MSIL="";
@@ -588,9 +588,9 @@ test_main() {
         case "$TEST_TYPE" in
             auto | jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
         esac;
-        case "$TEST_TYPE" in
-            auto | int ) FILES_INT="$FILES_INT $SRCDIR/run";;
-        esac;
+#        case "$TEST_TYPE" in
+#            auto | int ) FILES_INT="$FILES_INT $SRCDIR/run";;
+#        esac;
 #        case "$TEST_TYPE" in
 #            auto | shl ) FILES_SHL="$FILES_SHL $SRCDIR/shl";;
 #        esac;
@@ -672,6 +672,7 @@ fi;
 configure;
 
 case "$SCRIPT" in
+    nst*         ) test_main "$@";;
     scalanstest* ) test_main "$@";;
     *            ) abort "Don't know what to do for $SCRIPT.";;
 esac;
