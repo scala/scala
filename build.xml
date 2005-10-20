@@ -18,6 +18,13 @@
     	<contains string="${env.ANT_OPTS}" substring="-Xmx"/>
     </condition>
     <fail unless="memory.set">SABBUS requires additional memory. Please set the 'ANT_OPTS' environment property to '-Xmx256M' or more.</fail>
+    <condition property="classpath.set">
+    	<and>
+    	    <isset property="env.CLASSPATH"/>
+    	    <not><equals arg1="${env.CLASSPATH}" arg2="" trim="true"/></not>
+    	</and>
+    </condition>
+    <fail if="classpath.set">SABBUS is too unstable when used with a non-empty classpath. Unset your classpath environment variable.</fail>
 
     <!-- The system classpath should not be used -->
     <property name="build.sysclasspath" value="ignore"/>
