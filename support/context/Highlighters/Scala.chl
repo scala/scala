@@ -1,0 +1,81 @@
+//////////////////////////////////////////////////////////////////////////////
+//
+// Scala highlighter written by Stephane Micheloud, scala.epfl.ch
+//
+//////////////////////////////////////////////////////////////////////////////
+
+Language:               Scala
+Filter:                 Scala files (*.scala)|*.scala
+Description:            Scala highlighter written by Stephane Micheloud - scala.epfl.ch
+HelpFile:
+CaseSensitive:          1
+LineComment:            //
+BlockCommentBeg:        /*
+BlockCommentEnd:        */
+BlockAutoindent:        0
+BlockBegStr:            {
+BlockEndStr:            }
+IdentifierBegChars:     a..z A..Z _ `
+IdentifierChars:        a..z A..Z _ 0..9 `
+NumConstBegChars:       0..9 +-
+NumConstChars:          0..9 a..f A..F x X .
+EscapeChar:             \
+
+// keywords (see Scala specification, section 1.1)
+KeyWords1:              abstract case catch class def do else extends false
+                        final finally for if implicit import match requires
+                        new null object override package private protected
+                        return sealed super this throw trait true try type
+                        val var while with yield 
+
+// special characters (see Scala specification, section 1.1)
+KeyWords2:              _ : = => <- <: >: # @
+
+// standard library objects and classes (see Scala API documentation)
+KeyWords3:              Any AnyVal Application Array ArrayBuffer Atom
+                        Attribute
+                        BitSet Boolean Buffer Byte
+                        Cell Char Comment Console Double
+                        Elem EntityRef Enumeration Float
+                        HashMap HashSet HashTable History
+                        Int Iterable Iterator
+                        ListMap ListSet Long List Location
+                        Map Message MetaData MultiMap
+                        Nil Node NodeBuffer NodeSeq None Null Option
+                        Ordered Predef Queue
+                        ScalaObject Scriptable Seq Set Short Some Stack
+                        Stream Symbol
+                        Text TextBuffer Tree TreeMap TreeSet
+                        Unit XML
+
+// standard attribute classes
+KeyWords4:              cloneable serializable transcient volatile
+
+KeyWords5:
+
+StringBegChar:          "
+StringEndChar:          "
+MultilineStrings:       0
+UsePreprocessor:        0
+CurrLineHighlighted:    1
+
+// 1st value is foreground color, 2nd value is background color
+// (see color list in vbScript.chl) and 3rd value (optional) represents
+// font attribute (B=bold, I=italic, U=underline, S=strike out)
+SpaceCol:               clWindowText clWindow
+Keyword1Col:            clBlack clWindow B
+Keyword2Col:            clBlack clWindow
+Keyword3Col:            clMaroon clWindow B
+Keyword4Col:            clBlue clWindow B
+Keyword5Col:            clMaroon clWindow B
+IdentifierCol:          clWindowText clWindow
+CommentCol:             clGreen clWindow I
+NumberCol:              clNavy clWindow B
+StringCol:              clRed clWindow
+SymbolCol:              clWindowText clWindow
+PreprocessorCol:        clBlue clWindow
+SelectionCol:           clWhite clNavy
+CurrentLineCol:         clBlack clYellow
+MatchedBracesCol:       clWindowText clWindow
+
+OverrideTxtFgColor:     0
