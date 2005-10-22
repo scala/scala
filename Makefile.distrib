@@ -14,6 +14,13 @@ EXAMPLES_ROOT		 = $(PROJECT_SOURCEDIR)/examples
 EXAMPLES_LIST		+= $(call READLIST, $(PROJECT_LISTDIR)/examples.lst)
 EXAMPLES_FILES		 = $(EXAMPLES_LIST:%=$(EXAMPLES_ROOT)/%)
 
+# context hightlighter
+CONTEXT_ROOT		 = $(PROJECT_SUPPORTDIR)/context
+CONTEXT_LIST		+= README
+CONTEXT_LIST		+= Highlighters/Scala.chl
+CONTEXT_LIST		+= Template/Scala.ctpl 
+CONTEXT_FILES		 = $(CONTEXT_LIST:%=$(CONTEXT_ROOT)/%)
+
 # emacs scala-mode
 EMACS_ROOT		 = $(PROJECT_SUPPORTDIR)/emacs
 EMACS_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/emacs.lst)
@@ -172,6 +179,9 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(strip $(MIRROR) -m 644 -p -C $(EXAMPLES_ROOT) $(EXAMPLES_LIST) \
 	    $(INSTALL_EXAMPLEDIR))
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/context
+	$(strip $(MIRROR) -m 644 -p -C $(CONTEXT_ROOT) $(CONTEXT_LIST) \
+	    $(INSTALL_SUPPORTDIR)/context)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/emacs
 	$(strip $(MIRROR) -m 644 -p -C $(EMACS_ROOT) $(EMACS_LIST) \
 	    $(INSTALL_SUPPORTDIR)/emacs)
