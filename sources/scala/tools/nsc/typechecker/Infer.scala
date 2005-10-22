@@ -139,7 +139,7 @@ package scala.tools.nsc.typechecker;
    *  A nullary method type becomes its result type.
    *  Implicit parameters are skipped.
    */
-  private def normalize(tp: Type): Type = skipImplicit(tp) match {
+  def normalize(tp: Type): Type = skipImplicit(tp) match {
     case MethodType(formals, restpe) =>
       if (util.Statistics.enabled) normM = normM + 1;
       functionType(formals, normalize(restpe))

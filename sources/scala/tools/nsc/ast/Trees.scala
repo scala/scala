@@ -1057,6 +1057,19 @@ import symtab.Flags._;
     }
   }
 
+  class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
+    override def transform(tree: Tree): Tree = tree match {
+      case Ident(_) =>
+	def subst(from: List[Symbol], to: List[Tree]): Tree =
+	  if (from.isEmpty) tree
+	  else if (tree.symbol == from.head) to.head
+	  else subst(from.tail, to.tail);
+	subst(from, to)
+      case _ =>
+	super.transform(tree)
+    }
+  }
+
   class TreeTypeSubstituter(from: List[Symbol], to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to);
     override def traverse(tree: Tree): unit = {

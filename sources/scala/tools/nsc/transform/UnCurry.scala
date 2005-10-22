@@ -195,6 +195,9 @@ abstract class UnCurry extends InfoTransform {
     }
 
     def mainTransform(tree: Tree): Tree = (tree match {
+      case Apply(Select(Block(List(), Function(vparams, body)), nme.apply), args) =>
+	// perform beta-reduction; this helps keep view applications small
+	mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
       case Apply(fn, args) =>
 	val formals = fn.tpe.paramTypes;
         copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
