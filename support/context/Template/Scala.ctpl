@@ -1,0 +1,75 @@
+[class | Scala class template]
+class |MyClass {
+
+}
+
+[def | function definition]
+def |myFunc(): = {
+}
+
+[exit | System.exit]
+System.exit(|);
+
+[for | for comprehensions]
+for (val i <- |) {}
+
+[if | if expression]
+if (|) {
+  
+}
+
+[ife | if-else expression]
+if (|) {
+  
+}
+else {
+  
+}
+
+[main | Scala program template]
+object |Main {
+
+    /** Code documentation here */
+  def main(args: Array[String]): Unit = {
+    /* multi-line and semi-line comments here */
+    // one-line comments here
+    Console.println("Hello, world");
+  }
+
+}
+
+[match | match expression]
+| match {
+  case   => 
+  case _ => 
+}
+
+[Pair | Pair object]
+Pair(|, )
+
+[println | Console.println]
+Console.println(|);
+
+[trait | Scala trait template]
+trait |MyTrait {
+}
+
+[try | try-catch block]
+try {
+  |
+}
+catch {
+  case e: Exception =>
+    Console.println("Unexpected exception");
+    e.printStackTrace();
+}
+
+[val | value definition]
+val | = ;
+
+[while | while block]
+var i=0;
+while (i < |) {
+  
+  i = i + 1;
+}
