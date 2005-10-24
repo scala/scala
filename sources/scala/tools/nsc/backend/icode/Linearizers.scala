@@ -38,7 +38,14 @@ trait Linearizers: ICodes {
       blocks.reverse;
     }
 
+    def linearize(startBlock: BasicBlock): List[BasicBlock] = {
+      blocks = startBlock :: Nil;
+      run( { worklist.enqueue(startBlock); } );
+      blocks.reverse;
+    }
+
     def processElement(b: BasicBlock) =
+      if (b.size > 0)
       b.lastInstruction match {
         case JUMP(where) =>
           add(where);

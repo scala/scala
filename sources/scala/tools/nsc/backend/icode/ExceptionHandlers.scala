@@ -18,16 +18,14 @@ import scala.collection.mutable.HashSet;
  * in the generated code to preserve nesting.
  */
 trait ExceptionHandlers: ICodes {
+  import global.{Symbol, NoSymbol};
 
-  class ExceptionHandler(label: String) {
-    val code: Code = new Code("exh" + label);
-    var outer: ExceptionHandler = _;
+  class ExceptionHandler(val method: IMethod, label: String, val cls: Symbol) {
     private var coveredBlocks: List[BasicBlock] = Nil;
+    private var _startBlock: BasicBlock = _;
 
-    def setOuter(o: ExceptionHandler): ExceptionHandler = {
-      outer = o;
-      this
-    }
+    def setStartBlock(b: BasicBlock) = _startBlock = b;
+    def startBlock = _startBlock;
 
     def addBlock(b: BasicBlock): ExceptionHandler = {
       coveredBlocks = b :: coveredBlocks;
@@ -35,7 +33,11 @@ trait ExceptionHandlers: ICodes {
     }
 
     def covered: List[BasicBlock] = coveredBlocks;
+
+    override def toString() = "exh_" + label + "(" + cls.simpleName + ")";
   }
 
-  object NoHandler extends ExceptionHandler("<nohandler>");
+  class Finalizer(method: IMethod, label: String) extends ExceptionHandler(method, label, NoSymbol) {
+    override def toString() = "finalizer_" + label;
+  }
 }

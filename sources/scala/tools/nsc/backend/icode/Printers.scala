@@ -87,6 +87,12 @@ abstract class Printers {
         println(" {");
         printCode(m.code);
         println("}");
+
+        indent;println("Exception handlers: ");
+        m.exh foreach printExceptionHandler;
+
+        m.finalizers foreach printExceptionHandler;
+        undent;println;
       } else
         println;
     }
@@ -99,6 +105,11 @@ abstract class Printers {
     def printCode(code: Code): Unit = {
 //      code traverse printBlock;
       linearizer.linearize(code) foreach printBlock;
+    }
+
+    def printExceptionHandler(e: ExceptionHandler) = {
+      println(" catch (" + e.cls.simpleName + ") in " + e.covered);
+      linearizer.linearize(e.startBlock) foreach printBlock;
     }
 
     def printBlock(bb: BasicBlock): Unit = {

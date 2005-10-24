@@ -147,8 +147,8 @@ trait BasicBlocks: ICodes {
 
     /** Close the block */
     def close = {
-      assert(instructionList.length > 0,
-             "Empty block.");
+       assert(instructionList.length > 0,
+              "Empty block.");
       closed = true;
       instrs = toInstructionArray(instructionList.reverse);
     }
@@ -195,6 +195,10 @@ trait BasicBlocks: ICodes {
 	  global.abort("The last instruction is not a control flow instruction");
       }
 
+    /** Returns the precessors of this block, in the current 'code' chunk.
+     *  This is signifficant only if there are exception handlers, which live
+     *  in different code 'chunks' than the rest of the method.
+     */
     def predecessors: List[BasicBlock] = {
       if (preds == null)
         preds = code.blocks.elements.filter (p => (p.successors contains this)).toList;

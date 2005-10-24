@@ -85,19 +85,6 @@ trait Members: ICodes {
       });
     }
 
-//     def logType = {
-//       log ("// Typing " + toString());
-//       traverse( (bb: BasicBlock) => {
-//         log ("Typing block #" + bb.label);
-//         var typer = new TypeStack;
-//         bb.traverse((ic: Instruction) => {
-// 	  typer = typer.eval(ic);
-// 	  log(ic.toString()+" -> "+typer.toString());
-//         });
-
-//       });
-//     }
-
     /* Compute a unique new label */
     def nextLabel = {
       currentLabel = currentLabel + 1;
@@ -155,7 +142,8 @@ trait Members: ICodes {
    */
   class IMethod(val symbol: Symbol) {
     var code: Code = null;
-    var exh: List[ExceptionHandler] = _;
+    var exh: List[ExceptionHandler] = Nil;
+    var finalizers: List[Finalizer] = Nil;
     var sourceFile: String = _;
     var returnType: TypeKind = _;
 
@@ -194,6 +182,9 @@ trait Members: ICodes {
 
     def addHandler(e: ExceptionHandler): Unit =
       exh = e :: exh;
+
+    def addFinalizer(e: Finalizer): Unit =
+      finalizers = e :: finalizers;
 
     /** Is this method deferred ('abstract' in Java sense) */
     def isDeferred =

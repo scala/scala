@@ -25,6 +25,7 @@ import scala.tools.util.Position;
   case STORE_FIELD(field, isStatic) =>
   case CALL_PRIMITIVE(primitive) =>
   case CALL_METHOD(method, style) =>
+  case CALL_FINALIZER(finalizer) =>
   case NEW(kind) =>
   case CREATE_ARRAY(elem) =>
   case IS_INSTANCE(tpe) =>
@@ -231,6 +232,16 @@ import scala.tools.util.Position;
 
         result;
       }
+      override def produced = 1;
+    }
+
+    case class CALL_FINALIZER(finalizer: Finalizer) extends Instruction {
+
+      override def toString(): String =
+        "CALL_FINALIZER " + finalizer;
+
+      override def consumed = 0;
+
       override def produced = 1;
     }
 

@@ -84,6 +84,8 @@ abstract class GenICode extends SubComponent  {
 
       // !! modules should be eliminated by refcheck... or not?
       case ModuleDef(mods, name, impl) =>
+        abort("Modules should not reach backend!");
+
         log("Generating module: " + tree.symbol.fullNameString);
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit);
         addClassFields(ctx, tree.symbol);
@@ -125,27 +127,6 @@ abstract class GenICode extends SubComponent  {
 
       case _ =>
         abort("Illegal tree in gen: " + tree);
-
-
-/*  case AbsTypeDef(mods, name, lo, hi) =>                          (eliminated by erasure)
-  case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
-  case Import(expr, selectors) =>                                 (eliminated by typecheck)
-  case Attributed(attribute, definition) =>                       (eliminated by typecheck)
-  case DocDef(comment, definition) =>                             (eliminated by typecheck)
-  case CaseDef(pat, guard, body) =>                               (eliminated by transmatch)
-  case Sequence(trees) =>                                         (eliminated by transmatch)
-  case Alternative(trees) =>                                      (eliminated by transmatch)
-  case Star(elem) =>                                              (eliminated by transmatch)
-  case Bind(name, body) =>                                        (eliminated by transmatch)
-  case ArrayValue(elemtpt, trees) =>                              (introduced by uncurry)
-  case Function(vparams, body) =>                                 (eliminated by typecheck)
-  case Typed(expr, tpt) =>                                         (eliminated by erasure)
-  case TypeApply(fun, args) =>
-  case SingletonTypeTree(ref) =>                                  (eliminated by typecheck)
-  case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by typecheck)
-  case CompoundTypeTree(templ: Template) =>                        (eliminated by typecheck)
-  case AppliedTypeTree(tpt, args) =>                               (eliminated by typecheck)
-*/
     }
 
     private def genStat(trees: List[Tree], ctx: Context): Context = {
@@ -364,19 +345,20 @@ abstract class GenICode extends SubComponent  {
           genLoad(rhs, ctx1, toTypeKind(tree.symbol.info.resultType));
 
         case ValDef(_, _, _, rhs) =>
-          var initialValue = rhs;
           val sym = tree.symbol;
           val local = new Local(sym, toTypeKind(sym.info));
           ctx.method.addLocal(local);
 
           if (rhs == EmptyTree) {
             log("Uninitialized variable " + tree + " at: " + unit.position(tree.pos));
-            initialValue = zeroOf(local.kind);
+            ctx.bb.emit(getZeroOf(local.kind));
           }
 
-          val ctx1 = genLoad(initialValue, ctx, local.kind);
-//          if (rhs != EmptyTree)
-            ctx1.bb.emit(STORE_LOCAL(local, false), tree.pos);
+          var ctx1 = ctx;
+          if (rhs != EmptyTree)
+            ctx1 = genLoad(rhs, ctx, local.kind);
+
+          ctx1.bb.emit(STORE_LOCAL(local, false), tree.pos);
           generatedType = UNIT;
           ctx1
 
@@ -418,22 +400,64 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = genLoad(expr, ctx, returnedKind);
           ctx1.bb.emit(RETURN(returnedKind), tree.pos);
           ctx1.bb.enterIgnoreMode;
-          // although strange, 'return' does not necessarily close a block
-          //ctx1.bb.close;
           generatedType = expectedType;
           ctx1
 
         case Try(block, catches, finalizer) =>
-          var ctx1 = ctx.newHandler.newBlock;
-          ctx.bb.emit(JUMP(ctx1.bb), tree.pos);
-          ctx.bb.close;
-          val currentHandler = ctx.handlers.head;
-          ctx1 = genLoad(block, ctx1, toTypeKind(block.tpe));
-          assert(ctx1.handlers.head == currentHandler,
-                 "Handler nesting violated. Expected: " +
-                 currentHandler + " found: " + ctx1.handlers.head);
-          // TODO: generate code for handlers and finalizer
-          ctx1
+          val outerCtx = ctx.dup;
+
+          var bodyCtx: Context = null;
+
+          val handlers = for (val CaseDef(pat, _, body) <- catches)
+            yield pat match {
+              case Typed(Ident(nme.WILDCARD), tpt) =>
+                val exh = ctx.newHandler(tpt.tpe.symbol);
+
+                val ctx1 = genLoad(body, outerCtx.enterHandler(exh), UNIT);
+                ctx1.bb.emit(RETURN(UNIT));
+                ctx1.bb.close;
+                exh
+
+              case Ident(nme.WILDCARD) =>
+                val exh = ctx.newHandler(definitions.ThrowableClass);
+
+                val ctx1 = genLoad(body, outerCtx.enterHandler(exh), UNIT);
+                ctx1.bb.emit(RETURN(UNIT));
+                ctx1.bb.close;
+                exh
+
+              case Bind(name, _) =>
+                val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe));
+                ctx.method.addLocal(exception);
+
+                val exh = ctx.newHandler(pat.symbol.tpe.symbol);
+
+                val exhCtx = outerCtx.enterHandler(exh);
+                exhCtx.bb.emit(STORE_LOCAL(exception, false), pat.pos);
+                val ctx1 = genLoad(body, exhCtx, UNIT);
+                ctx1.bb.emit(RETURN(UNIT));
+                ctx1.bb.close;
+                exh
+
+              case _ =>
+                abort("Unknown exception case: " + pat + " at: " + unit.position(pat.pos));
+            }
+
+          val finalHandler = ctx.newFinalizer;
+
+          val ctx1 = genLoad(finalizer, outerCtx.enterHandler(finalHandler), UNIT);
+          ctx1.bb.emit(RETURN(UNIT));
+          ctx1.bb.close;
+
+          bodyCtx = ctx.newBlock;
+          outerCtx.bb.emit(JUMP(bodyCtx.bb), tree.pos);
+          outerCtx.bb.close;
+
+          generatedType = toTypeKind(block.tpe);
+          val ctxfinal = genLoad(block, bodyCtx, generatedType);
+          handlers.reverse foreach ctxfinal.exitHandler;
+          ctxfinal.exitFinalizer(finalHandler);
+          ctxfinal
 
         case Throw(expr) =>
           val ctx1 = genLoad(expr, ctx, THROWABLE);
@@ -1227,7 +1251,9 @@ abstract class GenICode extends SubComponent  {
       var defdef: DefDef = _;
 
       /** current exception handlers */
-      var handlers: List[ExceptionHandler] = NoHandler :: Nil;
+      var handlers: List[ExceptionHandler] = Nil;
+
+      var finalizers: List[Finalizer] = Nil;
 
       var handlerCount = 0;
 
@@ -1238,6 +1264,8 @@ abstract class GenICode extends SubComponent  {
         buf.append("\tmethod: ").append(method).append('\n');
         buf.append("\tbb: ").append(bb).append('\n');
         buf.append("\tlabels: ").append(labels).append('\n');
+        buf.append("\texception handlers: ").append(handlers).append('\n');
+        buf.append("\tfinalizers: ").append(finalizers).append('\n');
         buf.toString()
       }
 
@@ -1251,6 +1279,7 @@ abstract class GenICode extends SubComponent  {
         this.labels = other.labels;
         this.defdef = other.defdef;
         this.handlers = other.handlers;
+        this.finalizers = other.finalizers;
         this.handlerCount = other.handlerCount;
       }
 
@@ -1288,23 +1317,54 @@ abstract class GenICode extends SubComponent  {
       def newBlock: Context = {
         val block = method.code.newBlock;
         handlers foreach (h => h addBlock block);
+        finalizers foreach (.addBlock(block));
         new Context(this) setBasicBlock block;
       }
 
-      def newHandler: Context = {
+      /** Create a new exception handler and adds it in the list
+       * of current exception handlers.
+       */
+      def newHandler(cls: Symbol): ExceptionHandler = {
         handlerCount = handlerCount + 1;
-        val exh = new ExceptionHandler("" + handlerCount) setOuter handlers.head;
+        val exh = new ExceptionHandler(method, "" + handlerCount, cls);
+        method.addHandler(exh);
         handlers = exh :: handlers;
-        this
+        exh
       }
 
-      def exitHandler: Context = {
-        assert(handlerCount > 0,
-               "Wrong nesting of exception handlers.");
+      def newFinalizer: Finalizer = {
+        handlerCount = handlerCount + 1;
+        val exh = new Finalizer(method, "" + handlerCount);
+        method.addFinalizer(exh);
+        finalizers = exh :: finalizers;
+        exh
+      }
+
+      /** Return a new context for generating code for the given
+       * exception handler.
+       */
+      def enterHandler(exh: ExceptionHandler): Context = {
+        val ctx = newBlock;
+        exh.setStartBlock(ctx.bb);
+        ctx
+      }
+
+      def exitHandler(exh: ExceptionHandler): Unit = {
+        assert(handlerCount > 0 && handlers.head == exh,
+               "Wrong nesting of exception handlers." + this + " for " + exh);
         handlerCount = handlerCount - 1;
         handlers = handlers.tail;
-        this
       }
+
+      def exitFinalizer(f: Finalizer): Unit = {
+        assert(handlerCount > 0 && finalizers.head == f,
+               "Wrong nesting of exception handlers." + this + " for " + f);
+        handlerCount = handlerCount - 1;
+        finalizers = finalizers.tail;
+      }
+
+      /** Clone the current context */
+      def dup: Context = new Context(this);
     }
 
     /**
