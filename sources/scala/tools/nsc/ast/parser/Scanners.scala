@@ -390,6 +390,10 @@ import scala.tools.nsc.util.CharArrayReader;
 	    in.next;
 	    getIdentOrOperatorRest;
 	    return;
+      case SU =>
+	      setName;
+		  token = name2token(name);
+		  return;
 	  case _ =>
 	    if(java.lang.Character.isUnicodeIdentifierPart(in.ch)) {
 	      putChar(in.ch);
