@@ -48,7 +48,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	  if ((clazz hasFlag TRAIT) || (decls.toList exists (.isClass)))
             outerAcc.expandName(clazz);
 	  decls1 enter (
-	    outerAcc setFlag (PARAMACCESSOR | ACCESSOR | STABLE | FINAL)
+	    outerAcc setFlag (PARAMACCESSOR | ACCESSOR | STABLE)
 		     setInfo MethodType(List(), outerType));
 	  decls1 enter (clazz.newValue(clazz.pos, nme.getterToLocal(outerAcc.name))
 	    setFlag (LOCAL | PRIVATE | PARAMACCESSOR | (outerAcc getFlag EXPANDEDNAME))
