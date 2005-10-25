@@ -63,7 +63,15 @@ object Main {
     val interpreter = new Interpreter {
       val compiler: gCompiler.type = gCompiler
     };
-    loop(line => interpreter.interpret(line.trim(), reporter))
+    loop(line => try {
+        interpreter.interpret(line.trim(), reporter)
+      } catch {
+        case e: Exception => {
+          reporter.info(null,e.getMessage(),true);
+          //e.printStackTrace();
+        }
+      }
+    )
   }
 
   def process(args: Array[String]): unit = {

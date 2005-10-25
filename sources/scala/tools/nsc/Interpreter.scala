@@ -28,6 +28,9 @@ abstract class Interpreter {
     // and parse it, using syntaxAnalyzer, to get input ASTs
     val inASTs = syntaxAnalyzer.interpreterParse(
                    new compiler.CompilationUnit(
+                     //if SourceFile is not modified, then fix a bug
+                     //here by adding an EOF character to the end of
+                     //the 'line'
                      new SourceFile("<console>",line.toCharArray())));
 
     //todo:  if (errors in parsing) after reporting them, exit method
@@ -47,18 +50,46 @@ abstract class Interpreter {
 
     // first phase: compile auto-generated file
     compiler.settings.outdir.value = getTempPath().getPath();
-    (new compiler.Run) compile List(filename);
+    val cr = new compiler.Run;
+    cr compile List(filename);
 
-/*
     //todo: if no errors in compilation then
     // second phase: execute JVM, and print outcome
     // else consider definition as if has not happened and exit method
+    //todo: use Scala's reflection API, which I designed, instead, for the following code
+    val cl = new java.net.URLClassLoader(Predef.Array(getTempPath().toURL()));
+    val interpreterResultObject: Class = Class.forName("InterpreterLine"+lineno+"Result",true,cl);
+    val resultValMethod: java.lang.reflect.Method = interpreterResultObject.getMethod("result",null);
+    var interpreterResultString: String = resultValMethod.invoke(interpreterResultObject,null).toString();
 
-    //todo: uncomment
-    //val futureJVMFile: File = getJVMInterpFile(interp_file);
-    //futureJVMFile.deleteOnExit();
-    //if (futureJVMFile.exists())
-    //   futureJVMFile.delete();
+    //var interpreterResultJavaTypeString: String = resultValMethod.getReturnType().getName();
+    //Console.println(compiler.definitions.EmptyPackage.info.members);
+    val interpreterResultSym: compiler.Symbol =
+        compiler.definitions.getMember(compiler.definitions.EmptyPackage,
+          compiler.newTermName("InterpreterLine"+lineno+"Result"));
+
+    def findSymbolWithName(ls: List[compiler.Symbol], name: compiler.Name): compiler.Symbol =
+      ls.find(s=>s.name == name) match {
+        case None => throw new IllegalStateException("Cannot find field '"+name+"' in InterpreterResult");
+        case Some(s) => s;
+      }
+
+    //var lastname: String = compiler.atPhase(cr.typerPhase.next){interpreterResultSym.info.decls.toList.last.name.toString()};
+    //reporter.info(null,lastname,true);
+    //todo: similar to what I should be doing for Scala's reflection??
+    var interpreterResultScalaTypeString: String =
+      compiler.atPhase(cr.typerPhase.next){
+        findSymbolWithName(interpreterResultSym.info.decls.toList,
+          compiler.nme.getterToLocal(compiler.newTermName("result")))
+        .tpe.toString()
+      };
+    reporter.info(null,interpreterResultString+": "+interpreterResultScalaTypeString/*+" ("+interpreterResultJavaTypeString+")"*/,true);
+
+/*
+    val scalaInterpFile: File = ScalaInterpFile(filename);
+    scalaInterpFile.deleteOnExit();
+    if(scalaInterpFile.exists())
+       scalaInterpFile.delete();
 
     getvalue of line#.last_var_defined_in_line (from defined_vars)
     (works for 'it' as it was added as last val to definedvars)
@@ -103,6 +134,8 @@ abstract class Interpreter {
     import java.io.{File, PrintWriter, FileOutputStream};
     val scalaFile = new File(filename);
     scalaFile.deleteOnExit();
+    if(scalaFile.exists()) // to prevent old lingering files from having results from them reported!
+       scalaFile.delete();
 
     val module = new PrintWriter(new FileOutputStream(scalaFile));
     //todo:"import "+LoadedModules?.getName
@@ -119,6 +152,11 @@ abstract class Interpreter {
     else fullLine = "  " + line;
     module.println(fullLine);
     module.println("}");
+    module.println();
+    module.println("object InterpreterLine"+lineno+"Result ");
+    module.println("{ val result = (line"+lineno+"."+definedVars.toList.reverse.head+"); }");
+    // reflection is used later (see above) to get the result value above
+
     module.flush();
     module.close();
   }
@@ -147,10 +185,11 @@ abstract class Interpreter {
           //case AbsTypeDef(_,name,_,_) => throw new InterpIllegalDefException(name.toString()+": absract type definitions not allowed")
           //case AliasTypeDef(_,name,_,_) => throw new InterpIllegalDefException(name.toString()+": alias type definitions not allowed")
           //case LabelDef(name,_,_) => throw new InterpIllegalDefException(name.toString()+": label definitions not allowed")
-          //case _ => assert(false) // throw new InterpIllegalDefException("Unsupported definition!")// ()
+          case _ => throw new InterpIllegalDefException("Unsupported interpreter definition. Contact Scala developers for adding interpreter support for it.")// ()
         }
       }
   }
+  case class InterpIllegalDefException(msg: String) extends RuntimeException(msg);
 
 //    class ListTraverser extends Traverser {
 //      def traverse(trees: List[Tree]): Unit =
