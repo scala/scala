@@ -406,6 +406,46 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	val member = opc.overriding;
 	val other = opc.overridden;
 	if (!(member hasFlag DEFERRED)) {
+          val otpe = erasure(other.tpe);
+	  val bridgeNeeded = atPhase(phase.next) {
+	    !(other.tpe =:= member.tpe) &&
+            { var e = bridgesScope.lookupEntry(member.name);
+              while (e != null && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
+		e = bridgesScope.lookupNextEntry(e);
+              e == null
+            }
+	  }
+	  if (bridgeNeeded) {
+            val bridge = other.cloneSymbolImpl(owner)
+              setPos(owner.pos)
+              setFlag (member.flags | BRIDGE)
+              resetFlag ACCESSOR
+              setInfo otpe;
+            bridgeTarget(bridge) = member;
+	    owner.info.decls.enter(bridge);
+            bridgesScope enter bridge;
+            bridges =
+              atPhase(phase.next) {
+                atPos(bridge.pos) {
+		  val bridgeDef =
+                    DefDef(bridge, vparamss =>
+		      member.tpe match {
+			case MethodType(List(), ConstantType(c)) => Literal(c)
+			case _ =>
+			  ((Select(This(owner), member): Tree) /: vparamss)
+			  ((fun, vparams) => Apply(fun, vparams map Ident))
+		      });
+		  if (settings.debug.value)
+		    log("generating bridge from " + other + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);
+		  bridgeDef
+		}
+              } :: bridges;
+          }
+        }
+	opc.next
+      }
+      bridges
+    }
 /*
       for (val bc <- site.baseClasses.tail; val other <- bc.info.decls.toList) {
         if (other.isMethod && !other.isConstructor) {
@@ -415,48 +455,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 (site.memberType(member) matches site.memberType(other)) &&
                 !(site.parents exists (p =>
                   (p.symbol isSubClass member.owner) && (p.symbol isSubClass other.owner)))) {
-*/
-              val otpe = erasure(other.tpe);
-              if (!(otpe =:= erasure(member.tpe))) {
-                var e = bridgesScope.lookupEntry(member.name);
-                while (e != null && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
-                  e = bridgesScope.lookupNextEntry(e);
-                if (e == null) {
-                  val bridge = other.cloneSymbolImpl(owner)
-                     setPos(owner.pos)
-                     setFlag (member.flags | BRIDGE)
-                     resetFlag ACCESSOR
-                     setInfo otpe;
-                  bridgeTarget(bridge) = member;
-		  owner.info.decls.enter(bridge);
-                  bridgesScope enter bridge;
-                  bridges =
-                    atPhase(phase.next) {
-                      atPos(bridge.pos) {
-			val bridgeDef =
-                          DefDef(bridge, vparamss =>
-			    member.tpe match {
-			      case MethodType(List(), ConstantType(c)) => Literal(c)
-			      case _ =>
-				((Select(This(owner), member): Tree) /: vparamss)
-				((fun, vparams) => Apply(fun, vparams map Ident))
-			    });
-			if (settings.debug.value)
-			  log("generating bridge from " + other + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);
-			bridgeDef
-		      }
-                    } :: bridges;
-                }
-              }
-/*
+...
              }
           }
 */
-        }
-	opc.next
-      }
-      bridges
-    }
 
     def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
       if (base.isTrait) stats

@@ -1395,7 +1395,7 @@ import Flags._;
       case Pair(ConstantType(value1), ConstantType(value2)) =>
 	value1 == value2
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-	sym1 == sym2 && pre1 =:= pre2 && isSameTypes(args1, args2)
+	sym1 == sym2 && (phase.erasedTypes || pre1 =:= pre2) && isSameTypes(args1, args2)
       case Pair(RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
 	def isSubScope(s1: Scope, s2: Scope): boolean = s2.toList.forall {
 	  sym2 =>
