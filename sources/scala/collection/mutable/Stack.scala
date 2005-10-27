@@ -68,6 +68,7 @@ class Stack[A] extends MutableList[A] {
         if (first != null) {
             val res = first.elem;
             first = first.next;
+            len = len - 1;
             res
         } else
             error("stack empty");
