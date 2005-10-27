@@ -118,7 +118,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       else if (sym.name == nme.update)
         tp match {
           case MethodType(List(index, tvar), restpe) =>
-            MethodType(List(erasure(index), tvar), erasure(restpe))
+            MethodType(List(erasure(index), tvar), erasedTypeRef(UnitClass))
         }
       else erasure(tp)
     } else

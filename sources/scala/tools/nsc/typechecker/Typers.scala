@@ -674,25 +674,23 @@ import collection.mutable.HashMap;
       var tpt1 =
 	checkNoEscaping.locals(context.scope, WildcardType,
 	  checkNoEscaping.privates(meth,
-	    typedType(ddef.tpt)));
+	      typedType(ddef.tpt)));
       checkNonCyclic(ddef.pos, tpt1.tpe, meth);
       val rhs1 =
-        checkNoEscaping.locals(
-          context.scope, tpt1.tpe,
-	  if (ddef.name == nme.CONSTRUCTOR) {
-	    if (!meth.hasFlag(SYNTHETIC) &&
-	        !(meth.owner.isClass ||
-		  meth.owner.isModuleClass ||
-		  meth.owner.isAnonymousClass ||
-		  meth.owner.isRefinementClass))
-	      error(ddef.pos, "constructor definition not allowed here " + meth.owner);//debug
-	    context.enclClass.owner.setFlag(INCONSTRUCTOR);
-	    val result = typed(ddef.rhs, EXPRmode | INCONSTRmode, UnitClass.tpe);
-	    context.enclClass.owner.resetFlag(INCONSTRUCTOR);
-	    if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors() == 0)
-	      computeParamAliases(meth.owner, vparamss1, result);
-	    result
-	  } else transformedOrTyped(ddef.rhs, tpt1.tpe));
+	if (ddef.name == nme.CONSTRUCTOR) {
+	  if (!meth.hasFlag(SYNTHETIC) &&
+	      !(meth.owner.isClass ||
+		meth.owner.isModuleClass ||
+		meth.owner.isAnonymousClass ||
+		meth.owner.isRefinementClass))
+	    error(ddef.pos, "constructor definition not allowed here " + meth.owner);//debug
+	  context.enclClass.owner.setFlag(INCONSTRUCTOR);
+	  val result = typed(ddef.rhs, EXPRmode | INCONSTRmode, UnitClass.tpe);
+	  context.enclClass.owner.resetFlag(INCONSTRUCTOR);
+	  if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors() == 0)
+	    computeParamAliases(meth.owner, vparamss1, result);
+	  result
+	} else transformedOrTyped(ddef.rhs, tpt1.tpe);
       copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 

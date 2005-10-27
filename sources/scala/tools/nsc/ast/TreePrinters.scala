@@ -214,7 +214,7 @@ abstract class TreePrinters {
           print(fun); printRow(vargs, "(", ", ", ")");
 
         case Super(qual, mixin) =>
-          if (qual != nme.EMPTY.toTypeName) print(symName(tree, qual) + ".");
+          if (qual != nme.EMPTY.toTypeName || tree.symbol != NoSymbol) print(symName(tree, qual) + ".");
           print("super");
           if (mixin != nme.EMPTY.toTypeName)
 	    print("[" + mixin + "]")
