@@ -60,8 +60,8 @@
 
     <!-- A path containing the new Scala library -->
     <path id="nsc.classpath">
+        <pathelement location="${build.pico-nslib.dir}"/>
         <pathelement location="${build.osc-nstools.dir}"/>
-        <pathelement location="${build.nslib.dir}"/>
         <pathelement location="${oslib.jar}"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
@@ -138,29 +138,31 @@
     #####################################################################
     -->
     
-    <target name="build" depends="build.nsc.nstools"
+    <target name="build" depends="build.jars"
             description="Builds new Scala (compiler and library)."/>
     
     <target name="build.pico.nslib" depends="init.pico"
             description="Builds the runtime and pico libraries of the new Scala library.">
-        <mkdir dir="${build.nslib.dir}"/>
-        <pico srcdir="${sources.dir}" destdir="${build.nslib.dir}"
+        <mkdir dir="${build.pico-nslib.dir}"/>
+        <pico srcdir="${sources.dir}" destdir="${build.pico-nslib.dir}"
               scalahack="true">
             <classpath>
-                <pathelement location="${build.nslib.dir}"/>
+                <pathelement location="${build.pico-nslib.dir}"/>
             </classpath>
-            <include name="scala/runtime/*.java"/>
-            <include name="scala/runtime/**/*.java"/>
-            <include name="scala/tools/util/*.java"/>
-            <include name="scala/*.java"/>
-            <not>
-                <present targetdir="${newsources.dir}" present="both">
+            <or>
+            <filename name="scala/runtime/*.java"/>
+            <filename name="scala/runtime/**/*.java"/>
+            <filename name="scala/tools/util/*.java"/>
+            <and>
+                <filename name="scala/*.java"/>
+                <not><present targetdir="${newsources.dir}" present="both">
                     <mapper type="glob" from="*.scala" to="*.java"/>
-                </present>
-            </not>
+                </present></not>
+            </and>
+            </or>
         </pico>
         <delete>
-            <fileset dir="${build.nslib.dir}">
+            <fileset dir="${build.pico-nslib.dir}">
                 <present targetdir="${newsources.dir}" present="both">
                     <mapper type="glob" from="*.class" to="*.scala"/>
                 </present>
@@ -196,6 +198,7 @@
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
+                <pathelement location="${build.pico-nslib.dir}"/>
                 <pathelement location="${build.nslib.dir}"/>
                 <pathelement location="${sources.dir}"/>
                 <pathelement location="${newsources.dir}"/>
@@ -209,6 +212,7 @@
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
+                <pathelement location="${build.pico-nslib.dir}"/>
                 <pathelement location="${build.nslib.dir}"/>
                 <pathelement location="${sources.dir}"/>
                 <pathelement location="${newsources.dir}"/>
@@ -229,6 +233,7 @@
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
+                <pathelement location="${build.pico-nslib.dir}"/>
                 <pathelement location="${build.nslib.dir}"/>
                 <pathelement location="${build.nstools.dir}"/>
                 <pathelement location="${fjbg.jar}"/>
@@ -239,36 +244,33 @@
         </nsc>
     </target>
 
-    <target name="build.jars" depends="build"
-            description="">
-        <mkdir dir="${build.dir}/lib"/>
-        <jar destfile="${build.dir}/lib/${distrib.osc-nstools.jar}"
+    <target name="build.jars"
+            depends="build.nsc.nslib, build.nsc.nstools, build.osc.nstools, build.pico.nslib"
+            description="Builds JAR archives for all elements of Scala">
+        <mkdir dir="${build.dir}"/>
+        <jar destfile="${build.dir}/${osc-nstools.jar.name}" index="yes" update="yes"
              basedir="${build.osc-nstools.dir}">
-            <include name="**"/>
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
             </manifest>
         </jar>
-        <jar destfile="${build.dir}/lib/${distrib.nstools.jar}"
+        <jar destfile="${build.dir}/${nstools.jar.name}" index="yes" update="yes"
              basedir="${build.nstools.dir}">
-            <include name="**"/>
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
             </manifest>
         </jar>
-        <jar destfile="${build.dir}/lib/${distrib.nslib.jar}"
+        <jar destfile="${build.dir}/${nslib.jar.name}" index="yes" update="yes"
              basedir="${build.nslib.dir}">
-            <include name="**"/>
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
             </manifest>
         </jar>
-        <copy file="${fjbg.jar}"  todir="${build.dir}/lib"/>
-        <copy file="${oslib.jar}" todir="${build.dir}/lib"/>
-        <copy file="${msil.jar}"  todir="${build.dir}/lib"/>
-        <copy file="${scala.dll}" todir="${build.dir}/lib"/>
+        <jar destfile="${build.dir}/${nslib.jar.name}" index="yes" update="yes"
+             basedir="${build.pico-nslib.dir}">
+        </jar>
     </target>
 
     <!--
@@ -277,20 +279,7 @@
     #####################################################################
     -->
 
-    <condition property="os.unix">
-        <or>
-            <os family="unix"/>
-            <os family="mac"/>
-        </or>
-    </condition>
-
-    <condition property="os.mac">
-        <os family="mac"/>
-    </condition>
-
-    <condition property="os.win">
-        <os family="windows"/>
-    </condition>
+    
 
     <target name="distrib.init">
         <echo level="verbose">scala.dll=${scala.dll}</echo>
@@ -300,87 +289,102 @@
             </and></not></condition>
         </fail>
     	<tstamp prefix="start"/>
+    	<condition property="os.unix"><or>
+                <os family="unix"/>
+                <os family="mac"/>
+        </or></condition>
+        <condition property="os.mac">
+            <os family="mac"/>
+        </condition>
+        <condition property="os.win">
+            <os family="windows"/>
+        </condition>
     </target>
 
     <target name="distrib" depends="distrib.unix, distrib.win"
             description="Creates a simplified Scala distribution."/>
 
     <target name="distrib.unix" if="os.unix"
-            depends="build.jars, distrib.init"
+            depends="build, distrib.init"
             description="Creates a simplified Scala distribution for Unix.">
-        <property name="distrib.package.dir"
-                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
-        <property name="distrib.current.dir"
-                  value="${distrib.dir}/unix/${distrib.package.dir}"/>
-        <property name="distrib.scala.dir"
-                  value="${distrib.current.dir}/share/scala"/>
-        <property name="distrib.bin.dir"
-                  value="${distrib.scala.dir}/bin"/>
+        <property name="distrib.unix.current.dir"
+                  value="${distrib.unix.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+        <property name="distrib.unix.scala.dir"
+                  value="${distrib.unix.current.dir}/share/scala"/>
         <!-- Set up 'bin' directory (unix) -->
-        <mkdir dir="${distrib.bin.dir}"/>
+        <mkdir dir="${distrib.unix.scala.dir}/bin"/>
         <copy file="${bin.dir}/.nsc_wrapper.tmpl"
-              tofile="${distrib.bin.dir}/.nsc_wrapper">
+              tofile="${distrib.unix.scala.dir}/bin/.nsc_wrapper">
             <filterset>
-                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="VERSION" value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="CPATH"     value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
+                <filter token="CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/${nslib.jar.name}:$PREFIX/lib/${osc-nstools.jar.name}"/>
             </filterset>
         </copy>
-        <chmod file="${distrib.bin.dir}/.nsc_wrapper" perm="ugo+rx"/>
-        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
-                 link="${distrib.bin.dir}/scala"/>
-        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
-                 link="${distrib.bin.dir}/scalac"/>
-        <symlink resource="${distrib.bin.dir}"
-                 link="${distrib.current.dir}/bin"/>
+        <chmod file="${distrib.unix.scala.dir}/bin/.nsc_wrapper" perm="ugo+rx"/>
+        <symlink resource="${distrib.unix.scala.dir}/.nsc_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/scala"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/scalac"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin"
+                 link="${distrib.unix.current.dir}/bin"/>
         <!-- Set up 'lib' directory -->
-        <mkdir dir="${distrib.scala.dir}/lib"/>
-        <copy todir="${distrib.scala.dir}/lib">
-            <fileset dir="${build.dir}/lib"/>
+        <mkdir dir="${distrib.unix.scala.dir}/lib"/>
+        <copy todir="${distrib.unix.scala.dir}/lib">
+            <fileset dir="${build.dir}">
+                <include name="*.jar"/>
+            </fileset>
         </copy>
+        <copy todir="${distrib.unix.scala.dir}/lib" file="${fjbg.jar}"/>
+        <copy todir="${distrib.unix.scala.dir}/lib" file="${msil.jar}"/>
+        <copy todir="${distrib.unix.scala.dir}/lib" file="${scala.dll}"/>
         <!-- Set up latest -->
-        <symlink resource="${distrib.current.dir}"
-                 link="${distrib.dir}/unix/latest"/>
+        <symlink resource="${distrib.unix.current.dir}"
+                 link="${distrib.unix.dir}/latest"
+                 overwrite="yes"/>
     </target>
 
     <target name="distrib.win" if="os.win"
-            depends="build.jars, distrib.init"
+            depends="build, distrib.init"
             description="Creates a simplified Scala distribution for Windows.">
-        <property name="distrib.package.dir"
-                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
-        <property name="distrib.current.win.dir"
-                  value="${distrib.dir}/win/${distrib.package.dir}"/>
+        <property name="distrib.win.current.dir"
+                  value="${distrib.win.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
         <!-- Set up 'bin' directory -->
-        <mkdir dir="${distrib.current.win.dir}/bin"/>
+        <mkdir dir="${distrib.win.current.dir}/bin"/>
         <copy file="${bin.dir}/.scala_bat.tmpl"
-              tofile="${distrib.current.win.dir}/bin/scala.bat">
+              tofile="${distrib.win.current.dir}/bin/scala.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scala"/>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="BOOTCPATH" value="&quot;%SCALA_HOME%&quot;\lib\scala.jar"/>
+                <filter token="BOOTCPATH" value="&quot;%SCALA_HOME%&quot;\lib\${nslib.jar.name}"/>
             </filterset>
         </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
-              tofile="${distrib.current.win.dir}/bin/scalac.bat">
+              tofile="${distrib.win.current.dir}/bin/scalac.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scalac"/>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.nsc.Main"/>
-                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;&quot;%SCALA_HOME%&quot;\lib\${distrib.nslib.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.nstools.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.osc-nstools.jar}"/>
+                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\${nslib.jar.name};&quot;%SCALA_HOME%&quot;\lib\${osc-nstools.jar.name}"/>
             </filterset>
         </copy>
-        <fixcrlf srcdir="${distrib.current.win.dir}/bin" eol="dos"/>
+        <fixcrlf srcdir="${distrib.win.current.dir}/bin" eol="dos"/>
         <attrib readonly="true">
-            <fileset dir="${distrib.current.win.dir}/bin"
+            <fileset dir="${distrib.win.current.dir}/bin"
                      includes="**/*.bat"/>
         </attrib>
         <!-- Set up 'lib' directory (win) -->
-        <mkdir dir="${distrib.current.win.dir}/lib"/>
-        <copy todir="${distrib.current.win.dir}/lib">
-            <fileset dir="${build.dir}/lib"/>
+        <mkdir dir="${distrib.win.current.dir}/lib"/>
+        <copy todir="${distrib.win.current.dir}/lib">
+            <fileset dir="${build.dir}">
+                <include name="*.jar"/>
+            </fileset>
         </copy>
+        <copy todir="${distrib.win.current.dir}/lib" file="${fjbg.jar}"/>
+        <copy todir="${distrib.win.current.dir}/lib" file="${msil.jar}"/>
+        <copy todir="${distrib.win.current.dir}/lib" file="${scala.dll}"/>
     </target>
 
     <!--
@@ -392,44 +396,21 @@
     <target name="distrib.all"
             depends="distrib.unix.all, distrib.win.all"
             description="Creates a full Scala distribution."/>
+    
+    <target name="distrib.all.init"
+            depends="docs">
+        <property name="os.unix" value="yes"/>
+        <property name="os.win" value="yes"/>
+        <property name="os.mac" value="yes"/>
+    </target>
 
-    <target name="distrib.unix.all" depends="build.jars,docs,distrib.init"
+    <target name="distrib.unix.all" depends="distrib.all.init, distrib.unix"
             description="Creates a full Scala distribution for Unix.">
-        <property name="distrib.package.dir"
-                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
-        <property name="distrib.current.dir"
-                  value="${distrib.dir}/unix/${distrib.package.dir}"/>
-        <property name="distrib.scala.dir"
-                  value="${distrib.current.dir}/share/scala"/>
-        <property name="distrib.bin.dir"
-                  value="${distrib.scala.dir}/bin"/>
-        <property name="distrib.doc.dir"
-                  value="${distrib.current.dir}/share/doc/${distrib.package.dir}"/>
-        <mkdir dir="${distrib.scala.dir}"/>
-        <!-- Set up 'bin' directory (unix) -->
-        <mkdir dir="${distrib.bin.dir}"/>
-        <copy file="${bin.dir}/.nsc_wrapper.tmpl"
-              tofile="${distrib.bin.dir}/.nsc_wrapper">
-            <filterset>
-                <filter token="VERSION"   value="${scala.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="CPATH"     value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/${distrib.nslib.jar}:$PREFIX/lib/${distrib.nstools.jar}:$PREFIX/lib/${distrib.osc-nstools.jar}"/>
-            </filterset>
-        </copy>
-        <chmod file="${distrib.bin.dir}/.nsc_wrapper" perm="ugo+rx"/>
-        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
-                 link="${distrib.bin.dir}/scala"/>
-        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
-                 link="${distrib.bin.dir}/scalac"/>
-        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
-                 link="${distrib.bin.dir}/scaladoc"/>
-        <symlink resource="${distrib.bin.dir}/.nsc_wrapper"
-                 link="${distrib.bin.dir}/scalap"/>
-        <symlink resource="${distrib.bin.dir}"
-                 link="${distrib.current.dir}/bin"/>
+        <property name="distrib.unix.doc.dir"
+                  value="${distrib.unix.current.dir}/share/doc/scala"/>
         <!-- Set up 'doc' directory (unix) -->
-        <mkdir dir="${distrib.doc.dir}"/>
-        <copy todir="${distrib.doc.dir}">
+        <mkdir dir="${distrib.unix.doc.dir}"/>
+        <copy todir="${distrib.unix.doc.dir}">
             <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
             <fileset dir="${build.dir}/doc"/>
@@ -437,113 +418,62 @@
                      includes="ScalaByExample.pdf,ScalaReference.pdf"/>
             <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf"/>
         </copy>
-        <fixcrlf srcdir="${distrib.doc.dir}" eol="unix"
+        <fixcrlf srcdir="${distrib.unix.doc.dir}" eol="unix"
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
-        <!-- Set up 'lib' directory -->
-        <mkdir dir="${distrib.scala.dir}/lib"/>
-        <copy todir="${distrib.scala.dir}/lib">
-            <fileset dir="${build.dir}/lib"/>
-        </copy>
         <!-- Set up 'man' directory (unix) -->
-        <mkdir dir="${distrib.current.dir}/share/man"/>
-        <copy todir="${distrib.current.dir}/share/man">
+        <mkdir dir="${distrib.unix.current.dir}/share/man"/>
+        <copy todir="${distrib.unix.current.dir}/share/man">
             <fileset dir="${support.dir}/man" includes="**/*.1"/>
         </copy>
         <!-- Set up 'support' directory (unix) -->
-        <mkdir dir="${distrib.scala.dir}/support"/>
-        <copy todir="${distrib.scala.dir}/support">
+        <mkdir dir="${distrib.unix.scala.dir}/support"/>
+        <copy todir="${distrib.unix.scala.dir}/support">
             <fileset dir="${support.dir}"
                      includes="emacs/**,gedit/**,jedit/**,scite/**,vim/**,xcode/**"/>
         </copy>
-        <fixcrlf srcdir="${distrib.scala.dir}/support" eol="unix"/>
-        <!-- Set up 'sources.zip' (unix) -->
-        <zip destfile="${distrib.scala.dir}/sources.zip"
-             basedir="${basedir}" includes="sources/scala/**/*.scala"/>
+        <fixcrlf srcdir="${distrib.unix.scala.dir}/support" eol="unix"/>
+        <!-- Set up 'sources.tar.gz' (unix) -->
+        <tar destfile="${distrib.unix.scala.dir}/sources.tar.gz"
+             basedir="${basedir}" includes="sources/scala/**/*.scala" compression="gzip"/>
         <!-- Create gz and bz2 compressed tarballs -->
-        <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.gz"
-             basedir="${distrib.current.dir}" compression="gzip"/>
-        <tar destfile="${distrib.dir}/unix/${distrib.package.dir}.tar.bz2"
-             basedir="${distrib.current.dir}" compression="bzip2"/>
+        <tar destfile="${distrib.unix.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}.tar.gz"
+             basedir="${distrib.unix.current.dir}" compression="gzip"/>
     </target>
 
     <target name="distrib.mac.all" depends="distrib.unix.all"/>
 
-    <target name="distrib.win.all" depends="build, docs, distrib.init"
+    <target name="distrib.win.all" depends="distrib.all.init, distrib.win"
             description="Creates a full Scala distribution for Windows.">
-        <property name="distrib.package.dir"
-                  value="${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
-        <property name="distrib.current.win.dir"
-                  value="${distrib.dir}/win/${distrib.package.dir}"/>
-        <!-- Set up 'bin' directory -->
-        <mkdir dir="${distrib.current.win.dir}/bin"/>
-        <copy file="${bin.dir}/.scala_bat.tmpl"
-              tofile="${distrib.current.win.dir}/bin/scala.bat">
-            <filterset>
-                <filter token="PRODUCT"   value="scala"/>
-                <filter token="VERSION"   value="${scala.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="BOOTCPATH" value="&quot;%SCALA_HOME%&quot;\lib\scala.jar"/>
-            </filterset>
-        </copy>
-        <copy file="${bin.dir}/.nsc_bat.tmpl"
-              tofile="${distrib.current.win.dir}/bin/scalac.bat">
-            <filterset>
-                <filter token="PRODUCT"   value="scalac"/>
-                <filter token="VERSION"   value="${scala.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="MAIN"      value="scala.tools.nsc.Main"/>
-                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;&quot;%SCALA_HOME%&quot;\lib\${distrib.nslib.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.nstools.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.osc-nstools.jar}"/>
-            </filterset>
-        </copy>
-        <copy file="${bin.dir}/.nsc_bat.tmpl"
-              tofile="${distrib.current.win.dir}/bin/scalap.bat">
-            <filterset>
-                <filter token="PRODUCT"   value="scalap"/>
-                <filter token="VERSION"   value=""/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="MAIN"      value="scala.tools.scalap.Main"/>
-                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\scala.jar;&quot;%SCALA_HOME%&quot;\lib\${distrib.nslib.jar};&quot;%SCALA_HOME%&quot;\lib\${distrib.osc-nstools.jar}"/>
-            </filterset>
-        </copy>
-        <fixcrlf srcdir="${distrib.current.win.dir}/bin" eol="dos"/>
-        <attrib readonly="true">
-            <fileset dir="${distrib.current.win.dir}/bin"
-                     includes="**/*.bat"/>
-        </attrib>
         <!-- Set up 'doc' directory (win) -->
-        <copy todir="${distrib.current.win.dir}/doc">
+        <mkdir dir="${distrib.win.current.dir}/doc"/>
+        <copy todir="${distrib.win.current.dir}/doc">
             <fileset dir="${build.dir}/doc"/>
             <fileset dir="${doc.dir}/reference"
                      includes="ScalaByExample.pdf,ScalaReference.pdf"/>
             <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf"/>
         </copy>
-        <fixcrlf srcdir="${distrib.current.win.dir}/doc" eol="dos"
+        <fixcrlf srcdir="${distrib.win.current.dir}/doc" eol="dos"
                  includes="**/*.css,**/*.html,**/*.js"/>
         <!-- Set up 'examples' directory (win) -->
-        <copy todir="${distrib.current.win.dir}">
+        <copy todir="${distrib.win.current.dir}">
             <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
         </copy>
-        <fixcrlf srcdir="${distrib.current.win.dir}" eol="dos"
+        <fixcrlf srcdir="${distrib.win.current.dir}" eol="dos"
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
-        <!-- Set up 'lib' directory (win) -->
-        <mkdir dir="${distrib.current.win.dir}/lib"/>
-        <copy todir="${distrib.current.win.dir}/lib">
-            <fileset dir="${build.dir}/lib"/>
-        </copy>
         <!-- Set up 'support' directory -->
-        <mkdir dir="${distrib.current.win.dir}/support"/>
-        <copy todir="${distrib.current.win.dir}/support">
+        <mkdir dir="${distrib.win.current.dir}/support"/>
+        <copy todir="${distrib.win.current.dir}/support">
             <fileset dir="${support.dir}"
                      includes="context/**,emacs/**,jedit/**,scite/**,textpad/**,ultraedit/**,vim/**"/>
         </copy>
-        <fixcrlf srcdir="${distrib.current.win.dir}/support" eol="dos"/>
+        <fixcrlf srcdir="${distrib.win.current.dir}/support" eol="dos"/>
         <!-- Set up 'sources.zip' (win) -->
-        <zip destfile="${distrib.current.win.dir}/sources.zip"
+        <zip destfile="${distrib.win.current.dir}/sources.zip"
              basedir="${basedir}" includes="sources/scala/**/*.scala"/>
         <!-- Create zip archive -->
-        <zip destfile="${distrib.dir}/win/${distrib.package.dir}.zip"
-             basedir="${distrib.current.win.dir}"/>
+        <zip destfile="${distrib.win.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}.zip"
+             basedir="${distrib.win.current.dir}"/>
     </target>
 
     <!--
@@ -610,23 +540,24 @@
     -->
     
     <target name="clean"
+            depends="clean.build"
+            description="Deletes all generated build files."/>
+    
+    <target name="clean.all"
             depends="clean.build, clean.distrib"
             description="Deletes all generated files, both build and distribution files."/>
 
-    <target name="clean.build"
-            description="Deletes all generated build files.">
+    <target name="clean.build">
         <delete dir="${build.dir}" includeemptydirs="true"
                 quiet="true" failonerror="false"/>
     </target>
     
     <target name="clean.distrib"
             description="Deletes all generated distribution files.">
-        <delete includeemptydirs="true"
-                quiet="true" failonerror="false">
-            <fileset dir="${distrib.dir}">
-                <include name="${distrib.current.prefix}-*"/>
-            </fileset>
-        </delete>
+        <delete dir="${distrib.unix.dir}" includeemptydirs="true"
+                quiet="true" failonerror="false"/>
+        <delete dir="${distrib.win.dir}" includeemptydirs="true"
+                quiet="true" failonerror="false"/>
     </target>
 
     <!--
