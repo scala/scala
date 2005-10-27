@@ -453,7 +453,7 @@
         <mkdir dir="${distrib.scala.dir}/support"/>
         <copy todir="${distrib.scala.dir}/support">
             <fileset dir="${support.dir}"
-                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**"/>
+                     includes="emacs/**,gedit/**,jedit/**,scite/**,vim/**,xcode/**"/>
         </copy>
         <fixcrlf srcdir="${distrib.scala.dir}/support" eol="unix"/>
         <!-- Set up 'sources.zip' (unix) -->
@@ -535,7 +535,7 @@
         <mkdir dir="${distrib.current.win.dir}/support"/>
         <copy todir="${distrib.current.win.dir}/support">
             <fileset dir="${support.dir}"
-                     includes="emacs/**,gedit/**,jedit/**,scite/**,textpad/**,ultraedit/**"/>
+                     includes="context/**,emacs/**,jedit/**,scite/**,textpad/**,ultraedit/**,vim/**"/>
         </copy>
         <fixcrlf srcdir="${distrib.current.win.dir}/support" eol="dos"/>
         <!-- Set up 'sources.zip' (win) -->
