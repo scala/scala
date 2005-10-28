@@ -37,7 +37,7 @@ SCALAC_LIBDIR=/home/linuxsoft/apps/scala/share/scala/lib
 SCALAC_SCALA=$SCALAC_LIBDIR/scala.jar
 SCALAC_TOOLS=$SCALAC_LIBDIR/tools.jar
 
-NSC_SCALA=$PREFIX/build/nslib
+NSC_SCALA=$PREFIX/build/nslib:$PREFIX/build/pico-nslib
 NSC_TOOLS=$PREFIX/build/osc-nstools
 
 FJBG_JAR=/home/linuxsoft/apps/fjbg/jars/fjbg.jar
