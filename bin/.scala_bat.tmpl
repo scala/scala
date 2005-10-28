@@ -11,6 +11,7 @@ rem ##########################################################################
 if "%OS%"=="Windows_NT" @setlocal
 
 if "%SCALA_HOME%" == "" goto error1
+if not exist "%SCALA_HOME%\VERSION-@VERSION@" goto error2
 
 set _ARGS=
 :loop
@@ -36,7 +37,11 @@ rem ##########################################################################
 rem # errors
 
 :error1
-echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file %_VERSION%.
+echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@VERSION@".
+goto end
+
+:error2
+echo ERROR: environment variable SCALA_HOME points to the wrong directory "%SCALA_HOME%". It should point to the directory containing the file "VERSION-@VERSION@".
 goto end
 
 :end
