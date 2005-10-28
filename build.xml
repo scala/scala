@@ -351,6 +351,8 @@
             description="Creates a simplified Scala distribution for Windows.">
         <property name="distrib.win.current.dir"
                   value="${distrib.win.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+        <property name="quotted.lib.dir"
+                  value="&quot;%SCALA_HOME%&quot;\lib"/>
         <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.win.current.dir}/bin"/>
         <copy file="${bin.dir}/.scala_bat.tmpl"
@@ -359,7 +361,7 @@
                 <filter token="PRODUCT"   value="scala"/>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="BOOTCPATH" value="%SCALA_HOME%&quot;\lib\scala.jar;%SCALA_HOME%&quot;\lib\tools.jar"/>
+                <filter token="BOOTCPATH" value="${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar"/>
             </filterset>
         </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
@@ -369,7 +371,7 @@
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.nsc.Main"/>
-                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;%SCALA_HOME%&quot;\lib\tools.jar;&quot;%SCALA_HOME%&quot;\lib\${osc-nstools.jar.name}"/>
+                <filter token="CPATH"     value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
             </filterset>
         </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
@@ -379,7 +381,7 @@
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.scalap.Main"/>
-                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;%SCALA_HOME%&quot;\lib\tools.jar;&quot;%SCALA_HOME%&quot;\lib\${osc-nstools.jar.name}"/>
+                <filter token="CPATH"     value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
             </filterset>
         </copy>
         <fixcrlf srcdir="${distrib.win.current.dir}/bin" eol="dos"/>
