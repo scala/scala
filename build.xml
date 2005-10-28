@@ -279,8 +279,6 @@
     #####################################################################
     -->
 
-    
-
     <target name="distrib.init">
         <echo level="verbose">scala.dll=${scala.dll}</echo>
         <fail message="Required DLL library is missing; check the 'scala.dll' property in 'build.${user.name}.properties'.">
@@ -318,11 +316,11 @@
             <filterset>
                 <filter token="VERSION" value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/${nslib.jar.name}:$PREFIX/lib/${osc-nstools.jar.name}"/>
+                <filter token="CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/tools.jar:$PREFIX/lib/${osc-nstools.jar.name}"/>
             </filterset>
         </copy>
         <chmod file="${distrib.unix.scala.dir}/bin/.nsc_wrapper" perm="ugo+rx"/>
-        <symlink resource="${distrib.unix.scala.dir}/.nsc_wrapper"
+        <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
                  link="${distrib.unix.scala.dir}/bin/scala"/>
         <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
                  link="${distrib.unix.scala.dir}/bin/scalac"/>
@@ -335,6 +333,8 @@
                 <include name="*.jar"/>
             </fileset>
         </copy>
+        <copy todir="${distrib.unix.scala.dir}/lib" file="${oslib.jar}"/>
+        <copy todir="${distrib.unix.scala.dir}/lib" file="${ostools.jar}"/>
         <copy todir="${distrib.unix.scala.dir}/lib" file="${fjbg.jar}"/>
         <copy todir="${distrib.unix.scala.dir}/lib" file="${msil.jar}"/>
         <copy todir="${distrib.unix.scala.dir}/lib" file="${scala.dll}"/>
@@ -357,7 +357,7 @@
                 <filter token="PRODUCT"   value="scala"/>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="BOOTCPATH" value="&quot;%SCALA_HOME%&quot;\lib\${nslib.jar.name}"/>
+                <filter token="BOOTCPATH" value="%SCALA_HOME%&quot;\lib\scala.jar;%SCALA_HOME%&quot;\lib\tools.jar"/>
             </filterset>
         </copy>
         <copy file="${bin.dir}/.nsc_bat.tmpl"
@@ -367,7 +367,7 @@
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.nsc.Main"/>
-                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\${nslib.jar.name};&quot;%SCALA_HOME%&quot;\lib\${osc-nstools.jar.name}"/>
+                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;%SCALA_HOME%&quot;\lib\tools.jar;&quot;%SCALA_HOME%&quot;\lib\${osc-nstools.jar.name}"/>
             </filterset>
         </copy>
         <fixcrlf srcdir="${distrib.win.current.dir}/bin" eol="dos"/>
@@ -382,6 +382,8 @@
                 <include name="*.jar"/>
             </fileset>
         </copy>
+        <copy todir="${distrib.unix.scala.dir}/lib" file="${oslib.jar}"/>
+        <copy todir="${distrib.unix.scala.dir}/lib" file="${ostools.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${fjbg.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${msil.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${scala.dll}"/>
