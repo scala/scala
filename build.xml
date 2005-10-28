@@ -324,6 +324,8 @@
                  link="${distrib.unix.scala.dir}/bin/scala"/>
         <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
                  link="${distrib.unix.scala.dir}/bin/scalac"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/scalap"/>
         <symlink resource="${distrib.unix.scala.dir}/bin"
                  link="${distrib.unix.current.dir}/bin"/>
         <!-- Set up 'lib' directory -->
@@ -370,6 +372,16 @@
                 <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;%SCALA_HOME%&quot;\lib\tools.jar;&quot;%SCALA_HOME%&quot;\lib\${osc-nstools.jar.name}"/>
             </filterset>
         </copy>
+        <copy file="${bin.dir}/.nsc_bat.tmpl"
+              tofile="${distrib.win.current.dir}/bin/scalap.bat">
+            <filterset>
+                <filter token="PRODUCT"   value="scalap"/>
+                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="MAIN"      value="scala.tools.scalap.Main"/>
+                <filter token="CPATH"     value="&quot;%SCALA_HOME%&quot;\lib\fjbg.jar;&quot;%SCALA_HOME%&quot;\lib\msil.jar;&quot;%SCALA_HOME%&quot;\lib\scala.jar;%SCALA_HOME%&quot;\lib\tools.jar;&quot;%SCALA_HOME%&quot;\lib\${osc-nstools.jar.name}"/>
+            </filterset>
+        </copy>
         <fixcrlf srcdir="${distrib.win.current.dir}/bin" eol="dos"/>
         <attrib readonly="true">
             <fileset dir="${distrib.win.current.dir}/bin"
@@ -382,8 +394,8 @@
                 <include name="*.jar"/>
             </fileset>
         </copy>
-        <copy todir="${distrib.unix.scala.dir}/lib" file="${oslib.jar}"/>
-        <copy todir="${distrib.unix.scala.dir}/lib" file="${ostools.jar}"/>
+        <copy todir="${distrib.win.scala.dir}/lib"   file="${oslib.jar}"/>
+        <copy todir="${distrib.win.scala.dir}/lib"   file="${ostools.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${fjbg.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${msil.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${scala.dll}"/>
@@ -461,6 +473,8 @@
             <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
         </copy>
+        <copy file="${basedir}/VERSION"
+              tofile="${distrib.win.current.dir}/VERSION-${scala.version}"/>
         <fixcrlf srcdir="${distrib.win.current.dir}" eol="dos"
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
         <!-- Set up 'support' directory -->
