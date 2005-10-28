@@ -394,8 +394,8 @@
                 <include name="*.jar"/>
             </fileset>
         </copy>
-        <copy todir="${distrib.win.scala.dir}/lib"   file="${oslib.jar}"/>
-        <copy todir="${distrib.win.scala.dir}/lib"   file="${ostools.jar}"/>
+        <copy todir="${distrib.win.current.dir}/lib" file="${oslib.jar}"/>
+        <copy todir="${distrib.win.current.dir}/lib" file="${ostools.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${fjbg.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${msil.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${scala.dll}"/>
