@@ -21,8 +21,6 @@ abstract class ExplicitOuter extends InfoTransform {
   val phaseName: String = "explicitouter";
   override def changesBaseClasses = false;
 
-  final val needSuperAccessors = false;
-
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ExplicitOuterTransformer(unit);
 
@@ -138,47 +136,6 @@ abstract class ExplicitOuter extends InfoTransform {
 
   class ExplicitOuterTransformer(unit: CompilationUnit) extends Transformer {
 
-    /** A map that takes triples consisting of
-     *   - the class symbol that contains the accessor
-     *   - the symbol accessed by the accessor
-     *   - the mixin qualifier of the symbol
-     *  to super accessor symbols.
-     *  //todo: not clear whether we need to this for all super calls symbols, or just
-     *        protected ones (or all calls to protected from inner classes)?
-     *        (controled by switch `needSuperAccessors')
-     */
-    private val superAccessors = new HashMap[Triple[Symbol, Symbol, Name], Symbol];
-
-    /** Generate a superclass accessor symbol and enter in `superAccessors' unless one
-     *  exists already.
-     */
-    def superAccessor(clazz: Symbol, accessed: Symbol, mix: Name): Symbol =
-      superAccessors.get(Triple(clazz, accessed, mix)) match {
-	case Some(accessor) =>
-	  accessor
-	case None =>
-	  val accessor = makeSuperAccessor(clazz, accessed, mix);
-	  superAccessors(Triple(clazz, accessed, mix)) = accessor;
-	  accessor
-      }
-
-    /** Generate a superclass acessor symbol named `NAME$super$MIX' in class `class'
-     *  where NAME is the name of the accessed symbol `accessed'
-     *  and MIX is the mixin qualifier of the super call `mix'.
-     *  The method is initially `private'; will be widened later
-     */
-    def makeSuperAccessor(clazz: Symbol, accessed: Symbol, mix: Name): Symbol = {
-      assert(accessed.isMethod);
-      val accessorName = newTermName(
-	accessed.name.toString() + "$super" +
-	(if (mix == nme.EMPTY.toTypeName) "" else "$" + mix));
-      val accessor = clazz.newMethod(clazz.pos, accessorName)
-	setFlag PRIVATE
-	setInfo clazz.tpe.memberType(accessed);
-      clazz.info.decls enter accessor;
-      accessor
-    }
-
     /** The first step performs the following transformations:
      *   1. A class which is not an interface and is not static gets an outer link
      *      (@see outerDefs)
@@ -189,10 +146,6 @@ abstract class ExplicitOuter extends InfoTransform {
      *   4. A constructor of a class with an outer link gets an outer parameter.
      *   5. A reference C.this where C refers to an outer class is replaced by a selection
      *        this.$outer ... .$outer (@see outerPath)
-     *   6. A reference C.super.M where C refers to an outer class and M is a term member of C
-     *      is replaced by a selection
-     *        this.$outer ... .$outer.M$super
-     *      where M$super is the super accessor symbol of M (@see superAccessor).
      *   7. A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
      *      the constructor belongs to a non-static class is augmented by an outer argument.
      *      E.g. Q.<init>(args, OUTER) where OUTER is the qualifier corresponding to the
@@ -297,16 +250,6 @@ abstract class ExplicitOuter extends InfoTransform {
 	  case This(qual) =>
 	    if (sym == currentOwner.enclClass || (sym hasFlag MODULE) && sym.isStatic) tree
 	    else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
-	  case Select(qual @ Super(_, mix), name) =>
-            val qsym = qual.symbol;
-	    if (!needSuperAccessors || tree.symbol.isType || qsym == currentOwner.enclClass)
-	      tree
-	    else atPos(tree.pos) { // (6)
-	      val accessor = superAccessor(qsym, tree.symbol, mix);
-	      Select(if (qsym.isStatic) This(qsym)
-		     else outerPath(outerValue, qsym), accessor)
-                setType accessor.tpe
-	    }
 	  case Apply(sel @ Select(qual, name), args)
 	  if ((name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR)
 	      && !sel.symbol.owner.isStatic) =>
@@ -325,8 +268,6 @@ abstract class ExplicitOuter extends InfoTransform {
     }
 
     /** The second step performs the following transformations:
-     *   1. Add definitions of superaccessors to the members of a class
-     *      (@see makeSuperAccessorDefs)
      *   2. Remove private modifiers from members M of mixins T. (@see makeNotPrivate)
      *   3. Remove `private' modifier from class members M that are accessed from an inner class.
      *   4. Remove `protected' modifier from class members M that are accessed
@@ -335,28 +276,11 @@ abstract class ExplicitOuter extends InfoTransform {
      */
     private val secondTransformer = new Transformer {
 
-      /** Add a definition for each super accessor in `clazz':
-       *    def NAME$super$MIX(args) = super[MIX].NAME(args)
-       */
-      def makeSuperAccessorDefs(clazz: Symbol, typer: analyzer.Typer): List[Tree] =
-	(for (val Pair(Triple(owner, accessed, mix), accessor) <- superAccessors.elements;
-	      owner == clazz) yield
-	  typer.typed {
-	    atPos(clazz.pos) {
-	      DefDef(accessor, vparamss =>
-		Apply(Select(Super(clazz, mix), accessed), vparamss.head map Ident))
-	    }
-	  }).toList;
-
       /** The second-step transformation method */
       override def transform(tree: Tree): Tree = {
 	val sym = tree.symbol;
 	val tree1 = super.transform(tree);
 	tree1 match {
-	  case Template(parents, stats) => // (1)
-	    val accessors = makeSuperAccessorDefs(sym.owner, typer.atOwner(tree1, currentOwner));
-	    if (accessors.isEmpty) tree1
-	    else copy.Template(tree1, parents, stats ::: accessors)
           case DefDef(_, _, _, _, _, _) =>
             if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
               sym.makeNotPrivate(sym.owner);

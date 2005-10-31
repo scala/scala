@@ -20,7 +20,7 @@ abstract class UnPickler {
   } catch {
     case ex: Throwable =>
       ex.printStackTrace();//debug
-      System.out.println("EX");//debug
+
       throw new RuntimeException("error reading Scala signature of " + classRoot.nameString + ": " + ex.getMessage());
   }
 
@@ -45,7 +45,21 @@ abstract class UnPickler {
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: int): boolean = {
       val tag = bytes(index(i));
-      firstSymTag <= tag && tag <= lastSymTag
+      firstSymTag <= tag && tag <= lastSymTag &&
+      (tag != CLASSsym || !isRefinementSymbolEntry(i))
+    }
+
+    /** Does entry represent a refinement symbol?
+     *  pre: Entry is a class symbol
+     */
+    private def isRefinementSymbolEntry(i: int): boolean = {
+      val savedIndex = readIndex;
+      readIndex = index(i);
+      assert(readByte() == CLASSsym);
+      readNat();
+      val result = readNameRef() == nme.REFINE_CLASS_NAME.toTypeName;
+      readIndex = savedIndex;
+      result
     }
 
     /** If entry at `i' is undefined, define it by performing operation `op' with

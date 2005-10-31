@@ -95,7 +95,7 @@ abstract class SymbolLoaders {
         val module = owner.newModule(Position.NOPOS, name);
         clazz.setInfo(completer);
 	module.setInfo(completer);
-        module.moduleClass.setInfo(errorLoader);
+        module.moduleClass.setInfo(moduleClassLoader);
         owner.info.decls.enter(clazz);
         owner.info.decls.enter(module);
 	assert(clazz.linkedModule == module, module);
@@ -173,9 +173,9 @@ abstract class SymbolLoaders {
     protected def kindString: String = "source file";
   }
 
-  object errorLoader extends SymbolLoader(null) {
+  object moduleClassLoader extends SymbolLoader(null) {
     protected def doComplete(root: Symbol): unit =
-      throw new Error(" loading " + root + " without loading module first");
+      root.sourceModule.initialize;
     protected def kindString: String = "";
   }
 }

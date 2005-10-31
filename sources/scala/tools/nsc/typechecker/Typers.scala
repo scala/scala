@@ -260,29 +260,6 @@ import collection.mutable.HashMap;
       } else tree
     }
 
-    class AddSuperAccessors(clazz: Symbol, accdefs: ListBuffer[Tree]) extends Traverser {
-      override def traverse(tree: Tree) = tree match {
-        case Select(Super(_, mix), _) =>
-          if (tree.isTerm && mix == nme.EMPTY.toTypeName) {
-	    val supername = nme.superName(tree.symbol.name);
-	    if (clazz.info.decl(supername).suchThat(.alias.==(tree.symbol)) == NoSymbol) {
-	      if (settings.debug.value) log("add super acc " + tree.symbol + tree.symbol.locationString + " to " + clazz);//debug
-              val superAcc =
-                clazz.newMethod(tree.pos, supername)
-                  .setFlag(SUPERACCESSOR | PRIVATE)
-                  .setAlias(tree.symbol)
-                  .setInfo(clazz.thisType.memberType(tree.symbol));
-              clazz.info.decls enter superAcc;
-              accdefs += typed(DefDef(superAcc, vparamss => EmptyTree));
-	    }
-          }
-        case Template(_, _) =>
-          ;
-        case _ =>
-          super.traverse(tree)
-      }
-    }
-
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
      *  given mode `mode' and given prototype `pt':
      *  (0) Convert expressions with constant types to literals
@@ -585,14 +562,8 @@ import collection.mutable.HashMap;
       // the following is necessary for templates generated later
       new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body);
       validateParentClasses(parents1, selfType);
-      val body1 = templ.body flatMap addGetterSetter;
-      var body2 = typedStats(body1, templ.symbol);
-      if (clazz.isTrait && phase.id <= currentRun.typerPhase.id) {
-        val superAccs = new ListBuffer[Tree];
-        new AddSuperAccessors(clazz, superAccs).traverseTrees(body2);
-        body2 = superAccs.toList ::: body2;
-      }
-      copy.Template(templ, parents1, body2) setType clazz.tpe
+      val body1 = typedStats(templ.body flatMap addGetterSetter, templ.symbol);
+      copy.Template(templ, parents1, body1) setType clazz.tpe
     }
 
     def typedValDef(vdef: ValDef): ValDef = {

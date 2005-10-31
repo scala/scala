@@ -248,7 +248,6 @@ abstract class Mixin extends InfoTransform {
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)
         if (stat.symbol hasFlag SUPERACCESSOR) =>
-          assert(stat.symbol hasFlag MIXEDIN, stat);
           val rhs0 =
             Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
                   vparams map (vparam => Ident(vparam.symbol)));
@@ -323,12 +322,15 @@ abstract class Mixin extends InfoTransform {
           } else {
             tree
           }
+
         case This(_) if tree.symbol.isImplClass =>
 	  assert(tree.symbol == currentOwner.enclClass, "" + tree + " " + tree.symbol + " " + currentOwner.enclClass);
           selfRef(tree.pos)
         case Select(qual @ Super(_, mix), name) =>
           if (currentOwner.enclClass.isImplClass) {
-            if (mix == nme.EMPTY.toTypeName) {
+            if (mix == nme.EMPTY.toTypeName)
+	      assert(false, "illegal super in mixin class: " + currentOwner.enclClass + " " + tree);
+/*
 	      val superAccName = enclInterface.expandedName(nme.superName(sym.name));
 	      val superAcc = enclInterface.info.decl(superAccName) suchThat (.alias.==(sym));
 	      assert(superAcc != NoSymbol, tree);//debug
@@ -337,10 +339,8 @@ abstract class Mixin extends InfoTransform {
 	          Select(selfRef(qual.pos), superAcc)
 	        }
 	      }
-            } else {
-              copy.Select(tree, selfRef(qual.pos), name)
-            }
-
+*/
+            copy.Select(tree, selfRef(qual.pos), name)
           } else {
             if (mix == nme.EMPTY.toTypeName) tree
             else copy.Select(tree, gen.This(currentOwner.enclClass) setPos qual.pos, name)

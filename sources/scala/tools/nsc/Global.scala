@@ -176,6 +176,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object superAccessors extends SuperAccessors {
+    val global: Global.this.type = Global.this
+  }
+
   object pickler extends Pickler {
     val global: Global.this.type = Global.this
   }
@@ -248,8 +252,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory,
     analyzer.typerFactory,
+    superAccessors,
     pickler,
-//    syntheticMethods,
     refchecks,
     uncurry,
     tailCalls,
@@ -358,7 +362,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       } else {
 	for (val Pair(sym, file) <- symSource.elements) {
 	  sym.reset(new loaders.SourcefileLoader(file));
-	  if (sym.isTerm) sym.moduleClass.reset(loaders.errorLoader);
+	  if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader);
 	}
       }
       informTime("total", startTime);
