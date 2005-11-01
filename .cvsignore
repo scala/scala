@@ -19,3 +19,4 @@ env.*
 concrete-*.xml
 *test*.java
 *test*.scala
+sandbox
