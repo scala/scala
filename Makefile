@@ -136,6 +136,7 @@ scalap			: main.scalap
 scala4ant		: main.scala4ant
 scalatest		: main.scalatest
 tools			: main.tools
+jars			: main.jars
 
 $(prefix).all		: $(latest)all
 $(prefix).scripts	: $(latest)scripts
@@ -153,6 +154,7 @@ $(prefix).scalap	: $(latest)scalap
 $(prefix).scala4ant	: $(latest)scala4ant
 $(prefix).scalatest	: $(latest)scalatest
 $(prefix).tools		: $(latest)tools
+$(prefix).jars		: $(latest)jars
 
 meta.%			: ; @$(make) prefix="meta" $@;
 boot.% 			: ; @$(make) prefix="boot" $@;
@@ -180,6 +182,7 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: scala4ant
 .PHONY			: scalatest
 .PHONY			: tools
+.PHONY			: jars
 
 .PHONY			: $(prefix).all
 .PHONY			: $(prefix).scripts
@@ -197,6 +200,7 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: $(prefix).scala4ant
 .PHONY			: $(prefix).scalatest
 .PHONY			: $(prefix).tools
+.PHONY			: $(prefix).jars
 
 ##############################################################################
 # Commands - version management
@@ -777,6 +781,19 @@ $(TOOLS_JAR_ARCHIVE)	:
 	    TOOLS_JAR=@$(JAR)
 
 endif
+
+##############################################################################
+# Targets - scala jars
+
+$(latest)jars		: $(latest)library
+$(latest)jars		: $(latest)tools
+	@$(ECHO) "      [jar] Building jar: $(LIBRARY_JAR_ARCHIVE)"
+	@$(make) jar target=LIBRARY \
+	    LIBRARY_JAR=@$(JAR)
+	@$(ECHO) "      [jar] Building jar: $(TOOLS_JAR_ARCHIVE)"
+	@$(make) jar target=TOOLS \
+	    TOOLS_JAR=@$(JAR)
+	@$(TOUCH) $@
 
 ##############################################################################
 # Targets - template expansion
