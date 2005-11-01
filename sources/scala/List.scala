@@ -304,7 +304,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-sealed trait List[+a] extends Seq[a] { // todo make sealed once we figure out how to build
+sealed abstract class List[+a] extends Seq[a] {
 
   /** Returns true if the list does not contain any elements.
    *  @return true, iff the list is empty.
