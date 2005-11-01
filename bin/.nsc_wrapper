@@ -45,7 +45,7 @@ MSIL_JAR=/home/linuxsoft/apps/msil/lib/msil.jar
 
 _JAVACMD=java
 
-_CPATH=$SCALAC_SCALA:$SCALAC_TOOLS:$NSC_TOOLS:$FJBG_JAR
+_CPATH=$FJBG_JAR:$MSIL_JAR:$SCALAC_SCALA:$SCALAC_TOOLS:$NSC_TOOLS
 _NSC_CPATH=$PREFIX/sources:$PREFIX/newsources:$NSC_SCALA
 
 # For Cygwin, switch paths to appropriate format before running java
