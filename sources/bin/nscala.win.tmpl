@@ -1,0 +1,48 @@
+@echo off
+
+rem ##########################################################################
+rem # Copyright @COPYRIGHT@
+rem #
+rem # This is free software; see the distribution for copying conditions.
+rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+rem # PARTICULAR PURPOSE.
+rem ##########################################################################
+
+if "%OS%"=="Windows_NT" @setlocal
+
+if "%SCALA_HOME%" == "" goto error1
+if not exist "%SCALA_HOME%\VERSION-@VERSION@" goto error2
+
+set _ARGS=
+:loop
+if '%1' == '' goto exec
+if '%1' == '-version' goto version
+set _ARGS=%_ARGS% %1
+shift
+goto loop
+
+:exec
+set _JAVACMD=java
+set _JAVAOPT=-Xbootclasspath/a:@BOOTCPATH@
+
+rem echo %_JAVACMD% %_JAVAOPT% %_ARGS%
+%_JAVACMD% %_JAVAOPT% %_ARGS%
+goto end
+
+:version
+echo @PRODUCT@ @VERSION@ -- @COPYRIGHT@
+goto end
+
+rem ##########################################################################
+rem # errors
+
+:error1
+echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@VERSION@".
+goto end
+
+:error2
+echo ERROR: environment variable SCALA_HOME points to the wrong directory "%SCALA_HOME%". It should point to the directory containing the file "VERSION-@VERSION@".
+goto end
+
+:end
+if "%OS%"=="Windows_NT" @endlocal

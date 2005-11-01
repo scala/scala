@@ -311,23 +311,29 @@
                   value="${distrib.unix.current.dir}/share/scala"/>
         <!-- Set up 'bin' directory (unix) -->
         <mkdir dir="${distrib.unix.scala.dir}/bin"/>
-        <copy file="${bin.dir}/.nsc_wrapper.tmpl"
-              tofile="${distrib.unix.scala.dir}/bin/.nsc_wrapper">
+        <copy file="${support.dir}/bin/nscala.unix.tmpl"
+              tofile="${distrib.unix.scala.dir}/bin/.scala_wrapper">
             <filterset>
                 <filter token="VERSION" value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/tools.jar:$PREFIX/lib/${osc-nstools.jar.name}"/>
+                <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/tools.jar:$PREFIX/lib/${osc-nstools.jar.name}:$PREFIX/lib/${nslib.jar.name}"/>
+                <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
             </filterset>
         </copy>
-        <chmod file="${distrib.unix.scala.dir}/bin/.nsc_wrapper" perm="ugo+rx"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
+        <chmod file="${distrib.unix.scala.dir}/bin/.scala_wrapper" perm="ugo+rx"/>
+        <symlink resource=".scala_wrapper"
                  link="${distrib.unix.scala.dir}/bin/scala"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
+        <symlink resource=".scala_wrapper"
                  link="${distrib.unix.scala.dir}/bin/scalac"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/.nsc_wrapper"
+        <symlink resource=".scala_wrapper"
                  link="${distrib.unix.scala.dir}/bin/scalap"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin"
-                 link="${distrib.unix.current.dir}/bin"/>
+        <mkdir dir="${distrib.unix.current.dir}/bin"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/scala"
+                 link="${distrib.unix.current.dir}/bin/scala"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/scalac"
+                 link="${distrib.unix.current.dir}/bin/scalac"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/scalap"
+                 link="${distrib.unix.current.dir}/bin/scalap"/>
         <!-- Set up 'lib' directory -->
         <mkdir dir="${distrib.unix.scala.dir}/lib"/>
         <copy todir="${distrib.unix.scala.dir}/lib">
@@ -355,33 +361,33 @@
                   value="&quot;%SCALA_HOME%&quot;\lib"/>
         <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.win.current.dir}/bin"/>
-        <copy file="${bin.dir}/.scala_bat.tmpl"
-              tofile="${distrib.win.current.dir}/bin/scala.bat">
+        <copy file="${support.dir}/bin/nscala.win.tmpl"
+              tofile="${distrib.win.current.dir}/bin/nscala.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scala"/>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="BOOTCPATH" value="${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar"/>
+                <filter token="BOOTCPATH" value="${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
         </copy>
-        <copy file="${bin.dir}/.nsc_bat.tmpl"
-              tofile="${distrib.win.current.dir}/bin/scalac.bat">
+        <copy file="${support.dir}/bin/nscala-tool.win.tmpl"
+              tofile="${distrib.win.current.dir}/bin/nscalac.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scalac"/>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.nsc.Main"/>
-                <filter token="CPATH"     value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
+                <filter token="CPATH"     value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name};${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
         </copy>
-        <copy file="${bin.dir}/.nsc_bat.tmpl"
-              tofile="${distrib.win.current.dir}/bin/scalap.bat">
+        <copy file="${support.dir}/bin/nscala-tool.win.tmpl"
+              tofile="${distrib.win.current.dir}/bin/nscalap.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scalap"/>
                 <filter token="VERSION"   value="${scala.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.scalap.Main"/>
-                <filter token="CPATH"     value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
+                <filter token="CPATH"     value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name};${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
         </copy>
         <fixcrlf srcdir="${distrib.win.current.dir}/bin" eol="dos"/>
