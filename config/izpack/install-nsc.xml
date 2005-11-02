@@ -72,12 +72,12 @@
       <executable os="unix"
                   targetfile="$INSTALL_PATH/bin/.nsc_symlink"/>
       <singlefile os="unix"
-                  target="$INSTALL_PATH/share/scala/bin/.nsc_symlink"
+                  target="$INSTALL_PATH/share/@PREFIX@/bin/.nsc_symlink"
                   src="bin/.nsc_symlink.tmpl"/>
       <executable os="unix"
-                  targetfile="$INSTALL_PATH/share/scala/bin/.nsc_symlink"/>
+                  targetfile="$INSTALL_PATH/share/@PREFIX@/bin/.nsc_symlink"/>
       <executable os="unix" keep="true"
-                  targetfile="$INSTALL_PATH/share/scala/bin/.scala_wrapper"/>
+                  targetfile="$INSTALL_PATH/share/@PREFIX@/bin/.scala_wrapper"/>
 
       <!-- windows -->
 
@@ -87,11 +87,11 @@
                targetdir="$INSTALL_PATH"
                excludes="doc/*.pdf, lib/**"/>
       <fileset os="windows"
-               dir="distribs/unix/@PREFIX@-@VERSION@/share/doc/scala"
+               dir="distribs/unix/@PREFIX@-@VERSION@/share/doc/@PREFIX@"
                targetdir="$INSTALL_PATH/doc"
                includes="*.pdf"/>
       <fileset os="windows"
-               dir="distribs/unix/@PREFIX@-@VERSION@/share/scala"
+               dir="distribs/unix/@PREFIX@-@VERSION@/share/@PREFIX@"
                targetdir="$INSTALL_PATH"
                includes="lib/**"/>
       <fileset os="windows"

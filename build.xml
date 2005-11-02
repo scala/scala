@@ -318,9 +318,9 @@
             depends="build, distrib.init"
             description="Creates a simplified Scala distribution for Unix.">
         <property name="distrib.unix.current.dir"
-                  value="${distrib.unix.dir}/${distrib.current.prefix}-${distrib.version}"/>
+                  value="${distrib.unix.dir}/${distrib.name}-${distrib.version}"/>
         <property name="distrib.unix.scala.dir"
-                  value="${distrib.unix.current.dir}/share/scala"/>
+                  value="${distrib.unix.current.dir}/share/${distrib.name}"/>
         <!-- Set up 'bin' directory (unix) -->
         <mkdir dir="${distrib.unix.scala.dir}/bin"/>
         <copy file="${support.dir}/bin/nscala.unix.tmpl"
@@ -334,18 +334,18 @@
         </copy>
         <chmod file="${distrib.unix.scala.dir}/bin/.scala_wrapper" perm="ugo+rx"/>
         <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/scala"/>
+                 link="${distrib.unix.scala.dir}/bin/${scala.exec.name}"/>
         <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/scalac"/>
+                 link="${distrib.unix.scala.dir}/bin/${scalac.exec.name}"/>
         <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/scalap"/>
+                 link="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"/>
         <mkdir dir="${distrib.unix.current.dir}/bin"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/scala"
-                 link="${distrib.unix.current.dir}/bin/scala"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/scalac"
-                 link="${distrib.unix.current.dir}/bin/scalac"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/scalap"
-                 link="${distrib.unix.current.dir}/bin/scalap"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/${scala.exec.name}"
+                 link="${distrib.unix.current.dir}/bin/${scala.exec.name}"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/${scalac.exec.name}"
+                 link="${distrib.unix.current.dir}/bin/${scalac.exec.name}"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"
+                 link="${distrib.unix.current.dir}/bin/${scalap.exec.name}"/>
         <!-- Set up 'lib' directory -->
         <mkdir dir="${distrib.unix.scala.dir}/lib"/>
         <copy todir="${distrib.unix.scala.dir}/lib">
@@ -368,24 +368,24 @@
             depends="build, distrib.init"
             description="Creates a simplified Scala distribution for Windows.">
         <property name="distrib.win.current.dir"
-                  value="${distrib.win.dir}/${distrib.current.prefix}-${distrib.version}"/>
+                  value="${distrib.win.dir}/${distrib.name}-${distrib.version}"/>
         <property name="quotted.lib.dir"
                   value="&quot;%SCALA_HOME%&quot;\lib"/>
         <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.win.current.dir}/bin"/>
         <copy file="${support.dir}/bin/nscala.win.tmpl"
-              tofile="${distrib.win.current.dir}/bin/nscala.bat">
+              tofile="${distrib.win.current.dir}/bin/${scala.exec.name}.bat">
             <filterset>
-                <filter token="PRODUCT"   value="scala"/>
+                <filter token="PRODUCT"   value="${scala.exec.name}"/>
                 <filter token="VERSION"   value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="BOOTCPATH" value="${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
         </copy>
         <copy file="${support.dir}/bin/nscala-tool.win.tmpl"
-              tofile="${distrib.win.current.dir}/bin/nscalac.bat">
+              tofile="${distrib.win.current.dir}/bin/${scalac.exec.name}.bat">
             <filterset>
-                <filter token="PRODUCT"   value="scalac"/>
+                <filter token="PRODUCT"   value="${scalac.exec.name}"/>
                 <filter token="VERSION"   value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.nsc.Main"/>
@@ -394,9 +394,9 @@
             </filterset>
         </copy>
         <copy file="${support.dir}/bin/nscala-tool.win.tmpl"
-              tofile="${distrib.win.current.dir}/bin/nscalap.bat">
+              tofile="${distrib.win.current.dir}/bin/${scalap.exec.name}.bat">
             <filterset>
-                <filter token="PRODUCT"   value="scalap"/>
+                <filter token="PRODUCT"   value="${scalap.exec.name}"/>
                 <filter token="VERSION"   value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.scalap.Main"/>
@@ -443,7 +443,7 @@
     <target name="distrib.unix.all" depends="distrib.all.init, distrib.unix"
             description="Creates a full Scala distribution for Unix.">
         <property name="distrib.unix.doc.dir"
-                  value="${distrib.unix.current.dir}/share/doc/scala"/>
+                  value="${distrib.unix.current.dir}/share/doc/${distrib.name}"/>
         <!-- Set up 'doc' directory (unix) -->
         <mkdir dir="${distrib.unix.doc.dir}"/>
         <copy todir="${distrib.unix.doc.dir}">
@@ -472,7 +472,7 @@
         <tar destfile="${distrib.unix.scala.dir}/sources.tar.gz"
              basedir="${basedir}" includes="sources/scala/**/*.scala" compression="gzip"/>
         <!-- Create gz and bz2 compressed tarballs -->
-        <tar destfile="${distrib.unix.dir}/${distrib.current.prefix}-${distrib.version}.tar.gz"
+        <tar destfile="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.gz"
              basedir="${distrib.unix.current.dir}" compression="gzip"/>
     </target>
 
@@ -510,7 +510,7 @@
         <zip destfile="${distrib.win.current.dir}/sources.zip"
              basedir="${basedir}" includes="sources/scala/**/*.scala"/>
         <!-- Create zip archive -->
-        <zip destfile="${distrib.win.dir}/${distrib.current.prefix}-${distrib.version}.zip"
+        <zip destfile="${distrib.win.dir}/${distrib.name}-${distrib.version}.zip"
              basedir="${distrib.win.current.dir}"/>
     </target>
 
@@ -554,13 +554,13 @@
                      includes="**/*.html, **/*.xml"/>
             <filterset>
                 <filter token="RESOURCEDIR" value="${resource.dir}"/>
-                <filter token="PREFIX"      value="${distrib.current.prefix}"/>
+                <filter token="PREFIX"      value="${distrib.name}"/>
                 <filter token="VERSION"     value="${distrib.version}"/>
                 <filter token="URL"         value="http://scala.epfl.ch/"/>
             </filterset>
         </copy>
         <izpack input="${resource.dir}/install-nsc.xml"
-                output="${distrib.unix.dir}/nscala-install-${distrib.version}.jar"
+                output="${distrib.unix.dir}/${distrib.name}-install-${distrib.version}.jar"
                 installerType="standard" basedir="${basedir}"/>
     </target>
     
