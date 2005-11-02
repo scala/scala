@@ -46,7 +46,8 @@ if $cygwin; then
     else
         format=windows
     fi
-    _CPATH=`cygpath --path --$format "$_CPATH"`
+    _TOOLS_CPATH=`cygpath --path --$format "$_TOOLS_CPATH"`
+    _LIB_CPATH=`cygpath --path --$format "$_LIB_CPATH"`
 fi
 
 main=
