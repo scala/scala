@@ -77,7 +77,7 @@
       <executable os="unix"
                   targetfile="$INSTALL_PATH/share/scala/bin/.nsc_symlink"/>
       <executable os="unix" keep="true"
-                  targetfile="$INSTALL_PATH/share/scala/bin/.nsc_wrapper"/>
+                  targetfile="$INSTALL_PATH/share/scala/bin/.scala_wrapper"/>
 
       <!-- windows -->
 

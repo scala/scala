@@ -10,10 +10,10 @@
     <description>Create symbolic links</description>
     <os family="unix"/>
     <executefile name="$INSTALL_PATH/bin/.nsc_symlink">
-      <arg>../share/scala/bin/.nsc_wrapper</arg>
+      <arg>../share/scala/bin/.scala_wrapper</arg>
     </executefile>
     <executefile name="$INSTALL_PATH/share/scala/bin/.nsc_symlink">
-      <arg>.nsc_wrapper</arg>
+      <arg>.scala_wrapper</arg>
     </executefile>
   </job>
   <job name="Remote helper script">
