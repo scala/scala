@@ -83,11 +83,11 @@
 
       <!-- we share common resources doc/*.pdf and lib/** -->
       <fileset os="windows"
-               dir="distribs/win/@PREFIX@-@VERSION@"
+               dir="distribs/windows/@PREFIX@-@VERSION@"
                targetdir="$INSTALL_PATH"
                excludes="doc/*.pdf, lib/**"/>
       <fileset os="windows"
-               dir="distribs/unix/@PREFIX@-@VERSION@/share/doc/@PREFIX@-@VERSION@"
+               dir="distribs/unix/@PREFIX@-@VERSION@/share/doc/scala"
                targetdir="$INSTALL_PATH/doc"
                includes="*.pdf"/>
       <fileset os="windows"
