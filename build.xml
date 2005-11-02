@@ -307,6 +307,8 @@
         <condition property="os.win">
             <os family="windows"/>
         </condition>
+        <!-- This is a hack that compensates for the possibility of doc generation to be skipped. -->
+        <mkdir dir="${build.dir}/doc"/>
     </target>
 
     <target name="distrib" depends="distrib.unix, distrib.win"
