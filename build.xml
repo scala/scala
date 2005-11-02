@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- $Id$ -->
 
-<project name="nsc" default="build">
+<project name="nscala" default="distrib">
 
     <description>
       This is SABBUS, the system to build the Scala NSC compiler as well as
@@ -67,18 +67,29 @@
         <pathelement location="${msil.jar}"/>
     </path>
 
-    <!-- The current Scala version -->
-    <loadfile srcfile="${basedir}/VERSION" property="scala.version">
-        <filterchain>
-            <linecontainsregexp>
-                <regexp pattern="[0-9]+\.[0-9]+\.[0-9]+\.[0-9]"/>
-            </linecontainsregexp>
-            <striplinebreaks/>
-        </filterchain>
-    </loadfile>
-
-    <target name="all"
-            description="Builds and tests everything; creates a distribution."/>
+    <!--
+    #####################################################################
+    VERSION MANAGEMENT
+    #####################################################################
+    -->
+    
+    <target name="version.init" depends="version.trunk"/>
+    
+    <target name="version.trunk" depends="version.public">
+    	<tstamp prefix="start"/>
+        <property name="distrib.version" value="${start.DSTAMP}-${start.TSTAMP}"/>
+    </target>
+    
+    <target name="version.public" if="version.public">
+        <loadfile srcfile="${basedir}/VERSION" property="distrib.version">
+            <filterchain>
+                <linecontainsregexp>
+                    <regexp pattern="[0-9]+\.[0-9]+\.[0-9]+\.[0-9]"/>
+                </linecontainsregexp>
+                <striplinebreaks/>
+            </filterchain>
+        </loadfile>
+    </target>
 
     <!--
     #####################################################################
@@ -279,14 +290,13 @@
     #####################################################################
     -->
 
-    <target name="distrib.init">
+    <target name="distrib.init" depends="version.init">
         <echo level="verbose">scala.dll=${scala.dll}</echo>
         <fail message="Required DLL library is missing; check the 'scala.dll' property in 'build.${user.name}.properties'.">
             <condition><not><and>
                 <available file="${scala.dll}"/>
             </and></not></condition>
         </fail>
-    	<tstamp prefix="start"/>
     	<condition property="os.unix"><or>
                 <os family="unix"/>
                 <os family="mac"/>
@@ -306,7 +316,7 @@
             depends="build, distrib.init"
             description="Creates a simplified Scala distribution for Unix.">
         <property name="distrib.unix.current.dir"
-                  value="${distrib.unix.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+                  value="${distrib.unix.dir}/${distrib.current.prefix}-${distrib.version}"/>
         <property name="distrib.unix.scala.dir"
                   value="${distrib.unix.current.dir}/share/scala"/>
         <!-- Set up 'bin' directory (unix) -->
@@ -314,7 +324,7 @@
         <copy file="${support.dir}/bin/nscala.unix.tmpl"
               tofile="${distrib.unix.scala.dir}/bin/.scala_wrapper">
             <filterset>
-                <filter token="VERSION" value="${scala.version}"/>
+                <filter token="VERSION" value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/tools.jar:$PREFIX/lib/${osc-nstools.jar.name}"/>
                 <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
@@ -356,7 +366,7 @@
             depends="build, distrib.init"
             description="Creates a simplified Scala distribution for Windows.">
         <property name="distrib.win.current.dir"
-                  value="${distrib.win.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}"/>
+                  value="${distrib.win.dir}/${distrib.current.prefix}-${distrib.version}"/>
         <property name="quotted.lib.dir"
                   value="&quot;%SCALA_HOME%&quot;\lib"/>
         <!-- Set up 'bin' directory -->
@@ -365,7 +375,7 @@
               tofile="${distrib.win.current.dir}/bin/nscala.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scala"/>
-                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="VERSION"   value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="BOOTCPATH" value="${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
@@ -374,7 +384,7 @@
               tofile="${distrib.win.current.dir}/bin/nscalac.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scalac"/>
-                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="VERSION"   value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.nsc.Main"/>
                 <filter token="TOOLS_CPATH" value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
@@ -385,7 +395,7 @@
               tofile="${distrib.win.current.dir}/bin/nscalap.bat">
             <filterset>
                 <filter token="PRODUCT"   value="scalap"/>
-                <filter token="VERSION"   value="${scala.version}"/>
+                <filter token="VERSION"   value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.scalap.Main"/>
                 <filter token="TOOLS_CPATH" value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
@@ -460,7 +470,7 @@
         <tar destfile="${distrib.unix.scala.dir}/sources.tar.gz"
              basedir="${basedir}" includes="sources/scala/**/*.scala" compression="gzip"/>
         <!-- Create gz and bz2 compressed tarballs -->
-        <tar destfile="${distrib.unix.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}.tar.gz"
+        <tar destfile="${distrib.unix.dir}/${distrib.current.prefix}-${distrib.version}.tar.gz"
              basedir="${distrib.unix.current.dir}" compression="gzip"/>
     </target>
 
@@ -484,7 +494,7 @@
             <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
         </copy>
         <copy file="${basedir}/VERSION"
-              tofile="${distrib.win.current.dir}/VERSION-${scala.version}"/>
+              tofile="${distrib.win.current.dir}/VERSION-${distrib.version}"/>
         <fixcrlf srcdir="${distrib.win.current.dir}" eol="dos"
                  includes="LICENSE,README,VERSION,examples/**/*.scala"/>
         <!-- Set up 'support' directory -->
@@ -498,8 +508,64 @@
         <zip destfile="${distrib.win.current.dir}/sources.zip"
              basedir="${basedir}" includes="sources/scala/**/*.scala"/>
         <!-- Create zip archive -->
-        <zip destfile="${distrib.win.dir}/${distrib.current.prefix}-${start.DSTAMP}-${start.TSTAMP}.zip"
+        <zip destfile="${distrib.win.dir}/${distrib.current.prefix}-${distrib.version}.zip"
              basedir="${distrib.win.current.dir}"/>
+    </target>
+
+    <!--
+    #####################################################################
+    IZPACK DISTRIB
+    #####################################################################
+    -->
+    
+    <!-- A path containing the IzPack library -->
+    <path id="izpack.classpath">
+        <pathelement location="${izpack.jar}"/>
+    </path>
+    
+    <target name="izpack.all" depends="distrib.all, izpack.unix, izpack.win, izpack.mac"
+            description="Creates an IzPack installer for all scala distributions"/>
+    
+    <target name="izpack.init">
+        <echo level="verbose">izpack.jar=${izpack.jar}</echo>
+        <fail message="Missing library ${izpack.jar}; check the 'izpack.jar' property in 'build.${user.name}.properties'.">
+            <condition><not>
+                <available classname="com.izforge.izpack.ant.IzPackTask"
+                           classpathref="izpack.classpath"/>
+            </not></condition>
+        </fail>
+        <taskdef name="izpack"
+                 classname="com.izforge.izpack.ant.IzPackTask"
+                 classpathref="izpack.classpath"/>
+    </target>
+    
+    <target name="izpack.unix" depends="izpack.init, distrib.unix.all">
+        <property name="resource.dir" value="${build.dir}/izpack"/>
+        <copy todir="${resource.dir}" overwrite="true">
+            <fileset dir="${config.dir}/izpack"
+                     excludes="**/*.html, **/*.xml"/>
+        </copy>
+        <copy todir="${resource.dir}" overwrite="true">
+            <!-- CAUTION! Copy operations using filters will -->
+            <!-- corrupt binary files (see "Core Types").    -->
+            <fileset dir="${config.dir}/izpack"
+                     includes="**/*.html, **/*.xml"/>
+            <filterset>
+                <filter token="RESOURCEDIR" value="${resource.dir}"/>
+                <filter token="PREFIX"      value="${distrib.current.prefix}"/>
+                <filter token="VERSION"     value="${distrib.version}"/>
+                <filter token="URL"         value="http://scala.epfl.ch/"/>
+            </filterset>
+        </copy>
+        <izpack input="${resource.dir}/install-nsc.xml"
+                output="${distrib.unix.dir}/nscala-install-${distrib.version}.jar"
+                installerType="standard" basedir="${basedir}"/>
+    </target>
+    
+    <target name="izpack.mac" depends="izpack.unix"/>
+    
+    <target name="izpack.win" depends="izpack.init, distrib.win.all">
+        <echo>Windows-specific IzPack installer is not generated yet.</echo>
     </target>
 
     <!--
@@ -533,7 +599,7 @@
     #####################################################################
     -->
     
-    <target name="docs" description="Generates all documentation.">
+    <target name="docs" description="Generates all documentation." unless="docs.skip">
         <echo level="verbose">oslib.jar=${oslib.jar}</echo>
         <echo level="verbose">oslib.src=${oslib.src}</echo>
         <echo level="verbose">ostools.jar=${ostools.jar}</echo>
@@ -552,7 +618,7 @@
                 <pathelement location="${ostools.jar}"/>
             </classpath>
             <arg line="-windowtitle 'Scala Library Documentation'"/>
-            <arg line="-doctitle 'Scala&lt;br/&gt;${scala.version}'"/>
+            <arg line="-doctitle 'Scala&lt;br/&gt;${distrib.version}'"/>
             <arg line="-d ${build.dir}/doc/api"/>
             <arg line="${docs.sources}"/>
             <arg line="-- scala"/>
@@ -598,12 +664,5 @@
         <echo>Execute 'ant -projecthelp' for build file help.</echo>
         <echo>Execute 'ant -help' for Ant help.</echo>
     </target>
-
-    <!--
-    #####################################################################
-    IZPACK
-    #####################################################################
-    -->
-    <import file="${build.support.dir}/build-izpack.xml"/>
 
 </project>
