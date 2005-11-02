@@ -24,10 +24,11 @@ goto loop
 set _JAVACMD=java
 set _PROPS=-Dscala.product=@PRODUCT@ -Dscala.version=@VERSION@
 set _MAIN=@MAIN@
-set _CPATH=@CPATH@
+set _TOOLS_CPATH=@TOOLS_CPATH@
+set _LIB_CPATH=@LIB_CPATH@
 
 rem echo %_JAVACMD% %_PROPS% -cp %_CPATH% %_MAIN% %_ARGS%
-%_JAVACMD% %_PROPS% -cp %_CPATH% %_MAIN% %_ARGS%
+%_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% -sourcepath %_LIB_CPATH% %_ARGS%
 goto end
 
 rem ##########################################################################
