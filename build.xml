@@ -32,16 +32,18 @@
     <!-- Properties in 'build.base.properties' are all defined relatively
          to ${basedir}.
     -->
-    <echo level="verbose">Loading properties from '${basedir}/build.support/build.base.properties'</echo>
-    <property file="${basedir}/build.support/build.base.properties"/>
+    <echo level="verbose">Loading properties from '${basedir}/config/build.base.properties'</echo>
+    <property file="${basedir}/config/build.base.properties"/>
 
     <!-- Properties in 'build.${user.name}.properties' take precedence over
          properties in 'build.default.properties'.
     -->
+    <echo level="verbose">Loading properties from '${config.dir}/build.${user.name}.properties'</echo>
+    <property file="${config.dir}/build.${user.name}.properties"/>
     <echo level="verbose">Loading properties from '${build.support.dir}/build.${user.name}.properties'</echo>
     <property file="${build.support.dir}/build.${user.name}.properties"/>
-    <echo level="verbose">Loading properties from '${build.support.dir}/build.default.properties'</echo>
-    <property file="${build.support.dir}/build.default.properties"/>
+    <echo level="verbose">Loading properties from '${config.dir}/build.default.properties'</echo>
+    <property file="${config.dir}/build.default.properties"/>
     
     <!-- A path containing pre-compiled Scala libraries found typically
          in a Scala distribution. -->
@@ -66,6 +68,8 @@
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
     </path>
+    
+    <target name="all" depends="clean.all, distrib.all"/>
 
     <!--
     #####################################################################
@@ -580,17 +584,10 @@
     #####################################################################
     -->
 
-    <target name="init.test">
-        <fail message="Missing library ${junit.jar} in ${ant.home}.">
-            <condition><not><and>
-                <available classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"/>
-            </and></not></condition>
-        </fail>
-    </target>
-
-    <target name="test" depends="init.test, init.nsc"
-            description="Runs the Scala test suite.">
-        <fail>'test' is not implemented yet.</fail>
+    <target name="test" description="Runs the Scala test suite.">
+        <exec executable="test-nsc/scalanstest"
+              dir="${basedir}"
+              os="Mac OS X, Linux, FreeBSD, Solaris"/>
     <!--
         <junit printsummary="yes" fork="yes" haltonfailure="yes">
             <formatter type="plain"/>
