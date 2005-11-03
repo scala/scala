@@ -69,6 +69,6 @@ class Document extends NodeSeq {
 
   // methods for NodeSeq
 
-  def theSeq = docElem;
+  def theSeq: Seq[Node] = this.docElem ;
 
 }
