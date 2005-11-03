@@ -253,7 +253,7 @@ with RightTracers {
     }
     override def transform(tree: Tree): Tree = tree match {
       case Match(selector, cases) =>
-	    val nselector = transform(selector).setType(selector.tpe);
+	val nselector = transform(selector).setType(selector.tpe);
         val ncases = cases map { transform };
 		/*
 	  Console.println("TransMatch translating cases: ");

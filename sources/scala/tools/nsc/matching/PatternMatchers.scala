@@ -530,6 +530,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
   case class Break(res:Boolean) extends java.lang.Throwable;
   case class Break2() extends java.lang.Throwable;
 
+    // TODO disentangle this
     protected def isSimpleSwitch(): Boolean  = {
       print();
       var patNode = root.and;

@@ -141,6 +141,7 @@ import scala.tools.util.Position;
   }
 
   // used by Equals
+/*
   private def getEqEq(left: Type, right: Type): Symbol = {
     //Console.println("getEqeq of left  ==  "+left);
     val sym = left.nonPrivateMember( nme.EQEQ );
@@ -175,10 +176,12 @@ import scala.tools.util.Position;
     //if (fun == null) scala.Predef.error("couldn't find eqeq for left"+left);
     fun;
   }
-
-  def  Equals(left1:Tree , right1:Tree ): Tree = {
-    var left = left1;
-    var right = right1;
+*/
+  def  Equals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.EQEQ), List(right));
+/*    { var left = left1;
+      var right = right1;
+*/
+/*
     //Console.println("CodeFactory:: left.tpe =" + left.tpe + " right.tpe "+right.tpe+")");
     val ltype = left.tpe.widen;
     var rtype = right.tpe.widen;
@@ -193,10 +196,11 @@ import scala.tools.util.Position;
         rtype = definitions.IntClass.info;
       }
     val eqsym = getEqEq(ltype, rtype);
+*/
     //Console.println("eqsym "+eqsym);
     //Console.println("eqsym.tpe "+eqsym.tpe);
-    Apply(Select(left, eqsym), List(right));
-  }
+//    Apply(Select(left1, nme.EQEQ/*eqsym*/), List(right1));
+//  }
 
   def ThrowMatchError(pos: Int, tpe: Type ) =
     Apply(
