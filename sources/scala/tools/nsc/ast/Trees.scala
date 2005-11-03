@@ -152,7 +152,8 @@ import symtab.Flags._;
   /** Value definition */
   case class ValDef(mods: int, name: Name, tpt: Tree, rhs: Tree)
        extends DefTree {
-    assert(tpt.isType, tpt); assert(rhs.isTerm, rhs)
+         assert(tpt.isType, tpt);
+         assert(rhs.isTerm, rhs)
   }
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
