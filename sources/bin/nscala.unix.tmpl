@@ -52,11 +52,10 @@ fi
 
 main=
 case "$SCRIPT" in
-    scala      ) ;;
-    scalac*    ) main=scala.tools.nsc.Main;;
-    scaladoc*  ) main=scala.tools.scaladoc.Main;;
-    scalap*    ) main=scala.tools.scalap.Main;;
-    *          ) abort "Don't know what to do for $SCRIPT.";;
+    @SCALA@     ) ;;
+    @SCALAC@    ) main=scala.tools.nsc.Main;;
+    @SCALAP@    ) main=scala.tools.scalap.Main;;
+    *            ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 
 if [ -z "$main" ]; then
