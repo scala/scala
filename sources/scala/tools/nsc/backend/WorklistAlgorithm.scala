@@ -8,12 +8,12 @@
 package scala.tools.nsc.backend;
 
 import scala.tools.nsc.ast._;
-import scala.collection.mutable.Queue;
+import scala.collection.mutable.MutableList;
 
 /**
  * Simple implementation of a worklist algorithm. A processing
  * function is applied repeatedly to the first element in the
- * worklist queue, as long as the queue is not empty.
+ * worklist, as long as the stack is not empty.
  *
  * The client class should mix-in this trait and initialize the
  * worklist field and define the processElement method. Then call
@@ -24,8 +24,9 @@ import scala.collection.mutable.Queue;
  */
 trait WorklistAlgorithm {
   type Elem;
+  type WList <: MutableList[Elem];
 
-  val worklist: Queue[Elem];
+  val worklist: WList;
 
   /**
    * Run the iterative algorithm until the worklist
@@ -35,12 +36,15 @@ trait WorklistAlgorithm {
   def run(initWorklist: => Unit) = {
     initWorklist;
 
-    while (!worklist.isEmpty)
-      processElement(worklist.dequeue);
+    while (!(worklist.length == 0))
+      processElement(dequeue);
   }
 
   /**
    * Process the current element from the worklist.
    */
   def processElement(e: Elem): Unit;
+
+  /** Remove and return the first element to be processed from the worklist. */
+  def dequeue: Elem;
 }

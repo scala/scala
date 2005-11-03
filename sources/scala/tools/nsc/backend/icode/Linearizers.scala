@@ -8,13 +8,13 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
-import scala.collection.mutable.Queue;
+import scala.collection.mutable.Stack;
 
 trait Linearizers: ICodes {
   import opcodes._;
 
   trait Linearizer {
-    def linearize(c: Code): List[BasicBlock];
+    def linearize(c: IMethod): List[BasicBlock];
   }
 
   /**
@@ -26,42 +26,53 @@ trait Linearizers: ICodes {
    */
   class NormalLinearizer extends Linearizer with WorklistAlgorithm {
     type Elem = BasicBlock;
-    val worklist: Queue[Elem] = new Queue();
+    type WList = Stack[Elem];
+
+    val worklist: WList = new Stack();
 
     var blocks: List[BasicBlock] = Nil;
 
-    def linearize(c: Code): List[BasicBlock] = {
-      val b = c.startBlock;
-      blocks = b :: Nil;
+    def linearize(m: IMethod): List[BasicBlock] = {
+      val b = m.code.startBlock;
+      blocks = Nil;
 
-      run( { worklist.enqueue(b); } );
+      run {
+        worklist ++= (m.exh map (.startBlock));
+        worklist ++= (m.finalizers map (.startBlock));
+        worklist.push(b);
+      }
+
       blocks.reverse;
     }
 
+    /** Linearize another subtree and append it to the existing blocks. */
     def linearize(startBlock: BasicBlock): List[BasicBlock] = {
-      blocks = startBlock :: Nil;
-      run( { worklist.enqueue(startBlock); } );
+      //blocks = startBlock :: Nil;
+      run( { worklist.push(startBlock); } );
       blocks.reverse;
     }
 
     def processElement(b: BasicBlock) =
-      if (b.size > 0)
-      b.lastInstruction match {
-        case JUMP(where) =>
-          add(where);
-        case CJUMP(success, failure, _, _) =>
-          add(success);
-          add(failure);
-        case CZJUMP(success, failure, _, _) =>
-          add(success);
-          add(failure);
-        case SWITCH(_, labels) =>
-          add(labels);
-        case RETURN(_) =>
-          ()
-        case THROW() =>
-          ()
+      if (b.size > 0) {
+        add(b);
+        b.lastInstruction match {
+          case JUMP(where) =>
+            add(where);
+          case CJUMP(success, failure, _, _) =>
+            add(success);
+            add(failure);
+          case CZJUMP(success, failure, _, _) =>
+            add(success);
+            add(failure);
+          case SWITCH(_, labels) =>
+            add(labels);
+          case RETURN(_) => ();
+          case THROW() =>   ();
+          case LEAVE_FINALIZER(_) => ();
+        }
       }
+
+    def dequeue: Elem = worklist.pop;
 
     /**
      * Prepend b to the list, if not already scheduled.
@@ -72,7 +83,7 @@ trait Linearizers: ICodes {
         ()
       else {
         blocks = b :: blocks;
-        worklist enqueue b;
+        worklist push b;
       }
 
     def add(bs: List[BasicBlock]): Unit = bs foreach add;

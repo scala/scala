@@ -23,6 +23,7 @@ trait ExceptionHandlers: ICodes {
   class ExceptionHandler(val method: IMethod, label: String, val cls: Symbol) {
     private var coveredBlocks: List[BasicBlock] = Nil;
     private var _startBlock: BasicBlock = _;
+    var finalizer: Finalizer = _;
 
     def setStartBlock(b: BasicBlock) = _startBlock = b;
     def startBlock = _startBlock;
@@ -39,5 +40,10 @@ trait ExceptionHandlers: ICodes {
 
   class Finalizer(method: IMethod, label: String) extends ExceptionHandler(method, label, NoSymbol) {
     override def toString() = "finalizer_" + label;
+  }
+
+  object NoFinalizer extends Finalizer(null, "<no finalizer>") {
+    override def startBlock: BasicBlock = error("NoFinalizer cannot have a start block.");
+    override def setStartBlock(b: BasicBlock): Unit = error("NoFinalizer cannot have a start block.");
   }
 }

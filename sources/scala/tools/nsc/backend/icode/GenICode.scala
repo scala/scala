@@ -23,12 +23,12 @@ abstract class GenICode extends SubComponent  {
   import icodes._;
   import icodes.opcodes._;
 
-  val phaseName = "genicode";
+  val phaseName = "icode";
 
   override def newPhase(prev: Phase) = new ICodePhase(prev);
 
   class ICodePhase(prev: Phase) extends StdPhase(prev) {
-    override def name = "genicode";
+    override def name = "icode";
 
     override def description = "Generate ICode from the AST";
 
@@ -250,19 +250,26 @@ abstract class GenICode extends SubComponent  {
       def genArrayOp(tree: Tree, ctx: Context, code: Int): Context = {
         import scalaPrimitives._;
         val Apply(Select(arrayObj, _), args) = tree;
-        var ctx1 = genLoad(arrayObj, ctx, toTypeKind(arrayObj.tpe));
+        val k = toTypeKind(arrayObj.tpe);
+        val ARRAY(elem) = k;
+        var ctx1 = genLoad(arrayObj, ctx, k);
 
         if (scalaPrimitives.isArrayGet(code)) {
-           // load argument on stack
-           assert(args.length == 1,
-                  "Too many arguments for array get operation: " + tree);
-           ctx1 = genLoad(args.head, ctx1, INT);
+          // load argument on stack
+          assert(args.length == 1,
+                 "Too many arguments for array get operation: " + tree);
+          ctx1 = genLoad(args.head, ctx1, INT);
+          generatedType = elem;
         } else if (scalaPrimitives.isArraySet(code)) {
           assert(args.length == 2,
                  "Too many arguments for array set operation: " + tree);
           ctx1 = genLoad(args.head, ctx1, INT);
           ctx1 = genLoad(args.tail.head, ctx1, toTypeKind(args.tail.head.tpe));
-        }
+          // the following line should really be here, but because of bugs in erasure
+          // we pretend we generate whatever type is expected from us.
+          //generatedType = UNIT;
+        } else
+          generatedType = INT;
 
         code match {
           case ZARRAY_LENGTH =>
@@ -407,24 +414,23 @@ abstract class GenICode extends SubComponent  {
           val outerCtx = ctx.dup;
 
           var bodyCtx: Context = null;
+          var afterCtx: Context = outerCtx.newBlock;
+          var finalHandler: Finalizer = null;
+          if (finalizer != EmptyTree)
+            finalHandler = ctx.newFinalizer;
+          else
+            finalHandler = NoFinalizer;
+
+
+          def genHandler = genExceptionHandler(ctx, outerCtx, afterCtx, finalHandler);
 
           val handlers = for (val CaseDef(pat, _, body) <- catches)
             yield pat match {
               case Typed(Ident(nme.WILDCARD), tpt) =>
-                val exh = ctx.newHandler(tpt.tpe.symbol);
-
-                val ctx1 = genLoad(body, outerCtx.enterHandler(exh), UNIT);
-                ctx1.bb.emit(RETURN(UNIT));
-                ctx1.bb.close;
-                exh
+                genHandler(body, tpt.tpe.symbol);
 
               case Ident(nme.WILDCARD) =>
-                val exh = ctx.newHandler(definitions.ThrowableClass);
-
-                val ctx1 = genLoad(body, outerCtx.enterHandler(exh), UNIT);
-                ctx1.bb.emit(RETURN(UNIT));
-                ctx1.bb.close;
-                exh
+                genHandler(body, definitions.ThrowableClass);
 
               case Bind(name, _) =>
                 val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe));
@@ -434,8 +440,10 @@ abstract class GenICode extends SubComponent  {
 
                 val exhCtx = outerCtx.enterHandler(exh);
                 exhCtx.bb.emit(STORE_LOCAL(exception, false), pat.pos);
-                val ctx1 = genLoad(body, exhCtx, UNIT);
-                ctx1.bb.emit(RETURN(UNIT));
+                val ctx1 = genLoad(body, exhCtx, toTypeKind(body.tpe));
+                if (finalHandler != NoFinalizer)
+                  ctx1.bb.emit(CALL_FINALIZER(finalHandler));
+                ctx1.bb.emit(JUMP(afterCtx.bb));
                 ctx1.bb.close;
                 exh
 
@@ -443,11 +451,13 @@ abstract class GenICode extends SubComponent  {
                 abort("Unknown exception case: " + pat + " at: " + unit.position(pat.pos));
             }
 
-          val finalHandler = ctx.newFinalizer;
-
-          val ctx1 = genLoad(finalizer, outerCtx.enterHandler(finalHandler), UNIT);
-          ctx1.bb.emit(RETURN(UNIT));
-          ctx1.bb.close;
+          if (finalizer != EmptyTree) {
+            val finalizerCtx = outerCtx.enterHandler(finalHandler);
+            finalizerCtx.bb.emit(ENTER_FINALIZER(finalHandler));
+            val ctx1 = genLoad(finalizer, finalizerCtx, UNIT);
+            ctx1.bb.emit(LEAVE_FINALIZER(finalHandler));
+            ctx1.bb.close;
+          }
 
           bodyCtx = ctx.newBlock;
           outerCtx.bb.emit(JUMP(bodyCtx.bb), tree.pos);
@@ -455,9 +465,18 @@ abstract class GenICode extends SubComponent  {
 
           generatedType = toTypeKind(block.tpe);
           val ctxfinal = genLoad(block, bodyCtx, generatedType);
-          handlers.reverse foreach ctxfinal.exitHandler;
+
+          handlers.reverse foreach (ex => { ex.finalizer = finalHandler; ctxfinal exitHandler ex });
           ctxfinal.exitFinalizer(finalHandler);
-          ctxfinal
+//          if (generatedType != SCALA_ALL)
+            adapt(generatedType, expectedType, ctxfinal, tree);
+
+          if (finalHandler != NoFinalizer)
+            ctxfinal.bb.emit(CALL_FINALIZER(finalHandler));
+          ctxfinal.bb.emit(JUMP(afterCtx.bb));
+          ctxfinal.bb.close;
+          generatedType = expectedType;
+          afterCtx
 
         case Throw(expr) =>
           val ctx1 = genLoad(expr, ctx, THROWABLE);
@@ -610,11 +629,29 @@ abstract class GenICode extends SubComponent  {
               generatedType = BOOL;
               ctx1 = afterCtx;
             } else if (code == scalaPrimitives.SYNCHRONIZED) {
+              val monitor = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("monitor")).setInfo(definitions.ObjectClass.tpe),
+                                      ANY_REF_CLASS);
+              ctx.method.addLocal(monitor);
+
               ctx1 = genLoadQualifier(fun, ctx1);
+              ctx1.bb.emit(STORE_LOCAL(monitor, false));
               ctx1.bb.emit(MONITOR_ENTER(), tree.pos);
-              ctx1 = genLoad(args.head, ctx1, toTypeKind(tree.tpe.resultType));
-              ctx1 = genLoadQualifier(fun, ctx1);
-              ctx1.bb.emit(MONITOR_EXIT(), tree.pos);
+
+              log("synchronized block start");
+              ctx1 = ctx1.Try(NoSymbol,
+                bodyCtx => {
+                  val ctx1 = genLoad(args.head, bodyCtx, toTypeKind(tree.tpe.resultType));
+                  ctx1.bb.emit(LOAD_LOCAL(monitor, false));
+                  ctx1.bb.emit(MONITOR_EXIT(), tree.pos);
+                  ctx1
+                },
+                exhCtx => {
+                  exhCtx.bb.emit(LOAD_LOCAL(monitor, false));
+                  exhCtx.bb.emit(MONITOR_EXIT(), tree.pos);
+                  exhCtx.bb.emit(THROW());
+                  exhCtx
+                });
+              log("synchronized block end with block " + ctx1.bb + " closed=" + ctx1.bb.isClosed);
             } else if (scalaPrimitives.isCoercion(code)) {
               ctx1 = genLoad(receiver, ctx1, toTypeKind(receiver.tpe));
               genCoercion(tree, ctx1, code);
@@ -780,30 +817,46 @@ abstract class GenICode extends SubComponent  {
       }
 
       // emit conversion
-      if (!(generatedType <:< expectedType)) {
-        expectedType match {
-          case UNIT =>
-            resCtx.bb.emit(DROP(generatedType), tree.pos);
-            log("Dropped an " + generatedType);
-
-          case _ =>
-            assert(generatedType != UNIT, "Can't convert from UNIT to " + expectedType +
-                 tree + " at: " + unit.position(tree.pos));
-            resCtx.bb.emit(CALL_PRIMITIVE(Conversion(generatedType, expectedType)), tree.pos);
-        }
-//      } else if (generatedType == SCALA_ALL && expectedType == UNIT)
-//        resCtx.bb.emit(DROP(generatedType));
-      } else if (generatedType == SCALA_ALL) {
-        resCtx.bb.emit(DROP(generatedType));
-        resCtx.bb.emit(getZeroOf(ctx.method.returnType));
-        resCtx.bb.emit(RETURN(ctx.method.returnType));
-        resCtx.bb.enterIgnoreMode;
-      } else if (generatedType == SCALA_ALLREF) {
-        resCtx.bb.emit(DROP(generatedType));
-        resCtx.bb.emit(CONSTANT(Constant(null)));
-      }
+      if (generatedType != expectedType)
+        adapt(generatedType, expectedType, resCtx, tree);
 
       resCtx;
+    }
+
+    private def adapt(from: TypeKind, to: TypeKind, ctx: Context, tree: Tree): Unit = {
+      if (!(from <:< to)) {
+        to match {
+          case UNIT =>
+            ctx.bb.emit(DROP(from), tree.pos);
+            log("Dropped an " + from);
+
+          case _ =>
+            assert(from != UNIT, "Can't convert from UNIT to " + to +
+                 tree + " at: " + unit.position(tree.pos));
+            ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), tree.pos);
+        }
+      } else if (from == SCALA_ALL) {
+        ctx.bb.emit(DROP(from));
+        ctx.bb.emit(getZeroOf(ctx.method.returnType));
+        ctx.bb.emit(RETURN(ctx.method.returnType));
+        ctx.bb.enterIgnoreMode;
+      } else if (from == SCALA_ALLREF) {
+        ctx.bb.emit(DROP(from));
+        ctx.bb.emit(CONSTANT(Constant(null)));
+      }
+    }
+
+    private def genExceptionHandler(ctx: Context, outerCtx: Context, afterCtx: Context, finalHandler: Finalizer)(body: Tree, sym: Symbol): ExceptionHandler = {
+      val exh = ctx.newHandler(sym);
+
+      var ctx1 = outerCtx.enterHandler(exh);
+      ctx1.bb.emit(DROP(REFERENCE(sym)));
+      ctx1 = genLoad(body, ctx1, toTypeKind(body.tpe));
+      if (finalHandler != NoFinalizer)
+        ctx1.bb.emit(CALL_FINALIZER(finalHandler));
+      ctx1.bb.emit(JUMP(afterCtx.bb));
+      ctx1.bb.close;
+      exh
     }
 
     /** Load the qualifier of `tree' on top of the stack. */
@@ -1356,7 +1409,7 @@ abstract class GenICode extends SubComponent  {
         handlers = handlers.tail;
       }
 
-      def exitFinalizer(f: Finalizer): Unit = {
+      def exitFinalizer(f: Finalizer): Unit = if (f != NoFinalizer) {
         assert(handlerCount > 0 && finalizers.head == f,
                "Wrong nesting of exception handlers." + this + " for " + f);
         handlerCount = handlerCount - 1;
@@ -1365,6 +1418,28 @@ abstract class GenICode extends SubComponent  {
 
       /** Clone the current context */
       def dup: Context = new Context(this);
+
+      def Try(catched: Symbol, body: Context => Context, handler: Context => Context) = {
+        val outerCtx = this.dup;
+        val afterCtx = outerCtx.newBlock;
+        val exh = this.newHandler(catched);
+
+        val ctx1 = handler(outerCtx.enterHandler(exh));
+        ctx1.bb.emit(JUMP(afterCtx.bb));
+        ctx1.bb.close;
+
+        val bodyCtx = this.newBlock;
+        val finalCtx = body(bodyCtx);
+
+        outerCtx.bb.emit(JUMP(bodyCtx.bb));
+        outerCtx.bb.close;
+
+        finalCtx.exitHandler(exh);
+        finalCtx.bb.emit(JUMP(afterCtx.bb));
+        finalCtx.bb.close;
+
+        afterCtx
+      }
     }
 
     /**

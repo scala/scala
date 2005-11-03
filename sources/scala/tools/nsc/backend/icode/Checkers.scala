@@ -55,6 +55,7 @@ abstract class Checkers {
 
     val STRING = REFERENCE(definitions.StringClass);
     val SCALA_ALL = REFERENCE(definitions.AllClass);
+    val SCALA_ALL_REF = REFERENCE(definitions.AllRefClass);
 
     def checkICodes: Unit = {
       Console.println("[[consistency check at beginning of phase " + globalPhase.name + "]]");
@@ -299,7 +300,7 @@ abstract class Checkers {
                case Pair(value, obj) =>
                  checkField(obj, field);
                val fieldType = toTypeKind(field.tpe);
-               if (!(value <:< fieldType))
+               if (fieldType != SCALA_ALL_REF && !(value <:< fieldType))
                typeError(fieldType, value);
              }
            }

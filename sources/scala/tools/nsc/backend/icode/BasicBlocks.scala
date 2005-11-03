@@ -136,9 +136,10 @@ trait BasicBlocks: ICodes {
     }
 
     def emit(instr: Instruction, pos: Int) = {
-      assert (!closed || ignore, "BasicBlock closed");
+      assert (!closed || ignore, "BasicBlock " + label + " closed");
 
       if (!ignore) {
+//        Console.println("block " + label + ": " + instr);
         instr.pos = pos;
         instructionList = instr :: instructionList;
         _lastInstruction = instr;
@@ -150,6 +151,9 @@ trait BasicBlocks: ICodes {
        assert(instructionList.length > 0,
               "Empty block.");
       closed = true;
+
+//      Console.println("block " + label + " <closed>");
+
       instrs = toInstructionArray(instructionList.reverse);
     }
 

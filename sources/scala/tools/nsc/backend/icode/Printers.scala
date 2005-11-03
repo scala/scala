@@ -85,7 +85,7 @@ abstract class Printers {
 
       if (!m.isDeferred) {
         println(" {");
-        printCode(m.code);
+        linearizer.linearize(m) foreach printBlock;
         println("}");
 
         indent;println("Exception handlers: ");
@@ -102,14 +102,12 @@ abstract class Printers {
       print(" ("); print(p.kind); print(")");
     }
 
-    def printCode(code: Code): Unit = {
-//      code traverse printBlock;
-      linearizer.linearize(code) foreach printBlock;
-    }
-
     def printExceptionHandler(e: ExceptionHandler) = {
-      println(" catch (" + e.cls.simpleName + ") in " + e.covered);
-      linearizer.linearize(e.startBlock) foreach printBlock;
+      indent;
+      println("catch (" + e.cls.simpleName + ") in " + e.covered + " starting at: " + e.startBlock);
+      undent;
+      println("with finalizer: " + e.finalizer);
+//      linearizer.linearize(e.startBlock) foreach printBlock;
     }
 
     def printBlock(bb: BasicBlock): Unit = {

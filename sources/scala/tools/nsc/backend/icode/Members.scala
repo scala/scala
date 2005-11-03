@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.collection.mutable.HashMap;
-import scala.collection.mutable.HashSet;
+import scala.collection.mutable.{Set, HashSet};
 import scala.{Symbol => scala_Symbol};
 
 import scala.tools.nsc.symtab.Flags;
@@ -37,9 +37,29 @@ trait Members: ICodes {
     startBlock = newBlock;
     startBlock.initStack(new TypeStack);
 
-    /** Apply a function to all basic blocks, for side-effects. */
-    def traverse(f: BasicBlock => Unit) =
-      traverseFeedBack((bb: BasicBlock, hm: HashMap[BasicBlock, boolean]) => f(bb));
+    /**
+     * Apply a function to all basic blocks, for side-effects. It starts at
+     * the given startBlock and checks that are no predecessors of the given node.
+     * Only blocks that are reachable via a path from startBlock are ever visited.
+     */
+    def traverseFrom(startBlock: BasicBlock, f: BasicBlock => Unit) = {
+      val visited: Set[BasicBlock] = new HashSet();
+
+      def traverse0(toVisit: List[BasicBlock]): Unit = toVisit match {
+        case Nil => ();
+        case b :: bs => if (!visited.contains(b)) {
+          f(b);
+          visited += b;
+          traverse0(bs ::: b.successors);
+        } else
+          traverse0(bs);
+      }
+      assert(startBlock.predecessors == Nil,
+             "Starting traverse from a block with predecessors: " + this);
+      traverse0(startBlock :: Nil)
+    }
+
+    def traverse(f: BasicBlock => Unit) = blocks foreach f;
 
     /* This method applies the given function to each basic block. */
     def traverseFeedBack(f: (BasicBlock, HashMap[BasicBlock, Boolean])  => Unit) = {
@@ -65,25 +85,25 @@ trait Members: ICodes {
     override def toString() : String = "ICode '" + label + "'";
 
     /** This method print the code */
-    def print() : unit = print(System.out);
+//    def print() : unit = print(System.out);
 
-    def print(out: java.io.PrintStream) : unit = {
-      traverse((bb: BasicBlock) => {
-        out.println("Block #" + bb.label);
-        out.println("Substituable variables : ");
-        if (bb.substituteVars != null)
-	  bb.substituteVars.foreach(out.print);
-        else
-	  out.println(" {Empty} ");
-        out.println("Instructions:");
-        bb.traverse((ici: Instruction) =>
-	  out.println("  "+ici.toString()));
-        out.print  ("Successors: ");
-        bb.successors.foreach((bb: BasicBlock) => out.print(bb.label+", "));
-        out.println (""); // ?? Del
-        out.println ();
-      });
-    }
+//     def print(out: java.io.PrintStream) : unit = {
+//       traverse((bb: BasicBlock) => {
+//         out.println("Block #" + bb.label);
+//         out.println("Substituable variables : ");
+//         if (bb.substituteVars != null)
+// 	  bb.substituteVars.foreach(out.print);
+//         else
+// 	  out.println(" {Empty} ");
+//         out.println("Instructions:");
+//         bb.traverse((ici: Instruction) =>
+// 	  out.println("  "+ici.toString()));
+//         out.print  ("Successors: ");
+//         bb.successors.foreach((bb: BasicBlock) => out.print(bb.label+", "));
+//         out.println (""); // ?? Del
+//         out.println ();
+//       });
+//     }
 
     /* Compute a unique new label */
     def nextLabel = {

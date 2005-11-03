@@ -132,6 +132,7 @@ abstract class GenJVM extends SubComponent {
       log("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
         " owner: " + m.symbol.owner);
       method = m;
+      endPC.clear;
       computeLocalVarsIndex(m);
 
       var resTpe = javaType(toTypeKind(m.symbol.tpe.resultType));
@@ -157,7 +158,7 @@ abstract class GenJVM extends SubComponent {
           jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym));
 
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode];
-        genCode(m.code);
+        genCode(m);
       }
     }
 
@@ -224,12 +225,98 @@ abstract class GenJVM extends SubComponent {
 
 
     val linearizer = new NormalLinearizer();
+    var linearization: List[BasicBlock] = Nil;
 
-    def genCode(c: Code): Unit = {
-      code = c;
-      val blocks = linearizer.linearize(code);
-      makeLabels(blocks);
-      blocks foreach genBlock;
+    def genCode(m: IMethod): Unit = {
+      labels.clear;
+      retAddress.clear;
+      anyHandler.clear;
+
+      code = m.code;
+      linearization = linearizer.linearize(m);
+      makeLabels(linearization);
+      linearization foreach genBlock;
+      if (this.method.exh != Nil || this.method.finalizers != Nil)
+        genExceptionHandlers;
+    }
+
+    /** Map from finalizer to the code area where its 'any' exception handler was generated. */
+    val anyHandler: HashMap[Finalizer, Pair[Int, Int]] = new HashMap();
+
+    /** Generate exception handlers for the current method. */
+    def genExceptionHandlers: Unit = {
+
+      def ranges(e: ExceptionHandler): List[Pair[Int, Int]] = {
+        var covered = e.covered;
+        var ranges: List[Pair[Int, Int]] = Nil;
+        var start = -1;
+        var end = -1;
+
+        linearization foreach ((b) => {
+          if (! (covered contains b) ) {
+            if (start >= 0) { // we're inside a handler range
+              end = labels(b).getAnchor();
+              ranges = Pair(start, end) :: ranges;
+              log("ending range: " + ranges.head);
+              start = -1;
+            }
+          } else {
+            if (start >= 0) { // we're inside a handler range
+              end = endPC(b);
+              log("appending block " + b + " to current range: " + Pair(start, end));
+            } else {
+              start = labels(b).getAnchor();
+              end   = endPC(b);
+              log("starting new range with " + b + ": " + Pair(start, end));
+            }
+            covered = covered remove b.==;
+          }
+        });
+
+        if (start >= 0) {
+          ranges = Pair(start, end) :: ranges;
+          log("adding last range: " + ranges.head);
+        }
+
+        if (covered != Nil)
+          log("Some covered blocks were not found in method: " + method +
+               " covered: " + covered + " not in " + linearization);
+        ranges
+      }
+
+      this.method.exh foreach ((e) => {
+        ranges(e) foreach ((p) => {
+          log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
+              " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+          jcode.addExceptionHandler(p._1, p._2,
+                                    labels(e.startBlock).getAnchor(),
+                                    if (e.cls == NoSymbol)
+                                      null
+                                    else javaName(e.cls))
+        })
+      });
+      this.method.finalizers foreach ((f) => {
+        val targetPC = jcode.getPC();
+        val exceptionLocal = jmethod.addNewLocalVariable(JObjectType.JAVA_LANG_OBJECT, clasz.cunit.fresh.newName("exception"));
+        jcode.emitSTORE(exceptionLocal);
+        jcode.emitJSR(labels(f.startBlock));
+        jcode.emitLOAD(exceptionLocal);
+        jcode.emitATHROW();
+
+        log("Finalizer: " + f + " coveres: " + f.covered);
+        anyHandler.foreach((of: Finalizer, r: Pair[Int, Int]) =>
+          if (f.covered.contains(of.startBlock))
+            jcode.addFinallyHandler(r._1, r._2, targetPC));
+
+        anyHandler += f -> Pair(targetPC, jcode.getPC());
+
+        ranges(f) foreach ((p) => {
+          log("Adding finalizer handler " + f + "at: " + targetPC + " for " + method +
+             " from: " + p._1 + " to: " + p._2);
+          jcode.addFinallyHandler(p._1, p._2, targetPC);
+        });
+
+      });
     }
 
     def genBlock(b: BasicBlock): Unit = {
@@ -241,6 +328,9 @@ abstract class GenJVM extends SubComponent {
       var crtPC = 0;
 
       b traverse ( instr => {
+        if (b.lastInstruction == instr)
+          endPC(b) = jcode.getPC();
+
         instr match {
           case THIS(clasz) =>
             jcode.emitALOAD_0();
@@ -273,8 +363,8 @@ abstract class GenJVM extends SubComponent {
           case LOAD_FIELD(field, isStatic) =>
             var owner = javaName(field.owner);
 //            if (field.owner.hasFlag(Flags.MODULE)) owner = owner + "$";
-
-            log("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags));
+            if (settings.debug.value)
+              log("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags));
             if (isStatic)
               jcode.emitGETSTATIC(owner,
                                   javaName(field),
@@ -286,8 +376,9 @@ abstract class GenJVM extends SubComponent {
 
           case LOAD_MODULE(module) =>
             assert(module.isModule || module.isModuleClass, "Expected module: " + module);
-            log("genearting LOAD_MODULE for: " + module + " flags: " +
-                Flags.flagsToString(module.flags));
+            if (settings.debug.value)
+              log("genearting LOAD_MODULE for: " + module + " flags: " +
+                  Flags.flagsToString(module.flags));
             jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
                                 MODULE_INSTANCE_NAME,
                                 javaType(module));
@@ -357,6 +448,16 @@ abstract class GenJVM extends SubComponent {
                                           javaType(method).asInstanceOf[JMethodType]);
             }
 
+          case CALL_FINALIZER(finalizer) =>
+            jcode.emitJSR(labels(finalizer.startBlock));
+
+          case ENTER_FINALIZER(finalizer) =>
+            retAddress(finalizer) = jmethod.addNewLocalVariable(JType.ADDRESS, clasz.cunit.fresh.newName("ret"));
+            jcode.emitSTORE(retAddress(finalizer));
+
+          case LEAVE_FINALIZER(finalizer) =>
+            jcode.emitRET(retAddress(finalizer));
+
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls);
             jcode.emitNEW(className);
@@ -393,7 +494,8 @@ abstract class GenJVM extends SubComponent {
               caze = caze.tail;
             }
             val branchArray = new Array[JCode$Label](tagArray.length);
-            log("Emitting SWITHCH:\ntags: " + tags + "\nbranches: " + branches);
+            if (settings.debug.value)
+              log("Emitting SWITHCH:\ntags: " + tags + "\nbranches: " + branches);
             jcode.emitSWITCH(tagArray,
                              (branches map labels dropRight 1).copyToArray(branchArray, 0),
                              labels(branches.last),
@@ -603,7 +705,8 @@ abstract class GenJVM extends SubComponent {
         }
 
         case Conversion(src, dst) =>
-          log("Converting from: " + src + " to: " + dst);
+          if (settings.debug.value)
+            log("Converting from: " + src + " to: " + dst);
           if (dst == BOOL) {
             Console.println("Illegal conversion at: " + clasz +
                             " at: " + method.sourceFile + ":" + Position.line(pos));
@@ -638,8 +741,10 @@ abstract class GenJVM extends SubComponent {
       }
     }
 
+    val endPC: HashMap[BasicBlock, Int] = new HashMap();
     val labels: HashMap[BasicBlock, JCode$Label] = new HashMap();
     val conds: HashMap[TestOp, Int] = new HashMap();
+    val retAddress: HashMap[Finalizer, JLocalVariable] = new HashMap();
 
     conds += EQ -> JExtendedCode.COND_EQ;
     conds += NE -> JExtendedCode.COND_NE;
@@ -649,7 +754,7 @@ abstract class GenJVM extends SubComponent {
     conds += GE -> JExtendedCode.COND_GE;
 
     def makeLabels(bs: List[BasicBlock]) = {
-      labels.clear;
+      //labels.clear;
       log("Making labels for: " + method);
       bs foreach (bb => labels += bb -> jcode.newLabel() );
     }

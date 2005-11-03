@@ -26,6 +26,8 @@ import scala.tools.util.Position;
   case CALL_PRIMITIVE(primitive) =>
   case CALL_METHOD(method, style) =>
   case CALL_FINALIZER(finalizer) =>
+  case ENTER_FINALIZER(finalizer) =>
+  case LEAVE_FINALIZER(finalizer) =>
   case NEW(kind) =>
   case CREATE_ARRAY(elem) =>
   case IS_INSTANCE(tpe) =>
@@ -236,13 +238,28 @@ import scala.tools.util.Position;
     }
 
     case class CALL_FINALIZER(finalizer: Finalizer) extends Instruction {
-
+      assert(finalizer != NoFinalizer, "CALL_FINALIZER cannot call NoFinalizer");
       override def toString(): String =
         "CALL_FINALIZER " + finalizer;
 
       override def consumed = 0;
+      override def produced = 0;
+    }
 
-      override def produced = 1;
+    case class ENTER_FINALIZER(finalizer: Finalizer) extends Instruction {
+      override def toString(): String =
+        "ENTER_FINALIZER " + finalizer;
+
+      override def consumed = 1;
+      override def produced = 0;
+    }
+
+    case class LEAVE_FINALIZER(finalizer: Finalizer) extends Instruction {
+      override def toString(): String =
+        "LEAVE_FINALIZER " + finalizer;
+
+      override def consumed = 0;
+      override def produced = 0;
     }
 
     /** Create a new instance of a class through the specified constructor
