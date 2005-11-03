@@ -29,6 +29,8 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
 
   def hasNext: boolean = bp < buf.length;
 
+  def last: char = if(bp > start + 2) buf(bp - 2) else ' '; // XML literals
+
   def next: unit = {
     cline = nextline;
     ccol = nextcol;
