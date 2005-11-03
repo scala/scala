@@ -68,12 +68,12 @@
       <!-- to be renamed (unlike <file>).       -->
       <singlefile os="unix"
                   target="$INSTALL_PATH/bin/.nsc_symlink"
-                  src="bin/.nsc_symlink.tmpl"/>
+                  src="sources/bin/izpack.symlink.tmpl"/>
       <executable os="unix"
                   targetfile="$INSTALL_PATH/bin/.nsc_symlink"/>
       <singlefile os="unix"
                   target="$INSTALL_PATH/share/@PREFIX@/bin/.nsc_symlink"
-                  src="bin/.nsc_symlink.tmpl"/>
+                  src="sources/bin/izpack.symlink.tmpl"/>
       <executable os="unix"
                   targetfile="$INSTALL_PATH/share/@PREFIX@/bin/.nsc_symlink"/>
       <executable os="unix" keep="true"
