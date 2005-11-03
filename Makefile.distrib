@@ -81,7 +81,7 @@ XCODE_LIST		+= Specifications/Scala.pblangspec
 XCODE_FILES		 = $(XCODE_LIST:%=$(XCODE_ROOT)/%)
 
 # scala man pages
-MANPAGES_ROOT		 = $(PROJECT_SUPPORTDIR)/man/man1
+MANPAGES_ROOT		 = $(PROJECT_DOCUMENTDIR)/man/man1
 MANPAGES_LIST		+= scala.1
 MANPAGES_LIST		+= scalac.1
 MANPAGES_LIST		+= scaladoc.1
@@ -375,7 +375,7 @@ ia-build-windows	:
 	done
 	$(INSTALL) -m 644 -p $(IA_CONFIG_PREFIX)/tools.zip $(IA_BUILD_PREFIX)
 	$(XSLTPROC) $(XSLTPROC_FLAGS) $(IA_WIN32_PROJECTFILE) > $(IA_BUILD_PROJECTFILE)
-#	$(UNZIP) -q $(INSTALL_PREFIX).zip -d $(IA_BUILD_PREFIX)
+	$(UNZIP) -q $(INSTALL_PREFIX).zip -d $(IA_BUILD_PREFIX)
 	$(UNZIP) -q $(DISTRIB_ARCHIVE).zip -d $(IA_BUILD_PREFIX)
 	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
 	    $(ZIP) -q -r ../$(PROJECT_NAME).zip .)

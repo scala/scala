@@ -323,13 +323,16 @@
                   value="${distrib.unix.current.dir}/share/${distrib.name}"/>
         <!-- Set up 'bin' directory (unix) -->
         <mkdir dir="${distrib.unix.scala.dir}/bin"/>
-        <copy file="${support.dir}/bin/nscala.unix.tmpl"
+        <copy file="${sources.dir}/bin/nscala.unix.tmpl"
               tofile="${distrib.unix.scala.dir}/bin/.scala_wrapper">
             <filterset>
                 <filter token="VERSION" value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/tools.jar:$PREFIX/lib/${osc-nstools.jar.name}"/>
                 <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
+                <filter token="SCALA" value="${scala.exec.name}"/>
+                <filter token="SCALAC" value="${scalac.exec.name}"/>
+                <filter token="SCALAP" value="${scalap.exec.name}"/>
             </filterset>
         </copy>
         <chmod file="${distrib.unix.scala.dir}/bin/.scala_wrapper" perm="ugo+rx"/>
@@ -373,7 +376,7 @@
                   value="&quot;%SCALA_HOME%&quot;\lib"/>
         <!-- Set up 'bin' directory -->
         <mkdir dir="${distrib.win.current.dir}/bin"/>
-        <copy file="${support.dir}/bin/nscala.win.tmpl"
+        <copy file="${sources.dir}/bin/nscala.win.tmpl"
               tofile="${distrib.win.current.dir}/bin/${scala.exec.name}.bat">
             <filterset>
                 <filter token="PRODUCT"   value="${scala.exec.name}"/>
@@ -382,7 +385,7 @@
                 <filter token="BOOTCPATH" value="${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
         </copy>
-        <copy file="${support.dir}/bin/nscala-tool.win.tmpl"
+        <copy file="${sources.dir}/bin/nscala-tool.win.tmpl"
               tofile="${distrib.win.current.dir}/bin/${scalac.exec.name}.bat">
             <filterset>
                 <filter token="PRODUCT"   value="${scalac.exec.name}"/>
@@ -393,7 +396,7 @@
                 <filter token="LIB_CPATH"     value="${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
         </copy>
-        <copy file="${support.dir}/bin/nscala-tool.win.tmpl"
+        <copy file="${sources.dir}/bin/nscala-tool.win.tmpl"
               tofile="${distrib.win.current.dir}/bin/${scalap.exec.name}.bat">
             <filterset>
                 <filter token="PRODUCT"   value="${scalap.exec.name}"/>
@@ -459,7 +462,7 @@
         <!-- Set up 'man' directory (unix) -->
         <mkdir dir="${distrib.unix.current.dir}/share/man"/>
         <copy todir="${distrib.unix.current.dir}/share/man">
-            <fileset dir="${support.dir}/man" includes="**/*.1"/>
+            <fileset dir="${doc.dir}/man" includes="**/*.1"/>
         </copy>
         <!-- Set up 'support' directory (unix) -->
         <mkdir dir="${distrib.unix.scala.dir}/support"/>
