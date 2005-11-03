@@ -47,15 +47,19 @@ import Tokens._;
 
     val in = new Scanner(unit);
 
-    /** the markup parser
-    val xmlp = new MarkupParser(unit, s, this, false);
-     */
+    /** the markup parser */
+    val xmlp = new MarkupParser(unit, in, Parser.this, true);
 
     object treeBuilder extends TreeBuilder {
       val global: Parsers.this.global.type = Parsers.this.global;
       def freshName(prefix: String): Name = unit.fresh.newName(prefix);
     }
     import treeBuilder._;
+
+    object symbXMLBuilder extends SymbolicXMLBuilder(treeBuilder, Parser.this, true) { // DEBUG choices
+      val global: Parsers.this.global.type = Parsers.this.global;
+      def freshName(prefix: String): Name = unit.fresh.newName(prefix);
+    }
 
     /** this is the general parse method
      */
@@ -100,6 +104,7 @@ import Tokens._;
 	unit.error(pos, msg);
 	in.errpos = pos;
       }
+      assert(false);
       if (skipIt) skip();
     }
 
@@ -146,7 +151,7 @@ import Tokens._;
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
 	   STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
 	   THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
-	   DO | RETURN | THROW | LPAREN | LBRACE => true
+	   DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART => true
       case _ => false
     }
 
@@ -583,7 +588,9 @@ import Tokens._;
       expr(false, false);
 
     def expr(isArgument: boolean, isInBlock: boolean): Tree = {
-      if (in.token == IF) {
+      in.token match {
+        case IF =>
+      //if (in.token == IF) {
 	val pos = in.skipToken();
 	accept(LPAREN);
 	val cond = expr();
@@ -593,7 +600,8 @@ import Tokens._;
 	  if (in.token == ELSE) { in.nextToken(); expr() }
 	  else EmptyTree;
 	atPos(pos) { If(cond, thenp, elsep) }
-      } else if (in.token == TRY) {
+      //} else if (in.token == TRY) {
+        case TRY =>
 	atPos(in.skipToken()) {
 	  accept(LBRACE);
 	  val body = block();
@@ -611,7 +619,8 @@ import Tokens._;
 	    else EmptyTree;
 	  Try(body, catches, finalizer)
 	}
-      } else if (in.token == WHILE) {
+      //} else if (in.token == WHILE) {
+        case WHILE =>
 	val lname: Name = unit.fresh.newName("label$");
 	val pos = in.skipToken();
 	accept(LPAREN);
@@ -619,7 +628,8 @@ import Tokens._;
 	accept(RPAREN);
 	val body = expr();
 	atPos(pos) { makeWhile(lname, cond, body) }
-      } else if (in.token == DO) {
+      // } else if (in.token == DO) {
+        case DO =>
 	val lname: Name = unit.fresh.newName("label$");
 	val pos = in.skipToken();
 	val body = expr();
@@ -629,7 +639,8 @@ import Tokens._;
 	val cond = expr();
 	accept(RPAREN);
 	atPos(pos) { makeDoWhile(lname, body, cond) }
-      } else if (in.token == FOR) {
+      //} else if (in.token == FOR) {
+        case FOR =>
 	atPos(in.skipToken()) {
 	  accept(LPAREN);
 	  val enums = enumerators();
@@ -638,20 +649,24 @@ import Tokens._;
 	    in.nextToken(); makeForYield(enums, expr())
 	  } else makeFor(enums, expr())
 	}
-      } else if (in.token == RETURN) {
+      //} else if (in.token == RETURN) {
+        case RETURN =>
 	atPos(in.skipToken()) {
 	  Return(if (isExprIntro) expr() else Literal(()))
 	}
-      } else if (in.token == THROW) {
+      //} else if (in.token == THROW) {
+        case THROW =>
 	atPos(in.skipToken()) {
 	  Throw(expr())
 	}
-      } else if (in.token == DOT) {
+      //} else if (in.token == DOT) {
+        case DOT =>
 	atPos(in.skipToken()) {
 	  if (in.token == IDENTIFIER) makeClosure(simpleExpr())
 	  else { syntaxError("identifier expected", true); errorTermTree }
 	}
-      } else {
+      //} else {
+        case _ =>
 	var t = postfixExpr();
 	if (in.token == EQUALS) {
 	  t match {
@@ -751,8 +766,11 @@ import Tokens._;
 	case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT |
 	     SYMBOLLIT | TRUE | FALSE | NULL =>
 	  t = literal(false, false);
+        case XMLSTART =>
+          t = xmlp.xLiteral;
+          //Console.println("successfully parsed XML at "+t); // DEBUG
 	case IDENTIFIER | THIS | SUPER =>
-	  t = /*if (s.xStartsXML) xmlp.xLiteral else*/ stableRef(true, false);
+	  t = stableRef(true, false);
 	case LPAREN =>
 	  val pos = in.skipToken();
 	  if (in.token == RPAREN) {
@@ -1028,6 +1046,10 @@ import Tokens._;
 	  else Literal(()).setPos(pos);
 	accept(RPAREN);
 	p
+      case XMLSTART =>
+        val r = xmlp.xLiteralPattern;
+        //Console.println("successfully parsed xml pattern "+r); DEBUG
+        r
       case _ =>
 	syntaxError("illegal start of simple pattern", true);
 	errorPatternTree
@@ -1355,8 +1377,14 @@ import Tokens._;
           EmptyTree
         }
       def mkDefs(p: Tree): List[Tree] = {
+        //Console.println("DEBUG: p = "+p.toString()); // DEBUG
 	val trees =
-	  makePatDef(newmods, if (tp.isEmpty) p else Typed(p, tp), rhs.duplicate)
+	  makePatDef(newmods,
+                     if (tp.isEmpty)
+                       p
+                     else
+                       Typed(p, tp),
+                     rhs.duplicate)
 	    map atPos(p.pos);
 	if (rhs == EmptyTree) {
 	  trees match {
