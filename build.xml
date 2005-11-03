@@ -532,7 +532,7 @@
             description="Creates an IzPack installer for all scala distributions"/>
     
     <target name="izpack.init">
-        <echo level="verbose">izpack.jar=${izpack.jar}</echo>
+        <echo level="verbose">izpack.home=${izpack.home}</echo>
         <fail message="IzPack distribution not supported; check the 'izpack.home' property in 'build.${user.name}.properties'.">
             <condition><not>
                 <available classname="com.izforge.izpack.ant.IzPackTask"
