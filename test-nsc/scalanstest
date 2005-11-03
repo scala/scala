@@ -432,9 +432,7 @@ prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
 ##############################################################################
-# Configuration and invocation of $SCRIPT
-
-configure;
+# Invocation of $SCRIPT
 
 NORUN="false";
 SHOWLOG="false";
