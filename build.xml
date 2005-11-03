@@ -525,7 +525,7 @@
     
     <!-- A path containing the IzPack library -->
     <path id="izpack.classpath">
-        <pathelement location="${izpack.jar}"/>
+        <pathelement location="${izpack.home}/lib/compiler.jar"/>
     </path>
     
     <target name="izpack.all" depends="distrib.all, izpack.unix, izpack.win, izpack.mac"
@@ -564,7 +564,8 @@
         </copy>
         <izpack input="${resource.dir}/install-nsc.xml"
                 output="${distrib.unix.dir}/${distrib.name}-install-${distrib.version}.jar"
-                installerType="standard" basedir="${basedir}"/>
+                installerType="standard" basedir="${basedir}"
+                izPackDir="${izpack.home}"/>
     </target>
     
     <target name="izpack.mac" depends="izpack.unix"/>
