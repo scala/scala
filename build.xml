@@ -533,7 +533,7 @@
     
     <target name="izpack.init">
         <echo level="verbose">izpack.jar=${izpack.jar}</echo>
-        <fail message="Missing library ${izpack.jar}; check the 'izpack.jar' property in 'build.${user.name}.properties'.">
+        <fail message="IzPack distribution not supported; check the 'izpack.home' property in 'build.${user.name}.properties'.">
             <condition><not>
                 <available classname="com.izforge.izpack.ant.IzPackTask"
                            classpathref="izpack.classpath"/>
