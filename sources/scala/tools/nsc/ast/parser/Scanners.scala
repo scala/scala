@@ -137,7 +137,7 @@ import scala.tools.nsc.util.CharArrayReader;
             this.copyFrom(prev);
           }
         }
-        //Console.println("<" + this + ">");//DEBUG
+        // Console.println("<" + this + ">");//DEBUG
       }
     }
 
@@ -173,8 +173,22 @@ import scala.tools.nsc.util.CharArrayReader;
 	        in.next;
 	        getIdentRest;  // scala-mode: wrong indent for multi-line case blocks
 	        return;
+
+            case '<' => // is XMLSTART?
+              val last = in.last;
+              in.next;
+              last match {
+                case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(in.ch) =>
+                  token = XMLSTART;
+                case _ =>
+                  // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG
+                  putChar('<');
+                  getOperatorRest;
+              }
+              return;
+
               case '~' | '!' | '@' | '#' | '%' |
-                   '^' | '*' | '+' | '-' | '<' |
+                   '^' | '*' | '+' | '-' | /*'<' | */
                    '>' | '?' | ':' | '=' | '&' |
                    '|' | '\\' =>
                 putChar(in.ch);
@@ -641,61 +655,12 @@ import scala.tools.nsc.util.CharArrayReader;
     }
 
 // XML lexing----------------------------------------------------------------
-
-/*
-    // start XML tokenizing methods
-    // prod. [i] refers to productions in http://www.w3.org/TR/REC-xml
-
-    /** calls nextToken, starting the scanning of Scala tokens,
-    *   after XML tokens.
-    */
     def xSync = {
       token = SEMI; // avoid getting SEMI from nextToken if last was RBRACE
       //in.next;
       nextToken();
     }
 
-    def xSync2 = fetchToken();
-
-    def xLookahead = srcIterator.lookahead1;
-
-    /** read the next character. do not skip whitespace.
-    *   treat CR LF as single LF. update ccol and cline
-    *
-    *   @todo: may XML contain SU, in CDATA sections ?
-    */
-    def xNext = {
-      lastpos = pos;
-      ch = srcIterator.raw; ccol = ccol + 1; // = in.next without unicode
-      ch match {
-	case SU =>
-	  syntaxError(lastpos, "unclosed XML literal");
-	  token = EOF;
-	case LF =>
-	  ccol = 0; cline = cline + 1;
-	case CR =>
-	  if (LF == srcIterator.lookahead1) {
-	    srcIterator.raw; ccol = 0; cline = cline + 1;
-	  }
-	case _ =>
-	  //Console.print(ch.asInstanceOf[char]); // DEBUG
-      }
-      pos = Position.encode(cline, ccol);
-      //Console.print(ch);
-    }
-
-    final val LT   = Name.fromString("<");
-
-    def xStartsXML = {
-      /* unit.global.xmlMarkup && */ (token == IDENTIFIER) &&(name == LT);
-      /* ||  // support for proc instr, cdata, comment... ?
-	 {val s = name.toString();
-	  s.charAt(0) == '<' && (s.charAt(1)=='?' || s.charAt(1)=='!')}) */
-    }
-
-    // end XML tokenizing
-
-*/
 // Errors -----------------------------------------------------------------
 
     /** generate an error at the given position
@@ -841,6 +806,8 @@ import scala.tools.nsc.util.CharArrayReader;
 	"case class"
       case CASEOBJECT =>
 	"case object"
+      case XMLSTART =>
+        "$XMLSTART$<"
       case _ =>
 	try {
 	  "'" + tokenName(token) + "'"

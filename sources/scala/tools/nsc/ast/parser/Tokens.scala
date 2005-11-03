@@ -90,4 +90,7 @@ object Tokens {
   final val RBRACKET = 93;
   final val LBRACE = 94;
   final val RBRACE = 95;
+
+  /** XML mode */
+  final val XMLSTART = 96;
 }
