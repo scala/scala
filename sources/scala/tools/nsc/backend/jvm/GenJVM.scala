@@ -227,18 +227,30 @@ abstract class GenJVM extends SubComponent {
     val linearizer = new NormalLinearizer();
     var linearization: List[BasicBlock] = Nil;
 
+    var isModuleInitialized = false;
     def genCode(m: IMethod): Unit = {
       labels.clear;
       retAddress.clear;
       anyHandler.clear;
+      isModuleInitialized = false;
 
       code = m.code;
       linearization = linearizer.linearize(m);
       makeLabels(linearization);
-      linearization foreach genBlock;
+      genBlocks(linearization);
+
       if (this.method.exh != Nil || this.method.finalizers != Nil)
         genExceptionHandlers;
     }
+
+    var nextBlock: BasicBlock = _;
+
+    def genBlocks(l: List[BasicBlock]): Unit = l match {
+      case Nil => ();
+      case x :: Nil => nextBlock = null; genBlock(x);
+      case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys);
+    }
+
 
     /** Map from finalizer to the code area where its 'any' exception handler was generated. */
     val anyHandler: HashMap[Finalizer, Pair[Int, Int]] = new HashMap();
@@ -429,9 +441,10 @@ abstract class GenJVM extends SubComponent {
                                           javaType(method).asInstanceOf[JMethodType]);
 
                   // we initialize the MODULE$ field immediately after the super ctor
-                  if (isTopLevelModule(clasz.symbol) &&
+                  if (isTopLevelModule(clasz.symbol) && !isModuleInitialized &&
                       jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
                       javaName(method) == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
+                        isModuleInitialized = true;
                         jcode.emitALOAD_0();
                         jcode.emitPUTSTATIC(jclass.getName(),
                                             MODULE_INSTANCE_NAME,
@@ -502,17 +515,20 @@ abstract class GenJVM extends SubComponent {
                              MIN_SWITCH_DENSITY);
 
           case JUMP(where) =>
-            jcode.emitGOTO_maybe_W(labels(where), false); // default to short jumps
+            if (nextBlock != where)
+              jcode.emitGOTO_maybe_W(labels(where), false); // default to short jumps
 
           case CJUMP(success, failure, cond, kind) =>
             kind match {
               case BOOL | BYTE | CHAR | SHORT | INT =>
                 jcode.emitIF_ICMP(conds(cond), labels(success));
-                jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock != failure)
+                  jcode.emitGOTO_maybe_W(labels(failure), false);
 
               case REFERENCE(_) | ARRAY(_) =>
                 jcode.emitIF_ACMP(conds(cond), labels(success));
-                jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock != failure)
+                  jcode.emitGOTO_maybe_W(labels(failure), false);
 
               case _ =>
                 kind match {
@@ -521,18 +537,21 @@ abstract class GenJVM extends SubComponent {
                   case DOUBLE => jcode.emitDCMPG();
                 }
                 jcode.emitIF(conds(cond), labels(success));
-                jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock != failure)
+                  jcode.emitGOTO_maybe_W(labels(failure), false);
             }
 
           case CZJUMP(success, failure, cond, kind) =>
             kind match {
               case BOOL | BYTE | CHAR | SHORT | INT =>
                 jcode.emitIF(conds(cond), labels(success));
-                jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock != failure)
+                  jcode.emitGOTO_maybe_W(labels(failure), false);
 
               case REFERENCE(_) | ARRAY(_) =>
                 jcode.emitIFNULL(labels(success));
-                jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock != failure)
+                  jcode.emitGOTO_maybe_W(labels(failure), false);
 
               case _ =>
                 kind match {
@@ -541,7 +560,8 @@ abstract class GenJVM extends SubComponent {
                   case DOUBLE => jcode.emitDCONST_0(); jcode.emitDCMPL();
                 }
                 jcode.emitIF(conds(cond), labels(success));
-                jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock != failure)
+                  jcode.emitGOTO_maybe_W(labels(failure), false);
             }
 
           case RETURN(kind) =>
