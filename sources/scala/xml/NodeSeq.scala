@@ -23,12 +23,15 @@ abstract class NodeSeq extends Seq[Node] {
   def theSeq: Seq[Node];
   def length = theSeq.length;
   def elements = theSeq.elements ;
-  def apply( i:int ) = theSeq.apply( i );
+  def apply(i: int ): Node = theSeq.apply( i );
+
+  def apply(f: Node => Boolean): NodeSeq = filter(f);
 
   /** structural equality */
   override def equals( x:Any ) = x match {
     case z:Node      => ( length == 1 ) && z == apply( 0 )
     case z:Seq[Node] => sameElements( z )
+    case z:String    => text == z
     case _           => false;
   }
 
@@ -91,4 +94,12 @@ abstract class NodeSeq extends Seq[Node] {
 
   def filter(f:Node => Boolean): NodeSeq = { val x = asList filter f; x }
 
+  def text: String = {
+    val sb = new StringBuffer();
+    val it = elements;
+    while(it.hasNext) {
+      sb.append(it.next.text);
+    }
+    sb.toString();
+  }
 }

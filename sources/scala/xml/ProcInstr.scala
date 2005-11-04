@@ -16,12 +16,12 @@ package scala.xml;
  * @param  text   text contained in this node, may not contain "?>"
 **/
 
-case class ProcInstr(target:String, text:String) extends SpecialNode {
+case class ProcInstr(target:String, proctext:String) extends SpecialNode {
 
   if( !Utility.isName( target ) )
     throw new IllegalArgumentException(target+" must be an XML Name");
   else if( text.indexOf("?>" ) != -1 )
-    throw new IllegalArgumentException(text+" may not contain \"?>\"");
+    throw new IllegalArgumentException(proctext+" may not contain \"?>\"");
 
   final override def typeTag$:Int = -2;
 
@@ -33,7 +33,7 @@ case class ProcInstr(target:String, text:String) extends SpecialNode {
 
   /** structural equality */
   override def equals(x: Any): Boolean = x match {
-    case ProcInstr(x,y) => x.equals(target) && y.equals(text);
+    case ProcInstr(x,y) => x.equals(target) && y.equals(proctext);
     case _ => false
   }
 
@@ -41,7 +41,10 @@ case class ProcInstr(target:String, text:String) extends SpecialNode {
   final def label    = "#PI";
 
   /** hashcode for this PI */
-  override def hashCode() = target.hashCode() * 7 + text.hashCode();
+  override def hashCode() = target.hashCode() * 7 + proctext.hashCode();
+
+
+  override def text = "";
 
   /** appends &quot;&lt;?&quot; target (&quot; &quot;+text)?+&quot;?&gt;&quot;
    *  to this stringbuffer.
@@ -50,7 +53,7 @@ case class ProcInstr(target:String, text:String) extends SpecialNode {
     sb
     .append("<?")
     .append(target);
-    if( text.length() > 0 ) {
+    if( proctext.length() > 0 ) {
       sb
       .append(' ')
       .append(text);

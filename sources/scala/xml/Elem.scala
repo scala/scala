@@ -58,4 +58,13 @@ case class Elem(override val prefix: String,
          scope,
          child:_*);
 
+   override def text = {
+     val sb = new StringBuffer();
+     val it = child.elements;
+     while(it.hasNext) {
+       sb.append(it.next);
+     }
+     sb.toString()
+   }
+
 }

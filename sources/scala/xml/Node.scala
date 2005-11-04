@@ -121,4 +121,6 @@ abstract class Node extends NodeSeq {
   /** returns a type symbol (e.g. DTD, XSD), default null */
   def xmlType(): TypeSymbol = null;
 
+  override def text: String;
+
 }
