@@ -94,6 +94,24 @@ object Source {
     s
   }
 
+  def fromURL(s:String): Source =
+    fromURL(new java.net.URL(s));
+
+  def fromURL(url: java.net.URL): Source = {
+    val it = new Iterator[Char] {
+      var data: Int = _;
+      def hasNext = {data != -1};
+      def next = {val x = data.asInstanceOf[char]; data = bufIn.read(); x}
+      val in = url.openStream();
+      val bufIn = new java.io.BufferedInputStream(in);
+      data = bufIn.read()
+    }
+    new Source {
+      def reset = fromURL(url);
+      val iter = it;
+    }
+  }
+
 }
 
 /** an iterable representation of source files.
