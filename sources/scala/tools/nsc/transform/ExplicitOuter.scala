@@ -182,9 +182,15 @@ abstract class ExplicitOuter extends InfoTransform {
       /** The mixin constructor definition
        *    def $init$(): Unit = ()
        */
-      def mixinConstructorDef(clazz: Symbol): Tree = localTyper.typed {
-	DefDef(clazz.primaryConstructor, vparamss => Literal(()))
-      }
+      def mixinConstructorDef(clazz: Symbol): Tree =
+        localTyper.typed {
+          val constr = clazz.primaryConstructor;
+	  atPhase(currentRun.explicitOuterPhase) {
+            // necessary so that we do not include an outer parameter already here;
+            // this will be added later in transform.
+            DefDef(constr, vparamss => Literal(()))
+          }
+        }
 
       /** Add calls to supermixin constructors
        *     super[mix].$init$()

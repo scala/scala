@@ -11,6 +11,7 @@ class CompilerRun {
   def namerPhase: Phase = NoPhase;
   def typerPhase: Phase = NoPhase;
   def refchecksPhase: Phase = NoPhase;
+  def explicitOuterPhase: Phase = NoPhase;
   def erasurePhase: Phase = NoPhase;
   def flattenPhase: Phase = NoPhase;
   def mixinPhase: Phase = NoPhase;

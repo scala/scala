@@ -301,6 +301,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     override val namerPhase = phaseNamed("namer");
     override val typerPhase = phaseNamed("typer");
     override val refchecksPhase = phaseNamed("refchecks");
+    override val explicitOuterPhase = phaseNamed("explicitouter");
     override val erasurePhase = phaseNamed("erasure");
     override val flattenPhase = phaseNamed("flatten");
     override val mixinPhase = phaseNamed("mixin");

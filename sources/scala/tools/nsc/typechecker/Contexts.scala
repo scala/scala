@@ -62,6 +62,8 @@ import scala.tools.util.Position;
     private var _undetparams: List[Symbol] = List(); // Undetermined type parameters
     var depth: int = 0;
     var imports: List[ImportInfo] = List();
+    var typeSubstFrom: List[Symbol] = List();  // The set of type parameters in scope.
+    var typeSubstTo: List[Type] = List();  // Types to which parameters are mapped.
 
     var reportAmbiguousErrors = false;
     var reportGeneralErrors = false;
@@ -86,6 +88,8 @@ import scala.tools.util.Position;
       c.variance = this.variance;
       c.depth = if (scope == this.scope) this.depth else this.depth + 1;
       c.imports = imports;
+      c.typeSubstFrom = this.typeSubstFrom;
+      c.typeSubstTo = this.typeSubstTo;
       c.reportAmbiguousErrors = this.reportAmbiguousErrors;
       c.reportGeneralErrors = this.reportGeneralErrors;
       c.checking = this.checking;

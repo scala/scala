@@ -469,11 +469,13 @@ package scala.tools.nsc.typechecker;
     }
 
     /** Substitite free type variables `undetparams' of type constructor `tree' in pattern,
-     *  given prototype `pt'. */
+     *  given prototype `pt'.
+     *  return type substitution for type parameters.
+     */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt: Type): unit = {
-      val tvars = undetparams map freshVar;
-      val restpe = skipImplicit(tree.tpe.resultType);
-      if (restpe.subst(undetparams, tvars) <:< pt)
+      var restpe = skipImplicit(tree.tpe.resultType);
+      var tvars = undetparams map freshVar;
+      def computeArgs =
 	try {
 	  val targs = solve(tvars, undetparams, undetparams map varianceInType(restpe), true);
           checkBounds(tree.pos, undetparams, targs, "inferred ");
@@ -484,7 +486,23 @@ package scala.tools.nsc.typechecker;
 		      " can be instantiated in more than one way to expected type " + pt +
 		      "\n --- because ---\n" + ex.getMessage());
 	}
-      else {
+/*
+      if (!restpe.subst(undetparams, tvars) <:< pt) {
+        map all unbound type params to AnyVal;
+        tvars = undetparams map freshVar;
+        if (restpe.subst(undetparams, tvars) <:< pt) {
+          computeArgs;
+          restpe = skipImplicit(tree.tpe.resultType);
+          map all unbound type params tparams1 to freshVars tvars1
+          val targs1 = solve(tvars1, tparams1, ??, ??);
+          checkBounds(tparams1, targs1, "inferred");
+          return Pair(tparams, targs) where different
+        }
+      }
+*/
+      if (restpe.subst(undetparams, tvars) <:< pt) {
+        computeArgs
+      } else {
 	System.out.println("ici " + tree + " " + undetparams + " " + pt);//debug
         errorTree(tree, "constructor cannot be instantiated to expected type" +
                   foundReqMsg(restpe, pt))
