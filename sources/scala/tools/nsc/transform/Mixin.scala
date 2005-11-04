@@ -302,49 +302,48 @@ abstract class Mixin extends InfoTransform {
 	  val body1 = addNewDefs(currentOwner, body);
           copy.Template(tree, parents1, body1)
         case Apply(Select(qual, _), args) =>
-          assert(sym != NoSymbol, tree);//debug
-          if (isStatic(sym)) {
-            assert(sym.isConstructor || currentOwner.enclClass.isImplClass, tree);
-	    localTyper.typed {
-	      atPos(tree.pos) {
-	        Apply(staticRef(sym), qual :: args)
-	      }
-	    }
-          } else if (qual.isInstanceOf[Super] && (sym.owner hasFlag lateINTERFACE)) {
-            val sym1 = atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass));
-	    if (sym1 == NoSymbol)
+          def staticCall(target: Symbol) = {
+	    if (target == NoSymbol)
               assert(false, "" + sym + " " + sym.owner + " " + sym.owner.implClass + " " + sym.owner.owner + atPhase(phase.prev)(sym.owner.owner.info.decls.toList));//debug
             localTyper.typed {
               atPos(tree.pos) {
-                Apply(staticRef(sym1), gen.This(currentOwner.enclClass) :: args)
+                val qual1 =
+                  if (!qual.isInstanceOf[Super]) qual
+                  else if (currentOwner.enclClass.isImplClass) selfRef(qual.pos)
+                  else gen.This(currentOwner.enclClass);
+                Apply(staticRef(target), qual1 :: args)
               }
             }
-          } else {
-            tree
+          }
+          assert(sym != NoSymbol, tree);//debug
+          if (isStatic(sym)) {
+            assert(sym.isConstructor || currentOwner.enclClass.isImplClass, tree);
+            staticCall(sym)
+          } else qual match {
+            case Super(_, mix) =>
+              System.out.println("mix " + tree);//debug
+              if (mix == nme.EMPTY.toTypeName) {
+                if (currentOwner.enclClass.isImplClass)
+                  assert(false, "illegal super in mixin class: " + currentOwner.enclClass + " " + tree);
+                if (sym.owner hasFlag lateINTERFACE)
+                  staticCall(atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass)))
+                else
+                  tree
+              } else {
+                var sym1 = sym;
+                if (sym.owner hasFlag lateINTERFACE)
+                  sym1 = atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass));
+                staticCall(sym1)
+              }
+            case _ =>
+              tree
           }
 
         case This(_) if tree.symbol.isImplClass =>
 	  assert(tree.symbol == currentOwner.enclClass, "" + tree + " " + tree.symbol + " " + currentOwner.enclClass);
           selfRef(tree.pos)
-        case Select(qual @ Super(_, mix), name) =>
-          if (currentOwner.enclClass.isImplClass) {
-            if (mix == nme.EMPTY.toTypeName)
-	      assert(false, "illegal super in mixin class: " + currentOwner.enclClass + " " + tree);
-/*
-	      val superAccName = enclInterface.expandedName(nme.superName(sym.name));
-	      val superAcc = enclInterface.info.decl(superAccName) suchThat (.alias.==(sym));
-	      assert(superAcc != NoSymbol, tree);//debug
-	      localTyper.typedOperator {
-	        atPos(tree.pos){
-	          Select(selfRef(qual.pos), superAcc)
-	        }
-	      }
-*/
-            copy.Select(tree, selfRef(qual.pos), name)
-          } else {
-            if (mix == nme.EMPTY.toTypeName) tree
-            else copy.Select(tree, gen.This(currentOwner.enclClass) setPos qual.pos, name)
-          }
+        case Select(Super(_, _), name) =>
+          tree
         case Select(qual, name) if sym.owner.isImplClass && !isStatic(sym) =>
 	  if (sym.isMethod) {
 	    assert(sym hasFlag (LIFTED | BRIDGE), sym);
