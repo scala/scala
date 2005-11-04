@@ -9,10 +9,9 @@
 
 package scala.xml;
 
-/** an XML node for text (PCDATA). Used in both non-bound and bound XML
- *  representations
- * @author Burak Emir
- * @param text the text contained in this node, may not be null.
+/** an XML node for a list of data items.
+ * @author buraq
+ * @param list a list of data items, space separated
  */
 class Molecule[+A]( val list: List[A] ) extends SpecialNode {
 
@@ -30,6 +29,8 @@ class Molecule[+A]( val list: List[A] ) extends SpecialNode {
   /** hashcode for this Text */
   override def hashCode() =
     list.hashCode();
+
+  override def text = list.mkString(""," ","");
 
   /** returns text, with some characters escaped according to XML spec */
   def toString(sb:StringBuffer) =

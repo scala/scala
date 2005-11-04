@@ -62,16 +62,11 @@ abstract class MetaData extends Iterable[MetaData] {
     }
   }
 
+  /** bq: this can be done better */
   def elements = new Iterator[MetaData] {
-    var x: MetaData = _;
-    def hasNext = null == x || x.hasNext;
-    def next = {
-      x = if(null == x)
-        MetaData.this;
-      else
-        x.next;
-      x
-    }
+    var x: MetaData = MetaData.this;
+    def hasNext = Null != x;
+    def next = x.next;
   }
 
   /** shallow equals method */

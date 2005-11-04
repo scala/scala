@@ -15,7 +15,7 @@ package scala.xml;
  * @param text the text contained in this node
  **/
 
-case class EntityRef( entityName:String ) extends SpecialNode {
+case class EntityRef(entityName: String) extends SpecialNode {
 
   final override def typeTag$:Int = -5;
 
@@ -30,6 +30,8 @@ case class EntityRef( entityName:String ) extends SpecialNode {
   def label    = "#ENTITY";
 
   override def hashCode() = entityName.hashCode();
+
+  override def text = "";
 
   /** appends "&amp; entityName;" to this stringbuffer */
   def toString(sb:StringBuffer) =

@@ -29,10 +29,10 @@ case class Elem(override val prefix: String,
                 val child: Node*) extends Node {
 
   if (prefix != null && 0 == prefix.length())
-    error("prefix of zero length, use null instead");
+    scala.Predef.error("prefix of zero length, use null instead");
 
   if (null == scope)
-    error("scope is null");
+    scala.Predef.error("scope is null");
 
   //@todo: copy the children,
   //  setting namespace scope if necessary
@@ -58,6 +58,7 @@ case class Elem(override val prefix: String,
          scope,
          child:_*);
 
+   /* returns concatenation of text(n) for each child n */
    override def text = {
      val sb = new StringBuffer();
      val it = child.elements;
