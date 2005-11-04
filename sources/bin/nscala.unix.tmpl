@@ -71,7 +71,7 @@ if [ -z "$main" ]; then
         "$@"
 else
     $_JAVACMD \
-        -Xms16M -Xmx256M
+        -Xms16M -Xmx256M \
         -Dscala.product="$SCRIPT" \
         -Dscala.version="@VERSION@" \
         -Dscala.home="$PREFIX" \
