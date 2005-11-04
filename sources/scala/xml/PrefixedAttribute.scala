@@ -1,10 +1,25 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml;
 
 /** prefixed attributes always have a non-null namespace
  */
-class PrefixedAttribute(val pre: String, val key: String, val value: String, val next: MetaData) extends MetaData {
+class PrefixedAttribute(val pre: String,
+                        val key: String,
+                        val value: String,
+                        val next: MetaData) extends MetaData {
 
-  /** returns a copy of this unprefixed attribute with the given next field*/
+  /** Returns a copy of this unprefixed attribute with the given
+   *  next field.
+   */
   def copy(next: MetaData) =
     new PrefixedAttribute(pre, key, value, next);
 
@@ -13,16 +28,19 @@ class PrefixedAttribute(val pre: String, val key: String, val value: String, val
 
   //** duplicates the MetaData (deep copy), prepending it to tail */
   /*
-  def deepCopy(tail:MetaData): MetaData = {
+  def deepCopy(tail: MetaData): MetaData = {
     val md = copy(tail);
-    if(null == next)
+    if (null == next)
       md
     else
       next.deepCopy(md)
   }
   */
 
-  def equals1(m:MetaData) = m.isPrefixed && (m.asInstanceOf[PrefixedAttribute].pre == pre) && (m.key == key) && (m.value == value);
+  def equals1(m: MetaData) =
+     m.isPrefixed &&
+     (m.asInstanceOf[PrefixedAttribute].pre == pre) &&
+     (m.key == key) && (m.value == value);
 
   def getNamespace(owner: Node) =
     owner.getNamespace(pre);
@@ -33,7 +51,7 @@ class PrefixedAttribute(val pre: String, val key: String, val value: String, val
   /** gets attribute value of qualified (prefixed) attribute with given key
    */
   def getValue(namespace: String, scope: NamespaceBinding, key: String): String = {
-    if(key == this.key && scope.getURI(pre) == namespace)
+    if (key == this.key && scope.getURI(pre) == namespace)
       value
     else
       next.getValue(namespace, scope, key);

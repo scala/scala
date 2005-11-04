@@ -1,19 +1,29 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml;
 
-/** a document information item (according to InfoSet spec). The comments
+/** A document information item (according to InfoSet spec). The comments
  *  are copied from the Infoset spec, only augmented with some information
  *  on the Scala types for definitions that might have no value.
  */
 class Document extends NodeSeq {
 
   /** An ordered list of child information items, in document
-  * order. The list contains exactly one element information item. The
-  * list also contains one processing instruction information item for
-  * each processing instruction outside the document element, and one
-  * comment information item for each comment outside the document
-  * element. Processing instructions and comments within the DTD are
-  * excluded. If there is a document type declaration, the list also
-  * contains a document type declaration information item.
+  *  order. The list contains exactly one element information item. The
+  *  list also contains one processing instruction information item for
+  *  each processing instruction outside the document element, and one
+  *  comment information item for each comment outside the document
+  *  element. Processing instructions and comments within the DTD are
+  *  excluded. If there is a document type declaration, the list also
+  *  contains a document type declaration information item.
   */
   var children: Seq[Node] = _;
 
