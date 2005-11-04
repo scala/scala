@@ -321,20 +321,25 @@ abstract class Mixin extends InfoTransform {
             staticCall(sym)
           } else qual match {
             case Super(_, mix) =>
-              System.out.println("mix " + tree);//debug
               if (mix == nme.EMPTY.toTypeName) {
                 if (currentOwner.enclClass.isImplClass)
                   assert(false, "illegal super in mixin class: " + currentOwner.enclClass + " " + tree);
-                if (sym.owner hasFlag lateINTERFACE)
-                  staticCall(atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass)))
-                else
-                  tree
+              }
+              if (sym.owner hasFlag lateINTERFACE)
+                staticCall(atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass)))
+              else {
+                assert(!(sym.owner hasFlag INTERFACE));
+                assert(!currentOwner.enclClass.isImplClass);
+                tree
+              }
+/*
               } else {
                 var sym1 = sym;
                 if (sym.owner hasFlag lateINTERFACE)
                   sym1 = atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass));
                 staticCall(sym1)
               }
+*/
             case _ =>
               tree
           }
