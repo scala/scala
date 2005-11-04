@@ -41,6 +41,13 @@ insufficient for Scala compilation. The ANT_OPTS environment variable needs to
 be set to increase the memory size (either each time as in the quick start
 example above, or once and for all in the default shell environment).
 
+Skipping parts of the build
+
+In some cases, parts of the build process should be disabled for debug reasons:
+  - skip.doc will not build the LaTeX documentation.
+  - skip.nsc will not build anything with NSC. This will create a non-working
+             distribution.
+
 BUILDING NEW SCALA
 
 The 'build' target builds all the Scala library and tools. It is composed of the

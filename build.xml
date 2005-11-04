@@ -156,9 +156,16 @@
     <target name="build" depends="build.jars"
             description="Builds new Scala (compiler and library)."/>
     
-    <target name="build.pico.nslib" depends="init.pico"
-            description="Builds the runtime and pico libraries of the new Scala library.">
+    <target name="build.init">
+        <mkdir dir="${build.dir}"/>
         <mkdir dir="${build.pico-nslib.dir}"/>
+        <mkdir dir="${build.nslib.dir}"/>
+        <mkdir dir="${build.osc-nstools.dir}"/>
+        <mkdir dir="${build.nstools.dir}"/>
+    </target>
+    
+    <target name="build.pico.nslib" depends="init.pico, build.init"
+            description="Builds the runtime and pico libraries of the new Scala library.">
         <pico srcdir="${sources.dir}" destdir="${build.pico-nslib.dir}"
               scalahack="true">
             <classpath>
@@ -185,9 +192,8 @@
         </delete>
     </target>
 
-    <target name="build.osc.nstools" depends="init.osc"
+    <target name="build.osc.nstools" depends="init.osc, build.init"
             description="Builds the new Scala compiler.">
-        <mkdir dir="${build.osc-nstools.dir}"/>
         <osc srcdir="${sources.dir}" destdir="${build.osc-nstools.dir}"
              excludesfile="${nsc.osc-nstools.excludes}"
              force="changed">
@@ -205,9 +211,9 @@
         </osc>
     </target>
 
-    <target name="build.nsc.nslib" depends="init.nsc, build.pico.nslib"
+    <target name="build.nsc.nslib" depends="init.nsc, build.pico.nslib, build.init"
+            unless="skip.nsc"
             description="Builds the Scala library with the new Scala compiler.">
-        <mkdir dir="${build.nslib.dir}"/>
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              usepredefs="false"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
@@ -240,9 +246,9 @@
         </nsc>
     </target>
     
-    <target name="build.nsc.nstools" depends="init.nsc, build.nsc.nslib"
+    <target name="build.nsc.nstools" depends="init.nsc, build.nsc.nslib, build.init"
+            unless="skip.nsc"
             description="Builds the Scala tools (NSC and Scalap) with the new Scala compiler.">
-        <mkdir dir="${build.nstools.dir}"/>
         <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}"
              excludesfile="${nsc.nstools.excludes}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
@@ -260,9 +266,8 @@
     </target>
 
     <target name="build.jars"
-            depends="build.nsc.nslib, build.nsc.nstools, build.osc.nstools, build.pico.nslib"
+            depends="build.nsc.nslib, build.nsc.nstools, build.osc.nstools, build.pico.nslib, build.init"
             description="Builds JAR archives for all elements of Scala">
-        <mkdir dir="${build.dir}"/>
         <jar destfile="${build.dir}/${osc-nstools.jar.name}" index="yes" update="yes"
              basedir="${build.osc-nstools.dir}">
             <manifest>
@@ -442,6 +447,7 @@
     
     <target name="distrib.all.init"
             depends="docs">
+        <fail if="skip.nsc">A full distribution cannot be build when skipping NSC.</fail>
         <property name="os.unix" value="yes"/>
         <property name="os.win" value="yes"/>
         <property name="os.mac" value="yes"/>
@@ -602,7 +608,7 @@
     #####################################################################
     -->
     
-    <target name="docs" description="Generates all documentation." unless="docs.skip">
+    <target name="docs" description="Generates all documentation." unless="skip.doc">
         <echo level="verbose">oslib.jar=${oslib.jar}</echo>
         <echo level="verbose">oslib.src=${oslib.src}</echo>
         <echo level="verbose">ostools.jar=${ostools.jar}</echo>
