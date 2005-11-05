@@ -104,7 +104,6 @@ import Tokens._;
 	unit.error(pos, msg);
 	in.errpos = pos;
       }
-      assert(false);
       if (skipIt) skip();
     }
 
