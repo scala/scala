@@ -13,18 +13,17 @@ object Test {
   Console.println("NodeSeq");
   import scala.xml.Utility.view ;
 
-  val p = <foo><bar value="3"/><baz bazValue="8"/><bar value="5"/></foo>;
+    val p = <foo><bar value="3"/><baz bazValue="8"/><bar value="5"/></foo>;
 
-  assertSameElements(
-    for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
-      x.attribute("value") + y.attribute("bazValue")+ "!"
-    },
-    new NodeSeq { val theSeq = List(Text("38!"),Text("58!")) }
-  );
-assertSameElements(
-  p \\ "@value", new NodeSeq { val theSeq = List(Text("3"), Text("5")) }
-);
-  val books =
+    val pelems_1 = for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
+      Text(x.attribute("value") + y.attribute("bazValue")+ "!")
+    };
+    val pelems_2 = new NodeSeq { val theSeq = List(Text("38!"),Text("58!")) };
+    assertSameElements(pelems_1, pelems_2);
+    assertSameElements(
+      p \\ "@value", new NodeSeq { val theSeq = List(Text("3"), Text("5")) }
+    );
+    val books =
     <bks>
       <book><title>Blabla</title></book>
       <book><title>Blubabla</title></book>
