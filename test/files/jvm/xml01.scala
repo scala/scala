@@ -21,6 +21,7 @@ object Test {
     override def hashCode() =
       Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child);
     def child = Elem(null, "world", e, sc);
+	override def text = ""
     //def attributes = e;
   };
 
