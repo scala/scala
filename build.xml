@@ -608,10 +608,18 @@
     #####################################################################
     -->
     
-    <target name="docs" description="Generates all documentation." unless="skip.doc">
+    <target name="docs" description="Generates all documentation."
+            depends="version.init" unless="skip.doc">
         <echo level="verbose">oslib.jar=${oslib.jar}</echo>
         <echo level="verbose">oslib.src=${oslib.src}</echo>
         <echo level="verbose">ostools.jar=${ostools.jar}</echo>
+        <fail message="Required classes for OSC are missing; check the 'oslib.jar','ostools.jar' properties in 'build.${user.name}.properties'.">
+            <condition><not><and>
+                <available classname="scala.List" classpathref="osc.classpath"/>
+                <available classname="scala.runtime.RunTime" classpathref="osc.classpath"/>
+                <available classname="scala.tools.scaladoc.Main" classpathref="osc.classpath"/>
+            </and></not></condition>
+        </fail>
         <fileset id="oslib.src.files" dir="${sources.dir}">
             <include name="scala/**/*.scala"/>
             <exclude name="scala/tools/**"/>
