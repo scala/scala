@@ -532,12 +532,11 @@ printf_outline "Source directory is: $SRCDIR\\n\\n";
 
 test_check_all;
 
+TOTAL_COUNT=`echo "$FAILURE_COUNT+$SUCCESS_COUNT" | bc`;
 if [ $FAILURE_COUNT -eq 0 ]; then
-    printf_success "All tests were successful\\n";
-elif [ $FAILURE_COUNT -eq 1 ]; then
-    printf_failure "There was 1 test that failed\\n";
+    printf_success "All $TOTAL_COUNT tests were successful\\n";
 else
-    printf_failure "There were $FAILURE_COUNT tests that failed\\n";
+    printf_failure "$FAILURE_COUNT of $TOTAL_COUNT tests failed\\n";
 fi;
 
 if [ $FAILURE_COUNT -eq "$ERRORS" ]; then
