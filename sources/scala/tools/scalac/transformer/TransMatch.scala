@@ -342,7 +342,7 @@ class TransMatch( global:scalac_Global )
           Console.print("  unit "+cunit);
           Console.println(" with exception:"+e.getMessage());
           //e.printStackTrace();
-          exit(-1); //Debug.abort()
+          System.exit(-1); //Debug.abort()
       }
       if (global.log()) {
         global.log("internal pattern matching structure");
