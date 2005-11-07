@@ -634,6 +634,7 @@ abstract class GenICode extends SubComponent  {
               ctx.method.addLocal(monitor);
 
               ctx1 = genLoadQualifier(fun, ctx1);
+              ctx1.bb.emit(DUP(ANY_REF_CLASS));
               ctx1.bb.emit(STORE_LOCAL(monitor, false));
               ctx1.bb.emit(MONITOR_ENTER(), tree.pos);
 

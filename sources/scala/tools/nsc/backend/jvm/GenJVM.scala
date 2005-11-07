@@ -877,7 +877,7 @@ abstract class GenJVM extends SubComponent {
       jf = jf | (if ((sym hasFlag Flags.ABSTRACT) ||
                      (sym hasFlag Flags.DEFERRED)) ACC_ABSTRACT else 0);
       jf = jf | (if (sym hasFlag Flags.INTERFACE) ACC_INTERFACE else 0);
-      jf = jf | (if (sym hasFlag Flags.FINAL) ACC_FINAL else 0);
+      jf = jf | (if ((sym hasFlag Flags.FINAL) && !sym.enclClass.hasFlag(Flags.INTERFACE)) ACC_FINAL else 0);
       jf = jf | (if (isStaticSymbol(sym)) ACC_STATIC else 0);
       jf
     }
