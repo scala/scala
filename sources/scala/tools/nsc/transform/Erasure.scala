@@ -176,7 +176,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 Apply(
 		  Select(gen.mkRef(ScalaRunTimeModule), newTermName(elemClass.name.toString() + "Tag")),
 		  List())
-              else Literal(signature(pt));
+              else Literal(signature(pt.typeArgs.head));
             Apply(Select(tree1, "unbox"), List(elemTag))
           } else {
 	    assert(isNumericValueClass(pt.symbol));
