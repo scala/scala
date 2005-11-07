@@ -77,6 +77,29 @@ package scala.tools.nsc.typechecker;
     List.map2(bounds, targs)((bound, targ) => bound containsType targ) forall (x => x)
   }
 
+  object freeTypeParams extends TypeTraverser {
+    private var result: List[Symbol] = _;
+    private def includeIfAbstract(sym: Symbol): unit = {
+      if (sym.isAbstractType && !result.contains(sym)) result = sym :: result;
+    }
+    override def traverse(tp: Type): TypeTraverser = {
+      tp match {
+        case TypeRef(NoPrefix, sym, _) =>
+	  includeIfAbstract(sym)
+	case TypeRef(ThisType(_), sym, _) =>
+	  includeIfAbstract(sym)
+	case _ =>
+      }
+      mapOver(tp);
+      this
+    }
+    def collect(tp: Type): List[Symbol] = {
+      result = List();
+      traverse(tp);
+      result
+    }
+  }
+
   /** Solve constraint collected in types `tvars'
    *  @param tvars      All type variables to be instantiated.
    *  @param tparams    The type parameters corresponding to `tvars'
@@ -486,27 +509,43 @@ package scala.tools.nsc.typechecker;
 		      " can be instantiated in more than one way to expected type " + pt +
 		      "\n --- because ---\n" + ex.getMessage());
 	}
-/*
-      if (!restpe.subst(undetparams, tvars) <:< pt) {
-        map all unbound type params to AnyVal;
-        tvars = undetparams map freshVar;
-        if (restpe.subst(undetparams, tvars) <:< pt) {
-          computeArgs;
-          restpe = skipImplicit(tree.tpe.resultType);
-          map all unbound type params tparams1 to freshVars tvars1
-          val targs1 = solve(tvars1, tparams1, ??, ??);
-          checkBounds(tparams1, targs1, "inferred");
-          return Pair(tparams, targs) where different
-        }
-      }
-*/
-      if (restpe.subst(undetparams, tvars) <:< pt) {
-        computeArgs
-      } else {
+      def instError = {
 	System.out.println("ici " + tree + " " + undetparams + " " + pt);//debug
         errorTree(tree, "constructor cannot be instantiated to expected type" +
                   foundReqMsg(restpe, pt))
       }
+      if (restpe.subst(undetparams, tvars) <:< pt) {
+	computeArgs
+      } else if (isFullyDefined(pt)) {
+	System.out.println("infer constr " + tree + ":" + restpe + ", pt = " + pt);//debug
+	val ptparams = freeTypeParams.collect(pt);
+	System.out.println("free type params = " + ptparams);//debug
+	val ptWithWildcards = pt.subst(ptparams, ptparams map (ptparam => WildcardType));
+        tvars = undetparams map freshVar;
+	if (restpe.subst(undetparams, tvars) <:< ptWithWildcards) {
+	  computeArgs;
+	  restpe = skipImplicit(tree.tpe.resultType);
+	  System.out.println("new tree = " + tree + ":" + restpe);//debug
+	  val ptvars = ptparams map freshVar;
+	  if (restpe <:< pt.subst(ptparams, ptvars)) {
+	    for (val tvar <- ptvars) {
+	      val tparam = tvar.origin.symbol;
+	      val Pair(loBounds, hiBounds) =
+ 		if (tvar.constr.inst != NoType && isFullyDefined(tvar.constr.inst))
+		  Pair(List(tvar.constr.inst), List(tvar.constr.inst))
+		else
+		  Pair(tvar.constr.lobounds, tvar.constr.hibounds);
+	      if (!loBounds.isEmpty || !hiBounds.isEmpty) {
+                context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam);
+		tparam setInfo TypeBounds(
+		  lub(tparam.info.bounds.lo :: loBounds),
+		  glb(tparam.info.bounds.hi :: hiBounds));
+		System.out.println("new bounds of " + tparam + " = " + tparam.info);//debug
+	      }
+	    }
+	  } else { System.out.println("no instance: "); instError }
+	} else { System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
+      } else { System.out.println("not fuly defined: " + pt); instError }
     }
 
     /* -- Overload Resolution ----------------------------------------------------------- */

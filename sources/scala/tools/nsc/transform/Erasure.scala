@@ -407,7 +407,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	val member = opc.overriding;
 	val other = opc.overridden;
         //System.out.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
-	if (!(member hasFlag DEFERRED)) {
+	if (!atPhase(phase.prev)(member hasFlag DEFERRED)) {
           val otpe = erasure(other.tpe);
 	  val bridgeNeeded = atPhase(phase.next) {
 	    !(other.tpe =:= member.tpe) &&

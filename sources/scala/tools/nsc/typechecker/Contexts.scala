@@ -62,12 +62,12 @@ import scala.tools.util.Position;
     private var _undetparams: List[Symbol] = List(); // Undetermined type parameters
     var depth: int = 0;
     var imports: List[ImportInfo] = List();
-    var typeSubstFrom: List[Symbol] = List();  // The set of type parameters in scope.
-    var typeSubstTo: List[Type] = List();  // Types to which parameters are mapped.
 
     var reportAmbiguousErrors = false;
     var reportGeneralErrors = false;
     var checking = false;
+
+    var savedTypeBounds: List[Pair[Symbol, Type]] = List();
 
     def undetparams = _undetparams;
     def undetparams_=(ps: List[Symbol]) = {
@@ -88,8 +88,6 @@ import scala.tools.util.Position;
       c.variance = this.variance;
       c.depth = if (scope == this.scope) this.depth else this.depth + 1;
       c.imports = imports;
-      c.typeSubstFrom = this.typeSubstFrom;
-      c.typeSubstTo = this.typeSubstTo;
       c.reportAmbiguousErrors = this.reportAmbiguousErrors;
       c.reportGeneralErrors = this.reportGeneralErrors;
       c.checking = this.checking;
@@ -155,6 +153,9 @@ import scala.tools.util.Position;
       case _ => outer.isLocal()
     }
 
+    def nextEnclosing(p: Context => boolean): Context =
+      if (this == NoContext || p(this)) this else outer.nextEnclosing(p);
+
     override def toString(): String = {
       if (this == NoContext) "NoContext";
       else owner.toString() + " @ " + tree.getClass() + " " + tree.toString() + ", scope = " + scope.hashCode() + " " + scope.toList + "\n:: " + outer.toString()
@@ -191,6 +192,18 @@ import scala.tools.util.Position;
       (!sym.hasFlag(PRIVATE) &&
        (superAccess ||
 	(pre.widen.symbol.isSubClass(sym.owner) && isSubClassOfEnclosing(pre.widen.symbol))))
+    }
+
+    def pushTypeBounds(sym: Symbol): unit = {
+      savedTypeBounds = Pair(sym, sym.info) :: savedTypeBounds
+    }
+
+    def restoreTypeBounds: unit = {
+      for (val Pair(sym, info) <- savedTypeBounds) {
+        System.out.println("resetting " + sym + " to " + info);
+        sym.setInfo(info);
+      }
+      savedTypeBounds = List()
     }
 
     private var implicitsCache: List[List[ImplicitInfo]] = null;

@@ -1472,10 +1472,9 @@ import Flags._;
           tps1.isEmpty && tps2.isEmpty
           ||
           !tps1.isEmpty && !tps2.isEmpty &&
-          (if (tparams.head.hasFlag(COVARIANT)) tps1.head <:< tps2.head
-           else if (tparams.head.hasFlag(CONTRAVARIANT)) tps2.head <:< tps1.head
-           else tps1.head =:= tps2.head) &&
-           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
+          (tparams.head.hasFlag(COVARIANT) || (tps2.head <:< tps1.head)) &&
+          (tparams.head.hasFlag(CONTRAVARIANT) || tps1.head <:< tps2.head) &&
+          isSubArgs(tps1.tail, tps2.tail, tparams.tail)
         }
         sym1 == sym2 && (pre1 <:< pre2) &&
         isSubArgs(args1, args2, sym1.typeParams)

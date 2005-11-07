@@ -722,12 +722,13 @@ import collection.mutable.HashMap;
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
 	                 else typed(cdef.guard, BooleanClass.tpe);
       val body1: Tree = typed(cdef.body, pt);
+      context.restoreTypeBounds;
       copy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
     def typedCases(tree: Tree, cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] = {
       List.mapConserve(cases)(cdef =>
-	newTyper(context.makeNewScope(tree, context.owner)).typedCase(cdef, pattp, pt))
+	newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt))
     }
 
     def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
