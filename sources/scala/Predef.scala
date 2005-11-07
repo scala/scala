@@ -127,7 +127,12 @@ object Predef {
 
   def error(message: String): All = throw new Error(message);
 
-  def exit: Unit = java.lang.System.exit(0);
+  def exit: All = exit(0);
+
+  def exit(status: Int): All = {
+    java.lang.System.exit(status);
+    throw new Throwable()
+  }
 
   def assert(assertion: Boolean): Unit = {
     if (!assertion)

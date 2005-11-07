@@ -65,7 +65,7 @@ object Main {
       }
     }
     if( exitOnError ) {
-      System.exit(if (reporter.errors() > 0 || !ok) 1 else 0);
+      exit(if (reporter.errors() > 0 || !ok) 1 else 0);
     }
   }
 }
