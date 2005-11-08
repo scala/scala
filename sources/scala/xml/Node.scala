@@ -1,17 +1,20 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala.xml;
 
 import scala.collection.Map;
-import scala.collection.immutable;
 
+/**
+ * This object provides methods
+ */
 object Node {
 
   /** the constant empty attribute sequence */
@@ -23,8 +26,11 @@ object Node {
 }
 
 /**
- * Trait for representing XML using nodes of a labelled tree.
- * This trait contains an implementation of a subset of XPath for navigation.
+ * An abstract class representing XML with nodes of a labelled tree.
+ * This class contains an implementation of a subset of XPath for navigation.
+ *
+ *  @author  Burak Emir and others
+ *  @version 1.1
  */
 abstract class Node extends NodeSeq {
 
@@ -43,27 +49,32 @@ abstract class Node extends NodeSeq {
   def namespace = getNamespace(prefix);
 
   def getNamespace(_pre: String) =
-    if(scope == null) null else scope.getURI(_pre);
+    if (scope == null) null else scope.getURI(_pre);
 
-  /**  looks up an unprefixed attribute in attributes of this node.
-   *   @param  key of queried attribute.
-   *   @return value of UnprefixedAttribute with given key in attributes, if
-   *            it exists, otherwise null.
+  /**
+   * Looks up an unprefixed attribute in attributes of this node.
+   *
+   * @param  key of queried attribute.
+   * @return value of <code>UnprefixedAttribute</code> with given key
+   *         in attributes, if it exists, otherwise <code>null</code>.
    */
   final def attribute(key: String) =
     attributes.getValue(key);
 
-  /**  looks up a prefixed attribute in attributes of this node.
-   *   @param  uri namespace of queried attribute (may not be null).
-   *   @param  key of queried attribute.
-   *   @return value of PrefixedAttribute with given namespace and
-   *           given key, otherwise null.
+  /**
+   * Looks up a prefixed attribute in attributes of this node.
+   *
+   * @param  uri namespace of queried attribute (may not be null).
+   * @param  key of queried attribute.
+   * @return value of <code>PrefixedAttribute</code> with given namespace
+   *         and given key, otherwise <code>null</code>.
    */
-  final def attribute(uri:String, key: String) =
+  final def attribute(uri: String, key: String) =
     attributes.getValue(uri, this, key);
 
-  /** attribute axis - all attributes of this node, in order defined by attrib
-  */
+  /**
+   * Attribute axis - all attributes of this node, in order defined by attrib
+   */
   def attributes: MetaData =
     Null;
 
@@ -102,23 +113,31 @@ abstract class Node extends NodeSeq {
   def toString(stripComment: Boolean): String  =
     Utility.toXML(this, stripComment);
 
-  /** same as toString(false).
+  /**
+   * Same as <code>toString(false)</code>.
+   *
    * @see "toString(Boolean)"
    */
   override def toString(): String =
     toString(false);
 
-  /** appends qualified name of this node to StringBuffer
+  /**
+   * Appends qualified name of this node to <code>StringBuffer</code>.
+   *
+   * @param sb
+   * @return ..
    */
   def nameToString(sb: StringBuffer): StringBuffer  = {
-    if(null != prefix) {
+    if (null != prefix) {
       sb.append(prefix);
       sb.append(':');
     }
     sb.append(label);
   }
 
-  /** returns a type symbol (e.g. DTD, XSD), default null */
+  /**
+   * Returns a type symbol (e.g. DTD, XSD), default <code>null</code>.
+   */
   def xmlType(): TypeSymbol = null;
 
   override def text: String;
