@@ -271,7 +271,10 @@ install-windows		: install
 	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
 	    $(RM) "$$nixfile"; \
 	done
-	$(RM) $(INSTALL_PREFIX)/bin/.scala_wrapper
+#	$(RM) $(INSTALL_PREFIX)/bin/.scala_wrapper
+	cygfile="$(INSTALL_PREFIX)/bin/.scala_wrapper"; \
+	cygexec=`$(CAT) "$$cygfile"`; \
+	$(ECHO) "$$cygexec" | $(SED) -es"#/share/$(INSTALL_NAME)##g" > "$$cygfile"
 	$(FIND) $(INSTALL_SRCDIR) -type f -exec $(UNIX2DOS) "{}" ";"
 	$(FIND) $(INSTALL_APIDOCDIR) -type f -exec $(UNIX2DOS) "{}" ";"
 	$(FIND) $(INSTALL_EXAMPLEDIR) -type f -exec $(UNIX2DOS) "{}" ";"
