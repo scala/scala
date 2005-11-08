@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $id: $
+// $Id$
 
 package scala.xml;
 
@@ -18,20 +18,30 @@ class UnprefixedAttribute(val key: String, val value: String, val next: MetaData
   def copy(next: MetaData) =
     new UnprefixedAttribute(key, value, next);
 
-  def equals1(m:MetaData) = !m.isPrefixed && (m.key == key) && (m.value == value);
+  def equals1(m:MetaData) =
+    !m.isPrefixed && (m.key == key) && (m.value == value);
 
   /** returns null */
   final def getNamespace(owner: Node): String =
     null;
 
-  /** gets value of unqualified (unprefixed) attribute with given key */
+  /**
+   * Gets value of unqualified (unprefixed) attribute with given key.
+   *
+   * @param  key
+   * @return ..
+   */
   def getValue(key: String): String =
-    if(key == this.key)
-      value
-    else
-      next.getValue(key);
+    if (key == this.key) value else next.getValue(key);
 
-  /** forwards the call to next */
+  /**
+   * Forwards the call to next.
+   *
+   * @param  namespace
+   * @param  scope
+   * @param  key
+   * @return ..
+   */
   def getValue(namespace: String, scope: NamespaceBinding, key: String): String =
     next.getValue(namespace, scope, key);
 
