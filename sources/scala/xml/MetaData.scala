@@ -26,6 +26,8 @@ abstract class MetaData extends Iterable[MetaData] {
   def append(m: MetaData): MetaData =
     next.append(copy(m));
 
+  def apply(s:String) = getValue(s);
+
    def containedIn1(m: MetaData): Boolean =
      m.equals1(this) || containedIn1(m.next);
 
