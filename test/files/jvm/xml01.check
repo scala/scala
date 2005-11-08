@@ -18,3 +18,4 @@ xpath \\ DESCENDANTS
 passed ok
 passed ok
 passed ok
+<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>

@@ -23,6 +23,7 @@ object Test {
     def child = Elem(null, "world", e, sc);
 	override def text = ""
     //def attributes = e;
+    override def text = "";
   };
 
   assertSameElements( List( 3 ), List( 3 ));
@@ -173,5 +174,12 @@ object Test {
         Elem(null,"title",e,sc,Text("Data on ze web")),
         Elem(null,"title",e,sc,Text("Foundations of Programming Languages")))
   );
+
+
+  Console.println(
+    (parsedxml2 \\ "book" ){ n:Node => n \ "title" == "Data on ze web" }
+  )
   }
+
+
 }
