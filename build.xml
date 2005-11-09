@@ -487,6 +487,13 @@
         <!-- Create gz and bz2 compressed tarballs -->
         <tar destfile="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.gz"
              basedir="${distrib.unix.current.dir}" compression="gzip"/>
+        <tar destfile="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.bz2"
+             basedir="${distrib.unix.current.dir}" compression="bzip2"/>
+        <!-- Create md5 checksums -->
+        <checksum file="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.gz"
+                  forceOverwrite="yes" fileext=".md5"/>
+        <checksum file="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.bz2"
+                  forceOverwrite="yes" fileext=".md5"/>
     </target>
 
     <target name="distrib.mac.all" depends="distrib.unix.all"/>
@@ -525,6 +532,8 @@
         <!-- Create zip archive -->
         <zip destfile="${distrib.win.dir}/${distrib.name}-${distrib.version}.zip"
              basedir="${distrib.win.current.dir}"/>
+        <checksum file="${distrib.win.dir}/${distrib.name}-${distrib.version}.zip"
+                  forceOverwrite="yes" fileext=".md5"/>
     </target>
 
     <!--
