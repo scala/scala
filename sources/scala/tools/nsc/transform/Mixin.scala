@@ -21,7 +21,8 @@ abstract class Mixin extends InfoTransform {
   override def phaseNewFlags: long = lateMODULE | notABSTRACT;
 
   private def isForwarded(sym: Symbol) =
-    sym.owner.isImplClass && sym.isMethod && !(sym hasFlag (ACCESSOR | SUPERACCESSOR));
+    sym.owner.isImplClass && sym.isMethod &&
+    !sym.isModule && !(sym hasFlag (ACCESSOR | SUPERACCESSOR));
 
   private def isStatic(sym: Symbol) = isForwarded(sym) && (sym.hasFlag(PRIVATE) || sym.isConstructor);
 
@@ -81,7 +82,6 @@ abstract class Mixin extends InfoTransform {
           }
         } else if ((member hasFlag (LIFTED | BRIDGE)) && !(member hasFlag PRIVATE)) {
           member.expandName(clazz);
-	  if (settings.debug.value) log("adding " + member + " to " + clazz);
           addMember(clazz, member.cloneSymbol(clazz));
         }
       }
