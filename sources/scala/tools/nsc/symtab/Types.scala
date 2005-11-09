@@ -1172,7 +1172,7 @@ import Flags._;
 	      val symclazz = sym.owner;
 	      def throwError =
 		throw new Error("" + tp + " in " + symclazz +
-				"cannot be instantiated from " + pre.widen);
+				" cannot be instantiated from " + pre.widen);
 	      def instParam(ps: List[Symbol], as: List[Type]): Type =
 		if (ps.isEmpty) throwError
 		else if (sym eq ps.head) as.head
@@ -1345,6 +1345,32 @@ import Flags._;
       case _ => tp
     }
   }
+
+  /** Convert to corresponding type parameters all skolems which satisfy one of the
+   *  following two conditions:
+   *  1. The skolem is a parameter of a class or alias type
+   *  2. The skolem is a method parameter which appears in parameter `tparams'
+   */
+  class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
+    def apply(tp: Type): Type = tp;//for now
+    /*
+     tp match {
+      case TypeRef(pre, sym, args) =>
+	val tparam = sym.deSkolemize;
+	mapOver(
+	  if (tparam == sym || tparam.owner.isTerm && !(tparams contains tparam)) tp
+	  else rawTypeRef(pre, tparam, args))
+      case PolyType(tparams1, restpe) =>
+	assert(tparams.isEmpty);
+	new DeSkolemizeMap(tparams1).mapOver(tp)
+      case ClassInfoType(_, _, _) =>
+	tp
+      case _ =>
+	mapOver(tp)
+      }
+      */
+  }
+  val deSkolemize = new DeSkolemizeMap(List());
 
 // Helper Methods  -------------------------------------------------------------
 

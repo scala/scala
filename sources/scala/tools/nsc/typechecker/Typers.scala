@@ -215,7 +215,10 @@ import collection.mutable.HashMap;
       for (val vparams <- vparamss; val vparam <- vparams) context.scope enter vparam.symbol;
 
     def reenterTypeParams(tparams: List[AbsTypeDef]): List[Symbol] =
-      for (val tparam <- tparams) yield { context.scope enter tparam.symbol; tparam.symbol }
+      for (val tparam <- tparams) yield {
+	context.scope enter tparam.symbol;
+	tparam.symbol.deSkolemize
+      }
 
     def attrInfo(attr: Tree): AttrInfo = attr match {
       case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>

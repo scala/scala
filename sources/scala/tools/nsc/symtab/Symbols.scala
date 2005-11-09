@@ -84,6 +84,12 @@ import Flags._;
       new TypeSymbol(this, pos, name).setFlag(DEFERRED);
     final def newTypeParameter(pos: int, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM);
+    final def newSkolem(tparam: Symbol) = tparam;// for now
+/*
+      new TypeSkolem(this, tparam.pos, tparam.name, tparam)
+	.setFlag(tparam.flags)
+	.setInfo(tparam.rawInfo);
+*/
     final def newClass(pos: int, name: Name) =
       new ClassSymbol(this, pos, name);
     final def newModuleClass(pos: int, name: Name) =
@@ -104,9 +110,9 @@ import Flags._;
 
 // Tests ----------------------------------------------------------------------
 
-    def isTerm = false;        //to be overridden
-    def isType = false;        //to be overridden
-    def isClass = false;       //to be overridden
+    def isTerm   = false;        //to be overridden
+    def isType   = false;        //to be overridden
+    def isClass  = false;        //to be overridden
 
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA));
     final def isVariable = isTerm && hasFlag(MUTABLE) && !isMethod;
@@ -584,6 +590,9 @@ import Flags._;
     final def setter(base: Symbol): Symbol =
       base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (.hasFlag(ACCESSOR));
 
+    /** If this symbol is a skolem, its corresponding type parameter, otherwise this */
+    def deSkolemize: Symbol = this;
+
     /** Remove private modifier from symbol `sym's definition. If `sym' is a
      *  term symbol rename it by expanding its name to avoid name clashes
      */
@@ -857,6 +866,15 @@ import Flags._;
     def cloneSymbolImpl(owner: Symbol): Symbol =
       new TypeSymbol(owner, pos, name);
     if (util.Statistics.enabled) typeSymbolCount = typeSymbolCount + 1;
+  }
+
+  /** A class for type parameters viewed from inside their scopes */
+  class TypeSkolem(initOwner: Symbol, initPos: int, initName: Name, typeParam: Symbol) extends TypeSymbol(initOwner, initPos, initName) {
+    override def deSkolemize = typeParam;
+    override def cloneSymbolImpl(owner: Symbol): Symbol = {
+      throw new Error("should not clone a type skolem");
+    }
+    override def toString(): String = super.toString() + "&";
   }
 
   /** A class for class symbols */

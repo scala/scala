@@ -199,7 +199,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
     /** Adapt `tree' to expected type `pt' */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
-      //if (settings.debug.value && pt != WildcardType) log("adapting " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
+      if (settings.debug.value && pt != WildcardType) log("adapting " + tree + ":" + tree.tpe + " to " + pt);//debug
       if (tree.tpe <:< pt)
         tree
       else if (isUnboxedClass(tree.tpe.symbol) && !isUnboxedClass(pt.symbol))
@@ -239,15 +239,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           atPos(tree.pos) {
             Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
           }
-	case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List()) =>
-	  if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased) &&
-	      isValueClass(targ.tpe.symbol)) {
-	    val qual1 = typedQualifier(qual);
-	    if (isNumericValueClass(qual1.tpe.symbol) && isNumericValueClass(targ.tpe.symbol))
-	      // convert numeric type casts
-	      atPos(tree.pos)(Apply(Select(qual1, "to" + targ.tpe.symbol.name), List()))
-	    else unbox(qual1, targ.tpe)
-	  } else tree
+	case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
+	if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)) =>
+	  val qual1 = typedQualifier(qual);
+	  val targClass = targ.tpe.symbol;
+	  if (isNumericValueClass(qual1.tpe.symbol) && isNumericValueClass(targClass))
+	    // convert numeric type casts
+	    atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
+	  else if (isValueClass(targClass) ||
+		   (targClass == ArrayClass && (qual1.tpe <:< BoxedArrayClass.tpe)))
+	    unbox(qual1, targ.tpe)
+	  else tree
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
