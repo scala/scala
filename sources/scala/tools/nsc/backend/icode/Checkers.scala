@@ -65,8 +65,27 @@ abstract class Checkers {
     def check(cls: IClass): Unit = {
       log("Checking class " + cls);
       clasz = cls;
+
+      for (val f1 <- cls.fields; val f2 <- cls.fields; f1 ne f2)
+        if (f1.symbol.name == f2.symbol.name)
+          Checkers.this.global.error("Repetitive field name: " +
+                                     f1.symbol.fullNameString);
+
+      for (val m1 <- cls.methods; val m2 <- cls.methods; m1 ne m2)
+        if (m1.symbol.name == m2.symbol.name &&
+            m1.symbol.tpe =:= m2.symbol.tpe)
+          Checkers.this.global.error("Repetitive method: " +
+                                     m1.symbol.fullNameString);
       clasz.methods.foreach(check);
     }
+
+    /** Apply the give funtion to each pair of the cartesian product of
+     * l1 x l2.
+     */
+    def pairwise[a](l1: List[a], l2: List[a])(f: (a, a) => Unit) =
+      l1 foreach { x =>
+        l2 foreach { y => f(x, y) }
+      }
 
     def check(m: IMethod): Unit = {
       log("Checking method " + m);
