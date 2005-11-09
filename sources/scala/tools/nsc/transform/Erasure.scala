@@ -421,7 +421,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             val bridge = other.cloneSymbolImpl(owner)
               setPos(owner.pos)
               setFlag (member.flags | BRIDGE)
-              resetFlag ACCESSOR
+              resetFlag (ACCESSOR | DEFERRED | lateDEFERRED)
               setInfo otpe;
             bridgeTarget(bridge) = member;
 	    owner.info.decls.enter(bridge);
@@ -438,7 +438,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 			  ((fun, vparams) => Apply(fun, vparams map Ident))
 		      });
 		  if (settings.debug.value)
-		    log("generating bridge from " + other + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);
+		    log("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);
 		  bridgeDef
 		}
               } :: bridges;
