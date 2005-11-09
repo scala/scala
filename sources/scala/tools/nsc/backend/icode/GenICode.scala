@@ -13,9 +13,6 @@ import scala.tools.nsc.symtab._;
 
 /**
  * TODO:
- *  - exception handling
- *  - synchronized blocks should add exception handlers that guarantee
- *    monitor releases in case of exceptions (like Java)?
  *  - switches with alternatives
  */
 abstract class GenICode extends SubComponent  {
@@ -427,10 +424,10 @@ abstract class GenICode extends SubComponent  {
           val handlers = for (val CaseDef(pat, _, body) <- catches)
             yield pat match {
               case Typed(Ident(nme.WILDCARD), tpt) =>
-                genHandler(body, tpt.tpe.symbol);
+                genHandler(body, tpt.tpe.symbol, expectedType);
 
               case Ident(nme.WILDCARD) =>
-                genHandler(body, definitions.ThrowableClass);
+                genHandler(body, definitions.ThrowableClass, expectedType);
 
               case Bind(name, _) =>
                 val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe));
@@ -440,7 +437,7 @@ abstract class GenICode extends SubComponent  {
 
                 val exhCtx = outerCtx.enterHandler(exh);
                 exhCtx.bb.emit(STORE_LOCAL(exception, false), pat.pos);
-                val ctx1 = genLoad(body, exhCtx, toTypeKind(body.tpe));
+                val ctx1 = genLoad(body, exhCtx, expectedType); // toTypeKind(body.tpe));
                 if (finalHandler != NoFinalizer)
                   ctx1.bb.emit(CALL_FINALIZER(finalHandler));
                 ctx1.bb.emit(JUMP(afterCtx.bb));
@@ -528,8 +525,8 @@ abstract class GenICode extends SubComponent  {
         // on the stack (contrary to what the type in the AST says).
         case Apply(fun @ Select(Super(_, mixin), _), args) =>
           log("Call to super: " + tree);
-          val invokeStyle =
-            if (fun.symbol.isConstructor) Static(true) else SuperCall(mixin);
+          val invokeStyle = SuperCall(mixin);
+//            if (fun.symbol.isConstructor) Static(true) else SuperCall(mixin);
 
           ctx.bb.emit(THIS(ctx.clazz.symbol), tree.pos);
           val ctx1 = genLoadArguments(args, fun.symbol.info.paramTypes, ctx);
@@ -847,7 +844,8 @@ abstract class GenICode extends SubComponent  {
       }
     }
 
-    private def genExceptionHandler(ctx: Context, outerCtx: Context, afterCtx: Context, finalHandler: Finalizer)(body: Tree, sym: Symbol): ExceptionHandler = {
+    private def genExceptionHandler(ctx: Context, outerCtx: Context, afterCtx: Context, finalHandler: Finalizer)
+                                   (body: Tree, sym: Symbol, pt: TypeKind): ExceptionHandler = {
       val exh = ctx.newHandler(sym);
 
       var ctx1 = outerCtx.enterHandler(exh);

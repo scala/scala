@@ -439,7 +439,15 @@ abstract class GenJVM extends SubComponent {
                   jcode.emitINVOKESPECIAL(owner,
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
+                } else
+                  jcode.emitINVOKESTATIC(owner,
+                                          javaName(method),
+                                          javaType(method).asInstanceOf[JMethodType]);
 
+              case SuperCall(_) =>
+                  jcode.emitINVOKESPECIAL(owner,
+                                          javaName(method),
+                                          javaType(method).asInstanceOf[JMethodType]);
                   // we initialize the MODULE$ field immediately after the super ctor
                   if (isTopLevelModule(clasz.symbol) && !isModuleInitialized &&
                       jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
@@ -450,15 +458,8 @@ abstract class GenJVM extends SubComponent {
                                             MODULE_INSTANCE_NAME,
                                             jclass.getType());
                       }
-                } else
-                  jcode.emitINVOKESTATIC(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
 
-              case SuperCall(_) =>
-                  jcode.emitINVOKESPECIAL(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
+
             }
 
           case CALL_FINALIZER(finalizer) =>
