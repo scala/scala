@@ -126,7 +126,7 @@ trait Namers: Analyzer {
       def finish = finishWith(List());
 
       def skolemize(tparams: List[AbsTypeDef]): unit = {
-	for (val tp <- tparams) tp.symbol = context.owner.newSkolem(tp.symbol)
+	for (val tp <- tparams) tp.symbol = tp.symbol.owner.newSkolem(tp.symbol)
       }
 
       if (tree.symbol == NoSymbol) {
@@ -146,7 +146,6 @@ trait Namers: Analyzer {
 	    val mods1: int = if (impl.body forall treeInfo.isInterfaceMember) mods | INTERFACE else mods;
 	    tree.symbol = enterClassSymbol(tree.pos, mods1, name);
 	    finishWith(tparams);
-	    skolemize(tparams);
 	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods | MODULE | FINAL, name);
 	    tree.symbol.moduleClass.setInfo(innerNamer.typeCompleter(tree));
@@ -308,10 +307,11 @@ trait Namers: Analyzer {
 	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT)) ImplicitMethodType(formals, restpe)
 	else MethodType(formals, restpe);
       }
-      makePolyType(
-	tparamSyms,
-	if (vparamSymss.isEmpty) PolyType(List(), restype)
-	else (vparamSymss :\ restype)(mkMethodType))
+      deSkolemize(
+	makePolyType(
+	  tparamSyms,
+	  if (vparamSymss.isEmpty) PolyType(List(), restype)
+	  else (vparamSymss :\ restype)(mkMethodType)))
     }
 
     /** If `sym' is an implicit value, check that its type signature `tp' is contractive.
@@ -353,7 +353,7 @@ trait Namers: Analyzer {
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
       makePolyType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
 
-    private def typeSig(tree: Tree): Type = deSkolemize {
+    private def typeSig(tree: Tree): Type =
       try {
 	val sym: Symbol = tree.symbol;
 	tree match {
@@ -414,7 +414,6 @@ trait Namers: Analyzer {
 	  typer.reportTypeError(tree.pos, ex);
 	  ErrorType
       }
-    }
 
     /** Check that symbol's definition is well-formed. This means:
      *   - no conflicting modifiers

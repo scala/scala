@@ -511,6 +511,7 @@ package scala.tools.nsc.typechecker;
 	}
       def instError = {
 	System.out.println("ici " + tree + " " + undetparams + " " + pt);//debug
+	if (settings.explaintypes.value) explainTypes(restpe.subst(undetparams, tvars), pt);
         errorTree(tree, "constructor cannot be instantiated to expected type" +
                   foundReqMsg(restpe, pt))
       }

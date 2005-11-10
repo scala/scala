@@ -262,7 +262,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    val outerVal =
               atPos(tree.pos) {
 	        if (qual.isInstanceOf[This]) { assert(outerParam != NoSymbol); outerValue } // (8)
-		else if (qual.tpe.prefix == NoPrefix) gen.This(currentOwner.enclClass)
+		else if (qual.tpe.prefix == NoPrefix) gen.This(currentOwner.enclClass.owner.enclClass)
                 else gen.mkQualifier(qual.tpe.prefix); // (7)
               }
 	    copy.Apply(tree, sel, args ::: List(outerVal))

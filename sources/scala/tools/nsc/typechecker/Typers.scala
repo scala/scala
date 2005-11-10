@@ -509,7 +509,8 @@ import collection.mutable.HashMap;
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt));
       val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope()))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl));
-      copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, addSyntheticMethods(impl1, clazz))
+      val impl2 = addSyntheticMethods(impl1, clazz);
+      copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
 	setType NoType
     }
 

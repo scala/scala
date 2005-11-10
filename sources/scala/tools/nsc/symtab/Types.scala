@@ -1125,7 +1125,8 @@ import Flags._;
 	if (constr.inst != NoType) this(constr.inst)
 	else tp
       case _ =>
-        throw new Error("mapOver inapplicable for " + tp);
+	tp
+        // throw new Error("mapOver inapplicable for " + tp);
     }
 
     /** Map this function over given scope */
@@ -1352,9 +1353,7 @@ import Flags._;
    *  2. The skolem is a method parameter which appears in parameter `tparams'
    */
   class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
-    def apply(tp: Type): Type = tp;//for now
-    /*
-     tp match {
+    def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) =>
 	val tparam = sym.deSkolemize;
 	mapOver(
@@ -1363,12 +1362,12 @@ import Flags._;
       case PolyType(tparams1, restpe) =>
 	assert(tparams.isEmpty);
 	new DeSkolemizeMap(tparams1).mapOver(tp)
-      case ClassInfoType(_, _, _) =>
-	tp
+      case ClassInfoType(parents, decls, clazz) =>
+	val parents1 = List.mapConserve(parents)(this);
+	if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz);
       case _ =>
 	mapOver(tp)
       }
-      */
   }
   val deSkolemize = new DeSkolemizeMap(List());
 

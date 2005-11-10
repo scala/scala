@@ -84,12 +84,10 @@ import Flags._;
       new TypeSymbol(this, pos, name).setFlag(DEFERRED);
     final def newTypeParameter(pos: int, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM);
-    final def newSkolem(tparam: Symbol) = tparam;// for now
-/*
+    final def newSkolem(tparam: Symbol) =
       new TypeSkolem(this, tparam.pos, tparam.name, tparam)
 	.setFlag(tparam.flags)
 	.setInfo(tparam.rawInfo);
-*/
     final def newClass(pos: int, name: Name) =
       new ClassSymbol(this, pos, name);
     final def newModuleClass(pos: int, name: Name) =
@@ -672,7 +670,7 @@ import Flags._;
      *  E.g. $eq => =.
      *  If settings.uniquId adds id.
      */
-    final def nameString: String =
+    def nameString: String = //todo: should be final
       simpleName.decode + idString;
 
     /** String representation of symbol's full name with `separator'
@@ -874,7 +872,7 @@ import Flags._;
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a type skolem");
     }
-    override def toString(): String = super.toString() + "&";
+    override def nameString: String = super.nameString + "&";
   }
 
   /** A class for class symbols */
