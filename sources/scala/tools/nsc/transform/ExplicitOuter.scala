@@ -258,15 +258,15 @@ abstract class ExplicitOuter extends InfoTransform {
 	    else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
 	  case Apply(sel @ Select(qual, name), args)
 	  if ((name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR)
-	      && !sel.symbol.owner.isStatic) =>
+              && !sel.symbol.owner.isStatic) =>
 	    val outerVal =
               atPos(tree.pos) {
 	        if (qual.isInstanceOf[This]) { assert(outerParam != NoSymbol); outerValue } // (8)
-		else if (qual.tpe.prefix == NoPrefix)
-		  gen.This(
-		    if (qual.isInstanceOf[Super]) currentOwner.enclClass.owner.enclClass
-		    else currentOwner.enclClass)//???
-                else gen.mkQualifier(qual.tpe.prefix); // (7)
+		else {
+                  var pre = qual.tpe.prefix;
+                  if (pre == NoPrefix) pre = sym.owner.owner.enclClass.thisType;
+                  gen.mkQualifier(pre)
+                }
               }
 	    copy.Apply(tree, sel, args ::: List(outerVal))
 	  case _ =>
