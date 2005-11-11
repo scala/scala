@@ -725,8 +725,17 @@ import collection.mutable.HashMap;
       val pat1: Tree = typedPattern(cdef.pat, pattpe);
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
 	                 else typed(cdef.guard, BooleanClass.tpe);
-      val body1: Tree = typed(cdef.body, pt);
-      context.restoreTypeBounds;
+      var body1: Tree = typed(cdef.body, pt);
+      if (!context.savedTypeBounds.isEmpty) {
+        context.restoreTypeBounds;
+        // the following is a hack to make the pattern matcher work
+        body1 =
+          typed {
+            atPos(body1.pos) {
+              TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt)))
+            }
+          }
+      }
       copy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
