@@ -798,11 +798,11 @@ import Flags._;
     override def name: Name =
       if (phase.flatClasses && !hasFlag(METHOD) &&
           rawowner != NoSymbol && !rawowner.isPackageClass) {
-  if (flatname == nme.EMPTY) {
-    assert(rawowner.isClass);
-    flatname = newTermName(rawowner.name.toString() + "$" + rawname);
-  }
-  flatname
+	if (flatname == nme.EMPTY) {
+	  assert(rawowner.isClass);
+	  flatname = newTermName(rawowner.name.toString() + "$" + rawname);
+	}
+	flatname
       } else rawname;
 
     override def cloneSymbolImpl(owner: Symbol): Symbol = {

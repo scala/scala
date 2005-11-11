@@ -197,6 +197,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
        (sym.name == nme.EQ || sym.name == nme.NE) && sym.info.paramTypes.head.symbol == ObjectClass ||
        sym == Object_isInstanceOf || sym == Object_asInstanceOf);
 
+    def evalOnce(expr: Tree, within: (() => Tree) => Tree): Tree =
+      if (treeInfo.isPureExpr(expr)) {
+	within(() => expr);
+      } else {
+	val temp = context.owner.newValue(expr.pos, context.unit.fresh.newName())
+	  setFlag SYNTHETIC setInfo expr.tpe;
+	Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
+      }
+
     /** Adapt `tree' to expected type `pt' */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
       if (settings.debug.value && pt != WildcardType) log("adapting " + tree + ":" + tree.tpe + " to " + pt);//debug
@@ -243,12 +252,29 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)) =>
 	  val qual1 = typedQualifier(qual);
 	  val targClass = targ.tpe.symbol;
-	  if (isNumericValueClass(qual1.tpe.symbol) && isNumericValueClass(targClass))
+	  val qualClass = qual1.tpe.symbol;
+	  if (isNumericValueClass(qualClass) && isNumericValueClass(targClass))
 	    // convert numeric type casts
 	    atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
 	  else if (isValueClass(targClass) ||
-		   (targClass == ArrayClass && (qual1.tpe <:< BoxedArrayClass.tpe)))
+		   (targClass == ArrayClass && (qualClass isSubClass BoxedArrayClass)))
 	    unbox(qual1, targ.tpe)
+	  else if (targClass == ArrayClass && qualClass == ObjectClass)
+	    typed {
+	      atPos(tree.pos) {
+		evalOnce(qual1, x =>
+		  gen.cast(
+		    If(
+		      Apply(
+			TypeApply(
+			  Select(x(), Object_isInstanceOf),
+			  List(TypeTree(BoxedArrayClass.tpe))),
+			List()),
+		      unbox(x(), targ.tpe),
+		      x()),
+		    targ.tpe))
+	      }
+	    }
 	  else tree
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
@@ -526,7 +552,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       atPhase(phase.next) {
         val tree2 = traitTransformer.transform(tree1);
         if (settings.debug.value) log("tree after addinterfaces: \n" + tree2);
-        newTyper(startContext).typed(tree2)
+        newTyper(startContext.make(
+	  unit, tree, startContext.owner, startContext.scope, startContext.imports))
+	  .typed(tree2)
       }
     }
   }
