@@ -1,0 +1,73 @@
+digraph SQLTypes {
+
+  size="4,4"
+  rankdir=BT
+  rank=max
+  ratio=compress
+  
+  node [shape = record]
+  
+  Type
+  
+  SubType -> Type
+  
+  SingletonType -> SubType
+  
+  ErrorType -> Type
+  
+  WildcardType -> Type
+  
+  NoType -> Type
+  
+  NoPrefix -> Type
+  
+  ThisType [label = "{ThisType|sym: Symbol}"]
+  ThisType -> SingletonType
+  
+  SingleType [label = "{SingleType|pre: Type\nsym: Symbol}"]
+  SingleType -> SingletonType
+  
+  SuperType [label = "{SuperType|thistpe: Type\nsupertp: Type}"]
+  SuperType -> SingletonType
+  
+  TypeBounds [label = "{TypeBounds|lo: Type\nhi: Type}"]
+  TypeBounds -> SubType
+  
+  CompoundType -> Type
+  
+  RefinedType[label = "{RefinedType|parents: List[Type]\ndecls: Scope}"]
+  RefinedType -> CompoundType
+  
+  ClassInfoType[label = "{ClassInfoType|parents: List[Type]\ndecls: Scope\nsymbol: Symbol}"]
+  ClassInfoType -> CompoundType
+  
+  PackageClassInfoType[label = "{PackageClassInfoType|decls: Scope\nclazz: Symbol}"]
+  PackageClassInfoType -> ClassInfoType
+  
+  ConstantType[label = "{ConstantType|value: Constant}"]
+  ConstantType -> SingletonType
+  
+  TypeRef[label = "{TypeRef|pre: Type\nsym: Symbol\nargs: List[Type]}"]
+  TypeRef -> Type
+  
+  MethodType[label = "{MethodType|paramTypes: List[Type]\nresultType: Type}"]
+  MethodType -> Type
+  
+  PolyType[label = "{PolyType|typeParams: List[Symbol]\nresultType: Type}"]
+  PolyType -> Type
+  
+  OverloadedType[label = "{OverloadedType|pre: Type\nalternatives: List[Symbol]}"]
+  OverloadedType -> Type
+  
+  AntiPolyType[label = "{AntiPolyType|pre: Type\ntargs: List[Type]}"]
+  AntiPolyType -> Type
+  
+  TypeVar[label = "{TypeVar|origin: Type\nconstr: TypeConstraint}"]
+  TypeVar -> Type
+  
+  LazyType -> Type
+  
+  LazyPolyType[label = "{LazyPolyType|typeParams: List[Symbol]\nrestp: Type}"]
+  LazyPolyType -> LazyType
+  
+}
