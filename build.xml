@@ -268,27 +268,27 @@
     <target name="build.jars"
             depends="build.nsc.nslib, build.nsc.nstools, build.osc.nstools, build.pico.nslib, build.init"
             description="Builds JAR archives for all elements of Scala">
-        <jar destfile="${build.dir}/${osc-nstools.jar.name}" index="yes" update="yes"
+        <jar destfile="${build.dir}/${osc-nstools.jar.name}"
              basedir="${build.osc-nstools.dir}">
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
             </manifest>
         </jar>
-        <jar destfile="${build.dir}/${nstools.jar.name}" index="yes" update="yes"
+        <jar destfile="${build.dir}/${nstools.jar.name}"
              basedir="${build.nstools.dir}">
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
             </manifest>
         </jar>
-        <jar destfile="${build.dir}/${nslib.jar.name}" index="yes" update="yes"
+        <jar destfile="${build.dir}/${nslib.jar.name}"
              basedir="${build.nslib.dir}">
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
             </manifest>
         </jar>
-        <jar destfile="${build.dir}/${nslib.jar.name}" index="yes" update="yes"
+        <jar destfile="${build.dir}/${nslib.jar.name}" update="yes"
              basedir="${build.pico-nslib.dir}">
         </jar>
     </target>
