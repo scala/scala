@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode;
 
 import java.io.PrintWriter;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import scala.tools.nsc.symtab.Flags;
 
 abstract class Printers {

@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.ast;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import symtab.Flags._;
 
 abstract class TreeGen {

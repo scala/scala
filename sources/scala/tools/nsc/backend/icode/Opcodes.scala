@@ -9,7 +9,7 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 /*
   A pattern match

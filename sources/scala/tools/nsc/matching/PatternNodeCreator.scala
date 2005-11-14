@@ -1,6 +1,6 @@
 package scala.tools.nsc.matching;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 /** PatternNode factory.
  *  we inherit the globals from PatternTool.

@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc;
 
-import scala.tools.util.{SourceFile, Position};
+import scala.tools.nsc.util.{SourceFile, Position};
 import scala.tools.nsc.util.FreshNameCreator;
 
 [_trait_] abstract class CompilationUnits: Global {

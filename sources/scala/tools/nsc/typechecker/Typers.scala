@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 
 import nsc.util.ListBuffer;
 import symtab.Flags._;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import collection.mutable.HashMap;
 
 /** Methods to create symbols and to enter them into scopes. */

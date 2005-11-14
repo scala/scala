@@ -6,7 +6,7 @@
 package scala.tools.nsc.typechecker;
 
 import symtab.Flags._;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 [_trait_] abstract class Contexts: Analyzer {
   import global._;

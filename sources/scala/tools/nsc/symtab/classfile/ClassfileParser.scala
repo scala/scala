@@ -14,7 +14,10 @@
 */
 package scala.tools.nsc.symtab.classfile;
 
-import scala.tools.util._;
+import scala.tools.nsc.util.Position;
+import scala.tools.util.AbstractFile;
+import scala.tools.util.AbstractFileReader;
+
 import java.io.IOException;
 
 abstract class ClassfileParser {

@@ -5,7 +5,8 @@
 // $Id$
 package scala.tools.nsc.symtab.classfile;
 
-import scala.tools.util._;
+import scala.tools.util.{AbstractFile, AbstractFileReader};
+
 import java.io.IOException;
 
 abstract class SymblfileParser {

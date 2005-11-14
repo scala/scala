@@ -5,7 +5,8 @@
 // $Id$
 package scala.tools.nsc.symtab.classfile;
 
-import scala.tools.util.{Position, UTF8Codec};
+import scala.tools.nsc.util.Position;
+import scala.tools.util.UTF8Codec;
 import java.lang.{Float, Double};
 import Flags._;
 import PickleFormat._;

@@ -11,7 +11,7 @@ import java.io.File;
 
 import scala.collection.mutable.{Map, HashMap};
 import scala.tools.nsc.symtab._;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 import ch.epfl.lamp.fjbg._;
 

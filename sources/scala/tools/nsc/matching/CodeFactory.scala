@@ -3,7 +3,7 @@
 */
 package scala.tools.nsc.matching ;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 [_trait_] abstract class CodeFactory: TransMatcher  {
 

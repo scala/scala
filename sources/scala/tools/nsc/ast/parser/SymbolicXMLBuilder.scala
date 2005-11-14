@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.ast.parser;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import scala.Iterator;
 import scala.collection.immutable.{ Map, ListMap };
 import scala.collection.mutable;

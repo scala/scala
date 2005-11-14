@@ -8,7 +8,7 @@ package scala.tools.nsc.transform;
 import collection.mutable.HashMap;
 import symtab._;
 import Flags._;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import util.ListBuffer;
 
 abstract class Erasure extends AddInterfaces with typechecker.Analyzer {

@@ -6,7 +6,8 @@
 package scala.tools.nsc;
 
 import java.io._;
-import scala.tools.util.{Position, Reporter, ConsoleReporter}
+import scala.tools.nsc.util.{Position};
+import scala.tools.nsc.reporters.{Reporter, ConsoleReporter};
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.

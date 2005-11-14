@@ -7,7 +7,10 @@ package scala.tools.nsc;
 
 import java.io._;
 import java.nio.charset._;
-import scala.tools.util._;
+import scala.tools.util.{SourceReader,ClassPath,AbstractFile};
+import scala.tools.nsc.util.{Position,SourceFile};
+import scala.tools.nsc.reporters._;
+
 import scala.collection.mutable.{HashSet,HashMap}
 
 import symtab._;
@@ -263,10 +266,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     lambdaLift,
     flatten,
     constructors,
-    mixin,
+    mixin /*,
     genicode,
     genJVM,
-    sampleTransform);
+    sampleTransform */);
 
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;

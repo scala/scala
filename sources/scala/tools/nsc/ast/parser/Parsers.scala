@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.ast.parser;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import util.ListBuffer;
 import symtab.Flags;
 import Tokens._;

@@ -7,7 +7,7 @@ package scala.tools.nsc.ast;
 
 import java.io.StringWriter;
 import java.io.PrintWriter;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import symtab.Flags._;
 
 [_trait_] abstract class Trees: Global {

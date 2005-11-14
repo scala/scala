@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import collection.mutable.HashMap;
 import Flags._;
 

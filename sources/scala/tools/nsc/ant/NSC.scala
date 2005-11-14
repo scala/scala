@@ -24,8 +24,8 @@ import org.apache.tools.ant.util.SourceFileScanner;
 import org.apache.tools.ant.types.Reference;
 import org.apache.tools.ant.types.EnumeratedAttribute;
 
-import scala.tools.util.ConsoleReporter;
-import scala.tools.util.Reporter;
+import scala.tools.nsc.reporters.{Reporter,ConsoleReporter};
+
 
 package scala.tools.nsc.ant {
 
@@ -607,6 +607,7 @@ package scala.tools.nsc.ant {
             }
             catch {
               case exception @ FatalError(msg) => {
+		exception.printStackTrace();
                 if (settings.debug.value) exception.printStackTrace();
                 error("Compile failed because of an internal compiler error ("
                       + msg + "); see the error output for details.");

@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import symtab.Flags._;
 
 abstract class TreeCheckers extends Analyzer {
@@ -20,7 +20,7 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def check(unit: CompilationUnit): unit = {
-    val curPrompt = reporter.prompt();
+    val curPrompt = reporter.prompt;
     reporter.prompt(true);
     val context = startContext.make(unit);
     context.checking = true;

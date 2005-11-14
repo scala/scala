@@ -5,7 +5,8 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-import scala.tools.util.{AbstractFile, Position}
+import scala.tools.util.AbstractFile;
+import scala.tools.nsc.util.Position;
 import Flags._;
 
 [_trait_] abstract class Symbols: SymbolTable {

@@ -2,7 +2,7 @@ package scala.tools.nsc.matching ;
 
 //import java.util._ ;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 trait Autom2: TransMatcher {
 

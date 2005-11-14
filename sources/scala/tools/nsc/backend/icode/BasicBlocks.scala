@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
 import scala.collection.mutable.Map;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 trait BasicBlocks: ICodes {
   import opcodes._;

@@ -8,7 +8,7 @@
 
 package scala.tools.nsc.matching ;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 trait PatternNodes: TransMatcher {
 

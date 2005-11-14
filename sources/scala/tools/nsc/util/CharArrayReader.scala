@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.util;
 
-import scala.tools.util.SourceFile.{LF, FF, CR, SU}
+import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
 class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: int,
                       decodeUni: boolean, error: String => unit) {
@@ -21,8 +21,9 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
   */
   var ch: char = _;
   var bp = start;
-  var cline: int = _;
-  var ccol: int = _;
+  private var cline: int = _;
+  private var ccol: int = _;
+  def cpos = bp;
   var isUnicode: boolean = _;
   private var nextline = startline;
   private var nextcol = startcol;

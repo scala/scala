@@ -16,7 +16,7 @@ import scala.Iterator;
 import scala.collection.immutable.ListMap ;
 import scala.collection.mutable;
 //import scala.tools.scalac.util.NewArray;
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 import scala.xml.{Text,TextBuffer};
 
 

@@ -6,7 +6,8 @@
 package scala.tools.nsc.symtab;
 
 import java.io.IOException;
-import scala.tools.util.{AbstractFile, Position}
+import scala.tools.nsc.util.Position;
+import scala.tools.util.{AbstractFile};
 import scala.tools.nsc.util.NameTransformer;
 import scala.collection.mutable.HashMap;
 import classfile.{ClassfileParser, SymblfileParser};

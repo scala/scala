@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.matching ;
 
-import scala.tools.util.Position;
+import scala.tools.nsc.util.Position;
 
 trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with PatternNodeCreator {
 
@@ -68,7 +68,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
     this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
                               Ident(root.symbol).setType(root.tpe));
-    this.resultVar = owner.newVariable(Flags.MUTABLE,
+    this.resultVar = owner.newVariable(Position.NOPOS, // Flags.MUTABLE,
                                        //"result").setType( resultType );
                                        "result").setInfo( resultType );
     //Console.println("resultType =  "+resultType);

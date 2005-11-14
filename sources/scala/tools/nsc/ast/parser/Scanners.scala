@@ -6,7 +6,7 @@
 package scala.tools.nsc.ast.parser;
 
 import Tokens._;
-import scala.tools.util.{Position, SourceFile}
+import scala.tools.nsc.util.{Position, SourceFile}
 import SourceFile.{LF, FF, CR, SU}
 import scala.tools.nsc.util.CharArrayReader;
 
@@ -105,7 +105,7 @@ import scala.tools.nsc.util.CharArrayReader;
                LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | AT |
                RPAREN | RBRACKET | RBRACE =>
           case _ =>
-            if (token == EOF || Position.line(pos) > Position.line(prevpos)) {
+            if (token == EOF || ((new Position(unit.source, prevpos)).line < (new Position(unit.source, pos)).line)) {
               next.copyFrom(this);
               this.token = SEMI;
               this.pos = prevpos;
@@ -145,14 +145,14 @@ import scala.tools.nsc.util.CharArrayReader;
      */
     private def fetchToken(): unit = {
       if (token == EOF) return;
-      lastpos = Position.encode(in.cline, in.ccol);
+      lastpos = in.cpos; // Position.encode(in.cline, in.ccol);
       //var index = bp;
       while (true) {
         in.ch match {
           case ' ' | '\t' | CR | LF | FF =>
             in.next;
           case _ =>
-	    pos = Position.encode(in.cline, in.ccol);
+	    pos = in.cpos; // Position.encode(in.cline, in.ccol);
 	    in.ch match {
               case '\u21D2' =>
                 in.next; token = ARROW;
@@ -512,7 +512,7 @@ import scala.tools.nsc.util.CharArrayReader;
 	    case '\'' => putChar('\'')
 	    case '\\' => putChar('\\')
 	    case _    =>
-	      syntaxError(Position.encode(in.cline, in.ccol - 1),
+	      syntaxError(in.cpos - 1, // Position.encode(in.cline, in.ccol - 1),
 			  "invalid escape character");
 	      putChar(in.ch);
 	  }

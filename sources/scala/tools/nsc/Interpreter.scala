@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc;
 
-import scala.tools.util.Reporter;
+import scala.tools.nsc.reporters.Reporter;
 
 abstract class Interpreter {
   import scala.collection.mutable.ListBuffer;
@@ -22,7 +22,7 @@ abstract class Interpreter {
   }
 
   def interpret(line: String, reporter: Reporter): unit = {
-    import scala.tools.util.SourceFile;
+    import scala.tools.nsc.util.SourceFile;
 
     // convert input to a compilation unit, using SourceFile;
     // and parse it, using syntaxAnalyzer, to get input ASTs
