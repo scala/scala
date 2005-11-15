@@ -266,10 +266,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     lambdaLift,
     flatten,
     constructors,
-    mixin /*,
+    mixin,
     genicode,
     genJVM,
-    sampleTransform */);
+    sampleTransform);
 
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;

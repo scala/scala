@@ -136,7 +136,7 @@ abstract class Mixin extends InfoTransform {
               val alias1 = rebindSuper(clazz, member.alias, mixin);
               member1.asInstanceOf[TermSymbol] setAlias alias1;
             } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
-              addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN)
+              addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN resetFlag (DEFERRED | lateDEFERRED))
             }
           }
         }
