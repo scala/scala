@@ -28,6 +28,8 @@ abstract class MetaData extends Iterable[MetaData] {
 
   def apply(s:String) = getValue(s);
 
+  def apply(uri:String, scp:NamespaceBinding, k:String)= getValue(uri, scp, k);
+
    def containedIn1(m: MetaData): Boolean =
      m.equals1(this) || containedIn1(m.next);
 
