@@ -72,7 +72,7 @@ case class Database (dbms:Vendor) {
 
   def close: Unit = {
     closing = true;
-    for (val conn <- availableConnections) conn.close;
+    for (val conn <- availableConnections) conn.close();
   }
 
   /** Executes a statement that returns a relation on this database.
