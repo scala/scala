@@ -93,7 +93,8 @@ abstract class GenICode extends SubComponent  {
       case ValDef(mods, name, tpt, rhs) => ctx; // we use the symbol to add fields
 
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-        log("Entering method " + name);
+        if (settings.debug.value)
+          log("Entering method " + name);
         val m = new IMethod(tree.symbol);
         m.sourceFile = unit.source.toString();
         m.returnType = if (tree.symbol.isConstructor) UNIT
@@ -165,7 +166,8 @@ abstract class GenICode extends SubComponent  {
         ctx1
 
       case _ =>
-        log("Passing " + tree + " to genLoad");
+        if (settings.debug.value)
+          log("Passing " + tree + " to genLoad");
         genLoad(tree, ctx, UNIT);
     }
 
@@ -342,7 +344,8 @@ abstract class GenICode extends SubComponent  {
 
             case None =>
               ctx1.labels += tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (.symbol)));
-              log("Adding label " + tree.symbol);
+              if (settings.debug.value)
+                log("Adding label " + tree.symbol);
           }
           ctx.bb.emit(JUMP(ctx1.bb), tree.pos);
           ctx.bb.close;
@@ -354,7 +357,8 @@ abstract class GenICode extends SubComponent  {
           ctx.method.addLocal(local);
 
           if (rhs == EmptyTree) {
-            log("Uninitialized variable " + tree + " at: " + unit.position(tree.pos));
+            if (settings.debug.value)
+              log("Uninitialized variable " + tree + " at: " + unit.position(tree.pos));
             ctx.bb.emit(getZeroOf(local.kind));
           }
 
@@ -383,7 +387,8 @@ abstract class GenICode extends SubComponent  {
           // the type of 'if' is scala.Any, and its erasure would be Object.
           // But unboxed units are not Objects...
           if (thenKind == UNIT || elseKind == UNIT) {
-            log("Will drop result from an if branch");
+            if (settings.debug.value)
+              log("Will drop result from an if branch");
             thenCtx = genLoad(thenp, thenCtx, UNIT);
             elseCtx = genLoad(elsep, elseCtx, UNIT);
             assert(expectedType == UNIT, "I produce UNIT in a context where " + expectedType + " is expected!");
@@ -524,7 +529,8 @@ abstract class GenICode extends SubComponent  {
         // therefore, we can ignore this fact, and generate code that leaves nothing
         // on the stack (contrary to what the type in the AST says).
         case Apply(fun @ Select(Super(_, mixin), _), args) =>
-          log("Call to super: " + tree);
+          if (settings.debug.value)
+            log("Call to super: " + tree);
           val invokeStyle = SuperCall(mixin);
 //            if (fun.symbol.isConstructor) Static(true) else SuperCall(mixin);
 
@@ -615,7 +621,8 @@ abstract class GenICode extends SubComponent  {
               val trueCtx = ctx1.newBlock;
               val falseCtx = ctx1.newBlock;
               val afterCtx = ctx1.newBlock;
-              log("Passing " + tree + " to genCond");
+              if (settings.debug.value)
+                log("Passing " + tree + " to genCond");
               genCond(tree, ctx1, trueCtx, falseCtx);
               trueCtx.bb.emit(CONSTANT(Constant(true)), tree.pos);
               trueCtx.bb.emit(JUMP(afterCtx.bb));
@@ -635,7 +642,8 @@ abstract class GenICode extends SubComponent  {
               ctx1.bb.emit(STORE_LOCAL(monitor, false));
               ctx1.bb.emit(MONITOR_ENTER(), tree.pos);
 
-              log("synchronized block start");
+              if (settings.debug.value)
+                log("synchronized block start");
               ctx1 = ctx1.Try(NoSymbol,
                 bodyCtx => {
                   val ctx1 = genLoad(args.head, bodyCtx, toTypeKind(tree.tpe.resultType));
@@ -649,7 +657,8 @@ abstract class GenICode extends SubComponent  {
                   exhCtx.bb.emit(THROW());
                   exhCtx
                 });
-              log("synchronized block end with block " + ctx1.bb + " closed=" + ctx1.bb.isClosed);
+              if (settings.debug.value)
+                log("synchronized block end with block " + ctx1.bb + " closed=" + ctx1.bb.isClosed);
             } else if (scalaPrimitives.isCoercion(code)) {
               ctx1 = genLoad(receiver, ctx1, toTypeKind(receiver.tpe));
               genCoercion(tree, ctx1, code);
@@ -659,7 +668,8 @@ abstract class GenICode extends SubComponent  {
                     + " at: " + unit.position(tree.pos));
             ctx1
           } else {  // normal method call
-            log("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + isStaticSymbol(sym));
+            if (settings.debug.value)
+              log("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + isStaticSymbol(sym));
             var invokeStyle =
               if (isStaticSymbol(sym))
                 Static(false)
@@ -685,7 +695,8 @@ abstract class GenICode extends SubComponent  {
                  "Trying to access the this of another class: " +
                  "tree.symbol = " + tree.symbol + ", ctx.clazz.symbol = " + ctx.clazz.symbol);
           if (tree.symbol.isModuleClass && tree.symbol != ctx.clazz.symbol) {
-            log("LOAD_MODULE from 'This'");
+            if (settings.debug.value)
+              log("LOAD_MODULE from 'This': " + tree.symbol);
             ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos);
             generatedType = REFERENCE(tree.symbol);
           } else {
@@ -699,7 +710,8 @@ abstract class GenICode extends SubComponent  {
                  "Selection of non-module from empty package: " + tree.toString() +
                  " sym: " + tree.symbol +
                  " at: " + unit.position(tree.pos));
-          log("LOAD_MODULE from Select(<emptypackage>)");
+          if (settings.debug.value)
+            log("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol);
           ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos);
           ctx
 
@@ -708,7 +720,8 @@ abstract class GenICode extends SubComponent  {
           generatedType = toTypeKind(sym.info);
 
           if (sym.isModule) {
-            log("LOAD_MODULE from Select(qualifier, selector)");
+            if (settings.debug.value)
+              log("LOAD_MODULE from Select(qualifier, selector): " + sym);
             ctx.bb.emit(LOAD_MODULE(sym), tree.pos);
             ctx
           } else if (isStaticSymbol(sym)) {
@@ -723,7 +736,8 @@ abstract class GenICode extends SubComponent  {
         case Ident(name) =>
           if (!tree.symbol.isPackage) {
             if (tree.symbol.isModule) {
-              log("LOAD_MODULE from Ident(name)");
+              if (settings.debug.value)
+                log("LOAD_MODULE from Ident(name): " + tree.symbol);
               ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos);
               generatedType = toTypeKind(tree.symbol.info);
             } else {
@@ -741,7 +755,6 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case Block(stats, expr) =>
-          log("Entering block");
           assert(!(ctx.method eq null), "Block outside method");
           val ctx1 = genStat(stats, ctx);
           genLoad(expr, ctx1, expectedType);
@@ -772,7 +785,8 @@ abstract class GenICode extends SubComponent  {
           ctx1
 
         case Match(selector, cases) =>
-          log("Generating SWITCH statement.");
+          if (settings.debug.value)
+            log("Generating SWITCH statement.");
           var ctx1 = genLoad(selector, ctx, INT);
           val afterCtx = ctx1.newBlock;
           var caseCtx: Context  = null;
@@ -826,7 +840,8 @@ abstract class GenICode extends SubComponent  {
         to match {
           case UNIT =>
             ctx.bb.emit(DROP(from), tree.pos);
-            log("Dropped an " + from);
+            if (settings.debug.value)
+              log("Dropped an " + from);
 
           case _ =>
             assert(from != UNIT, "Can't convert from UNIT to " + to +
@@ -1055,7 +1070,8 @@ abstract class GenICode extends SubComponent  {
              "Too many parameters for string concatenation");
 
       val concatenations = liftStringConcat(tree);
-      log("Lifted string concatenations for " + tree + "\n to: " + concatenations);
+      if (settings.debug.value)
+        log("Lifted string concatenations for " + tree + "\n to: " + concatenations);
 
       ctx1.bb.emit(CALL_PRIMITIVE(StartConcat), tree.pos);
       for (val elem <- concatenations) {
@@ -1139,7 +1155,8 @@ abstract class GenICode extends SubComponent  {
         ctx1.bb.close;
       }
 
-      log("Entering genCond with tree: " + tree);
+      if (settings.debug.value)
+        log("Entering genCond with tree: " + tree);
 
       tree match {
         case Apply(fun, args)
