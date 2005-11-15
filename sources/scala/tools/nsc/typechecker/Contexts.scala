@@ -63,6 +63,7 @@ import scala.tools.nsc.util.Position;
     var depth: int = 0;
     var imports: List[ImportInfo] = List();
 
+    var thisSkolemType: Type = NoPrefix;
     var reportAmbiguousErrors = false;
     var reportGeneralErrors = false;
     var checking = false;
@@ -88,6 +89,7 @@ import scala.tools.nsc.util.Position;
       c.variance = this.variance;
       c.depth = if (scope == this.scope) this.depth else this.depth + 1;
       c.imports = imports;
+      c.thisSkolemType = if (owner.isClass) owner.thisType else thisSkolemType;
       c.reportAmbiguousErrors = this.reportAmbiguousErrors;
       c.reportGeneralErrors = this.reportGeneralErrors;
       c.checking = this.checking;

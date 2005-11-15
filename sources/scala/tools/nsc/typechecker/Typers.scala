@@ -2,7 +2,6 @@
  * Copyright 2005 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 //todo: rewrite or disallow new T where T is a trait (currently: <init> not a member of T)
 package scala.tools.nsc.typechecker;
 
@@ -881,22 +880,16 @@ import collection.mutable.HashMap;
       }
 
       /** The qualifying class of a this or super with prefix `qual' */
-      def qualifyingClass(qual: Name): Symbol = {
+      def qualifyingClassContext(qual: Name): Context = {
         if (qual == nme.EMPTY.toTypeName) {
-          val clazz = context.enclClass.owner;
-          if (!clazz.isPackageClass) clazz
-          else {
+          if (context.enclClass.owner.isPackageClass)
             error(tree.pos, "" + tree + " can be used only in a class, object, or template");
-            NoSymbol
-          }
+          context.enclClass
         } else {
           var c = context.enclClass;
           while (c != NoContext && c.owner.name != qual) c = c.outer.enclClass;
-          if (c != NoContext) c.owner
-          else {
-            error(tree.pos, "" + qual + " is not an enclosing class");
-	    NoSymbol
-          }
+          if (c == NoContext) error(tree.pos, "" + qual + " is not an enclosing class");
+	  c
         }
       }
 
@@ -963,11 +956,12 @@ import collection.mutable.HashMap;
 
 	  var cx = context;
 	  while (defSym == NoSymbol && cx != NoContext) {
-	    pre = cx.enclClass.owner.thisType;
+	    pre = cx.enclClass.thisSkolemType;
 	    defEntry = cx.scope.lookupEntry(name);
-	    if (defEntry != null)
-	      defSym = defEntry.sym
-	    else {
+	    if (defEntry != null) {
+	      defSym = defEntry.sym;
+	      assert(pre eq cx.enclClass.owner.thisType, "mismatch " + pre + " " + cx.enclClass.owner + " " + defSym);//debug
+	    } else {
 	      cx = cx.enclClass;
 	      defSym = pre.member(name) filter (sym => context.isAccessible(sym, pre, false));
 	      if (defSym == NoSymbol) cx = cx.outer;
@@ -1239,7 +1233,13 @@ import collection.mutable.HashMap;
 	  }
 
         case Super(qual, mix) =>
-          val clazz = if (tree.symbol != NoSymbol) tree.symbol else qualifyingClass(qual);
+          val Pair(clazz, selftype) =
+            if (tree.symbol != NoSymbol) {
+              Pair(tree.symbol, tree.symbol.thisType)
+            } else {
+              val clazzContext = qualifyingClassContext(qual);
+              Pair(clazzContext.owner, clazzContext.thisSkolemType)
+            }
           if (clazz == NoSymbol) setError(tree)
           else {
 	    val owntype =
@@ -1254,15 +1254,21 @@ import collection.mutable.HashMap;
                   ErrorType
                 } else ps.head
               }
-	    tree setSymbol clazz setType SuperType(clazz.thisType, owntype)
+	    tree setSymbol clazz setType SuperType(selftype, owntype)
 	  }
 
         case This(qual) =>
-          val clazz = if (tree.symbol != NoSymbol) tree.symbol else qualifyingClass(qual);
+          val Pair(clazz, selftype) =
+            if (tree.symbol != NoSymbol) {
+              Pair(tree.symbol, tree.symbol.thisType)
+            } else {
+              val clazzContext = qualifyingClassContext(qual);
+              Pair(clazzContext.owner, clazzContext.thisSkolemType)
+            }
           if (clazz == NoSymbol) setError(tree)
           else {
-	    val owntype = if (pt.isStable || (mode & QUALmode) != 0) clazz.thisType
-			  else clazz.typeOfThis;
+	    val owntype = if (pt.isStable || (mode & QUALmode) != 0) selftype
+                          else selftype.singleDeref;
             tree setSymbol clazz setType owntype
 	  }
 
