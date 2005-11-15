@@ -167,20 +167,21 @@
     <target name="build.pico.nslib" depends="init.pico, build.init"
             description="Builds the runtime and pico libraries of the new Scala library.">
         <pico srcdir="${sources.dir}" destdir="${build.pico-nslib.dir}"
-              scalahack="true">
+              scalahack="true" includes="**/*.java">
             <classpath>
                 <pathelement location="${build.pico-nslib.dir}"/>
             </classpath>
             <or>
-            <filename name="scala/runtime/*.java"/>
-            <filename name="scala/runtime/**/*.java"/>
-            <filename name="scala/tools/util/*.java"/>
-            <and>
-                <filename name="scala/*.java"/>
-                <not><present targetdir="${newsources.dir}" present="both">
-                    <mapper type="glob" from="*.scala" to="*.java"/>
-                </present></not>
-            </and>
+                <filename name="scala/runtime/**/*"/>
+                <filename name="scala/tools/util/*"/>
+                <and>
+                    <filename name="scala/*"/>
+                    <not>
+                        <present targetdir="${newsources.dir}" present="both">
+                            <mapper type="glob" from="*.java" to="*.scala"/>
+                        </present>
+                    </not>
+                </and>
             </or>
         </pico>
         <delete>
