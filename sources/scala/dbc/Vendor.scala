@@ -8,27 +8,31 @@
 
 package scala.dbc;
 
-import java.sql._;
+import java.sql.{Connection, Driver};
 
+
+/** This class ..
+ */
 abstract class Vendor {
 
-	def nativeDriverClass: Class;
-	def uri: java.net.URI;
-	def user: String;
-	def pass: String;
-	def nativeProperties: java.util.Properties = {
-		val properties = new java.util.Properties();
-		properties.setProperty("user", user);
-		properties.setProperty("password", pass);
-		properties
-	}
+  def nativeDriverClass: Class;
+  def uri: java.net.URI;
+  def user: String;
+  def pass: String;
+  def nativeProperties: java.util.Properties = {
+    val properties = new java.util.Properties();
+    properties.setProperty("user", user);
+    properties.setProperty("password", pass);
+    properties
+  }
 
-	def retainedConnections: Int;
+  def retainedConnections: Int;
 
-	def getConnection: Connection = {
-		nativeDriverClass.newInstance().asInstanceOf[java.sql.Driver].connect(uri.toString(),nativeProperties)
-	}
+  def getConnection: Connection = {
+    val driver = nativeDriverClass.newInstance().asInstanceOf[Driver];
+    driver.connect(uri.toString(),nativeProperties)
+  }
 
-	def urlProtocolString: String;
+  def urlProtocolString: String;
 
 }
