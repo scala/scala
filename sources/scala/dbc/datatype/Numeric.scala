@@ -9,19 +9,20 @@
 package scala.dbc.datatype;
 
 /** A type category for all SQL types that store numbers. */
-abstract class Numeric [Type] (_nativeTypeId: DataType.Id) extends DataType {
+abstract class Numeric[Type](_nativeTypeId: DataType.Id) extends DataType {
 
-	type NativeType = Type;
-	val nativeTypeId = _nativeTypeId;
+  type NativeType = Type;
+  val nativeTypeId = _nativeTypeId;
 
-	/** The radix in which the precision (and scale when appliable) is defined.
-		* ISO-9075 only allows 2 and 10 for this value. */
-	def precisionRadix: Int;
+  /** The radix in which the precision (and scale when appliable) is defined.
+   *  ISO-9075 only allows 2 and 10 for this value.
+   */
+  def precisionRadix: Int;
 
-	/** The number of significant digits for that number. */
-	def precision: Int;
+  /** The number of significant digits for that number. */
+  def precision: Int;
 
-	/** Whether the number is signed or not. */
-	def signed: scala.Boolean;
+  /** Whether the number is signed or not. */
+  def signed: scala.Boolean;
 
 }
