@@ -75,6 +75,31 @@ object Main {
     )
   }
 
+  def tokenMetric(compiler: Global, fnames: List[String]): unit = {
+    import compiler.CompilationUnit;
+    import compiler.syntaxAnalyzer.Scanner;
+    import ast.parser.Tokens.EOF;
+    var totale = 0;
+    for (val source <- fnames) {
+      val s = new Scanner(new CompilationUnit(compiler.getSourceFile(source)));
+      s.nextToken;
+      var i = 0;
+      while(s.token != EOF) {
+        i = i + 1;
+        s.nextToken()
+      }
+      var j = 0 ; while(j + Math.log(i)/ Math.log(10) < 7) {
+        j = j+1;
+        Console.print(' ');
+      }
+      Console.print(i.toString());
+      Console.print(" ");
+      Console.println(source.toString());
+      totale = totale + i;
+    }
+    Console.println(totale.toString()+" total");
+  }
+
   def process(args: Array[String]): unit = {
     reporter = new ConsoleReporter();
     val command = new CompilerCommand(List.fromArray(args), error, false);
@@ -86,7 +111,9 @@ object Main {
     else {
       try {
   val compiler = new Global(command.settings, reporter);
-  if (command.settings.resident.value)
+  if (command.settings.tokenMetric.value)
+    tokenMetric(compiler, command.files);
+  else if (command.settings.resident.value)
     resident(compiler);
   else if (command.settings.interpret.value)
     interpret(compiler);
