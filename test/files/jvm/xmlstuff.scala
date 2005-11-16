@@ -9,11 +9,16 @@ object Test {
   //val e:  scala.xml.MetaData         = null; //Node.NoAttributes;
   //val sc: scala.xml.NamespaceBinding = null;
 
+    // ------------------------------------------ tests for class NodeSeq
 
   Console.println("NodeSeq");
   import scala.xml.Utility.view ;
 
-    val p = <foo><bar value="3"/><baz bazValue="8"/><bar value="5"/></foo>;
+    val p = <foo>
+              <bar gt='ga' value="3"/>
+              <baz bazValue="8"/>
+              <bar value="5" gi='go'/>
+            </foo>;
 
     val pelems_1 = for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
       Text(x.attribute("value") + y.attribute("bazValue")+ "!")
@@ -23,6 +28,7 @@ object Test {
     assertSameElements(
       p \\ "@value", new NodeSeq { val theSeq = List(Text("3"), Text("5")) }
     );
+
     val books =
     <bks>
       <book><title>Blabla</title></book>
