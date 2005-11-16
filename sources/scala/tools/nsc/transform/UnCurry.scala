@@ -37,6 +37,8 @@ abstract class UnCurry extends InfoTransform {
   def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit);
   override def changesBaseClasses = false;
 
+  var needTryLift = false;
+
   private val uncurry = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case MethodType(formals, MethodType(formals1, restpe)) =>
@@ -194,28 +196,70 @@ abstract class UnCurry extends InfoTransform {
       }
     }
 
-    def mainTransform(tree: Tree): Tree = (tree match {
-      case Apply(Select(Block(List(), Function(vparams, body)), nme.apply), args) =>
-	// perform beta-reduction; this helps keep view applications small
-	mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
-      case Apply(fn, args) =>
-	val formals = fn.tpe.paramTypes;
-        copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
-      case CaseDef(pat, guard, body) =>
-        inPattern = true;
-	val pat1 = transform(pat);
-	inPattern = false;
-	copy.CaseDef(tree, pat1, transform(guard), transform(body))
-      case fun @ Function(_, _) =>
-        mainTransform(transformFunction(fun))
-      case _ =>
-        assert(!tree.isInstanceOf[Function]);
-        val tree1 = super.transform(tree);
-	if (isByNameRef(tree1))
-	  typed(atPos(tree1.pos)(
-	    Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply), List())))
-	else tree1;
-    }) setType uncurryTreeType(tree.tpe);
+    def mainTransform(tree: Tree): Tree = {
+      def withNeedLift(needLift: Boolean)(f: => Tree): Tree = {
+        val savedNeedTryLift = needTryLift;
+        needTryLift = needLift;
+        val t = f;
+        needTryLift = savedNeedTryLift;
+        t
+      }
+
+      tree match {
+        case DefDef(_, _, _, _, _, _) =>
+          withNeedLift(false) { super.transform(tree) }
+
+        case ValDef(_, _, _, rhs)
+          if (!tree.symbol.owner.isSourceMethod) =>
+            withNeedLift(true) { super.transform(tree) }
+
+
+        case Apply(Select(Block(List(), Function(vparams, body)), nme.apply), args) =>
+	  // perform beta-reduction; this helps keep view applications small
+          withNeedLift(true) {
+	    mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
+          }
+
+        case Apply(fn, args) =>
+          withNeedLift(true) {
+	    val formals = fn.tpe.paramTypes;
+            copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
+          }
+
+        case Assign(Select(_, _), _) =>
+          withNeedLift(true) { super.transform(tree) }
+
+        case Try(block, catches, finalizer) =>
+          if (needTryLift) {
+            if (settings.debug.value)
+              log("lifting try at: " + unit.position(tree.pos));
+
+            val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName("liftedTry"));
+            sym.setInfo(MethodType(List(), tree.tpe));
+            new ChangeOwnerTraverser(currentOwner, sym).traverse(tree);
+
+            transform(typed(atPos(tree.pos)(
+              Block(List(DefDef(sym, List(List()), tree)),
+                    Apply(Ident(sym), Nil)))))
+          } else
+            super.transform(tree)
+
+        case CaseDef(pat, guard, body) =>
+          inPattern = true;
+	  val pat1 = transform(pat);
+	  inPattern = false;
+	  copy.CaseDef(tree, pat1, transform(guard), transform(body))
+        case fun @ Function(_, _) =>
+          mainTransform(transformFunction(fun))
+        case _ =>
+          assert(!tree.isInstanceOf[Function]);
+          val tree1 = super.transform(tree);
+	  if (isByNameRef(tree1))
+	    typed(atPos(tree1.pos)(
+	      Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply), List())))
+	  else tree1;
+      }
+    } setType uncurryTreeType(tree.tpe);
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
       def applyUnary(tree: Tree): Tree =
