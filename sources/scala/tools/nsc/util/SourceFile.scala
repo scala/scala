@@ -59,8 +59,8 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
     }
 
     def find(toFind : Int, isIndex : Boolean) : Int = {
-      if (!isIndex && toFind == Position.NOPOS ) return Position.NOLINE - 1; // 1 will be added
-      if ( isIndex && toFind == Position.NOLINE) return Position.NOPOS;
+      if (!isIndex) assert(toFind != Position.NOPOS);
+      if ( isIndex) assert(toFind > Position.NOLINE - Position.FIRSTLINE);
 
       if (!isIndex && (toFind >= content.length)) throw new Error(toFind + " not valid offset in " + file.getName() + ":" + content.length);
 
