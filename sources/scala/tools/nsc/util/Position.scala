@@ -40,7 +40,10 @@ class Position(_source : SourceFile,_offset: Int) {
   // for display purposes only.
   def column: Int = if (hasOffset) {
     var column = 1;
-    var coffset = source.lineToOffset(source.offsetToLine(offset));
+
+    // find beginning offset for line
+    val line    = source.offsetToLine  (offset);
+    var coffset = source.  lineToOffset(line);
     var continue = true;
     while (continue) {
       if (coffset == offset) continue = false;
