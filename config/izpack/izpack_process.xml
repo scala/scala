@@ -10,9 +10,9 @@
     <description>Create symbolic links</description>
     <os family="unix"/>
     <executefile name="$INSTALL_PATH/bin/.nsc_symlink">
-      <arg>../share/scala/bin/.scala_wrapper</arg>
+      <arg>../share/@PREFIX@/bin/.scala_wrapper</arg>
     </executefile>
-    <executefile name="$INSTALL_PATH/share/scala/bin/.nsc_symlink">
+    <executefile name="$INSTALL_PATH/share/@PREFIX@/bin/.nsc_symlink">
       <arg>.scala_wrapper</arg>
     </executefile>
   </job>
@@ -22,7 +22,7 @@
     <executefile name="/bin/rm">
       <arg>-f</arg>
       <arg>$INSTALL_PATH/bin/.nsc_symlink</arg>
-      <arg>$INSTALL_PATH/share/scala/bin/.nsc_symlink</arg>
+      <arg>$INSTALL_PATH/share/@PREFIX@/bin/.nsc_symlink</arg>
     </executefile>
   </job>
 
