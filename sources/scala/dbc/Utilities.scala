@@ -9,14 +9,15 @@
 package scala.dbc;
 
 /** An object offering transformation methods (views) on various values.
- * This object's members must be visible in an expression to use value auto-
- * conversion. */
+ *  This object's members must be visible in an expression to use value
+ *  auto-conversion.
+ */
 object Utilities {
 
-  def view (obj:statement.expression.Constant): Value =
+  def view (obj: statement.expression.Constant): Value =
     obj.constantValue;
 
-  def view (obj:Value): statement.expression.Constant =
+  def view (obj: Value): statement.expression.Constant =
     new statement.expression.Constant {
       val constantValue = obj;
     }
