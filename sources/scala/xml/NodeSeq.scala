@@ -28,8 +28,8 @@ abstract class NodeSeq extends Seq[Node] {
   def apply(f: Node => Boolean): NodeSeq = filter(f);
 
   /** structural equality */
-  override def equals( x:Any ) = x match {
-    case z:Node      => ( length == 1 ) && z == apply( 0 )
+  override def equals(x: Any) = x match {
+    case z:Node      => (length == 1) && z == apply(0)
     case z:Seq[Node] => sameElements( z )
     case z:String    => text == z
     case _           => false;
@@ -39,21 +39,25 @@ abstract class NodeSeq extends Seq[Node] {
    *  of all elements of this sequence that are labelled with "foo".
    *  Use \ "_" as a wildcard. The document order is preserved.
    */
-  def \(that: String):NodeSeq = that match {
-    case "_" => for( val x <- this;
-                     val y <- x.child: NodeSeq)
-                yield { y }
-    case _ if that.charAt(0) == '@' =>
-                val attrib = that.substring(1);
-                (for( val x <- this;
-                      val y <- x.child: NodeSeq;
-                      val z <- y.attributes;
-                      z.key == attrib )
-                yield { Text(z.value) }): NodeSeq
-    case _   => for( val x <- this;
-                     val y <- x.child: NodeSeq;
-                     y.label == that )
-                yield { y }
+  def \(that: String):NodeSeq = {
+    var res: NodeSeq = NodeSeq.Empty;
+    that match {
+      case "_" =>
+        res = for( val x <- this; val y <- x.child: NodeSeq) yield { y }
+
+      case _ if (that.charAt(0) == '@') && (this.length == 1) =>
+        val k = that.substring(1);
+        val y = this(0);
+        val v = y.attribute(k);
+        if( v != null ) {
+          res = NodeSeq.fromSeq(Seq.single(Text(v)));
+        }
+
+      case _   =>
+        res = for( val x <- this; val y <- x.child: NodeSeq; y.label == that )
+              yield { y }
+    }
+    res
   }
 
   /** projection function. Similar to XPath, use this \\ 'foo to get a list
@@ -66,12 +70,11 @@ abstract class NodeSeq extends Seq[Node] {
                        val y <- x.descendant_or_self: NodeSeq )
                   yield { y }
       case _ if that.charAt(0) == '@' =>
-                  val attrib = that.substring(1);
-                  (for( val x <- this;
-                       val y <- x.descendant_or_self: NodeSeq;
-                       val z <- y.attributes;
-                       z.key == attrib )
-                yield { Text(z.value) }): NodeSeq
+        val attrib = that.substring(1);
+        (for(val x <- this;
+             val y <- x.descendant_or_self: NodeSeq;
+             val z <- y \ that)
+         yield { z }):NodeSeq
       case _ => for( val x <- this;
                      val y <- x.descendant_or_self: NodeSeq;
                      y.label == that)
@@ -82,11 +85,7 @@ abstract class NodeSeq extends Seq[Node] {
     (s:String,x:Node) => s + x.toString()
   }
 
-  private var _asList:List[Node] = null;
-  def asList = {
-    if (_asList == null ) _asList = elements.toList;
-    _asList
-  }
+  def asList = elements.toList;
 
   def map(f: Node => Node): NodeSeq = { val x = asList map f; x }
 

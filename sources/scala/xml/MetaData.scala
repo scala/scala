@@ -41,7 +41,7 @@ abstract class MetaData extends Iterable[MetaData] {
 
   def hasNext = (Null != next);
 
-  def length: Int = length(1);
+  def length: Int = length(0);
 
   def length(i: Int): Int = next.length(i + 1);
 
@@ -66,7 +66,7 @@ abstract class MetaData extends Iterable[MetaData] {
     }
   }
 
-  /** bq: this can be done better */
+  /** returns an iterator on attributes */
   def elements = new Iterator[MetaData] {
     var x: MetaData = MetaData.this;
     def hasNext = Null != x;
@@ -76,6 +76,31 @@ abstract class MetaData extends Iterable[MetaData] {
       y
     }
   }
+
+  /* returns a sequences of "pseudo nodes" that contain attribute info.
+     not sure if this useful, and it violates contract for nodes...
+  def nodes = {
+    class NodeProxy(last:MetaData) extends Node {
+      override def prefix   = last match {
+        case p:PrefixedAttribute => p.pre;
+        case _ => null
+      }
+      override def label = "@"+last.key;
+      override def child = Text(last.value);
+      override def text = last.value
+    }
+    val ns = new Array[Node](this.length);
+    var i = 0;
+    val it = elements;
+    while(it.hasNext) {
+      val a = it.next;
+      ns(i) = new NodeProxy(a);
+      i = i + 1;
+    }
+    val seq = array2seq(ns);
+    NodeSeq.fromSeq(seq);
+  }
+   */
 
   /** shallow equals method */
   def equals1(that: MetaData): Boolean;
