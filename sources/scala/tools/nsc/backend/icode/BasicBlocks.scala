@@ -195,8 +195,9 @@ trait BasicBlocks: ICodes {
         case SWITCH(_,labels) => labels;
         case RETURN(_) => Nil;
         case THROW() => Nil;
+        case LEAVE_FINALIZER(_) => Nil;
         case _ =>
-	  global.abort("The last instruction is not a control flow instruction");
+	  global.abort("The last instruction is not a control flow instruction: " + lastInstruction);
       }
 
     /** Returns the precessors of this block, in the current 'code' chunk.

@@ -56,6 +56,7 @@ abstract class Checkers {
     val STRING = REFERENCE(definitions.StringClass);
     val SCALA_ALL = REFERENCE(definitions.AllClass);
     val SCALA_ALL_REF = REFERENCE(definitions.AllRefClass);
+    val CASE_CLASS = REFERENCE(definitions.getClass("scala.CaseClass"));
 
     def checkICodes: Unit = {
       Console.println("[[consistency check at beginning of phase " + globalPhase.name + "]]");
@@ -303,7 +304,7 @@ abstract class Checkers {
            checkStack(1);
 
            val actualType = stack.pop;
-           if (!(actualType <:< local.kind))
+           if (!(actualType <:< local.kind) && actualType != CASE_CLASS)
              typeError(local.kind, actualType);
 
          case STORE_FIELD(field, isStatic) =>

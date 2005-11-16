@@ -318,7 +318,6 @@ import scala.collection.mutable.{Map, HashMap};
       }
 
     case ClassInfoType(_, _, sym) =>
-      Console.println("Got a ClassInfoType!");
       primitiveTypeMap get sym match {
         case Some(k) => k;
         case None    =>
