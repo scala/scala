@@ -58,7 +58,7 @@ class ConsoleReporter(_reader : BufferedReader, _writer : PrintWriter) extends A
       case 2 => "two "   + elements + "s";
       case 3 => "three " + elements + "s";
       case 4 => "four "  + elements + "s";
-      "" + n + " " + elements + "s";
+      default: "" + n + " " + elements + "s";
     }
 
 
