@@ -38,7 +38,6 @@ trait Linearizers: ICodes {
 
       run {
         worklist ++= (m.exh map (.startBlock));
-        worklist ++= (m.finalizers map (.startBlock));
         worklist.push(b);
       }
 
@@ -68,7 +67,6 @@ trait Linearizers: ICodes {
             add(labels);
           case RETURN(_) => ();
           case THROW() =>   ();
-          case LEAVE_FINALIZER(_) => ();
         }
       }
 

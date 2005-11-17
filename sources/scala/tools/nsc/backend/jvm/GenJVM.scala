@@ -230,8 +230,6 @@ abstract class GenJVM extends SubComponent {
     var isModuleInitialized = false;
     def genCode(m: IMethod): Unit = {
       labels.clear;
-      retAddress.clear;
-      anyHandler.clear;
       isModuleInitialized = false;
 
       code = m.code;
@@ -239,7 +237,7 @@ abstract class GenJVM extends SubComponent {
       makeLabels(linearization);
       genBlocks(linearization);
 
-      if (this.method.exh != Nil || this.method.finalizers != Nil)
+      if (this.method.exh != Nil)
         genExceptionHandlers;
     }
 
@@ -251,9 +249,6 @@ abstract class GenJVM extends SubComponent {
       case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys);
     }
 
-
-    /** Map from finalizer to the code area where its 'any' exception handler was generated. */
-    val anyHandler: HashMap[Finalizer, Pair[Int, Int]] = new HashMap();
 
     /** Generate exception handlers for the current method. */
     def genExceptionHandlers: Unit = {
@@ -306,28 +301,6 @@ abstract class GenJVM extends SubComponent {
                                       null
                                     else javaName(e.cls))
         })
-      });
-      this.method.finalizers foreach ((f) => {
-        val targetPC = jcode.getPC();
-        val exceptionLocal = jmethod.addNewLocalVariable(JObjectType.JAVA_LANG_OBJECT, clasz.cunit.fresh.newName("exception"));
-        jcode.emitSTORE(exceptionLocal);
-        jcode.emitJSR(labels(f.startBlock));
-        jcode.emitLOAD(exceptionLocal);
-        jcode.emitATHROW();
-
-        log("Finalizer: " + f + " coveres: " + f.covered);
-        anyHandler.foreach((of: Finalizer, r: Pair[Int, Int]) =>
-          if (f.covered.contains(of.startBlock))
-            jcode.addFinallyHandler(r._1, r._2, targetPC));
-
-        anyHandler += f -> Pair(targetPC, jcode.getPC());
-
-        ranges(f) foreach ((p) => {
-          log("Adding finalizer handler " + f + "at: " + targetPC + " for " + method +
-             " from: " + p._1 + " to: " + p._2);
-          jcode.addFinallyHandler(p._1, p._2, targetPC);
-        });
-
       });
     }
 
@@ -462,16 +435,6 @@ abstract class GenJVM extends SubComponent {
 
             }
 
-          case CALL_FINALIZER(finalizer) =>
-            jcode.emitJSR(labels(finalizer.startBlock));
-
-          case ENTER_FINALIZER(finalizer) =>
-            retAddress(finalizer) = jmethod.addNewLocalVariable(JType.ADDRESS, clasz.cunit.fresh.newName("ret"));
-            jcode.emitSTORE(retAddress(finalizer));
-
-          case LEAVE_FINALIZER(finalizer) =>
-            jcode.emitRET(retAddress(finalizer));
-
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls);
             jcode.emitNEW(className);
@@ -592,7 +555,7 @@ abstract class GenJVM extends SubComponent {
         }
 
         crtPC = jcode.getPC();
-        val crtLine = Position.line(instr.pos);
+        val crtLine = instr.pos; //clasz.cunit.position(instr.pos).line;
         if (crtLine != lastLineNr &&
             crtPC > lastMappedPC) {
           jcode.completeLineNumber(lastMappedPC, crtPC, crtLine);
@@ -765,7 +728,6 @@ abstract class GenJVM extends SubComponent {
     val endPC: HashMap[BasicBlock, Int] = new HashMap();
     val labels: HashMap[BasicBlock, JCode$Label] = new HashMap();
     val conds: HashMap[TestOp, Int] = new HashMap();
-    val retAddress: HashMap[Finalizer, JLocalVariable] = new HashMap();
 
     conds += EQ -> JExtendedCode.COND_EQ;
     conds += NE -> JExtendedCode.COND_NE;

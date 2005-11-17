@@ -163,7 +163,6 @@ trait Members: ICodes {
   class IMethod(val symbol: Symbol) {
     var code: Code = null;
     var exh: List[ExceptionHandler] = Nil;
-    var finalizers: List[Finalizer] = Nil;
     var sourceFile: String = _;
     var returnType: TypeKind = _;
 
@@ -202,9 +201,6 @@ trait Members: ICodes {
 
     def addHandler(e: ExceptionHandler): Unit =
       exh = e :: exh;
-
-    def addFinalizer(e: Finalizer): Unit =
-      finalizers = e :: finalizers;
 
     /** Is this method deferred ('abstract' in Java sense) */
     def isDeferred =

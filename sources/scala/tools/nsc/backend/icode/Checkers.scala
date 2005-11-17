@@ -304,7 +304,9 @@ abstract class Checkers {
            checkStack(1);
 
            val actualType = stack.pop;
-           if (!(actualType <:< local.kind) && actualType != CASE_CLASS)
+           if (!(actualType <:< local.kind) &&
+               actualType != CASE_CLASS &&
+               local.kind != SCALA_ALL_REF)
              typeError(local.kind, actualType);
 
          case STORE_FIELD(field, isStatic) =>

@@ -413,72 +413,49 @@ abstract class GenICode extends SubComponent  {
           ctx1
 
         case Try(block, catches, finalizer) =>
-          val outerCtx = ctx.dup;
-
-          var bodyCtx: Context = null;
-          var afterCtx: Context = outerCtx.newBlock;
-          var finalHandler: Finalizer = null;
-          if (finalizer != EmptyTree)
-            finalHandler = ctx.newFinalizer;
-          else
-            finalHandler = NoFinalizer;
-
-
-          def genHandler = genExceptionHandler(ctx, outerCtx, afterCtx, finalHandler);
-
-          val handlers = for (val CaseDef(pat, _, body) <- catches)
+          var handlers = for (val CaseDef(pat, _, body) <- catches)
             yield pat match {
-              case Typed(Ident(nme.WILDCARD), tpt) =>
-                genHandler(body, tpt.tpe.symbol, expectedType);
+              case Typed(Ident(nme.WILDCARD), tpt) => Pair(tpt.tpe.symbol, {
+                ctx: Context =>
+                  ctx.bb.emit(DROP(REFERENCE(tpt.tpe.symbol)));
+                  val ctx1 = genLoad(finalizer, ctx, UNIT);
+                  genLoad(body, ctx1, toTypeKind(body.tpe))
+                })
 
-              case Ident(nme.WILDCARD) =>
-                genHandler(body, definitions.ThrowableClass, expectedType);
+              case Ident(nme.WILDCARD) => Pair(definitions.ThrowableClass, {
+                ctx: Context =>
+                  ctx.bb.emit(DROP(REFERENCE(definitions.ThrowableClass)));
+                  val ctx1 = genLoad(finalizer, ctx, UNIT);
+                  genLoad(body, ctx1, toTypeKind(body.tpe))
+                })
 
               case Bind(name, _) =>
                 val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe));
                 ctx.method.addLocal(exception);
 
-                val exh = ctx.newHandler(pat.symbol.tpe.symbol);
-
-                val exhCtx = outerCtx.enterHandler(exh);
-                exhCtx.bb.emit(STORE_LOCAL(exception, false), pat.pos);
-                val ctx1 = genLoad(body, exhCtx, expectedType); // toTypeKind(body.tpe));
-                if (finalHandler != NoFinalizer)
-                  ctx1.bb.emit(CALL_FINALIZER(finalHandler));
-                ctx1.bb.emit(JUMP(afterCtx.bb));
-                ctx1.bb.close;
-                exh
-
-              case _ =>
-                abort("Unknown exception case: " + pat + " at: " + unit.position(pat.pos));
+                Pair(pat.symbol.tpe.symbol, {
+                     ctx: Context =>
+                       ctx.bb.emit(STORE_LOCAL(exception, false), pat.pos);
+                       val ctx1 = genLoad(finalizer, ctx, UNIT);
+                       genLoad(body, ctx1, toTypeKind(body.tpe))
+                     })
             }
 
-          if (finalizer != EmptyTree) {
-            val finalizerCtx = outerCtx.enterHandler(finalHandler);
-            finalizerCtx.bb.emit(ENTER_FINALIZER(finalHandler));
-            val ctx1 = genLoad(finalizer, finalizerCtx, UNIT);
-            ctx1.bb.emit(LEAVE_FINALIZER(finalHandler));
-            ctx1.bb.close;
-          }
+          if (finalizer != EmptyTree)
+            handlers = Pair(NoSymbol, {
+                            ctx: Context =>
+                              val ctx1 = genLoad(finalizer, ctx, UNIT);
+                              ctx1.bb.emit(THROW());
+                              ctx1
+                            }) :: handlers;
 
-          bodyCtx = ctx.newBlock;
-          outerCtx.bb.emit(JUMP(bodyCtx.bb), tree.pos);
-          outerCtx.bb.close;
-
-          generatedType = toTypeKind(block.tpe);
-          val ctxfinal = genLoad(block, bodyCtx, generatedType);
-
-          handlers.reverse foreach (ex => { ex.finalizer = finalHandler; ctxfinal exitHandler ex });
-          ctxfinal.exitFinalizer(finalHandler);
-//          if (generatedType != SCALA_ALL)
-            adapt(generatedType, expectedType, ctxfinal, tree);
-
-          if (finalHandler != NoFinalizer)
-            ctxfinal.bb.emit(CALL_FINALIZER(finalHandler));
-          ctxfinal.bb.emit(JUMP(afterCtx.bb));
-          ctxfinal.bb.close;
-          generatedType = expectedType;
-          afterCtx
+          ctx.Try(
+            bodyCtx => {
+              generatedType = toTypeKind(block.tpe);
+              val ctx1 = genLoad(block, bodyCtx, generatedType);
+              genLoad(finalizer, ctx1, UNIT)
+            },
+            handlers)
 
         case Throw(expr) =>
           val ctx1 = genLoad(expr, ctx, THROWABLE);
@@ -644,19 +621,19 @@ abstract class GenICode extends SubComponent  {
 
               if (settings.debug.value)
                 log("synchronized block start");
-              ctx1 = ctx1.Try(NoSymbol,
+              ctx1 = ctx1.Try(
                 bodyCtx => {
                   val ctx1 = genLoad(args.head, bodyCtx, toTypeKind(tree.tpe.resultType));
                   ctx1.bb.emit(LOAD_LOCAL(monitor, false));
                   ctx1.bb.emit(MONITOR_EXIT(), tree.pos);
                   ctx1
-                },
-                exhCtx => {
+                }, List(
+                Pair(NoSymbol, exhCtx => {
                   exhCtx.bb.emit(LOAD_LOCAL(monitor, false));
                   exhCtx.bb.emit(MONITOR_EXIT(), tree.pos);
                   exhCtx.bb.emit(THROW());
                   exhCtx
-                });
+                })));
               if (settings.debug.value)
                 log("synchronized block end with block " + ctx1.bb + " closed=" + ctx1.bb.isClosed);
             } else if (scalaPrimitives.isCoercion(code)) {
@@ -857,20 +834,6 @@ abstract class GenICode extends SubComponent  {
         ctx.bb.emit(DROP(from));
         ctx.bb.emit(CONSTANT(Constant(null)));
       }
-    }
-
-    private def genExceptionHandler(ctx: Context, outerCtx: Context, afterCtx: Context, finalHandler: Finalizer)
-                                   (body: Tree, sym: Symbol, pt: TypeKind): ExceptionHandler = {
-      val exh = ctx.newHandler(sym);
-
-      var ctx1 = outerCtx.enterHandler(exh);
-      ctx1.bb.emit(DROP(REFERENCE(sym)));
-      ctx1 = genLoad(body, ctx1, toTypeKind(body.tpe));
-      if (finalHandler != NoFinalizer)
-        ctx1.bb.emit(CALL_FINALIZER(finalHandler));
-      ctx1.bb.emit(JUMP(afterCtx.bb));
-      ctx1.bb.close;
-      exh
     }
 
     /** Load the qualifier of `tree' on top of the stack. */
@@ -1322,8 +1285,6 @@ abstract class GenICode extends SubComponent  {
       /** current exception handlers */
       var handlers: List[ExceptionHandler] = Nil;
 
-      var finalizers: List[Finalizer] = Nil;
-
       var handlerCount = 0;
 
       override def toString(): String = {
@@ -1334,7 +1295,6 @@ abstract class GenICode extends SubComponent  {
         buf.append("\tbb: ").append(bb).append('\n');
         buf.append("\tlabels: ").append(labels).append('\n');
         buf.append("\texception handlers: ").append(handlers).append('\n');
-        buf.append("\tfinalizers: ").append(finalizers).append('\n');
         buf.toString()
       }
 
@@ -1348,7 +1308,6 @@ abstract class GenICode extends SubComponent  {
         this.labels = other.labels;
         this.defdef = other.defdef;
         this.handlers = other.handlers;
-        this.finalizers = other.finalizers;
         this.handlerCount = other.handlerCount;
       }
 
@@ -1386,7 +1345,6 @@ abstract class GenICode extends SubComponent  {
       def newBlock: Context = {
         val block = method.code.newBlock;
         handlers foreach (h => h addBlock block);
-        finalizers foreach (.addBlock(block));
         new Context(this) setBasicBlock block;
       }
 
@@ -1398,14 +1356,9 @@ abstract class GenICode extends SubComponent  {
         val exh = new ExceptionHandler(method, "" + handlerCount, cls);
         method.addHandler(exh);
         handlers = exh :: handlers;
-        exh
-      }
+        if (settings.debug.value)
+          log("added handler: " + exh);
 
-      def newFinalizer: Finalizer = {
-        handlerCount = handlerCount + 1;
-        val exh = new Finalizer(method, "" + handlerCount);
-        method.addFinalizer(exh);
-        finalizers = exh :: finalizers;
         exh
       }
 
@@ -1423,34 +1376,52 @@ abstract class GenICode extends SubComponent  {
                "Wrong nesting of exception handlers." + this + " for " + exh);
         handlerCount = handlerCount - 1;
         handlers = handlers.tail;
-      }
+        if (settings.debug.value)
+          log("removed handler: " + exh);
 
-      def exitFinalizer(f: Finalizer): Unit = if (f != NoFinalizer) {
-        assert(handlerCount > 0 && finalizers.head == f,
-               "Wrong nesting of exception handlers." + this + " for " + f);
-        handlerCount = handlerCount - 1;
-        finalizers = finalizers.tail;
       }
 
       /** Clone the current context */
       def dup: Context = new Context(this);
 
-      def Try(catched: Symbol, body: Context => Context, handler: Context => Context) = {
+      /**
+       * Generate exception handlers for the body. Body is evaluated
+       * with a context where all the handlers are active. Handlers are
+       * evaluated in the 'outer' context.
+       *
+       * It returns the resulting context, with the same active handlers as
+       * before the call. Use it like:
+       *
+       * <code> ctx.Try( ctx => {
+       *   ctx.bb.emit(...) // protected block
+       * }, Pair(definitions.ThrowableClass,
+       *   ctx => {
+       *     ctx.bb.emit(...); // exception handler
+       *   }), Pair(AnotherExceptionClass,
+       *   ctx => {...
+       *   } ))</code>
+       */
+      def Try(body: Context => Context,
+              handlers: List[Pair[Symbol, (Context => Context)]]) = {
         val outerCtx = this.dup;
         val afterCtx = outerCtx.newBlock;
-        val exh = this.newHandler(catched);
 
-        val ctx1 = handler(outerCtx.enterHandler(exh));
-        ctx1.bb.emit(JUMP(afterCtx.bb));
-        ctx1.bb.close;
-
+        val exhs = handlers.map { handler =>
+            val exh = this.newHandler(handler._1);
+            val ctx1 = handler._2(outerCtx.enterHandler(exh));
+            ctx1.bb.emit(JUMP(afterCtx.bb));
+            ctx1.bb.close;
+            exh
+          }
         val bodyCtx = this.newBlock;
+
         val finalCtx = body(bodyCtx);
 
         outerCtx.bb.emit(JUMP(bodyCtx.bb));
         outerCtx.bb.close;
 
-        finalCtx.exitHandler(exh);
+        exhs.reverse foreach finalCtx.exitHandler;
+
         finalCtx.bb.emit(JUMP(afterCtx.bb));
         finalCtx.bb.close;
 

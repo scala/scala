@@ -91,7 +91,6 @@ abstract class Printers {
         indent;println("Exception handlers: ");
         m.exh foreach printExceptionHandler;
 
-        m.finalizers foreach printExceptionHandler;
         undent;println;
       } else
         println;
