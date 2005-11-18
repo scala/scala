@@ -1,20 +1,20 @@
 /* NSC -- new scala compiler
  * Copyright 2005 LAMP/EPFL
- * @author  Martin Odersky
+ * @author emir
  */
 // $Id$
 package scala.tools.nsc;
 
+import java.io._;
 import scala.tools.nsc.util.{Position};
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter};
 
-/** The main class for NSC, a compiler for the programming
- *  language Scala.
+/** The main class for the new scala interpreter.
  */
-object Main extends Object with EvalLoop {
-
+object MainInterpreter extends Object with EvalLoop {
+  // lots of stuff duplicated from Main
   val PRODUCT: String =
-    System.getProperty("scala.product", "scalac");
+    System.getProperty("scala.product", "scalaint");
   val VERSION: String =
     System.getProperty("scala.version", "unknown version");
   val versionMsg = PRODUCT + " " + VERSION + " -- (c) 2002-05 LAMP/EPFL";
@@ -28,12 +28,19 @@ object Main extends Object with EvalLoop {
 
   def errors() = reporter.errors();
 
-  def resident(compiler: Global): unit = {
-    loop(line => {
-      val args = List.fromString(line, ' ');
-      val command = new CompilerCommand(args, error, true);
-      (new compiler.Run) compile command.files
-    })
+  def interpret(gCompiler: Global): unit = {
+    val interpreter = new Interpreter {
+      val compiler: gCompiler.type = gCompiler
+    };
+    loop(line => try {
+        interpreter.interpret(line.trim(), reporter)
+      } catch {
+        case e: Exception => {
+          reporter.info(null,e.getMessage(),true);
+          //e.printStackTrace();
+        }
+      }
+    )
   }
 
   def process(args: Array[String]): unit = {
@@ -42,22 +49,18 @@ object Main extends Object with EvalLoop {
     reporter.prompt(command.settings.prompt.value);
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
-    else if (command.settings.help.value)
+    else if (command.settings.help.value) // 2do replace with InterpCommand
       reporter.info(null, command.usageMsg, true)
+
     else {
       try {
         val compiler = new Global(command.settings, reporter);
-        if (command.settings.resident.value)
-          resident(compiler);
-        else if (command.files.isEmpty)
-            reporter.info(null, command.usageMsg, true)
-        else
-          (new compiler.Run) compile command.files;
+        interpret(compiler);
       } catch {
-        case ex @ FatalError(msg) =>
-          if (command.settings.debug.value)
-            ex.printStackTrace();
-        reporter.error(null, "fatal error: " + msg);
+  case ex @ FatalError(msg) =>
+    if (command.settings.debug.value)
+      ex.printStackTrace();
+    reporter.error(null, "fatal error: " + msg);
       }
       reporter.printSummary()
     }

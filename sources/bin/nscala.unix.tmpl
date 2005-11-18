@@ -54,7 +54,9 @@ main=
 case "$SCRIPT" in
     @SCALA@     ) ;;
     @SCALAC@    ) main=scala.tools.nsc.Main;;
+    @SCALAI@    ) main=scala.tools.nsc.MainInterpreter;;
     @SCALAP@    ) main=scala.tools.scalap.Main;;
+    @SCALATOK@  ) main=scala.tools.nsc.MainTokenMetric;;
     *            ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 

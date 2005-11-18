@@ -342,7 +342,9 @@
                 <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
                 <filter token="SCALA" value="${scala.exec.name}"/>
                 <filter token="SCALAC" value="${scalac.exec.name}"/>
+                <filter token="SCALAI" value="${scalai.exec.name}"/>
                 <filter token="SCALAP" value="${scalap.exec.name}"/>
+                <filter token="SCALATOK" value="${scalatok.exec.name}"/>
             </filterset>
         </copy>
         <chmod file="${distrib.unix.scala.dir}/bin/.scala_wrapper" perm="ugo+rx"/>
@@ -351,14 +353,22 @@
         <symlink resource=".scala_wrapper"
                  link="${distrib.unix.scala.dir}/bin/${scalac.exec.name}"/>
         <symlink resource=".scala_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/${scalai.exec.name}"/>
+        <symlink resource=".scala_wrapper"
                  link="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"/>
+        <symlink resource=".scala_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/${scalatok.exec.name}"/>
         <mkdir dir="${distrib.unix.current.dir}/bin"/>
         <symlink resource="${distrib.unix.scala.dir}/bin/${scala.exec.name}"
                  link="${distrib.unix.current.dir}/bin/${scala.exec.name}"/>
         <symlink resource="${distrib.unix.scala.dir}/bin/${scalac.exec.name}"
                  link="${distrib.unix.current.dir}/bin/${scalac.exec.name}"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/${scalai.exec.name}"
+                 link="${distrib.unix.current.dir}/bin/${scalai.exec.name}"/>
         <symlink resource="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"
                  link="${distrib.unix.current.dir}/bin/${scalap.exec.name}"/>
+        <symlink resource="${distrib.unix.scala.dir}/bin/${scalatok.exec.name}"
+                 link="${distrib.unix.current.dir}/bin/${scalatok.exec.name}"/>
         <!-- Set up 'lib' directory -->
         <mkdir dir="${distrib.unix.scala.dir}/lib"/>
         <copy todir="${distrib.unix.scala.dir}/lib">
