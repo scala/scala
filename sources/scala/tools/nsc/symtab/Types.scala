@@ -51,6 +51,7 @@ import Flags._;
   /** The base class for all types */
   trait Type {
 
+    /** Types for which asSeenFrom always is the identity, no matter what prefix or owner */
     def isTrivial: boolean = false;
 
     /** The symbol associated with the type */
@@ -1359,6 +1360,10 @@ import Flags._;
 	mapOver(
 	  if (tparam == sym || tparam.owner.isTerm && !(tparams contains tparam)) tp
 	  else rawTypeRef(pre, tparam, args))
+/* not yet (GADT)
+      case SingleType(pre, sym) if (sym.isThisSym) =>
+        pre
+*/
       case PolyType(tparams1, restpe) =>
 	assert(tparams.isEmpty);
 	new DeSkolemizeMap(tparams1).mapOver(tp)
@@ -1370,6 +1375,29 @@ import Flags._;
       }
   }
   val deSkolemize = new DeSkolemizeMap(List());
+
+  object freeTypeParams extends TypeTraverser {
+    private var result: List[Symbol] = _;
+    private def includeIfAbstract(sym: Symbol): unit = {
+      if (sym.isAbstractType && !result.contains(sym)) result = sym :: result;
+    }
+    override def traverse(tp: Type): TypeTraverser = {
+      tp match {
+        case TypeRef(NoPrefix, sym, _) =>
+	  includeIfAbstract(sym)
+	case TypeRef(ThisType(_), sym, _) =>
+	  includeIfAbstract(sym)
+	case _ =>
+      }
+      mapOver(tp);
+      this
+    }
+    def collect(tp: Type): List[Symbol] = {
+      result = List();
+      traverse(tp);
+      result
+    }
+  }
 
 // Helper Methods  -------------------------------------------------------------
 

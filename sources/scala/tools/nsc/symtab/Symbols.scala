@@ -85,10 +85,9 @@ import Flags._;
       new TypeSymbol(this, pos, name).setFlag(DEFERRED);
     final def newTypeParameter(pos: int, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM);
-    final def newSkolem(tparam: Symbol) =
-      new TypeSkolem(this, tparam.pos, tparam.name, tparam)
-	.setFlag(tparam.flags)
-	.setInfo(tparam.rawInfo);
+    final def newSkolem: Symbol =
+      new TypeSkolem(owner, pos, name, this)
+        .setFlag(flags);
     final def newClass(pos: int, name: Name) =
       new ClassSymbol(this, pos, name);
     final def newModuleClass(pos: int, name: Name) =
@@ -134,7 +133,8 @@ import Flags._;
     final def isTrait = isClass & hasFlag(TRAIT);
     final def isAliasType = isType && !isClass && !hasFlag(DEFERRED);
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
-    final def isTypeParameter = isType && hasFlag(PARAM);
+    final def isTypeParameterOrSkolem = isType && hasFlag(PARAM);
+    final def isTypeParameter         = isTypeParameterOrSkolem && deSkolemize == this;
     final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME);
       // startsWith necessary because name may grow when lifted and also because of anonymous function classes
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
@@ -265,32 +265,32 @@ import Flags._;
     final def info: Type = {
       var cnt = 0;
       while (validForRun != currentRun) {
-  //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
+        //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         var ifs = infos;
         assert(ifs != null, this.name);
         while (ifs.prev != null) {
           ifs = ifs.prev;
         }
-  val tp = ifs.info;
-  //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
+        val tp = ifs.info;
+        //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
         if ((rawflags & LOCKED) != 0) {
           setInfo(ErrorType);
           throw CyclicReference(this, tp);
         }
         rawflags = rawflags | LOCKED;
-  val current = phase;
+        val current = phase;
         try {
-    phase = phaseWithId(ifs.start);
+          phase = phaseWithId(ifs.start);
           tp.complete(this);
-    // if (settings.debug.value && (validForRun == currentRun) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
+          // if (settings.debug.value && (validForRun == currentRun) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
           rawflags = rawflags & ~LOCKED
         } finally {
-    phase = current
+          phase = current
         }
-  cnt = cnt + 1;
-  // allow for two completions:
-  //   one: sourceCompleter to LazyType, two: LazyType to completed type
-  if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp);
+        cnt = cnt + 1;
+        // allow for two completions:
+        //   one: sourceCompleter to LazyType, two: LazyType to completed type
+        if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp);
       }
       rawInfo
     }
@@ -397,14 +397,14 @@ import Flags._;
      */
     final def isLess(that: Symbol): boolean = {
       def closureLength(sym: Symbol) =
-  if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
-  else sym.info.closure.length;
+        if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
+        else sym.info.closure.length;
       if (this.isType)
-  that.isType &&
-  {val diff = closureLength(this) - closureLength(that);
-   diff > 0 || diff == 0 && this.id < that.id}
+        that.isType &&
+      {val diff = closureLength(this) - closureLength(that);
+       diff > 0 || diff == 0 && this.id < that.id}
       else
-  that.isType || this.id < that.id;
+        that.isType || this.id < that.id;
     }
 
     /** A partial ordering between symbols.
@@ -432,12 +432,12 @@ import Flags._;
     def filter(cond: Symbol => boolean): Symbol =
       if (hasFlag(OVERLOADED)) {
         //assert(info.isInstanceOf[OverloadedType], "" + this + ":" + info);//DEBUG
-	val alts = alternatives;
-	val alts1 = alts filter cond;
-	if (alts1 eq alts) this
-	else if (alts1.isEmpty) NoSymbol
-	else if (alts1.tail.isEmpty) alts1.head
-	else owner.newOverloaded(info.prefix, alts1)
+        val alts = alternatives;
+        val alts1 = alts filter cond;
+        if (alts1 eq alts) this
+        else if (alts1.isEmpty) NoSymbol
+        else if (alts1.tail.isEmpty) alts1.head
+        else owner.newOverloaded(info.prefix, alts1)
       } else if (cond(this)) this
       else NoSymbol;
 
@@ -524,7 +524,7 @@ import Flags._;
      */
     final def linkedModule: Symbol =
       if (owner.isPackageClass)
-	owner.info.decl(name.toTermName).suchThat(
+        owner.info.decl(name.toTermName).suchThat(
           sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType));
       else NoSymbol;
 
@@ -541,10 +541,10 @@ import Flags._;
 
     final def toInterface: Symbol =
       if (isImplClass) {
-	assert(!tpe.parents.isEmpty, this);
-	val iface = tpe.parents.last.symbol;
-	assert(nme.implClassName(iface.name) == name, this);
-	iface
+        assert(!tpe.parents.isEmpty, this);
+        val iface = tpe.parents.last.symbol;
+        assert(nme.implClassName(iface.name) == name, this);
+        iface
       } else this;
 
     /** The module corresponding to this module class (note that this
@@ -575,8 +575,8 @@ import Flags._;
       var sym: Symbol = NoSymbol;
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (!bcs.head.isImplClass)
-	  sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
-	bcs = bcs.tail
+          sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
+        bcs = bcs.tail
       }
       sym
     }
@@ -599,7 +599,7 @@ import Flags._;
       if (isTerm && (this hasFlag PRIVATE)) {
         setFlag(notPRIVATE);
         if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
-	expandName(base)
+        expandName(base)
       }
 
     /** change name by appending $$<fully-qualified-name-of-class `base'>
@@ -711,28 +711,28 @@ import Flags._;
     ""
       }
       if (isClass)
-  typeParamsString + " extends " + tp.resultType
+        typeParamsString + " extends " + tp.resultType
       else if (isAliasType)
-  typeParamsString + " = " + tp.resultType
+        typeParamsString + " = " + tp.resultType
       else if (isAbstractType)
-  tp match {
-    case TypeBounds(lo, hi) =>
-      (if (lo.symbol == AllClass) "" else " >: " + lo) +
-      (if (hi.symbol == AnyClass) "" else " <: " + hi)
-    case _ =>
-      "<: " + tp;
-  }
+        tp match {
+          case TypeBounds(lo, hi) =>
+            (if (lo.symbol == AllClass) "" else " >: " + lo) +
+          (if (hi.symbol == AnyClass) "" else " <: " + hi)
+          case _ =>
+            "<: " + tp;
+        }
       else if (isModule)
-  moduleClass.infoString(tp)
+        moduleClass.infoString(tp)
       else
-  tp match {
-    case PolyType(tparams, res) =>
-      typeParamsString + infoString(res)
-    case MethodType(pts, res) =>
-      pts.mkString("(", ",", ")") + infoString(res)
-    case _ =>
-      ": " + tp
-  }
+        tp match {
+          case PolyType(tparams, res) =>
+            typeParamsString + infoString(res)
+          case MethodType(pts, res) =>
+            pts.mkString("(", ",", ")") + infoString(res)
+          case _ =>
+            ": " + tp
+        }
     }
 
     def infosString = infos.toString();
@@ -799,11 +799,11 @@ import Flags._;
     override def name: Name =
       if (phase.flatClasses && !hasFlag(METHOD) &&
           rawowner != NoSymbol && !rawowner.isPackageClass) {
-	if (flatname == nme.EMPTY) {
-	  assert(rawowner.isClass);
-	  flatname = newTermName(rawowner.name.toString() + "$" + rawname);
-	}
-	flatname
+        if (flatname == nme.EMPTY) {
+          assert(rawowner.isClass);
+          flatname = newTermName(rawowner.name.toString() + "$" + rawname);
+        }
+        flatname
       } else rawname;
 
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
@@ -826,11 +826,11 @@ import Flags._;
       if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor);
       if (tpePhase != phase) {
         if (isValid(tpePhase)) {
-	  tpePhase = phase
+          tpePhase = phase
         } else {
           if (isInitialized) tpePhase = phase;
           tpeCache = NoType;
-	  val targs = if (phase.erasedTypes && this != ArrayClass) List()
+          val targs = if (phase.erasedTypes && this != ArrayClass) List()
           else unsafeTypeParams map (.tpe);
           tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, targs)
         }
@@ -838,32 +838,37 @@ import Flags._;
       assert(tpeCache != null/*, "" + this + " " + phase*/);//debug
       tpeCache
     }
+
     override def typeConstructor: Type = {
       if (tyconCache == null || tyconRun != currentRun) {
-  tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List());
+        tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List());
         tyconRun = currentRun;
       }
       assert(tyconCache != null);
       tyconCache
     }
+
     override def setInfo(tp: Type): this.type = {
       tpePhase = null;
       tyconCache = null;
       tp match { //debug
-	case TypeRef(_, sym, _) =>
-	  assert(sym != this, this);
-	case _ =>
+        case TypeRef(_, sym, _) =>
+          assert(sym != this, this);
+        case _ =>
       }
       super.setInfo(tp);
       this
     }
+
     override def reset(completer: Type): unit = {
       super.reset(completer);
       tpePhase = null;
       tyconCache = null;
     }
+
     def cloneSymbolImpl(owner: Symbol): Symbol =
       new TypeSymbol(owner, pos, name);
+
     if (util.Statistics.enabled) typeSymbolCount = typeSymbolCount + 1;
   }
 
@@ -894,11 +899,11 @@ import Flags._;
 
     override def name: Name =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
-  if (flatname == nme.EMPTY) {
-    assert(rawowner.isClass);
-    flatname = newTypeName(rawowner.name.toString() + "$" + rawname);
-  }
-  flatname
+        if (flatname == nme.EMPTY) {
+          assert(rawowner.isClass);
+          flatname = newTypeName(rawowner.name.toString() + "$" + rawname);
+        }
+        flatname
       } else rawname;
 
     private var thisTypeCache: Type = _;
@@ -911,10 +916,10 @@ import Flags._;
         thisTypePhase = phase;
         if (!(isValid(p) /*||
         thisTypePhase != null && thisTypePhase.erasedTypes && phase.erasedTypes*/)) {
-    thisTypeCache =
-      if (isModuleClass && !isRoot && !phase.erasedTypes)
-        singleType(owner.thisType, sourceModule);
-      else ThisType(this);
+          thisTypeCache =
+            if (isModuleClass && !isRoot && !phase.erasedTypes)
+              singleType(owner.thisType, sourceModule);
+            else ThisType(this);
         }
       }
       thisTypeCache
@@ -976,6 +981,16 @@ import Flags._;
     val syms1 = syms map (.cloneSymbol(owner));
     for (val sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1));
     syms1
+  }
+
+  def newSkolems(tparams: List[Symbol]): List[Symbol] = {
+    val tskolems = tparams map (.newSkolem);
+    val ltp = new LazyType {
+      override def complete(sym: Symbol): unit =
+        sym setInfo sym.deSkolemize.info.substSym(tparams, tskolems);
+    }
+    tskolems foreach (.setInfo(ltp));
+    tskolems
   }
 
   /** An exception for cyclic references of symbol definitions */

@@ -82,14 +82,17 @@ import scala.tools.nsc.util.Position;
       c.tree = tree;
       c.owner = owner;
       c.scope = scope;
-      c.enclClass = tree match {
-        case Template(_, _) | PackageDef(_, _) => c
-        case _ => this.enclClass
+      tree match {
+        case Template(_, _) | PackageDef(_, _) =>
+	  c.enclClass = c;
+	  c.thisSkolemType = skolemizedThisType(c.owner)
+	case _ =>
+	  c.enclClass = this.enclClass;
+	  c.thisSkolemType = this.thisSkolemType
       }
       c.variance = this.variance;
       c.depth = if (scope == this.scope) this.depth else this.depth + 1;
       c.imports = imports;
-      c.thisSkolemType = if (owner.isClass) owner.thisType else thisSkolemType;
       c.reportAmbiguousErrors = this.reportAmbiguousErrors;
       c.reportGeneralErrors = this.reportGeneralErrors;
       c.checking = this.checking;
@@ -124,6 +127,19 @@ import scala.tools.nsc.util.Position;
       c.reportAmbiguousErrors = reportAmbiguousErrors;
       c.reportGeneralErrors = false;
       c
+    }
+
+    def skolemizedThisType(clazz: Symbol): Type = {
+      clazz.thisType
+      /* not yet (GADT)
+      val tparams = clazz.unsafeTypeParams;
+      if (tparams.isEmpty) clazz.thisType
+      else {
+        val self = clazz.newThisSym(clazz.pos)
+        setInfo clazz.typeOfThis.substSym(tparams, newSkolems(tparams));
+        singleType(clazz.thisType, self)
+      }
+      */
     }
 
     def error(pos: int, msg: String): unit =

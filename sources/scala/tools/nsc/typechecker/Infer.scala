@@ -77,29 +77,6 @@ package scala.tools.nsc.typechecker;
     List.map2(bounds, targs)((bound, targ) => bound containsType targ) forall (x => x)
   }
 
-  object freeTypeParams extends TypeTraverser {
-    private var result: List[Symbol] = _;
-    private def includeIfAbstract(sym: Symbol): unit = {
-      if (sym.isAbstractType && !result.contains(sym)) result = sym :: result;
-    }
-    override def traverse(tp: Type): TypeTraverser = {
-      tp match {
-        case TypeRef(NoPrefix, sym, _) =>
-	  includeIfAbstract(sym)
-	case TypeRef(ThisType(_), sym, _) =>
-	  includeIfAbstract(sym)
-	case _ =>
-      }
-      mapOver(tp);
-      this
-    }
-    def collect(tp: Type): List[Symbol] = {
-      result = List();
-      traverse(tp);
-      result
-    }
-  }
-
   /** Solve constraint collected in types `tvars'
    *  @param tvars      All type variables to be instantiated.
    *  @param tparams    The type parameters corresponding to `tvars'
@@ -240,7 +217,7 @@ package scala.tools.nsc.typechecker;
       if (sym.isError) {
 	tree setSymbol sym setType ErrorType
       } else if (sym.owner.hasFlag(INCONSTRUCTOR) &&
-		 !sym.isTypeParameter && !sym.isConstructor &&
+		 !sym.isTypeParameterOrSkolem && !sym.isConstructor &&
 		 (site.isInstanceOf[This] || site.isInstanceOf[Super]) && !phase.erasedTypes) {
 	errorTree(tree, "" + sym + " cannot be accessed from constructor");
       } else {

@@ -106,6 +106,7 @@ abstract class Mixin extends InfoTransform {
                   val member1 = addMember(
                     clazz,
                     member.cloneSymbol(clazz)
+                      setPos clazz.pos
                       setFlag MIXEDIN resetFlag (DEFERRED | lateDEFERRED));
                   member1.asInstanceOf[TermSymbol] setAlias member;
                 }
@@ -119,7 +120,9 @@ abstract class Mixin extends InfoTransform {
             if (member hasFlag ACCESSOR) {
               val member1 = addMember(
                 clazz,
-                member.cloneSymbol(clazz) setFlag (MIXEDIN | FINAL) resetFlag (DEFERRED | lateDEFERRED));
+                member.cloneSymbol(clazz)
+                  setPos clazz.pos
+                  setFlag (MIXEDIN | FINAL) resetFlag (DEFERRED | lateDEFERRED));
               if (!member.isSetter)
                 member.tpe match {
                   case MethodType(List(), ConstantType(_)) =>
@@ -131,12 +134,14 @@ abstract class Mixin extends InfoTransform {
                               setInfo member.tpe.resultType)
                 }
             } else if (member hasFlag SUPERACCESSOR) {
-              val member1 = addMember(clazz, member.cloneSymbol(clazz)) setFlag MIXEDIN;
+              val member1 = addMember(clazz, member.cloneSymbol(clazz))
+                setPos clazz.pos setFlag MIXEDIN;
               assert(member1.alias != NoSymbol, member1);
               val alias1 = rebindSuper(clazz, member.alias, mixin);
               member1.asInstanceOf[TermSymbol] setAlias alias1;
             } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
-              addMember(clazz, member.cloneSymbol(clazz) setFlag MIXEDIN resetFlag (DEFERRED | lateDEFERRED))
+              addMember(clazz, member.cloneSymbol(clazz)) resetFlag (DEFERRED | lateDEFERRED)
+                setPos clazz.pos setFlag MIXEDIN
             }
           }
         }

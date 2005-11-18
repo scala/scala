@@ -2,6 +2,7 @@
  * Copyright 2005 LAMP/EPFL
  * @author  Martin Odersky
  */
+// $Id$
 //todo: rewrite or disallow new T where T is a trait (currently: <init> not a member of T)
 package scala.tools.nsc.typechecker;
 
@@ -197,7 +198,8 @@ import collection.mutable.HashMap;
             if (o == sym.owner) badSymbol = sym
           } else if (sym.owner.isTerm) {
             val e = scope.lookupEntry(sym.name);
-            if (e != null && e.sym == sym && e.owner == scope && !e.sym.isTypeParameter) badSymbol = e.sym
+            if (e != null && e.sym == sym && e.owner == scope && !e.sym.isTypeParameterOrSkolem)
+              badSymbol = e.sym
           }
         }
         if (badSymbol == NoSymbol)
@@ -388,6 +390,7 @@ import collection.mutable.HashMap;
               }
 	      if (context.reportGeneralErrors && !tree.tpe.isError && !pt.isError) {
 		// (13); the condition prevents chains of views
+                if (settings.debug.value) log("inferring view from " + tree.tpe + " to " + pt);
 	        val coercion = inferView(tree.pos, tree.tpe, pt, true);
 	        if (coercion != EmptyTree) {
 		  if (settings.debug.value) log("inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe);
@@ -960,7 +963,6 @@ import collection.mutable.HashMap;
 	    defEntry = cx.scope.lookupEntry(name);
 	    if (defEntry != null) {
 	      defSym = defEntry.sym;
-	      assert(pre eq cx.enclClass.owner.thisType, "mismatch " + pre + " " + cx.enclClass.owner + " " + defSym);//debug
 	    } else {
 	      cx = cx.enclClass;
 	      defSym = pre.member(name) filter (sym => context.isAccessible(sym, pre, false));
@@ -990,7 +992,7 @@ import collection.mutable.HashMap;
 	      ambiguousError(
 		"it is both defined in " + defSym.owner +
 		" and imported subsequently by \n" + imports.head);
-	    else if (!defSym.owner.isClass || defSym.owner.isPackageClass || defSym.isTypeParameter)
+	    else if (!defSym.owner.isClass || defSym.owner.isPackageClass || defSym.isTypeParameterOrSkolem)
 	      pre = NoPrefix
 	    else
 	      qual = atPos(tree.pos)(gen.mkQualifier(pre));

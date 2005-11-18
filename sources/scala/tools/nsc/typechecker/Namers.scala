@@ -126,7 +126,8 @@ trait Namers: Analyzer {
       def finish = finishWith(List());
 
       def skolemize(tparams: List[AbsTypeDef]): unit = {
-	for (val tp <- tparams) tp.symbol = tp.symbol.owner.newSkolem(tp.symbol)
+	val tskolems = newSkolems(tparams map (.symbol));
+        for (val Pair(tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
       }
 
       if (tree.symbol == NoSymbol) {
@@ -388,6 +389,7 @@ trait Namers: Analyzer {
 	    new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
 
 	  case AbsTypeDef(_, _, lo, hi) =>
+            //System.out.println("bounds of " + sym + ":" + sym.tpe + " = " + typer.typedType(hi).tpe);
 	    TypeBounds(typer.typedType(lo).tpe, typer.typedType(hi).tpe);
 
 	  case Import(expr, selectors) =>
@@ -444,7 +446,7 @@ trait Namers: Analyzer {
 	  sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
 	context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
-	if (!sym.isValueParameter && !sym.isTypeParameter &&
+	if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
 	    (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
 	  context.error(sym.pos,
 	    "only classes can have declared but undefined members" +
