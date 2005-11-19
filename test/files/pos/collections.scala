@@ -11,5 +11,5 @@ class Collections extends HashSet[Int] with ObservableSet[Int,Collections] {
 
 object collections extends Collections;
 
-class Collections1 extends HashSet[Int] with ObservableSet[Int,Collections1];
-object collections1 extends Collections1;
+//class Collections1 extends HashSet[Int] with ObservableSet[Int,Collections1];
+//object collections1 extends Collections1;
