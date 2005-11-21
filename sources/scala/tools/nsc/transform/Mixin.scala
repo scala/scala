@@ -319,7 +319,7 @@ abstract class Mixin extends InfoTransform {
         case Apply(Select(qual, _), args) =>
           def staticCall(target: Symbol) = {
 	    if (target == NoSymbol)
-              assert(false, "" + sym + " " + sym.owner + " " + sym.owner.implClass + " " + sym.owner.owner + atPhase(phase.prev)(sym.owner.owner.info.decls.toList));//debug
+              assert(false, "" + sym + " " + sym.owner + " " + implClass(sym.owner) + " " + sym.owner.owner + atPhase(phase.prev)(sym.owner.owner.info.decls.toList));//debug
             localTyper.typed {
               atPos(tree.pos) {
                 val qual1 =
@@ -341,20 +341,12 @@ abstract class Mixin extends InfoTransform {
                   assert(false, "illegal super in mixin class: " + currentOwner.enclClass + " " + tree);
               }
               if (sym.owner hasFlag lateINTERFACE)
-                staticCall(atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass)))
+                staticCall(atPhase(phase.prev)(sym.overridingSymbol(implClass(sym.owner))))
               else {
                 assert(!(sym.owner hasFlag INTERFACE));
                 assert(!currentOwner.enclClass.isImplClass);
                 tree
               }
-/*
-              } else {
-                var sym1 = sym;
-                if (sym.owner hasFlag lateINTERFACE)
-                  sym1 = atPhase(phase.prev)(sym.overridingSymbol(sym.owner.implClass));
-                staticCall(sym1)
-              }
-*/
             case _ =>
               tree
           }
@@ -380,14 +372,6 @@ abstract class Mixin extends InfoTransform {
 	      }
             }
 	  }
-/*
-        case Ident(_) =>
-          if (sym.owner.isClass) {
-            assert(sym.isModuleVar, sym);
-            assert(!sym.owner.isImplClass, sym);
-            atPos(tree.pos) {
-              gen.SelectThis(
-*/
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
           localTyper.typed {
             atPos(tree.pos) {

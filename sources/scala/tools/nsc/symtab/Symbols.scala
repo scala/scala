@@ -155,7 +155,7 @@ import Flags._;
       isConstructor && owner.primaryConstructor == this;
 
     /** Is this symbol an implementation class for a trait ? */
-    final def isImplClass: boolean = isClass && nme.isImplClassName(name);
+    final def isImplClass: boolean = isClass && hasFlag(IMPLCLASS);
 
     final def needsImplClass: boolean =
       isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
@@ -542,9 +542,7 @@ import Flags._;
     final def toInterface: Symbol =
       if (isImplClass) {
         assert(!tpe.parents.isEmpty, this);
-        val iface = tpe.parents.last.symbol;
-        assert(nme.implClassName(iface.name) == name, this);
-        iface
+        tpe.parents.last.symbol
       } else this;
 
     /** The module corresponding to this module class (note that this
@@ -745,7 +743,7 @@ import Flags._;
 
     /** String representation of symbol's definition */
     final def defString: String =
-      compose(List(flagsToString(flags & ExplicitFlags),
+      compose(List(flagsToString(if (settings.debug.value) flags else flags & ExplicitFlags),
        keyString,
        varianceString + nameString + infoString(rawInfo)));
 

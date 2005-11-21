@@ -1,6 +1,6 @@
 object test {
 
-  val x: Object { def toString(): String } = new Object {
-    override def toString(): String = "1";
+  val x: Object { def t(): String } = new Object {
+    def t(): String = "1";
   }
 }

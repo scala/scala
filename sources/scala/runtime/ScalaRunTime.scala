@@ -12,7 +12,7 @@ package scala.runtime;
 
 object ScalaRunTime {
 
-  /** Names for primitive typesm, used by array unboxing */
+  /** Names for primitive types, used by array unboxing */
   val ByteTag = ".Byte";
   val ShortTag = ".Short";
   val CharTag = ".Char";

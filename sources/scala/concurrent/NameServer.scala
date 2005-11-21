@@ -29,7 +29,7 @@ object NameServer {
   def whereis(name: Symbol): Option[Process] =
     names.get(name);
 
-  def send(name: Symbol, msg: Actor#Message) =
+  def send(name: Symbol, msg: MailBox#Message) =
     names(name).send(msg);
 
 }

@@ -9,7 +9,7 @@ public class verbfilterScala {
       "do", "else", "extends", "false", "final",
       "finally", "for", "if", "import", "new",
       "null", "object", "override", "package", "private",
-      "protected", "return", "sealed", "super", "this",
+      "protected", "requires", "return", "sealed", "super", "this", "throw",
       "trait", "true", "try", "type", "val",
       "var", "while", "with", "yield"};
 

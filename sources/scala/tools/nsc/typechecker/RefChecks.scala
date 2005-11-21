@@ -81,6 +81,10 @@ abstract class RefChecks extends InfoTransform {
 	mvarRef))
   }
 
+  // def m: T;
+  def newModuleAccessDcl(accessor: Symbol) =
+    DefDef(accessor setFlag lateDEFERRED, vparamss => EmptyTree);
+
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
@@ -450,10 +454,12 @@ abstract class RefChecks extends InfoTransform {
           val ddef =
 	    atPhase(phase.next) {
 	      localTyper.typed {
-                newModuleAccessDef(sym, vdef.symbol)
+                if (sym.owner.isTrait) newModuleAccessDcl(sym)
+                else newModuleAccessDef(sym, vdef.symbol)
               }
             }
-          if (sym.owner.isTrait) List(transform(cdef))
+
+          if (sym.owner.isTrait) transformTrees(List(cdef, ddef))
           else transformTrees(List(cdef, vdef, ddef))
 	}
 

@@ -20,6 +20,10 @@ trait CaseClass extends AnyRef {
   */
   def caseElement(n: Int): Any ;
 
+  /** need also, for reflection
+  def setCaseElement(n: Int, v: Any): unit
+  */
+
   /** for a case class A(x_0,...,x_(k-1)), returns k
   */
   def caseArity: Int ;

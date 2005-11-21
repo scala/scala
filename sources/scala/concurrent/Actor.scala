@@ -10,7 +10,20 @@
 
 package scala.concurrent;
 
+abstract class Actor extends Thread {
+  private val in = new MailBox;
 
-abstract class Actor extends Thread with MailBox;
+  def send(msg: in.Message) =
+    in.send(msg);
+
+  def receive[a](f: PartialFunction[in.Message, a]): a =
+    if (Thread.currentThread() == this) in.receive(f);
+    else error("receive called not on own process");
+
+  def receiveWithin[a](msec: long)(f: PartialFunction[in.Message, a]): a =
+    if (Thread.currentThread() == this) in.receiveWithin(msec)(f);
+    else error("receiveWithin called not on own process");
+}
+
 
 

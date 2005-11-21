@@ -20,12 +20,12 @@ object Process {
 	self.spawn_link(body);
     }
 
-    def send(p: Process,msg: Actor#Message) =
+    def send(p: Process,msg: MailBox#Message) =
 	p.send(msg);
-    def receive[a](f: PartialFunction[Actor#Message, a]): a =
+    def receive[a](f: PartialFunction[MailBox#Message, a]): a =
 	self.receive(f);
 
-    def receiveWithin[a](msec: long)(f: PartialFunction[Actor#Message, a]): a =
+    def receiveWithin[a](msec: long)(f: PartialFunction[MailBox#Message, a]): a =
         self.receiveWithin(msec)(f);
 
     def self: Process = {
@@ -51,11 +51,11 @@ class Process(body: => Unit) extends Actor() {
 	}
     }
 
-    private def signal(s: Actor#Message) = {
+    private def signal(s: MailBox#Message) = {
 	links.foreach((p:Process) => p.send(Tuple3('EXIT,this,s)));
     }
 
-    def !(msg: Actor#Message) =
+    def !(msg: MailBox#Message) =
 	send(msg);
 
     def link(p: Process) = {

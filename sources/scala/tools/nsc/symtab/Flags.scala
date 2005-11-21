@@ -52,25 +52,26 @@ object Flags {
                                           // for parameters: is a val parameter
 
   final val LABEL         = 0x40000000;   // symbol is a label. Set by TailCall
-  final val CAPTURED      = 0x80000000l;   // variable is accessed from nested function. Set by LambdaLift
+  final val CAPTURED      = 0x80000000L;   // variable is accessed from nested function. Set by LambdaLift
 
-  final val IS_ERROR      = 0x100000000l; // symbol is an error symbol
-  final val OVERLOADED    = 0x200000000l; // symbol is overloaded
-  final val LIFTED        = 0x400000000l; // class has been lifted out to package level
+  final val IS_ERROR      = 0x100000000L; // symbol is an error symbol
+  final val OVERLOADED    = 0x200000000L; // symbol is overloaded
+  final val LIFTED        = 0x400000000L; // class has been lifted out to package level
 					  // local value has been lifted out to class level
-  final val MIXEDIN       = 0x800000000l; // member has been mixed in
+  final val MIXEDIN       = 0x800000000L; // member has been mixed in
 
-  final val EXPANDEDNAME  = 0x1000000000l; // name has been expanded with class suffix
-  final val TRANS_FLAG    = 0x2000000000l; // transient flag guaranteed to be reset after each phase.
-  final val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
+  final val EXPANDEDNAME  = 0x1000000000L; // name has been expanded with class suffix
+  final val IMPLCLASS     = 0x2000000000L; // symbol is an implementation class
+  final val TRANS_FLAG    = 0x4000000000L; // transient flag guaranteed to be reset after each phase.
+  final val INCONSTRUCTOR = TRANS_FLAG;    // transient flag for analyzer
 
-  final val LOCKED        = 0x8000000000l; // temporary flag to catch cyclic dependencies
+  final val LOCKED        = 0x8000000000L; // temporary flag to catch cyclic dependencies
 
-  final val InitialFlags  = 0x000000FFFFFFFFFFl; // flags that are enabled from phase 1.
-  final val LateFlags     = 0x000FFF0000000000l; // flags that override flags in 0xFFF.
-  final val AntiFlags     = 0x7FF0000000000000l; // flags that cancel flags in 0x7FF
-  final val LateShift     = 40l;
-  final val AntiShift     = 52l;
+  final val InitialFlags  = 0x000000FFFFFFFFFFL; // flags that are enabled from phase 1.
+  final val LateFlags     = 0x000FFF0000000000L; // flags that override flags in 0xFFF.
+  final val AntiFlags     = 0x7FF0000000000000L; // flags that cancel flags in 0x7FF
+  final val LateShift     = 40L;
+  final val AntiShift     = 52L;
 
   // late flags (set by a transformer phase)
   final val lateDEFERRED = (DEFERRED: long) << LateShift;

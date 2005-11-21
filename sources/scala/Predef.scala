@@ -144,6 +144,16 @@ object Predef {
       throw new Error("assertion failed: " + message);
   }
 
+  def assume(assumption: Boolean): Unit = {
+    if (!assumption)
+      throw new Error("assumption failed");
+  }
+
+  def assume(assumption: Boolean, message: Any): Unit = {
+    if (!assumption)
+      throw new Error("assumption failed: " + message);
+  }
+
   // views -------------------------------------------------------------
 
   implicit def identity[a](x: a): a = x;
