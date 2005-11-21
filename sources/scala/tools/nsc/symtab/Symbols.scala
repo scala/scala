@@ -914,10 +914,12 @@ import Flags._;
         thisTypePhase = phase;
         if (!(isValid(p) /*||
         thisTypePhase != null && thisTypePhase.erasedTypes && phase.erasedTypes*/)) {
-          thisTypeCache =
+          thisTypeCache = ThisType(this)
+/*
             if (isModuleClass && !isRoot && !phase.erasedTypes)
               singleType(owner.thisType, sourceModule);
             else ThisType(this);
+*/
         }
       }
       thisTypeCache

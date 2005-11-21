@@ -480,7 +480,7 @@ import Flags._;
   /** A class for this-types of the form <sym>.this.type
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType {
-    assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym);
+    //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym);
     override def isTrivial: boolean = sym.isPackageClass;
     override def symbol = sym;
     override def singleDeref: Type = sym.typeOfThis;
