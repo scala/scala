@@ -249,7 +249,9 @@ abstract class RefChecks extends InfoTransform {
       // 3. Check that every defined member with an `override' modifier overrides some other member.
       for (val member <- clazz.info.decls.toList)
 	if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-	    (clazz.info.baseClasses.tail forall (bc => member.overriddenSymbol(bc) == NoSymbol))) {
+	    (clazz.info.baseClasses.tail forall {
+               bc => member.matchingSymbol(bc, clazz.thisType) == NoSymbol
+            })) {
           // for (val bc <- clazz.info.baseClasses.tail) System.out.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
 	  unit.error(member.pos, member.toString() + " overrides nothing");
 	  member resetFlag OVERRIDE
@@ -550,7 +552,7 @@ abstract class RefChecks extends InfoTransform {
 	    case Super(qualifier, mixin) =>
               val base = currentOwner.enclClass;
               if (sym hasFlag DEFERRED) {
-	        val member = sym.overridingSymbol(base);
+	        val member = sym.overridingSymbol(base);//???
 	        if (mixin != nme.EMPTY.toTypeName || member == NoSymbol ||
 		    !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(base)))
 		  unit.error(tree.pos, "symbol accessed from super may not be abstract");

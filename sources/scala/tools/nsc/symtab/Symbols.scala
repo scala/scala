@@ -558,15 +558,21 @@ import Flags._;
      */
     def moduleClass: Symbol = NoSymbol;
 
-    /** The symbol overridden by this symbol in given base class */
-    final def overriddenSymbol(base: Symbol): Symbol =
-      base.info.nonPrivateDecl(name).suchThat(sym =>
-        !sym.isTerm || (tpe matches owner.thisType.memberType(sym)));
+    /** The non-abstract, symbol whose type matches the type of this symbol in in given class
+     *  @param ofclazz   The class containing the symbol's definition
+     *  @param site      The base type from which member types are computed
+     */
+    final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol =
+      ofclazz.info.nonPrivateDecl(name).suchThat(sym =>
+        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)));
 
-    /** The symbol overriding this symbol in given subclass */
-    final def overridingSymbol(base: Symbol): Symbol =
-      base.info.nonPrivateDecl(name).suchThat(sym =>
-        !sym.isTerm || (base.thisType.memberType(sym) matches base.thisType.memberType(this)));
+    /** The symbol overridden by this symbol in given class `ofclazz' */
+    final def overriddenSymbol(ofclazz: Symbol): Symbol =
+      matchingSymbol(ofclazz, owner.thisType);
+
+    /** The symbol overriding this symbol in given subclass `ofclazz' */
+    final def overridingSymbol(ofclazz: Symbol): Symbol =
+      matchingSymbol(ofclazz, ofclazz.thisType);
 
     /** The symbol accessed by a super in the definition of this symbol when seen from
      *  class `base'. This symbol is always concrete.
@@ -577,7 +583,8 @@ import Flags._;
       var sym: Symbol = NoSymbol;
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (!bcs.head.isImplClass)
-          sym = overriddenSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
+          sym = matchingSymbol(bcs.head, base.thisType).suchThat(
+            sym => !sym.hasFlag(DEFERRED));
         bcs = bcs.tail
       }
       sym
