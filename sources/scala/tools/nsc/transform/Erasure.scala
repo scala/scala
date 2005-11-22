@@ -186,6 +186,25 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
+    private def cast(tree: Tree, pt: Type): Tree =
+      if (pt.symbol == ArrayClass && tree.tpe.symbol == ObjectClass)
+	typed {
+	  atPos(tree.pos) {
+	    evalOnce(tree, x =>
+	      gen.cast(
+		If(
+		  Apply(
+		    TypeApply(
+		      Select(x(), Object_isInstanceOf),
+		      List(TypeTree(BoxedArrayClass.tpe))),
+		    List()),
+		  unbox(x(), pt),
+		  x()),
+		pt))
+	  }
+	}
+      else gen.cast(tree, pt);
+
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
     private def isUnboxedArrayMember(sym: Symbol) =
       sym.name == nme.apply || sym.name == nme.length || sym.name == nme.update ||
@@ -217,11 +236,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         assert(tree.symbol.isStable);
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
       } else if (pt <:< tree.tpe)
-        gen.cast(tree, pt)
+        cast(tree, pt)
       else if (isUnboxedClass(pt.symbol) && !isUnboxedClass(tree.tpe.symbol))
         adaptToType(unbox(tree, pt), pt)
       else
-        gen.cast(tree, pt)
+        cast(tree, pt)
     }
 
     /** Replace member references as follows:
@@ -260,22 +279,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 		   (targClass == ArrayClass && (qualClass isSubClass BoxedArrayClass)))
 	    unbox(qual1, targ.tpe)
 	  else if (targClass == ArrayClass && qualClass == ObjectClass)
-	    typed {
-	      atPos(tree.pos) {
-		evalOnce(qual1, x =>
-		  gen.cast(
-		    If(
-		      Apply(
-			TypeApply(
-			  Select(x(), Object_isInstanceOf),
-			  List(TypeTree(BoxedArrayClass.tpe))),
-			List()),
-		      unbox(x(), targ.tpe),
-		      x()),
-		    targ.tpe))
-	      }
-	    }
-	  else tree
+            cast(qual1, targ.tpe)
+	  else
+            tree
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
@@ -301,7 +307,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 assert(qual1.symbol.isStable);
                 qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType;
               } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
-                qual1 = gen.cast(qual1, tree.symbol.owner.tpe);
+                qual1 = cast(qual1, tree.symbol.owner.tpe);
             copy.Select(tree, qual1, name)
           }
         case _ =>
