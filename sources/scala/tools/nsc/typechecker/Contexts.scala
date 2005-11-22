@@ -63,7 +63,7 @@ import scala.tools.nsc.util.Position;
     var depth: int = 0;
     var imports: List[ImportInfo] = List();
 
-    var thisSkolemType: Type = NoPrefix;
+    var prefix: Type = NoPrefix;
     var reportAmbiguousErrors = false;
     var reportGeneralErrors = false;
     var checking = false;
@@ -85,10 +85,10 @@ import scala.tools.nsc.util.Position;
       tree match {
         case Template(_, _) | PackageDef(_, _) =>
 	  c.enclClass = c;
-	  c.thisSkolemType = skolemizedThisType(c.owner)
+	  c.prefix = skolemizedThisType(this.prefix, c.owner)
 	case _ =>
 	  c.enclClass = this.enclClass;
-	  c.thisSkolemType = this.thisSkolemType
+          c.prefix = if (c.owner != this.owner && c.owner.isTerm) NoPrefix else this.prefix
       }
       c.variance = this.variance;
       c.depth = if (scope == this.scope) this.depth else this.depth + 1;
@@ -129,18 +129,14 @@ import scala.tools.nsc.util.Position;
       c
     }
 
-    def skolemizedThisType(clazz: Symbol): Type = {
-      clazz.thisType
-      /* not yet (GADT)
+    def skolemizedThisType(pre: Type, clazz: Symbol): Type = if (settings.Xgadt.value) {
       val tparams = clazz.unsafeTypeParams;
-      if (tparams.isEmpty) clazz.thisType
-      else {
-        val self = clazz.newThisSym(clazz.pos)
-        setInfo clazz.typeOfThis.substSym(tparams, newSkolems(tparams));
-        singleType(clazz.thisType, self)
-      }
-      */
-    }
+      if (pre.isInstanceOf[SingleType] || !tparams.isEmpty) {
+        val self = clazz.newThisSkolem
+          setInfo clazz.typeOfThis.substSym(tparams, newTypeSkolems(tparams));
+        singleType(pre, self)
+      } else clazz.thisType
+    } else clazz.thisType;
 
     def error(pos: int, msg: String): unit =
       if (reportGeneralErrors)

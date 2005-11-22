@@ -1311,6 +1311,9 @@ import Flags._;
       }
     }
     def apply(tp: Type): Type = tp match {
+      case ThisType(sym) if (sym.isModuleClass) =>
+        val sym1 = adaptToNewRun(sym.owner.thisType, sym);
+        if (sym1 == sym) tp else ThisType(sym1)
       case SingleType(pre, sym) =>
 	if (sym.isPackage) tp
 	else {

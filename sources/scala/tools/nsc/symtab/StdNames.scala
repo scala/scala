@@ -76,6 +76,7 @@ import scala.tools.nsc.util.NameTransformer;
     val IMPL_CLASS_SUFFIX = newTermName("$class");
     val MODULE_SUFFIX = newTermName("$module");
     val LOCALDUMMY_PREFIX = newTermName(LOCALDUMMY_PREFIX_STRING);
+    val THIS_SUFFIX = newTermName(".this");
 
     def isLocalName(name: Name) = name.endsWith(LOCAL_SUFFIX);
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX);

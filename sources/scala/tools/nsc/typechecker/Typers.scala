@@ -959,7 +959,7 @@ import collection.mutable.HashMap;
 
 	  var cx = context;
 	  while (defSym == NoSymbol && cx != NoContext) {
-	    pre = cx.enclClass.thisSkolemType;
+	    pre = cx.enclClass.prefix;
 	    defEntry = cx.scope.lookupEntry(name);
 	    if (defEntry != null) {
 	      defSym = defEntry.sym;
@@ -1240,7 +1240,7 @@ import collection.mutable.HashMap;
               Pair(tree.symbol, tree.symbol.thisType)
             } else {
               val clazzContext = qualifyingClassContext(qual);
-              Pair(clazzContext.owner, clazzContext.thisSkolemType)
+              Pair(clazzContext.owner, clazzContext.prefix)
             }
           if (clazz == NoSymbol) setError(tree)
           else {
@@ -1265,7 +1265,7 @@ import collection.mutable.HashMap;
               Pair(tree.symbol, tree.symbol.thisType)
             } else {
               val clazzContext = qualifyingClassContext(qual);
-              Pair(clazzContext.owner, clazzContext.thisSkolemType)
+              Pair(clazzContext.owner, clazzContext.prefix)
             }
           if (clazz == NoSymbol) setError(tree)
           else {

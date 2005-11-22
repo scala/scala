@@ -70,6 +70,9 @@ import Flags._;
     final def newThisSym(pos: int) = {
       newValue(pos, nme.this_).setFlag(SYNTHETIC);
     }
+    final def newThisSkolem: Symbol =
+      new ThisSkolem(owner, pos, name, this)
+        .setFlag(SYNTHETIC | FINAL);
     final def newImport(pos: int) =
       newValue(pos, nme.IMPORT).setFlag(SYNTHETIC);
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
@@ -85,7 +88,7 @@ import Flags._;
       new TypeSymbol(this, pos, name).setFlag(DEFERRED);
     final def newTypeParameter(pos: int, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM);
-    final def newSkolem: Symbol =
+    final def newTypeSkolem: Symbol =
       new TypeSkolem(owner, pos, name, this)
         .setFlag(flags);
     final def newClass(pos: int, name: Name) =
@@ -129,6 +132,7 @@ import Flags._;
     final def isStaticModule = isModule && isStatic && !isMethod;
     final def isPackage = isModule && hasFlag(PACKAGE);
     final def isThisSym = isTerm && name == nme.this_;
+    final def isThisSkolem = isTerm && deSkolemize != this;
     final def isError = hasFlag(IS_ERROR);
     final def isTrait = isClass & hasFlag(TRAIT);
     final def isAliasType = isType && !isClass && !hasFlag(DEFERRED);
@@ -811,6 +815,15 @@ import Flags._;
     }
   }
 
+  /** A class for type parameters viewed from inside their scopes */
+  class ThisSkolem(initOwner: Symbol, initPos: int, initName: Name, clazz: Symbol) extends TermSymbol(initOwner, initPos, initName) {
+    override def deSkolemize = clazz;
+    override def cloneSymbolImpl(owner: Symbol): Symbol = {
+      throw new Error("should not clone a this skolem");
+    }
+    override def nameString: String = clazz.name.toString() + ".this";
+  }
+
   /** A class of type symbols. Alias and abstract types are direct instances
    *  of this class. Classes are instances of a subclass.
    */
@@ -983,8 +996,8 @@ import Flags._;
     syms1
   }
 
-  def newSkolems(tparams: List[Symbol]): List[Symbol] = {
-    val tskolems = tparams map (.newSkolem);
+  def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
+    val tskolems = tparams map (.newTypeSkolem);
     val ltp = new LazyType {
       override def complete(sym: Symbol): unit =
         sym setInfo sym.deSkolemize.info.substSym(tparams, tskolems);

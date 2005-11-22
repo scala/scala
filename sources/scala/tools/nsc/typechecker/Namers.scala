@@ -126,7 +126,7 @@ trait Namers: Analyzer {
       def finish = finishWith(List());
 
       def skolemize(tparams: List[AbsTypeDef]): unit = {
-	val tskolems = newSkolems(tparams map (.symbol));
+	val tskolems = newTypeSkolems(tparams map (.symbol));
         for (val Pair(tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
       }
 
