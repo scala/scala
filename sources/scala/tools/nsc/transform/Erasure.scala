@@ -131,6 +131,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   /** The modifier typer which retypes with erased types. */
   class Eraser(context: Context) extends Typer(context) {
 
+    private def evalOnce(expr: Tree, within: (() => Tree) => Tree): Tree =
+      if (treeInfo.isPureExpr(expr)) {
+	within(() => expr);
+      } else {
+	val temp = context.owner.newValue(expr.pos, context.unit.fresh.newName())
+	  setFlag SYNTHETIC setInfo expr.tpe;
+	Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
+      }
+
     /** Box `tree' of unboxed type */
     private def box(tree: Tree): Tree =
       typed {
@@ -215,15 +224,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       (sym.name == nme.equals_ || sym.name == nme.hashCode_ || sym.name == nme.toString_ ||
        (sym.name == nme.EQ || sym.name == nme.NE) && sym.info.paramTypes.head.symbol == ObjectClass ||
        sym == Object_isInstanceOf || sym == Object_asInstanceOf);
-
-    def evalOnce(expr: Tree, within: (() => Tree) => Tree): Tree =
-      if (treeInfo.isPureExpr(expr)) {
-	within(() => expr);
-      } else {
-	val temp = context.owner.newValue(expr.pos, context.unit.fresh.newName())
-	  setFlag SYNTHETIC setInfo expr.tpe;
-	Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
-      }
 
     /** Adapt `tree' to expected type `pt' */
     private def adaptToType(tree: Tree, pt: Type): Tree = {

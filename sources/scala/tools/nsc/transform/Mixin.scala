@@ -260,6 +260,19 @@ abstract class Mixin extends InfoTransform {
         if (sym.pos == Position.NOPOS) clazz.pos else sym.pos;
       def addDefDef(sym: Symbol, rhs: List[Symbol] => Tree): unit =
 	addDef(position(sym), DefDef(sym, vparamss => rhs(vparamss.head)));
+      def add(stats: List[Tree], newDefs: List[Tree]) = {
+        val newSyms = newDefs map (.symbol);
+        def isNotDuplicate(tree: Tree) = tree match {
+          case DefDef(_, _, _, _, _, _) =>
+            val sym = tree.symbol;
+            !((sym hasFlag DEFERRED) &&
+              (newSyms exists (nsym => nsym.name == sym.name && (nsym.tpe matches sym.tpe))))
+          case _ =>
+            true
+        }
+        if (newDefs.isEmpty) stats
+        else stats.filter(isNotDuplicate) ::: newDefs
+      }
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)
         if (stat.symbol hasFlag SUPERACCESSOR) =>
@@ -272,13 +285,11 @@ abstract class Mixin extends InfoTransform {
         case _ =>
           stat
       }
-      var stats1 = stats;
       if (clazz hasFlag lateINTERFACE) {
 	for (val sym <- clazz.info.decls.toList) {
 	  if ((sym hasFlag SYNTHETIC) && (sym hasFlag ACCESSOR))
 	    addDefDef(sym, vparamss => EmptyTree)
 	}
-	if (newDefs.hasNext) stats1 = stats1 ::: newDefs.toList;
       } else if (!clazz.isTrait) {
 	for (val sym <- clazz.info.decls.toList) {
 	  if (sym hasFlag MIXEDIN) {
@@ -304,8 +315,8 @@ abstract class Mixin extends InfoTransform {
 	    }
 	  }
 	}
-        if (newDefs.hasNext) stats1 = stats1 ::: newDefs.toList;
       }
+      val stats1 = add(stats, newDefs.toList);
       if (clazz.isTrait) stats1 else stats1 map completeSuperAccessor;
     }
 
