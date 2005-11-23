@@ -8,6 +8,15 @@ package scala.tools.nsc.typechecker;
 import symtab.Flags._;
 import util.ListBuffer;
 
+/**
+ *   - caseArity, caseElement implementations added to case classes
+ *   - equals, and hashCode and toString methods are added to case classes,
+ *       unless they are defined in the class or a baseclass
+ *       different from java.lang.Object
+ *   - toString method is added to case objects,
+ *       unless they are defined in the class or a baseclass
+ *       different from java.lang.Object
+*/
 [_trait_] abstract class SyntheticMethods: Analyzer {
   import global._;                  // the global environment
   import definitions._;             // standard classes and methods
