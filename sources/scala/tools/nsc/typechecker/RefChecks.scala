@@ -22,13 +22,6 @@ import transform.InfoTransform;
  *  It performs the following transformations.
  *
  *   - Local modules are replaced by variables and classes
- *   - caseArity, caseElement implementations added to case classes
- *   - equals, and hashCode and toString methods are added to case classes,
- *       unless they are defined in the class or a baseclass
- *       different from java.lang.Object
- *   - toString method is added to case objects,
- *       unless they are defined in the class or a baseclass
- *       different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
  *   - References to parameter accessors with aliases are replaced by super references to
  *     these aliases.
