@@ -555,7 +555,9 @@ abstract class GenJVM extends SubComponent {
         }
 
         crtPC = jcode.getPC();
-        val crtLine = instr.pos; //clasz.cunit.position(instr.pos).line;
+        val crtLine = try { clasz.cunit.position(instr.pos).line; } catch {
+            case _: Error => -1;
+        }
         if (crtLine != lastLineNr &&
             crtPC > lastMappedPC) {
           jcode.completeLineNumber(lastMappedPC, crtPC, crtLine);

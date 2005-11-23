@@ -489,9 +489,14 @@ abstract class GenICode extends SubComponent  {
             genConversion(l, r, ctx1, cast)
           else if (l.isValueType) {
             ctx1.bb.emit(DROP(l), fun.pos);
-            ctx1.bb.emit(CONSTANT(Constant(false)))
+            if (cast) {
+              ctx1.bb.emit(NEW(REFERENCE(definitions.getClass("ClassCastException"))));
+              ctx1.bb.emit(DUP(ANY_REF_CLASS));
+              ctx1.bb.emit(THROW());
+            } else
+              ctx1.bb.emit(CONSTANT(Constant(false)))
           }
-          else if (r.isValueType)
+          else if (r.isValueType /*|| r.isArrayType */)
             genBoxedConversion(l, r, ctx1, cast)
           else
             genCast(l, r, ctx1, cast);
@@ -902,14 +907,29 @@ abstract class GenICode extends SubComponent  {
       }
     }
 
+    /** Generate a conversion from a reference type to a value type, like in
+     *  Any -> Array[Int] or Any -> Int
+     */
     def genBoxedConversion(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean) = {
-      assert(to.isValueType, "Expecting conversion to value type: " + to);
-      val boxedCls = definitions.boxedClass(to.toType.symbol);
+      assert(to.isValueType || to.isArrayType, "Expecting conversion to value type: " + to);
+
+      val boxedCls = to match {
+        case ARRAY(ARRAY(_)) | ARRAY(REFERENCE(_)) =>
+          definitions.BoxedObjectArrayClass;
+        case ARRAY(elem) =>
+          definitions.boxedArrayClass(elem.toType.symbol)
+        case _ =>
+          definitions.boxedClass(to.toType.symbol);
+      }
+
       if (cast) {
         ctx.bb.emit(CHECK_CAST(REFERENCE(boxedCls)));
-        ctx.bb.emit(LOAD_FIELD(definitions.getMember(boxedCls, "value"), false));
-      } else
+        ctx.bb.emit(CONSTANT(Constant(definitions.signature(to.toType))));
+        ctx.bb.emit(CALL_METHOD(definitions.getMember(boxedCls, "unbox"),
+                                Dynamic));
+      } else {
         ctx.bb.emit(IS_INSTANCE(REFERENCE(boxedCls)));
+      }
     }
 
     def genCast(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean) = {

@@ -5,6 +5,8 @@
 // $Id$
 package scala.tools.nsc.transform;
 
+import scala.tools.nsc.symtab.Flags;
+
 /** Perform tail recursive call elimination.
  */
 abstract class TailCalls extends Transform
@@ -67,7 +69,7 @@ abstract class TailCalls extends Transform
       var label: Symbol = NoSymbol;
 
       /** The expected type arguments of self-recursive calls */
-      var types: List[Type] = Nil;
+      var tparams: List[Symbol] = Nil;
 
       /** Tells whether we are in a (possible) tail position */
       var tailPos = false;
@@ -79,9 +81,9 @@ abstract class TailCalls extends Transform
         this();
         this.currentMethod = that.currentMethod;
         this.label         = that.label;
-        this.types         = that.types;
+        this.tparams       = that.tparams;
         this.tailPos       = that.tailPos;
-        this.accessed    = that.accessed;
+        this.accessed      = that.accessed;
       }
 
       /** Create a new method symbol for the current method and store it in
@@ -93,7 +95,7 @@ abstract class TailCalls extends Transform
       }
 
       override def toString(): String = {
-        "" + currentMethod.name + " types: " + types + " tailPos: " + tailPos +
+        "" + currentMethod.name + " tparams: " + tparams + " tailPos: " + tailPos +
         " accessed: " + accessed + "\nLabel: " + label + "\nLabel type: " + label.info;
       }
     }
@@ -127,15 +129,18 @@ abstract class TailCalls extends Transform
           newCtx.label.setInfo(tree.symbol.info);
           newCtx.tailPos = true;
 
-          val t1 = if (newCtx.currentMethod.isFinal) {
-            newCtx.types = Nil;
-
-            newCtx.currentMethod.tpe match {
-              case PolyType(tparams, result) =>
-                newCtx.types = tparams map (s => s.tpe);
-                newCtx.label.setInfo(result);
-
-              case _ => ;
+          val t1 = if (newCtx.currentMethod.isFinal ||
+                       newCtx.currentMethod.enclClass.hasFlag(Flags.MODULE)) {
+            newCtx.tparams = Nil;
+            log("  Considering " + name + " for tailcalls");
+            tree.symbol.tpe match {
+              case PolyType(tpes, restpe) =>
+                newCtx.tparams = tparams map (.symbol);
+                newCtx.label.setInfo(
+                  restpe.substSym(tpes, tparams map (.symbol)));
+                log("adding types: " + newCtx.tparams);
+                log("setting return resultType to: " + newCtx.label.tpe);
+              case _ => ();
             }
 
             var newRHS = transform(rhs, newCtx);
@@ -187,7 +192,8 @@ abstract class TailCalls extends Transform
                throw new RuntimeException("We should've never gotten inside a pattern");
 
         case Function(vparams, body) =>
-          throw new RuntimeException("Anonymous function should not exist at this point");
+          tree
+          //throw new RuntimeException("Anonymous function should not exist at this point. at: " + unit.position(tree.pos));
 
         case Assign(lhs, rhs) => super.transform(tree);
         case If(cond, thenp, elsep) =>
@@ -204,11 +210,11 @@ abstract class TailCalls extends Transform
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
           if ( ctx.currentMethod.isFinal &&
                ctx.tailPos &&
-               isSameTypes(ctx.types, targs map (.tpe)) &&
+               isSameTypes(ctx.tparams, targs map (.tpe.symbol)) &&
                isRecursiveCall(fun))
-                rewriteTailCall(fun, transformTrees(vargs, mkContext(ctx, false)));
-            else
-              copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)));
+                 rewriteTailCall(fun, transformTrees(vargs, mkContext(ctx, false)))
+               else
+                 copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)));
 
         case TypeApply(fun, args) =>
           super.transform(tree);
@@ -248,6 +254,14 @@ abstract class TailCalls extends Transform
       ctx.accessed = true;
       typed(atPos(fun.pos)(
         Apply(Ident(ctx.label), args)));
+    }
+
+    private def isSameTypes(ts1: List[Symbol], ts2: List[Symbol]): Boolean = {
+      def isSameType(t1: Symbol, t2: Symbol) = {
+        log("" + t1 + " vs " + t2);
+        t1 == t2
+      }
+      List.forall2(ts1, ts2)(isSameType)
     }
 
     /** Return true if the fun tree refers to the same method as the one

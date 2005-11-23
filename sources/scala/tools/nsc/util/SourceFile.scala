@@ -47,7 +47,7 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   // constants
 
   // NOTE: all indexes are based on zero!!!!
-  override def toString(): String = file.getName() + ":" + content.length;
+  override def toString(): String = file.getName() /* + ":" + content.length */ ;
 
 
   object line {
