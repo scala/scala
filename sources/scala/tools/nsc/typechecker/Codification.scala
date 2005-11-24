@@ -187,9 +187,9 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
    */
   def codify(tree: Tree): Tree = {
     val reified = reify(tree);
-    System.out.println("reified = " + reified);
+    if (settings.debug.value) log("reified = " + reified);
     val injected = inject(reified);
-    System.out.println("injected = " + injected);
+    if (settings.debug.value) log("injected = " + injected);
     New(TypeTree(appliedType(definitions.TypedCodeClass.typeConstructor, List(tree.tpe))),
         List(List(injected)));
 

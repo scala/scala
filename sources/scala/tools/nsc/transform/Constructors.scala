@@ -75,6 +75,7 @@ abstract class Constructors extends Transform {
 
       val defBuf = new ListBuffer[Tree];
       val constrStatBuf = new ListBuffer[Tree];
+      val constrPrefixBuf = new ListBuffer[Tree];
       constrBody.stats foreach (constrStatBuf +=);
 
       for (val stat <- stats) stat match {
@@ -92,7 +93,9 @@ abstract class Constructors extends Transform {
 	    assert(stat.symbol.getter != NoSymbol, stat)
 	  else {
 	    if (rhs != EmptyTree) {
-	      constrStatBuf += mkAssign(stat.symbol, intoConstructor(stat.symbol, rhs));
+              val rhs1 = intoConstructor(stat.symbol, rhs);
+              (if (refersToThis(rhs1)) constrStatBuf else constrPrefixBuf)
+                += mkAssign(stat.symbol, rhs1)
 	    }
 	    defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
 	  }
@@ -128,7 +131,10 @@ abstract class Constructors extends Transform {
 
       defBuf += copy.DefDef(
 	constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,
-	copy.Block(constrBody, paramInits ::: constrStatBuf.toList, constrBody.expr));
+	copy.Block(
+          constrBody,
+          paramInits ::: constrPrefixBuf.toList ::: constrStatBuf.toList,
+          constrBody.expr));
 
       copy.Template(impl, impl.parents, defBuf.toList filter (stat => isAccessed(stat.symbol)))
     }
@@ -138,6 +144,22 @@ abstract class Constructors extends Transform {
 	copy.ClassDef(tree, mods, name, tparams, tpt, transformClassTemplate(impl))
       case _ =>
         super.transform(tree)
+    }
+  }
+
+  def refersToThis(tree: Tree): boolean = {
+    refersToThisTraverser.result = false;
+    refersToThisTraverser.traverse(tree);
+    refersToThisTraverser.result
+  }
+
+  object refersToThisTraverser extends Traverser {
+    var result: boolean = _;
+    override def traverse(tree: Tree) = {
+      tree match {
+        case This(_) => result = true;
+        case _ => super.traverse(tree)
+      }
     }
   }
 }
