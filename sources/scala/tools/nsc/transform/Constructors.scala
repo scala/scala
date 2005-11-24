@@ -96,6 +96,8 @@ abstract class Constructors extends Transform {
 	    }
 	    defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
 	  }
+        case ClassDef(_, _, _, _, _) =>
+          defBuf += transform(stat)
 	case _ =>
 	  constrStatBuf += intoConstructor(impl.symbol, stat)
       }
@@ -132,11 +134,10 @@ abstract class Constructors extends Transform {
     }
 
     override def transform(tree: Tree): Tree = tree match {
-      case PackageDef(_, _) =>
-	super.transform(tree);
-      case ClassDef(mods, name, tparams, tpt, impl) =>
-	if (tree.symbol hasFlag INTERFACE) tree
-	else copy.ClassDef(tree, mods, name, tparams, tpt, transformClassTemplate(impl))
+      case ClassDef(mods, name, tparams, tpt, impl) if !tree.symbol.hasFlag(INTERFACE) =>
+	copy.ClassDef(tree, mods, name, tparams, tpt, transformClassTemplate(impl))
+      case _ =>
+        super.transform(tree)
     }
   }
 }

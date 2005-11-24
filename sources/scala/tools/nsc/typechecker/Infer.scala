@@ -216,10 +216,6 @@ package scala.tools.nsc.typechecker;
     def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
       if (sym.isError) {
 	tree setSymbol sym setType ErrorType
-      } else if (sym.owner.hasFlag(INCONSTRUCTOR) &&
-		 !sym.isTypeParameterOrSkolem && !sym.isConstructor &&
-		 (site.isInstanceOf[This] || site.isInstanceOf[Super]) && !phase.erasedTypes) {
-	errorTree(tree, "" + sym + " cannot be accessed from constructor");
       } else {
 	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
 	if (sym1 == NoSymbol) {

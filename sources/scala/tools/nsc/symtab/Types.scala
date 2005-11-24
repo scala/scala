@@ -714,6 +714,7 @@ import Flags._;
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
     assert(!sym.isAbstractType || pre.isStable || pre.isError);
     assert(!pre.isInstanceOf[ClassInfoType], this);
+    assert(!sym.isTypeParameterOrSkolem || pre == NoPrefix, this);
 
     private var parentsCache: List[Type] = _;
     private var parentsPhase: Phase = null;
@@ -1350,34 +1351,6 @@ import Flags._;
       case _ => tp
     }
   }
-
-  /** Convert to corresponding type parameters all skolems which satisfy one of the
-   *  following two conditions:
-   *  1. The skolem is a parameter of a class or alias type
-   *  2. The skolem is a method parameter which appears in parameter `tparams'
-   */
-  class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, args) =>
-	val tparam = sym.deSkolemize;
-	mapOver(
-	  if (tparam == sym || tparam.owner.isTerm && !(tparams contains tparam)) tp
-	  else rawTypeRef(pre, tparam, args))
-/* not yet (GADT)
-      case SingleType(pre, sym) if (sym.isThisSym) =>
-        pre
-*/
-      case PolyType(tparams1, restpe) =>
-	assert(tparams.isEmpty);
-	new DeSkolemizeMap(tparams1).mapOver(tp)
-      case ClassInfoType(parents, decls, clazz) =>
-	val parents1 = List.mapConserve(parents)(this);
-	if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz);
-      case _ =>
-	mapOver(tp)
-      }
-  }
-  val deSkolemize = new DeSkolemizeMap(List());
 
   object freeTypeParams extends TypeTraverser {
     private var result: List[Symbol] = _;

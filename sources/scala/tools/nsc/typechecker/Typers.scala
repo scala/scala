@@ -488,7 +488,8 @@ import collection.mutable.HashMap;
 	  }
 	  if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) {
 	    System.out.println(context.owner);//debug
-	    System.out.println(context.owner.thisSym);//debug
+            System.out.println(context.owner.unsafeTypeParams);//debug
+            System.out.println(List.fromArray(context.owner.info.closure));//debug
 	    error(parent.pos, "illegal inheritance;\n self-type " +
 		  selfType + " does not conform to " + parent +
 		  "'s selftype " + parent.tpe.typeOfThis);
@@ -564,6 +565,7 @@ import collection.mutable.HashMap;
       val selfType =
         if (clazz.isAnonymousClass && !phase.erasedTypes)
           intersectionType(clazz.info.parents, clazz.owner)
+        else if (settings.Xgadt.value) clazz.typeOfThis.asSeenFrom(context.prefix, clazz)
         else clazz.typeOfThis;
       // the following is necessary for templates generated later
       new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body);
@@ -574,7 +576,10 @@ import collection.mutable.HashMap;
 
     def typedValDef(vdef: ValDef): ValDef = {
       val sym = vdef.symbol;
-      var tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt));
+      val typer1 = if (sym.hasFlag(PARAM) && sym.owner.isConstructor)
+                     newTyper(context.constructorContext)
+                   else this;
+      var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt));
       checkNonCyclic(vdef.pos, tpt1.tpe, sym);
       val rhs1 =
         if (vdef.rhs.isEmpty) {
@@ -638,6 +643,9 @@ import collection.mutable.HashMap;
       }
     }
 
+    def typedSuperCall(tree: Tree): Tree =
+      typed(tree, EXPRmode | INCONSTRmode, UnitClass.tpe);
+
     def typedDefDef(ddef: DefDef): DefDef = {
       val meth = ddef.symbol;
       reenterTypeParams(ddef.tparams);
@@ -661,9 +669,16 @@ import collection.mutable.HashMap;
 		meth.owner.isAnonymousClass ||
 		meth.owner.isRefinementClass))
 	    error(ddef.pos, "constructor definition not allowed here " + meth.owner);//debug
-	  context.enclClass.owner.setFlag(INCONSTRUCTOR);
-	  val result = typed(ddef.rhs, EXPRmode | INCONSTRmode, UnitClass.tpe);
-	  context.enclClass.owner.resetFlag(INCONSTRUCTOR);
+          val result = ddef.rhs match {
+            case Block(stat :: stats, expr) =>
+              val stat1 = typedSuperCall(stat);
+              typed(copy.Block(ddef.rhs, stats, expr), UnitClass.tpe) match {
+                case block1 @ Block(stats1, expr1) =>
+                  copy.Block(block1, stat1 :: stats1, expr1)
+              }
+            case _ =>
+              typedSuperCall(ddef.rhs)
+          }
 	  if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors() == 0)
 	    computeParamAliases(meth.owner, vparamss1, result);
 	  result
@@ -704,14 +719,7 @@ import collection.mutable.HashMap;
     def typedBlock(block: Block, mode: int, pt: Type): Block = {
       namer.enterSyms(block.stats);
       block.stats foreach enterLabelDef;
-      val stats1 =
-        if ((mode & INCONSTRmode) != 0) {
-          val constrCall = typed(block.stats.head, mode, WildcardType);
-          context.enclClass.owner.resetFlag(INCONSTRUCTOR);
-          constrCall :: typedStats(block.stats.tail, context.owner);
-        } else {
-	  typedStats(block.stats, context.owner)
-        }
+      val stats1 = typedStats(block.stats, context.owner);
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt);
       val block1 = copy.Block(block, stats1, expr1)
         setType (if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst);
@@ -827,10 +835,16 @@ import collection.mutable.HashMap;
           errorTree(tree, treeSymTypeMsg(fun) + " does not take type parameters.");
         }
 
+      def typedArg(arg: Tree, pt: Type): Tree = {
+        val argTyper = if ((mode & INCONSTRmode) != 0) newTyper(context.constructorContext)
+                       else this;
+        argTyper.typed(arg, mode & stickyModes, pt)
+      }
+
       def typedApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
         case OverloadedType(pre, alts) =>
           val args1 = List.mapConserve(args)(arg =>
-            typed(arg, mode & stickyModes, WildcardType));
+            typedArg(arg, WildcardType));
           inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt);
           typedApply(adapt(fun, funmode, WildcardType), args1);
         case MethodType(formals0, restpe) =>
@@ -842,8 +856,7 @@ import collection.mutable.HashMap;
             val tparams = context.undetparams;
             context.undetparams = List();
             if (tparams.isEmpty) {
-              val args1 = List.map2(args, formals) ((arg, formal) =>
-                typed(arg, mode & stickyModes, formal));
+              val args1 = List.map2(args, formals)(typedArg);
 	      def ifPatternSkipFormals(tp: Type) = tp match {
 		case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
 		case _ => tp
@@ -854,18 +867,18 @@ import collection.mutable.HashMap;
               val lenientTargs = protoTypeArgs(tparams, formals, restpe, pt);
               val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
                 if (targ == WildcardType) tparam.tpe else targ);
-              def typedArg(tree: Tree, formal: Type): Tree = {
+              def typedArgToPoly(arg: Tree, formal: Type): Tree = {
 	        val lenientPt = formal.subst(tparams, lenientTargs);
-	        val tree1 = typed(tree, mode & stickyModes | POLYmode, lenientPt);
+	        val arg1 = typedArg(arg, lenientPt);
 	        val argtparams = context.undetparams;
 	        context.undetparams = List();
 	        if (!argtparams.isEmpty) {
 	          val strictPt = formal.subst(tparams, strictTargs);
-	          inferArgumentInstance(tree1, argtparams, strictPt, lenientPt);
+	          inferArgumentInstance(arg1, argtparams, strictPt, lenientPt);
 	        }
-	        tree1
+	        arg1
               }
-              val args1 = List.map2(args, formals)(typedArg);
+              val args1 = List.map2(args, formals)(typedArgToPoly);
               if (args1 exists (.tpe.isError)) setError(tree)
               else {
                 if (settings.debug.value) log("infer method inst " + fun + ", tparams = " + tparams + ", args = " + args1.map(.tpe) + ", pt = " + pt + ", lobounds = " + tparams.map(.tpe.bounds.lo));//debug

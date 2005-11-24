@@ -28,6 +28,30 @@ trait Namers: Analyzer {
     sym
   }
 
+  /** Convert to corresponding type parameters all skolems which satisfy one of the
+   *  following two conditions:
+   *  1. The skolem is a parameter of a class or alias type
+   *  2. The skolem is a method parameter which appears in parameter `tparams'
+   */
+  class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(pre, sym, args) =>
+	val tparam = sym.deSkolemize;
+	mapOver(
+	  if (tparam == sym || !(tparams contains tparam)) tp
+	  else rawTypeRef(NoPrefix, tparam, args))
+      case SingleType(pre, sym) if (sym.isThisSkolem) =>
+        ThisType(sym.deSkolemize)
+      case PolyType(tparams1, restpe) =>
+	new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
+      case ClassInfoType(parents, decls, clazz) =>
+	val parents1 = List.mapConserve(parents)(this);
+	if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz);
+      case _ =>
+	mapOver(tp)
+      }
+  }
+
   class Namer(val context: Context) {
 
     private def isTemplateContext(context: Context): boolean = context.tree match {
@@ -112,6 +136,27 @@ trait Namers: Analyzer {
     def enterSyms(trees: List[Tree]): Namer =
       (this /: trees) ((namer, tree) => namer.enterSym(tree));
 
+    def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
+      val tskolems = tparams map (.newTypeSkolem);
+      val ltp = new LazyType {
+        override def complete(sym: Symbol): unit =
+          sym setInfo sym.deSkolemize.info.substSym(tparams, tskolems);
+      }
+      tskolems foreach (.setInfo(ltp));
+      tskolems
+    }
+
+    def skolemize(tparams: List[AbsTypeDef]): unit = if (settings.Xgadt.value) {
+      val tskolems = newTypeSkolems(tparams map (.symbol));
+      for (val Pair(tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
+    }
+
+    def applicableTypeParams(owner: Symbol): List[Symbol] =
+      if (owner.isTerm || owner.isPackageClass) List()
+      else applicableTypeParams(owner.owner) ::: owner.unsafeTypeParams;
+
+    def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner));
+
     def enterSym(tree: Tree): Namer = {
 
       def finishWith(tparams: List[AbsTypeDef]): unit = {
@@ -120,15 +165,11 @@ trait Namers: Analyzer {
         if (!tparams.isEmpty) {
 	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
 	  ltype = new LazyPolyType(tparams map (.symbol), ltype);
+          skolemize(tparams);
 	}
 	tree.symbol.setInfo(ltype);
       }
       def finish = finishWith(List());
-
-      def skolemize(tparams: List[AbsTypeDef]): unit = {
-	val tskolems = newTypeSkolems(tparams map (.symbol));
-        for (val Pair(tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
-      }
 
       if (tree.symbol == NoSymbol) {
 	val owner = context.owner;
@@ -180,11 +221,9 @@ trait Namers: Analyzer {
 	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
 	      .setFlag(mods | owner.getFlag(ConstrFlags));
 	    finishWith(tparams);
-	    skolemize(tparams);
 	  case DefDef(mods, name, tparams, _, _, _) =>
 	    tree.symbol = enterInScope(owner.newMethod(tree.pos, name)).setFlag(mods);
 	    finishWith(tparams);
-	    skolemize(tparams);
 	  case AbsTypeDef(mods, name, _, _) =>
 	    tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name)).setFlag(mods);
 	    finish
@@ -211,7 +250,9 @@ trait Namers: Analyzer {
     def typeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol): unit = {
         if (settings.debug.value) log("defining " + sym);
-        sym.setInfo(typeSig(tree));
+        val tp = typeSig(tree);
+        sym.setInfo(tp);
+        if (settings.Xgadt.value) System.out.println("" + sym + ":" + tp);
         if (settings.debug.value) log("defined " + sym);
         validate(sym);
       }
@@ -308,11 +349,10 @@ trait Namers: Analyzer {
 	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT)) ImplicitMethodType(formals, restpe)
 	else MethodType(formals, restpe);
       }
-      deSkolemize(
-	makePolyType(
-	  tparamSyms,
-	  if (vparamSymss.isEmpty) PolyType(List(), restype)
-	  else (vparamSymss :\ restype)(mkMethodType)))
+      makePolyType(
+	tparamSyms,
+	if (vparamSymss.isEmpty) PolyType(List(), restype)
+	else (vparamSymss :\ restype)(mkMethodType))
     }
 
     /** If `sym' is an implicit value, check that its type signature `tp' is contractive.
@@ -354,7 +394,7 @@ trait Namers: Analyzer {
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
       makePolyType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
 
-    private def typeSig(tree: Tree): Type =
+    private def typeSig(tree: Tree): Type = deSkolemize {
       try {
 	val sym: Symbol = tree.symbol;
 	tree match {
@@ -368,10 +408,8 @@ trait Namers: Analyzer {
 	    clazz.tpe;
 
 	  case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-	    if (sym.isConstructor) sym.owner.setFlag(INCONSTRUCTOR);
 	    val result =
 	      new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
-	    if (sym.isConstructor) sym.owner.resetFlag(INCONSTRUCTOR);
 	    checkContractive(sym, result)
 
 	  case ValDef(_, _, tpt, rhs) =>
@@ -383,7 +421,16 @@ trait Namers: Analyzer {
 		tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
 		tpt.tpe
 	      }
-	    else typer.typedType(tpt).tpe
+	    else {
+              val typer1 =
+                if (false && sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes) {
+                  //todo: find out instead why Template contexts can be nested in Template contexts?
+                  var c = context.enclClass;
+                  while (c.tree.isInstanceOf[Template]) c = c.outer;
+                  newTyper(c)
+                } else typer;
+              typer1.typedType(tpt).tpe
+            }
 
 	  case AliasTypeDef(_, _, tparams, rhs) =>
 	    new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
@@ -416,6 +463,7 @@ trait Namers: Analyzer {
 	  typer.reportTypeError(tree.pos, ex);
 	  ErrorType
       }
+    }
 
     /** Check that symbol's definition is well-formed. This means:
      *   - no conflicting modifiers

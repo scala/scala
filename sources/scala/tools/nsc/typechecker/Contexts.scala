@@ -85,7 +85,7 @@ import scala.tools.nsc.util.Position;
       tree match {
         case Template(_, _) | PackageDef(_, _) =>
 	  c.enclClass = c;
-	  c.prefix = skolemizedThisType(this.prefix, c.owner)
+	  c.prefix = skolemizedThisType(this.tree, this.prefix, c.owner)
 	case _ =>
 	  c.enclClass = this.enclClass;
           c.prefix = if (c.owner != this.owner && c.owner.isTerm) NoPrefix else this.prefix
@@ -129,13 +129,27 @@ import scala.tools.nsc.util.Position;
       c
     }
 
-    def skolemizedThisType(pre: Type, clazz: Symbol): Type = if (settings.Xgadt.value) {
-      val tparams = clazz.unsafeTypeParams;
-      if (pre.isInstanceOf[SingleType] || !tparams.isEmpty) {
-        val self = clazz.newThisSkolem
-          setInfo clazz.typeOfThis.substSym(tparams, newTypeSkolems(tparams));
-        singleType(pre, self)
-      } else clazz.thisType
+    def constructorContext = {
+      val baseContext = enclClass.outer;
+      val argContext = baseContext.makeNewScope(tree, owner);
+      for (val sym <- scope.toList) argContext.scope enter sym;
+      argContext
+    }
+
+    def skolemizedThisType(encl: Tree, pre: Type, clazz: Symbol): Type = if (settings.Xgadt.value) {
+      encl match {
+        case ClassDef(_, _, tparamdefs, _, _) =>
+          System.out.println("sktt " + clazz);
+          if (!tparamdefs.isEmpty || pre.isInstanceOf[SingleType]) {
+            val tparams = clazz.unsafeTypeParams;
+            val tskolems = tparamdefs map (.symbol);
+            System.out.println("sktt2 " + tparams + " " + tskolems);
+            val self = clazz.newThisSkolem setInfo clazz.typeOfThis.substSym(tparams, tskolems);
+            singleType(pre, self)
+          } else clazz.thisType
+        case _ =>
+          clazz.thisType
+      }
     } else clazz.thisType;
 
     def error(pos: int, msg: String): unit =

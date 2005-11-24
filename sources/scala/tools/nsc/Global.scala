@@ -215,11 +215,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
-  object flatten extends Flatten {
+  object constructors extends Constructors {
     val global: Global.this.type = Global.this;
   }
 
-  object constructors extends Constructors {
+  object flatten extends Flatten {
     val global: Global.this.type = Global.this;
   }
 
@@ -264,8 +264,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     explicitOuter,
     erasure,
     lambdaLift,
-    flatten,
     constructors,
+    flatten,
     mixin,
     genicode,
     genJVM,

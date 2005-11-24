@@ -850,7 +850,7 @@ import Flags._;
           tpeCache = NoType;
           val targs = if (phase.erasedTypes && this != ArrayClass) List()
           else unsafeTypeParams map (.tpe);
-          tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, targs)
+          tpeCache = typeRef(if (isTypeParameterOrSkolem) NoPrefix else owner.thisType, this, targs)
         }
       }
       assert(tpeCache != null/*, "" + this + " " + phase*/);//debug
@@ -1001,16 +1001,6 @@ import Flags._;
     val syms1 = syms map (.cloneSymbol(owner));
     for (val sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1));
     syms1
-  }
-
-  def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
-    val tskolems = tparams map (.newTypeSkolem);
-    val ltp = new LazyType {
-      override def complete(sym: Symbol): unit =
-        sym setInfo sym.deSkolemize.info.substSym(tparams, tskolems);
-    }
-    tskolems foreach (.setInfo(ltp));
-    tskolems
   }
 
   /** An exception for cyclic references of symbol definitions */
