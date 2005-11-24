@@ -158,6 +158,7 @@ abstract class Constructors extends Transform {
     override def traverse(tree: Tree) = {
       tree match {
         case This(_) => result = true;
+        case Super(_, _) => result = true;
         case _ => super.traverse(tree)
       }
     }
