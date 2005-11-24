@@ -501,7 +501,7 @@ import scala.tools.nsc.util.CharArrayReader;
 	    }
 	  }
 	  putChar(oct.asInstanceOf[char]);
-	} else
+	} else {
 	  in.ch match {
 	    case 'b'  => putChar('\b')
 	    case 't'  => putChar('\t')
@@ -516,7 +516,8 @@ import scala.tools.nsc.util.CharArrayReader;
 			  "invalid escape character");
 	      putChar(in.ch);
 	  }
-	  in.next;
+	  in.next
+        }
       } else  {
 	putChar(in.ch);
 	in.next;
