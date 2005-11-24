@@ -91,7 +91,7 @@ import util.ListBuffer;
 
     val ts = new ListBuffer[Tree];
     if ((clazz hasFlag CASE) && !phase.erasedTypes) {
-      if (!hasImplementation(nme.tag)) ts += tagMethod;
+	  ts += tagMethod;
       if (clazz.isModuleClass) {
 	if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod;
 	if (clazz.isSubClass(SerializableClass)) {
