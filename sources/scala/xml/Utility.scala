@@ -202,4 +202,39 @@ object Utility extends AnyRef with parsing.TokenTests {
     sb.append('"')
   }
 
+  def getName(s: String, index: Int): String = {
+    var i = index;
+    val sb = new StringBuffer();
+    if(i < s.length()) {
+      var c = s.charAt(i);
+      if(isNameStart(s.charAt(i)))
+        while(i < s.length() && { c = s.charAt(i); isNameChar(c)}) {
+          sb.append(c);
+          i = i + 1;
+        }
+      sb.toString();
+    } else null
+  }
+
+  /** returns null if the value is a correct attribute value, error message if it isn't */
+  def checkAttributeValue(value: String): String = {
+    var i = 0;
+    while(i < value.length()) {
+      value.charAt(i) match {
+        case '<' =>
+          return "< not allowed in attribute value";
+        case '&' =>
+          val n = getName(value, i+1);
+          if(n== null)
+            return "malformed entity reference in attribute value ["+value+"]";
+          i = i + n.length() + 1;
+          if(i >= value.length() || value.charAt(i) != ';')
+            return "malformed entity reference in attribute value ["+value+"]";
+        case _   =>
+      }
+      i = i + 1;
+    }
+    return null;
+  }
+
 }
