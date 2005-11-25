@@ -158,7 +158,7 @@ trait PatternNodes: TransMatcher {
        case ConstantPat(pval) =>
          q match {
            case ConstantPat(qval) =>
-              pval.equals(qval);
+              pval == qval;
            case _ =>
              false;
          }
