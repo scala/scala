@@ -45,6 +45,7 @@ ok
 >>> bug 199
 
 <<< bug 213
+Exception in thread "Thread[main,5,main]" java.lang.ClassCastException
 >>> bug 213
 
 <<< bug 217
