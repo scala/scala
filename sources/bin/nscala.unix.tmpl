@@ -78,5 +78,5 @@ else
         -Dscala.version="@VERSION@" \
         -Dscala.home="$PREFIX" \
         -cp "$_TOOLS_CPATH" \
-        $main -classpath "$_LIB_CPATH" "$@"
+        $main -sourcepath "$_LIB_CPATH" "$@"
 fi
