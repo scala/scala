@@ -14,6 +14,12 @@ package scala.xml;
  */
 class UnprefixedAttribute(val key: String, val value: String, val next: MetaData) extends MetaData {
 
+  // verify that value is a proper attribute value (references, no &lt;)
+  Utility.checkAttributeValue(value) match {
+    case null => ;
+    case msg  => throw new MalformedAttributeException(msg);
+  }
+
   /** returns a copy of this unprefixed attribute with the given next field*/
   def copy(next: MetaData) =
     new UnprefixedAttribute(key, value, next);

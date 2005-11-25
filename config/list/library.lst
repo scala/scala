@@ -335,6 +335,7 @@ xml/Comment.scala
 xml/Document.scala
 xml/Elem.scala
 xml/EntityRef.scala
+xml/MalformedAttributeException.scala
 xml/MetaData.scala
 xml/Molecule.scala
 xml/NamespaceBinding.scala
@@ -390,5 +391,9 @@ xml/path/Expression.scala
 xml/transform/BasicTransformer.scala
 xml/transform/RewriteRule.scala
 xml/transform/RuleTransformer.scala
+
+#xml/xsd/Decl.scala
+#xml/xsd/ContentModel.scala
+#xml/xsd/XsTypeSymbol.scala
 
 ##############################################################################

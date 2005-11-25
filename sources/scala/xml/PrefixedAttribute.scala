@@ -17,6 +17,12 @@ class PrefixedAttribute(val pre: String,
                         val value: String,
                         val next: MetaData) extends MetaData {
 
+  // verify that value is a proper attribute value (references, no &lt;)
+  Utility.checkAttributeValue(value) match {
+    case null => ;
+    case msg  => throw new MalformedAttributeException(msg);
+  }
+
   /** Returns a copy of this unprefixed attribute with the given
    *  next field.
    */
