@@ -4,12 +4,38 @@ import scala.testing.UnitTest._ ;
 import scala.xml.{Node, NodeSeq, Elem, Text, XML};
 
 object Test {
+
+  /** returns true if exception was thrown */
+  def catcher(att:Function1[Unit,scala.xml.MetaData]): Boolean = {
+    var ex = false;
+      try {
+        val x = att.apply({});
+      } catch {
+        case scala.xml.MalformedAttributeException(msg) =>
+          Console.println(msg);
+          ex = true;
+      }
+    return ex;
+  }
+
   def main(args:Array[String]) = {
 
   //val e:  scala.xml.MetaData         = null; //Node.NoAttributes;
   //val sc: scala.xml.NamespaceBinding = null;
 
     // ------------------------------------------ tests for class NodeSeq
+
+    Console.println("checking wellformed attributes");
+    {
+    import scala.xml.{ UnprefixedAttribute, Null }
+    assertTrue(catcher {x:Unit => new UnprefixedAttribute("key", "<", Null)});   // < illegal
+    assertTrue(catcher(x:Unit => new UnprefixedAttribute("key", "&", Null)));   // & illegal
+    assertTrue(catcher(x:Unit => new UnprefixedAttribute("key", "a&a", Null))); // & illegal
+    assertTrue(catcher(x:Unit => new UnprefixedAttribute("key", "a&a;&", Null))); // 2nd &
+
+    assertFalse(catcher(x:Unit => new UnprefixedAttribute("key", "a&a; &lt;&lt;", Null)));
+    }
+
 
   Console.println("NodeSeq");
   import scala.xml.Utility.view ;
@@ -28,6 +54,28 @@ object Test {
     assertSameElements(
       p \\ "@value", new NodeSeq { val theSeq = List(Text("3"), Text("5")) }
     );
+
+
+    /* // more test cases !!!
+    val test = <a name="bar"/>;
+
+    Console.println(test \ "@name");
+
+    val x = test.attributes.nodes;
+    Console.println("trying to print");
+    val it = x.elements;
+    while(it.hasNext) {
+      val c = it.next;
+      Console.println(c);
+      Console.println("c.label == @name? "+(c.label == "@name"));
+    }
+    */
+
+    /*
+    for(val c <- x) {
+      Console.println(x);
+    }
+    */
 
     val books =
     <bks>
@@ -115,9 +163,9 @@ val addrBook =
   assertEquals(
      <hello foo="bar">
        <world/>
-     </hello> match { case <hello>
+     </hello> match { case x @ <hello>
                                <world/>
-                           </hello> => true;
+                           </hello> if x.attribute("foo") == "bar" => true;
                       case _ => false; },
                true);
 
