@@ -1012,6 +1012,10 @@ import Flags._;
     case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
     case PolyType(tparams, restpe) => restpe.subst(tparams, args)
     case ErrorType => tycon
+    case _ =>
+      System.out.println(tycon.getClass());
+      System.out.println(tycon.$tag());
+      throw new Error();
   }
 
 // Hash consing --------------------------------------------------------------

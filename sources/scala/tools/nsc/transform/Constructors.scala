@@ -49,14 +49,24 @@ abstract class Constructors extends Transform {
         ps.head
       }
 
+      var thisRefSeen: boolean = false;
+
       val intoConstructorTransformer = new Transformer {
 	override def transform(tree: Tree): Tree = tree match {
 	  case Apply(Select(This(_), _), List())
 	  if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-            gen.Ident(parameter(tree.symbol.accessed)) setPos tree.pos
+            thisRefSeen = true;
+            gen.Ident(parameter(tree.symbol.accessed)) setPos tree.pos;
 	  case Select(This(_), _)
 	  if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-	    gen.Ident(parameter(tree.symbol)) setPos tree.pos
+            thisRefSeen = true;
+	    gen.Ident(parameter(tree.symbol)) setPos tree.pos;
+          case This(_) =>
+            thisRefSeen = true;
+            super.transform(tree)
+          case Super(_, _) =>
+            thisRefSeen = true;
+            super.transform(tree)
 	  case _ =>
 	    super.transform(tree)
 	}
@@ -94,7 +104,7 @@ abstract class Constructors extends Transform {
 	  else {
 	    if (rhs != EmptyTree) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
-              (if (refersToThis(rhs1)) constrStatBuf else constrPrefixBuf)
+              (if (thisRefSeen) constrStatBuf else constrPrefixBuf)
                 += mkAssign(stat.symbol, rhs1)
 	    }
 	    defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
@@ -144,23 +154,6 @@ abstract class Constructors extends Transform {
 	copy.ClassDef(tree, mods, name, tparams, tpt, transformClassTemplate(impl))
       case _ =>
         super.transform(tree)
-    }
-  }
-
-  def refersToThis(tree: Tree): boolean = {
-    refersToThisTraverser.result = false;
-    refersToThisTraverser.traverse(tree);
-    refersToThisTraverser.result
-  }
-
-  object refersToThisTraverser extends Traverser {
-    var result: boolean = _;
-    override def traverse(tree: Tree) = {
-      tree match {
-        case This(_) => result = true;
-        case Super(_, _) => result = true;
-        case _ => super.traverse(tree)
-      }
     }
   }
 }
