@@ -411,6 +411,16 @@ public class Debug extends scala.tools.util.debug.Debug {
         return showTree(tree, false);
     }
 
+    public static String showTree(Tree[] trees, boolean showType) {
+        StringBuffer buf = new StringBuffer();
+        append(buf, trees, showType);
+        return buf.toString();
+    }
+
+    public static String showTree(Tree[] trees) {
+        return showTree(trees, false);
+    }
+
     //########################################################################
 }
 
