@@ -215,6 +215,7 @@ pos/thistype.scala
 pos/thistypes.scala
 pos/traits.scala
 pos/valdefs.scala
+pos/variances.scala
 pos/viewtest1.scala
 pos/viewtest2.scala
 pos/viewtest3.scala
