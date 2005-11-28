@@ -43,6 +43,8 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
         }
         reflect.Function(vparams map (.symbol) map env1,
                          new Reifier(env1, currentOwner).reify(body))
+      case This(_) =>
+        reflect.This(reify(tree.symbol))
       case _ =>
         throw new TypeError("cannot reify tree: " + tree)
     }
@@ -57,29 +59,29 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
       case Some(rsym) =>
         rsym
       case None =>
-	if (sym.isRoot || sym.isRootPackage || sym.isEmptyPackageClass || sym.isEmptyPackage)
-	  reflect.RootSymbol
-	else reify(sym.owner) match {
+        if (sym.isRoot || sym.isRootPackage || sym.isEmptyPackageClass || sym.isEmptyPackage)
+          reflect.RootSymbol
+        else reify(sym.owner) match {
           case reflect.NoSymbol =>
             reflect.NoSymbol;
           case reflect.RootSymbol =>
-	    mkGlobalSymbol(sym.name.toString(), sym)
-	  case reflect.Class(ownername) =>
-	    mkGlobalSymbol(ownername + "." + sym.name, sym)
+            mkGlobalSymbol(sym.name.toString(), sym)
+          case reflect.Class(ownername) =>
+            mkGlobalSymbol(ownername + "." + sym.name, sym)
           case _ =>
             reflect.NoSymbol
         }
     }
 
-    def reify(tp: Type): reflect.Type = tp match {
+    def reify(tp: Type): reflect.Type = null /*tp match {
       case NoPrefix =>
         reflect.NoPrefix
       case NoType =>
         reflect.NoType
       case TypeRef(pre, sym, args) =>
-	val tp = if (sym.owner.isPackageClass) reflect.NamedType(sym.fullNameString);
-		 else reflect.PrefixedType(reify(pre), reify(sym));
-	if (args.isEmpty) tp else reflect.AppliedType(tp, args map reify)
+        val tp = if (sym.owner.isPackageClass) reflect.NamedType(sym.fullNameString);
+                 else reflect.PrefixedType(reify(pre), reify(sym));
+        if (args.isEmpty) tp else reflect.AppliedType(tp, args map reify)
       case SingleType(pre, sym) =>
         reflect.SingleType(reify(pre), reify(sym))
       case ThisType(clazz) =>
@@ -91,9 +93,14 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
         val restp1 = reify(restp);
         if (tp.isInstanceOf[ImplicitMethodType]) new reflect.ImplicitMethodType(formals1, restp1)
         else reflect.MethodType(formals1, restp1)
+      //case PolyType(typeParams, ClassInfoType(parents, decls, symbol)) => reflect.PolyType(typeParams map reify, Nil, resultType)
+      //case PolyType(typeParams, SingleType(pre, sym)) => reflect.PolyType(typeParams map reify, Nil, resultType)
+      case PolyType(typeParams, MethodType(paramsList, resultType)) =>
+        System.err.println("poly polyyyy");
+        reflect.PolyType(Nil, Nil , reify(resultType)) //typeParams map mkTypeBounds
       case _ =>
         throw new TypeError("cannot reify type: " + tp)
-    }
+    }*/
   }
 
   type InjectEnvironment = ListMap[reflect.Symbol, Name];
@@ -112,6 +119,7 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
       case reflect.Class(_) => "scala.reflect.Class"
       case reflect.Method(_, _) => "scala.reflect.Method"
       case reflect.Field(_, _) => "scala.reflect.Field"
+      case reflect.This(_) => "scala.reflect.This"
       case reflect.NamedType(_) => "scala.reflect.NamedType"
       case reflect.PrefixedType(_, _) => "scala.reflect.PrefixedType"
       case reflect.SingleType(_, _) => "scala.reflect.SingleType"
@@ -120,6 +128,7 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
       case reflect.TypeBounds(_, _) => "scala.reflect.TypeBounds"
       case reflect.MethodType(_, _) =>
         if (value.isInstanceOf[reflect.ImplicitMethodType]) "scala.reflect.ImplicitMethodType" else "scala.reflect.MethodType"
+      case reflect.PolyType(_, _, _) => "scala.reflect.PolyType"
       case _ =>
         ""
     }
@@ -162,14 +171,15 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
       case c: CaseClass =>
         val name = objectName(c);
         if (name.length() != 0) gen.mkRef(definitions.getModule(name))
-	else {
+        else {
           val name = className(c);
           if (name.length() == 0) throw new Error("don't know how to inject " + value);
           val injectedArgs = new ListBuffer[Tree];
           for (val i <- Iterator.range(0, c.caseArity))
             injectedArgs += inject(c.caseElement(i));
           New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
-	}
+        }
+      case null => gen.mkRef(definitions.getModule("scala.reflect.NoType"))
       case _ => throw new Error("don't know how to inject " + value);
     }
   }
@@ -195,5 +205,3 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
 
   }
 }
-
-

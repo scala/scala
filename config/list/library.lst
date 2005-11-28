@@ -226,6 +226,7 @@ reflect/Code.scala
 reflect/Symbol.scala
 reflect/Type.scala
 reflect/TypedCode.scala
+reflect/Print.scala
 
 runtime/AtomicReference.java
 runtime/BooleanRef.java

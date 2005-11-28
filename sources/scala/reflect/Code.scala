@@ -16,4 +16,4 @@ case class Literal(value: Any) extends Code;
 case class Apply(fun: Code, args: List[Code]) extends Code;
 case class TypeApply(fun: Code, args: List[Type]) extends Code;
 case class Function(params: List[Symbol], body: Code) extends Code;
-
+case class This(sym: Symbol) extends Code;
