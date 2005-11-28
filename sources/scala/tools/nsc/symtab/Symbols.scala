@@ -605,7 +605,7 @@ import Flags._;
      *  term symbol rename it by expanding its name to avoid name clashes
      */
     final def makeNotPrivate(base: Symbol): unit =
-      if (isTerm && !(this hasFlag notPRIVATE) && (this hasFlag PRIVATE) || this.owner.isTerm) {
+      if (isTerm && !(this hasFlag notPRIVATE) && ((this hasFlag PRIVATE) || this.owner.isTerm)) {
         setFlag(notPRIVATE);
         if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
         expandName(base)

@@ -55,11 +55,9 @@ abstract class Constructors extends Transform {
 	override def transform(tree: Tree): Tree = tree match {
 	  case Apply(Select(This(_), _), List())
 	  if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-            thisRefSeen = true;
             gen.Ident(parameter(tree.symbol.accessed)) setPos tree.pos;
 	  case Select(This(_), _)
 	  if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-            thisRefSeen = true;
 	    gen.Ident(parameter(tree.symbol)) setPos tree.pos;
           case This(_) =>
             thisRefSeen = true;
@@ -110,7 +108,7 @@ abstract class Constructors extends Transform {
 	    defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
 	  }
         case ClassDef(_, _, _, _, _) =>
-          defBuf += transform(stat)
+          defBuf += (new ConstructorTransformer).transform(stat)
 	case _ =>
 	  constrStatBuf += intoConstructor(impl.symbol, stat)
       }
