@@ -1,6 +1,8 @@
 test '\u0024' == '$' was successful
 test '\u005f' == '_' was successful
 test 65.asInstanceOf[char] == 'A' was successful
+test "\141\142" == "ab" was successful
+test "\0x61\0x62".trim() == "x61\0x62" was successful
 
 test 01 == 1 was successful
 test 010 == 8 was successful

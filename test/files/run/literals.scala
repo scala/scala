@@ -36,6 +36,8 @@ object Test {
     check_success("'\\u0024' == '$'", '\u0024', '$');
     check_success("'\\u005f' == '_'", '\u005f', '_');
     check_success("65.asInstanceOf[char] == 'A'", 65.asInstanceOf[char], 'A');
+    check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab");
+    check_success("\"\\0x61\\0x62\".trim() == \"x61\\0x62\"", "\0x61\0x62".trim(), "x61\0x62");
 
     Console.println;
 
