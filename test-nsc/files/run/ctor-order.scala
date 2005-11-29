@@ -11,10 +11,12 @@ class Outer {
      * *before* calling the super constructors. This is tested by
      * mixin M1, which tries to access global from the enclosing class.
      */
+    val outer = Outer.this;
   }
 
   trait M1: X {
     Console.println(global.x);
+    Console.println(outer.global.x);
   }
 
 }
