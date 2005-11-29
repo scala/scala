@@ -74,6 +74,11 @@ abstract class Constructors extends Transform {
 	intoConstructorTransformer.transform(
           new ChangeOwnerTraverser(oldowner, constr.symbol)(tree));
 
+      def canBeMoved(tree: Tree) = tree match {
+        case ValDef(_, _, _, _) => !thisRefSeen
+        case _ => false
+      }
+
       def mkAssign(to: Symbol, from: Tree): Tree =
 	atPos(to.pos) {
 	  localTyper.typed {
@@ -102,7 +107,7 @@ abstract class Constructors extends Transform {
 	  else {
 	    if (rhs != EmptyTree) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
-              (if (thisRefSeen) constrStatBuf else constrPrefixBuf)
+              (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf)
                 += mkAssign(stat.symbol, rhs1)
 	    }
 	    defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
