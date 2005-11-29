@@ -63,7 +63,7 @@ case class Elem(override val prefix: String,
      val sb = new StringBuffer();
      val it = child.elements;
      while(it.hasNext) {
-       sb.append(it.next);
+       sb.append(it.next.text);
      }
      sb.toString()
    }
