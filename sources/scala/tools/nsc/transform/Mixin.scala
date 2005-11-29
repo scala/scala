@@ -82,7 +82,8 @@ abstract class Mixin extends InfoTransform {
           }
         } else if ((member hasFlag (LIFTED | BRIDGE)) && !(member hasFlag PRIVATE)) {
           member.expandName(clazz);
-          addMember(clazz, member.cloneSymbol(clazz));
+          System.out.println("LIFTING " + member + " to " + clazz);//debug
+          addMember(clazz, member.cloneSymbol(clazz) resetFlag FINAL);
         }
       }
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
@@ -99,6 +100,7 @@ abstract class Mixin extends InfoTransform {
       val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=);
       def mixinMembers(mixin: Symbol, mmap: Symbol => Symbol): unit = {
         if (mixin.isImplClass) {
+          addLateInterfaceMembers(mixin.toInterface);
           for (val member <- mixin.info.decls.toList) {
             //System.out.println("adding forwarded method " + member + member.locationString + " to " + clazz + " " + clazz.info.member(member.name).alternatives);//DEBUG
             if (isForwarded(member) && !isStatic(member) &&
