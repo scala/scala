@@ -154,8 +154,10 @@ abstract class GenJVM extends SubComponent {
                                                          new Array[Byte](0)));
 
       if (!jmethod.isAbstract()) {
-        for (val local <- m.locals; !local.sym.isValueParameter)
+        for (val local <- m.locals; (! m.params.contains(local))) {
+          log("add local var: " + local);
           jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym));
+        }
 
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode];
         genCode(m);

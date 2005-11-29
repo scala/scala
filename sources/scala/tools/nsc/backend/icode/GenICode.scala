@@ -337,13 +337,15 @@ abstract class GenICode extends SubComponent  {
       // genLoad
       val resCtx: Context = tree match {
         case LabelDef(name, params, rhs) =>
-          ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
           val ctx1 = ctx.newBlock;
           ctx1.labels.get(tree.symbol) match {
-            case Some(label) => label.anchor(ctx1.bb);
+            case Some(label) =>
+              label.anchor(ctx1.bb);
+              label.patch(ctx.method.code);
 
             case None =>
               ctx1.labels += tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (.symbol)));
+              ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
               if (settings.debug.value)
                 log("Adding label " + tree.symbol);
           }
@@ -572,7 +574,9 @@ abstract class GenICode extends SubComponent  {
                 log("Performing scan for label because of forward jump.");
                 scanForLabels(ctx.defdef, ctx);
                 ctx.labels.get(sym) match {
-                  case Some(l) => l;
+                  case Some(l) =>
+                    log("Found label: " + l);
+                    l
                   case _       => abort("Unknown label target: " + sym + " at: " + unit.position(fun.pos) + ": ctx: " + ctx);
                 }
             }
@@ -1103,6 +1107,7 @@ abstract class GenICode extends SubComponent  {
 
           case LabelDef(name, params, rhs) =>
             ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
+            ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
             //super.traverse(rhs);
 
           case _ => super.traverse(tree);

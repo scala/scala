@@ -114,16 +114,31 @@ trait BasicBlocks: ICodes {
     }
 
     /** Replace all instructions found in the map. */
-    def subst(map: Map[Instruction, Instruction]) = {
-      var i = 0;
-      while (i < instrs.length) {
-        map get instrs(i) match {
-          case Some(instr) => replaceInstruction(i, instr);
-          case None => ();
+    def subst(map: Map[Instruction, Instruction]) =
+      if (!closed) substOnList(map) else {
+        var i = 0;
+        while (i < instrs.length) {
+          map get instrs(i) match {
+            case Some(instr) => replaceInstruction(i, instr);
+            case None => ();
+          }
+          i = i + 1;
         }
-        i = i + 1;
       }
+
+    private def substOnList(map: Map[Instruction, Instruction]): Unit = {
+      def subst(l: List[Instruction]): List[Instruction] = l match {
+        case Nil => Nil
+        case x :: xs =>
+          map.get(x) match {
+            case Some(newInstr) => newInstr :: subst(xs);
+            case None => x :: subst(xs);
+          }
+      }
+
+      instructionList = subst(instructionList);
     }
+
 
     /** Add a new instruction at the end of the block,
      *  using the same source position as the last emitted instruction
