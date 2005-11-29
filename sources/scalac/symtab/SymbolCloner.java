@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -8,8 +8,8 @@
 
 package scalac.symtab;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 import scalac.util.Debug;
 
@@ -128,6 +128,14 @@ public class SymbolCloner {
         return cloner.apply(type);
     }
 
+    /** Clones the given types. */
+    public Type[] cloneTypes(Type[] types) {
+        Type[] clones = new Type[types.length];
+        for (int i = 0; i < types.length; i++)
+            clones[i] = cloner.apply(types[i]);
+        return clones;
+    }
+
     //########################################################################
     // Public Methods - Mapping symbols
 
@@ -143,6 +151,12 @@ public class SymbolCloner {
     /** Replaces all cloned symbols by clones in given type. */
     public Type mapType(Type type) {
         return mapper.apply(type);
+    }
+
+    /** Returns the type map built during symbol cloning. */
+    // used in scalac/ast/TreeCloner.java
+    public Type.Map getTypeMap() {
+        return cloner;
     }
 
     //########################################################################
