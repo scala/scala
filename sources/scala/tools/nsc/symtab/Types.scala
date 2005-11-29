@@ -49,7 +49,7 @@ import Flags._;
   val emptyTypeArray = new Array[Type](0);
 
   /** The base class for all types */
-  trait Type {
+  abstract class Type {
 
     /** Types for which asSeenFrom always is the identity, no matter what prefix or owner */
     def isTrivial: boolean = false;

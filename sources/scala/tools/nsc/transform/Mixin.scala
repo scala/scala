@@ -52,7 +52,7 @@ abstract class Mixin extends InfoTransform {
   def addMember(clazz: Symbol, member: Symbol): Symbol = {
     if (settings.debug.value) log("new member of " + clazz + ":" + member.defString);//debug
     clazz.info.decls enter member;
-    member
+    member setFlag MIXEDIN
   }
 
   def addLateInterfaceMembers(clazz: Symbol) =
@@ -105,9 +105,7 @@ abstract class Mixin extends InfoTransform {
                 (clazz.info.findMember(member.name, 0, 0).alternatives contains mmap(member))) {
                   val member1 = addMember(
                     clazz,
-                    member.cloneSymbol(clazz)
-                      setPos clazz.pos
-                      setFlag MIXEDIN resetFlag (DEFERRED | lateDEFERRED));
+                    member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED));
                   member1.asInstanceOf[TermSymbol] setAlias member;
                 }
           }
@@ -122,7 +120,7 @@ abstract class Mixin extends InfoTransform {
                 clazz,
                 member.cloneSymbol(clazz)
                   setPos clazz.pos
-                  setFlag (MIXEDIN | FINAL) resetFlag (DEFERRED | lateDEFERRED));
+                  setFlag FINAL resetFlag (DEFERRED | lateDEFERRED));
               if (!member.isSetter)
                 member.tpe match {
                   case MethodType(List(), ConstantType(_)) =>
@@ -130,18 +128,17 @@ abstract class Mixin extends InfoTransform {
                   case _ =>
                     addMember(clazz,
                               clazz.newValue(member.pos, nme.getterToLocal(member.name))
-                              setFlag (LOCAL | PRIVATE | MIXEDIN | member.getFlag(MUTABLE))
+                              setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE))
                               setInfo member.tpe.resultType)
                 }
             } else if (member hasFlag SUPERACCESSOR) {
-              val member1 = addMember(clazz, member.cloneSymbol(clazz))
-                setPos clazz.pos setFlag MIXEDIN;
+              val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos;
               assert(member1.alias != NoSymbol, member1);
               val alias1 = rebindSuper(clazz, member.alias, mixin);
               member1.asInstanceOf[TermSymbol] setAlias alias1;
             } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
-              addMember(clazz, member.cloneSymbol(clazz)) resetFlag (DEFERRED | lateDEFERRED)
-                setPos clazz.pos setFlag MIXEDIN
+              addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
+                resetFlag (DEFERRED | lateDEFERRED)
             }
           }
         }
@@ -247,6 +244,7 @@ abstract class Mixin extends InfoTransform {
     }
 
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
+      if (settings.debug.value) System.out.println("add new defs for " + clazz);
       val newDefs = new ListBuffer[Tree];
       def addDef(pos: int, tree: Tree): unit = {
         if (settings.debug.value) log("add new def to " + clazz + ": " + tree);
@@ -285,14 +283,11 @@ abstract class Mixin extends InfoTransform {
         case _ =>
           stat
       }
-      if (clazz hasFlag lateINTERFACE) {
-	for (val sym <- clazz.info.decls.toList) {
-	  if ((sym hasFlag SYNTHETIC) && (sym hasFlag ACCESSOR))
+      for (val sym <- clazz.info.decls.toList) {
+	if (sym hasFlag MIXEDIN) {
+          if (clazz hasFlag lateINTERFACE) {
 	    addDefDef(sym, vparamss => EmptyTree)
-	}
-      } else if (!clazz.isTrait) {
-	for (val sym <- clazz.info.decls.toList) {
-	  if (sym hasFlag MIXEDIN) {
+	  } else if (!clazz.isTrait) {
 	    if (sym hasFlag ACCESSOR) {
               addDefDef(sym, vparams => {
 		val accessedRef = sym.tpe match {

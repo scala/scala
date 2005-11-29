@@ -605,11 +605,18 @@ import Flags._;
      *  term symbol rename it by expanding its name to avoid name clashes
      */
     final def makeNotPrivate(base: Symbol): unit =
+      if (isTerm && (this hasFlag PRIVATE)) {
+        setFlag(notPRIVATE);
+        if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
+        expandName(base)
+      }
+/*
       if (isTerm && !(this hasFlag notPRIVATE) && ((this hasFlag PRIVATE) || this.owner.isTerm)) {
         setFlag(notPRIVATE);
         if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
         expandName(base)
       }
+*/
 
     /** change name by appending $$<fully-qualified-name-of-class `base'>
      *  Do the same for any accessed symbols or setters/getters
