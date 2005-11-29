@@ -1,0 +1,189 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id: Trees.scala,v 1.35 2005/11/14 16:58:21 mcdirmid Exp $
+package scala.tools.nsc.models;
+
+import scala.tools.nsc.Global;
+import scala.tools.nsc.ast.Trees;
+import scala.tools.nsc.symtab.Flags;
+import scala.tools.nsc.symtab.Names;
+
+[_trait_] abstract class Models {
+  val global : Global;
+
+  import global._;
+
+  abstract class Model {
+  }
+  abstract class HasTree extends Model {
+    var tree : Tree = _;
+    def update(tree0 : Tree): Boolean = {
+      tree = tree0;
+      false;
+    }
+    def replacedBy(tree0 : Tree) : Boolean = true;
+  }
+  class ImportMod extends HasTree { 
+    def treex = tree.asInstanceOf[Import];
+
+    override def replacedBy(tree0 : Tree) : Boolean = if (super.replacedBy(tree0) && tree0.isInstanceOf[Import]) {
+      val tree1 = tree0.asInstanceOf[Import];
+      tree1.tpe == treex.tpe;
+    } else false;
+  }
+
+  abstract class Composite extends Model {
+    import scala.collection.mutable._;
+    class Members extends HashSet[HasTree] with ObservableSet[HasTree, Members] {
+      override def +=(elem: HasTree): Unit = super.+=(elem);
+      override def -=(elem: HasTree): Unit = super.-=(elem);
+      override def clear: Unit = super.clear;
+    }
+    object members extends Members;
+
+    def isMember(tree : Tree) : Boolean = false;
+
+    def update0(members1 : List[Tree]) : Boolean = {
+      val marked = new HashSet[HasTree];
+      var updated = false;
+      for (val mmbr1 <- members1) {
+	var found = false;
+	for (val mmbr <- members) if (!found && mmbr.replacedBy(mmbr1)) {
+	  found = true;
+	  updated = mmbr.update(mmbr1) || updated;
+	  marked += mmbr;
+	}
+	if (!found) {
+	  updated = true;
+	  val add = modelFor(mmbr1);
+	  add.update(mmbr1);
+	  members += (add);
+	  marked += add;
+	}
+      }
+      val sz = members.size;
+      members.intersect(marked);
+      updated = updated || sz < members.size;
+      // check if anything was removed!
+      updated;
+    }
+  }
+  abstract class MemberMod extends HasTree {
+    def treex = tree.asInstanceOf[MemberDef];
+    def flags = new Flags.Flag(treex.mods0);
+    def name : Name = { treex.name0; }
+
+    override def replacedBy(tree0 : Tree) : Boolean = if (super.replacedBy(tree0) && tree0.isInstanceOf[MemberDef]) {
+      val tree1 = tree0.asInstanceOf[MemberDef];
+      treex.name0 == tree1.name0;
+    } else false;
+
+    override def update(tree0 : Tree): Boolean = {
+      val updated = tree == null || (treex.mods0 != tree0.asInstanceOf[MemberDef].mods0);
+      super.update(tree0) || updated;
+    }
+  }
+  abstract class MemberComposite extends MemberMod with Composite;
+
+  abstract class HasClassObjects extends Composite {
+    override def isMember(tree : Tree) : Boolean = super.isMember(tree) || tree.isInstanceOf[ImplDef];
+  }
+  abstract class ValOrDefMod extends MemberComposite with HasClassObjects {
+    def treey = tree.asInstanceOf[ValOrDefDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[ValOrDefDef]);
+
+    override def update(tree0 : Tree): Boolean = {
+      val tree1 = tree0.asInstanceOf[ValOrDefDef];
+      val updated = tree == null || treex.tpe != tree1.tpe;
+      update0(flatten(tree1.rhs0, (tree2 : Tree) => isMember(tree2)));
+      super.update(tree0) || updated;
+    }
+  }
+  class ValMod extends ValOrDefMod { 
+    def treez = tree.asInstanceOf[ValDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[ValDef]);
+  }
+  class DefMod extends ValOrDefMod { 
+    def treez = tree.asInstanceOf[DefDef];
+
+    override def replacedBy(tree0 : Tree) : Boolean = if (super.replacedBy(tree0) && tree0.isInstanceOf[DefDef]) {
+      val tree1 = tree0.asInstanceOf[DefDef];
+      if (tree1.vparamss.length == treez.vparamss.length) {
+	val tpz = for (val vd <- treez.vparamss) yield for (val xd <- vd) yield xd.tpe;
+	val tp1 = for (val vd <- tree1.vparamss) yield for (val xd <- vd) yield xd.tpe;
+	tpz == tp1;
+      } else false; 
+    } else false;
+  }
+  abstract class ImplMod extends MemberComposite with HasClassObjects {
+    def treey = tree.asInstanceOf[ImplDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[ImplDef]);
+    override def isMember(tree : Tree) : Boolean = super.isMember(tree) || tree.isInstanceOf[ValOrDefDef] || tree.isInstanceOf[AliasTypeDef];
+
+    override def update(tree0 : Tree): Boolean = {
+      val tree1 = tree0.asInstanceOf[ImplDef];
+      
+      var updated = update0(tree1.impl0.body);
+
+      // XXX: ignore parents for now!
+
+      (super.update(tree0) || updated) && !flags.isPrivate;
+    }
+
+
+  }
+  class  ClassMod extends ImplMod { 
+    def treez = tree.asInstanceOf[ClassDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[ClassDef]);
+
+    override def update(tree0 : Tree): Boolean = {
+      // XXX: type parameters and this type!
+
+
+      super.update(tree0);
+    }
+  }
+  class ObjectMod extends ImplMod { 
+    def treez = tree.asInstanceOf[ModuleDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[ModuleDef]);
+  }
+  class AliasTypeMod extends MemberMod { 
+    def treey = tree.asInstanceOf[AliasTypeDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[AliasTypeDef]);
+  }
+  class SourceMod(val unit : CompilationUnit) extends Composite with HasClassObjects {
+    override def isMember(tree : Tree) : Boolean = super.isMember(tree) || tree.isInstanceOf[Import];
+  }
+
+
+  def flatten0(exprs : List[Tree], filter: (Tree) => Boolean) : List[Tree] = 
+    for (val expr <- exprs; val t : Tree <- flatten(expr,filter)) yield t;
+
+  def flatten(expr : Tree, filter: (Tree) => Boolean) : List[Tree] = 
+    if (filter(expr)) expr :: Nil; else expr match {
+      case Block(stats,last) => flatten0(stats, filter) ::: flatten(last, filter);
+      case If(cond,thenp,elsep) => flatten(cond,filter) ::: flatten(thenp,filter) ::: flatten(elsep,filter);
+      case Assign(lhs,rhs) => flatten(rhs,filter);
+      case CaseDef(pat,guard,body) => flatten(body,filter);
+      case Return(expr0) => flatten(expr0,filter);
+      case  Throw(expr0) => flatten(expr0,filter);
+      case Try(block,catches,finalizer) => flatten(block,filter) ::: flatten(finalizer,filter) ::: flatten0(catches, filter);
+      case Match(selector,cases) => flatten(selector,filter) ::: flatten0(cases, filter);
+      case Apply(fun,args) => flatten(fun,filter) ::: flatten0(args,filter); 
+      case TypeApply(fun,args) => flatten(fun,filter) ::: flatten0(args,filter); 
+      case _ => Nil;
+    }
+
+
+  def modelFor(tree: Tree): HasTree = tree match {
+    case _:    ValDef => new    ValMod();
+    case _:    DefDef => new    DefMod();
+    case _:  ClassDef => new  ClassMod();
+    case _: ModuleDef => new ObjectMod();
+    case _: AliasTypeDef => new AliasTypeMod();
+    case _: Import => new ImportMod();
+  }
+
+}

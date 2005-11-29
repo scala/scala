@@ -6,7 +6,7 @@
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.AbstractFile;
-import scala.tools.nsc.util.Position;
+import scala.tools.nsc.util.{Position, SourceFile};
 import Flags._;
 
 [_trait_] abstract class Symbols: SymbolTable {
@@ -36,6 +36,26 @@ import Flags._;
 
     def pos = rawpos;
     def setPos(pos: int): this.type = { this.rawpos = pos; this }
+
+    def namePos(source : SourceFile) = {
+      val buf = source.content;
+      if (pos == Position.NOPOS) Position.NOPOS;
+      else if (isTypeParameter) pos - name.length;
+      else if (isVariable || isMethod || isClass || isModule) {
+	var ret = pos;
+
+	if (buf(pos) == ',') ret = ret + 1;
+	else if (isClass)  ret = ret + ("class").length();
+	else if (isModule) ret = ret + ("object").length();
+	else ret = ret + ("var").length();
+	while (Character.isWhitespace(buf(ret))) ret = ret + 1;
+	ret;
+      }
+      else if (isValue) pos;
+      else -1;
+    }
+
+
 
     var attributes: List[AttrInfo] = List();
 
@@ -116,7 +136,11 @@ import Flags._;
     def isClass  = false;        //to be overridden
 
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA));
-    final def isVariable = isTerm && hasFlag(MUTABLE) && !isMethod;
+    final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod;
+
+    // XXX: Seems like this is what we really want for variables????
+    final def isVariableX = isTerm && hasFlag(MUTABLE);
+
     final def isSetter = isTerm && hasFlag(ACCESSOR) && nme.isSetterName(name);
        //todo: make independent of name, as this can be forged.
     final def hasGetter = isTerm && nme.isLocalName(name);

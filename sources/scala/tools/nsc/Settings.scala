@@ -99,12 +99,12 @@ class Settings(error: String => unit) {
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) =>
         if (rest.isEmpty) {
-    error("missing argument");
-    List()
-  } else {
-    value = rest.head;
-    rest.tail
-  }
+	  error("missing argument");
+	  List()
+	} else {
+	  value = rest.head;
+	  rest.tail
+	}
       case _ => args
     }
 

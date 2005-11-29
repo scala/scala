@@ -60,7 +60,9 @@ abstract class Printers {
     }
 
 
+    private var clazz : IClass = _;
     def printClass(cls: IClass): Unit = {
+      this.clazz = cls;
       print(cls.symbol.toString()); print(" extends ");
       printList(cls.symbol.info.parents, ", ");
       indent; println(" {");
@@ -119,7 +121,7 @@ abstract class Printers {
 
     def printInstruction(i: Instruction): Unit = {
       if (settings.debug.value)
-        print("/* " + Position.line(i.pos) + " */ ");
+        print("/* " + Position.line(clazz.cunit.source, i.pos) + " */ ");
       println(i.toString());
     }
   }

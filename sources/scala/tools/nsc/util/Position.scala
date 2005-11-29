@@ -20,15 +20,15 @@ object Position {
 
 
   def line(offset : Int) = offset;
+
+  def line(source : SourceFile, offset : Int) = (new Position(source, offset)).line;
 }
 
 
-class Position(_source : SourceFile,_offset: Int) {
+class Position( val source : SourceFile, val offset: Int) {
   import Position._;
 
-  val offset = _offset;
-  val  source = _source;
-  val tabInc = 8;
+  private val tabInc = 8;
 
   def this(sourceName : String) = this(new SourceFile(sourceName, new Array[Char](0)), Position.NOPOS);
   def this(sourceName : String, _offset : Int) = this(new SourceFile(sourceName, new Array[Char](0)), _offset);

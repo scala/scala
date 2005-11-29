@@ -38,7 +38,9 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   def this(sourceName: String, content : Array[Char]) =
     this(new CharArrayFile(sourceName, content), content);
 
-  def isLineBreak(idx : Int) = SourceFile.isLineBreak(content(idx));
+  def isLineBreak(idx : Int) = if (!SourceFile.isLineBreak(content(idx))) false;
+			       else if (content(idx) == CR && idx + 1 < content.length && content(idx + 1) == LF) false;
+			       else true;
 
 
   def position(offset : Int) = new Position(this, offset);
@@ -54,42 +56,56 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
     var index  = 0;
     var offset = 0;
 
-    private def reset: Unit = {
-      index = 0; offset = 0;
-    }
-
     def find(toFind : Int, isIndex : Boolean) : Int = {
+      if (toFind == 0) return 0;
+
       if (!isIndex) assert(toFind != Position.NOPOS);
       if ( isIndex) assert(toFind > Position.NOLINE - Position.FIRSTLINE);
 
       if (!isIndex && (toFind >= content.length)) throw new Error(toFind + " not valid offset in " + file.getName() + ":" + content.length);
 
-      if ( isIndex && toFind <  index) reset;
-      if (!isIndex && toFind < offset) reset;
-      try {
-	var seek = 0;
-	var continue = true;
-	while (continue) {
-	  if (false) {;}
-	  else if ( isIndex && seek == 0 && toFind == index   ) continue = false;
-	  else if (!isIndex &&      toFind ==  offset + seek  ) continue = false;
-	  else if (!isIndex &&     (toFind  < (offset + seek))) throw new Error("HOW??? toFind=" + toFind + " offset=" + offset + " seek=" + seek);
-	  else if (isLineBreak(offset + seek)) {
-	    index  = index         + 1;
-	    offset = offset + seek + 1;
-	    seek = 0;
-	  } else seek = seek + 1;
+      def get(isIndex : Boolean) = if (isIndex) index else offset;
+
+      val isBackward = toFind <= get(isIndex);
+      val increment = if (isBackward) -1 else + 1;
+      val oneIfBackward = if (isBackward) +1 else 0;
+
+      // System.err.println("FIND-0: " + toFind + " " + isIndex);
+
+      while (true) {
+	// System.err.println("FIND-1: " + offset + " " + index);
+
+	if (!isIndex && offset == toFind) return index;
+	if ( isBackward && offset <= 0) throw new Error(offset + " " + index + " " + toFind + " " + isIndex);
+	offset = offset + increment;
+	if (!isBackward) assert(offset < content.length);
+
+	if (isLineBreak(offset + (if (isBackward) 0 else -1))) {
+	  index = index + increment;
+	  if (isIndex && index + oneIfBackward == toFind)
+	    return      offset + oneIfBackward;
 	}
-	if (isIndex) offset else index;
-      } catch {
-	  case ex: ArrayIndexOutOfBoundsException =>
-	    System.err.println("XXX: toFind=" + toFind + " isIndex=" + isIndex + " length=" + content.length);
-	throw ex;
       }
+      throw new Error();
     }
   }
   def offsetToLine(offset : Int) : Int = line.find(offset, false);
   def lineToOffset(index  : Int) : Int = line.find(index , true);
+
+  def beginsWith(offset : Int, text : String): Boolean = {
+    var idx = 0;
+    while (idx < text.length()) {
+      if (offset + idx >= content.length) return false;
+      if (content(offset + idx) != text.charAt(idx)) return false;
+      idx = idx + 1;
+    }
+    return true;
+  }
+  def path = getFile().getPath();
+
+  def skipWhitespace(offset : Int): Int =
+    if (Character.isWhitespace(content(offset))) skipWhitespace(offset + 1) else offset;
+
 
   def lineToString(index : Int) = {
     var offset = lineToOffset(index);

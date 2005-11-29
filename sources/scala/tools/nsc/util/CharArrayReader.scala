@@ -7,11 +7,11 @@ package scala.tools.nsc.util;
 
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
-class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: int,
+class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol: int, */
                       decodeUni: boolean, error: String => unit) {
 
   def this(buf: Array[char], decodeUni: boolean, error: String => unit) =
-    this(buf, 0, 1, 1, decodeUni, error);
+    this(buf, 0, /* 1, 1, */ decodeUni, error);
 
   /** layout constant
    */
@@ -21,36 +21,36 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
   */
   var ch: char = _;
   var bp = start;
-  private var cline: int = _;
-  private var ccol: int = _;
+  //private var cline: int = _;
+  //private var ccol: int = _;
   def cpos = bp;
   var isUnicode: boolean = _;
-  private var nextline = startline;
-  private var nextcol = startcol;
+  //private var nextline = startline;
+  //private var nextcol = startcol;
 
   def hasNext: boolean = bp < buf.length;
 
   def last: char = if(bp > start + 2) buf(bp - 2) else ' '; // XML literals
 
   def next: unit = {
-    cline = nextline;
-    ccol = nextcol;
+    //cline = nextline;
+    //ccol = nextcol;
     ch = buf(bp);
     isUnicode = false;
     bp = bp + 1;
     ch match {
       case '\t' =>
-        nextcol = ((nextcol - 1) / tabinc * tabinc) + tabinc + 1;
+        // nextcol = ((nextcol - 1) / tabinc * tabinc) + tabinc + 1;
       case CR =>
-        nextline = nextline + 1;
-        nextcol = 1;
+        //nextline = nextline + 1;
+        // nextcol = 1;
         if (buf(bp) == LF) {
           ch = LF;
           bp = bp + 1
         }
       case LF | FF =>
-        nextline = nextline + 1;
-        nextcol = 1
+        //nextline = nextline + 1;
+        //nextcol = 1
       case '\\' =>
         def evenSlashPrefix: boolean = {
           var p = bp - 2;
@@ -59,26 +59,26 @@ class CharArrayReader(buf: Array[char], start: int, startline: int, startcol: in
         }
         def udigit: int = {
           val d = digit2int(buf(bp), 16);
-          if (d >= 0) { bp = bp + 1; nextcol = nextcol + 1 }
+          if (d >= 0) { bp = bp + 1; /* nextcol = nextcol + 1 */ }
           else error("error in unicode escape");
           d
         }
-        nextcol = nextcol + 1;
+        // nextcol = nextcol + 1;
         if (buf(bp) == 'u' && decodeUni && evenSlashPrefix) {
           do {
-            bp = bp + 1; nextcol = nextcol + 1;
+            bp = bp + 1; // nextcol = nextcol + 1;
           } while (buf(bp) == 'u');
           val code = udigit << 12 | udigit << 8 | udigit << 4 | udigit;
           ch = code.asInstanceOf[char];
           isUnicode = true
         }
       case _ =>
-        nextcol = nextcol + 1
+        // nextcol = nextcol + 1
     }
   }
 
   def copy: CharArrayReader =
-    new CharArrayReader(buf, bp, nextcol, nextline, decodeUni, error);
+    new CharArrayReader(buf, bp, /* nextcol, nextline, */ decodeUni, error);
 
   def digit2int(ch: char, base: int): int = {
     if ('0' <= ch && ch <= '9' && ch < '0' + base)

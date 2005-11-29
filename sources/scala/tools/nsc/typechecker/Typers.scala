@@ -309,7 +309,7 @@ import collection.mutable.HashMap;
 	val tparams1 = cloneSymbols(tparams);
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
-                      TypeTree() setPos tree.pos setType tparam.tpe)) setPos tree.pos;
+                      TypeTree(tparam.tpe) setPos tree.pos)) setPos tree.pos;
 	context.undetparams = context.undetparams ::: tparams1;
 	adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode) => // (4.1)
@@ -336,9 +336,9 @@ import collection.mutable.HashMap;
 	    } else {
 	      clazz.initialize;
 	      if (clazz.hasFlag(CASE)) {   // (5.1)
-		val tree1 = TypeTree() setPos tree.pos
-		    setType
-		      clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner);
+		val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setOriginal(tree);
+
+
 		// tree.tpe.prefix.memberType(clazz.primaryConstructor); //!!!
 		inferConstructorInstance(tree1, clazz.unsafeTypeParams, pt);
 		tree1
@@ -362,7 +362,7 @@ import collection.mutable.HashMap;
             errorTree(tree, "" + clazz + " takes type parameters");
           } else tree match { // (6)
             case TypeTree() => tree
-            case _ => TypeTree() setPos tree.pos setType tree.tpe
+            case _ => TypeTree(tree.tpe) setOriginal(tree)
           }
 	} else if ((mode & (EXPRmode | FUNmode)) == (EXPRmode | FUNmode) &&
                    ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
@@ -513,8 +513,12 @@ import collection.mutable.HashMap;
       val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope()))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl));
       val impl2 = addSyntheticMethods(impl1, clazz);
-      copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
-	setType NoType
+      val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
+	setType NoType;
+      //for (val p <- impl2.parents)
+      //  System.err.println("AFTER: " + p + " " + p.pos);
+      // Thread.dumpStack();
+      ret;
     }
 
     def typedModuleDef(mdef: ModuleDef): Tree = {
@@ -1338,7 +1342,7 @@ import collection.mutable.HashMap;
 	    val argtypes = args1 map (.tpe);
 	    val owntype = if (tpt1.symbol.isClass) appliedType(tpt1.tpe, argtypes)
 			  else tpt1.tpe.subst(tparams, argtypes);
-            TypeTree() setPos tree.pos setType owntype
+            TypeTree(owntype) setOriginal(tree) // setPos tree.pos
           } else if (tparams.length == 0) {
             errorTree(tree, "" + tpt1.tpe + " does not take type parameters")
           } else {

@@ -558,8 +558,11 @@ abstract class GenJVM extends SubComponent {
 
         crtPC = jcode.getPC();
         val crtLine = try { clasz.cunit.position(instr.pos).line; } catch {
-            case _: Error => -1;
+            case _: Error => Position.NOPOS;
         }
+	//System.err.println("CRTLINE: " + instr.pos + " " +
+	//	   /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
+
         if (crtLine != lastLineNr &&
             crtPC > lastMappedPC) {
           jcode.completeLineNumber(lastMappedPC, crtPC, crtLine);
@@ -697,7 +700,7 @@ abstract class GenJVM extends SubComponent {
             log("Converting from: " + src + " to: " + dst);
           if (dst == BOOL) {
             Console.println("Illegal conversion at: " + clasz +
-                            " at: " + method.sourceFile + ":" + Position.line(pos));
+                            " at: " + method.sourceFile + ":" + Position.line(clasz.cunit.source, pos));
           } else
             jcode.emitT2T(javaType(src), javaType(dst));
 

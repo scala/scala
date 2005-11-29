@@ -97,7 +97,7 @@ import Tokens._;
     }
 
     def syntaxError(msg: String, skipIt: boolean): unit =
-      syntaxError(in.pos, msg, skipIt);
+      syntaxError(in.currentPos, msg, skipIt);
 
     def syntaxError(pos: int, msg: String, skipIt: boolean): unit = {
       if (pos != in.errpos) {
@@ -108,20 +108,20 @@ import Tokens._;
     }
 
     def accept(token: int): int = {
-      val pos = in.pos;
+      val pos = in.currentPos;
       if (in.token != token)
 	syntaxError(
-	  if (Position.line(in.pos) > Position.line(in.lastpos)) in.lastpos
-            else in.pos,
+	  if (Position.line(in.currentPos) > Position.line(in.lastpos)) in.lastpos
+            else in.currentPos,
 	  in.token2string(token) + " expected but " +
             in.token2string(in.token) + " found.", true);
       if (in.token == token) in.nextToken();
-      pos
+      pos;
     }
 
-    def errorTypeTree = TypeTree().setType(ErrorType).setPos(in.pos);
-    def errorTermTree = Literal(Constant(null)).setPos(in.pos);
-    def errorPatternTree = Ident(nme.WILDCARD).setPos(in.pos);
+    def errorTypeTree = TypeTree().setType(ErrorType).setPos(in.currentPos);
+    def errorTermTree = Literal(Constant(null)).setPos(in.currentPos);
+    def errorPatternTree = Ident(nme.WILDCARD).setPos(in.currentPos);
 
 /////// TOKEN CLASSES //////////////////////////////////////////////////////
 
@@ -326,7 +326,7 @@ import Tokens._;
 	if (in.token == DOT)
 	  t = atPos(in.skipToken()) { selectors(t, typeOK) }
       } else {
-	val i = atPos(in.pos) { Ident(ident()) }
+	val i = atPos(in.currentPos) { Ident(ident()) }
 	t = i;
 	if (in.token == DOT) {
 	  val pos = in.skipToken();
@@ -381,7 +381,7 @@ import Tokens._;
     /** QualId ::= Id {`.' Id}
     */
     def qualId(): Tree = {
-      val id = atPos(in.pos) { Ident(ident()) }
+      val id = atPos(in.currentPos) { Ident(ident()) }
       if (in.token == DOT) atPos(in.skipToken()) { selectors(id, false) }
       else id
     }
@@ -391,7 +391,7 @@ import Tokens._;
     *                  | null
     */
     def literal(isPattern: boolean, isNegated: boolean): Tree = {
-      def litToTree() = atPos(in.pos) {
+      def litToTree() = atPos(in.currentPos) {
 	Literal(
 	  in.token match {
 	    case CHARLIT =>
@@ -490,7 +490,7 @@ import Tokens._;
     /** Type1 ::= SimpleType {with SimpleType} [Refinement]
      */
     def type1(): Tree = {
-      val pos = in.pos;
+      val pos = in.currentPos;
       var ts = new ListBuffer[Tree] + simpleType();
       while (in.token == WITH) {
 	in.nextToken(); ts += simpleType()
@@ -508,7 +508,7 @@ import Tokens._;
      *              | `(' Type `)'
      */
     def simpleType(): Tree = {
-      val pos = in.pos;
+      val pos = in.currentPos;
       var t: Tree =
 	if (in.token == LPAREN) {
 	  in.nextToken();
@@ -517,15 +517,17 @@ import Tokens._;
 	  t
 	} else {
           val r = stableRef(false, true);
-          r match {
+          val x = r match {
             case SingletonTypeTree(_) => r
             case _ => convertToTypeId(r);
           }
+	  // System.err.println("SIMPLE_TYPE: " + r.pos + " " + r + " => " + x.pos + " " + x);
+	  x;
 	}
       while (true) {
 	if (in.token == HASH)
 	  t = atPos(in.skipToken()) {
-	    SelectFromTypeTree(t, ident().toTypeName)
+	    SelectFromTypeTree(t, ident().toTypeName);
 	  }
 	else if (in.token == LBRACKET)
 	  t = atPos(pos) { AppliedTypeTree(t, typeArgs()) }
@@ -683,7 +685,7 @@ import Tokens._;
 		Typed(t, atPos(pos1) { Ident(nme.WILDCARD_STAR.toTypeName) })
 	      }
 	    } else {
-	      syntaxError(in.pos, "`*' expected", true);
+	      syntaxError(in.currentPos, "`*' expected", true);
 	    }
 	  } else {
 	    t = atPos(pos) { Typed(t, type1()) }
@@ -715,7 +717,7 @@ import Tokens._;
       while (in.token == IDENTIFIER) {
 	top = reduceStack(
 	  true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
-	opstack = OpInfo(top, in.name, in.pos) :: opstack;
+	opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
 	ident();
 	if (isExprIntro) {
 	  top = prefixExpr();
@@ -737,10 +739,10 @@ import Tokens._;
 	val name = ident();
 	in.token match {
 	  case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => literal(false, true)
-	  case _ => atPos(in.pos) { Select(simpleExpr(), name) }
+	  case _ => atPos(in.currentPos) { Select(simpleExpr(), name) }
 	}
       } else if (in.token == IDENTIFIER && (in.name == PLUS || in.name == TILDE || in.name == BANG)) {
-	val pos = in.pos;
+	val pos = in.currentPos;
 	val name = ident();
 	atPos(pos) { Select(simpleExpr(), name) }
       } else {
@@ -820,12 +822,12 @@ import Tokens._;
 	  case LBRACKET =>
 	    t match {
 	      case Ident(_) | Select(_, _) =>
-		t = atPos(in.pos) { TypeApply(t, typeArgs()) }
+		t = atPos(in.currentPos) { TypeApply(t, typeArgs()) }
 	      case _ =>
 		return t;
 	    }
 	  case LPAREN | LBRACE if (!isNew) =>
-	    t = atPos(in.pos) { Apply(t, argumentExprs()) }
+	    t = atPos(in.currentPos) { Apply(t, argumentExprs()) }
 	  case _ =>
 	    return t
 	}
@@ -919,7 +921,7 @@ import Tokens._;
      *    SeqPattern ::= SeqPattern1 { `|' SeqPattern1 }
      */
     def pattern(seqOK: boolean): Tree = {
-      val pos = in.pos;
+      val pos = in.currentPos;
       val t = pattern1(seqOK);
       if (in.token == IDENTIFIER && in.name == BAR) {
 	val ts = new ListBuffer[Tree] + t;
@@ -941,7 +943,7 @@ import Tokens._;
      */
     def pattern1(seqOK: boolean): Tree =
       if (seqOK && !isExprIntro) {
-	atPos(in.pos) { Sequence(List()) }
+	atPos(in.currentPos) { Sequence(List()) }
       } else {
 	val p = pattern2(seqOK);
 	p match {
@@ -994,7 +996,7 @@ import Tokens._;
       while (in.token == IDENTIFIER && in.name != BAR) {
 	top = reduceStack(
           false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
-	opstack = OpInfo(top, in.name, in.pos) :: opstack;
+	opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
 	ident();
 	top = simplePattern(seqOK)
       }
@@ -1108,7 +1110,7 @@ import Tokens._;
 
     private def addMod(mods: int, mod: int): int = {
       if ((mods & mod) != 0)
-	syntaxError(in.pos, "repeated modifier", false);
+	syntaxError(in.currentPos, "repeated modifier", false);
       in.nextToken();
       mods | mod;
     }
@@ -1126,7 +1128,7 @@ import Tokens._;
       var implicitmod = 0;
       var caseParam = ofCaseClass;
       def param(): ValDef = {
-	atPos(in.pos) {
+	atPos(in.currentPos) {
 	  var mods = Flags.PARAM;
 	  if (owner.isTypeName) {
 	    mods = modifiers() | Flags.PARAMACCESSOR;
@@ -1159,7 +1161,7 @@ import Tokens._;
 	params.toList
       }
       val vds = new ListBuffer[List[ValDef]];
-      val pos = in.pos;
+      val pos = in.currentPos;
       while (implicitmod == 0 && in.token == LPAREN) {
 	in.nextToken();
 	vds += paramClause();
@@ -1214,7 +1216,7 @@ import Tokens._;
           }
 	}
         val pname = ident();
-	val param = atPos(in.pos) { typeBounds(mods, pname) }
+	val param = atPos(in.currentPos) { typeBounds(mods, pname) }
         if (in.token == VIEWBOUND && (implicitViews != null))
           implicitViews += atPos(in.skipToken()) {
             makeFunctionTypeTree(List(Ident(pname.toTypeName)), typ())
@@ -1262,15 +1264,15 @@ import Tokens._;
     /**  ImportRef ::= StableId `.' (Id | `_' | ImportSelectors)
      */
     def importExpr(): Tree =
-      atPos(in.pos) {
+      atPos(in.currentPos) {
         var t: Tree = null;
         var pos = 0;
         if (in.token == THIS) {
-          t = atPos(in.pos) { This(nme.EMPTY.toTypeName) }
+          t = atPos(in.currentPos) { This(nme.EMPTY.toTypeName) }
           t = atPos(accept(DOT)) { Select(t, ident()) }
           pos = accept(DOT);
         } else {
-          val i = atPos(in.pos) { Ident(ident()) }
+          val i = atPos(in.currentPos) { Ident(ident()) }
           pos = accept(DOT);
           if (in.token == THIS) {
             in.nextToken();
@@ -1477,7 +1479,7 @@ import Tokens._;
      *  TypeDcl ::= Id TypeBounds
      */
     def typeDefOrDcl(mods: int): Tree =
-      atPos(in.pos) {
+      atPos(in.currentPos) {
         val name = ident().toTypeName;
         in.token match {
           case LBRACKET =>
@@ -1541,13 +1543,15 @@ import Tokens._;
     /** ClassTemplate ::= [`extends' TemplateParents] [TemplateBody]
      *  TemplateParents ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
      */
-    def classTemplate(mods: int, name: Name, vparamss: List[List[ValDef]]): Template =
-      atPos(in.pos) {
+    def classTemplate(mods: int, name: Name, vparamss: List[List[ValDef]]): Template = {
+      val ret = atPos(in.currentPos) {
         val parents = new ListBuffer[Tree];
         val argss = new ListBuffer[List[Tree]];
         if (in.token == EXTENDS) {
           in.nextToken();
-          parents += simpleType();
+	  val parent = simpleType();
+	  // System.err.println("classTempl: " + parent);
+          parents += parent;
           if (in.token == LPAREN)
 	    do { argss += argumentExprs() } while (in.token == LPAREN)
 	  else argss += List();
@@ -1571,6 +1575,8 @@ import Tokens._;
 	if ((mods & Flags.TRAIT) == 0) Template(ps, vparamss, argss.toList, body)
 	else Template(ps, body)
       }
+      ret;
+    }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 
@@ -1684,10 +1690,10 @@ import Tokens._;
     /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)']
      */
     def attribute(): Tree = {
-      val pos = in.pos;
+      val pos = in.currentPos;
       var t: Tree = convertToTypeId(stableId());
       if (in.token == LBRACKET)
-        t = atPos(in.pos)(AppliedTypeTree(t, typeArgs()));
+        t = atPos(in.currentPos)(AppliedTypeTree(t, typeArgs()));
       val args = if (in.token == LPAREN) argumentExprs() else List();
       atPos(pos) { New(t, List(args)) }
     }
@@ -1743,13 +1749,13 @@ import Tokens._;
           stats ++= defOrDcl(0);
           accept(SEMI);
           if (in.token == RBRACE || in.token == CASE) {
-            stats += Literal(()).setPos(in.pos)
+            stats += Literal(()).setPos(in.currentPos)
           }
         } else if (isLocalModifier) {
           stats += tmplDef(localClassModifiers());
           accept(SEMI);
           if (in.token == RBRACE || in.token == CASE) {
-            stats += Literal(()).setPos(in.pos)
+            stats += Literal(()).setPos(in.currentPos)
           }
         } else if (in.token == SEMI) {
           in.nextToken();
@@ -1765,7 +1771,7 @@ import Tokens._;
      *                    | TopStatSeq
      */
     def compilationUnit(): Tree =
-      atPos(in.pos) {
+      atPos(in.currentPos) {
         if (in.token == PACKAGE) {
           in.nextToken();
           val pkg = qualId();

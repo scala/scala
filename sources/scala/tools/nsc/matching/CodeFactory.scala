@@ -210,7 +210,7 @@ import scala.tools.nsc.util.Position;
       ),
       List(
         Literal(cunit.toString()),
-        Literal(Position.line(pos))
+        Literal(Position.line(cunit.source, pos))
       )
     );
 
@@ -220,7 +220,7 @@ import scala.tools.nsc.util.Position;
      gen.mkRef(definitions.MatchError_report),
      List(
        Literal(cunit.toString()),
-       Literal(Position.line(pos)),
+       Literal(Position.line(cunit.source, pos)),
        tree
      )
    );

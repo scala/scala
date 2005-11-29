@@ -87,6 +87,7 @@ object Flags {
   final val STATICMODULE = lateMODULE;
   final val STATICMEMBER = notOVERRIDE;
 
+
   // masks
   /** This flags can be set when class or module symbol is first created. */
   final val TopLevelCreationFlags =
@@ -169,5 +170,11 @@ object Flags {
 
       case _ => ""
     }
+  }
+  class Flag(mods : int) {
+    def isPrivate   = ((mods & PRIVATE  ) != 0);
+    def isProtected = ((mods & PROTECTED) != 0);
+    def isVariable  = ((mods &   MUTABLE) != 0);
+    def isPublic    = !isPrivate && !isProtected;
   }
 }

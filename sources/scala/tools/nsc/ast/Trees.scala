@@ -5,9 +5,10 @@
 // $Id$
 package scala.tools.nsc.ast;
 
+import scala.tools.nsc.symtab.Flags;
 import java.io.StringWriter;
 import java.io.PrintWriter;
-import scala.tools.nsc.util.Position;
+import scala.tools.nsc.util.{Position,SourceFile};
 import symtab.Flags._;
 
 [_trait_] abstract class Trees: Global {
@@ -19,10 +20,15 @@ import symtab.Flags._;
 
     if (util.Statistics.enabled) nodeCount = nodeCount + 1;
 
-    var pos: int = Position.NOPOS;
+    private var posx: int = Position.NOPOS;
+
+    def pos = posx;
+
+
+
     var tpe: Type = _;
 
-    def setPos(p: int): this.type = { pos = p; this }
+    def setPos(p: int): this.type = { posx = p; this }
     def setType(tp: Type): this.type = { tpe = tp; this }
 
     def symbol: Symbol = null;
@@ -53,7 +59,7 @@ import symtab.Flags._;
     def duplicate: this.type = (duplicator transform this).asInstanceOf[this.type];
 
     def copyAttrs(tree: Tree): this.type = {
-      pos = tree.pos;
+      posx = tree.posx;
       tpe = tree.tpe;
       if (hasSymbol) symbol = tree.symbol;
       this
@@ -65,8 +71,8 @@ import symtab.Flags._;
     override var symbol: Symbol = NoSymbol;
   }
 
-  trait DefTree extends SymTree {
-    override def isDef = true
+  abstract class DefTree(val name0 : Name) extends SymTree {
+    override def isDef = true;
   }
 
   trait TermTree extends Tree {
@@ -109,17 +115,43 @@ import symtab.Flags._;
     override def isEmpty = true;
   }
 
+  abstract class MemberDef(val mods0: int, name: Name) extends DefTree(name) {
+    def keyword : String;
+    def flags = new Flags.Flag(mods0);
+    final def hasFlag(mask: long): boolean = (mods0 & mask) != 0;
+
+    def namePos(source : SourceFile) : Int = if (pos == Position.NOPOS) Position.NOPOS else {
+      assert(keyword != null);
+      if (!source.beginsWith(pos, keyword + " ")) {
+	val p = new Position(source, pos);
+	// System.err.println("SYM=" + symbol + " KW=" + keyword + " LINE=" + p.lineContent + " TEXT=" + source.content(pos) + source.content(pos + 1));
+	if (true) return Position.NOPOS;
+	else throw new Error();
+      }
+      source.skipWhitespace(pos + keyword.length() + 1);
+    }
+  }
+
   /** Package clause */
   case class PackageDef(name: Name, stats: List[Tree])
-       extends DefTree;
+       extends MemberDef(0, name) {
+	 def keyword = "package";
+       }
 
   def PackageDef(sym: Symbol, stats: List[Tree]): PackageDef =
     PackageDef(sym.name, stats) setSymbol sym;
 
 
+
+
+  abstract class ImplDef(mods : int, name: Name, val impl0: Template) extends MemberDef(mods, name);
+
+
   /** Class definition */
   case class ClassDef(mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
-       extends DefTree;
+       extends ImplDef(mods, name, impl) {
+	 def keyword = "class";
+       }
 
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     posAssigner.atPos(sym.pos) {
@@ -142,33 +174,49 @@ import symtab.Flags._;
 
   /** Singleton object definition */
   case class ModuleDef(mods: int, name: Name, impl: Template)
-       extends DefTree;
+       extends ImplDef(mods, name, impl) {
+	 def keyword = "object";
+       }
 
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     posAssigner.atPos(sym.pos) {
       ModuleDef(flags2mods(sym.flags), sym.name, impl)
     }
 
+
+  abstract class ValOrDefDef(mods: int, name: Name, val tpt0: Tree, val rhs0 : Tree) extends MemberDef(mods, name);
+
+
+
   /** Value definition */
   case class ValDef(mods: int, name: Name, tpt: Tree, rhs: Tree)
-       extends DefTree {
+       extends ValOrDefDef(mods, name, tpt, rhs) {
          assert(tpt.isType, tpt);
-         assert(rhs.isTerm, rhs)
-  }
+         assert(rhs.isTerm, rhs);
+	 def keyword = if (flags.isVariable) "var" else "val";
+	 override def namePos(source : SourceFile) =
+	   if (pos == Position.NOPOS) Position.NOPOS;
+	   else if (source.beginsWith(pos, "val ") || source.beginsWith(pos, "var ")) source.skipWhitespace(pos + ("val ").length());
+	   else if (source.content(pos) == ',') source.skipWhitespace(pos + 1);
+	   else pos;
+       }
 
-  def ValDef(sym: Symbol, rhs: Tree): ValDef =
+
+  def ValDef(sym: Symbol, rhs: Tree): ValDef = {
     posAssigner.atPos(sym.pos) {
       ValDef(flags2mods(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
     }
+  }
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree);
 
   /** Method definition */
   case class DefDef(mods: int, name: Name, tparams: List[AbsTypeDef],
 		    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
-       extends DefTree {
+       extends ValOrDefDef(mods, name, tpt, rhs) {
 	 assert(tpt.isType);
 	 assert(rhs.isTerm);
+         def keyword = "def";
        }
 
   def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
@@ -189,7 +237,15 @@ import symtab.Flags._;
 
   /** Abstract type or type parameter */
   case class AbsTypeDef(mods: int, name: Name, lo: Tree, hi: Tree)
-       extends DefTree;
+       extends DefTree(name) {
+	 def keyword = "";
+
+	 override def setPos(pos : Int) : this.type = {
+	   val ret = super.setPos(pos);
+	   ret;
+	 }
+	 def namePos = pos - name.length;
+       }
 
   def AbsTypeDef(sym: Symbol): AbsTypeDef =
     posAssigner.atPos(sym.pos) {
@@ -199,7 +255,9 @@ import symtab.Flags._;
 
   /** Type alias */
   case class AliasTypeDef(mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree)
-       extends DefTree;
+       extends MemberDef(mods, name) {
+	 def keyword = "type";
+       }
 
   def AliasTypeDef(sym: Symbol, rhs: Tree): AliasTypeDef =
     posAssigner.atPos(sym.pos) {
@@ -216,7 +274,7 @@ import symtab.Flags._;
    *       jumps within a Block.
    */
   case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
-       extends DefTree with TermTree {
+       extends DefTree(name) with TermTree {
 	 assert(rhs.isTerm);
        }
 
@@ -245,7 +303,9 @@ import symtab.Flags._;
 
   /** Instantiation template */
   case class Template(parents: List[Tree], body: List[Tree])
-       extends SymTree;
+       extends SymTree {
+	 // System.err.println("TEMPLATE: " + parents);
+       }
 
   def Template(parents: List[Tree], vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
     /** Add constructor to template */
@@ -290,7 +350,7 @@ import symtab.Flags._;
 
   /** Bind of a variable to a rhs pattern, eliminated by TransMatch */
   case class Bind(name: Name, body: Tree)
-       extends DefTree;
+       extends DefTree(name);
 
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym;
@@ -353,16 +413,19 @@ import symtab.Flags._;
   case class Typed(expr: Tree, tpt: Tree)
        extends TermTree;
 
+  abstract class GenericApply(val fun0: Tree, val args0: List[Tree]) extends TermTree;
+
+
   /** Type application */
   case class TypeApply(fun: Tree, args: List[Tree])
-       extends TermTree {
+       extends GenericApply(fun, args) {
     override def symbol: Symbol = fun.symbol;
     override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
   }
 
   /** Value application */
   case class Apply(fun: Tree, args: List[Tree])
-       extends TermTree {
+       extends GenericApply(fun, args) {
     override def symbol: Symbol = fun.symbol;
     override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
   }
@@ -384,6 +447,17 @@ import symtab.Flags._;
        extends SymTree {
     override def isTerm = selector.isTermName;
     override def isType = selector.isTypeName;
+
+    override def setPos(pos : Int) : this.type = {
+      val ret = super.setPos(pos);
+      if (pos == 23) {
+	//System.err.println("SELECT: " + this);
+	//Thread.dumpStack();
+      }
+      ret;
+    }
+
+
   }
 
   def Select(qualifier: Tree, sym: Symbol): Select =
@@ -394,6 +468,12 @@ import symtab.Flags._;
        extends SymTree {
     override def isTerm = name.isTermName;
     override def isType = name.isTypeName;
+
+    override def setPos(p : Int) : this.type = {
+      val ret = super.setPos(p);
+      ret;
+    }
+
   }
 
   def Ident(sym: Symbol): Ident =
@@ -409,10 +489,27 @@ import symtab.Flags._;
 
   /** General type term, introduced by RefCheck. */
   case class TypeTree() extends TypTree {
+    var original : Tree = _;
+
+    def setOriginal(tree : Tree) : this.type = {
+      original = tree;
+      setPos(tree.pos);
+    }
+    override def setPos(pos : Int) : this.type = {
+      val ret = super.setPos(pos);
+      if (false && pos == 151 && original == null) {
+	System.err.println("TYPE: " + this + " POS=" + pos + " TPE=" + tpe);
+	Thread.dumpStack();
+      }
+      ret;
+    }
+
+
     override def isEmpty = tpe == null || tpe == NoType;
   }
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp;
+  // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp;
 
 
   /** Singleton type, eliminated by RefCheck */
@@ -1114,7 +1211,7 @@ import symtab.Flags._;
     private var pos: int = _;
     override def traverse(t: Tree): unit =
       if (t != EmptyTree && t.pos == Position.NOPOS) {
-	t.pos = pos;
+	t.setPos(pos);
 	super.traverse(t);
       }
     def atPos[T <: Tree](pos: int)(tree: T): T = {

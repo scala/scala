@@ -416,7 +416,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   def xLiteral: Tree = try {
     init;
     handle.isPattern = false;
-    val pos = s.pos;
+    val pos = s.currentPos;
     var tree = element;
     xSpaceOpt;
     // parse more XML ?
@@ -452,7 +452,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     init;
     val oldMode = handle.isPattern;
     handle.isPattern = true;
-    val pos = s.pos;
+    val pos = s.currentPos;
     var tree = xPattern; xSpaceOpt;
     //if (ch == '<') {
       var ts: List[Tree] = List();
@@ -508,13 +508,13 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   //var ch: Char = _;
 
   /** this method assign the next character to ch and advances in input */
-  def nextch: Unit = { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.pos; }
+  def nextch: Unit = { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.currentPos; }
 
   //def lookahead = { s.xLookahead }
 
   def init: Unit = {
     ch = s.in.ch;
-    pos = s.pos;
+    pos = s.currentPos;
     //Console.println("\ninit! ch = "+ch);
   }
 

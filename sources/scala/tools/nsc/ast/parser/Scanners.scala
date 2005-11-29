@@ -21,7 +21,10 @@ import scala.tools.nsc.util.CharArrayReader;
     var token: int = EMPTY;
 
     /** the token's position */
-    var pos: int = 0;
+    protected var pos: int = 0;
+
+    def currentPos = pos - 1;
+
 
     /** the name of an identifier or token */
     var name: Name = null;
@@ -92,7 +95,9 @@ import scala.tools.nsc.util.CharArrayReader;
     /** read next token and return last position
      */
     def skipToken(): int = {
-      val p = pos; nextToken(); p
+      val p = pos; nextToken();
+      // XXX: account for off by one error
+      p - 1
     }
 
     def nextToken(): unit = {
