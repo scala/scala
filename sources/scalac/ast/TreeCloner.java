@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -13,8 +13,8 @@ import java.util.Map;
 import scalac.Global;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolCloner;
-import scalac.symtab.Type;
 import scalac.symtab.SymbolSubstTypeMap;
+import scalac.symtab.Type;
 import scalac.util.Debug;
 
 /**
@@ -105,6 +105,11 @@ public class GenTreeCloner extends GenTransformer {
     /** Initializes a new instance. */
     public GenTreeCloner(Global global, Type.Map map, SymbolCloner cloner) {
         super(global, map);
+        this.cloner = cloner;
+    }
+
+    public GenTreeCloner(Global global, SymbolCloner cloner) {
+        super(global, cloner.getTypeMap());
         this.cloner = cloner;
     }
 
