@@ -267,6 +267,9 @@ import symtab.Flags._;
   /** Labelled expression - the symbols in the array (must be Idents!)
    *  are those the label takes as argument
    *
+   *  The symbol that is given to the labeldef should have a MethodType
+   *  (as if it were a nested function)
+   *
    *  jumps are apply nodes attributed with label symbol, the arguements
    *    will get assigned to the idents.
    *
