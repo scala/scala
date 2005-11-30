@@ -525,7 +525,9 @@ import collection.mutable.HashMap;
       val clazz = mdef.symbol.moduleClass;
       val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope()))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl));
-      copy.ModuleDef(mdef, mdef.mods, mdef.name, impl1) setType NoType
+      val impl2 = addSyntheticMethods(impl1, clazz);
+
+      copy.ModuleDef(mdef, mdef.mods, mdef.name, impl2) setType NoType
     }
 
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
