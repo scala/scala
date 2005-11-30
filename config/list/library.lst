@@ -393,8 +393,8 @@ xml/transform/BasicTransformer.scala
 xml/transform/RewriteRule.scala
 xml/transform/RuleTransformer.scala
 
-#xml/xsd/Decl.scala
-#xml/xsd/ContentModel.scala
-#xml/xsd/XsTypeSymbol.scala
+xml/xsd/Decl.scala
+xml/xsd/ContentModel.scala
+xml/xsd/XsTypeSymbol.scala
 
 ##############################################################################
