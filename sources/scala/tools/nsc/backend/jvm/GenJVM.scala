@@ -161,6 +161,7 @@ abstract class GenJVM extends SubComponent {
 
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode];
         genCode(m);
+        genLocalVariableTable;
       }
     }
 
@@ -896,6 +897,39 @@ abstract class GenJVM extends SubComponent {
     def getFile(cls: JClass, suffix: String): String = {
       val path = cls.getName().replace('.', File.separatorChar);
       settings.outdir.value + File.separatorChar + path + suffix
+    }
+
+
+    private def genLocalVariableTable: Unit = {
+        val vars: Array[JLocalVariable] = jmethod.getLocalVariables();
+
+        if (!settings.debuginfo.value || vars.length == 0)
+            return;
+
+        val pool = jclass.getConstantPool();
+        val pc = jcode.getPC();
+        var anonCounter = 0;
+
+        val lvTab = java.nio.ByteBuffer.allocate(2 + 10 * vars.length);
+        lvTab.putShort(vars.length.asInstanceOf[Short]);
+        for (val lv <- vars) {
+            val name = if (lv.getName() == null) {
+              anonCounter = anonCounter + 1;
+              "<anon" + anonCounter + ">"
+            } else lv.getName();
+
+            lvTab.putShort(0.asInstanceOf[Short]);
+            lvTab.putShort(pc.asInstanceOf[Short]);
+            lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short]);
+            lvTab.putShort(pool.addUtf8(lv.getType().getSignature()).asInstanceOf[Short]);
+            lvTab.putShort(lv.getIndex().asInstanceOf[Short]);
+        }
+        val attr =
+            fjbgContext.JOtherAttribute(jclass,
+                                        jmethod,
+                                        "LocalVariableTable",
+                                        lvTab.array());
+        jcode.addAttribute(attr);
     }
 
   }

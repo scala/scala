@@ -52,8 +52,9 @@ package scala.tools.nsc.ant {
      *    <li>stop,</li>
      *    <li>skip,</li>
      *    <li>check,</li>
-     *    <li>showicode.</li>
+     *    <li>showicode,</li>
      *    <li>log,</li>
+     *    <li>debuginfo.</li>
      * </ul>
      * It also takes the following parameters as nested elements:<ul>
      *    <li>src (for srcdir),</li>
@@ -134,6 +135,10 @@ package scala.tools.nsc.ant {
       private var check: List[String] = Nil;
       /** Print ICode files along with class files (debug option). */
       private var showICode: Boolean = false;
+
+      /** Instruct the compiler to generate debugging information (pass '-g') */
+      private var debugInfo: Boolean = false;
+
 
       // ###################################################################
       // #####                    Properties setters                   #####
@@ -435,6 +440,12 @@ package scala.tools.nsc.ant {
       def setShowicode(input: Boolean): Unit =
         showICode = input;
 
+      /**
+       * Set the debug info attribute.
+       */
+      def setDebuginfo(input: Boolean): Unit =
+        debugInfo = input;
+
       // ###################################################################
       // #####             Compilation and support methods             #####
       // ###################################################################
@@ -588,6 +599,7 @@ package scala.tools.nsc.ant {
             if (!skip.isEmpty) settings.skip.value = skip;
             if (!check.isEmpty) settings.check.value = check;
             settings.Xshowicode.value = showICode;
+            settings.debuginfo.value = debugInfo;
             if (!logPhase.isEmpty) settings.log.value = logPhase;
 
             // Sets path properties to prevent ClassPath from being corrupted.

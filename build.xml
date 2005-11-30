@@ -216,7 +216,7 @@
             unless="skip.nsc"
             description="Builds the Scala library with the new Scala compiler.">
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
-             usepredefs="false"
+             usepredefs="false" debuginfo="${nsc.debuginfo}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
@@ -230,7 +230,7 @@
             <include name="scala/runtime/ScalaRunTime.scala"/>
         </nsc>
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
-             excludesfile="${nsc.nslib.excludes}"
+             excludesfile="${nsc.nslib.excludes}" debuginfo="${nsc.debuginfo}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
@@ -251,7 +251,7 @@
             unless="skip.nsc"
             description="Builds the Scala tools (NSC and Scalap) with the new Scala compiler.">
         <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}"
-             excludesfile="${nsc.nstools.excludes}"
+             excludesfile="${nsc.nstools.excludes}" debuginfo="${nsc.debuginfo}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
              logging="${nsc.logging}">
             <classpath>
