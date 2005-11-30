@@ -52,6 +52,7 @@ package scala.tools.nsc.ant {
      *    <li>stop,</li>
      *    <li>skip,</li>
      *    <li>check,</li>
+     *    <li>print,</li>
      *    <li>showicode,</li>
      *    <li>log,</li>
      *    <li>debuginfo.</li>
@@ -133,6 +134,8 @@ package scala.tools.nsc.ant {
       private var logPhase: List[String] = Nil;
       /** Which compilation phases results should be checked for consistency. */
       private var check: List[String] = Nil;
+      /** Which compilation phases results should be printed-out. */
+      private var print: List[String] = Nil;
       /** Print ICode files along with class files (debug option). */
       private var showICode: Boolean = false;
 
@@ -426,14 +429,26 @@ package scala.tools.nsc.ant {
       }
 
       /**
-       * Sets the force attribute. Used by Ant.
-       * @param input The value for <code>force</code>.
+       * Sets the check attribute. Used by Ant.
+       * @param input The value for <code>check</code>.
        */
       def setCheck (input: String) = {
         check = List.fromArray(input.split(",")).flatMap(s: String => {
           val st = s.trim();
           if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
           else {error("Phase " + st + " in check does not exist."); Nil}
+        });
+      }
+
+      /**
+       * Sets the print attribute. Used by Ant.
+       * @param input The value for <code>print</code>.
+       */
+      def setPrint (input: String) = {
+        print = List.fromArray(input.split(",")).flatMap(s: String => {
+          val st = s.trim();
+          if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
+          else {error("Phase " + st + " in print does not exist."); Nil}
         });
       }
 
@@ -598,6 +613,7 @@ package scala.tools.nsc.ant {
             if (!stop.isEmpty) settings.stop.value = List(stop.get);
             if (!skip.isEmpty) settings.skip.value = skip;
             if (!check.isEmpty) settings.check.value = check;
+            if (!print.isEmpty) settings.print.value = print;
             settings.Xshowicode.value = showICode;
             settings.debuginfo.value = debugInfo;
             if (!logPhase.isEmpty) settings.log.value = logPhase;

@@ -218,7 +218,7 @@
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              usepredefs="false" debuginfo="${nsc.debuginfo}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
-             logging="${nsc.logging}">
+             logging="${nsc.logging}" print="${nsc.print}">
             <classpath>
                 <pathelement location="${build.pico-nslib.dir}"/>
                 <pathelement location="${build.nslib.dir}"/>
@@ -232,7 +232,7 @@
         <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
              excludesfile="${nsc.nslib.excludes}" debuginfo="${nsc.debuginfo}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
-             logging="${nsc.logging}">
+             logging="${nsc.logging}" print="${nsc.print}">
             <classpath>
                 <pathelement location="${build.pico-nslib.dir}"/>
                 <pathelement location="${build.nslib.dir}"/>
@@ -253,7 +253,7 @@
         <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}"
              excludesfile="${nsc.nstools.excludes}" debuginfo="${nsc.debuginfo}"
              stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
-             logging="${nsc.logging}">
+             logging="${nsc.logging}" print="${nsc.print}">
             <classpath>
                 <pathelement location="${build.pico-nslib.dir}"/>
                 <pathelement location="${build.nslib.dir}"/>
