@@ -581,7 +581,7 @@ import collection.mutable.HashMap;
     def typedValDef(vdef: ValDef): ValDef = {
       val sym = vdef.symbol;
       val typer1 = if (sym.hasFlag(PARAM) && sym.owner.isConstructor)
-                     newTyper(context.constructorContext)
+                     newTyper(context.makeConstructorContext)
                    else this;
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt));
       checkNonCyclic(vdef.pos, tpt1.tpe, sym);
@@ -676,7 +676,8 @@ import collection.mutable.HashMap;
           val result = ddef.rhs match {
             case Block(stat :: stats, expr) =>
               val stat1 = typedSuperCall(stat);
-              typed(copy.Block(ddef.rhs, stats, expr), UnitClass.tpe) match {
+              newTyper(context.makeConstructorSuffixContext).typed(
+                copy.Block(ddef.rhs, stats, expr), UnitClass.tpe) match {
                 case block1 @ Block(stats1, expr1) =>
                   copy.Block(block1, stat1 :: stats1, expr1)
               }
@@ -840,7 +841,7 @@ import collection.mutable.HashMap;
         }
 
       def typedArg(arg: Tree, pt: Type): Tree = {
-        val argTyper = if ((mode & INCONSTRmode) != 0) newTyper(context.constructorContext)
+        val argTyper = if ((mode & INCONSTRmode) != 0) newTyper(context.makeConstructorContext)
                        else this;
         argTyper.typed(arg, mode & stickyModes, pt)
       }

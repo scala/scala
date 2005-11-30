@@ -177,12 +177,12 @@ abstract class UnPickler {
           TypeBounds(readTypeRef(), readTypeRef())
 	case REFINEDtpe =>
 	  val clazz = readSymbolRef();
+/*
           val ps = until(end, readTypeRef);
           val dcls = symScope(clazz);
           new RefinedType(ps, dcls) { override def symbol = clazz }
-/* //todo replace with but need to rethink initialization first
-	  new RefinedType(until(end, readTypeRef), )) { override def symbol = clazz }
 */
+	  new RefinedType(until(end, readTypeRef), symScope(clazz)) { override def symbol = clazz }
 	case CLASSINFOtpe =>
 	  val clazz = readSymbolRef();
 	  ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)

@@ -95,12 +95,16 @@ trait Namers: Analyzer {
       }
     }
 
+    private def inConstructorFlag: long =
+      if (context.owner.isConstructor && !context.inConstructorSuffix) INCONSTRUCTOR
+      else 0l;
+
     private def enterClassSymbol(pos: int, mods: int, name: Name): Symbol = {
       var c: Symbol = context.scope.lookup(name);
       if (c.isType && c.isExternal && context.scope == c.owner.info.decls) {
         updatePosFlags(c, pos, mods);
       } else {
-	c = enterInScope(context.owner.newClass(pos, name).setFlag(mods))
+	c = enterInScope(context.owner.newClass(pos, name).setFlag(mods | inConstructorFlag))
       }
       if (c.owner.isPackageClass) currentRun.symSource(c) = context.unit.source.getFile();
       c
@@ -115,7 +119,7 @@ trait Namers: Analyzer {
           context.scope.unlink(m);
         m = context.owner.newModule(pos, name);
         m.setFlag(mods);
-        m.moduleClass.setFlag(mods);
+        m.moduleClass.setFlag(mods | inConstructorFlag);
 	enterInScope(m)
       }
       if (m.owner.isPackageClass) currentRun.symSource(m) = context.unit.source.getFile();

@@ -37,8 +37,6 @@ abstract class UnCurry extends InfoTransform {
   def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit);
   override def changesBaseClasses = false;
 
-  var needTryLift = false;
-
   private val uncurry = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case MethodType(formals, MethodType(formals1, restpe)) =>
@@ -65,7 +63,9 @@ abstract class UnCurry extends InfoTransform {
 
   class UnCurryTransformer(unit: CompilationUnit) extends Transformer {
 
+    private var needTryLift = false;
     private var inPattern = false;
+    private var inConstructorFlag = 0;
 
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree));
@@ -121,7 +121,8 @@ abstract class UnCurry extends InfoTransform {
      *      def isDefinedAt(x: T): boolean = true
      */
     def transformFunction(fun: Function): Tree = {
-      val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos) setFlag (FINAL | SYNTHETIC);
+      val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos)
+        setFlag (FINAL | SYNTHETIC | inConstructorFlag);
       val formals = fun.tpe.typeArgs.init;
       val restpe = fun.tpe.typeArgs.last;
       anonClass setInfo ClassInfoType(
@@ -197,6 +198,7 @@ abstract class UnCurry extends InfoTransform {
     }
 
     def mainTransform(tree: Tree): Tree = {
+
       def withNeedLift(needLift: Boolean)(f: => Tree): Tree = {
         val savedNeedTryLift = needTryLift;
         needTryLift = needLift;
@@ -205,9 +207,36 @@ abstract class UnCurry extends InfoTransform {
         t
       }
 
+      def withInConstructorFlag(inConstructorFlag: int)(f: => Tree): Tree = {
+        val savedInConstructorFlag = this.inConstructorFlag;
+        this.inConstructorFlag = inConstructorFlag;
+        val t = f;
+        this.inConstructorFlag = savedInConstructorFlag;
+        t
+      }
+
       tree match {
-        case DefDef(_, _, _, _, _, _) =>
-          withNeedLift(false) { super.transform(tree) }
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          withNeedLift(false) {
+            if (tree.symbol.isConstructor) {
+              atOwner(tree.symbol) {
+                val rhs1 = rhs match {
+                  case Block(stat :: stats, expr) =>
+                    copy.Block(
+                      rhs,
+                      withInConstructorFlag(INCONSTRUCTOR) { transform(stat) } :: transformTrees(stats),
+                      transform(expr));
+                  case _ =>
+                    withInConstructorFlag(INCONSTRUCTOR) { transform(rhs) }
+                }
+                copy.DefDef(
+	          tree, mods, name, transformAbsTypeDefs(tparams),
+                  transformValDefss(vparamss), transform(tpt), rhs1)
+              }
+            } else {
+              super.transform(tree)
+            }
+          }
 
         case ValDef(_, _, _, rhs)
           if (!tree.symbol.owner.isSourceMethod) =>
@@ -249,10 +278,14 @@ abstract class UnCurry extends InfoTransform {
 	  val pat1 = transform(pat);
 	  inPattern = false;
 	  copy.CaseDef(tree, pat1, transform(guard), transform(body))
+
         case fun @ Function(_, _) =>
           mainTransform(transformFunction(fun))
+
+        case Template(_, _) =>
+          withInConstructorFlag(0) { super.transform(tree) }
+
         case _ =>
-          assert(!tree.isInstanceOf[Function]);
           val tree1 = super.transform(tree);
 	  if (isByNameRef(tree1))
 	    typed(atPos(tree1.pos)(

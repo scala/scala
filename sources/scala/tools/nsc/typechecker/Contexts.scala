@@ -64,6 +64,8 @@ import scala.tools.nsc.util.Position;
     var imports: List[ImportInfo] = List();
 
     var prefix: Type = NoPrefix;
+    var inConstructorSuffix = false;         // are we in a secondary constructor
+                                             // after the this constructor call?
     var reportAmbiguousErrors = false;
     var reportGeneralErrors = false;
     var checking = false;
@@ -85,10 +87,12 @@ import scala.tools.nsc.util.Position;
       tree match {
         case Template(_, _) | PackageDef(_, _) =>
 	  c.enclClass = c;
-	  c.prefix = skolemizedThisType(this.tree, this.prefix, c.owner)
+	  c.prefix = skolemizedThisType(this.tree, this.prefix, c.owner);
+          c.inConstructorSuffix = false;
 	case _ =>
 	  c.enclClass = this.enclClass;
-          c.prefix = if (c.owner != this.owner && c.owner.isTerm) NoPrefix else this.prefix
+          c.prefix = if (c.owner != this.owner && c.owner.isTerm) NoPrefix else this.prefix;
+          c.inConstructorSuffix = this.inConstructorSuffix;
       }
       c.variance = this.variance;
       c.depth = if (scope == this.scope) this.depth else this.depth + 1;
@@ -129,11 +133,17 @@ import scala.tools.nsc.util.Position;
       c
     }
 
-    def constructorContext = {
+    def makeConstructorContext = {
       val baseContext = enclClass.outer;
       val argContext = baseContext.makeNewScope(tree, owner);
       for (val sym <- scope.toList) argContext.scope enter sym;
       argContext
+    }
+
+    def makeConstructorSuffixContext = {
+      val c = make(tree);
+      c.inConstructorSuffix = true;
+      c
     }
 
     def skolemizedThisType(encl: Tree, pre: Type, clazz: Symbol): Type = if (settings.Xgadt.value) {

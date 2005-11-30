@@ -163,6 +163,7 @@ import Flags._;
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM);
     final def isTypeParameter         = isTypeParameterOrSkolem && deSkolemize == this;
+    final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR);
     final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME);
       // startsWith necessary because name may grow when lifted and also because of anonymous function classes
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
@@ -192,10 +193,12 @@ import Flags._;
     final def isModuleVar: boolean = isVariable && nme.isModuleVarName(name);
 
     /** Is this symbol static (i.e. with no outer instance)? */
-    final def isStatic: boolean = hasFlag(STATIC) || isRoot || owner.isStaticOwner;
+    final def isStatic: boolean =
+      hasFlag(STATIC) || isRoot || owner.isStaticOwner;
 
     /** Does this symbol denote a class that defines static symbols? */
-    final def isStaticOwner: boolean = isPackageClass || isStatic && isModuleClass;
+    final def isStaticOwner: boolean =
+      isPackageClass || isModuleClass && isStatic;
 
     /** Is this symbol final?*/
     final def isFinal: boolean =
@@ -259,6 +262,8 @@ import Flags._;
 
     def owner: Symbol = rawowner;
     final def owner_=(owner: Symbol): unit = { rawowner = owner }
+
+    def ownerChain: List[Symbol] = this :: owner.ownerChain;
 
     def name: Name = rawname;
     final def name_=(name: Name): unit = { rawname = name }
@@ -1017,6 +1022,7 @@ import Flags._;
     override def toplevelClass: Symbol = this;
     override def enclMethod: Symbol = this;
     override def owner: Symbol = throw new Error();
+    override def ownerChain: List[Symbol] = List();
     override def alternatives: List[Symbol] = List();
     override def reset(completer: Type): unit = {}
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error();

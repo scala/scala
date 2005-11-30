@@ -51,7 +51,9 @@ object Flags {
   final val PARAMACCESSOR = 0x20000000;   // for value definitions: is an access method for a final val parameter
                                           // for parameters: is a val parameter
 
-  final val LABEL         = 0x40000000;   // symbol is a label. Set by TailCall
+  final val LABEL         = 0x40000000;   // method symbol is a label. Set by TailCall
+  final val INCONSTRUCTOR = 0x40000000;   // class symbol is defined in this/superclass constructor.
+
   final val CAPTURED      = 0x80000000L;   // variable is accessed from nested function. Set by LambdaLift
 
   final val IS_ERROR      = 0x100000000L; // symbol is an error symbol
@@ -63,7 +65,6 @@ object Flags {
   final val EXPANDEDNAME  = 0x1000000000L; // name has been expanded with class suffix
   final val IMPLCLASS     = 0x2000000000L; // symbol is an implementation class
   final val TRANS_FLAG    = 0x4000000000L; // transient flag guaranteed to be reset after each phase.
-  final val INCONSTRUCTOR = TRANS_FLAG;    // transient flag for analyzer
 
   final val LOCKED        = 0x8000000000L; // temporary flag to catch cyclic dependencies
 

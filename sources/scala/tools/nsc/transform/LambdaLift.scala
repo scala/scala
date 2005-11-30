@@ -207,7 +207,7 @@ abstract class LambdaLift extends InfoTransform {
           case None => searchIn(outer(owner))
         }
       }
-      if (settings.debug.value) log("proxy " + sym + " in " + sym.owner + " from " + currentOwner + " " + enclMethOrClass(sym.owner));//debug
+      if (settings.debug.value) log("proxy " + sym + " in " + sym.owner + " from " + currentOwner.ownerChain + " " + enclMethOrClass(sym.owner));//debug
       if (enclMethOrClass(sym.owner) == enclMethOrClass(currentOwner)) sym
       else searchIn(currentOwner)
     }
