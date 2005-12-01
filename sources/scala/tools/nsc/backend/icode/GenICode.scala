@@ -1106,8 +1106,10 @@ abstract class GenICode extends SubComponent  {
         override def traverse(tree: Tree): Unit = tree match {
 
           case LabelDef(name, params, rhs) =>
-            ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
-            ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
+            if (!ctx.labels.contains(tree.symbol)) {
+              ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
+              ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
+            }
             super.traverse(rhs);
 
           case _ => super.traverse(tree);
