@@ -82,11 +82,12 @@ import scala.xml.dtd._ ;
   }
 
   /** &lt;? prolog ::= xml S
+   *  // this is a bit more lenient than necessary...
    */
   def prolog(): Tuple3[Option[String], Option[String], Option[Boolean]] = {
 
     //Console.println("(DEBUG) prolog");
-
+    var n = 0;
     var info_ver: Option[String] = None;
     var info_enc: Option[String] = None;
     var info_stdl: Option[Boolean] = None;
@@ -95,38 +96,32 @@ import scala.xml.dtd._ ;
 
     xSpace;
 
-    if (!m.isPrefixed && m.key == "version") {
-      if (m.value == "1.0") {
-        info_ver = Some("1.0");
-        m = m.next;
-      } else {
-        reportSyntaxError("cannot deal with versions != 1.0");
-      }
-    } else
-      reportSyntaxError("VersionInfo expected!");
-
-    if (!m.isPrefixed && m.key == "encoding") {
-      val enc = m.value;
-      if (!isValidIANAEncoding(enc))
-        reportSyntaxError("\"" + enc + "\" is not a valid encoding");
-      info_enc = Some(enc);
-      m = m.next
+    m.getValue("version") match {
+      case null  => ;
+      case "1.0" => info_ver = Some("1.0"); n = n + 1;
+      case _     => reportSyntaxError("cannot deal with versions != 1.0");
     }
 
-    if (!m.isPrefixed && m.key == "standalone") {
-      m.value match {
-        case "yes" =>
-          info_stdl = Some(true);
-        case "no" =>
-          info_stdl = Some(false);
-        case _ =>
-          reportSyntaxError("either 'yes' or 'no' expected");
-      }
-      m = m.next
+    m.getValue("encoding") match {
+      case null => ;
+      case enc  => if (!isValidIANAEncoding(enc))
+                    reportSyntaxError("\"" + enc + "\" is not a valid encoding");
+                  else {
+                    info_enc = Some(enc);
+                    n = n + 1;
+                  }
+    }
+    m.getValue("standalone") match {
+      case null => ;
+      case "yes" => info_stdl = Some(true);  n = n + 1;
+      case "no"  => info_stdl = Some(false); n = n + 1;
+      case _     => reportSyntaxError("either 'yes' or 'no' expected");
     }
 
-    if (m != Null)
+    if(m.length - n != 0) {
+      Console.println("[length "+(m.length - n)+"]");
       reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
+    }
     Tuple3(info_ver,info_enc,info_stdl)
   }
 
@@ -513,16 +508,23 @@ import scala.xml.dtd._ ;
             ch match {
               case '#' => // CharacterRef
                 nextch;
-              val theChar = handle.text( tmppos, xCharRef );
-              xToken(';');
-              ts &+ theChar ;
+                val theChar = handle.text( tmppos, xCharRef );
+                xToken(';');
+                ts &+ theChar ;
               case _ => // EntityRef
                 val n = xName ;
                 xToken(';');
-                /*
-                ts + handle.entityRef( tmppos, n ) ;
-                */
-                push( n );
+                xName match {
+                  case "lt"    => ts &+ '<';
+                  case "gt"    => ts &+ '>';
+                  case "amp"   => ts &+ '&';
+                  case "quote" => ts &+ '"';
+                  case _ =>
+                    /*
+                     ts + handle.entityRef( tmppos, n ) ;
+                     */
+                    push( n );
+                }
             }
           case _ => // text content
             //Console.println("text content?? pos = "+pos);
@@ -576,13 +578,13 @@ import scala.xml.dtd._ ;
     //external ID
     if('S' == ch || 'P' == ch) {
       extID = externalID();
-      xSpace;
+      xSpaceOpt;
     }
 
     /* parse external subset of DTD
      */
 
-    if(null != extID) {
+    if((null != extID)&&(isValidating)) {
 
       pushExternal(extID.systemId);
       //val extSubsetSrc = externalSource( extID.systemId );

@@ -48,10 +48,10 @@ class PrettyPrinter( width:Int, step:Int ) {
       return List(Box(ind,s));
     val sb = new StringBuffer();
     var i = s.indexOf(' ');
-    if( i > tmp ) throw new BrokenException(); // cannot break
+    if(i > tmp || i == -1) throw new BrokenException(); // cannot break
 
-    var last = i::Nil;
-    while( i < tmp ) {
+    var last:List[Int] = Nil;
+    while(i < tmp) {
       last = i::last;
       i = s.indexOf(' ', i );
     }
@@ -121,16 +121,6 @@ class PrettyPrinter( width:Int, step:Int ) {
     sb.toString();
   }
 
-
-  protected def breakable( n:Node ):boolean = {
-    val it = n.child.elements;
-    while( it.hasNext )
-      it.next match {
-        case _:Atom[Any] | _: Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
-        case _:Node => return true;
-      }
-    return false
-  }
   /** @param tail: what we'd like to sqeeze in */
   protected def traverse( node:Node, pscope: NamespaceBinding, ind:int ):Unit = {
     node match {
@@ -141,7 +131,7 @@ class PrettyPrinter( width:Int, step:Int ) {
       case _:Node =>
         val sb = new StringBuffer();
         val test = { Utility.toXML(node, pscope, sb, false); sb.toString()};
-        if(( test.length() < width - cur )&&( !breakable( node ))){ // all ?
+        if( test.length() < width - cur  ) {
           makeBox( ind, test );
         } else {  // start tag + content + end tag
           //Console.println(node.label+" ind="+ind);
@@ -201,14 +191,20 @@ class PrettyPrinter( width:Int, step:Int ) {
   def format(n: Node, pscope:NamespaceBinding, sb: StringBuffer): Unit = { // entry point
     reset();
     traverse( n, pscope, 0 );
+    var last = 0;
     var cur = 0;
     //Console.println( items.reverse );
     for( val b <- items.reverse ) b match {
       case Break =>
         sb.append('\n');  // on windows: \r\n ?
         cur = 0;
+        while( cur < last ) {
+          sb.append(' ');
+          cur = cur + 1;
+        }
 
       case Box(i, s) =>
+        last = i;
         while( cur < i ) {
           sb.append(' ');
           cur = cur + 1;

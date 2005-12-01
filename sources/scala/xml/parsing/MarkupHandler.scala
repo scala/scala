@@ -42,8 +42,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
     lookup(decls)
   }
 
-  def replacementText( entityName: String ): Source = {
-    ent.get(entityName) match {
+  def replacementText( entityName: String ): Source = ent.get(entityName) match {
       case Some(ParsedEntityDecl(_, IntDef(value))) =>
         Source.fromString(value);
       case Some(ParameterEntityDecl(_, IntDef(value))) =>
@@ -53,7 +52,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
       case None =>
         Source.fromString("<!-- unknown entity "+entityName+"; -->")
     }
-  }
+
 
  //def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {}
 
