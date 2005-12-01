@@ -943,7 +943,7 @@ import symtab.Flags._;
           copy.AliasTypeDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(rhs))
 	}
       case LabelDef(name, params, rhs) =>
-        copy.LabelDef(tree, name, transformIdents(params), transform(rhs))
+        copy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
       case Import(expr, selectors) =>
         copy.Import(tree, transform(expr), selectors)
       case Attributed(attribute, definition) =>
