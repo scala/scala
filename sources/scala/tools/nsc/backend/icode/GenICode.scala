@@ -1108,7 +1108,7 @@ abstract class GenICode extends SubComponent  {
           case LabelDef(name, params, rhs) =>
             ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
             ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
-            //super.traverse(rhs);
+            super.traverse(rhs);
 
           case _ => super.traverse(tree);
         }

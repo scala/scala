@@ -68,14 +68,19 @@ trait AlgebraicMatchers : TransMatcher {
   //////////// generator methods
 
   override def toTree(): Tree = {
+
+    this.exit = currentOwner.newLabel(root.pos, "exitA")
+      .setInfo(new MethodType(List(resultType), resultType));
+
+    val result = exit.newValueParameter(root.pos, "resultA").setInfo( resultType );
+
     Block(
       List (
-        ValDef(root.symbol, _m.selector),
-        ValDef(resultVar, EmptyTree)
+        ValDef(root.symbol, _m.selector)
       ),
       If( super.toTree(root.and),
-         Ident(resultVar ),
-         ThrowMatchError( _m.pos, resultVar.tpe ))
+         LabelDef(exit, List(result), Ident(result)),
+         ThrowMatchError( _m.pos, resultType ))
     );
   }
 

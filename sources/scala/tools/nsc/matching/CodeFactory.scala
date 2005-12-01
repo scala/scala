@@ -115,7 +115,10 @@ import scala.tools.nsc.util.Position;
       }
   }
 
-  /*protected*/ def Or(left: Tree, right: Tree): Tree = left match {
+  /*protected*/ def Or(left: Tree, right: Tree): Tree = {
+    left match {
+      case If(cond: Tree, thenp: Tree, Literal(Constant(false))) =>  // little opt, frequent special case
+        If(cond, thenp, right)
       case Literal(Constant(value: Boolean))=>
 	if(value) left else right;
       case _ =>
@@ -125,6 +128,7 @@ import scala.tools.nsc.util.Position;
           case _ =>
             Apply(Select(left, definitions.Boolean_or), List(right));
         }
+    }
   }
 
   // used by Equals

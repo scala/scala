@@ -224,8 +224,12 @@ abstract class LambdaLift extends InfoTransform {
     }
 
     private def proxyRef(sym: Symbol) = {
-      val psym = proxy(sym);
-      if (psym.isLocal) gen.Ident(psym) else memberRef(psym)
+      if (sym.owner.isLabel) //
+        gen.Ident(sym)      // bq: account for the fact that LambdaLift does not know how to handle references to LabelDef parameters.
+      else {                 //
+        val psym = proxy(sym);
+        if (psym.isLocal) gen.Ident(psym) else memberRef(psym)
+      }
     }
 
     private def addFreeArgs(pos: int, sym: Symbol, args: List[Tree]) = {

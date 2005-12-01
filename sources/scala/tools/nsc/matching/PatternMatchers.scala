@@ -37,7 +37,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
 
   /** the symbol of the result variable
    */
-  protected var resultVar: Symbol = _;
+//  protected var resultVar: Symbol = _;
 
   def defs = definitions;
   /** init method, also needed in subclass AlgebraicMatcher
@@ -68,9 +68,6 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
     this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
                               Ident(root.symbol).setType(root.tpe));
-    this.resultVar = owner.newVariable(Position.NOPOS, // Flags.MUTABLE,
-                                       //"result").setType( resultType );
-                                       "result").setInfo( resultType );
     //Console.println("resultType =  "+resultType);
     this.owner = owner;
     this.selector = selector;
@@ -666,7 +663,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
 
     //print();
     val ncases = numCases(root.and);
-    val matchError = ThrowMatchError(selector.pos, resultVar.tpe);
+    val matchError = ThrowMatchError(selector.pos, resultType);
     // without a case, we return a match error if there is no default case
     if (ncases == 0)
       return defaultBody(root.and, matchError);
@@ -727,20 +724,28 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
       n = n + 1;
       mappings = mappings.next;
     }
-    return Switch(selector, tags, bodies, defaultBody1, resultVar.tpe);
+    return Switch(selector, tags, bodies, defaultBody1, resultType);
     */
     nCases = CaseDef(Ident(nme.WILDCARD), defaultBody1) :: nCases;
     return Match(selector, nCases)
   }
 
+
+    var exit:Symbol = null;
+    /** simple optimization: if the last pattern is `case _' (no guards), we won't generate the ThrowMatchError
+     */
   def generalSwitchToTree(): Tree = {
-    val ts = List(
-      ValDef(root.symbol, selector),
-      ValDef(resultVar, EmptyTree /* DefaultValue */));
+    this.exit = currentOwner.newLabel(root.pos, "exit")
+    .setInfo(new MethodType(List(resultType), resultType));
+    //Console.println("resultType:"+resultType.toString());
+    val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
+
+    //Console.println("generalSwitchToTree: "+root.or);
+    val ts = List(ValDef(root.symbol, selector));
     val res = If(toTree(root.and),
-                 Ident(resultVar),
-                 ThrowMatchError(selector.pos,  resultVar.tpe /* ,
-                                    Ident(root.symbol) */));
+                 LabelDef(exit, List(result), Ident(result)),
+                 ThrowMatchError(selector.pos,  resultType // , Ident(root.symbol)
+                               ));
     return Block(ts, res);
   }
 
@@ -798,9 +803,13 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
                 var i = guard.length - 1; while(i >= 0) {
                   val ts:Seq[Tree] = bound(i).asInstanceOf[Array[Tree]];
                   var res0: Tree =
+                    //Block(
+                    //  List(Assign(Ident(resultVar), body(i))),
+                    //  Literal(Constant(true)));
                     Block(
-                      List(Assign(Ident(resultVar), body(i))),
-                      Literal(Constant(true)));
+                      List(Apply(Ident(exit), List(body(i)))),
+                      Literal(Constant(true))
+                    ); // forward jump
                   if (guard(i) != EmptyTree)
                     res0 = And(guard(i), res0);
                   res = Or(Block(ts.toList, res0), res);
