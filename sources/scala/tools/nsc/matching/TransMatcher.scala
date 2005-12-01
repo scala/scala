@@ -252,28 +252,47 @@ with RightTracers {
       }
     }
     override def transform(tree: Tree): Tree = tree match {
+      /* // test code to generate forward jumps
+      case Match(selector, CaseDef(Ident(nme.WILDCARD), EmptyTree, exp)::Nil) => // inserting test-code
+
+        val target1 = currentOwner.newLabel(tree.pos, "target1")
+        .setInfo(new MethodType(List(definitions.IntClass.tpe), definitions.IntClass.tpe));
+
+        val a = currentOwner.newValue(tree.pos, "a").setInfo(definitions.IntClass.tpe);
+        val x = currentOwner.newValueParameter(tree.pos, "x").setInfo(definitions.IntClass.tpe);
+        val y = currentOwner.newValueParameter(tree.pos, "y").setInfo(definitions.IntClass.tpe);
+        val target2 = currentOwner.newLabel(tree.pos, "target2")
+        .setInfo(new MethodType(List(definitions.IntClass.tpe, definitions.IntClass.tpe), definitions.IntClass.tpe));
+
+        val z = currentOwner.newValueParameter(tree.pos, "z").setInfo(definitions.IntClass.tpe);
+        typed { atPos(tree.pos) { Block(
+          List(
+            Apply(Ident(target2), List(Literal(Constant(1)),Literal(Constant(2)))),
+            LabelDef(target1, List(x), exp)),
+            LabelDef(target2, List(y,z), Apply(Select(Ident(y), nme.PLUS), List(Ident(z))))
+        )}};
+*/
+
       case Match(selector, cases) =>
 	val nselector = transform(selector).setType(selector.tpe);
         val ncases = cases map { transform };
-		/*
-	  Console.println("TransMatch translating cases: ");
-	  for(val t <- cases) {
-	    Console.println(t.pat.toString());
-	    Console.println("BODY "+t.body.toString());
-	  }
-	  */
+/*
+      Console.println("TransMatch translating cases: ");
+      for(val t <- cases) {
+	Console.println(t.pat.toString());
+	Console.println("BODY "+t.body.toString());
+      }
+*/
         // @todo: remove from partial matcher
         TransMatcher.this.currentOwner = currentOwner;
         TransMatcher.this.resultType   = tree.tpe;
+        //Console.println("TransMatcher currentOwner ="+currentOwner+")");
         //Console.println("TransMatcher selector.tpe ="+selector.tpe+")");
         //Console.println("TransMatcher resultType ="+resultType+")");
-        val t =
-          typed {
-            atPos(tree.pos) {
-              handle(nselector, ncases.asInstanceOf[List[CaseDef]])
-            }
-          }
-        //Console.println(t.toString());
+        val t_untyped = handle(nselector, ncases.asInstanceOf[List[CaseDef]]);
+        //Console.println("t_untyped "+t_untyped.toString());
+        val t         = typed { atPos(tree.pos) (t_untyped) };
+        //Console.println("t typed "+t.toString());
         t
       case _ =>
         super.transform(tree);
