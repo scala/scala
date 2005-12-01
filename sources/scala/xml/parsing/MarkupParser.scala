@@ -119,9 +119,9 @@ import scala.xml.dtd._ ;
     }
 
     if(m.length - n != 0) {
-      Console.println("[length "+(m.length - n)+"]");
       reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
     }
+    //Console.println("[MarkupParser::prolog] finished parsing prolog!");
     Tuple3(info_ver,info_enc,info_stdl)
   }
 
@@ -132,28 +132,28 @@ import scala.xml.dtd._ ;
     var info_enc: Option[String] = None;
 
     var m = xmlProcInstr();
+    var n = 0;
 
-    if (!m.isPrefixed && m.key == "version") {
-      if (m.value == "1.0") {
-        info_ver = Some("1.0");
-        m = m.next;
-      } else {
-        reportSyntaxError("cannot deal with versions != 1.0");
-      }
-    } else
-      reportSyntaxError("VersionInfo expected!");
-
-    if (m != Null && !m.isPrefixed && m.key == "encoding") {
-      val enc = m.value;
-      if (!isValidIANAEncoding(enc))
-        reportSyntaxError("\"" + enc + "\" is not a valid encoding");
-      info_enc = Some(enc);
-      m = m.next
+    m.getValue("version") match {
+      case null => ;
+      case "1.0" => info_ver = Some("1.0"); n = n + 1;
+      case _     => reportSyntaxError("cannot deal with versions != 1.0");
     }
 
-    if (m != Null)
-      reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
+    m.getValue("encoding") match {
+      case null => ;
+      case enc  => if (!isValidIANAEncoding(enc))
+        reportSyntaxError("\"" + enc + "\" is not a valid encoding");
+                   else {
+                     info_enc = Some(enc);
+                     n = n + 1;
+                   }
+    }
 
+    if(m.length - n != 0) {
+      reportSyntaxError("VersionInfo EncodingDecl? or '?>' expected!");
+    }
+    //Console.println("[MarkupParser::textDecl] finished parsing textdecl");
     Tuple2(info_ver, info_enc);
   }
 
@@ -179,11 +179,21 @@ import scala.xml.dtd._ ;
     }
 
     nextch; // is prolog ?
+    var children: NodeSeq = null;
     if ('?' == ch) {
+      //Console.println("[MarkupParser::document] starts with xml declaration");
       nextch;
       info_prolog = prolog();
+      children = content(TopScope); // DTD handled as side effect
+
+    } else {
+      //Console.println("[MarkupParser::document] does not start with xml declaration");
+      val ts = new NodeBuffer();
+      content1(TopScope, ts); // DTD handled as side effect
+      ts &+ content(TopScope);
+      children = NodeSeq.fromSeq(ts);
     }
-    val children = content(TopScope); // DTD handled as side effect
+    //Console.println("[MarkupParser::document] children now: "+children.toList);
     var elemCount = 0;
     var theNode: Node = null;
     for (val c <- children) c match {
@@ -514,7 +524,7 @@ import scala.xml.dtd._ ;
               case _ => // EntityRef
                 val n = xName ;
                 xToken(';');
-                xName match {
+                n match {
                   case "lt"    => ts &+ '<';
                   case "gt"    => ts &+ '>';
                   case "amp"   => ts &+ '&';
@@ -691,8 +701,7 @@ import scala.xml.dtd._ ;
       val n = cbuf.toString().intern();
       cbuf.setLength(0);
       n
-    }
-    else {
+    } else {
       reportSyntaxError("name expected");
       new String()
     }
@@ -1110,7 +1119,8 @@ import scala.xml.dtd._ ;
    * report a syntax error
    */
   def reportSyntaxError(pos: int, str: String): Unit = {
-    curInput.reportError(pos, str)
+    curInput.reportError(pos, str);
+    //error("MarkupParser::synerr"); // DEBUG
   }
 
   def reportSyntaxError(str: String): Unit = reportSyntaxError(pos, str);
