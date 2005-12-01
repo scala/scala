@@ -810,12 +810,16 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
                 bound = Predef.Array[Array[ValDef]]( Predef.Array[ValDef]() );
                 var i = guard.length - 1; while(i >= 0) {
                   val ts:Seq[Tree] = bound(i).asInstanceOf[Array[Tree]];
+                  val temp = currentOwner.newValue(body(i).pos, cunit.fresh.newName("r$"))
+                    setFlag Flags.SYNTHETIC setInfo body(i).tpe;
                   var res0: Tree =
                     //Block(
                     //  List(Assign(Ident(resultVar), body(i))),
                     //  Literal(Constant(true)));
                     Block(
-                      List(Apply(Ident(exit), List(body(i)))),
+                      List(
+                        ValDef(temp, body(i)),
+                        Apply(Ident(exit), List(Ident(temp)))),
                       Literal(Constant(true))
                     ); // forward jump
                   if (guard(i) != EmptyTree)
