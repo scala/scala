@@ -82,7 +82,6 @@ abstract class Mixin extends InfoTransform {
           }
         } else if ((member hasFlag (LIFTED | BRIDGE)) && !(member hasFlag PRIVATE)) {
           member.expandName(clazz);
-          System.out.println("LIFTING " + member + " to " + clazz);//debug
           addMember(clazz, member.cloneSymbol(clazz) resetFlag FINAL);
         }
       }
@@ -246,7 +245,6 @@ abstract class Mixin extends InfoTransform {
     }
 
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
-      if (settings.debug.value) System.out.println("add new defs for " + clazz);
       val newDefs = new ListBuffer[Tree];
       def addDef(pos: int, tree: Tree): unit = {
         if (settings.debug.value) log("add new def to " + clazz + ": " + tree);
