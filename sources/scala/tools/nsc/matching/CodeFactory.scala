@@ -207,7 +207,17 @@ import scala.tools.nsc.util.Position;
 //  }
 
   def ThrowMatchError(pos: Int, tpe: Type ) =
-    Apply(
+    atPos(pos) {
+      Throw(
+        New(
+          TypeTree(definitions.MatchErrorClass.tpe),
+          List(List(
+            Literal(cunit.toString()),
+            Literal(Position.line(cunit.source, pos))))))
+    }
+
+/*
+ Apply(
       TypeApply(
         gen.mkRef(definitions.MatchError_fail),
         List(TypeTree(tpe))
@@ -217,6 +227,7 @@ import scala.tools.nsc.util.Position;
         Literal(Position.line(cunit.source, pos))
       )
     );
+*/
 
   /* // ?!
   def ThrowMatchError(pos:int , tree:Tree ) =

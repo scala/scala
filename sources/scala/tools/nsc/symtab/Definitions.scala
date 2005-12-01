@@ -72,6 +72,7 @@ import Flags._;
     var SerializableClass: Symbol = _;
     var PredefModule: Symbol = _;
     var ConsoleModule: Symbol = _;
+    var MatchErrorClass: Symbol = _;
     var MatchErrorModule: Symbol = _;
       def MatchError_fail = getMember(MatchErrorModule, "fail");
       def MatchError_report = getMember(MatchErrorModule, "report");
@@ -339,6 +340,7 @@ import Flags._;
       SerializableClass = getClass("java.io.Serializable");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
+      MatchErrorClass = getClass("scala.MatchError");
       MatchErrorModule = getModule("scala.MatchError");
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime");
       RepeatedParamClass = newCovariantPolyClass(

@@ -741,12 +741,20 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
 
     //Console.println("generalSwitchToTree: "+root.or);
+    /*
     val ts = List(ValDef(root.symbol, selector));
     val res = If(toTree(root.and),
                  LabelDef(exit, List(result), Ident(result)),
                  ThrowMatchError(selector.pos,  resultType // , Ident(root.symbol)
                                ));
     return Block(ts, res);
+    */
+    return Block(
+      List(
+        ValDef(root.symbol, selector),
+        toTree(root.and),
+        ThrowMatchError(selector.pos,  resultType)),
+      LabelDef(exit, List(result), Ident(result)))
   }
 
   /*protected*/ def toTree(node1: PatternNode): Tree = {
