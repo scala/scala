@@ -50,7 +50,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     var i = s.indexOf(' ');
     if(i > tmp || i == -1) throw new BrokenException(); // cannot break
 
-    var last:List[Int] = Nil;
+    var last:List[Int] = i::Nil;
     while(i < tmp) {
       last = i::last;
       i = s.indexOf(' ', i );
@@ -121,24 +121,36 @@ class PrettyPrinter( width:Int, step:Int ) {
     sb.toString();
   }
 
+
+  protected def childrenAreLeaves(n: Node): Boolean = {
+    val it = n.child.elements;
+    while( it.hasNext )
+      it.next match {
+        case _:Atom[Any] | _: Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
+        case _:Node =>
+          return false;
+      }
+    return true;
+  }
+
+
+  protected def fits(test: String) = {
+    test.length() < width - cur;
+  }
+
   /** @param tail: what we'd like to sqeeze in */
-  protected def traverse( node:Node, pscope: NamespaceBinding, ind:int ):Unit = {
-    node match {
+  protected def traverse(node: Node, pscope: NamespaceBinding, ind: Int): Unit =  node match {
 
       case _:Atom[Any] | _:Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
         makeBox( ind, node.toString() );
 
       case _:Node =>
-        val sb = new StringBuffer();
-        val test = { Utility.toXML(node, pscope, sb, false); sb.toString()};
-        if( test.length() < width - cur  ) {
+        val test = { val sb = new StringBuffer(); Utility.toXML(node, pscope, sb, false); sb.toString()};
+        if(childrenAreLeaves(node) && fits(test)) {
           makeBox( ind, test );
-        } else {  // start tag + content + end tag
-          //Console.println(node.label+" ind="+ind);
+        } else {
           val Pair(stg, len2) = startTag( node, pscope );
           val etg             = endTag( node );
-          //val len2   = pmap(node.namespace).length() + node.label.length() + 2;
-
           if( stg.length() < width - cur ) { // start tag fits
 
             makeBox( ind, stg );
@@ -157,8 +169,8 @@ class PrettyPrinter( width:Int, step:Int ) {
              for( val c <- it ) {
              makeBox( ind+len2-2, c );
              makeBreak();
-               }
-               }*/
+             }
+             }*/
             makeBox( ind, stg.substring( len2, stg.length() ));
             makeBreak();
             traverse( node.child.elements, node.scope, ind + step );
@@ -168,10 +180,9 @@ class PrettyPrinter( width:Int, step:Int ) {
             makeBreak();
           }
         }
-    }
   }
 
-  protected def traverse( it:Iterator[Node], scope:NamespaceBinding, ind:int ):unit = {
+  protected def traverse( it:Iterator[Node], scope:NamespaceBinding, ind: Int ): Unit = {
     for( val c <- it ) {
       traverse( c, scope, ind );
       makeBreak();
@@ -191,20 +202,18 @@ class PrettyPrinter( width:Int, step:Int ) {
   def format(n: Node, pscope:NamespaceBinding, sb: StringBuffer): Unit = { // entry point
     reset();
     traverse( n, pscope, 0 );
-    var last = 0;
     var cur = 0;
     //Console.println( items.reverse );
     for( val b <- items.reverse ) b match {
       case Break =>
         sb.append('\n');  // on windows: \r\n ?
         cur = 0;
-        while( cur < last ) {
-          sb.append(' ');
-          cur = cur + 1;
-        }
+//        while( cur < last ) {
+//          sb.append(' ');
+//          cur = cur + 1;
+//        }
 
       case Box(i, s) =>
-        last = i;
         while( cur < i ) {
           sb.append(' ');
           cur = cur + 1;
