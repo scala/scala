@@ -48,7 +48,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
 
 
   /** Returns the number of errors issued totally as a string */
-  def getCountString(severity : Severity) : Unit = getCountString0(count(severity), label(severity));;
+  def getCountString(severity : Severity) : String = getCountString0(count(severity), label(severity));;
   /** Returns a string meaning "n elements". */
   def getCountString0(n : Int, elements : String) : String =
     n match {
