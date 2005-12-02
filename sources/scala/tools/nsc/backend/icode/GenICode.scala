@@ -351,7 +351,7 @@ abstract class GenICode extends SubComponent  {
           }
           ctx.bb.emit(JUMP(ctx1.bb), tree.pos);
           ctx.bb.close;
-          genLoad(rhs, ctx1, toTypeKind(tree.symbol.info.resultType));
+          genLoad(rhs, ctx1, expectedType /*toTypeKind(tree.symbol.info.resultType)*/);
 
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol;

@@ -265,16 +265,16 @@ import Flags._;
     def isUnboxedClass(sym: Symbol): boolean = isValueClass(sym) || sym == ArrayClass;
 
     def signature(tp: Type): String = {
-      def flatNameString(sym: Symbol): String =
+      def flatNameString(sym: Symbol, separator: char): String =
         if (sym.owner.isPackageClass) sym.fullNameString('.')
-        else flatNameString(sym.owner) + "$" + sym.simpleName;
+        else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(tp: Type): String = {
         if (tp.symbol == ArrayClass) "[" + signature1(tp.typeArgs.head);
         else if (isValueClass(tp.symbol)) String.valueOf(abbrvTag(tp.symbol))
-        else "L" + flatNameString(tp.symbol) + ";"
+        else "L" + flatNameString(tp.symbol, '/') + ";"
       }
       if (tp.symbol == ArrayClass) signature1(tp);
-      else flatNameString(tp.symbol)
+      else flatNameString(tp.symbol, '.')
     }
 
     private var isInitialized = false;
