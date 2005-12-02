@@ -7,37 +7,36 @@
 // $Id$
 
 package scala.tools.nsc.reporters;
-import java.util.HashSet;
+import scala.collection.mutable.HashSet;
 import scala.tools.nsc.util.Position;
 
 /**
- * This abstract class implements most aspects of a Reporter, only how
- * things are displayed has to be implemented in subclasses.
+ * This reporter implements filtering.
  */
 abstract class AbstractReporter extends Reporter {
-  private val positions = new HashSet();
+  private val positions = new HashSet[Position]();
 
-  def displayInfo   (pos : Position, msg : String) : Unit;
-  def displayWarning(pos : Position, msg : String) : Unit;
-  def displayError  (pos : Position, msg : String) : Unit;
+  def display(pos : Position, msg : String, severity : Severity) : Unit;
+  var prompt : Boolean = false;
+  var verbose : Boolean = false;
+  var nowarn  : Boolean = false;
   def displayPrompt : Unit;
 
   // XXX: while is pos ignored?
-  def    info(pos : Position, msg : String, force : Boolean) : Unit =
-    if (force || verbose) displayInfo(pos, msg);
-
-  def warning(pos : Position, msg : String) : Unit = {
-    val hidden = testAndLog(pos);
-    if (nowarn) return;
-    if (!hidden || prompt) displayWarning(pos, msg);
-    if (!hidden) warningsx = warningsx + 1;
-    if (prompt) displayPrompt;
-  }
-  def error(pos : Position, msg : String) : Unit = {
-    val hidden = testAndLog(pos);
-    if (!hidden || prompt) displayError(pos, msg);
-    if (!hidden) errorsx = errorsx + 1;
-    if (prompt) displayPrompt;
+  protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit = severity match {
+    case INFO    => if (force || verbose) display(pos, msg, severity);
+    case WARNING => {
+      val hidden = testAndLog(pos);
+      if (!nowarn) {
+	if (!hidden || prompt) display(pos, msg, severity);
+	if (prompt) displayPrompt;
+      }
+    }
+    case ERROR => {
+      val hidden = testAndLog(pos);
+      if (!hidden || prompt) display(pos, msg, severity);
+      if (prompt) displayPrompt;
+    }
   }
 
   //########################################################################
@@ -48,7 +47,7 @@ abstract class AbstractReporter extends Reporter {
     if (pos == null) return false;
     if (pos.column == 0) return false;
     if (positions.contains(pos)) return true;
-    positions.add(pos);
+    positions += (pos);
     return false;
   }
 

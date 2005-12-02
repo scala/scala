@@ -6,6 +6,7 @@
 package scala.tools.nsc.typechecker;
 
 import scala.tools.nsc.util.Position;
+import scala.tools.nsc.reporters.AbstractReporter;
 import symtab.Flags._;
 
 abstract class TreeCheckers extends Analyzer {
@@ -20,8 +21,14 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def check(unit: CompilationUnit): unit = {
-    val curPrompt = reporter.prompt;
-    reporter.prompt(true);
+    val areporter = if (reporter.isInstanceOf[AbstractReporter]) reporter.asInstanceOf[AbstractReporter] else null;
+
+    val curPrompt = if (areporter != null) {
+      val ret = areporter.prompt;
+      areporter.prompt = true;
+      ret;
+    } else false;
+
     val context = startContext.make(unit);
     context.checking = true;
     tpeOfTree.clear;
@@ -29,7 +36,8 @@ abstract class TreeCheckers extends Analyzer {
     checker.precheck.traverse(unit.body);
     checker.typed(unit.body);
     checker.postcheck.traverse(unit.body);
-    reporter.prompt(curPrompt);
+    if (areporter != null)
+      areporter.prompt = curPrompt;
   }
 
   override def newTyper(context: Context): Typer = new TreeChecker(context);

@@ -627,10 +627,10 @@ package scala.tools.nsc.ant {
             val compiler = new Global(settings, reporter);
             try {
               (new compiler.Run).compile(sourceFiles.map(f:File=>f.toString()));
-              if (reporter.errors() > 0)
+              if (reporter.errors > 0)
                 error("Compile failed with "
-                      + reporter.errors() + " error"
-                      + (if (reporter.errors() > 1) "s" else "")
+                      + reporter.errors + " error"
+                      + (if (reporter.errors > 1) "s" else "")
                       + "; see the compiler error output for details.");
             }
             catch {
@@ -641,10 +641,10 @@ package scala.tools.nsc.ant {
                       + msg + "); see the error output for details.");
               }
             }
-            if (reporter.warnings() > 0)
+            if (reporter.warnings > 0)
               log("Compile suceeded with "
-                  + reporter.errors() + " warning"
-                  + (if (reporter.warnings() > 1) "s" else "")
+                  + reporter.errors + " warning"
+                  + (if (reporter.warnings > 1) "s" else "")
                   + "; see the compiler output for details.");
             reporter.printSummary()
         }

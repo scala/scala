@@ -686,7 +686,7 @@ import collection.mutable.HashMap;
             case _ =>
               typedSuperCall(ddef.rhs)
           }
-	  if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors() == 0)
+	  if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors == 0)
 	    computeParamAliases(meth.owner, vparamss1, result);
 	  result
 	} else transformedOrTyped(ddef.rhs, tpt1.tpe);

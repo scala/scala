@@ -26,7 +26,7 @@ object MainInterpreter extends Object with EvalLoop {
     reporter.error(new Position(PRODUCT),
                    msg + "\n  " + PRODUCT + " -help  gives more information");
 
-  def errors() = reporter.errors();
+  def errors() = reporter.errors;
 
   def interpret(gCompiler: Global): unit = {
     val interpreter = new Interpreter {
@@ -46,7 +46,7 @@ object MainInterpreter extends Object with EvalLoop {
   def process(args: Array[String]): unit = {
     reporter = new ConsoleReporter();
     val command = new CompilerCommand(List.fromArray(args), error, false);
-    reporter.prompt(command.settings.prompt.value);
+    reporter.prompt = (command.settings.prompt.value);
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else if (command.settings.help.value) // 2do replace with InterpCommand
@@ -68,7 +68,7 @@ object MainInterpreter extends Object with EvalLoop {
 
   def main(args: Array[String]): unit = {
     process(args);
-    System.exit(if (reporter.errors() > 0) 1 else 0);
+    System.exit(if (reporter.errors > 0) 1 else 0);
   }
 
 }

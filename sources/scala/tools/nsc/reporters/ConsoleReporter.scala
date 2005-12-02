@@ -18,22 +18,24 @@ import java.io.PrintWriter;
  * This class implements a Reporter that displays messages on a text
  * console.
  */
-class ConsoleReporter(_reader : BufferedReader, _writer : PrintWriter) extends AbstractReporter {
-
-  //########################################################################
-  // Private Fields
-
-  /** The reader to ask for failures on demand */
-  private val reader = _reader;
-  /** The writer to print messages */
-  private val writer = _writer;
-
-
+class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends AbstractReporter {
   //########################################################################
   // Public Fields
 
   /** Whether a short file name should be displayed before errors */
   var shortname : Boolean = false;
+
+  def label(severity : Severity): String = severity match {
+    case ERROR   => "error";
+    case WARNING => "warning";
+    case INFO    => null;
+  };
+  def clabel(severity : Severity) = {
+    val label0 = label(severity);
+    if (label0 == null) ""; else label0 + ": ";
+  }
+
+
 
   //########################################################################
   // Public Constructors
@@ -44,14 +46,11 @@ class ConsoleReporter(_reader : BufferedReader, _writer : PrintWriter) extends A
   //########################################################################
   // Public Methods - Count
 
+
   /** Returns the number of errors issued totally as a string */
-  def getErrorCountString = getCountString(errorsx, "error");
-
-    /** Returns the number of warnings issued totally as a string */
-  def getWarningCountString = getCountString(warningsx, "warning");
-
+  def getCountString(severity : Severity) : Unit = getCountString0(count(severity), label(severity));;
   /** Returns a string meaning "n elements". */
-  def getCountString(n : Int, elements : String) : String =
+  def getCountString0(n : Int, elements : String) : String =
     n match {
       case 0 => "no "    + elements + "s";
       case 1 => "one "   + elements;
@@ -82,8 +81,7 @@ class ConsoleReporter(_reader : BufferedReader, _writer : PrintWriter) extends A
     } else printMessage(msg);
   }
 
-  def printWarning(pos : Position, msg : String) = printMessage(pos, "warning: " + msg);
-  def printError  (pos : Position, msg : String) = printMessage(pos,   "error: " + msg);
+  def print(pos : Position, msg : String, severity : Severity) = printMessage(pos, clabel(severity) + msg);
 
   def printSourceLine(pos : Position) = if (pos != null && pos.offset != Position.NOPOS) {
     printMessage(pos.lineContent);
@@ -103,16 +101,16 @@ class ConsoleReporter(_reader : BufferedReader, _writer : PrintWriter) extends A
 
   /** Prints the number of errors and warnings if their are non-zero. */
   def printSummary() = {
-    if (warningsx > 0) printMessage(getWarningCountString + " found");
-    if (  errorsx > 0) printMessage(getErrorCountString   + " found");
+    if (warnings > 0) printMessage(getCountString(WARNING) + " found");
+    if (  errors > 0) printMessage(getCountString(ERROR  ) + " found");
   }
 
   //########################################################################
   // Public Methods - Display
-  def displayInfo   (pos : Position, msg : String) : Unit = printMessage(pos, msg);
-  def displayWarning(pos : Position, msg : String) : Unit = printWarning(pos, msg);
-  def displayError  (pos : Position, msg : String) : Unit = printError  (pos, msg);
-
+  def display(pos : Position, msg : String, severity : Severity) : Unit = {
+    incr(severity);
+    print(pos, msg, severity);
+  };
   def displayPrompt : Unit = try {
     var continue = true;
     while (continue) {

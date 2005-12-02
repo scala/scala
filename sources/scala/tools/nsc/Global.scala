@@ -274,6 +274,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;
 
+  class TyperRun extends Run {
+    override val terminalPhase : Phase = typerPhase.next;
+  }
   class Run extends CompilerRun {
     curRun = this;
     override val firstPhase = syntaxAnalyzer.newPhase(NoPhase);
@@ -290,7 +293,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       }
     }
 
-    override val terminalPhase = new GlobalPhase(p) {
+    override val terminalPhase : Phase = new GlobalPhase(p) {
       def name = "terminal";
       def apply(unit: CompilationUnit): unit = {}
     }
@@ -325,15 +328,17 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     /** A map from compiled top-level symbols to their picklers */
     val symData = new HashMap[Symbol, PickleBuffer];
 
+
+
     def compileSources(sources: List[SourceFile]): unit = {
       val startTime = System.currentTimeMillis();
-      reporter.resetCounters();
+      reporter.reset;
 
       for (val source <- sources)
 	addUnit(new CompilationUnit(source));
 
       globalPhase = firstPhase;
-      while (globalPhase != terminalPhase && reporter.errors() == 0) {
+      while (globalPhase != terminalPhase && reporter.errors == 0) {
 	val startTime = System.currentTimeMillis();
 	phase = globalPhase;
 	globalPhase.run;
@@ -353,7 +358,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
       if (settings.Xshowicode.value) writeICode();
 
-      if (reporter.errors() == 0) {
+      if (reporter.errors == 0) {
 	for (val Pair(sym, pickled) <- symData.elements.toList) {
 	  sym setPos Position.NOPOS;
 	  if (symData contains sym) {
