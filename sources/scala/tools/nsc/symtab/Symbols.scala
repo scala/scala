@@ -137,9 +137,7 @@ import Flags._;
 
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA));
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod;
-
-    // XXX: Seems like this is what we really want for variables????
-    final def isVariableX = isTerm && hasFlag(MUTABLE);
+    final def isCapturedVariable  = isVariable && hasFlag(CAPTURED);
 
     final def isSetter = isTerm && hasFlag(ACCESSOR) && nme.isSetterName(name);
        //todo: make independent of name, as this can be forged.
@@ -176,7 +174,7 @@ import Flags._;
 
     /** Does this symbol denote a stable value? */
     final def isStable =
-      isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD) || hasFlag(STABLE));
+      isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE));
 
     /** Does this symbol denote the primary constructor
      * of its enclosing class or trait? */

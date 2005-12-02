@@ -1141,7 +1141,8 @@ import Tokens._;
 	  }
           val name = ident();
           accept(COLON);
-          ValDef(mods | implicitmod, name, paramType(), EmptyTree)
+          val bynamemod = if (in.token == ARROW) Flags.BYNAMEPARAM else 0;
+          ValDef(mods | implicitmod | bynamemod, name, paramType(), EmptyTree)
 	}
       }
       def paramClause(): List[ValDef] = {

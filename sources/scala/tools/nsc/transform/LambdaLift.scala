@@ -275,7 +275,7 @@ abstract class LambdaLift extends InfoTransform {
           val tree1 = addFreeParams(tree, sym);
           if (sym.isLocal) liftDef(tree1) else tree1
 	case ValDef(mods, name, tpt, rhs) =>
-          if (sym hasFlag CAPTURED) {
+          if (sym.isCapturedVariable) {
             val tpt1 = TypeTree(sym.tpe) setPos tpt.pos;
             val rhs1 =
               atPos(rhs.pos) {
@@ -310,7 +310,7 @@ abstract class LambdaLift extends InfoTransform {
 		atPos(tree.pos)(proxyRef(sym))
 	      else tree
 	    else tree;
-          if (sym hasFlag CAPTURED)
+          if (sym.isCapturedVariable)
             atPos(tree.pos) {
               val tp = tree.tpe;
               val elemTree = typed { Select(tree1 setType sym.tpe, nme.elem) }

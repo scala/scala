@@ -59,13 +59,15 @@ abstract class UnCurry extends InfoTransform {
   /** - return symbol's transformed type,
    *  - if symbol is a def parameter with transformed type T, return () => T
    */
-  def transformInfo(sym: Symbol, tp: Type): Type = if (sym.isType) tp else uncurry(tp);
+  def transformInfo(sym: Symbol, tp: Type): Type =
+    if (sym.isType) tp
+    else uncurry(tp);
 
   class UnCurryTransformer(unit: CompilationUnit) extends Transformer {
 
     private var needTryLift = false;
     private var inPattern = false;
-    private var inConstructorFlag = 0;
+    private var inConstructorFlag = 0L;
 
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree));
@@ -207,7 +209,7 @@ abstract class UnCurry extends InfoTransform {
         t
       }
 
-      def withInConstructorFlag(inConstructorFlag: int)(f: => Tree): Tree = {
+      def withInConstructorFlag(inConstructorFlag: long)(f: => Tree): Tree = {
         val savedInConstructorFlag = this.inConstructorFlag;
         this.inConstructorFlag = inConstructorFlag;
         val t = f;

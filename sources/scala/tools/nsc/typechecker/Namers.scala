@@ -305,7 +305,7 @@ trait Namers: Analyzer {
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
 	param.symbol = owner.newValueParameter(param.pos, param.name)
-	  .setInfo(typeCompleter(param)).setFlag(param.mods & IMPLICIT);
+	  .setInfo(typeCompleter(param)).setFlag(param.mods & (BYNAMEPARAM | IMPLICIT));
         context.scope enter param.symbol;
         param.symbol
       }

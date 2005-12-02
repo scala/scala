@@ -1351,6 +1351,7 @@ import collection.mutable.HashMap;
           } else if (tparams.length == 0) {
             errorTree(tree, "" + tpt1.tpe + " does not take type parameters")
           } else {
+            //System.out.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}");
 	    System.out.println("" + tpt1 + ":" + tpt1.symbol + ":" + tpt1.symbol.info);//debug
             errorTree(tree, "wrong number of type arguments for " + tpt1.tpe + ", should be " + tparams.length)
 	  }
@@ -1452,9 +1453,11 @@ import collection.mutable.HashMap;
           tree = Ident(info.name) setPos pos;
           if (!local) tree setSymbol info.sym;
 	  tree = typed1(tree, EXPRmode, pt);
-	  if (settings.debug.value) log("typed implicit " + tree + ":" + tree.tpe + ", pt = " + pt);//debug
+	  if (settings.debug.value)
+            log("typed implicit " + tree + ":" + tree.tpe + ", pt = " + pt);//debug
 	  val tree1 = adapt(tree, EXPRmode, pt);
-	  if (settings.debug.value) log("adapted implicit " + tree.symbol + ":" + tree1.tpe + " to " + pt);//debug
+	  if (settings.debug.value)
+            log("adapted implicit " + tree.symbol + ":" + tree1.tpe + " to " + pt);//debug
 	  if (info.sym == tree.symbol) tree1
           else fail("syms differ: " + tree.symbol + " " + info.sym)
 	} catch {

@@ -51,10 +51,11 @@ object Flags {
   final val PARAMACCESSOR = 0x20000000;   // for value definitions: is an access method for a final val parameter
                                           // for parameters: is a val parameter
 
-  final val LABEL         = 0x40000000;   // method symbol is a label. Set by TailCall
-  final val INCONSTRUCTOR = 0x40000000;   // class symbol is defined in this/superclass constructor.
+  final val CAPTURED      = 0x40000000;   // variable is accessed from nested function. Set by LambdaLift
+  final val BYNAMEPARAM   = 0x40000000;   // parameter is by name
 
-  final val CAPTURED      = 0x80000000L;   // variable is accessed from nested function. Set by LambdaLift
+  final val LABEL         = 0x80000000L;   // method symbol is a label. Set by TailCall
+  final val INCONSTRUCTOR = 0x80000000L;   // class symbol is defined in this/superclass constructor.
 
   final val IS_ERROR      = 0x100000000L; // symbol is an error symbol
   final val OVERLOADED    = 0x200000000L; // symbol is overloaded
@@ -84,6 +85,7 @@ object Flags {
   final val notPROTECTED = (PROTECTED: long) << AntiShift;
   final val notABSTRACT  = (ABSTRACT: long) << AntiShift;
   final val notOVERRIDE  = (OVERRIDE: long) << AntiShift;
+  final val notMETHOD    = (METHOD: long) << AntiShift;
 
   final val STATICMODULE = lateMODULE;
   final val STATICMEMBER = notOVERRIDE;
@@ -99,7 +101,7 @@ object Flags {
 
   final val PrintableFlags =               // these modifiers appear in TreePrinter output.
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | ACCESSOR |
-    SUPERACCESSOR | PARAMACCESSOR | LABEL | BRIDGE | STATIC;
+    SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC;
 
   final val FieldFlags = MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL;
 
@@ -119,7 +121,7 @@ object Flags {
       .filter("" !=).mkString("", " ", "");
 
   private def flagToString(flag: long): String = {
-    if (flag == CAPTURED) "<captured>"
+    if (flag == LABEL) "<label>"
     else if (flag == INTERFACE) "<interface>"
     else if (flag == IS_ERROR) "<is-error>"
     else if (flag == OVERLOADED) "<overloaded>"
@@ -166,8 +168,8 @@ object Flags {
 
       case SUPERACCESSOR => "<superaccessor>"
       case PARAMACCESSOR => "<paramaccessor>"
-      case LABEL         => "<label>"
       case BRIDGE        => "<bridge>"
+      case CAPTURED      => "<captured>"
 
       case _ => ""
     }
