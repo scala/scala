@@ -101,7 +101,7 @@ abstract class Mixin extends InfoTransform {
         if (mixin.isImplClass) {
           addLateInterfaceMembers(mixin.toInterface);
           for (val member <- mixin.info.decls.toList) {
-            System.out.println("adding forwarded method " + member + member.locationString + " to " + clazz + " " + clazz.info.member(member.name).alternatives);//debug
+            //System.out.println("adding forwarded method " + member + " " + mmap(member) + member.locationString + " to " + clazz + " " + clazz.info.member(member.name).alternatives);//DEBUG
             if (isForwarded(member) && !isStatic(member) &&
                 (clazz.info.findMember(member.name, 0, 0).alternatives contains mmap(member))) {
                   val member1 = addMember(

@@ -553,7 +553,8 @@ package scala.tools.nsc.typechecker;
 	  }
 	  typeErrorTree(tree, tree.symbol.tpe, pt)
 	} else if (!competing.isEmpty) {
-	  context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt);
+          if (!pt.isError)
+	    context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt);
 	  setError(tree);
           ()
 	} else {
@@ -589,9 +590,10 @@ package scala.tools.nsc.typechecker;
 	    inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
 	  }
 	} else if (!competing.isEmpty) {
-	  context.ambiguousError(tree.pos, pre, best, competing.head,
-				 "argument types " + argtpes.mkString("(", ",", ")") +
-				 (if (pt == WildcardType) "" else " and expected result type " + pt));
+          if (!(argtpes exists (.isError)) && !pt.isError)
+	    context.ambiguousError(tree.pos, pre, best, competing.head,
+				   "argument types " + argtpes.mkString("(", ",", ")") +
+				   (if (pt == WildcardType) "" else " and expected result type " + pt));
 	  setError(tree);
 	  ()
 	} else {

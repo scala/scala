@@ -60,7 +60,7 @@ abstract class ConstantFolder {
 	  case nme.NE   => Constant(x.booleanValue != y.booleanValue)
 	  case _ => null
 	}
-      case ByteTag | ShortTag | LongTag | IntTag =>
+      case ByteTag | ShortTag | CharTag | IntTag =>
 	op match {
 	  case nme.OR  => Constant(x.intValue | y.intValue)
 	  case nme.XOR => Constant(x.intValue ^ y.intValue)
