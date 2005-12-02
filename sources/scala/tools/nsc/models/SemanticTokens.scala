@@ -87,20 +87,8 @@ class SemanticTokens(val compiler: Compiler) {
     // already gap
     override def convertToGap : Pair[Int,Actual] = new Pair(0, this);
   }
-  val sources = new HashMap[String /* path */, Process];
-  val reverse = new HashMap[Symbol, String /* path */];
-
-
-
   class Process(val unit : CompilationUnit) {
     def source = unit.source;
-
-    if (sources.contains(source.path)) {
-      for (val sym : Symbol <- sources(source.path).symbols.keys; reverse(sym) == source.path)
-	reverse -= sym;
-      sources -= source.path;
-    }
-    sources.update(source.path, this);
 
     val symbols = new HashMap[Symbol,Info];
 
@@ -130,19 +118,14 @@ class SemanticTokens(val compiler: Compiler) {
 	else if (term0.isValue   )       VAL;
 	else if (term0.isTypeParameter)  TPARAM;
 	else {
-	  System.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
+	  // System.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
 	  null;
 	}
       };
-
-
-
     }
     class Def(tree0 : DefTree) extends Semantic(tree0.symbol) {
-      if (info.defined != null) throw new Error("old=" + info.defined + " vs. new=" + this);
+      // if (info.defined != null) throw new Error("old=" + info.defined + " vs. new=" + this);
       info.defined = this;
-      reverse.update(symbol, source.path);
-
       override def toString() = "def-" + name;
 
       // if (name.equals("x$0")) throw new Error("SYM=" + symbol + " TREE: " + tree0);
@@ -249,7 +232,7 @@ class SemanticTokens(val compiler: Compiler) {
 	    case select : Select => build(select, tpe0.resultType);
 	    case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass());
 	  }
-	  case _ => System.err.println("UNKNOWN: " + tree + " " + tree.getClass() + " vs. " + tpe + " " + tpe.getClass() + " " + tree.pos);
+	  case _ => System.err.println("UNKNOWN: " + tree + " " + (if (tree != null) tree.getClass() else null) + " vs. " + tpe + " " + (if (tpe != null) tpe.getClass() else null) + " " + (if (tree != null) tree.pos else null));
 	};
         def buildTs(trees : List[Tree], types : List[Type]): Unit = if (!trees.isEmpty || !types.isEmpty) {
 	  build  (trees.head, types.head);
@@ -275,6 +258,7 @@ class SemanticTokens(val compiler: Compiler) {
       case tree : Sequence   => build(tree.trees);
       case tree : Assign     => build(tree.lhs); build(tree.rhs);
       case tree : If         => build(tree.cond); build(tree.thenp); build(tree.elsep);
+      case tree : New        => build(tree.tpt);
       case tree : Match      => build(tree.selector); build(tree.cases);
       case tree : Return     => build(tree.expr);
       case tree : Literal => ;
@@ -438,7 +422,7 @@ class SemanticTokens(val compiler: Compiler) {
 	def seek(soffset : Int) : Unit = if (soffset == 0) {
 	  token = begin.next;
 	  offset = 0;
-	} else if (soffset == length) {
+	} else if (soffset >= length) {
 	  token = end;
 	  offset = length;
 	} else {
@@ -458,18 +442,20 @@ class SemanticTokens(val compiler: Compiler) {
 		 length: Int, /* how many characters are modified */
 		 to    : Int  /* length of new string */) = {
        cursor.seek(offset);
-       cursor.convertToGap;
-       while (cursor.offset + cursor.token.length < offset + length && cursor.token.next != end) {
-	 val save = cursor.offset;
-	 cursor.next;
+       if (cursor.token != end) {
 	 cursor.convertToGap;
-	 assert(cursor.offset == save);
+	 while (cursor.offset + cursor.token.length < offset + length && cursor.token.next != end) {
+	   val save = cursor.offset;
+	   cursor.next;
+	     cursor.convertToGap;
+	   assert(cursor.offset == save);
+	 }
+	 if (length != to && cursor.token != end) {
+	   val diff = to - length;
+	   val gap = cursor.token.asInstanceOf[Gap];
+	   gap.setLength(gap.length + diff);
+	 };
        }
-       if (length != to) {
-	 val diff = to - length;
-	 val gap = cursor.token.asInstanceOf[Gap];
-	 gap.setLength(gap.length + diff);
-       };
      }
     };
   }
