@@ -1314,7 +1314,9 @@ import collection.mutable.HashMap;
 
 	// todo: try with case Literal(Constant(()))
         case Literal(value) =>
-          tree setType (if (value.tag == UnitTag) UnitClass.tpe else ConstantType(value))
+          tree setType (
+            if (value.tag == UnitTag) UnitClass.tpe
+            else ConstantType(value))
 
         case SingletonTypeTree(ref) =>
           val ref1 = checkStable(typed(ref, EXPRmode | QUALmode, AnyRefClass.tpe));

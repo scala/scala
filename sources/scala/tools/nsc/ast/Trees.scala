@@ -488,7 +488,8 @@ import symtab.Flags._;
     assert(value != null)
   }
 
-  def Literal(value: Any): Literal = Literal(Constant(value));
+  def Literal(value: Any): Literal =
+    Literal(Constant(value));
 
   /** General type term, introduced by RefCheck. */
   case class TypeTree() extends TypTree {

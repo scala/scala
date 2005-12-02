@@ -407,7 +407,6 @@ import Flags._;
 
 // Subclasses ------------------------------------------------------------
 
-
   [_trait_] abstract class UniqueType {
     private val hashcode = { val h = super.hashCode(); if (h < 0) -h else h }
     override def hashCode() = hashcode;

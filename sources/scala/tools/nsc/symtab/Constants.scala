@@ -55,6 +55,12 @@ import classfile.PickleFormat._;
       case NullTag    => AllRefClass.tpe
     }
 
+    /** We need the equals method to take account of tags as well as values */
+    override def equals(other: Any): boolean = other match {
+      case that: Constant => this.value == that.value && this.tag == that.tag
+      case _ => false
+    }
+
     def booleanValue: boolean =
       if (tag == BooleanTag) value.asInstanceOf$erased[boolean]
       else throw new Error("value " + value + " is not a boolean");

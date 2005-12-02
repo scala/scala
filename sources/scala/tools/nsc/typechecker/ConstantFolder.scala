@@ -25,7 +25,8 @@ abstract class ConstantFolder {
   });
 
   private def fold(tree: Tree, x: Constant): Tree =
-    if (x != null && x.tag != UnitTag) tree setType ConstantType(x) else tree;
+    if (x != null && x.tag != UnitTag) tree setType ConstantType(x)
+    else tree;
 
   private def foldUnop(op: Name, x: Constant): Constant = Pair(op, x.tag) match {
     case Pair(nme.ZNOT, BooleanTag) => Constant(!x.booleanValue)
