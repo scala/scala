@@ -113,9 +113,13 @@ abstract class GenICode extends SubComponent  {
           rhs match {
             case Block(_, Return(_)) => ();
             case Return(_) => ();
-            case _ => ctx1.bb.emit(RETURN(m.returnType), rhs.pos);
+            case _ => if (ctx1.bb.isEmpty)
+              ctx1.bb.emit(RETURN(m.returnType), rhs.pos);
+            else
+              ctx1.bb.emit(RETURN(m.returnType));
           }
           ctx1.bb.close;
+          prune(ctx1.method);
         } else
           ctx1.method.setCode(null);
         ctx1;
@@ -349,6 +353,14 @@ abstract class GenICode extends SubComponent  {
               if (settings.debug.value)
                 log("Adding label " + tree.symbol);
           }
+
+//           if (!isTailCallLabel(tree.asInstanceOf[LabelDef], ctx)) {
+//             log("Non-tail call label found (" + tree.symbol + "), initializing arguments to default values.");
+//             genLoadLabelArguments(params map { p => zeroOf(toTypeKind(p.symbol.tpe)) },
+//                                   ctx1.labels(tree.symbol),
+//                                   ctx);
+//           }
+
           ctx.bb.emit(JUMP(ctx1.bb), tree.pos);
           ctx.bb.close;
           genLoad(rhs, ctx1, expectedType /*toTypeKind(tree.symbol.info.resultType)*/);
@@ -400,10 +412,11 @@ abstract class GenICode extends SubComponent  {
             elseCtx = genLoad(elsep, elseCtx, ifKind);
           }
 
-          thenCtx.bb.emit(JUMP(contCtx.bb), thenp.pos);
+          thenCtx.bb.emit(JUMP(contCtx.bb));
           thenCtx.bb.close;
-          elseCtx.bb.emit(JUMP(contCtx.bb), elsep.pos);
+          elseCtx.bb.emit(JUMP(contCtx.bb));
           elseCtx.bb.close;
+
           contCtx;
 
         case Return(expr) =>
@@ -822,7 +835,7 @@ abstract class GenICode extends SubComponent  {
     }
 
     private def adapt(from: TypeKind, to: TypeKind, ctx: Context, tree: Tree): Unit = {
-      if (!(from <:< to)) {
+      if (!(from <:< to) && !(from == SCALA_ALLREF && to == SCALA_ALL)) {
         to match {
           case UNIT =>
             ctx.bb.emit(DROP(from), tree.pos);
@@ -1272,6 +1285,70 @@ abstract class GenICode extends SubComponent  {
           abort("Malformed parameter list: " + vparamss);
       }
 
+    /**
+     *  If the block consists of a single unconditional jump, prune
+     *  it by replacing the instructions in the predecessor to jump
+     *  directly to the JUMP target of the block.
+     */
+    def prune(method: IMethod) = {
+      var changed = false;
+      var n = 0;
+
+      def prune0(block: BasicBlock): Unit = {
+        val optCont = block.lastInstruction match {
+          case JUMP(b) if (b != block) => Some(b);
+          case _ => None
+        }
+        if (block.size == 1 && optCont != None) {
+          val Some(cont) = optCont;
+          val pred = block.predecessors;
+          log("Preds: " + pred + " of " + block);
+          pred foreach { p =>
+            p.lastInstruction match {
+              case CJUMP(succ, fail, cond, kind) =>
+                if (settings.debug.value)
+                  log("Pruning empty if branch.");
+                changed = true;
+                p.replaceInstruction(p.lastInstruction,
+                                     if (block == succ)
+                                       CJUMP(cont, fail, cond, kind)
+                                     else if (block == fail)
+                                       CJUMP(succ, cont, cond, kind)
+                                     else
+                                       abort("Could not find block in preds"));
+
+              case CZJUMP(succ, fail, cond, kind) =>
+                if (settings.debug.value)
+                  log("Pruning empty if branch.");
+                changed = true;
+                p.replaceInstruction(p.lastInstruction,
+                                     if (block == succ)
+                                       CZJUMP(cont, fail, cond, kind)
+                                     else if (block == fail)
+                                       CZJUMP(succ, cont, cond, kind)
+                                     else
+                                       abort("Could not find block in preds"));
+
+              case JUMP(b) =>
+                if (settings.debug.value)
+                  log("Pruning empty if branch.");
+                changed = true;
+                p.replaceInstruction(p.lastInstruction, JUMP(cont));
+            }
+          }
+          if (changed)
+            method.code.removeBlock(block);
+        }
+      }
+
+      do {
+        changed = false;
+        n = n + 1;
+        method.code traverse prune0;
+      } while (changed);
+
+      log("Prune fixpoint reached in " + n + " iterations.");
+    }
 
     def getMaxType(ts: List[Type]): TypeKind = {
       def maxType(a: TypeKind, b: TypeKind): TypeKind =
@@ -1280,6 +1357,15 @@ abstract class GenICode extends SubComponent  {
       val kinds = ts map toTypeKind;
       kinds reduceLeft maxType;
     }
+
+    /** Check weather a given label definition is introduced by the tail call phase
+     *  It is considered to be so if all value parameters of the label are the
+     *  same as the value parameters of the current method.
+     */
+    def isTailCallLabel(tree: LabelDef, ctx: Context) =
+      tree.params.length == ctx.defdef.vparamss.head &&
+      List.forall2(tree.params, ctx.defdef.vparamss.head)
+        { (x, y) => x.symbol == y.symbol }
 
 
     /////////////////////// Context ////////////////////////////////
@@ -1455,6 +1541,7 @@ abstract class GenICode extends SubComponent  {
         afterCtx
       }
     }
+  }
 
     /**
      * Represent a label in the current method code. In order
@@ -1544,7 +1631,7 @@ abstract class GenICode extends SubComponent  {
      * It is used temporarily during code generation. It is replaced
      * by a real JUMP instruction when all labels are resolved.
      */
-    class PseudoJUMP(label: Label) extends Instruction {
+    abstract class PseudoJUMP(label: Label) extends Instruction {
       override def toString(): String ="PJUMP " + label.symbol.simpleName;
 
       override def consumed = 0;
@@ -1571,6 +1658,5 @@ abstract class GenICode extends SubComponent  {
          failure.addCallingInstruction(this);
     }
 
-  }
 }
 

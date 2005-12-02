@@ -312,7 +312,7 @@ abstract class GenJVM extends SubComponent {
 
       log("Generating code for block: " + b + " at pc: " + labels(b).getAnchor());
       var lastMappedPC = 0;
-      var lastLineNr = 0;
+      var lastLineNr =0;
       var crtPC = 0;
 
       b traverse ( instr => {
@@ -559,13 +559,12 @@ abstract class GenJVM extends SubComponent {
 
         crtPC = jcode.getPC();
         val crtLine = try { clasz.cunit.position(instr.pos).line; } catch {
-            case _: Error => Position.NOPOS;
+            case _: Error => lastLineNr;
         }
 	//System.err.println("CRTLINE: " + instr.pos + " " +
 	//	   /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
 
-        if (crtLine != lastLineNr &&
-            crtPC > lastMappedPC) {
+        if (crtPC > lastMappedPC) {
           jcode.completeLineNumber(lastMappedPC, crtPC, crtLine);
           lastMappedPC = crtPC;
           lastLineNr   = crtLine;

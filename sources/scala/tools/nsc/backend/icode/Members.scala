@@ -37,6 +37,21 @@ trait Members: ICodes {
     startBlock = newBlock;
     startBlock.initStack(new TypeStack);
 
+
+    def removeBlock(b: BasicBlock) = {
+      if (settings.debug.value) {
+        assert(blocks.forall(p => !(p.successors.contains(b))),
+               "Removing block that is still referenced in method code " + label);
+        if (b == startBlock)
+          assert(b.successors.length == 1,
+                 "Removing start block with more than one successor.");
+      }
+
+      if (b == startBlock)
+        startBlock = b.successors.head;
+      blocks -= b;
+    }
+
     /**
      * Apply a function to all basic blocks, for side-effects. It starts at
      * the given startBlock and checks that are no predecessors of the given node.

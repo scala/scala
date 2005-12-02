@@ -70,7 +70,11 @@ trait BasicBlocks: ICodes {
     }
 
     /** The number of instructions in this basic block so far. */
-    def size: Int = instrs.length;
+    def size: Int =
+      if (isClosed)
+        instrs.length;
+      else
+        instructionList.length;
 
     /** Initialize the stack of the block, must be done before evaluation
      *  the type stack  */
@@ -139,6 +143,8 @@ trait BasicBlocks: ICodes {
       instructionList = subst(instructionList);
     }
 
+    ////////////////////// Emit //////////////////////
+
 
     /** Add a new instruction at the end of the block,
      *  using the same source position as the last emitted instruction
@@ -166,11 +172,10 @@ trait BasicBlocks: ICodes {
        assert(instructionList.length > 0,
               "Empty block.");
       closed = true;
-
-//      Console.println("block " + label + " <closed>");
-
       instrs = toInstructionArray(instructionList.reverse);
     }
+
+    def isEmpty: Boolean = instructionList.isEmpty;
 
     /** Enter ignore mode: new 'emit'ted instructions will not be
      * added to this basic block. It makes the generation of THROW
@@ -190,6 +195,12 @@ trait BasicBlocks: ICodes {
       else
         instructionList.head;
 
+    def firstInstruction =
+      if (closed)
+        instrs(0)
+      else
+        instructionList.last;
+
     /** Convert the list to an array */
     def toInstructionArray(l: List[Instruction]): Array[Instruction] = {
       var array = new Array[Instruction](l.length);
@@ -202,7 +213,7 @@ trait BasicBlocks: ICodes {
     def isClosed = closed;
 
     // TODO: Take care of exception handlers!
-    def successors : List[BasicBlock] = // here order will count
+    def successors : List[BasicBlock] = if (isEmpty) Nil else
       lastInstruction match {
         case JUMP (where) => List(where);
         case CJUMP(success, failure, _, _) => failure::success::Nil;
@@ -211,7 +222,9 @@ trait BasicBlocks: ICodes {
         case RETURN(_) => Nil;
         case THROW() => Nil;
         case _ =>
-	  global.abort("The last instruction is not a control flow instruction: " + lastInstruction);
+          if (isClosed)
+	    global.abort("The last instruction is not a control flow instruction: " + lastInstruction);
+          else Nil;
       }
 
     /** Returns the precessors of this block, in the current 'code' chunk.
