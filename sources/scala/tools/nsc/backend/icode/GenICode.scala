@@ -1334,6 +1334,13 @@ abstract class GenICode extends SubComponent  {
                   log("Pruning empty if branch.");
                 changed = true;
                 p.replaceInstruction(p.lastInstruction, JUMP(cont));
+
+              case SWITCH(tags, labels) =>
+                if (settings.debug.value)
+                  log("Pruning empty if branch.");
+                changed = true;
+                p.replaceInstruction(p.lastInstruction,
+                                     SWITCH(tags, labels map (l => if (l == block) cont else l)));
             }
           }
           if (changed)

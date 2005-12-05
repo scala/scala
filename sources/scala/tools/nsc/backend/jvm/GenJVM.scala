@@ -488,14 +488,24 @@ abstract class GenJVM extends SubComponent {
           case CJUMP(success, failure, cond, kind) =>
             kind match {
               case BOOL | BYTE | CHAR | SHORT | INT =>
-                jcode.emitIF_ICMP(conds(cond), labels(success));
-                if (nextBlock != failure)
-                  jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock == success) {
+                  jcode.emitIF_ICMP(conds(negate(cond)), labels(failure));
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF_ICMP(conds(cond), labels(success));
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false);
+                }
 
               case REFERENCE(_) | ARRAY(_) =>
-                jcode.emitIF_ACMP(conds(cond), labels(success));
-                if (nextBlock != failure)
-                  jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock == success) {
+                  jcode.emitIF_ACMP(conds(negate(cond)), labels(failure));
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF_ACMP(conds(cond), labels(success));
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false);
+                }
 
               case _ =>
                 kind match {
@@ -503,9 +513,14 @@ abstract class GenJVM extends SubComponent {
                   case FLOAT  => jcode.emitFCMPG();
                   case DOUBLE => jcode.emitDCMPG();
                 }
-                jcode.emitIF(conds(cond), labels(success));
-                if (nextBlock != failure)
-                  jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock == success) {
+                  jcode.emitIF(conds(negate(cond)), labels(failure));
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF(conds(cond), labels(success));
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false);
+                }
             }
 
           case CZJUMP(success, failure, cond, kind) =>
@@ -742,6 +757,15 @@ abstract class GenJVM extends SubComponent {
     conds += GT -> JExtendedCode.COND_GT;
     conds += LE -> JExtendedCode.COND_LE;
     conds += GE -> JExtendedCode.COND_GE;
+
+    val negate: HashMap[TestOp, TestOp] = new HashMap();
+
+    negate += EQ -> NE;
+    negate += NE -> EQ;
+    negate += LT -> GE;
+    negate += GT -> LE;
+    negate += LE -> GT;
+    negate += GE -> LT;
 
     def makeLabels(bs: List[BasicBlock]) = {
       //labels.clear;
