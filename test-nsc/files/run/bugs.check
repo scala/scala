@@ -5,7 +5,6 @@ mycase
 <<< bug 120
 one
 A
-two
 B
 C
 >>> bug 120
@@ -68,8 +67,9 @@ true
 >>> bug 250
 
 <<< bug 257
-hello
-hello
+I should come 1st and 2nd
+I should come 1st and 2nd
+I should come last
 >>> bug 257
 
 <<< bug 266
@@ -93,3 +93,5 @@ C
 a
 >>> bug 399
 
+
+1 error

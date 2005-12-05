@@ -135,4 +135,50 @@ public abstract class Int     extends AnyVal implements java.io.Serializable {
     public int     $bar       (int     that) { return  value |  that; }
     public int     $amp       (int     that) { return  value &  that; }
     public int     $up        (int     that) { return  value ^  that; }
+
+
+    public boolean $eq$eq     (char     that) { return  value == that; }
+    public boolean $bang$eq   (char     that) { return  value != that; }
+    public boolean $less      (char     that) { return  value <  that; }
+    public boolean $greater   (char     that) { return  value >  that; }
+    public boolean $less$eq   (char     that) { return  value <= that; }
+    public boolean $greater$eq(char     that) { return  value >= that; }
+    public int     $plus      (char     that) { return  value +  that; }
+    public int     $minus     (char     that) { return  value -  that; }
+    public int     $times     (char     that) { return  value *  that; }
+    public int     $div       (char     that) { return  value /  that; }
+    public int     $percent   (char     that) { return  value %  that; }
+    public int     $bar       (char     that) { return  value |  that; }
+    public int     $amp       (char     that) { return  value &  that; }
+    public int     $up        (char     that) { return  value ^  that; }
+
+    public boolean $eq$eq     (short     that) { return  value == that; }
+    public boolean $bang$eq   (short     that) { return  value != that; }
+    public boolean $less      (short     that) { return  value <  that; }
+    public boolean $greater   (short     that) { return  value >  that; }
+    public boolean $less$eq   (short     that) { return  value <= that; }
+    public boolean $greater$eq(short     that) { return  value >= that; }
+    public int     $plus      (short     that) { return  value +  that; }
+    public int     $minus     (short     that) { return  value -  that; }
+    public int     $times     (short     that) { return  value *  that; }
+    public int     $div       (short     that) { return  value /  that; }
+    public int     $percent   (short     that) { return  value %  that; }
+    public int     $bar       (short     that) { return  value |  that; }
+    public int     $amp       (short     that) { return  value &  that; }
+    public int     $up        (short     that) { return  value ^  that; }
+
+    public boolean $eq$eq     (byte     that) { return  value == that; }
+    public boolean $bang$eq   (byte     that) { return  value != that; }
+    public boolean $less      (byte     that) { return  value <  that; }
+    public boolean $greater   (byte     that) { return  value >  that; }
+    public boolean $less$eq   (byte     that) { return  value <= that; }
+    public boolean $greater$eq(byte     that) { return  value >= that; }
+    public int     $plus      (byte     that) { return  value +  that; }
+    public int     $minus     (byte     that) { return  value -  that; }
+    public int     $times     (byte     that) { return  value *  that; }
+    public int     $div       (byte     that) { return  value /  that; }
+    public int     $percent   (byte     that) { return  value %  that; }
+    public int     $bar       (byte     that) { return  value |  that; }
+    public int     $amp       (byte     that) { return  value &  that; }
+    public int     $up        (byte     that) { return  value ^  that; }
 }

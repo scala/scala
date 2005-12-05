@@ -319,22 +319,6 @@ object Bug257Test {
   }
 }
 
-object Bug257Test {
-  def sayhello(): Unit = { Console.println("hello"); };
-
-  def f1(x: Unit): Unit = ();
-  def f2(x: Unit)(y: Unit): Unit = ();
-
-  def f(x: => Unit) = {
-    f1(x);
-    f2(x);
-  }
-
-  def main(args: Array[String]): Unit = {
-    f(sayhello())
-  }
-}
-
 //############################################################################
 // Bug 266
 
