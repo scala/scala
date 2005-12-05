@@ -806,6 +806,8 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   /** Print template. */
   def printTemplate(clasz: Symbol, template: Tree.Template): Unit = {
     val local = template.symbol();
+    val constructors = if (clasz == null) null else clasz.allConstructors();
+    val primary = if (clasz == null) null else clasz.primaryConstructor();
     val parents = template.parents;
     val body = template.body;
     val types = new ArrayList();
@@ -828,11 +830,20 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       printArray(parents, None, None, TXT_WITH_SP);
     }
     // print local
-    if (global.uniqid && local != null) {
+    if (global.uniqid && (local != null || constructors != null)) {
       print(Space);
       printString("/*");
-      printString("local");
-      printUniqueIdOf(local);
+      if (constructors != null) {
+        printString("constructors");
+        printUniqueIdOf(constructors);
+        printString(",primary");
+        printUniqueIdOf(primary);
+      }
+      if (local != null) {
+        if (constructors != null) printString(",");
+        printString("local");
+        printUniqueIdOf(local);
+      }
       printString("*/");
     }
     // print body
