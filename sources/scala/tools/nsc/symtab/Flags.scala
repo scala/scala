@@ -61,6 +61,8 @@ object Flags {
   final val OVERLOADED    = 0x200000000L; // symbol is overloaded
   final val LIFTED        = 0x400000000L; // class has been lifted out to package level
 					  // local value has been lifted out to class level
+  //todo: make LIFTED = latePRIVATE?
+
   final val MIXEDIN       = 0x800000000L; // member has been mixed in
 
   final val EXPANDEDNAME  = 0x1000000000L; // name has been expanded with class suffix
@@ -76,6 +78,7 @@ object Flags {
   final val AntiShift     = 52L;
 
   // late flags (set by a transformer phase)
+  final val latePRIVATE  = (PRIVATE: long) << LateShift;
   final val lateDEFERRED = (DEFERRED: long) << LateShift;
   final val lateINTERFACE = (INTERFACE: long) << LateShift;
   final val lateMODULE   = (MODULE: long) << LateShift;

@@ -24,10 +24,18 @@ abstract class Mixin extends InfoTransform {
     sym.owner.isImplClass && sym.isMethod &&
     !sym.isModule && !(sym hasFlag (ACCESSOR | SUPERACCESSOR));
 
-  private def isStatic(sym: Symbol) = isForwarded(sym) && (sym.hasFlag(PRIVATE) || sym.isConstructor);
+  private def isStatic(sym: Symbol) = isForwarded(sym) && sym.isImplOnly;
 
   private def toInterface(tp: Type): Type =
     atPhase(currentRun.mixinPhase)(tp.symbol.toInterface).tpe;
+
+  private val toInterfaceMap = new TypeMap {
+    def apply(tp: Type): Type = mapOver( tp match {
+      case TypeRef(pre, sym, args) if (sym.isImplClass) =>
+        typeRef(pre, atPhase(currentRun.mixinPhase)(sym.toInterface), args)
+      case _ => tp
+    })
+  }
 
   private def rebindSuper(base: Symbol, member: Symbol, prevowner: Symbol): Symbol =
     atPhase(currentRun.refchecksPhase) {
@@ -80,9 +88,11 @@ abstract class Mixin extends InfoTransform {
             var setter = member.setter(clazz);
             if (setter == NoSymbol) setter = addMember(clazz, newSetter(member));
           }
-        } else if ((member hasFlag (LIFTED | BRIDGE)) && !(member hasFlag PRIVATE)) {
+/*
+        } else if ((member hasFlag BRIDGE) && !(member hasFlag PRIVATE)) {
           member.expandName(clazz);
           addMember(clazz, member.cloneSymbol(clazz) resetFlag FINAL);
+*/
         }
       }
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
@@ -182,8 +192,9 @@ abstract class Mixin extends InfoTransform {
       else ClassInfoType(parents1, decls1, clazz);
 
     case MethodType(formals, restp) =>
-      if (isForwarded(sym)) MethodType(toInterface(sym.owner.typeOfThis) :: formals, restp)
-      else tp
+      toInterfaceMap(
+        if (isForwarded(sym)) MethodType(toInterface(sym.owner.typeOfThis) :: formals, restp)
+        else tp)
 
     case _ =>
       tp
@@ -338,7 +349,7 @@ abstract class Mixin extends InfoTransform {
           }
           assert(sym != NoSymbol, tree);//debug
           if (isStatic(sym)) {
-            assert(sym.isConstructor || currentOwner.enclClass.isImplClass, tree);
+            //assert(sym.isConstructor || currentOwner.enclClass.isImplClass, tree);
             staticCall(sym)
           } else qual match {
             case Super(_, mix) =>
@@ -364,6 +375,7 @@ abstract class Mixin extends InfoTransform {
           tree
         case Select(qual, name) if sym.owner.isImplClass && !isStatic(sym) =>
 	  if (sym.isMethod) {
+            assert(false, sym);//!!!
 	    assert(sym hasFlag (LIFTED | BRIDGE), sym);
 	    val sym1 = toInterface(qual.tpe).member(sym.name);
 	    assert(sym1 != NoSymbol, sym);//debug

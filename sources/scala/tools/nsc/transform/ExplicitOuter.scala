@@ -39,6 +39,7 @@ abstract class ExplicitOuter extends InfoTransform {
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
+      //todo: needed?
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED;
       if (sym.isConstructor && !isStatic(sym.owner))
 	MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
@@ -283,7 +284,7 @@ abstract class ExplicitOuter extends InfoTransform {
      *   2. Remove private modifiers from members M of mixins T. (@see makeNotPrivate)
      *   3. Remove `private' modifier from class members M that are accessed from an inner class.
      *   4. Remove `protected' modifier from class members M that are accessed
-     *      without a super qualifier accessed from an inner class. (@see makeNotPrivate)
+     *      without a super qualifier accessed from an inner class.
      *   5. Remove `private' and `protected' modifiers from type symbols
      */
     private val secondTransformer = new Transformer {
@@ -295,18 +296,18 @@ abstract class ExplicitOuter extends InfoTransform {
 	tree1 match {
           case DefDef(_, _, _, _, _, _) =>
             if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
-              sym.makeNotPrivate(sym.owner);
+              sym.makeNotPrivate(sym.owner); //(2)
             tree1
 	  case Select(qual, name) =>
 	    if (currentOwner.enclClass != sym.owner) // (3)
               sym.makeNotPrivate(sym.owner);
-	    if ((sym hasFlag PROTECTED) &&
+	    if ((sym hasFlag PROTECTED) && //(4)
 		!(qual.isInstanceOf[Super] ||
 		  (qual.tpe.widen.symbol isSubClass currentOwner.enclClass)))
 	      sym setFlag notPROTECTED;
 	    tree1
 	  case _ =>
-	    if (sym != null && sym.isType) {
+	    if (sym != null && sym.isType) {//(5)
 	      if (sym hasFlag PRIVATE) sym setFlag notPRIVATE;
 	      if (sym hasFlag PROTECTED) sym setFlag notPROTECTED;
 	    }

@@ -37,7 +37,8 @@ abstract class AddInterfaces extends InfoTransform {
   private def isInterfaceMember(sym: Symbol): boolean = {
     sym.info; // to set lateMETHOD flag if necessary
     sym.isType ||
-    sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) && !sym.isConstructor
+    sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) &&
+    !sym.isConstructor && !sym.isImplOnly
   }
 
   def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
@@ -73,8 +74,6 @@ abstract class AddInterfaces extends InfoTransform {
 	    sym setFlag lateDEFERRED
           }
         } else {
-          if (sym.name == newTermName("definitions"))
-            System.out.println("definitions to impl class " + sym.isMethod + " " + sym.getFlag(PRIVATE | BRIDGE | LABEL));
 	  sym.owner = implClass;
           decls enter sym;
 	}

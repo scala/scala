@@ -187,6 +187,12 @@ import Flags._;
     final def needsImplClass: boolean =
       isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
 
+    final def isImplOnly: boolean =
+      hasFlag(PRIVATE) ||
+      (owner.isImplClass || owner.isTrait) &&
+      (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR) ||
+       isConstructor);
+
     /** Is this symbol a module variable ? */
     final def isModuleVar: boolean = isVariable && nme.isModuleVarName(name);
 
@@ -632,14 +638,7 @@ import Flags._;
      *  term symbol rename it by expanding its name to avoid name clashes
      */
     final def makeNotPrivate(base: Symbol): unit =
-/*
       if (isTerm && (this hasFlag PRIVATE)) {
-        setFlag(notPRIVATE);
-        if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
-        expandName(base)
-      }
-*/
-      if (isTerm && !(this hasFlag notPRIVATE) && ((this hasFlag PRIVATE) || this.owner.isTerm)) {
         setFlag(notPRIVATE);
         if (!hasFlag(DEFERRED)) setFlag(lateFINAL);
         expandName(base)
