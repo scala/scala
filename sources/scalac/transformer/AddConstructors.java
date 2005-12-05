@@ -132,6 +132,7 @@ public class AddConstructors extends GenTransformer {
 	switch (tree) {
 	case ClassDef(_, _, _, _, _, Template impl):
             Symbol clasz = tree.symbol();
+
 	    if (clasz.isInterface())
 		return gen.ClassDef(clasz, transform(impl.body));
 
@@ -193,7 +194,7 @@ public class AddConstructors extends GenTransformer {
                 }
             }
 
-	    // add valdefs and class-level expression to the constructorr body
+	    // add valdefs and class-level expression to the constructor body
 	    constrBody.addAll(constrBody2);
 
             Tree constrTree = gen.mkUnitBlock(
@@ -260,7 +261,8 @@ public class AddConstructors extends GenTransformer {
                 symbol = getInitializer(symbol);
                 Symbol clasz = symbol.owner();
                 return gen.Select(gen.This(tree.pos, clasz), symbol);
-            } else if (symbol.owner().isConstructor()) {
+            }
+            else if (symbol.owner().isConstructor()) {
                 symbol = subst.lookupSymbol(symbol);
             }
             return gen.Ident(tree.pos, symbol);
