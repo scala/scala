@@ -42,6 +42,10 @@ abstract class ClassfileParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 
+  private object unpickler extends UnPickler {
+    val global: ClassfileParser.this.global.type = ClassfileParser.this.global
+  }
+
   def parse(file: AbstractFile, root: Symbol): unit = {
     assert(!busy);
     busy = true;
@@ -326,8 +330,8 @@ abstract class ClassfileParser {
         case nme.InnerClassesATTR =>
           parseInnerClasses()
         case nme.ScalaSignatureATTR =>
-          //unpickle.parse(in.nextBytes(attrLen), clazz, statics.sourceModule);
-	  //this.isScala = true;
+          unpickler.unpickle(in.buf, in.bp, clazz, staticModule);
+	  this.isScala = true;
         case nme.JacoMetaATTR =>
           val meta = pool.getName(in.nextChar()).toString().trim();
           metaParser.parse(meta, sym, symtype);

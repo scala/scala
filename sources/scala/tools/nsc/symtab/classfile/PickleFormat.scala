@@ -52,6 +52,9 @@ object PickleFormat {
  *
  *   len is remaining length after `len'.
  */
+  val MajorVersion = 2;
+  val MinorVersion = 0;
+
   final val TERMname = 1;
   final val TYPEname = 2;
   final val NONEsym = 3;

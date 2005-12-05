@@ -63,6 +63,27 @@ abstract class GenJVM extends SubComponent {
 
     val fjbgContext = new FJBGContext();
 
+    def emitClass(jclass: JClass, sym: Symbol): Unit = {
+      def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
+        case Some(pickle) =>
+          val scalaAttr = fjbgContext.JOtherAttribute(jclass,
+                                                  jclass,
+                                                  nme.ScalaSignatureATTR.toString(),
+                                                  pickle.bytes,
+                                                  pickle.writeIndex);
+          jclass.addAttribute(scalaAttr);
+          currentRun.symData -= sym;
+          currentRun.symData -= sym.linkedSym;
+          //System.out.println("Generated ScalaSig Attr for " + sym);//debug
+        case _ =>
+          log("Could not find pickle information for " + sym);
+      }
+      if (!jclass.getName().endsWith("$"))
+        addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
+      val outfile = getFile(jclass, ".class");
+      jclass.writeTo(outfile);
+      informProgress("wrote " + outfile);
+    }
 
     def genClass(c: IClass): Unit = {
       log("Generating class " + c.symbol + " flags: " + Flags.flagsToString(c.symbol.flags));
@@ -99,26 +120,11 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField;
       clasz.methods foreach genMethod;
 
-      addScalaAttribute(c.symbol);
-      jclass.writeTo(getFile(jclass, ".class"));
+      emitClass(jclass, c.symbol)
     }
 
     def isTopLevelModule(sym: Symbol): Boolean = {
       sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED) /* && !atPhase(currentRun.erasurePhase)(sym.isNestedClass) */
-    }
-
-    def addScalaAttribute(sym: Symbol): Unit = {
-      currentRun.symData.get(sym) match {
-        case Some(pickle) =>
-          val scalaAttr = fjbgContext.JOtherAttribute(jclass,
-                                                  jclass,
-                                                  nme.ScalaSignatureATTR.toString(),
-                                                  pickle.bytes,
-                                                  pickle.writeIndex);
-          jclass.addAttribute(scalaAttr);
-        case _ =>
-          log("Could not find pickle information for " + sym);
-      }
     }
 
     def genField(f: IField): Unit  = {
@@ -222,8 +228,7 @@ abstract class GenJVM extends SubComponent {
         mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType]);
         mirrorCode.emitRETURN(mirrorMethod.getReturnType());
       }
-
-      mirrorClass.writeTo(getFile(mirrorClass, ".class"));
+      emitClass(mirrorClass, clasz.symbol);
     }
 
 
@@ -922,7 +927,6 @@ abstract class GenJVM extends SubComponent {
       settings.outdir.value + File.separatorChar + path + suffix
     }
 
-
     private def genLocalVariableTable: Unit = {
         val vars: Array[JLocalVariable] = jmethod.getLocalVariables();
 
@@ -954,7 +958,5 @@ abstract class GenJVM extends SubComponent {
                                         lvTab.array());
         jcode.addAttribute(attr);
     }
-
   }
-
 }

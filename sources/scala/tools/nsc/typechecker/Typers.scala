@@ -515,9 +515,6 @@ import collection.mutable.HashMap;
       val impl2 = addSyntheticMethods(impl1, clazz);
       val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
 	setType NoType;
-      //for (val p <- impl2.parents)
-      //  System.err.println("AFTER: " + p + " " + p.pos);
-      // Thread.dumpStack();
       ret;
     }
 

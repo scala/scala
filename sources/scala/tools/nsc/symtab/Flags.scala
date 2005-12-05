@@ -114,7 +114,7 @@ object Flags {
   final val PickledFlags  = 0xFFFFFFFF;
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags = AccessFlags | PACKAGE;
+  final val ModuleToClassFlags = AccessFlags | PACKAGE | CASE;
 
   def flags2mods(flags: long): int = flags.asInstanceOf[int];
 

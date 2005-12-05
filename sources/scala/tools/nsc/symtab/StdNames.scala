@@ -315,7 +315,7 @@ import scala.tools.nsc.util.NameTransformer;
     val LocalVariableTableATTR = newTermName("LocalVariableTable");
     val InnerClassesATTR = newTermName("InnerClasses");
     val JacoMetaATTR = newTermName("JacoMeta");
-    val ScalaSignatureATTR = newTermName("ScalaSignature");
+    val ScalaSignatureATTR = newTermName("ScalaSig");
     val JavaInterfaceATTR = newTermName("JacoInterface");
 
     // '_' is temporary

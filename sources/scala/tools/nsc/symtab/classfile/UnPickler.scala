@@ -28,6 +28,7 @@ abstract class UnPickler {
   private class UnPickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {
     if (settings.debug.value) global.log("unpickle " + classRoot + " and " + moduleRoot);
 
+    checkVersion();
     private val index = createIndex;
     private val entries = new Array[AnyRef](index.length);
     private val symScopes = new HashMap[Symbol, Scope];
@@ -36,6 +37,16 @@ abstract class UnPickler {
       if (isSymbolEntry(i)) { at(i, readSymbol); () }
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
+
+    private def checkVersion() = {
+      val major = readNat();
+      val minor = readNat();
+      if (major != MajorVersion || minor > MinorVersion)
+        throw new TypeError("Scala signature " + classRoot.name +
+                            " has wrong version\n expected: " +
+                            MajorVersion + "." + MinorVersion +
+                            "\n found: " + major + "." + minor)
+    }
 
     /** The scope associated with given symbol */
     private def symScope(sym: Symbol) = symScopes.get(sym) match {

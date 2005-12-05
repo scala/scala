@@ -1563,7 +1563,7 @@ import Tokens._;
         } else argss += List();
 	if (name != nme.ScalaObject.toTypeName)
           parents += scalaScalaObjectConstr;
-	if (name.isTypeName && (mods & Flags.CASE) != 0) parents += caseClassConstr;
+	if (/*name.isTypeName && */(mods & Flags.CASE) != 0) parents += caseClassConstr;
         val ps = parents.toList;
 	var body =
 	  if (in.token == LBRACE) {

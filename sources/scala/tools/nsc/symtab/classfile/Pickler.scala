@@ -232,6 +232,8 @@ abstract class Pickler extends SubComponent {
     /** Write byte array */
     def finish = {
       assert(writeIndex == 0);
+      writeNat(MajorVersion);
+      writeNat(MinorVersion);
       writeNat(ep);
       if (settings.debug.value) log("" + ep + " entries");//debug
       for (val i <- Iterator.range(0, ep)) writeEntry(entries(i))

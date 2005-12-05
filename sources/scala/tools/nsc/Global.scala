@@ -359,13 +359,19 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (settings.Xshowicode.value) writeICode();
 
       if (reporter.errors == 0) {
+/*
 	for (val Pair(sym, pickled) <- symData.elements.toList) {
 	  sym setPos Position.NOPOS;
-	  if (symData contains sym) {
-	    symData -= sym;
-	    symData -= sym.linkedSym;
-	    writeSymblFile(sym, pickled)
-	  }
+//	  if (symData contains sym) {
+//	    symData -= sym;
+//	    symData -= sym.linkedSym;
+//	    writeSymblFile(sym, pickled)
+//	  }
+//        }
+*/
+	for (val Pair(sym, file) <- symSource.elements) {
+          sym setPos Position.NOPOS;
+          if (sym.isTerm) sym.moduleClass setPos Position.NOPOS;
 	  resetPackageClass(sym.owner);
 	}
       } else {

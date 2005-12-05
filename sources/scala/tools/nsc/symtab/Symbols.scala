@@ -55,8 +55,6 @@ import Flags._;
       else -1;
     }
 
-
-
     var attributes: List[AttrInfo] = List();
 
 // Creators -------------------------------------------------------------------

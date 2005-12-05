@@ -102,13 +102,13 @@ import util.ListBuffer;
 	  if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
 	}
       } else {
-	if (!hasImplementation(nme.caseElement)) ts += caseElementMethod;
-	if (!hasImplementation(nme.caseArity)) ts += caseArityMethod;
-	if (!hasImplementation(nme.caseName)) ts += caseNameMethod;
-	if (!hasImplementation(nme.equals_)) ts += forwardingMethod(nme.equals_);
 	if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_);
 	if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_);
+        if (!hasImplementation(nme.equals_)) ts += forwardingMethod(nme.equals_);
       }
+      if (!hasImplementation(nme.caseElement)) ts += caseElementMethod;
+      if (!hasImplementation(nme.caseArity)) ts += caseArityMethod;
+      if (!hasImplementation(nme.caseName)) ts += caseNameMethod;
     }
     val synthetics = ts.toList;
     copy.Template(

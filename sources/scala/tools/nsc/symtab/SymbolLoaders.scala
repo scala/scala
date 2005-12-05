@@ -112,11 +112,13 @@ abstract class SymbolLoaders {
         val filename = file.getName();
         if (file.isDirectory()) {
           if (filename != "META_INF" && !packages.isDefinedAt(filename)) packages(filename) = file;
+/*
         } else if (filename.endsWith(".symbl")) {
           val name = filename.substring(0, filename.length() - 6);
           if (isValid(name) &&
 	      (!classes.isDefinedAt(name) || classes(name).getName().endsWith(".class")))
 	    classes(name) = file;
+*/
         } else if (filename.endsWith(".class")) {
           val name = filename.substring(0, filename.length() - 6);
 	  if (isValid(name) && !classes.isDefinedAt(name))
@@ -138,8 +140,9 @@ abstract class SymbolLoaders {
           case Some(sfile) if (sfile.lastModified() > cfile.lastModified()) => {}
           case _ =>
             val loader =
-	      if (cfile.getName().endsWith(".symbl")) new SymblfileLoader(cfile)
-              else new ClassfileLoader(cfile);
+/*	      if (cfile.getName().endsWith(".symbl")) new SymblfileLoader(cfile)
+              else */
+              new ClassfileLoader(cfile);
             enterClassAndModule(name, loader)
         }
       }
@@ -155,20 +158,22 @@ abstract class SymbolLoaders {
     val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
   }
 
+/*
   private object symblfileParser extends SymblfileParser {
     val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
   }
+*/
 
   class ClassfileLoader(file: AbstractFile) extends SymbolLoader(file) {
     protected def doComplete(root: Symbol): unit = classfileParser.parse(file, root);
     protected def kindString: String = "class file";
   }
-
+/*
   class SymblfileLoader(file: AbstractFile) extends SymbolLoader(file) {
     protected def doComplete(root: Symbol): unit = symblfileParser.parse(file, root);
     protected def kindString: String = "symbl file";
   }
-
+*/
   class SourcefileLoader(file: AbstractFile) extends SymbolLoader(file) {
     protected def doComplete(root: Symbol): unit = global.currentRun.compileLate(file);
     protected def kindString: String = "source file";
