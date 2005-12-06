@@ -930,9 +930,12 @@ import collection.mutable.HashMap;
 		       "\n phase = " + phase);
             }
 	    tree.symbol
-	  } else {
-	    qual.tpe.member(name)
-	  }
+	  } else qual.tpe match {
+            case ThisType(clazz) if (clazz == context.enclClass.owner) =>
+              qual.tpe.member(name)
+            case _  =>
+              qual.tpe.nonLocalMember(name)
+          }
 	if (sym == NoSymbol && qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
 	    !phase.erasedTypes && !qual.tpe.widen.isError) {
 	  val coercion = inferView(qual.pos, qual.tpe, name, true);

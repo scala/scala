@@ -135,7 +135,7 @@ import Flags._;
      */
     def decl(name: Name): Symbol = findDecl(name, 0);
 
-    /** The non-orivate defined or declared members with name `name' in this type;
+    /** The non-private defined or declared members with name `name' in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
@@ -160,6 +160,10 @@ import Flags._;
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE | BRIDGE, 0);
+
+    /** The non-local member with given name,
+     *  an OverloadedSymbol if several exist, NoSymbol if none exist */
+    def nonLocalMember(name: Name): Symbol = findMember(name, LOCAL | BRIDGE, 0);
 
     /** The least type instance of given class which is a supertype
      *  of this type */
