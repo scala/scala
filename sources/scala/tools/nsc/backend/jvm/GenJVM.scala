@@ -117,6 +117,7 @@ abstract class GenJVM extends SubComponent {
           case _ => ();
         }
       }
+      parents = parents.removeDuplicates;
 
       if (parents.length > 1 ) {
         ifaces = new Array[String](parents.length - 1);
@@ -158,6 +159,7 @@ abstract class GenJVM extends SubComponent {
       f.symbol.attributes foreach { a => a match {
         case Pair(TransientAtt, _) => attributes = attributes | JAccessFlags.ACC_TRANSIENT;
         case Pair(VolatileAttr, _) => attributes = attributes | JAccessFlags.ACC_VOLATILE;
+        case _ => ();
       }}
       jclass.addNewField(javaFlags(f.symbol) | attributes,
                          javaName(f.symbol),
