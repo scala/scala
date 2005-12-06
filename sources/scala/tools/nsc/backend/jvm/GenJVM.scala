@@ -531,14 +531,22 @@ abstract class GenJVM extends SubComponent {
           case CZJUMP(success, failure, cond, kind) =>
             kind match {
               case BOOL | BYTE | CHAR | SHORT | INT =>
-                jcode.emitIF(conds(cond), labels(success));
-                if (nextBlock != failure)
-                  jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock == success) {
+                  jcode.emitIF(conds(negate(cond)), labels(failure));
+                } else {
+                  jcode.emitIF(conds(cond), labels(success));
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false);
+                }
 
               case REFERENCE(_) | ARRAY(_) =>
-                jcode.emitIFNULL(labels(success));
-                if (nextBlock != failure)
-                  jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock == success) {
+                  jcode.emitIFNONNULL(labels(failure));
+                } else {
+                  jcode.emitIFNULL(labels(success));
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false);
+                }
 
               case _ =>
                 kind match {
@@ -546,9 +554,13 @@ abstract class GenJVM extends SubComponent {
                   case FLOAT  => jcode.emitFCONST_0(); jcode.emitFCMPL();
                   case DOUBLE => jcode.emitDCONST_0(); jcode.emitDCMPL();
                 }
-                jcode.emitIF(conds(cond), labels(success));
-                if (nextBlock != failure)
-                  jcode.emitGOTO_maybe_W(labels(failure), false);
+                if (nextBlock == success) {
+                  jcode.emitIF(conds(negate(cond)), labels(failure));
+                } else {
+                  jcode.emitIF(conds(cond), labels(success));
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false);
+                }
             }
 
           case RETURN(kind) =>
