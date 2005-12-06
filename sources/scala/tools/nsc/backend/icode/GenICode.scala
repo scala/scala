@@ -428,7 +428,7 @@ abstract class GenICode extends SubComponent  {
           ctx1
 
         case Try(block, catches, finalizer) =>
-          var handlers = for (val CaseDef(pat, _, body) <- catches)
+          var handlers = for (val CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
               case Typed(Ident(nme.WILDCARD), tpt) => Pair(tpt.tpe.symbol, {
                 ctx: Context =>

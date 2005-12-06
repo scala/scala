@@ -54,6 +54,15 @@ abstract class GenJVM extends SubComponent {
     val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER);
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY);
 
+    // Scala attributes
+    val SerializableAttr = definitions.getClass("scala.serializable").tpe;
+    val SerialVersionUID = definitions.getClass("scala.SerialVersionUID").tpe;
+    val CloneableAttr    = definitions.getClass("scala.cloneable").tpe;
+    val TransientAtt     = definitions.getClass("scala.transient").tpe;
+    val VolatileAttr     = definitions.getClass("scala.volatile").tpe;
+
+    val CloneableClass   = definitions.getClass("java.lang.Cloneable");
+
     var clasz: IClass = _;
     var method: IMethod = _;
     var code: Code = _;
@@ -85,15 +94,29 @@ abstract class GenJVM extends SubComponent {
       informProgress("wrote " + outfile);
     }
 
+    var serialVUID: Option[Long] = None;
+
     def genClass(c: IClass): Unit = {
       log("Generating class " + c.symbol + " flags: " + Flags.flagsToString(c.symbol.flags));
       clasz = c;
       var parents = c.symbol.info.parents;
-      var ifaces = JClass.NO_INTERFACES;
-      val name = javaName(c.symbol); // + (if (c.symbol.isModuleClass) "$" else "");
+      var ifaces  = JClass.NO_INTERFACES;
+      val name    = javaName(c.symbol);
+      serialVUID  = None;
 
       if (parents.isEmpty)
         parents = definitions.ObjectClass.tpe :: parents;
+
+      c.symbol.attributes foreach { a => a match {
+          case Pair(SerializableAttr, _) =>
+            parents = parents ::: List(definitions.SerializableClass.tpe);
+          case Pair(CloneableAttr, _) =>
+            parents = parents ::: List(CloneableClass.tpe);
+          case Pair(SerialVersionUID, value :: _) =>
+            serialVUID = Some(value.longValue);
+          case _ => ();
+        }
+      }
 
       if (parents.length > 1 ) {
         ifaces = new Array[String](parents.length - 1);
@@ -107,8 +130,9 @@ abstract class GenJVM extends SubComponent {
                                   ifaces,
                                   c.cunit.source.toString());
 
-      if (isTopLevelModule(c.symbol)) {
-        addModuleInstanceField;
+      if (isTopLevelModule(c.symbol) || serialVUID != None) {
+        if (isTopLevelModule(c.symbol))
+            addModuleInstanceField;
         addStaticInit(jclass);
 
         if (c.symbol.linkedClass != NoSymbol)
@@ -129,7 +153,13 @@ abstract class GenJVM extends SubComponent {
 
     def genField(f: IField): Unit  = {
       log("Adding field: " + f.symbol.fullNameString);
-      jclass.addNewField(javaFlags(f.symbol),
+      var attributes = 0;
+
+      f.symbol.attributes foreach { a => a match {
+        case Pair(TransientAtt, _) => attributes = attributes | JAccessFlags.ACC_TRANSIENT;
+        case Pair(VolatileAttr, _) => attributes = attributes | JAccessFlags.ACC_VOLATILE;
+      }}
+      jclass.addNewField(javaFlags(f.symbol) | attributes,
                          javaName(f.symbol),
                          javaType(toTypeKind(f.symbol.tpe)));
     }
@@ -185,12 +215,26 @@ abstract class GenJVM extends SubComponent {
                                           JType.VOID,
                                           JType.EMPTY_ARRAY,
                                           new Array[String](0));
-      val clinit = clinitMethod.getCode();
-      clinit.emitNEW(cls.getName());
-      clinit.emitDUP();
-      clinit.emitINVOKESPECIAL(cls.getName(),
-                               JMethod.INSTANCE_CONSTRUCTOR_NAME,
-                               JMethodType.ARGLESS_VOID_FUNCTION);
+      val clinit = clinitMethod.getCode().asInstanceOf[JExtendedCode];
+      if (isTopLevelModule(clasz.symbol)) {
+        clinit.emitNEW(cls.getName());
+        clinit.emitDUP();
+        clinit.emitINVOKESPECIAL(cls.getName(),
+                                 JMethod.INSTANCE_CONSTRUCTOR_NAME,
+                                 JMethodType.ARGLESS_VOID_FUNCTION);
+      }
+
+      serialVUID match {
+        case Some(value) =>
+          val fieldName = "serialVersionUID";
+          jclass.addNewField(JAccessFlags.ACC_STATIC | JAccessFlags.ACC_PUBLIC,
+                             fieldName,
+                             JType.LONG);
+          clinit.emitPUSH(value);
+          clinit.emitPUTSTATIC(jclass.getName(), fieldName, JType.LONG);
+        case None => ();
+      }
+
       clinit.emitRETURN();
     }
 
@@ -300,7 +344,8 @@ abstract class GenJVM extends SubComponent {
       }
 
       this.method.exh foreach ((e) => {
-        ranges(e) foreach ((p) => {
+        ranges(e).sort({ (p1, p2) => p1._1 < p2._1 })
+        foreach ((p) => {
           log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
               " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
           jcode.addExceptionHandler(p._1, p._2,
@@ -330,18 +375,18 @@ abstract class GenJVM extends SubComponent {
 
           case CONSTANT(const) =>
             const.tag match {
-              case UnitTag => ();
+              case UnitTag    => ();
               case BooleanTag => jcode.emitPUSH(const.booleanValue);
-              case ByteTag => jcode.emitPUSH(const.byteValue);
-              case ShortTag => jcode.emitPUSH(const.shortValue);
-              case CharTag  => jcode.emitPUSH(const.charValue);
-              case IntTag => jcode.emitPUSH(const.intValue);
-              case LongTag => jcode.emitPUSH(const.longValue);
-              case FloatTag => jcode.emitPUSH(const.floatValue);
-              case DoubleTag => jcode.emitPUSH(const.doubleValue);
-              case StringTag => jcode.emitPUSH(const.stringValue);
-              case NullTag => jcode.emitACONST_NULL();
-              case _ => abort("Unknown constant value: " + const);
+              case ByteTag    => jcode.emitPUSH(const.byteValue);
+              case ShortTag   => jcode.emitPUSH(const.shortValue);
+              case CharTag    => jcode.emitPUSH(const.charValue);
+              case IntTag     => jcode.emitPUSH(const.intValue);
+              case LongTag    => jcode.emitPUSH(const.longValue);
+              case FloatTag   => jcode.emitPUSH(const.floatValue);
+              case DoubleTag  => jcode.emitPUSH(const.doubleValue);
+              case StringTag  => jcode.emitPUSH(const.stringValue);
+              case NullTag    => jcode.emitACONST_NULL();
+              case _          => abort("Unknown constant value: " + const);
             }
 
           case LOAD_ARRAY_ITEM(kind) =>
