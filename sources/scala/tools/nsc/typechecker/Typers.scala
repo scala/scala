@@ -366,8 +366,9 @@ import collection.mutable.HashMap;
           }
 	} else if ((mode & (EXPRmode | FUNmode)) == (EXPRmode | FUNmode) &&
                    ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
-		   tree.tpe.member(nme.apply).filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
-	  typed(Select(tree, nme.apply) setPos tree.pos, mode, pt)
+                   adaptToName(tree, nme.apply).tpe.nonLocalMember(nme.apply)
+                     .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
+	  typed(Select(adaptToName(tree, nme.apply), nme.apply) setPos tree.pos, mode, pt)
 	} else if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
 	    val tparams = context.undetparams;
 	    context.undetparams = List();
@@ -406,6 +407,15 @@ import collection.mutable.HashMap;
 //      System.out.println("adapt " + tree + ":" + tree.tpe + ", mode = " + mode + ", pt = " + pt);
 //      adapt(tree, mode, pt)
 //    }
+
+    def adaptToName(qual: Tree, name: Name): Tree =
+      if (qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
+          !phase.erasedTypes && !qual.tpe.widen.isError &&
+          qual.tpe.nonLocalMember(name) == NoSymbol) {
+	val coercion = inferView(qual.pos, qual.tpe, name, true);
+	if (coercion != EmptyTree) Apply(coercion, List(qual)) setPos qual.pos
+        else qual
+      } else qual;
 
     private def completeSuperType(supertpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
       enclTparams foreach context.scope.enter;
@@ -936,12 +946,9 @@ import collection.mutable.HashMap;
             case _  =>
               qual.tpe.nonLocalMember(name)
           }
-	if (sym == NoSymbol && qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
-	    !phase.erasedTypes && !qual.tpe.widen.isError) {
-	  val coercion = inferView(qual.pos, qual.tpe, name, true);
-	  if (coercion != EmptyTree)
-	    return typed(
-	      copy.Select(tree, Apply(coercion, List(qual)) setPos qual.pos, name), mode, pt)
+        if (sym == NoSymbol) {
+          val qual1 = adaptToName(qual, name);
+          if (qual1 ne qual) return typed(copy.Select(tree, qual1, name), mode, pt)
 	}
         if (sym.info == NoType) {
           if (settings.debug.value) log("qual = " + qual + ":" + qual.tpe + "\nSymbol=" + qual.tpe.symbol + "\nsymbol-info = " + qual.tpe.symbol.info + "\nscope-id = " + qual.tpe.symbol.info.decls.hashCode() + "\nmembers = " + qual.tpe.members + "\nfound = " + sym);
@@ -1355,6 +1362,8 @@ import collection.mutable.HashMap;
 	    System.out.println("" + tpt1 + ":" + tpt1.symbol + ":" + tpt1.symbol.info);//debug
             errorTree(tree, "wrong number of type arguments for " + tpt1.tpe + ", should be " + tparams.length)
 	  }
+        case _ =>
+          throw new Error("unexpected tree: " + tree);//debug
       }
     }
 
@@ -1371,6 +1380,7 @@ import collection.mutable.HashMap;
 	result
       } catch {
         case ex: TypeError =>
+          System.out.println("caught " + ex + " in typed");//debug
 	  reportTypeError(tree.pos, ex);
 	  setError(tree)
 	case ex: Throwable =>

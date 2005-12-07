@@ -464,6 +464,7 @@ trait Namers: Analyzer {
 	}
       } catch {
         case ex: TypeError =>
+          System.out.println("caught " + ex + " in typeSig");//debug
 	  typer.reportTypeError(tree.pos, ex);
 	  ErrorType
       }
