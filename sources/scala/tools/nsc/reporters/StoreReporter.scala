@@ -30,6 +30,7 @@ class StoreReporter extends Reporter {
     incr(severity);
   }
   override def reset = {
+    super.reset;
     infos.clear;
   }
 }

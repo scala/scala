@@ -68,17 +68,19 @@ class SemanticTokens(val compiler: Compiler) {
 	new Pair(0,gap);
       }
     }
-  }
-  final class Gap extends Actual {
-    def this(prev1 : HasNext) = {
-      this();
+    def insert(prev1 : HasNext) = {
       next0 = prev1.next;
       prev0 = prev1;
       prev0.next0 = this;
       next0.prev0 = this;
     }
+  }
+  final class Gap extends Actual {
+    def this(prev1 : HasNext) = {
+      this();
+      insert(prev1);
+    }
     override def toString() = "gap-" + length;
-
 
     var length0 : Int = -1;
     def length : Int = length0;
@@ -102,6 +104,7 @@ class SemanticTokens(val compiler: Compiler) {
 
     abstract class Semantic(val symbol : Symbol) extends Actual {
       val name = NameTransformer.decode(symbol.name.toString()).toString().trim();
+      assert(symbol != NoSymbol);
 
 
       def length = name.length();
@@ -126,19 +129,22 @@ class SemanticTokens(val compiler: Compiler) {
     class Def(tree0 : DefTree) extends Semantic(tree0.symbol) {
       // if (info.defined != null) throw new Error("old=" + info.defined + " vs. new=" + this);
       info.defined = this;
-      override def toString() = "def-" + name;
+      override def toString() = "def-" + name + "-" + symbol.getClass();
 
       // if (name.equals("x$0")) throw new Error("SYM=" + symbol + " TREE: " + tree0);
 
     }
+    def Def(tree : DefTree) = if (tree.symbol == NoSymbol) {
+      val gap = new Gap();
+      gap.setLength(1);
+      gap;
+    } else new Def(tree);
+
     class Use(symbol0 : Symbol) extends Semantic(symbol0) {
       info.uses += this;
 
       override def toString() = "use-" + name;
     }
-
-
-
     val list = new TokenList;
 
     build(unit.body);
@@ -148,49 +154,44 @@ class SemanticTokens(val compiler: Compiler) {
 
     def build(tree0 : Tree) : Unit = if (tree0.pos != Position.NOPOS) tree0 match {
       case tree : ImplDef     =>
-        list.put(tree.namePos(unit.source), new Def(tree));
+        list.put(tree.namePos(unit.source), Def(tree));
         tree match {
 	  case cdef : ClassDef => build(cdef.tparams);
 	  case   _  => ;
 	}
 	build(tree.impl0.parents);
 	build(tree.impl0.body);
-
       case tree : ValOrDefDef =>
-      // System.err.println("VAL: " + tree + " @ " + tree.pos);
-
-
-	if (tree.name0.toString().equals("<init>")) {
-	  //System.err.println("IGNORE: " + tree.name0.toString() + " " + tree.pos);
-	} else if (tree.symbol.hasFlag(Flags.ACCESSOR)) {
+	if (tree.symbol.hasFlag(Flags.ACCESSOR)) {
 	  // ignore
 	  ;
 	} else {
-	  val pos = tree.namePos(unit.source);
-	  if (pos != Position.NOPOS) {
-
-	    if (!tree.hasFlag(Flags.SYNTHETIC))
-	      list.put(pos, new Def(tree));
-
-	    if (tree.isInstanceOf[DefDef]) {
-	      val ddef = tree.asInstanceOf[DefDef];
-	      build(ddef.tparams);
-
-	      for (val l0 <- ddef.vparamss; val arg <- l0) {
-
-		val pos0 = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
-			   else unit.source.skipWhitespace(arg.pos + ("val ").length());
-		list.put(pos0, new Def(arg));
-		build(arg.tpt0);
-	      }
+	  {
+	    val pos = if (tree.name0.toString().equals("<init>")) Position.NOPOS else tree.namePos(unit.source);
+	    if (pos != Position.NOPOS) {
+	      if (!tree.hasFlag(Flags.SYNTHETIC))
+		list.put(pos, Def(tree));
 	    }
-	    build(tree.tpt0);
-	    build(tree.rhs0);
 	  }
+
+	  if (tree.isInstanceOf[DefDef]) {
+	    val ddef = tree.asInstanceOf[DefDef];
+	    build(ddef.tparams);
+
+	    for (val l0 <- ddef.vparamss; val arg <- l0) {
+
+	      val pos0 = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
+			 else unit.source.skipWhitespace(arg.pos + ("val ").length());
+	      list.put(pos0, Def(arg));
+	      build(arg.tpt0);
+	    }
+	  }
+	  build(tree.tpt0);
+	  build(tree.rhs0);
 	}
       case tree : PackageDef =>
         val pos = tree.namePos(unit.source);
-        list.put(pos, new Def(tree));
+        list.put(pos, Def(tree));
         build(tree.stats);
       case tree : Function   =>
         for (val arg <- tree.vparams) if (arg.pos != Position.NOPOS) {
@@ -202,53 +203,55 @@ class SemanticTokens(val compiler: Compiler) {
 	      while (Character.isWhitespace(unit.source.content(posx - 1))) posx = posx - 1;
 	      posx - name.length();
 	    } else arg.pos;
-	  list.put(pos, new Def(arg));
+	  list.put(pos, Def(arg));
 	  build(arg.tpt0);
 	}
         build(tree.body);
       case tree : TypeTree =>
         val tree1 = if (tree.original != null) tree.original; else tree;
-        build(tree1, tree.tpe);
-        def build( tree : Tree, tpe : Type) : Unit = if (tree.pos != Position.NOPOS) tpe match {
+        buildT(tree1, tree.tpe);
+        def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != Position.NOPOS) tpe match {
 	  case tpe0 : TypeRef => tree match {
 	    case apt : AppliedTypeTree =>
-	      buildSym(tpe0.sym, apt.tpt.pos);
+	      build(apt.tpt);
+	      //buildSym(tpe0.sym, apt.tpt.pos);
 	      buildTs (apt.args, tpe0.args);
 	    case ident : Ident => buildSym(tpe0.sym, ident.pos);
 	    case select : Select =>
-	      val pos = selectPos(select);
-	      buildSym(tpe0.sym, pos);
+	      // System.err.println("BUILD_SELECT: " + select + " @ " + tpe0);
+	      build(select);
 	    case tpt : TypeTree =>
-	      // System.err.println("UNKNOWN TPT: " + tree + " vs. " + tpe0 + " " + tpt.original + " " + unit.source.content(tree.pos));
-	    case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + unit.source.content(tree.pos));
+	      // System.err.println("UNKNOWN TPT0: " + tpe0 + " vs. " + tpt);
+	    case _ => System.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + unit.source.content(tree.pos));
 	  }
 	  case tpe0 : MethodType => tree match {
 	    case tpt: TypeTree =>
-	      if (tpt.original != null) build(tpt.original, tpe);
+	      if (tpt.original != null) buildT(tpt.original, tpe);
 	      else {
-		System.err.println("UNKNOWN TPT: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
+		System.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
 	      }
-	    case ident  : Ident  => build(ident,  tpe0.resultType);
-	    case select : Select => build(select, tpe0.resultType);
+	    case ident  : Ident  => buildT(ident,  tpe0.resultType);
+	    case select : Select => buildT(select, tpe0.resultType);
 	    case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass());
 	  }
-	  case _ => System.err.println("UNKNOWN: " + tree + " " + (if (tree != null) tree.getClass() else null) + " vs. " + tpe + " " + (if (tpe != null) tpe.getClass() else null) + " " + (if (tree != null) tree.pos else null));
+	  case _ => // System.err.println("UNKNOWN: " + tree + " " + (if (tree != null) tree.getClass() else null) + " vs. " + tpe + " " + (if (tpe != null) tpe.getClass() else null) + " " + (if (tree != null) tree.pos else null));
 	};
         def buildTs(trees : List[Tree], types : List[Type]): Unit = if (!trees.isEmpty || !types.isEmpty) {
-	  build  (trees.head, types.head);
+	  buildT (trees.head, types.head);
 	  buildTs(trees.tail, types.tail);
 	};
       case tree : AbsTypeDef =>
-        list.put(tree.namePos, new Def(tree));
+        list.put(tree.namePos, Def(tree));
       case tree : Bind =>
-        list.put(tree.pos, new Def(tree));
+        list.put(tree.pos, Def(tree));
         build(tree.body);
       case tree : Ident      => buildSym(tree.symbol, tree.pos);
       case tree : Select     =>
+	// System.err.println("SELECT: " + tree.qualifier + " ** " + tree.symbol + " " + selectPos(tree));
         build(tree.qualifier);
         buildSym(tree.symbol, selectPos(tree));
       case tree : GenericApply =>
-      // System.err.println("APPLY: " + tree.fun0 + " " + tree.args0);
+        // System.err.println("APPLY: " + tree.fun0 + " " + tree.args0);
         build(tree.fun0); build(tree.args0);
       case tree : Typed        => build(tree.expr); build(tree.tpt);
       case tree : Import     => build(tree.expr);
@@ -263,6 +266,7 @@ class SemanticTokens(val compiler: Compiler) {
       case tree : Return     => build(tree.expr);
       case tree : Literal => ;
       case tree : This    => ;
+      case tree : Super   => ;
       case _ => ;
         if (tree0 != EmptyTree)
 	  System.err.println("BAIL: " + tree0.pos + " " + tree0 + " " + tree0.getClass());
@@ -312,9 +316,8 @@ class SemanticTokens(val compiler: Compiler) {
       begin.next0 = end;
       end.prev0 = begin;
 
-      private var length : Int = 0;
 
-      def tokenAt(offset : Int) = if (offset >= length) null else {
+      def tokenAt(offset : Int) = {
 	//System.err.println("CURSOR-0: " + cursor.offset);
 	cursor.seek(offset);
 	//System.err.println("CURSOR-1: " + cursor.offset + " " + cursor.token + " " + offset);
@@ -322,13 +325,34 @@ class SemanticTokens(val compiler: Compiler) {
 	if (cursor.token.isInstanceOf[Semantic]) cursor.token.asInstanceOf[Semantic];
 	else null;
       };
-      def put(offset : Int, tok : Semantic) = {
-	grow(offset);
-	if (offset == length) append(tok);
-	else {
-	  grow(offset + tok.length);
-	  cursor.seek(offset);
-	  assert(cursor.token.isInstanceOf[Gap]);
+      def put(offset : Int, tok : Actual) : Unit = tok match {
+	case tok0 : Semantic => put(offset, tok0);
+	case gap  : Gap      => ;
+      }
+
+
+      def put(offset : Int, tok : Semantic) :Unit = {
+	cursor.seek(offset);
+	if (cursor.token == end) {
+	  assert(offset >= cursor.offset);
+	  if (offset > cursor.offset) {
+	    // add a gap.
+	    val gap = new Gap(end.prev);
+	    gap.setLength(offset - cursor.offset);
+	    cursor.offset = offset;
+	  }
+	  // append.
+	  tok.insert(end.prev);
+	  cursor.offset = cursor.offset + tok.length;
+
+	} else if (!cursor.token.isInstanceOf[Gap]) {
+	  val sem = cursor.token.asInstanceOf[Semantic];
+	  if (sem.symbol == tok.symbol) return;
+	  System.err.println("NOT_GAP: " + sem.symbol + " " + sem.symbol.getClass());
+	  System.err.println("NOT_GAP: " + tok.symbol + " " + tok.symbol.getClass());
+	  System.err.println("LIST: " + this);
+	  throw new Error();
+	} else {
 	  val gap = cursor.token.asInstanceOf[Gap];
 	  if (!(offset - cursor.offset + tok.length <= gap.length)) {
 	    System.err.println("LIST  =" + this);
@@ -374,39 +398,6 @@ class SemanticTokens(val compiler: Compiler) {
 	}
 	str;
       };
-      def grow(length0 : Int) = if (length0 > length) {
-	if (false) {
-	  System.err.println("GROW: " + length + " -> " + length0);
-	  System.err.println("      " + this);
-	}
-
-	assert(length < length0);
-
-	if (end.prev.isInstanceOf[Gap]) {
-	  val gap = end.prev.asInstanceOf[Gap];
-	  gap.setLength(gap.length + (length0 - length));
-	} else {
-	  val gap = new Gap;
-	  gap.setLength(length0 - length);
-	  gap.prev0 = end.prev;
-	  gap.next0 = end;
-	  gap.prev0.next0 = gap;
-	  end.prev0 = gap;
-	}
-	if (cursor.token == end) {
-	  assert(cursor.offset == length);
-	  cursor.offset = length0;
-	}
-	length = length0;
-      }
-      def append(tok : Semantic) : Unit = {
-	tok.prev0 = end.prev;
-	tok.next0 = end;
-	tok.prev0.next0 = tok;
-	end.prev0 = tok;
-	length = length + tok.length;
-	if (cursor.token == end) cursor.offset = length;
-      }
       private object cursor {
 	var token  : Token = end;
 	var offset : Int   = 0;
@@ -422,14 +413,13 @@ class SemanticTokens(val compiler: Compiler) {
 	def seek(soffset : Int) : Unit = if (soffset == 0) {
 	  token = begin.next;
 	  offset = 0;
-	} else if (soffset >= length) {
-	  token = end;
-	  offset = length;
 	} else {
 	  assert(soffset > 0);
-	  assert(soffset < length);
 	  while (offset                >  soffset) prev;
-	  while (offset + token.length <= soffset) next;
+	  while (offset + token.length <= soffset && token != end) {
+	    val len0 = offset;
+	    next;
+	  }
 	}
 	def convertToGap = if (token.isInstanceOf[Actual]) {
 	  val ret = token.asInstanceOf[Actual].convertToGap;

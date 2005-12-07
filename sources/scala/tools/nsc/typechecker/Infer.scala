@@ -217,6 +217,14 @@ package scala.tools.nsc.typechecker;
       if (sym.isError) {
 	tree setSymbol sym setType ErrorType
       } else {
+        sym.toplevelClass match {
+	case clazz : ClassSymbol =>
+	  // System.err.println("TOP: " + clazz + " " + clazz.sourceFile);
+	  if (clazz.sourceFile != null)
+	    global.currentRun.currentUnit.depends += clazz.sourceFile;
+
+	case _ =>
+	}
 	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
 	if (sym1 == NoSymbol) {
 	  if (settings.debug.value) {

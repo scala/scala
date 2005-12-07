@@ -160,14 +160,19 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this;
     def run: unit = currentRun.units foreach applyPhase;
+
     def apply(unit: CompilationUnit): unit;
     private val isErased = prev.name == "erasure" || prev.erasedTypes;
     override def erasedTypes: boolean = isErased;
     private val isFlat = prev.name == "flatten" || prev.flatClasses;
     override def flatClasses: boolean = isFlat;
-    def applyPhase(unit: CompilationUnit): unit = {
+    final def applyPhase(unit: CompilationUnit): unit = {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]");
-      apply(unit)
+      val unit0 = currentRun.currentUnit;
+      currentRun.currentUnit = unit;
+      apply(unit);
+      assert(currentRun.currentUnit == unit);
+      currentRun.currentUnit = unit0;
     }
   }
 
@@ -278,6 +283,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     override val terminalPhase : Phase = typerPhase.next;
   }
   class Run extends CompilerRun {
+    var currentUnit : CompilationUnit = _;
     curRun = this;
     override val firstPhase = syntaxAnalyzer.newPhase(NoPhase);
     phase = firstPhase;
@@ -333,7 +339,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     def compileSources(sources: List[SourceFile]): unit = {
       val startTime = System.currentTimeMillis();
       reporter.reset;
-
       for (val source <- sources)
 	addUnit(new CompilationUnit(source));
 

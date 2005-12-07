@@ -89,11 +89,12 @@ abstract class SymbolLoaders {
         root.info.decls.enter(pkg)
       }
 
-      def enterClassAndModule(str: String, completer: SymbolLoader): unit = {
+      def enterClassAndModule(str: String, completer: SymbolLoader, sfile : AbstractFile): unit = {
 	val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
 	val name = newTermName(str);
         val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
         val module = owner.newModule(Position.NOPOS, name);
+	clazz.sourceFile = sfile;
         clazz.setInfo(completer);
 	module.setInfo(completer);
         module.moduleClass.setInfo(moduleClassLoader);
@@ -132,10 +133,14 @@ abstract class SymbolLoaders {
       for (val Pair(name, sfile) <- sources.elements) {
         classes.get(name) match {
           case Some(cfile) if (cfile.lastModified() >= sfile.lastModified()) => {}
-          case _ => enterClassAndModule(name, new SourcefileLoader(sfile));
+          case _ => enterClassAndModule(name, new SourcefileLoader(sfile), sfile);
         }
       }
       for (val Pair(name, cfile) <- classes.elements) {
+	val sfile = sources.get(name) match {
+	  case Some(sfile0) => sfile0;
+	  case _ => null;
+	}
         sources.get(name) match {
           case Some(sfile) if (sfile.lastModified() > cfile.lastModified()) => {}
           case _ =>
@@ -143,7 +148,7 @@ abstract class SymbolLoaders {
 /*	      if (cfile.getName().endsWith(".symbl")) new SymblfileLoader(cfile)
               else */
               new ClassfileLoader(cfile);
-            enterClassAndModule(name, loader)
+            enterClassAndModule(name, loader, sfile)
         }
       }
       for (val Pair(name, file) <- packages.elements) {

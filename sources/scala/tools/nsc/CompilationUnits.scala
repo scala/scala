@@ -7,6 +7,8 @@ package scala.tools.nsc;
 
 import scala.tools.nsc.util.{SourceFile, Position};
 import scala.tools.nsc.util.FreshNameCreator;
+import scala.tools.util.AbstractFile;
+import scala.collection.mutable.HashSet;
 
 [_trait_] abstract class CompilationUnits: Global {
 
@@ -20,6 +22,8 @@ import scala.tools.nsc.util.FreshNameCreator;
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree;
+
+    val depends = new HashSet[AbstractFile];
 
     def position(pos: int) = new Position(source, pos);
 

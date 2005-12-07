@@ -932,6 +932,8 @@ import Flags._;
 
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
+
+
     var sourceFile: AbstractFile = null;
     private var thissym: Symbol = this;
     override def isClass: boolean = true;
