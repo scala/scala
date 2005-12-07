@@ -138,7 +138,11 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param children
    */
   def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) = {
-    41 * pre.hashCode() % 7 + label.hashCode() * 53 + attribHashCode * 7 + scpeHash * 31 + children.hashCode()
+    ( if(pre!=null) {41 * pre.hashCode() % 7} else {0})
+    + label.hashCode() * 53
+    + attribHashCode * 7
+    + scpeHash * 31
+    + children.hashCode()
   }
 
   /**

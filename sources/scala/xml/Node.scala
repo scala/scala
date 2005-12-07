@@ -99,7 +99,7 @@ abstract class Node extends NodeSeq {
   }
   /** returns a hashcode */
   override def hashCode(): Int;
-    //Utility.hashCode(namespace, label, attributes.hashCode(), child);
+    //Utility.hashCode(pre, label, attributes.hashCode(), child);
 
 
   /** method for NodeSeq */

@@ -46,6 +46,9 @@ case class Elem(override val prefix: String,
 
   final override def typeTag$: Int = 0;
 
+  override def hashCode(): Int = {
+    Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child);
+  }
   /** Return a new element with updated attributes
    *
    *  @param attrs
