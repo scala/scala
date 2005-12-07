@@ -338,7 +338,7 @@
             <filterset>
                 <filter token="VERSION" value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/scala.jar:$PREFIX/lib/tools.jar:$PREFIX/lib/${osc-nstools.jar.name}"/>
+                <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/${nslib.jar.name}:$PREFIX/lib/${nstools.jar.name}"/>
                 <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
                 <filter token="SCALA" value="${scala.exec.name}"/>
                 <filter token="SCALAC" value="${scalac.exec.name}"/>
@@ -412,7 +412,7 @@
                 <filter token="VERSION"   value="${distrib.version}"/>
                 <filter token="COPYRIGHT" value="${copyright.notice}"/>
                 <filter token="MAIN"      value="scala.tools.nsc.Main"/>
-                <filter token="TOOLS_CPATH" value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
+                <filter token="TOOLS_CPATH" value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\${nslib.jar.name};${quotted.lib.dir}\${nstools.jar.name}"/>
                 <filter token="LIB_CPATH"     value="${quotted.lib.dir}\${nslib.jar.name}"/>
             </filterset>
         </copy>
