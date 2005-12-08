@@ -354,18 +354,27 @@ public abstract class RunTime {
 // classes confuse pico which then attributes the metadata to the
 // wrong members.
 
-final class UValue extends Unit    { public UValue(         ) { super( ); } }
-final class ZValue extends Boolean { public ZValue(boolean x) { super(x); } }
-final class BValue extends Byte    { public BValue(byte    x) { super(x); } }
-final class SValue extends Short   { public SValue(short   x) { super(x); } }
-final class CValue extends Char    { public CValue(char    x) { super(x); } }
-final class IValue extends Int     { public IValue(int     x) { super(x); } }
-final class LValue extends Long    { public LValue(long    x) { super(x); } }
-final class FValue extends Float   { public FValue(float   x) { super(x); } }
-final class DValue extends Double  { public DValue(double  x) { super(x); } }
+final class UValue extends Unit    implements java.io.Serializable
+  { public UValue(         ) { super( ); } }
+final class ZValue extends Boolean implements java.io.Serializable
+  { public ZValue(boolean x) { super(x); } }
+final class BValue extends Byte    implements java.io.Serializable
+  { public BValue(byte    x) { super(x); } }
+final class SValue extends Short   implements java.io.Serializable
+  { public SValue(short   x) { super(x); } }
+final class CValue extends Char    implements java.io.Serializable
+  { public CValue(char    x) { super(x); } }
+final class IValue extends Int     implements java.io.Serializable
+  { public IValue(int     x) { super(x); } }
+final class LValue extends Long    implements java.io.Serializable
+  { public LValue(long    x) { super(x); } }
+final class FValue extends Float   implements java.io.Serializable
+  { public FValue(float   x) { super(x); } }
+final class DValue extends Double  implements java.io.Serializable
+  { public DValue(double  x) { super(x); } }
 
 /** @meta class extends scala.Array[scala.Boolean]; */
-final class ZArray extends Array {
+final class ZArray extends Array implements java.io.Serializable {
     public final boolean[] value;
     public ZArray(boolean[] value) { this.value = value; }
     public Object value() { return value; }
@@ -376,7 +385,7 @@ final class ZArray extends Array {
 }
 
 /** @meta class extends scala.Array[scala.Byte]; */
-final class BArray extends Array {
+final class BArray extends Array implements java.io.Serializable {
     public final byte[] value;
     public BArray(byte[] value) { this.value = value; }
     public Object value() { return value; }
@@ -387,7 +396,7 @@ final class BArray extends Array {
 }
 
 /** @meta class extends scala.Array[scala.Short]; */
-final class SArray extends Array {
+final class SArray extends Array implements java.io.Serializable {
     public final short[] value;
     public SArray(short[] value) { this.value = value; }
     public Object value() { return value; }
@@ -398,7 +407,7 @@ final class SArray extends Array {
 }
 
 /** @meta class extends scala.Array[scala.Char]; */
-final class CArray extends Array {
+final class CArray extends Array implements java.io.Serializable {
     public final char[] value;
     public CArray(char[] value) { this.value = value; }
     public Object value() { return value; }
@@ -409,7 +418,7 @@ final class CArray extends Array {
 }
 
 /** @meta class extends scala.Array[scala.Int]; */
-final class IArray extends Array {
+final class IArray extends Array implements java.io.Serializable {
     public final int[] value;
     public IArray(int[] value) { this.value = value; }
     public Object value() { return value; }
@@ -420,7 +429,7 @@ final class IArray extends Array {
 }
 
 /** @meta class extends scala.Array[scala.Long]; */
-final class LArray extends Array {
+final class LArray extends Array implements java.io.Serializable {
     public final long[] value;
     public LArray(long[] value) { this.value = value; }
     public Object value() { return value; }
@@ -431,7 +440,7 @@ final class LArray extends Array {
 }
 
 /** @meta class extends scala.Array[scala.Float]; */
-final class FArray extends Array {
+final class FArray extends Array implements java.io.Serializable {
     public final float[] value;
     public FArray(float[] value) { this.value = value; }
     public Object value() { return value; }
@@ -442,7 +451,7 @@ final class FArray extends Array {
 }
 
 /** @meta class extends scala.Array[scala.Double]; */
-final class DArray extends Array {
+final class DArray extends Array implements java.io.Serializable {
     public final double[] value;
     public DArray(double[] value) { this.value = value; }
     public Object value() { return value; }
@@ -453,7 +462,7 @@ final class DArray extends Array {
 }
 
 /** @meta class [?T < scala.AnyRef] extends scala.Array[?T]; */
-final class OArray extends Array {
+final class OArray extends Array implements java.io.Serializable {
     public final Object[] value;
     public OArray(Object[] value) { this.value = value; }
     public Object value() { return value; }
