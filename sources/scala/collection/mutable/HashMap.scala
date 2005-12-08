@@ -28,7 +28,7 @@ class HashMap[A, B] extends scala.collection.mutable.Map[A, B]
         tableSize = 0;
     }
 
-    override def clone(): HashMap[A, B] = {
+    override def clone(): Map[A, B] = {
         val res = new HashMap[A, B];
         res ++= this;
         res

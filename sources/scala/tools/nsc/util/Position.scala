@@ -18,9 +18,6 @@ object Position {
   val NOLINE   = 0;
   val FIRSTLINE = 1;
 
-
-  def line(offset : Int) = offset;
-
   def line(source : SourceFile, offset : Int) = (new Position(source, offset)).line;
 }
 

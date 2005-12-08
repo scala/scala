@@ -25,6 +25,8 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
   //private var ccol: int = _;
   def cpos = bp;
   var isUnicode: boolean = _;
+  var lastLineStartPos: int = 0;
+  var lineStartPos: int = 0;
   //private var nextline = startline;
   //private var nextcol = startcol;
 
@@ -48,7 +50,11 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
           ch = LF;
           bp = bp + 1
         }
+        lastLineStartPos = lineStartPos;
+        lineStartPos = bp;
       case LF | FF =>
+        lastLineStartPos = lineStartPos;
+        lineStartPos = bp;
         //nextline = nextline + 1;
         //nextcol = 1
       case '\\' =>

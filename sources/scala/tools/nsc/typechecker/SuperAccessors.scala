@@ -30,8 +30,8 @@ abstract class SuperAccessors extends transform.Transform {
 
     private def transformArgs(args: List[Tree], formals: List[Type]) = {
       if (!formals.isEmpty && formals.last.symbol == definitions.ByNameParamClass)
-        (args take (formals.length - 1) map transform) :::
-        withInvalidOwner { args drop (formals.length - 1) map transform }
+        ((args take (formals.length - 1) map transform) :::
+         withInvalidOwner { args drop (formals.length - 1) map transform })
       else
         args map transform
     }

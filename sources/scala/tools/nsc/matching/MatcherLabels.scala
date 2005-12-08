@@ -55,8 +55,9 @@ package scala.tools.nsc.matching ;
 		 case Apply( _, _ ) =>
 		   pat2 match {
 		     case Apply( _, _ ) =>
-		       return treeInfo.methPart/*methSymbol?*/( pat )
-                     == treeInfo.methPart/*methSymbol*/( pat2 );
+		       return
+                         (treeInfo.methPart/*methSymbol?*/( pat )
+                          == treeInfo.methPart/*methSymbol*/( pat2 ));
 		   }
                  case _ => false;
 	       }

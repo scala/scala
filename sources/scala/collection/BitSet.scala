@@ -51,12 +51,13 @@ package scala.collection;
    *
    *  @return true, iff both bitsets contain the same sequence of elements.
    */
-  override def equals(that: Any): Boolean =
+  override def equals(that: Any): Boolean = (
     that.isInstanceOf[BitSet] &&
     { val other = that.asInstanceOf[BitSet];
       (size == other.size) &&
-      (Iterator.range(0, size) forall { i => apply(i) == other.apply(i)});
-    };
+      (Iterator.range(0, size) forall { i => apply(i) == other.apply(i)})
+    }
+  );
 
   /**
    *  applies f to any index which is set to true.

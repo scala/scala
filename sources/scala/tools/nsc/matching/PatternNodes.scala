@@ -235,17 +235,17 @@ trait PatternNodes: TransMatcher {
           else
             sb
         case ConstrPat(casted) =>
-          val s = "-- " + patNode.getTpe().symbol.name +
-                    "(" + patNode.getTpe() + ", " + casted + ") -> ";
+          val s = ("-- " + patNode.getTpe().symbol.name +
+                   "(" + patNode.getTpe() + ", " + casted + ") -> ");
           val nindent = newIndent(s);
           sb.append(nindent + s).append('\n');
           patNode.and.print(nindent, sb);
           cont;
 
         case SequencePat( casted, plen ) =>
-          val s = "-- " + patNode.getTpe().symbol.name + "(" +
-                  patNode.getTpe() +
-                  ", " + casted + ", " + plen + ") -> ";
+          val s = ("-- " + patNode.getTpe().symbol.name + "(" +
+                   patNode.getTpe() +
+                   ", " + casted + ", " + plen + ") -> ");
           val nindent = newIndent(s);
           sb.append(indent + s).append('\n');
           patNode.and.print(nindent, sb);

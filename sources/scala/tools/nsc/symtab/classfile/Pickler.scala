@@ -54,10 +54,11 @@ abstract class Pickler extends SubComponent {
     private val index = new HashMap[AnyRef, int];
 
     /** Is root in symbol.owner*? */
-    private def isLocal(sym: Symbol): boolean =
+    private def isLocal(sym: Symbol): boolean = (
       sym.isRefinementClass ||
       sym.name.toTermName == rootName && sym.owner == rootOwner ||
-      sym != NoSymbol && isLocal(sym.owner);
+      sym != NoSymbol && isLocal(sym.owner)
+    );
 
     // Phase 1 methods: Populate entries/index ------------------------------------
 

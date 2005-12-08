@@ -35,8 +35,8 @@ class Scanner extends Tokens with parsing.TokenTests {
   //                                            zzz    scanner methods   zzz
 
   // todo: see XML specification... probably isLetter,isDigit is fine
-  final def isIdentChar = { ('a' <= c && c <= 'z')
-                           || ('A' <= c && c <= 'Z')};
+  final def isIdentChar = ( ('a' <= c && c <= 'z')
+                           || ('A' <= c && c <= 'Z'));
 
   final def next = if( it.hasNext ) c = it.next else c = ENDCH;
 

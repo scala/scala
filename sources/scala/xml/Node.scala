@@ -91,11 +91,11 @@ abstract class Node extends NodeSeq {
   /** structural equality */
   override def equals(x: Any): Boolean = x match {
     case that: Node =>
-      (that.prefix == this.prefix )
-      &&(that.label == this.label )
-      &&(that.attributes ==  this.attributes)
-      && that.child.sameElements(this.child) // sameElements
-      case _ => false
+      ((that.prefix == this.prefix )
+       &&(that.label == this.label )
+       &&(that.attributes ==  this.attributes)
+       && that.child.sameElements(this.child)) // sameElements
+    case _ => false
   }
   /** returns a hashcode */
   override def hashCode(): Int;

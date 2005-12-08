@@ -306,10 +306,10 @@ import Flags._;
       AnyRefClass = newAlias(ScalaPackageClass, "AnyRef", ObjectClass.typeConstructor);
 
       AllRefClass = newClass(ScalaPackageClass, "AllRef", List(AnyRefClass.typeConstructor))
-	setFlag (ABSTRACT | TRAIT | FINAL);
+	.setFlag(ABSTRACT | TRAIT | FINAL);
 
       AllClass = newClass(ScalaPackageClass, "All", List(AnyClass.typeConstructor))
-	setFlag (ABSTRACT | TRAIT | FINAL);
+	.setFlag(ABSTRACT | TRAIT | FINAL);
 
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");

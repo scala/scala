@@ -215,16 +215,17 @@ import Flags._;
       if (util.Statistics.enabled) subtypeCount = subtypeCount + 1;
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
       val result =
-        (this eq that) ||
-        (if (explainSwitch) explain("<", isSubType, this, that) else isSubType(this, that));
+        ((this eq that) ||
+         (if (explainSwitch) explain("<", isSubType, this, that) else isSubType(this, that)));
       if (util.Statistics.enabled) subtypeMillis = subtypeMillis + System.currentTimeMillis() - startTime;
       result
     }
 
     /** Is this type equivalent to that type? */
-    def =:=(that: Type): boolean =
+    def =:=(that: Type): boolean = (
       (this eq that) ||
-      (if (explainSwitch) explain("=", isSameType, this, that) else isSameType(this, that));
+      (if (explainSwitch) explain("=", isSameType, this, that) else isSameType(this, that))
+    );
 
     /** Does this type implement symbol `sym' with same or stronger type? */
     def specializes(sym: Symbol): boolean =
@@ -643,12 +644,13 @@ import Flags._;
           var mixins = parents.tail;
           val sbcs = superclazz.baseClasses;
 	  var bcs = sbcs;
-	  def isNew(clazz: Symbol): boolean =
+	  def isNew(clazz: Symbol): boolean = (
             superclazz.closurePos(clazz) < 0 &&
             { var p = bcs;
               while ((p ne sbcs) && (p.head != clazz)) p = p.tail;
               p eq sbcs
             }
+          );
 	  while (!mixins.isEmpty) {
             def addMixinBaseClasses(mbcs: List[Symbol]): List[Symbol] =
               if (mbcs.isEmpty) bcs
@@ -679,10 +681,11 @@ import Flags._;
 
     override def narrow: Type = symbol.thisType;
 
-    override def toString(): String =
+    override def toString(): String = (
       parents.mkString("", " with ", "") +
       (if (settings.debug.value || parents.isEmpty || decls.elems != null)
 	decls.mkString("{", "; ", "}") else "")
+    );
   }
 
   /** A class representing intersection types with refinements of the form
@@ -1153,8 +1156,8 @@ import Flags._;
       if (infos1 eq infos) syms
       else {
         val syms1 = syms map (.cloneSymbol);
-        List.map2(syms1, infos1)
-          ((sym1, info1) => sym1.setInfo(info1.substSym(syms, syms1)))
+        (List.map2(syms1, infos1)
+          ((sym1, info1) => sym1.setInfo(info1.substSym(syms, syms1))))
       }
     }
   }
@@ -1391,9 +1394,10 @@ import Flags._;
     }
 
   final def isValidForBaseClasses(p: Phase): boolean = {
-    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): boolean =
+    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): boolean = (
       it.pid >= limit ||
-      !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit);
+      !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)
+    );
     p != null && phaseWithId(p.id) == p && {
       if (phase.id > p.id) noChangeInBaseClasses(infoTransformers.nextFrom(p.id), phase.id)
       else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), p.id)
@@ -1445,10 +1449,10 @@ import Flags._;
         res1 =:= res2 &&
         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
       case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-        tparams1.length == tparams2.length &&
-        List.forall2(tparams1, tparams2)
-          ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) &&
-        res1 =:= res2.substSym(tparams2, tparams1)
+        (tparams1.length == tparams2.length &&
+         List.forall2(tparams1, tparams2)
+           ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) &&
+         res1 =:= res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
 	lo1 =:= lo2 && hi1 =:= hi2
       case Pair(TypeVar(_, constr1), _) =>
@@ -1469,9 +1473,10 @@ import Flags._;
   }
 
   /** Are tps1 and tps2 lists of pairwise equivalent types? */
-  def isSameTypes(tps1: List[Type], tps2: List[Type]): boolean =
+  def isSameTypes(tps1: List[Type], tps2: List[Type]): boolean = (
     tps1.length == tps2.length &&
-    List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2);
+    List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2)
+  );
 
   var subtypecount = 0;
   def isSubType(tp1: Type, tp2: Type): boolean = {
@@ -1504,37 +1509,36 @@ import Flags._;
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
 	//System.out.println("isSubType " + tp1 + " " + tp2);//DEBUG
         def isSubArgs(tps1: List[Type], tps2: List[Type],
-                      tparams: List[Symbol]): boolean = {
+                      tparams: List[Symbol]): boolean = (
           tps1.isEmpty && tps2.isEmpty
           ||
           !tps1.isEmpty && !tps2.isEmpty &&
           (tparams.head.hasFlag(COVARIANT) || (tps2.head <:< tps1.head)) &&
           (tparams.head.hasFlag(CONTRAVARIANT) || tps1.head <:< tps2.head) &&
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
-        }
-        sym1 == sym2 && (pre1 <:< pre2) &&
-        isSubArgs(args1, args2, sym1.typeParams)
-        ||
-        sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
-        ||
-        sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
-        ||
-        sym2.isClass &&
-          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
-        ||
-        sym1 == AllClass
-        ||
-        sym1 == AllRefClass && sym2 != AllClass && tp2 <:< AnyRefClass.tpe
+        );
+        (sym1 == sym2 && (pre1 <:< pre2) && isSubArgs(args1, args2, sym1.typeParams)
+         ||
+         sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
+         ||
+         sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
+         ||
+         sym2.isClass &&
+           ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
+         ||
+         sym1 == AllClass
+         ||
+         sym1 == AllRefClass && sym2 != AllClass && tp2 <:< AnyRefClass.tpe)
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
-        pts1.length == pts2.length &&
-        matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
-        (res1 <:< res2) &&
-        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
+        (pts1.length == pts2.length &&
+         matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
+         (res1 <:< res2) &&
+         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
       case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-        tparams1.length == tparams2.length &&
-        List.forall2(tparams1, tparams2)
-          ((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
-        res1 <:< res2.substSym(tparams2, tparams1)
+        (tparams1.length == tparams2.length &&
+         List.forall2(tparams1, tparams2)
+           ((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
+         res1 <:< res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
       case Pair(_, TypeVar(_, constr2)) =>
@@ -1557,9 +1561,9 @@ import Flags._;
       case Pair(ConstantType(_), _) => tp1.singleDeref <:< tp2
 
       case Pair(TypeRef(pre1, sym1, args1), _) =>
-        sym1 == AllClass && tp2 <:< AnyClass.tpe
-        ||
-        sym1 == AllRefClass && tp2.symbol != AllClass && tp2 <:< AnyRefClass.tpe
+        (sym1 == AllClass && tp2 <:< AnyClass.tpe
+         ||
+         sym1 == AllRefClass && tp2.symbol != AllClass && tp2 <:< AnyRefClass.tpe)
       case _ =>
         false
     }
@@ -1567,39 +1571,41 @@ import Flags._;
 
   /** Are tps1 and tps2 lists of equal length such that all elements
    *  of tps1 conform to corresponding elements of tps2? */
-  def isSubTypes(tps1: List[Type], tps2: List[Type]): boolean =
+  def isSubTypes(tps1: List[Type], tps2: List[Type]): boolean = (
     tps1.length == tps2.length &&
-    List.forall2(tps1, tps2)((tp1, tp2) => tp1 <:< tp2);
+    List.forall2(tps1, tps2)((tp1, tp2) => tp1 <:< tp2)
+  );
 
   /** Does type `tp' implement symbol `sym' with same or stronger type?
    *  Exact only if `sym' is a member of some refinement type, otherwise
    *  we might return false negatives */
-  def specializesSym(tp: Type, sym: Symbol): boolean =
+  def specializesSym(tp: Type, sym: Symbol): boolean = (
     tp.symbol == AllClass ||
     tp.symbol == AllRefClass && (sym.owner isSubClass ObjectClass) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
-      (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)));
+      (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
+   );
 
   /** Does member `sym1' of `tp1' have a stronger type than member `sym2' of `tp2'? */
   private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): boolean = {
     val info1 = tp1.memberInfo(sym1);
     val info2 = tp2.memberInfo(sym2).substThis(tp2.symbol, tp1);
-    sym2.isTerm &&
-      info1 <:< info2 ||
-    sym2.isAbstractType &&
-      (info2.bounds containsType info1) ||
-    sym2.isAliasType &&
-      tp2.memberType(sym2) =:= tp1.memberType(sym1)
+    (sym2.isTerm &&
+       info1 <:< info2 ||
+     sym2.isAbstractType &&
+       (info2.bounds containsType info1) ||
+     sym2.isAliasType &&
+       tp2.memberType(sym2) =:= tp1.memberType(sym1))
   }
 
   /** A function implementing tp1 matches tp2 */
   private def matchesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
     case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
-      matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) && (res1 matches res2) &&
-      tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
+      (matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) && (res1 matches res2) &&
+       tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
     case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-      tparams1.length == tparams2.length &&
-      (res1 matches res2.substSym(tparams2, tparams1))
+      (tparams1.length == tparams2.length &&
+       (res1 matches res2.substSym(tparams2, tparams1)))
     case Pair(PolyType(List(), rtp1), _) => matchesType(rtp1, tp2)
     case Pair(_, PolyType(List(), rtp2)) => matchesType(tp1, rtp2)
     case Pair(MethodType(_, _), _) => false
@@ -1611,10 +1617,11 @@ import Flags._;
   }
 
   /** Are tps1 and tps2 lists of pairwise equivalent types? */
-  private def matchingParams(tps1: List[Type], tps2: List[Type], tps2isJava: boolean): boolean =
+  private def matchingParams(tps1: List[Type], tps2: List[Type], tps2isJava: boolean): boolean = (
     tps1.length == tps2.length &&
     List.forall2(tps1, tps2)((tp1, tp2) =>
-      (tp1 =:= tp2) || tps2isJava & tp1.symbol == ObjectClass && tp2.symbol == AnyClass);
+      (tp1 =:= tp2) || tps2isJava & tp1.symbol == ObjectClass && tp2.symbol == AnyClass)
+  );
 
   /** Prepend type `tp' to closure `cl' */
   private def addClosure(tp: Type, cl: Array[Type]): Array[Type] = {
@@ -1789,8 +1796,9 @@ import Flags._;
 	        sym.tpe matches prototp.substThis(lubThisType.symbol, t)));
             if (syms contains NoSymbol) NoSymbol
 	    else {
-              val symtypes = List.map2(narrowts, syms)
-              ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType));
+              val symtypes =
+                (List.map2(narrowts, syms)
+                   ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType)));
 	      if (settings.debug.value) log("common symbols: " + syms + ":" + symtypes);//debug
               if (proto.isTerm)
                 proto.cloneSymbol.setInfo(lub(symtypes))
@@ -1939,11 +1947,11 @@ import Flags._;
       val pre = if (variance == 1) lub(pres) else glb(pres);
       val argss = tps map (.typeArgs);
       val args =
-	List.map2(sym.typeParams, List.transpose(argss))
-        ((tparam, as) =>
-	  if (tparam.variance == variance) lub(as)
-	  else if (tparam.variance == -variance) glb(as)
-          else NoType);
+	(List.map2(sym.typeParams, List.transpose(argss))
+           ((tparam, as) =>
+	     if (tparam.variance == variance) lub(as)
+	     else if (tparam.variance == -variance) glb(as)
+             else NoType));
       try {
 	if (args contains NoType) None
 	else Some(typeRef(pre, sym, args))

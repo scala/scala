@@ -185,9 +185,9 @@ abstract class LambdaLift extends InfoTransform {
           proxies(owner) =
             for (val fv <- free(owner).elements.toList) yield {
               val proxy = owner.newValue(owner.pos, fv.name)
-              setFlag (if (owner.isClass) PARAMACCESSOR | PRIVATE | LOCAL else PARAM)
-              setFlag SYNTHETIC
-              setInfo fv.info;
+                .setFlag(if (owner.isClass) PARAMACCESSOR | PRIVATE | LOCAL else PARAM)
+                .setFlag(SYNTHETIC)
+                .setInfo(fv.info);
               if (owner.isClass) owner.info.decls enter proxy;
               proxy
             }

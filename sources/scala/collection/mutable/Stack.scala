@@ -99,12 +99,13 @@ class Stack[A] extends MutableList[A] {
      *
      *  @return true, iff both stacks contain the same sequence of elements.
      */
-    override def equals(that: Any): Boolean =
+    override def equals(that: Any): Boolean = (
         that.isInstanceOf[Stack[A]] &&
         { val other = that.asInstanceOf[Stack[A]];
           elements.zip(other.elements).forall {
             case Pair(thiselem, thatelem) => thiselem == thatelem;
-        }};
+        }}
+    );
 
     /** The hashCode method always yields an error, since it is not
      *  safe to use mutable stacks as keys in hash tables.

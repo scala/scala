@@ -67,11 +67,12 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
      *  @return true, iff this set and the other set contain the same
      *          elements.
      */
-    override def equals(that: Any): Boolean =
+    override def equals(that: Any): Boolean = (
         that.isInstanceOf[Set[A]] &&
         { val other = that.asInstanceOf[Set[A]];
           this.size == other.size &&
-          this.elements.forall(other.contains) };
+          this.elements.forall(other.contains) }
+    );
 
     /** Returns the elements of this set as a list.
      *

@@ -20,9 +20,10 @@ abstract class Mixin extends InfoTransform {
 
   override def phaseNewFlags: long = lateMODULE | notABSTRACT;
 
-  private def isForwarded(sym: Symbol) =
+  private def isForwarded(sym: Symbol) = (
     sym.owner.isImplClass && sym.isMethod &&
-    !sym.isModule && !(sym hasFlag (ACCESSOR | SUPERACCESSOR));
+    !sym.isModule && !(sym hasFlag (ACCESSOR | SUPERACCESSOR))
+  );
 
   private def isStatic(sym: Symbol) = isForwarded(sym) && sym.isImplOnly;
 
@@ -68,12 +69,12 @@ abstract class Mixin extends InfoTransform {
       clazz setFlag MIXEDIN;
       def newGetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterName(field.name))
-          setFlag (field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
-          setInfo MethodType(List(), field.info);
+          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
+          .setInfo(MethodType(List(), field.info));
       def newSetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterToSetter(nme.getterName(field.name)))
-          setFlag (field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
-          setInfo MethodType(List(field.info), UnitClass.tpe);
+          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
+          .setInfo(MethodType(List(field.info), UnitClass.tpe));
       clazz.info;
       val impl = implClass(clazz);
       assert(impl != NoSymbol);
@@ -148,8 +149,9 @@ abstract class Mixin extends InfoTransform {
               val alias1 = rebindSuper(clazz, member.alias, mixin);
               member1.asInstanceOf[TermSymbol] setAlias alias1;
             } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
-              addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
-                resetFlag (DEFERRED | lateDEFERRED)
+              addMember(clazz, member.cloneSymbol(clazz))
+                .setPos(clazz.pos)
+                .resetFlag(DEFERRED | lateDEFERRED)
             }
           }
         }
@@ -221,8 +223,8 @@ abstract class Mixin extends InfoTransform {
           if (isForwarded(sym)) {
 	    sym setFlag notOVERRIDE;
             self = sym.newValue(sym.pos, nme.SELF)
-	      setFlag (PARAM | SYNTHETIC)
-	      setInfo toInterface(currentOwner.typeOfThis);
+	      .setFlag(PARAM | SYNTHETIC)
+	      .setInfo(toInterface(currentOwner.typeOfThis));
 	    enclInterface = currentOwner.toInterface;
             val selfdef = ValDef(self) setType NoType;
             copy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)

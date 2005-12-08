@@ -148,18 +148,18 @@ class Queue[+A](elem: A*) extends Seq[A] {
          the same position in this (queue).
          If they are equal the next element is
          compared. */
-      def eqe(index: Int): Boolean = {
+      def eqe(index: Int): Boolean = (
         /* If all elements are compared
         the queues are equal. */
         index >= this.length ||
         /* Otherwise: compare the elements */
         (q.apply(index) == this.apply(index) &&
          /* if they are equal compare the rest. */
-           eqe(index + 1))
-          }
-          /* If the length of the ques are the same,
-             compare each element, starting at index 0. */
-          (q.length == this.length) && eqe(0);
+         eqe(index + 1))
+      );
+        /* If the length of the ques are the same,
+         compare each element, starting at index 0. */
+      (q.length == this.length) && eqe(0);
 
     case _ => false; /* o is not a queue: not equal to this. */
   }

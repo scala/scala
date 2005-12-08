@@ -462,7 +462,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
     var stms: scala.List[Tree] = scala.List();
     val loopbody = code_body_NEW();
 
-    stms =
+    stms = (
       scala.List(
         ValDef( iterSym, trace ),
         ValDef( stateSym, Literal( 0 ))
@@ -475,7 +475,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
               stateSym
             ),
             loopbody )
-        );
+        ));
 
     // bind variables handled by this righttracer
     var it = seqVars.iterator();

@@ -61,9 +61,10 @@ trait TypeStacks: ICodes {
      * length and each type kind agrees position-wise. Two
      * types agree if they are subtypes of one another.
      */
-    def agreesWith(other: TypeStack): Boolean =
+    def agreesWith(other: TypeStack): Boolean = (
       (types.length == other.types.length) &&
-      List.forall2(types, other.types) ((t1, t2) => t1 <:< t2 || t2 <:< t1);
+      List.forall2(types, other.types) ((t1, t2) => t1 <:< t2 || t2 <:< t1)
+    );
 
     def mergeWith(that: TypeStack): TypeStack = {
       def merge(a: TypeStack, b: TypeStack): TypeStack = {

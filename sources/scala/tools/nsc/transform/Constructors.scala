@@ -107,8 +107,8 @@ abstract class Constructors extends Transform {
 	  else {
 	    if (rhs != EmptyTree) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
-              (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf)
-                += mkAssign(stat.symbol, rhs1)
+              (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
+                stat.symbol, rhs1)
 	    }
 	    defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
 	  }
@@ -120,11 +120,12 @@ abstract class Constructors extends Transform {
 
       val accessed = new TreeSet[Symbol]((x, y) => x isLess y);
 
-      def isAccessed(sym: Symbol) =
+      def isAccessed(sym: Symbol) = (
 	sym.owner != clazz ||
 	!(sym hasFlag PARAMACCESSOR) ||
 	!(sym hasFlag LOCAL) ||
-	(accessed contains sym);
+	(accessed contains sym)
+      );
 
       val accessTraverser = new Traverser {
         override def traverse(tree: Tree) = {

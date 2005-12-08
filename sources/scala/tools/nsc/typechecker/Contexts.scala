@@ -170,10 +170,10 @@ import scala.tools.nsc.util.Position;
 
     def ambiguousError(pos: int, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): unit = {
       val msg =
-	"ambiguous reference to overloaded definition,\n" +
-	"both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
-	"\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
-        "\nmatch " + rest;
+	("ambiguous reference to overloaded definition,\n" +
+	 "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
+	 "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
+         "\nmatch " + rest);
       if (reportAmbiguousErrors) unit.error(pos, msg)
       else throw new TypeError(msg);
     }
@@ -221,15 +221,15 @@ import scala.tools.nsc.util.Position;
 	c != NoContext;
       }
 
-      pre == NoPrefix
-      ||
-      (!sym.hasFlag(PRIVATE | PROTECTED))
-      ||
-      accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
-      ||
-      (!sym.hasFlag(PRIVATE) &&
-       (superAccess ||
-	(pre.widen.symbol.isSubClass(sym.owner) && isSubClassOfEnclosing(pre.widen.symbol))))
+      (pre == NoPrefix
+       ||
+       (!sym.hasFlag(PRIVATE | PROTECTED))
+       ||
+       accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
+       ||
+       (!sym.hasFlag(PRIVATE) &&
+        (superAccess ||
+	 (pre.widen.symbol.isSubClass(sym.owner) && isSubClassOfEnclosing(pre.widen.symbol)))))
     }
 
     def pushTypeBounds(sym: Symbol): unit = {

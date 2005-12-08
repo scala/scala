@@ -187,7 +187,7 @@ trait Namers: Analyzer {
 	    if ((mods & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
 		tree.pos, mods & AccessFlags | METHOD | CASE, name.toTermName)
-		setInfo innerNamer.caseFactoryCompleter(tree)
+	          .setInfo(innerNamer.caseFactoryCompleter(tree))
             }
 	    val mods1: int = if (impl.body forall treeInfo.isInterfaceMember) mods | INTERFACE else mods;
 	    tree.symbol = enterClassSymbol(tree.pos, mods1, name);
@@ -199,8 +199,8 @@ trait Namers: Analyzer {
 	  case ValDef(mods, name, tp, rhs) =>
             if (context.owner.isClass & (mods & LOCAL) == 0) {
 	      val accmods =
-                (if ((mods & MUTABLE) != 0) mods & ~MUTABLE else mods | STABLE) |
-                (if ((mods & DEFERRED) == 0) ACCESSOR else 0);
+                ((if ((mods & MUTABLE) != 0) mods & ~MUTABLE else mods | STABLE) |
+                 (if ((mods & DEFERRED) == 0) ACCESSOR else 0));
 	      val getter = owner.newMethod(tree.pos, name)
 	        .setFlag(accmods).setInfo(innerNamer.getterTypeCompleter(tree));
 	      enterInScope(getter);
@@ -464,7 +464,7 @@ trait Namers: Analyzer {
 	}
       } catch {
         case ex: TypeError =>
-          System.out.println("caught " + ex + " in typeSig");//debug
+          //System.out.println("caught " + ex + " in typeSig");//DEBUG
 	  typer.reportTypeError(tree.pos, ex);
 	  ErrorType
       }

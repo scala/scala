@@ -39,10 +39,11 @@ import collection.mutable.HashMap;
     import context0.unit;
 
     val infer = new Inferencer(context0) {
-      override def isCoercible(tp: Type, pt: Type): boolean =
+      override def isCoercible(tp: Type, pt: Type): boolean = (
         tp.isError || pt.isError ||
 	context0.reportGeneralErrors && // this condition prevents chains of views
 	inferView(Position.NOPOS, tp, pt, false) != EmptyTree
+      )
     }
 
     private def inferView(pos: int, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
@@ -368,7 +369,7 @@ import collection.mutable.HashMap;
                    ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
                    adaptToName(tree, nme.apply).tpe.nonLocalMember(nme.apply)
                      .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
-	  typed(Select(adaptToName(tree, nme.apply), nme.apply) setPos tree.pos, mode, pt)
+	  typed(atPos(tree.pos)(Select(adaptToName(tree, nme.apply), nme.apply)), mode, pt)
 	} else if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
 	    val tparams = context.undetparams;
 	    context.undetparams = List();
@@ -413,15 +414,15 @@ import collection.mutable.HashMap;
           !phase.erasedTypes && !qual.tpe.widen.isError &&
           qual.tpe.nonLocalMember(name) == NoSymbol) {
 	val coercion = inferView(qual.pos, qual.tpe, name, true);
-	if (coercion != EmptyTree) Apply(coercion, List(qual)) setPos qual.pos
+	if (coercion != EmptyTree) typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
         else qual
       } else qual;
 
     private def completeSuperType(supertpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
       enclTparams foreach context.scope.enter;
       namer.enterValueParams(context.owner, vparamss);
-      val newTree = New(supertpt) setType
-	PolyType(tparams, appliedType(supertpt.tpe, tparams map (.tpe)));
+      val newTree = New(supertpt)
+        .setType(PolyType(tparams, appliedType(supertpt.tpe, tparams map (.tpe))));
       val tree = typed(atPos(supertpt.pos)(Apply(Select(newTree, nme.CONSTRUCTOR), superargs)));
       if (settings.debug.value) log("superconstr " + tree + " co = " + context.owner);//debug
       tree.tpe
@@ -524,7 +525,7 @@ import collection.mutable.HashMap;
         .typedTemplate(cdef.impl, parentTypes(cdef.impl));
       val impl2 = addSyntheticMethods(impl1, clazz);
       val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
-	setType NoType;
+	.setType(NoType);
       ret;
     }
 
@@ -548,7 +549,7 @@ import collection.mutable.HashMap;
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
 	      if ((mods & DEFERRED) != 0) EmptyTree
-	      else typed(Select(This(value.owner), value), EXPRmode, value.tpe)));
+	      else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe)));
           checkNoEscaping.privates(getter, result.tpt);
           result
 	}
@@ -736,7 +737,7 @@ import collection.mutable.HashMap;
       val stats1 = typedStats(block.stats, context.owner);
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt);
       val block1 = copy.Block(block, stats1, expr1)
-        setType (if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst);
+        .setType(if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst);
       if (isFullyDefined(pt)) block1
       else {
 	if (block1.tpe.symbol.isAnonymousClass)
@@ -798,7 +799,7 @@ import collection.mutable.HashMap;
       val restpe = body.tpe.deconst;
       val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe));
       val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
-        setType funtpe;
+        .setType(funtpe);
       if (pt.symbol == TypedCodeClass) typed(atPos(fun.pos)(codify(fun1)))
       else fun1
     }
@@ -955,7 +956,8 @@ import collection.mutable.HashMap;
           if (!qual.tpe.widen.isError)
             error(tree.pos,
 	      decode(name) + " is not a member of " + qual.tpe.widen +
-	      (if (Position.line(tree.pos) > Position.line(qual.pos))
+              (if (Position.line(context.unit.source, qual.pos) <
+                   Position.line(context.unit.source, tree.pos))
 	        "\npossible cause: maybe a semicolon is missing before `" + name + "'?" else ""));
           setError(tree)
         } else {
@@ -1135,7 +1137,7 @@ import collection.mutable.HashMap;
 	  val elemtpt1 = typedType(elemtpt);
 	  val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elemtpt1.tpe));
           copy.ArrayValue(tree, elemtpt1, elems1)
-            setType (if (isFullyDefined(pt) && !phase.erasedTypes) pt
+            .setType(if (isFullyDefined(pt) && !phase.erasedTypes) pt
                      else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe)))
 
         case fun @ Function(_, _) =>
@@ -1202,7 +1204,7 @@ import collection.mutable.HashMap;
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe);
           copy.Try(tree, block1, catches1, finalizer1)
-            setType ptOrLub(block1.tpe :: (catches1 map (.tpe)))
+            .setType(ptOrLub(block1.tpe :: (catches1 map (.tpe))))
 
         case Throw(expr) =>
           val expr1 = typed(expr, ThrowableClass.tpe);
@@ -1213,8 +1215,8 @@ import collection.mutable.HashMap;
           if (tpt1.hasSymbol && !tpt1.symbol.typeParams.isEmpty) {
 	    context.undetparams = cloneSymbols(tpt1.symbol.unsafeTypeParams);
             tpt1 = TypeTree()
-              setPos tpt1.pos
-              setType appliedType(tpt1.tpe, context.undetparams map (.tpe));
+              .setPos(tpt1.pos)
+              .setType(appliedType(tpt1.tpe, context.undetparams map (.tpe)));
           }
 	  if (tpt1.tpe.symbol.isTrait) error(tree.pos, "traits cannot be instantiated");
           copy.New(tree, tpt1).setType(tpt1.tpe)
@@ -1380,7 +1382,7 @@ import collection.mutable.HashMap;
 	result
       } catch {
         case ex: TypeError =>
-          System.out.println("caught " + ex + " in typed");//debug
+          //System.out.println("caught " + ex + " in typed");//DEBUG
 	  reportTypeError(tree.pos, ex);
 	  setError(tree)
 	case ex: Throwable =>
@@ -1528,9 +1530,10 @@ import collection.mutable.HashMap;
 	tp1.baseClasses map implicitsOfClass;
       }
 
-      def implicitsOfClass(clazz: Symbol): List[ImplicitInfo] =
+      def implicitsOfClass(clazz: Symbol): List[ImplicitInfo] = (
         clazz.initialize.linkedModule.moduleClass.info.decls.toList.filter(.hasFlag(IMPLICIT)) map
-	  (sym => ImplicitInfo(sym.name, clazz.linkedModule.tpe.memberType(sym), sym));
+	  (sym => ImplicitInfo(sym.name, clazz.linkedModule.tpe.memberType(sym), sym))
+      );
 
       var tree = searchImplicit(context.implicitss, true);
       if (tree == EmptyTree) tree = searchImplicit(implicitsOfType(pt.widen), false);

@@ -21,9 +21,10 @@ package scala;
  */
 final case class Symbol(name: String) {
 
-    /** Converts this symbol to a string.
-     */
-    override def toString(): String = {
-      "'" + name
-    }
+  /** Converts this symbol to a string.
+   */
+  override def toString(): String = {
+    "'" + name
+  }
+
 }

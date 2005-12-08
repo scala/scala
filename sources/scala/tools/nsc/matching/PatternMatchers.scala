@@ -811,7 +811,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
                 var i = guard.length - 1; while(i >= 0) {
                   val ts:Seq[Tree] = bound(i).asInstanceOf[Array[Tree]];
                   val temp = currentOwner.newValue(body(i).pos, cunit.fresh.newName("r$"))
-                    setFlag Flags.SYNTHETIC setInfo resultType;
+                    .setFlag(Flags.SYNTHETIC).setInfo(resultType);
                   var res0: Tree =
                     //Block(
                     //  List(Assign(Ident(resultVar), body(i))),

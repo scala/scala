@@ -30,15 +30,16 @@ abstract class AddInterfaces extends InfoTransform {
     super.newPhase(prev)
   }
 
-  private def needsImplMethod(sym: Symbol): boolean =
+  private def needsImplMethod(sym: Symbol): boolean = (
     sym.isMethod && isInterfaceMember(sym) &&
-    (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED));
+    (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED))
+  );
 
   private def isInterfaceMember(sym: Symbol): boolean = {
     sym.info; // to set lateMETHOD flag if necessary
-    sym.isType ||
-    sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) &&
-    !sym.isConstructor && !sym.isImplOnly
+    (sym.isType ||
+     sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) &&
+     !sym.isConstructor && !sym.isImplOnly)
   }
 
   def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
@@ -165,8 +166,8 @@ abstract class AddInterfaces extends InfoTransform {
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos){
     val templ1 = Template(templ.parents, templ.body map implMemberDef)
-      setPos templ.pos
-      setSymbol clazz.newLocalDummy(templ.pos);
+      .setPos(templ.pos)
+      .setSymbol(clazz.newLocalDummy(templ.pos));
     new ChangeOwnerTraverser(templ.symbol.owner, clazz)(
       new ChangeOwnerTraverser(templ.symbol, templ1.symbol)(templ1))
   }
@@ -188,8 +189,8 @@ abstract class AddInterfaces extends InfoTransform {
 
   protected val traitTransformer = new Transformer {
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
-      super.transformStats(stats, exprOwner) :::
-      super.transformStats(implClassDefs(stats), exprOwner);
+      (super.transformStats(stats, exprOwner) :::
+       super.transformStats(implClassDefs(stats), exprOwner));
     override def transform(tree: Tree): Tree = {
       val tree1 = tree match {
 	case ClassDef(mods, name, tparams, tpt, impl) =>

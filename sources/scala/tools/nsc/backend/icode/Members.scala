@@ -218,9 +218,10 @@ trait Members: ICodes {
       exh = e :: exh;
 
     /** Is this method deferred ('abstract' in Java sense) */
-    def isDeferred =
+    def isDeferred = (
       symbol.hasFlag(Flags.DEFERRED) ||
-      symbol.owner.hasFlag(Flags.INTERFACE);
+      symbol.owner.hasFlag(Flags.INTERFACE)
+    );
 
     override def toString() = symbol.fullNameString;
   }
@@ -229,9 +230,10 @@ trait Members: ICodes {
   class Local(val sym: Symbol, val kind: TypeKind) {
     var index: Int = -1;
 
-    override def equals(other: Any): Boolean =
+    override def equals(other: Any): Boolean = (
       other.isInstanceOf[Local] &&
-      other.asInstanceOf[Local].sym == this.sym;
+      other.asInstanceOf[Local].sym == this.sym
+    );
 
     override def toString(): String = sym.toString();
   }

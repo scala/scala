@@ -81,9 +81,10 @@ abstract class UnCurry extends InfoTransform {
      * x.apply()? Note that this is not the case if `x' is used as an argument to another
      * call by name parameter.
      */
-    def isByNameRef(tree: Tree): boolean =
+    def isByNameRef(tree: Tree): boolean = (
       tree.isTerm && tree.hasSymbol &&
-      tree.symbol.tpe.symbol == ByNameParamClass && tree.tpe == tree.symbol.tpe.typeArgs.head;
+      tree.symbol.tpe.symbol == ByNameParamClass && tree.tpe == tree.symbol.tpe.typeArgs.head
+    );
 
     /** Uncurry a type of a tree node.
      *  This function is sensitive to whether or not we are in a pattern -- when in a pattern
@@ -124,13 +125,13 @@ abstract class UnCurry extends InfoTransform {
      */
     def transformFunction(fun: Function): Tree = {
       val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos)
-        setFlag (FINAL | SYNTHETIC | inConstructorFlag);
+        .setFlag(FINAL | SYNTHETIC | inConstructorFlag);
       val formals = fun.tpe.typeArgs.init;
       val restpe = fun.tpe.typeArgs.last;
       anonClass setInfo ClassInfoType(
 	List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), new Scope(), anonClass);
       val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
-	setFlag FINAL setInfo MethodType(formals, restpe);
+	.setFlag(FINAL).setInfo(MethodType(formals, restpe));
       anonClass.info.decls enter applyMethod;
       for (val vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
       new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
@@ -139,7 +140,7 @@ abstract class UnCurry extends InfoTransform {
 	  setSymbol applyMethod);
       if (fun.tpe.symbol == PartialFunctionClass) {
 	val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
-	  setFlag FINAL setInfo MethodType(formals, BooleanClass.tpe);
+	  .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe));
 	anonClass.info.decls enter isDefinedAtMethod;
 	def idbody(idparam: Symbol) = fun.body match {
 	  case Match(_, cases) =>

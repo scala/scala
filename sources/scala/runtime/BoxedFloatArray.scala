@@ -22,9 +22,10 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
 
   def unbox(elemTag: String): Object = value;
 
-  override def equals(other: Any) =
+  override def equals(other: Any) = (
     value == other ||
-    other.isInstanceOf[BoxedFloatArray] && value == other.asInstanceOf[BoxedFloatArray].value;
+    other.isInstanceOf[BoxedFloatArray] && value == other.asInstanceOf[BoxedFloatArray].value
+  );
 
   override def hashCode(): Int = value.hashCode();
 }

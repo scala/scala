@@ -70,7 +70,7 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet wit
    *
    *  @return true, iff both bitsets contain the same sequence of elements.
    */
-  override def equals(that: Any): Boolean =
+  override def equals(that: Any): Boolean = (
     that.isInstanceOf[BitSet] &&
     { val other = that.asInstanceOf[BitSet];
       (size == other.size) && ( size == 0 || {
@@ -83,7 +83,8 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet wit
         }
         res
       })
-   } || super.equals(that);
+   } || super.equals(that)
+  );
 
   def this(rbs: mutable.BitSet) = {
     this(rbs.size, rbs.toArray, false);

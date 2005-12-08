@@ -237,10 +237,11 @@ trait BasicBlocks: ICodes {
       preds
     }
 
-    override def equals(other: Any): Boolean =
+    override def equals(other: Any): Boolean = (
       other.isInstanceOf[BasicBlock] &&
       other.asInstanceOf[BasicBlock].label == label &&
-      other.asInstanceOf[BasicBlock].code  == code;
+      other.asInstanceOf[BasicBlock].code  == code
+    );
 
     // Instead of it, rather use a printer
     def print() : unit = print(System.out);

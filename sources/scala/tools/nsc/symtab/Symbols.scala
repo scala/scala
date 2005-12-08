@@ -185,11 +185,12 @@ import Flags._;
     final def needsImplClass: boolean =
       isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
 
-    final def isImplOnly: boolean =
+    final def isImplOnly: boolean = (
       hasFlag(PRIVATE) ||
       (owner.isImplClass || owner.isTrait) &&
       (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR) ||
-       isConstructor);
+       isConstructor)
+    );
 
     /** Is this symbol a module variable ? */
     final def isModuleVar: boolean = isVariable && nme.isModuleVarName(name);
@@ -203,10 +204,11 @@ import Flags._;
       isPackageClass || isModuleClass && isStatic;
 
     /** Is this symbol final?*/
-    final def isFinal: boolean =
+    final def isFinal: boolean = (
       hasFlag(FINAL) ||
       isTerm && (
-        hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE));
+        hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE))
+    );
 
     /** Is this symbol a sealed class?*/
     final def isSealed: boolean =
@@ -218,10 +220,10 @@ import Flags._;
     /** Is this symbol a constant? */
     final def isConstant: boolean =
       isStable && (tpe match {
-  case ConstantType(_) => true
-  case PolyType(_, ConstantType(_)) => true
-  case MethodType(_, ConstantType(_)) => true
-  case _ => false
+        case ConstantType(_) => true
+        case PolyType(_, ConstantType(_)) => true
+        case MethodType(_, ConstantType(_)) => true
+        case _ => false
       });
 
     /** Is this class nested in another class or module (not a package)? */
@@ -244,12 +246,13 @@ import Flags._;
     /** A a member of class `base' is incomplete if (1) it is declared deferred or
      *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.
      */
-    final def isIncompleteIn(base: Symbol): boolean =
+    final def isIncompleteIn(base: Symbol): boolean = (
       (this hasFlag DEFERRED) ||
       (this hasFlag ABSOVERRIDE) && {
         val supersym = superSymbol(base);
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
+    );
 
     final def isInitialized: boolean =
       validForRun == currentRun;
@@ -435,9 +438,9 @@ import Flags._;
         if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
         else sym.info.closure.length;
       if (this.isType)
-        that.isType &&
-      {val diff = closureLength(this) - closureLength(that);
-       diff > 0 || diff == 0 && this.id < that.id}
+        (that.isType &&
+         { val diff = closureLength(this) - closureLength(that);
+           diff > 0 || diff == 0 && this.id < that.id })
       else
         that.isType || this.id < that.id;
     }
@@ -450,13 +453,14 @@ import Flags._;
       owner == that || owner != NoSymbol && (owner isNestedIn that);
 
     /** Is this class symbol a subclass of that symbol? */
-    final def isSubClass(that: Symbol): boolean =
+    final def isSubClass(that: Symbol): boolean = (
       this == that || this.isError || that.isError ||
       info.closurePos(that) >= 0 ||
       this == AllClass ||
       this == AllRefClass &&
-  (that == AnyClass ||
-         that != AllClass && (that isSubClass AnyRefClass));
+      (that == AnyClass ||
+       that != AllClass && (that isSubClass AnyRefClass))
+    );
 
 // Overloaded Alternatives ---------------------------------------------------------
 

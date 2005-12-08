@@ -143,9 +143,10 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     unboxed
   }
 
-  override def equals(other: Any): Boolean =
+  override def equals(other: Any): Boolean = (
     other.isInstanceOf[BoxedAnyArray] && (this eq (other.asInstanceOf[BoxedAnyArray])) ||
-    (if (unboxed == null) boxed == other else unboxed == other);
+    (if (unboxed == null) boxed == other else unboxed == other)
+  );
 
   override def hashCode(): Int = hash;
 }

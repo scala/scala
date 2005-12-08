@@ -22,9 +22,10 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
 
   def unbox(elemTag: String): Object = value;
 
-  override def equals(other: Any) =
+  override def equals(other: Any) = (
     value == other ||
-    other.isInstanceOf[BoxedDoubleArray] && value == other.asInstanceOf[BoxedDoubleArray].value;
+    other.isInstanceOf[BoxedDoubleArray] && value == other.asInstanceOf[BoxedDoubleArray].value
+  );
 
   override def hashCode(): Int = value.hashCode();
 }

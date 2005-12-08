@@ -235,9 +235,9 @@ abstract class ClassfileParser {
       throw new IOException("class file '" + in.file + "' contains wrong " + clazz);
     val superType = pool.getSuperClass(in.nextChar()).tpe;
     val ifaceCount = in.nextChar();
-    val parents = superType ::
+    val parents = (superType ::
       (for (val i <- List.range(0, ifaceCount))
-       yield pool.getSuperClass(in.nextChar()).tpe);
+       yield pool.getSuperClass(in.nextChar()).tpe));
     instanceDefs = new Scope();
     staticDefs = new Scope();
     val classInfo = ClassInfoType(parents, instanceDefs, clazz);
@@ -263,9 +263,9 @@ abstract class ClassfileParser {
       for (val i <- Iterator.range(0, methodCount)) parseMethod();
       if (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol && (sflags & INTERFACE) == 0) {
         //System.out.println("adding constructor to " + clazz);//DEBUG
-        instanceDefs enter
+        instanceDefs.enter(
           clazz.newConstructor(Position.NOPOS)
-            .setFlag(clazz.flags & ConstrFlags).setInfo(MethodType(List(), clazz.tpe));
+            .setFlag(clazz.flags & ConstrFlags).setInfo(MethodType(List(), clazz.tpe)));
       }
     }
   }

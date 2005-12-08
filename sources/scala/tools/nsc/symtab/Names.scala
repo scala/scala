@@ -35,10 +35,10 @@ class Names {
    */
   private def hashValue(cs: Array[char], offset: int, len: int): int =
     if (len > 0)
-      len * (41 * 41 * 41) +
-      cs(offset) * (41 * 41) +
-      cs(offset + len - 1) * 41 +
-      cs(offset + (len >> 1));
+      (len * (41 * 41 * 41) +
+       cs(offset) * (41 * 41) +
+       cs(offset + len - 1) * 41 +
+       cs(offset + (len >> 1)))
     else 0;
 
   /** is (the ascii representation of) name at given index equal to
@@ -284,9 +284,9 @@ class Names {
     }
 
     /** Replace $op_name by corresponding operator symbol */
-    def decode: String =
+    def decode: String = (
       NameTransformer.decode(toString()) +
-      (if (nameDebug && isTypeName) "!" else "");//debug
+      (if (nameDebug && isTypeName) "!" else ""));//debug
   }
 
   private class TermName(index: int, len: int, hash: int) extends Name(index, len) {

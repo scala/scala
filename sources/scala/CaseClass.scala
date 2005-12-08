@@ -29,4 +29,5 @@ trait CaseClass extends AnyRef {
   def caseArity: Int ;
 
   def caseName: String = ""; // for now
+
 }

@@ -103,8 +103,8 @@ object Flags {
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
 
   final val PrintableFlags =               // these modifiers appear in TreePrinter output.
-    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | ACCESSOR |
-    SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC;
+    (ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | ACCESSOR |
+     SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC);
 
   final val FieldFlags = MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL;
 

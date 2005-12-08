@@ -135,12 +135,13 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with java.io.Seri
      *
      *  @return true, iff both queues contain the same sequence of elements.
      */
-    override def equals(that: Any): Boolean =
+    override def equals(that: Any): Boolean = (
         that.isInstanceOf[PriorityQueue[A]] &&
         { val other = that.asInstanceOf[PriorityQueue[A]];
           elements.zip(other.elements).forall {
             case Pair(thiselem, thatelem) => thiselem == thatelem;
-        }};
+        }}
+    );
 
     /** The hashCode method always yields an error, since it is not
      *  safe to use mutable queues as keys in hash tables.

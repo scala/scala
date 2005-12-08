@@ -1369,10 +1369,11 @@ abstract class GenICode extends SubComponent  {
      *  It is considered to be so if all value parameters of the label are the
      *  same as the value parameters of the current method.
      */
-    def isTailCallLabel(tree: LabelDef, ctx: Context) =
+    def isTailCallLabel(tree: LabelDef, ctx: Context) = (
       tree.params.length == ctx.defdef.vparamss.head &&
       List.forall2(tree.params, ctx.defdef.vparamss.head)
         { (x, y) => x.symbol == y.symbol }
+    );
 
 
     /////////////////////// Context ////////////////////////////////

@@ -44,9 +44,9 @@ class PrefixedAttribute(val pre: String,
   */
 
   def equals1(m: MetaData) =
-     m.isPrefixed &&
-     (m.asInstanceOf[PrefixedAttribute].pre == pre) &&
-     (m.key == key) && (m.value == value);
+     (m.isPrefixed &&
+      (m.asInstanceOf[PrefixedAttribute].pre == pre) &&
+      (m.key == key) && (m.value == value));
 
   def getNamespace(owner: Node) =
     owner.getNamespace(pre);

@@ -347,7 +347,7 @@ abstract class GenJVM extends SubComponent {
 
       this.method.exh foreach ((e) => {
         ranges(e).sort({ (p1, p2) => p1._1 < p2._1 })
-        foreach ((p) => {
+        .foreach ((p) => {
           log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
               " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
           jcode.addExceptionHandler(p._1, p._2,

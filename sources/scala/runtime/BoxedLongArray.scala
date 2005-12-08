@@ -22,9 +22,10 @@ final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
 
   def unbox(elemTag: String): Object = value;
 
-  override def equals(other: Any) =
+  override def equals(other: Any) = (
     value == other ||
-    other.isInstanceOf[BoxedLongArray] && value == other.asInstanceOf[BoxedLongArray].value;
+    other.isInstanceOf[BoxedLongArray] && value == other.asInstanceOf[BoxedLongArray].value
+  );
 
   override def hashCode(): Int = value.hashCode();
 }

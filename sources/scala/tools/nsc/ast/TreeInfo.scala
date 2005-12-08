@@ -126,10 +126,10 @@ abstract class TreeInfo {
   /** Is name a variable name? */
   def isVariableName(name: Name): boolean = {
     val first = name(0);
-    (('a' <= first && first <= 'z') || first == '_')
-    && name != nme.false_
-    && name != nme.true_
-    && name != nme.null_
+    ((('a' <= first && first <= 'z') || first == '_')
+     && name != nme.false_
+     && name != nme.true_
+     && name != nme.null_)
   }
 
   /** Is tree a this node which belongs to `enclClass'? */

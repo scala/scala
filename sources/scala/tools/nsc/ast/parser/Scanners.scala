@@ -23,6 +23,9 @@ import scala.tools.nsc.util.CharArrayReader;
     /** the token's position */
     protected var pos: int = 0;
 
+    /** the first character position after the previous token */
+    var lastPos: int = 0;
+
     def currentPos = pos - 1;
 
 
@@ -35,6 +38,7 @@ import scala.tools.nsc.util.CharArrayReader;
     def copyFrom(td: TokenData) = {
       this.token = td.token;
       this.pos = td.pos;
+      this.lastPos = td.lastPos;
       this.name = td.name;
       this.base = td.base;
     }
@@ -82,13 +86,13 @@ import scala.tools.nsc.util.CharArrayReader;
     val next = new TokenData();
     val prev = new TokenData();
 
-    /** the first character position after the previous token
-     */
-    var lastpos = 0;
-
     /** the last error position
      */
     var errpos = -1;
+
+    /** a stack which indicates whether line-ends can be statement separators
+     */
+    var statSepModes: List[boolean] = List();
 
 // Get next token ------------------------------------------------------------
 
@@ -96,11 +100,12 @@ import scala.tools.nsc.util.CharArrayReader;
      */
     def skipToken(): int = {
       val p = pos; nextToken();
-      // XXX: account for off by one error
+      // XXX: account for off by one error //???
       p - 1
     }
 
     def nextToken(): unit = {
+/*
       if (token == RBRACE) {
         val prevpos = pos;
         fetchToken();
@@ -117,6 +122,16 @@ import scala.tools.nsc.util.CharArrayReader;
             }
         }
       } else {
+*/
+        if (token == LPAREN || token == LBRACKET)
+          statSepModes = false :: statSepModes
+        else if (token == LBRACE)
+          statSepModes = true :: statSepModes
+        else if ((token == RPAREN || token == RBRACKET) && !statSepModes.isEmpty && !statSepModes.head)
+          statSepModes = statSepModes.tail
+        else if (token == RBRACE && !statSepModes.isEmpty && statSepModes.head)
+          statSepModes = statSepModes.tail;
+
         if (next.token == EMPTY) {
           fetchToken();
         } else {
@@ -128,8 +143,10 @@ import scala.tools.nsc.util.CharArrayReader;
           fetchToken();
           if (token == CLASS) {
             token = CASECLASS;
+            lastPos = prev.lastPos;
           } else if (token == OBJECT) {
             token = CASEOBJECT;
+            lastPos = prev.lastPos;
           } else {
             next.copyFrom(this);
             this.copyFrom(prev);
@@ -143,14 +160,14 @@ import scala.tools.nsc.util.CharArrayReader;
           }
         }
         // Console.println("<" + this + ">");//DEBUG
-      }
+//      }
     }
 
     /** read next token
      */
     private def fetchToken(): unit = {
       if (token == EOF) return;
-      lastpos = in.cpos; // Position.encode(in.cline, in.ccol);
+      lastPos = in.cpos - 1; // Position.encode(in.cline, in.ccol);
       //var index = bp;
       while (true) {
         in.ch match {
@@ -367,18 +384,41 @@ import scala.tools.nsc.util.CharArrayReader;
         false
       }
 
+    def isStatSep: boolean = (
+      (token == SEMI) ||
+      afterLineEnd && (statSepModes.isEmpty || statSepModes.head) && inFirstStat(token)
+    );
+
+    def afterLineEnd: boolean = (
+      lastPos < in.lineStartPos &&
+      (in.lineStartPos <= pos ||
+       lastPos < in.lastLineStartPos && in.lastLineStartPos <= pos)
+    );
+
+    def inFirstStat(token: int) = token match {
+      case ELSE | EXTENDS | WITH | YIELD | CATCH | FINALLY |
+           COMMA | SEMI | DOT | COLON | EQUALS | ARROW |
+           LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | AT |
+           RPAREN | RBRACKET | RBRACE =>
+        false
+      case _ =>
+        true
+    }
+
 // Identifiers ---------------------------------------------------------------
 
-    def isIdentStart(c: char): boolean =
+    def isIdentStart(c: char): boolean = (
       ('A' <= c && c <= 'Z') ||
       ('a' <= c && c <= 'a') ||
       (c == '_') || (c == '$') ||
-      Character.isUnicodeIdentifierStart(c);
+      Character.isUnicodeIdentifierStart(c)
+    );
 
-    def isIdentPart(c: char) =
+    def isIdentPart(c: char) = (
       isIdentStart(c) ||
       ('0' <= c && c <= '9') ||
-      Character.isUnicodeIdentifierPart(c);
+      Character.isUnicodeIdentifierPart(c)
+    );
 
     def isSpecial(c: char) = {
       val chtp = Character.getType(c);

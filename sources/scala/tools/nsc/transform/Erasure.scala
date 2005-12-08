@@ -136,7 +136,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	within(() => expr);
       } else {
 	val temp = context.owner.newValue(expr.pos, context.unit.fresh.newName())
-	  setFlag SYNTHETIC setInfo expr.tpe;
+	  .setFlag(SYNTHETIC).setInfo(expr.tpe);
 	Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
       }
 
@@ -215,9 +215,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       else gen.cast(tree, pt);
 
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
-    private def isUnboxedArrayMember(sym: Symbol) =
+    private def isUnboxedArrayMember(sym: Symbol) = (
       sym.name == nme.apply || sym.name == nme.length || sym.name == nme.update ||
-      sym.owner == ObjectClass;
+      sym.owner == ObjectClass
+    );
 
     /** Is symbol a member of a boxed value class (which will not be expanded later)? */
     def isBoxedValueMember(sym: Symbol) =
@@ -453,10 +454,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	  }
 	  if (bridgeNeeded) {
             val bridge = other.cloneSymbolImpl(owner)
-              setPos(owner.pos)
-              setFlag (member.flags | BRIDGE)
-              resetFlag (ACCESSOR | DEFERRED | lateDEFERRED)
-              setInfo otpe;
+              .setPos(owner.pos)
+              .setFlag(member.flags | BRIDGE)
+              .resetFlag(ACCESSOR | DEFERRED | lateDEFERRED)
+              .setInfo(otpe);
             bridgeTarget(bridge) = member;
 	    owner.info.decls.enter(bridge);
             bridgesScope enter bridge;
@@ -468,8 +469,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 		      member.tpe match {
 			case MethodType(List(), ConstantType(c)) => Literal(c)
 			case _ =>
-			  ((Select(This(owner), member): Tree) /: vparamss)
-			  ((fun, vparams) => Apply(fun, vparams map Ident))
+			  (((Select(This(owner), member): Tree) /: vparamss)
+			     ((fun, vparams) => Apply(fun, vparams map Ident)))
 		      });
 		  if (settings.debug.value)
 		    log("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);

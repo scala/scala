@@ -173,14 +173,16 @@ package scala.tools.nsc.typechecker;
 	"expression of type " + tree.tpe
       else if (tree.symbol.hasFlag(OVERLOADED))
 	"overloaded method " + tree.symbol + " with alternatives " + tree.tpe
-      else
+      else (
 	tree.symbol.toString() +
-        (if (tree.tpe.paramSectionCount > 0) "" else " of type ") +
-        tree.tpe;
+        (if (tree.tpe.paramSectionCount > 0) ": " else " of type ") +
+        tree.tpe
+      );
 
-    def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) =
+    def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = (
       treeSymTypeMsg(tree) + msg + argtpes.mkString("(", ",", ")") +
-      (if (pt == WildcardType) "" else " with expected result type " + pt);
+       (if (pt == WildcardType) "" else " with expected result type " + pt)
+    );
 
     def foundReqMsg(found: Type, req: Type): String =
       ";\n found   : " + found.toLongString + "\n required: " + req;
@@ -372,9 +374,10 @@ package scala.tools.nsc.typechecker;
 	    try {
 	      val uninstantiated = new ListBuffer[Symbol];
 	      val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated);
-	      val result =
+	      val result = (
 		exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) != null &&
-		isWithinBounds(undetparams, targs);
+		isWithinBounds(undetparams, targs)
+              );
 	      result
 	    } catch {
 	      case ex: NoInstance => false
@@ -541,15 +544,16 @@ package scala.tools.nsc.typechecker;
       case OverloadedType(pre, alts) => tryTwice {
 	var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt));
         if (alts1.isEmpty) alts1 = alts;
-	def improves(sym1: Symbol, sym2: Symbol): boolean =
+	def improves(sym1: Symbol, sym2: Symbol): boolean = (
 	  sym2 == NoSymbol ||
 	  ((sym1.owner isSubClass sym2.owner) &&
 	     {val tp1 = pre.memberType(sym1);
 	      val tp2 = pre.memberType(sym2);
-	      tp2 == ErrorType ||
-	      !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
-	      (tp2.paramSectionCount > 0) && (tp1.paramSectionCount == 0 || specializes(tp1, tp2))
-	     });
+	      (tp2 == ErrorType ||
+	       !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
+	       (tp2.paramSectionCount > 0) && (tp1.paramSectionCount == 0 || specializes(tp1, tp2))
+             )})
+        );
 	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
 	  if (improves(alt, best)) alt else best);
 	val competing = alts1 dropWhile (alt => best == alt || improves(best, alt));

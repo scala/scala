@@ -48,7 +48,7 @@ abstract class Select extends Relation {
   /* def windowClause: Option[_]; */
 
   /** A SQL-99 compliant string representation of the select statement. */
-  def sqlString: String = {
+  def sqlString: String = (
     "SELECT" +
     (setQuantifier match {
       case None => ""
@@ -72,15 +72,16 @@ abstract class Select extends Relation {
       case None => ""
       case Some(gbl) => gbl match {
 	case Nil => error("Empty group by clause is not allowed")
-	case _ => " GROUP BY " + gbl.tail.foldLeft(gbl.head.sqlInnerString)
-	((name:String, gb) => name + ", " + gb.sqlInnerString)
+	case _ => " GROUP BY " +
+          (gbl.tail.foldLeft(gbl.head.sqlInnerString)
+            ((name:String, gb) => name + ", " + gb.sqlInnerString))
       }
     }) +
     (havingClause match {
       case None => ""
       case Some(expr) => " HAVING " + expr.sqlString
     })
-  }
+  );
 
   /** A SQL-99 compliant string representation of the relation sub-
    * statement. This only has a meaning inside a query. */

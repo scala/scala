@@ -41,12 +41,12 @@ import scala.collection.mutable ;
     }
   }
 
-  def nodeEquals(n: Node, pre: String, name: String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]) =
+  def nodeEquals(n: Node, pre: String, name: String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]) = (
     (n.prefix == pre)
     &&(n.label == name)
     &&(n.attributes == attrSeq)
   // scope??
-    &&(eqElements(n.child,children));
+    &&(eqElements(n.child,children)));
 
   def makeNode(pre: String, name: String, attrSeq:MetaData, scpe: NamespaceBinding, children:Seq[Node]): A = {
     //Console.println("NodeFactory::makeNode("+pre+","+name+","+attrSeq+","+scpe+","+children+")");

@@ -53,7 +53,7 @@ trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A,
      *  @return the value associated with the given key.
      */
     def apply(key: A): B = get(key) match {
-        case None => error("key not found")
+        case None => default
         case Some(value) => value
     }
 
@@ -136,7 +136,7 @@ trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A,
      *
      *  @return    true, iff both maps contain exactly the same mappings.
      */
-    override def equals(that: Any): Boolean =
+    override def equals(that: Any): Boolean = (
         that.isInstanceOf[Map[A, B]] &&
         { val other = that.asInstanceOf[Map[A, B]];
           this.size == other.size &&
@@ -145,7 +145,8 @@ trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A,
                   case None => false;
                   case Some(otherval) => value == otherval;
               }
-          }};
+          }}
+    );
 
     /** Returns the mappings of this map as a list.
      *
@@ -170,5 +171,11 @@ trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A,
                 res;
             } + "}";
 
+    /** The default value for the map, returned when a key is not found
+     *  The method implemented here yields an error,
+     *  but it might be overridden in subclasses.
+     */
+    def default: B =
+      error("key not found")
 }
 

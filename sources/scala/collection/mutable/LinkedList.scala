@@ -22,9 +22,10 @@ class LinkedList[A](head: A, tail: LinkedList[A])
   elem = head;
   next = tail;
 
-  override def equals(obj: Any): Boolean =
+  override def equals(obj: Any): Boolean = (
     obj.isInstanceOf[LinkedList[A]]
-      && toList.equals((obj.asInstanceOf[LinkedList[A]]).toList);
+      && toList.equals((obj.asInstanceOf[LinkedList[A]]).toList)
+  );
 
   override protected def stringPrefix: String = "LinkedList";
 }

@@ -50,7 +50,7 @@ abstract class RefChecks extends InfoTransform {
   // var m$: T = null; or, if class member: local var m$: T = _;
   def newModuleVarDef(accessor: Symbol) = {
     val mvar = accessor.owner.newVariable(accessor.pos, nme.moduleVarName(accessor.name))
-      setInfo accessor.tpe.finalResultType;
+      .setInfo(accessor.tpe.finalResultType);
     if (mvar.owner.isClass) {
       mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
       mvar.owner.info.decls.enter(mvar);
@@ -105,14 +105,15 @@ abstract class RefChecks extends InfoTransform {
 
       val self = clazz.thisType;
 
-      def infoString(sym: Symbol) =
+      def infoString(sym: Symbol) = (
 	sym.toString() +
 	(if (sym.owner == clazz) ""
 	 else (sym.locationString +
 	       (if (sym.isAliasType) ", which equals " + self.memberInfo(sym)
 		else if (sym.isAbstractType) " with bounds " +  self.memberInfo(sym)
 		else if (sym.isTerm) " of type " + self.memberInfo(sym)
-		else "")));
+		else "")))
+      );
 
       /* Check that all conditions for overriding `other' by `member' are met. */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol): unit = {
@@ -434,9 +435,9 @@ abstract class RefChecks extends InfoTransform {
       case ModuleDef(mods, name, impl) =>
 	val sym = tree.symbol;
 	val cdef = ClassDef(mods | MODULE, name, List(), EmptyTree, impl)
-	  setPos tree.pos
-          setSymbol sym.moduleClass
-          setType NoType;
+	  .setPos(tree.pos)
+          .setSymbol(sym.moduleClass)
+          .setType(NoType);
 	if (sym.isStatic) List(transform(cdef))
 	else {
           val vdef =
