@@ -1,7 +1,7 @@
 /*    __  ______________                                                      *\
 **   /  |/ / ____/ ____/                                                      **
 **  / | | /___  / /___                                                        **
-** /_/|__/_____/_____/ Copyright 2005 LAMP/EPFL                               **
+** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
 \*                                                                            */
 
 // $Id$
@@ -21,8 +21,8 @@ import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.util.FileUtils;
 import org.apache.tools.ant.util.GlobPatternMapper;
 import org.apache.tools.ant.util.SourceFileScanner;
-import org.apache.tools.ant.types.Reference;
 import org.apache.tools.ant.types.EnumeratedAttribute;
+import org.apache.tools.ant.types.Reference;
 
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter};
 
@@ -83,7 +83,7 @@ package scala.tools.nsc.ant {
 
       abstract class PermissibleValue {
         val values: List[String];
-        def isPermissible (value: String): Boolean =
+        def isPermissible(value: String): Boolean =
           (value == "") ||
           values.exists(v: String => v startsWith value);
       }
@@ -151,7 +151,7 @@ package scala.tools.nsc.ant {
        * Sets the srcdir attribute. Used by Ant.
        * @param input The value of <code>origin</code>.
        */
-      def setSrcdir (input: Path) =
+      def setSrcdir(input: Path) =
         if (origin.isEmpty)
           origin = Some(input);
         else
@@ -161,7 +161,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>origin</code> as a nested src Ant parameter.
        * @return An origin path to be configured.
        */
-      def createSrc (): Path = {
+      def createSrc(): Path = {
         if (origin.isEmpty) {
           origin = Some(new Path(getProject()))
         }
@@ -172,7 +172,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>origin</code> as an external reference Ant parameter.
        * @param input A reference to an origin path.
        */
-      def setSrcref (input: Reference) =
+      def setSrcref(input: Reference) =
         createSrc().setRefid(input);
 
       /**
@@ -189,7 +189,7 @@ package scala.tools.nsc.ant {
        * Sets the destdir attribute. Used by Ant.
        * @param input The value of <code>destination</code>.
        */
-      def setDestdir (input: File) =
+      def setDestdir(input: File) =
         destination = Some(input);
 
       /**
@@ -206,7 +206,7 @@ package scala.tools.nsc.ant {
        * Sets the classpath attribute. Used by Ant.
        * @param input The value of <code>classpath</code>.
        */
-      def setClasspath (input: Path) =
+      def setClasspath(input: Path) =
         if (classpath.isEmpty)
           classpath = Some(input);
         else
@@ -216,7 +216,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>classpath</code> as a nested classpath Ant parameter.
        * @return A class path to be configured.
        */
-      def createClasspath (): Path = {
+      def createClasspath(): Path = {
         if (classpath.isEmpty) {
           classpath = Some(new Path(getProject()))
         }
@@ -227,7 +227,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>classpath</code> as an external reference Ant parameter.
        * @param input A reference to a class path.
        */
-      def setClasspathref (input: Reference) =
+      def setClasspathref(input: Reference) =
         createClasspath().setRefid(input);
 
       /**
@@ -244,7 +244,7 @@ package scala.tools.nsc.ant {
        * Sets the sourcepath attribute. Used by Ant.
        * @param input The value of <code>sourcepath</code>.
        */
-      def setSourcepath (input: Path) =
+      def setSourcepath(input: Path) =
         if (sourcepath.isEmpty)
           sourcepath = Some(input);
         else
@@ -254,7 +254,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>sourcepath</code> as a nested sourcepath Ant parameter.
        * @return A source path to be configured.
        */
-      def createSourcepath (): Path = {
+      def createSourcepath(): Path = {
         if (sourcepath.isEmpty) {
           sourcepath = Some(new Path(getProject()))
         }
@@ -265,7 +265,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>sourcepath</code> as an external reference Ant parameter.
        * @param input A reference to a source path.
        */
-      def setSourcepathref (input: Reference) =
+      def setSourcepathref(input: Reference) =
         createSourcepath().setRefid(input);
 
       /**
@@ -282,7 +282,7 @@ package scala.tools.nsc.ant {
        * Sets the boot classpath attribute. Used by Ant.
        * @param input The value of <code>bootclasspath</code>.
        */
-      def setBootclasspath (input: Path) =
+      def setBootclasspath(input: Path) =
         if (bootclasspath.isEmpty)
           bootclasspath = Some(input);
         else
@@ -292,7 +292,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>bootclasspath</code> as a nested sourcepath Ant parameter.
        * @return A source path to be configured.
        */
-      def createBootclasspath (): Path = {
+      def createBootclasspath(): Path = {
         if (bootclasspath.isEmpty) {
           bootclasspath = Some(new Path(getProject()))
         }
@@ -303,7 +303,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>bootclasspath</code> as an external reference Ant parameter.
        * @param input A reference to a source path.
        */
-      def setBootclasspathref (input: Reference) =
+      def setBootclasspathref(input: Reference) =
         createBootclasspath().setRefid(input);
 
       /**
@@ -320,7 +320,7 @@ package scala.tools.nsc.ant {
        * Sets the external extensions path attribute. Used by Ant.
        * @param input The value of <code>extpath</code>.
        */
-      def setExtdirs (input: Path) =
+      def setExtdirs(input: Path) =
         if (extpath.isEmpty)
           extpath = Some(input);
         else
@@ -330,7 +330,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>extpath</code> as a nested sourcepath Ant parameter.
        * @return An extensions path to be configured.
        */
-      def createExtdirs (): Path = {
+      def createExtdirs(): Path = {
         if (extpath.isEmpty) {
           extpath = Some(new Path(getProject()))
         }
@@ -341,7 +341,7 @@ package scala.tools.nsc.ant {
        * Sets the <code>extpath</code> as an external reference Ant parameter.
        * @param input A reference to an extensions path.
        */
-      def setExtdirsref (input: Reference) =
+      def setExtdirsref(input: Reference) =
         createExtdirs().setRefid(input);
 
       /**
@@ -365,7 +365,7 @@ package scala.tools.nsc.ant {
        * Sets the logging level attribute. Used by Ant.
        * @param input The value for <code>logging</code>.
        */
-      def setLogging (input: String) =
+      def setLogging(input: String) =
         if (LoggingLevel.isPermissible(input))
           logging = Some(input);
         else
@@ -375,28 +375,28 @@ package scala.tools.nsc.ant {
        * Sets the use predefs attribute. Used by Ant.
        * @param input The value for <code>usepredefs</code>.
        */
-      def setUsepredefs (input: Boolean): Unit =
+      def setUsepredefs(input: Boolean): Unit =
         usepredefs = input;
 
       /**
        * Sets the use imports attribute. Used by Ant.
        * @param input The value for <code>useimport</code>.
        */
-      def setUseimports (input: Boolean): Unit =
+      def setUseimports(input: Boolean): Unit =
         useimports = input;
 
       /**
        * Sets the force attribute. Used by Ant.
        * @param input The value for <code>force</code>.
        */
-      def setForce (input: Boolean): Unit =
+      def setForce(input: Boolean): Unit =
         force = input;
 
       /**
        * Sets the force attribute. Used by Ant.
        * @param input The value for <code>force</code>.
        */
-      def setStop (input: String) =
+      def setStop(input: String) =
         if (CompilerPhase.isPermissible(input)) {
           if (input != "")
             stop = Some(input);
@@ -408,7 +408,7 @@ package scala.tools.nsc.ant {
        * Sets the force attribute. Used by Ant.
        * @param input The value for <code>force</code>.
        */
-      def setSkip (input: String) = {
+      def setSkip(input: String) = {
         skip = List.fromArray(input.split(",")).flatMap(s: String => {
           val st = s.trim();
           if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
@@ -420,7 +420,7 @@ package scala.tools.nsc.ant {
        * Sets the log attribute. Used by Ant.
        * @param input The value for <code>logPhase</code>.
        */
-      def setLog (input: String) = {
+      def setLog(input: String) = {
         logPhase = List.fromArray(input.split(",")).flatMap(s: String => {
           val st = s.trim();
           if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
@@ -432,7 +432,7 @@ package scala.tools.nsc.ant {
        * Sets the check attribute. Used by Ant.
        * @param input The value for <code>check</code>.
        */
-      def setCheck (input: String) = {
+      def setCheck(input: String) = {
         check = List.fromArray(input.split(",")).flatMap(s: String => {
           val st = s.trim();
           if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
@@ -444,7 +444,7 @@ package scala.tools.nsc.ant {
        * Sets the print attribute. Used by Ant.
        * @param input The value for <code>print</code>.
        */
-      def setPrint (input: String) = {
+      def setPrint(input: String) = {
         print = List.fromArray(input.split(",")).flatMap(s: String => {
           val st = s.trim();
           if (CompilerPhase.isPermissible(st)) (if (input != "") List(st) else Nil)
@@ -471,7 +471,7 @@ package scala.tools.nsc.ant {
        * @param name The path of the file as a string.
        * @return The file corresponding to the provided name.
        */
-      private def nameToFile(test: File=>File) (name: String): File =
+      private def nameToFile(test: File=>File)(name: String): File =
         test(getProject().resolveFile(name));
 
       /**
@@ -480,7 +480,7 @@ package scala.tools.nsc.ant {
        * @param name The path of the file as a string.
        * @return The file corresponding to the provided name.
        */
-      private def nameToFile (test: File=>File, origin: File) (name: String): File =
+      private def nameToFile(test: File=>File, origin: File)(name: String): File =
         test(fileUtils.resolveFile(origin, name));
 
         /**
@@ -489,7 +489,7 @@ package scala.tools.nsc.ant {
          * @param name The path of the file as a string.
          * @return The file corresponding to the provided name.
          */
-        private def nameToFile (pathName: String, origin: File) (name: String): File = {
+        private def nameToFile(pathName: String, origin: File)(name: String): File = {
             nameToFile(testReadableFile(pathName), origin)(name);
         }
 
@@ -499,7 +499,7 @@ package scala.tools.nsc.ant {
          * @param name The path of the file as a string.
          * @return The file corresponding to the provided name.
          */
-        private def nameToFile (pathName: String) (name: String): File = {
+        private def nameToFile(pathName: String)(name: String): File = {
             nameToFile(testReadableFile(pathName))(name);
         }
 
@@ -510,30 +510,29 @@ package scala.tools.nsc.ant {
          * @param file The file to test.
          * @return The same file as provided.
          */
-        private def testReadableFile (pathName: String)(file: File): File = {
+        private def testReadableFile(pathName: String)(file: File): File = {
             if (!file.exists())
                 log("Element '" + file.toString() + "' in " + pathName + " does not exist.", Project.MSG_WARN);
             file
         }
 
-        private def asString (path: List[File]): String = {
-            path.map(file:File=>asString(file)).mkString("", ":", "")
+        private def asString(path: List[File]): String = {
+            path.map(file: File => asString(file)).mkString("", File.pathSeparator, "")
         }
 
-        private def asString (file: File): String = {
-            file.getAbsolutePath()
-        }
+        private def asString(file: File): String =
+            file.getAbsolutePath();
 
         /**
          * Generates a build error. Error location will be the current task in the ant file.
          * @param message The message of the error. This message should be end-user readable.
          * @throws org.apache.tools.ant.BuildException The build error exception. Will be thrown in all conditions.
          */
-        private def error (message: String) = {
+        private def error(message: String) = {
             throw new BuildException(message, getLocation());
         }
 
-        private def getClassLoaderClasspath (classLoader: ClassLoader): List[File] = {
+        private def getClassLoaderClasspath(classLoader: ClassLoader): List[File] = {
             val parentClassLoader = classLoader.getParent();
             val classloaderName = classLoader.getClass().getName();
             (if (parentClassLoader != null && parentClassLoader != classLoader)
@@ -549,7 +548,7 @@ package scala.tools.nsc.ant {
         /**
          * Performs the compilation.
          */
-        override def execute () = {
+        override def execute() = {
 
             // Tests if all mandatory attributes are set and valid.
             if (origin.isEmpty) error("Attribute 'srcdir' is not set.");
