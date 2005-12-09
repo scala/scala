@@ -51,6 +51,18 @@ class Position( val source : SourceFile, val offset: Int) {
   } else 0;
 
 
+  def dbgString =
+    if (!hasOffset) "NOP"
+    else if (offset >= source.content.length) "OB-" + offset else {
+      val ret = "offset=" + offset + " line=" + line;
+      var add = "";
+      while (offset + add.length() < source.content.length &&
+	     add.length() < 10) add = add + source.content(offset + add.length());
+      ret + " c[0..9]=\"" + add + "\"";
+    }
+
+
+
   def lineContent: String = if (hasOffset) source.lineToString(line - FIRSTLINE) else "NO_LINE";
 
   /** Returns a string representation of the encoded position. */

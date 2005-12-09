@@ -453,10 +453,8 @@ import symtab.Flags._;
 
     override def setPos(pos : Int) : this.type = {
       val ret = super.setPos(pos);
-      if (pos == 23) {
-	//System.err.println("SELECT: " + this);
-	//Thread.dumpStack();
-      }
+      // System.err.println("SELECT_POS: " + pos + " " + this);
+      // if (pos == 74) Thread.dumpStack();
       ret;
     }
 
@@ -496,6 +494,13 @@ import symtab.Flags._;
     var original : Tree = _;
 
     def setOriginal(tree : Tree) : this.type = {
+      tree match {
+	case tt : TypeTree =>
+	  System.err.println("Illegal: " + this + " to " + tree);
+	  Thread.dumpStack();
+	case _ =>
+      }
+
       original = tree;
       setPos(tree.pos);
     }

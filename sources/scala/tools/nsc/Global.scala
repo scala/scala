@@ -171,6 +171,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       val unit0 = currentRun.currentUnit;
       currentRun.currentUnit = unit;
       apply(unit);
+      currentRun.advanceUnit;
       assert(currentRun.currentUnit == unit);
       currentRun.currentUnit = unit0;
     }
@@ -280,8 +281,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   override def currentRun: Run = curRun;
 
   class TyperRun extends Run {
-    override val terminalPhase : Phase = typerPhase.next;
+    override val terminalPhase : Phase = typerPhase.next.next;
+    //override val terminalPhase : Phase = superAccessors.next;
   }
+
+
+
   class Run extends CompilerRun {
     var currentUnit : CompilationUnit = _;
     curRun = this;
@@ -299,11 +304,29 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       }
     }
 
+    // progress tracking
+    def progress(current : Int, total : Int) : Unit = {}
+    private var phasec : Int = 0;
+    private var unitc  : Int = 0;
+    def advancePhase : Unit = {
+      unitc = 0;
+      phasec = phasec + 1;
+      refreshProgress;
+    }
+    def advanceUnit : Unit = {
+      unitc = unitc + 1;
+      refreshProgress;
+    }
+    private def refreshProgress = if (fileset.size > 0)
+      progress((phasec * fileset.size) + unitc,
+	       (phaseDescriptors.length+1) * fileset.size);
+
+
+
     override val terminalPhase : Phase = new GlobalPhase(p) {
       def name = "terminal";
       def apply(unit: CompilationUnit): unit = {}
     }
-
     override def phaseNamed(name: String): Phase = {
       var p: Phase = firstPhase;
       while (p.next != p && p.name != name) p = p.next;
@@ -357,6 +380,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
           else checker.checkTrees;
 	}
 	if (settings.statistics.value) statistics.print(phase);
+	advancePhase;
       }
 
       if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
@@ -399,6 +423,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	  atPhase(localPhase)(localPhase.applyPhase(unit));
 	  localPhase = localPhase.next.asInstanceOf[GlobalPhase];
 	}
+	refreshProgress;
       }
 
     def compileFiles(files: List[AbstractFile]): unit =

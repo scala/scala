@@ -21,7 +21,9 @@ import java.io.PrintWriter;
  */
 class StoreReporter extends Reporter {
 
-  class Info(val pos: Position, val msg: String, val severity: Severity);
+  class Info(val pos: Position, val msg: String, val severity: Severity) {
+    override def toString() = "pos: " + pos + " " + msg + " " + severity;
+  }
 
   val infos = new HashSet[Info];
 

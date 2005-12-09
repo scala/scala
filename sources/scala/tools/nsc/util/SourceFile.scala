@@ -52,6 +52,9 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   override def toString(): String = file.getName() /* + ":" + content.length */ ;
 
 
+  def dbg(offset : Int) = (new Position(this, offset)).dbgString;
+
+
   object line {
     var index  = 0;
     var offset = 0;

@@ -2026,6 +2026,8 @@ import Flags._;
   /** An exception signalling a malformed type */
   class MalformedType(msg: String) extends TypeError(msg) {
     def this(pre: Type, tp: String) = this("malformed type: " + pre + "#" + tp);
+    // System.err.println("MALFORMED_TYPE: " + msg);
+    // Thread.dumpStack();
   }
 
   /** An exception signalling a malformed closure */

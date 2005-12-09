@@ -191,8 +191,12 @@ import Flags._;
       val result =
         if (module) sym.info.nonPrivateMember(fullname.subName(i, j)).suchThat(.hasFlag(MODULE));
         else sym.info.nonPrivateMember(fullname.subName(i, j).toTypeName);
-      if (result == NoSymbol)
-	throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
+      if (result == NoSymbol) {
+	val msg = (if (module) "object " else "class ") + fullname + " not found.";
+	System.err.println("MSG: " + msg);
+	Thread.dumpStack();
+	throw new FatalError(msg);
+      }
       result
     }
 
