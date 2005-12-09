@@ -453,10 +453,15 @@ FILES_POS="";
 FILES_NEG="";
 FILES_MSIL="";
 
-SCALA="$PREFIX/distribs/unix/latest/bin/ns";
-# SOCOS="$PREFIX/distribs/unix/latest/bin/nsc -verbose";
-SOCOS="$PREFIX/distribs/unix/latest/bin/nsc -classpath /tmp/newclasses:$HOME/scala/build/nslib.jar:$HOME/scala/sources:$HOME/scala/newsources:/home/linuxsoft/apps/fjbg/jars/fjbg.jar:/home/linuxsoft/apps/msil/msil.jar"
-SCALAP="$PREFIX/distribs/unix/latest/bin/nsp";
+case `uname` in
+    CYGWIN* ) LATEST="$PREFIX/distribs/windows/latest";;
+    *       ) LATEST="$PREFIX/distribs/unix/latest";;
+esac;
+
+SCALA="$LATEST/bin/ns";
+SOCOS="$LATEST/bin/nsc";
+#SOCOS="$LATEST/bin/nsc -classpath /tmp/newclasses:$HOME/scala/build/nslib.jar:$HOME/scala/sources:$HOME/scala/newsources:/home/linuxsoft/apps/fjbg/jars/fjbg.jar:/home/linuxsoft/apps/msil/msil.jar"
+SCALAP="$LATEST/bin/nsp";
 DIFF="diff";
 
 case `uname` in
