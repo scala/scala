@@ -92,7 +92,7 @@ import scala.tools.nsc.util.CharArrayReader;
 
     /** a stack which indicates whether line-ends can be statement separators
      */
-    var statSepModes: List[boolean] = List();
+    var sepRegions: List[int] = List();
 
 // Get next token ------------------------------------------------------------
 
@@ -105,63 +105,73 @@ import scala.tools.nsc.util.CharArrayReader;
     }
 
     def nextToken(): unit = {
-/*
-      if (token == RBRACE) {
-        val prevpos = pos;
-        fetchToken();
-        token match {
-          case ELSE | EXTENDS | WITH | YIELD | CATCH | FINALLY |
-               COMMA | SEMI | DOT | COLON | EQUALS | ARROW |
-               LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | AT |
-               RPAREN | RBRACKET | RBRACE =>
-          case _ =>
-            if (token == EOF || ((new Position(unit.source, prevpos)).line < (new Position(unit.source, pos)).line)) {
-              next.copyFrom(this);
-              this.token = SEMI;
-              this.pos = prevpos;
-            }
-        }
-      } else {
-*/
-        if (token == LPAREN || token == LBRACKET)
-          statSepModes = false :: statSepModes
-        else if (token == LBRACE)
-          statSepModes = true :: statSepModes
-        else if ((token == RPAREN || token == RBRACKET) && !statSepModes.isEmpty && !statSepModes.head)
-          statSepModes = statSepModes.tail
-        else if (token == RBRACE && !statSepModes.isEmpty && statSepModes.head)
-          statSepModes = statSepModes.tail;
+      if (token == LPAREN) {
+        sepRegions = RPAREN :: sepRegions
+      } else if (token == LBRACKET) {
+        sepRegions = RBRACKET :: sepRegions
+      } else if  (token == LBRACE) {
+        sepRegions = RBRACE :: sepRegions
+      } else if (token == CASE) {
+        sepRegions = ARROW :: sepRegions
+      } else if (token == RBRACE) {
+        while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
+          sepRegions = sepRegions.tail;
+        if (!sepRegions.isEmpty)
+          sepRegions = sepRegions.tail
+      } else if (token == RBRACKET || token == RPAREN || token == ARROW) {
+        if (!sepRegions.isEmpty && sepRegions.head == token)
+          sepRegions = sepRegions.tail
+      }
 
-        if (next.token == EMPTY) {
-          fetchToken();
+      val lastToken = token;
+      if (next.token == EMPTY) {
+        fetchToken();
+      } else {
+        this.copyFrom(next);
+        next.token = EMPTY
+      }
+
+      if (token == CASE) {
+        prev.copyFrom(this);
+        fetchToken();
+        if (token == CLASS) {
+          token = CASECLASS;
+          lastPos = prev.lastPos;
+        } else if (token == OBJECT) {
+          token = CASEOBJECT;
+          lastPos = prev.lastPos;
         } else {
-          copyFrom(next);
-          next.token = EMPTY
+          next.copyFrom(this);
+          this.copyFrom(prev);
         }
-        if (token == CASE) {
-          prev.copyFrom(this);
-          fetchToken();
-          if (token == CLASS) {
-            token = CASECLASS;
-            lastPos = prev.lastPos;
-          } else if (token == OBJECT) {
-            token = CASEOBJECT;
-            lastPos = prev.lastPos;
-          } else {
-            next.copyFrom(this);
-            this.copyFrom(prev);
-          }
-        } else if (token == SEMI) {
-          prev.copyFrom(this);
-          fetchToken();
-          if (token != ELSE) {
-            next.copyFrom(this);
-            this.copyFrom(prev);
-          }
+      } else if (token == SEMI) {
+        prev.copyFrom(this);
+        fetchToken();
+        if (token != ELSE) {
+          next.copyFrom(this);
+          this.copyFrom(prev);
         }
-        // Console.println("<" + this + ">");//DEBUG
-//      }
+      }
+
+      if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
+          (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
+        next.copyFrom(this);
+        pos = in.lineStartPos;
+        token = NEWLINE
+/*
+      } else if (lastToken == RBRACE) {
+        System.out.println("failing to insert NL after RBRACE: " + sepRegions + " " +
+                           lastPos + " " + in.lineStartPos + " " + pos);
+*/
+      }
+//    System.out.println("token: " + toString());//DEBUG
     }
+
+    private def afterLineEnd() = (
+      lastPos < in.lineStartPos &&
+      (in.lineStartPos <= pos ||
+       lastPos < in.lastLineStartPos && in.lastLineStartPos <= pos)
+    );
 
     /** read next token
      */
@@ -384,25 +394,23 @@ import scala.tools.nsc.util.CharArrayReader;
         false
       }
 
-    def isStatSep: boolean = (
-      (token == SEMI) ||
-      afterLineEnd && (statSepModes.isEmpty || statSepModes.head) && inFirstStat(token)
-    );
-
-    def afterLineEnd: boolean = (
-      lastPos < in.lineStartPos &&
-      (in.lineStartPos <= pos ||
-       lastPos < in.lastLineStartPos && in.lastLineStartPos <= pos)
-    );
-
-    def inFirstStat(token: int) = token match {
-      case ELSE | EXTENDS | WITH | YIELD | CATCH | FINALLY |
-           COMMA | SEMI | DOT | COLON | EQUALS | ARROW |
+    def inFirstOfStat(token: int) = token match {
+      case EOF | ELSE | CASE | EXTENDS | WITH | YIELD | CATCH | FINALLY | MATCH |
+           REQUIRES | COMMA | SEMI | NEWLINE | DOT | USCORE | COLON | EQUALS | ARROW |
            LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | AT |
            RPAREN | RBRACKET | RBRACE =>
         false
       case _ =>
         true
+    }
+
+    def inLastOfStat(token: int) = token match {
+      case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
+           IDENTIFIER | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
+           RPAREN | RBRACKET | RBRACE =>
+        true
+      case _ =>
+        false
     }
 
 // Identifiers ---------------------------------------------------------------
@@ -702,7 +710,7 @@ import scala.tools.nsc.util.CharArrayReader;
 
 // XML lexing----------------------------------------------------------------
     def xSync = {
-      token = SEMI; // avoid getting SEMI from nextToken if last was RBRACE
+      token = NEWLINE; // avoid getting NEWLINE from nextToken if last was RBRACE
       //in.next;
       nextToken();
     }
@@ -846,6 +854,8 @@ import scala.tools.nsc.util.CharArrayReader;
 	"something"
       case SEMI =>
 	"';'"
+      case NEWLINE =>
+	"';'"
       case COMMA =>
 	"','"
       case CASECLASS =>
@@ -881,6 +891,8 @@ import scala.tools.nsc.util.CharArrayReader;
       case STRINGLIT =>
 	"string(" + name + ")"
       case SEMI =>
+	";"
+      case NEWLINE =>
 	";"
       case COMMA =>
 	","

@@ -390,7 +390,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     def compileLate(file: AbstractFile): unit =
       if (fileset == null)
-	throw new FatalError("No symbol file for " + file + " was found\n(This file cannot be loaded as a source file)");
+	throw new FatalError("No class file for " + file + " was found\n(This file cannot be loaded as a source file)");
       else if (!(fileset contains file)) {
 	val unit = new CompilationUnit(getSourceFile(file));
 	addUnit(unit);

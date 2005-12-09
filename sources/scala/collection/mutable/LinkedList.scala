@@ -29,3 +29,6 @@ class LinkedList[A](head: A, tail: LinkedList[A])
 
   override protected def stringPrefix: String = "LinkedList";
 }
+
+
+

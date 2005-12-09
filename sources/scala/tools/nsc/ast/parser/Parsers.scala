@@ -79,6 +79,10 @@ import Tokens._;
 	in.token match {
           case EOF =>
             return;
+          case SEMI =>
+            if (nparens == 0 && nbraces == 0) return;
+          case NEWLINE =>
+            if (nparens == 0 && nbraces == 0) return;
           case RPAREN =>
             nparens = nparens - 1;
           case RBRACE =>
@@ -89,7 +93,6 @@ import Tokens._;
           case LBRACE =>
             nbraces = nbraces + 1;
           case _ =>
-            if (in.isStatSep && nparens <= 0 && nbraces == 0) return;
 	}
 	in.nextToken();
       }
@@ -110,16 +113,18 @@ import Tokens._;
       val pos = in.currentPos;
       if (in.token != token)
 	syntaxError(
-	  if (in.afterLineEnd) in.lastPos else in.currentPos,
+	  if (Position.line(unit.source, in.currentPos) > Position.line(unit.source, in.lastPos)) in.lastPos
+          else in.currentPos,
 	  in.token2string(token) + " expected but " +
             in.token2string(in.token) + " found.", true);
       if (in.token == token) in.nextToken();
       pos;
     }
 
-    def acceptStatSep(): Unit =
-      if (in.token == SEMI) in.nextToken()
-      else if (!in.isStatSep) accept(SEMI);
+    /** SEP = NL | `;'
+     *  NL  = `\n' // where allowed
+     */
+    def acceptStatSep(): unit = if (in.token == NEWLINE) in.nextToken() else accept(SEMI);
 
     def errorTypeTree = TypeTree().setType(ErrorType).setPos(in.currentPos);
     def errorTermTree = Literal(Constant(null)).setPos(in.currentPos);
@@ -434,6 +439,8 @@ import Tokens._;
       }
     }
 
+    def newLineOpt(): unit = if (in.token == NEWLINE) in.nextToken();
+
 //////// TYPES ///////////////////////////////////////////////////////////////
 
     /** TypedOpt ::= [`:' Type]
@@ -498,7 +505,7 @@ import Tokens._;
 	in.nextToken(); ts += simpleType()
       }
       atPos(pos) {
-        if (in.token == LBRACE && !in.isStatSep) CompoundTypeTree(Template(ts.toList, refinement()))
+        if (in.token == LBRACE) CompoundTypeTree(Template(ts.toList, refinement()))
         else makeIntersectionTypeTree(ts.toList)
       }
     }
@@ -571,11 +578,11 @@ import Tokens._;
      *               | Expr1
      *  ResultExpr ::= Bindings `=>' Block
      *               | Expr1
-     *  Expr1      ::= (' Expr `)' Expr [[`;'] else Expr]
+     *  Expr1      ::= if (' Expr `)' [NL] Expr [[`;'] else Expr]
      *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
-     *               | while `(' Expr `)' Expr
-     *               | do Expr [`;'] while `(' Expr `)'
-     *               | for (`(' Enumerators `)' | '{' Enumerators '}') (do | yield) Expr
+     *               | while `(' Expr `)' [NL] Expr
+     *               | do Expr [SEP] while `(' Expr `)'
+     *               | for (`(' Enumerators `)' | '{' Enumerators '}') [NL] (yield) Expr
      *               | throw Expr
      *               | return [Expr]
      *               | [SimpleExpr `.'] Id `=' Expr
@@ -596,6 +603,7 @@ import Tokens._;
         accept(LPAREN);
         val cond = expr();
         accept(RPAREN);
+        newLineOpt();
         val thenp = expr();
         val elsep =
           if (in.token == ELSE) { in.nextToken(); expr() }
@@ -625,13 +633,14 @@ import Tokens._;
         accept(LPAREN);
         val cond = expr();
         accept(RPAREN);
+        newLineOpt();
         val body = expr();
         atPos(pos) { makeWhile(lname, cond, body) }
       case DO =>
         val lname: Name = unit.fresh.newName("label$");
         val pos = in.skipToken();
         val body = expr();
-        if (in.token == SEMI) in.nextToken();
+        if (in.token == SEMI || in.token == NEWLINE) in.nextToken();
         accept(WHILE);
         accept(LPAREN);
         val cond = expr();
@@ -643,6 +652,7 @@ import Tokens._;
           accept(if (startToken == LBRACE) LBRACE else LPAREN);
           val enums = enumerators();
           accept(if (startToken == LBRACE) RBRACE else RPAREN);
+          newLineOpt();
           if (in.token == YIELD) {
             in.nextToken(); makeForYield(enums, expr())
           } else makeFor(enums, expr())
@@ -706,13 +716,12 @@ import Tokens._;
     def postfixExpr(): Tree = {
       val base = opstack;
       var top = prefixExpr();
-      while (in.token == IDENTIFIER && !in.isStatSep) {
-        //System.out.println("operator: " + in.name + " " + in.afterLineEnd + " " + in.lastPos + " " + in.in.lineStartPos + " " + in.currentPos);//DEBUG
+      while (in.token == IDENTIFIER) {
 	top = reduceStack(
 	  true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
 	opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
 	ident();
-	if (isExprIntro && !in.isStatSep) {
+	if (isExprIntro) {
 	  top = prefixExpr();
 	} else {
 	  val topinfo = opstack.head;
@@ -793,14 +802,14 @@ import Tokens._;
 	  t = atPos(in.skipToken()) {
             val parents = new ListBuffer[Tree] + simpleType();
             val argss = new ListBuffer[List[Tree]];
-            if (in.token == LPAREN && !in.isStatSep)
-	      do { argss += argumentExprs() } while (in.token == LPAREN && !in.isStatSep)
+            if (in.token == LPAREN)
+	      do { argss += argumentExprs() } while (in.token == LPAREN)
 	    else argss += List();
             while (in.token == WITH) {
 	      in.nextToken();
 	      parents += simpleType()
             }
-            val stats = if (in.token == LBRACE && !in.isStatSep) templateBody() else List();
+            val stats = if (in.token == LBRACE) templateBody() else List();
             makeNew(parents.toList, stats, argss.toList)
           }
 	  isNew = true
@@ -812,14 +821,14 @@ import Tokens._;
 	in.token match {
 	  case DOT =>
 	    t = atPos(in.skipToken()) { Select(t, ident()) }
-	  case LBRACKET if (!in.isStatSep) =>
+	  case LBRACKET =>
 	    t match {
 	      case Ident(_) | Select(_, _) =>
 		t = atPos(in.currentPos) { TypeApply(t, typeArgs()) }
 	      case _ =>
 		return t;
 	    }
-	  case LPAREN | LBRACE if (!isNew && !in.isStatSep) =>
+	  case LPAREN | LBRACE if (!isNew) =>
 	    t = atPos(in.currentPos) { Apply(t, argumentExprs()) }
 	  case _ =>
 	    return t
@@ -878,14 +887,14 @@ import Tokens._;
 	makeCaseDef(pat, guard, atPos(accept(ARROW))(block()))
       }
 
-    /** Enumerators ::= Generator {`;' Enumerator}
+    /** Enumerators ::= Generator {SEP Enumerator}
      *  Enumerator  ::= Generator
      *                | Expr
      */
     def enumerators(): List[Tree] = {
       val enums = new ListBuffer[Tree] + generator();
-      while (in.isStatSep) {
-	if (in.token == SEMI) in.nextToken();
+      while (in.token == SEMI || in.token == NEWLINE) {
+	in.nextToken();
 	enums += (if (in.token == VAL) generator() else expr())
       }
       enums.toList
@@ -1156,7 +1165,7 @@ import Tokens._;
       }
       val vds = new ListBuffer[List[ValDef]];
       val pos = in.currentPos;
-      while (implicitmod == 0 && in.token == LPAREN && !in.isStatSep) {
+      while (implicitmod == 0 && in.token == LPAREN) {
 	in.nextToken();
 	vds += paramClause();
 	accept(RPAREN);
@@ -1281,7 +1290,7 @@ import Tokens._;
           if (in.token == USCORE) {
             in.nextToken();
             Import(t, List(Pair(nme.WILDCARD, null)))
-          } else if (in.token == LBRACE && !in.isStatSep) {
+          } else if (in.token == LBRACE) {
             Import(t, importSelectors())
           } else {
             val name = ident();
@@ -1447,7 +1456,7 @@ import Tokens._;
       }
 
     /** ConstrExpr      ::=  SelfInvocation
-     *                    |  `{' SelfInvocation {`;' BlockStat} `}'
+     *                    |  `{' SelfInvocation {SEP BlockStat} `}'
      *  SelfInvocation  ::= this ArgumentExpr
      */
     def constrExpr(): Tree =
@@ -1456,7 +1465,7 @@ import Tokens._;
           val statlist = new ListBuffer[Tree];
 	  statlist += selfInvocation();
           val stats =
-            if (in.isStatSep) { in.nextToken(); blockStatSeq(statlist) }
+            if (in.token == SEMI || in.token == NEWLINE) { in.nextToken(); blockStatSeq(statlist) }
             else statlist.toList;
           accept(RBRACE);
           makeBlock(stats)
@@ -1474,18 +1483,19 @@ import Tokens._;
     def typeDefOrDcl(mods: int): Tree =
       atPos(in.currentPos) {
         val name = ident().toTypeName;
-        if (in.token == LBRACKET) {
-          val tparams = typeParamClauseOpt(name, null);
-          accept(EQUALS);
-          AliasTypeDef(mods, name, tparams, typ())
-        } else if (in.token == EQUALS) {
-          in.nextToken();
-          AliasTypeDef(mods, name, List(), typ())
-        } else if (in.token == SUPERTYPE || in.token == SUBTYPE || in.token == COMMA || in.token == RBRACE || in.isStatSep) {
-          typeBounds(mods | Flags.DEFERRED, name)
-        } else {
-          syntaxError("`=', `>:', or `<:' expected", true);
-          EmptyTree
+        in.token match {
+          case LBRACKET =>
+            val tparams = typeParamClauseOpt(name, null);
+            accept(EQUALS);
+            AliasTypeDef(mods, name, tparams, typ())
+          case EQUALS =>
+            in.nextToken();
+            AliasTypeDef(mods, name, List(), typ())
+          case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | COMMA | RBRACE =>
+            typeBounds(mods | Flags.DEFERRED, name)
+          case _ =>
+            syntaxError("`=', `>:', or `<:' expected", true);
+            EmptyTree
         }
       }
 
@@ -1532,7 +1542,7 @@ import Tokens._;
 	ModuleDef(mods, name, template)
       }
 
-    /** ClassTemplate ::= [`extends' TemplateParents] [TemplateBody]
+    /** ClassTemplate ::= [`extends' TemplateParents] [[NL] TemplateBody]
      *  TemplateParents ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
      */
     def classTemplate(mods: int, name: Name, vparamss: List[List[ValDef]]): Template = {
@@ -1544,7 +1554,7 @@ import Tokens._;
 	  val parent = simpleType();
 	  // System.err.println("classTempl: " + parent);
           parents += parent;
-          if (in.token == LPAREN && !in.isStatSep)
+          if (in.token == LPAREN)
 	    do { argss += argumentExprs() } while (in.token == LPAREN)
 	  else argss += List();
           while (in.token == WITH) {
@@ -1556,11 +1566,12 @@ import Tokens._;
           parents += scalaScalaObjectConstr;
 	if (/*name.isTypeName && */(mods & Flags.CASE) != 0) parents += caseClassConstr;
         val ps = parents.toList;
+        if (in.token == NEWLINE && in.next.token == LBRACE) in.nextToken();
 	var body =
 	  if (in.token == LBRACE) {
 	    templateBody()
 	  } else {
-	    if (!(in.token == COMMA || in.token == RBRACE | in.isStatSep))
+	    if (!(in.token == SEMI || in.token == NEWLINE || in.token == COMMA || in.token == RBRACE))
               syntaxError("`extends' or `{' expected", true);
             List()
 	  }
@@ -1572,7 +1583,7 @@ import Tokens._;
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 
-    /** TemplateBody ::= `{' [TemplateStat {`;' TemplateStat}] `}'
+    /** TemplateBody ::= `{' [TemplateStat {SEP TemplateStat}] `}'
      */
     def templateBody(): List[Tree] = {
       accept(LBRACE);
@@ -1582,7 +1593,7 @@ import Tokens._;
       body
     }
 
-    /** Refinement ::= `{' [RefineStat {`;' RefineStat}] `}'
+    /** Refinement ::= `{' [RefineStat {SEP RefineStat}] `}'
      */
     def refinement(): List[Tree] = {
       accept(LBRACE);
@@ -1605,7 +1616,7 @@ import Tokens._;
       }
     }
 
-    /** TopStatSeq ::= [TopStat {`;' TopStat}]
+    /** TopStatSeq ::= [TopStat {SEP TopStat}]
      *  TopStat ::= AttributeClauses Modifiers ClsDef
      *            | Packaging
      *            | Import
@@ -1628,7 +1639,7 @@ import Tokens._;
           val attrs = attributeClauses();
           stats ++
             joinAttributes(attrs, joinComment(List(tmplDef(modifiers() | traitAttribute(attrs)))))
-        } else if (in.token != SEMI) {
+        } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of class or object definition", true);
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep();
@@ -1636,7 +1647,7 @@ import Tokens._;
       stats.toList
     }
 
-    /** TemplateStatSeq  ::= TemplateStat {`;' TemplateStat}
+    /** TemplateStatSeq  ::= TemplateStat {SEP TemplateStat}
      *  TemplateStat     ::= Import
      *                     | AttributeClauses Modifiers Def
      *                     | AttributeClauses Modifiers Dcl
@@ -1654,7 +1665,7 @@ import Tokens._;
           val attrs = attributeClauses();
           stats ++
             joinAttributes(attrs, joinComment(defOrDcl(modifiers() | traitAttribute(attrs))))
-        } else if (in.token != SEMI) {
+        } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of definition", true);
         }
         if (in.token != RBRACE) acceptStatSep();
@@ -1663,7 +1674,7 @@ import Tokens._;
     }
 
     /** AttributeClauses   ::= {AttributeClause}
-     *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]'
+     *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]' [NL]
      */
     def attributeClauses(): List[Tree] = {
       var attrs = new ListBuffer[Tree];
@@ -1675,6 +1686,7 @@ import Tokens._;
           attrs += attribute()
         }
         accept(RBRACKET);
+        newLineOpt();
       }
       attrs.toList
     }
@@ -1704,7 +1716,7 @@ import Tokens._;
       defs map (defn =>
         (attrs :\ defn) ((attr, tree) => Attributed(attr, tree) setPos attr.pos));
 
-    /** RefineStatSeq    ::= RefineStat {`;' RefineStat}
+    /** RefineStatSeq    ::= RefineStat {SEP RefineStat}
      *  RefineStat       ::= Dcl
      *                     | type TypeDef
      *                     |
@@ -1714,7 +1726,7 @@ import Tokens._;
       while (in.token != RBRACE && in.token != EOF) {
         if (isDclIntro) {
           stats ++= joinComment(defOrDcl(0))
-        } else if (in.token != SEMI) {
+        } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of declaration", true);
         }
         if (in.token != RBRACE) acceptStatSep();
@@ -1722,7 +1734,7 @@ import Tokens._;
       stats.toList
     }
 
-    /** BlockStatSeq ::= { BlockStat `;' } [Expr]
+    /** BlockStatSeq ::= { BlockStat SEP } [Expr]
      *  BlockStat    ::= Import
      *                 | Def
      *                 | LocalModifiers TmplDef
@@ -1749,7 +1761,7 @@ import Tokens._;
           if (in.token == RBRACE || in.token == CASE) {
             stats += Literal(()).setPos(in.currentPos)
           }
-        } else if (in.token == SEMI) {
+        } else if (in.token == SEMI || in.token == NEWLINE) {
           in.nextToken();
         } else {
           syntaxError("illegal start of statement", true);
@@ -1758,7 +1770,7 @@ import Tokens._;
       stats.toList
     }
 
-    /** CompilationUnit ::= package QualId `;' TopStatSeq
+    /** CompilationUnit ::= package QualId SEP TopStatSeq
      *                    | package QualId `{' TopStatSeq `}'
      *                    | TopStatSeq
      */
@@ -1767,14 +1779,14 @@ import Tokens._;
         if (in.token == PACKAGE) {
           in.nextToken();
           val pkg = qualId();
-          if (in.isStatSep) {
-	    if (in.token == SEMI) in.nextToken();
+          if (in.token == SEMI || in.token == NEWLINE) {
+            in.nextToken();
             makePackaging(pkg, topStatSeq())
           } else {
             accept(LBRACE);
             val t =  makePackaging(pkg, topStatSeq());
             accept(RBRACE);
-	    if (in.token == SEMI) in.nextToken();
+	    if (in.token == SEMI || in.token == NEWLINE) in.nextToken();
 	    t
           }
         } else {

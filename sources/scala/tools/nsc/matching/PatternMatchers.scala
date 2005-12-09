@@ -944,7 +944,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
                             toTree(node.and)),
                       toTree(node.or, selector.duplicate));
           case SequencePat(casted, len) =>
-            return
+            return (
           Or(
             And(
               And(gen.mkIsInstanceOf(selector.duplicate, node.getTpe()),
@@ -966,7 +966,7 @@ trait PatternMatchers: (TransMatcher with PatternNodes) extends AnyRef with Patt
                   ValDef(casted,
                          gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true))),
                   toTree(node.and))),
-            toTree(node.or, selector.duplicate));
+            toTree(node.or, selector.duplicate)));
           case ConstantPat(value) =>
             //Console.println("selector = "+selector);
             //Console.println("selector.tpe = "+selector.tpe);

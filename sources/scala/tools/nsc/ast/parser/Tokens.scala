@@ -77,6 +77,7 @@ object Tokens {
   final val EQUALS = 66;
   final val LARROW = 67;
   final val ARROW = 68;
+  final val NEWLINE = 69;
   final val SUBTYPE = 70;
   final val SUPERTYPE = 71;
   final val HASH = 72;

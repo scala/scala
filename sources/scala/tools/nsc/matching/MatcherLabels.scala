@@ -43,8 +43,8 @@ package scala.tools.nsc.matching ;
            case SimpleLabel( lit ) =>
            oL match {
              case SimpleLabel( lit2 ) =>
-             return /*(lit.kind == lit2.kind)
-	     && */lit.value.equals( lit2.value );
+             return (/*(lit.kind == lit2.kind)
+	     && */lit.value.equals( lit2.value ));
              case _ => false;
            }
 
@@ -55,8 +55,7 @@ package scala.tools.nsc.matching ;
 		 case Apply( _, _ ) =>
 		   pat2 match {
 		     case Apply( _, _ ) =>
-		       return
-                         (treeInfo.methPart/*methSymbol?*/( pat )
+		       return (treeInfo.methPart/*methSymbol?*/( pat )
                           == treeInfo.methPart/*methSymbol*/( pat2 ));
 		   }
                  case _ => false;
