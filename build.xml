@@ -474,11 +474,11 @@
         <symlink resource=".scala_wrapper"
                  link="${distrib.win.current.dir}/bin/${scalac.exec.name}"/>
         <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scalai.exec.name}"/>
+                 link="${distrib.win.current.dir}/bin/${scalai.exec.name}"/>
         <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"/>
+                 link="${distrib.win.current.dir}/bin/${scalap.exec.name}"/>
         <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scalatok.exec.name}"/>
+                 link="${distrib.win.current.dir}/bin/${scalatok.exec.name}"/>
         <!-- Set up latest -->
         <symlink resource="${distrib.win.current.dir}"
                  link="${distrib.win.dir}/latest"
