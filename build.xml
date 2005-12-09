@@ -317,11 +317,17 @@
         <condition property="os.win">
             <os family="windows"/>
         </condition>
+        <exec executable="cygpath" vmlauncher="false" errorproperty="err">
+            <arg value="--windir"/>
+        </exec>
+        <condition property="os.cygwin">
+            <equals arg1="${err}" arg2=""/>
+        </condition>
         <!-- This is a hack that compensates for the possibility of doc generation to be skipped. -->
         <mkdir dir="${build.dir}/doc"/>
     </target>
 
-    <target name="distrib" depends="distrib.unix, distrib.win"
+    <target name="distrib" depends="distrib.unix, distrib.win, distrib.cygwin"
             description="Creates a simplified Scala distribution."/>
 
     <target name="distrib.unix" if="os.unix"
@@ -444,6 +450,39 @@
         <copy todir="${distrib.win.current.dir}/lib" file="${fjbg.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${msil.jar}"/>
         <copy todir="${distrib.win.current.dir}/lib" file="${scala.dll}"/>
+    </target>
+
+    <target name="distrib.cygwin" if="os.cygwin"
+            depends="distrib.win"
+            description="Creates symbolic links for NSC commands on Cygwin.">
+        <copy file="${sources.dir}/bin/nscala.unix.tmpl"
+              tofile="${distrib.win.current.dir}/bin/.scala_wrapper">
+            <filterset>
+                <filter token="VERSION" value="${distrib.version}"/>
+                <filter token="COPYRIGHT" value="${copyright.notice}"/>
+                <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/${nslib.jar.name}:$PREFIX/lib/${nstools.jar.name}"/>
+                <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
+                <filter token="SCALA" value="${scala.exec.name}"/>
+                <filter token="SCALAC" value="${scalac.exec.name}"/>
+                <filter token="SCALAI" value="${scalai.exec.name}"/>
+                <filter token="SCALAP" value="${scalap.exec.name}"/>
+                <filter token="SCALATOK" value="${scalatok.exec.name}"/>
+            </filterset>
+        </copy>
+        <symlink resource=".scala_wrapper"
+                 link="${distrib.win.current.dir}/bin/${scala.exec.name}"/>
+        <symlink resource=".scala_wrapper"
+                 link="${distrib.win.current.dir}/bin/${scalac.exec.name}"/>
+        <symlink resource=".scala_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/${scalai.exec.name}"/>
+        <symlink resource=".scala_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"/>
+        <symlink resource=".scala_wrapper"
+                 link="${distrib.unix.scala.dir}/bin/${scalatok.exec.name}"/>
+        <!-- Set up latest -->
+        <symlink resource="${distrib.win.current.dir}"
+                 link="${distrib.win.dir}/latest"
+                 overwrite="yes"/>
     </target>
 
     <!--
