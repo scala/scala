@@ -25,7 +25,7 @@ object ContentModel extends WordExp  {
     case "choice"   =>  Alt(fromSchema(node.child):_*);
     case "group"    => Sequ(fromSchema(node.child):_*);
     case "element"  =>
-      val name = node.attribute("name");
+      val name = node.attribute("name").toString();
       Letter(ElemRef(name)); // ouch, anonymous? references?
   }
 }

@@ -15,10 +15,12 @@ abstract class Decl ;
 /** name     - label of the element
  *  typeName - reference to a (possibly generated) type name
  */
-case class ElemDecl(name: String, tpe: TypeSymbol) ;
+case class ElemDecl(name: String, tpe: TypeSymbol) extends Decl;
 
-case class ComplexTypeDecl(name: String, derivedFrom: DerivSym, contentModel: ContentModel) ;
+abstract class TypeDecl ;
 
-case class SimpleTypeDecl(name: String);
+case class ComplexTypeDecl(name: String, derivedFrom: DerivSym, contentModel: ContentModel) extends TypeDecl;
+
+case class SimpleTypeDecl(name: String) extends TypeDecl;;
 
 abstract class xsdBuiltin(name: String) extends SimpleTypeDecl(name);

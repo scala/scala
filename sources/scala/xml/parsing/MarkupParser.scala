@@ -104,10 +104,10 @@ import scala.xml.dtd._ ;
 
     m.getValue("encoding") match {
       case null => ;
-      case enc  => if (!isValidIANAEncoding(enc))
+      case enc  => if (!isValidIANAEncoding(enc.toString()))
                     reportSyntaxError("\"" + enc + "\" is not a valid encoding");
                   else {
-                    info_enc = Some(enc);
+                    info_enc = Some(enc.toString());
                     n = n + 1;
                   }
     }
@@ -142,10 +142,10 @@ import scala.xml.dtd._ ;
 
     m.getValue("encoding") match {
       case null => ;
-      case enc  => if (!isValidIANAEncoding(enc))
+      case enc  => if (!isValidIANAEncoding(enc.toString()))
         reportSyntaxError("\"" + enc + "\" is not a valid encoding");
                    else {
-                     info_enc = Some(enc);
+                     info_enc = Some(enc.toString());
                      n = n + 1;
                    }
     }
@@ -331,9 +331,8 @@ import scala.xml.dtd._ ;
     val str = cbuf.toString();
     cbuf.setLength(0);
 
-    // @todo: normalize attribute value
     // well-formedness constraint
-    str
+    normalizeAttributeValue(str)
 
   }
 
@@ -409,25 +408,25 @@ import scala.xml.dtd._ ;
    *
    * see [66]
    */
-  def xCharRef: String = {
-    val hex  = (ch == 'x') && { nextch; true };
+  def xCharRef(ch: () => Char, nextch: () => Unit): String = {
+    val hex  = (ch() == 'x') && { nextch(); true };
     val base = if (hex) 16 else 10;
     var i = 0;
-    while (ch != ';') {
-      ch match {
+    while (ch() != ';') {
+      ch() match {
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-          i = i * base + Character.digit( ch, base );
+          i = i * base + Character.digit( ch(), base );
         case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
            | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
           if (! hex)
             reportSyntaxError("hex char not allowed in decimal char ref\n"
                          +"Did you mean to write &#x ?");
           else
-            i = i * base + Character.digit(ch, base);
+            i = i * base + Character.digit(ch(), base);
         case _ =>
-          reportSyntaxError("character '" + ch + " not allowed in char ref\n");
+          reportSyntaxError("character '" + ch() + " not allowed in char ref\n");
       }
-      nextch;
+      nextch();
     }
     new String(Predef.Array(i.asInstanceOf[char]))
   }
@@ -518,7 +517,8 @@ import scala.xml.dtd._ ;
             ch match {
               case '#' => // CharacterRef
                 nextch;
-                val theChar = handle.text( tmppos, xCharRef );
+                val theChar = handle.text( tmppos,
+                                          xCharRef ({ ()=> ch },{ () => nextch }) );
                 xToken(';');
                 ts &+ theChar ;
               case _ => // EntityRef
@@ -1175,6 +1175,49 @@ import scala.xml.dtd._ ;
     eof = false; // must be false, because of places where entity refs occur
     //Console.println("\n AFTER POP, curInput = $"+curInput.descr);
     //Console.println(inpStack.map { x => x.descr });
+  }
+
+  /** for the moment, replace only character references
+   *  see spec 3.3.3
+   *  precond: cbuf empty
+   */
+  def normalizeAttributeValue(attval: String) = {
+    val s:Seq[Char] = attval;
+    val it = s.elements;
+    while(it.hasNext) {
+      it.next match {
+        case ' '|'\t'|'\n'|'\r' =>
+          cbuf.append(' ');
+        case '&' => it.next match {
+          case '#' =>
+            var c = it.next;
+            val s = xCharRef ({ () => c }, { () => c = it.next });
+            cbuf.append(s);
+          case nchar =>
+            val nbuf = new StringBuffer();
+            var d = nchar;
+            do {
+              nbuf.append(d);
+              d = it.next;
+            } while(d != ';');
+            nbuf.toString() match {
+              case "lt"    => cbuf.append('<');
+              case "gt"    => cbuf.append('>');
+              case "amp"   => cbuf.append('&');
+              case "quote" => cbuf.append('"');
+              case name =>
+                //don't handle entityrefs for now
+                cbuf.append('&');
+                cbuf.append(name);
+                cbuf.append(';');
+            }
+        }
+        case c => cbuf.append(c);
+      }
+    }
+    val name = cbuf.toString();
+    cbuf.setLength(0);
+    name
   }
 
 }
