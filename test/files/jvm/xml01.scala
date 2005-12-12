@@ -177,7 +177,28 @@ object Test {
 
   Console.println(
     (parsedxml2 \\ "book" ){ n:Node => n \ "title" == "Data on ze web" }
-  )
+  );
+
+    // test unicode escapes backslash u
+
+  Console println ("attribute value normalization");
+  val xmlAttrValueNorm = "<personne id='p0003' nom='&#x015e;ahingöz' />";
+    {
+      val isrcA       = new InputSource( new StringReader(xmlAttrValueNorm) );
+      val parsedxmlA  = XML.load(isrcA);
+      val c = (parsedxmlA \ "@nom").text.charAt(0);
+      //Console.println("char '"+c+"' \u015e");
+      assertTrue(c == '\u015e');
+    }
+    {
+      val isr  = scala.io.Source.fromString(xmlAttrValueNorm);
+      val pxmlB  = scala.xml.parsing.ConstructingParser.fromSource(isr,false);
+      val parsedxmlB  = pxmlB.element(TopScope);
+      val c = (parsedxmlB \ "@nom").text.charAt(0);
+      //Console.println("char '"+c+"' \u015e");
+      assertTrue(c == '\u015e');
+    }
+
   }
 
 

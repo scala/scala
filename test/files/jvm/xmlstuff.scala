@@ -47,7 +47,7 @@ object Test {
             </foo>;
 
     val pelems_1 = for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
-      Text(x.attribute("value") + y.attribute("bazValue")+ "!")
+      Text(x.attribute("value").toString() + y.attribute("bazValue").toString()+ "!")
     };
     val pelems_2 = new NodeSeq { val theSeq = List(Text("38!"),Text("58!")) };
     assertSameElements(pelems_1, pelems_2);
