@@ -25,6 +25,7 @@ object Test {
 
     // ------------------------------------------ tests for class NodeSeq
 
+    /**
     Console.println("checking wellformed attributes");
     {
     import scala.xml.{ UnprefixedAttribute, Null }
@@ -35,7 +36,20 @@ object Test {
 
     assertFalse(catcher(x:Unit => new UnprefixedAttribute("key", "a&a; &lt;&lt;", Null)));
     }
+*/
 
+/*
+checking wellformed attributes
+< not allowed in attribute value
+passed ok
+malformed entity reference in attribute value [&]
+passed ok
+malformed entity reference in attribute value [a&a]
+passed ok
+malformed entity reference in attribute value [a&a;&]
+passed ok
+passed ok
+*/
 
   Console.println("NodeSeq");
   import scala.xml.Utility.view ;

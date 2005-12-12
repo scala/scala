@@ -1,13 +1,3 @@
-checking wellformed attributes
-< not allowed in attribute value
-passed ok
-malformed entity reference in attribute value [&]
-passed ok
-malformed entity reference in attribute value [a&a]
-passed ok
-malformed entity reference in attribute value [a&a;&]
-passed ok
-passed ok
 NodeSeq
 passed ok
 passed ok
