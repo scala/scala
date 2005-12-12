@@ -14,14 +14,18 @@ package scala.xml;
  */
 class PrefixedAttribute(val pre: String,
                         val key: String,
-                        val value: String,
+                        val value: Any,
                         val next: MetaData) extends MetaData {
 
+/*
+
   // verify that value is a proper attribute value (references, no &lt;)
-  Utility.checkAttributeValue(value) match {
+  // update: this should happen before the attribute is constructed.
+  Utility.checkAttributeValue(value.toString()) match {
     case null => ;
     case msg  => throw new MalformedAttributeException(msg);
   }
+*/
 
   /** Returns a copy of this unprefixed attribute with the given
    *  next field.
@@ -52,11 +56,11 @@ class PrefixedAttribute(val pre: String,
     owner.getNamespace(pre);
 
   /** forwards the call to next */
-  def getValue(key: String): String = next.getValue(key);
+  def getValue(key: String): Any = next.getValue(key);
 
   /** gets attribute value of qualified (prefixed) attribute with given key
    */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): String = {
+  def getValue(namespace: String, scope: NamespaceBinding, key: String): Any = {
     if (key == this.key && scope.getURI(pre) == namespace)
       value
     else
@@ -75,7 +79,7 @@ class PrefixedAttribute(val pre: String,
     sb.append(':');
     sb.append(key);
     sb.append('=');
-    Utility.appendQuoted(value, sb);
+    Utility.appendAttributeValue(value.toString(), sb);
   }
 
   def wellformed(scope: NamespaceBinding): Boolean = {

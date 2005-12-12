@@ -50,7 +50,7 @@ abstract class NodeSeq extends Seq[Node] {
         val y = this(0);
         val v = y.attribute(k);
         if( v != null ) {
-          res = NodeSeq.fromSeq(Seq.single(Text(v)));
+          res = NodeSeq.fromSeq(Seq.single(new Atom(v)));
         }
 
       case _   =>

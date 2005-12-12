@@ -12,14 +12,16 @@ package scala.xml;
 
 /** unprefixed attributes have the null namespace
  */
-class UnprefixedAttribute(val key: String, val value: String, val next: MetaData) extends MetaData {
+class UnprefixedAttribute(val key: String, val value: Any, val next: MetaData) extends MetaData {
 
+  /*
   // verify that value is a proper attribute value (references, no &lt;)
+  // this should happen before the attribute is constructed.
   Utility.checkAttributeValue(value) match {
     case null => ;
     case msg  => throw new MalformedAttributeException(msg);
   }
-
+*/
   /** returns a copy of this unprefixed attribute with the given next field*/
   def copy(next: MetaData) =
     new UnprefixedAttribute(key, value, next);
@@ -37,7 +39,7 @@ class UnprefixedAttribute(val key: String, val value: String, val next: MetaData
    * @param  key
    * @return ..
    */
-  def getValue(key: String): String =
+  def getValue(key: String): Any =
     if (key == this.key) value else next.getValue(key);
 
   /**
@@ -48,7 +50,7 @@ class UnprefixedAttribute(val key: String, val value: String, val next: MetaData
    * @param  key
    * @return ..
    */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): String =
+  def getValue(namespace: String, scope: NamespaceBinding, key: String): Any =
     next.getValue(namespace, scope, key);
 
   override def hashCode() =
@@ -60,7 +62,7 @@ class UnprefixedAttribute(val key: String, val value: String, val next: MetaData
   def toString1(sb:StringBuffer): Unit = {
     sb.append(key);
     sb.append('=');
-    Utility.appendQuoted(value, sb);
+    Utility.appendAttributeValue(value.toString(), sb);
   }
 
   def wellformed(scope: NamespaceBinding): Boolean =
