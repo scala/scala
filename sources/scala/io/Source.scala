@@ -27,6 +27,14 @@ object Source {
   def fromBytes(bytes: Array[Byte], enc: String): Source =
     fromString(new String(bytes, enc));
 
+  /** creates Source from a single char */
+  def fromChar(c: Char): Source = {
+    val it = Iterator.single(c);
+    new Source {
+      def reset = fromChar(c);
+      val iter = it;
+    }
+  }
   /** creates Source from array of characters, with empty description
    */
   def fromChars(chars: Array[Char]): Source = {
@@ -106,10 +114,12 @@ object Source {
       val bufIn = new java.io.BufferedInputStream(in);
       data = bufIn.read()
     }
-    new Source {
+    val s = new Source {
       def reset = fromURL(url);
       val iter = it;
-    }
+    };
+    s.descr = url.toString();
+    s
   }
 
 }
@@ -216,10 +226,10 @@ abstract class Source extends Iterator[Char] {
 
   def report(pos: Int, msg: String, out: PrintStream): Unit = {
     val line = Position.line(pos);
-    Console.println(descr+":"+line+": "+msg);
+    val col = Position.column(pos);
+    Console.println(descr+":"+line+":"+col+": "+msg);
     Console.println(getLine(line));
     var i = 1;
-    val col = Position.column(pos);
     while( i < col ) {
       Console.print(' ');
       i = i + 1;
