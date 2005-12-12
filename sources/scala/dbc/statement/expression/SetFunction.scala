@@ -20,14 +20,14 @@ object SetFunction {
   abstract class General extends SetFunction {
     def setQuantifier: Option[SetQuantifier];
     def valueExpression: Expression;
-    def sqlString = {
+    def sqlString = (
       "(" +
       (setQuantifier match {
 	case None => ""
 	case Some(sq) => sq.sqlString + " "
       }) +
       valueExpression.sqlString + ")"
-    }
+    );
   }
   abstract class Binary extends SetFunction {
     def sqlString = error("Binary set function is not supported yet.");

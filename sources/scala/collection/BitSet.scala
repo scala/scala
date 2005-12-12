@@ -54,8 +54,9 @@ package scala.collection;
   override def equals(that: Any): Boolean = (
     that.isInstanceOf[BitSet] &&
     { val other = that.asInstanceOf[BitSet];
-      (size == other.size) &&
-      (Iterator.range(0, size) forall { i => apply(i) == other.apply(i)})
+      ( size == other.size) && (
+          Iterator.range(0, size) forall { i => apply(i) == other.apply(i)}
+      )
     }
   );
 

@@ -26,11 +26,11 @@ abstract class Table extends Relation {
 
 	/** A SQL-99 compliant string representation of the relation sub-
 		* statement. This only has a meaning inside a query. */
-	def sqlInnerString: String = {
+	def sqlInnerString: String = (
 		tableName +
 		(tableRename match {
 			case None => ""
 			case Some(rename) => " AS " + rename
 		})
-	}
+	)
 }

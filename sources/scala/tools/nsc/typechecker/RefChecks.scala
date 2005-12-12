@@ -228,7 +228,7 @@ abstract class RefChecks extends InfoTransform {
 	  if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
 	    abstractClassError(false,
 	      infoString(member) + " is not defined" +
-	      (if (member.isVariable)
+	      (if (member.isVariable || member.hasFlag(ACCESSOR))
 		"\n(Note that variables need to be initialized to be defined)" else ""))
 	  } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
 	    val other = member.superSymbol(clazz);

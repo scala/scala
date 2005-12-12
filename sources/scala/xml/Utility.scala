@@ -190,27 +190,6 @@ object Utility extends AnyRef with parsing.TokenTests {
     sb.append(ch).append(s).append(ch)
   }
 
-
-  /**
-   * Appends &quot;s&quot; if s does not contain &quot;, &apos;s&apos;
-   * otherwise, and replaces &lt; and &amp;
-   *
-   * @param s
-   * @param sb
-   */
-  def appendAttributeValue(s: String, sb: StringBuffer) = {
-    val ch = if (s.indexOf('"') == -1) '"' else '\'';
-    sb.append(ch);
-    val ss: Seq[Char] = s;
-    val it = ss.elements;
-    while(it.hasNext) it.next match {
-      case '<' => sb.append("&lt;");
-      case '&' => sb.append("&amp;");
-      case x   => sb.append(x);
-    }
-    sb.append(ch)
-  }
-
   /**
    * Appends &quot;s&quot; and escapes and &quot; i s with \&quot;
    *

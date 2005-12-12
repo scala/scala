@@ -163,8 +163,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     /** The method-name xxxValue, where Xxx is a numeric value class name */
     def unboxOp(tp: Type) = {
       val clazzName = tp.symbol.name.toString();
-      String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
-      clazzName.substring(1) + "Value"
+      (String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
+       clazzName.substring(1) + "Value")
     }
 
     /** Unbox `tree' of boxed type to expected type `pt' */
@@ -444,14 +444,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         //System.out.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
 	if (!atPhase(phase.prev)(member hasFlag DEFERRED)) {
           val otpe = erasure(other.tpe);
-	  val bridgeNeeded = atPhase(phase.next) {
+	  val bridgeNeeded = atPhase(phase.next) (
 	    !(other.tpe =:= member.tpe) &&
             { var e = bridgesScope.lookupEntry(member.name);
               while (e != null && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
 		e = bridgesScope.lookupNextEntry(e);
               e == null
             }
-	  }
+	  );
 	  if (bridgeNeeded) {
             val bridge = other.cloneSymbolImpl(owner)
               .setPos(owner.pos)

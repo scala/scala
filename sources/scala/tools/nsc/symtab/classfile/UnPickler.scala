@@ -57,8 +57,8 @@ abstract class UnPickler {
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: int): boolean = {
       val tag = bytes(index(i));
-      firstSymTag <= tag && tag <= lastSymTag &&
-      (tag != CLASSsym || !isRefinementSymbolEntry(i))
+      (firstSymTag <= tag && tag <= lastSymTag &&
+       (tag != CLASSsym || !isRefinementSymbolEntry(i)))
     }
 
     /** Does entry represent a refinement symbol?

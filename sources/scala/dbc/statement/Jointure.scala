@@ -30,7 +30,7 @@ abstract class Jointure extends Relation {
 
 	/** A SQL-99 compliant string representation of the relation sub-
 		* statement. This only has a meaning inside a query. */
-	def sqlInnerString: String = {
+	def sqlInnerString: String = (
 		leftRelation.sqlInnerString + " " +
 		joinType.sqlString + " " +
 		rightRelation.sqlInnerString +
@@ -38,6 +38,6 @@ abstract class Jointure extends Relation {
 			case Some(jc) => jc.sqlString
 			case None => ""
 		})
-	}
+	)
 
 }

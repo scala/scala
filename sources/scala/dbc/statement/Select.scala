@@ -72,9 +72,10 @@ abstract class Select extends Relation {
       case None => ""
       case Some(gbl) => gbl match {
 	case Nil => error("Empty group by clause is not allowed")
-	case _ => " GROUP BY " +
-          (gbl.tail.foldLeft(gbl.head.sqlInnerString)
-            ((name:String, gb) => name + ", " + gb.sqlInnerString))
+	case _ =>
+          (" GROUP BY " +
+           gbl.tail.foldLeft(gbl.head.sqlInnerString)
+           ((name:String, gb) => name + ", " + gb.sqlInnerString))
       }
     }) +
     (havingClause match {

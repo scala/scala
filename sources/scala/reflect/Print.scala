@@ -35,23 +35,23 @@ object Print extends Function1[Any, String] {
     case reflect.Literal(value) =>
       "Literal (" + value + ")"
     case reflect.Apply(fun, args) =>
-      "Apply (" + Print(fun) + " on " +
-      ((args match {
-        case Nil => "nothing "
-        case _ :: _ => args.map(Print).mkString("", ", ", "")
-      }):String) + ")"
+      ("Apply (" + Print(fun) + " on " +
+       ((args match {
+         case Nil => "nothing "
+         case _ :: _ => args.map(Print).mkString("", ", ", "")
+       }):String) + ")")
     case reflect.TypeApply(fun, args) =>
-      "TypeApply (" + Print(fun) + " on " +
-      ((args match {
-        case Nil => "nothing"
-        case _ :: _ => args.map(Print).mkString("", ", ", "")
-      }):String) + ")"
+      ("TypeApply (" + Print(fun) + " on " +
+       ((args match {
+         case Nil => "nothing"
+         case _ :: _ => args.map(Print).mkString("", ", ", "")
+       }):String) + ")")
     case reflect.Function(params, body) =>
-      "Function (" +
-      ((params match {
-        case Nil => "nothing"
-        case _ :: _ => params.map(Print).mkString("", ", ", "")
-      }):String) + " is " + Print(body) + ")"
+      ("Function (" +
+       ((params match {
+         case Nil => "nothing"
+         case _ :: _ => params.map(Print).mkString("", ", ", "")
+       }):String) + " is " + Print(body) + ")")
     case reflect.This(sym) =>
       "This (" + Print(sym) + ")"
     case _ => "UnknownCode"
@@ -67,11 +67,11 @@ object Print extends Function1[Any, String] {
     case reflect.TypeField(name, datatype) =>
       "TypeField (" + name + " of " + Print(datatype) + ")"
     case reflect.LocalValue(owner, name, datatype) =>
-      "LocalValue (" + name + " owned by " + Print(owner) +
-      " of " + Print(datatype) + ")"
+      ("LocalValue (" + name + " owned by " + Print(owner) +
+       " of " + Print(datatype) + ")")
     case reflect.LocalMethod(owner, name, datatype) =>
-      "LocalMethod (" + name + " owned by " + Print(owner) +
-      " of " + Print(datatype) + ")"
+      ("LocalMethod (" + name + " owned by " + Print(owner) +
+       " of " + Print(datatype) + ")")
     case reflect.NoSymbol => "NoSymbol"
     case reflect.RootSymbol => "RootSymbol"
     case _ => "UnknownSymbol"
@@ -89,24 +89,24 @@ object Print extends Function1[Any, String] {
     case reflect.ThisType(clazz) =>
       "ThisType (" + Print(clazz) + ")"
     case reflect.AppliedType(datatype, args) =>
-      "AppliedType (" + Print(datatype) + " on " +
-      ((args match {
-        case Nil => "nothing"
-        case _ :: _ => args.map(Print).mkString("", ", ", "")
-      }):String) + ")"
+      ("AppliedType (" + Print(datatype) + " on " +
+       ((args match {
+         case Nil => "nothing"
+         case _ :: _ => args.map(Print).mkString("", ", ", "")
+       }):String) + ")")
     case reflect.TypeBounds(lo, hi) =>
       "TypeBounds (" + Print(lo) + " to " + Print(hi) + ")"
     case reflect.MethodType(formals, resultType) =>
-      "MethodType (" +
-      ((formals match {
-        case Nil => "nothing"
-        case _ :: _ => formals.map(Print).mkString("", ", ", "")
-      }):String) + " is " + Print(resultType) + ")"
+      ("MethodType (" +
+       ((formals match {
+         case Nil => "nothing"
+         case _ :: _ => formals.map(Print).mkString("", ", ", "")
+       }):String) + " is " + Print(resultType) + ")")
     case reflect.PolyType(typeParams, typeBounds, resultType) =>
-      "PolyType (" + (typeParams zip typeBounds).map{
+      ("PolyType (" + (typeParams zip typeBounds).map{
         case Pair(typeParam, Pair(lo, hi)) =>
           Print(lo) + " < " + Print(typeParam) + " < " + Print(hi)
-      }.mkString("", ", ", "") + " to " + Print(resultType) + ")"
+      }.mkString("", ", ", "") + " to " + Print(resultType) + ")")
     case _ => "UnknownType"
   }
 

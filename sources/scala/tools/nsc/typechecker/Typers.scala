@@ -97,6 +97,8 @@ import collection.mutable.HashMap;
     val SUPERCONSTRmode = 0x100; // Set for the `super' in a superclass constructor call
                                  // super.<init>
 
+    val STATmode = 0x200;        // Set if we are type-checking a statement.
+
     private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode;
 
     /** Report a type error.
@@ -324,8 +326,10 @@ import collection.mutable.HashMap;
 	typed(applyImplicitArgs(tree1), mode, pt)
       case mt: MethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
 	                      isCompatible(tree.tpe, pt)) => // (4.2)
-	if (tree.symbol.isConstructor) errorTree(tree, "missing arguments for " + tree.symbol)
-	else {
+	if (tree.symbol.isConstructor || (mode & STATmode) != 0) {
+          errorTree(tree, "missing arguments for " + tree.symbol)
+	} else {
+          if (settings.debug.value) log("eta-expanding " + tree + ":" + tree.tpe + " to " + pt);//debug
 	  typed(etaExpand(tree), mode, pt)
 	}
       case _ =>
@@ -821,7 +825,8 @@ import collection.mutable.HashMap;
 	    EmptyTree
 	  case _ =>
 	    (if (exprOwner != context.owner && (!stat.isDef || stat.isInstanceOf[LabelDef]))
-	      newTyper(context.make(stat, exprOwner)) else this).typed(stat)
+	      newTyper(context.make(stat, exprOwner)) else this)
+                .typed(stat, EXPRmode | STATmode, WildcardType)
 	}
       }
 
@@ -1482,10 +1487,10 @@ import collection.mutable.HashMap;
       if (util.Statistics.enabled) implcnt = implcnt + 1;
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
 
-      def isBetter(sym1: Symbol, tpe1: Type, sym2: Symbol, tpe2: Type): boolean = {
+      def isBetter(sym1: Symbol, tpe1: Type, sym2: Symbol, tpe2: Type): boolean = (
         sym2.isError ||
-	(sym1.owner != sym2.owner) && (sym1.owner isSubClass sym2.owner) && (tpe1 matches tpe2);
-      }
+	(sym1.owner != sym2.owner) && (sym1.owner isSubClass sym2.owner) && (tpe1 matches tpe2)
+      );
       val tc = newTyper(context.makeImplicit(reportAmbiguous));
 
       def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], local: boolean): Tree = {

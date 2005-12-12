@@ -19,7 +19,7 @@ case class Update (
 
 
 	/** A SQL-99 compliant string representation of the select statement. */
-	def sqlString: String = {
+	def sqlString: String = (
 		"UPDATE " +
 		updateTarget +
 		" SET " + setClauses.map(sc=>sc.sqlString).mkString("",", ","") +
@@ -27,7 +27,7 @@ case class Update (
 			case None => ""
 			case Some(expr) => " WHERE " + expr.sqlString
 		})
-	}
+	);
 
 	/** The name of the table that should be updated. */
 	//def updateTarget: String;

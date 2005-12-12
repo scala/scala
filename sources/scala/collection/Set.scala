@@ -70,8 +70,8 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
     override def equals(that: Any): Boolean = (
         that.isInstanceOf[Set[A]] &&
         { val other = that.asInstanceOf[Set[A]];
-          this.size == other.size &&
-          this.elements.forall(other.contains) }
+          (this.size == other.size &&
+           this.elements.forall(other.contains)) }
     );
 
     /** Returns the elements of this set as a list.

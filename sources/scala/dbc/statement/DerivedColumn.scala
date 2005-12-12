@@ -21,12 +21,12 @@ abstract class DerivedColumn {
 
   /** A SQL-99 compliant string representation of the derived column
    * sub-statement. This only has a meaning inside a select statement. */
-  def sqlString: String = {
+  def sqlString: String = (
     valueExpression.sqlInnerString +
     (asClause match {
       case None => ""
       case Some(ac) => " AS " + ac
     })
-  }
+  );
 
 }

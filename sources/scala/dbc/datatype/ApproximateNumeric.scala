@@ -17,20 +17,20 @@ abstract class ApproximateNumeric[Type] (
 
   def isEquivalent(datatype: DataType) = datatype match {
     case dt: ApproximateNumeric[Type] =>
-      nativeTypeId == dt.nativeTypeId &&
-      precisionRadix == dt.precisionRadix &&
-      precision == dt.precision &&
-      signed == dt.signed
+      (nativeTypeId == dt.nativeTypeId &&
+       precisionRadix == dt.precisionRadix &&
+       precision == dt.precision &&
+       signed == dt.signed)
     case _ =>
       false
   }
 
   def isSubtypeOf (datatype:DataType) = datatype match {
     case dt:ApproximateNumeric[Type] =>
-      nativeTypeId == dt.nativeTypeId &&
-      precisionRadix == dt.precisionRadix &&
-      precision <= dt.precision &&
-      signed == dt.signed
+      (nativeTypeId == dt.nativeTypeId &&
+       precisionRadix == dt.precisionRadix &&
+       precision <= dt.precision &&
+       signed == dt.signed)
     case _ =>
       false
   }

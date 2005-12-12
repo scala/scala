@@ -60,23 +60,21 @@ abstract class Rule extends Ordered[Rule] {
       n.toString()+" ::= "+m.toString();
 
     case TreeRule( n, label, n2 )  =>
-      n.toString()+{ if( !n.vset.isEmpty ) n.vset.toString() else "" }+
-    " ::= "+label+"( "+n2.toString()+{if( n2.nullable ) "~" else ""}+" )";
+      (n.toString()+{ if( !n.vset.isEmpty ) n.vset.toString() else "" }+
+       " ::= "+label+"( "+n2.toString()+{if( n2.nullable ) "~" else ""}+" )")
 
     case AnyTreeRule( n ) =>
-      n.toString()+{ if( !n.vset.isEmpty ) n.vset.toString() else "" }+
-    " ::= _ ";
+      n.toString()+{ if( !n.vset.isEmpty ) n.vset.toString() else "" }+" ::= _ ";
 
     case AnyNodeRule( n, h ) =>
-      n.toString()+{ if( !n.vset.isEmpty ) n.vset.toString() else "" }+
-    " ::= _ ( "+h.toString()+" )";
+      n.toString()+{ if( !n.vset.isEmpty ) n.vset.toString() else "" }+" ::= _ ( "+h.toString()+" )";
 
     case HedgeRule( n, t, h ) =>
-      n.toString()+{
+      n.toString()+(
         if( n.nullable ) "~" else " "
-      }+" ::= "+{
+      )+" ::= "+(
         if( t == ANYTREE ) "_" else t.toString()
-      }+" "+h.toString();
+      )+" "+h.toString();
 
   }
 }

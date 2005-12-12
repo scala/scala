@@ -16,11 +16,11 @@ abstract class Relation extends Statement {
 
   def typeCheck (relation: result.Relation): Unit = {
     if (typeCheck != Nil) {
-      val sameType: Boolean = {
+      val sameType: Boolean = (
 	relation.metadata.length == fieldTypes.length &&
 	(relation.metadata.zip(fieldTypes).forall({case Pair(field,expectedType) =>
 	  isCompatibleType(field.datatype, expectedType)}))
-      }
+      );
       if (!sameType)
 	throw new exception.IncompatibleSchema(fieldTypes,relation.metadata.map(field=>field.datatype));
     }

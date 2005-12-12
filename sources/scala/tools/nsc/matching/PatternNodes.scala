@@ -165,10 +165,10 @@ trait PatternNodes: TransMatcher {
        case VariablePat(tree) =>
          q match {
            case VariablePat(other) =>
-              (tree.symbol != null) &&
-           (tree.symbol != NoSymbol) &&
-           (!tree.symbol.isError) &&
-           (tree.symbol == other.symbol);
+             ((tree.symbol != null) &&
+              (tree.symbol != NoSymbol) &&
+              (!tree.symbol.isError) &&
+              (tree.symbol == other.symbol))
            case _ =>
              false;
          }

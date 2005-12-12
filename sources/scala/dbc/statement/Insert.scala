@@ -17,11 +17,11 @@ case class Insert (
 ) extends Status {
 
 	/** A SQL-99 compliant string representation of the select statement. */
-	def sqlString: String = {
+	def sqlString: String = (
 		"INSERT INTO " +
 		insertionTarget +
 		" " + insertionData.sqlString
-	}
+	);
 
 	/** The name of the table where the data should be added. */
 	//def insertionTarget: String;

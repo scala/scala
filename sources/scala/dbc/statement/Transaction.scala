@@ -16,7 +16,7 @@ case class Transaction [ResultType] (
 ) extends Statement {
 
 	/** A SQL-99 compliant string representation of the statement. */
-	def sqlStartString: String = {
+	def sqlStartString: String = (
 		"START TRANSACTION" +
 		(Pair(accessMode,isolationLevel) match {
 			case Pair(None,None) => ""
@@ -24,7 +24,7 @@ case class Transaction [ResultType] (
 			case Pair(None,Some(il)) => " " + il.sqlString
 			case Pair(Some(am),Some(il)) => " " + am.sqlString + ", " + il.sqlString
 		})
-	}
+	);
 
 	def sqlCommitString: String = {
 		"COMMIT"

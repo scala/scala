@@ -278,8 +278,8 @@ import scala.collection.mutable.{Map, HashMap};
         case ARRAY(elem2) =>
           elem <:< elem2;
         case REFERENCE(sym) =>
-          sym == definitions.AnyRefClass ||
-          sym == definitions.ObjectClass; // TODO: platform dependent!
+          (sym == definitions.AnyRefClass ||
+           sym == definitions.ObjectClass) // TODO: platform dependent!
 
         case _ => false;
       }

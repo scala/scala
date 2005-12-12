@@ -761,8 +761,8 @@ import Flags._;
       else if (isAbstractType)
         tp match {
           case TypeBounds(lo, hi) =>
-            (if (lo.symbol == AllClass) "" else " >: " + lo) +
-          (if (hi.symbol == AnyClass) "" else " <: " + hi)
+            ((if (lo.symbol == AllClass) "" else " >: " + lo) +
+             (if (hi.symbol == AnyClass) "" else " <: " + hi))
           case _ =>
             "<: " + tp;
         }

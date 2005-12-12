@@ -25,13 +25,13 @@ object InsertionData {
 		columnNames:Option[List[String]],
 		columnValues:List[Expression]
 	) extends InsertionData {
-		def sqlString = {
+		def sqlString = (
 			(columnNames match {
 				case None => ""
 				case Some(cn) => cn.mkString(" (",", ",")")
 			}) +
 			" VALUES" +
 			columnValues.map(e=>e.sqlInnerString).mkString(" (",", ",")")
-		}
+		)
 	}
 }

@@ -1517,8 +1517,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       case Type$MethodType(_, _) =>
 	// convert unapplied methods to functions.
 	if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
-	    (infer.isCompatible(tree.getType(), pt) ||
-	     pt.symbol() == definitions.UNIT_CLASS)) {
+	    (infer.isCompatible(tree.getType(), pt))) {
 	  checkEtaExpandable(tree.pos, tree.getType());
 	  if (TreeInfo.methPart(tree).symbol() == definitions.ANY_MATCH) {
 	    error(tree.pos, "`match' needs to be applied fully");
@@ -1649,7 +1648,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case _ =>
       }
       if ((mode & EXPRmode) != 0) {
-	if (pt.symbol() == definitions.UNIT_CLASS) {
+	if (pt.isInstanceOf[Type$TypeRef] && pt.symbol() == definitions.UNIT_CLASS && tree.getType().isSubType(definitions.ANY_TYPE())) {
 	  return gen.mkUnitBlock(tree);
 	} else if (infer.isCompatible(tree.getType(), pt)) {
           tree match {

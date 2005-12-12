@@ -26,9 +26,9 @@ import util.ListBuffer;
 
     def hasImplementation(name: Name): boolean = {
       val sym = clazz.info.nonPrivateMember(name);
-      sym.isTerm &&
-      (sym.owner == clazz ||
-       !(ObjectClass isSubClass sym.owner) && !(sym hasFlag DEFERRED));
+      (sym.isTerm &&
+       (sym.owner == clazz ||
+        !(ObjectClass isSubClass sym.owner) && !(sym hasFlag DEFERRED)))
     }
 
     def syntheticMethod(name: Name, flags: int, tpe: Type) = {

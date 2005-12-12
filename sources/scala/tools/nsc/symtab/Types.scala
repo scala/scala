@@ -807,8 +807,8 @@ import Flags._;
 	if (isFunctionType(this))
 	  return args.init.mkString("(", ", ", ")") + " => " + args.last;
       }
-      pre.prefixString + sym.nameString +
-	(if (args.isEmpty) "" else args.mkString("[", ",", "]"))
+      (pre.prefixString + sym.nameString +
+	(if (args.isEmpty) "" else args.mkString("[", ",", "]")))
     }
 
     override def prefixString =
@@ -1444,10 +1444,10 @@ import Flags._;
 	}
 	isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
-        pts1.length == pts2.length &&
-        isSameTypes(pts1, pts2) &&
-        res1 =:= res2 &&
-        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
+        (pts1.length == pts2.length &&
+         isSameTypes(pts1, pts2) &&
+         res1 =:= res2 &&
+         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
       case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
         (tparams1.length == tparams2.length &&
          List.forall2(tparams1, tparams2)
@@ -2026,8 +2026,6 @@ import Flags._;
   /** An exception signalling a malformed type */
   class MalformedType(msg: String) extends TypeError(msg) {
     def this(pre: Type, tp: String) = this("malformed type: " + pre + "#" + tp);
-    // System.err.println("MALFORMED_TYPE: " + msg);
-    // Thread.dumpStack();
   }
 
   /** An exception signalling a malformed closure */

@@ -324,14 +324,14 @@ import Tokens._;
       if (in.token == THIS) {
 	t = atPos(in.skipToken()) { This(nme.EMPTY.toTypeName) }
 	if (!thisOK || in.token == DOT)
-	  t = { selectors(t, typeOK, accept(DOT)) }
+	  t = atPos(accept(DOT)) { selectors(t, typeOK) }
       } else if (in.token == SUPER) {
 	t = atPos(in.skipToken()) {
 	  Super(nme.EMPTY.toTypeName, mixinQualifierOpt())
 	}
 	t = atPos(accept(DOT)) { Select(t, ident()) }
 	if (in.token == DOT)
-	  t = { selectors(t, typeOK, in.skipToken()) }
+	  t = atPos(in.skipToken()) { selectors(t, typeOK) }
       } else {
 	val i = atPos(in.currentPos) { Ident(ident()) }
 	t = i;
@@ -341,35 +341,29 @@ import Tokens._;
 	    in.nextToken();
 	    t = atPos(i.pos) { This(i.name.toTypeName) }
 	    if (!thisOK || in.token == DOT)
-	      t = { selectors(t, typeOK, accept(DOT)) }
+	      t = atPos(accept(DOT)) { selectors(t, typeOK) }
 	  } else if (in.token == SUPER) {
 	    in.nextToken();
 	    t = atPos(i.pos) { Super(i.name.toTypeName, mixinQualifierOpt()) }
 	    t = atPos(accept(DOT)) { Select(t, ident())}
 	    if (in.token == DOT)
-	      t = { selectors(t, typeOK, in.skipToken()) }
+	      t = atPos(in.skipToken()) { selectors(t, typeOK) }
 	  } else {
-	    t = { selectors(t, typeOK, pos) }
+	    t = atPos(pos) { selectors(t, typeOK) }
 	  }
 	}
       }
       t
     }
 
-    def selectors(t: Tree, typeOK: boolean, pos: Int): Tree =
+    def selectors(t: Tree, typeOK: boolean): Tree =
       if (typeOK && in.token == TYPE) {
 	in.nextToken();
-	atPos(pos) { SingletonTypeTree(t) }
+	SingletonTypeTree(t)
       } else {
-	val ident0 : Name = ident();
-	//System.err.println("IDENT: " + ident0);
-	val t1 = atPos(pos) { Select(t, ident0); }
-	if (in.token == DOT) {
-	  val skipPos = in.skipToken();
-	  //System.err.println("SKIP: " + skipPos);
-	  //Thread.dumpStack();
-	  selectors(t1, typeOK, skipPos);
-	} else t1;
+	val t1 = Select(t, ident());
+	if (in.token == DOT) atPos(in.skipToken()) { selectors(t1, typeOK) }
+	else t1
       }
 
     /** MixinQualifier ::= `[' Id `]'
@@ -395,7 +389,7 @@ import Tokens._;
     */
     def qualId(): Tree = {
       val id = atPos(in.currentPos) { Ident(ident()) }
-      if (in.token == DOT) { selectors(id, false, in.skipToken()) }
+      if (in.token == DOT) atPos(in.skipToken()) { selectors(id, false) }
       else id
     }
 
@@ -1643,8 +1637,8 @@ import Tokens._;
                    in.token == LBRACKET ||
                    isModifier) {
           val attrs = attributeClauses();
-          stats ++
-            joinAttributes(attrs, joinComment(List(tmplDef(modifiers() | traitAttribute(attrs)))))
+          (stats ++
+             joinAttributes(attrs, joinComment(List(tmplDef(modifiers() | traitAttribute(attrs))))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of class or object definition", true);
         }
@@ -1669,8 +1663,8 @@ import Tokens._;
           stats += expr()
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
           val attrs = attributeClauses();
-          stats ++
-            joinAttributes(attrs, joinComment(defOrDcl(modifiers() | traitAttribute(attrs))))
+          (stats ++
+             joinAttributes(attrs, joinComment(defOrDcl(modifiers() | traitAttribute(attrs)))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of definition", true);
         }

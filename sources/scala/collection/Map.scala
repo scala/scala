@@ -139,13 +139,14 @@ trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A,
     override def equals(that: Any): Boolean = (
         that.isInstanceOf[Map[A, B]] &&
         { val other = that.asInstanceOf[Map[A, B]];
-          this.size == other.size &&
-          this.elements.forall {
-              case Pair(key, value) => other.get(key) match {
-                  case None => false;
-                  case Some(otherval) => value == otherval;
-              }
-          }}
+          (this.size == other.size &&
+           this.elements.forall {
+             case Pair(key, value) => other.get(key) match {
+               case None => false;
+               case Some(otherval) => value == otherval;
+             }
+           })
+       }
     );
 
     /** Returns the mappings of this map as a list.

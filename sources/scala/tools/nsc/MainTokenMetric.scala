@@ -22,7 +22,6 @@ object MainTokenMetric {
     var totale = 0;
     for (val source <- fnames) {
       val s = new Scanner(new CompilationUnit(compiler.getSourceFile(source)));
-      s.nextToken;
       var i = 0;
       while(s.token != EOF) {
         i = i + 1;

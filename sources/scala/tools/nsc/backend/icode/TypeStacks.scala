@@ -87,11 +87,10 @@ trait TypeStacks: ICodes {
       (types.foldLeft(new StringBuffer("")) ((buf, k) => buf.append(" ").append(k))).toString();
     }
 
-    override def equals(other: Any): Boolean = {
+    override def equals(other: Any): Boolean = (
       other.isInstanceOf[TypeStack] &&
-      List.forall2(other.asInstanceOf[TypeStack].types,
-                   types) ((a, b) => a == b);
-    }
+      List.forall2(other.asInstanceOf[TypeStack].types, types)((a, b) => a == b)
+    );
   }
 
 }

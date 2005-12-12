@@ -38,8 +38,8 @@ abstract class OverridingPairs {
     private def intersectionContainsElementLeq(bs1: BitSet, bs2: BitSet, n: int): boolean = {
       val nshifted = n >> 5;
       val nmask = 1 << (n & 31);
-      (List.range(0, nshifted) exists (i => (bs1(i) & bs2(i)) != 0)) ||
-      ((bs1(nshifted) & bs2(nshifted) & (nmask | nmask - 1)) != 0)
+      ((List.range(0, nshifted) exists (i => (bs1(i) & bs2(i)) != 0)) ||
+       ((bs1(nshifted) & bs2(nshifted) & (nmask | nmask - 1)) != 0))
     }
 
     private val decls = new Scope;

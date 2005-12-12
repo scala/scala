@@ -114,7 +114,7 @@ abstract class MetaData extends Iterable[MetaData] {
   def key: String;
 
   /** returns key of this MetaData item */
-  def value: Any;
+  def value: String;
 
   /** maps this sequence of meta data */
   def map(f: MetaData => Text): List[Text] = f(this)::(next map f);
@@ -123,15 +123,14 @@ abstract class MetaData extends Iterable[MetaData] {
   def next: MetaData;
 
   /** gets value of unqualified (unprefixed) attribute with given key */
-  def getValue(key: String): Any;
+  def getValue(key: String): String;
 
   /** gets value of qualified (prefixed) attribute with given key */
-  def getValue(namespace: String, owner: Node, key: String): Any =
+  def getValue(namespace: String, owner: Node, key: String): String =
     getValue(namespace, owner.scope, key);
 
   /** gets value of qualified (prefixed) attribute with given key */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): Any;
-
+  def getValue(namespace: String, scope: NamespaceBinding, key: String): String;
   override def hashCode(): Int;
 
   def toString1(): String = {

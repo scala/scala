@@ -94,10 +94,10 @@ abstract class TailCalls extends Transform
         accessed = false;
       }
 
-      override def toString(): String = {
+      override def toString(): String = (
         "" + currentMethod.name + " tparams: " + tparams + " tailPos: " + tailPos +
-        " accessed: " + accessed + "\nLabel: " + label + "\nLabel type: " + label.info;
-      }
+        " accessed: " + accessed + "\nLabel: " + label + "\nLabel type: " + label.info
+      );
     }
 
     private def mkContext(that: Context) = new Context(that);

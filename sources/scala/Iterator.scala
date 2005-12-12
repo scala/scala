@@ -372,10 +372,10 @@ trait Iterator[+A] {
         var ahead: Iterator[A] = null;
         class Partner extends Iterator[A] {
             var ys: List[A] = Nil;
-            def hasNext: Boolean = Iterator.this.synchronized {
+            def hasNext: Boolean = Iterator.this.synchronized (
                 ((this == ahead) && Iterator.this.hasNext) ||
-                ((this != ahead) && (!xs.isEmpty || !ys.isEmpty || Iterator.this.hasNext));
-            }
+                ((this != ahead) && (!xs.isEmpty || !ys.isEmpty || Iterator.this.hasNext))
+            );
             def next: A = Iterator.this.synchronized {
                 if (this == ahead) {
                     val e = Iterator.this.next;
