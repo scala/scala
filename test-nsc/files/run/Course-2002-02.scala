@@ -17,16 +17,13 @@ object M0 {
 object M1 {
   def cube(x: Int): Double = x * x * x;
 
-  def sumInts(a: Int, b: Int): Double =
-    if (a > b) 0
+  def sumInts(a: Int, b: Int): Double = if (a > b) 0
     else a + sumInts(a + 1, b);
 
-  def sumCubes(a: Int, b: Int): Double =
-    if (a > b) 0
+  def sumCubes(a: Int, b: Int): Double = if (a > b) 0
     else cube(a) + sumCubes(a + 1, b);
 
-  def sumReciprocals(a: Int, b: Int): Double =
-    if (a > b) 0
+  def sumReciprocals(a: Int, b: Int): Double = if (a > b) 0
     else 1.0/a + sumReciprocals(a + 1, b);
 
   def sumPi(n: Int): Double = {
@@ -198,17 +195,14 @@ object M8 {
 //############################################################################
 
 object M9 {
-  def accumulate[t](combiner: (t, t) => t, nullValue: t, f: Int => t, next: Int => Int)
-      (a: Int, b: Int): t =
-    if (a > b) nullValue
+  def accumulate[t](combiner: (t, t) => t, nullValue: t, f: Int => t,
+                    next: Int => Int)(a: Int, b: Int): t = if (a > b) nullValue
     else combiner(f(a), accumulate(combiner, nullValue, f, next)(next(a), b));
 
   def inc(x: Int) = x + 1;
 
-  def sum(f: Int => Double) =
-    accumulate((x: Double, y: Double) => x + y, 0d, f, inc);
-  def product(f: Int => Double) =
-    accumulate((x: Double, y: Double) => x * y, 1d, f, inc);
+  def sum(f: Int => Double) = accumulate((x: Double, y: Double) => x + y, 0d, f, inc);
+  def product(f: Int => Double) = accumulate((x: Double, y: Double) => x * y, 1d, f, inc);
 
   def sumInts = sum(x => x);
   def sumCubes = sum(x => x * x * x);
@@ -323,8 +317,7 @@ object MC {
 //############################################################################
 
 object MD {
-  def reduce(op: (Double,Double) => Double, zero:Double)
-    (f: Int => Double)(a: Int,b: Int): Double = {
+  def reduce(op: (Double,Double) => Double, zero:Double)(f: Int => Double)(a: Int,b: Int): Double = {
     def iter(a: Int, result: Double): Double = {
       if (a > b) result
       else iter(a + 1, op(result, f(a)))
@@ -367,8 +360,7 @@ object MD {
 //############################################################################
 
 object ME {
-  def reduce(op: (Double,Double) => Double, zero:Double)
-    (f: Int => Double)(a: Int,b: Int): Double = {
+  def reduce(op: (Double,Double) => Double, zero:Double)(f: Int => Double)(a: Int,b: Int): Double = {
     def iter(a: Int, result: Double): Double = {
       if (a > b) result
       else iter(a + 1, op(result, f(a)))

@@ -83,9 +83,10 @@ package scala.tools.nsc.ant {
 
       abstract class PermissibleValue {
         val values: List[String];
-        def isPermissible(value: String): Boolean =
+        def isPermissible(value: String): Boolean = (
           (value == "") ||
-          values.exists(v: String => v startsWith value);
+          values.exists(v: String => v startsWith value)
+        )
       }
 
       /** Defines valid values for the logging property. */

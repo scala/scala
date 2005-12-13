@@ -130,14 +130,14 @@ object M3 {
       else {
         def isSafe(column: int, placement: Placement): boolean =
           placement forall {
-            pos => pos._2 != column
-              && abs(pos._2 - column) != row - pos._1
+            pos => (pos._2 != column &&
+              abs(pos._2 - column) != row - pos._1)
           }
 
         def adjoinRow(placement: Placement): List[Placement] =
           range(1, n)
-            filter (column => isSafe(column, placement))
-            map (column => Pair(row, column) :: placement);
+            .filter (column => isSafe(column, placement))
+            .map (column => Pair(row, column) :: placement);
 
         placeQueens(row - 1) flatMap adjoinRow
       }
@@ -173,10 +173,10 @@ object M4 {
         List(List())
       else {
         def isSafe(col: Int, p: Placement, delta: Int): Boolean =
-          p.isEmpty ||
-          (col != p.head &&
-           abs(col - p.head) != delta &&
-           isSafe(col, p.tail, delta + 1));
+          (p.isEmpty ||
+           (col != p.head &&
+            abs(col - p.head) != delta &&
+            isSafe(col, p.tail, delta + 1)));
 
         for (
           val placement <- placeQueens(row - 1);

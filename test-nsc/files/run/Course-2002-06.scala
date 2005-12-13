@@ -155,8 +155,7 @@ object M0 {
   /** Transform the frame in which the painter is to be drawn, hence
    *  changing the appearance of the painter
    */
-  def transformPainter(origin: Vector, newX: Vector, newY: Vector)
-                      (painter: Painter): Painter = {
+  def transformPainter(origin: Vector, newX: Vector, newY: Vector)(painter: Painter): Painter = {
     frame: Frame => {
       val newOrigin = frame.coordMap(origin);
       val newFrame = new Frame(newOrigin,

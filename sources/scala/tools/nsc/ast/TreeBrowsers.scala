@@ -215,7 +215,7 @@ abstract class TreeBrowsers {
             str.append(buf.toString());
           }
           str.append("\nSymbol Attributes: \n").append(TreeInfo.symbolAttributes(t));
-          str.append("\nType: \n").append(t.tpe.toString());
+          str.append("\nType: \n").append(if (t.tpe ne null) t.tpe.toString() else "");
         }
       setText(str.toString());
     }
