@@ -6,28 +6,28 @@
 
 // $Id$
 
-import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Vector;
-
-import org.apache.tools.ant.AntClassLoader;
-import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.DirectoryScanner;
-import org.apache.tools.ant.Project;
-import org.apache.tools.ant.taskdefs.MatchingTask;
-import org.apache.tools.ant.types.Path;
-import org.apache.tools.ant.util.FileUtils;
-import org.apache.tools.ant.util.GlobPatternMapper;
-import org.apache.tools.ant.util.SourceFileScanner;
-import org.apache.tools.ant.types.EnumeratedAttribute;
-import org.apache.tools.ant.types.Reference;
-
-import scala.tools.nsc.reporters.{Reporter,ConsoleReporter};
-
 
 package scala.tools.nsc.ant {
+
+    import java.io.File;
+    import java.net.URL;
+    import java.net.URLClassLoader;
+    import java.util.ArrayList;
+    import java.util.Vector;
+
+    import org.apache.tools.ant.AntClassLoader;
+    import org.apache.tools.ant.BuildException;
+    import org.apache.tools.ant.DirectoryScanner;
+    import org.apache.tools.ant.Project;
+    import org.apache.tools.ant.taskdefs.MatchingTask;
+    import org.apache.tools.ant.types.Path;
+    import org.apache.tools.ant.util.FileUtils;
+    import org.apache.tools.ant.util.GlobPatternMapper;
+    import org.apache.tools.ant.util.SourceFileScanner;
+    import org.apache.tools.ant.types.EnumeratedAttribute;
+    import org.apache.tools.ant.types.Reference;
+
+    import scala.tools.nsc.reporters.{Reporter,ConsoleReporter};
 
     /**
      * An Ant task to compile with the new Scala compiler (NSC).
@@ -536,14 +536,14 @@ package scala.tools.nsc.ant {
         private def getClassLoaderClasspath(classLoader: ClassLoader): List[File] = {
             val parentClassLoader = classLoader.getParent();
             val classloaderName = classLoader.getClass().getName();
-            (if (parentClassLoader != null && parentClassLoader != classLoader)
+            ((if (parentClassLoader != null && parentClassLoader != classLoader)
                 getClassLoaderClasspath(parentClassLoader)
             else Nil) :::
             (if (classloaderName.endsWith("URLClassLoader"))
                 List.fromArray((classLoader.asInstanceOf[URLClassLoader]).getURLs()).map(url:URL=>new File(url.getFile()))
             else if (classloaderName.endsWith("AntClassLoader2") || classloaderName.endsWith("AntClassLoader"))
                 List.fromArray(( classLoader.asInstanceOf[AntClassLoader]).getClasspath().split(File.pathSeparator)).map(nameToFile(f:File=>f))
-            else Nil)
+            else Nil))
         }
 
         /**

@@ -262,7 +262,6 @@
                 <pathelement location="${ant.jar}"/>
             </classpath>
             <include name="scala/tools/nsc/**/*.scala"/>
-            <exclude name="scala/tools/nsc/ant/*.scala"/>
         </nsc>
     </target>
 
