@@ -561,7 +561,7 @@ package scala.tools.nsc.ant {
             }
 
             val mapper = new GlobPatternMapper();
-            mapper.setTo("*.symbl");
+            mapper.setTo("*.class");
             mapper.setFrom("*.scala");
 
             // Scans source directories to build up a compile lists.
