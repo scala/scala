@@ -91,7 +91,8 @@ abstract class GenJVM extends SubComponent {
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
       val outfile = getFile(jclass, ".class");
       jclass.writeTo(outfile);
-      informProgress("wrote " + outfile);
+      val file = scala.tools.util.AbstractFile.getFile(outfile);
+      informProgress("wrote " + outfile + " " + (if (file != null) "" + file.getFile() + " " + file.getFile().exists() else "no file"));
     }
 
     var serialVUID: Option[Long] = None;

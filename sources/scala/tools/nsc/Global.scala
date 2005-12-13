@@ -80,7 +80,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def error(msg: String) = reporter.error(null, msg);
   def warning(msg: String) = reporter.warning(null, msg);
-  def inform(msg: String) = reporter.info(null, msg, true);
+  def inform(msg: String) = System.err.println(msg);
+
+    //reporter.info(null, msg, true);
 
   def informProgress(msg: String) =
     if (settings.verbose.value) inform("[" + msg + "]");
@@ -121,7 +123,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     settings.extdirs.value);
 
   if (settings.verbose.value) {
-    System.out.println("classpath = " + classPath);
+    System.err.println("classpath = " + classPath);
   }
 
   def getSourceFile(f: AbstractFile): SourceFile =
