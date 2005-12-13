@@ -1,0 +1,4 @@
+variances.scala:2: covariant type a occurs in contravariant position in type Vector[a] of value x
+  def append(x: Vector[a]): Vector[a] 
+             ^
+one error found
