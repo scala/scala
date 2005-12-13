@@ -55,7 +55,7 @@ abstract class GenJVM extends SubComponent {
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY);
 
     // Scala attributes
-    val SerializableAttr = definitions.getClass("scala.serializable").tpe;
+    val SerializableAttr = definitions.SerializableAttr;
     val SerialVersionUID = definitions.getClass("scala.SerialVersionUID").tpe;
     val CloneableAttr    = definitions.getClass("scala.cloneable").tpe;
     val TransientAtt     = definitions.getClass("scala.transient").tpe;
