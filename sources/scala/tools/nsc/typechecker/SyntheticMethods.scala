@@ -31,8 +31,11 @@ import util.ListBuffer;
         !(ObjectClass isSubClass sym.owner) && !(sym hasFlag DEFERRED)))
     }
 
-    def syntheticMethod(name: Name, flags: int, tpe: Type) = {
-      val method = clazz.newMethod(clazz.pos, name) setFlag (flags | OVERRIDE) setInfo tpe;
+    def syntheticMethod(name: Name, flags: int, tpe: Type) =
+      newSyntheticMethod(name, flags | OVERRIDE, tpe);
+
+    def newSyntheticMethod(name: Name, flags: int, tpe: Type) = {
+      val method = clazz.newMethod(clazz.pos, name) setFlag (flags) setInfo tpe;
       clazz.info.decls.enter(method);
       method
     }
@@ -82,25 +85,31 @@ import util.ListBuffer;
 	Apply(gen.mkRef(target), This(clazz) :: (vparamss.head map Ident))));
     }
 
+    val SerializableAttr = definitions.SerializableAttr;
+
+    def isSerializable(clazz: Symbol): Boolean = {
+      clazz.attributes.exists(p => p match {
+        case Pair(SerializableAttr, _) => true;
+        case _ => false
+      })
+    }
+
     def readResolveMethod: Tree = {
       // !!! the synthetic method "readResolve" should be private,
       // but then it is renamed !!!
-      val method = syntheticMethod(nme.readResolve, PROTECTED, MethodType(List(), ObjectClass.tpe));
+      val method = newSyntheticMethod(nme.readResolve, PROTECTED,
+                                      MethodType(List(), ObjectClass.tpe));
       typed(DefDef(method, vparamss => gen.mkRef(clazz.sourceModule)))
     }
 
     val ts = new ListBuffer[Tree];
     if ((clazz hasFlag CASE) && !phase.erasedTypes) {
+      // case classes are implicitly declared serializable
+      clazz.attributes = Pair(SerializableAttr, List()) :: clazz.attributes;
+
       ts += tagMethod;
       if (clazz.isModuleClass) {
 	if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod;
-	if (clazz.isSubClass(SerializableClass)) {
-	  // If you serialize a singleton and then deserialize it twice,
-	  // you will have two instances of your singleton, unless you implement
-	  // the readResolve() method (see http://www.javaworld.com/javaworld/
-	  // jw-04-2003/jw-0425-designpatterns_p.html)
-	  if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
-	}
       } else {
 	if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_);
 	if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_);
@@ -109,6 +118,13 @@ import util.ListBuffer;
       if (!hasImplementation(nme.caseElement)) ts += caseElementMethod;
       if (!hasImplementation(nme.caseArity)) ts += caseArityMethod;
       if (!hasImplementation(nme.caseName)) ts += caseNameMethod;
+    }
+    if (!phase.erasedTypes && clazz.isModuleClass && isSerializable(clazz)) {
+      // If you serialize a singleton and then deserialize it twice,
+      // you will have two instances of your singleton, unless you implement
+      // the readResolve() method (see http://www.javaworld.com/javaworld/
+      // jw-04-2003/jw-0425-designpatterns_p.html)
+      if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
     }
     val synthetics = ts.toList;
     copy.Template(
