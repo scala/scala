@@ -113,7 +113,7 @@ import Flags._;
     def isFunctionType(tp: Type): boolean = tp match {
       case TypeRef(_, sym, args) =>
         ((args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
-         (sym == FunctionClass(args.length - 1)))
+        (sym == FunctionClass(args.length - 1)))
       case _ =>
         false
     }
@@ -165,6 +165,10 @@ import Flags._;
     var BoxedUnitModule: Symbol = _;
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT");
     var ObjectRefClass: Symbol = _;
+
+    // special attributes
+    var SerializableAttr: Type = _;
+
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname, true);
@@ -406,6 +410,8 @@ import Flags._;
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit");
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit");
       ObjectRefClass = getClass("scala.runtime.ObjectRef");
+
+      SerializableAttr = getClass("scala.serializable").tpe;
     }
   }
 }
