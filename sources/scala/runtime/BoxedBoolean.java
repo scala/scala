@@ -10,7 +10,9 @@
 
 package scala.runtime;
 
-public final class BoxedBoolean {
+public final class BoxedBoolean
+    implements java.io.Serializable
+{
 
     private final static BoxedBoolean TRUE = new BoxedBoolean(true);
     private final static BoxedBoolean FALSE = new BoxedBoolean(false);

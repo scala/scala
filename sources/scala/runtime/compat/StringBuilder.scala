@@ -17,6 +17,10 @@ class StringBuilder {
     str.append(x);
     this
   }
+  def append(x: String): StringBuilder = {
+    str.append(x);
+    this
+  }
   def length(): Int = str.length();
   override def toString() = str.toString();
 }

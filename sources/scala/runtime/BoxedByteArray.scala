@@ -10,6 +10,7 @@
 
 package scala.runtime;
 
+[serializable]
 final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
 
   def length: Int = value.length;

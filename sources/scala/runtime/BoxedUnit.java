@@ -7,7 +7,9 @@
 \*                                                                      */
 package scala.runtime;
 
-public final class BoxedUnit {
+public final class BoxedUnit
+    implements java.io.Serializable
+{
 
     public final static BoxedUnit UNIT = new BoxedUnit();
 

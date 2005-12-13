@@ -7,7 +7,9 @@
 \*                                                                      */
 package scala.runtime;
 
-public class BoxedDouble extends BoxedNumber {
+public class BoxedDouble extends BoxedNumber
+    implements java.io.Serializable
+{
 
     public static BoxedDouble box(double value) {
 	return new BoxedDouble(value);

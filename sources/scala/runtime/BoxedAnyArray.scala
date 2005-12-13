@@ -12,6 +12,7 @@ package scala.runtime;
 
 /** Arrays created by    new Array[T](length)    where T is a type variable
  */
+[serializable]
 final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
   private var boxed = new Array[Object](length);

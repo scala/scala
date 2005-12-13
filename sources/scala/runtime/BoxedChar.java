@@ -7,7 +7,9 @@
 \*                                                                      */
 package scala.runtime;
 
-public class BoxedChar extends BoxedNumber {
+public class BoxedChar extends BoxedNumber
+    implements java.io.Serializable
+{
 
     private static final int MinHashed = 0;
     private static final int MaxHashed = 255;

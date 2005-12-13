@@ -7,7 +7,9 @@
 \*                                                                      */
 package scala.runtime;
 
-public class BoxedFloat extends BoxedNumber {
+public class BoxedFloat extends BoxedNumber
+    implements java.io.Serializable
+{
 
     public static BoxedFloat box(float value) {
 	return new BoxedFloat(value);

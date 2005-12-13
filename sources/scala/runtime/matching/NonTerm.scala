@@ -46,7 +46,7 @@ case class HedgeNT(i:int) extends NonTerm with Ordered[HedgeNT] {
   }
 };
 
-object EMPTYHEDGE extends HedgeNT( 0, true ) ;
-object ANYHEDGE   extends HedgeNT( 1, true ) ;
+//case object EMPTYHEDGE extends HedgeNT( 0, true ) ;
+//case object ANYHEDGE   extends HedgeNT( 1, true ) ;
 object ANYTREE    extends TreeNT( 1 );
 
