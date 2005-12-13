@@ -97,8 +97,6 @@ import collection.mutable.HashMap;
     val SUPERCONSTRmode = 0x100; // Set for the `super' in a superclass constructor call
                                  // super.<init>
 
-    val STATmode = 0x200;        // Set if we are type-checking a statement.
-
     private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode;
 
     /** Report a type error.
@@ -326,8 +324,9 @@ import collection.mutable.HashMap;
 	typed(applyImplicitArgs(tree1), mode, pt)
       case mt: MethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
 	                      isCompatible(tree.tpe, pt)) => // (4.2)
-	if (tree.symbol.isConstructor || (mode & STATmode) != 0) {
-          errorTree(tree, "missing arguments for " + tree.symbol)
+	if (tree.symbol.isConstructor || pt == WildcardType ||
+            !(pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) {
+          errorTree(tree, "missing arguments for " + tree.symbol) //debug
 	} else {
           if (settings.debug.value) log("eta-expanding " + tree + ":" + tree.tpe + " to " + pt);//debug
 	  typed(etaExpand(tree), mode, pt)
@@ -627,7 +626,7 @@ import collection.mutable.HashMap;
 	  Pair(call, List())
       }
       val Pair(superConstr, superArgs) = decompose(rhs);
-      assert(superConstr.symbol != null, superConstr);//debug
+      assert(superConstr.symbol != null);//debug
       if (superConstr.symbol.isPrimaryConstructor) {
 	val superClazz = superConstr.symbol.owner;
         if (!superClazz.hasFlag(JAVA)) {
@@ -825,8 +824,7 @@ import collection.mutable.HashMap;
 	    EmptyTree
 	  case _ =>
 	    (if (exprOwner != context.owner && (!stat.isDef || stat.isInstanceOf[LabelDef]))
-	      newTyper(context.make(stat, exprOwner)) else this)
-                .typed(stat, EXPRmode | STATmode, WildcardType)
+	      newTyper(context.make(stat, exprOwner)) else this).typed(stat)
 	}
       }
 
@@ -1149,7 +1147,8 @@ import collection.mutable.HashMap;
 /*
           newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)
 */
-          tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME) setFlag SYNTHETIC;
+          tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME)
+            .setFlag(SYNTHETIC).setInfo(NoType);
           newTyper(context.makeNewScope(tree, tree.symbol)).typedFunction(fun, mode, pt)
 
         case Assign(lhs, rhs) =>
@@ -1243,6 +1242,9 @@ import collection.mutable.HashMap;
 	  val args1 = List.mapConserve(args)(typedType);
 	  // do args first in order to maintain conext.undetparams on the function side.
           typedTypeApply(typed(fun, funmode | TAPPmode, WildcardType), args1)
+
+        case Apply(Block(stats, expr), args) =>
+          typed1(Block(stats, Apply(expr, args)), mode, pt)
 
         case Apply(fun, args) =>
 	  val stableApplication = fun.symbol != null && fun.symbol.isMethod && fun.symbol.isStable;

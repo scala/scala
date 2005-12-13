@@ -103,7 +103,7 @@ abstract class Constructors extends Transform {
 	  }
 	case ValDef(mods, name, tpt, rhs) =>
 	  if (stat.symbol.tpe.isInstanceOf[ConstantType])
-	    assert(stat.symbol.getter != NoSymbol, stat)
+	    assert(stat.symbol.getter(stat.symbol.owner) != NoSymbol, stat)
 	  else {
 	    if (rhs != EmptyTree) {
               val rhs1 = intoConstructor(stat.symbol, rhs);

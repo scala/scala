@@ -45,7 +45,7 @@ abstract class ApproximateNumeric[Type] (
     case Tuple2(2,128) => "DOUBLE PRECISION"
     case Tuple2(2,p) =>
       throw exception.UnsupportedFeature("SQL-99 does not support an approximate numeric type with a binary defined precision other than 16, 32 and 64 bits");
-    case Tuple2(10,p) => "FLOAT (" + p.toString + ")"
+    case Tuple2(10,p) => "FLOAT (" + p.toString() + ")"
     case Tuple2(pr,_) =>
       throw exception.UnsupportedFeature("SQL-99 does not support the precision of an approximate numeric type to be defined in a radix other than 2 or 10");
   }

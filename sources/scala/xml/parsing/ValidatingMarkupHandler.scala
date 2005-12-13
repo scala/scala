@@ -39,7 +39,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
       log("advanceDFA(trans): "+trans);
       trans.get(ContentModel.ElemName(label)) match {
           case Some(qNew) => qCurrent = qNew
-          case _          => reportValidationError(pos, "DTD says, wrong element, expected one of "+trans.keys.toString);
+          case _          => reportValidationError(pos, "DTD says, wrong element, expected one of "+trans.keys.toString());
         }
     }
     // advance in current automaton

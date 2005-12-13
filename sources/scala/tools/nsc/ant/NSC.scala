@@ -491,7 +491,7 @@ package scala.tools.nsc.ant {
          * @return The file corresponding to the provided name.
          */
         private def nameToFile(pathName: String, origin: File)(name: String): File = {
-            nameToFile(testReadableFile(pathName), origin)(name);
+            nameToFile((f: File) => testReadableFile(pathName)(f), origin)(name);
         }
 
         /**
@@ -501,7 +501,7 @@ package scala.tools.nsc.ant {
          * @return The file corresponding to the provided name.
          */
         private def nameToFile(pathName: String)(name: String): File = {
-            nameToFile(testReadableFile(pathName))(name);
+            nameToFile((f: File) => testReadableFile(pathName)(f))(name);
         }
 
         /**

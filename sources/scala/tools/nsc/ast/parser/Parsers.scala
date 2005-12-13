@@ -1530,7 +1530,10 @@ import Tokens._;
 	val vparamss = paramClauses(name, implicitViews.toList, (mods & Flags.CASE) != 0);
 	val thistpe = requiresTypeOpt();
 	val template = classTemplate(mods, name, vparamss);
-	ClassDef(mods, name, tparams, thistpe, template)
+	val mods1 = if ((mods & TRAIT) != 0 &&
+                        (template.body forall treeInfo.isInterfaceMember)) mods | Flags.INTERFACE
+                    else mods;
+	ClassDef(mods1, name, tparams, thistpe, template)
       }
 
     /** ObjectDef       ::= Id ClassTemplate

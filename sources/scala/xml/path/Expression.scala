@@ -4,8 +4,8 @@ object Expression {
 
   final def testFromString(x: String): Test = {
     x.charAt(0) match {
-      case '*' if( x.length == 1 ) => WildcardTest;
-      case _                       => NameTest(x);
+      case '*' if( x.length() == 1 ) => WildcardTest;
+      case _                         => NameTest(x);
     }
   }
 

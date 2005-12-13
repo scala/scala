@@ -56,13 +56,13 @@ abstract class Select extends Relation {
     }) +
     (selectList match {
       case Nil => " *"
-      case _ => " " + selectList.tail.foldLeft(selectList.head.sqlString)
-      ((name:String, dc:DerivedColumn) => name + ", " + dc.sqlString)
+      case _ => (" " + selectList.tail.foldLeft(selectList.head.sqlString)
+                 ((name:String, dc:DerivedColumn) => name + ", " + dc.sqlString))
     }) +
     (fromClause match {
       case Nil => error("Empty from clause is not allowed")
-      case _ => " FROM " + fromClause.tail.foldLeft(fromClause.head.sqlInnerString)
-      ((name:String, rel:Relation) => name + ", " + rel.sqlInnerString)
+      case _ => (" FROM " + fromClause.tail.foldLeft(fromClause.head.sqlInnerString)
+      ((name:String, rel:Relation) => name + ", " + rel.sqlInnerString))
     }) +
     (whereClause match {
       case None => ""

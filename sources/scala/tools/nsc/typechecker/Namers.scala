@@ -84,11 +84,14 @@ trait Namers: Analyzer {
     }
 
     private def enterPackageSymbol(pos: int, name: Name): Symbol = {
-      val p: Symbol = context.scope.lookup(name);
-      if (p.isPackage && context.scope == p.owner.info.decls) {
+      val cscope = if (context.owner == EmptyPackageClass) RootClass.info.decls
+                   else context.scope;
+      val p: Symbol = cscope.lookup(name);
+      if (p.isPackage && cscope == p.owner.info.decls) {
         p
       } else {
-        val pkg = context.owner.newPackage(pos, name);
+        val cowner = if (context.owner == EmptyPackageClass) RootClass else context.owner;
+        val pkg = cowner.newPackage(pos, name);
         pkg.moduleClass.setInfo(new PackageClassInfoType(new Scope(), pkg.moduleClass));
         pkg.setInfo(pkg.moduleClass.tpe);
         enterInScope(pkg)
@@ -189,8 +192,7 @@ trait Namers: Analyzer {
 		tree.pos, mods & AccessFlags | METHOD | CASE, name.toTermName)
 	          .setInfo(innerNamer.caseFactoryCompleter(tree))
             }
-	    val mods1: int = if (impl.body forall treeInfo.isInterfaceMember) mods | INTERFACE else mods;
-	    tree.symbol = enterClassSymbol(tree.pos, mods1, name);
+	    tree.symbol = enterClassSymbol(tree.pos, mods, name);
 	    finishWith(tparams);
 	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods | MODULE | FINAL, name);
