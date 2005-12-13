@@ -6,6 +6,7 @@
 dis/List.scala
 
 jvm/JavaInteraction.scala
+#jvm/RunTimeTypes.scala
 #jvm/matching.scala
 jvm/serialization.scala
 jvm/xmlLiterals.scala
@@ -72,6 +73,7 @@ neg/refine.scala
 neg/seqtest.scala
 neg/stable.scala
 neg/tests.scala
+neg/variances.scala
 neg/vincent1.scala
 neg/xmlParsing001.scala
 neg/xmlParsing002.scala
@@ -234,6 +236,7 @@ run/Course-2002-13.scala
 run/NestedClasses.scala
 run/arrays.scala
 run/bridges.scala
+run/bug508.scala
 run/bugs.scala
 run/boolexprs.scala
 run/constructors.scala
