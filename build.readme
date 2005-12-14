@@ -6,7 +6,7 @@ This is version 1.0 of the Scala Ant-based build system SABBUS.
 QUICK START
 -----------
 
-- Copy the 'build.TEMPLATE.properties' file in 'config' to
+- Copy the 'build.TEMPLATE.properties' file in 'build.support' to
   'build.USER_NAME.properties'. Set all properties in this file.
 
 - In a terminal window, type:
