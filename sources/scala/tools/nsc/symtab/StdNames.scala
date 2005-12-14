@@ -213,6 +213,8 @@ import scala.tools.nsc.util.NameTransformer;
     val While = newTermName("While");
     val apply = newTermName("apply");
     val array = newTermName("array");
+    val assert_ = newTermName("assert");
+    val assume_ = newTermName("assume");
     val asInstanceOf = newTermName("asInstanceOf");
     val asInstanceOfErased = newTermName("asInstanceOf$erased");
     val box = newTermName("box");

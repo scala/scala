@@ -253,9 +253,16 @@ abstract class UnCurry extends InfoTransform {
           }
 
         case Apply(fn, args) =>
-          withNeedLift(true) {
-	    val formals = fn.tpe.paramTypes;
-            copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
+          if (settings.noassertions.value &&
+              fn.symbol != null &&
+              (fn.symbol.name == nme.assert_ || fn.symbol.name == nme.assume_) &&
+              fn.symbol.owner == PredefModule.moduleClass) {
+            Literal(()).setPos(tree.pos).setType(UnitClass.tpe)
+          } else {
+            withNeedLift(true) {
+	      val formals = fn.tpe.paramTypes;
+              copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
+            }
           }
 
         case Assign(Select(_, _), _) =>

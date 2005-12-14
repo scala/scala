@@ -67,7 +67,7 @@ abstract class UnPickler {
     private def isRefinementSymbolEntry(i: int): boolean = {
       val savedIndex = readIndex;
       readIndex = index(i);
-      assert(readByte() == CLASSsym);
+      if (readByte() != CLASSsym) assert(false);
       readNat();
       val result = readNameRef() == nme.REFINE_CLASS_NAME.toTypeName;
       readIndex = savedIndex;

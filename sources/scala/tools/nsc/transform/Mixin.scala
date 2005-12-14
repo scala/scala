@@ -335,6 +335,9 @@ abstract class Mixin extends InfoTransform {
           val parents1 = currentOwner.info.parents map (t => TypeTree(t) setPos tree.pos);
 	  val body1 = addNewDefs(currentOwner, body);
           copy.Template(tree, parents1, body1)
+	case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
+	if (tree.symbol == Object_asInstanceOf && (qual.tpe <:< targ.tpe)) =>
+          qual
         case Apply(Select(qual, _), args) =>
           def staticCall(target: Symbol) = {
 	    if (target == NoSymbol)
@@ -371,26 +374,18 @@ abstract class Mixin extends InfoTransform {
           }
 
         case This(_) if tree.symbol.isImplClass =>
-	  assert(tree.symbol == currentOwner.enclClass, "" + tree + " " + tree.symbol + " " + currentOwner.enclClass);
+	  assert(tree.symbol == currentOwner.enclClass);
           selfRef(tree.pos)
         case Select(Super(_, _), name) =>
           tree
         case Select(qual, name) if sym.owner.isImplClass && !isStatic(sym) =>
-	  if (sym.isMethod) {
-            assert(false, sym);//!!!
-	    assert(sym hasFlag (LIFTED | BRIDGE), sym);
-	    val sym1 = toInterface(qual.tpe).member(sym.name);
-	    assert(sym1 != NoSymbol, sym);//debug
-            assert(!(sym1 hasFlag OVERLOADED), sym);//debug
-	    tree setSymbol sym1
-	  } else {
-	    val getter = sym.getter(enclInterface);
-	    assert(getter != NoSymbol);
-            localTyper.typed {
-	      atPos(tree.pos) {
-		Apply(Select(qual, getter), List())
-	      }
-            }
+	  assert(!sym.isMethod, sym);
+	  val getter = sym.getter(enclInterface);
+	  assert(getter != NoSymbol);
+          localTyper.typed {
+	    atPos(tree.pos) {
+	      Apply(Select(qual, getter), List())
+	    }
 	  }
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
           localTyper.typed {

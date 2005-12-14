@@ -325,7 +325,6 @@ abstract class ClassfileParser {
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar());
 	  val c1 = c convertTo symtype;
-	  assert(c1 != null, "cannot convert " + c + " to " + symtype);
           sym.setInfo(ConstantType(c1));
         case nme.InnerClassesATTR =>
           parseInnerClasses()

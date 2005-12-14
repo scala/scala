@@ -11,6 +11,7 @@ class Settings(error: String => unit) {
 
   val debuginfo     = BooleanSetting("-g", "Generate debugging info");
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings");
+  val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions");
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing");
   val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files",
                                      System.getProperty("scala.class.path",

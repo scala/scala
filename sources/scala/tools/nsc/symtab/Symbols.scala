@@ -365,28 +365,28 @@ import Flags._;
     /** Return info without checking for initialization or completing */
     final def rawInfo: Type = {
       if (limit < phase.id) {
-  if (validForRun == currentRun) {
-    val current = phase;
-          var itr = infoTransformers.nextFrom(limit);
-          infoTransformers = itr; // caching optimization
-          while (itr.pid != NoPhase.id && itr.pid < current.id) {
-            phase = phaseWithId(itr.pid);
-            val info1 = itr.transform(this, infos.info);
-            limit = phase.id + 1;
-      if (info1 ne infos.info) {
-        infos = new TypeHistory(limit, info1, infos);
-            }
-            itr = itr.nextFrom(limit)
-          }
-          phase = current;
-          limit = current.id;
-  }
-  assert(infos != null, name);
-  infos.info
+        if (validForRun == currentRun) {
+          val current = phase;
+                var itr = infoTransformers.nextFrom(limit);
+                infoTransformers = itr; // caching optimization
+                while (itr.pid != NoPhase.id && itr.pid < current.id) {
+                  phase = phaseWithId(itr.pid);
+                  val info1 = itr.transform(this, infos.info);
+                  limit = phase.id + 1;
+            if (info1 ne infos.info) {
+              infos = new TypeHistory(limit, info1, infos);
+                  }
+                  itr = itr.nextFrom(limit)
+                }
+                phase = current;
+                limit = current.id;
+        }
+        assert(infos != null, name);
+        infos.info
       } else {
-  var infos = this.infos;
-  while (phase.id < infos.start && infos.prev != null) infos = infos.prev;
-  infos.info
+        var infos = this.infos;
+        while (phase.id < infos.start && infos.prev != null) infos = infos.prev;
+        infos.info
       }
     }
 
