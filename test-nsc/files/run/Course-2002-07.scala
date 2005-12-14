@@ -419,7 +419,7 @@ object MA {
     case Prod(e1, e2) => eval(e1) * eval(e2)
   }
 
-  def evalvars(xs: List[Pair[String,int]]) = {
+  def evalvars(xs: List[Pair[String,int]]): Expr => Int = {
     def loop(e: Expr): int = e match {
       case Number(n) => n
       case Var(name) => lookup(xs,name)

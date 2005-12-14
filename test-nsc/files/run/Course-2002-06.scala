@@ -168,14 +168,14 @@ object M0 {
 
   /** Flip the painter vertically
    */
-  def flipVert =
+  def flipVert: Painter => Painter =
     transformPainter(new Vector(0.0, 1.0),
                      new Vector(1.0, 1.0),
                      new Vector(0.0, 0.0));
 
   /** Flip the painter horizontally
    */
-  def flipHoriz =
+  def flipHoriz: Painter => Painter =
     transformPainter(new Vector(1.0, 0.0),
                      new Vector(0.0, 0.0),
                      new Vector(1.0, 1.0));

@@ -92,7 +92,7 @@ object M3 {
 //############################################################################
 
 object M4 {
-  def sum(f: Int => Double) = {
+  def sum(f: Int => Double): (Int, Int) => Double = {
     def sumF(a: Int, b: Int): Double =
       if (a > b) 0
       else f(a) + sumF(a + 1, b);
@@ -140,9 +140,9 @@ object M6 {
     if (a > b) 0
     else f(a) + sum(f)(a + 1, b);
 
-  def sumInts = sum(x => x);
-  def sumCubes = sum(x => x * x * x);
-  def sumReciprocals = sum(x => 1.0/x);
+  def sumInts: (Int, Int) => Double = sum(x => x);
+  def sumCubes: (Int, Int) => Double = sum(x => x * x * x);
+  def sumReciprocals: (Int, Int) => Double = sum(x => 1.0/x);
   def sumPi = (n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n));
 
   Console.println(sumInts(1,4));
@@ -163,9 +163,9 @@ object M7 {
     iter(a, 0)
   }
 
-  def sumInts = sum(x => x);
-  def sumCubes = sum(x => x * x * x);
-  def sumReciprocals = sum(x => 1.0/x);
+  def sumInts: (Int, Int) => Double = sum(x => x);
+  def sumCubes: (Int, Int) => Double = sum(x => x * x * x);
+  def sumReciprocals: (Int, Int) => Double = sum(x => 1.0/x);
   def sumPi = (n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n));
 
   Console.println(sumInts(1,4));
@@ -201,8 +201,10 @@ object M9 {
 
   def inc(x: Int) = x + 1;
 
-  def sum(f: Int => Double) = accumulate((x: Double, y: Double) => x + y, 0d, f, inc);
-  def product(f: Int => Double) = accumulate((x: Double, y: Double) => x * y, 1d, f, inc);
+  def sum(f: Int => Double): (Int, Int) => Double = accumulate((x: Double, y: Double) => x + y,
+                                                               0d, f, inc);
+  def product(f: Int => Double): (Int, Int) => Double = accumulate((x: Double, y: Double) => x * y,
+                                                                   1d, f, inc);
 
   def sumInts = sum(x => x);
   def sumCubes = sum(x => x * x * x);
@@ -325,8 +327,10 @@ object MD {
     iter(a, zero)
   }
 
-  def plus (x:Double,y:Double) = x+y; val sum     = reduce(plus , 0);
-  def times(x:Double,y:Double) = x*y; val product = reduce(times, 1);
+  def plus (x:Double,y:Double) = x+y;
+  val sum: (Int => Double) => (Int, Int) => Double = reduce(plus , 0);
+  def times(x:Double,y:Double) = x*y;
+  val product: (Int => Double) => (Int, Int) => Double = reduce(times, 1);
 
   def factorial(n: Int) = product(x => x)(1 , n);
 
@@ -368,8 +372,8 @@ object ME {
     iter(a, zero)
   }
 
-  def sum     = reduce((x,y) => x + y, 0);
-  def product = reduce((x,y) => x * y, 1);
+  def sum: (Int => Double) => (Int, Int) => Double     = reduce((x,y) => x + y, 0);
+  def product: (Int => Double) => (Int, Int) => Double = reduce((x,y) => x * y, 1);
 
   def factorial(n: Int) = product(x => x)(1 , n);
 

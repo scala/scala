@@ -19,7 +19,7 @@ object M0 {
   }
 
   def test = {
-    val isort = quicksort[Int]((x,y) => x < y);
+    val isort: List[Int] => List[Int] = quicksort[Int]((x,y) => x < y);
     val list0 = List(6,3,1,8,7,1,2,5,8,4,3,4,8);
     val list1 = quicksort[Int]((x,y) => x < y)(list0);
     val list2 = quicksort[Int]((x,y) => x < y)(list1);
