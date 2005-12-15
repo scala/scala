@@ -117,4 +117,65 @@ public abstract class Long    extends AnyVal implements java.io.Serializable {
     public long    $amp       (long    that) { return  value &  that; }
     public long    $up        (long    that) { return  value ^  that; }
 
+
+    public boolean $eq$eq     (int    that) { return  value == that; }
+    public boolean $bang$eq   (int    that) { return  value != that; }
+    public boolean $less      (int    that) { return  value <  that; }
+    public boolean $greater   (int    that) { return  value >  that; }
+    public boolean $less$eq   (int    that) { return  value <= that; }
+    public boolean $greater$eq(int    that) { return  value >= that; }
+    public long    $plus      (int    that) { return  value +  that; }
+    public long    $minus     (int    that) { return  value -  that; }
+    public long    $times     (int    that) { return  value *  that; }
+    public long    $div       (int    that) { return  value /  that; }
+    public long    $percent   (int    that) { return  value %  that; }
+    public long    $bar       (int    that) { return  value |  that; }
+    public long    $amp       (int    that) { return  value &  that; }
+    public long    $up        (int    that) { return  value ^  that; }
+
+    public boolean $eq$eq     (short    that) { return  value == that; }
+    public boolean $bang$eq   (short    that) { return  value != that; }
+    public boolean $less      (short    that) { return  value <  that; }
+    public boolean $greater   (short    that) { return  value >  that; }
+    public boolean $less$eq   (short    that) { return  value <= that; }
+    public boolean $greater$eq(short    that) { return  value >= that; }
+    public long    $plus      (short    that) { return  value +  that; }
+    public long    $minus     (short    that) { return  value -  that; }
+    public long    $times     (short    that) { return  value *  that; }
+    public long    $div       (short    that) { return  value /  that; }
+    public long    $percent   (short    that) { return  value %  that; }
+    public long    $bar       (short    that) { return  value |  that; }
+    public long    $amp       (short    that) { return  value &  that; }
+    public long    $up        (short    that) { return  value ^  that; }
+
+    public boolean $eq$eq     (char    that) { return  value == that; }
+    public boolean $bang$eq   (char    that) { return  value != that; }
+    public boolean $less      (char    that) { return  value <  that; }
+    public boolean $greater   (char    that) { return  value >  that; }
+    public boolean $less$eq   (char    that) { return  value <= that; }
+    public boolean $greater$eq(char    that) { return  value >= that; }
+    public long    $plus      (char    that) { return  value +  that; }
+    public long    $minus     (char    that) { return  value -  that; }
+    public long    $times     (char    that) { return  value *  that; }
+    public long    $div       (char    that) { return  value /  that; }
+    public long    $percent   (char    that) { return  value %  that; }
+    public long    $bar       (char    that) { return  value |  that; }
+    public long    $amp       (char    that) { return  value &  that; }
+    public long    $up        (char    that) { return  value ^  that; }
+
+    public boolean $eq$eq     (byte    that) { return  value == that; }
+    public boolean $bang$eq   (byte    that) { return  value != that; }
+    public boolean $less      (byte    that) { return  value <  that; }
+    public boolean $greater   (byte    that) { return  value >  that; }
+    public boolean $less$eq   (byte    that) { return  value <= that; }
+    public boolean $greater$eq(byte    that) { return  value >= that; }
+    public long    $plus      (byte    that) { return  value +  that; }
+    public long    $minus     (byte    that) { return  value -  that; }
+    public long    $times     (byte    that) { return  value *  that; }
+    public long    $div       (byte    that) { return  value /  that; }
+    public long    $percent   (byte    that) { return  value %  that; }
+    public long    $bar       (byte    that) { return  value |  that; }
+    public long    $amp       (byte    that) { return  value &  that; }
+    public long    $up        (byte    that) { return  value ^  that; }
+
 }
