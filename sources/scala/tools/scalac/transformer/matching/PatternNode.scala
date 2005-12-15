@@ -112,6 +112,7 @@ package scala.tools.scalac.transformer.matching {
     *  "q matches" => "p matches"
     */
    def isSameAs(q: PatternNode): boolean = {
+     //Console.println("isSameAs("+this+","+q+")");
      this match {
        case ConstrPat(_) =>
          q match {
@@ -135,6 +136,8 @@ package scala.tools.scalac.transformer.matching {
    /** returns true if "q matches" => "p matches"
     */
    def subsumes(q:PatternNode): Boolean = {
+     //Console.print("subsumes("+this+","+q+")");
+     /* val res = */
      this match {
        case DefaultPat() =>
          q match {
@@ -160,23 +163,45 @@ package scala.tools.scalac.transformer.matching {
        case ConstantPat(pval) =>
          q match {
            case ConstantPat(qval) =>
-              pval.equals(qval);
+              pval == qval;
            case _ =>
              false;
          }
        case VariablePat(tree) =>
          q match {
            case VariablePat(other) =>
-              (tree.symbol() != null) &&
-           (!tree.symbol().isNone()) &&
-           (!tree.symbol().isError()) &&
-           (tree.symbol() == other.symbol());
+             val treesym = tree match {
+               case _:Tree.Ident => tree.symbol();
+               case _:Tree.Apply => TreeInfo.methSymbol( tree );
+             }
+             val othersym =  tree match {
+               case _:Tree.Ident => tree.symbol();
+               case _:Tree.Apply => TreeInfo.methSymbol( tree );
+             }
+/*
+             Console.println("VPat, getc = "+tree.getClass());
+             Console.println("[tree.symbol() = "+tree.symbol());
+           if (tree.symbol() != null) {
+             Console.println("[other.symbol() = "+other.symbol());
+             Console.println("[ ==? "+(tree.symbol() == other.symbol()));
+
+             Console.println("\n\n[treesym != null? "+ tree.symbol() != null);
+             Console.println("\n\n[!treesym.isNone? "+ !tree.symbol().isNone());
+             Console.println("\n\n[!treesym.isError? "+ !tree.symbol().isError());
+           }
+*/
+              (treesym != null) &&
+           (!treesym.isNone()) &&
+           (!treesym.isError()) &&
+           (treesym == othersym);
            case _ =>
              false;
          }
        case _ =>
          false;
      }
+     /*Console.println("="+res);
+     return res;*/
    }
 
      override def toString(): String  = {
