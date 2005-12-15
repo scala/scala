@@ -49,7 +49,12 @@ import collection.mutable.HashMap;
     private def inferView(pos: int, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
       if (settings.debug.value) log("infer view from " + from + " to " + to);//debug
       if (phase.erasedTypes) EmptyTree
-      else inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous);
+      else from match {
+        case MethodType(_, _) => EmptyTree
+        case OverloadedType(_, _) => EmptyTree
+        case PolyType(_, _) => EmptyTree
+        case _ => inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous)
+      }
     }
 
     private def inferView(pos: int, from: Type, name: Name, reportAmbiguous: boolean): Tree = {
@@ -369,6 +374,7 @@ import collection.mutable.HashMap;
             case _ => TypeTree(tree.tpe) setOriginal(tree)
           }
 	} else if ((mode & (EXPRmode | FUNmode)) == (EXPRmode | FUNmode) &&
+                   !tree.tpe.isInstanceOf[MethodType] && !tree.tpe.isInstanceOf[OverloadedType] &&
                    ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
                    adaptToName(tree, nme.apply).tpe.nonLocalMember(nme.apply)
                      .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)

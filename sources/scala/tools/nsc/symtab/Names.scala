@@ -73,8 +73,9 @@ class Names {
   def newTermName(cs: Array[char], offset: int, len: int): Name = {
     val h = hashValue(cs, offset, len) & HASH_MASK;
     var n = termHashtable(h);
-    while ((n != null) && (n.length != len || !equals(n.start, cs, offset, len)))
+    while ((n != null) && (n.length != len || !equals(n.start, cs, offset, len))) {
       n = n.next;
+    }
     if (n == null) {
       n = new TermName(nc, len, h);
       enterChars(cs, offset, len);
