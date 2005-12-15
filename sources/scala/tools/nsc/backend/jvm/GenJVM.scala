@@ -51,6 +51,8 @@ abstract class GenJVM extends SubComponent {
     val MIN_SWITCH_DENSITY = 0.7;
     val MODULE_INSTANCE_NAME = "MODULE$";
     val JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer";
+    val JAVA_RMI_REMOTEEXCEPTION = "java.rmi.RemoteException";
+
     val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER);
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY);
 
@@ -60,8 +62,10 @@ abstract class GenJVM extends SubComponent {
     val CloneableAttr    = definitions.getClass("scala.cloneable").tpe;
     val TransientAtt     = definitions.getClass("scala.transient").tpe;
     val VolatileAttr     = definitions.getClass("scala.volatile").tpe;
+    val RemoteAttr       = definitions.getClass("scala.remote").tpe;
 
     val CloneableClass   = definitions.getClass("java.lang.Cloneable");
+    val RemoteInterface  = definitions.getClass("java.rmi.Remote");
 
     var clasz: IClass = _;
     var method: IMethod = _;
@@ -96,6 +100,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     var serialVUID: Option[Long] = None;
+    var remoteClass: Boolean = false;
 
     def genClass(c: IClass): Unit = {
       if (settings.debug.value)
@@ -105,6 +110,7 @@ abstract class GenJVM extends SubComponent {
       var ifaces  = JClass.NO_INTERFACES;
       val name    = javaName(c.symbol);
       serialVUID  = None;
+      remoteClass = false;
 
       if (parents.isEmpty)
         parents = definitions.ObjectClass.tpe :: parents;
@@ -116,6 +122,9 @@ abstract class GenJVM extends SubComponent {
             parents = parents ::: List(CloneableClass.tpe);
           case Pair(SerialVersionUID, value :: _) =>
             serialVUID = Some(value.longValue);
+          case Pair(RemoteAttr, _) =>
+            parents = parents ::: List(RemoteInterface.tpe);
+            remoteClass = true;
           case _ => ();
         }
       }
@@ -194,6 +203,24 @@ abstract class GenJVM extends SubComponent {
       if (m.symbol.hasFlag(Flags.BRIDGE))
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
                                                          new Array[Byte](0)));
+      if (remoteClass || (m.symbol.attributes contains Pair(RemoteAttr, Nil)))
+        if (jmethod.isPublic()) {
+          // (see http://java.sun.com/docs/books/vmspec/html/ClassFile.doc.html#3129)
+          // Exceptions_attribute {
+          // ..
+          // u2 number_of_exceptions;
+    	  // u2 exception_index_table[number_of_exceptions];
+          // }
+          val cp = jclass.getConstantPool();
+          val reInx = cp.addClass(JAVA_RMI_REMOTEEXCEPTION);
+          val contents = java.nio.ByteBuffer.allocate(4); // u2 + u2[1]
+          contents.putShort(1.asInstanceOf[Short]);
+          contents.putShort(reInx.asInstanceOf[Short]);
+          if (settings.debug.value)
+            log("adding 'Exceptions_attribute' " + contents + " for remote method " + method);
+          jmethod.addAttribute(
+            fjbgContext.JOtherAttribute(jclass, jmethod, "Exceptions", contents.array()));
+        }
 
       if (!jmethod.isAbstract()) {
         for (val local <- m.locals; (! m.params.contains(local))) {
