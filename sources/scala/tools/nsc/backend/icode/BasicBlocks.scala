@@ -157,7 +157,7 @@ trait BasicBlocks: ICodes {
     }
 
     def emit(instr: Instruction, pos: Int) = {
-      assert (!closed || ignore, "BasicBlock " + label + " closed");
+      assert (!closed || ignore, "BasicBlock closed");
 
       if (!ignore) {
 //        Console.println("block " + label + ": " + instr);

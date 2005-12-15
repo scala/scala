@@ -1355,7 +1355,8 @@ abstract class GenICode extends SubComponent  {
         method.code traverse prune0;
       } while (changed);
 
-      log("Prune fixpoint reached in " + n + " iterations.");
+      if (settings.debug.value)
+        log("Prune fixpoint reached in " + n + " iterations.");
     }
 
     def getMaxType(ts: List[Type]): TypeKind = {

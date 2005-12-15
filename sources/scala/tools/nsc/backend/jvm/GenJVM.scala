@@ -98,7 +98,8 @@ abstract class GenJVM extends SubComponent {
     var serialVUID: Option[Long] = None;
 
     def genClass(c: IClass): Unit = {
-      log("Generating class " + c.symbol + " flags: " + Flags.flagsToString(c.symbol.flags));
+      if (settings.debug.value)
+        log("Generating class " + c.symbol + " flags: " + Flags.flagsToString(c.symbol.flags));
       clasz = c;
       var parents = c.symbol.info.parents;
       var ifaces  = JClass.NO_INTERFACES;
@@ -154,7 +155,8 @@ abstract class GenJVM extends SubComponent {
     }
 
     def genField(f: IField): Unit  = {
-      log("Adding field: " + f.symbol.fullNameString);
+      if (settings.debug.value)
+        log("Adding field: " + f.symbol.fullNameString);
       var attributes = 0;
 
       f.symbol.attributes foreach { a => a match {
@@ -168,8 +170,9 @@ abstract class GenJVM extends SubComponent {
     }
 
     def genMethod(m: IMethod): Unit = {
-      log("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
-        " owner: " + m.symbol.owner);
+      if (settings.debug.value)
+        log("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
+            " owner: " + m.symbol.owner);
       method = m;
       endPC.clear;
       computeLocalVarsIndex(m);
@@ -194,7 +197,8 @@ abstract class GenJVM extends SubComponent {
 
       if (!jmethod.isAbstract()) {
         for (val local <- m.locals; (! m.params.contains(local))) {
-          log("add local var: " + local);
+          if (settings.debug.value)
+            log("add local var: " + local);
           jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym));
         }
 
@@ -244,8 +248,8 @@ abstract class GenJVM extends SubComponent {
     def dumpMirrorClass: Unit = {
       import JAccessFlags._;
       assert(clasz.symbol.isModuleClass);
-
-      log("Dumping mirror class for object: " + clasz);
+      if (settings.debug.value)
+        log("Dumping mirror class for object: " + clasz);
       val moduleName = javaName(clasz.symbol); // + "$";
       val mirrorName = moduleName.substring(0, moduleName.length() - 1);
       val mirrorClass = fjbgContext.JClass(ACC_SUPER | ACC_PUBLIC | ACC_FINAL,
@@ -319,17 +323,14 @@ abstract class GenJVM extends SubComponent {
             if (start >= 0) { // we're inside a handler range
               end = labels(b).getAnchor();
               ranges = Pair(start, end) :: ranges;
-              log("ending range: " + ranges.head);
               start = -1;
             }
           } else {
             if (start >= 0) { // we're inside a handler range
               end = endPC(b);
-              log("appending block " + b + " to current range: " + Pair(start, end));
             } else {
               start = labels(b).getAnchor();
               end   = endPC(b);
-              log("starting new range with " + b + ": " + Pair(start, end));
             }
             covered = covered remove b.==;
           }
@@ -337,20 +338,21 @@ abstract class GenJVM extends SubComponent {
 
         if (start >= 0) {
           ranges = Pair(start, end) :: ranges;
-          log("adding last range: " + ranges.head);
         }
 
         if (covered != Nil)
-          log("Some covered blocks were not found in method: " + method +
-               " covered: " + covered + " not in " + linearization);
+          if (settings.debug.value)
+            log("Some covered blocks were not found in method: " + method +
+                " covered: " + covered + " not in " + linearization);
         ranges
       }
 
       this.method.exh foreach ((e) => {
         ranges(e).sort({ (p1, p2) => p1._1 < p2._1 })
         .foreach ((p) => {
-          log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
-              " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+          if (settings.debug.value)
+            log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
+                " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
           jcode.addExceptionHandler(p._1, p._2,
                                     labels(e.startBlock).getAnchor(),
                                     if (e.cls == NoSymbol)
@@ -363,7 +365,8 @@ abstract class GenJVM extends SubComponent {
     def genBlock(b: BasicBlock): Unit = {
       labels(b).anchorToNext();
 
-      log("Generating code for block: " + b + " at pc: " + labels(b).getAnchor());
+      if (settings.debug.value)
+        log("Generating code for block: " + b + " at pc: " + labels(b).getAnchor());
       var lastMappedPC = 0;
       var lastLineNr =0;
       var crtPC = 0;
@@ -834,7 +837,8 @@ abstract class GenJVM extends SubComponent {
 
     def makeLabels(bs: List[BasicBlock]) = {
       //labels.clear;
-      log("Making labels for: " + method);
+      if (settings.debug.value)
+        log("Making labels for: " + method);
       bs foreach (bb => labels += bb -> jcode.newLabel() );
     }
 
@@ -872,7 +876,8 @@ abstract class GenJVM extends SubComponent {
         idx = 0;
 
       for (val l <- m.locals) {
-        log("Index value for " + l + ": " + idx);
+        if (settings.debug.value)
+          log("Index value for " + l + ": " + idx);
         l.index = idx;
         idx = idx + sizeOf(l.kind);
       }
