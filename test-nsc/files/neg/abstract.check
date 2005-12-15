@@ -1,0 +1,7 @@
+abstract.scala:5 error: malformed type: A.this.T#T
+  def foo1 = bar().bar();
+                  ^
+abstract.scala:7 error: malformed type: A#T
+  def foo3 = baz().bar();
+                  ^
+two errors found
