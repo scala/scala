@@ -171,12 +171,12 @@ package scala.tools.scalac.transformer.matching {
          q match {
            case VariablePat(other) =>
              val treesym = tree match {
-               case _:Tree.Ident => tree.symbol();
-               case _:Tree.Apply => TreeInfo.methSymbol( tree );
+               case _: Tree.Apply => TreeInfo.methSymbol( tree );
+               case _             => tree.symbol()
              }
              val othersym =  tree match {
-               case _:Tree.Ident => tree.symbol();
-               case _:Tree.Apply => TreeInfo.methSymbol( tree );
+               case _: Tree.Apply => TreeInfo.methSymbol( other );
+               case _             => other.symbol()
              }
 /*
              Console.println("VPat, getc = "+tree.getClass());
