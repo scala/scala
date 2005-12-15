@@ -39,6 +39,8 @@ class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
         val it = ns.elements;
         while(it.hasNext) {
           this &+ it.next;
+          if (it.hasNext)
+            this &+ " ";
         }
       case _          => super.+(Text(o.toString()));
     }

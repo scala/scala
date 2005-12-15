@@ -18,7 +18,7 @@ passed ok
 passed ok
 passed ok
 Test03Servlet
-<html><head><title>ModularFormatting</title></head><body><h2>Welcome</h2><p>What follows is an example of modular formatting.</p><p><table align="center"><tr><td bgcolor="#AAAAFF" color="#222255"><h1>message</h1></td></tr></table></p><p>1a23.23</p><p><table align="center"><tr><td bgcolor="#AAAAFF" color="#222255"><h1>message</h1></td></tr></table><table align="center"><tr><td bgcolor="#AAAAFF" color="#222255"><h1>message</h1></td></tr></table></p><hr></hr><p>Complicated layout tasks can be encapsulated and outsourced.</p><h2>Bye!</h2></body></html>
+<html><head><title>ModularFormatting</title></head><body><h2>Welcome</h2><p>What follows is an example of modular formatting.</p><p><table align="center"><tr><td bgcolor="#AAAAFF" color="#222255"><h1>message</h1></td></tr></table></p><p>1a23.23</p><p><table align="center"><tr><td bgcolor="#AAAAFF" color="#222255"><h1>message</h1></td></tr></table> <table align="center"><tr><td bgcolor="#AAAAFF" color="#222255"><h1>message</h1></td></tr></table></p><hr></hr><p>Complicated layout tasks can be encapsulated and outsourced.</p><h2>Bye!</h2></body></html>
 <html>
   <head>
     <title>ModularFormatting</title>
@@ -44,6 +44,7 @@ Test03Servlet
           </td>
         </tr>
       </table>
+       
       <table align="center">
         <tr>
           <td bgcolor="#AAAAFF" color="#222255">
