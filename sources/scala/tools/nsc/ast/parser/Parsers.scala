@@ -1062,7 +1062,7 @@ import Tokens._;
 
     /** Modifiers ::= {Modifier}
      *  Modifier  ::= final
-     *             | private
+     *             | private [ "[" Id "]" ]
      *             | protected
      *             | override
      *             | abstract

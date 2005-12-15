@@ -57,6 +57,8 @@ import Flags._;
 
     var attributes: List[AttrInfo] = List();
 
+    var privateWithin: Symbol = null;
+
 // Creators -------------------------------------------------------------------
 
     final def newValue(pos: int, name: Name) =
@@ -367,19 +369,19 @@ import Flags._;
       if (limit < phase.id) {
         if (validForRun == currentRun) {
           val current = phase;
-                var itr = infoTransformers.nextFrom(limit);
-                infoTransformers = itr; // caching optimization
-                while (itr.pid != NoPhase.id && itr.pid < current.id) {
-                  phase = phaseWithId(itr.pid);
-                  val info1 = itr.transform(this, infos.info);
-                  limit = phase.id + 1;
+          var itr = infoTransformers.nextFrom(limit);
+          infoTransformers = itr; // caching optimization
+          while (itr.pid != NoPhase.id && itr.pid < current.id) {
+            phase = phaseWithId(itr.pid);
+            val info1 = itr.transform(this, infos.info);
+            limit = phase.id + 1;
             if (info1 ne infos.info) {
               infos = new TypeHistory(limit, info1, infos);
-                  }
-                  itr = itr.nextFrom(limit)
-                }
-                phase = current;
-                limit = current.id;
+            }
+            itr = itr.nextFrom(limit)
+          }
+          phase = current;
+          limit = current.id;
         }
         assert(infos != null, name);
         infos.info

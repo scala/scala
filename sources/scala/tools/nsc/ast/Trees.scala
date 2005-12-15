@@ -16,6 +16,14 @@ import symtab.Flags._;
   //statistics
   var nodeCount = 0;
 
+  case class Modifiers(flags: int, privateWithin: Name) {
+    def isPrivate   = ((flags & PRIVATE  ) != 0);
+    def isProtected = ((flags & PROTECTED) != 0);
+    def isVariable  = ((flags &   MUTABLE) != 0);
+    def isPublic    = !isPrivate && !isProtected;
+    def this(flags: int) = this(flags, nme.EMPTY.toTypeName)
+  }
+
   abstract class Tree {
 
     if (util.Statistics.enabled) nodeCount = nodeCount + 1;
@@ -71,7 +79,8 @@ import symtab.Flags._;
     override var symbol: Symbol = NoSymbol;
   }
 
-  abstract class DefTree(val name0 : Name) extends SymTree {
+  abstract class DefTree extends SymTree {
+    def name: Name;
     override def isDef = true;
   }
 
@@ -115,10 +124,12 @@ import symtab.Flags._;
     override def isEmpty = true;
   }
 
-  abstract class MemberDef(val mods0: int, name: Name) extends DefTree(name) {
+  abstract class MemberDef extends DefTree {
+    def mods: int;
+    def name: Name;
     def keyword : String;
-    def flags = new Flags.Flag(mods0);
-    final def hasFlag(mask: long): boolean = (mods0 & mask) != 0;
+    final def flags = new Flags.Flag(mods);
+    final def hasFlag(mask: long): boolean = (mods & mask) != 0;
 
     def namePos(source : SourceFile) : Int = if (pos == Position.NOPOS) Position.NOPOS else {
       assert(keyword != null);
@@ -134,7 +145,8 @@ import symtab.Flags._;
 
   /** Package clause */
   case class PackageDef(name: Name, stats: List[Tree])
-       extends MemberDef(0, name) {
+       extends MemberDef {
+         def mods = 0;
 	 def keyword = "package";
        }
 
@@ -142,14 +154,13 @@ import symtab.Flags._;
     PackageDef(sym.name, stats) setSymbol sym;
 
 
-
-
-  abstract class ImplDef(mods : int, name: Name, val impl0: Template) extends MemberDef(mods, name);
-
+  abstract class ImplDef extends MemberDef {
+    def impl: Template
+  }
 
   /** Class definition */
   case class ClassDef(mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
-       extends ImplDef(mods, name, impl) {
+       extends ImplDef {
 	 def keyword = "class";
        }
 
@@ -174,7 +185,7 @@ import symtab.Flags._;
 
   /** Singleton object definition */
   case class ModuleDef(mods: int, name: Name, impl: Template)
-       extends ImplDef(mods, name, impl) {
+       extends ImplDef {
 	 def keyword = "object";
        }
 
@@ -184,13 +195,14 @@ import symtab.Flags._;
     }
 
 
-  abstract class ValOrDefDef(mods: int, name: Name, val tpt0: Tree, val rhs0 : Tree) extends MemberDef(mods, name);
-
-
+  abstract class ValOrDefDef extends MemberDef {
+    def tpt: Tree;
+    def rhs: Tree;
+  }
 
   /** Value definition */
   case class ValDef(mods: int, name: Name, tpt: Tree, rhs: Tree)
-       extends ValOrDefDef(mods, name, tpt, rhs) {
+       extends ValOrDefDef {
          assert(tpt.isType, tpt);
          assert(rhs.isTerm, rhs);
 	 def keyword = if (flags.isVariable) "var" else "val";
@@ -213,7 +225,7 @@ import symtab.Flags._;
   /** Method definition */
   case class DefDef(mods: int, name: Name, tparams: List[AbsTypeDef],
 		    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
-       extends ValOrDefDef(mods, name, tpt, rhs) {
+       extends ValOrDefDef {
 	 assert(tpt.isType);
 	 assert(rhs.isTerm);
          def keyword = "def";
@@ -237,7 +249,7 @@ import symtab.Flags._;
 
   /** Abstract type or type parameter */
   case class AbsTypeDef(mods: int, name: Name, lo: Tree, hi: Tree)
-       extends DefTree(name) {
+       extends DefTree {
 	 def keyword = "";
 
 	 override def setPos(pos : Int) : this.type = {
@@ -255,7 +267,7 @@ import symtab.Flags._;
 
   /** Type alias */
   case class AliasTypeDef(mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree)
-       extends MemberDef(mods, name) {
+       extends MemberDef {
 	 def keyword = "type";
        }
 
@@ -277,7 +289,7 @@ import symtab.Flags._;
    *       jumps within a Block.
    */
   case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
-       extends DefTree(name) with TermTree {
+       extends DefTree with TermTree {
 	 assert(rhs.isTerm);
        }
 
@@ -353,7 +365,7 @@ import symtab.Flags._;
 
   /** Bind of a variable to a rhs pattern, eliminated by TransMatch */
   case class Bind(name: Name, body: Tree)
-       extends DefTree(name);
+       extends DefTree;
 
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym;

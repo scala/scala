@@ -161,15 +161,15 @@ class SemanticTokens(val compiler: Compiler) {
 	  case cdef : ClassDef => build(cdef.tparams);
 	  case   _  => ;
 	}
-	build(tree.impl0.parents);
-	build(tree.impl0.body);
+	build(tree.impl.parents);
+	build(tree.impl.body);
       case tree : ValOrDefDef =>
 	if (tree.symbol.hasFlag(Flags.ACCESSOR)) {
 	  // ignore
 	  ;
 	} else {
 	  {
-	    val pos = if (tree.name0.toString().equals("<init>")) Position.NOPOS else tree.namePos(unit.source);
+	    val pos = if (tree.name.toString().equals("<init>")) Position.NOPOS else tree.namePos(unit.source);
 	    if (pos != Position.NOPOS) {
 	      if (!tree.hasFlag(Flags.SYNTHETIC))
 		buildDef(tree.symbol, pos);
@@ -185,20 +185,20 @@ class SemanticTokens(val compiler: Compiler) {
 	      val pos0 = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
 			 else unit.source.skipWhitespace(arg.pos + ("val ").length());
 	      buildDef(arg.symbol, pos0);
-	      build(arg.tpt0);
+	      build(arg.tpt);
 	    }
 	  }
 	  try {
-	    build(tree.tpt0);
+	    build(tree.tpt);
 	  } catch {
 	    case e: Error =>
-	      System.err.println("VALDEF: " + tree + " " + tree.tpt0 + " " + tree.pos + " " + tree.tpt0.pos);
+	      System.err.println("VALDEF: " + tree + " " + tree.tpt + " " + tree.pos + " " + tree.tpt.pos);
 	      throw e;
 	  }
-	  build(tree.rhs0);
+	  build(tree.rhs);
 	}
       case tree : PackageDef =>
-	//System.err.println("PACKAGE: " + tree.name0);
+	//System.err.println("PACKAGE: " + tree.name);
 	if (false) {
 	  val pos = tree.namePos(unit.source);
           if (pos != Position.NOPOS)
@@ -207,7 +207,7 @@ class SemanticTokens(val compiler: Compiler) {
 	build(tree.stats);
       case tree : Function   =>
         for (val arg <- tree.vparams) if (arg.pos != Position.NOPOS) {
-	  val name = arg.name0.toString().trim();
+	  val name = arg.name.toString().trim();
 	  val pos : Int =
 	    if (unit.source.beginsWith(arg.pos, "val ")) unit.source.skipWhitespace(arg.pos + ("val ").length());
 	    else if (unit.source.content(arg.pos) == ':') {
@@ -216,7 +216,7 @@ class SemanticTokens(val compiler: Compiler) {
 	      posx - name.length();
 	    } else arg.pos;
 	  buildDef(arg.symbol, pos);
-	  build(arg.tpt0);
+	  build(arg.tpt);
 	}
         build(tree.body);
       case tree : TypeTree =>
