@@ -207,6 +207,7 @@
             </classpath>
             <include name="scala/tools/nsc/**/*.scala"/>
             <include name="scala/tools/scalap/**/*.scala"/>
+            <include name="scala/reflect/*.scala"/>
             <include name="scala/runtime/*.scala"/>
             <include name="scala/runtime/**/*.scala"/>
         </osc>
