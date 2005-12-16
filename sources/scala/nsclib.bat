@@ -1,1 +1,0 @@
-nsc -bootclasspath c:\j2sdk1.4.2_05\jre\lib\rt.jar -classpath "bootclasses;\scala\sources" -d newclasses -verbose -prompt -nopredefs %*
