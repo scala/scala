@@ -1,7 +1,0 @@
-xmlParsing001.scala:13: in XML literal: expected closing tag of hello
-  val y = <hello></hallo>.toString();
-                        ^
-xmlParsing001.scala:13: in XML literal: '>' expected instead of '.'
-  val y = <hello></hallo>.toString();
-                         ^
-two errors found

@@ -1,7 +1,0 @@
-bug113.scala:3: illegal cyclic reference involving type A
-  type B <: A;
-       ^
-bug113.scala:2: only classes can have declared but undefined members
-  type A <: B;
-       ^
-two errors found

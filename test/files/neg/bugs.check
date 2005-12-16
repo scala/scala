@@ -1,6 +1,0 @@
-bugs.scala:11: Double declaration:
-method p: ((scala.Tuple2[scala.Boolean,scala.Boolean]) => scala.Boolean)scala.Int(1) and
-method p: ((scala.List[scala.Any]) => scala.Boolean)scala.Int(2) have same types after erasure
-  def p(f:List[Any] => Boolean) = 2;
-      ^
-one error found

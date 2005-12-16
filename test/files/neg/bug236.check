@@ -1,4 +1,0 @@
-bug236.scala:4: wrong number of arguments for constructor A()
-  class B extends A(1) {
-                   ^
-one error found

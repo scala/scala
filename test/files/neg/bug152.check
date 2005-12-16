@@ -1,4 +1,0 @@
-bug152.scala:5: type foo.type escapes its defining scope as part of java.lang.Object with scala.ScalaObject { def a: foo.T }
-class Bar(foo: Foo)  {
-      ^
-one error found

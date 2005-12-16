@@ -1,4 +1,0 @@
-bug58.scala:1: type x.type escapes its defining scope as part of x.C with scala.ScalaObject
-class A(x: B) extends x.C {}
-      ^
-one error found

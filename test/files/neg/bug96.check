@@ -1,4 +1,0 @@
-bug96.scala:5: method foo:(=> scala.Any)java.lang.Object in class B overrides nothing
-    override def foo(x: => Any): Object = null;
-                 ^
-one error found

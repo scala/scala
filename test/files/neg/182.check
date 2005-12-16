@@ -1,5 +1,0 @@
-bug182.scala:2: error overriding class Foo.I in class Foo;
- class Bar.I in class Bar cannot override a class
-class Bar extends Foo { class I; }
-                              ^
-one error found

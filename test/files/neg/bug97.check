@@ -1,4 +1,0 @@
-bug97.scala:3: expected pattern type scala.Any does not conform to sequence class List
-    case List(y) => "zero"
-         ^
-one error found

@@ -1,6 +1,0 @@
-overlapping.scala:9: Double declaration:
-method foo: X.this.I and
-method foo: X.this.J have same types after erasure
-  def foo: J;
-      ^
-one error found

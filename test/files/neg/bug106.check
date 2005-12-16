@@ -1,4 +1,0 @@
-bug106.scala:2: Java class may not be used as mixin
-class S extends T with Object;
-                       ^
-one error found

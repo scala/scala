@@ -1,4 +1,0 @@
-bug107.scala:4: object creation impossible, since method foo in trait C is not defined
-object O extends C {
-       ^
-one error found
