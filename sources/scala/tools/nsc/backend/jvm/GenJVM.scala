@@ -173,6 +173,7 @@ abstract class GenJVM extends SubComponent {
         case Pair(VolatileAttr, _) => attributes = attributes | JAccessFlags.ACC_VOLATILE;
         case _ => ();
       }}
+      //System.out.println("gen field " + f.symbol);//debug
       jclass.addNewField(javaFlags(f.symbol) | attributes,
                          javaName(f.symbol),
                          javaType(toTypeKind(f.symbol.tpe)));
