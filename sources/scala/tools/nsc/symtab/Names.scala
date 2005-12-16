@@ -132,6 +132,8 @@ class Names {
      */
     final def length: int = len;
 
+    final def isEmpty = length == 0;
+
     def isTermName: boolean;
     def isTypeName: boolean;
     def toTermName: Name;

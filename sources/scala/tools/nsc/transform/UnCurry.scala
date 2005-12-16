@@ -136,7 +136,7 @@ abstract class UnCurry extends InfoTransform {
       for (val vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
       new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
       var members = List(
-	DefDef(FINAL, nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
+	DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
 	  setSymbol applyMethod);
       if (fun.tpe.symbol == PartialFunctionClass) {
 	val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)

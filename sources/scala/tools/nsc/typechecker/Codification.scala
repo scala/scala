@@ -152,7 +152,7 @@ import scala.tools.nsc.util.{ListBuffer, FreshNameCreator};
         val vdefs = for (val param <- params) yield {
           val lname = newTermName(fresh.newName());
           env1 = env1.update(param, lname);
-          ValDef(0, lname, injectType("scala.reflect.LocalValue"),
+          ValDef(NoMods, lname, injectType("scala.reflect.LocalValue"),
                  New(injectType("scala.reflect.LocalValue"),
                      List(List(inject(param.owner), inject(param.name), inject(param.tpe)))))
         }

@@ -39,7 +39,7 @@ import symtab.Flags._;
 	if (treeInfo.isPureExpr(tree)) tree
 	else {
 	  val vname: Name = freshName();
-	  defs += atPos(tree.pos)(ValDef(SYNTHETIC, vname, TypeTree(), tree));
+	  defs += atPos(tree.pos)(ValDef(Modifiers(SYNTHETIC), vname, TypeTree(), tree));
 	  Ident(vname) setPos tree.pos
 	}
       tree match {
@@ -60,7 +60,7 @@ import symtab.Flags._;
         tree
       case MethodType(formals, restpe) =>
         val params = formals map (formal =>
-          ValDef(SYNTHETIC | PARAM, freshName(), TypeTree().setType(formal), EmptyTree));
+          ValDef(Modifiers(SYNTHETIC | PARAM), freshName(), TypeTree().setType(formal), EmptyTree));
         val args = params map (param => Ident(param.name));
         atPos(tree.pos)(Function(params, expand(Apply(tree, args), restpe)))
       case _ =>

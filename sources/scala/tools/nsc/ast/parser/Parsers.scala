@@ -204,12 +204,12 @@ import Tokens._;
       atPos(tree.pos) {
 	tree match {
 	  case Ident(name) =>
-	    ValDef(Flags.PARAM, name, TypeTree(), EmptyTree)
+	    ValDef(Modifiers(Flags.PARAM), name, TypeTree(), EmptyTree)
 	  case Typed(Ident(name), tpe) =>
-	    ValDef(Flags.PARAM, name, tpe, EmptyTree)
+	    ValDef(Modifiers(Flags.PARAM), name, tpe, EmptyTree)
 	  case _ =>
 	    syntaxError(tree.pos, "not a legal formal parameter", false);
-	    ValDef(Flags.PARAM, nme.ERROR, errorTypeTree, EmptyTree)
+	    ValDef(Modifiers(Flags.PARAM), nme.ERROR, errorTypeTree, EmptyTree)
 	}
       }
 
@@ -243,7 +243,7 @@ import Tokens._;
 	  errorTermTree
       }
       Function(
-	List(ValDef(Flags.PARAM, pname, TypeTree(), EmptyTree)),
+	List(ValDef(Modifiers(Flags.PARAM), pname, TypeTree(), EmptyTree)),
 	insertParam(tree))
     }
 
@@ -1067,7 +1067,7 @@ import Tokens._;
      *             | override
      *             | abstract
      */
-    def modifiers(): int = {
+    def modifiers(): Modifiers = {
       def loop(mods: int): int = in.token match {
 	case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
@@ -1089,14 +1089,14 @@ import Tokens._;
       var mods = loop(0);
       if ((mods & (Flags.ABSTRACT | Flags.OVERRIDE)) == (Flags.ABSTRACT | Flags.OVERRIDE))
         mods = mods & ~(Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE;
-      mods
+      Modifiers(mods)
     }
 
     /** LocalClassModifiers ::= {LocalClassModifier}
      *  LocalClassModifier  ::= final
      *                       | private
      */
-    def localClassModifiers(): int = {
+    def localClassModifiers(): Modifiers = {
       def loop(mods: int): int = in.token match {
 	case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
@@ -1107,7 +1107,7 @@ import Tokens._;
 	case _ =>
           mods
       }
-      loop(0)
+      Modifiers(loop(0))
     }
 
     private def addMod(mods: int, mod: int): int = {
@@ -1124,19 +1124,23 @@ import Tokens._;
      *  Param ::= Id `:' ParamType
      *  ClassParamClauses ::= {`(' [ClassParam {`' ClassParam}] ')'}
      *                        [`(' implicit ClassParam {`,' ClassParam} `)']
-     *  ClassParam ::= [[modifiers] val] Param
+     *  ClassParam ::= [[modifiers] (val | var)] Param
      */
     def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: boolean): List[List[ValDef]] = {
       var implicitmod = 0;
       var caseParam = ofCaseClass;
       def param(): ValDef = {
 	atPos(in.currentPos) {
-	  var mods = Flags.PARAM;
+	  var mods = Modifiers(Flags.PARAM);
 	  if (owner.isTypeName) {
 	    mods = modifiers() | Flags.PARAMACCESSOR;
-	    if (in.token == VAL) in.nextToken()
-	    else {
-	      if (mods != Flags.PARAMACCESSOR) accept(VAL);
+	    if (in.token == VAL) {
+              in.nextToken()
+	    } else if (in.token == VAR) {
+              mods = mods | Flags.MUTABLE;
+              in.nextToken()
+            } else {
+	      if (mods.flags != Flags.PARAMACCESSOR) accept(VAL);
 	      if (!(caseParam)) mods = mods | Flags.PRIVATE | Flags.LOCAL;
 	    }
 	    if (caseParam) mods = mods | Flags.CASEACCESSOR;
@@ -1173,8 +1177,8 @@ import Tokens._;
       }
       val result = vds.toList;
       if (owner == nme.CONSTRUCTOR &&
-	  (result.isEmpty || (!result.head.isEmpty &&
-			      (result.head.head.mods & Flags.IMPLICIT) != 0)))
+	  (result.isEmpty ||
+           (!result.head.isEmpty && result.head.head.mods.hasFlag(Flags.IMPLICIT))))
 	if (in.token == LBRACKET)
 	  syntaxError(pos, "no type parameters allowed here", false);
 	else
@@ -1208,7 +1212,7 @@ import Tokens._;
      */
     def typeParamClauseOpt(owner: Name, implicitViews: ListBuffer[Tree]): List[AbsTypeDef] = {
       def typeParam(): AbsTypeDef = {
-	var mods = Flags.PARAM;
+	var mods = Modifiers(Flags.PARAM);
 	if (owner.isTypeName && in.token == IDENTIFIER) {
           if (in.name == PLUS) {
             in.nextToken();
@@ -1241,7 +1245,7 @@ import Tokens._;
 
     /** TypeBounds ::= [`>:' Type] [`<:' Type]
      */
-    def typeBounds(mods: int, name: Name): AbsTypeDef = {
+    def typeBounds(mods: Modifiers, name: Name): AbsTypeDef = {
       def bound(tok: int, default: Name): Tree =
         if (in.token == tok) { in.nextToken(); typ() }
         else scalaDot(default.toTypeName);
@@ -1347,7 +1351,7 @@ import Tokens._;
      *           | def FunDcl {`,' FunDcl}
      *           | type TypeDcl {`,' TypeDcl}
      */
-    def defOrDcl(mods: int): List[Tree] = {
+    def defOrDcl(mods: Modifiers): List[Tree] = {
       in.token match {
         case VAL =>
 	  patDefOrDcl(mods);
@@ -1366,7 +1370,7 @@ import Tokens._;
     /** PatDef ::= Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
      *  ValDcl ::= Id {`,' Id} `:' Type
      */
-    def patDefOrDcl(mods: int): List[Tree] = {
+    def patDefOrDcl(mods: Modifiers): List[Tree] = {
       var newmods = mods;
       var lhs = new ListBuffer[Tree];
       do {
@@ -1404,7 +1408,7 @@ import Tokens._;
      *           | Id {`,' Id} `:' Type `=' `_'
      *  VarDcl ::= Id {`,' Id} `:' Type
      */
-    def varDefOrDcl(mods: int): List[Tree] = {
+    def varDefOrDcl(mods: Modifiers): List[Tree] = {
       var newmods = mods | Flags.MUTABLE;
       val lhs = new ListBuffer[Pair[Int, Name]];
       do {
@@ -1431,7 +1435,7 @@ import Tokens._;
      *  FunDcl ::= FunSig `:' Type
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      */
-    def funDefOrDcl(mods: int): Tree =
+    def funDefOrDcl(mods: Modifiers): Tree =
       atPos(in.skipToken()) {
 	if (in.token == THIS) {
 	  in.nextToken();
@@ -1480,7 +1484,7 @@ import Tokens._;
     /** TypeDef ::= Id `=' Type
      *  TypeDcl ::= Id TypeBounds
      */
-    def typeDefOrDcl(mods: int): Tree =
+    def typeDefOrDcl(mods: Modifiers): Tree =
       atPos(in.currentPos) {
         val name = ident().toTypeName;
         in.token match {
@@ -1502,7 +1506,7 @@ import Tokens._;
       /**  TmplDef ::= ([case] class | trait) ClassDef
        *            | [case] object ObjectDef
        */
-      def tmplDef(mods: int): Tree = in.token match {
+      def tmplDef(mods: Modifiers): Tree = in.token match {
         case TRAIT =>
           classDef(mods | Flags.TRAIT | Flags.ABSTRACT);
         case CLASS =>
@@ -1521,24 +1525,24 @@ import Tokens._;
     /** ClassDef ::= ClassSig RequiresTypeOpt ClassTemplate
      *  ClassSig ::= Id [TypeParamClause] {ClassParamClause}
      */
-    def classDef(mods: int): Tree =
+    def classDef(mods: Modifiers): Tree =
       atPos(in.skipToken()) {
 	val name = ident().toTypeName;
         val implicitViews = new ListBuffer[Tree];
 	val tparams = typeParamClauseOpt(name, implicitViews);
-	if ((mods & Flags.CASE) != 0 && in.token != LPAREN) accept(LPAREN);
-	val vparamss = paramClauses(name, implicitViews.toList, (mods & Flags.CASE) != 0);
+	if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN);
+	val vparamss = paramClauses(name, implicitViews.toList, mods.hasFlag(Flags.CASE));
 	val thistpe = requiresTypeOpt();
 	val template = classTemplate(mods, name, vparamss);
-	val mods1 = if ((mods & TRAIT) != 0 &&
-                        (template.body forall treeInfo.isInterfaceMember)) mods | Flags.INTERFACE
+	val mods1 = if (mods.hasFlag(Flags.TRAIT) && (template.body forall treeInfo.isInterfaceMember))
+                      mods | Flags.INTERFACE
                     else mods;
 	ClassDef(mods1, name, tparams, thistpe, template)
       }
 
     /** ObjectDef       ::= Id ClassTemplate
      */
-    def objectDef(mods: int): Tree =
+    def objectDef(mods: Modifiers): Tree =
       atPos(in.skipToken()) {
 	val name = ident();
 	val template = classTemplate(mods, name, List());
@@ -1548,7 +1552,7 @@ import Tokens._;
     /** ClassTemplate ::= [`extends' TemplateParents] [[NL] TemplateBody]
      *  TemplateParents ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
      */
-    def classTemplate(mods: int, name: Name, vparamss: List[List[ValDef]]): Template = {
+    def classTemplate(mods: Modifiers, name: Name, vparamss: List[List[ValDef]]): Template = {
       val ret = atPos(in.currentPos) {
         val parents = new ListBuffer[Tree];
         val argss = new ListBuffer[List[Tree]];
@@ -1567,7 +1571,7 @@ import Tokens._;
         } else argss += List();
 	if (name != nme.ScalaObject.toTypeName)
           parents += scalaScalaObjectConstr;
-	if (/*name.isTypeName && */(mods & Flags.CASE) != 0) parents += caseClassConstr;
+	if (mods.hasFlag(Flags.CASE)) parents += caseClassConstr;
         val ps = parents.toList;
         if (in.token == NEWLINE && in.next.token == LBRACE) in.nextToken();
 	var body =
@@ -1578,7 +1582,7 @@ import Tokens._;
               syntaxError("`extends' or `{' expected", true);
             List()
 	  }
-	if ((mods & Flags.TRAIT) == 0) Template(ps, vparamss, argss.toList, body)
+	if (!mods.hasFlag(Flags.TRAIT)) Template(ps, vparamss, argss.toList, body)
 	else Template(ps, body)
       }
       ret;
@@ -1728,7 +1732,7 @@ import Tokens._;
       val stats = new ListBuffer[Tree];
       while (in.token != RBRACE && in.token != EOF) {
         if (isDclIntro) {
-          stats ++= joinComment(defOrDcl(0))
+          stats ++= joinComment(defOrDcl(NoMods))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of declaration", true);
         }
@@ -1753,7 +1757,7 @@ import Tokens._;
           stats += expr(false, true);
           if (in.token != RBRACE && in.token != CASE) acceptStatSep();
         } else if (isDefIntro) {
-          stats ++= defOrDcl(0);
+          stats ++= defOrDcl(NoMods);
           acceptStatSep();
           if (in.token == RBRACE || in.token == CASE) {
             stats += Literal(()).setPos(in.currentPos)

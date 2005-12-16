@@ -116,12 +116,17 @@ object Flags {
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags = AccessFlags | PACKAGE | CASE;
 
-  def flags2mods(flags: long): int = flags.asInstanceOf[int];
+  def flagsToString(flags: long, suffixes: List[Pair[long, String]]): String =
+    (for (val i <- List.range(0, 63)) yield {
+      var s = flagToString(flags & (1L << i));
+      suffixes.find(._1.==(i)) match {
+        case Some(Pair(i, suffix)) => s = s + "[" + suffix + "]"
+        case None =>
+      }
+      s
+    }).filter("" !=).mkString("", " ", "");
 
-  def flagsToString(flags: long): String =
-    List.range(0, 63)
-      .map(i => flagToString(flags & (1L << i)))
-      .filter("" !=).mkString("", " ", "");
+  def flagsToString(flags: long): String = flagsToString(flags, List());
 
   private def flagToString(flag: long): String = {
     if (flag == LABEL) "<label>"

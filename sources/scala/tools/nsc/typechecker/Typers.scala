@@ -548,16 +548,15 @@ import collection.mutable.HashMap;
     }
 
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
-      case ValDef(mods, name, tpe, rhs) if (mods & LOCAL) == 0 && !stat.symbol.isModuleVar =>
+      case ValDef(mods, name, tpe, rhs) if !(mods hasFlag LOCAL) && !stat.symbol.isModuleVar =>
 	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpe, rhs);
         val value = vdef.symbol;
-        val getter = if ((mods & DEFERRED) != 0) value else value.getter(value.owner);
-	if (getter hasFlag OVERLOADED) System.out.println("overloaded getter: " + getter.alternatives + getter.alternatives.map(.tpe));//debug
-        assert(getter != NoSymbol, value);//debug
+        val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner);
+        assert(getter != NoSymbol, getter);//debug
 	val getterDef: DefDef = {
 	  val result = atPos(vdef.pos)(
 	    DefDef(getter, vparamss =>
-	      if ((mods & DEFERRED) != 0) EmptyTree
+	      if (mods hasFlag DEFERRED) EmptyTree
 	      else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe)));
           checkNoEscaping.privates(getter, result.tpt);
           result
@@ -567,13 +566,13 @@ import collection.mutable.HashMap;
           assert(setter != NoSymbol, getter);//debug
           atPos(vdef.pos)(
 	    DefDef(setter, vparamss =>
-	      if ((mods & DEFERRED) != 0) EmptyTree
+	      if (mods hasFlag DEFERRED) EmptyTree
 	      else typed(Assign(Select(This(value.owner), value),
 				Ident(vparamss.head.head)))))
 	}
-	val gs = if ((mods & MUTABLE) != 0) List(getterDef, setterDef)
+	val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
                  else List(getterDef);
-	if ((mods & DEFERRED) != 0) gs else vdef :: gs
+	if (mods hasFlag DEFERRED) gs else vdef :: gs
       case DocDef(comment, defn) =>
 	addGetterSetter(defn) map (stat => DocDef(comment, stat))
       case Attributed(attr, defn) =>

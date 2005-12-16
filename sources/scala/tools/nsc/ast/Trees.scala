@@ -21,8 +21,17 @@ import symtab.Flags._;
     def isProtected = ((flags & PROTECTED) != 0);
     def isVariable  = ((flags &   MUTABLE) != 0);
     def isPublic    = !isPrivate && !isProtected;
-    def this(flags: int) = this(flags, nme.EMPTY.toTypeName)
+    def hasFlag(flag: int) = (flags & flag) != 0;
+    def | (flag: int): Modifiers = {
+      val flags1 = flags | flag;
+      if (flags1 == flags) this else Modifiers(flags1, privateWithin)
+    }
   }
+
+  def Modifiers(flags: int): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName);
+  def Modifiers(flags: long): Modifiers = Modifiers(flags.asInstanceOf[int]);
+
+  val NoMods = Modifiers(0);
 
   abstract class Tree {
 
@@ -31,8 +40,6 @@ import symtab.Flags._;
     private var posx: int = Position.NOPOS;
 
     def pos = posx;
-
-
 
     var tpe: Type = _;
 
@@ -125,11 +132,10 @@ import symtab.Flags._;
   }
 
   abstract class MemberDef extends DefTree {
-    def mods: int;
+    def mods: Modifiers;
     def name: Name;
     def keyword : String;
-    final def flags = new Flags.Flag(mods);
-    final def hasFlag(mask: long): boolean = (mods & mask) != 0;
+    final def hasFlag(mask: long): boolean = (mods.flags & mask) != 0;
 
     def namePos(source : SourceFile) : Int = if (pos == Position.NOPOS) Position.NOPOS else {
       assert(keyword != null);
@@ -146,7 +152,7 @@ import symtab.Flags._;
   /** Package clause */
   case class PackageDef(name: Name, stats: List[Tree])
        extends MemberDef {
-         def mods = 0;
+         def mods = NoMods;
 	 def keyword = "package";
        }
 
@@ -159,14 +165,14 @@ import symtab.Flags._;
   }
 
   /** Class definition */
-  case class ClassDef(mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
+  case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
        extends ImplDef {
 	 def keyword = "class";
        }
 
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     posAssigner.atPos(sym.pos) {
-      ClassDef(flags2mods(sym.flags),
+      ClassDef(Modifiers(sym.flags),
                sym.name,
                sym.typeParams map AbsTypeDef,
                if (sym.thisSym == sym) EmptyTree else TypeTree(sym.typeOfThis),
@@ -184,14 +190,14 @@ import symtab.Flags._;
     ClassDef(sym, Template(sym.info.parents map TypeTree, vparamss, argss, body));
 
   /** Singleton object definition */
-  case class ModuleDef(mods: int, name: Name, impl: Template)
+  case class ModuleDef(mods: Modifiers, name: Name, impl: Template)
        extends ImplDef {
 	 def keyword = "object";
        }
 
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     posAssigner.atPos(sym.pos) {
-      ModuleDef(flags2mods(sym.flags), sym.name, impl)
+      ModuleDef(Modifiers(sym.flags), sym.name, impl)
     }
 
 
@@ -201,11 +207,11 @@ import symtab.Flags._;
   }
 
   /** Value definition */
-  case class ValDef(mods: int, name: Name, tpt: Tree, rhs: Tree)
+  case class ValDef(mods: Modifiers, name: Name, tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
          assert(tpt.isType, tpt);
          assert(rhs.isTerm, rhs);
-	 def keyword = if (flags.isVariable) "var" else "val";
+	 def keyword = if (mods.isVariable) "var" else "val";
 	 override def namePos(source : SourceFile) =
 	   if (pos == Position.NOPOS) Position.NOPOS;
 	   else if (source.beginsWith(pos, "val ") || source.beginsWith(pos, "var ")) source.skipWhitespace(pos + ("val ").length());
@@ -216,14 +222,14 @@ import symtab.Flags._;
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef = {
     posAssigner.atPos(sym.pos) {
-      ValDef(flags2mods(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
+      ValDef(Modifiers(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
     }
   }
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree);
 
   /** Method definition */
-  case class DefDef(mods: int, name: Name, tparams: List[AbsTypeDef],
+  case class DefDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef],
 		    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
 	 assert(tpt.isType);
@@ -234,7 +240,7 @@ import symtab.Flags._;
   def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     posAssigner.atPos(sym.pos) {
       assert(sym != NoSymbol);
-      DefDef(flags2mods(sym.flags),
+      DefDef(Modifiers(sym.flags),
              sym.name,
              sym.typeParams map AbsTypeDef,
              vparamss,
@@ -248,7 +254,7 @@ import symtab.Flags._;
   }
 
   /** Abstract type or type parameter */
-  case class AbsTypeDef(mods: int, name: Name, lo: Tree, hi: Tree)
+  case class AbsTypeDef(mods: Modifiers, name: Name, lo: Tree, hi: Tree)
        extends DefTree {
 	 def keyword = "";
 
@@ -261,19 +267,19 @@ import symtab.Flags._;
 
   def AbsTypeDef(sym: Symbol): AbsTypeDef =
     posAssigner.atPos(sym.pos) {
-      AbsTypeDef(flags2mods(sym.flags), sym.name,
+      AbsTypeDef(Modifiers(sym.flags), sym.name,
                  TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi))
     }
 
   /** Type alias */
-  case class AliasTypeDef(mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree)
+  case class AliasTypeDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree)
        extends MemberDef {
 	 def keyword = "type";
        }
 
   def AliasTypeDef(sym: Symbol, rhs: Tree): AliasTypeDef =
     posAssigner.atPos(sym.pos) {
-      AliasTypeDef(flags2mods(sym.flags), sym.name, sym.typeParams map AbsTypeDef, rhs)
+      AliasTypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map AbsTypeDef, rhs)
     }
 
   /** Labelled expression - the symbols in the array (must be Idents!)
@@ -326,13 +332,13 @@ import symtab.Flags._;
     /** Add constructor to template */
     var vparamss1 =
       vparamss map (.map (vd =>
-	ValDef(PARAM | (vd.mods & IMPLICIT), vd.name, vd.tpt.duplicate, EmptyTree)));
+	ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM), vd.name, vd.tpt.duplicate, EmptyTree)));
     if (vparamss1.isEmpty ||
-	!vparamss1.head.isEmpty && (vparamss1.head.head.mods & IMPLICIT) != 0)
+	!vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
       vparamss1 = List() :: vparamss1;
     val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR);
     val superCall = (superRef /: argss) (Apply);
-    val constr: Tree = DefDef(0, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), superCall);
+    val constr: Tree = DefDef(NoMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), superCall);
     Template(parents, List.flatten(vparamss) ::: constr :: body)
   }
 
@@ -597,13 +603,13 @@ import symtab.Flags._;
 */
 
   trait TreeCopier {
-    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template): ClassDef;
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template): ClassDef;
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef;
-    def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template): ModuleDef;
-    def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree): ValDef;
-    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef;
-    def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree): AbsTypeDef;
-    def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef;
+    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef;
+    def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef;
+    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef;
+    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree): AbsTypeDef;
+    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef;
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef;
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import;
     def Attributed(tree: Tree, attribute: Tree, definition: Tree): Attributed;
@@ -640,19 +646,19 @@ import symtab.Flags._;
   }
 
   class StrictTreeCopier extends TreeCopier {
-    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) =
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) =
       new ClassDef(mods, name, tparams, tpt, impl).copyAttrs(tree);
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
       new PackageDef(name, stats).copyAttrs(tree);
-    def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template) =
+    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
       new ModuleDef(mods, name, impl).copyAttrs(tree);
-    def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree) =
+    def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) =
       new ValDef(mods, name, tpt, rhs).copyAttrs(tree);
-    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
+    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
       new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree);
-    def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree) =
+    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree) =
       new AbsTypeDef(mods, name, lo, hi).copyAttrs(tree);
-    def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
+    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
       new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree);
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
       new LabelDef(name, params, rhs).copyAttrs(tree);
@@ -724,7 +730,7 @@ import symtab.Flags._;
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
     def this() = this(new StrictTreeCopier);
-    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) = tree match {
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) = tree match {
       case t @ ClassDef(mods0, name0, tparams0, tpt0, impl0)
       if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (tpt0 == tpt) && (impl0 == impl)) => t
       case _ => copy.ClassDef(tree, mods, name, tparams, tpt, impl)
@@ -734,27 +740,27 @@ import symtab.Flags._;
       if ((name0 == name) && (stats0 == stats)) => t
       case _ => copy.PackageDef(tree, name, stats)
     }
-    def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template) = tree match {
+    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) = tree match {
       case t @ ModuleDef(mods0, name0, impl0)
       if (mods0 == mods && (name0 == name) && (impl0 == impl)) => t
       case _ => copy.ModuleDef(tree, mods, name, impl)
     }
-    def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree) = tree match {
+    def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) = tree match {
       case t @ ValDef(mods0, name0, tpt0, rhs0)
       if (mods0 == mods && (name0 == name) && (tpt0 == tpt) && (rhs0 == rhs)) => t
       case _ => copy.ValDef(tree, mods, name, tpt, rhs)
     }
-    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) = tree match {
+    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) = tree match {
       case t @ DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0)
       if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (vparamss0 == vparamss) && (tpt0 == tpt) && (rhs == rhs0)) => t
       case _ => copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
     }
-    def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree) = tree match {
+    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree) = tree match {
       case t @ AbsTypeDef(mods0, name0, lo0, hi0)
       if (mods0 == mods && (name0 == name) && (lo0 == lo) && (hi0 == hi)) => t
       case _ => copy.AbsTypeDef(tree, mods, name, lo, hi)
     }
-    def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree) = tree match {
+    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) = tree match {
       case t @ AliasTypeDef(mods0, name0, tparams0, rhs0)
       if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (rhs0 == rhs)) => t
       case _ => copy.AliasTypeDef(tree, mods, name, tparams, rhs)

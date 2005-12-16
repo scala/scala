@@ -81,7 +81,7 @@ abstract class TreeBuilder {
       } else {
 	val x = freshName();
 	Block(
-	  List(ValDef(SYNTHETIC, x, TypeTree(), left)),
+	  List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), left)),
 	  Apply(Select(right, op.encode), List(Ident(x))))
       }
     } else {
@@ -97,7 +97,7 @@ abstract class TreeBuilder {
       val x = nme.ANON_CLASS_NAME.toTypeName;
       Block(
         List(ClassDef(
-          FINAL | SYNTHETIC, x, List(), TypeTree(),
+          Modifiers(FINAL | SYNTHETIC), x, List(), TypeTree(),
           Template(parents, List(List()), argss, stats))),
 	New(Ident(x), List(List())))
     }
@@ -159,7 +159,7 @@ abstract class TreeBuilder {
 
     def makeCont(pat: Tree, body: Tree): Tree = matchVarPattern(pat) match {
       case Some(Pair(name, tpt)) =>
-        Function(List(ValDef(PARAM, name, tpt, EmptyTree)), body)
+        Function(List(ValDef(Modifiers(PARAM), name, tpt, EmptyTree)), body)
       case None =>
 	makeVisitor(List(CaseDef(pat, EmptyTree, body)))
     }
@@ -218,7 +218,7 @@ abstract class TreeBuilder {
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef]): Tree = {
     val x = freshName();
-    Function(List(ValDef(PARAM | SYNTHETIC, x, TypeTree(), EmptyTree)), Match(Ident(x), cases))
+    Function(List(ValDef(Modifiers(PARAM | SYNTHETIC), x, TypeTree(), EmptyTree)), Match(Ident(x), cases))
   }
 
   /** Create tree for case definition <case pat if guard => rhs> */
@@ -227,7 +227,7 @@ abstract class TreeBuilder {
   }
 
   /** Create tree for pattern definition <mods val pat0 = rhs> */
-  def makePatDef(mods: int, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {
+  def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {
     case Some(Pair(name, tpt)) =>
       List(ValDef(mods, name, tpt, rhs))
 
@@ -255,7 +255,7 @@ abstract class TreeBuilder {
 	  List(ValDef(mods, vname, TypeTree(), matchExpr))
 	case _ =>
 	  val tmp = freshName();
-	  val firstDef = ValDef(PRIVATE | LOCAL | SYNTHETIC, tmp, TypeTree(), matchExpr);
+	  val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), tmp, TypeTree(), matchExpr);
 	  var cnt = 0;
 	  val restDefs = for (val v <- vars) yield {
 	    cnt = cnt + 1;
@@ -273,7 +273,7 @@ abstract class TreeBuilder {
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
-    val mods = if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM;
+    val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM);
     def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("view$"), tpt, EmptyTree);
     if (implicitViews.isEmpty) vparamss
     else vparamss ::: List(implicitViews map makeViewParam)

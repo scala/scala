@@ -55,7 +55,7 @@ abstract class TreePrinters {
 
     def printValueParams(ts: List[ValDef]): unit = {
       print("(");
-      if (!ts.isEmpty) printModifiers(ts.head.mods & IMPLICIT);
+      if (!ts.isEmpty) printFlags(ts.head.mods.flags & IMPLICIT, nme.EMPTY.toTypeName);
       printSeq(ts){printParam}{print(", ")};
       print(")")
     }
@@ -79,12 +79,20 @@ abstract class TreePrinters {
     def printOpt(prefix: String, tree: Tree): unit =
       if (!tree.isEmpty) { print(prefix); print(tree) }
 
-    def printFlags(tree: Tree, flags: long): unit =
-      printModifiers(if (tree.symbol == NoSymbol) flags else tree.symbol.flags);
+    def printModifiers(tree: Tree, mods: Modifiers): unit = {
+      if (tree.symbol == NoSymbol)
+        printFlags(mods.flags, mods.privateWithin)
+      else if (tree.symbol.privateWithin == null)
+        printFlags(tree.symbol.flags, nme.EMPTY.toTypeName)
+      else
+        printFlags(tree.symbol.flags, tree.symbol.privateWithin.name)
+    }
 
-    def printModifiers(flags: long): unit = {
+    def printFlags(flags: long, privateWithin: Name): unit = {
       val mask = if (settings.debug.value) -1 else PrintableFlags;
-      val s = flagsToString(flags & mask);
+      val suffixes: List[Pair[long, String]] =
+        if (privateWithin.isEmpty) List() else List(Pair(PRIVATE, privateWithin.toString()));
+      val s = flagsToString(flags & mask, suffixes);
       if (s.length() != 0) print(s + " ")
     }
 
@@ -97,8 +105,8 @@ abstract class TreePrinters {
           print("<empty>");
 
         case ClassDef(mods, name, tparams, tp, impl) =>
-          printFlags(tree, mods);
-	  print((if ((mods & TRAIT) != 0) "trait " else "class ") + symName(tree, name));
+          printModifiers(tree, mods);
+	  print((if (mods.hasFlag(TRAIT)) "trait " else "class ") + symName(tree, name));
           printTypeParams(tparams);
           printOpt(": ", tp); print(" extends "); print(impl);
 
@@ -106,30 +114,30 @@ abstract class TreePrinters {
           print("package "); print(packaged); printColumn(stats, " {", ";", "}")
 
         case ModuleDef(mods, name, impl) =>
-          printFlags(tree, mods); print("object " + symName(tree, name));
+          printModifiers(tree, mods); print("object " + symName(tree, name));
           print(" extends "); print(impl);
 
         case ValDef(mods, name, tp, rhs) =>
-          printFlags(tree, mods);
-          print(if ((mods & MUTABLE) != 0) "var " else "val ");
+          printModifiers(tree, mods);
+          print(if (mods.hasFlag(MUTABLE)) "var " else "val ");
           print(symName(tree, name));
           printOpt(": ", tp);
-          if ((mods & DEFERRED) == 0) {
+          if (!mods.hasFlag(DEFERRED)) {
             print(" = ");
             if (rhs.isEmpty) print("_") else print(rhs)
           }
 
         case DefDef(mods, name, tparams, vparamss, tp, rhs) =>
-          printFlags(tree, mods);
+          printModifiers(tree, mods);
           print("def " + symName(tree, name));
           printTypeParams(tparams); vparamss foreach printValueParams;
           printOpt(": ", tp); printOpt(" = ", rhs);
 
         case AbsTypeDef(mods, name, lo, hi) =>
-          printFlags(tree, mods); print("type "); printParam(tree);
+          printModifiers(tree, mods); print("type "); printParam(tree);
 
         case AliasTypeDef(mods, name, tparams, rhs) =>
-          printFlags(tree, mods); print("type " + symName(tree, name));
+          printModifiers(tree, mods); print("type " + symName(tree, name));
           printTypeParams(tparams); printOpt(" = ", rhs);
 
         case LabelDef(name, params, rhs) =>
@@ -214,13 +222,13 @@ abstract class TreePrinters {
           print(fun); printRow(vargs, "(", ", ", ")");
 
         case Super(qual, mixin) =>
-          if (qual != nme.EMPTY.toTypeName || tree.symbol != NoSymbol) print(symName(tree, qual) + ".");
+          if (!qual.isEmpty || tree.symbol != NoSymbol) print(symName(tree, qual) + ".");
           print("super");
-          if (mixin != nme.EMPTY.toTypeName)
+          if (!mixin.isEmpty)
 	    print("[" + mixin + "]")
 
         case This(qual) =>
-          if (qual != nme.EMPTY.toTypeName) print(symName(tree, qual) + ".");
+          if (!qual.isEmpty) print(symName(tree, qual) + ".");
           print("this");
 
         case Select(qualifier, name) =>

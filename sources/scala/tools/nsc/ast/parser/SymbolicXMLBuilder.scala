@@ -316,19 +316,19 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     var ts2: List[Tree] = List();
 
     if(moreAttributes) {
-      ts2 = atPos(pos) {ValDef(MUTABLE,
+      ts2 = atPos(pos) {ValDef(Modifiers(MUTABLE),
                               _md,
                               _scala_xml_MetaData,
                               _scala_xml_Null)} :: tlist2;
     }
     if(moreNamespaces) {
       ts = atPos(pos) {
-      ValDef(MUTABLE,
+      ValDef(Modifiers(MUTABLE),
              _tmpscope,
              _scala_xml_NamespaceBinding,
              Ident(_scope))} :: ts;
 
-      ts2 = ValDef(0, _scope, _scala_xml_NamespaceBinding, Ident(_tmpscope)) :: ts2;
+      ts2 = ValDef(NoMods, _scope, _scala_xml_NamespaceBinding, Ident(_tmpscope)) :: ts2;
     }
 
     val makeSymbolicAttrs = {
