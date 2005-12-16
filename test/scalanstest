@@ -2,7 +2,7 @@
 ##############################################################################
 #                      __                                                    #
 #      ________ ___   / /  ___     Scala Tools Launch Script                 #
-#     / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL                  #
+#     / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL                  #
 #   __\ \/ /__/ __ |/ /__/ __ |                                              #
 #  /____/\___/_/ |_/____/_/ | |                                              #
 #                           |/                                               #
@@ -441,8 +441,8 @@ FAILED="false";
 ERRORS=0;
 SUCCESS_COUNT=0;
 FAILURE_COUNT=0;
-TESTROOT="$PREFIX/test-nsc/files";
-SRCDIR="$PREFIX/test-nsc/files";
+TESTROOT="$PREFIX/test/files";
+SRCDIR="$PREFIX/test/files";
 OBJDIR="""";
 
 TEST_ALL="true";
@@ -460,7 +460,6 @@ esac;
 
 SCALA="$LATEST/bin/ns";
 SOCOS="$LATEST/bin/nsc";
-#SOCOS="$LATEST/bin/nsc -classpath /tmp/newclasses:$HOME/scala/build/nslib.jar:$HOME/scala/sources:$HOME/scala/newsources:/home/linuxsoft/apps/fjbg/jars/fjbg.jar:/home/linuxsoft/apps/msil/msil.jar"
 SCALAP="$LATEST/bin/nsp";
 DIFF="diff";
 
