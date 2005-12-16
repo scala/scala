@@ -116,7 +116,7 @@ public abstract class Long    extends AnyVal implements java.io.Serializable {
     public long    $bar       (long    that) { return  value |  that; }
     public long    $amp       (long    that) { return  value &  that; }
     public long    $up        (long    that) { return  value ^  that; }
-
+/*
 
     public boolean $eq$eq     (int    that) { return  value == that; }
     public boolean $bang$eq   (int    that) { return  value != that; }
@@ -177,5 +177,5 @@ public abstract class Long    extends AnyVal implements java.io.Serializable {
     public long    $bar       (byte    that) { return  value |  that; }
     public long    $amp       (byte    that) { return  value &  that; }
     public long    $up        (byte    that) { return  value ^  that; }
-
+*/
 }
