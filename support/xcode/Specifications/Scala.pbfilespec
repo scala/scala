@@ -1,1 +1,0 @@
-/**	Scala source file specs.    23rd of July 2005 - Pascal Perez (plperez@stanford.edu)*/(    {      Identifier = sourcecode.scala;      BasedOn = sourcecode;      Name = "Scala Files";      Extensions = (scala);      MIMETypes = ("text/scala");      ComputerLanguage = scala;      IsTextFile = YES;    })
