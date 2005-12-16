@@ -995,3 +995,4 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 }
 
 } // package
+
