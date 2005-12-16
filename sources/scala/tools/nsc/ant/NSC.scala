@@ -466,6 +466,9 @@ package scala.tools.nsc.ant {
       // #####             Compilation and support methods             #####
       // ###################################################################
 
+      override protected def getDirectoryScanner (baseDir: java.io.File) =
+        super.getDirectoryScanner(baseDir);
+
       /**
        * Creates a file from a given string.
        * @param test A method to test whether the file is valid.
@@ -533,19 +536,6 @@ package scala.tools.nsc.ant {
             throw new BuildException(message, getLocation());
         }
 
-        private def getClassLoaderClasspath(classLoader: ClassLoader): List[File] = {
-            val parentClassLoader = classLoader.getParent();
-            val classloaderName = classLoader.getClass().getName();
-            ((if (parentClassLoader != null && parentClassLoader != classLoader)
-                getClassLoaderClasspath(parentClassLoader)
-            else Nil) :::
-            (if (classloaderName.endsWith("URLClassLoader"))
-                List.fromArray((classLoader.asInstanceOf[URLClassLoader]).getURLs()).map(url:URL=>new File(url.getFile()))
-            else if (classloaderName.endsWith("AntClassLoader2") || classloaderName.endsWith("AntClassLoader"))
-                List.fromArray(( classLoader.asInstanceOf[AntClassLoader]).getClasspath().split(File.pathSeparator)).map(nameToFile(f:File=>f))
-            else Nil))
-        }
-
         /**
          * Performs the compilation.
          */
@@ -583,9 +573,9 @@ package scala.tools.nsc.ant {
               }
 
             if (sourceFiles.length == 0)
-            	log("No files selected for compilation")
+                    log("No files selected for compilation")
             else
-            	log("Compiling " + sourceFiles.length + " source file"
+                    log("Compiling " + sourceFiles.length + " source file"
                                  + (if (sourceFiles.length > 1) "s" else "")
                                  + (" to " + getDestination.toString()));
 
@@ -597,7 +587,8 @@ package scala.tools.nsc.ant {
             val settings = new Settings(error);
             settings.outdir.value = asString(destination.get);
             if (!classpath.isEmpty) settings.classpath.value = asString(getClasspath);
-            if (!sourcepath.isEmpty) settings.sourcepath.value = asString(getSourcepath);
+            if (!sourcepath.isEmpty) settings.sourcepath.value = asString(getSourcepath)
+            else if (origin.get.size() > 0) settings.sourcepath.value = origin.get.list()(0);
             if (!bootclasspath.isEmpty) settings.bootclasspath.value = asString(getBootclasspath);
             if (!extpath.isEmpty) settings.extdirs.value = asString(getExtpath);
             if (!encoding.isEmpty) settings.encoding.value = encoding.get;
@@ -635,7 +626,7 @@ package scala.tools.nsc.ant {
             }
             catch {
               case exception @ FatalError(msg) => {
-		exception.printStackTrace();
+                exception.printStackTrace();
                 if (settings.debug.value) exception.printStackTrace();
                 error("Compile failed because of an internal compiler error ("
                       + msg + "); see the error output for details.");
