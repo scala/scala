@@ -296,6 +296,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     phase = firstPhase;
     definitions.init; // needs firstPhase and phase to be defined != NoPhase,
                       // that's why it is placed here.
+    icodes.init;
 
     private var p: Phase = firstPhase;
     private var stopped = false;
@@ -359,8 +360,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     /** A map from compiled top-level symbols to their picklers */
     val symData = new HashMap[Symbol, PickleBuffer];
 
-
-
     def compileSources(sources: List[SourceFile]): unit = {
       val startTime = System.currentTimeMillis();
       reporter.reset;
@@ -390,6 +389,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (settings.Xshowicode.value) writeICode();
 
       if (reporter.errors == 0) {
+        assert(symData.isEmpty, symData.elements.toList);
 /*
 	for (val Pair(sym, pickled) <- symData.elements.toList) {
 	  sym setPos Position.NOPOS;

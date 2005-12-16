@@ -24,6 +24,8 @@ abstract class ICodes extends AnyRef
   val global: Global;
 
   /** The ICode representation of classes */
-  var classes: List[IClass] = Nil;
+  var classes: List[IClass] = _;
+
+  def init = { classes = Nil }
 }
 
