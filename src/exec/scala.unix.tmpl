@@ -1,0 +1,44 @@
+#!/bin/bash
+
+##############################################################################
+# Copyright @copyright@
+#
+# This is free software; see the distribution for copying conditions.
+# There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+##############################################################################
+
+cygwin=false;
+darwin=false;
+case "`uname`" in
+    CYGWIN*) cygwin=true ;;
+    Darwin*) darwin=true ;;
+esac
+
+PREFIX=`dirname "$0"`/..;
+PREFIX=`cd "$PREFIX"; pwd`;
+
+JAVA=java
+JAVA_CLASSPATH=@lib.path@
+
+# For Cygwin, switch paths to appropriate format before running java
+if $cygwin; then
+    if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
+        format=mixed
+    else
+        format=windows
+    fi
+    JAVA_CLASSPATH=`cygpath --path --$format "$JAVA_CLASSPATH"`
+fi
+
+for arg in "" "$@"; do
+    [ -z "$arg" ] && continue;
+    if [ "$arg" = "-version" ]; then
+        echo "$SCRIPT @version@ -- @copyright@";
+        exit 0
+    fi
+done;
+
+$JAVA \
+    -Xbootclasspath/a:"$JAVA_CLASSPATH" \
+    "$@"

@@ -50,25 +50,24 @@
   <property name="scala.dll" value="${lib.dir}/scala.dll"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
   <!-- Location of build products properties -->
-  <property name="locker.dir" value="${basedir}/build/locker"/>
-  <property name="quick.dir" value="${basedir}/build/quick"/>
-  <property name="strap.dir" value="${basedir}/build/strap"/>
+  <property name="build.dir" value="${basedir}/build"/>
+  <property name="locker.dir" value="${build.dir}/locker"/>
+  <property name="quick.dir" value="${build.dir}/quick"/>
+  <property name="strap.dir" value="${build.dir}/strap"/>
   <!-- Location of source and build elements names properties -->
   <property name="lib.dir.name" value="library"/>
   <property name="comp.dir.name" value="compiler"/>
   <property name="exec.dir.name" value="exec"/>
   <!-- Location of structure of the distribution properties -->
-  <property name="distrib.unix.dir" value="${basedir}/distribs/unix"/>
-  <property name="distrib.win.dir" value="${basedir}/distribs/windows"/>
-  <property name="distrib.latest.dir" value="${basedir}/distribs/latest"/>
-  <property name="distrib.name" value="scala"/>
-  <property name="lib.jar.name" value="${distrib.name}-${lib.dir.name}.jar"/>
-  <property name="comp.jar.name" value="${distrib.name}-${comp.dir.name}.jar"/>
-  <property name="scala.exec.name" value="${distrib.name}"/>
-  <property name="scalai.exec.name" value="${distrib.name}i"/>
-  <property name="scalac.exec.name" value="${distrib.name}c"/>
-  <property name="scalatok.exec.name" value="${distrib.name}tok"/>
-  <property name="wrapper.exec.name" value=".${distrib.name}-wrapper"/>
+  <property name="dist.dir" value="${basedir}/dists"/>
+  <property name="dist.latest.dir" value="${dist.dir}/latest"/>
+  <property name="dist.name" value="scala"/>
+  <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
+  <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
+  <property name="scala.exec.name" value="${dist.name}"/>
+  <property name="scalai.exec.name" value="${dist.name}i"/>
+  <property name="scalac.exec.name" value="${dist.name}c"/>
+  <property name="scalatok.exec.name" value="${dist.name}tok"/>
   <!-- Shorcut names -->
   <property name="locker.lib.dir" value="${locker.dir}/${lib.dir.name}"/>
   <property name="locker.comp.dir" value="${locker.dir}/${comp.dir.name}"/>
@@ -149,7 +148,7 @@
     </path>
     <!-- Defining version number -->
   	<tstamp prefix="start"/>
-    <property name="version" value="${start.DSTAMP}-${start.TSTAMP}"/>
+    <property name="version.number" value="${start.DSTAMP}-${start.TSTAMP}"/>
     <!-- Creating boot-level tasks -->
     <taskdef name="starr"
              classname="scala.tools.nsc.ant.NSC"
@@ -193,8 +192,17 @@
     <attribute name="exec.dir"/>
     <sequential>
       <mkdir dir="@{exec.dir}"/>
-      <copy file="${src.dir}/${exec.dir.name}/nscala.unix.tmpl"
-            tofile="@{exec.dir}/${wrapper.exec.name}">
+      <copy file="${src.dir}/${exec.dir.name}/scala.unix.tmpl"
+            tofile="@{exec.dir}/scala">
+        <filterset>
+          <filter token="version" value="${version}"/>
+          <filter token="copyright" value="${copyright}"/>
+          <filter token="lib.path" value="@{lib.dir}"/>
+        </filterset>
+      </copy>
+      <chmod file="@{exec.dir}/scala" perm="ugo+rx"/>
+      <copy file="${src.dir}/${exec.dir.name}/scala-tool.unix.tmpl"
+            tofile="@{exec.dir}/scalac">
         <filterset>
           <filter token="version" value="${version}"/>
           <filter token="copyright" value="${copyright}"/>
@@ -202,21 +210,30 @@
           <filter token="comp.path" value="@{comp.dir}"/>
           <filter token="fjbg.jar" value="${fjbg.jar}"/>
           <filter token="msil.jar" value="${msil.jar}"/>
-          <filter token="scala.exec.name" value="${scala.exec.name}"/>
-          <filter token="scalac.exec.name" value="${scalac.exec.name}"/>
-          <filter token="scalai.exec.name" value="${scalai.exec.name}"/>
-          <filter token="scalatok.exec.name" value="${scalatok.exec.name}"/>
+          <filter token="tool.class" value="scala.tools.nsc.Main"/>
         </filterset>
       </copy>
-      <chmod file="@{exec.dir}/${wrapper.exec.name}" perm="ugo+rx"/>
-      <symlink resource="${wrapper.exec.name}" overwrite="yes"
-               link="@{exec.dir}/${scala.exec.name}"/>
-      <symlink resource="${wrapper.exec.name}" overwrite="yes"
-               link="@{exec.dir}/${scalac.exec.name}"/>
-      <symlink resource="${wrapper.exec.name}" overwrite="yes"
-               link="@{exec.dir}/${scalai.exec.name}"/>
-      <symlink resource="${wrapper.exec.name}" overwrite="yes"
-               link="@{exec.dir}/${scalatok.exec.name}"/>
+      <chmod file="@{exec.dir}/scalac" perm="ugo+rx"/>
+      <copy file="${src.dir}/${exec.dir.name}/scala.win.tmpl"
+            tofile="@{exec.dir}/scala.bat">
+        <filterset>
+          <filter token="version" value="${version}"/>
+          <filter token="copyright" value="${copyright}"/>
+          <filter token="lib.path" value="@{lib.dir}"/>
+        </filterset>
+      </copy>
+      <copy file="${src.dir}/${exec.dir.name}/scala-tool.win.tmpl"
+            tofile="@{exec.dir}/scalac.bat">
+        <filterset>
+          <filter token="version" value="${version}"/>
+          <filter token="copyright" value="${copyright}"/>
+          <filter token="lib.path" value="@{lib.dir}"/>
+          <filter token="comp.path" value="@{comp.dir}"/>
+          <filter token="fjbg.jar" value="${fjbg.jar}"/>
+          <filter token="msil.jar" value="${msil.jar}"/>
+          <filter token="tool.class" value="scala.tools.nsc.Main"/>
+        </filterset>
+      </copy>
     </sequential>
   </macrodef>
   
@@ -422,13 +439,19 @@
                 exec.dir="${strap.dir}/${exec.dir.name}"/>
     <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
-      <fileset dir="${quick.dir}"/>
+      <fileset dir="${quick.dir}">
+        <include name="${lib.dir.name}/**"/>
+        <include name="${comp.dir.name}/**"/>
+      </fileset>
     </checksum>
     <delete quiet="true" failonerror="false">
       <fileset dir="${quick.dir}"><include name="**/*.MD5"/></fileset>
     </delete>
     <checksum totalproperty="strap.md5">
-      <fileset dir="${strap.dir}"/>
+      <fileset dir="${strap.dir}">
+        <include name="${lib.dir.name}/**"/>
+        <include name="${comp.dir.name}/**"/>
+      </fileset>
     </checksum>
     <delete quiet="true" failonerror="false">
       <fileset dir="${strap.dir}"><include name="**/*.MD5"/></fileset>
@@ -457,8 +480,22 @@
   ##############################################################################
   -->
   
-  <target name="dist">
-    <echo>Dist is not available yet.</echo>
+  <target name="dist" depends="test">
+    <mkdir dir="${dist.dir}"/>
+    <mkdir dir="${dist.dir}/lib"/>
+    <jar destfile="${dist.dir}/lib/${comp.jar.name}"
+         basedir="${strap.comp.dir}">
+      <manifest>
+        <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
+      </manifest>
+    </jar>
+    <jar destfile="${dist.dir}/lib/${lib.jar.name}"
+         basedir="${strap.lib.dir}">
+    </jar>
+    <mkdir dir="${dist.dir}/bin"/>
+    <build.exec lib.dir="lib/${lib.jar.name}"
+                comp.dir="lib/${comp.jar.name}"
+                exec.dir="${dist.dir}/bin"/>
   </target>
   
   <!--
@@ -486,9 +523,9 @@
     <remove dir="${locker.dir}"/>
     <remove dir="${quick.dir}"/>
     <remove dir="${strap.dir}"/>
-    <remove dir="${distrib.unix.dir}"/>
-    <remove dir="${distrib.win.dir}"/>
-    <remove dir="${distrib.latest.dir}"/>
+    <remove dir="${dist.unix.dir}"/>
+    <remove dir="${dist.win.dir}"/>
+    <remove dir="${dist.unix.latest.dir}"/>
   </target>
 
 </project>

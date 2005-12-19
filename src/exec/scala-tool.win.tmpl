@@ -1,7 +1,7 @@
 @echo off
 
 rem ##########################################################################
-rem # Copyright @COPYRIGHT@
+rem # Copyright @copyright@
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -12,7 +12,6 @@ if "%OS%"=="Windows_NT" @setlocal
 if "%OS%"=="Windows_NT" @set SCALA_HOME=%~dp0
 
 if "%SCALA_HOME%" == "" goto error1
-if not exist "%SCALA_HOME%\VERSION-@VERSION@" goto error2
 
 set _ARGS=
 :loop
@@ -23,24 +22,20 @@ goto loop
 
 :exec
 set _JAVACMD=java
-set _PROPS=-Dscala.product=@PRODUCT@ -Dscala.version=@VERSION@
-set _MAIN=@MAIN@
-set _TOOLS_CPATH=@TOOLS_CPATH@
-set _LIB_CPATH=@LIB_CPATH@
+set _PROPS=-Dscala.version=@version@ -Dscala.home=%SCALA_HOME%
+set _MAIN=@tool.class@
+set _TOOLS_CPATH=@fjbg.jar@;@msil.jar@;@comp.path@;@lib.path@
+set _LIB_CPATH=@lib.path@
 
 rem echo %_JAVACMD% %_PROPS% -cp %_CPATH% %_MAIN% %_ARGS%
-%_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% -sourcepath %_LIB_CPATH% %_ARGS%
+%_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% -bootclasspath %_LIB_CPATH% %_ARGS%
 goto end
 
 rem ##########################################################################
 rem # errors
 
 :error1
-echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@VERSION@".
-goto end
-
-:error2
-echo ERROR: environment variable SCALA_HOME points to the wrong directory "%SCALA_HOME%". It should point to the directory containing the file "VERSION-@VERSION@".
+echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@version@".
 goto end
 
 :end
