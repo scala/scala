@@ -7,8 +7,8 @@ package scala.tools.nsc.transform;
 
 import symtab._;
 import Flags._;
-import util.{ListBuffer, TreeSet};
-import collection.mutable.HashMap;
+import util.TreeSet;
+import scala.collection.mutable.{HashMap, ListBuffer};
 
 abstract class LambdaLift extends InfoTransform {
   import global._;
@@ -329,12 +329,9 @@ abstract class LambdaLift extends InfoTransform {
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {
 	case ClassDef(mods, name, tparams, tpt, impl @ Template(parents, body)) =>
-	  val result =
-	    if (liftedDefs(stat.symbol).hasNext) {
-	      val lifted = liftedDefs(stat.symbol).toList map addLifted;
-	      copy.ClassDef(stat, mods, name, tparams, tpt,
-			    copy.Template(impl, parents, body ::: lifted))
-	    } else stat;
+	  val lifted = liftedDefs(stat.symbol).toList map addLifted;
+	  val result = copy.ClassDef(
+            stat, mods, name, tparams, tpt, copy.Template(impl, parents, body ::: lifted));
 	  liftedDefs -= stat.symbol;
 	  result
 	case _ =>

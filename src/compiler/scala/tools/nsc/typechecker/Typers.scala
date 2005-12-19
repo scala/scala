@@ -6,10 +6,9 @@
 //todo: rewrite or disallow new T where T is a trait (currently: <init> not a member of T)
 package scala.tools.nsc.typechecker;
 
-import nsc.util.ListBuffer;
 import symtab.Flags._;
 import scala.tools.nsc.util.Position;
-import collection.mutable.HashMap;
+import scala.collection.mutable.{HashMap, ListBuffer}
 
 /** Methods to create symbols and to enter them into scopes. */
 [_trait_] abstract class Typers: Analyzer {

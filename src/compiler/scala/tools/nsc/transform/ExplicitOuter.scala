@@ -7,8 +7,7 @@ package scala.tools.nsc.transform;
 
 import symtab._;
 import Flags._;
-import util.ListBuffer;
-import collection.mutable.HashMap;
+import scala.collection.mutable.{HashMap, ListBuffer};
 
 abstract class ExplicitOuter extends InfoTransform {
   import global._;

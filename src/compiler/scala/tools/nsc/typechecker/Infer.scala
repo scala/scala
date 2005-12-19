@@ -5,12 +5,13 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
+import scala.collection.mutable.ListBuffer;
+import symtab.Flags._;
+
 [_trait_] abstract class Infer: Analyzer {
-  import symtab.Flags._;
   import global._;
   import definitions._;
   import posAssigner.atPos;
-  import util.ListBuffer;
 
   var normM = 0;
   var normP = 0;

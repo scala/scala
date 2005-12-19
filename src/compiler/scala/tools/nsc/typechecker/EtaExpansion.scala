@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-import util.ListBuffer;
+import scala.collection.mutable.ListBuffer;
 import symtab.Flags._;
 
 [_trait_] abstract class EtaExpansion: Analyzer {

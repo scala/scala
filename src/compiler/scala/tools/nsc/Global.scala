@@ -11,11 +11,11 @@ import scala.tools.util.{SourceReader,ClassPath,AbstractFile};
 import scala.tools.nsc.util.{Position,SourceFile};
 import scala.tools.nsc.reporters._;
 
-import scala.collection.mutable.{HashSet,HashMap}
+import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
 
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
-import util.{ListBuffer, Statistics};
+import util.Statistics;
 import ast._;
 import ast.parser._;
 import typechecker._;

@@ -6,7 +6,7 @@
 package scala.tools.nsc.typechecker;
 
 import symtab.Flags._;
-import util.ListBuffer;
+import scala.collection.mutable.ListBuffer;
 
 /**
  *   - caseArity, caseElement implementations added to case classes

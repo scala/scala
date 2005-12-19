@@ -6,7 +6,7 @@
 package scala.tools.nsc.ast.parser;
 
 import symtab.Flags._;
-import util.ListBuffer;
+import scala.collection.mutable.ListBuffer;
 
 abstract class TreeBuilder {
 

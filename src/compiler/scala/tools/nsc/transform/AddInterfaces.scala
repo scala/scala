@@ -7,8 +7,7 @@ package scala.tools.nsc.transform;
 
 import symtab._;
 import Flags._;
-import util.ListBuffer;
-import collection.mutable.HashMap;
+import collection.mutable.{HashMap, ListBuffer};
 
 abstract class AddInterfaces extends InfoTransform {
   import global._;                  // the global environment

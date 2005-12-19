@@ -9,7 +9,7 @@ import collection.mutable.HashMap;
 import symtab._;
 import Flags._;
 import scala.tools.nsc.util.Position;
-import util.ListBuffer;
+import scala.collection.mutable.ListBuffer;
 
 abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   import global._;                  // the global environment

@@ -7,7 +7,8 @@ package scala.tools.nsc.transform;
 
 import symtab._;
 import Flags._;
-import util.{ListBuffer, TreeSet}
+import scala.collection.mutable.ListBuffer;
+import util.TreeSet;
 
 abstract class Constructors extends Transform {
   import global._;

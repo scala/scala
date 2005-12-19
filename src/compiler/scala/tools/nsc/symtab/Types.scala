@@ -6,7 +6,8 @@
 package scala.tools.nsc.symtab;
 
 import scala.tools.nsc.util.Position;
-import nsc.util.{ListBuffer, HashSet};
+import nsc.util.HashSet;
+import scala.collection.mutable.ListBuffer;
 import Flags._;
 
 /* A standard type pattern match:

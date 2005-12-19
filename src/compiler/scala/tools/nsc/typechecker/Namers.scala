@@ -111,7 +111,10 @@ trait Namers: Analyzer {
       } else {
 	c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag);
       }
-      if (c.owner.isPackageClass) currentRun.symSource(c) = context.unit.source.getFile();
+      if (c.owner.isPackageClass) {
+        currentRun.symSource(c) = context.unit.source.getFile();
+        c.sourceFile = context.unit.source.getFile();
+      }
       c
     }
 

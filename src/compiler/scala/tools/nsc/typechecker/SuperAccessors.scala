@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-import nsc.util.ListBuffer;
+import scala.collection.mutable.ListBuffer;
 import nsc.symtab.Flags._;
 
 /** A sample transform.

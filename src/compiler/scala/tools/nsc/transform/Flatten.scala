@@ -7,8 +7,7 @@ package scala.tools.nsc.transform;
 
 import symtab._;
 import Flags._;
-import util.ListBuffer;
-import collection.mutable.HashMap;
+import scala.collection.mutable.{HashMap, ListBuffer}
 
 abstract class Flatten extends InfoTransform {
   import global._;
@@ -103,10 +102,8 @@ abstract class Flatten extends InfoTransform {
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val stats1 = super.transformStats(stats, exprOwner);
-      if (currentOwner.isPackageClass && liftedDefs(currentOwner).hasNext)
-        stats1 ::: liftedDefs(currentOwner).toList
-      else
-        stats1
+      if (currentOwner.isPackageClass) stats1 ::: liftedDefs(currentOwner).toList
+      else stats1
     }
   }
 }

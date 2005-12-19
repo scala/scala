@@ -7,8 +7,8 @@ package scala.tools.nsc.transform;
 
 import symtab._;
 import Flags._;
-import util.{ListBuffer}
 import scala.tools.nsc.util.Position;
+import scala.collection.mutable.ListBuffer;
 
 abstract class Mixin extends InfoTransform {
   import global._;
