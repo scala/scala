@@ -1,744 +1,494 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- $Id$ -->
 
-<project name="nscala" default="distrib">
+<project name="scala-core" default="build">
 
-    <description>
-      This is SABBUS, the system to build the Scala NSC compiler as well as
-      various related tools. The 'build.TEMPLATE.properties' file must be
-      customised for your own particular system, no other customisation should
-      be required. The build file expects the file structure of a Scala CVS
-      distribution.
-    </description>
-    
-    <echo>This is SABBUS, your helpful build script for new Scala.</echo>
+  <description>
+    I am Sabbus for Scala-core, the build system for the Scala compiler and core
+    library. Please check the 'docs/README' file for more information about me.
+  </description>
+  
+  <echo>Running Sabbus for Scala-core</echo>
 
-    <property environment="env"/>
-    <condition property="memory.set">
-    	<contains string="${env.ANT_OPTS}" substring="-Xmx"/>
+  <!--
+  ##############################################################################
+  PROPERTIES
+  ##############################################################################
+  -->
+  
+  <property environment="env"/>
+  <condition property="memory.set">
+  	<contains string="${env.ANT_OPTS}" substring="-Xmx"/>
+  </condition>
+  <fail unless="memory.set">
+    Sabbus requires additional memory. Please set the 'ANT_OPTS' environment
+    property to '-Xmx256M' or more.
+  </fail>
+
+  <!-- Prevents system classpath from being used -->
+  <property name="build.sysclasspath" value="ignore"/>
+
+  <!-- Base properties -->
+  <property name="docs.dir" value="${basedir}/docs"/>
+  <property name="lib.dir" value="${basedir}/lib"/>
+  <property name="src.dir" value="${basedir}/src"/>
+  <property name="test.dir" value="${basedir}/test"/>
+  <!-- User properties -->
+  <property file="${basedir}/build.properties"/>
+  <!-- General properties -->
+  <property name="copyright" value="(c) 2002-05 LAMP/EPFL"/>
+  <!-- NSC configuration properties -->
+  <property name="nsc.logging" value="none"/>
+  <property name="nsc.debug-info" value="true"/>
+  <property name="nsc.excludes" value="build.excludes"/>
+  <!-- Location of pre-compiled libraries properties -->
+  <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
+  <property name="starr.comp.jar" value="${lib.dir}/scala-compiler.jar"/>
+  <property name="jaco.jar" value="${lib.dir}/jaco.jar"/>
+  <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
+  <property name="msil.jar" value="${lib.dir}/msil.jar"/>
+  <property name="scala.dll" value="${lib.dir}/scala.dll"/>
+  <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
+  <!-- Location of build products properties -->
+  <property name="locker.dir" value="${basedir}/build/locker"/>
+  <property name="quick.dir" value="${basedir}/build/quick"/>
+  <property name="strap.dir" value="${basedir}/build/strap"/>
+  <!-- Location of source and build elements names properties -->
+  <property name="lib.dir.name" value="library"/>
+  <property name="comp.dir.name" value="compiler"/>
+  <property name="exec.dir.name" value="exec"/>
+  <!-- Location of structure of the distribution properties -->
+  <property name="distrib.unix.dir" value="${basedir}/distribs/unix"/>
+  <property name="distrib.win.dir" value="${basedir}/distribs/windows"/>
+  <property name="distrib.latest.dir" value="${basedir}/distribs/latest"/>
+  <property name="distrib.name" value="scala"/>
+  <property name="lib.jar.name" value="${distrib.name}-${lib.dir.name}.jar"/>
+  <property name="comp.jar.name" value="${distrib.name}-${comp.dir.name}.jar"/>
+  <property name="scala.exec.name" value="${distrib.name}"/>
+  <property name="scalai.exec.name" value="${distrib.name}i"/>
+  <property name="scalac.exec.name" value="${distrib.name}c"/>
+  <property name="scalatok.exec.name" value="${distrib.name}tok"/>
+  <property name="wrapper.exec.name" value=".${distrib.name}-wrapper"/>
+  <!-- Shorcut names -->
+  <property name="locker.lib.dir" value="${locker.dir}/${lib.dir.name}"/>
+  <property name="locker.comp.dir" value="${locker.dir}/${comp.dir.name}"/>
+  <property name="quick.lib.dir" value="${quick.dir}/${lib.dir.name}"/>
+  <property name="quick.comp.dir" value="${quick.dir}/${comp.dir.name}"/>
+  <property name="strap.lib.dir" value="${strap.dir}/${lib.dir.name}"/>
+  <property name="strap.comp.dir" value="${strap.dir}/${comp.dir.name}"/>
+
+  <!--
+  ##############################################################################
+  INITIALISATION
+  ##############################################################################
+  -->
+  
+  <target name="init">
+    <!-- Testing if everything is in place -->
+    <echo level="verbose">starr.lib.jar=${starr.lib.jar}</echo>
+    <fail message="STARR library in 'lib/' is not available">
+      <condition><not><and>
+        <available classname="scala.Predef" 
+                   classpath="${starr.lib.jar}"/>
+        <available classname="scala.List"
+                   classpath="${starr.lib.jar}"/>
+        <available classname="scala.runtime.ObjectRef"
+                   classpath="${starr.lib.jar}"/>
+      </and></not></condition>
+    </fail>
+    <echo level="verbose">starr.comp.jar=${starr.comp.jar}</echo>
+    <fail message="STARR compiler in 'lib/' is not available">
+      <condition><not>
+        <available classname="scala.tools.nsc.ant.NSC"
+                   classpath="${starr.comp.jar}:${starr.lib.jar}"/>
+      </not></condition>
+    </fail>
+    <echo level="verbose">fjbg.jar=${fjbg.jar}</echo>
+    <fail message="FJBG library in 'lib/' is not available">
+      <condition><not>
+        <available classname="ch.epfl.lamp.fjbg.JCode"
+                   classpath="${fjbg.jar}"/>
+      </not></condition>
+    </fail>
+    <echo level="verbose">msil.jar=${msil.jar}</echo>
+    <fail message="MSIL library in 'lib/' is not available">
+      <condition><not>
+        <available classname="ch.epfl.lamp.compiler.msil.Assembly"
+                   classpath="${msil.jar}"/>
+      </not></condition>
+    </fail>
+    <echo level="verbose">jaco.jar=${jaco.jar}</echo>
+    <fail message="JaCo compiler in 'lib/' is not available">
+      <condition><not>
+        <available classname="jaco.pizza.Main" classpath="${jaco.jar}"/>
+      </not></condition>
+    </fail>
+    <echo level="verbose">ant.jar=${ant.jar}</echo>
+    <!-- Finding out what is available -->
+    <available property="excludes.avail" file="${nsc.excludes}"/>
+    <condition property="locker.avail">
+      <and>
+        <available classname="scala.Predef" classpath="${locker.lib.dir}"/>
+        <available classname="scala.List" classpath="${locker.lib.dir}"/>
+        <available classname="scala.runtime.ObjectRef"
+                   classpath="${locker.lib.dir}"/>
+        <available classname="scala.tools.nsc.ant.NSC"
+                   classpath="${locker.comp.dir}:${locker.lib.dir}"/>
+        <available file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"/>
+      </and>
     </condition>
-    <fail unless="memory.set">SABBUS requires additional memory. Please set the 'ANT_OPTS' environment property to '-Xmx256M' or more.</fail>
-    <condition property="classpath.set">
-    	<and>
-    	    <isset property="env.CLASSPATH"/>
-    	    <not><equals arg1="${env.CLASSPATH}" arg2="" trim="true"/></not>
-    	</and>
-    </condition>
-    <fail if="classpath.set">SABBUS is too unstable when used with a non-empty classpath. Unset your classpath environment variable.</fail>
-
-    <!-- The system classpath should not be used -->
-    <property name="build.sysclasspath" value="ignore"/>
-
-    <!-- Properties in 'build.base.properties' are all defined relatively
-         to ${basedir}.
-    -->
-    <echo level="verbose">Loading properties from '${basedir}/config/build.base.properties'</echo>
-    <property file="${basedir}/config/build.base.properties"/>
-
-    <!-- Properties in 'build.${user.name}.properties' take precedence over
-         properties in 'build.default.properties'.
-    -->
-    <echo level="verbose">Loading properties from '${config.dir}/build.${user.name}.properties'</echo>
-    <property file="${config.dir}/build.${user.name}.properties"/>
-    <echo level="verbose">Loading properties from '${build.support.dir}/build.${user.name}.properties'</echo>
-    <property file="${build.support.dir}/build.${user.name}.properties"/>
-    <echo level="verbose">Loading properties from '${config.dir}/build.default.properties'</echo>
-    <property file="${config.dir}/build.default.properties"/>
-    
-    <!-- A path containing pre-compiled Scala libraries found typically
-         in a Scala distribution. -->
-    <path id="osc.classpath">
-        <pathelement location="${oslib.jar}"/>
-        <pathelement location="${oslib.src}"/>
-        <pathelement location="${ostools.jar}"/>
-        <pathelement location="${fjbg.jar}"/>
-        <pathelement location="${msil.jar}"/>
+    <!-- Creating class-pathes -->
+    <path id="common.classpath">
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${msil.jar}"/>
     </path>
-
-    <!-- A path containing the Pico library -->
-    <path id="pico.classpath">
-        <pathelement location="${jaco.jar}"/>
+    <path id="starr.classpath">
+      <pathelement location="${starr.lib.jar}"/>
+      <pathelement location="${starr.comp.jar}"/>
+      <path refid="common.classpath"/>
     </path>
-
-    <!-- A path containing the new Scala library -->
-    <path id="nsc.classpath">
-        <pathelement location="${build.pico-nslib.dir}"/>
-        <pathelement location="${build.osc-nstools.dir}"/>
-        <pathelement location="${oslib.jar}"/>
-        <pathelement location="${fjbg.jar}"/>
-        <pathelement location="${msil.jar}"/>
+    <!-- Defining version number -->
+  	<tstamp prefix="start"/>
+    <property name="version" value="${start.DSTAMP}-${start.TSTAMP}"/>
+    <!-- Creating boot-level tasks -->
+    <taskdef name="starr"
+             classname="scala.tools.nsc.ant.NSC"
+             classpathref="starr.classpath"/>
+    <taskdef name="pico"
+             classname="jaco.pizza.ant.Pico"
+             classpath="${jaco.jar}"/>
+  </target>
+  
+  <target name="init.locker" depends="init, build.locker">
+    <path id="locker.classpath">
+      <pathelement location="${locker.dir}/${lib.dir.name}"/>
+      <pathelement location="${locker.dir}/${comp.dir.name}"/>
+      <path refid="common.classpath"/>
     </path>
-    
-    <target name="all" depends="clean.all, distrib.all"/>
-
-    <!--
-    #####################################################################
-    VERSION MANAGEMENT
-    #####################################################################
-    -->
-    
-    <target name="version.init" depends="version.trunk"/>
-    
-    <target name="version.trunk" depends="version.public">
-    	<tstamp prefix="start"/>
-        <property name="distrib.version" value="${start.DSTAMP}-${start.TSTAMP}"/>
-    </target>
-    
-    <target name="version.public" if="version.public">
-        <loadfile srcfile="${basedir}/VERSION" property="distrib.version">
-            <filterchain>
-                <linecontainsregexp>
-                    <regexp pattern="[0-9]+\.[0-9]+\.[0-9]+\.[0-9]"/>
-                </linecontainsregexp>
-                <striplinebreaks/>
-            </filterchain>
-        </loadfile>
-    </target>
-
-    <!--
-    #####################################################################
-    INIT
-    #####################################################################
-    -->
-    
-    <target name="init.osc">
-        <echo level="verbose">oslib.jar=${oslib.jar}</echo>
-        <echo level="verbose">oslib.src=${oslib.src}</echo>
-        <echo level="verbose">ostools.jar=${ostools.jar}</echo>
-        <echo level="verbose">fjbg.jar=${fjbg.jar}</echo>
-        <echo level="verbose">msil.jar=${msil.jar}</echo>
-        <fail message="Required classes for OSC are missing; check the 'oslib.jar', 'ostools.jar' properties in 'build.${user.name}.properties'.">
-            <condition><not><and>
-                <available classname="scala.List" classpathref="osc.classpath"/>
-                <available classname="scala.runtime.RunTime" classpathref="osc.classpath"/>
-                <available classname="scala.tools.scalac.Main" classpathref="osc.classpath"/>
-                <available classname="scala.tools.scalac.ant.Scalac" classpathref="osc.classpath"/>
-            </and></not></condition>
-        </fail>
-        <fail message="Required classes for FJBG are missing; check the 'fjbg.jar' property in 'build.${user.name}.properties'.">
-            <condition><not><and>
-                <available classname="ch.epfl.lamp.fjbg.JField" classpathref="osc.classpath"/>
-                <available classname="ch.epfl.lamp.util.ByteArray" classpathref="osc.classpath"/>
-            </and></not></condition>
-        </fail>
-        <fail message="Required classes for MSIL are missing; check the 'msil.jar' property in 'build.${user.name}.properties'.">
-            <condition><not><and>
-                <available classname="ch.epfl.lamp.compiler.msil.Module" classpathref="osc.classpath"/>
-                <available classname="ch.epfl.lamp.compiler.msil.Type" classpathref="osc.classpath"/>
-            </and></not></condition>
-        </fail>
-        <taskdef name="osc" classname="scala.tools.scalac.ant.Scalac"
-                 classpathref="osc.classpath"/>
-    </target>
-
-    <target name="init.nsc" depends="build.osc.nstools, build.pico.nslib">
-        <taskdef name="nsc" classname="scala.tools.nsc.ant.NSC$class"
-                 classpathref="nsc.classpath"/>
-    </target>
-
-    <target name="init.pico">
-        <echo level="verbose">jaco.jar=${jaco.jar}</echo>
-        <fail message="Required classes for PiCo are missing; check the 'jaco.jar' property in 'build.properties'.">
-            <condition><not><and>
-                <available classname="jaco.pizza.Main" classpathref="pico.classpath"/>
-                <available classname="jaco.pizza.ant.Pico" classpathref="pico.classpath"/>
-            </and></not></condition>
-        </fail>
-        <taskdef name="pico" classname="jaco.pizza.ant.Pico" classpathref="pico.classpath"/>
-    </target>
-    
-    <!--
-    #####################################################################
-    BUILD
-    #####################################################################
-    -->
-    
-    <target name="build" depends="build.jars"
-            description="Builds new Scala (compiler and library)."/>
-    
-    <target name="build.init">
-        <mkdir dir="${build.dir}"/>
-        <mkdir dir="${build.pico-nslib.dir}"/>
-        <mkdir dir="${build.nslib.dir}"/>
-        <mkdir dir="${build.osc-nstools.dir}"/>
-        <mkdir dir="${build.nstools.dir}"/>
-    </target>
-    
-    <target name="build.pico.nslib" depends="init.pico, build.init"
-            description="Builds the runtime and pico libraries of the new Scala library.">
-        <pico srcdir="${sources.dir}" destdir="${build.pico-nslib.dir}"
-              scalahack="true" includes="**/*.java">
-            <classpath>
-                <pathelement location="${build.pico-nslib.dir}"/>
-            </classpath>
-            <or>
-                <filename name="scala/runtime/**/*"/>
-                <filename name="scala/tools/util/*"/>
-                <and>
-                    <filename name="scala/*"/>
-                    <not>
-                        <present targetdir="${newsources.dir}" present="both">
-                            <mapper type="glob" from="*.java" to="*.scala"/>
-                        </present>
-                    </not>
-                </and>
-            </or>
-        </pico>
-        <delete>
-            <fileset dir="${build.pico-nslib.dir}">
-                <present targetdir="${newsources.dir}" present="both">
-                    <mapper type="glob" from="*.class" to="*.scala"/>
-                </present>
-            </fileset>
-        </delete>
-    </target>
-
-    <target name="build.osc.nstools" depends="init.osc, build.init"
-            description="Builds the new Scala compiler.">
-        <osc srcdir="${sources.dir}" destdir="${build.osc-nstools.dir}"
-             excludesfile="${nsc.osc-nstools.excludes}"
-             force="changed">
-            <classpath>
-                <pathelement location="${build.osc-nstools.dir}"/>
-                <pathelement location="${oslib.jar}"/>
-                <pathelement location="${oslib.src}"/>
-                <pathelement location="${fjbg.jar}"/>
-                <pathelement location="${ant.jar}"/>
-            </classpath>
-            <include name="scala/tools/nsc/**/*.scala"/>
-            <include name="scala/tools/scalap/**/*.scala"/>
-            <include name="scala/reflect/*.scala"/>
-            <include name="scala/runtime/*.scala"/>
-            <include name="scala/runtime/**/*.scala"/>
-        </osc>
-    </target>
-
-    <target name="build.nsc.nslib" depends="init.nsc, build.pico.nslib, build.init"
-            unless="skip.nsc"
-            description="Builds the Scala library with the new Scala compiler.">
-        <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
-             usepredefs="false" debuginfo="${nsc.debuginfo}"
-             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
-             logging="${nsc.logging}" print="${nsc.print}">
-            <classpath>
-                <pathelement location="${build.pico-nslib.dir}"/>
-                <pathelement location="${build.nslib.dir}"/>
-                <pathelement location="${sources.dir}"/>
-                <pathelement location="${newsources.dir}"/>
-                <pathelement location="${fjbg.jar}"/>
-            </classpath>
-            <include name="scala/Predef.scala"/>
-            <include name="scala/runtime/ScalaRunTime.scala"/>
-        </nsc>
-        <nsc srcdir="${sources.dir}" destdir="${build.nslib.dir}"
-             excludesfile="${nsc.nslib.excludes}" debuginfo="${nsc.debuginfo}"
-             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
-             logging="${nsc.logging}" print="${nsc.print}">
-            <classpath>
-                <pathelement location="${build.pico-nslib.dir}"/>
-                <pathelement location="${build.nslib.dir}"/>
-                <pathelement location="${sources.dir}"/>
-                <pathelement location="${newsources.dir}"/>
-                <pathelement location="${fjbg.jar}"/>
-            </classpath>
-            <include name="scala/**/*.scala"/>
-            <exclude name="scala/Predef.scala"/>
-            <exclude name="scala/runtime/ScalaRunTime.scala"/>
-            <exclude name="scala/tools/**"/>
-        </nsc>
-    </target>
-    
-    <target name="build.nsc.nstools" depends="init.nsc, build.nsc.nslib, build.init"
-            unless="skip.nsc"
-            description="Builds the Scala tools (NSC and Scalap) with the new Scala compiler.">
-        <nsc srcdir="${sources.dir}" destdir="${build.nstools.dir}"
-             excludesfile="${nsc.nstools.excludes}" debuginfo="${nsc.debuginfo}"
-             stop="${nsc.stop}" skip="${nsc.skip}" check="${nsc.check}" log="${nsc.log}"
-             logging="${nsc.logging}" print="${nsc.print}">
-            <classpath>
-                <pathelement location="${build.pico-nslib.dir}"/>
-                <pathelement location="${build.nslib.dir}"/>
-                <pathelement location="${build.nstools.dir}"/>
-                <pathelement location="${fjbg.jar}"/>
-                <pathelement location="${ant.jar}"/>
-            </classpath>
-            <include name="scala/tools/nsc/**/*.scala"/>
-        </nsc>
-    </target>
-
-    <target name="build.jars"
-            depends="build.nsc.nslib, build.nsc.nstools, build.osc.nstools, build.pico.nslib, build.init"
-            description="Builds JAR archives for all elements of Scala">
-        <jar destfile="${build.dir}/${osc-nstools.jar.name}"
-             basedir="${build.osc-nstools.dir}">
-            <manifest>
-                <attribute name="Built-By" value="${user.name}"/>
-                <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
-            </manifest>
-        </jar>
-        <jar destfile="${build.dir}/${nstools.jar.name}"
-             basedir="${build.nstools.dir}">
-            <manifest>
-                <attribute name="Built-By" value="${user.name}"/>
-                <attribute name="Main-Class" value="scala.tools.nsc.Main$class"/>
-            </manifest>
-        </jar>
-        <jar destfile="${build.dir}/${nslib.jar.name}"
-             basedir="${build.nslib.dir}">
-            <manifest>
-                <attribute name="Built-By" value="${user.name}"/>
-            </manifest>
-        </jar>
-        <jar destfile="${build.dir}/${nslib.jar.name}" update="yes"
-             basedir="${build.pico-nslib.dir}">
-        </jar>
-    </target>
-
-    <!--
-    #####################################################################
-    DISTRIB
-    #####################################################################
-    -->
-
-    <target name="distrib.init" depends="version.init">
-        <echo level="verbose">scala.dll=${scala.dll}</echo>
-        <fail message="Required DLL library is missing; check the 'scala.dll' property in 'build.${user.name}.properties'.">
-            <condition><not><and>
-                <available file="${scala.dll}"/>
-            </and></not></condition>
-        </fail>
-    	<condition property="os.unix"><or>
-                <os family="unix"/>
-                <os family="mac"/>
-        </or></condition>
-        <condition property="os.mac">
-            <os family="mac"/>
-        </condition>
-        <condition property="os.win">
-            <os family="windows"/>
-        </condition>
-        <exec executable="cygpath" vmlauncher="false" errorproperty="err">
-            <arg value="--windir"/>
-        </exec>
-        <condition property="os.cygwin">
-            <equals arg1="${err}" arg2=""/>
-        </condition>
-        <!-- This is a hack that compensates for the possibility of doc generation to be skipped. -->
-        <mkdir dir="${build.dir}/doc"/>
-    </target>
-
-    <target name="distrib" depends="distrib.unix, distrib.win, distrib.cygwin"
-            description="Creates a simplified Scala distribution."/>
-
-    <target name="distrib.unix" if="os.unix"
-            depends="build, distrib.init"
-            description="Creates a simplified Scala distribution for Unix.">
-        <property name="distrib.unix.current.dir"
-                  value="${distrib.unix.dir}/${distrib.name}-${distrib.version}"/>
-        <property name="distrib.unix.scala.dir"
-                  value="${distrib.unix.current.dir}/share/${distrib.name}"/>
-        <!-- Set up 'bin' directory (unix) -->
-        <mkdir dir="${distrib.unix.scala.dir}/bin"/>
-        <copy file="${sources.dir}/bin/nscala.unix.tmpl"
-              tofile="${distrib.unix.scala.dir}/bin/.scala_wrapper">
-            <filterset>
-                <filter token="VERSION" value="${distrib.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/${nslib.jar.name}:$PREFIX/lib/${nstools.jar.name}"/>
-                <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
-                <filter token="SCALA" value="${scala.exec.name}"/>
-                <filter token="SCALAC" value="${scalac.exec.name}"/>
-                <filter token="SCALAI" value="${scalai.exec.name}"/>
-                <filter token="SCALAP" value="${scalap.exec.name}"/>
-                <filter token="SCALATOK" value="${scalatok.exec.name}"/>
-            </filterset>
-        </copy>
-        <chmod file="${distrib.unix.scala.dir}/bin/.scala_wrapper" perm="ugo+rx"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scala.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scalac.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scalai.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.unix.scala.dir}/bin/${scalatok.exec.name}"/>
-        <mkdir dir="${distrib.unix.current.dir}/bin"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/${scala.exec.name}"
-                 link="${distrib.unix.current.dir}/bin/${scala.exec.name}"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/${scalac.exec.name}"
-                 link="${distrib.unix.current.dir}/bin/${scalac.exec.name}"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/${scalai.exec.name}"
-                 link="${distrib.unix.current.dir}/bin/${scalai.exec.name}"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/${scalap.exec.name}"
-                 link="${distrib.unix.current.dir}/bin/${scalap.exec.name}"/>
-        <symlink resource="${distrib.unix.scala.dir}/bin/${scalatok.exec.name}"
-                 link="${distrib.unix.current.dir}/bin/${scalatok.exec.name}"/>
-        <!-- Set up 'lib' directory -->
-        <mkdir dir="${distrib.unix.scala.dir}/lib"/>
-        <copy todir="${distrib.unix.scala.dir}/lib">
-            <fileset dir="${build.dir}">
-                <include name="*.jar"/>
-            </fileset>
-        </copy>
-        <copy todir="${distrib.unix.scala.dir}/lib" file="${oslib.jar}"/>
-        <copy todir="${distrib.unix.scala.dir}/lib" file="${ostools.jar}"/>
-        <copy todir="${distrib.unix.scala.dir}/lib" file="${fjbg.jar}"/>
-        <copy todir="${distrib.unix.scala.dir}/lib" file="${msil.jar}"/>
-        <copy todir="${distrib.unix.scala.dir}/lib" file="${scala.dll}"/>
-        <!-- Set up latest -->
-        <symlink resource="${distrib.unix.current.dir}"
-                 link="${distrib.unix.dir}/latest"
-                 overwrite="yes"/>
-    </target>
-
-    <target name="distrib.win" if="os.win"
-            depends="build, distrib.init"
-            description="Creates a simplified Scala distribution for Windows.">
-        <property name="distrib.win.current.dir"
-                  value="${distrib.win.dir}/${distrib.name}-${distrib.version}"/>
-        <property name="quotted.lib.dir"
-                  value="&quot;%SCALA_HOME%&quot;\lib"/>
-        <!-- Set up 'bin' directory -->
-        <mkdir dir="${distrib.win.current.dir}/bin"/>
-        <copy file="${sources.dir}/bin/nscala.win.tmpl"
-              tofile="${distrib.win.current.dir}/bin/${scala.exec.name}.bat">
-            <filterset>
-                <filter token="PRODUCT"   value="${scala.exec.name}"/>
-                <filter token="VERSION"   value="${distrib.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="BOOTCPATH" value="${quotted.lib.dir}\${nslib.jar.name}"/>
-            </filterset>
-        </copy>
-        <copy file="${sources.dir}/bin/nscala-tool.win.tmpl"
-              tofile="${distrib.win.current.dir}/bin/${scalac.exec.name}.bat">
-            <filterset>
-                <filter token="PRODUCT"   value="${scalac.exec.name}"/>
-                <filter token="VERSION"   value="${distrib.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="MAIN"      value="scala.tools.nsc.Main"/>
-                <filter token="TOOLS_CPATH" value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\${nslib.jar.name};${quotted.lib.dir}\${nstools.jar.name}"/>
-                <filter token="LIB_CPATH"     value="${quotted.lib.dir}\${nslib.jar.name}"/>
-            </filterset>
-        </copy>
-        <copy file="${sources.dir}/bin/nscala-tool.win.tmpl"
-              tofile="${distrib.win.current.dir}/bin/${scalap.exec.name}.bat">
-            <filterset>
-                <filter token="PRODUCT"   value="${scalap.exec.name}"/>
-                <filter token="VERSION"   value="${distrib.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="MAIN"      value="scala.tools.scalap.Main"/>
-                <filter token="TOOLS_CPATH" value="${quotted.lib.dir}\fjbg.jar;${quotted.lib.dir}\msil.jar;${quotted.lib.dir}\scala.jar;${quotted.lib.dir}\tools.jar;${quotted.lib.dir}\${osc-nstools.jar.name}"/>
-                <filter token="LIB_CPATH"     value="${quotted.lib.dir}\${nslib.jar.name}"/>
-            </filterset>
-        </copy>
-        <fixcrlf srcdir="${distrib.win.current.dir}/bin" eol="dos"/>
-        <attrib readonly="true">
-            <fileset dir="${distrib.win.current.dir}/bin"
-                     includes="**/*.bat"/>
-        </attrib>
-        <!-- Set up 'lib' directory (win) -->
-        <mkdir dir="${distrib.win.current.dir}/lib"/>
-        <copy todir="${distrib.win.current.dir}/lib">
-            <fileset dir="${build.dir}">
-                <include name="*.jar"/>
-            </fileset>
-        </copy>
-        <copy todir="${distrib.win.current.dir}/lib" file="${oslib.jar}"/>
-        <copy todir="${distrib.win.current.dir}/lib" file="${ostools.jar}"/>
-        <copy todir="${distrib.win.current.dir}/lib" file="${fjbg.jar}"/>
-        <copy todir="${distrib.win.current.dir}/lib" file="${msil.jar}"/>
-        <copy todir="${distrib.win.current.dir}/lib" file="${scala.dll}"/>
-    </target>
-
-    <target name="distrib.cygwin" if="os.cygwin"
-            depends="distrib.win"
-            description="Creates symbolic links for NSC commands on Cygwin.">
-        <copy file="${sources.dir}/bin/nscala.unix.tmpl"
-              tofile="${distrib.win.current.dir}/bin/.scala_wrapper">
-            <filterset>
-                <filter token="VERSION" value="${distrib.version}"/>
-                <filter token="COPYRIGHT" value="${copyright.notice}"/>
-                <filter token="TOOLS_CPATH" value="$PREFIX/lib/fjbg.jar:$PREFIX/lib/msil.jar:$PREFIX/lib/${nslib.jar.name}:$PREFIX/lib/${nstools.jar.name}"/>
-                <filter token="LIB_CPATH" value="$PREFIX/lib/${nslib.jar.name}"/>
-                <filter token="SCALA" value="${scala.exec.name}"/>
-                <filter token="SCALAC" value="${scalac.exec.name}"/>
-                <filter token="SCALAI" value="${scalai.exec.name}"/>
-                <filter token="SCALAP" value="${scalap.exec.name}"/>
-                <filter token="SCALATOK" value="${scalatok.exec.name}"/>
-            </filterset>
-        </copy>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.win.current.dir}/bin/${scala.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.win.current.dir}/bin/${scalac.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.win.current.dir}/bin/${scalai.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.win.current.dir}/bin/${scalap.exec.name}"/>
-        <symlink resource=".scala_wrapper"
-                 link="${distrib.win.current.dir}/bin/${scalatok.exec.name}"/>
-        <!-- Set up latest -->
-        <symlink resource="${distrib.win.current.dir}"
-                 link="${distrib.win.dir}/latest"
-                 overwrite="yes"/>
-    </target>
-
-    <!--
-    #####################################################################
-    FULL DISTRIB
-    #####################################################################
-    -->
-
-    <target name="distrib.all"
-            depends="distrib.unix.all, distrib.win.all"
-            description="Creates a full Scala distribution."/>
-    
-    <target name="distrib.all.init"
-            depends="docs">
-        <fail if="skip.nsc">A full distribution cannot be build when skipping NSC.</fail>
-        <property name="os.unix" value="yes"/>
-        <property name="os.win" value="yes"/>
-        <property name="os.mac" value="yes"/>
-    </target>
-
-    <target name="distrib.unix.all" depends="distrib.all.init, distrib.unix"
-            description="Creates a full Scala distribution for Unix.">
-        <property name="distrib.unix.doc.dir"
-                  value="${distrib.unix.current.dir}/share/doc/${distrib.name}"/>
-        <!-- Set up 'doc' directory (unix) -->
-        <mkdir dir="${distrib.unix.doc.dir}"/>
-        <copy todir="${distrib.unix.doc.dir}">
-            <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
-            <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
-            <fileset dir="${build.dir}/doc"/>
-            <fileset dir="${doc.dir}/reference"
-                     includes="ScalaByExample.pdf,ScalaReference.pdf"/>
-            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf"/>
-        </copy>
-        <fixcrlf srcdir="${distrib.unix.doc.dir}" eol="unix"
-                 includes="LICENSE,README,VERSION,examples/**/*.scala"/>
-        <!-- Set up 'man' directory (unix) -->
-        <mkdir dir="${distrib.unix.current.dir}/share/man"/>
-        <copy todir="${distrib.unix.current.dir}/share/man">
-            <fileset dir="${doc.dir}/man" includes="**/*.1"/>
-        </copy>
-        <!-- Set up 'support' directory (unix) -->
-        <mkdir dir="${distrib.unix.scala.dir}/support"/>
-        <copy todir="${distrib.unix.scala.dir}/support">
-            <fileset dir="${support.dir}"
-                     includes="emacs/**,gedit/**,jedit/**,scite/**,vim/**,xcode/**"/>
-        </copy>
-        <fixcrlf srcdir="${distrib.unix.scala.dir}/support" eol="unix"/>
-        <!-- Set up 'sources.tar.gz' (unix) -->
-        <tar destfile="${distrib.unix.scala.dir}/sources.tar.gz"
-             basedir="${basedir}" includes="sources/scala/**/*.scala" compression="gzip"/>
-        <!-- Create gz and bz2 compressed tarballs -->
-        <tar destfile="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.gz"
-             basedir="${distrib.unix.current.dir}" compression="gzip"/>
-        <tar destfile="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.bz2"
-             basedir="${distrib.unix.current.dir}" compression="bzip2"/>
-        <!-- Create md5 checksums -->
-        <checksum file="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.gz"
-                  forceOverwrite="yes" fileext=".md5"/>
-        <checksum file="${distrib.unix.dir}/${distrib.name}-${distrib.version}.tar.bz2"
-                  forceOverwrite="yes" fileext=".md5"/>
-    </target>
-
-    <target name="distrib.mac.all" depends="distrib.unix.all"/>
-
-    <target name="distrib.win.all" depends="distrib.all.init, distrib.win"
-            description="Creates a full Scala distribution for Windows.">
-        <!-- Set up 'doc' directory (win) -->
-        <mkdir dir="${distrib.win.current.dir}/doc"/>
-        <copy todir="${distrib.win.current.dir}/doc">
-            <fileset dir="${build.dir}/doc"/>
-            <fileset dir="${doc.dir}/reference"
-                     includes="ScalaByExample.pdf,ScalaReference.pdf"/>
-            <fileset dir="${doc.dir}/tutorial" includes="ScalaTutorial.pdf"/>
-        </copy>
-        <fixcrlf srcdir="${distrib.win.current.dir}/doc" eol="dos"
-                 includes="**/*.css,**/*.html,**/*.js"/>
-        <!-- Set up 'examples' directory (win) -->
-        <copy todir="${distrib.win.current.dir}">
-            <fileset dir="${basedir}" includes="LICENSE,README,VERSION"/>
-            <fileset dir="${basedir}/sources" includes="examples/**/*.scala"/>
-        </copy>
-        <copy file="${basedir}/VERSION"
-              tofile="${distrib.win.current.dir}/VERSION-${distrib.version}"/>
-        <fixcrlf srcdir="${distrib.win.current.dir}" eol="dos"
-                 includes="LICENSE,README,VERSION,examples/**/*.scala"/>
-        <!-- Set up 'support' directory -->
-        <mkdir dir="${distrib.win.current.dir}/support"/>
-        <copy todir="${distrib.win.current.dir}/support">
-            <fileset dir="${support.dir}"
-                     includes="context/**,emacs/**,jedit/**,scite/**,textpad/**,ultraedit/**,vim/**"/>
-        </copy>
-        <fixcrlf srcdir="${distrib.win.current.dir}/support" eol="dos"/>
-        <!-- Set up 'sources.zip' (win) -->
-        <zip destfile="${distrib.win.current.dir}/sources.zip"
-             basedir="${basedir}" includes="sources/scala/**/*.scala"/>
-        <!-- Create zip archive -->
-        <zip destfile="${distrib.win.dir}/${distrib.name}-${distrib.version}.zip"
-             basedir="${distrib.win.current.dir}"/>
-        <checksum file="${distrib.win.dir}/${distrib.name}-${distrib.version}.zip"
-                  forceOverwrite="yes" fileext=".md5"/>
-    </target>
-
-    <!--
-    #####################################################################
-    IZPACK DISTRIB
-    #####################################################################
-    -->
-    
-    <!-- A path containing the IzPack library -->
-    <path id="izpack.classpath">
-        <pathelement location="${izpack.home}/lib/compiler.jar"/>
+    <taskdef name="locker"
+             classname="scala.tools.nsc.ant.NSC"
+             classpathref="locker.classpath"/>
+  </target>
+  
+  <target name="init.quick" depends="init, build">
+    <path id="quick.classpath">
+      <pathelement location="${quick.dir}/${lib.dir.name}"/>
+      <pathelement location="${quick.dir}/${comp.dir.name}"/>
+      <path refid="common.classpath"/>
     </path>
-    
-    <target name="izpack.all" depends="distrib.all, izpack.unix, izpack.win, izpack.mac"
-            description="Creates an IzPack installer for all scala distributions"/>
-    
-    <target name="izpack.init">
-        <echo level="verbose">izpack.home=${izpack.home}</echo>
-        <fail message="IzPack distribution not supported; check the 'izpack.home' property in 'build.${user.name}.properties'.">
-            <condition><not>
-                <available classname="com.izforge.izpack.ant.IzPackTask"
-                           classpathref="izpack.classpath"/>
-            </not></condition>
-        </fail>
-        <taskdef name="izpack"
-                 classname="com.izforge.izpack.ant.IzPackTask"
-                 classpathref="izpack.classpath"/>
-    </target>
-    
-    <target name="izpack.unix" depends="izpack.init, distrib.unix.all">
-        <property name="resource.dir" value="${build.dir}/izpack"/>
-        <copy todir="${resource.dir}" overwrite="true">
-            <fileset dir="${config.dir}/izpack"
-                     excludes="**/*.html, **/*.xml"/>
-        </copy>
-        <copy todir="${resource.dir}" overwrite="true">
-            <!-- CAUTION! Copy operations using filters will -->
-            <!-- corrupt binary files (see "Core Types").    -->
-            <fileset dir="${config.dir}/izpack"
-                     includes="**/*.html, **/*.xml"/>
-            <filterset>
-                <filter token="RESOURCEDIR" value="${resource.dir}"/>
-                <filter token="PREFIX"      value="${distrib.name}"/>
-                <filter token="VERSION"     value="${distrib.version}"/>
-                <filter token="URL"         value="http://scala.epfl.ch/"/>
-            </filterset>
-        </copy>
-        <izpack input="${resource.dir}/install-nsc.xml"
-                output="${distrib.unix.dir}/${distrib.name}-install-${distrib.version}.jar"
-                installerType="standard" basedir="${basedir}"
-                izPackDir="${izpack.home}"/>
-    </target>
-    
-    <target name="izpack.mac" depends="izpack.unix"/>
-    
-    <target name="izpack.win" depends="izpack.init, distrib.win.all">
-        <echo>Windows-specific IzPack installer is not generated yet.</echo>
-    </target>
+    <taskdef name="quick"
+             classname="scala.tools.nsc.ant.NSC"
+             classpathref="quick.classpath"/>
+  </target>
+  
+  <!--
+  ##############################################################################
+  BUILD SUPPORT MACROS
+  ##############################################################################
+  -->
+  
+  <macrodef name="build.exec">
+    <attribute name="lib.dir"/>
+    <attribute name="comp.dir"/>
+    <attribute name="exec.dir"/>
+    <sequential>
+      <mkdir dir="@{exec.dir}"/>
+      <copy file="${src.dir}/${exec.dir.name}/nscala.unix.tmpl"
+            tofile="@{exec.dir}/${wrapper.exec.name}">
+        <filterset>
+          <filter token="version" value="${version}"/>
+          <filter token="copyright" value="${copyright}"/>
+          <filter token="lib.path" value="@{lib.dir}"/>
+          <filter token="comp.path" value="@{comp.dir}"/>
+          <filter token="fjbg.jar" value="${fjbg.jar}"/>
+          <filter token="msil.jar" value="${msil.jar}"/>
+          <filter token="scala.exec.name" value="${scala.exec.name}"/>
+          <filter token="scalac.exec.name" value="${scalac.exec.name}"/>
+          <filter token="scalai.exec.name" value="${scalai.exec.name}"/>
+          <filter token="scalatok.exec.name" value="${scalatok.exec.name}"/>
+        </filterset>
+      </copy>
+      <chmod file="@{exec.dir}/${wrapper.exec.name}" perm="ugo+rx"/>
+      <symlink resource="${wrapper.exec.name}" overwrite="yes"
+               link="@{exec.dir}/${scala.exec.name}"/>
+      <symlink resource="${wrapper.exec.name}" overwrite="yes"
+               link="@{exec.dir}/${scalac.exec.name}"/>
+      <symlink resource="${wrapper.exec.name}" overwrite="yes"
+               link="@{exec.dir}/${scalai.exec.name}"/>
+      <symlink resource="${wrapper.exec.name}" overwrite="yes"
+               link="@{exec.dir}/${scalatok.exec.name}"/>
+    </sequential>
+  </macrodef>
+  
+  <!--
+  ##############################################################################
+  BUILD LOCAL REFERENCE (LOCKER) LAYER
+  ##############################################################################
+  -->
+  
+  <target name="build.locker" depends="init" unless="locker.avail">
+    <!-- Build library -->
+    <mkdir dir="${locker.lib.dir}"/>
+    <pico srcdir="${src.dir}/${lib.dir.name}"
+          destdir="${locker.lib.dir}"
+          scalahack="true">
+      <classpath>
+        <pathelement location="${locker.lib.dir}"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </pico>
+    <starr srcdir="${src.dir}/${lib.dir.name}"
+           destdir="${locker.lib.dir}"
+           usepredefs="false"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${locker.lib.dir}"/>
+      </classpath>
+      <include name="scala/Predef.scala"/>
+      <include name="scala/runtime/ScalaRunTime.scala"/>
+    </starr>
+    <starr srcdir="${src.dir}/${lib.dir.name}"
+           destdir="${locker.lib.dir}"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${locker.lib.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/runtime/ScalaRunTime.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </starr>
+    <!-- Build compiler -->
+    <mkdir dir="${locker.comp.dir}"/>
+    <pico srcdir="${src.dir}/${comp.dir.name}"
+          destdir="${locker.comp.dir}"
+          scalahack="true">
+      <classpath>
+        <pathelement location="${locker.lib.dir}"/>
+        <pathelement location="${locker.comp.dir}"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </pico>
+    <starr srcdir="${src.dir}/${comp.dir.name}"
+           destdir="${locker.comp.dir}"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${locker.lib.dir}"/>
+        <pathelement location="${locker.comp.dir}"/>
+        <path refid="starr.classpath"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </starr>
+    <!-- Build executable files -->
+    <build.exec lib.dir="${locker.lib.dir}"
+                comp.dir="${locker.comp.dir}"
+                exec.dir="${locker.dir}/${exec.dir.name}"/>
+  </target>
+  
+  <!--
+  ##############################################################################
+  BUILD QUICK-TEST LAYER
+  ##############################################################################
+  -->
+  
+  <target name="build" depends="init.locker">
+    <!-- Build library -->
+    <mkdir dir="${quick.lib.dir}"/>
+    <pico srcdir="${src.dir}/${lib.dir.name}"
+          destdir="${quick.lib.dir}"
+          scalahack="true">
+      <classpath>
+        <pathelement location="${quick.lib.dir}"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </pico>
+    <locker srcdir="${src.dir}/${lib.dir.name}"
+           destdir="${quick.lib.dir}"
+           usepredefs="false"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${quick.lib.dir}"/>
+      </classpath>
+      <include name="scala/Predef.scala"/>
+      <include name="scala/runtime/ScalaRunTime.scala"/>
+    </locker>
+    <locker srcdir="${src.dir}/${lib.dir.name}"
+           destdir="${quick.lib.dir}"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${quick.lib.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/runtime/ScalaRunTime.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </locker>
+    <!-- Build compiler -->
+    <mkdir dir="${quick.comp.dir}"/>
+    <pico srcdir="${src.dir}/${comp.dir.name}"
+          destdir="${quick.comp.dir}"
+          scalahack="true">
+      <classpath>
+        <pathelement location="${quick.lib.dir}"/>
+        <pathelement location="${quick.comp.dir}"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </pico>
+    <locker srcdir="${src.dir}/${comp.dir.name}"
+           destdir="${quick.comp.dir}"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${quick.lib.dir}"/>
+        <pathelement location="${quick.comp.dir}"/>
+        <path refid="locker.classpath"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </locker>
+    <!-- Build executable files -->
+    <build.exec lib.dir="${quick.lib.dir}"
+                comp.dir="${quick.comp.dir}"
+                exec.dir="${quick.dir}/${exec.dir.name}"/>
+  </target>
 
-    <!--
-    #####################################################################
-    TEST
-    #####################################################################
-    -->
+  <!--
+  ##############################################################################
+  TEST
+  ##############################################################################
+  -->
+  
+  <target name="test" depends="init.quick">
+    <!-- Build the bootstrap layer -->
+    <!-- Build library -->
+    <mkdir dir="${strap.lib.dir}"/>
+    <pico srcdir="${src.dir}/${lib.dir.name}"
+          destdir="${strap.lib.dir}"
+          scalahack="true">
+      <classpath>
+        <pathelement location="${strap.lib.dir}"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </pico>
+    <quick srcdir="${src.dir}/${lib.dir.name}"
+           destdir="${strap.lib.dir}"
+           usepredefs="false"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${strap.lib.dir}"/>
+      </classpath>
+      <include name="scala/Predef.scala"/>
+      <include name="scala/runtime/ScalaRunTime.scala"/>
+    </quick>
+    <quick srcdir="${src.dir}/${lib.dir.name}"
+           destdir="${strap.lib.dir}"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${strap.lib.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/runtime/ScalaRunTime.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </quick>
+    <!-- Build compiler -->
+    <mkdir dir="${strap.comp.dir}"/>
+    <pico srcdir="${src.dir}/${comp.dir.name}"
+          destdir="${strap.comp.dir}"
+          scalahack="true">
+      <classpath>
+        <pathelement location="${strap.lib.dir}"/>
+        <pathelement location="${strap.comp.dir}"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </pico>
+    <quick srcdir="${src.dir}/${comp.dir.name}"
+           destdir="${strap.comp.dir}"
+           debuginfo="${nsc.debug-info}">
+      <classpath>
+        <pathelement location="${strap.lib.dir}"/>
+        <pathelement location="${strap.comp.dir}"/>
+        <path refid="quick.classpath"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </quick>
+    <!-- Build executable files -->
+    <build.exec lib.dir="${strap.lib.dir}"
+                comp.dir="${strap.comp.dir}"
+                exec.dir="${strap.dir}/${exec.dir.name}"/>
+    <!-- Compares quick and test level -->
+    <checksum totalproperty="quick.md5">
+      <fileset dir="${quick.dir}"/>
+    </checksum>
+    <delete quiet="true" failonerror="false">
+      <fileset dir="${quick.dir}"><include name="**/*.MD5"/></fileset>
+    </delete>
+    <checksum totalproperty="strap.md5">
+      <fileset dir="${strap.dir}"/>
+    </checksum>
+    <delete quiet="true" failonerror="false">
+      <fileset dir="${strap.dir}"><include name="**/*.MD5"/></fileset>
+    </delete>
+    <fail message="Build is not stable">
+      <condition><not>
+        <equals arg1="${quick.md5}" arg2="${strap.md5}"/>
+      </not></condition>
+    </fail>
+    <echo>Build is stable</echo>
+  </target>
 
-    <target name="test" description="Runs the Scala test suite.">
-        <exec executable="test-nsc/scalanstest"
-              dir="${basedir}"
-              os="Mac OS X, Linux, FreeBSD, Solaris"/>
-    <!--
-        <junit printsummary="yes" fork="yes" haltonfailure="yes">
-            <formatter type="plain"/>
-            <test name="my.test.TestCase"/>
-        </junit>
-    -->
-    </target>
+  <!--
+  ##############################################################################
+  DOCUMENT
+  ##############################################################################
+  -->
+  
+  <target name="docs">
+    <echo>Docs is not available yet.</echo>
+  </target>
 
-    <!--
-    #####################################################################
-    DOCS
-    #####################################################################
-    -->
-    
-    <target name="docs" description="Generates all documentation."
-            depends="version.init" unless="skip.doc">
-        <echo level="verbose">oslib.jar=${oslib.jar}</echo>
-        <echo level="verbose">oslib.src=${oslib.src}</echo>
-        <echo level="verbose">ostools.jar=${ostools.jar}</echo>
-        <fail message="Required classes for OSC are missing; check the 'oslib.jar','ostools.jar' properties in 'build.${user.name}.properties'.">
-            <condition><not><and>
-                <available classname="scala.List" classpathref="osc.classpath"/>
-                <available classname="scala.runtime.RunTime" classpathref="osc.classpath"/>
-                <available classname="scala.tools.scaladoc.Main" classpathref="osc.classpath"/>
-            </and></not></condition>
-        </fail>
-        <fileset id="oslib.src.files" dir="${sources.dir}">
-            <include name="scala/**/*.scala"/>
-            <exclude name="scala/tools/**"/>
-        </fileset>
-        <pathconvert pathsep=" " property="docs.sources" refid="oslib.src.files"/>
-        <mkdir dir="${build.dir}/doc/api"/>
-        <echo>Generating API documentation to ${build.dir}/doc/api</echo>
-        <java classname="scala.tools.scaladoc.Main" fork="true">
-            <jvmarg value="-Dscala.library.source.path=${oslib.src}"/>
-            <jvmarg value="-Dscala.library.class.path=${oslib.jar}"/>
-            <classpath>
-                <pathelement location="${oslib.jar}"/>
-                <pathelement location="${ostools.jar}"/>
-            </classpath>
-            <arg line="-windowtitle 'Scala Library Documentation'"/>
-            <arg line="-doctitle 'Scala&lt;br/&gt;${distrib.version}'"/>
-            <arg line="-d ${build.dir}/doc/api"/>
-            <arg line="${docs.sources}"/>
-            <arg line="-- scala"/>
-        </java>
-    </target>
-    
-    <!--
-    #####################################################################
-    CLEAN
-    #####################################################################
-    -->
-    
-    <target name="clean"
-            depends="clean.build"
-            description="Deletes all generated build files."/>
-    
-    <target name="clean.all"
-            depends="clean.build, clean.distrib"
-            description="Deletes all generated files, both build and distribution files."/>
-
-    <target name="clean.build">
-        <delete dir="${build.dir}" includeemptydirs="true"
-                quiet="true" failonerror="false"/>
-    </target>
-    
-    <target name="clean.distrib"
-            description="Deletes all generated distribution files.">
-        <delete dir="${distrib.unix.dir}" includeemptydirs="true"
-                quiet="true" failonerror="false"/>
-        <delete dir="${distrib.win.dir}" includeemptydirs="true"
-                quiet="true" failonerror="false"/>
-    </target>
-
-    <!--
-    #####################################################################
-    HELP
-    #####################################################################
-    -->
-
-    <target name="help" depends="usage"/>
-
-    <target name="usage" description="Display usage information.">
-        <echo>Execute 'ant -projecthelp' for build file help.</echo>
-        <echo>Execute 'ant -help' for Ant help.</echo>
-    </target>
+  <!--
+  ##############################################################################
+  GENERATES A DISTRIBUTION
+  ##############################################################################
+  -->
+  
+  <target name="dist">
+    <echo>Dist is not available yet.</echo>
+  </target>
+  
+  <!--
+  ##############################################################################
+  CLEAN
+  ##############################################################################
+  -->
+  
+  <macrodef name="remove">
+    <attribute name="dir"/>
+    <sequential>
+      <delete dir="@{dir}"
+              includeemptydirs="true"
+              quiet="true"
+              failonerror="false"/>
+    </sequential>
+  </macrodef>
+  
+  <target name="clean">
+    <remove dir="${quick.dir}"/>
+    <remove dir="${strap.dir}"/>
+  </target>
+  
+  <target name="clean.all">
+    <remove dir="${locker.dir}"/>
+    <remove dir="${quick.dir}"/>
+    <remove dir="${strap.dir}"/>
+    <remove dir="${distrib.unix.dir}"/>
+    <remove dir="${distrib.win.dir}"/>
+    <remove dir="${distrib.latest.dir}"/>
+  </target>
 
 </project>

@@ -1,0 +1,81 @@
+#!/bin/bash
+
+##############################################################################
+# Copyright @copyright@
+#
+# This is free software; see the distribution for copying conditions.
+# There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+##############################################################################
+
+cygwin=false;
+darwin=false;
+case "`uname`" in
+    CYGWIN*) cygwin=true ;;
+    Darwin*) darwin=true ;;
+esac
+
+SOURCE=$0;
+SCRIPT=`basename "$SOURCE"`;
+while [ -h "$SOURCE" ]; do
+    SCRIPT=`basename "$SOURCE"`;
+    LOOKUP=`ls -ld "$SOURCE"`;
+    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
+    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
+        SOURCE=${TARGET:-.};
+    else
+        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
+    fi;
+done;
+PREFIX=`dirname "$SOURCE"`/..;
+prefix=$PREFIX;
+PREFIX=`cd "$PREFIX"; pwd`;
+
+if [ -z "$SCRIPT" ]; then
+    abort "Illegal direct invocation; invoke me through a symbolic link.";
+fi;
+
+_JAVACMD=java
+_TOOLS_CPATH=@fjbg.jar@:@msil.jar@:@comp.path@:@lib.path@
+_LIB_CPATH=@lib.path@
+
+# For Cygwin, switch paths to appropriate format before running java
+if $cygwin; then
+    if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
+        format=mixed
+    else
+        format=windows
+    fi
+    _TOOLS_CPATH=`cygpath --path --$format "$_TOOLS_CPATH"`
+    _LIB_CPATH=`cygpath --path --$format "$_LIB_CPATH"`
+fi
+
+main=
+case "$SCRIPT" in
+    @scala.exec.name@     ) ;;
+    @scalac.exec.name@    ) main=scala.tools.nsc.Main;;
+    @scalai.exec.name@    ) main=scala.tools.nsc.MainInterpreter;;
+    @scalatok.exec.name@  ) main=scala.tools.nsc.MainTokenMetric;;
+    *            ) abort "Don't know what to do for $SCRIPT.";;
+esac;
+
+if [ -z "$main" ]; then
+    for arg in "" "$@"; do
+        [ -z "$arg" ] && continue;
+        if [ "$arg" = "-version" ]; then
+            echo "$SCRIPT @version@ -- @copyright@";
+            exit 0
+        fi
+    done;
+    $_JAVACMD \
+        -Xbootclasspath/a:"$_LIB_CPATH" \
+        "$@"
+else
+    $_JAVACMD \
+        -Xms16M -Xmx256M \
+        -Dscala.product="$SCRIPT" \
+        -Dscala.version="@version@" \
+        -Dscala.home="$PREFIX" \
+        -cp "$_TOOLS_CPATH" \
+        $main -sourcepath "$_LIB_CPATH" "$@"
+fi
