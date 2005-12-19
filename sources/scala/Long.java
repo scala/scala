@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -116,7 +116,6 @@ public abstract class Long    extends AnyVal implements java.io.Serializable {
     public long    $bar       (long    that) { return  value |  that; }
     public long    $amp       (long    that) { return  value &  that; }
     public long    $up        (long    that) { return  value ^  that; }
-/*
 
     public boolean $eq$eq     (int    that) { return  value == that; }
     public boolean $bang$eq   (int    that) { return  value != that; }
@@ -177,5 +176,5 @@ public abstract class Long    extends AnyVal implements java.io.Serializable {
     public long    $bar       (byte    that) { return  value |  that; }
     public long    $amp       (byte    that) { return  value &  that; }
     public long    $up        (byte    that) { return  value ^  that; }
-*/
+
 }
