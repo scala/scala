@@ -7,7 +7,6 @@ import scala.tools.nsc.util.{NameTransformer,Position,SourceFile};
 import scala.collection.mutable.{HashMap,HashSet};
 
 
-
 class SemanticTokens(val compiler: Compiler) {
   import compiler._;
 
@@ -223,73 +222,71 @@ class SemanticTokens(val compiler: Compiler) {
         val tree1 = if (tree.original != null) tree.original; else tree;
         buildT(tree1, tree.tpe);
         def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != Position.NOPOS) tpe match {
-	  case tpe0 : TypeRef => tree match {
-	    case apt : AppliedTypeTree =>
-	      buildUse(tpe.symbol, apt.tpt.pos);
-	      //System.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " " + " " + apt.args + " " + tpe0.args);
+				  case tpe0 : TypeRef => tree match {
+				    case apt : AppliedTypeTree =>
+				      buildUse(tpe.symbol, apt.tpt.pos);
+				      //System.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " " + " " + apt.args + " " + tpe0.args);
 
-	      buildTs (apt.args, tpe0.args);
-	    case ident : Ident => buildUse(tpe0.sym, ident.pos);
-	    case select : Select =>
-	      // System.err.println("BUILD_SELECT: " + select + " @ " + tpe0);
-	      try {
-		build(select);
-	      } catch {
-		case e : Error =>
-		  System.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " " + unit.source.dbg(select.pos));
-		  throw e;
-	      }
-	    case tpt : TypeTree =>
-	      //System.err.println("UNKNOWN TPT0: " + tpe0 + " " + tpe0.args + " " + tpt);
-	    case sft : SelectFromTypeTree =>
-	      build(sft.qualifier); // XXX: broken
-	    if (false) System.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
-					  sft.qualifier.symbol +
-					  " qual.pos=" + unit.source.dbg(sft.qualifier.pos) + " symbol=" + sft.symbol + " type=" + tpe0 +
-					  " type.sym=" + tpe0.symbol);
-	    case _ => System.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + unit.source.content(tree.pos));
-	  }
-	  case tpe0 : MethodType => tree match {
-	    case tpt: TypeTree =>
-	      if (tpt.original != null) buildT(tpt.original, tpe);
-	      else {
-		System.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
-	      }
-	    case ident  : Ident  => buildT(ident,  tpe0.resultType);
-	    case select : Select => buildT(select, tpe0.resultType);
-	    case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass());
-	  }
-	  case _ => // System.err.println("UNKNOWN: " + tree + " " + (if (tree != null) tree.getClass() else null) + " vs. " + tpe + " " + (if (tpe != null) tpe.getClass() else null) + " " + (if (tree != null) tree.pos else null));
-	};
+				      buildTs (apt.args, tpe0.args);
+				    case ident : Ident => buildUse(tpe0.sym, ident.pos);
+				    case select : Select =>
+				      // System.err.println("BUILD_SELECT: " + select + " @ " + tpe0);
+				      try {
+								build(select);
+				      } catch {
+								case e : Error =>
+								  System.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " " + unit.source.dbg(select.pos));
+								  throw e;
+				      }
+				    case tpt : TypeTree =>
+				      //System.err.println("UNKNOWN TPT0: " + tpe0 + " " + tpe0.args + " " + tpt);
+				    case sft : SelectFromTypeTree =>
+				      build(sft.qualifier); // XXX: broken
+				    if (false) System.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
+								  sft.qualifier.symbol +
+								  " qual.pos=" + unit.source.dbg(sft.qualifier.pos) + " symbol=" + sft.symbol + " type=" + tpe0 +
+								  " type.sym=" + tpe0.symbol);
+				    case _ => System.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + unit.source.content(tree.pos));
+				  }
+				  case tpe0 : MethodType => tree match {
+				    case tpt: TypeTree =>
+				      if (tpt.original != null) buildT(tpt.original, tpe);
+				      else {
+								System.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
+	      			}
+				    case ident  : Ident  => buildT(ident,  tpe0.resultType);
+				    case select : Select => buildT(select, tpe0.resultType);
+				    case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass());
+				  }
+				  case _ => // System.err.println("UNKNOWN: " + tree + " " + (if (tree != null) tree.getClass() else null) + " vs. " + tpe + " " + (if (tpe != null) tpe.getClass() else null) + " " + (if (tree != null) tree.pos else null));
+				};
         def buildTs(trees : List[Tree], types : List[Type]): Unit = if (!trees.isEmpty || !types.isEmpty) {
-	  buildT (trees.head, types.head);
-	  buildTs(trees.tail, types.tail);
-	};
-      case tree : AbsTypeDef =>
-	buildDef(tree.symbol, tree.namePos);
-      case tree : Bind =>
-	buildDef(tree.symbol, tree.pos);
-        build(tree.body);
+				  buildT (trees.head, types.head);
+				  buildTs(trees.tail, types.tail);
+				};
+      case tree : AbsTypeDef => buildDef(tree.symbol, tree.namePos);
+      case tree : Bind =>       buildDef(tree.symbol, tree.pos);
+                                build(tree.body);
       case tree : Ident      => buildUse(tree.symbol, tree.pos);
       case tree : Select     =>
-	// System.err.println("SELECT: " + tree.qualifier + " ** " + tree.symbol + " " + selectPos(tree));
-	try {
-          build(tree.qualifier);
-	} catch {
-	  case e : Error => System.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + unit.source.dbg(tree.qualifier.pos)); throw e;
-	}
-	try {
-	  if (tree.pos >= unit.source.content.length)
-	    System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + tree.pos);
-	  else buildUse(tree.symbol, selectPos(tree));
-	} catch {
-	  case e : Error => System.err.println("SELECTU: " + tree + " " + tree.symbol + " " + unit.source.dbg(tree.pos)); throw e;
-	}
+				// System.err.println("SELECT: " + tree.qualifier + " ** " + tree.symbol + " " + selectPos(tree));
+				try {
+			          build(tree.qualifier);
+				} catch {
+				  case e : Error => System.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + unit.source.dbg(tree.qualifier.pos)); throw e;
+				}
+				try {
+				  if (tree.pos >= unit.source.content.length)
+				    System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + tree.pos);
+				  else buildUse(tree.symbol, selectPos(tree));
+				} catch {
+				  case e : Error => System.err.println("SELECTU: " + tree + " " + tree.symbol + " " + unit.source.dbg(tree.pos)); throw e;
+				}
       case tree : GenericApply =>
         //System.err.println("APPLY-FUN: " + tree.fun0 + " " + tree.args0);
         build(tree.fun0);
         //System.err.println("APPLY-ARG: " + tree.fun0 + " " + tree.args0);
-	build(tree.args0);
+				build(tree.args0);
       case tree : Typed        => build(tree.expr); build(tree.tpt);
       case tree : Import     =>
 	//System.err.println("IMPORT: " + tree.expr + " " + tree.selectors);
@@ -461,7 +458,7 @@ class SemanticTokens(val compiler: Compiler) {
 	}
 	str;
       };
-      private object cursor {
+      object cursor {
 	var token  : Token = end;
 	var offset : Int   = 0;
 

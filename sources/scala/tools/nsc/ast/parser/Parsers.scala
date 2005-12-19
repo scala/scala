@@ -324,14 +324,14 @@ import Tokens._;
       if (in.token == THIS) {
 	t = atPos(in.skipToken()) { This(nme.EMPTY.toTypeName) }
 	if (!thisOK || in.token == DOT)
-	  t = atPos(accept(DOT)) { selectors(t, typeOK) }
+	  t =  { selectors(t, typeOK, accept(DOT)) }
       } else if (in.token == SUPER) {
 	t = atPos(in.skipToken()) {
 	  Super(nme.EMPTY.toTypeName, mixinQualifierOpt())
 	}
 	t = atPos(accept(DOT)) { Select(t, ident()) }
 	if (in.token == DOT)
-	  t = atPos(in.skipToken()) { selectors(t, typeOK) }
+	  t = { selectors(t, typeOK, in.skipToken()) }
       } else {
 	val i = atPos(in.currentPos) { Ident(ident()) }
 	t = i;
@@ -341,28 +341,28 @@ import Tokens._;
 	    in.nextToken();
 	    t = atPos(i.pos) { This(i.name.toTypeName) }
 	    if (!thisOK || in.token == DOT)
-	      t = atPos(accept(DOT)) { selectors(t, typeOK) }
+	      t = { selectors(t, typeOK, accept(DOT)) }
 	  } else if (in.token == SUPER) {
 	    in.nextToken();
 	    t = atPos(i.pos) { Super(i.name.toTypeName, mixinQualifierOpt()) }
 	    t = atPos(accept(DOT)) { Select(t, ident())}
 	    if (in.token == DOT)
-	      t = atPos(in.skipToken()) { selectors(t, typeOK) }
+	      t = { selectors(t, typeOK, in.skipToken()) }
 	  } else {
-	    t = atPos(pos) { selectors(t, typeOK) }
+	    t = { selectors(t, typeOK, pos) }
 	  }
 	}
       }
       t
     }
 
-    def selectors(t: Tree, typeOK: boolean): Tree =
+    def selectors(t: Tree, typeOK: boolean, pos : Int): Tree =
       if (typeOK && in.token == TYPE) {
 	in.nextToken();
-	SingletonTypeTree(t)
+	atPos(pos) { SingletonTypeTree(t) }
       } else {
-	val t1 = Select(t, ident());
-	if (in.token == DOT) atPos(in.skipToken()) { selectors(t1, typeOK) }
+	val t1 = atPos(pos) { Select(t, ident()); }
+	if (in.token == DOT) { selectors(t1, typeOK, in.skipToken()) }
 	else t1
       }
 
@@ -389,7 +389,7 @@ import Tokens._;
     */
     def qualId(): Tree = {
       val id = atPos(in.currentPos) { Ident(ident()) }
-      if (in.token == DOT) atPos(in.skipToken()) { selectors(id, false) }
+      if (in.token == DOT) { selectors(id, false, in.skipToken()) }
       else id
     }
 
