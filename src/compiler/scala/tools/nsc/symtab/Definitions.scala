@@ -340,7 +340,7 @@ import Flags._;
       SeqClass = getClass("scala.Seq");
       ListClass = getClass("scala.List");
       ArrayClass = getClass("scala.Array");
-      TypeClass = getClass("scala.Type");
+      //TypeClass = getClass("scala.Type");
       SerializableClass = getClass("java.io.Serializable");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
