@@ -113,7 +113,7 @@ trait Namers: Analyzer {
       }
       if (c.owner.isPackageClass) {
         currentRun.symSource(c) = context.unit.source.getFile();
-        c.sourceFile = context.unit.source.getFile();
+        c.asIntanceOf[ClassSymbol].sourceFile = context.unit.source.getFile();
       }
       c
     }
