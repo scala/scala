@@ -493,8 +493,8 @@
          basedir="${strap.lib.dir}">
     </jar>
     <mkdir dir="${dist.dir}/bin"/>
-    <build.exec lib.dir="lib/${lib.jar.name}"
-                comp.dir="lib/${comp.jar.name}"
+    <build.exec lib.dir="$$PREFIX/lib/${lib.jar.name}"
+                comp.dir="$$PREFIX/lib/${comp.jar.name}"
                 exec.dir="${dist.dir}/bin"/>
   </target>
   

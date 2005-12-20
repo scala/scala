@@ -609,11 +609,6 @@ package scala.tools.nsc.ant {
             settings.debuginfo.value = debugInfo;
             if (!logPhase.isEmpty) settings.log.value = logPhase;
 
-            // Sets path properties to prevent ClassPath from being corrupted.
-            // It this isn't done, classpath will contain more than
-            //System.setProperty("scala.library.class.path", "");
-            //System.setProperty("scala.library.source.path", "");
-
             // Compiles the actual code
             val compiler = new Global(settings, reporter);
             try {
