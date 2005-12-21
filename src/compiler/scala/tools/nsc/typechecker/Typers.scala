@@ -279,8 +279,11 @@ import scala.collection.mutable.{HashMap, ListBuffer}
      *      unless followed by explicit type application.
      *  (4) Do the following to unapplied methods used as values:
      *  (4.1) If the method has only implicit parameters pass implicit arguments
-     *  (4.2) otherwise, convert to function by eta-expansion,
-     *        except if the method is a constructor, in which case we issue an error.
+     *  (4.2) otherwise, if `pt' is a function type and method is not a constructor,
+     *        convert to function by eta-expansion,
+     *  (4.3) otherwise, if the method is nullary with a result type compatible to `pt'
+     *        and it is not a constructor, apply it to ()
+     *  otherwise issue an error
      *  (5) Convert a class type that serves as a constructor in a pattern as follows:
      *  (5.1) If this type refers to a case class, set tree's type to the unique
      *        instance of its primary constructor that is a subtype of the expected type.
@@ -326,15 +329,21 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 	    adapt(tree, mode, pt)
 	  } else tree;
 	typed(applyImplicitArgs(tree1), mode, pt)
-      case mt: MethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
-	                      isCompatible(tree.tpe, pt)) => // (4.2)
-	if (tree.symbol.isConstructor || pt == WildcardType ||
-            !(pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) {
-          errorTree(tree, "missing arguments for " + tree.symbol) //debug
-	} else {
-          if (settings.debug.value) log("eta-expanding " + tree + ":" + tree.tpe + " to " + pt);//debug
+      case mt: MethodType
+      if (((mode & (EXPRmode | FUNmode)) == EXPRmode) &&
+          (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
+        if (!tree.symbol.isConstructor && pt != WildcardType && isCompatible(mt, pt) &&
+            (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) { // (4.2)
+          if (settings.debug.value) log("eta-expanding " + tree + ":" + tree.tpe + " to " + pt);
 	  typed(etaExpand(tree), mode, pt)
-	}
+        } else if (!tree.symbol.isConstructor &&
+                   mt.paramTypes.isEmpty && isCompatible(mt.resultType, pt)) { // (4.3)
+          typed(Apply(tree, List()) setPos tree.pos)
+        } else {
+          if (context.reportGeneralErrors)
+            error(tree.pos, "missing arguments for " + tree.symbol);
+          setError(tree)
+        }
       case _ =>
 	if (tree.isType) {
 	  val clazz = tree.tpe.symbol;
@@ -409,7 +418,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 	      }
             }
             if (settings.debug.value) log("error tree = " + tree);
-	    typeErrorTree(tree, tree.tpe, pt)
+            typeErrorTree(tree, tree.tpe, pt)
           }
 	}
     }
@@ -426,16 +435,35 @@ import scala.collection.mutable.{HashMap, ListBuffer}
         else qual
       } else qual;
 
-    private def completeSuperType(supertpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
+    private def completeParentType(tpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
       enclTparams foreach context.scope.enter;
       namer.enterValueParams(context.owner, vparamss);
-      val newTree = New(supertpt)
-        .setType(PolyType(tparams, appliedType(supertpt.tpe, tparams map (.tpe))));
-      val tree = typed(atPos(supertpt.pos)(Apply(Select(newTree, nme.CONSTRUCTOR), superargs)));
+      val newTree = New(tpt)
+        .setType(PolyType(tparams, appliedType(tpt.tpe, tparams map (.tpe))));
+      val tree = typed(atPos(tpt.pos)(Apply(Select(newTree, nme.CONSTRUCTOR), superargs)));
       if (settings.debug.value) log("superconstr " + tree + " co = " + context.owner);//debug
       tree.tpe
     }
 
+/*
+    def completeParentType(tpt: Tree, templ: Template): Tree =
+      if (tpt.hasSymbol) {
+	val tparams = tpt.symbol.typeParams;
+	if (!tparams.isEmpty) {
+	  val constr @ DefDef(_, _, _, vparamss, _, rhs) = treeInfo.firstConstructor(templ.body);
+          val Apply(_, superargs) = treeInfo.superCall(rhs, tpt.symbol.name);
+	  val outercontext = context.outer;
+	  TypeTree(
+	    newTyper(outercontext.makeNewScope(constr, outercontext.owner))
+	      .completeParentType(
+		tpt,
+                tparams,
+		context.owner.unsafeTypeParams,
+		vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
+		superargs map (.duplicate))) setPos tpt.pos;
+        } else tpt
+      } else tpt
+*/
     def parentTypes(templ: Template): List[Tree] = try {
       if (templ.parents.isEmpty) List()
       else {
@@ -453,8 +481,8 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 	      treeInfo.firstConstructor(templ.body);
 	    val outercontext = context.outer;
 	    supertpt = TypeTree(
-	      newTyper(outercontext.makeNewScope(constr, outercontext.owner/*.newValue(templ.pos, newTermName("<dummy>"))*/))
-		.completeSuperType(
+	      newTyper(outercontext.makeNewScope(constr, outercontext.owner))
+		.completeParentType(
 		  supertpt,
                   tparams,
 		  context.owner.unsafeTypeParams,
@@ -1467,9 +1495,10 @@ import scala.collection.mutable.{HashMap, ListBuffer}
     private def typedImplicit(pos: int, info: ImplicitInfo, pt: Type, local: boolean): Tree =
       if (isCompatible(depoly(info.tpe), pt)) {
 	var tree: Tree = EmptyTree;
-        def fail(reason: String): Tree = {
+        def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
           if (settings.debug.value)
-            log(tree.toString() + " is not a valid implicit value because:\n" + reason);
+            log(tree.toString() + " is not a valid implicit value because:\n" + reason +
+                sym1 + " " + sym2);
           EmptyTree
         }
 	try {
@@ -1481,10 +1510,10 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 	  val tree1 = adapt(tree, EXPRmode, pt);
 	  if (settings.debug.value)
             log("adapted implicit " + tree.symbol + ":" + tree1.tpe + " to " + pt);//debug
-	  if (info.sym == tree.symbol) tree1
-          else fail("syms differ: " + tree.symbol + " " + info.sym)
+	  if (tree1.tpe != ErrorType && info.sym == tree.symbol) tree1
+          else fail("syms differ: ", tree.symbol, info.sym)
 	} catch {
-	  case ex: TypeError => fail(ex.getMessage())
+	  case ex: TypeError => fail(ex.getMessage(), NoSymbol, NoSymbol)
 	}
       } else EmptyTree;
 

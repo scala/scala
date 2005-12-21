@@ -9,6 +9,8 @@
 
 package scala.collection.mutable;
 
+import Predef._;
+
 
 /** Class <code>Message</code> represents messages that are issued by observable
  *  collection classes whenever a data structure is changed. Class <code>Message</code>

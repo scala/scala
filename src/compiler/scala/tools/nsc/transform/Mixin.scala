@@ -282,7 +282,7 @@ abstract class Mixin extends InfoTransform {
             true
         }
         if (newDefs.isEmpty) stats
-        else stats.filter(isNotDuplicate) ::: newDefs
+        else newDefs ::: stats.filter(isNotDuplicate)//!!!
       }
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)

@@ -9,6 +9,8 @@
 
 package scala.collection.mutable;
 
+import Predef._;
+
 /** Buffers are used to create sequences of elements incrementally by
  *  appending, prepending, or inserting new elements. It is also
  *  possible to access and modify elements in a random access fashion

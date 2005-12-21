@@ -90,4 +90,64 @@ public abstract class Float   extends AnyVal implements java.io.Serializable {
     public float   $div       (float   that) { return  value /  that; }
     public float   $percent   (float   that) { return  value %  that; }
 
+    public boolean $eq$eq     (long   that) { return  value == that; }
+    public boolean $bang$eq   (long   that) { return  value != that; }
+    public boolean $less      (long   that) { return  value <  that; }
+    public boolean $greater   (long   that) { return  value >  that; }
+    public boolean $less$eq   (long   that) { return  value <= that; }
+    public boolean $greater$eq(long   that) { return  value >= that; }
+    public float   $plus      (long   that) { return  value +  that; }
+    public float   $minus     (long   that) { return  value -  that; }
+    public float   $times     (long   that) { return  value *  that; }
+    public float   $div       (long   that) { return  value /  that; }
+    public float   $percent   (long   that) { return  value %  that; }
+
+    public boolean $eq$eq     (int   that) { return  value == that; }
+    public boolean $bang$eq   (int   that) { return  value != that; }
+    public boolean $less      (int   that) { return  value <  that; }
+    public boolean $greater   (int   that) { return  value >  that; }
+    public boolean $less$eq   (int   that) { return  value <= that; }
+    public boolean $greater$eq(int   that) { return  value >= that; }
+    public float   $plus      (int   that) { return  value +  that; }
+    public float   $minus     (int   that) { return  value -  that; }
+    public float   $times     (int   that) { return  value *  that; }
+    public float   $div       (int   that) { return  value /  that; }
+    public float   $percent   (int   that) { return  value %  that; }
+
+    public boolean $eq$eq     (short   that) { return  value == that; }
+    public boolean $bang$eq   (short   that) { return  value != that; }
+    public boolean $less      (short   that) { return  value <  that; }
+    public boolean $greater   (short   that) { return  value >  that; }
+    public boolean $less$eq   (short   that) { return  value <= that; }
+    public boolean $greater$eq(short   that) { return  value >= that; }
+    public float   $plus      (short   that) { return  value +  that; }
+    public float   $minus     (short   that) { return  value -  that; }
+    public float   $times     (short   that) { return  value *  that; }
+    public float   $div       (short   that) { return  value /  that; }
+    public float   $percent   (short   that) { return  value %  that; }
+
+    public boolean $eq$eq     (char   that) { return  value == that; }
+    public boolean $bang$eq   (char   that) { return  value != that; }
+    public boolean $less      (char   that) { return  value <  that; }
+    public boolean $greater   (char   that) { return  value >  that; }
+    public boolean $less$eq   (char   that) { return  value <= that; }
+    public boolean $greater$eq(char   that) { return  value >= that; }
+    public float   $plus      (char   that) { return  value +  that; }
+    public float   $minus     (char   that) { return  value -  that; }
+    public float   $times     (char   that) { return  value *  that; }
+    public float   $div       (char   that) { return  value /  that; }
+    public float   $percent   (char   that) { return  value %  that; }
+
+    public boolean $eq$eq     (byte   that) { return  value == that; }
+    public boolean $bang$eq   (byte   that) { return  value != that; }
+    public boolean $less      (byte   that) { return  value <  that; }
+    public boolean $greater   (byte   that) { return  value >  that; }
+    public boolean $less$eq   (byte   that) { return  value <= that; }
+    public boolean $greater$eq(byte   that) { return  value >= that; }
+    public float   $plus      (byte   that) { return  value +  that; }
+    public float   $minus     (byte   that) { return  value -  that; }
+    public float   $times     (byte   that) { return  value *  that; }
+    public float   $div       (byte   that) { return  value /  that; }
+    public float   $percent   (byte   that) { return  value %  that; }
+
 }

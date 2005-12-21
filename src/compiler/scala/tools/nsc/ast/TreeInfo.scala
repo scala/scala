@@ -113,12 +113,23 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  /** The longest statement suffix that starts with a constructor */
+  /** The first constructor definitions in `stats' */
   def firstConstructor(stats: List[Tree]): Tree = stats.head match {
     case constr @ DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => constr
     case _ => firstConstructor(stats.tail)
   }
-
+/*
+  /** The super call that calls mixin `mix' in stats */
+  def superCall(stats: List[Tree], mix: Name): Tree = stats match {
+    case scall @ Apply(Select(Super(_, mix1), name), List()) :: _
+    if ((name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR) && mix1 == mix) =>
+      scall
+    case _ :: stats1 =>
+      superCall(stats1, name)
+    case _ =>
+      assert(false, "no supercall to " + mix + " in " + stats);
+  }
+*/
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name): boolean =
     operator.length > 0 && operator(operator.length - 1) != ':';

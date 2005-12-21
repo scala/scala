@@ -364,6 +364,15 @@ trait Iterator[+A] {
         override def buffered: BufferedIterator[A] = this;
     }
 
+    /** Returns a counted iterator from this iterator.
+     */
+    def counted = new CountedIterator[A] {
+      private var cnt = -1;
+      def count = cnt;
+      def hasNext: Boolean = Iterator.this.hasNext;
+      def next: A = { cnt = cnt + 1; Iterator.this.next }
+    }
+
     /** Creates two new iterators that both iterate over the same elements
      *  than this iterator (in the same order).
      */

@@ -12,7 +12,7 @@
 package scala.runtime.compat;
 
 object Platform {
-  def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: int): Unit =
+  def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit =
     System.arraycopy(src, srcPos, dest, destPos, length);
   def getClass(obj: AnyRef) = obj.getClass();
   def getClassName(obj: AnyRef) = obj.getClass().getName();

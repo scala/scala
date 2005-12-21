@@ -9,6 +9,8 @@
 
 package scala.collection.mutable;
 
+import Predef._;
+
 
 /** An implementation of the Buffer trait using an array to
  *  represent the assembled sequence internally.
@@ -136,9 +138,10 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      */
     override def equals(obj: Any): Boolean = obj match {
         case that: ArrayBuffer[A] =>
+          ( this.length == that.length &&
             elements.zip(that.elements).forall {
                 case Pair(thiselem, thatelem) => thiselem == thatelem;
-            }
+            } )
         case _ => false
     }
 

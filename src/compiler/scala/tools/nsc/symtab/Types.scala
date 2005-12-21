@@ -1607,6 +1607,8 @@ import Flags._;
     case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       (tparams1.length == tparams2.length &&
        (res1 matches res2.substSym(tparams2, tparams1)))
+    case Pair(PolyType(List(), rtp1), MethodType(List(), rtp2)) => matchesType(rtp1, rtp2)
+    case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) => matchesType(rtp1, rtp2)
     case Pair(PolyType(List(), rtp1), _) => matchesType(rtp1, tp2)
     case Pair(_, PolyType(List(), rtp2)) => matchesType(tp1, rtp2)
     case Pair(MethodType(_, _), _) => false

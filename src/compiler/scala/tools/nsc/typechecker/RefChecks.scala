@@ -96,7 +96,10 @@ abstract class RefChecks extends InfoTransform {
      *    1.7. If O is an abstract type then
      *         either M is an abstract type, and M's bounds are sharper than O's bounds.
      *         or M is an unparameterized type alias or class which conforms to O's bounds.
-     *    1.8. If O and M are values, then M's type is a subtype of O's type.
+     *    1.8. If O and M are values, then
+     *    1.8.1  M's type is a subtype of O's type, or
+     *    1.8.2  M is of type []S, O is of type ()T and S <: T, or
+     *    1.8.3  M is of type ()S, O is of type []T and S <: T, or
      *  2. Check that only abstract classes have deferred members
      *  3. Check that every member with an `override' modifier
      *     overrides some other member.
@@ -114,6 +117,12 @@ abstract class RefChecks extends InfoTransform {
 		else if (sym.isTerm) " of type " + self.memberInfo(sym)
 		else "")))
       );
+
+      def overridesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
+        case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) => rtp1 <:< rtp2
+        case Pair(PolyType(List(), rtp1), MethodType(List(), rtp2)) => rtp1 <:< rtp2
+        case _ => tp1 <:< tp2
+      }
 
       /* Check that all conditions for overriding `other' by `member' are met. */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol): unit = {
@@ -179,8 +188,9 @@ abstract class RefChecks extends InfoTransform {
 	    if (!(self.memberInfo(other).bounds containsType self.memberType(member))) // (1.7)
 	      overrideTypeError();
 	  } else if (other.isTerm) {
-	    if (!(self.memberInfo(member) <:< (self.memberInfo(other)))) // 8
+	    if (!overridesType(self.memberInfo(member), self.memberInfo(other))) { // 8
 	      overrideTypeError();
+            }
 	  }
 	}
       }

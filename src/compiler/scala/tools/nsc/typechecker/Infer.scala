@@ -13,6 +13,7 @@ import symtab.Flags._;
   import definitions._;
   import posAssigner.atPos;
 
+  // statistics
   var normM = 0;
   var normP = 0;
   var normO = 0;
@@ -152,17 +153,24 @@ import symtab.Flags._;
       tp1
   }
 
+  private val stdErrorClass = RootClass.newErrorClass(nme.ERROR.toTypeName);
+  private val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR);
+
   /** The context-dependent inferencer part */
   class Inferencer(context: Context) {
 
     /* -- Error Messages ----------------------------------------------------- */
 
     def setError[T <: Tree](tree: T): T = {
-      val name = newTermName("<error: " + tree + ">");
       if (tree.hasSymbol)
-	tree.setSymbol(
-	  if (tree.isType) context.owner.newErrorClass(name.toTypeName)
-	  else context.owner.newErrorValue(name));
+        if (context.reportGeneralErrors) {
+          val name = newTermName("<error: " + tree.symbol + ">");
+	  tree.setSymbol(
+	    if (tree.isType) context.owner.newErrorClass(name.toTypeName)
+	    else context.owner.newErrorValue(name));
+        } else {
+          tree.setSymbol(if (tree.isType) stdErrorClass else stdErrorValue)
+        }
       tree.setType(ErrorType)
     }
 

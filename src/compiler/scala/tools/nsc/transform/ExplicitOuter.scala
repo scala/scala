@@ -211,7 +211,8 @@ abstract class ExplicitOuter extends InfoTransform {
  	                                     // as constructor arguments might be missing
 	  }
 	val mixinConstructorCalls =
-	  for (val mixin <- clazz.info.parents.tail; !(mixin.symbol hasFlag INTERFACE)) yield
+	  for (val mixin <- clazz.info.parents.tail;
+               !(mixin.symbol hasFlag INTERFACE) && mixin.symbol != ScalaObjectClass) yield
 	    mixinConstructorCall(mixin.symbol);
 	tree match {
 	  case Block(supercall :: stats, expr) =>

@@ -188,13 +188,13 @@ import Flags._;
       var i = 0;
       var j = fullname.pos('.', i);
       while (j < fullname.length) {
-        sym = sym.info.nonPrivateMember(fullname.subName(i, j));
+        sym = sym.info.member(fullname.subName(i, j));
         i = j + 1;
         j = fullname.pos('.', i)
       }
       val result =
-        if (module) sym.info.nonPrivateMember(fullname.subName(i, j)).suchThat(.hasFlag(MODULE));
-        else sym.info.nonPrivateMember(fullname.subName(i, j).toTypeName);
+        if (module) sym.info.member(fullname.subName(i, j)).suchThat(.hasFlag(MODULE));
+        else sym.info.member(fullname.subName(i, j).toTypeName);
       if (result == NoSymbol)
 	throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
       result

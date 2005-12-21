@@ -1552,8 +1552,11 @@ import Tokens._;
     /** ClassTemplate ::= [`extends' TemplateParents] [[NL] TemplateBody]
      *  TemplateParents ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
      */
-    def classTemplate(mods: Modifiers, name: Name, vparamss: List[List[ValDef]]): Template = {
-      val ret = atPos(in.currentPos) {
+    def classTemplate(mods: Modifiers, name: Name, vparamss: List[List[ValDef]]): Template =
+      atPos(in.currentPos) {
+        def acceptEmptyTemplateBody(msg: String): unit =
+          if (!(in.token == SEMI || in.token == NEWLINE || in.token == COMMA || in.token == RBRACE))
+            syntaxError(msg, true);
         val parents = new ListBuffer[Tree];
         val argss = new ListBuffer[List[Tree]];
         if (in.token == EXTENDS) {
@@ -1568,25 +1571,21 @@ import Tokens._;
 	    in.nextToken();
 	    parents += simpleType()
           }
-        } else argss += List();
+        } else {
+          if (in.token != LBRACE) acceptEmptyTemplateBody("`extends' or `{' expected");
+          argss += List()
+        }
 	if (name != nme.ScalaObject.toTypeName)
           parents += scalaScalaObjectConstr;
 	if (mods.hasFlag(Flags.CASE)) parents += caseClassConstr;
         val ps = parents.toList;
         if (in.token == NEWLINE && in.next.token == LBRACE) in.nextToken();
 	var body =
-	  if (in.token == LBRACE) {
-	    templateBody()
-	  } else {
-	    if (!(in.token == SEMI || in.token == NEWLINE || in.token == COMMA || in.token == RBRACE))
-              syntaxError("`extends' or `{' expected", true);
-            List()
-	  }
+	  if (in.token == LBRACE) templateBody()
+	  else { acceptEmptyTemplateBody("`{' expected"); List() }
 	if (!mods.hasFlag(Flags.TRAIT)) Template(ps, vparamss, argss.toList, body)
 	else Template(ps, body)
       }
-      ret;
-    }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 

@@ -289,7 +289,7 @@ abstract class ClassfileParser {
   def parseMethod(): unit = {
     val jflags = in.nextChar();
     var sflags = transFlags(jflags);
-    if ((sflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE;
+    if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE;
     if ((sflags & PRIVATE) != 0) {
       in.skip(4); skipAttributes();
     } else {
