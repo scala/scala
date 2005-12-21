@@ -45,8 +45,10 @@
   <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="starr.comp.jar" value="${lib.dir}/scala-compiler.jar"/>
   <property name="jaco.jar" value="${lib.dir}/jaco.jar"/>
-  <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
-  <property name="msil.jar" value="${lib.dir}/msil.jar"/>
+  <property name="fjbg.name" value="fjbg.jar"/>
+  <property name="fjbg.jar" value="${lib.dir}/${fjbg.name}"/>
+  <property name="msil.name" value="msil.jar"/>
+  <property name="msil.jar" value="${lib.dir}/${msil.name}"/>
   <property name="scala.dll" value="${lib.dir}/scala.dll"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
   <!-- Location of build products properties -->
@@ -149,6 +151,8 @@
     <!-- Defining version number -->
   	<tstamp prefix="start"/>
     <property name="version.number" value="${start.DSTAMP}-${start.TSTAMP}"/>
+  <property name="dist.current.dir"
+            value="${dist.dir}/${dist.name}-${version.number}"/>
     <!-- Creating boot-level tasks -->
     <taskdef name="starr"
              classname="scala.tools.nsc.ant.NSC"
@@ -187,8 +191,10 @@
   -->
   
   <macrodef name="build.exec">
-    <attribute name="lib.dir"/>
-    <attribute name="comp.dir"/>
+    <attribute name="lib.path"/>
+    <attribute name="comp.path"/>
+    <attribute name="fjbg.path"/>
+    <attribute name="msil.path"/>
     <attribute name="exec.dir"/>
     <sequential>
       <mkdir dir="@{exec.dir}"/>
@@ -197,7 +203,7 @@
         <filterset>
           <filter token="version" value="${version}"/>
           <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.dir}"/>
+          <filter token="lib.path" value="@{lib.path}"/>
         </filterset>
       </copy>
       <chmod file="@{exec.dir}/scala" perm="ugo+rx"/>
@@ -206,10 +212,10 @@
         <filterset>
           <filter token="version" value="${version}"/>
           <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.dir}"/>
-          <filter token="comp.path" value="@{comp.dir}"/>
-          <filter token="fjbg.jar" value="${fjbg.jar}"/>
-          <filter token="msil.jar" value="${msil.jar}"/>
+          <filter token="lib.path" value="@{lib.path}"/>
+          <filter token="comp.path" value="@{comp.path}"/>
+          <filter token="fjbg.jar" value="@{fjbg.path}"/>
+          <filter token="msil.jar" value="@{msil.path}"/>
           <filter token="tool.class" value="scala.tools.nsc.Main"/>
         </filterset>
       </copy>
@@ -219,7 +225,7 @@
         <filterset>
           <filter token="version" value="${version}"/>
           <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.dir}"/>
+          <filter token="lib.path" value="@{lib.path}"/>
         </filterset>
       </copy>
       <copy file="${src.dir}/${exec.dir.name}/scala-tool.win.tmpl"
@@ -227,10 +233,10 @@
         <filterset>
           <filter token="version" value="${version}"/>
           <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.dir}"/>
-          <filter token="comp.path" value="@{comp.dir}"/>
-          <filter token="fjbg.jar" value="${fjbg.jar}"/>
-          <filter token="msil.jar" value="${msil.jar}"/>
+          <filter token="lib.path" value="@{lib.path}"/>
+          <filter token="comp.path" value="@{comp.path}"/>
+          <filter token="fjbg.jar" value="@{fjbg.path}"/>
+          <filter token="msil.jar" value="@{msil.path}"/>
           <filter token="tool.class" value="scala.tools.nsc.Main"/>
         </filterset>
       </copy>
@@ -299,8 +305,10 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
     <!-- Build executable files -->
-    <build.exec lib.dir="${locker.lib.dir}"
-                comp.dir="${locker.comp.dir}"
+    <build.exec lib.path="${locker.lib.dir}"
+                comp.path="${locker.comp.dir}"
+                fjbg.path="${fjbg.jar}"
+                msil.path="${msil.jar}"
                 exec.dir="${locker.dir}/${exec.dir.name}"/>
   </target>
   
@@ -366,8 +374,10 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
     <!-- Build executable files -->
-    <build.exec lib.dir="${quick.lib.dir}"
-                comp.dir="${quick.comp.dir}"
+    <build.exec lib.path="${quick.lib.dir}"
+                comp.path="${quick.comp.dir}"
+                fjbg.path="${fjbg.jar}"
+                msil.path="${msil.jar}"
                 exec.dir="${quick.dir}/${exec.dir.name}"/>
   </target>
 
@@ -434,8 +444,10 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
     <!-- Build executable files -->
-    <build.exec lib.dir="${strap.lib.dir}"
-                comp.dir="${strap.comp.dir}"
+    <build.exec lib.path="${strap.lib.dir}"
+                comp.path="${strap.comp.dir}"
+                fjbg.path="${fjbg.jar}"
+                msil.path="${msil.jar}"
                 exec.dir="${strap.dir}/${exec.dir.name}"/>
     <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
@@ -481,21 +493,28 @@
   -->
   
   <target name="dist" depends="test">
-    <mkdir dir="${dist.dir}"/>
-    <mkdir dir="${dist.dir}/lib"/>
-    <jar destfile="${dist.dir}/lib/${comp.jar.name}"
+    <mkdir dir="${dist.current.dir}"/>
+    <mkdir dir="${dist.current.dir}/lib"/>
+    <jar destfile="${dist.current.dir}/lib/${comp.jar.name}"
          basedir="${strap.comp.dir}">
       <manifest>
         <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
       </manifest>
     </jar>
-    <jar destfile="${dist.dir}/lib/${lib.jar.name}"
+    <jar destfile="${dist.current.dir}/lib/${lib.jar.name}"
          basedir="${strap.lib.dir}">
     </jar>
-    <mkdir dir="${dist.dir}/bin"/>
-    <build.exec lib.dir="$$PREFIX/lib/${lib.jar.name}"
-                comp.dir="$$PREFIX/lib/${comp.jar.name}"
-                exec.dir="${dist.dir}/bin"/>
+    <copy file="${fjbg.jar}" todir="${dist.current.dir}/lib"/>
+    <copy file="${msil.jar}" todir="${dist.current.dir}/lib"/>
+    <mkdir dir="${dist.current.dir}/bin"/>
+    <build.exec lib.path="$$PREFIX/lib/${lib.jar.name}"
+                comp.path="$$PREFIX/lib/${comp.jar.name}"
+                fjbg.path="$$PREFIX/lib/${fjbg.name}"
+                msil.path="$$PREFIX/lib/${msil.name}"
+                exec.dir="${dist.current.dir}/bin"/>
+    <symlink link="${dist.latest.dir}"
+             resource="${dist.current.dir}"
+             overwrite="yes"/>
   </target>
   
   <!--

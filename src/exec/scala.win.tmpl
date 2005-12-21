@@ -1,7 +1,7 @@
 @echo off
 
 rem ##########################################################################
-rem # Copyright @COPYRIGHT@
+rem # Copyright @copyright@
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -12,7 +12,6 @@ if "%OS%"=="Windows_NT" @setlocal
 if "%OS%"=="Windows_NT" @set SCALA_HOME=%~dp0
 
 if "%SCALA_HOME%" == "" goto error1
-if not exist "%SCALA_HOME%\VERSION-@VERSION@" goto error2
 
 set _ARGS=
 :loop
@@ -24,25 +23,25 @@ goto loop
 
 :exec
 set _JAVACMD=java
-set _JAVAOPT=-Xbootclasspath/a:@BOOTCPATH@
+set _JAVAOPT=-Xbootclasspath/a:@lib.path@
 
 rem echo %_JAVACMD% %_JAVAOPT% %_ARGS%
 %_JAVACMD% %_JAVAOPT% %_ARGS%
 goto end
 
 :version
-echo @PRODUCT@ @VERSION@ -- @COPYRIGHT@
+echo @product@ @version@ -- @copyright@
 goto end
 
 rem ##########################################################################
 rem # errors
 
 :error1
-echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@VERSION@".
+echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@version@".
 goto end
 
 :error2
-echo ERROR: environment variable SCALA_HOME points to the wrong directory "%SCALA_HOME%". It should point to the directory containing the file "VERSION-@VERSION@".
+echo ERROR: environment variable SCALA_HOME points to the wrong directory "%SCALA_HOME%". It should point to the directory containing the file "VERSION-@version@".
 goto end
 
 :end

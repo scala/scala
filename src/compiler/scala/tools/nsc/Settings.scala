@@ -5,24 +5,42 @@
 // $Id$
 package scala.tools.nsc;
 
+import java.io.File;
+
 class Settings(error: String => unit) {
 
   private var allsettings: List[Setting] = List();
+
+  private val classpathDefault = {
+    val scalaCp = System.getProperty("scala.class.path");
+    if (scalaCp != null) scalaCp + File.pathSeparator + "."
+    else "."
+  }
+  private val bootclasspathDefault = {
+    val javaBcp = System.getProperty("sun.boot.class.path");
+    val scalaBcp = System.getProperty("scala.boot.class.path");
+    if (javaBcp != null && scalaBcp != null) javaBcp + File.pathSeparator + scalaBcp
+    else if (javaBcp != null) javaBcp
+    else if (scalaBcp != null) scalaBcp
+    else ""
+  }
+  private val extdirsDefault = {
+    val javaExt = System.getProperty("java.ext.dirs");
+    val scalaExt = System.getProperty("scala.ext.dirs");
+    if (javaExt != null && scalaExt != null) javaExt + File.pathSeparator + scalaExt
+    else if (javaExt != null) javaExt
+    else if (scalaExt != null) scalaExt
+    else ""
+  }
 
   val debuginfo     = BooleanSetting("-g", "Generate debugging info");
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings");
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions");
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing");
-  val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files",
-                                     System.getProperty("scala.class.path",
-                                       System.getProperty("java.class.path", ".")));
-  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files",
-                                     System.getProperty("scala.source.path",
-                                       System.getProperty("java.source.path", ".")));
-  val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files",
-                                     System.getProperty("sun.boot.class.path", ""));
-  val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions",
-                                     System.getProperty("java.ext.dirs", ""));
+  val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault);
+  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "");
+  val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault);
+  val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault);
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", "");
   val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", "ISO-8859-1");
   val separate      = ChoiceSetting ("-separate", "Read symbol files for separate compilation", List("yes","no"), "default");

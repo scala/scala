@@ -453,14 +453,10 @@ FILES_POS="";
 FILES_NEG="";
 FILES_MSIL="";
 
-case `uname` in
-    CYGWIN* ) LATEST="$PREFIX/distribs/windows/latest";;
-    *       ) LATEST="$PREFIX/distribs/unix/latest";;
-esac;
-
-SCALA="$LATEST/bin/ns";
-SOCOS="$LATEST/bin/nsc";
-SCALAP="$LATEST/bin/nsp";
+LATEST="$PREFIX/dists/latest";
+SCALA="$LATEST/bin/scala";
+SOCOS="$LATEST/bin/scalac";
+SCALAP="$LATEST/bin/scalap";
 DIFF="diff";
 
 case `uname` in

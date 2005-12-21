@@ -22,13 +22,13 @@ goto loop
 
 :exec
 set _JAVACMD=java
-set _PROPS=-Dscala.version=@version@ -Dscala.home=%SCALA_HOME%
 set _MAIN=@tool.class@
 set _TOOLS_CPATH=@fjbg.jar@;@msil.jar@;@comp.path@;@lib.path@
 set _LIB_CPATH=@lib.path@
+set _PROPS=-Dscala.version=@version@ -Dscala.home=%SCALA_HOME% -Dscala.boot.class.path="%_LIB_CPATH%"
 
 rem echo %_JAVACMD% %_PROPS% -cp %_CPATH% %_MAIN% %_ARGS%
-%_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% -bootclasspath %_LIB_CPATH% %_ARGS%
+%_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% %_ARGS%
 goto end
 
 rem ##########################################################################

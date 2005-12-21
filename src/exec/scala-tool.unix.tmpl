@@ -15,7 +15,20 @@ case "`uname`" in
     Darwin*) darwin=true ;;
 esac
 
-PREFIX=`dirname "$0"`/..;
+SOURCE=$0;
+SCRIPT=`basename "$SOURCE"`;
+while [ -h "$SOURCE" ]; do
+    SCRIPT=`basename "$SOURCE"`;
+    LOOKUP=`ls -ld "$SOURCE"`;
+    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
+    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
+        SOURCE=${TARGET:-.};
+    else
+        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
+    fi;
+done;
+PREFIX=`dirname "$SOURCE"`/..;
+prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
 JAVA=java
@@ -38,5 +51,6 @@ $JAVA \
   -Xms16M -Xmx256M \
   -Dscala.version="20051219-1541" \
   -Dscala.home="$PREFIX" \
+  -Dscala.boot.class.path="$TOOL_CLASSPATH" \
   -cp "$JAVA_CLASSPATH" \
-  "$TOOL" -sourcepath "$TOOL_CLASSPATH" "$@"
+  "$TOOL" "$@"
