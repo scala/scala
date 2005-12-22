@@ -49,7 +49,8 @@ fi
 
 $JAVA \
   -Xms16M -Xmx256M \
-  -Dscala.version="20051219-1541" \
+  -Dscala.version="@version@" \
+  -Dscala.copyright="@copyright@" \
   -Dscala.home="$PREFIX" \
   -Dscala.boot.class.path="$TOOL_CLASSPATH" \
   -cp "$JAVA_CLASSPATH" \
