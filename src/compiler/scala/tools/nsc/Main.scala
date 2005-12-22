@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-06 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -17,7 +17,9 @@ object Main extends Object with EvalLoop {
     System.getProperty("scala.product", "scalac");
   val VERSION: String =
     System.getProperty("scala.version", "unknown version");
-  val versionMsg = PRODUCT + " " + VERSION + " -- (c) 2002-05 LAMP/EPFL";
+  val COPYRIGHT: String =
+    System.getProperty("scala.copyright", "(c) 2002-06 LAMP/EPFL");
+  val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT;
   val prompt = "\nnsc> ";
 
   private var reporter: ConsoleReporter = _;
