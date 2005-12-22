@@ -9,9 +9,9 @@ rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
 if "%OS%"=="Windows_NT" @setlocal
-if "%OS%"=="Windows_NT" @set SCALA_HOME=%~dp0
+if "%OS%"=="Windows_NT" @set SCALA_HOME=%~dp0..
 
-if "%SCALA_HOME%" == "" goto error1
+if "%SCALA_HOME%"=="" goto error1
 
 set _ARGS=
 :loop
@@ -25,9 +25,9 @@ set _JAVACMD=java
 set _MAIN=@tool.class@
 set _TOOLS_CPATH=@fjbg.jar@;@msil.jar@;@comp.path@;@lib.path@
 set _LIB_CPATH=@lib.path@
-set _PROPS=-Dscala.version=@version@ -Dscala.home=%SCALA_HOME% -Dscala.boot.class.path="%_LIB_CPATH%"
+set _PROPS=-Dscala.version=@version@ -Dscala.home="%SCALA_HOME%" -Dscala.boot.class.path="%_LIB_CPATH%"
 
-rem echo %_JAVACMD% %_PROPS% -cp %_CPATH% %_MAIN% %_ARGS%
+rem echo %_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% %_ARGS%
 %_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% %_ARGS%
 goto end
 
