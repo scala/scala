@@ -9,9 +9,9 @@ rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
 if "%OS%"=="Windows_NT" @setlocal
-if "%OS%"=="Windows_NT" @set SCALA_HOME=%~dp0
+if "%OS%"=="Windows_NT" @set SCALA_HOME=%~dp0..
 
-if "%SCALA_HOME%" == "" goto error1
+if "%SCALA_HOME%"=="" goto error1
 
 set _ARGS=
 :loop
