@@ -18,7 +18,7 @@
   
   <property environment="env"/>
   <condition property="memory.set">
-  	<contains string="${env.ANT_OPTS}" substring="-Xmx"/>
+    <contains string="${env.ANT_OPTS}" substring="-Xmx"/>
   </condition>
   <fail unless="memory.set">
     Sabbus requires additional memory. Please set the 'ANT_OPTS' environment
@@ -36,7 +36,7 @@
   <!-- User properties -->
   <property file="${basedir}/build.properties"/>
   <!-- General properties -->
-  <property name="copyright" value="(c) 2002-05 LAMP/EPFL"/>
+  <property name="copyright" value="(c) 2002-06 LAMP/EPFL"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
   <property name="nsc.debug-info" value="true"/>
@@ -83,7 +83,7 @@
   INITIALISATION
   ##############################################################################
   -->
-  
+
   <target name="init">
     <!-- Testing if everything is in place -->
     <echo level="verbose">starr.lib.jar=${starr.lib.jar}</echo>
@@ -149,10 +149,10 @@
       <path refid="common.classpath"/>
     </path>
     <!-- Defining version number -->
-  	<tstamp prefix="start"/>
+    <tstamp prefix="start"/>
     <property name="version.number" value="${start.DSTAMP}-${start.TSTAMP}"/>
-  <property name="dist.current.dir"
-            value="${dist.dir}/${dist.name}-${version.number}"/>
+    <property name="dist.current.dir"
+              value="${dist.dir}/${dist.name}-${version.number}"/>
     <!-- Creating boot-level tasks -->
     <taskdef name="starr"
              classname="scala.tools.nsc.ant.NSC"
@@ -201,7 +201,7 @@
       <copy file="${src.dir}/${exec.dir.name}/scala.unix.tmpl"
             tofile="@{exec.dir}/scala">
         <filterset>
-          <filter token="version" value="${version}"/>
+          <filter token="version" value="${version.number}"/>
           <filter token="copyright" value="${copyright}"/>
           <filter token="lib.path" value="@{lib.path}"/>
         </filterset>
@@ -210,7 +210,7 @@
       <copy file="${src.dir}/${exec.dir.name}/scala-tool.unix.tmpl"
             tofile="@{exec.dir}/scalac">
         <filterset>
-          <filter token="version" value="${version}"/>
+          <filter token="version" value="${version.number}"/>
           <filter token="copyright" value="${copyright}"/>
           <filter token="lib.path" value="@{lib.path}"/>
           <filter token="comp.path" value="@{comp.path}"/>
@@ -220,10 +220,21 @@
         </filterset>
       </copy>
       <chmod file="@{exec.dir}/scalac" perm="ugo+rx"/>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="build.exec.win">
+    <attribute name="lib.path"/>
+    <attribute name="comp.path"/>
+    <attribute name="fjbg.path"/>
+    <attribute name="msil.path"/>
+    <attribute name="exec.dir"/>
+    <sequential>
+      <mkdir dir="@{exec.dir}"/>
       <copy file="${src.dir}/${exec.dir.name}/scala.win.tmpl"
             tofile="@{exec.dir}/scala.bat">
         <filterset>
-          <filter token="version" value="${version}"/>
+          <filter token="version" value="${version.number}"/>
           <filter token="copyright" value="${copyright}"/>
           <filter token="lib.path" value="@{lib.path}"/>
         </filterset>
@@ -231,7 +242,7 @@
       <copy file="${src.dir}/${exec.dir.name}/scala-tool.win.tmpl"
             tofile="@{exec.dir}/scalac.bat">
         <filterset>
-          <filter token="version" value="${version}"/>
+          <filter token="version" value="${version.number}"/>
           <filter token="copyright" value="${copyright}"/>
           <filter token="lib.path" value="@{lib.path}"/>
           <filter token="comp.path" value="@{comp.path}"/>
@@ -242,7 +253,7 @@
       </copy>
     </sequential>
   </macrodef>
-  
+
   <!--
   ##############################################################################
   BUILD LOCAL REFERENCE (LOCKER) LAYER
@@ -305,11 +316,16 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
     <!-- Build executable files -->
-    <build.exec lib.path="${locker.lib.dir}"
-                comp.path="${locker.comp.dir}"
-                fjbg.path="${fjbg.jar}"
-                msil.path="${msil.jar}"
+    <build.exec lib.path="$$PREFIX/${lib.dir.name}"
+                comp.path="$$PREFIX/${comp.dir.name}"
+                fjbg.path="../../../lib/${fjbg.name}"
+                msil.path="../../../lib/${msil.name}"
                 exec.dir="${locker.dir}/${exec.dir.name}"/>
+    <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
+                comp.path="%SCALA_HOME%\${comp.dir.name}"
+                fjbg.path="..\..\..\lib\${fjbg.name}"
+                msil.path="..\..\..\lib\${msil.name}"
+                exec.dir="${locker.dir}\${exec.dir.name}"/>
   </target>
   
   <!--
@@ -374,11 +390,16 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
     <!-- Build executable files -->
-    <build.exec lib.path="${quick.lib.dir}"
-                comp.path="${quick.comp.dir}"
-                fjbg.path="${fjbg.jar}"
-                msil.path="${msil.jar}"
+    <build.exec lib.path="$$PREFIX/${lib.dir.name}"
+                comp.path="$$PREFIX/${comp.dir.name}"
+                fjbg.path="../../../lib/${fjbg.name}"
+                msil.path="../../../lib/${msil.name}"
                 exec.dir="${quick.dir}/${exec.dir.name}"/>
+    <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
+                comp.path="%SCALA_HOME%\${comp.dir.name}"
+                fjbg.path="..\..\..\lib\${fjbg.name}"
+                msil.path="..\..\..\lib\${msil.name}"
+                exec.dir="${quick.dir}\${exec.dir.name}"/>
   </target>
 
   <!--
@@ -444,11 +465,16 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
     <!-- Build executable files -->
-    <build.exec lib.path="${strap.lib.dir}"
-                comp.path="${strap.comp.dir}"
-                fjbg.path="${fjbg.jar}"
-                msil.path="${msil.jar}"
+    <build.exec lib.path="$$$PREFIX/${lib.dir.name}"
+                comp.path="$$PREFIX/${comp.dir.name}"
+                fjbg.path="../../../lib/${fjbg.name}"
+                msil.path="../../../lib/${msil.name}"
                 exec.dir="${strap.dir}/${exec.dir.name}"/>
+    <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
+                comp.path="%SCALA_HOME%\${comp.dir.name}"
+                fjbg.path="..\..\..\lib\${fjbg.name}"
+                msil.path="..\..\..\lib\${msil.name}"
+                exec.dir="${strap.dir}\${exec.dir.name}"/>
     <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
       <fileset dir="${quick.dir}">
@@ -512,6 +538,11 @@
                 fjbg.path="$$PREFIX/lib/${fjbg.name}"
                 msil.path="$$PREFIX/lib/${msil.name}"
                 exec.dir="${dist.current.dir}/bin"/>
+    <build.exec.win lib.path="%SCALA_HOME%\lib\${lib.jar.name}"
+                comp.path="%SCALA_HOME%\lib\${comp.jar.name}"
+                fjbg.path="%SCALA_HOME%\lib\${fjbg.name}"
+                msil.path="%SCALA_HOME%\lib\${msil.name}"
+                exec.dir="${dist.current.dir}\bin"/>
     <symlink link="${dist.latest.dir}"
              resource="${dist.current.dir}"
              overwrite="yes"/>
