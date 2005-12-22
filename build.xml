@@ -24,6 +24,9 @@
     Sabbus requires additional memory. Please set the 'ANT_OPTS' environment
     property to '-Xmx256M' or more.
   </fail>
+  <condition property="os.win">
+    <os family="windows"/>
+  </condition>
 
   <!-- Prevents system classpath from being used -->
   <property name="build.sysclasspath" value="ignore"/>
@@ -84,7 +87,20 @@
   ##############################################################################
   -->
 
-  <target name="init">
+  <target name="init.cygwin" if="os.win">
+    <exec executable="cygpath" vmlauncher="false" errorproperty="err">
+      <arg value="--windir"/>
+    </exec>
+    <condition property="os.cygwin">
+      <equals arg1="${err}" arg2=""/>
+    </condition>
+  </target>
+
+  <target name="init" depends="init.cygwin">
+    <condition property="os.unix"><or>
+      <os family="unix"/><os family="mac"/>
+      <isset property="os.cygwin"/>
+    </or></condition>
     <!-- Testing if everything is in place -->
     <echo level="verbose">starr.lib.jar=${starr.lib.jar}</echo>
     <fail message="STARR library in 'lib/' is not available">
@@ -234,6 +250,7 @@
       <copy file="${src.dir}/${exec.dir.name}/scala.win.tmpl"
             tofile="@{exec.dir}/scala.bat">
         <filterset>
+          <filter token="product" value="scala"/>
           <filter token="version" value="${version.number}"/>
           <filter token="copyright" value="${copyright}"/>
           <filter token="lib.path" value="@{lib.path}"/>
@@ -517,8 +534,15 @@
   GENERATES A DISTRIBUTION
   ##############################################################################
   -->
-  
-  <target name="dist" depends="test">
+
+  <target name="init.dist" if="os.unix">
+    <mkdir dir="${dist.current.dir}"/>
+    <symlink link="${dist.latest.dir}"
+             resource="${dist.current.dir}"
+             overwrite="yes"/>
+  </target>
+
+  <target name="dist" depends="test, init.dist">
     <mkdir dir="${dist.current.dir}"/>
     <mkdir dir="${dist.current.dir}/lib"/>
     <jar destfile="${dist.current.dir}/lib/${comp.jar.name}"
@@ -543,9 +567,6 @@
                 fjbg.path="%SCALA_HOME%\lib\${fjbg.name}"
                 msil.path="%SCALA_HOME%\lib\${msil.name}"
                 exec.dir="${dist.current.dir}\bin"/>
-    <symlink link="${dist.latest.dir}"
-             resource="${dist.current.dir}"
-             overwrite="yes"/>
   </target>
   
   <!--
