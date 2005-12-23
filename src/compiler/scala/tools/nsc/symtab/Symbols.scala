@@ -666,6 +666,9 @@ import Flags._;
     def expandedName(name: Name): Name =
       newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name);
 
+    def sourceFile: AbstractFile =
+      (if (isModule) moduleClass else toplevelClass).sourceFile;
+
 /*
     def referenced: Symbol =
       throw new Error("referenced inapplicable for " + this);
@@ -939,8 +942,10 @@ import Flags._;
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
 
+    private var source: AbstractFile = null;
+    override def sourceFile = source
+    def sourceFile_=(f: AbstractFile): unit = { source = f }
 
-    var sourceFile: AbstractFile = null;
     private var thissym: Symbol = this;
     override def isClass: boolean = true;
     override def reset(completer: Type): unit = {
@@ -1025,6 +1030,7 @@ import Flags._;
     override def toplevelClass: Symbol = this;
     override def enclMethod: Symbol = this;
     override def owner: Symbol = throw new Error();
+    override def sourceFile: AbstractFile = null;
     override def ownerChain: List[Symbol] = List();
     override def alternatives: List[Symbol] = List();
     override def reset(completer: Type): unit = {}

@@ -13,7 +13,6 @@ import scala.tools.nsc.symtab._;
 abstract class Checkers {
   val global: Global;
   import global._;
-  import global.icodes.toTypeKind;
 
   /**
    * This class performs a set of checks similar to what the bytecode
