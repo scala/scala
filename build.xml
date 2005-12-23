@@ -10,11 +10,9 @@
   
   <echo>Running Sabbus for Scala-core</echo>
 
-  <!--
-  ##############################################################################
-  PROPERTIES
-  ##############################################################################
-  -->
+<!-- ===========================================================================
+PROPERTIES
+============================================================================ -->
   
   <property environment="env"/>
   <condition property="memory.set">
@@ -24,9 +22,6 @@
     Sabbus requires additional memory. Please set the 'ANT_OPTS' environment
     property to '-Xmx256M' or more.
   </fail>
-  <condition property="os.win">
-    <os family="windows"/>
-  </condition>
 
   <!-- Prevents system classpath from being used -->
   <property name="build.sysclasspath" value="ignore"/>
@@ -42,7 +37,7 @@
   <property name="copyright" value="(c) 2002-06 LAMP/EPFL"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
-  <property name="nsc.debug-info" value="true"/>
+  <property name="nsc.debug-info" value="yes"/>
   <property name="nsc.excludes" value="build.excludes"/>
   <!-- Location of pre-compiled libraries properties -->
   <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
@@ -54,6 +49,7 @@
   <property name="msil.jar" value="${lib.dir}/${msil.name}"/>
   <property name="scala.dll" value="${lib.dir}/scala.dll"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
+  <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
   <!-- Location of build products properties -->
   <property name="build.dir" value="${basedir}/build"/>
   <property name="locker.dir" value="${build.dir}/locker"/>
@@ -81,26 +77,11 @@
   <property name="strap.lib.dir" value="${strap.dir}/${lib.dir.name}"/>
   <property name="strap.comp.dir" value="${strap.dir}/${comp.dir.name}"/>
 
-  <!--
-  ##############################################################################
-  INITIALISATION
-  ##############################################################################
-  -->
+<!-- ===========================================================================
+INITIALISATION
+============================================================================ -->
 
-  <target name="init.cygwin" if="os.win">
-    <exec executable="cygpath" vmlauncher="false" errorproperty="err">
-      <arg value="--windir"/>
-    </exec>
-    <condition property="os.cygwin">
-      <equals arg1="${err}" arg2=""/>
-    </condition>
-  </target>
-
-  <target name="init" depends="init.cygwin">
-    <condition property="os.unix"><or>
-      <os family="unix"/><os family="mac"/>
-      <isset property="os.cygwin"/>
-    </or></condition>
+  <target name="init">
     <!-- Testing if everything is in place -->
     <echo level="verbose">starr.lib.jar=${starr.lib.jar}</echo>
     <fail message="STARR library in 'lib/' is not available">
@@ -141,6 +122,35 @@
       </not></condition>
     </fail>
     <echo level="verbose">ant.jar=${ant.jar}</echo>
+    <echo level="verbose">ant-contrib.jar=${ant-contrib.jar}</echo>
+    <fail message="Additional Ant tasks in 'lib/' is not available">
+      <condition><not>
+        <available classname="net.sf.antcontrib.AntContribVersion"
+                   classpath="${ant-contrib.jar}"/>
+      </not></condition>
+    </fail>
+    <!-- Creating class-pathes -->
+    <path id="common.classpath">
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${msil.jar}"/>
+    </path>
+    <path id="starr.classpath">
+      <pathelement location="${starr.lib.jar}"/>
+      <pathelement location="${starr.comp.jar}"/>
+      <path refid="common.classpath"/>
+    </path>
+    <!-- Creating boot-level tasks -->
+    <taskdef name="starr"
+             classname="scala.tools.nsc.ant.NSC"
+             classpathref="starr.classpath"/>
+    <taskdef name="pico"
+             classname="jaco.pizza.ant.Pico"
+             classpath="${jaco.jar}"/>
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+      <classpath>
+        <pathelement location="${ant-contrib.jar}" />
+      </classpath>
+    </taskdef>
     <!-- Finding out what is available -->
     <available property="excludes.avail" file="${nsc.excludes}"/>
     <condition property="locker.avail">
@@ -154,28 +164,47 @@
         <available file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"/>
       </and>
     </condition>
-    <!-- Creating class-pathes -->
-    <path id="common.classpath">
-      <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${msil.jar}"/>
-    </path>
-    <path id="starr.classpath">
-      <pathelement location="${starr.lib.jar}"/>
-      <pathelement location="${starr.comp.jar}"/>
-      <path refid="common.classpath"/>
-    </path>
+    <!-- Finding out what system architecture is being used -->
+    <condition property="os.win">
+      <os family="windows"/>
+    </condition>
+    <if><isset property="os.win"/>
+      <then>
+        <exec executable="cygpath"
+              vmlauncher="no"
+              errorproperty="cygpath.err"
+              outputproperty="cygpath.out">
+          <arg value="--windir"/>
+        </exec>
+        <condition property="os.cygwin">
+          <equals arg1="${cygpath.err}" arg2=""/>
+        </condition>
+      </then>
+    </if>
+    <condition property="os.unix">
+      <or>
+        <os family="unix"/>
+        <os family="mac"/>
+        <isset property="os.cygwin"/>
+      </or>
+    </condition>
+    <if><isset property="os.cygwin"/>
+      <then><echo>Sabbus detected a Cygwin environnement</echo></then>
+      <elseif><isset property="os.win"/>
+        <then><echo>Sabbus detected a Windows environnement</echo></then>
+      </elseif>
+      <elseif><isset property="os.unix"/>
+        <then><echo>Sabbus detected a UNIX environnement</echo></then>
+      </elseif>
+      <else>
+        <fail>System environment could not be determined</fail>
+      </else>
+    </if>
     <!-- Defining version number -->
     <tstamp prefix="start"/>
     <property name="version.number" value="${start.DSTAMP}-${start.TSTAMP}"/>
     <property name="dist.current.dir"
               value="${dist.dir}/${dist.name}-${version.number}"/>
-    <!-- Creating boot-level tasks -->
-    <taskdef name="starr"
-             classname="scala.tools.nsc.ant.NSC"
-             classpathref="starr.classpath"/>
-    <taskdef name="pico"
-             classname="jaco.pizza.ant.Pico"
-             classpath="${jaco.jar}"/>
   </target>
   
   <target name="init.locker" depends="init, build.locker">
@@ -185,7 +214,7 @@
       <path refid="common.classpath"/>
     </path>
     <taskdef name="locker"
-             classname="scala.tools.nsc.ant.NSC"
+             classname="scala.tools.ant.Scalac"
              classpathref="locker.classpath"/>
   </target>
   
@@ -196,17 +225,15 @@
       <path refid="common.classpath"/>
     </path>
     <taskdef name="quick"
-             classname="scala.tools.nsc.ant.NSC"
+             classname="scala.tools.ant.Scalac"
              classpathref="quick.classpath"/>
   </target>
+
+<!-- ===========================================================================
+BUILD SUPPORT MACROS
+============================================================================ -->
   
-  <!--
-  ##############################################################################
-  BUILD SUPPORT MACROS
-  ##############################################################################
-  -->
-  
-  <macrodef name="build.exec">
+  <macrodef name="build.exec.unix">
     <attribute name="lib.path"/>
     <attribute name="comp.path"/>
     <attribute name="fjbg.path"/>
@@ -271,18 +298,17 @@
     </sequential>
   </macrodef>
 
-  <!--
-  ##############################################################################
-  BUILD LOCAL REFERENCE (LOCKER) LAYER
-  ##############################################################################
-  -->
+<!-- ===========================================================================
+BUILD LOCAL REFERENCE (LOCKER) LAYER
+============================================================================ -->
   
   <target name="build.locker" depends="init" unless="locker.avail">
+    <property name="built.locker" value="yes"/>
     <!-- Build library -->
     <mkdir dir="${locker.lib.dir}"/>
     <pico srcdir="${src.dir}/${lib.dir.name}"
           destdir="${locker.lib.dir}"
-          scalahack="true">
+          scalahack="yes">
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
       </classpath>
@@ -290,8 +316,7 @@
     </pico>
     <starr srcdir="${src.dir}/${lib.dir.name}"
            destdir="${locker.lib.dir}"
-           usepredefs="false"
-           debuginfo="${nsc.debug-info}">
+           usepredefs="no">
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
       </classpath>
@@ -299,8 +324,7 @@
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </starr>
     <starr srcdir="${src.dir}/${lib.dir.name}"
-           destdir="${locker.lib.dir}"
-           debuginfo="${nsc.debug-info}">
+           destdir="${locker.lib.dir}">
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
       </classpath>
@@ -313,7 +337,7 @@
     <mkdir dir="${locker.comp.dir}"/>
     <pico srcdir="${src.dir}/${comp.dir.name}"
           destdir="${locker.comp.dir}"
-          scalahack="true">
+          scalahack="yes">
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
         <pathelement location="${locker.comp.dir}"/>
@@ -321,8 +345,7 @@
       <include name="**/*.java"/>
     </pico>
     <starr srcdir="${src.dir}/${comp.dir.name}"
-           destdir="${locker.comp.dir}"
-           debuginfo="${nsc.debug-info}">
+           destdir="${locker.comp.dir}">
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
         <pathelement location="${locker.comp.dir}"/>
@@ -333,7 +356,7 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
     <!-- Build executable files -->
-    <build.exec lib.path="$$PREFIX/${lib.dir.name}"
+    <build.exec.unix lib.path="$$PREFIX/${lib.dir.name}"
                 comp.path="$$PREFIX/${comp.dir.name}"
                 fjbg.path="../../../lib/${fjbg.name}"
                 msil.path="../../../lib/${msil.name}"
@@ -344,19 +367,17 @@
                 msil.path="..\..\..\lib\${msil.name}"
                 exec.dir="${locker.dir}\${exec.dir.name}"/>
   </target>
-  
-  <!--
-  ##############################################################################
-  BUILD QUICK-TEST LAYER
-  ##############################################################################
-  -->
+
+<!-- ===========================================================================
+BUILD QUICK-TEST LAYER
+============================================================================ -->
   
   <target name="build" depends="init.locker">
     <!-- Build library -->
     <mkdir dir="${quick.lib.dir}"/>
     <pico srcdir="${src.dir}/${lib.dir.name}"
           destdir="${quick.lib.dir}"
-          scalahack="true">
+          scalahack="yes">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -364,8 +385,7 @@
     </pico>
     <locker srcdir="${src.dir}/${lib.dir.name}"
            destdir="${quick.lib.dir}"
-           usepredefs="false"
-           debuginfo="${nsc.debug-info}">
+           usepredefs="no">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -373,8 +393,7 @@
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </locker>
     <locker srcdir="${src.dir}/${lib.dir.name}"
-           destdir="${quick.lib.dir}"
-           debuginfo="${nsc.debug-info}">
+           destdir="${quick.lib.dir}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -387,7 +406,7 @@
     <mkdir dir="${quick.comp.dir}"/>
     <pico srcdir="${src.dir}/${comp.dir.name}"
           destdir="${quick.comp.dir}"
-          scalahack="true">
+          scalahack="yes">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
@@ -395,8 +414,7 @@
       <include name="**/*.java"/>
     </pico>
     <locker srcdir="${src.dir}/${comp.dir.name}"
-           destdir="${quick.comp.dir}"
-           debuginfo="${nsc.debug-info}">
+           destdir="${quick.comp.dir}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
@@ -407,7 +425,7 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
     <!-- Build executable files -->
-    <build.exec lib.path="$$PREFIX/${lib.dir.name}"
+    <build.exec.unix lib.path="$$PREFIX/${lib.dir.name}"
                 comp.path="$$PREFIX/${comp.dir.name}"
                 fjbg.path="../../../lib/${fjbg.name}"
                 msil.path="../../../lib/${msil.name}"
@@ -419,11 +437,9 @@
                 exec.dir="${quick.dir}\${exec.dir.name}"/>
   </target>
 
-  <!--
-  ##############################################################################
-  TEST
-  ##############################################################################
-  -->
+<!-- ===========================================================================
+TEST
+============================================================================ -->
   
   <target name="test" depends="init.quick">
     <!-- Build the bootstrap layer -->
@@ -431,7 +447,7 @@
     <mkdir dir="${strap.lib.dir}"/>
     <pico srcdir="${src.dir}/${lib.dir.name}"
           destdir="${strap.lib.dir}"
-          scalahack="true">
+          scalahack="yes">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -439,8 +455,7 @@
     </pico>
     <quick srcdir="${src.dir}/${lib.dir.name}"
            destdir="${strap.lib.dir}"
-           usepredefs="false"
-           debuginfo="${nsc.debug-info}">
+           usepredefs="no">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -448,8 +463,7 @@
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </quick>
     <quick srcdir="${src.dir}/${lib.dir.name}"
-           destdir="${strap.lib.dir}"
-           debuginfo="${nsc.debug-info}">
+           destdir="${strap.lib.dir}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -462,7 +476,7 @@
     <mkdir dir="${strap.comp.dir}"/>
     <pico srcdir="${src.dir}/${comp.dir.name}"
           destdir="${strap.comp.dir}"
-          scalahack="true">
+          scalahack="yes">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
         <pathelement location="${strap.comp.dir}"/>
@@ -470,8 +484,7 @@
       <include name="**/*.java"/>
     </pico>
     <quick srcdir="${src.dir}/${comp.dir.name}"
-           destdir="${strap.comp.dir}"
-           debuginfo="${nsc.debug-info}">
+           destdir="${strap.comp.dir}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
         <pathelement location="${strap.comp.dir}"/>
@@ -482,7 +495,7 @@
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
     <!-- Build executable files -->
-    <build.exec lib.path="$$$PREFIX/${lib.dir.name}"
+    <build.exec.unix lib.path="$$$PREFIX/${lib.dir.name}"
                 comp.path="$$PREFIX/${comp.dir.name}"
                 fjbg.path="../../../lib/${fjbg.name}"
                 msil.path="../../../lib/${msil.name}"
@@ -499,7 +512,7 @@
         <include name="${comp.dir.name}/**"/>
       </fileset>
     </checksum>
-    <delete quiet="true" failonerror="false">
+    <delete quiet="yes" failonerror="no">
       <fileset dir="${quick.dir}"><include name="**/*.MD5"/></fileset>
     </delete>
     <checksum totalproperty="strap.md5">
@@ -508,7 +521,7 @@
         <include name="${comp.dir.name}/**"/>
       </fileset>
     </checksum>
-    <delete quiet="true" failonerror="false">
+    <delete quiet="yes" failonerror="no">
       <fileset dir="${strap.dir}"><include name="**/*.MD5"/></fileset>
     </delete>
     <fail message="Build is not stable">
@@ -519,45 +532,39 @@
     <echo>Build is stable</echo>
   </target>
 
-  <!--
-  ##############################################################################
-  DOCUMENT
-  ##############################################################################
-  -->
+<!-- ===========================================================================
+DOCUMENT
+============================================================================ -->
   
   <target name="docs">
     <echo>Docs is not available yet.</echo>
   </target>
 
-  <!--
-  ##############################################################################
-  GENERATES A DISTRIBUTION
-  ##############################################################################
-  -->
+<!-- ===========================================================================
+GENERATES A DISTRIBUTION
+============================================================================ -->
 
-  <target name="init.dist" if="os.unix">
-    <mkdir dir="${dist.current.dir}"/>
-    <symlink link="${dist.latest.dir}"
-             resource="${dist.current.dir}"
-             overwrite="yes"/>
-  </target>
-
-  <target name="dist" depends="test, init.dist">
+  <target name="dist" depends="test">
     <mkdir dir="${dist.current.dir}"/>
     <mkdir dir="${dist.current.dir}/lib"/>
     <jar destfile="${dist.current.dir}/lib/${comp.jar.name}"
          basedir="${strap.comp.dir}">
       <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
+        <attribute name="Class-Path" value="${lib.jar.name}"/>
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${lib.jar.name}"
          basedir="${strap.lib.dir}">
+      <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
+      </manifest>
     </jar>
     <copy file="${fjbg.jar}" todir="${dist.current.dir}/lib"/>
     <copy file="${msil.jar}" todir="${dist.current.dir}/lib"/>
     <mkdir dir="${dist.current.dir}/bin"/>
-    <build.exec lib.path="$$PREFIX/lib/${lib.jar.name}"
+    <build.exec.unix lib.path="$$PREFIX/lib/${lib.jar.name}"
                 comp.path="$$PREFIX/lib/${comp.jar.name}"
                 fjbg.path="$$PREFIX/lib/${fjbg.name}"
                 msil.path="$$PREFIX/lib/${msil.name}"
@@ -567,21 +574,27 @@
                 fjbg.path="%SCALA_HOME%\lib\${fjbg.name}"
                 msil.path="%SCALA_HOME%\lib\${msil.name}"
                 exec.dir="${dist.current.dir}\bin"/>
+    <if><isset property="os.unix"/>
+      <then>
+        <symlink link="${dist.latest.dir}"
+                 resource="${dist.current.dir}"
+                 overwrite="yes"
+                 failonerror="no"/>
+      </then>
+    </if>
   </target>
-  
-  <!--
-  ##############################################################################
-  CLEAN
-  ##############################################################################
-  -->
+
+<!-- ===========================================================================
+CLEAN
+============================================================================ -->
   
   <macrodef name="remove">
     <attribute name="dir"/>
     <sequential>
       <delete dir="@{dir}"
-              includeemptydirs="true"
-              quiet="true"
-              failonerror="false"/>
+              includeemptydirs="yes"
+              quiet="yes"
+              failonerror="no"/>
     </sequential>
   </macrodef>
   
