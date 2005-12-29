@@ -18,7 +18,24 @@ class Settings(error: String => unit) {
   }
   private val bootclasspathDefault = {
     val javaBcp = System.getProperty("sun.boot.class.path");
-    val scalaBcp = System.getProperty("scala.boot.class.path");
+    val scalaBcp = {
+      val explicit = System.getProperty("scala.boot.class.path");
+      if(explicit != null)
+	explicit
+      else {
+	val scalaHome = System.getProperty("scala.home");
+	if(scalaHome != null) {
+	  val guess = new File(new File(new File(scalaHome), "lib"), "scala-library.jar");
+	  if(guess.exists())
+	    guess.getPath()
+	  else
+	    null
+	}
+	else
+	  null
+      }
+    }
+
     if (javaBcp != null && scalaBcp != null) javaBcp + File.pathSeparator + scalaBcp
     else if (javaBcp != null) javaBcp
     else if (scalaBcp != null) scalaBcp
