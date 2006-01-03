@@ -57,7 +57,7 @@ import Flags._;
 
     var attributes: List[AttrInfo] = List();
 
-    var privateWithin: Symbol = NoSymbol;
+    var privateWithin: Symbol = _;
 
 // Creators -------------------------------------------------------------------
 
@@ -804,6 +804,8 @@ import Flags._;
   class TermSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true;
 
+    privateWithin = NoSymbol;
+
     protected var referenced: Symbol = NoSymbol;
 
     def cloneSymbolImpl(owner: Symbol): Symbol = {
@@ -873,6 +875,7 @@ import Flags._;
    */
   class TypeSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isType = true;
+    privateWithin = NoSymbol;
     private var tyconCache: Type = null;
     private var tyconRun: CompilerRun = null;
     private var tpeCache: Type = _;
@@ -1022,6 +1025,7 @@ import Flags._;
   /** An object repreesenting a missing symbol */
   object NoSymbol extends Symbol(null, Position.NOPOS, nme.NOSYMBOL) {
     setInfo(NoType);
+    privateWithin = this;
     override def setInfo(info: Type): this.type = { assert(info eq NoType); super.setInfo(info) }
     override def enclClass: Symbol = this;
     override def toplevelClass: Symbol = this;
