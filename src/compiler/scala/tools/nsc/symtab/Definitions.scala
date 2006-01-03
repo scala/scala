@@ -80,7 +80,7 @@ import Flags._;
       def SeqFactory = getMember(ScalaRunTimeModule, "Seq");
     var RepeatedParamClass: Symbol = _;
     var ByNameParamClass: Symbol = _;
-    var TraitClass: Symbol = _;
+    //var TraitClass: Symbol = _;
 
     val MaxTupleArity = 9;
     val MaxFunctionArity = 9;
@@ -310,10 +310,10 @@ import Flags._;
       AnyRefClass = newAlias(ScalaPackageClass, "AnyRef", ObjectClass.typeConstructor);
 
       AllRefClass = newClass(ScalaPackageClass, "AllRef", List(AnyRefClass.typeConstructor))
-	.setFlag(ABSTRACT | TRAIT | FINAL);
+	.setFlag(ABSTRACT | MIXIN | FINAL);
 
       AllClass = newClass(ScalaPackageClass, "All", List(AnyClass.typeConstructor))
-	.setFlag(ABSTRACT | TRAIT | FINAL);
+	.setFlag(ABSTRACT | MIXIN | FINAL);
 
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");
@@ -352,7 +352,7 @@ import Flags._;
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
-      TraitClass = getClass("scala._trait_");
+      //TraitClass = getClass("scala._trait_");
       TupleClass = new Array(MaxTupleArity + 1);
       for (val i <- List.range(1, MaxTupleArity + 1))
 	TupleClass(i) = getClass("scala.Tuple" + i);

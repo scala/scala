@@ -317,8 +317,8 @@ abstract class TreeBrowsers {
       case Apply(fun, args) =>
         Pair("Apply", EMPTY);
 
-      case Super(qualif, mixin) =>
-        Pair("Super", qualif.toString() + ", mixin: " + mixin.toString());
+      case Super(qualif, mix) =>
+        Pair("Super", qualif.toString() + ", mix: " + mix.toString());
 
       case This(qualifier) =>
         Pair("This", qualifier);
@@ -458,7 +458,7 @@ abstract class TreeBrowsers {
       case Apply(fun, args) =>
         List(fun) ::: args;
 
-      case Super(qualif, mixin) =>
+      case Super(qualif, mix) =>
         Nil;
 
       case This(qualif) =>

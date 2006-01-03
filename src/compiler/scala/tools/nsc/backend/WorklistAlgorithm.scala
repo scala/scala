@@ -15,7 +15,7 @@ import scala.collection.mutable.MutableList;
  * function is applied repeatedly to the first element in the
  * worklist, as long as the stack is not empty.
  *
- * The client class should mix-in this trait and initialize the
+ * The client class should mix-in this class and initialize the
  * worklist field and define the processElement method. Then call
  * the 'run' method providing a function that initializes the
  * worklist.

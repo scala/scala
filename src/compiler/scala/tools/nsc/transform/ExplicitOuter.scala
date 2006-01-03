@@ -33,13 +33,13 @@ abstract class ExplicitOuter extends InfoTransform {
   /** The type transformation method:
    *  1. Add an outer paramter to the formal parameters of a constructor or mixin constructor
    *     in a non-static class;
-   *  2. Add a mixin constructor $init$ to all traits except interfaces
+   *  2. Add a mixin constructor $init$ to all mixins except interfaces
    *  Leave all other types unchanged.
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
       //todo: needed?
-      if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED;
+      if (sym.owner.isMixin && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED;
       if (sym.isConstructor && !isStatic(sym.owner))
 	MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
       else tp;
@@ -49,7 +49,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	if (!isStatic(clazz)) {
 	  decls1 = new Scope(decls1.toList);
 	  val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER);
-	  if ((clazz hasFlag TRAIT) || (decls.toList exists (.isClass)))
+	  if (clazz.isMixin || (decls.toList exists (.isClass)))
             outerAcc.expandName(clazz);
 	  decls1 enter (
 	    outerAcc setFlag (PARAMACCESSOR | ACCESSOR | STABLE)
@@ -58,7 +58,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    setFlag (LOCAL | PRIVATE | PARAMACCESSOR | (outerAcc getFlag EXPANDEDNAME))
 	    setInfo outerClass(clazz).thisType);
 	}
-	if (clazz.isTrait) {
+	if (clazz.isMixin) {
 	  decls1 = new Scope(decls1.toList);
 	  decls1 enter makeMixinConstructor(clazz);
 	}
@@ -201,19 +201,19 @@ abstract class ExplicitOuter extends InfoTransform {
        *  to `tree'. `tree' which is assumed to be the body of a constructor of class `clazz'.
        */
       def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
-	def mixinConstructorCall(mixin: Symbol): Tree =
+	def mixinConstructorCall(mixinClass: Symbol): Tree =
 	  atPos(tree.pos) {
 	    Apply(
 	      localTyper.typedOperator {
-		Select(Super(clazz, mixin.name), mixin.primaryConstructor)
+		Select(Super(clazz, mixinClass.name), mixinClass.primaryConstructor)
 	      },
 	      List()) setType UnitClass.tpe; // don't type this with typed(...),
  	                                     // as constructor arguments might be missing
 	  }
 	val mixinConstructorCalls =
-	  for (val mixin <- clazz.info.parents.tail;
-               !(mixin.symbol hasFlag INTERFACE) && mixin.symbol != ScalaObjectClass) yield
-	    mixinConstructorCall(mixin.symbol);
+	  for (val mixinClass <- clazz.info.parents.tail;
+               !(mixinClass.symbol hasFlag INTERFACE) && mixinClass.symbol != ScalaObjectClass) yield
+	    mixinConstructorCall(mixinClass.symbol);
 	tree match {
 	  case Block(supercall :: stats, expr) =>
             assert(supercall match {
@@ -239,7 +239,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    if (!(currentOwner hasFlag INTERFACE)) {
 	      if (!isStatic(currentOwner))
 		decls1 = decls1 ::: outerDefs(currentOwner); // (1)
-	      if (currentOwner.isTrait)
+	      if (currentOwner.isMixin)
 		decls1 = decls1 ::: List(mixinConstructorDef(currentOwner)) // (2)
 	    }
 	    localTyper = savedLocalTyper;
@@ -295,7 +295,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	val tree1 = super.transform(tree);
 	tree1 match {
           case DefDef(_, _, _, _, _, _) =>
-            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
+            if (sym.owner.isMixin && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
               sym.makeNotPrivate(sym.owner); //(2)
             tree1
 	  case Select(qual, name) =>

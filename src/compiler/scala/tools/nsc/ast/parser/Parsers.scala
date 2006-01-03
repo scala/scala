@@ -133,12 +133,12 @@ import Tokens._;
 /////// TOKEN CLASSES //////////////////////////////////////////////////////
 
     def isModifier: boolean = in.token match {
-      case ABSTRACT | FINAL | SEALED | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT => true
+      case ABSTRACT | FINAL | SEALED | MIXIN | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT => true
       case _ => false
     }
 
     def isLocalModifier: boolean = in.token match {
-      case ABSTRACT | FINAL | SEALED => true
+      case ABSTRACT | FINAL | SEALED | MIXIN => true
       case _ => false
     }
 
@@ -1061,22 +1061,29 @@ import Tokens._;
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
 
     /** Modifiers ::= {Modifier}
-     *  Modifier  ::= final
-     *             | private [ "[" Id "]" ]
-     *             | protected
-     *             | override
-     *             | abstract
+     *  Modifier  ::= LocalClassModifier
+     *             |  private [ "[" Id "]" ]
+     *             |  protected | override | implicit
      */
     def modifiers(): Modifiers = {
+      var privateWithin: Name = nme.EMPTY.toTypeName;
       def loop(mods: int): int = in.token match {
 	case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
+	case MIXIN =>
+          loop(addMod(mods, Flags.MIXIN))
 	case FINAL =>
           loop(addMod(mods, Flags.FINAL))
 	case SEALED =>
           loop(addMod(mods, Flags.SEALED))
 	case PRIVATE =>
-          loop(addMod(mods, Flags.PRIVATE))
+          val mods1 = addMod(mods, Flags.PRIVATE);
+          if (in.token == LBRACKET) {
+            in.nextToken();
+            privateWithin = ident().toTypeName;
+            accept(RBRACKET)
+          }
+          loop(mods1)
 	case PROTECTED =>
           loop(addMod(mods, Flags.PROTECTED))
 	case OVERRIDE =>
@@ -1089,17 +1096,18 @@ import Tokens._;
       var mods = loop(0);
       if ((mods & (Flags.ABSTRACT | Flags.OVERRIDE)) == (Flags.ABSTRACT | Flags.OVERRIDE))
         mods = mods & ~(Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE;
-      Modifiers(mods)
+      Modifiers(mods, privateWithin)
     }
 
     /** LocalClassModifiers ::= {LocalClassModifier}
-     *  LocalClassModifier  ::= final
-     *                       | private
+     *  LocalClassModifier  ::= abstract | mixin | final | sealed
      */
     def localClassModifiers(): Modifiers = {
       def loop(mods: int): int = in.token match {
 	case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
+	case MIXIN =>
+          loop(addMod(mods, Flags.MIXIN))
 	case FINAL =>
           loop(addMod(mods, Flags.FINAL))
 	case SEALED =>
@@ -1506,20 +1514,23 @@ import Tokens._;
       /**  TmplDef ::= ([case] class | trait) ClassDef
        *            | [case] object ObjectDef
        */
-      def tmplDef(mods: Modifiers): Tree = in.token match {
-        case TRAIT =>
-          classDef(mods | Flags.TRAIT | Flags.ABSTRACT);
-        case CLASS =>
-          classDef(mods);
-        case CASECLASS =>
-          classDef(mods | Flags.CASE);
-        case OBJECT =>
-          objectDef(mods);
-        case CASEOBJECT =>
-          objectDef(mods | Flags.CASE);
-        case _ =>
-          syntaxError("illegal start of definition", true);
+      def tmplDef(mods: Modifiers): Tree = {
+        val mods1 = if (mods.hasFlag(Flags.MIXIN)) mods | Flags.ABSTRACT else mods;
+        in.token match {
+          case TRAIT =>
+            classDef(mods1 | Flags.MIXIN | Flags.ABSTRACT);
+          case CLASS =>
+            classDef(mods1);
+          case CASECLASS =>
+            classDef(mods1 | Flags.CASE);
+          case OBJECT =>
+            objectDef(mods1);
+          case CASEOBJECT =>
+            objectDef(mods1 | Flags.CASE);
+          case _ =>
+            syntaxError("illegal start of definition", true);
 	  EmptyTree
+        }
       }
 
     /** ClassDef ::= ClassSig RequiresTypeOpt ClassTemplate
@@ -1534,7 +1545,7 @@ import Tokens._;
 	val vparamss = paramClauses(name, implicitViews.toList, mods.hasFlag(Flags.CASE));
 	val thistpe = requiresTypeOpt();
 	val template = classTemplate(mods, name, vparamss);
-	val mods1 = if (mods.hasFlag(Flags.TRAIT) && (template.body forall treeInfo.isInterfaceMember))
+	val mods1 = if (mods.hasFlag(Flags.MIXIN) && (template.body forall treeInfo.isInterfaceMember))
                       mods | Flags.INTERFACE
                     else mods;
 	ClassDef(mods1, name, tparams, thistpe, template)
@@ -1583,7 +1594,7 @@ import Tokens._;
 	var body =
 	  if (in.token == LBRACE) templateBody()
 	  else { acceptEmptyTemplateBody("`{' expected"); List() }
-	if (!mods.hasFlag(Flags.TRAIT)) Template(ps, vparamss, argss.toList, body)
+	if (!mods.hasFlag(Flags.MIXIN)) Template(ps, vparamss, argss.toList, body)
 	else Template(ps, body)
       }
 
@@ -1644,7 +1655,7 @@ import Tokens._;
                    isModifier) {
           val attrs = attributeClauses();
           (stats ++
-             joinAttributes(attrs, joinComment(List(tmplDef(modifiers() | traitAttribute(attrs))))))
+             joinAttributes(attrs, joinComment(List(tmplDef(modifiers() | mixinAttribute(attrs))))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of class or object definition", true);
         }
@@ -1670,7 +1681,7 @@ import Tokens._;
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
           val attrs = attributeClauses();
           (stats ++
-             joinAttributes(attrs, joinComment(defOrDcl(modifiers() | traitAttribute(attrs)))))
+             joinAttributes(attrs, joinComment(defOrDcl(modifiers() | mixinAttribute(attrs)))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of definition", true);
         }
@@ -1708,14 +1719,15 @@ import Tokens._;
       atPos(pos) { New(t, List(args)) }
     }
 
-    def traitAttribute(attrs: List[Tree]) = {
-      def isTraitAttribute(attr: Tree) = attr match {
-        case Apply(Select(New(Ident(name)), constr), List()) if (name.toString() == "_trait_") =>
+    def mixinAttribute(attrs: List[Tree]) = {
+      def isMixinAttribute(attr: Tree) = attr match {
+        case Apply(Select(New(Ident(name)), constr), List())
+        if (name.toString() == "_mixin_" || name.toString() == "_trait_") =>
 	  true
 	case _ =>
           false
       }
-      if (attrs exists isTraitAttribute) Flags.TRAIT else 0
+      if (attrs exists isMixinAttribute) Flags.MIXIN else 0
     }
 
     def joinAttributes(attrs: List[Tree], defs: List[Tree]): List[Tree] =

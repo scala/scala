@@ -226,11 +226,11 @@ abstract class RefChecks extends InfoTransform {
 	}
 */
       // 2. Check that only abstract classes have deferred members
-      if (clazz.isClass && !clazz.isTrait) {
-	def abstractClassError(mustBeTrait: boolean, msg: String): unit = {
+      if (clazz.isClass && !clazz.isMixin) {
+	def abstractClassError(mustBeMixin: boolean, msg: String): unit = {
 	  unit.error(clazz.pos,
 	    (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
-	     else if (mustBeTrait) clazz.toString() + " needs to be a trait"
+	     else if (mustBeMixin) clazz.toString() + " needs to be a mixin"
 	     else clazz.toString() + " needs to be abstract") + ", since " + msg);
 	  clazz.setFlag(ABSTRACT);
 	}
@@ -265,7 +265,7 @@ abstract class RefChecks extends InfoTransform {
   // Basetype Checking --------------------------------------------------------
 
     /** 1. Check that later type instances in the base-type sequence
-     *     are subtypes of earlier type instances of the same trait.
+     *     are subtypes of earlier type instances of the same mixin.
      *  2. Check that case classes do not inherit from case classes.
      *  3. Check that at most one base type is a case-class.
      */
@@ -460,12 +460,12 @@ abstract class RefChecks extends InfoTransform {
           val ddef =
 	    atPhase(phase.next) {
 	      localTyper.typed {
-                if (sym.owner.isTrait) newModuleAccessDcl(sym)
+                if (sym.owner.isMixin) newModuleAccessDcl(sym)
                 else newModuleAccessDef(sym, vdef.symbol)
               }
             }
 
-          if (sym.owner.isTrait) transformTrees(List(cdef, ddef))
+          if (sym.owner.isMixin) transformTrees(List(cdef, ddef))
           else transformTrees(List(cdef, vdef, ddef))
 	}
 
@@ -553,16 +553,16 @@ abstract class RefChecks extends InfoTransform {
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
 	  else qual match {
-	    case Super(qualifier, mixin) =>
+	    case Super(qualifier, mix) =>
               val base = currentOwner.enclClass;
               if (sym hasFlag DEFERRED) {
 	        val member = sym.overridingSymbol(base);//???
-	        if (mixin != nme.EMPTY.toTypeName || member == NoSymbol ||
+	        if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
 		    !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(base)))
 		  unit.error(tree.pos, "symbol accessed from super may not be abstract");
               }
               //System.out.println("super: " + tree + " in " + base);//DEBUG
-              if (base.isTrait && sym.isTerm && mixin == nme.EMPTY.toTypeName) {
+              if (base.isMixin && sym.isTerm && mix == nme.EMPTY.toTypeName) {
                 val superAccName = nme.superName(sym.name);
 	        val superAcc = base.info.decl(superAccName) suchThat (.alias.==(sym));
 	        assert(superAcc != NoSymbol, "" + sym + " " + base + " " + superAccName);//debug

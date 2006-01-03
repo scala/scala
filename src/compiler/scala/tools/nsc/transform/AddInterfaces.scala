@@ -84,9 +84,9 @@ abstract class AddInterfaces extends InfoTransform {
     override def complete(sym: Symbol): unit = {
       def implType(tp: Type): Type = tp match {
 	case ClassInfoType(parents, decls, _) =>
-	  //ClassInfoType(traitToImplClass(parents) ::: List(iface.tpe), implDecls(sym, decls), sym)
+	  //ClassInfoType(mixinToImplClass(parents) ::: List(iface.tpe), implDecls(sym, decls), sym)
 	  ClassInfoType(
-            ObjectClass.tpe :: (parents.tail map traitToImplClass) ::: List(iface.tpe),
+            ObjectClass.tpe :: (parents.tail map mixinToImplClass) ::: List(iface.tpe),
             implDecls(sym, decls),
             sym)
 	case PolyType(tparams, restpe) =>
@@ -98,14 +98,14 @@ abstract class AddInterfaces extends InfoTransform {
     override def load(clazz: Symbol): unit = complete(clazz)
   }
 
-  private def traitToImplClass(tp: Type): Type = tp match {
+  private def mixinToImplClass(tp: Type): Type = tp match {
     case TypeRef(pre, sym, args) if (sym.needsImplClass) =>
       typeRef(pre, implClass(sym), args)
     case _ =>
       tp
   }
 
-  def transformTraitInfo(tp: Type): Type = tp match {
+  def transformMixinInfo(tp: Type): Type = tp match {
     case ClassInfoType(parents, decls, clazz) =>
       if (clazz.needsImplClass) {
         clazz setFlag lateINTERFACE;
@@ -114,10 +114,10 @@ abstract class AddInterfaces extends InfoTransform {
       val parents1 =
         if (parents.isEmpty) List()
         else {
-          assert(!parents.head.symbol.isTrait || clazz == RepeatedParamClass, clazz);
+          assert(!parents.head.symbol.isMixin || clazz == RepeatedParamClass, clazz);
           if (clazz hasFlag INTERFACE) erasedTypeRef(ObjectClass) :: parents.tail
           else if (clazz.isImplClass || clazz == ArrayClass) parents
-	  else parents map traitToImplClass
+	  else parents map mixinToImplClass
         }
       val decls1 = if (clazz hasFlag INTERFACE) new Scope(decls.toList filter isInterfaceMember)
                    else decls;
@@ -186,7 +186,7 @@ abstract class AddInterfaces extends InfoTransform {
     buf.toList
   }
 
-  protected val traitTransformer = new Transformer {
+  protected val mixinTransformer = new Transformer {
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       (super.transformStats(stats, exprOwner) :::
        super.transformStats(implClassDefs(stats), exprOwner));

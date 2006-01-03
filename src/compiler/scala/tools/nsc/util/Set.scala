@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.util;
 
-/** A common trait for lightweight sets.
+/** A common class for lightweight sets.
  */
 abstract class Set[T <: AnyRef] {
 

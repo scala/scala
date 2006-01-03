@@ -19,7 +19,7 @@ import symtab.Flags._;
   case class Modifiers(flags: int, privateWithin: Name) {
     def isPrivate   = ((flags & PRIVATE  ) != 0);
     def isProtected = ((flags & PROTECTED) != 0);
-    def isVariable  = ((flags &   MUTABLE) != 0);
+    def isVariable  = ((flags & MUTABLE  ) != 0);
     def isPublic    = !isPrivate && !isProtected;
     def hasFlag(flag: int) = (flags & flag) != 0;
     def | (flag: int): Modifiers = {
@@ -452,10 +452,10 @@ import symtab.Flags._;
   }
 
   /** Super reference */
-  case class Super(qual: Name, mixin: Name)
+  case class Super(qual: Name, mix: Name)
        extends TermTree with SymTree;
 
-  def Super(sym: Symbol, mixin: Name): Tree = Super(sym.name, mixin) setSymbol sym;
+  def Super(sym: Symbol, mix: Name): Tree = Super(sym.name, mix) setSymbol sym;
 
   /** Self reference */
   case class This(qual: Name)
@@ -590,7 +590,7 @@ import symtab.Flags._;
   case Typed(expr, tpt) =>                                         (eliminated by erasure)
   case TypeApply(fun, args) =>
   case Apply(fun, args) =>
-  case Super(qual, mixin) =>
+  case Super(qual, mix) =>
   case This(qual) =>
   case Select(qualifier, selector) =>
   case Ident(name) =>
@@ -633,7 +633,7 @@ import symtab.Flags._;
     def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed;
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply;
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply;
-    def Super(tree: Tree, qual: Name, mixin: Name): Super;
+    def Super(tree: Tree, qual: Name, mix: Name): Super;
     def This(tree: Tree, qual: Name): This;
     def Select(tree: Tree, qualifier: Tree, selector: Name): Select;
     def Ident(tree: Tree, name: Name): Ident;
@@ -706,8 +706,8 @@ import symtab.Flags._;
       new TypeApply(fun, args).copyAttrs(tree);
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
       new Apply(fun, args).copyAttrs(tree);
-    def Super(tree: Tree, qual: Name, mixin: Name) =
-      new Super(qual, mixin).copyAttrs(tree);
+    def Super(tree: Tree, qual: Name, mix: Name) =
+      new Super(qual, mix).copyAttrs(tree);
     def This(tree: Tree, qual: Name) =
       new This(qual).copyAttrs(tree);
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
@@ -880,10 +880,10 @@ import symtab.Flags._;
       if ((fun0 == fun) && (args0 == args)) => t
       case _ => copy.Apply(tree, fun, args)
     }
-    def Super(tree: Tree, qual: Name, mixin: Name) = tree match {
-      case t @ Super(qual0, mixin0)
-      if ((qual0 == qual) && (mixin0 == mixin)) => t
-      case _ => copy.Super(tree, qual, mixin)
+    def Super(tree: Tree, qual: Name, mix: Name) = tree match {
+      case t @ Super(qual0, mix0)
+      if ((qual0 == qual) && (mix0 == mix)) => t
+      case _ => copy.Super(tree, qual, mix)
     }
     def This(tree: Tree, qual: Name) = tree match {
       case t @ This(qual0)
@@ -1012,8 +1012,8 @@ import symtab.Flags._;
         copy.TypeApply(tree, transform(fun), transformTrees(args))
       case Apply(fun, args) =>
         copy.Apply(tree, transform(fun), transformTrees(args))
-      case Super(qual, mixin) =>
-        copy.Super(tree, qual, mixin)
+      case Super(qual, mix) =>
+        copy.Super(tree, qual, mix)
       case This(qual) =>
         copy.This(tree, qual)
       case Select(qualifier, selector) =>

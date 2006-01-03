@@ -228,7 +228,7 @@ abstract class TailCalls extends Transform
           else
             copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)));
 
-        case Super(qual, mixin) =>
+        case Super(qual, mix) =>
           tree;
         case This(qual) =>
           tree;

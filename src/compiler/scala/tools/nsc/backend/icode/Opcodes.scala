@@ -454,7 +454,7 @@ import scala.tools.nsc.util.Position;
         case Dynamic =>  "dynamic";
         case Static(false) => "static-class";
         case Static(true) =>  "static-instance";
-        case SuperCall(mixin) => "super(" + mixin + ")";
+        case SuperCall(mix) => "super(" + mix + ")";
       }
     }
 
@@ -466,8 +466,8 @@ import scala.tools.nsc.util.Position;
      */
     case class Static(onInstance: Boolean) extends InvokeStyle;
 
-    /** Call through super[mixin]. */
-    case class SuperCall(mixin: Name) extends InvokeStyle;
+    /** Call through super[mix]. */
+    case class SuperCall(mix: Name) extends InvokeStyle;
 
   }
 }

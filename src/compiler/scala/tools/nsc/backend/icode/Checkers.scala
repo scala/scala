@@ -419,7 +419,7 @@ abstract class Checkers {
                  stack.push(toTypeKind(method.info.resultType));
                }
 
-             case SuperCall(mixin) =>
+             case SuperCall(mix) =>
                checkStack(1 + method.info.paramTypes.length);
                checkMethodArgs(method);
                checkMethod(stack.pop, method);

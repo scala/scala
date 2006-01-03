@@ -122,7 +122,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       else erasure(tp)
     } else
-      transformTraitInfo(erasure(tp));
+      transformMixinInfo(erasure(tp));
 
 // -------- boxing/unboxing --------------------------------------------------------
 
@@ -498,7 +498,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 */
 
     def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
-      if (base.isTrait) stats
+      if (base.isMixin) stats
       else {
         val bridges = bridgeDefs(base);
         if (bridges.isEmpty) stats else stats ::: bridges
@@ -571,7 +571,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     override def transform(tree: Tree): Tree = {
       val tree1 = preTransformer.transform(tree);
       atPhase(phase.next) {
-        val tree2 = traitTransformer.transform(tree1);
+        val tree2 = mixinTransformer.transform(tree1);
         if (settings.debug.value) log("tree after addinterfaces: \n" + tree2);
         newTyper(startContext.make(
 	  unit, tree, startContext.owner, startContext.scope, startContext.imports))

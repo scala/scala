@@ -43,8 +43,8 @@ object Flags {
   final val STATIC        = 0x00800000;   // static field, method or class
 
   final val CASEACCESSOR  = 0x01000000;   // symbol is a case parameter (or its accessor)
-  final val TRAIT         = 0x02000000;   // symbol is a trait
-  final val BRIDGE        = 0x04000000;  // function is a bridge method. Set by Erasure
+  final val MIXIN         = 0x02000000;   // symbol is a mixin class
+  final val BRIDGE        = 0x04000000;   // function is a bridge method. Set by Erasure
   final val ACCESSOR      = 0x08000000;   // a value or variable accessor
 
   final val SUPERACCESSOR = 0x10000000;   // a super accessor
@@ -100,7 +100,7 @@ object Flags {
     MODULE | PACKAGE | FINAL | JAVA;
 
   final val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
-    PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
+    PRIVATE | PROTECTED | ABSTRACT | MIXIN | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
 
   final val PrintableFlags =               // these modifiers appear in TreePrinter output.
     (ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | ACCESSOR |
@@ -116,17 +116,9 @@ object Flags {
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags = AccessFlags | PACKAGE | CASE;
 
-  def flagsToString(flags: long, suffixes: List[Pair[long, String]]): String =
-    (for (val i <- List.range(0, 63)) yield {
-      var s = flagToString(flags & (1L << i));
-      suffixes.find(._1.==(i)) match {
-        case Some(Pair(i, suffix)) => s = s + "[" + suffix + "]"
-        case None =>
-      }
-      s
-    }).filter("" !=).mkString("", " ", "");
-
-  def flagsToString(flags: long): String = flagsToString(flags, List());
+  def flagsToString(flags: long): String =
+    (for (val i <- List.range(0, 63)) yield flagToString(flags & (1L << i)))
+      .filter("" !=).mkString("", " ", "");
 
   private def flagToString(flag: long): String = {
     if (flag == LABEL) "<label>"
@@ -153,7 +145,7 @@ object Flags {
 
       case DEFERRED      => "<deferred>"
       case METHOD        => "<method>"
-      case TRAIT         => "<trait>"
+      case MIXIN         => "mixin"
       case MODULE        => "<module>"
 
       case MUTABLE       => "<mutable>"

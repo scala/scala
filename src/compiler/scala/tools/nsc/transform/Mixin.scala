@@ -101,17 +101,17 @@ abstract class Mixin extends InfoTransform {
 
   def addMixedinMembers(clazz: Symbol): unit = {
     if (!(clazz hasFlag MIXEDIN) && (clazz != ObjectClass)) {
-      assert(!clazz.isTrait, clazz);
+      assert(!clazz.isMixin, clazz);
       clazz setFlag MIXEDIN;
       assert(!clazz.info.parents.isEmpty, clazz);
       val superclazz = clazz.info.parents.head.symbol;
       addMixedinMembers(superclazz);
       //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
       val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=);
-      def mixinMembers(mixin: Symbol, mmap: Symbol => Symbol): unit = {
-        if (mixin.isImplClass) {
-          addLateInterfaceMembers(mixin.toInterface);
-          for (val member <- mixin.info.decls.toList) {
+      def mixinMembers(mixinClass: Symbol, mmap: Symbol => Symbol): unit = {
+        if (mixinClass.isImplClass) {
+          addLateInterfaceMembers(mixinClass.toInterface);
+          for (val member <- mixinClass.info.decls.toList) {
             //System.out.println("adding forwarded method " + member + " " + mmap(member) + member.locationString + " to " + clazz + " " + clazz.info.member(member.name).alternatives);//DEBUG
             if (isForwarded(member) && !isStatic(member) &&
                 (clazz.info.findMember(member.name, 0, 0).alternatives contains mmap(member))) {
@@ -121,12 +121,12 @@ abstract class Mixin extends InfoTransform {
                   member1.asInstanceOf[TermSymbol] setAlias member;
                 }
           }
-        } else if (mixin.hasFlag(lateINTERFACE)) {
-          addLateInterfaceMembers(mixin);
-          val impl = implClass(mixin);
-          //System.out.println("late impl " + mixin + " " + impl);//DEBUG
-          if (!(mixins contains impl)) mixinMembers(impl, .overriddenSymbol(mixin));
-          for (val member <- mixin.info.decls.toList) {
+        } else if (mixinClass.hasFlag(lateINTERFACE)) {
+          addLateInterfaceMembers(mixinClass);
+          val impl = implClass(mixinClass);
+          //System.out.println("late impl " + mixinClass + " " + impl);//DEBUG
+          if (!(mixins contains impl)) mixinMembers(impl, .overriddenSymbol(mixinClass));
+          for (val member <- mixinClass.info.decls.toList) {
             if (member hasFlag ACCESSOR) {
               val member1 = addMember(
                 clazz,
@@ -146,7 +146,7 @@ abstract class Mixin extends InfoTransform {
             } else if (member hasFlag SUPERACCESSOR) {
               val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos;
               assert(member1.alias != NoSymbol, member1);
-              val alias1 = rebindSuper(clazz, member.alias, mixin);
+              val alias1 = rebindSuper(clazz, member.alias, mixinClass);
               member1.asInstanceOf[TermSymbol] setAlias alias1;
             } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
               addMember(clazz, member.cloneSymbol(clazz))
@@ -156,8 +156,8 @@ abstract class Mixin extends InfoTransform {
           }
         }
       }
-//      for (val mixin <- mixins) if (mixin.hasFlag(lateINTERFACE)) addLateInterfaceMembers(mixin);
-      for (val mixin <- mixins) mixinMembers(mixin, identity);
+//      for (val mixinClass <- mixins) if (mixinClass.hasFlag(lateINTERFACE)) addLateInterfaceMembers(mixinClass);
+      for (val mixinClass <- mixins) mixinMembers(mixinClass, identity);
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
     }
   }
@@ -216,7 +216,7 @@ abstract class Mixin extends InfoTransform {
         case Template(parents, body) =>
 	  localTyper = erasure.newTyper(rootContext.make(tree, currentOwner));
 	  atPhase(phase.next)(currentOwner.owner.info);//needed?
-          if (!currentOwner.isTrait) addMixedinMembers(currentOwner)
+          if (!currentOwner.isMixin) addMixedinMembers(currentOwner)
           else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner);
 	  tree
         case DefDef(mods, name, tparams, List(vparams), tpt, rhs) if currentOwner.isImplClass =>
@@ -300,7 +300,7 @@ abstract class Mixin extends InfoTransform {
 	if (sym hasFlag MIXEDIN) {
           if (clazz hasFlag lateINTERFACE) {
 	    addDefDef(sym, vparamss => EmptyTree)
-	  } else if (!clazz.isTrait) {
+	  } else if (!clazz.isMixin) {
 	    if (sym hasFlag ACCESSOR) {
               addDefDef(sym, vparams => {
 		val accessedRef = sym.tpe match {
@@ -325,7 +325,7 @@ abstract class Mixin extends InfoTransform {
 	}
       }
       val stats1 = add(stats, newDefs.toList);
-      if (clazz.isTrait) stats1 else stats1 map completeSuperAccessor;
+      if (clazz.isMixin) stats1 else stats1 map completeSuperAccessor;
     }
 
     private def postTransform(tree: Tree): Tree = {

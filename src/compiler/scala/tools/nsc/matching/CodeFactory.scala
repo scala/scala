@@ -134,6 +134,7 @@ import scala.tools.nsc.util.Position;
   }
 
   // used by Equals
+  /*
   private def getCoerceToInt(left: Type): Symbol = {
     val sym = left.nonPrivateMember( nme.coerce );
     //assert sym != Symbol.NONE : Debug.show(left);
@@ -145,7 +146,7 @@ import scala.tools.nsc.util.Position;
       }
     }.get
   }
-
+  */
   // used by Equals
 /*
   private def getEqEq(left: Type, right: Type): Symbol = {

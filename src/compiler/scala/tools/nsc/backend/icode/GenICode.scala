@@ -526,11 +526,11 @@ abstract class GenICode extends SubComponent  {
         // to call super constructors explicitly and/or use their 'returned' value.
         // therefore, we can ignore this fact, and generate code that leaves nothing
         // on the stack (contrary to what the type in the AST says).
-        case Apply(fun @ Select(Super(_, mixin), _), args) =>
+        case Apply(fun @ Select(Super(_, mix), _), args) =>
           if (settings.debug.value)
             log("Call to super: " + tree);
-          val invokeStyle = SuperCall(mixin);
-//            if (fun.symbol.isConstructor) Static(true) else SuperCall(mixin);
+          val invokeStyle = SuperCall(mix);
+//            if (fun.symbol.isConstructor) Static(true) else SuperCall(mix);
 
           ctx.bb.emit(THIS(ctx.clazz.symbol), tree.pos);
           val ctx1 = genLoadArguments(args, fun.symbol.info.paramTypes, ctx);

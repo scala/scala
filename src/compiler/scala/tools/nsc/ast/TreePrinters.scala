@@ -82,17 +82,20 @@ abstract class TreePrinters {
     def printModifiers(tree: Tree, mods: Modifiers): unit = {
       if (tree.symbol == NoSymbol)
         printFlags(mods.flags, mods.privateWithin)
-      else if (tree.symbol.privateWithin == null)
+      else if (tree.symbol.privateWithin == NoSymbol ||
+               tree.symbol.privateWithin == tree.symbol.owner)
         printFlags(tree.symbol.flags, nme.EMPTY.toTypeName)
       else
         printFlags(tree.symbol.flags, tree.symbol.privateWithin.name)
     }
 
     def printFlags(flags: long, privateWithin: Name): unit = {
-      val mask = if (settings.debug.value) -1 else PrintableFlags;
-      val suffixes: List[Pair[long, String]] =
-        if (privateWithin.isEmpty) List() else List(Pair(PRIVATE, privateWithin.toString()));
-      val s = flagsToString(flags & mask, suffixes);
+      var mask = if (settings.debug.value) -1 else PrintableFlags;
+      if (!privateWithin.isEmpty) {
+        print("private["+privateWithin+"] ");
+        mask = mask & ~PRIVATE
+      }
+      val s = flagsToString(flags & mask);
       if (s.length() != 0) print(s + " ")
     }
 
@@ -106,7 +109,7 @@ abstract class TreePrinters {
 
         case ClassDef(mods, name, tparams, tp, impl) =>
           printModifiers(tree, mods);
-	  print((if (mods.hasFlag(TRAIT)) "trait " else "class ") + symName(tree, name));
+	  print("class " + symName(tree, name));
           printTypeParams(tparams);
           printOpt(": ", tp); print(" extends "); print(impl);
 
@@ -221,11 +224,11 @@ abstract class TreePrinters {
         case Apply(fun, vargs) =>
           print(fun); printRow(vargs, "(", ", ", ")");
 
-        case Super(qual, mixin) =>
+        case Super(qual, mix) =>
           if (!qual.isEmpty || tree.symbol != NoSymbol) print(symName(tree, qual) + ".");
           print("super");
-          if (!mixin.isEmpty)
-	    print("[" + mixin + "]")
+          if (!mix.isEmpty)
+	    print("[" + mix + "]")
 
         case This(qual) =>
           if (!qual.isEmpty) print(symName(tree, qual) + ".");

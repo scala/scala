@@ -28,6 +28,7 @@ import scala.tools.nsc.util.NameTransformer;
     val IMPLICITkw = newTermName("implicit");
     val IMPORTkw = newTermName("import");
     val MATCHkw = newTermName("match");
+    val MIXINkw = newTermName("mixin");
     val NEWkw = newTermName("new");
     val NULLkw = newTermName("null");
     val OBJECTkw = newTermName("object");

@@ -57,7 +57,7 @@ import Flags._;
 
     var attributes: List[AttrInfo] = List();
 
-    var privateWithin: Symbol = null;
+    var privateWithin: Symbol = NoSymbol;
 
 // Creators -------------------------------------------------------------------
 
@@ -156,7 +156,7 @@ import Flags._;
     final def isThisSym = isTerm && name == nme.this_;
     final def isThisSkolem = isTerm && deSkolemize != this;
     final def isError = hasFlag(IS_ERROR);
-    final def isTrait = isClass & hasFlag(TRAIT);
+    final def isMixin = isClass & hasFlag(MIXIN);
     final def isAliasType = isType && !isClass && !hasFlag(DEFERRED);
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM);
@@ -176,20 +176,19 @@ import Flags._;
     final def isStable =
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE));
 
-    /** Does this symbol denote the primary constructor
-     * of its enclosing class or trait? */
+    /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this;
 
-    /** Is this symbol an implementation class for a trait ? */
+    /** Is this symbol an implementation class for a mixin? */
     final def isImplClass: boolean = isClass && hasFlag(IMPLCLASS);
 
     final def needsImplClass: boolean =
-      isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
+      isMixin && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
 
     final def isImplOnly: boolean = (
       hasFlag(PRIVATE) ||
-      (owner.isImplClass || owner.isTrait) &&
+      (owner.isImplClass || owner.isMixin) &&
       (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR) ||
        isConstructor)
     );
@@ -512,7 +511,7 @@ import Flags._;
 
     /** The primary constructor of a class */
     def primaryConstructor: Symbol = {
-      val c = info.decl(if (isTrait || isImplClass) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR);
+      val c = info.decl(if (isMixin || isImplClass) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR);
       if (c hasFlag OVERLOADED) c.alternatives.head else c
     }
 
@@ -686,8 +685,7 @@ import Flags._;
 
     /** String representation of symbol's definition key word */
     final def keyString: String =
-      if (isTrait)
-        if (hasFlag(JAVA)) "interface" else "trait"
+      if (isMixin && hasFlag(JAVA)) "interface"
       else if (isClass) "class"
       else if (isType && !hasFlag(PARAM)) "type"
       else if (isVariable) "var"
@@ -704,7 +702,6 @@ import Flags._;
       else if (isAnonymousClass) "<template>"
       else if (isRefinementClass) ""
       else if (isModuleClass) "singleton class"
-      else if (isTrait) "trait"
       else if (isClass) "class"
       else if (isType) "type"
       else if (isVariable) "variable"
@@ -754,10 +751,10 @@ import Flags._;
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
       def typeParamsString: String = tp match {
-  case PolyType(tparams, _) if (tparams.length != 0) =>
-    (tparams map (.defString)).mkString("[", ",", "]")
-  case _ =>
-    ""
+        case PolyType(tparams, _) if (tparams.length != 0) =>
+          (tparams map (.defString)).mkString("[", ",", "]")
+        case _ =>
+          ""
       }
       if (isClass)
         typeParamsString + " extends " + tp.resultType

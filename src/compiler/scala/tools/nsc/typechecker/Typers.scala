@@ -3,7 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id$
-//todo: rewrite or disallow new T where T is a trait (currently: <init> not a member of T)
+//todo: rewrite or disallow new T where T is a mixin (currently: <init> not a member of T)
 package scala.tools.nsc.typechecker
 
 import symtab.Flags._
@@ -235,6 +235,20 @@ import scala.collection.mutable.{HashMap, ListBuffer}
             error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
             null
         })
+    }
+
+    /** The qualifying class of a this or super with prefix `qual' */
+    def qualifyingClassContext(tree: Tree, qual: Name): Context = {
+      if (qual.isEmpty) {
+        if (context.enclClass.owner.isPackageClass)
+          error(tree.pos, ""+tree+" can be used only in a class, object, or template")
+        context.enclClass
+      } else {
+        var c = context.enclClass
+        while (c != NoContext && c.owner.name != qual) c = c.outer.enclClass
+        if (c == NoContext) error(tree.pos, ""+qual+" is not an enclosing class")
+	c
+      }
     }
 
     /** Post-process an identifier or selection node, performing the following:
@@ -469,8 +483,8 @@ import scala.collection.mutable.{HashMap, ListBuffer}
       else {
 	var supertpt = typedTypeConstructor(templ.parents.head)
 	var mixins = templ.parents.tail map typedType
-	// If first parent is trait, make it first mixin and add its superclass as first parent
-	while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isTrait) {
+	// If first parent is a mixin class, make it first mixin and add its superclass as first parent
+	while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isMixin) {
 	  mixins = typedType(supertpt) :: mixins
 	  supertpt = TypeTree(supertpt.tpe.parents.head) setPos supertpt.pos
 	}
@@ -501,7 +515,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 
     /** Check that
      *  - all parents are class types,
-     *  - first parent cluss is not a trait; following classes are traits,
+     *  - first parent cluss is not a mixin; following classes are mixins,
      *  - final classes are not inherited,
      *  - sealed classes are only inherited by classes which are
      *    nested within definition of base class, or that occur within same
@@ -519,8 +533,8 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 	  val psym = parent.tpe.symbol.initialize
 	  if (!psym.isClass)
 	    error(parent.pos, "class type expected")
-	  else if (!isFirst && !psym.isTrait)
-	    error(parent.pos, ""+psym+" is not a trait; cannot be used as mixin")
+	  else if (!isFirst && !psym.isMixin)
+	    error(parent.pos, ""+psym+" is not declared to be a mixin class")
 	  else if (psym.hasFlag(FINAL))
 	    error(parent.pos, "illegal inheritance from final class")
 	  else if (psym.isSealed && !phase.erasedTypes) {
@@ -944,20 +958,6 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 	  errorTree(tree, ""+fun+" does not take parameters")
       }
 
-      /** The qualifying class of a this or super with prefix `qual' */
-      def qualifyingClassContext(qual: Name): Context = {
-        if (qual == nme.EMPTY.toTypeName) {
-          if (context.enclClass.owner.isPackageClass)
-            error(tree.pos, ""+tree+" can be used only in a class, object, or template")
-          context.enclClass
-        } else {
-          var c = context.enclClass
-          while (c != NoContext && c.owner.name != qual) c = c.outer.enclClass
-          if (c == NoContext) error(tree.pos, ""+qual+" is not an enclosing class")
-	  c
-        }
-      }
-
       /** Attribute a selection where `tree' is `qual.name'.
        *  `qual' is already attributed.
        */
@@ -1261,7 +1261,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
               .setPos(tpt1.pos)
               .setType(appliedType(tpt1.tpe, context.undetparams map (.tpe)))
           }
-	  if (tpt1.tpe.symbol.isTrait) error(tree.pos, "traits cannot be instantiated")
+	  if (tpt1.tpe.symbol.isMixin) error(tree.pos, "mixin classes cannot be instantiated")
           copy.New(tree, tpt1).setType(tpt1.tpe)
 
         case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
@@ -1314,13 +1314,13 @@ import scala.collection.mutable.{HashMap, ListBuffer}
             if (tree.symbol != NoSymbol) {
               Pair(tree.symbol, tree.symbol.thisType)
             } else {
-              val clazzContext = qualifyingClassContext(qual)
+              val clazzContext = qualifyingClassContext(tree, qual)
               Pair(clazzContext.owner, clazzContext.prefix)
             }
           if (clazz == NoSymbol) setError(tree)
           else {
 	    val owntype =
-	      if (mix == nme.EMPTY.toTypeName)
+	      if (mix.isEmpty)
                 if ((mode & SUPERCONSTRmode) != 0) clazz.info.parents.head
                 else intersectionType(clazz.info.parents)
               else {
@@ -1339,7 +1339,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
             if (tree.symbol != NoSymbol) {
               Pair(tree.symbol, tree.symbol.thisType)
             } else {
-              val clazzContext = qualifyingClassContext(qual)
+              val clazzContext = qualifyingClassContext(tree, qual)
               Pair(clazzContext.owner, clazzContext.prefix)
             }
           if (clazz == NoSymbol) setError(tree)

@@ -231,7 +231,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
-  object mixin extends Mixin {
+  object mixer extends Mixin {
     val global: Global.this.type = Global.this;
   }
 
@@ -274,7 +274,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     lambdaLift,
     constructors,
     flatten,
-    mixin,
+    mixer,
     genicode,
     genJVM,
     sampleTransform);
