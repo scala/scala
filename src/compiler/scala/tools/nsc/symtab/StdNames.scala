@@ -202,6 +202,7 @@ import scala.tools.nsc.util.NameTransformer;
     val String = newTermName("String");
     val Symbol = newTermName("Symbol");
     val Synthetic = newTermName("Synthetic");
+    val System = newTermName("System");
 
     val Text = newTermName("Text");
     val Throwable = newTermName("Throwable");
@@ -213,6 +214,7 @@ import scala.tools.nsc.util.NameTransformer;
     val While = newTermName("While");
     val apply = newTermName("apply");
     val array = newTermName("array");
+    val arraycopy = newTermName("arraycopy");
     val assert_ = newTermName("assert");
     val assume_ = newTermName("assume");
     val asInstanceOf = newTermName("asInstanceOf");

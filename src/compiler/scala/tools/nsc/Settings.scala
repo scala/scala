@@ -2,94 +2,95 @@
  * Copyright 2005 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
-package scala.tools.nsc;
+// $Id: Settings.scala
+package scala.tools.nsc
 
-import java.io.File;
+import java.io.File
+import System.getProperty
 
 class Settings(error: String => unit) {
 
-  private var allsettings: List[Setting] = List();
+  private var allsettings: List[Setting] = List()
 
-  private val classpathDefault = {
-    val scalaCp = System.getProperty("scala.class.path");
-    if (scalaCp != null) scalaCp + File.pathSeparator + "."
-    else "."
+  private val classpathDefault =
+    alternatePath(
+      concatPath(
+        getProperty("java.class.path"),
+        getProperty("scala.class.path")),
+      ".")
+
+  private val bootclasspathDefault =
+    alternatePath(
+      concatPath(
+        getProperty("sun.boot.class.path"),
+        alternatePath(
+          getProperty("scala.boot.class.path"),
+          guessedScalaBootClassPath)),
+      "")
+
+  private val extdirsDefault =
+    alternatePath(
+      concatPath(
+        getProperty("java.ext.dirs"),
+        getProperty("scala.ext.dirs")),
+      "")
+
+  private def alternatePath(p1: String, p2: => String) =
+    if (p1 != null) p1 else p2
+
+  private def concatPath(p1: String, p2: String) =
+     if (p1 != null && p2 != null) p1 + File.pathSeparator + p2
+     else if (p1 != null) p1
+     else p2
+
+  private def guessedScalaBootClassPath = {
+    val scalaHome = System.getProperty("scala.home")
+    if (scalaHome != null) {
+      val guess = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
+      if (guess.exists()) guess.getPath() else null
+    } else null
   }
-  private val bootclasspathDefault = {
-    val javaBcp = System.getProperty("sun.boot.class.path");
-    val scalaBcp = {
-      val explicit = System.getProperty("scala.boot.class.path");
-      if(explicit != null)
-	explicit
-      else {
-	val scalaHome = System.getProperty("scala.home");
-	if(scalaHome != null) {
-	  val guess = new File(new File(new File(scalaHome), "lib"), "scala-library.jar");
-	  if(guess.exists())
-	    guess.getPath()
-	  else
-	    null
-	}
-	else
-	  null
-      }
-    }
 
-    if (javaBcp != null && scalaBcp != null) javaBcp + File.pathSeparator + scalaBcp
-    else if (javaBcp != null) javaBcp
-    else if (scalaBcp != null) scalaBcp
-    else ""
-  }
-  private val extdirsDefault = {
-    val javaExt = System.getProperty("java.ext.dirs");
-    val scalaExt = System.getProperty("scala.ext.dirs");
-    if (javaExt != null && scalaExt != null) javaExt + File.pathSeparator + scalaExt
-    else if (javaExt != null) javaExt
-    else if (scalaExt != null) scalaExt
-    else ""
-  }
+  val debuginfo     = BooleanSetting("-g", "Generate debugging info")
+  val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
+  val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
+  val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing")
+  val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault)
+  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
+  val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
+  val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
+  val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", "")
+  val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", "ISO-8859-1")
+  val separate      = ChoiceSetting ("-separate", "Read symbol files for separate compilation", List("yes","no"), "default")
+  val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm")
+  val debug         = BooleanSetting("-debug", "Output debugging messages")
+  val statistics    = BooleanSetting("-statistics", "Print compiler statistics")
+  val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail")
+  val resident      = BooleanSetting("-resident", "Compiler stays resident, files to compile are read from standard input")
+  val uniqid        = BooleanSetting("-uniqid", "Print identifiers with unique names (debugging option)")
+  val printtypes    = BooleanSetting("-printtypes", "Print tree types (debugging option)")
+  val prompt        = BooleanSetting("-prompt", "Display a prompt after each error (debugging option)")
+  val noimports     = BooleanSetting("-noimports", "Compile without any implicit imports")
+  val nopredefs     = BooleanSetting("-nopredefs", "Compile without any implicit predefined values")
+  val skip          = PhasesSetting ("-skip", "Skip")
+  val check         = PhasesSetting ("-check", "Check the tree at start of")
+  val print         = PhasesSetting ("-print", "Print out program after")
+  val printer       = ChoiceSetting ("-printer", "Printer to use", List("text", "html"), "text")
+  val printfile     = StringSetting ("-printfile", "file", "Specify file in which to print trees", "-")
+  val graph         = PhasesSetting ("-graph", "Graph the program after")
+  val browse        = PhasesSetting ("-browse", "Browse the abstract syntax tree after")
+  val stop          = PhasesSetting ("-stop", "Stop after phase")
+  val log           = PhasesSetting ("-log", "Log operations in")
+  val version       = BooleanSetting("-version", "Print product version and exit")
+  val help          = BooleanSetting("-help", "Print a synopsis of standard options")
 
-  val debuginfo     = BooleanSetting("-g", "Generate debugging info");
-  val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings");
-  val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions");
-  val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing");
-  val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault);
-  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "");
-  val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault);
-  val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault);
-  val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", "");
-  val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", "ISO-8859-1");
-  val separate      = ChoiceSetting ("-separate", "Read symbol files for separate compilation", List("yes","no"), "default");
-  val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm");
-  val debug         = BooleanSetting("-debug", "Output debugging messages");
-  val statistics    = BooleanSetting("-statistics", "Print compiler statistics");
-  val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail");
-  val resident      = BooleanSetting("-resident", "Compiler stays resident, files to compile are read from standard input");
-  val uniqid        = BooleanSetting("-uniqid", "Print identifiers with unique names (debugging option)");
-  val printtypes    = BooleanSetting("-printtypes", "Print tree types (debugging option)");
-  val prompt        = BooleanSetting("-prompt", "Display a prompt after each error (debugging option)");
-  val noimports     = BooleanSetting("-noimports", "Compile without any implicit imports");
-  val nopredefs     = BooleanSetting("-nopredefs", "Compile without any implicit predefined values");
-  val skip          = PhasesSetting ("-skip", "Skip");
-  val check         = PhasesSetting ("-check", "Check the tree at start of");
-  val print         = PhasesSetting ("-print", "Print out program after");
-  val printer       = ChoiceSetting ("-printer", "Printer to use", List("text", "html"), "text");
-  val printfile     = StringSetting ("-printfile", "file", "Specify file in which to print trees", "-");
-  val graph         = PhasesSetting ("-graph", "Graph the program after");
-  val browse        = PhasesSetting ("-browse", "Browse the abstract syntax tree after");
-  val stop          = PhasesSetting ("-stop", "Stop after phase");
-  val log           = PhasesSetting ("-log", "Log operations in");
-  val version       = BooleanSetting("-version", "Print product version and exit");
-  val help          = BooleanSetting("-help", "Print a synopsis of standard options");
-
-  val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "");
-  val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "");
-  val Xshowicode    = BooleanSetting("-Xshowicode", "Print the generated ICode");
-  val Xgadt         = BooleanSetting("-Xgadt", "enable gadt for classes");
+  val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
+  val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
+  val Xshowicode    = BooleanSetting("-Xshowicode", "Print the generated ICode")
+  val Xgadt         = BooleanSetting("-Xgadt", "enable gadt for classes")
 
   /** A list of all settings */
-  def allSettings: List[Setting] = allsettings.reverse;
+  def allSettings: List[Setting] = allsettings.reverse
 
   /** A base class for settings of all types.
    *  Subclasses each define a `value' field of the appropriate type.
@@ -102,22 +103,22 @@ class Settings(error: String => unit) {
      *  issue error message and return empty.
      *  If first arg does not define this setting return args unchanged.
      */
-    def tryToSet(args: List[String]): List[String];
+    def tryToSet(args: List[String]): List[String]
 
     /** The syntax defining this setting in a help string */
-    def helpSyntax: String = name;
+    def helpSyntax: String = name
 
     /** A description of the purpose of this setting in a help string */
-    def helpDescription = descr;
+    def helpDescription = descr
 
     // initialization
-    allsettings = this :: allsettings;
+    allsettings = this :: allsettings
   }
 
   /** A setting represented by a boolean flag (false, unless set) */
   case class BooleanSetting(name: String, descr: String)
   extends Setting(name, descr) {
-    var value: boolean = false;
+    var value: boolean = false
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) => value = true; rest
@@ -128,21 +129,21 @@ class Settings(error: String => unit) {
   /** A setting represented by a string, (`default' unless set) */
   case class StringSetting(name: String, arg: String, descr: String, default: String)
   extends Setting(name, descr) {
-    var value: String = default;
+    var value: String = default
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) =>
         if (rest.isEmpty) {
-	  error("missing argument");
+	  error("missing argument")
 	  List()
 	} else {
-	  value = rest.head;
+	  value = rest.head
 	  rest.tail
 	}
       case _ => args
     }
 
-    override def helpSyntax = name + " <" + arg + ">";
+    override def helpSyntax = name + " <" + arg + ">"
   }
 
   /** A setting represented by a string in a given set of `choices',
@@ -150,26 +151,26 @@ class Settings(error: String => unit) {
    */
   case class ChoiceSetting(name: String, descr: String, choices: List[String], default: String)
   extends Setting(name, descr + choices.mkString(" (", ",", ")")) {
-    var value: String = default;
+    var value: String = default
 
-    private def argument: String = name.substring(1);
+    private def argument: String = name.substring(1)
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n startsWith (name + ":")) =>
-        val choice = n.substring(name.length() + 1);
+        val choice = n.substring(name.length() + 1)
         if (!(choices contains choice)) {
           error(
             if (choice == "") "missing " + argument
-            else "unknown " + argument + " '" + choice + "'");
-    List()
-  } else {
-          value = choice;
+            else "unknown " + argument + " '" + choice + "'")
+          List()
+        } else {
+          value = choice
           rest
-  }
+        }
       case _ => args
     }
 
-    override def helpSyntax = name + ":<" + argument + ">";
+    override def helpSyntax = name + ":<" + argument + ">"
   }
 
   /** A setting represented by a list of strings which should be prefixes of
@@ -178,22 +179,22 @@ class Settings(error: String => unit) {
    */
   case class PhasesSetting(name: String, descr: String)
   extends Setting(name, descr + " <phases> (see below)") {
-    var value: List[String] = List();
+    var value: List[String] = List()
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n startsWith (name + ":")) =>
-        val phase = n.substring(name.length() + 1);
+        val phase = n.substring(name.length() + 1)
         if (phase == "") {
-    error("missing phase");
-    List()
-  } else {
-          value = value ::: List(phase);
+          error("missing phase")
+          List()
+        } else {
+          value = value ::: List(phase)
           rest
-  }
+        }
       case _ => args
     }
 
-    override def helpSyntax = name + ":<phase>";
+    override def helpSyntax = name + ":<phase>"
 
     def contains(phasename: String): boolean =
       value exists (str => phasename startsWith str)

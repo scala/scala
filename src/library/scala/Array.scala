@@ -10,6 +10,22 @@
 
 package scala;
 
+import runtime._
+
+object Array {
+  def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = src match {
+    case xs: BoxedArray =>
+      xs.copyTo(srcPos, dest, destPos, length)
+    case _ =>
+      dest match {
+        case xs: BoxedArray =>
+          xs.copyFrom(src, srcPos, destPos, length)
+        case _ =>
+          System.arraycopy(src, srcPos, dest, destPos, length)
+      }
+  }
+}
+
 final class Array[A](_length: Int) extends Cloneable with java.io.Serializable with Seq[A] {
   def length: Int = throw new Error();
   def apply(i: Int): A = throw new Error();

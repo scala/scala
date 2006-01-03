@@ -119,7 +119,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with java.io.Seri
      */
     override def elements: Iterator[A] = new Iterator[A] {
         val as: Array[A] = new Array[A](size);
-        java.lang.System.arraycopy(array, 0, as, 0, size);
+        Array.copy(array, 0, as, 0, size);
         var i = size - 1;
         def hasNext: Boolean = i > 0;
         def next: A = {

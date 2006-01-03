@@ -531,6 +531,19 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           case TypeApply(fun, args) if (fun.symbol.owner != AnyClass) =>
 	    // leave all other type tests/type casts, remove all other type applications
 	    fun
+          case Apply(fn, args) =>
+            def isGenericArray(tpe: Type): boolean = erasure(tpe).symbol == BoxedArrayClass
+            if (fn.hasSymbol &&
+                fn.symbol.name == nme.arraycopy &&
+                fn.symbol.owner.name == nme.System.toTypeName &&
+                fn.symbol.owner.owner == JavaLangPackage.tpe.symbol &&
+                args.length == 5 &&
+                (isGenericArray(args(0).tpe) || isGenericArray(args(2).tpe)))
+              unit.warning(tree.pos,
+                           "System.arraycopy should be applied only to arrays with fixed element types;\n" +
+                           "use Array.copy instead")
+            tree
+
           case Template(parents, body) =>
             assert(!currentOwner.isImplClass);
 	    //System.out.println("checking no dble defs " + tree);//DEBUG

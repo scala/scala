@@ -421,7 +421,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	val unit = new CompilationUnit(getSourceFile(file));
 	addUnit(unit);
 	var localPhase = firstPhase.asInstanceOf[GlobalPhase];
-	while (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) {
+	while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) &&
+               reporter.errors == 0) {
 	  atPhase(localPhase)(localPhase.applyPhase(unit));
 	  localPhase = localPhase.next.asInstanceOf[GlobalPhase];
 	}

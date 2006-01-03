@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |                        2                 **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -42,4 +42,14 @@ abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] 
     def hasNext: Boolean = index < length;
     def next: Object = { val i = index; index = i + 1; apply(i) }
   }
+
+  /** The underlying array value
+   */
+  def value: Object;
+
+  def copyFrom(src: Object, from: Int, to: Int, len: Int): Unit =
+    Array.copy(src, from, value, to, len)
+
+  def copyTo(from: Int, dest: Object, to: Int, len: Int): Unit =
+    Array.copy(value, from, dest, to, len)
 }

@@ -22,6 +22,8 @@ object ScalaRunTime {
   val DoubleTag = ".Double";
   val BooleanTag = ".Boolean";
 
+  def isValueTag(tag: String) = tag.charAt(0) == '.'
+
   trait Try[a] {
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b;
     def Finally(handler: Unit): a;
