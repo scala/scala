@@ -91,11 +91,8 @@ abstract class TreePrinters {
 
     def printFlags(flags: long, privateWithin: Name): unit = {
       var mask = if (settings.debug.value) -1 else PrintableFlags;
-      if (!privateWithin.isEmpty) {
-        print("private["+privateWithin+"] ");
-        mask = mask & ~PRIVATE
-      }
       val s = flagsToString(flags & mask);
+      if (!privateWithin.isEmpty) print("private["+privateWithin+"] ");
       if (s.length() != 0) print(s + " ")
     }
 

@@ -61,6 +61,12 @@ abstract class UnPickler {
        (tag != CLASSsym || !isRefinementSymbolEntry(i)))
     }
 
+    /** Does entry represent an (internal or external) symbol */
+    private def isSymbolRef(i: int): boolean = {
+      val tag = bytes(index(i));
+      (firstSymTag <= tag && tag <= lastExtSymTag)
+    }
+
     /** Does entry represent a refinement symbol?
      *  pre: Entry is a class symbol
      */
@@ -122,7 +128,12 @@ abstract class UnPickler {
 	  val name = readNameRef();
 	  val owner = readSymbolRef();
 	  val flags = readNat();
-	  val inforef = readNat();
+          var privateWithin: Symbol = NoSymbol;
+          var inforef = readNat();
+          if (isSymbolRef(inforef)) {
+            privateWithin = at(inforef, readSymbol);
+            inforef = readNat()
+          }
 	  tag match {
 	    case TYPEsym =>
 	      sym = owner.newAbstractType(Position.NOPOS, name);
@@ -155,6 +166,7 @@ abstract class UnPickler {
 	      errorBadSignature("bad symbol tag: " + tag);
 	  }
 	  sym.setFlag(flags);
+          sym.privateWithin = privateWithin;
 	  if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR));
 	  if (sym hasFlag SUPERACCESSOR) assert(readIndex != end);
 	  sym.setInfo(

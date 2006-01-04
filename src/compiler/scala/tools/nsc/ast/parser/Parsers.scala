@@ -1077,11 +1077,12 @@ import Tokens._;
 	case SEALED =>
           loop(addMod(mods, Flags.SEALED))
 	case PRIVATE =>
-          val mods1 = addMod(mods, Flags.PRIVATE);
+          var mods1 = addMod(mods, Flags.PRIVATE);
           if (in.token == LBRACKET) {
             in.nextToken();
             privateWithin = ident().toTypeName;
-            accept(RBRACKET)
+            accept(RBRACKET);
+            mods1 = mods
           }
           loop(mods1)
 	case PROTECTED =>

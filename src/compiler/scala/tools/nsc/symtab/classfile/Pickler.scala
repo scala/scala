@@ -83,6 +83,7 @@ abstract class Pickler extends SubComponent {
       if (isLocal(sym)) {
 	putEntry(sym.name);
 	putSymbol(sym.owner);
+        putSymbol(sym.privateWithin);
 	putType(sym.info);
 	if (sym.thisSym != sym)
           putType(sym.typeOfThis);
@@ -146,6 +147,7 @@ abstract class Pickler extends SubComponent {
       writeRef(sym.name);
       writeRef(sym.owner);
       writeNat((sym.flags & PickledFlags).asInstanceOf[int]);
+      if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin);
       writeRef(sym.info)
     }
 

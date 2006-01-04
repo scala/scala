@@ -31,10 +31,12 @@ abstract class SymbolLoaders {
     /** The kind of file that's processed by this loader */
     protected def kindString: String;
     private var ok = false;
+
     private def setSource(sym: Symbol): unit = sym match {
       case clazz: ClassSymbol => clazz.sourceFile = file;
       case _ =>
     }
+
     override def complete(root: Symbol): unit = {
       try {
         val start = System.currentTimeMillis();
@@ -45,7 +47,7 @@ abstract class SymbolLoaders {
         informTime("loaded " + source, start);
         if (root.rawInfo != this) {
 	  ok = true;
-	  setSource(root.linkedModule);
+	  setSource(root.linkedModule.moduleClass);
 	  setSource(root.linkedClass);
 	} else error(source + " does not define " + root)
       } catch {
@@ -94,7 +96,6 @@ abstract class SymbolLoaders {
 	val name = newTermName(str);
         val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
         val module = owner.newModule(Position.NOPOS, name);
-	clazz.sourceFile = sfile;
         clazz.setInfo(completer);
 	module.setInfo(completer);
         module.moduleClass.setInfo(moduleClassLoader);

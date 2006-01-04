@@ -221,15 +221,20 @@ import scala.tools.nsc.util.Position;
 	c != NoContext;
       }
 
-      (pre == NoPrefix
-       ||
-       (!sym.hasFlag(PRIVATE | PROTECTED))
-       ||
-       accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
-       ||
-       (!sym.hasFlag(PRIVATE) &&
-        (superAccess ||
-	 (pre.widen.symbol.isSubClass(sym.owner) && isSubClassOfEnclosing(pre.widen.symbol)))))
+      ( pre == NoPrefix
+        ||
+        (!sym.hasFlag(PRIVATE | PROTECTED))
+        ||
+        accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
+        ||
+        (!sym.hasFlag(PRIVATE) &&
+         (superAccess ||
+	  (pre.widen.symbol.isSubClass(sym.owner) && isSubClassOfEnclosing(pre.widen.symbol))))
+      ) && (
+        sym.privateWithin == NoSymbol
+        ||
+        accessWithin(sym.privateWithin)
+      )
     }
 
     def pushTypeBounds(sym: Symbol): unit = {

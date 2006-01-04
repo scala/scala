@@ -573,7 +573,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt))
       val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope()))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
-      val impl2 = addSyntheticMethods(impl1, clazz)
+      val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
       val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
 	.setType(NoType)
       ret
@@ -583,7 +583,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope()))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
-      val impl2 = addSyntheticMethods(impl1, clazz)
+      val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
 
       copy.ModuleDef(mdef, mdef.mods, mdef.name, impl2) setType NoType
     }

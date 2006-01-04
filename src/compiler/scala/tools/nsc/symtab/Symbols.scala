@@ -668,13 +668,9 @@ import Flags._;
     def sourceFile: AbstractFile =
       (if (isModule) moduleClass else toplevelClass).sourceFile;
 
-/*
-    def referenced: Symbol =
-      throw new Error("referenced inapplicable for " + this);
+    def sourceFile_=(f: AbstractFile): unit =
+      throw new Error("sourceFile_= inapplicable for "+this)
 
-    def setReferenced(sym: Symbol): Symbol =
-      throw new Error("setReferenced inapplicable for " + this);
-*/
 // ToString -------------------------------------------------------------------
 
     /** A tag which (in the ideal case) uniquely identifies class symbols */
@@ -944,7 +940,7 @@ import Flags._;
 
     private var source: AbstractFile = null;
     override def sourceFile = source
-    def sourceFile_=(f: AbstractFile): unit = { source = f }
+    override def sourceFile_=(f: AbstractFile): unit = { source = f }
 
     private var thissym: Symbol = this;
     override def isClass: boolean = true;

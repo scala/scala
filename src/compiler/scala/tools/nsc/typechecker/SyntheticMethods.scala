@@ -6,6 +6,7 @@
 package scala.tools.nsc.typechecker;
 
 import symtab.Flags._;
+import util.FreshNameCreator;
 import scala.collection.mutable.ListBuffer;
 
 /**
@@ -22,7 +23,7 @@ import scala.collection.mutable.ListBuffer;
   import definitions._;             // standard classes and methods
   import typer.{typed};             // methods to type trees
 
-  def addSyntheticMethods(templ: Template, clazz: Symbol): Template = {
+  def addSyntheticMethods(templ: Template, clazz: Symbol, unit: CompilationUnit): Template = {
 
     def hasImplementation(name: Name): boolean = {
       val sym = clazz.info.nonPrivateMember(name);
@@ -102,10 +103,29 @@ import scala.collection.mutable.ListBuffer;
       typed(DefDef(method, vparamss => gen.mkRef(clazz.sourceModule)))
     }
 
+    def newAccessorMethod(tree: Tree): Tree = tree match {
+      case DefDef(_, _, _, _, _, rhs) =>
+        val newAcc = tree.symbol.cloneSymbol;
+        newAcc.name = unit.fresh.newName(""+tree.symbol.name+"$");
+        newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR);
+        newAcc.owner.info.decls enter newAcc;
+        val result = typed(DefDef(newAcc, vparamss => rhs.duplicate));
+        System.out.println("new acc method " + result)
+        result
+    }
+
     val ts = new ListBuffer[Tree];
     if ((clazz hasFlag CASE) && !phase.erasedTypes) {
       // case classes are implicitly declared serializable
       clazz.attributes = Pair(SerializableAttr, List()) :: clazz.attributes;
+
+      for (val stat <- templ.body) {
+        if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) &&
+            (stat.symbol.hasFlag(PRIVATE | PROTECTED) || stat.symbol.privateWithin != NoSymbol)) {
+          ts += newAccessorMethod(stat);
+          stat.symbol.resetFlag(CASEACCESSOR)
+        }
+      }
 
       ts += tagMethod;
       if (clazz.isModuleClass) {

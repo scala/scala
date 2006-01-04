@@ -45,7 +45,7 @@ object PickleFormat {
  *                  | 34 LITERALnull len_Nat
  *                  | 35 LITERALzero len_Nat
  *                  | 36 ATTRIBUTE sym_Ref type_Ref {constant_Ref}  <not yet>
- *   SymbolInfo     = name_Ref owner_Ref flags_Nat info_Ref
+ *   SymbolInfo     = name_Ref owner_Ref flags_Nat [privateWithin_Ref] info_Ref
  *   NameInfo       = <character sequence of length len_Nat in Utf8 format>
  *   NumInfo        = <len_Nat-byte signed number in big endian format>
  *   Ref            = Nat
@@ -53,7 +53,7 @@ object PickleFormat {
  *   len is remaining length after `len'.
  */
   val MajorVersion = 2;
-  val MinorVersion = 0;
+  val MinorVersion = 1;
 
   final val TERMname = 1;
   final val TYPEname = 2;
@@ -94,6 +94,7 @@ object PickleFormat {
 
   final val firstSymTag = NONEsym;
   final val lastSymTag = VALsym;
+  final val lastExtSymTag = EXTMODCLASSref;
   final val firstTypeTag = NOtpe;
   final val lastTypeTag = POLYtpe;
 }

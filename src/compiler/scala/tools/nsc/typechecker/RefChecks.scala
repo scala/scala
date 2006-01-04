@@ -164,6 +164,9 @@ abstract class RefChecks extends InfoTransform {
 
 	if (member hasFlag PRIVATE) { // (1.1)
 	  overrideError("has weaker access privileges; it should not be private");
+        } else if (member.privateWithin != NoSymbol &&
+                   !other.privateWithin.ownerChain.contains(member.privateWithin)) {
+	  overrideError("has weaker access privileges; it should at least be private["+other.privateWithin.name+"]");
 	} else if ((member hasFlag PROTECTED) && !(other hasFlag PROTECTED)) { // 1
 	  overrideError("has weaker access privileges; it should not be protected");
 	} else if (other hasFlag FINAL) { // (1.2)

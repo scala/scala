@@ -42,7 +42,7 @@ trait Namers: Analyzer {
 
     val typer = newTyper(context);
 
-    def setPrivate(sym: Symbol, mods: Modifiers): Symbol = {
+    def setPrivateWithin(sym: Symbol, mods: Modifiers): Symbol = {
       if (!mods.privateWithin.isEmpty)
         sym.privateWithin = typer.qualifyingClassContext(EmptyTree, mods.privateWithin).owner;
       sym
@@ -119,7 +119,7 @@ trait Namers: Analyzer {
       }
       if (c.owner.isPackageClass) {
         currentRun.symSource(c) = context.unit.source.getFile();
-        c.asInstanceOf[ClassSymbol].sourceFile = context.unit.source.getFile();
+        c.sourceFile = context.unit.source.getFile();
       }
       c
     }
@@ -134,6 +134,7 @@ trait Namers: Analyzer {
         m = context.owner.newModule(pos, name);
         m.setFlag(flags);
         m.moduleClass.setFlag(flags | inConstructorFlag);
+        m.moduleClass.sourceFile = context.unit.source.getFile();
 	enterInScope(m)
       }
       if (m.owner.isPackageClass) currentRun.symSource(m) = context.unit.source.getFile();
@@ -203,15 +204,15 @@ trait Namers: Analyzer {
 	      tree.symbol = enterCaseFactorySymbol(
 		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
 	          .setInfo(innerNamer.caseFactoryCompleter(tree));
-              setPrivate(tree.symbol, mods);
+              setPrivateWithin(tree.symbol, mods);
             }
 	    tree.symbol = enterClassSymbol(tree.pos, mods.flags, name);
-            setPrivate(tree.symbol, mods);
+            setPrivateWithin(tree.symbol, mods);
 	    finishWith(tparams);
 	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods.flags | MODULE | FINAL, name);
-            setPrivate(tree.symbol, mods);
-            setPrivate(tree.symbol.moduleClass, mods);
+            setPrivateWithin(tree.symbol, mods);
+            setPrivateWithin(tree.symbol.moduleClass, mods);
 	    tree.symbol.moduleClass.setInfo(innerNamer.typeCompleter(tree));
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>
@@ -222,13 +223,13 @@ trait Namers: Analyzer {
 	      val getter = owner.newMethod(tree.pos, name)
 	        .setFlag(accflags)
                 .setInfo(innerNamer.getterTypeCompleter(tree));
-              setPrivate(getter, mods);
+              setPrivateWithin(getter, mods);
 	      enterInScope(getter);
 	      if ((mods.flags & MUTABLE) != 0) {
 	        val setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
 		  .setFlag(accflags & ~STABLE & ~CASEACCESSOR)
                   .setInfo(innerNamer.setterTypeCompleter(tree));
-                setPrivate(setter, mods);
+                setPrivateWithin(setter, mods);
 	        enterInScope(setter)
 	      }
 	      tree.symbol =
@@ -245,22 +246,22 @@ trait Namers: Analyzer {
 	  case DefDef(mods, nme.CONSTRUCTOR, tparams, vparams, tp, rhs) =>
 	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
 	      .setFlag(mods.flags | owner.getFlag(ConstrFlags));
-            setPrivate(tree.symbol, mods);
+            setPrivateWithin(tree.symbol, mods);
 	    finishWith(tparams);
 	  case DefDef(mods, name, tparams, _, _, _) =>
 	    tree.symbol = enterInScope(owner.newMethod(tree.pos, name))
               .setFlag(mods.flags);
-            setPrivate(tree.symbol, mods);
+            setPrivateWithin(tree.symbol, mods);
 	    finishWith(tparams);
 	  case AbsTypeDef(mods, name, _, _) =>
 	    tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name))
               .setFlag(mods.flags);
-            setPrivate(tree.symbol, mods);
+            setPrivateWithin(tree.symbol, mods);
 	    finish
 	  case AliasTypeDef(mods, name, tparams, _) =>
 	    tree.symbol = enterInScope(owner.newAliasType(tree.pos, name))
               .setFlag(mods.flags);
-            setPrivate(tree.symbol, mods);
+            setPrivateWithin(tree.symbol, mods);
 	    finishWith(tparams)
 	  case Attributed(attr, defn) =>
 	    enterSym(defn);
@@ -333,7 +334,7 @@ trait Namers: Analyzer {
 	param.symbol = owner.newValueParameter(param.pos, param.name)
 	  .setInfo(typeCompleter(param))
           .setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT));
-        setPrivate(param.symbol, param.mods);
+        setPrivateWithin(param.symbol, param.mods);
         context.scope enter param.symbol;
         param.symbol
       }
