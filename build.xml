@@ -148,7 +148,7 @@ INITIALISATION
              classpath="${jaco.jar}"/>
     <taskdef resource="net/sf/antcontrib/antlib.xml">
       <classpath>
-        <pathelement location="${ant-contrib.jar}" />
+        <pathelement location="${ant-contrib.jar}"/>
       </classpath>
     </taskdef>
     <!-- Finding out what is available -->
@@ -355,16 +355,25 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
+    <!-- Link to libraries -->
+    <symlink link="${locker.dir}/${fjbg.name}"
+                 resource="${fjbg.jar}"
+                 overwrite="yes"
+                 failonerror="no"/>
+    <symlink link="${locker.dir}/${msil.name}"
+                 resource="${msil.jar}"
+                 overwrite="yes"
+                 failonerror="no"/>
     <!-- Build executable files -->
     <build.exec.unix lib.path="$$PREFIX/${lib.dir.name}"
                 comp.path="$$PREFIX/${comp.dir.name}"
-                fjbg.path="../../../lib/${fjbg.name}"
-                msil.path="../../../lib/${msil.name}"
+                fjbg.path="$$PREFIX/${fjbg.name}"
+                msil.path="$$PREFIX/${msil.name}"
                 exec.dir="${locker.dir}/${exec.dir.name}"/>
     <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
                 comp.path="%SCALA_HOME%\${comp.dir.name}"
-                fjbg.path="..\..\..\lib\${fjbg.name}"
-                msil.path="..\..\..\lib\${msil.name}"
+                fjbg.path="%SCALA_HOME%\${fjbg.name}"
+                msil.path="%SCALA_HOME%\${msil.name}"
                 exec.dir="${locker.dir}\${exec.dir.name}"/>
   </target>
 
@@ -424,16 +433,25 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
+    <!-- Link to libraries -->
+    <symlink link="${quick.dir}/${fjbg.name}"
+                 resource="${fjbg.jar}"
+                 overwrite="yes"
+                 failonerror="no"/>
+    <symlink link="${quick.dir}/${msil.name}"
+                 resource="${msil.jar}"
+                 overwrite="yes"
+                 failonerror="no"/>
     <!-- Build executable files -->
     <build.exec.unix lib.path="$$PREFIX/${lib.dir.name}"
                 comp.path="$$PREFIX/${comp.dir.name}"
-                fjbg.path="../../../lib/${fjbg.name}"
-                msil.path="../../../lib/${msil.name}"
+                fjbg.path="$$PREFIX/${fjbg.name}"
+                msil.path="$$PREFIX/${msil.name}"
                 exec.dir="${quick.dir}/${exec.dir.name}"/>
     <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
                 comp.path="%SCALA_HOME%\${comp.dir.name}"
-                fjbg.path="..\..\..\lib\${fjbg.name}"
-                msil.path="..\..\..\lib\${msil.name}"
+                fjbg.path="%SCALA_HOME%\${fjbg.name}"
+                msil.path="%SCALA_HOME%\${msil.name}"
                 exec.dir="${quick.dir}\${exec.dir.name}"/>
   </target>
 
@@ -494,16 +512,25 @@ TEST
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
+    <!-- Link to libraries -->
+    <symlink link="${strap.dir}/${fjbg.name}"
+                 resource="${fjbg.jar}"
+                 overwrite="yes"
+                 failonerror="no"/>
+    <symlink link="${strap.dir}/${msil.name}"
+                 resource="${msil.jar}"
+                 overwrite="yes"
+                 failonerror="no"/>
     <!-- Build executable files -->
     <build.exec.unix lib.path="$$$PREFIX/${lib.dir.name}"
                 comp.path="$$PREFIX/${comp.dir.name}"
-                fjbg.path="../../../lib/${fjbg.name}"
-                msil.path="../../../lib/${msil.name}"
+                fjbg.path="$$PREFIX/${fjbg.name}"
+                msil.path="$$PREFIX/${msil.name}"
                 exec.dir="${strap.dir}/${exec.dir.name}"/>
     <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
                 comp.path="%SCALA_HOME%\${comp.dir.name}"
-                fjbg.path="..\..\..\lib\${fjbg.name}"
-                msil.path="..\..\..\lib\${msil.name}"
+                fjbg.path="%SCALA_HOME%\${fjbg.name}"
+                msil.path="%SCALA_HOME%\${msil.name}"
                 exec.dir="${strap.dir}\${exec.dir.name}"/>
     <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
