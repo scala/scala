@@ -18,7 +18,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-[_trait_] abstract class ObservableBuffer[A, This <: ObservableBuffer[A, This]]: This
+mixin class ObservableBuffer[A, This <: ObservableBuffer[A, This]]
+                    requires This
                     extends Buffer[A]
                     with Publisher[Message[Pair[Location, A]] with Undoable, This] {
 

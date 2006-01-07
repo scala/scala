@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import symtab.Flags._;
 import scala.tools.nsc.util.Position;
 
-[_trait_] abstract class Contexts: Analyzer {
+mixin class Contexts requires Analyzer {
   import global._;
 
   val NoContext = new Context {

@@ -10,7 +10,7 @@ import scala.tools.nsc.util.FreshNameCreator;
 import scala.tools.util.AbstractFile;
 import scala.collection.mutable.HashSet;
 
-[_trait_] abstract class CompilationUnits: Global {
+mixin class CompilationUnits requires Global {
 
   class CompilationUnit(val source: SourceFile, val mixinOnly: boolean) {
 

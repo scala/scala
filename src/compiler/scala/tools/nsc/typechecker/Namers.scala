@@ -10,7 +10,7 @@ import symtab.Flags;
 import symtab.Flags._;
 
 /** Methods to create symbols and to enter them into scopes. */
-trait Namers: Analyzer {
+trait Namers requires Analyzer {
   import global._;
   import definitions._;
 

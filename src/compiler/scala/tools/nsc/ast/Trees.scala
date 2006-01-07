@@ -11,7 +11,7 @@ import java.io.PrintWriter;
 import scala.tools.nsc.util.{Position,SourceFile};
 import symtab.Flags._;
 
-[_trait_] abstract class Trees: Global {
+mixin class Trees requires Global {
 
   //statistics
   var nodeCount = 0;

@@ -6,7 +6,7 @@ import scala.tools.nsc.util.Position;
  *  we inherit the globals from PatternTool.
  */
 
-trait PatternNodeCreator: (TransMatcher with PatternNodes) {
+mixin class PatternNodeCreator requires (TransMatcher with PatternNodes) {
 
   import global._;
 

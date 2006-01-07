@@ -18,7 +18,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-[_trait_] abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
+mixin class ObservableMap[A, B, This <: ObservableMap[A, B, This]]
+                    requires This
                     extends scala.collection.mutable.Map[A, B]
                     with Publisher[Message[Pair[A, B]] with Undoable, This] {
 

@@ -10,7 +10,7 @@ package scala.tools.nsc.backend.icode;
 import scala.tools.nsc.ast._;
 import scala.collection.mutable.Stack;
 
-trait Linearizers: ICodes {
+mixin class Linearizers requires ICodes {
   import opcodes._;
 
   trait Linearizer {

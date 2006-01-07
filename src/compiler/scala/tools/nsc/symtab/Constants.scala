@@ -9,7 +9,7 @@ package scala.tools.nsc.symtab;
 
 import classfile.PickleFormat._;
 
-[_trait_] abstract class Constants: SymbolTable {
+mixin class Constants requires SymbolTable {
 
   import definitions._;
 
@@ -178,7 +178,9 @@ import classfile.PickleFormat._;
 	Constant(floatValue)
       else if (target == DoubleClass && ByteTag <= tag && tag <= DoubleTag)
 	Constant(doubleValue)
-      else null
+      else {
+        null
+      }
     }
 
     def stringValue: String =

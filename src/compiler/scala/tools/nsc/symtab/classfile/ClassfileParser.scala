@@ -65,7 +65,8 @@ abstract class ClassfileParser {
       parseClass()
     } catch {
       case e: RuntimeException =>
-        if (settings.debug.value) e.printStackTrace();
+        e.printStackTrace();
+        if (settings.debug.value)
         throw new IOException("class file '" + in.file + "' is broken")
     }
     busy = false
@@ -249,6 +250,7 @@ abstract class ClassfileParser {
     parseAttributes(clazz, classInfo);
     if (!isScala) {
       clazz.setFlag(sflags);
+      setPrivateWithin(clazz, jflags);
       if (!hasMeta) {
 	clazz.setInfo(classInfo);
       }
@@ -281,6 +283,7 @@ abstract class ClassfileParser {
       val info = pool.getType(in.nextChar());
       val sym = getOwner(jflags)
         .newValue(Position.NOPOS, name).setFlag(sflags).setInfo(info);
+      setPrivateWithin(sym, jflags);
       parseAttributes(sym, info);
       getScope(jflags).enter(sym);
     }
@@ -303,12 +306,19 @@ abstract class ClassfileParser {
 	}
       val sym = getOwner(jflags)
         .newMethod(Position.NOPOS, name).setFlag(sflags).setInfo(info);
+      setPrivateWithin(sym, jflags);
       parseAttributes(sym, info);
       getScope(jflags).enter(sym);
     }
   }
 
   def parseAttributes(sym: Symbol, symtype: Type): unit = {
+    def convertTo(c: Constant, pt: Type): Constant = {
+      if (pt.symbol == definitions.BooleanClass && c.tag == IntTag)
+        Constant(if (c.value == 0) false else true)
+      else
+        c convertTo pt
+    }
     def parseAttribute(): unit = {
       val attrName = pool.getName(in.nextChar());
       val attrLen = in.nextInt();
@@ -324,8 +334,9 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar());
-	  val c1 = c convertTo symtype;
-          sym.setInfo(ConstantType(c1));
+	  val c1 = convertTo(c, symtype);
+          if (c1 != null) sym.setInfo(ConstantType(c1));
+          else System.out.println("failure to convert "+c+" to "+symtype);//debug
         case nme.InnerClassesATTR =>
           parseInnerClasses()
         case nme.ScalaSignatureATTR =>
@@ -385,8 +396,6 @@ abstract class ClassfileParser {
       res = res | PRIVATE
     else if ((flags & JAVA_ACC_PROTECTED) != 0)
       res = res | PROTECTED
-    else if ((flags & JAVA_ACC_PUBLIC) == 0)
-      res = res | PRIVATE;
     if ((flags & JAVA_ACC_ABSTRACT) != 0)
       res = res | DEFERRED;
     if ((flags & JAVA_ACC_FINAL) != 0)
@@ -399,4 +408,8 @@ abstract class ClassfileParser {
       res = res | STATIC;
     res | JAVA;
   }
+
+  private def setPrivateWithin(sym: Symbol, jflags: int): unit =
+    if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
+      sym.privateWithin = sym.toplevelClass.owner
 }

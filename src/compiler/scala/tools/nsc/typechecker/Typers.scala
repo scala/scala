@@ -11,7 +11,7 @@ import scala.tools.nsc.util.Position
 import scala.collection.mutable.{HashMap, ListBuffer}
 
 /** Methods to create symbols and to enter them into scopes. */
-[_trait_] abstract class Typers: Analyzer {
+mixin class Typers requires Analyzer {
   import global._
   import definitions._
   import posAssigner.atPos
@@ -354,8 +354,12 @@ import scala.collection.mutable.{HashMap, ListBuffer}
                    mt.paramTypes.isEmpty && isCompatible(mt.resultType, pt)) { // (4.3)
           typed(Apply(tree, List()) setPos tree.pos)
         } else {
-          if (context.reportGeneralErrors)
-            error(tree.pos, "missing arguments for "+tree.symbol)
+          if (context.reportGeneralErrors) {
+            if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))
+              error(tree.pos, migrateMsg + " method can be converted to function only if an expected function type is given");
+            else
+              error(tree.pos, "missing arguments for "+tree.symbol)
+          }
           setError(tree)
         }
       case _ =>

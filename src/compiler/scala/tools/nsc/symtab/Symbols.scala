@@ -9,7 +9,7 @@ import scala.tools.util.AbstractFile;
 import scala.tools.nsc.util.{Position, SourceFile};
 import Flags._;
 
-[_trait_] abstract class Symbols: SymbolTable {
+mixin class Symbols requires SymbolTable {
   import definitions._;
 
   private var ids = 0;

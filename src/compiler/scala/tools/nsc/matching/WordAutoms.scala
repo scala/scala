@@ -10,7 +10,7 @@ import java.util._ ;
 
 import scala.tools.nsc.util.Position;
 
-trait WordAutoms: TransMatcher {
+mixin class WordAutoms requires TransMatcher {
 
   import global._ ;
   /** translates a recognizer to scala code

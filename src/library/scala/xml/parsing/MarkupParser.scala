@@ -23,7 +23,7 @@ import scala.xml.dtd._ ;
  * While XML elements are returned, DTD declarations - if handled - are
  * collected using side-effects.
  */
-[_trait_] abstract class MarkupParser: (MarkupParser with MarkupHandler) extends AnyRef with TokenTests {
+mixin class MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef with TokenTests {
 
   val input: Source;
 

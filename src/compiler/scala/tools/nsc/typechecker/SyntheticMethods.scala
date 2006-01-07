@@ -18,7 +18,7 @@ import scala.collection.mutable.ListBuffer;
  *       unless they are defined in the class or a baseclass
  *       different from java.lang.Object
 */
-[_trait_] abstract class SyntheticMethods: Analyzer {
+mixin class SyntheticMethods requires Analyzer {
   import global._;                  // the global environment
   import definitions._;             // standard classes and methods
   import typer.{typed};             // methods to type trees

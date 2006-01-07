@@ -150,6 +150,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def rootLoader: LazyType = new loaders.PackageLoader(classPath.getRoot());
 
+  val migrateMsg = "migration problem when moving from Scala version 1.0 to version 2.0:\n";
+
 // Phases ------------------------------------------------------------
 
   var globalPhase: Phase = NoPhase;

@@ -13,7 +13,7 @@ import scala.{Symbol => scala_Symbol};
 
 import scala.tools.nsc.symtab.Flags;
 
-trait Members: ICodes {
+mixin class Members requires ICodes {
   import global._;
 
   /**

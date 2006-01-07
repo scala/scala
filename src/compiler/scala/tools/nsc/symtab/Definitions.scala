@@ -9,7 +9,7 @@ import scala.tools.nsc.util.Position;
 import collection.mutable.HashMap;
 import Flags._;
 
-[_trait_] abstract class Definitions: SymbolTable {
+mixin class Definitions requires SymbolTable {
 
   object definitions {
 

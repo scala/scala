@@ -9,7 +9,7 @@ import symtab.Flags._;
 
 /** Variances form a lattice, 0 <= COVARIANT <= Variances, 0 <= CONTRAVARIANT <= VARIANCES
  */
-[_trait_] abstract class Variances {
+mixin class Variances {
 
   val global: Global;
   import global._;

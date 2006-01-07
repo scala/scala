@@ -25,7 +25,7 @@ package scala.tools.nsc.backend.icode;
 
 import scala.collection.mutable.{Map, HashMap};
 
-[_trait_] abstract class TypeKinds: ICodes {
+mixin class TypeKinds requires ICodes {
   import global._;
 
   /** This class represents a type kind. Type kinds

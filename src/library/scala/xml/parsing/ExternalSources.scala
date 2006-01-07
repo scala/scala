@@ -13,8 +13,7 @@ import scala.io.Source;
 import java.net._;
 import java.io._;
 
-trait ExternalSources : (ExternalSources with MarkupParser with MarkupHandler)  {
-
+mixin class ExternalSources requires (ExternalSources with MarkupParser with MarkupHandler)  {
 
   private def externalSourceFromURL(url:URL): Source = {
     val in =

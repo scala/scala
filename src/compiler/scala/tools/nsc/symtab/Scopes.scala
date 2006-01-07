@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-[_trait_] abstract class Scopes: SymbolTable {
+mixin class Scopes requires SymbolTable {
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
 

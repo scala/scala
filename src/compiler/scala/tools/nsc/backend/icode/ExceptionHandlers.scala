@@ -17,7 +17,7 @@ import scala.collection.mutable.HashSet;
  * all our handlers will catch `Throwable' and rely on proper ordering
  * in the generated code to preserve nesting.
  */
-trait ExceptionHandlers: ICodes {
+mixin class ExceptionHandlers requires ICodes {
   import global.{Symbol, NoSymbol};
 
   class ExceptionHandler(val method: IMethod, label: String, val cls: Symbol) {

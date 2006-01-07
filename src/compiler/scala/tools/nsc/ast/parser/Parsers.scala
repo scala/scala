@@ -38,7 +38,7 @@ import Tokens._;
  *  (4) Wraps naked case definitions in a match as follows:
  *        { cases }   ==>   (x => x.match {cases}), except when already argument to match
  */
-[_trait_] abstract class Parsers: SyntaxAnalyzer {
+mixin class Parsers requires SyntaxAnalyzer {
 
   import global._;
   import posAssigner.atPos;
@@ -106,8 +106,21 @@ import Tokens._;
 	unit.error(pos, msg);
 	in.errpos = pos;
       }
-      if (skipIt) skip();
+      if (skipIt) {
+        in.skipping = true;
+        skip();
+        in.skipping = false;
+      }
     }
+
+    def syntaxErrorMigrate(msg: String) =
+      syntaxError(in.currentPos, migrateMsg + msg, false);
+
+    def warning(msg: String) =
+      if (in.currentPos != in.errpos) {
+        unit.warning(in.currentPos, msg);
+	in.errpos = in.currentPos;
+      }
 
     def accept(token: int): int = {
       val pos = in.currentPos;
@@ -311,9 +324,18 @@ import Tokens._;
 	in.nextToken();
 	name
       } else {
+        if (settings.migrate.value &&
+            in.token == REQUIRES || in.token == IMPLICIT || in.token == MIXIN)
+          syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
 	accept(IDENTIFIER);
 	nme.ERROR
       }
+
+    def selector(t: Tree) = {
+      if (in.token == MATCH && settings.migrate.value)
+        syntaxErrorMigrate("Period should be omitted before `match'")
+      Select(t, ident())
+    }
 
     /** StableRef  ::= StableId
      *              |  [Ident `.'] this
@@ -329,7 +351,7 @@ import Tokens._;
 	t = atPos(in.skipToken()) {
 	  Super(nme.EMPTY.toTypeName, mixinQualifierOpt())
 	}
-	t = atPos(accept(DOT)) { Select(t, ident()) }
+	t = atPos(accept(DOT)) { selector(t) }
 	if (in.token == DOT)
 	  t = { selectors(t, typeOK, in.skipToken()) }
       } else {
@@ -345,7 +367,7 @@ import Tokens._;
 	  } else if (in.token == SUPER) {
 	    in.nextToken();
 	    t = atPos(i.pos) { Super(i.name.toTypeName, mixinQualifierOpt()) }
-	    t = atPos(accept(DOT)) { Select(t, ident())}
+	    t = atPos(accept(DOT)) { selector(t)}
 	    if (in.token == DOT)
 	      t = { selectors(t, typeOK, in.skipToken()) }
 	  } else {
@@ -361,7 +383,7 @@ import Tokens._;
 	in.nextToken();
 	atPos(pos) { SingletonTypeTree(t) }
       } else {
-	val t1 = atPos(pos) { Select(t, ident()); }
+	val t1 = atPos(pos) { selector(t); }
 	if (in.token == DOT) { selectors(t1, typeOK, in.skipToken()) }
 	else t1
       }
@@ -439,7 +461,14 @@ import Tokens._;
       }
     }
 
-    def newLineOpt(): unit = if (in.token == NEWLINE) in.nextToken();
+    def newLineOpt(): unit =
+      if (in.token == NEWLINE) {
+        if (settings.migrate.value) in.newNewLine = false;
+        in.nextToken();
+      }
+
+    def newLineOptWhenFollowedBy(token: int): unit =
+      if (in.token == NEWLINE && in.next.token == token) newLineOpt();
 
 //////// TYPES ///////////////////////////////////////////////////////////////
 
@@ -452,7 +481,11 @@ import Tokens._;
     /** RequiresTypedOpt ::= [`:' SimpleType | requires SimpleType]
     */
     def requiresTypeOpt(): Tree =
-      if (in.token == COLON | in.token == REQUIRES) { in.nextToken(); simpleType() }
+      if (in.token == COLON | in.token == REQUIRES) {
+        if (in.token == COLON)
+          warning("`:' has been deprecated; use `requires' instead");
+        in.nextToken(); simpleType()
+      }
       else TypeTree();
 
     /** Types ::= Type {`,' Type}
@@ -511,10 +544,10 @@ import Tokens._;
     }
 
     /** SimpleType ::= SimpleType TypeArgs
-     *              | SimpleType `#' Id
-     *              | StableId
-     *              | StableRef `.' type
-     *              | `(' Type `)'
+     *              |  SimpleType `#' Id
+     *              |  StableId
+     *              |  StableRef `.' type
+     *              |  `(' Type `)'
      */
     def simpleType(): Tree = {
       val pos = in.currentPos;
@@ -814,13 +847,19 @@ import Tokens._;
           }
 	  isNew = true
 	case _ =>
+          if (settings.migrate.value) {
+            if (in.token == MATCH)
+              syntaxErrorMigrate("`match' must be preceded by a selector expression")
+            else if (in.token == REQUIRES || in.token == IMPLICIT || in.token == MIXIN)
+              syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
+          }
 	  syntaxError("illegal start of simple expression", true);
 	  t = errorTermTree
       }
       while (true) {
 	in.token match {
 	  case DOT =>
-	    t = atPos(in.skipToken()) { Select(t, ident()) }
+	    t = atPos(in.skipToken()) { selector(t) }
 	  case LBRACKET =>
 	    t match {
 	      case Ident(_) | Select(_, _) =>
@@ -1054,6 +1093,9 @@ import Tokens._;
         //Console.println("successfully parsed xml pattern "+r); DEBUG
         r
       case _ =>
+        if (settings.migrate.value &&
+            in.token == REQUIRES || in.token == IMPLICIT || in.token == MIXIN)
+          syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
 	syntaxError("illegal start of simple pattern", true);
 	errorPatternTree
     }
@@ -1128,11 +1170,11 @@ import Tokens._;
 
 //////// PARAMETERS //////////////////////////////////////////////////////////
 
-    /** ParamClauses ::= {`(' [Param {`,' Param}] ')'}
-     *                   [`(' implicit Param {`,' Param} `)']
+    /** ParamClauses ::= {[NL] `(' [Param {`,' Param}] ')'}
+     *                   [[NL] `(' implicit Param {`,' Param} `)']
      *  Param ::= Id `:' ParamType
-     *  ClassParamClauses ::= {`(' [ClassParam {`' ClassParam}] ')'}
-     *                        [`(' implicit ClassParam {`,' ClassParam} `)']
+     *  ClassParamClauses ::= {[NL] `(' [ClassParam {`' ClassParam}] ')'}
+     *                        [[NL] [`(' implicit ClassParam {`,' ClassParam} `)']
      *  ClassParam ::= [[modifiers] (val | var)] Param
      */
     def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: boolean): List[List[ValDef]] = {
@@ -1178,11 +1220,13 @@ import Tokens._;
       }
       val vds = new ListBuffer[List[ValDef]];
       val pos = in.currentPos;
+      newLineOptWhenFollowedBy(LPAREN);
       while (implicitmod == 0 && in.token == LPAREN) {
 	in.nextToken();
 	vds += paramClause();
 	accept(RPAREN);
-	caseParam = false
+	caseParam = false;
+        newLineOptWhenFollowedBy(LPAREN);
       }
       val result = vds.toList;
       if (owner == nme.CONSTRUCTOR &&
@@ -1214,7 +1258,7 @@ import Tokens._;
         } else t
       }
 
-    /** TypeParamClauseOpt ::= [`[' TypeParam {`,' TypeParam} `]']
+    /** TypeParamClauseOpt ::= [[NL] `[' TypeParam {`,' TypeParam} `]']
      *  TypeParam    ::= [`+' | `-'] FunTypeParam
      *  FunTypeParamClauseOpt ::= [`[' FunTypeParam {`,' FunTypeParam} `]']
      *  FunTypeParam ::= Id TypeBounds
@@ -1240,6 +1284,7 @@ import Tokens._;
         param
       }
       val params = new ListBuffer[AbsTypeDef];
+      newLineOptWhenFollowedBy(LBRACKET);
       if (in.token == LBRACKET) {
         in.nextToken();
         params += typeParam();
@@ -1285,7 +1330,7 @@ import Tokens._;
         var pos = 0;
         if (in.token == THIS) {
           t = atPos(in.currentPos) { This(nme.EMPTY.toTypeName) }
-          t = atPos(accept(DOT)) { Select(t, ident()) }
+          t = atPos(accept(DOT)) { selector(t) }
           pos = accept(DOT);
         } else {
           val i = atPos(in.currentPos) { Ident(ident()) }
@@ -1293,7 +1338,7 @@ import Tokens._;
           if (in.token == THIS) {
             in.nextToken();
             t = atPos(i.pos) { This(i.name.toTypeName) }
-            t = atPos(accept(DOT)) { Select(t, ident()) }
+            t = atPos(accept(DOT)) { selector(t) }
             pos = accept(DOT);
           } else {
             t = i;
@@ -1478,8 +1523,9 @@ import Tokens._;
           val statlist = new ListBuffer[Tree];
 	  statlist += selfInvocation();
           val stats =
-            if (in.token == SEMI || in.token == NEWLINE) { in.nextToken(); blockStatSeq(statlist) }
-            else statlist.toList;
+            if (in.token == SEMI || in.token == NEWLINE) {
+              in.nextToken(); blockStatSeq(statlist)
+            } else statlist.toList;
           accept(RBRACE);
           makeBlock(stats)
         }
@@ -1566,9 +1612,13 @@ import Tokens._;
      */
     def classTemplate(mods: Modifiers, name: Name, vparamss: List[List[ValDef]]): Template =
       atPos(in.currentPos) {
-        def acceptEmptyTemplateBody(msg: String): unit =
-          if (!(in.token == SEMI || in.token == NEWLINE || in.token == COMMA || in.token == RBRACE))
+        def acceptEmptyTemplateBody(msg: String): unit = {
+          if (in.token == LPAREN && settings.migrate.value)
+            syntaxErrorMigrate("mixin classes may not have parameters");
+          if (!(in.token == SEMI || in.token == NEWLINE ||
+                in.token == COMMA || in.token == RBRACE))
             syntaxError(msg, true);
+        }
         val parents = new ListBuffer[Tree];
         val argss = new ListBuffer[List[Tree]];
         if (in.token == EXTENDS) {
@@ -1584,6 +1634,8 @@ import Tokens._;
 	    parents += simpleType()
           }
         } else {
+          if (in.token == WITH && settings.migrate.value)
+            syntaxErrorMigrate("`extends' needed before `with'")
           if (in.token != LBRACE) acceptEmptyTemplateBody("`extends' or `{' expected");
           argss += List()
         }
@@ -1591,7 +1643,7 @@ import Tokens._;
           parents += scalaScalaObjectConstr;
 	if (mods.hasFlag(Flags.CASE)) parents += caseClassConstr;
         val ps = parents.toList;
-        if (in.token == NEWLINE && in.next.token == LBRACE) in.nextToken();
+        newLineOptWhenFollowedBy(LBRACE);
 	var body =
 	  if (in.token == LBRACE) templateBody()
 	  else { acceptEmptyTemplateBody("`{' expected"); List() }

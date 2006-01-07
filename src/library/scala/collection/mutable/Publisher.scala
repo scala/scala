@@ -20,7 +20,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-[_trait_] abstract class Publisher[A, This <: Publisher[A, This]]: This {
+mixin class Publisher[A, This <: Publisher[A, This]] requires This {
     private val filters = new HashMap[Subscriber[A, This],
                                       scala.collection.mutable.Set[A => Boolean]]
                             with MultiMap[Subscriber[A, This], A => Boolean];

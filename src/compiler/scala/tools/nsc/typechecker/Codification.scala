@@ -10,7 +10,7 @@ import scala.collection.immutable.ListMap;
 import scala.collection.mutable.ListBuffer;
 import scala.tools.nsc.util.FreshNameCreator;
 
-[_trait_] abstract class Codification: Analyzer {
+mixin class Codification requires Analyzer {
 
   import global._;
 

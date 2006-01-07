@@ -20,7 +20,7 @@ import scala.tools.nsc.util.Position;
 import scala.xml.{Text,TextBuffer};
 
 
-trait MarkupParsers: SyntaxAnalyzer {
+trait MarkupParsers requires SyntaxAnalyzer {
 
   import global._ ;
   import posAssigner.atPos;

@@ -30,7 +30,7 @@ import Flags._;
   case TypeVar(_, _) =>
 */
 
-[_trait_] abstract class Types: SymbolTable {
+mixin class Types requires SymbolTable {
   import definitions._;
 
   //statistics
@@ -413,7 +413,7 @@ import Flags._;
 
 // Subclasses ------------------------------------------------------------
 
-  [_trait_] abstract class UniqueType {
+  mixin class UniqueType {
     private val hashcode = { val h = super.hashCode(); if (h < 0) -h else h }
     override def hashCode() = hashcode;
   }

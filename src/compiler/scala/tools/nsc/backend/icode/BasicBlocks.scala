@@ -11,7 +11,7 @@ import scala.tools.nsc.ast._;
 import scala.collection.mutable.Map;
 import scala.tools.nsc.util.Position;
 
-trait BasicBlocks: ICodes {
+mixin class BasicBlocks requires ICodes {
   import opcodes._;
 
   /** This class represents a basic block. Each

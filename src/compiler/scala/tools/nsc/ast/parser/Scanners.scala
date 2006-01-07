@@ -10,7 +10,7 @@ import scala.tools.nsc.util.{Position, SourceFile}
 import SourceFile.{LF, FF, CR, SU}
 import scala.tools.nsc.util.CharArrayReader
 
-[_trait_] abstract class Scanners: SyntaxAnalyzer {
+mixin class Scanners requires SyntaxAnalyzer {
 
   import global._
 
@@ -94,6 +94,16 @@ import scala.tools.nsc.util.CharArrayReader
      */
     var sepRegions: List[int] = List()
 
+    /** A new line was inserted where in version 1.0 it would not be.
+     *  Only significant if settings.migrate.value is set
+     */
+    var newNewLine = false;
+
+    /** Parser is currently skipping ahead because of an error.
+     *  Only significant if settings.migrate.value is set
+     */
+    var skipping = false;
+
 // Get next token ------------------------------------------------------------
 
     /** read next token and return last position
@@ -121,6 +131,12 @@ import scala.tools.nsc.util.CharArrayReader
       } else if (token == RBRACKET || token == RPAREN || token == ARROW) {
         if (!sepRegions.isEmpty && sepRegions.head == token)
           sepRegions = sepRegions.tail
+      }
+
+      if (newNewLine && !skipping) {
+        unit.warning(pos, migrateMsg + "new line will start a new statement here;\n"
+                     + "to suppress it, enclose expression in parentheses (...)")
+        newNewLine = false
       }
 
       val lastToken = token
@@ -157,7 +173,9 @@ import scala.tools.nsc.util.CharArrayReader
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         next.copyFrom(this)
         pos = in.lineStartPos
+        if (settings.migrate.value) newNewLine = lastToken != RBRACE && token != EOF;
         token = NEWLINE
+
 /*
       } else if (lastToken == RBRACE) {
         System.out.println("failing to insert NL after RBRACE: " + sepRegions + " " +
