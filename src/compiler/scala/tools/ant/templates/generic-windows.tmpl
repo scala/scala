@@ -10,7 +10,7 @@ rem ##########################################################################
 
 if "%OS%"=="Windows_NT" (
   @@setlocal
-  set _SCALA_HOME=%~dp0..
+  set _PREFIX=%~dp0..
 ) else (
   set _PREFIX=%SCALA_HOME%
   if "%_PREFIX%"=="" goto error1
