@@ -181,7 +181,8 @@ package scala.tools.ant {
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
     private def getWinClasspath: String =
-      classpath.mkString("", ";", "")
+      classpath.map(.replace("/", "\\")).
+                mkString("", ";", "")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
@@ -252,6 +253,16 @@ package scala.tools.ant {
         writer.close()
       }
 
+    private def expandUnixVar(vars: Map[String,String]): Map[String,String] =
+      vars.map((key:String,vari:String) => vari.
+        replaceAll("#([^#]*)#", "\\$$1")
+      )
+
+    private def expandWinVar(vars: Map[String,String]): Map[String,String] =
+      vars.map((key:String,vari:String) => vari.
+        replaceAll("#([^#]*)#", "%_$1%")
+      )
+
 
 /******************************************************************************\
 **                           The big execute method                           **
@@ -275,7 +286,8 @@ package scala.tools.ant {
         update("javaflags", javaFlags).
         update("toolflags", toolFlags)
       if (platforms.contains("unix")) {
-        val unixPatches = patches.update("classpath", getUnixClasspath)
+        val unixPatches = expandUnixVar(
+          patches.update("classpath", getUnixClasspath))
         val unixTemplateResource = resourceRoot + "tool-unix.tmpl"
         val unixTemplate = readResource(unixTemplateResource, unixPatches)
         writeFile(getFile, unixTemplate)
@@ -286,7 +298,8 @@ package scala.tools.ant {
         }
       }
       if (platforms.contains("windows")) {
-        val winPatches = patches.update("classpath", getWinClasspath)
+        val winPatches = expandWinVar(
+          patches.update("classpath", getWinClasspath))
         val winTemplateResource = resourceRoot + "tool-windows.tmpl"
         val winTemplate = readResource(winTemplateResource, winPatches)
         writeFile(new File(getFile.getAbsolutePath() + ".bat"), winTemplate)

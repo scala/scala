@@ -65,10 +65,10 @@ PROPERTIES
   <property name="dist.name" value="scala"/>
   <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
   <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
-  <property name="scala.exec.name" value="${dist.name}"/>
-  <property name="scalai.exec.name" value="${dist.name}i"/>
-  <property name="scalac.exec.name" value="${dist.name}c"/>
-  <property name="scalatok.exec.name" value="${dist.name}tok"/>
+  <property name="scala.exec.name" value="${dist.name}2"/>
+  <property name="scalai.exec.name" value="${dist.name}i2"/>
+  <property name="scalac.exec.name" value="${dist.name}c2"/>
+  <property name="scalatok.exec.name" value="${dist.name}tok2"/>
   <!-- Shorcut names -->
   <property name="locker.lib.dir" value="${locker.dir}/${lib.dir.name}"/>
   <property name="locker.comp.dir" value="${locker.dir}/${comp.dir.name}"/>
@@ -478,8 +478,8 @@ BUILD QUICK-TEST LAYER
                 class="scala.tools.nsc.Main"
                 version="${version.number}"
                 copyright="${copyright}"
-                classpath="$$PREFIX/${lib.dir.name}:$$PREFIX/${comp.dir.name}:$$PREFIX/${fjbg.name}:$$PREFIX/${msil.name}"
-                properties="scala.boot.class.path=$$CP"
+                classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
+                properties="scala.boot.class.path=#CLASSPATH#"
                 javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
            perm="ugo+rx"/>
@@ -558,14 +558,14 @@ TEST
     <!-- Build executable files -->
     <mkdir dir="${strap.dir}/${exec.dir.name}"/>
     <quicktool file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
-                genericFile="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
-                name="Scala compiler"
-                class="scala.tools.nsc.Main"
-                version="${version.number}"
-                copyright="${copyright}"
-                classpath="$$PREFIX/${lib.dir.name}:$$PREFIX/${comp.dir.name}:$$PREFIX/${fjbg.name}:$$PREFIX/${msil.name}"
-                properties="scala.boot.class.path=$$CP"
-                javaFlags="-Xmx256M -Xms16M"/>
+               genericFile="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
+               name="Scala compiler"
+               class="scala.tools.nsc.Main"
+               version="${version.number}"
+               copyright="${copyright}"
+               classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
+               properties="scala.boot.class.path=#CLASSPATH#"
+               javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
            perm="ugo+rx"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
@@ -629,16 +629,21 @@ GENERATES A DISTRIBUTION
     <copy file="${fjbg.jar}" todir="${dist.current.dir}/lib"/>
     <copy file="${msil.jar}" todir="${dist.current.dir}/lib"/>
     <mkdir dir="${dist.current.dir}/bin"/>
-    <build.exec.unix lib.path="$$PREFIX/lib/${lib.jar.name}"
-                comp.path="$$PREFIX/lib/${comp.jar.name}"
-                fjbg.path="$$PREFIX/lib/${fjbg.name}"
-                msil.path="$$PREFIX/lib/${msil.name}"
-                exec.dir="${dist.current.dir}/bin"/>
-    <build.exec.win lib.path="%SCALA_HOME%\lib\${lib.jar.name}"
-                comp.path="%SCALA_HOME%\lib\${comp.jar.name}"
-                fjbg.path="%SCALA_HOME%\lib\${fjbg.name}"
-                msil.path="%SCALA_HOME%\lib\${msil.name}"
-                exec.dir="${dist.current.dir}\bin"/>
+    <!-- Build executable files -->
+    <mkdir dir="${dist.current.dir}/bin"/>
+    <lockertool file="${dist.current.dir}/bin/${scalac.exec.name}"
+                genericFile="${dist.current.dir}/bin/${scala.exec.name}"
+                name="Scala compiler"
+                class="scala.tools.nsc.Main"
+                version="${version.number}"
+                copyright="${copyright}"
+                classpath=""
+                properties="scala.boot.class.path=#CLASSPATH#"
+                javaFlags="-Xmx256M -Xms16M"/>
+    <chmod file="${dist.current.dir}/bin/${scalac.exec.name}"
+           perm="ugo+rx"/>
+    <chmod file="${dist.current.dir}/bin/${scala.exec.name}"
+           perm="ugo+rx"/>
     <if><isset property="os.unix"/>
       <then>
         <symlink link="${dist.latest.dir}"

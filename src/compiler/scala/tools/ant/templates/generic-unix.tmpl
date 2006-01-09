@@ -32,12 +32,12 @@ PREFIX=`dirname "$SOURCE"`/..;
 prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
-CP=@classpath@
-if [ "$CP" == "" ] ; then
+CLASSPATH=@classpath@
+if [ "$CLASSPATH" == "" ] ; then
   for jar in `ls $PREFIX/lib/*.jar` ; do
-    CP=$CP:$jar
+    CLASSPATH=$CLASSPATH:$jar
   done
-  CP=${CP:1}
+  CLASSPATH=${CLASSPATH:1}
 fi
 
 if $cygwin; then
@@ -46,15 +46,15 @@ if $cygwin; then
     else
         format=windows
     fi
-    CP=`cygpath --path --$format "$CP"`
+    CLASSPATH=`cygpath --path --$format "$CLASSPATH"`
 fi
 
 for flag in "$@@" ; do
     if [ $flag == '-version' ] ; then
-        echo "Scala runtime version @version@"
+        echo "Scala runtime version @version@ -- @copyright@"
         ${JAVACMD:=java} -version
         exit 0
     fi
 done
 
-${JAVACMD:=java} @javaflags@ -cp "$CP" "$@@"
+${JAVACMD:=java} @javaflags@ -Xbootclasspath/a:"$CLASSPATH" "$@@"
