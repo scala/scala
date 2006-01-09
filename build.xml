@@ -39,6 +39,7 @@ PROPERTIES
   <property name="nsc.logging" value="none"/>
   <property name="nsc.debug-info" value="yes"/>
   <property name="nsc.excludes" value="build.excludes"/>
+  <property name="nsc.params" value=""/>
   <!-- Location of pre-compiled libraries properties -->
   <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="starr.comp.jar" value="${lib.dir}/scala-compiler.jar"/>
@@ -143,6 +144,9 @@ INITIALISATION
     <taskdef name="starr"
              classname="scala.tools.ant.Scalac"
              classpathref="starr.classpath"/>
+    <taskdef name="starrtool"
+             classname="scala.tools.ant.ScalaTool"
+             classpathref="starr.classpath"/>
     <taskdef name="pico"
              classname="jaco.pizza.ant.Pico"
              classpath="${jaco.jar}"/>
@@ -239,71 +243,6 @@ INITIALISATION
 BUILD SUPPORT MACROS
 ============================================================================ -->
   
-  <macrodef name="build.exec.unix">
-    <attribute name="lib.path"/>
-    <attribute name="comp.path"/>
-    <attribute name="fjbg.path"/>
-    <attribute name="msil.path"/>
-    <attribute name="exec.dir"/>
-    <sequential>
-      <mkdir dir="@{exec.dir}"/>
-      <copy file="${src.dir}/${exec.dir.name}/scala.unix.tmpl"
-            tofile="@{exec.dir}/scala">
-        <filterset>
-          <filter token="version" value="${version.number}"/>
-          <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.path}"/>
-        </filterset>
-      </copy>
-      <chmod file="@{exec.dir}/scala" perm="ugo+rx"/>
-      <copy file="${src.dir}/${exec.dir.name}/scala-tool.unix.tmpl"
-            tofile="@{exec.dir}/scalac">
-        <filterset>
-          <filter token="version" value="${version.number}"/>
-          <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.path}"/>
-          <filter token="comp.path" value="@{comp.path}"/>
-          <filter token="fjbg.jar" value="@{fjbg.path}"/>
-          <filter token="msil.jar" value="@{msil.path}"/>
-          <filter token="tool.class" value="scala.tools.nsc.Main"/>
-        </filterset>
-      </copy>
-      <chmod file="@{exec.dir}/scalac" perm="ugo+rx"/>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="build.exec.win">
-    <attribute name="lib.path"/>
-    <attribute name="comp.path"/>
-    <attribute name="fjbg.path"/>
-    <attribute name="msil.path"/>
-    <attribute name="exec.dir"/>
-    <sequential>
-      <mkdir dir="@{exec.dir}"/>
-      <copy file="${src.dir}/${exec.dir.name}/scala.win.tmpl"
-            tofile="@{exec.dir}/scala.bat">
-        <filterset>
-          <filter token="product" value="scala"/>
-          <filter token="version" value="${version.number}"/>
-          <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.path}"/>
-        </filterset>
-      </copy>
-      <copy file="${src.dir}/${exec.dir.name}/scala-tool.win.tmpl"
-            tofile="@{exec.dir}/scalac.bat">
-        <filterset>
-          <filter token="version" value="${version.number}"/>
-          <filter token="copyright" value="${copyright}"/>
-          <filter token="lib.path" value="@{lib.path}"/>
-          <filter token="comp.path" value="@{comp.path}"/>
-          <filter token="fjbg.jar" value="@{fjbg.path}"/>
-          <filter token="msil.jar" value="@{msil.path}"/>
-          <filter token="tool.class" value="scala.tools.nsc.Main"/>
-        </filterset>
-      </copy>
-    </sequential>
-  </macrodef>
-  
   <macrodef name="build.support">
     <attribute name="build.dir"/>
     <sequential>
@@ -391,16 +330,20 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
                  overwrite="yes"
                  failonerror="no"/>
     <!-- Build executable files -->
-    <build.exec.unix lib.path="$$PREFIX/${lib.dir.name}"
-                comp.path="$$PREFIX/${comp.dir.name}"
-                fjbg.path="$$PREFIX/${fjbg.name}"
-                msil.path="$$PREFIX/${msil.name}"
-                exec.dir="${locker.dir}/${exec.dir.name}"/>
-    <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
-                comp.path="%SCALA_HOME%\${comp.dir.name}"
-                fjbg.path="%SCALA_HOME%\${fjbg.name}"
-                msil.path="%SCALA_HOME%\${msil.name}"
-                exec.dir="${locker.dir}\${exec.dir.name}"/>
+    <mkdir dir="${locker.dir}/${exec.dir.name}"/>
+    <starrtool file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
+                genericFile="${locker.dir}/${exec.dir.name}/${scala.exec.name}"
+                name="Scala compiler"
+                class="scala.tools.nsc.Main"
+                version="${version.number}"
+                copyright="${copyright}"
+                classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
+                properties="scala.boot.class.path=#CLASSPATH#"
+                javaFlags="-Xmx256M -Xms16M"/>
+    <chmod file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
+           perm="ugo+rx"/>
+    <chmod file="${locker.dir}/${exec.dir.name}/${scala.exec.name}"
+           perm="ugo+rx"/>
   </target>
 
 <!-- ===========================================================================
@@ -420,7 +363,8 @@ BUILD QUICK-TEST LAYER
     </pico>
     <locker srcdir="${src.dir}/${lib.dir.name}"
            destdir="${quick.lib.dir}"
-           usepredefs="no">
+           usepredefs="no"
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -428,7 +372,8 @@ BUILD QUICK-TEST LAYER
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </locker>
     <locker srcdir="${src.dir}/${lib.dir.name}"
-           destdir="${quick.lib.dir}">
+           destdir="${quick.lib.dir}"
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -449,7 +394,8 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.java"/>
     </pico>
     <locker srcdir="${src.dir}/${comp.dir.name}"
-           destdir="${quick.comp.dir}">
+           destdir="${quick.comp.dir}"
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
@@ -505,7 +451,8 @@ TEST
     </pico>
     <quick srcdir="${src.dir}/${lib.dir.name}"
            destdir="${strap.lib.dir}"
-           usepredefs="no">
+           usepredefs="no"
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -513,7 +460,8 @@ TEST
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </quick>
     <quick srcdir="${src.dir}/${lib.dir.name}"
-           destdir="${strap.lib.dir}">
+           destdir="${strap.lib.dir}"
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -534,7 +482,8 @@ TEST
       <include name="**/*.java"/>
     </pico>
     <quick srcdir="${src.dir}/${comp.dir.name}"
-           destdir="${strap.comp.dir}">
+           destdir="${strap.comp.dir}"
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
         <pathelement location="${strap.comp.dir}"/>

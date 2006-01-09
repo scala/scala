@@ -41,7 +41,8 @@ package scala.tools.ant {
     *  <li>logging,</li>
     *  <li>logphase,</li>
     *  <li>usepredefs,</li>
-    *  <li>debugcode.</li>
+    *  <li>debugcode,</li>
+    *  <li>addparams.</li>
     * </ul>
     * It also takes the following parameters as nested elements:<ul>
     *  <li>src (for srcdir),</li>
@@ -114,6 +115,8 @@ package scala.tools.ant {
     private var usepredefs: Boolean = true;
     /** Instruct the compiler to generate debugging information */
     private var debugCode: Boolean = false
+    /** Instruct the compiler to generate debugging information */
+    private var addParams: String = ""
 
 /******************************************************************************\
 **                             Properties setters                             **
@@ -254,6 +257,10 @@ package scala.tools.ant {
     /** Set the debug info attribute. */
     def setDebugCode(input: Boolean): Unit =
       debugCode = input
+
+    /** Set the debug info attribute. */
+    def setAddparams(input: String): Unit =
+      addParams = input
 
 /******************************************************************************\
 **                             Properties getters                             **
@@ -419,6 +426,20 @@ package scala.tools.ant {
       if (!logPhase.isEmpty) settings.log.value = logPhase
       settings.nopredefs.value = !usepredefs;
       settings.debuginfo.value = debugCode
+
+      log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
+      var args =
+        if (addParams.trim() == "") Nil
+        else List.fromArray(addParams.trim().split(" ")).map(.trim())
+      while(!args.isEmpty) {
+        val argsBuf = args
+        if (args.head.startsWith("-")) {
+          for (val setting <- settings.allSettings)
+            args = setting.tryToSet(args);
+        } else error("Parameter '" + args.head + "' does not start with '-'.")
+        if (argsBuf eq args)
+          error("Parameter '" + args.head + "' is not recognised by Scalac.")
+      }
 
       // Compiles the actual code
       val compiler = new Global(settings, reporter)
