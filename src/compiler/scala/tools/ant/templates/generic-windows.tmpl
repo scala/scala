@@ -47,10 +47,10 @@ rem ##########################################################################
 rem # subroutines
 
 :add_cpath
-  if "%_CPATH%"=="" (
-    set _CPATH=%~1
+  if "%_CLASSPATH%"=="" (
+    set _CLASSPATH=%~1
   ) else (
-    set _CPATH=%_CPATH%;%~1
+    set _CLASSPATH=%_CLASSPATH%;%~1
   )
 goto :eof
 
