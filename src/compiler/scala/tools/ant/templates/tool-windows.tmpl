@@ -1,4 +1,4 @@
-@echo off
+@@echo off
 
 rem ##########################################################################
 rem # Copyright @copyright@
@@ -8,28 +8,52 @@ rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
-if "%OS%"=="Windows_NT" @setlocal
-if "%OS%"=="Windows_NT" @set SCALA_HOME=%~dp0..
+if "%OS%" == "Windows_NT" (
+  @@setlocal
+  set _PREFIX=%~dp0..
+) else (
+  set _PREFIX=%SCALA_HOME%
+  if "%_PREFIX%" == "" goto error1
+)
 
-if "%SCALA_HOME%"=="" goto error1
+set _JAVACMD=%JAVACMD%
+if "%_JAVACMD%" == "" set _JAVACMD=java
+set _JAVAFLAGS=@javaflags@
 
+set _CLASSPATH=@classpath@
+if not "%_CLASSPATH%"=="" goto args
+for %%f in ("%_PREFIX%\lib\*.jar") do call :add_cpath "%%f"
+
+:args
 set _ARGS=
 :loop
-if '%1' == '' goto exec
+if "%1" == "" goto exec
+if "%1" == "-version" goto version
 set _ARGS=%_ARGS% %1
 shift
 goto loop
 
 :exec
-set _JAVACMD=java
-set _MAIN=@tool.class@
-set _TOOLS_CPATH=@fjbg.jar@;@msil.jar@;@comp.path@;@lib.path@
-set _LIB_CPATH=@lib.path@
-set _PROPS=-Dscala.version=@version@ -Dscala.home="%SCALA_HOME%" -Dscala.boot.class.path="%_LIB_CPATH%"
+set _PROPS=-Dscala.home="%SCALA_HOME%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
 
-rem echo %_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% %_ARGS%
-%_JAVACMD% %_PROPS% -cp %_TOOLS_CPATH% %_MAIN% %_ARGS%
+rem echo %_JAVACMD% %_JAVAFLAGS% %_PROPS% -cp %_CLASSPATH% @class@ @toolflags@ %_ARGS%
+%_JAVACMD% %_JAVAFLAGS% %_PROPS% -cp %_CLASSPATH% @class@ @toolflags@ %_ARGS%
 goto end
+
+:version
+echo @name@ version @version@ -- @copyright@
+goto end
+
+rem ##########################################################################
+rem # subroutines
+
+:add_cpath
+  if "%_CPATH%"=="" (
+    set _CPATH=%~1
+  ) else (
+    set _CPATH=%_CPATH%;%~1
+  )
+goto :eof
 
 rem ##########################################################################
 rem # errors
@@ -39,4 +63,4 @@ echo ERROR: environment variable SCALA_HOME is undefined. It should point to the
 goto end
 
 :end
-if "%OS%"=="Windows_NT" @endlocal
+if "%OS%"=="Windows_NT" @@endlocal
