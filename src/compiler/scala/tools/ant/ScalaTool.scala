@@ -32,9 +32,9 @@ package scala.tools.ant {
     *  <li>copyright,</li>
     *  <li>classpath,</li>
     *  <li>properties,</li>
-    *  <li>javaFlags,</li>
-    *  <li>toolFlags,</li>
-    *  <li>genericFile.</li></ul>
+    *  <li>javaflags,</li>
+    *  <li>toolflags,</li>
+    *  <li>genericfile.</li></ul>
     *
     * @author Gilles Dubochet */
   class ScalaTool extends MatchingTask {
@@ -150,17 +150,17 @@ package scala.tools.ant {
 
     /** Sets the version attribute. Used by Ant.
       * @param input The value of <code>version</code>. */
-    def setJavaFlags(input: String) =
+    def setJavaflags(input: String) =
       javaFlags = input
 
     /** Sets the version attribute. Used by Ant.
       * @param input The value of <code>version</code>. */
-    def setToolFlags(input: String) =
+    def setToolflags(input: String) =
       toolFlags = input
 
     /** Sets the version attribute. Used by Ant.
       * @param input The value of <code>version</code>. */
-    def setGenericFile(input: File) =
+    def setGenericfile(input: File) =
       genericFile = Some(input)
 
 /******************************************************************************\
@@ -181,7 +181,7 @@ package scala.tools.ant {
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
     private def getWinClasspath: String =
-      classpath.map(.replace("/", "\\")).
+      classpath.map(.replace('/', '\\')).
                 mkString("", ";", "")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
