@@ -8,16 +8,16 @@ rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
-if "%OS%" == "Windows_NT" (
+if "%OS%"=="Windows_NT" (
   @@setlocal
   set _PREFIX=%~dp0..
 ) else (
   set _PREFIX=%SCALA_HOME%
-  if "%_PREFIX%" == "" goto error1
+  if "%_PREFIX%"=="" goto error1
 )
 
 set _JAVACMD=%JAVACMD%
-if "%_JAVACMD%" == "" set _JAVACMD=java
+if "%_JAVACMD%"=="" set _JAVACMD=java
 set _JAVAFLAGS=@javaflags@
 
 set _CLASSPATH=@classpath@
@@ -27,8 +27,8 @@ for %%f in ("%_PREFIX%\lib\*.jar") do call :add_cpath "%%f"
 :args
 set _ARGS=
 :loop
-if "%1" == "" goto exec
-if "%1" == "-version" goto version
+if "%1"=="" goto exec
+if "%1"=="-version" goto version
 set _ARGS=%_ARGS% %1
 shift
 goto loop
