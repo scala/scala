@@ -27,7 +27,6 @@ abstract class UnPickler {
 
   private class UnPickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {
     if (settings.debug.value) global.log("unpickle " + classRoot + " and " + moduleRoot);
-
     checkVersion();
     private val index = createIndex;
     private val entries = new Array[AnyRef](index.length);

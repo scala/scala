@@ -49,6 +49,7 @@ object ShowPickled extends Names {
   }
 
   def printFile(buf: PickleBuffer, out: PrintStream): unit = {
+    out.println("Version "+buf.readNat()+"."+buf.readNat());
     val index = buf.createIndex;
 
     def printNameRef() = {

@@ -538,7 +538,10 @@ mixin class Typers requires Analyzer {
 	  if (!psym.isClass)
 	    error(parent.pos, "class type expected")
 	  else if (!isFirst && !psym.isMixin)
-	    error(parent.pos, ""+psym+" is not declared to be a mixin class")
+            if (settings.migrate.value)
+              error(parent.pos, migrateMsg+psym+" needs to be a declared as a mixin class")
+            else
+	      error(parent.pos, ""+psym+" is not declared to be a mixin class")
 	  else if (psym.hasFlag(FINAL))
 	    error(parent.pos, "illegal inheritance from final class")
 	  else if (psym.isSealed && !phase.erasedTypes) {

@@ -39,6 +39,8 @@ abstract class ExplicitOuter extends InfoTransform {
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
       //todo: needed?
+      if (sym.owner.isMixin && (sym hasFlag SUPERACCESSOR))
+        sym.makeNotPrivate(sym.owner);
       if (sym.owner.isMixin && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED;
       if (sym.isConstructor && !isStatic(sym.owner))
 	MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
