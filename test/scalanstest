@@ -454,9 +454,9 @@ FILES_NEG="";
 FILES_MSIL="";
 
 LATEST="$PREFIX/dists/latest";
-SCALA="$LATEST/bin/scala";
-SOCOS="$LATEST/bin/scalac";
-SCALAP="$LATEST/bin/scalap";
+SCALA="$LATEST/bin/scala2";
+SOCOS="$LATEST/bin/scalac2";
+SCALAP="$LATEST/bin/scalap2";
 DIFF="diff";
 
 case `uname` in
