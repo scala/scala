@@ -1,0 +1,12 @@
+<antlib>
+    <!--<taskdef name="scala"
+             classname="scala.tools.ant.Scala"/>-->
+    <taskdef name="scalac"
+             classname="scala.tools.ant.Scalac"/>
+    <taskdef name="scalascript"
+             classname="scala.tools.ant.ScalaTool"/>
+    <!--<taskdef name="scalatest"
+             classname="scala.tools.ant.ScalaTest"/>-->
+    <!--<taskdef name="scalatest"
+             classname="scala.tools.ant.ScalaDoc"/>-->
+</antlib>

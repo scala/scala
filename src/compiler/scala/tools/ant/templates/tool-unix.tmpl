@@ -1,0 +1,59 @@
+#!/bin/bash
+
+##############################################################################
+# @name@ @version@
+##############################################################################
+# @copyright@
+# This is free software; see the distribution for copying conditions.
+# There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+##############################################################################
+
+cygwin=false;
+darwin=false;
+case "`uname`" in
+    CYGWIN*) cygwin=true ;;
+    Darwin*) darwin=true ;;
+esac
+
+SOURCE=$0;
+SCRIPT=`basename "$SOURCE"`;
+while [ -h "$SOURCE" ]; do
+    SCRIPT=`basename "$SOURCE"`;
+    LOOKUP=`ls -ld "$SOURCE"`;
+    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
+    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
+        SOURCE=${TARGET:-.};
+    else
+        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
+    fi;
+done;
+PREFIX=`dirname "$SOURCE"`/..;
+prefix=$PREFIX;
+PREFIX=`cd "$PREFIX"; pwd`;
+
+CP=@classpath@
+if [ "$CP" == "" ] ; then
+  for jar in `ls $PREFIX/lib/*.jar` ; do
+    CP=$CP:$jar
+  done
+  CP=${CP:1}
+fi
+
+if $cygwin; then
+    if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
+        format=mixed
+    else
+        format=windows
+    fi
+    CP=`cygpath --path --$format "$CP"`
+fi
+
+for flag in "$@@" ; do
+    if [ $flag == '-version' ] ; then
+        echo "@name@ version @version@"
+        exit 0
+    fi
+done
+
+${JAVACMD:=java} @javaflags@ -Dscala.home="$PREFIX" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ -cp "$CP" @class@ @toolflags@ "$@@"

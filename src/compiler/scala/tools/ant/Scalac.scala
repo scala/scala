@@ -282,15 +282,13 @@ package scala.tools.ant {
       * @returns The source path as a list of files. */
     private def getSourcepath: List[File] =
       if (sourcepath.isEmpty) error("Member 'sourcepath' is empty.")
-      else
-        List.fromArray(sourcepath.get.list()).map(nameToFile)
+      else List.fromArray(sourcepath.get.list()).map(nameToFile)
 
     /** Gets the value of the bootclasspath attribute in a Scala-friendly form.
       * @returns The boot class path as a list of files. */
     private def getBootclasspath: List[File] =
     if (bootclasspath.isEmpty) error("Member 'bootclasspath' is empty.")
-    else
-      List.fromArray(bootclasspath.get.list()).map(nameToFile)
+    else List.fromArray(bootclasspath.get.list()).map(nameToFile)
 
     /** Gets the value of the extdirs attribute in a Scala-friendly form.
       * @returns The extensions path as a list of files. */
@@ -391,7 +389,8 @@ package scala.tools.ant {
           originFile
         }
 
-      if (sourceFiles.length == 0) log("No files selected for compilation")
+      if (sourceFiles.length == 0)
+        log("No files selected for compilation", Project.MSG_VERBOSE)
       else log("Compiling " + sourceFiles.length + " source file" +
                (if (sourceFiles.length > 1) "s" else "") +
                (" to " + getDestination.toString()))
@@ -442,7 +441,7 @@ package scala.tools.ant {
       }
       if (reporter.warnings > 0)
         log("Compile suceeded with " +
-            reporter.errors + " warning" +
+            reporter.warnings + " warning" +
             (if (reporter.warnings > 1) "s" else "") +
             "; see the compiler output for details."
            )

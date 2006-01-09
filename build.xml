@@ -97,7 +97,7 @@ INITIALISATION
     <echo level="verbose">starr.comp.jar=${starr.comp.jar}</echo>
     <fail message="STARR compiler in 'lib/' is not available">
       <condition><not>
-        <available classname="scala.tools.nsc.ant.NSC"
+        <available classname="scala.tools.ant.Scalac"
                    classpath="${starr.comp.jar}:${starr.lib.jar}"/>
       </not></condition>
     </fail>
@@ -141,7 +141,7 @@ INITIALISATION
     </path>
     <!-- Creating boot-level tasks -->
     <taskdef name="starr"
-             classname="scala.tools.nsc.ant.NSC"
+             classname="scala.tools.ant.Scalac"
              classpathref="starr.classpath"/>
     <taskdef name="pico"
              classname="jaco.pizza.ant.Pico"
@@ -159,7 +159,7 @@ INITIALISATION
         <available classname="scala.List" classpath="${locker.lib.dir}"/>
         <available classname="scala.runtime.ObjectRef"
                    classpath="${locker.lib.dir}"/>
-        <available classname="scala.tools.nsc.ant.NSC"
+        <available classname="scala.tools.ant.Scalac"
                    classpath="${locker.comp.dir}:${locker.lib.dir}"/>
         <available file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"/>
       </and>
@@ -216,6 +216,9 @@ INITIALISATION
     <taskdef name="locker"
              classname="scala.tools.ant.Scalac"
              classpathref="locker.classpath"/>
+    <taskdef name="lockertool"
+             classname="scala.tools.ant.ScalaTool"
+             classpathref="locker.classpath"/>
   </target>
   
   <target name="init.quick" depends="init, build">
@@ -226,6 +229,9 @@ INITIALISATION
     </path>
     <taskdef name="quick"
              classname="scala.tools.ant.Scalac"
+             classpathref="quick.classpath"/>
+    <taskdef name="quicktool"
+             classname="scala.tools.ant.ScalaTool"
              classpathref="quick.classpath"/>
   </target>
 
@@ -297,6 +303,24 @@ BUILD SUPPORT MACROS
       </copy>
     </sequential>
   </macrodef>
+  
+  <macrodef name="build.support">
+    <attribute name="build.dir"/>
+    <sequential>
+      <copy todir="@{build.dir}/${lib.dir.name}">
+        <fileset dir="${src.dir}/${lib.dir.name}">
+          <include name="**/*.tmpl"/>
+          <include name="**/*.xml"/>
+        </fileset>
+      </copy>
+      <copy todir="@{build.dir}/${comp.dir.name}">
+        <fileset dir="${src.dir}/${comp.dir.name}">
+          <include name="**/*.tmpl"/>
+          <include name="**/*.xml"/>
+        </fileset>
+      </copy>
+    </sequential>
+  </macrodef>
 
 <!-- ===========================================================================
 BUILD LOCAL REFERENCE (LOCKER) LAYER
@@ -355,6 +379,8 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
+    <!-- Copy support files to build folder -->
+    <build.support build.dir="${locker.dir}"/>
     <!-- Link to libraries -->
     <symlink link="${locker.dir}/${fjbg.name}"
                  resource="${fjbg.jar}"
@@ -433,6 +459,8 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
+    <!-- Copy templates to build -->
+    <build.support build.dir="${quick.dir}"/>
     <!-- Link to libraries -->
     <symlink link="${quick.dir}/${fjbg.name}"
                  resource="${fjbg.jar}"
@@ -443,16 +471,20 @@ BUILD QUICK-TEST LAYER
                  overwrite="yes"
                  failonerror="no"/>
     <!-- Build executable files -->
-    <build.exec.unix lib.path="$$PREFIX/${lib.dir.name}"
-                comp.path="$$PREFIX/${comp.dir.name}"
-                fjbg.path="$$PREFIX/${fjbg.name}"
-                msil.path="$$PREFIX/${msil.name}"
-                exec.dir="${quick.dir}/${exec.dir.name}"/>
-    <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
-                comp.path="%SCALA_HOME%\${comp.dir.name}"
-                fjbg.path="%SCALA_HOME%\${fjbg.name}"
-                msil.path="%SCALA_HOME%\${msil.name}"
-                exec.dir="${quick.dir}\${exec.dir.name}"/>
+    <mkdir dir="${quick.dir}/${exec.dir.name}"/>
+    <lockertool file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
+                genericFile="${quick.dir}/${exec.dir.name}/${scala.exec.name}"
+                name="Scala compiler"
+                class="scala.tools.nsc.Main"
+                version="${version.number}"
+                copyright="${copyright}"
+                classpath="$$PREFIX/${lib.dir.name}:$$PREFIX/${comp.dir.name}:$$PREFIX/${fjbg.name}:$$PREFIX/${msil.name}"
+                properties="scala.boot.class.path=$$CP"
+                javaFlags="-Xmx256M -Xms16M"/>
+    <chmod file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
+           perm="ugo+rx"/>
+    <chmod file="${quick.dir}/${exec.dir.name}/${scala.exec.name}"
+           perm="ugo+rx"/>
   </target>
 
 <!-- ===========================================================================
@@ -512,6 +544,8 @@ TEST
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
+    <!-- Copy templates to build -->
+    <build.support build.dir="${strap.dir}"/>
     <!-- Link to libraries -->
     <symlink link="${strap.dir}/${fjbg.name}"
                  resource="${fjbg.jar}"
@@ -522,16 +556,20 @@ TEST
                  overwrite="yes"
                  failonerror="no"/>
     <!-- Build executable files -->
-    <build.exec.unix lib.path="$$$PREFIX/${lib.dir.name}"
-                comp.path="$$PREFIX/${comp.dir.name}"
-                fjbg.path="$$PREFIX/${fjbg.name}"
-                msil.path="$$PREFIX/${msil.name}"
-                exec.dir="${strap.dir}/${exec.dir.name}"/>
-    <build.exec.win lib.path="%SCALA_HOME%\${lib.dir.name}"
-                comp.path="%SCALA_HOME%\${comp.dir.name}"
-                fjbg.path="%SCALA_HOME%\${fjbg.name}"
-                msil.path="%SCALA_HOME%\${msil.name}"
-                exec.dir="${strap.dir}\${exec.dir.name}"/>
+    <mkdir dir="${strap.dir}/${exec.dir.name}"/>
+    <quicktool file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
+                genericFile="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
+                name="Scala compiler"
+                class="scala.tools.nsc.Main"
+                version="${version.number}"
+                copyright="${copyright}"
+                classpath="$$PREFIX/${lib.dir.name}:$$PREFIX/${comp.dir.name}:$$PREFIX/${fjbg.name}:$$PREFIX/${msil.name}"
+                properties="scala.boot.class.path=$$CP"
+                javaFlags="-Xmx256M -Xms16M"/>
+    <chmod file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
+           perm="ugo+rx"/>
+    <chmod file="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
+           perm="ugo+rx"/>
     <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
       <fileset dir="${quick.dir}">
