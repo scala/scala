@@ -7,7 +7,8 @@ package scala.tools.nsc;
 
 import java.io._;
 import java.nio.charset._;
-import scala.tools.util.{SourceReader,ClassPath,AbstractFile};
+import scala.tools.util.{SourceReader,AbstractFile};
+import scala.tools.nsc.util.ClassPath;
 import scala.tools.nsc.util.{Position,SourceFile};
 import scala.tools.nsc.reporters._;
 
@@ -116,9 +117,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     new SourceReader(charset.newDecoder());
   }
 
-  val classPath = new ClassPath(
+  val classPath = new ClassPath.Build(
     settings.classpath.value,
     settings.sourcepath.value,
+    settings.outdir.value,
     settings.bootclasspath.value,
     settings.extdirs.value);
 
@@ -137,7 +139,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   def getSourceFile(clazz: Symbol): SourceFile = {
-    val f = classPath.getRoot().lookupPath(
+    val f = classPath.output.source.location.
+    /* val f = classPath.getRoot(). */
+    lookupPath(
       clazz.fullNameString(File.separatorChar) + ".scala", false);
     if (f == null) throw new FileNotFoundException(
       "source file for " + clazz + " could not be found");
@@ -148,7 +152,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  def rootLoader: LazyType = new loaders.PackageLoader(classPath.getRoot());
+  def rootLoader: LazyType = new loaders.PackageLoader(classPath.root /* getRoot() */);
 
   val migrateMsg = "migration problem when moving from Scala version 1.0 to version 2.0:\n";
 

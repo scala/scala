@@ -21,6 +21,7 @@ import scala.tools.util.AbstractFileReader;
 import java.io.IOException;
 
 abstract class ClassfileParser {
+  def sourcePath : AbstractFile = null;
 
   val global: Global;
   import global._;
@@ -346,6 +347,14 @@ abstract class ClassfileParser {
           val meta = pool.getName(in.nextChar()).toString().trim();
           metaParser.parse(meta, sym, symtype);
 	  this.hasMeta = true;
+	case nme.SourceFileATTR =>
+	  assert(attrLen == 2);
+	  val source = pool.getName(in.nextChar());
+	  if (sourcePath != null) sym match {
+	  case clazz: ClassSymbol =>
+	    clazz.sourceFile = sourcePath.lookupPath(source.toString(), false);
+	    // System.err.println("clazz=" + clazz + " @ " + clazz.sourceFile);
+	  }
         case _ =>
           in.skip(attrLen)
       }

@@ -8,8 +8,11 @@ package scala.tools.nsc.symtab.classfile;
 import java.io._;
 import java.lang.{Float, Double}
 import scala.collection.mutable.HashMap;
+import scala.tools.nsc.util.Position;
 import Flags._;
 import PickleFormat._;
+
+
 
 /**
  * Serialize a top-level module and/or class;
@@ -77,17 +80,21 @@ abstract class Pickler extends SubComponent {
 	ep = ep + 1;
 	true
     }
+    case class PositionSymbol(val sym : Symbol, val pos : Int);
 
     /** Store symbol in index. If symbol is local, also store everything it refers to. */
     def putSymbol(sym: Symbol): unit = if (putEntry(sym)) {
       if (isLocal(sym)) {
 	putEntry(sym.name);
+	if (sym.pos != Position.NOPOS) putEntry(new PositionSymbol(sym, sym.pos));
+
 	putSymbol(sym.owner);
         putSymbol(sym.privateWithin);
 	putType(sym.info);
 	if (sym.thisSym != sym)
           putType(sym.typeOfThis);
 	putSymbol(sym.alias);
+
         //for (val attr <- sym.attributes) putAttribute(sym, attr);
       } else if (sym != NoSymbol) {
 	putEntry(if (sym.isModuleClass) sym.name.toTermName else sym.name);
@@ -223,6 +230,7 @@ abstract class Pickler extends SubComponent {
           for (val c <- cs) writeRef(cs);
           ATTRIBUTE
 */
+	case PositionSymbol(sym, pos) => writeRef(sym); writeLong(pos); POS;
 	case _ =>
 	  throw new FatalError("bad entry: " + entry + " " + entry.getClass());//debug
       }
@@ -239,7 +247,7 @@ abstract class Pickler extends SubComponent {
       writeNat(MinorVersion);
       writeNat(ep);
       if (settings.debug.value) log("" + ep + " entries");//debug
-      for (val i <- Iterator.range(0, ep)) writeEntry(entries(i))
+      for (val i <- Iterator.range(0, ep)) writeEntry(entries(i));
     }
   }
 }

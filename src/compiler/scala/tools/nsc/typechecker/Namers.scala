@@ -84,8 +84,16 @@ trait Namers requires Analyzer {
     def enterInScope(sym: Symbol): Symbol = {
       if (!(sym.isSourceMethod && sym.owner.isClass)) {
 	val prev = context.scope.lookupEntry(sym.name);
-	if (prev != null && prev.owner == context.scope && !prev.sym.isSourceMethod)
-	  doubleDefError(sym.pos, prev.sym);
+	if (prev != null && prev.owner == context.scope && !prev.sym.isSourceMethod) {
+	  if (sym.sourceFile == null && prev.sym.sourceFile == null) {}
+	  else if (sym.sourceFile != null && prev.sym.sourceFile != null &&
+		     sym.sourceFile.equals(prev.sym.sourceFile)) {}
+	  else {
+	    System.err.println("SYM: " + sym.sourceFile);
+	    System.err.println("PRV: " + prev.sym.sourceFile);
+	    doubleDefError(sym.pos, prev.sym);
+	  }
+	}
       }
       context.scope enter sym;
       sym
@@ -118,8 +126,20 @@ trait Namers requires Analyzer {
 	c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag);
       }
       if (c.owner.isPackageClass) {
-        currentRun.symSource(c) = context.unit.source.getFile();
-        c.sourceFile = context.unit.source.getFile();
+	val file = context.unit.source.getFile();
+	val clazz = c.asInstanceOf[ClassSymbol];
+	if (file != null) {
+	  if (clazz.sourceFile != null && !clazz.sourceFile.equals(file)) // double def.
+	    throw new Error(""+clazz.sourceFile + " vs. " + file + " SYM=" + c);
+	  else clazz.sourceFile = file;
+
+	}
+	if (clazz.sourceFile != null) {
+	  if (currentRun.symSource.isDefinedAt(c) && currentRun.symSource(c) != null &&
+	      !currentRun.symSource(c).equals(clazz.sourceFile))
+	    throw new Error(""+currentRun.symSource(c) + " vs. " + clazz.sourceFile + " SYM=" + currentRun + " " + c);
+	  else currentRun.symSource(c) = clazz.sourceFile;
+	}
       }
       c
     }

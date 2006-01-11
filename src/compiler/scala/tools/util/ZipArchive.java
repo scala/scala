@@ -196,7 +196,7 @@ public final class ZipArchive extends PlainFile {
     // Private Class - FileEntry
 
     /** A regular file archive entry */
-    private final class FileEntry extends Entry {
+    public final class FileEntry extends Entry {
 
         public final ZipEntry entry;
 

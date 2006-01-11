@@ -6,7 +6,9 @@
 package scala.tools.nsc.symtab;
 
 import java.io.IOException;
+import java.io.File;
 import scala.tools.nsc.util.Position;
+import scala.tools.nsc.util.ClassPath;
 import scala.tools.util.{AbstractFile};
 import scala.tools.nsc.util.NameTransformer;
 import scala.collection.mutable.HashMap;
@@ -25,17 +27,18 @@ abstract class SymbolLoaders {
    *                       name of file loaded for completion as a result.
    *                       Can throw an IOException on error.
    */
-  abstract class SymbolLoader(file: AbstractFile) extends LazyType {
+  abstract class SymbolLoader extends LazyType {
     /** Load source or class file for `root', return */
     protected def doComplete(root: Symbol): unit;
     /** The kind of file that's processed by this loader */
     protected def kindString: String;
     private var ok = false;
-
-    private def setSource(sym: Symbol): unit = sym match {
-      case clazz: ClassSymbol => clazz.sourceFile = file;
-      case _ =>
+    private def setSource(sym: Symbol, sourceFile0: AbstractFile): unit = sym match {
+      case clazz: ClassSymbol => if (sourceFile0 != null) clazz.sourceFile = sourceFile0;
+      case _ => if (sourceFile0 != null) if (false) System.err.println("YYY: " + sym + " " + sourceFile0);
     }
+    def sourceFile : AbstractFile = null;
+    protected def sourceString : String;
 
     override def complete(root: Symbol): unit = {
       try {
@@ -43,12 +46,16 @@ abstract class SymbolLoaders {
         val currentphase = phase;
         doComplete(root);
         phase = currentphase;
-	def source = kindString + " " + file;
+	def source = kindString + " " + sourceString;
         informTime("loaded " + source, start);
         if (root.rawInfo != this) {
 	  ok = true;
-	  setSource(root.linkedModule.moduleClass);
-	  setSource(root.linkedClass);
+	  val sourceFile0 = if (sourceFile == null) (root match {
+	    case clazz: ClassSymbol => clazz.sourceFile;
+	    case _ => null;
+	  }) else sourceFile;
+	  setSource(root.linkedModule, sourceFile0);
+	  setSource(root.linkedClass,  sourceFile0);
 	} else error(source + " does not define " + root)
       } catch {
         case ex: IOException =>
@@ -75,7 +82,11 @@ abstract class SymbolLoaders {
 
   /** Load contents of a package
    */
-  class PackageLoader(directory: AbstractFile) extends SymbolLoader(directory) {
+  class PackageLoader(directory: ClassPath.Context) extends SymbolLoader {
+    // System.err.println("PACKAGE LOADER: " + directory);
+
+    protected def sourceString = directory.toString();
+
     protected def doComplete(root: Symbol): unit = {
       assert(root.isPackageClass, root);
       root.setInfo(new PackageClassInfoType(new Scope(), root));
@@ -91,11 +102,12 @@ abstract class SymbolLoaders {
         root.info.decls.enter(pkg)
       }
 
-      def enterClassAndModule(str: String, completer: SymbolLoader, sfile : AbstractFile): unit = {
+      def enterClassAndModule(str: String, completer: SymbolLoader): unit = {
 	val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
 	val name = newTermName(str);
         val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
         val module = owner.newModule(Position.NOPOS, name);
+	if (completer.sourceFile != null) clazz.sourceFile = completer.sourceFile;
         clazz.setInfo(completer);
 	module.setInfo(completer);
         module.moduleClass.setInfo(moduleClassLoader);
@@ -104,64 +116,46 @@ abstract class SymbolLoaders {
 	assert(clazz.linkedModule == module, module);
 	assert(module.linkedClass == clazz, clazz);
       }
-
-      val sources  = new HashMap[String, AbstractFile];
-      val classes  = new HashMap[String, AbstractFile];
-      val packages = new HashMap[String, AbstractFile];
-      val it = directory.list();
-      while (it.hasNext()) {
-        val file = it.next().asInstanceOf[AbstractFile];
-        val filename = file.getName();
-        if (file.isDirectory()) {
-          if (filename != "META_INF" && !packages.isDefinedAt(filename)) packages(filename) = file;
-/*
-        } else if (filename.endsWith(".symbl")) {
-          val name = filename.substring(0, filename.length() - 6);
-          if (isValid(name) &&
-	      (!classes.isDefinedAt(name) || classes(name).getName().endsWith(".class")))
-	    classes(name) = file;
-*/
-        } else if (filename.endsWith(".class")) {
-          val name = filename.substring(0, filename.length() - 6);
-	  if (isValid(name) && !classes.isDefinedAt(name))
-	    classes(name) = file;
-        } else if (filename.endsWith(".scala")) {
-          val name = filename.substring(0, filename.length() - 6);
-	  if (isValid(name) && !sources.isDefinedAt(name))
-	    sources(name) = file;
-        }
-      }
-      for (val Pair(name, sfile) <- sources.elements) {
-        classes.get(name) match {
-          case Some(cfile) if (cfile.lastModified() >= sfile.lastModified()) => {}
-          case _ => enterClassAndModule(name, new SourcefileLoader(sfile), sfile);
-        }
-      }
-      for (val Pair(name, cfile) <- classes.elements) {
-	val sfile = sources.get(name) match {
-	  case Some(sfile0) => sfile0;
-	  case _ => null;
+      val classes  = new HashMap[String, ClassPath.Context];
+      val packages = new HashMap[String, ClassPath.Context];
+      for (val dir <- directory.classes) if (dir != null) {
+	val it = dir.list();
+	while (it.hasNext()) {
+	  val file = it.next().asInstanceOf[AbstractFile];
+	  if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
+	    packages(file.getName()) = directory.find(file.getName(), true);
+	  else if (!file.isDirectory() && file.getName().endsWith(".class")) {
+	    val name = file.getName().substring(0, file.getName().length() - (".class").length());
+	    if (isValid(name) && !classes.isDefinedAt(name))
+	      classes(name) = directory.find(name, false);
+	  }
 	}
-        sources.get(name) match {
-          case Some(sfile) if (sfile.lastModified() > cfile.lastModified()) => {}
-          case _ =>
-            val loader =
-/*	      if (cfile.getName().endsWith(".symbl")) new SymblfileLoader(cfile)
-              else */
-              new ClassfileLoader(cfile);
-            enterClassAndModule(name, loader, sfile)
-        }
       }
-      for (val Pair(name, file) <- packages.elements) {
-        if (!sources.contains(name) && !classes.contains(name))
-          enterPackage(name, new PackageLoader(file));
+      for (val dir <- directory.sources) if (dir != null) {
+	val it = dir.location.list();
+	while (it.hasNext()) {
+	  val file = it.next().asInstanceOf[AbstractFile];
+	  if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
+	    packages(file.getName()) = directory.find(file.getName(), true);
+	  else if (dir.compile && !file.isDirectory() && file.getName().endsWith(".scala")) {
+	    val name = file.getName().substring(0, file.getName().length() - (".scala").length());
+	    if (isValid(name) && !classes.isDefinedAt(name))
+	      classes(name) = directory.find(name, false);
+	  }
+	}
       }
+      //if (!packages.isEmpty) System.err.println("COMPLETE: " + packages);
+      //if (! classes.isEmpty) System.err.println("COMPLETE: " + classes);
+      // do classes first
+
+      for (val Pair(name, file) <- classes.elements) {
+	val loader = if (!file.isSourceFile) new ClassfileLoader(file.file, file.sourceFile, file.sourcePath);
+	else new SourcefileLoader(file.file);
+	enterClassAndModule(name, loader);
+      }
+      for (val Pair(name, file) <- packages.elements) enterPackage(name, new PackageLoader(file));
     }
     protected def kindString: String = "directory path"
-  }
-
-  private object classfileParser extends ClassfileParser {
-    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
   }
 
 /*
@@ -170,9 +164,15 @@ abstract class SymbolLoaders {
   }
 */
 
-  class ClassfileLoader(file: AbstractFile) extends SymbolLoader(file) {
-    protected def doComplete(root: Symbol): unit = classfileParser.parse(file, root);
+  class ClassfileLoader(classFile: AbstractFile, sourceFile0: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
+    private object classfileParser extends ClassfileParser {
+      val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
+      override def sourcePath = sourcePath0; /* could be null */
+    }
+    protected def doComplete(root: Symbol): unit = classfileParser.parse(classFile, root);
     protected def kindString: String = "class file";
+    protected def sourceString = classFile.toString();
+    override def sourceFile : AbstractFile = sourceFile0;
   }
 /*
   class SymblfileLoader(file: AbstractFile) extends SymbolLoader(file) {
@@ -180,14 +180,17 @@ abstract class SymbolLoaders {
     protected def kindString: String = "symbl file";
   }
 */
-  class SourcefileLoader(file: AbstractFile) extends SymbolLoader(file) {
-    protected def doComplete(root: Symbol): unit = global.currentRun.compileLate(file);
+  class SourcefileLoader(sourceFile0: AbstractFile) extends SymbolLoader {
+    protected def doComplete(root: Symbol): unit = global.currentRun.compileLate(sourceFile0);
     protected def kindString: String = "source file";
+    override def sourceFile = sourceFile0;
+    protected def sourceString = sourceFile0.toString();
   }
 
-  object moduleClassLoader extends SymbolLoader(null) {
+  object moduleClassLoader extends SymbolLoader {
     protected def doComplete(root: Symbol): unit =
       root.sourceModule.initialize;
     protected def kindString: String = "";
+    protected def sourceString = "";
   }
 }

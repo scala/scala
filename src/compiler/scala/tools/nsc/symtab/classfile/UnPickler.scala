@@ -8,6 +8,7 @@ package scala.tools.nsc.symtab.classfile;
 import scala.tools.nsc.util.Position;
 import scala.tools.util.UTF8Codec;
 import java.lang.{Float, Double};
+
 import Flags._;
 import PickleFormat._;
 import collection.mutable.HashMap;
@@ -32,8 +33,10 @@ abstract class UnPickler {
     private val entries = new Array[AnyRef](index.length);
     private val symScopes = new HashMap[Symbol, Scope];
 
-    for (val i <- Iterator.range(0, index.length))
+    for (val i <- Iterator.range(0, index.length)) {
       if (isSymbolEntry(i)) { at(i, readSymbol); () }
+      else if (isPosition(i)) { at(i, readPosition); () }
+    }
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
@@ -60,12 +63,13 @@ abstract class UnPickler {
        (tag != CLASSsym || !isRefinementSymbolEntry(i)))
     }
 
+    private def isPosition(i: int): boolean = bytes(index(i)) == POS;
+
     /** Does entry represent an (internal or external) symbol */
     private def isSymbolRef(i: int): boolean = {
       val tag = bytes(index(i));
       (firstSymTag <= tag && tag <= lastExtSymTag)
     }
-
     /** Does entry represent a refinement symbol?
      *  pre: Entry is a class symbol
      */
@@ -105,6 +109,16 @@ abstract class UnPickler {
       }
     }
 
+    private def readPosition(): Integer = {
+      val tag = readByte();
+      val len = readNat();
+      val start = readIndex;
+      val sym = readSymbolRef();
+      val pos = readLong(len - (readIndex - start)).asInstanceOf[Int];
+      assert(sym.pos == Position.NOPOS);
+      sym.setPos(pos);
+      new Integer(pos);
+    }
     /** Read a symbol */
     private def readSymbol(): Symbol = {
       val tag = readByte();

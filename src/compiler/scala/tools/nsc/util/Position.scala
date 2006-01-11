@@ -68,12 +68,14 @@ class Position( val source : SourceFile, val offset: Int) {
   /** Returns a string representation of the encoded position. */
   override def toString(): String = {
     val sb = new StringBuffer();
-    sb.append(source.file.getPath());
-    if (hasOffset) {
-      sb.append(line);
-      sb.append(':');
-      sb.append(column);
-    }
+    if (source != null) {
+      sb.append(source.file.getPath());
+      if (hasOffset) {
+	sb.append(line);
+	sb.append(':');
+	sb.append(column);
+      }
+    } else sb.append("::" + offset);
     sb.toString();
   }
 }

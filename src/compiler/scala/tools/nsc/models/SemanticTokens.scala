@@ -88,6 +88,7 @@ class SemanticTokens(val compiler: Compiler) {
     // already gap
     override def convertToGap : Pair[Int,Actual] = new Pair(0, this);
   }
+  def Process(unit : CompilationUnit) = new Process(unit);
   class Process(val unit : CompilationUnit) {
     def source = unit.source;
 
@@ -147,8 +148,6 @@ class SemanticTokens(val compiler: Compiler) {
 	case _ =>
       }
       if (tree0.pos != Position.NOPOS) tree0 match {
-
-
       case tree : ImplDef     =>
 	val pos = tree.namePos(unit.source);
 	if (pos == Position.NOPOS) {
@@ -315,15 +314,16 @@ class SemanticTokens(val compiler: Compiler) {
     def buildUse(term : Symbol, pos : Int) = buildSym(term, pos, false);
     def buildDef(term : Symbol, pos : Int) = buildSym(term, pos, true);
 
-    def buildSym(term : Symbol, pos : Int, isDef : Boolean) : Unit = if (term.hasFlag(Flags.ACCESSOR)) buildSym(term.accessed, pos, isDef)
-    else if (pos == Position.NOPOS) {
-      System.err.println("NOPOS: " + term);
-      Thread.dumpStack();
-    } else if (term != NoSymbol) {
-      val name = NameTransformer.decode(term.name.toString()).toString().trim();
-      val buf = unit.source.content;
-      val cs = name.toChars;
-      var idx = 0;
+    def buildSym(term : Symbol, pos : Int, isDef : Boolean) : Unit =
+      if (term.hasFlag(Flags.ACCESSOR)) buildSym(term.accessed, pos, isDef);
+      else if (pos == Position.NOPOS) {
+	System.err.println("NOPOS: " + term);
+	Thread.dumpStack();
+      } else if (term != NoSymbol) {
+	val name = NameTransformer.decode(term.name.toString()).toString().trim();
+	val buf = unit.source.content;
+	val cs = name.toChars;
+	var idx = 0;
       if (cs.length + pos > buf.length) {
 	return;
       }

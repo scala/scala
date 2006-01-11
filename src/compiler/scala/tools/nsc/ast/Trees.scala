@@ -20,6 +20,8 @@ mixin class Trees requires Global {
     def isPrivate   = ((flags & PRIVATE  ) != 0);
     def isProtected = ((flags & PROTECTED) != 0);
     def isVariable  = ((flags & MUTABLE  ) != 0);
+    def isArgument  = ((flags & PARAM    ) != 0);
+    def isAccessor  = ((flags & ACCESSOR ) != 0);
     def isPublic    = !isPrivate && !isProtected;
     def hasFlag(flag: int) = (flags & flag) != 0;
     def | (flag: int): Modifiers = {
@@ -141,7 +143,6 @@ mixin class Trees requires Global {
       assert(keyword != null);
       if (!source.beginsWith(pos, keyword + " ")) {
 	val p = new Position(source, pos);
-	// System.err.println("SYM=" + symbol + " KW=" + keyword + " LINE=" + p.lineContent + " TEXT=" + source.content(pos) + source.content(pos + 1));
 	if (true) return Position.NOPOS;
 	else throw new Error();
       }
@@ -214,7 +215,8 @@ mixin class Trees requires Global {
 	 def keyword = if (mods.isVariable) "var" else "val";
 	 override def namePos(source : SourceFile) =
 	   if (pos == Position.NOPOS) Position.NOPOS;
-	   else if (source.beginsWith(pos, "val ") || source.beginsWith(pos, "var ")) source.skipWhitespace(pos + ("val ").length());
+	   else if (source.beginsWith(pos, "val ") || source.beginsWith(pos, "var "))
+	     source.skipWhitespace(pos + ("val ").length());
 	   else if (source.content(pos) == ',') source.skipWhitespace(pos + 1);
 	   else pos;
        }
