@@ -5,7 +5,6 @@
 // $Id$
 package scala.tools.nsc;
 
-import scala.tools.util.Reporter;
 
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], error: String => unit, interactive: boolean) {
