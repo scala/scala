@@ -321,14 +321,22 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <!-- Copy support files to build folder -->
     <build.support build.dir="${locker.dir}"/>
     <!-- Link to libraries -->
-    <symlink link="${locker.dir}/${fjbg.name}"
+    <if><isset property="os.unix"/>
+      <then>
+        <symlink link="${locker.dir}/${fjbg.name}"
                  resource="${fjbg.jar}"
                  overwrite="yes"
                  failonerror="no"/>
-    <symlink link="${locker.dir}/${msil.name}"
+        <symlink link="${locker.dir}/${msil.name}"
                  resource="${msil.jar}"
                  overwrite="yes"
                  failonerror="no"/>
+      </then>
+      <else>
+        <copy file="${fjbg.jar}" tofile="${locker.dir}/${fjbg.name}"/>
+        <copy file="${msil.jar}" tofile="${locker.dir}/${msil.name}"/>
+      </else>
+    </if>
     <!-- Build executable files -->
     <mkdir dir="${locker.dir}/${exec.dir.name}"/>
     <starrtool file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -408,14 +416,22 @@ BUILD QUICK-TEST LAYER
     <!-- Copy templates to build -->
     <build.support build.dir="${quick.dir}"/>
     <!-- Link to libraries -->
-    <symlink link="${quick.dir}/${fjbg.name}"
+    <if><isset property="os.unix"/>
+      <then>
+        <symlink link="${quick.dir}/${fjbg.name}"
                  resource="${fjbg.jar}"
                  overwrite="yes"
                  failonerror="no"/>
-    <symlink link="${quick.dir}/${msil.name}"
+        <symlink link="${quick.dir}/${msil.name}"
                  resource="${msil.jar}"
                  overwrite="yes"
                  failonerror="no"/>
+      </then>
+      <else>
+        <copy file="${fjbg.jar}" tofile="${quick.dir}/${fjbg.name}"/>
+        <copy file="${msil.jar}" tofile="${quick.dir}/${msil.name}"/>
+      </else>
+    </if>
     <!-- Build executable files -->
     <mkdir dir="${quick.dir}/${exec.dir.name}"/>
     <lockertool file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -496,14 +512,22 @@ TEST
     <!-- Copy templates to build -->
     <build.support build.dir="${strap.dir}"/>
     <!-- Link to libraries -->
-    <symlink link="${strap.dir}/${fjbg.name}"
+    <if><isset property="os.unix"/>
+      <then>
+        <symlink link="${strap.dir}/${fjbg.name}"
                  resource="${fjbg.jar}"
                  overwrite="yes"
                  failonerror="no"/>
-    <symlink link="${strap.dir}/${msil.name}"
+        <symlink link="${strap.dir}/${msil.name}"
                  resource="${msil.jar}"
                  overwrite="yes"
                  failonerror="no"/>
+      </then>
+      <else>
+        <copy file="${fjbg.jar}" tofile="${strap.dir}/${fjbg.name}"/>
+        <copy file="${msil.jar}" tofile="${strap.dir}/${msil.name}"/>
+      </else>
+    </if>
     <!-- Build executable files -->
     <mkdir dir="${strap.dir}/${exec.dir.name}"/>
     <quicktool file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
