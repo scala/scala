@@ -251,17 +251,17 @@ install-windows		: install
 	    srcfile="$(PROJECT_SUPPORTDIR)/windows/scala_wrapper"; \
 	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
 	    winfile="$(INSTALL_PREFIX)/bin/$$name.bat"; \
-	    nixexec=`SCALA_JAVA_CMD="echo java" SCALA_CLASSPATH=\"%CLASSPATH%\" $$nixfile`; \
+	    nixexec=`SCALA_JAVA_CMD="echo %_JAVACMD%" SCALA_CLASSPATH=\"%CLASSPATH%\" $$nixfile`; \
 	    winexec="$$nixexec"; \
-	    winexec=`echo "$$winexec" | sed -es"#$$root#\"%SCALA_HOME%\"#g"`; \
+	    winexec=`echo "$$winexec" | sed -es"#$$root#\"%_PREFIX%\"#g"`; \
 	    winexec=`echo "$$winexec" | sed -es"#/share/$(INSTALL_NAME)##g"`; \
 	    winexec=`echo "$$winexec" | tr '/' '\\\\' | tr ':' ';'`; \
 	    winexec=`echo "$$winexec" | sed -es"#Xbootclasspath.a;#Xbootclasspath/a:#g"`; \
 	    $(RM) -f "$$winfile"; \
 	    ( \
 	        $(CAT) "$$srcfile-header.bat"; \
-	        $(ECHO) "set VERSION=$(INSTALL_VERSION)"; \
-	        $(ECHO) "set COMMAND=$$winexec"; \
+	        $(ECHO) "set _VERSION=$(INSTALL_VERSION)"; \
+	        $(ECHO) "set _COMMAND=$$winexec"; \
 	        $(CAT) "$$srcfile-footer.bat"; \
 	    ) | $(UNIX2DOS) >> "$$winfile"; \
 	    $(ECHO) "done"; \
