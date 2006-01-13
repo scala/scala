@@ -57,7 +57,7 @@ class Settings(error: String => unit) {
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing")
   val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault)
-  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
+  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", ".")
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", "")
@@ -140,6 +140,9 @@ class Settings(error: String => unit) {
 	} else {
 	  value = rest.head
 	  rest.tail
+
+
+
 	}
       case _ => args
     }
