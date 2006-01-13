@@ -5,7 +5,7 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 **                                                                      **
-** $Id: MatchError.scala 5390 2005-12-19 13:49:03Z dubochet $
+** $Id$
 \*                                                                      */
 package scala;
 

@@ -2,7 +2,7 @@
  * Copyright 2005 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Trees.scala,v 1.35 2005/11/14 16:58:21 mcdirmid Exp $
+// $Id$
 package scala.tools.nsc.models;
 
 import scala.tools.nsc.Global;
