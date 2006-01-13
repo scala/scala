@@ -28,86 +28,44 @@ object Print extends Function1[Any, String] {
     Print(typedCode.code);
 
   def apply (code: Code): String = code match {
-    case reflect.Ident(sym) =>
-      "Ident (" + Print(sym) + ")"
-    case reflect.Select(qual, sym) =>
-      "Select (" + Print(qual) + " from " + Print(sym) + ")"
-    case reflect.Literal(value) =>
-      "Literal (" + value + ")"
-    case reflect.Apply(fun, args) =>
-      ("Apply (" + Print(fun) + " on " +
-       ((args match {
-         case Nil => "nothing "
-         case _ :: _ => args.map(Print).mkString("", ", ", "")
-       }):String) + ")")
-    case reflect.TypeApply(fun, args) =>
-      ("TypeApply (" + Print(fun) + " on " +
-       ((args match {
-         case Nil => "nothing"
-         case _ :: _ => args.map(Print).mkString("", ", ", "")
-       }):String) + ")")
-    case reflect.Function(params, body) =>
-      ("Function (" +
-       ((params match {
-         case Nil => "nothing"
-         case _ :: _ => params.map(Print).mkString("", ", ", "")
-       }):String) + " is " + Print(body) + ")")
-    case reflect.This(sym) =>
-      "This (" + Print(sym) + ")"
-    case _ => "UnknownCode"
+    case reflect.Ident(sym) => Print(sym)
+    case reflect.Select(qual, sym) => "(" + Print(qual) + "." + Print(sym) + ")"
+    case reflect.Literal(value) => "(value: " + value.toString + ")"
+    case reflect.Apply(fun, args) => Print(fun) + args.map(Print).mkString("(", ", ", ")")
+    case reflect.TypeApply(fun, args) => Print(fun) + args.map(Print).mkString("[", ", ", "]")
+    case reflect.Function(params, body) => "(" + params.map(Print).mkString("(", ", ", ")") + " => " + Print(body) + ")"
+    case reflect.This(sym) => "(" + Print(sym) + ".this)"
+    case reflect.Block(stats, expr) => (stats ::: List(expr)).map(Print).mkString("{", ";\n", "}")
+    case _ => "???"
   }
 
   def apply (symbol: Symbol): String = symbol match {
-    case reflect.Class(name) =>
-      "Class (" + name + ")"
-    case reflect.Method(name, datatype) =>
-      "Method (" + name + " of " + Print(datatype) + ")"
-    case reflect.Field(name, datatype) =>
-      "Field (" + name + " of " + Print(datatype) + ")"
-    case reflect.TypeField(name, datatype) =>
-      "TypeField (" + name + " of " + Print(datatype) + ")"
-    case reflect.LocalValue(owner, name, datatype) =>
-      ("LocalValue (" + name + " owned by " + Print(owner) +
-       " of " + Print(datatype) + ")")
-    case reflect.LocalMethod(owner, name, datatype) =>
-      ("LocalMethod (" + name + " owned by " + Print(owner) +
-       " of " + Print(datatype) + ")")
+    case reflect.Class(name) => "(class: " + name + ")"
+    case reflect.Method(name, datatype) => "(method: " + name + ")" //+ ": " + datatype
+    case reflect.Field(name, datatype) => "(field: " + name + ")" //+ ": " + datatype
+    case reflect.TypeField(name, datatype) => "(typefield: " + name + ")" //+ ": " + datatype
+    case reflect.LocalValue(owner, name, datatype) => "(lvalue: " + name + ")" //+ ": " + datatype
+    case reflect.LocalMethod(owner, name, datatype) => "(lmethod: " + name + ")" //+ ": " + datatype
     case reflect.NoSymbol => "NoSymbol"
     case reflect.RootSymbol => "RootSymbol"
-    case _ => "UnknownSymbol"
+    case _ => "???"
   }
 
   def apply (datatype: Type): String = datatype match {
     case reflect.NoPrefix => "NoPrefix"
     case reflect.NoType => "NoType"
-    case reflect.NamedType(name) =>
-      "NamedType (" + name + ")"
-    case reflect.PrefixedType(prefix, symbol) =>
-      "PrefixedType (" + Print(symbol) + " in " + Print(prefix) + ")"
-    case reflect.SingleType(prefix, symbol) =>
-      "SingleType (" + Print(symbol) + " in " + Print(prefix) + ")"
-    case reflect.ThisType(clazz) =>
-      "ThisType (" + Print(clazz) + ")"
-    case reflect.AppliedType(datatype, args) =>
-      ("AppliedType (" + Print(datatype) + " on " +
-       ((args match {
-         case Nil => "nothing"
-         case _ :: _ => args.map(Print).mkString("", ", ", "")
-       }):String) + ")")
-    case reflect.TypeBounds(lo, hi) =>
-      "TypeBounds (" + Print(lo) + " to " + Print(hi) + ")"
-    case reflect.MethodType(formals, resultType) =>
-      ("MethodType (" +
-       ((formals match {
-         case Nil => "nothing"
-         case _ :: _ => formals.map(Print).mkString("", ", ", "")
-       }):String) + " is " + Print(resultType) + ")")
+    case reflect.NamedType(name) => "(named: " + name + ")"
+    case reflect.PrefixedType(prefix, symbol) => "(" + Print(prefix) + "." + Print(symbol) + ")"
+    case reflect.SingleType(prefix, symbol) => "(" + Print(prefix) + "." + Print(symbol) + ")"
+    case reflect.ThisType(clazz) => "(" + Print(clazz) + ".this.type)"
+    case reflect.AppliedType(datatype, args) => Print(datatype) + args.map(Print).mkString("[", ", ", "]")
+    case reflect.TypeBounds(lo, hi) => "[" + Print(lo) + " ... " + Print(hi) + "]"
+    case reflect.MethodType(formals, resultType) => formals.map(Print).mkString("(", ", ", ")") + " => " + Print(resultType)
     case reflect.PolyType(typeParams, typeBounds, resultType) =>
-      ("PolyType (" + (typeParams zip typeBounds).map{
-        case Pair(typeParam, Pair(lo, hi)) =>
-          Print(lo) + " < " + Print(typeParam) + " < " + Print(hi)
-      }.mkString("", ", ", "") + " to " + Print(resultType) + ")")
-    case _ => "UnknownType"
+      (List.map2(typeParams, typeBounds)
+        ((tp, tb) => "[" + Print(tb._1) + " :> " + Print(tp) + " :> " + Print(tb._2) + "]")).
+          mkString("[", ", ", "]") + " -> " + Print(resultType)
+    case _ => "???"
   }
 
 }

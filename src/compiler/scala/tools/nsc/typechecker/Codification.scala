@@ -46,6 +46,8 @@ mixin class Codification requires Analyzer {
                          new Reifier(env1, currentOwner).reify(body))
       case This(_) =>
         reflect.This(reify(tree.symbol))
+      case Block(stats, expr) =>
+        reflect.Block(stats.map(reify), reify(expr))
       case _ =>
         throw new TypeError("cannot reify tree: " + tree)
     }
@@ -120,7 +122,11 @@ mixin class Codification requires Analyzer {
       case reflect.Class(_) => "scala.reflect.Class"
       case reflect.Method(_, _) => "scala.reflect.Method"
       case reflect.Field(_, _) => "scala.reflect.Field"
+      case reflect.TypeField(_, _) => "scala.reflect.TypeField"
+      case reflect.LocalValue(_, _, _) => "scala.reflect.LocalValue"
+      case reflect.LocalMethod(_, _, _) => "scala.reflect.LocalMethod"
       case reflect.This(_) => "scala.reflect.This"
+      case reflect.Block(_,_) => "scala.reflect.Block"
       case reflect.NamedType(_) => "scala.reflect.NamedType"
       case reflect.PrefixedType(_, _) => "scala.reflect.PrefixedType"
       case reflect.SingleType(_, _) => "scala.reflect.SingleType"
@@ -148,18 +154,6 @@ mixin class Codification requires Analyzer {
     def inject(value: Any): Tree = value match {
       case FreeValue(tree) =>
         tree
-      case reflect.Function(params, body) =>
-        var env1 = env;
-        val vdefs = for (val param <- params) yield {
-          val lname = newTermName(fresh.newName());
-          env1 = env1.update(param, lname);
-          ValDef(NoMods, lname, injectType("scala.reflect.LocalValue"),
-                 New(injectType("scala.reflect.LocalValue"),
-                     List(List(inject(param.owner), inject(param.name), inject(param.tpe)))))
-        }
-        Block(vdefs, new Injector(env1, fresh).inject(body))
-      case rsym: reflect.LocalSymbol =>
-        Ident(env(rsym))
       case x: String => Literal(Constant(x))
       case x: Boolean => Literal(Constant(x))
       case x: Byte => Literal(Constant(x))
