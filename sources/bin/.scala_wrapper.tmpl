@@ -2,7 +2,7 @@
 ##############################################################################
 #                      __                                                    #
 #      ________ ___   / /  ___     Scala Tools Launch Script                 #
-#     / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL                  #
+#     / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL                  #
 #   __\ \/ /__/ __ |/ /__/ __ |                                              #
 #  /____/\___/_/ |_/____/_/ | |                                              #
 #                           |/                                               #
@@ -985,7 +985,8 @@ test_main() {
         fi
     fi
 
-    printf_outline "Source directory is: $SRCDIR\\n\\n";
+    printf_outline "Source directory is  : $SRCDIR\\n";
+    printf_outline "Scala distribution is: $PREFIX\\n\\n";
 
     test_check_all;
 
