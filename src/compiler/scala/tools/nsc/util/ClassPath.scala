@@ -1,10 +1,12 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id: $
 
 package scala.tools.nsc.util;
 
@@ -21,26 +23,26 @@ import java.util.StringTokenizer;
  */
 object ClassPath {
 
-  class Source(val location : AbstractFile, val compile : Boolean);
+  class Source(val location: AbstractFile, val compile: Boolean);
 
   abstract class Entry {
     def location : AbstractFile;
     def source   : Source;
   }
 
-  class Output(val location : AbstractFile, val sourceFile : AbstractFile) extends Entry {
+  class Output(val location: AbstractFile, val sourceFile: AbstractFile) extends Entry {
     def source = new Source(sourceFile, true);
   }
-  class Library(val location : AbstractFile) extends Entry {
-    def    doc : AbstractFile = null;
+  class Library(val location: AbstractFile) extends Entry {
+    def doc : AbstractFile = null;
     def sourceFile : AbstractFile = null;
     def source = if (sourceFile == null) null else new Source(sourceFile, false);
   }
 
-  class Context(val classes : List[AbstractFile], val sources : List[Source]) {
-    def find(name : String, isDir : boolean) = {
+  class Context(val classes: List[AbstractFile], val sources: List[Source]) {
+    def find(name: String, isDir: boolean) = {
       assert(isPackage);
-      def find0(classes : List[AbstractFile], sources : List[Source]) : Context = {
+      def find0(classes: List[AbstractFile], sources: List[Source]): Context = {
 	assert(classes.length == sources.length);
 	if (classes.isEmpty) new Context(Nil, Nil);
 	else {
@@ -64,22 +66,23 @@ object ClassPath {
 			     :: ret.sources);
 	}
       }
-      find0(classes, sources);
+      find0(classes, sources)
     }
 
     def isPackage = {
       if (classes.head != null) classes.head.isDirectory();
       else sources.head.location.isDirectory();
     }
+
     def name = {
       val name = if (classes.head != null) classes.head.getName() else sources.head.location.getName();
       if (isPackage) name;
       else name.substring(0, name.length() - (".class").length());
     }
 
-    override def toString() : String = toString(classes, sources);
+    override def toString(): String = toString(classes, sources);
 
-    def toString(classes0 : List[AbstractFile], sources0 : List[Source]) : String =
+    def toString(classes0: List[AbstractFile], sources0: List[Source]): String =
       if (classes0.isEmpty) "";
       else
 	((if (classes0.head == null) "<none>" else classes0.head.toString()) + (if (sources0.head != null) {
@@ -109,18 +112,18 @@ object ClassPath {
       else if (!sources.head.location.isDirectory()) null;
       else sources.head.location;
 
-    def validPackage(name : String) : Boolean =
+    def validPackage(name: String): Boolean =
       if (name.equals("META-INF")) false;
       else if (name.startsWith(".")) false;
       else true;
 
-    def complete : List[Context] = {
+    def complete: List[Context] = {
       assert(isPackage);
-      def complete0(classes : List[AbstractFile], sources : List[Source]) : List[Context] =
+      def complete0(classes: List[AbstractFile], sources: List[Source]): List[Context] =
       if (classes.isEmpty) Nil;
       else if (classes.head == null && sources.head == null) complete0(classes.tail, sources.tail);
       else {
-	var ret : List[Context] = Nil;
+	var ret: List[Context] = Nil;
 	if (classes.head != null) {
 	  val i = classes.head.list();
 	  while (i.hasNext()) {
@@ -152,47 +155,52 @@ object ClassPath {
       }
       complete0(classes, sources);
     }
-  }
 
-  class Build(val output : Output) {
-    val entries = new ArrayBuffer[Entry];
+  } // class Context
+
+  class Build(val output: Output) {
+    val entries = new ArrayBuffer[Entry]
 
     def root = {
-      val classes = for (val entry <- entries.toList) yield entry.location;
-      val sources = for (val entry <- entries.toList) yield entry.source;
-      new Context(classes, sources);
+      val classes = for (val entry <- entries.toList) yield entry.location
+      val sources = for (val entry <- entries.toList) yield entry.source
+      new Context(classes, sources)
     }
 
 
-    def this(classpath : String, source : String, output : String, boot : String, extdirs : String) = {
+    def this(classpath: String, source: String, output: String, boot: String, extdirs: String) = {
       this(new Output(AbstractFile.getDirectory(output), AbstractFile.getDirectory(source)));
 
-      if (this.output.location == null) throw new FileNotFoundException("output location \"" + output + "\" not found");
-      if (this.output.source   == null) throw new FileNotFoundException("source location \"" + source + "\" not found");
+      if (this.output.location == null)
+        throw new FileNotFoundException("output location \"" + output + "\" not found");
+      if (this.output.source   == null)
+        throw new FileNotFoundException("source location \"" + source + "\" not found");
 
       addFilesInPath(boot);
       addArchivesInExtDirPath(extdirs);
       entries += this.output;
-      addFilesInPath(classpath);
+      addFilesInPath(classpath)
     }
-    def library(classes : String, sources : String) = {
+
+    def library(classes: String, sources: String) = {
       assert(classes != null);
       val location = AbstractFile.getDirectory(classes);
       val sourceFile0 = (if (sources != null) AbstractFile.getDirectory(sources) else null);
       class Library0 extends Library(location) {
 	override def sourceFile = sourceFile0;
       }
-      entries += new Library0();
+      entries += new Library0()
     }
 
-    private def addFilesInPath(path : String) = {
+    private def addFilesInPath(path: String) = {
       val strtok = new StringTokenizer(path, File.pathSeparator);
       while (strtok.hasMoreTokens()) {
 	val file = AbstractFile.getDirectory(strtok.nextToken());
 	if (file != null) entries += (new Library(file));
       }
     }
-    private def addArchivesInExtDirPath(path : String) = {
+
+    private def addArchivesInExtDirPath(path: String) = {
       val strtok = new StringTokenizer(path, File.pathSeparator);
       while (strtok.hasMoreTokens()) {
 	val file = AbstractFile.getDirectory(strtok.nextToken());
@@ -207,5 +215,7 @@ object ClassPath {
 	}
       }
     }
-  }
+
+  } // class Build
+
 }
