@@ -6,16 +6,19 @@
 package scala.tools.nsc.models;
 
 import scala.tools.nsc.Global;
-import scala.tools.nsc.ast.Trees;
 import scala.tools.nsc.util.Position;
-import scala.tools.nsc.symtab.Flags;
-import scala.tools.nsc.symtab.Names;
 
 class Models(val global : Global) {
   import global._;
 
-  abstract class Model {
+  abstract class Listener {
+	    def    add(from : Composite, model : HasTree) : Unit;
+	    def remove(from : Composite, model : HasTree) : Unit;
+
   }
+  abstract class Model extends Listener;
+
+
   abstract class HasTree(val parent : Composite) extends Model {
     var tree : Tree = _;
     def update(tree0 : Tree): Boolean = {
@@ -23,6 +26,11 @@ class Models(val global : Global) {
       false;
     }
     def replacedBy(tree0 : Tree) : Boolean = true;
+
+
+
+    override def    add(from : Composite, model : HasTree) : Unit = { parent.add(from, model); }
+    override def remove(from : Composite, model : HasTree) : Unit = { parent.remove(from, model); }
   }
   class ImportMod(parent0 : Composite) extends HasTree(parent0) {
     def treex = tree.asInstanceOf[Import];
@@ -32,15 +40,30 @@ class Models(val global : Global) {
       tree1.tpe == treex.tpe;
     } else false;
   }
+  class PackageMod(parent0 : Composite) extends HasTree(parent0) {
+	    def treex = tree.asInstanceOf[PackageDef];
+	}
 
   [_trait_] abstract class Composite extends Model {
     import scala.collection.mutable._;
-    class Members extends HashSet[HasTree] /* with ObservableSet[HasTree, Members] */ {
-      // override def +=(elem: HasTree): Unit = super.+=(elem);
-      // override def -=(elem: HasTree): Unit = super.-=(elem);
-      // override def clear: Unit = super.clear;
-    }
+
+
+    class Members extends HashSet[HasTree] with ObservableSet[HasTree, Members];
+	//    val members = new Members;
     object members extends Members;
+
+
+    object subscriber extends Subscriber[Message[HasTree] with Undoable, Members] {
+    	def notify(pub: Members, event: Message[HasTree] with Undoable): Unit = event match {
+				case i : Include[HasTree] with Undoable  =>    add(Composite.this, i.elem);
+				case r : Remove [HasTree] with Undoable  => remove(Composite.this, r.elem);
+			}
+    }
+    members.subscribe(subscriber);
+
+
+
+
 
     def isMember(tree : Tree) : Boolean = tree.isInstanceOf[Import]; // imports welcome anywhere.
 
@@ -48,26 +71,32 @@ class Models(val global : Global) {
 
     def update0(members1 : List[Tree]) : Boolean = {
       // System.err.println("update0 " + this + " " + members1);
+      if (members1.length == 1 && members1.head.isInstanceOf[PackageDef])
+    	  return update0(members1.head.asInstanceOf[PackageDef].stats);
+
       val marked = new HashSet[HasTree];
       var updated = false;
-      for (val mmbr1 <- members1) if (isMember(mmbr1)) {
-	val mmbr2 = member(mmbr1, members1);
-	if (mmbr2 != null) {
-	  var found = false;
-	  for (val mmbr <- members) if (!found && mmbr.replacedBy(mmbr2)) {
-	    found = true;
-	    updated = mmbr.update(mmbr2) || updated;
-	    marked += mmbr;
-	  }
-	  if (!found) {
-	    updated = true;
-	    val add = modelFor(mmbr2, this);
-	    add.update(mmbr2);
-	    members += (add);
-	    marked += add;
-	  }
-	}
-	// System.err.println("update1 " + this + " " + members + " " + marked);
+      for (val mmbr1 <- members1) if (mmbr1.isInstanceOf[PackageDef]) {
+    	  System.err.println("PACKAGE: " + mmbr1.symbol + " " + members1.length);
+
+      } else if (isMember(mmbr1)) {
+				val mmbr2 = member(mmbr1, members1);
+				if (mmbr2 != null) {
+				  var found = false;
+				  for (val mmbr <- members) if (!found && mmbr.replacedBy(mmbr2)) {
+				    found = true;
+				    updated = mmbr.update(mmbr2) || updated;
+				    marked += mmbr;
+				  }
+				  if (!found) {
+				    updated = true;
+				    val add = modelFor(mmbr2, this);
+				    add.update(mmbr2);
+				    members += (add);
+				    marked += add;
+				  }
+				}
+				// System.err.println("update1 " + this + " " + members + " " + marked);
       }
       val sz = members.size;
       members.intersect(marked);
@@ -118,9 +147,9 @@ class Models(val global : Global) {
     override def replacedBy(tree0 : Tree) : Boolean = if (super.replacedBy(tree0) && tree0.isInstanceOf[DefDef]) {
       val tree1 = tree0.asInstanceOf[DefDef];
       if (tree1.vparamss.length == treez.vparamss.length) {
-	val tpz = for (val vd <- treez.vparamss) yield for (val xd <- vd) yield xd.tpe;
-	val tp1 = for (val vd <- tree1.vparamss) yield for (val xd <- vd) yield xd.tpe;
-	tpz == tp1;
+				val tpz = for (val vd <- treez.vparamss) yield for (val xd <- vd) yield xd.tpe;
+				val tp1 = for (val vd <- tree1.vparamss) yield for (val xd <- vd) yield xd.tpe;
+				tpz == tp1;
       } else false;
     } else false;
   }
@@ -133,15 +162,16 @@ class Models(val global : Global) {
        /* && !tree.asInstanceOf[ValOrDefDef].mods.isAccessor */) ||
       tree.isInstanceOf[AliasTypeDef]);
 
+
     override def member(tree : Tree, members : List[Tree]) : Tree = {
       val tree0 = if (tree.isInstanceOf[DefDef]) {
-	val ddef = tree.asInstanceOf[DefDef];
-	if (ddef.mods.isAccessor && ddef.symbol != null) {
-	  val sym = ddef.symbol.accessed;
-	  val ret = for (val member <- members; member.symbol == sym) yield member;
-	  if (ret.isEmpty) tree;
-	  else ret.head;
-	} else tree;
+				val ddef = tree.asInstanceOf[DefDef];
+				if (ddef.mods.isAccessor && ddef.symbol != null) {
+				  val sym = ddef.symbol.accessed;
+				  val ret = for (val member <- members; member.symbol == sym) yield member;
+				  if (ret.isEmpty) null;
+				  else ret.head;
+				} else tree;
       } else super.member(tree, members);
       val sym = tree0.symbol;
       if (sym.pos == Position.NOPOS) null;
@@ -174,10 +204,14 @@ class Models(val global : Global) {
   }
   class SourceMod(val original : CompilationUnit) extends Composite with HasClassObjects {
     // update(unit);
+    var listener : Listener = null;
     def update(unit : CompilationUnit) = unit.body match {
       case pdef : PackageDef => update0(pdef.stats);
       case _ =>
     }
+    override def    add(from : Composite, model : HasTree) : Unit = if (listener != null) { listener.add(from, model); }
+    override def remove(from : Composite, model : HasTree) : Unit = if (listener != null) { listener.remove(from, model); }
+
 
     override def isMember(tree : Tree) : Boolean = super.isMember(tree) || tree.isInstanceOf[Import];
   }

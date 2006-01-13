@@ -14,6 +14,7 @@ import scala.tools.nsc.reporters._;
 
 import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
 
+
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
 import util.Statistics;
@@ -26,10 +27,12 @@ import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
 import backend.jvm.GenJVM;
 
+
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
                                                              with CompilationUnits
 {
+
 
   // sub-components --------------------------------------------------
 
@@ -84,7 +87,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   def inform(msg: String) = System.err.println(msg);
 
     //reporter.info(null, msg, true);
-
   def informProgress(msg: String) =
     if (settings.verbose.value) inform("[" + msg + "]");
 
@@ -139,13 +141,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   def getSourceFile(clazz: Symbol): SourceFile = {
-    val f = classPath.output.source.location.
-    /* val f = classPath.getRoot(). */
-    lookupPath(
-      clazz.fullNameString(File.separatorChar) + ".scala", false);
-    if (f == null) throw new FileNotFoundException(
-      "source file for " + clazz + " could not be found");
-    getSourceFile(f)
+		val ret = classPath.root.find(clazz.fullNameString(File.separatorChar), false);
+		if (ret.sources.isEmpty) throw new FileNotFoundException(
+			      "source file for " + clazz + " could not be found");
+		getSourceFile(ret.sources.head.location);
   }
 
   object loaders extends SymbolLoaders {
@@ -312,9 +311,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
         stopped = settings.stop contains pd.phaseName;
       }
     }
-
     // progress tracking
     def progress(current : Int, total : Int) : Unit = {}
+
     private var phasec : Int = 0;
     private var unitc  : Int = 0;
     def advancePhase : Unit = {
@@ -457,6 +456,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner);
     }
   }
+
 
   def showDef(name: Name, module: boolean): unit = {
     def getSym(name: Name, module: boolean): Symbol = {
