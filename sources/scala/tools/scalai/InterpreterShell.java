@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2006, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -33,7 +33,7 @@ public class InterpreterShell {
 
     public static final String PRODUCT   = Main.PRODUCT;
     public static final String VERSION   = Main.VERSION;
-    public static final String COPYRIGHT = "(c) 2002-05, LAMP/EPFL";
+    public static final String COPYRIGHT = "(c) 2002-2006, LAMP/EPFL";
 
     //########################################################################
     // Private Constants
