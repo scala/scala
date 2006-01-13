@@ -1,8 +1,9 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Settings.scala
+// $Id$
+
 package scala.tools.nsc
 
 import java.io.File
