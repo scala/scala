@@ -11,7 +11,7 @@ trait Base {
   trait Exp {
     def eval: int
   }
-  class Num(v: int): exp extends Exp {
+  class Num(v: int) requires exp extends Exp {
     val value = v;
     def eval = value
   }
@@ -26,7 +26,7 @@ object testBase extends Application with Base {
 /** Data extension: An extension of `Base' with `Plus' expressions
  */
 trait BasePlus extends Base {
-  class Plus(l: exp, r: exp): exp extends Exp {
+  class Plus(l: exp, r: exp) requires exp extends Exp {
     val left = l;
     val right = r;
     def eval = left.eval + right.eval
@@ -41,7 +41,7 @@ trait Show extends Base {
   trait Exp1 extends Exp {
     def show: String;
   }
-  class Num1(v: int): (exp with Num1) extends Num(v) with Exp1 {
+  class Num1(v: int) requires (exp with Num1) extends Num(v) with Exp1 {
     def show = value.toString();
   }
 }
@@ -49,7 +49,7 @@ trait Show extends Base {
 /** Operation extension: An extension of `BasePlus' with 'show' methods.
  */
 trait ShowPlus extends BasePlus with Show {
-  class Plus1(l: exp, r: exp): (exp with Plus1) extends Plus(l, r) with Exp1 {
+  class Plus1(l: exp, r: exp) requires (exp with Plus1) extends Plus(l, r) with Exp1 {
     def show = left.show + " + " + right.show
   }
 }
