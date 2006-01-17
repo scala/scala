@@ -814,7 +814,7 @@ mixin class Symbols requires SymbolTable {
       if (hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN)) initialize.referenced else NoSymbol;
 
     def setAlias(alias: Symbol): TermSymbol = {
-      assert(alias != NoSymbol);
+      assert(alias != NoSymbol, this);
       assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN));
       referenced = alias;
       this

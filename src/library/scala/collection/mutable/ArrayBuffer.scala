@@ -97,8 +97,8 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
         if ((n < 0) || (n >= size))
             error("cannot update element " + n + " in ArrayBuffer");
         else {
-            val res = array(n);
-            array(n) = newelem;
+            val res = array(n)
+            array(n) = newelem
             res
         }
     }

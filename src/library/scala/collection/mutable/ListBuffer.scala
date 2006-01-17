@@ -193,7 +193,17 @@ final class ListBuffer[A] extends Buffer[A] {
    *  that are performed afterwards on the buffer. To get iterator an over the current
    *  buffer snapshot, use  toList.elements
    */
-  override def elements: Iterator[A] = start.elements
+  override def elements = new Iterator[A] {
+    var cursor: List[A] = null;
+    def hasNext: Boolean = !start.isEmpty && cursor != last;
+    def next: A =
+      if (!hasNext) {
+        error("next on empty Iterator")
+      } else {
+        if (cursor == null) cursor = start else cursor = cursor.tail;
+        cursor.head
+      }
+  }
 
   /** Return a clone of this buffer.
    *

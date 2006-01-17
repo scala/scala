@@ -133,7 +133,7 @@ mixin class Typers requires Analyzer {
 
     /** Check that type `tp' is not a subtype of itself.
      */
-    def checkNonCyclic(pos: int, tp: Type): unit = {
+    def checkNonCyclic(pos: int, tp: Type): boolean = {
       def checkNotLocked(sym: Symbol): boolean = {
 	sym.initialize
 	if (sym hasFlag LOCKED) {
@@ -142,24 +142,38 @@ mixin class Typers requires Analyzer {
       }
       tp match {
 	case TypeRef(pre, sym, args) =>
-	  if (checkNotLocked(sym) && (sym.isAliasType || sym.isAbstractType)) {
-	    //System.out.println("checking "+sym);//DEBUG
+          (checkNotLocked(sym)) && (
+            !sym.isAliasType && !sym.isAbstractType ||
 	    checkNonCyclic(pos, pre.memberInfo(sym).subst(sym.typeParams, args), sym)
-	  }
+          )
 	case SingleType(pre, sym) =>
 	  checkNotLocked(sym)
 	case st: SubType =>
 	  checkNonCyclic(pos, st.supertype)
 	case ct: CompoundType =>
-	  for (val p <- ct.parents) checkNonCyclic(pos, p)
+          var p = ct.parents
+          while (!p.isEmpty && checkNonCyclic(pos, p.head)) p = p.tail
+          p.isEmpty
 	case _ =>
+          true
       }
     }
 
-    def checkNonCyclic(pos: int, tp: Type, lockedSym: Symbol): unit = {
+    def checkNonCyclic(pos: int, tp: Type, lockedSym: Symbol): boolean = {
       lockedSym.setFlag(LOCKED)
-      checkNonCyclic(pos, tp)
+      val result = checkNonCyclic(pos, tp)
       lockedSym.resetFlag(LOCKED)
+      result
+    }
+
+    def checkNonCyclic(sym: Symbol): unit =
+      if (!checkNonCyclic(sym.pos, sym.tpe)) sym.setInfo(ErrorType);
+
+    def checkNonCyclic(defn: Tree, tpt: Tree): unit = {
+      if (!checkNonCyclic(defn.pos, tpt.tpe, defn.symbol)) {
+        tpt.tpe = ErrorType
+        defn.symbol.setInfo(ErrorType)
+      }
     }
 
     /** Check that type of given tree does not contain local or private components
@@ -650,7 +664,7 @@ mixin class Typers requires Analyzer {
                      newTyper(context.makeConstructorContext)
                    else this
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
-      checkNonCyclic(vdef.pos, tpt1.tpe, sym)
+      checkNonCyclic(vdef, tpt1)
       val rhs1 =
         if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && phase.id <= currentRun.typerPhase.id)
@@ -730,7 +744,7 @@ mixin class Typers requires Analyzer {
 	checkNoEscaping.locals(context.scope, WildcardType,
 	  checkNoEscaping.privates(meth,
 	      typedType(ddef.tpt)))
-      checkNonCyclic(ddef.pos, tpt1.tpe, meth)
+      checkNonCyclic(ddef, tpt1)
       val rhs1 =
 	if (ddef.name == nme.CONSTRUCTOR) {
 	  if (!meth.hasFlag(SYNTHETIC) &&
@@ -760,7 +774,7 @@ mixin class Typers requires Analyzer {
     def typedAbsTypeDef(tdef: AbsTypeDef): AbsTypeDef = {
       val lo1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.lo))
       val hi1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.hi))
-      checkNonCyclic(tdef.pos, tdef.symbol.tpe)
+      checkNonCyclic(tdef.symbol)
       copy.AbsTypeDef(tdef, tdef.mods, tdef.name, lo1, hi1) setType NoType
     }
 
@@ -768,7 +782,7 @@ mixin class Typers requires Analyzer {
       reenterTypeParams(tdef.tparams)
       val tparams1 = List.mapConserve(tdef.tparams)(typedAbsTypeDef)
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
-      checkNonCyclic(tdef.pos, tdef.symbol.tpe)
+      checkNonCyclic(tdef.symbol)
       copy.AliasTypeDef(tdef, tdef.mods, tdef.name, tparams1, rhs1) setType NoType
     }
 

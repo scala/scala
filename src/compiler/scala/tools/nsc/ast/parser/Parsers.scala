@@ -742,9 +742,9 @@ mixin class Parsers requires SyntaxAnalyzer {
         t
     }
 
-    /** PostfixExpr   ::= [`.'] InfixExpr [Id]
+    /** PostfixExpr   ::= [`.'] InfixExpr [Id [NL]]
      *  InfixExpr     ::= PrefixExpr
-     *                  | InfixExpr Id InfixExpr
+     *                  | InfixExpr Id [NL] InfixExpr
      */
     def postfixExpr(): Tree = {
       val base = opstack;
@@ -754,6 +754,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 	  true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
 	opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
 	ident();
+        newLineOpt();
 	if (isExprIntro) {
 	  top = prefixExpr();
 	} else {
