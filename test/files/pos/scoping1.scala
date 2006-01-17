@@ -2,7 +2,7 @@ object This extends Application {
      trait A {
          def foo(): unit;
      }
-     class C: A {
+     class C requires A {
          def bar() = this.foo();
      }
   class D extends C with A {
