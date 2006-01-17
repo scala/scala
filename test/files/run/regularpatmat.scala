@@ -8,16 +8,16 @@ object Test {
     val L = List(1,2,3);
     scala.testing.UnitTest.assertEquals( L, L match { case List(xs@_*) => xs; } ) ;
 
-    testWR.main( args );
-    testWS.main( args );
-    testWT.main( args );
-    testWV.main( args );
-    //testWW.main( args );
-    testBK.main( args );
-    testBL.main( args );
-    testBM.main( args );
-    testBN.main( args );
-    testBO.main( args );
+    testWR.main(args);
+    testWS.main(args);
+    testWT.main(args);
+    testWV.main(args);
+    //testWW.main(args);
+    testBK.main(args);
+    testBL.main(args);
+    testBM.main(args);
+    testBN.main(args);
+    testBO.main(args);
     testMZ.main;
     //testNN.main;
     //testBugSequenceApply.main;
@@ -41,21 +41,21 @@ object bug179 {
 // testW? are for recognition only ( no variables )
 // testB? are for variables binding
 
-object values  { // test values reused in nearly all test cases
+object values { // test values reused in nearly all test cases
 
-    val s0:List[Char] = Nil ;
-    val s1:List[Char] = 'a'::'b'::'c'::Nil ;
-    val s2:List[Char] = 'a'::'b'::'c'::s1 ;
-    val s3:List[Char] = 'a'::'a'::'a'::Nil ;
-    val s4:List[Char] = 'b'::'c'::Nil ;
-    val s5:List[Char] = 'b'::Nil ;
-    val s6:List[Char] = 'b'::'a'::'a'::'a'::Nil ;
+    val s0: List[Char] = Nil ;
+    val s1: List[Char] = 'a'::'b'::'c'::Nil ;
+    val s2: List[Char] = 'a'::'b'::'c'::s1 ;
+    val s3: List[Char] = 'a'::'a'::'a'::Nil ;
+    val s4: List[Char] = 'b'::'c'::Nil ;
+    val s5: List[Char] = 'b'::Nil ;
+    val s6: List[Char] = 'b'::'a'::'a'::'a'::Nil ;
 
-    val s7:List[Int]  = 1::2::7::Nil ;
-    val s8:List[Int]  = 1::0::1::0::Nil;
-    val s9:List[Int]  = Nil ;
+    val s7: List[Int]  = 1::2::7::Nil ;
+    val s8: List[Int]  = 1::0::1::0::Nil;
+    val s9: List[Int]  = Nil ;
 
-    val s10:List[Char] = '7'::'0'::'1'::'.'::'2'::'4'::Nil ;
+    val s10: List[Char] = '7'::'0'::'1'::'.'::'2'::'4'::Nil ;
 
 }
 
@@ -66,34 +66,31 @@ object values  { // test values reused in nearly all test cases
 // 2do             case [ 'a'*; x @ ( _;('a'; 'b')* ); y @ 'b'* ]   => 100
 //                case _               => 321 // 20022 // this never happens
 
-object testBK  {
+object testBK {
 
-        import values._ ;
+  import values._ ;
+  import scala.testing.UnitTest._ ;
 
-        import scala.testing.UnitTest._ ;
+  def doit1(e: List[Char]): Int = e match {
+    case List( 'a'*, x @ ( 'a',('a', 'b')* ), y @ ('b'*) ) => 100
+    case List( _ * )         => 321
+  }
 
-    def doit1(e: List[Char]):Int = e match {
+  def test1: Unit = {
+    Console.println("testBK");
+    //test[List[Char],Int]( doit1, s0, 321);
+    assertEquals( doit1( s0 ), 321);
+    assertEquals( doit1( s1 ),321);
+    assertEquals( doit1( s2 ),321);
+    assertEquals( doit1( s3 ),100);
+    assertEquals( doit1( s4 ),321);
+    assertEquals( doit1( s5 ),321);
+    assertEquals( doit1( s6 ),321)
+  }
 
-                case List( 'a'*, x @ ( 'a',('a', 'b')* ), y @ ('b'*) )   => { 100 }
-
-                case List( _ * )         => 321
-        };
-
-    def test1:Unit = {
-                Console.println("testBK");
-                //test[List[Char],Int]( doit1, s0, 321);
-      assertEquals( doit1( s0 ), 321);
-      assertEquals( doit1( s1 ),321);
-      assertEquals( doit1( s2 ),321);
-      assertEquals( doit1( s3 ),100);
-      assertEquals( doit1( s4 ),321);
-      assertEquals( doit1( s5 ),321);
-      assertEquals( doit1( s6 ),321)
-    };
-
-    def main( args:Array[ String ] ) = {
-         test1;
-    }
+  def main(args: Array[String]): Unit = {
+    test1;
+  }
 
 }
 
@@ -105,321 +102,254 @@ object testBL {
 
   def preTest(a:String,b:String):boolean = (a==b);
 
-  def doit( x:List[String] ):String = x match {
-
+  def doit(x: List[String]): String = x match {
     case List( z @ "John" ) => z
-
   }
 
-        // BEWARE: main type should be specified...
-        // often, last thing is not () then you have a problem
+  // BEWARE: main type should be specified...
+  // often, last thing is not () then you have a problem
 
-  def main(args:Array[String]):Unit = {
-
+  def main(args: Array[String]): Unit = {
     val a = "John";
     val b = "John";
 
-    assertEquals( a == b, true );
-    assertEquals( doit( List( b ) ), "John" )
-
+    assertEquals(a == b, true);
+    assertEquals(doit(List(b)), "John")
   }
 }
-object testBM  {
 
-    import scala.testing.UnitTest._ ;
-    import values._ ;
+object testBM {
 
-    def doit1(e: List[Char]):List[Char] = e match {
+  import scala.testing.UnitTest._ ;
+  import values._ ;
 
-                case List( 'a'*, x @ ( 'a',('a', 'b')* ), y @ ('b'*) )
+  def doit1(e: List[Char]): List[Char] = e match {
+    case List( 'a'*, x @ ( 'a',('a', 'b')* ), y @ ('b'*) )
+      => { x.toList }
 
-                        => { x.toList }
+    case List( 'a'*, x @ (('a', 'b')*) , y @ (('a','b','c') *) )
+      => { y.toList }
 
-                case List( 'a'*, x @ (('a', 'b')*) , y @ (('a','b','c') *) )
+    case List( _ * )
+      => Nil
+  }
 
-                        => { y.toList }
+  def test1: Unit = {
+    Console.println("testBM");
+    assertEquals( doit1( s0 ), Nil);
+    assertEquals( doit1( s1 ), s1);
+    assertEquals( doit1( s2 ), s2);
 
-                case List( _ * )
+    assertEquals( doit1( s3 ), List('a'));
+    assertEquals( doit1( s4 ), Nil);
+    assertEquals( doit1( s5 ), Nil);
+    assertEquals( doit1( s6 ), Nil);
 
-                        => Nil
-        };
+    val t7:List[Char] = 'a'::'a'::'a'::'b'::'b'::'b'::Nil;
+    //val t7ex:List[Char] = 'a'::'a'::'b'::Nil; // with longest match policy
 
-    def test1:Unit = {
-                Console.println("testBM");
-                assertEquals( doit1( s0 ), Nil);
-                assertEquals( doit1( s1 ), s1);
-                assertEquals( doit1( s2 ), s2);
+    assertEquals( doit1( t7 ), List('a') );
+  }
 
-                assertEquals( doit1( s3 ), List('a'));
-                assertEquals( doit1( s4 ), Nil);
-                assertEquals( doit1( s5 ), Nil);
-                assertEquals( doit1( s6 ), Nil);
-
-                val t7:List[Char] = 'a'::'a'::'a'::'b'::'b'::'b'::Nil;
-                //val t7ex:List[Char] = 'a'::'a'::'b'::Nil; // with longest match policy
-
-                assertEquals( doit1( t7 ), List('a') );
-    };
-
-    def main( args:Array[ String ] ) = {
-         test1;
-    }
+  def main(args: Array[String]) = {
+    test1
+  }
 
 }
+
 object testBN {
 
-    import scala.testing.UnitTest._ ;
-    import values._ ;
+  import scala.testing.UnitTest._ ;
+  import values._ ;
 
-        class testClass;
+  class testClass;
 
-        case class testA( arg:List[Char] ) extends testClass;
+  case class testA(arg: List[Char]) extends testClass;
 
-    def doit1(e: testClass):List[Char] = e match {
-                case testA(List( 'a', x, y ))   => x::y::Nil
-                case _                      => Nil
-        };
+  def doit1(e: testClass): List[Char] = e match {
+    case testA(List( 'a', x, y )) => x::y::Nil
+    case _                        => Nil
+  }
 
-    def test1:Unit = {
-                Console.print("BN preTest: ");
-                Console.println( Nil == Nil );
-                Console.println("testBN");
+  def test1:Unit = {
+    Console.print("BN preTest: ");
+    Console.println(Nil == Nil);
+    Console.println("testBN");
 
-                assertEquals
-                        ( doit1( testA(s0)), Nil);
+    assertEquals(doit1(testA(s0)), Nil);
+    assertEquals(doit1(testA(s1)), 'b'::'c'::Nil);
+    assertEquals(doit1(testA(s2)), Nil);
+    assertEquals(doit1(testA(s3)), 'a'::'a'::Nil);
+    assertEquals(doit1(testA(s4)), Nil);
+    assertEquals(doit1(testA(s5)), Nil);
+    assertEquals(doit1(testA(s6)), Nil);
+  }
 
-                assertEquals
-                        ( doit1( testA(s1)), 'b'::'c'::Nil);
-
-                assertEquals
-                        ( doit1( testA(s2)), Nil);
-
-                assertEquals
-                        ( doit1( testA(s3)), 'a'::'a'::Nil);
-
-                assertEquals
-                        ( doit1( testA(s4)), Nil);
-
-                assertEquals
-                        ( doit1( testA(s5)), Nil);
-
-                assertEquals
-                        ( doit1( testA(s6)), Nil);
-
-    };
-
-
-    def main( args:Array[String] ) = {
-
-                test1
-
-    }
+  def main(args: Array[String]) = {
+    test1
+  }
 
 }
 
 object testBO  {
 
-        // example suggested by Matthias
-        import scala.testing.UnitTest._ ;
+  // example suggested by Matthias
+  import scala.testing.UnitTest._ ;
 
+  case class Person(firstname: String, lastname: String);
 
-        case class Person( firstname:String, lastname:String );
+  def onlyJohn(db: List[Person]): List[String] = db match {
+    case List(Person("John", lastname)) => lastname::Nil
+    case _ => Nil
+  }
 
-        def onlyJohn( db:List[ Person ] ):List[ String ] = {
+  /** first longest match policy -> the star is greedy/hungry/...
+   */
+  def searchFirstJohn(db: List[Person]): String = db match {
+    case List( _ *, Person("John", lastname), _ * ) => lastname
+    case _ => "<not found>"
+  }
 
-           db match {
+  /** first longest match policy -> star is a greedy/hungry
+   */
+  def searchJohns(db: List[Person]): List[String] = db match {
+    case List( _ *, Person("John", lastname), rest@(_ *)) => {
+      //Console.print("before is : " + before);
+      lastname::searchJohns(rest.toList)
+    }
+    case _ => Nil
+  }
 
-                case List( Person( "John", lastname  ) )
+  def main(args: Array[String]): Unit = {
+    val p1 = Person("Albert",  "Camus");
+    val p2 = Person("Henry",   "Miller");
+    val p3 = Person("John",    "Le Carre");
+    val p4 = Person("Herbert", "Franke");
+    val p5 = Person("John",    "Smith");
+    val p6 = Person("William", "Gibson");
 
-                        => lastname::Nil
+    val db: List[Person] = p1::p2::p3::p4::p5::p6::Nil;
 
-                case _
-                        => Nil
+    val db2: List[Person] = p3::Nil;
 
-           }
+    Console.println("testBO");
 
-        }
-
-        /** first longest match policy -> the star is greedy/hungry/...
-         */
-
-        def searchFirstJohn( db:List[ Person ] ):String = {
-
-           db match {
-
-                case List( _ *, Person( "John", lastname  ), _ * )
-                        => lastname
-
-                case _
-                        => "<not found>"
-
-           }
-
-        }
-
-        /** first longest match policy -> star is a greedy/hungry
-         */
-
-        def searchJohns( db:List[Person]):List[String] = {
-
-           db match {
-
-                case List( _ *, Person( "John", lastname  ), rest@(_ *) )
-                        => { //Console.print("before is : "+before );
-                             lastname::searchJohns( rest.toList )
-                                }
-
-                case _
-                        => Nil
-
-           }
-
-        }
-
-        def main( args:Array[String] ) = {
-
-                val p1 = Person("Albert",  "Camus");
-                val p2 = Person("Henry",   "Miller");
-                val p3 = Person("John",    "Le Carre");
-                val p4 = Person("Herbert", "Franke");
-                val p5 = Person("John",    "Smith");
-                val p6 = Person("William", "Gibson");
-
-                val db:List[Person] = p1::p2::p3::p4::p5::p6::Nil;
-
-                val db2:List[Person] = p3::Nil;
-
-                Console.println("testBO");
-
-          assertEquals
-                        ( onlyJohn( db ), Nil );
-
-          assertEquals
-                        ( onlyJohn( db2 ), "Le Carre"::Nil );
-
-          assertEquals
-                        ( searchFirstJohn( db ), "Le Carre" );
-
-          assertEquals
-                        ( searchFirstJohn( db2 ), "Le Carre" );
-
-          assertEquals
-                        ( searchJohns( db ), "Le Carre"::"Smith"::Nil );
-
-          assertEquals
-                        ( searchJohns( db2 ), "Le Carre"::Nil );
-
-        }
+    assertEquals(onlyJohn(db),         Nil);
+    assertEquals(onlyJohn(db2),        "Le Carre"::Nil);
+    assertEquals(searchFirstJohn(db),  "Le Carre");
+    assertEquals(searchFirstJohn(db2), "Le Carre");
+    assertEquals(searchJohns(db),      "Le Carre"::"Smith"::Nil);
+    assertEquals(searchJohns(db2),     "Le Carre"::Nil);
+  }
 
 }
+
 object testWR  {
 
-        import values._ ;
+  import values._ ;
+  import scala.testing.UnitTest._ ;
 
-        import scala.testing.UnitTest._ ;
+  def doit1(e: List[Char]): Int = e match {
+    case List( 'a', 'b', 'c' ) => 100
+    case _                     => 321
+  }
 
-    def doit1(e: List[Char]):Int = e match {
-                case List( 'a', 'b', 'c' ) => 100
-                case _                     => 321
-        };
+  def test1: Unit = {
+    Console.println("testWR_1");
+    assertEquals( doit1( s0 ), 321);
+    assertEquals( doit1( s1 ), 100);
+    assertEquals( doit1( s2 ), 321);
+    assertEquals( doit1( s3 ), 321);
+    assertEquals( doit1( s4 ), 321);
+    assertEquals( doit1( s5 ), 321);
+    assertEquals( doit1( s6 ), 321)
+  }
 
-    def test1:Unit = {
-                Console.println("testWR_1");
-                assertEquals( doit1( s0 ),321);
-                assertEquals( doit1( s1 ),100);
-                assertEquals( doit1( s2 ),321);
-                assertEquals( doit1( s3 ),321);
-                assertEquals( doit1( s4 ),321);
-                assertEquals( doit1( s5 ),321);
-                assertEquals( doit1( s6 ),321)
-    };
+  def doit2(e: List[Char]):Int = e match {
+    case List( ('a', 'b','c')? ) => 1000
+    case _                       => 321
+  }
 
-    def doit2(e: List[Char]):Int = e match {
-                case List( ('a', 'b','c')? ) => 1000
-                case _                       => 321
-	}
+  def test2: Unit = {
+    Console.println("testWR_2");
+    assertEquals( doit2( s0 ), 1000);
+    assertEquals( doit2( s1 ), 1000);
+    assertEquals( doit2( s2 ),  321);
+    assertEquals( doit2( s3 ),  321);
+    assertEquals( doit2( s4 ),  321);
+    assertEquals( doit2( s5 ),  321);
+    assertEquals( doit2( s6 ),  321);
+  }
 
-    def test2:Unit = {
-                Console.println("testWR_2");
-                assertEquals( doit2( s0 ),1000);
-                assertEquals( doit2( s1 ),1000);
-                assertEquals( doit2( s2 ),321);
-                assertEquals( doit2( s3 ),321);
-                assertEquals( doit2( s4 ),321);
-                assertEquals( doit2( s5 ),321);
-                assertEquals( doit2( s6 ),321);
-    }
+  def doit3(e: List[Char]): String = e match {
+    case List( ('a', 'a','a')? ) => "ok"
+    case _                   => "fail"
+  }
 
+  def test3: Unit = {
+    Console.println("testWR_3");
+    assertEquals(doit3(s0), "ok");
+    assertEquals(doit3(s1), "fail");
+    assertEquals(doit3(s2), "fail");
+    assertEquals(doit3(s3), "ok");
+    assertEquals(doit3(s4), "fail");
+    assertEquals(doit3(s5), "fail");
+    assertEquals(doit3(s6), "fail");
+  }
 
-    def doit3(e: List[Char]):String = e match {
-                case List( ('a', 'a','a')? ) => "ok"
-                case _                   => "fail"
-	}
+  def doit4(e: List[Char]): String = e match {
+    case List( ('a'|'b')*,('a'|'b'|'c')+ ) => "ga!!!!"
+    case _                                 => "gu"
+  }
 
-    def test3:Unit = {
-                Console.println("testWR_3");
-                assertEquals( doit3( s0 ), "ok");
-                assertEquals( doit3( s1 ),"fail");
-                assertEquals( doit3( s2 ), "fail");
-                assertEquals( doit3( s3 ),"ok");
-                assertEquals( doit3( s4 ),"fail");
-                assertEquals( doit3( s5 ),"fail");
-                assertEquals( doit3( s6 ),"fail");
-    }
+  def test4: Unit = {
+    Console.println("testWR_4");
+    assertEquals( doit4( s0 ), "gu");
+    assertEquals( doit4( s1 ), "ga!!!!");
+    assertEquals( doit4( s2 ), "ga!!!!");
+    assertEquals( doit4( s3 ), "ga!!!!");
+    assertEquals( doit4( s4 ), "ga!!!!");
+    assertEquals( doit4( s5 ), "ga!!!!");
+    assertEquals( doit4( s6 ), "ga!!!!");
+  }
 
-    def doit4(e: List[Char]):String = e match {
-                case List( ('a'|'b')*,('a'|'b'|'c')+ ) => "ga!!!!"
-                case _                             => "gu"
-	}
+  def doit5(e: List[Int]): String = e match {
+    case List( (0|1)+ ) => "binary"
+    case _              => "not binary"
+  }
 
-    def test4:Unit = {
-                Console.println("testWR_4");
-                assertEquals( doit4( s0 ), "gu");
-                assertEquals( doit4( s1 ), "ga!!!!");
-                assertEquals( doit4( s2 ), "ga!!!!");
-                assertEquals( doit4( s3 ), "ga!!!!");
-                assertEquals( doit4( s4 ), "ga!!!!");
-                assertEquals( doit4( s5 ), "ga!!!!");
-                assertEquals( doit4( s6 ), "ga!!!!");
-    }
+  def test5: Unit = {
+    Console.println("testWR_5");
+    assertEquals( doit5( s7 ), "not binary");
+    assertEquals( doit5( s8 ), "binary");
+    assertEquals( doit5( s9 ), "not binary");
+  }
 
-    def doit5(e: List[Int]):String = e match {
-                case List( (0|1)+ )               => "binary"
-                case _                        => "not binary"
-	}
-
-    def test5:Unit = {
-                Console.println("testWR_5");
-                assertEquals( doit5( s7 ), "not binary");
-                assertEquals( doit5( s8 ), "binary");
-                assertEquals( doit5( s9 ), "not binary");
-    }
-
-    //  { ('0'..'9')*;'.';('0'..'9');('0'..'9')* ]
-    def doit6(e: List[Char]):String = e match {
-                case List( ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9')*,
-                       '.',
-                       ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'),
-                       ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9')* )
+  //  { ('0'..'9')*;'.';('0'..'9');('0'..'9')* ]
+  def doit6(e: List[Char]): String = e match {
+    case List( ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9')*,
+                '.',
+               ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'),
+               ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9')* )
 
                                               => "decimal number"
                 case _                        => "not decimal"
-	}
+  }
 
-    def test6:Unit = {
-                Console.println("testWR_6");
-                assertEquals( doit6( s3 ), "not decimal");
-                assertEquals( doit6( s10 ), "decimal number");
-    }
+  def test6: Unit = {
+    Console.println("testWR_6");
+    assertEquals(doit6(s3),  "not decimal");
+    assertEquals(doit6(s10), "decimal number");
+  }
 
-    def  test8: Unit = {
-      Console.println("testWR_8");
+  def test8: Unit = {
+    Console.println("testWR_8");
 
-      assertTrue( List('d','c') match {
-        case List('a'*, 'd'|'e', 'c'*) => true
-        case _                         => false
-      });
-    }
+    assertTrue( List('d','c') match {
+      case List('a'*, 'd'|'e', 'c'*) => true
+      case _                         => false
+    });
+  }
 
   def test7:Unit = {
     Console.println("testWR_7");
@@ -428,25 +358,23 @@ object testWR  {
       case _ => false;
     }, true);
   }
-    def main( args:Array[String] ) = {
-        test1;
-        test2;
-        test3;
-        test4;
-        test5;
-        test6;
-        test7;
-        test8;
-    }
 
-
-
+  def main(args: Array[String]): Unit = {
+    test1;
+    test2;
+    test3;
+    test4;
+    test5;
+    test6;
+    test7;
+    test8;
+  }
 }
+
 object testWS {
 
-        import values._ ;
-
-        import scala.testing.UnitTest._ ;
+  import values._ ;
+  import scala.testing.UnitTest._ ;
 
         /* strings:
 
@@ -502,89 +430,81 @@ object testWS {
                 case _                        => 321
         };
 
-    def test1:Unit = {
-                Console.println("testWS");
-                assertEquals( doit1( s0 ),1004);
-                assertEquals( doit1( s1 ),100);
-                assertEquals( doit1( s2 ),321);
-                assertEquals( doit1( s3 ),50);
-                assertEquals( doit1( s4 ),321);
-                assertEquals( doit1( s5 ),700);
-                assertEquals( doit1( s6 ),700);
-    };
+  def test1: Unit = {
+    Console.println("testWS");
+    assertEquals( doit1( s0 ), 1004);
+    assertEquals( doit1( s1 ),  100);
+    assertEquals( doit1( s2 ),  321);
+    assertEquals( doit1( s3 ),  50);
+    assertEquals( doit1( s4 ), 321);
+    assertEquals( doit1( s5 ), 700);
+    assertEquals( doit1( s6 ), 700);
+  }
 
-    def main( args:Array[String] ) = {
-        test1;
-    }
-
-
+  def main(args: Array[String]): Unit = {
+    test1;
+  }
 
 }
+
 object testWT  {
 
-        import values._ ;
+  import values._ ;
+  import scala.testing.UnitTest._ ;
 
-        import scala.testing.UnitTest._ ;
+  def doit1(e: List[Char]): Int = e match {
+    case List('a', _, _) => 100
+    case List(_ *)       => 321
+    case _               => 20022 // this never happens
+  }
 
-    def doit1(e: List[Char]):Int = e match {
-                case List( 'a', _, _ )   => 100
-                case List( _ * )         => 321
-                case _               => 20022 // this never happens
-        };
+  def test1: Unit = {
+    Console.println("testWT");
+    assertEquals( doit1( s0 ),321);
+    assertEquals( doit1( s1 ),100);
+    assertEquals( doit1( s2 ),321);
+    assertEquals( doit1( s3 ),100);
+    assertEquals( doit1( s4 ),321);
+    assertEquals( doit1( s5 ),321);
+    assertEquals( doit1( s6 ),321)
+  }
 
-    def test1:Unit = {
-                Console.println("testWT");
-                assertEquals( doit1( s0 ),321);
-                assertEquals( doit1( s1 ),100);
-                assertEquals( doit1( s2 ),321);
-                assertEquals( doit1( s3 ),100);
-                assertEquals( doit1( s4 ),321);
-                assertEquals( doit1( s5 ),321);
-                assertEquals( doit1( s6 ),321)
-    };
-
-    def main( args:Array[ String ] ) = {
-         test1;
-    }
+  def main(args: Array[String]): Unit = {
+    test1;
+  }
 
 }
 object testWV {
 
-        import values._ ;
+  import values._ ;
+  import scala.testing.UnitTest._ ;
 
-        import scala.testing.UnitTest._ ;
+  class testClass;
 
-        class testClass;
+  case class testA( arg:List[Char] ) extends testClass;
 
-        case class testA( arg:List[Char] ) extends testClass;
+  def doit1(e: testClass):Int = e match {
+    case testA(List( 'a', 'b', 'c' ))        => 100
+    case testA(List( ('a', 'b','c')? ))      => 1004
+    case testA(List( ('a', 'a','a')? ))      => 50
+    case testA(List( ('a'|'b')*,('a'|'b') )) => 700
+    case testA( _ )                          => 321
+  }
 
-    def doit1( e: testClass ):Int = e match {
+  def test1: Unit = {
+    Console.println("testWV");
+    assertEquals(doit1(testA(s0)), 1004);
+    assertEquals(doit1(testA(s1)),  100);
+    assertEquals(doit1(testA(s2)),  321);
+    assertEquals(doit1(testA(s3)),   50);
+    assertEquals(doit1(testA(s4)),  321);
+    assertEquals(doit1(testA(s5)),  700);
+    assertEquals(doit1(testA(s6)),  700);
+  }
 
-                case testA( List( 'a', 'b', 'c' ))        => 100
-                case testA( List( ('a', 'b','c')? ))      => 1004
-                case testA( List( ('a', 'a','a')? ))      => 50
-                case testA( List( ('a'|'b')*,('a'|'b') )) => 700
-                case testA( _ )                        => 321
-
-        };
-
-    def test1:Unit = {
-                Console.println("testWV");
-                assertEquals( doit1( testA(s0) ),1004);
-                assertEquals( doit1( testA(s1) ),100);
-                assertEquals( doit1( testA(s2) ),321);
-                assertEquals( doit1( testA(s3) ),50);
-                assertEquals( doit1( testA(s4) ),321);
-                assertEquals( doit1( testA(s5) ),700);
-                assertEquals( doit1( testA(s6) ),700);
-    };
-
-
-    def main( args:Array[String] ) = {
-
-                test1
-
-    }
+  def main(args: Array[String]) = {
+    test1
+  }
 
 }
 /*
