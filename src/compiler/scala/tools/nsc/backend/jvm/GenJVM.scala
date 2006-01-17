@@ -284,12 +284,20 @@ abstract class GenJVM extends SubComponent {
                                            "java.lang.Object",
                                            JClass.NO_INTERFACES,
                                            clasz.cunit.source.toString());
-      for (val m <- clasz.methods; !(m.symbol.hasFlag(Flags.PRIVATE)) && !m.symbol.isClassConstructor && !isStaticSymbol(m.symbol) ) {
-        val mirrorMethod = mirrorClass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
-                                               javaName(m.symbol),
-                                               javaType(toTypeKind(m.symbol.tpe.resultType)),
-                                               javaTypes(m.params map (.kind)),
-                                               javaNames(m.params map (.sym)));
+      for (val m <- clasz.symbol.tpe.nonPrivateMembers;
+           m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
+           m.isMethod && !m.isConstructor && !isStaticSymbol(m) )
+      {
+        val paramJavaTypes = m.tpe.paramTypes map (t => toTypeKind(t));
+        val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
+        for (val i <- Iterator.range(0, paramJavaTypes.length))
+          paramNames(i) = "x_" + i;
+        val mirrorMethod = mirrorClass
+        .addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
+                      javaName(m),
+                      javaType(toTypeKind(m.tpe.resultType)),
+                      javaTypes(paramJavaTypes),
+                      paramNames);
         val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
         mirrorCode.emitGETSTATIC(moduleName,
                                  MODULE_INSTANCE_NAME,
