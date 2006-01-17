@@ -3,7 +3,7 @@
 abstract class Bug360A requires Bug360C {
   def f: String = "hello";
 }
-trait Bug360B: Bug360C {
+trait Bug360B requires Bug360C {
   object d {
     System.out.println(f);
   }
