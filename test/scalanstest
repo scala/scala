@@ -529,7 +529,10 @@ if [ -n "$OBJDIR" ]; then
     fi
 fi
 
-printf_outline "Source directory is: $SRCDIR\\n\\n";
+printf_outline "Source directory is  : $SRCDIR\\n";
+printf_outline "Scala distribution is: $LATEST\\n";
+JVM_VERSION=`${JAVA_CMD:=java} -version 2>&1 | head -2 | tail -1`
+printf_outline "Java runtime is      : $JVM_VERSION\\n\\n";
 
 test_check_all;
 
