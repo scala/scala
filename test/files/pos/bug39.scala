@@ -1,4 +1,4 @@
-abstract class Extensible[A, This <: Extensible[A, This]](x: A, xs: This): This {
+abstract class Extensible[A, This <: Extensible[A, This]](x: A, xs: This) requires This {
 	def mkObj(x: A, xs: This): This;
 }
 class Fixed[A](x: A, xs: Fixed[A]) extends Extensible[A, Fixed[A]](x, xs) {
