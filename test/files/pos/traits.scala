@@ -1,28 +1,28 @@
 object Test {
   type Color = int;
   trait Shape {
-    override def equals(other: Any) = true;
+    override def equals(other: Any) = true
   }
   trait Bordered extends Shape {
     val thickness: int;
     override def equals(other: Any) = other match {
-      case that: Bordered => this.thickness == that.thickness;
+      case that: Bordered => this.thickness == that.thickness
       case _ => false
     }
   }
   trait Colored extends Shape {
     val color: Color;
     override def equals(other: Any) = other match {
-      case that: Colored => this.color == that.color;
+      case that: Colored => this.color == that.color
       case _ => false
     }
   }
   trait BorderedColoredShape extends Shape with Bordered with Colored {
     override def equals(other: Any) = other match {
-      case that: BorderedColoredShape =>
+      case that: BorderedColoredShape => (
 	super.equals(that) &&
         super[Bordered].equals(that) &&
-        super[Colored].equals(that)
+        super[Colored].equals(that))
       case _ => false
     }
   }
@@ -36,7 +36,7 @@ object Test {
     val color = 0;
   }
   System.out.println(bcs1 == bcs1);
-  System.out.println(bcs1 == bcs2);
+  System.out.println(bcs1 == bcs2)
 }
 
 
