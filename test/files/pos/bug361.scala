@@ -2,7 +2,7 @@
 
 class Bug361Global extends Bug361Trees;
 
-abstract class Bug361Trees: Bug361Global {
+abstract class Bug361Trees requires Bug361Global {
 
   abstract class Tree {
     var pos: int = 0;

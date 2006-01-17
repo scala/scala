@@ -1,3 +1,5 @@
+// $Id$
+
 object CI {
    trait TreeDisplay {
 	type TreeNode <: ITreeNode;
@@ -13,7 +15,7 @@ object CI {
    trait TreeDisplayFinal extends TreeDisplay with TreeDisplayExp {
    	type TreeNode <: ITreeNode with ITreeNodeExp;
    }
-   abstract class SimpleTreeDisplay: TreeDisplayFinal extends
+   abstract class SimpleTreeDisplay requires TreeDisplayFinal extends
 TreeDisplay {
      def display() = { this.getRoot().display(); }
    }

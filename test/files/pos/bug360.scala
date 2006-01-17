@@ -1,6 +1,6 @@
 // $Id$
 
-abstract class Bug360A: Bug360C {
+abstract class Bug360A requires Bug360C {
   def f: String = "hello";
 }
 trait Bug360B: Bug360C {
