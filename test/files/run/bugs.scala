@@ -309,7 +309,7 @@ object Bug257Test {
   def f1(x: Unit): Unit = ();
   def f2(x: Unit)(y: Unit): Unit = ();
 
-  def f(x: => Unit) = {
+  def f(x: => Unit): Unit => Unit = {
     f1(x);
     f2(x);
   }
