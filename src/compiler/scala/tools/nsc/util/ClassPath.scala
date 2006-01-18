@@ -42,6 +42,7 @@ object ClassPath {
     def source = if (sourceFile == null) null else new Source(sourceFile, false);
   }
 
+
   class Context(val classes : List[AbstractFile], val sources : List[Source]) {
     def find(name : String, isDir : boolean) = if (isPackage) {
       def find0(classes : List[AbstractFile], sources : List[Source]) : Context = {
@@ -57,7 +58,7 @@ object ClassPath {
 				    if (sources.head == null) null;
 				    else {
 				      val source0 = sources.head.location.lookupPath(name + (if (!isDir) ".scala" else ""), isDir);
-				      if (source0 != null) source0;
+				      if (source0 != null && isDir) source0;
 				      else if (clazz != null && !isDir) sources.head.location; // directory where we can find source.
 				      else null;
 				    }
@@ -68,13 +69,15 @@ object ClassPath {
 						     :: ret.sources);
 				}
 		  }
-		  find0(classes, sources);
+		  val ret = find0(classes, sources);
+      ret;
 		} else null;
 
 
     def isPackage = {
-      if (classes.head != null) classes.head.isDirectory();
-      else sources.head.location.isDirectory();
+      if (!classes.isEmpty && classes.head != null) classes.head.isDirectory();
+      else if (!sources.isEmpty && sources.head.location != null) sources.head.location.isDirectory();
+      else true;
     }
 
     def name = {
