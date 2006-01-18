@@ -55,6 +55,8 @@ class Models(val global : Global) {
 
     object subscriber extends Subscriber[Message[HasTree] with Undoable, Members] {
     	def notify(pub: Members, event: Message[HasTree] with Undoable): Unit = event match {
+				//case Include(elem) =>    add(Composite.this, i.elem);
+				//case  Remove(elem) => remove(Composite.this, i.elem);
 				case i : Include[HasTree] with Undoable  =>    add(Composite.this, i.elem);
 				case r : Remove [HasTree] with Undoable  => remove(Composite.this, r.elem);
 			}
@@ -173,8 +175,8 @@ class Models(val global : Global) {
 				  else ret.head;
 				} else tree;
       } else super.member(tree, members);
-      val sym = tree0.symbol;
-      if (sym.pos == Position.NOPOS) null;
+      def sym = tree0.symbol;
+      if (tree0 == null || sym.pos == Position.NOPOS) null;
       else tree0;
     }
 
@@ -203,7 +205,7 @@ class Models(val global : Global) {
     override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[AbsTypeDef]);
   }
   class SourceMod(val original : CompilationUnit) extends Composite with HasClassObjects {
-    // update(unit);
+    update(original);
     var listener : Listener = null;
     def update(unit : CompilationUnit) = unit.body match {
       case pdef : PackageDef => update0(pdef.stats);

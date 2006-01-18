@@ -142,9 +142,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def getSourceFile(clazz: Symbol): SourceFile = {
 		val ret = classPath.root.find(clazz.fullNameString(File.separatorChar), false);
-		if (ret.sources.isEmpty) throw new FileNotFoundException(
+		if (!ret.isSourceFile) throw new FileNotFoundException(
 			      "source file for " + clazz + " could not be found");
-		getSourceFile(ret.sources.head.location);
+		getSourceFile(ret.sourceFile);
   }
 
   object loaders extends SymbolLoaders {
