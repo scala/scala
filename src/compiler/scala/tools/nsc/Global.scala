@@ -420,18 +420,21 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
 
     def compileLate(file: AbstractFile): unit =
-      if (fileset == null)
-	throw new FatalError("No class file for " + file + " was found\n(This file cannot be loaded as a source file)");
+      if (fileset == null) {
+    	  val msg = "No class file for " + file + " was found\n(This file cannot be loaded as a source file)";
+    	  System.err.println(msg);
+				throw new FatalError(msg);
+      }
       else if (!(fileset contains file)) {
-	val unit = new CompilationUnit(getSourceFile(file));
-	addUnit(unit);
-	var localPhase = firstPhase.asInstanceOf[GlobalPhase];
-	while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) &&
-               reporter.errors == 0) {
-	  atPhase(localPhase)(localPhase.applyPhase(unit));
-	  localPhase = localPhase.next.asInstanceOf[GlobalPhase];
-	}
-	refreshProgress;
+				val unit = new CompilationUnit(getSourceFile(file));
+				addUnit(unit);
+				var localPhase = firstPhase.asInstanceOf[GlobalPhase];
+				while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) &&
+			               reporter.errors == 0) {
+				  atPhase(localPhase)(localPhase.applyPhase(unit));
+				  localPhase = localPhase.next.asInstanceOf[GlobalPhase];
+			}
+			refreshProgress;
       }
 
     def compileFiles(files: List[AbstractFile]): unit =

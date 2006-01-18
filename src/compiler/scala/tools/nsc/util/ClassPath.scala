@@ -46,37 +46,37 @@ object ClassPath {
   class Context(val entries : List[Entry]) {
     def find(name : String, isDir : boolean) : Context = if (isPackage) {
       def find0(entries : List[Entry]) : Context = {
-    		if (entries.isEmpty) new Context(Nil);
-				else {
-				  val ret = find0(entries.tail);
-				  val head = entries.head;
+    	if (entries.isEmpty) new Context(Nil);
+	else {
+	  val ret = find0(entries.tail);
+	  val head = entries.head;
 
 
-				  val clazz = if (head.location == null) null; else
-				    head.location.lookupPath(name + (if (!isDir) ".class" else ""), isDir);
+	  val clazz = if (head.location == null) null; else
+	    head.location.lookupPath(name + (if (!isDir) ".class" else ""), isDir);
 
-				  val source0 = if (head.source == null) null; else {
-						val source1 = head.source.location.lookupPath(name + (if (isDir) "" else ".scala"), isDir);
- 						if (source1 == null && !isDir && clazz != null) head.source.location;
- 						else source1;
-				  }
-				  if (clazz == null && source0 == null) ret;
-				  else {
-					  object entry extends Entry {
-						  override def location = clazz;
-						  override def source =
-							  if (source0 == null) null;
-							  else new Source(source0, head.source.compile);
-					  };
-					  new Context(entry :: ret.entries);
-				  }
-				}
-		  }
-		  val ret = find0(entries);
+	  val source0 = if (head.source == null) null; else {
+	    val source1 = head.source.location.lookupPath(name + (if (isDir) "" else ".scala"), isDir);
+ 	    if (source1 == null && !isDir && clazz != null) head.source.location;
+ 	    else source1;
+	  }
+	  if (clazz == null && source0 == null) ret;
+	  else {
+	    object entry extends Entry {
+	      override def location = clazz;
+	      override def source =
+		if (source0 == null) null;
+		else new Source(source0, head.source.compile);
+	    };
+	    new Context(entry :: ret.entries);
+	  }
+	}
+      }
+      val ret = find0(entries);
       if (false && this.toString().indexOf("scala") != -1)
-	      System.err.println("FIND " + name + " in " + this + " => " + ret);
+	System.err.println("FIND " + name + " in " + this + " => " + ret);
       ret;
-		} else null;
+    } else null;
 
 
     def isPackage = {
@@ -107,27 +107,21 @@ object ClassPath {
       if (entries0.isEmpty) "";
       else toString(entries0.head) + ":::" + toString(entries0.tail);
 
-    def isSourceFile =
-    	(!isPackage && !entries.isEmpty && entries.head.source != null &&
-    	 entries.head.source.location.getFile().isFile());
+    def isSourceFile = {
+      def head = entries.head;
+      def clazz = head.location;
+      def source = if (head.source == null) null else head.source.location;
+      if (entries.isEmpty || entries.isEmpty || source == null || !head.source.compile || !source.getFile().isFile()) false;
+      else if (clazz == null) true;
+      else if (source.lastModified() > clazz.lastModified()) true;
+      else false;
+    }
 
-    def sourceFile = if (isSourceFile) entries.head.source.location else null;
+    def sourceFile = if ( isSourceFile) entries.head.source.location else null;
+    def  classFile = if (!isSourceFile) entries.head       .location else null;
 
     def sourcePath = if (!isSourceFile && entries.head.source != null) entries.head.source.location else null;
 
-    def file = {
-      if (entries.isEmpty) null; /* file not found */
-      else if (isPackage) null;
-      else {
-	      def clazz = entries.head.location;
-	      def source = if (entries.head.source == null) null else entries.head.source.location;
-	      assert(!(clazz == null && source == null));
-	      if (clazz == null) source;
-	      else if (source == null) clazz;
-	      else if (source.getFile().isFile() && source.lastModified() > clazz.lastModified()) source;
-	      else clazz;
-      }
-    }
     def validPackage(name: String): Boolean =
       if (name.equals("META-INF")) false;
       else if (name.startsWith(".")) false;
@@ -141,9 +135,12 @@ object ClassPath {
 
 
     def this(classpath : String, source : String, output : String, boot : String, extdirs : String) = {
-    	this();
+      this();
+      //System.err.println("BOOT: " + boot);
+      //System.err.println("CLAS: " + classpath);
 
       addFilesInPath(boot);
+
       addArchivesInExtDirPath(extdirs);
       val strtok = new StringTokenizer(source, File.pathSeparator);
       while (strtok.hasMoreTokens()) {
@@ -153,7 +150,7 @@ object ClassPath {
   	    entries += output0;
       }
       addFilesInPath(classpath);
-	    //System.err.println("CLASSPATH: " + root);
+      //System.err.println("CLASSPATH: " + root);
     }
     def library(classes : String, sources : String) = {
       assert(classes != null);

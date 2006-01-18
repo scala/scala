@@ -103,19 +103,20 @@ abstract class SymbolLoaders {
       }
 
       def enterClassAndModule(str: String, completer: SymbolLoader): unit = {
-	val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
-	val name = newTermName(str);
+				val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
+				val name = newTermName(str);
         val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
         val module = owner.newModule(Position.NOPOS, name);
-	if (completer.sourceFile != null) clazz.sourceFile = completer.sourceFile;
-        clazz.setInfo(completer);
-	module.setInfo(completer);
-        module.moduleClass.setInfo(moduleClassLoader);
-        owner.info.decls.enter(clazz);
-        owner.info.decls.enter(module);
-				assert(clazz.linkedModule == module, module);
-				assert(module.linkedClass == clazz, clazz);
-      }
+				if (completer.sourceFile != null) clazz.sourceFile = completer.sourceFile;
+	        clazz.setInfo(completer);
+	        module.setInfo(completer);
+	        module.moduleClass.setInfo(moduleClassLoader);
+	        owner.info.decls.enter(clazz);
+	        owner.info.decls.enter(module);
+					assert(clazz.linkedModule == module, module);
+					assert(module.linkedClass == clazz, clazz);
+	      }
+
       val classes  = new HashMap[String, ClassPath.Context];
       val packages = new HashMap[String, ClassPath.Context];
       for (val dir <- directory.entries) if (dir.location != null) {
@@ -149,15 +150,16 @@ abstract class SymbolLoaders {
       // do classes first
 
       for (val Pair(name, file) <- classes.elements) {
-				val loader = if (!file.isSourceFile) {
+	val loader = if (!file.isSourceFile) {
           // System.err.println("CLASSFILE: " + file.file + " in " + file);
-					new ClassfileLoader(file.file, file.sourceFile, file.sourcePath);
-				} else {
-					assert(file.sourceFile != null);
-					//System.err.println("SOURCEFILE: " + file.sourceFile + " in " + file);
-					new SourcefileLoader(file.sourceFile);
-				}
-				enterClassAndModule(name, loader);
+	  new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath);
+	} else {
+	  assert(file.sourceFile != null);
+	  //System.err.println("SOURCEFILE: " + file.sourceFile + " in " + file);
+
+	  new SourcefileLoader(file.sourceFile);
+	}
+	enterClassAndModule(name, loader);
       }
       for (val Pair(name, file) <- packages.elements) enterPackage(name, new PackageLoader(file));
     }
