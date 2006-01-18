@@ -75,15 +75,20 @@ object ClassPath {
 
 
     def isPackage = {
-      if (!classes.isEmpty && classes.head != null) classes.head.isDirectory();
-      else if (!sources.isEmpty && sources.head.location != null) sources.head.location.isDirectory();
+    	assert(classes.length == sources.length);
+    	if (classes.isEmpty) true;
+    	else if (classes.head != null) classes.head.isDirectory();
+      else if (sources.head != null && sources.head.location != null) sources.head.location.isDirectory();
       else true;
     }
 
     def name = {
-      val name = if (classes.head != null) classes.head.getName() else sources.head.location.getName();
-      if (isPackage) name;
-      else name.substring(0, name.length() - (".class").length());
+    	if (classes.isEmpty) "<none>";
+    	else {
+	      val name = if (classes.head != null) classes.head.getName() else sources.head.location.getName();
+	      if (isPackage) name;
+	      else name.substring(0, name.length() - (".class").length());
+    	}
     }
 
     override def toString(): String = toString(classes, sources);
