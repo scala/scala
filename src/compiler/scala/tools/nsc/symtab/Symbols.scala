@@ -117,8 +117,12 @@ mixin class Symbols requires SymbolTable {
       new ModuleClassSymbol(this, pos, name);
     final def newAnonymousClass(pos: int) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName);
-    final def newAnonymousFunctionClass(pos: int) =
-      newClass(pos, nme.ANON_FUN_NAME.toTypeName);
+    final def newAnonymousFunctionClass(pos: int) = {
+      val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName);
+      anonfun.attributes =
+        Pair(definitions.SerializableAttr, List()) :: anonfun.attributes;
+      anonfun
+    }
     final def newRefinementClass(pos: int) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName);
     final def newErrorClass(name: Name) = {
