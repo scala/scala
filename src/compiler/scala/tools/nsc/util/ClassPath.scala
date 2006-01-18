@@ -46,8 +46,8 @@ object ClassPath {
   class Context(val classes : List[AbstractFile], val sources : List[Source]) {
     def find(name : String, isDir : boolean) = if (isPackage) {
       def find0(classes : List[AbstractFile], sources : List[Source]) : Context = {
-				assert(classes.length == sources.length);
-				if (classes.isEmpty) new Context(Nil, Nil);
+				//assert(classes.length == sources.length);
+				if (classes.isEmpty || sources.isEmpty) new Context(Nil, Nil);
 				else {
 				  val ret = find0(classes.tail, sources.tail);
 
@@ -75,10 +75,10 @@ object ClassPath {
 
 
     def isPackage = {
-    	assert(classes.length == sources.length);
+    	//assert(classes.length == sources.length);
     	if (classes.isEmpty) true;
     	else if (classes.head != null) classes.head.isDirectory();
-      else if (sources.head != null && sources.head.location != null) sources.head.location.isDirectory();
+      else if (!sources.isEmpty && sources.head != null && sources.head.location != null) sources.head.location.isDirectory();
       else true;
     }
 
