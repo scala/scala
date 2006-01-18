@@ -263,7 +263,8 @@ install-windows		: install
 	        $(ECHO) "set _VERSION=$(INSTALL_VERSION)"; \
 	        $(ECHO) "set _COMMAND=$$winexec"; \
 	        $(CAT) "$$srcfile-footer.bat"; \
-	    ) | $(UNIX2DOS) >> "$$winfile"; \
+	    ) >> "$$winfile"; \
+	    $(UNIX2DOS) $$winfile; \
 	    $(ECHO) "done"; \
 	done; \
 	for name in "" $(SCRIPTS_ALIASES_NAMES); do \
