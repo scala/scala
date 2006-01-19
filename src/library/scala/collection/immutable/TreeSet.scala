@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -17,8 +17,9 @@ package scala.collection.immutable;
  *  @author  Burak Emir
  *  @version 1.1, 03/05/2004
  */
-//[serializable]
-class TreeSet[A <% Ordered[A]]() extends Tree[A, A] with Set[A] with java.io.Serializable {
+
+[serializable]
+class TreeSet[A <% Ordered[A]]() extends Tree[A, A] with Set[A] {
 
     override protected type This = TreeSet[A];
     override protected def getThis: This = this;

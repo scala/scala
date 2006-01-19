@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -19,8 +19,9 @@ object TreeMap {
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-//[serializable]
-class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] with java.io.Serializable {
+
+[serializable]
+class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] {
 
     override protected type This = TreeMap[A, B];
     override protected def getThis: This = this;
