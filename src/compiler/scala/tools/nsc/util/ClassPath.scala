@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.util;
 
@@ -75,6 +75,7 @@ object ClassPath {
       val ret = find0(entries);
       if (false && this.toString().indexOf("scala") != -1)
 	System.err.println("FIND " + name + " in " + this + " => " + ret);
+      assert(!ret.entries.isEmpty, ""+this+" "+name);
       ret;
     } else null;
 

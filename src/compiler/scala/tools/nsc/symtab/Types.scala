@@ -1514,8 +1514,8 @@ mixin class Types requires SymbolTable {
           tps1.isEmpty && tps2.isEmpty
           ||
           !tps1.isEmpty && !tps2.isEmpty &&
-          (tparams.head.hasFlag(COVARIANT) || (tps2.head <:< tps1.head)) &&
-          (tparams.head.hasFlag(CONTRAVARIANT) || tps1.head <:< tps2.head) &&
+          (tparams.head.isCovariant || (tps2.head <:< tps1.head)) &&
+          (tparams.head.isContravariant || (tps1.head <:< tps2.head)) &&
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
         );
         (sym1 == sym2 && (pre1 <:< pre2) && isSubArgs(args1, args2, sym1.typeParams)

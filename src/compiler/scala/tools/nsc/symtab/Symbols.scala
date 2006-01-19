@@ -262,10 +262,14 @@ mixin class Symbols requires SymbolTable {
     final def isInitialized: boolean =
       validForRun == currentRun;
 
+    final def isCovariant: boolean = isType && hasFlag(COVARIANT);
+
+    final def isContravariant: boolean = isType && hasFlag(CONTRAVARIANT);
+
     /** The variance of this symbol as an integer */
     final def variance: int =
-      if (hasFlag(COVARIANT)) 1
-      else if (hasFlag(CONTRAVARIANT)) -1
+      if (isCovariant) 1
+      else if (isContravariant) -1
       else 0;
 
 // Flags, owner, and name attributes --------------------------------------------------------------

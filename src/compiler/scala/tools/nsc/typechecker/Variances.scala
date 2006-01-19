@@ -55,8 +55,8 @@ mixin class Variances {
     var v: int = VARIANCES;
     for (val Pair(tp, tparam1) <- tps zip tparams1) {
       val v1 = varianceInType(tp)(tparam);
-      v = v & (if (tparam1.hasFlag(COVARIANT)) v1
-	       else if (tparam1.hasFlag(CONTRAVARIANT)) flip(v1)
+      v = v & (if (tparam1.isCovariant) v1
+	       else if (tparam1.isContravariant) flip(v1)
 	       else cut(v1))
     }
     v

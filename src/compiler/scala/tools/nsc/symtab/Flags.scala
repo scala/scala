@@ -31,7 +31,12 @@ object Flags {
   final val DEPRECATED    = 0x00008000;   // symbol is deprecated.
 
   final val COVARIANT     = 0x00010000;   // symbol is a covariant type variable
+  final val CAPTURED      = 0x00010000;   // variable is accessed from nested function. Set by LambdaLift
+  final val BYNAMEPARAM   = 0x00010000;   // parameter is by name
   final val CONTRAVARIANT = 0x00020000;   // symbol is a contravariant type variable
+  final val LABEL         = 0x00020000;   // method symbol is a label. Set by TailCall
+  final val INCONSTRUCTOR = 0x00020000;   // class symbol is defined in this/superclass constructor.
+
   final val ABSOVERRIDE   = 0x00040000;   // combination of abstract & override
   final val LOCAL         = 0x00080000;   // symbol is local to current class.
 	                            // pre: PRIVATE is also set
@@ -50,12 +55,6 @@ object Flags {
   final val SUPERACCESSOR = 0x10000000;   // a super accessor
   final val PARAMACCESSOR = 0x20000000;   // for value definitions: is an access method for a final val parameter
                                           // for parameters: is a val parameter
-
-  final val CAPTURED      = 0x40000000;   // variable is accessed from nested function. Set by LambdaLift
-  final val BYNAMEPARAM   = 0x40000000;   // parameter is by name
-
-  final val LABEL         = 0x80000000L;   // method symbol is a label. Set by TailCall
-  final val INCONSTRUCTOR = 0x80000000L;   // class symbol is defined in this/superclass constructor.
 
   final val IS_ERROR      = 0x100000000L; // symbol is an error symbol
   final val OVERLOADED    = 0x200000000L; // symbol is overloaded
