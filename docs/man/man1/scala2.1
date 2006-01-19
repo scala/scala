@@ -7,19 +7,19 @@
 .\" #                           |/                                           #
 .\" ##########################################################################
 .\"
-.\" Process this file with nroff -man scala.1
+.\" Process this file with nroff -man scala2.1
 .\"
 .TH scala 1  "April 29, 2005" "version 0.1" "USER COMMANDS"
 .\"
 .\" ################################# NAME ###################################
 .\"
 .SH NAME
-scala \- Launcher for the Scala language
+scala2 \- Launcher for the Scala language
 .\"
 .\" ############################### SYNOPSIS #################################
 .\"
 .SH SYNOPSIS
-\fBscala\fR [ <\fIoptions\fR> ] <\fIclass file\fR> [ <\fIargs\fR> ]
+\fBscala2\fR [ <\fIoptions\fR> ] <\fIclass file\fR> [ <\fIargs\fR> ]
 .\"
 .\" ############################### PARAMETERS ###############################
 .\"
@@ -37,7 +37,7 @@ Program arguments passed to the main function.
 .\" ############################## DESCRIPTION ###############################
 .\"
 .SH DESCRIPTION
-The \fBscala\fR utility launches a Scala application. It does this by starting
+The \fBscala2\fR utility launches a Scala application. It does this by starting
 a Java runtime environment, loading a specified class, and invoking that
 class’s \fBmain\fR method. The method must have the following signature:
 .PP
@@ -89,18 +89,18 @@ Same options as the \fBjava\fR command.
 .TP
 Execute a Scala program generated in the current directory
 .BR
-\fBscala\fR HelloWorld
+\fBscala2\fR HelloWorld
 .PP
 .TP
 Execute a Scala program generated in a user-defined directory \fBclasses\fR
 .BR
-\fBscala\fR \-classpath classes hello.HelloWorld
+\fBscala2\fR \-classpath classes hello.HelloWorld
 .PP
 .\"
 .\" ############################# EXIT STATUS ################################
 .\"
 .SH "EXIT STATUS"
-\fBscala\fR returns a zero exit status if it succeeds. Non zero is returned
+\fBscala2\fR returns a zero exit status if it succeeds. Non zero is returned
 in case of failure.
 .\"
 .\" ############################## AUTHOR(S) #################################
@@ -124,10 +124,10 @@ NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 .\" ############################### SEE ALSO #################################
 .\"
 .SH "SEE ALSO"
-.BR scalac(1),
-.BR scaladoc(1),
-.BR scalaint(1),
-.BR scalarun(1)
+.BR scalac2(1)
+.\" .BR scaladoc(1),
+.\" .BR scalaint(1),
+.\" .BR scalarun(1)
 .\"
 .\" ##########################################################################
 .\" $Id$
