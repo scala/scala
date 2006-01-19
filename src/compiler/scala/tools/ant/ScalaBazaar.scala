@@ -1,0 +1,283 @@
+/*    __  ______________                                                      *\
+**   /  |/ / ____/ ____/                                                      **
+**  / | | /___  / /___                                                        **
+** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
+**
+** $Id: ScalaTool.scala 5482 2006-01-09 19:22:46 +0100 (Mon, 09 Jan 2006) dubochet $
+\*                                                                            */
+
+package scala.tools.ant {
+
+  import scala.collection.Map
+  import scala.collection.mutable.HashMap
+  import java.io.{File, FileInputStream, FileOutputStream,
+                  FileWriter, StringReader}
+  import java.net.{URL, URLClassLoader}
+  import java.util.{ArrayList, Vector}
+  import java.util.zip.{ZipOutputStream, ZipEntry}
+
+  import org.apache.tools.ant.{AntClassLoader, BuildException,
+                               DirectoryScanner, Project}
+  import org.apache.tools.ant.taskdefs.MatchingTask
+  import org.apache.tools.ant.types.Path
+  import org.apache.tools.ant.util.{FileUtils, MergingMapper,
+                                    SourceFileScanner}
+  import org.apache.tools.ant.types.{EnumeratedAttribute, Reference, FileSet}
+
+  /** An Ant task that generates a SH or BAT script to execute a Scala program.
+    * This task can take the following parameters as attributes:<ul>
+    *  <li>file (mandatory),</li>
+    *  <li>adfile,</li>
+    *  <li>name (mandatory),</li>
+    *  <li>version (mandatory),</li>
+    *  <li>depends,</li>
+    *  <li>description.</li></ul>
+    *
+    * @author Gilles Dubochet */
+  class ScalaBazaar extends MatchingTask {
+
+    /** The unique Ant file utilities instance to use in this task. */
+    private val fileUtils = FileUtils.newFileUtils()
+
+/******************************************************************************\
+**                             Ant user-properties                            **
+\******************************************************************************/
+
+    /** The path to the archive file. */
+    private var file: Option[File] = None
+    /** The optional path to the advertisement file. */
+    private var adfile: Option[File] = None
+    /** The name of the package. */
+    private var name: Option[String] = None
+    /** The version number of the package. */
+    private var version: Option[String] = None
+    /** An (optional) list of names of the packages it depends of. */
+    private var depends: List[String] = Nil
+    /** An (optional) description of this package. */
+    private var desc: Option[String] = None
+    /** An (optional) description of this package. */
+    private object fileSetsMap extends Map[String, List[FileSet]] {
+      private var content = new HashMap[String, List[FileSet]]()
+      def get(key: String): Option[List[FileSet]] = content.get(key)
+      def size: Int = content.size
+      def update(key: String, value: FileSet) = {
+        if (content.contains(key) && content(key) != Nil)
+          content.update(key, value :: content(key))
+        else content.update(key, List(value))
+      }
+      def fileSets = elements.toList
+      def elements = content.elements
+    }
+
+/******************************************************************************\
+**                             Properties setters                             **
+\******************************************************************************/
+
+    /** Sets the file attribute. Used by Ant.
+      * @param input The value of <code>file</code>. */
+    def setFile(input: File) =
+      file = Some(input)
+
+    /** Sets the advertisement file attribute. Used by Ant.
+      * @param input The value of <code>adfile</code>. */
+    def setAdfile(input: File) =
+      adfile = Some(input)
+
+    /** Sets the name attribute of this package. Used by Ant.
+      * @param input The value of <code>name</code>. */
+    def setName(input: String) =
+      name = Some(input)
+
+    /** Sets the version attribute of this package. Used by Ant.
+      * @param input The value of <code>version</code>. */
+    def setVersion(input: String) =
+      version = Some(input)
+
+    /** Sets the depends attribute. Used by Ant.
+      * @param input The value for <code>depends</code>. */
+    def setDepends(input: String) = {
+      depends = List.fromArray(input.split(",")).flatMap(s: String => {
+        val st = s.trim()
+        (if (st != "") List(st) else Nil)
+      })
+    }
+
+    /** Sets the description attribute of this package. Used by Ant.
+      * @param input The value of <code>description</code>. */
+    def setDesc(input: String) =
+      desc = Some(input)
+
+    def addConfiguredLibset(input: FileSet) =
+      fileSetsMap.update("lib", input)
+
+    def addConfiguredBinset(input: FileSet) =
+      fileSetsMap.update("bin", input)
+
+    def addConfiguredSrcset(input: FileSet) =
+      fileSetsMap.update("src", input)
+
+    def addConfiguredManset(input: FileSet) =
+      fileSetsMap.update("man", input)
+
+    def addConfiguredDocset(input: FileSet) =
+      fileSetsMap.update("doc/" + getName, input)
+
+    def addConfiguredMiscset(input: FileSet) =
+      fileSetsMap.update("misc/" + getName, input)
+
+/******************************************************************************\
+**                             Properties getters                             **
+\******************************************************************************/
+
+    /** Gets the value of the file attribute in a Scala-friendly form.
+      * @returns The file as a file. */
+    private def getName: String =
+      if (name.isEmpty) error("Name attribute must be defined first.")
+      else name.get
+
+    /** Gets the value of the file attribute in a Scala-friendly form.
+      * @returns The file as a file. */
+    private def getFile: File =
+      if (file.isEmpty) error("Member 'file' is empty.")
+      else getProject().resolveFile(file.get.toString())
+
+    /** Gets the value of the adfile attribute in a Scala-friendly form.
+      * @returns The adfile as a file. */
+    private def getAdfile: File =
+      if (adfile.isEmpty) error("Member 'adfile' is empty.")
+      else getProject().resolveFile(adfile.get.toString())
+
+/******************************************************************************\
+**                       Compilation and support methods                      **
+\******************************************************************************/
+    /** Transforms a string name into a file relative to the provided base
+      * directory.
+      * @param base A file pointing to the location relative to which the name
+      *   will be resolved.
+      * @param name A relative or absolute path to the file as a string.
+      * @return A file created from the name and the base file. */
+    private def nameToFile(base: File)(name: String): File =
+      existing(fileUtils.resolveFile(base, name))
+
+    /** Transforms a string name into a file relative to the build root
+      * directory.
+      * @param name A relative or absolute path to the file as a string.
+      * @return A file created from the name. */
+    private def nameToFile(name: String): File =
+      existing(getProject().resolveFile(name))
+
+    /** Tests if a file exists and prints a warning in case it doesn't. Always
+      * returns the file, even if it doesn't exist.
+      * @param file A file to test for existance.
+      * @return The same file. */
+    private def existing(file: File): File = {
+      if (!file.exists())
+        log("Element '" + file.toString() + "' does not exist.",
+            Project.MSG_WARN)
+      file
+    }
+
+    /** Generates a build error. Error location will be the current task in the
+      * ant file.
+      * @param message A message describing the error.
+      * @throws BuildException A build error exception thrown in every case. */
+    private def error(message: String): All =
+      throw new BuildException(message, getLocation())
+
+    private def writeFile(file: File, content: String) =
+      if (file.exists() && !file.canWrite())
+        error("File " + file + " is not writable")
+      else {
+        val writer = new FileWriter(file, false)
+        writer.write(content)
+        writer.close()
+      }
+
+/******************************************************************************\
+**                           The big execute method                           **
+\******************************************************************************/
+
+    /** Performs the compilation. */
+    override def execute() = {
+      // Tests if all mandatory attributes are set and valid.
+      if (file.isEmpty) error("Attribute 'file' is not set.")
+      if (name.isEmpty) error("Attribute 'name' is not set.")
+      if (version.isEmpty) error("Attribute 'version' is not set.")
+
+      val pack = {
+        <package>
+          <name>{name.get}</name>
+          <version>{version.get}</version>{
+            if (!depends.isEmpty)
+              <depends>{
+                for (val depend <- depends) yield
+                  <name>{depend}</name>
+              }</depends>
+            else Nil
+          }{
+            if (!desc.isEmpty)
+              <description>{desc.get}</description>
+            else Nil
+          }
+        </package>
+      }
+
+      // Creates the advert file
+      val advert = {
+        <availablepackage>
+          {pack}
+          <link></link>
+        </availablepackage>
+      };
+
+      if (!adfile.isEmpty)
+        writeFile(getAdfile, advert.toString())
+
+      // Checks for new files and creates the ZIP
+
+      val mapper = new MergingMapper()
+      mapper.setTo(getFile.getName)
+      val zipContent =
+        for {
+          val Pair(folder, fileSets) <- fileSetsMap.fileSets
+          val fileSet <- fileSets
+          val file <- {
+            List.fromArray(new SourceFileScanner(this).restrict(
+              fileSet.getDirectoryScanner(getProject).getIncludedFiles,
+              fileSet.getDir(getProject),
+              getFile.getParentFile,
+              mapper
+            ))
+          }
+        } yield Triple(folder, fileSet.getDir(getProject), file)
+      if (!zipContent.isEmpty) {
+        val zip = new ZipOutputStream(new FileOutputStream(file.get, false))
+        for (val Triple(destFolder, srcFolder, file) <- zipContent) {
+          log(file, Project.MSG_DEBUG)
+          zip.putNextEntry(new ZipEntry(destFolder + "/" + file))
+          val input = new FileInputStream(nameToFile(srcFolder)(file))
+          var byte = input.read()
+          while (byte != -1) {
+            zip.write (byte)
+            byte = input.read()
+          }
+          zip.closeEntry()
+          input.close()
+        }
+        zip.putNextEntry(new ZipEntry("meta/description"))
+        val packInput = new StringReader(pack.toString())
+        var byte = packInput.read()
+        while (byte != -1) {
+          zip.write (byte)
+          byte = packInput.read()
+        }
+        zip.closeEntry()
+        packInput.close()
+        zip.close
+      } else log("No files added to SBaz archive.", Project.MSG_VERBOSE)
+
+    }
+
+  }
+
+}

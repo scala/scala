@@ -63,7 +63,7 @@ PROPERTIES
   <!-- Location of structure of the distribution properties -->
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="dist.latest.dir" value="${dist.dir}/latest"/>
-  <property name="dist.name" value="scala"/>
+  <property name="dist.name" value="scala-core"/>
   <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
   <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
   <property name="scala.exec.name" value="${dist.name}2"/>
@@ -236,6 +236,9 @@ INITIALISATION
              classpathref="quick.classpath"/>
     <taskdef name="quicktool"
              classname="scala.tools.ant.ScalaTool"
+             classpathref="quick.classpath"/>
+    <taskdef name="quicksbaz"
+             classname="scala.tools.ant.ScalaBazaar"
              classpathref="quick.classpath"/>
   </target>
 
@@ -604,7 +607,7 @@ GENERATES A DISTRIBUTION
     <mkdir dir="${dist.current.dir}/bin"/>
     <!-- Build executable files -->
     <mkdir dir="${dist.current.dir}/bin"/>
-    <lockertool file="${dist.current.dir}/bin/${scalac.exec.name}"
+    <quicktool file="${dist.current.dir}/bin/${scalac.exec.name}"
                 genericFile="${dist.current.dir}/bin/${scala.exec.name}"
                 name="Scala compiler"
                 class="scala.tools.nsc.Main"
@@ -624,7 +627,16 @@ GENERATES A DISTRIBUTION
                  overwrite="yes"
                  failonerror="no"/>
       </then>
-    </if>
+    </if> 
+    <quicksbaz file="${dist.dir}/${dist.name}-${version.number}.sbp"
+          adfile="${dist.dir}/${dist.name}-${version.number}.advert"
+          name="${dist.name}"
+          version="${version.number}"
+          desc="The Scala core library and compiler.">
+      <libset dir="${dist.current.dir}/lib" includes="*.jar"/>
+      <binset dir="${dist.current.dir}/bin" includes="*"/>
+      <manset dir="${docs.dir}/man" includes="**"/>
+    </quicksbaz>
   </target>
 
 <!-- ===========================================================================
