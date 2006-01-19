@@ -46,6 +46,7 @@ public class PlainFile extends AbstractFile {
     protected PlainFile(File file) {
         this.file = file;
         assert file != null;
+	if (!file.exists()) throw new Error("non-existent file: " + file);
     }
 
     //########################################################################
@@ -141,7 +142,9 @@ public class PlainFile extends AbstractFile {
     public AbstractFile lookupName(String name, boolean directory) {
         assert isDirectory(): "not a directory '" + this + "'";
         File child = new File(file, name);
-        if (directory ? !child.isDirectory() : !child.isFile()) return null;
+	if (!child.exists()) return null;
+	if (directory != child.isDirectory()) return null;
+	if (directory == child.isFile()     ) return null;
         return new PlainFile(child);
     }
 

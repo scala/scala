@@ -120,46 +120,50 @@ abstract class SymbolLoaders {
       val classes  = new HashMap[String, ClassPath.Context];
       val packages = new HashMap[String, ClassPath.Context];
       for (val dir <- directory.entries) if (dir.location != null) {
-				val it = dir.location.list();
-				while (it.hasNext()) {
-				  val file = it.next().asInstanceOf[AbstractFile];
-				  if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
-				    packages(file.getName()) = directory.find(file.getName(), true);
-				  else if (!file.isDirectory() && file.getName().endsWith(".class")) {
-				    val name = file.getName().substring(0, file.getName().length() - (".class").length());
-				    if (isValid(name) && !classes.isDefinedAt(name))
-				      classes(name) = directory.find(name, false);
-				  }
-				}
+      	val it = dir.location.list();
+      	while (it.hasNext()) {
+      	  val file = it.next().asInstanceOf[AbstractFile];
+      	    if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
+      	      packages(file.getName()) = directory.find(file.getName(), true);
+      	    else if (!file.isDirectory() && file.getName().endsWith(".class")) {
+      	      val name = file.getName().substring(0, file.getName().length() - (".class").length());
+      	      if (isValid(name) && !classes.isDefinedAt(name)) {
+                val clazz = directory.find(name, false);
+            		if (clazz != null) classes(name) = clazz;
+              }
+      	    }
+      	}
       }
       for (val dir <- directory.entries) if (dir.source != null) {
-				val jt = dir.source.location.list();
-				while (jt.hasNext()) {
-				  val file = jt.next().asInstanceOf[AbstractFile];
-				  if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
-				    packages(file.getName()) = directory.find(file.getName(), true);
-				  else if (dir.source.compile && !file.isDirectory() && file.getName().endsWith(".scala")) {
-				    val name = file.getName().substring(0, file.getName().length() - (".scala").length());
-				    if (isValid(name) && !classes.isDefinedAt(name))
-				      classes(name) = directory.find(name, false);
-				  }
-				}
+      	val jt = dir.source.location.list();
+      	while (jt.hasNext()) {
+      	  val file = jt.next().asInstanceOf[AbstractFile];
+      	  if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
+      	    packages(file.getName()) = directory.find(file.getName(), true);
+      	  else if (dir.source.compile && !file.isDirectory() && file.getName().endsWith(".scala")) {
+      	    val name = file.getName().substring(0, file.getName().length() - (".scala").length());
+      	    if (isValid(name) && !classes.isDefinedAt(name)) {
+              val source = directory.find(name, false);
+              if (source != null) classes(name) = source;
+            }
+      	  }
+      	}
       }
       //if (!packages.isEmpty) System.err.println("COMPLETE: " + packages);
       //if (! classes.isEmpty) System.err.println("COMPLETE: " + classes);
       // do classes first
 
       for (val Pair(name, file) <- classes.elements) {
-	val loader = if (!file.isSourceFile) {
+      	val loader = if (!file.isSourceFile) {
           // System.err.println("CLASSFILE: " + file.file + " in " + file);
-	  new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath);
-	} else {
-	  assert(file.sourceFile != null);
-	  //System.err.println("SOURCEFILE: " + file.sourceFile + " in " + file);
+      	  new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath);
+      	} else {
+      	  assert(file.sourceFile != null);
+      	  //System.err.println("SOURCEFILE: " + file.sourceFile + " in " + file);
 
-	  new SourcefileLoader(file.sourceFile);
-	}
-	enterClassAndModule(name, loader);
+      	  new SourcefileLoader(file.sourceFile);
+      	}
+      	enterClassAndModule(name, loader);
       }
       for (val Pair(name, file) <- packages.elements) enterPackage(name, new PackageLoader(file));
     }

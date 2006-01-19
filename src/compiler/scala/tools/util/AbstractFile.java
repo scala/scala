@@ -43,7 +43,7 @@ public abstract class AbstractFile {
      * abstract regular file backed by it. Otherwise, returns null.
      */
     public static AbstractFile getFile(File file) {
-        return file.isFile() ? new PlainFile(file) : null;
+        return file.isFile() && file.exists() ? new PlainFile(file) : null;
     }
 
 
@@ -58,8 +58,8 @@ public abstract class AbstractFile {
      * backed by it. Otherwise, returns null.
      */
     public static AbstractFile getDirectory(File file) {
-        if (file.isDirectory()) return new PlainFile(file);
-        if (file.isFile()) {
+        if (file.isDirectory() && file.exists()) return new PlainFile(file);
+        if (file.isFile() && file.exists()) {
             String path = file.getPath();
             if (path.endsWith(".jar") || path.endsWith(".zip"))
                 return ZipArchive.fromFile(file);
