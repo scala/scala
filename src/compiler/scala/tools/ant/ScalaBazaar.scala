@@ -224,10 +224,10 @@ package scala.tools.ant {
 
       // Creates the advert file
       val advert = {
-        <availablepackage>
+        <availablePackage>
           {pack}
           <link></link>
-        </availablepackage>
+        </availablePackage>
       };
 
       if (!adfile.isEmpty)
