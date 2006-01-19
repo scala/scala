@@ -69,7 +69,7 @@ class Process(body: => Unit) extends Actor() {
 	p
     }
 
-    def self = this;
+    //def self = this;
 
     def exit(reason: AnyRef): Unit = {
 	exitReason = reason;
