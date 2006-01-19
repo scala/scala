@@ -66,10 +66,10 @@ PROPERTIES
   <property name="dist.name" value="scala2"/>
   <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
   <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
-  <property name="scala.exec.name" value="${dist.name}2"/>
-  <property name="scalai.exec.name" value="${dist.name}i2"/>
-  <property name="scalac.exec.name" value="${dist.name}c2"/>
-  <property name="scalatok.exec.name" value="${dist.name}tok2"/>
+  <property name="scala.exec.name" value="${dist.name}"/>
+  <property name="scalai.exec.name" value="scalai2"/>
+  <property name="scalac.exec.name" value="scalac2"/>
+  <property name="scalatok.exec.name" value="scalatok2"/>
   <!-- Shorcut names -->
   <property name="locker.lib.dir" value="${locker.dir}/${lib.dir.name}"/>
   <property name="locker.comp.dir" value="${locker.dir}/${comp.dir.name}"/>
@@ -592,8 +592,10 @@ GENERATES A DISTRIBUTION
          basedir="${strap.comp.dir}">
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
+<!-- For a sbaz package, the Main-Class should not be included
         <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
         <attribute name="Class-Path" value="${lib.jar.name}"/>
+-->
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${lib.jar.name}"
@@ -628,14 +630,39 @@ GENERATES A DISTRIBUTION
                  failonerror="no"/>
       </then>
     </if> 
-    <quicksbaz file="${dist.dir}/${dist.name}-${version.number}.sbp"
-          adfile="${dist.dir}/${dist.name}-${version.number}.advert"
-          name="${dist.name}"
-          version="${version.number}"
-          desc="The Scala core library and compiler.">
-      <libset dir="${dist.current.dir}/lib" includes="*.jar"/>
-      <binset dir="${dist.current.dir}/bin" includes="*"/>
-      <manset dir="${docs.dir}/man" includes="**"/>
+
+    <quicksbaz
+       file="${dist.dir}/scalac2-${version.number}.sbp"
+       adfile="${dist.dir}/scalac2-${version.number}.advert"
+       name="scalac2"
+       version="${version.number}"
+       desc="The Scala compiler.  This is used to compile Scala programs
+into Java .class files.">
+      <libset dir="${dist.current.dir}/lib" includes="scala2-compiler.jar"/>
+      <binset dir="${dist.current.dir}/bin" includes="scalac2*"/>
+      <manset dir="${docs.dir}/man" includes="scalac2.1"/>
+    </quicksbaz>
+
+    <quicksbaz
+       file="${dist.dir}/scala2-${version.number}.sbp"
+       adfile="${dist.dir}/scala2-${version.number}.advert"
+       name="scala2"
+       version="${version.number}"
+       desc="The Scala command runner.  It is a wrapper around the Java VM that,
+by default, sets up a large CLASSPATH including the Scala library
+as well as all jars installed in the lib directory of the sbaz-
+managed directory.">
+      <binset dir="${dist.current.dir}/bin" includes="scala2*"/>
+      <manset dir="${docs.dir}/man" includes="scala2.1"/>
+    </quicksbaz>
+
+    <quicksbaz
+       file="${dist.dir}/scala2-library-${version.number}.sbp"
+       adfile="${dist.dir}/scala2-library-${version.number}.advert"
+       name="scala2-library"
+       version="${version.number}"
+       desc="The base Scala library, required for running all Scala programs.">
+      <libset dir="${dist.current.dir}/lib" includes="scala2-library.jar"/>
     </quicksbaz>
   </target>
 
