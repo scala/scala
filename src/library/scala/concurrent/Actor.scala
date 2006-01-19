@@ -23,6 +23,15 @@ abstract class Actor extends Thread {
   def receiveWithin[a](msec: long)(f: PartialFunction[in.Message, a]): a =
     if (Thread.currentThread() == this) in.receiveWithin(msec)(f);
     else error("receiveWithin called not on own process");
+
+  private var pid: Pid = null;
+
+  def self = {
+    if (pid == null) pid = new Pid(this);
+    pid
+  }
+
+  def self_= (p: Pid) = pid = p;
 }
 
 
