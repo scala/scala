@@ -375,7 +375,8 @@ BUILD QUICK-TEST LAYER
     <locker srcdir="${src.dir}/${lib.dir.name}"
            destdir="${quick.lib.dir}"
            usepredefs="no"
-           addparams="${nsc.params}">
+           addparams="${nsc.params}"
+           scalacdebugging="yes">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -384,7 +385,8 @@ BUILD QUICK-TEST LAYER
     </locker>
     <locker srcdir="${src.dir}/${lib.dir.name}"
            destdir="${quick.lib.dir}"
-           addparams="${nsc.params}">
+           addparams="${nsc.params}"
+           scalacdebugging="yes">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -406,7 +408,8 @@ BUILD QUICK-TEST LAYER
     </pico>
     <locker srcdir="${src.dir}/${comp.dir.name}"
            destdir="${quick.comp.dir}"
-           addparams="${nsc.params}">
+           addparams="${nsc.params}"
+           scalacdebugging="yes">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
@@ -471,7 +474,8 @@ TEST
     <quick srcdir="${src.dir}/${lib.dir.name}"
            destdir="${strap.lib.dir}"
            usepredefs="no"
-           addparams="${nsc.params}">
+           addparams="${nsc.params}"
+           scalacdebugging="yes">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -480,7 +484,8 @@ TEST
     </quick>
     <quick srcdir="${src.dir}/${lib.dir.name}"
            destdir="${strap.lib.dir}"
-           addparams="${nsc.params}">
+           addparams="${nsc.params}"
+           scalacdebugging="yes">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -502,7 +507,8 @@ TEST
     </pico>
     <quick srcdir="${src.dir}/${comp.dir.name}"
            destdir="${strap.comp.dir}"
-           addparams="${nsc.params}">
+           addparams="${nsc.params}"
+           scalacdebugging="yes">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
         <pathelement location="${strap.comp.dir}"/>

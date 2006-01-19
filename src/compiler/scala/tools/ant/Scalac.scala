@@ -118,6 +118,10 @@ package scala.tools.ant {
     /** Instruct the compiler to generate debugging information */
     private var addParams: String = ""
 
+    /** Whether the compiler is being debuged. Prints more information in case
+      * in case of failure. */
+    private var scalacDebugging: Boolean = false
+
 /******************************************************************************\
 **                             Properties setters                             **
 \******************************************************************************/
@@ -262,6 +266,10 @@ package scala.tools.ant {
     def setAddparams(input: String): Unit =
       addParams = input
 
+    /** Set the scalac debugging attribute. */
+    def setScalacdebugging(input: Boolean): Unit =
+      scalacDebugging = input
+
 /******************************************************************************\
 **                             Properties getters                             **
 \******************************************************************************/
@@ -380,27 +388,40 @@ package scala.tools.ant {
       // If force is false, only files were the .class file in destination is
       // older than the .scala file will be used.
       val sourceFiles: List[File] =
-        for (val originDir <- getOrigin;
-             val originFile <- {
-              var includedFiles =
-                getDirectoryScanner(originDir).getIncludedFiles()
-              if (!force) {
-                includedFiles = new SourceFileScanner(this).
-                  restrict(includedFiles, originDir, destination.get, mapper)
-              }
-              (List.fromArray(includedFiles)).
-                map(nameToFile(originDir))
-            })
-        yield {
-          log(originFile.toString(), Project.MSG_DEBUG)
-          originFile
-        }
+        for {
+          val originDir <- getOrigin;
+          val originFile <- {
+            var includedFiles =
+              getDirectoryScanner(originDir).getIncludedFiles()
+            if (!force) {
+              includedFiles = new SourceFileScanner(this).
+                restrict(includedFiles, originDir, destination.get, mapper)
+            }
+            val list = List.fromArray(includedFiles)
+            if (scalacDebugging && list.length > 0)
+              log(
+                list.mkString(
+                  "Compiling source file" +
+                  (if (list.length > 1) "s: " else ": "),
+                  ", ",
+                  " "
+                ) + "to " + getDestination.toString()
+              )
+            else if (list.length > 0)
+              log(
+                "Compiling " + list.length + " source file" +
+                (if (list.length > 1) "s" else "") +
+                (" to " + getDestination.toString())
+              )
+            else
+              log("No files selected for compilation", Project.MSG_VERBOSE)
 
-      if (sourceFiles.length == 0)
-        log("No files selected for compilation", Project.MSG_VERBOSE)
-      else log("Compiling " + sourceFiles.length + " source file" +
-               (if (sourceFiles.length > 1) "s" else "") +
-               (" to " + getDestination.toString()))
+            list
+          }
+        } yield {
+          log(originFile.toString(), Project.MSG_DEBUG)
+          nameToFile(originDir)(originFile)
+        }
 
       // Builds-up the compilation settings for Scalac with the existing Ant
       // parameters.
@@ -446,27 +467,30 @@ package scala.tools.ant {
       try {
         (new compiler.Run).compile(sourceFiles.map(f:File=>f.toString()))
         if (reporter.errors > 0)
-          error("Compile failed with " +
-                reporter.errors + " error" +
-                (if (reporter.errors > 1) "s" else "") +
-                "; see the compiler error output for details."
-               )
-      }
-      catch {
-        case exception @ FatalError(msg) => {
-          exception.printStackTrace()
-          if (settings.debug.value) exception.printStackTrace()
-          error("Compile failed because of an internal compiler error (" + msg +
-                "); see the error output for details.")
-        }
-      }
-      if (reporter.warnings > 0)
-        log("Compile suceeded with " +
+          error (
+            "Compile failed with " +
+            reporter.errors + " error" +
+            (if (reporter.errors > 1) "s" else "") +
+            "; see the compiler error output for details."
+          )
+        else if (reporter.warnings > 0)
+          log (
+            "Compile suceeded with " +
             reporter.warnings + " warning" +
             (if (reporter.warnings > 1) "s" else "") +
             "; see the compiler output for details."
-           )
-      reporter.printSummary()
+          )
+        reporter.printSummary()
+      } catch {
+        case exception: Throwable if (exception.getMessage != null) =>
+          if (scalacDebugging) exception.printStackTrace()
+          error("Compile failed because of an internal compiler error (" +
+          exception.getMessage + "); see the error output for details.")
+        case exception =>
+          if (scalacDebugging) exception.printStackTrace()
+          error("Compile failed because of an internal compiler error " +
+          "(no error message provided); see the error output for details.")
+      }
     }
 
   }
