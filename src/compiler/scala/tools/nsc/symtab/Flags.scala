@@ -120,17 +120,14 @@ object Flags {
       .filter("" !=).mkString("", " ", "");
 
   private def flagToString(flag: long): String = {
-    if (flag == LABEL) "<label>"
-    else if (flag == INTERFACE) "<interface>"
-    else if (flag == IS_ERROR) "<is-error>"
+    if (flag == IS_ERROR) "<is-error>"
     else if (flag == OVERLOADED) "<overloaded>"
     else if (flag == LIFTED) "<lifted>"
-    else if (flag == TRANS_FLAG) "<trans-flag>"
     else if (flag == MIXEDIN) "<mixedin>"
     else if (flag == EXPANDEDNAME) "<expandedname>"
+    else if (flag == IMPLCLASS) "<implclass>"
+    else if (flag == TRANS_FLAG) "<trans-flag>"
     else if (flag == LOCKED) "<locked>"
-    else if (flag == STATICMODULE) "<staticobject>"
-    else if (flag == STATICMEMBER) "<staticmember>"
     else flag.asInstanceOf[int] match {
       case IMPLICIT      => "implicit"
       case FINAL         => "final"
@@ -144,16 +141,16 @@ object Flags {
 
       case DEFERRED      => "<deferred>"
       case METHOD        => "<method>"
-      case MIXIN         => "mixin"
       case MODULE        => "<module>"
+      case INTERFACE     => "<interface>"
 
       case MUTABLE       => "<mutable>"
       case PARAM         => "<param>"
       case PACKAGE       => "<package>"
       case DEPRECATED    => "<deprecated>"
 
-      case COVARIANT     => "<covariant>"
-      case CONTRAVARIANT => "<contravariant>"
+      case COVARIANT     => "<covariant/captured/byname>"
+      case CONTRAVARIANT => "<contravariant/label/inconstr>"
       case ABSOVERRIDE   => "abstract override"
       case LOCAL         => "<local>"
 
@@ -163,12 +160,12 @@ object Flags {
       case STATIC        => "<static>"
 
       case CASEACCESSOR  => "<caseaccessor>"
+      case MIXIN         => "mixin"
+      case BRIDGE        => "<bridge>"
       case ACCESSOR      => "<accessor>"
 
       case SUPERACCESSOR => "<superaccessor>"
       case PARAMACCESSOR => "<paramaccessor>"
-      case BRIDGE        => "<bridge>"
-      case CAPTURED      => "<captured>"
 
       case _ => ""
     }

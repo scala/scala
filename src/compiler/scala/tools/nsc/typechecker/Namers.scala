@@ -120,7 +120,7 @@ trait Namers requires Analyzer {
 
     private def enterClassSymbol(pos: int, flags: int, name: Name): Symbol = {
       var c: Symbol = context.scope.lookup(name);
-      if (c.isType && c.isExternal && context.scope == c.owner.info.decls) {
+      if (c.isType && !currentRun.compiles(c) && context.scope == c.owner.info.decls) {
         updatePosFlags(c, pos, flags);
       } else {
 	c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag);
@@ -135,10 +135,8 @@ trait Namers requires Analyzer {
 
 	}
 	if (clazz.sourceFile != null) {
-	  if (currentRun.symSource.isDefinedAt(c) && currentRun.symSource(c) != null &&
-	      !currentRun.symSource(c).equals(clazz.sourceFile))
-	    throw new Error(""+currentRun.symSource(c) + " vs. " + clazz.sourceFile + " SYM=" + currentRun + " " + c);
-	  else currentRun.symSource(c) = clazz.sourceFile;
+          assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
+	  currentRun.symSource(c) = clazz.sourceFile
 	}
       }
       c
@@ -146,10 +144,10 @@ trait Namers requires Analyzer {
 
     private def enterModuleSymbol(pos: int, flags: int, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name);
-      if (m.isModule && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
+      if (m.isModule && !m.isPackage && !currentRun.compiles(m) && (context.scope == m.owner.info.decls)) {
         updatePosFlags(m, pos, flags)
       } else {
-        if (m.isTerm && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls))
+        if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && (context.scope == m.owner.info.decls))
           context.scope.unlink(m);
         m = context.owner.newModule(pos, name);
         m.setFlag(flags);
@@ -163,7 +161,7 @@ trait Namers requires Analyzer {
 
     private def enterCaseFactorySymbol(pos: int, flags: int, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name);
-      if (m.isTerm && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
+      if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, flags)
       } else {
         m = enterInScope(context.owner.newMethod(pos, name)).setFlag(flags);

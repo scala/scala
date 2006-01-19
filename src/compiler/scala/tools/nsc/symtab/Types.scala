@@ -1340,7 +1340,7 @@ mixin class Types requires SymbolTable {
 	  val pre1 = this(pre);
           val args1 = List.mapConserve(args)(this);
           val sym1 = adaptToNewRun(pre1, sym);
-          if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args) && sym.isExternal) tp
+          if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
           else typeRef(pre1, sym1, args1)
 	}
       case PolyType(tparams, restp) =>

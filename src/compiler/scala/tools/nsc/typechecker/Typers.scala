@@ -1071,7 +1071,7 @@ mixin class Typers requires Analyzer {
           // compilation units
 	  if (defSym.tpe != NoType && impSym.tpe != NoType &&
               defSym.owner.isPackageClass &&
-              (defSym.isExternal ||
+              (!currentRun.compiles(defSym) ||
                context.unit != null && defSym.sourceFile != context.unit.source.file))
 	    defSym = NoSymbol
 

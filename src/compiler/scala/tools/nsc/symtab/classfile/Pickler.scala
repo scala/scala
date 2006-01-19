@@ -29,7 +29,7 @@ abstract class Pickler extends SubComponent {
       def pickle(tree: Tree): unit = {
 
 	def add(sym: Symbol, pickle: Pickle) = {
-	  if (!sym.isExternal && !currentRun.symData.contains(sym)) {
+	  if (currentRun.compiles(sym) && !currentRun.symData.contains(sym)) {
 	    if (settings.debug.value) log("pickling " + sym);
 	    pickle.putSymbol(sym);
 	    currentRun.symData(sym) = pickle;

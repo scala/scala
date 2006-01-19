@@ -365,6 +365,14 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     /** A map from compiled top-level symbols to their picklers */
     val symData = new HashMap[Symbol, PickleBuffer];
 
+    /** does this run compile given class, module, or case factory? */
+    def compiles(sym: Symbol): boolean =
+      if (sym == NoSymbol) false
+      else if (symSource.isDefinedAt(sym)) true
+      else if (!sym.owner.isPackageClass) compiles(sym.toplevelClass)
+      else if (sym.isModuleClass) compiles(sym.sourceModule)
+      else false;
+
     def compileSources(sources: List[SourceFile]): unit = {
       val startTime = System.currentTimeMillis();
       reporter.reset;
@@ -395,27 +403,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
       if (reporter.errors == 0) {
         assert(symData.isEmpty, symData.elements.toList);
-/*
-	for (val Pair(sym, pickled) <- symData.elements.toList) {
-	  sym setPos Position.NOPOS;
-//	  if (symData contains sym) {
-//	    symData -= sym;
-//	    symData -= sym.linkedSym;
-//	    writeSymblFile(sym, pickled)
-//	  }
-//        }
-*/
-	for (val Pair(sym, file) <- symSource.elements) {
-          sym setPos Position.NOPOS;
-          if (sym.isTerm) sym.moduleClass setPos Position.NOPOS;
-	  resetPackageClass(sym.owner);
-	}
       } else {
 	for (val Pair(sym, file) <- symSource.elements) {
 	  sym.reset(new loaders.SourcefileLoader(file));
 	  if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader);
 	}
       }
+      for (val Pair(sym, file) <- symSource.elements) resetPackageClass(sym.owner);
       informTime("total", startTime);
     }
 

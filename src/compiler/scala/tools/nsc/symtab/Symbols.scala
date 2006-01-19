@@ -245,9 +245,6 @@ mixin class Symbols requires SymbolTable {
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
                   !owner.isPackageClass && owner.isLocalClass);
 
-    /** Symbol was preloaded from package */
-    final def isExternal: boolean = rawpos == Position.NOPOS;
-
     /** A a member of class `base' is incomplete if (1) it is declared deferred or
      *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.
      */
@@ -430,7 +427,6 @@ mixin class Symbols requires SymbolTable {
      */
     def reset(completer: Type): unit = {
       resetFlags;
-      rawpos = Position.NOPOS;
       infos = null;
       limit = NoPhase.id;
       setInfo(completer)

@@ -52,6 +52,7 @@ abstract class AddInterfaces extends InfoTransform {
           impl.name = implName;
           if (iface.owner.isClass) iface.owner.info.decls enter impl
         }
+        if (currentRun.compiles(iface)) currentRun.symSource(impl) = iface.sourceFile;
         impl setPos iface.pos;
         impl.flags = iface.flags & ~(INTERFACE | lateINTERFACE) | IMPLCLASS;
 	impl setInfo new LazyImplClassType(iface);
@@ -69,7 +70,7 @@ abstract class AddInterfaces extends InfoTransform {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
 	    val impl = sym.cloneSymbol(implClass).setInfo(sym.info).resetFlag(lateDEFERRED);
-	    if (!impl.isExternal) implMethodMap(sym) = impl;
+	    if (currentRun.compiles(implClass)) implMethodMap(sym) = impl;
 	    decls enter impl;
 	    sym setFlag lateDEFERRED
           }
