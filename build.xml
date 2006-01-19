@@ -63,7 +63,7 @@ PROPERTIES
   <!-- Location of structure of the distribution properties -->
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="dist.latest.dir" value="${dist.dir}/latest"/>
-  <property name="dist.name" value="scala-core"/>
+  <property name="dist.name" value="scala2"/>
   <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
   <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
   <property name="scala.exec.name" value="${dist.name}2"/>
