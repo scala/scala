@@ -235,21 +235,13 @@ package scala.tools.ant {
 
       // Checks for new files and creates the ZIP
 
-      val mapper = new MergingMapper()
-      mapper.setTo(getFile.getName)
       val zipContent =
         for {
           val Pair(folder, fileSets) <- fileSetsMap.fileSets
           val fileSet <- fileSets
-          val file <- {
-            List.fromArray(new SourceFileScanner(this).restrict(
-              fileSet.getDirectoryScanner(getProject).getIncludedFiles,
-              fileSet.getDir(getProject),
-              getFile.getParentFile,
-              mapper
-            ))
-          }
-        } yield Triple(folder, fileSet.getDir(getProject), file)
+          val file <-
+            List.fromArray(fileSet.getDirectoryScanner(getProject).getIncludedFiles)
+        } yield {Console.println(file.toString); Triple(folder, fileSet.getDir(getProject), file)}
       if (!zipContent.isEmpty) {
         val zip = new ZipOutputStream(new FileOutputStream(file.get, false))
         for (val Triple(destFolder, srcFolder, file) <- zipContent) {
