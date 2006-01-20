@@ -5,6 +5,8 @@
              classname="scala.tools.ant.Scalac"/>
     <taskdef name="scalascript"
              classname="scala.tools.ant.ScalaTool"/>
+    <taskdef name="sbaz"
+             classname="scala.tools.ant.ScalaBazaar"/>
     <!--<taskdef name="scalatest"
              classname="scala.tools.ant.ScalaTest"/>-->
     <!--<taskdef name="scalatest"
