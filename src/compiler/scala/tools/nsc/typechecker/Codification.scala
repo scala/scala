@@ -48,6 +48,10 @@ mixin class Codification requires Analyzer {
         reflect.This(reify(tree.symbol))
       case Block(stats, expr) =>
         reflect.Block(stats.map(reify), reify(expr))
+      case New(clazz) =>
+        val reifiedClass = reify(clazz)
+        reflect.New(reifiedClass)
+      case Typed(t, _) => reify(t)
       case _ =>
         throw new TypeError("cannot reify tree: " + tree)
     }
@@ -127,6 +131,7 @@ mixin class Codification requires Analyzer {
       case reflect.LocalMethod(_, _, _) => "scala.reflect.LocalMethod"
       case reflect.This(_) => "scala.reflect.This"
       case reflect.Block(_,_) => "scala.reflect.Block"
+      case reflect.New(_) => "scala.reflect.New"
       case reflect.NamedType(_) => "scala.reflect.NamedType"
       case reflect.PrefixedType(_, _) => "scala.reflect.PrefixedType"
       case reflect.SingleType(_, _) => "scala.reflect.SingleType"
