@@ -464,7 +464,7 @@ BUILD QUICK-TEST LAYER
            perm="ugo+rx"/>
   </target>
   
-  <target name="test.quick" depends="build.quick">
+  <target name="test.quick" depends="build">
     <echo>Ant test bench is not available yet</echo>
   </target>
 
