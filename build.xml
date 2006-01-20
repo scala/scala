@@ -4,11 +4,11 @@
 <project name="scala-core" default="build">
 
   <description>
-    I am Sabbus for Scala-core, the build system for the Scala compiler and core
+    I am SABBUS for Scala-core, the build system for the Scala compiler and core
     library. Please check the 'docs/README' file for more information about me.
   </description>
   
-  <echo>Running Sabbus for Scala-core</echo>
+  <echo>Running SABBUS for Scala-core</echo>
 
 <!-- ===========================================================================
 PROPERTIES
@@ -19,7 +19,7 @@ PROPERTIES
     <contains string="${env.ANT_OPTS}" substring="-Xmx"/>
   </condition>
   <fail unless="memory.set">
-    Sabbus requires additional memory. Please set the 'ANT_OPTS' environment
+    SABBUS requires additional memory. Please set the 'ANT_OPTS' environment
     property to '-Xmx256M' or more.
   </fail>
 
@@ -82,7 +82,7 @@ PROPERTIES
 INITIALISATION
 ============================================================================ -->
 
-  <target name="init">
+  <target name="init" unless="init.avail">
     <!-- Testing if everything is in place -->
     <echo level="verbose">starr.lib.jar=${starr.lib.jar}</echo>
     <fail message="STARR library in 'lib/' is not available">
@@ -155,19 +155,6 @@ INITIALISATION
         <pathelement location="${ant-contrib.jar}"/>
       </classpath>
     </taskdef>
-    <!-- Finding out what is available -->
-    <available property="excludes.avail" file="${nsc.excludes}"/>
-    <condition property="locker.avail">
-      <and>
-        <available classname="scala.Predef" classpath="${locker.lib.dir}"/>
-        <available classname="scala.List" classpath="${locker.lib.dir}"/>
-        <available classname="scala.runtime.ObjectRef"
-                   classpath="${locker.lib.dir}"/>
-        <available classname="scala.tools.ant.Scalac"
-                   classpath="${locker.comp.dir}:${locker.lib.dir}"/>
-        <available file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"/>
-      </and>
-    </condition>
     <!-- Finding out what system architecture is being used -->
     <condition property="os.win">
       <os family="windows"/>
@@ -193,22 +180,43 @@ INITIALISATION
       </or>
     </condition>
     <if><isset property="os.cygwin"/>
-      <then><echo>Sabbus detected a Cygwin environnement</echo></then>
+      <then><echo>SABBUS detected a Cygwin environnement</echo></then>
       <elseif><isset property="os.win"/>
-        <then><echo>Sabbus detected a Windows environnement</echo></then>
+        <then><echo>SABBUS detected a Windows environnement</echo></then>
       </elseif>
       <elseif><isset property="os.unix"/>
-        <then><echo>Sabbus detected a UNIX environnement</echo></then>
+        <then><echo>SABBUS detected a UNIX environnement</echo></then>
       </elseif>
       <else>
         <fail>System environment could not be determined</fail>
       </else>
     </if>
+    <!-- Removing any outdated stuff -->
+    <if>
+      <and>
+        <available file="${locker.dir}/complete"/>
+        <not><uptodate targetfile="${locker.dir}/complete">
+          <srcfiles dir="${lib.dir}" includes="scala-*.jar"/>
+        </uptodate></not>
+      </and>
+      <then>
+        <echo>
+          STARR has been updated. LOCKER is obsolete and will be rebuilt.
+        </echo>
+        <runtarget target="clean"/>
+      </then>
+    </if>
+    <!-- Finding out what is available -->
+    <available property="excludes.avail" file="${nsc.excludes}"/>
+    <condition property="locker.avail">
+      <available file="${locker.dir}/complete"/>
+    </condition>
     <!-- Defining version number -->
     <tstamp prefix="start"/>
     <property name="version.number" value="${start.DSTAMP}-${start.TSTAMP}"/>
     <property name="dist.current.dir"
               value="${dist.dir}/${dist.name}-${version.number}"/>
+    <property name="init.avail" value="yes"/>
   </target>
   
   <target name="init.locker" depends="init, build.locker">
@@ -263,10 +271,42 @@ BUILD SUPPORT MACROS
       </copy>
     </sequential>
   </macrodef>
+  
+  <macrodef name="build.links">
+    <attribute name="build.dir"/>
+    <sequential>
+      <if>
+        <not><and>
+          <available file="@{build.dir}/${fjbg.name}"/>
+          <available file="@{build.dir}/${msil.name}"/>
+        </and></not>
+        <then>
+          <if><isset property="os.unix"/>
+            <then>
+              <symlink link="@{build.dir}/${fjbg.name}"
+                       resource="${fjbg.jar}"
+                       overwrite="yes"
+                       failonerror="no"/>
+              <symlink link="@{build.dir}/${msil.name}"
+                       resource="${msil.jar}"
+                       overwrite="yes"
+                       failonerror="no"/>
+            </then>
+            <else>
+              <copy file="${fjbg.jar}" tofile="@{build.dir}/${fjbg.name}"/>
+              <copy file="${msil.jar}" tofile="@{build.dir}/${msil.name}"/>
+            </else>
+          </if>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
 
 <!-- ===========================================================================
 BUILD LOCAL REFERENCE (LOCKER) LAYER
 ============================================================================ -->
+
+  <target name="newlocker" depends="clean.unfreeze, build.locker"/>
   
   <target name="build.locker" depends="init" unless="locker.avail">
     <property name="built.locker" value="yes"/>
@@ -321,25 +361,9 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
-    <!-- Copy support files to build folder -->
+    <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${locker.dir}"/>
-    <!-- Link to libraries -->
-    <if><isset property="os.unix"/>
-      <then>
-        <symlink link="${locker.dir}/${fjbg.name}"
-                 resource="${fjbg.jar}"
-                 overwrite="yes"
-                 failonerror="no"/>
-        <symlink link="${locker.dir}/${msil.name}"
-                 resource="${msil.jar}"
-                 overwrite="yes"
-                 failonerror="no"/>
-      </then>
-      <else>
-        <copy file="${fjbg.jar}" tofile="${locker.dir}/${fjbg.name}"/>
-        <copy file="${msil.jar}" tofile="${locker.dir}/${msil.name}"/>
-      </else>
-    </if>
+    <build.links build.dir="${locker.dir}"/>
     <!-- Build executable files -->
     <mkdir dir="${locker.dir}/${exec.dir.name}"/>
     <starrtool file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -355,6 +379,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
            perm="ugo+rx"/>
     <chmod file="${locker.dir}/${exec.dir.name}/${scala.exec.name}"
            perm="ugo+rx"/>
+    <touch file="${locker.dir}/complete" verbose="no"/>
   </target>
 
 <!-- ===========================================================================
@@ -419,25 +444,9 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
-    <!-- Copy templates to build -->
+    <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${quick.dir}"/>
-    <!-- Link to libraries -->
-    <if><isset property="os.unix"/>
-      <then>
-        <symlink link="${quick.dir}/${fjbg.name}"
-                 resource="${fjbg.jar}"
-                 overwrite="yes"
-                 failonerror="no"/>
-        <symlink link="${quick.dir}/${msil.name}"
-                 resource="${msil.jar}"
-                 overwrite="yes"
-                 failonerror="no"/>
-      </then>
-      <else>
-        <copy file="${fjbg.jar}" tofile="${quick.dir}/${fjbg.name}"/>
-        <copy file="${msil.jar}" tofile="${quick.dir}/${msil.name}"/>
-      </else>
-    </if>
+    <build.links build.dir="${quick.dir}"/>
     <!-- Build executable files -->
     <mkdir dir="${quick.dir}/${exec.dir.name}"/>
     <lockertool file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -454,12 +463,18 @@ BUILD QUICK-TEST LAYER
     <chmod file="${quick.dir}/${exec.dir.name}/${scala.exec.name}"
            perm="ugo+rx"/>
   </target>
+  
+  <target name="test.quick" depends="build.quick">
+    <echo>Ant test bench is not available yet</echo>
+  </target>
 
 <!-- ===========================================================================
 TEST
 ============================================================================ -->
   
-  <target name="test" depends="init.quick">
+  <target name="test" depends="clean, test.stability, test.strap"/>
+  
+  <target name="build.strap" depends="init.quick">
     <!-- Build the bootstrap layer -->
     <!-- Build library -->
     <mkdir dir="${strap.lib.dir}"/>
@@ -474,8 +489,7 @@ TEST
     <quick srcdir="${src.dir}/${lib.dir.name}"
            destdir="${strap.lib.dir}"
            usepredefs="no"
-           addparams="${nsc.params}"
-           scalacdebugging="yes">
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -484,8 +498,7 @@ TEST
     </quick>
     <quick srcdir="${src.dir}/${lib.dir.name}"
            destdir="${strap.lib.dir}"
-           addparams="${nsc.params}"
-           scalacdebugging="yes">
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
@@ -507,8 +520,7 @@ TEST
     </pico>
     <quick srcdir="${src.dir}/${comp.dir.name}"
            destdir="${strap.comp.dir}"
-           addparams="${nsc.params}"
-           scalacdebugging="yes">
+           addparams="${nsc.params}">
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
         <pathelement location="${strap.comp.dir}"/>
@@ -518,25 +530,9 @@ TEST
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
-    <!-- Copy templates to build -->
+    <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${strap.dir}"/>
-    <!-- Link to libraries -->
-    <if><isset property="os.unix"/>
-      <then>
-        <symlink link="${strap.dir}/${fjbg.name}"
-                 resource="${fjbg.jar}"
-                 overwrite="yes"
-                 failonerror="no"/>
-        <symlink link="${strap.dir}/${msil.name}"
-                 resource="${msil.jar}"
-                 overwrite="yes"
-                 failonerror="no"/>
-      </then>
-      <else>
-        <copy file="${fjbg.jar}" tofile="${strap.dir}/${fjbg.name}"/>
-        <copy file="${msil.jar}" tofile="${strap.dir}/${msil.name}"/>
-      </else>
-    </if>
+    <build.links build.dir="${strap.dir}"/>
     <!-- Build executable files -->
     <mkdir dir="${strap.dir}/${exec.dir.name}"/>
     <quicktool file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -552,6 +548,9 @@ TEST
            perm="ugo+rx"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
            perm="ugo+rx"/>
+  </target>
+  
+  <target name="test.stability" depends="build.strap">
     <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
       <fileset dir="${quick.dir}">
@@ -577,6 +576,10 @@ TEST
       </not></condition>
     </fail>
     <echo>Build is stable</echo>
+  </target>
+  
+  <target name="test.strap" depends="build.strap">
+    <echo>Ant test bench is not available yet</echo>
   </target>
 
 <!-- ===========================================================================
@@ -687,17 +690,24 @@ CLEAN
   </macrodef>
   
   <target name="clean">
-    <remove dir="${quick.dir}"/>
-    <remove dir="${strap.dir}"/>
+    <remove dir="${build.dir}"/>
   </target>
   
   <target name="clean.all">
-    <remove dir="${locker.dir}"/>
-    <remove dir="${quick.dir}"/>
-    <remove dir="${strap.dir}"/>
-    <remove dir="${dist.unix.dir}"/>
-    <remove dir="${dist.win.dir}"/>
-    <remove dir="${dist.unix.latest.dir}"/>
+    <remove dir="${build.dir}"/>
+    <remove dir="${dist.dir}"/>
+  </target>
+  
+  <target name="clean.unfreeze" depends="init">
+    <delete file="${locker.dir}/complete"
+            quiet="yes"
+            failonerror="no"/>
+    <if>
+      <not><isset property="unsafe"/></not>
+      <then>
+        <remove dir="${quick.dir}"/>
+      </then>
+    </if>
   </target>
 
 </project>

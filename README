@@ -37,23 +37,82 @@ scala/
 
 Any change to this structure requires a modification of the 'build.xml' file.
 
+Part IV. Building Scala with SABBUS
+--------------------------------------------------------------------------------
 
+SABBUS is the name of the Ant build script used to compile Scala. It is mostly automated and takes care of managing the dependencies.
 
-Part II. Building Scala
+LAYERS:
+
+In order to guarantee the bootstrapping of the Scala compiler, SABBUS builds Scala in layers. Each layer is a complete compiled Scala compiler and library. A superior layer is always compiled by the layer just below it. Here is a short description of the four layers that SABBUS uses, from bottom to top:
+
+'starr': the stable reference Scala release which is shared by all the developers. It is found in the repository as 'lib/scala.compiler.jar' and 'lib/scala-library.jar'. Any committable source code must be compiled directly by starr to guarantee the bootstrapping of the compiler.
+
+'locker': the local reference which is compiled by starr and is the work compiler in a typical development cycle. When it has been built once, it is “frozen” in this state. Updating it to fit the current source code must be explicitly required (see below).
+
+'quick': the layer which is incrementally built when testing changes in the compiler or library. This is considered a actual new version when locker is up-to-date in relation to the source code.
+
+'strap': a test layer used to check stability of the build.
+
+DEPENDANT CHANGES:
+
+SABBUS compiles, for each layer, the Scala library first and the compiler next. That means that any changes in the library can immediately be used in the compiler without an intermediate build. On the other hand, if building the library requires changes in the compiler a new starr (or in some case only locker if bootstrapping is still possible) compiler must be built in-between.
+
+Part III. Requirements for SABBUS
 --------------------------------------------------------------------------------
 
 The Scala build system is based on Apache Ant. Most required pre-compiled libraries are part of the repository (in 'lib/'). The following however is assumed to be installed on the build machine:
-  - A Java SDK 1.4 or above (1.5 not supported).
-  - Apache Ant version 1.6.2 or above.
+  - A Java runtime environment (JRE) or SDK 1.4 or above (with 1.5 highly
+    recommended for performance reasons).
+  - Apache Ant version 1.6 or above.
 
-More to come ...
-
-Part III. Creating distributions
+Part IV. Common use-cases
 --------------------------------------------------------------------------------
 
-More to come ...
+'ant -p'
+  Prints-out information about all available targets in the build script.
 
-Part IV. Contributing to Scala
+'ant' or 'ant build'
+  A quick compilation (to quick) of your changes using the locker compiler.
+    - This will rebuild all quick if locker changed.
+    - This will also rebuild locker if starr changed.
+
+'ant test.quick' (planned)
+  Runs the test suite against quick. This is not a full test but merely a
+  commodity feature for development.
+
+'ln -s build/quick/exec/ bin' (once)
+'ant && bin/scalac -d sandbox sandbox/test.scala && bin/scala -cp sandbox Test'
+  Incrementally builds quick, and then uses it to compile and run the file
+  'sandbox/test.scala'. This is a typical debug cycle.
+
+'ant newlocker'
+  “unfreezes” locker by updating it to match the current source code.
+    - This will delete quick so as not to mix classes compiled with different
+      versions of locker.
+
+'ant test'
+  Tests that your code is working and fit to be committed.
+    - Rebuilds locker from scratch (to make sure it bootstraps).
+    - Builds everything twice more and compares bit-to-bit the two builds (to
+      make sure it is stable).
+    - (planned) Runs the test suite.
+
+'ant dist'
+  Builds a distribution.
+    - Runs all the tests as above (and refuses to build a distribution if it
+      fails).
+    - Creates a local distribution in 'dists/latest'.
+    - Creates all relevant Scala Bazaar archives and advertisement files.
+    - (planned) Creates the IzPack installer.
+
+'ant clean'
+  Removes all build files (including locker).
+
+'ant clean.all'
+  Removes all build files (including locker) and all distributions.
+
+Part V. Contributing to Scala
 --------------------------------------------------------------------------------                            
 
 More to come ...
