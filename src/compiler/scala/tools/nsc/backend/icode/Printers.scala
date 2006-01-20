@@ -21,7 +21,6 @@ abstract class Printers {
   class TextPrinter(writer: PrintWriter) {
     var margin = 0;
     var out = writer;
-    val linearizer = new NormalLinearizer();
 
     final val TAB = 2;
 

@@ -89,6 +89,7 @@ class Settings(error: String => unit) {
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
   val Xshowicode    = BooleanSetting("-Xshowicode", "Print the generated ICode")
   val Xgadt         = BooleanSetting("-Xgadt", "enable gadt for classes")
+  val Xlinearizer   = ChoiceSetting ("-Xlinearizer", "Linearizer to use", List("normal", "dfs", "rpo"), "rpo")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse

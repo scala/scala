@@ -26,6 +26,17 @@ abstract class ICodes extends AnyRef
   /** The ICode representation of classes */
   var classes: List[IClass] = _;
 
+  /** The ICode linearizer. */
+  val linearizer: Linearizer =
+    if (global.settings.Xlinearizer.value == "rpo")
+      new ReversePostOrderLinearizer();
+    else if (global.settings.Xlinearizer.value == "dfs")
+      new DepthFirstLinerizer();
+    else if (global.settings.Xlinearizer.value == "normal")
+      new NormalLinearizer();
+    else
+      global.abort("Unknown linearizer: " + global.settings.Xlinearizer.value);
+
   def init = { classes = Nil }
 }
 

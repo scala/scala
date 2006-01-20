@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
-import scala.collection.mutable.Stack;
+import scala.collection.mutable.{Stack, HashSet};
 
 mixin class Linearizers requires ICodes {
   import opcodes._;
@@ -85,5 +85,74 @@ mixin class Linearizers requires ICodes {
       }
 
     def add(bs: List[BasicBlock]): Unit = bs foreach add;
+  }
+
+  /**
+   * Linearize code using a depth first traversal.
+   */
+  class DepthFirstLinerizer extends Linearizer {
+    var blocks: List[BasicBlock] = Nil;
+
+    def linearize(m: IMethod): List[BasicBlock] = {
+      blocks = Nil;
+
+      dfs(m.code.startBlock);
+      m.exh foreach (b => dfs(b.startBlock));
+
+      blocks.reverse
+    }
+
+    def dfs(b: BasicBlock): Unit =
+      if (b.size > 0 && add(b))
+        b.successors foreach dfs;
+
+    /**
+     * Prepend b to the list, if not already scheduled.
+     * TODO: use better test than linear search
+     * @return Returns true if the block was added.
+     */
+    def add(b: BasicBlock): Boolean =
+      if (blocks.contains(b))
+        false
+      else {
+        blocks = b :: blocks;
+        true
+      }
+  }
+
+  /**
+   * Linearize code in reverse post order. In fact, it does
+   * a post order traversal, prepending visited nodes to the list.
+   * This way, it is constructed already in reverse post order.
+   */
+  class ReversePostOrderLinearizer extends Linearizer {
+    var blocks: List[BasicBlock] = Nil;
+    var visited: HashSet[BasicBlock] = new HashSet;
+
+    def linearize(m: IMethod): List[BasicBlock] = {
+      blocks = Nil;
+      visited.clear;
+
+      m.exh foreach (b => rpo(b.startBlock));
+      rpo(m.code.startBlock);
+
+      blocks
+    }
+
+    def rpo(b: BasicBlock): Unit =
+      if (b.size > 0 && !(visited contains b)) {
+        visited += b;
+        b.successors foreach rpo;
+        add(b);
+      }
+
+    /**
+     * Prepend b to the list, if not already scheduled.
+     * TODO: use better test than linear search
+     * @return Returns true if the block was added.
+     */
+    def add(b: BasicBlock) =
+      if (!blocks.contains(b))
+        blocks = b :: blocks;
   }
 }

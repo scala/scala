@@ -317,8 +317,6 @@ abstract class GenJVM extends SubComponent {
       emitClass(mirrorClass, clasz.symbol);
     }
 
-
-    val linearizer = new NormalLinearizer();
     var linearization: List[BasicBlock] = Nil;
 
     var isModuleInitialized = false;

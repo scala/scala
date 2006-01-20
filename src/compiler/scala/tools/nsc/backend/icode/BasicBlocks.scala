@@ -216,8 +216,8 @@ mixin class BasicBlocks requires ICodes {
     def successors : List[BasicBlock] = if (isEmpty) Nil else
       lastInstruction match {
         case JUMP (where) => List(where);
-        case CJUMP(success, failure, _, _) => failure::success::Nil;
-        case CZJUMP(success, failure, _, _) => failure::success::Nil;
+        case CJUMP(success, failure, _, _) => success :: failure :: Nil;
+        case CZJUMP(success, failure, _, _) => success :: failure :: Nil;
         case SWITCH(_,labels) => labels;
         case RETURN(_) => Nil;
         case THROW() => Nil;
