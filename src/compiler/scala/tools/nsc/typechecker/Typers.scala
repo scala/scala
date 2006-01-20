@@ -353,9 +353,8 @@ mixin class Typers requires Analyzer {
             (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
 	  typed(etaExpand(tree), mode, pt)
-        } else if (!tree.symbol.isConstructor &&
-                   mt.paramTypes.isEmpty && isCompatible(mt.resultType, pt)) { // (4.3)
-          typed(Apply(tree, List()) setPos tree.pos)
+        } else if (!tree.symbol.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
+          adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else {
           if (context.reportGeneralErrors) {
             if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))

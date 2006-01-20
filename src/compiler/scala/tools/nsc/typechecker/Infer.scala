@@ -560,8 +560,9 @@ mixin class Infer requires Analyzer {
 	      val tp2 = pre.memberType(sym2);
 	      (tp2 == ErrorType ||
 	       !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
-	       (tp2.paramSectionCount > 0) && (tp1.paramSectionCount == 0 || specializes(tp1, tp2))
-             )})
+	       ((tp2.paramSectionCount > 0 && !tp2.paramTypes.isEmpty) && (tp1.paramSectionCount == 0 || tp1.paramTypes.isEmpty)) ||
+               specializes(tp1, tp2) && !specializes(tp2, tp1))
+             })
         );
 	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
 	  if (improves(alt, best)) alt else best);
