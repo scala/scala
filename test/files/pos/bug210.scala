@@ -1,13 +1,13 @@
 trait Lang1 {
   trait Exp;
   trait Visitor { def f(left: Exp): unit; }
-  class Eval1: Visitor extends Visitor {
+  class Eval1 requires Visitor extends Visitor {
     def f(left: Exp) = ();
   }
 }
 
 trait Lang2 extends Lang1 {
-  class Eval2: Visitor extends Eval1;
+  class Eval2 requires Visitor extends Eval1;
 }
 /*
 object Main with Application {

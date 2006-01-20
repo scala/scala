@@ -15,7 +15,7 @@ abstract class Lang {
     def visit(v: visitor): unit = v.caseNum(n);
   }
 
-  class Eval(result: Ref[int]): visitor extends Visitor {
+  class Eval(result: Ref[int]) requires visitor extends Visitor {
     def caseNum(n: int) = result.elem = n;
   }
 }
@@ -31,12 +31,12 @@ abstract class Lang2 extends Lang {
     def visit(v: visitor): unit = v.casePlus(l, r);
   }
 
-  class Eval2(result: Ref[int]): visitor extends Eval(result) with Visitor2 {
+  class Eval2(result: Ref[int]) requires visitor extends Eval(result) with Visitor2 {
     def casePlus(l: Exp, r: Exp) =
       result.elem = { l.visit(this); result.elem } + { r.visit(this); result.elem }
   }
 
-  class Show2(result: Ref[String]): visitor extends Visitor2 {
+  class Show2(result: Ref[String]) requires visitor extends Visitor2 {
     def caseNum(n: int) = result.elem = n.toString();
     def casePlus(l: Exp, r: Exp) =
 	result.elem =

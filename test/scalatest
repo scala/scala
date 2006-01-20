@@ -220,7 +220,7 @@ test_run_jvm() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
     $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
-    $SCALA -classpath "$os_dstbase".obj Test "jvm" &&
+    $SCALA -classpath "$os_dstbase".obj:$CLASSPATH Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
