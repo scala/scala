@@ -215,11 +215,13 @@ mixin class StdNames requires SymbolTable {
     val While = newTermName("While");
     val apply = newTermName("apply");
     val array = newTermName("array");
+    val arrayValue = newTermName("arrayValue");
     val arraycopy = newTermName("arraycopy");
     val assert_ = newTermName("assert");
     val assume_ = newTermName("assume");
     val asInstanceOf = newTermName("asInstanceOf");
     val asInstanceOfErased = newTermName("asInstanceOf$erased");
+    val booleanValue = newTermName("booleanValue");
     val box = newTermName("box");
     val caseArity = newTermName("caseArity");
     val caseElement = newTermName("caseElement");

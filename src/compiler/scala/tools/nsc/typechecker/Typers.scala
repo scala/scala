@@ -240,17 +240,6 @@ mixin class Typers requires Analyzer {
 	tparam.symbol.deSkolemize
       }
 
-    def attrInfo(attr: Tree): AttrInfo = attr match {
-      case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-        Pair(tpt.tpe, args map {
-          case Literal(value) =>
-            value
-          case arg =>
-            error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
-            null
-        })
-    }
-
     /** The qualifying class of a this or super with prefix `qual' */
     def qualifyingClassContext(tree: Tree, qual: Name): Context = {
       if (qual.isEmpty) {
@@ -1164,10 +1153,22 @@ mixin class Typers requires Analyzer {
 
         case Attributed(attr, defn) =>
           val attr1 = typed(attr, AttributeClass.tpe)
-          val defn1 = typed(defn, mode, pt)
-	  val ai = attrInfo(attr1)
-	  if (ai != null) defn1.symbol.attributes = defn1.symbol.attributes ::: List(ai)
-          defn1
+          val attrInfo = attr1 match {
+            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+              Pair(tpt.tpe, args map {
+                case Literal(value) =>
+                  value
+                case arg =>
+                  error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
+                  null
+              })
+          }
+          if (attrInfo != null) {
+            val attributed =
+              if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol;
+            attributed.attributes = attributed.attributes ::: List(attrInfo)
+          }
+          typed(defn, mode, pt)
 
         case DocDef(comment, defn) =>
           typed(defn, mode, pt)

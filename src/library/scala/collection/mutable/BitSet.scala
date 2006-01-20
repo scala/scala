@@ -25,13 +25,14 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
   class ByteArray extends AnyRef with ResizableArray[Int] {
 
     final def ensureBits(nbits: Int): Unit = {
+      val l = array.length;
       super[ResizableArray].ensureSize(memsize( nbits ));
-    }
-    final def and(j: Int, mask:Int): Unit = {
-      array.update( j, array(j) & mask );
     }
     final def or(j: Int, mask:Int): Unit = {
       array.update( j, array(j) | mask );
+    }
+    final def and(j: Int, mask:Int): Unit = {
+      array.update( j, array(j) & mask );
     }
     def get(j:Int, mask:Int):Boolean = {
       (array(j) & mask) != 0;

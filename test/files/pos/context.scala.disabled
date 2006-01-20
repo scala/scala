@@ -12,7 +12,7 @@ class Context {
 abstract class SymbolWrapper {
   val context: Context;
   import context._;
-
+  
   class Symbols requires context.symbols.type {
     abstract class Symbol {
       def typ: types.Type;

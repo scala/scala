@@ -161,11 +161,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       }
 
     /** The method-name xxxValue, where Xxx is a numeric value class name */
-    def unboxOp(tp: Type) = {
+    def unboxOp(tp: Type): Name = {
       val clazzName = tp.symbol.name.toString();
-      (String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
-       clazzName.substring(1) + "Value")
+      newTermName(
+        String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
+        clazzName.substring(1) + "Value")
     }
+
+    private def runtimeCall(meth: Name, args: List[Tree]): Tree =
+      Apply(Select(gen.mkRef(ScalaRunTimeModule), meth), args);
 
     /** Unbox `tree' of boxed type to expected type `pt' */
     private def unbox(tree: Tree, pt: Type): Tree =
@@ -174,23 +178,24 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           if (pt.symbol == UnitClass) {
             if (treeInfo.isPureExpr(tree)) Literal(())
 	    else Block(List(tree), Literal(()))
-          } else if (pt.symbol == BooleanClass) {
-            val tree1 = adaptToType(tree, boxedClass(BooleanClass).tpe);
-            Apply(Select(tree1, "booleanValue"), List())
-          } else if (pt.symbol == ArrayClass) {
-            val tree1 = adaptToType(tree, BoxedArrayClass.tpe);
-            val elemClass = pt.typeArgs.head.symbol;
-            val elemTag =
-              if (isValueClass(elemClass))
-                Apply(
-		  Select(gen.mkRef(ScalaRunTimeModule), newTermName(elemClass.name.toString() + "Tag")),
-		  List())
-              else Literal(signature(pt.typeArgs.head));
-            Apply(Select(tree1, "unbox"), List(elemTag))
           } else {
-	    assert(isNumericValueClass(pt.symbol));
-            val tree1 = adaptToType(tree, BoxedNumberClass.tpe);
-            Apply(Select(tree1, unboxOp(pt)), List())
+            if (pt.symbol == BooleanClass) {
+              val tree1 = adaptToType(tree, boxedClass(BooleanClass).tpe);
+              runtimeCall(nme.booleanValue, List(tree1))
+            } else if (pt.symbol == ArrayClass) {
+              val tree1 = adaptToType(tree, BoxedArrayClass.tpe);
+              val elemClass = pt.typeArgs.head.symbol;
+              val elemTag =
+                if (isValueClass(elemClass))
+                  runtimeCall(newTermName(elemClass.name.toString() + "Tag"), List())
+                else
+                  Literal(signature(pt.typeArgs.head));
+              runtimeCall(nme.arrayValue, List(tree1, elemTag))
+            } else {
+	      assert(isNumericValueClass(pt.symbol));
+              val tree1 = adaptToType(tree, BoxedNumberClass.tpe);
+              runtimeCall(unboxOp(pt), List(tree1))
+            }
           }
         }
       }

@@ -88,12 +88,11 @@ mixin class SyntheticMethods requires Analyzer {
 
     val SerializableAttr = definitions.SerializableAttr;
 
-    def isSerializable(clazz: Symbol): Boolean = {
+    def isSerializable(clazz: Symbol): Boolean =
       clazz.attributes.exists(p => p match {
         case Pair(SerializableAttr, _) => true;
         case _ => false
       })
-    }
 
     def readResolveMethod: Tree = {
       // !!! the synthetic method "readResolve" should be private,

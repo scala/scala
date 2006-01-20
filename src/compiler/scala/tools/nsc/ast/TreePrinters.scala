@@ -96,6 +96,14 @@ abstract class TreePrinters {
       if (s.length() != 0) print(s + " ")
     }
 
+    def printAttributes(attrs: List[AttrInfo]): unit = {
+      def attrToString(attr: AttrInfo): String = attr match {
+        case Pair(tp, List()) => tp.toString()
+        case Pair(tp, args) => tp.toString()+args.mkString("(", ",", ")")
+      }
+      if (!attrs.isEmpty) print(attrs.map(attrToString).mkString("[", ",", "]"))
+    }
+
     def print(str: String): unit = out.print(str);
     def print(name: Name): unit = print(name.toString());
 
@@ -105,6 +113,7 @@ abstract class TreePrinters {
           print("<empty>");
 
         case ClassDef(mods, name, tparams, tp, impl) =>
+          printAttributes(tree.symbol.attributes);
           printModifiers(tree, mods);
 	  print("class " + symName(tree, name));
           printTypeParams(tparams);
@@ -114,10 +123,12 @@ abstract class TreePrinters {
           print("package "); print(packaged); printColumn(stats, " {", ";", "}")
 
         case ModuleDef(mods, name, impl) =>
+          printAttributes(tree.symbol.attributes);
           printModifiers(tree, mods); print("object " + symName(tree, name));
           print(" extends "); print(impl);
 
         case ValDef(mods, name, tp, rhs) =>
+          printAttributes(tree.symbol.attributes);
           printModifiers(tree, mods);
           print(if (mods.hasFlag(MUTABLE)) "var " else "val ");
           print(symName(tree, name));
@@ -128,15 +139,18 @@ abstract class TreePrinters {
           }
 
         case DefDef(mods, name, tparams, vparamss, tp, rhs) =>
+          printAttributes(tree.symbol.attributes);
           printModifiers(tree, mods);
           print("def " + symName(tree, name));
           printTypeParams(tparams); vparamss foreach printValueParams;
           printOpt(": ", tp); printOpt(" = ", rhs);
 
         case AbsTypeDef(mods, name, lo, hi) =>
+          printAttributes(tree.symbol.attributes);
           printModifiers(tree, mods); print("type "); printParam(tree);
 
         case AliasTypeDef(mods, name, tparams, rhs) =>
+          printAttributes(tree.symbol.attributes);
           printModifiers(tree, mods); print("type " + symName(tree, name));
           printTypeParams(tparams); printOpt(" = ", rhs);
 
@@ -151,7 +165,9 @@ abstract class TreePrinters {
           print(selectors.map(selectorToString).mkString(".{", ", ", "}"))
 
         case Attributed(attr, definition) =>
-          print("["); print(attr); print("]"); println; print(definition);
+          if (tree.symbol == NoSymbol) {
+            print("["); print(attr); print("]"); println; print(definition);
+          }
 
         case DocDef(comment, definition) =>
           print(comment); println; print(definition);

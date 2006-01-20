@@ -28,6 +28,6 @@ trait CaseClass extends AnyRef {
   */
   def caseArity: Int ;
 
-  def caseName: String = ""; // for now
+  def caseName: String ;
 
 }
