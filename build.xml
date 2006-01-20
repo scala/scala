@@ -141,15 +141,6 @@ INITIALISATION
       <path refid="common.classpath"/>
     </path>
     <!-- Creating boot-level tasks -->
-    <taskdef name="starr"
-             classname="scala.tools.ant.Scalac"
-             classpathref="starr.classpath"/>
-    <taskdef name="starrtool"
-             classname="scala.tools.ant.ScalaTool"
-             classpathref="starr.classpath"/>
-    <taskdef name="pico"
-             classname="jaco.pizza.ant.Pico"
-             classpath="${jaco.jar}"/>
     <taskdef resource="net/sf/antcontrib/antlib.xml">
       <classpath>
         <pathelement location="${ant-contrib.jar}"/>
@@ -191,6 +182,19 @@ INITIALISATION
         <fail>System environment could not be determined</fail>
       </else>
     </if>
+  </target>
+  
+  <target name="setup" depends="init">
+    <!-- Creating boot-level tasks -->
+    <taskdef name="starr"
+             classname="scala.tools.ant.Scalac"
+             classpathref="starr.classpath"/>
+    <taskdef name="starrtool"
+             classname="scala.tools.ant.ScalaTool"
+             classpathref="starr.classpath"/>
+    <taskdef name="pico"
+             classname="jaco.pizza.ant.Pico"
+             classpath="${jaco.jar}"/>
     <!-- Removing any outdated stuff -->
     <if>
       <and>
@@ -219,7 +223,7 @@ INITIALISATION
     <property name="init.avail" value="yes"/>
   </target>
   
-  <target name="init.locker" depends="init, build.locker">
+  <target name="setup.locker" depends="setup, build.locker">
     <path id="locker.classpath">
       <pathelement location="${locker.dir}/${lib.dir.name}"/>
       <pathelement location="${locker.dir}/${comp.dir.name}"/>
@@ -233,7 +237,7 @@ INITIALISATION
              classpathref="locker.classpath"/>
   </target>
   
-  <target name="init.quick" depends="init, build">
+  <target name="setup.quick" depends="setup, build">
     <path id="quick.classpath">
       <pathelement location="${quick.dir}/${lib.dir.name}"/>
       <pathelement location="${quick.dir}/${comp.dir.name}"/>
@@ -308,7 +312,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
 
   <target name="newlocker" depends="clean.unfreeze, build.locker"/>
   
-  <target name="build.locker" depends="init" unless="locker.avail">
+  <target name="build.locker" depends="setup" unless="locker.avail">
     <property name="built.locker" value="yes"/>
     <!-- Build library -->
     <mkdir dir="${locker.lib.dir}"/>
@@ -386,7 +390,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
 BUILD QUICK-TEST LAYER
 ============================================================================ -->
   
-  <target name="build" depends="init.locker">
+  <target name="build" depends="setup.locker">
     <!-- Build library -->
     <mkdir dir="${quick.lib.dir}"/>
     <pico srcdir="${src.dir}/${lib.dir.name}"
@@ -474,7 +478,7 @@ TEST
   
   <target name="test" depends="clean, test.stability, test.strap"/>
   
-  <target name="build.strap" depends="init.quick">
+  <target name="build.strap" depends="setup.quick">
     <!-- Build the bootstrap layer -->
     <!-- Build library -->
     <mkdir dir="${strap.lib.dir}"/>
