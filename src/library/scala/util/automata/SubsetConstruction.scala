@@ -11,22 +11,17 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
   /** the set {0} */
   final val _initialBitSet = {
     val rbs = new mutable.BitSet(1);
-    rbs.set(0);
-    rbs.makeImmutable;
+    rbs += 0;
+    rbs.toImmutable;
   }
 
   /** the set {} */
-  final val _sinkBitSet = {
-    new mutable.BitSet(1).makeImmutable;
-  }
+  final val _sinkBitSet = new mutable.BitSet(1).toImmutable;
 
-  final val _emptyBitSet =  {
-    val rbs = new scala.collection.mutable.BitSet(1);
-    new BitSet(rbs);
-  }
+  final val _emptyBitSet = new scala.collection.mutable.BitSet(1).toImmutable;
 
   def selectTag(Q:BitSet, finals:Array[Int]) = {
-    val it = Q.toSet(true).elements;
+    val it = Q.elements;
     var mintag = scala.runtime.compat.Math.MAX_INT;
     while(it.hasNext) {
       val tag = finals(it.next);

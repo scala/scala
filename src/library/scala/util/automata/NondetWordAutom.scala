@@ -26,7 +26,7 @@ abstract class NondetWordAutom[T <: AnyRef] {
 
   /** returns true if the set of states contains at least one final state */
   final def containsFinal(Q: immutable.BitSet): Boolean = {
-    val it = Q.toSet(true).elements;
+    val it = Q.elements;
     while( it.hasNext )
       if( isFinal( it.next ))
         return true;
@@ -54,23 +54,23 @@ abstract class NondetWordAutom[T <: AnyRef] {
   /** returns a bitset with the next states for given state and label */
   def next(Q:immutable.BitSet, a: T): immutable.BitSet = {
     val x = new mutable.BitSet(nstates);
-    for(val q <- Q.toSet(true)) {
-      for(val i <- next(q,a).toSet(true)) {
-        x.set(i);
+    for(val q <- Q) {
+      for(val i <- next(q,a)) {
+        x += i;
       }
     }
-    x.makeImmutable
+    x.toImmutable
   }
 
 
   def nextDefault(Q:immutable.BitSet): immutable.BitSet = {
     val x = new mutable.BitSet(nstates);
-    for(val q <- Q.toSet(true)) {
-      for(val i <- default(q).toSet(true)) { //@todo: OR
-        x.set(i)
+    for(val q <- Q) {
+      for(val i <- default(q)) { //@todo: OR
+        x += i
       }
     }
-    x.makeImmutable;
+    x.toImmutable;
   }
 
   override def toString() = {

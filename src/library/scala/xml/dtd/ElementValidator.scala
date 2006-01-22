@@ -63,7 +63,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
       var attr: AttrDecl = null;
       val jt = adecls.elements; while(j < adecls.length) {
         jt.next match {
-          case a @ AttrDecl(Key, _, _) => attr = a; ok.set(j); j = adecls.length;
+          case a @ AttrDecl(Key, _, _) => attr = a; ok += j; j = adecls.length;
           case _                       => j = j + 1;
         }
       }
@@ -89,7 +89,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
     }
     //Console.println("so far:"+(exc.length == len));
 
-    val missing = ok.toSet( false );
+    //val missing = ok.toSet( false ); FIXME: it doesn't seem to be used anywhere
     j  = 0; var kt = adecls.elements; while(kt.hasNext) {
       kt.next match {
         case AttrDecl(key, tpe, REQUIRED) if !ok(j) =>

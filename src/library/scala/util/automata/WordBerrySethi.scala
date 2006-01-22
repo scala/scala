@@ -215,8 +215,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
             val trans = delta1(k);
             val x = new mutable.BitSet(pos);
             for(val q <- trans(lab))
-              x.set(q);
-            hmap.update(lab, x.makeImmutable);
+              x += q;
+            hmap.update(lab, x.toImmutable);
           }
           deltaArr(k) = hmap;
           k = k + 1;
@@ -227,8 +227,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         var k = 0; while(k < pos) {
           val x = new mutable.BitSet(pos);
           for(val q <- defaultq(k))
-            x.set(q);
-          defaultArr(k) = x.makeImmutable;
+            x += q;
+          defaultArr(k) = x.toImmutable;
           k = k + 1;
         }
       }
