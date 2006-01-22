@@ -27,6 +27,7 @@ object Math {
   val MIN_DOUBLE = java.lang.Double.MIN_VALUE;
   val MAX_DOUBLE = java.lang.Double.MAX_VALUE;
 
+  def min(x: Int, y: Int): Int = java.lang.Math.min(x, y);
   def max(x: Int, y: Int): Int = java.lang.Math.max(x, y);
 
   def ceil (x: Double): Double = java.lang.Math.ceil(x);
