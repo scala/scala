@@ -223,8 +223,8 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
 /**
 *  GBTree is an internal class used by Tree.
 */
-//[serializable]
-protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef with java.io.Serializable {
+[serializable]
+protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
   type aNode = GBTree[A,B];
   type anInsertTree = InsertTree[A,B];
 
