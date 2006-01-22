@@ -1,88 +1,75 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 ** $Id$
 \*                                                                      */
 
-package scala.collection.mutable ;
+package scala.collection.mutable;
 
-/** mutable, resizable bit sets, to represent dense sets of small integers
- *  Bit indices are between 0..(size-1) inclusive
- *  @author  Burak Emir
- *  @param initSize: initial size in nbits
+/**
+ * This class implements mutable, resizable Bit sets
+ *
+ * @author  Burak Emir, Nikolay Mihaylov
+ * @version 1.1
+ *
+ * @param initSize: initial size in bits
  */
+
 [serializable]
-class BitSet(initSize: Int) extends scala.collection.BitSet {
+class BitSet(initSize: Int) extends collection.BitSet with mutable.Set[Int] {
+
   import scala.runtime.compat.Platform.arraycopy;
 
   /** default constructor, initial size of 512 bits */
-  def this() = this( 512 );  // ResizableArray.initialSize << 5
+  def this() = this(0);
 
-  [serializable]
-  class ByteArray extends AnyRef with ResizableArray[Int] {
+  /** ensure that this bitset can store at least <pre>n</pre> bits */
+  def ensureCapacity(n: Int): Unit =
+    if (capacity < n) {
+      val newn = memsize(n);
+      var newsize = (arr.length + 1) * 2; // works even in the case arr.length == 0
+      while(newn > newsize)
+        newsize = newsize * 2;
+      val newarr = new Array[Int](newsize);
+      arraycopy(arr, 0, newarr, 0, arr.length);
+      arr = newarr;
+      capacity = n;
+    }
 
-    final def ensureBits(nbits: Int): Unit = {
-      val l = array.length;
-      super[ResizableArray].ensureSize(memsize( nbits ));
-    }
-    final def or(j: Int, mask:Int): Unit = {
-      array.update( j, array(j) | mask );
-    }
-    final def and(j: Int, mask:Int): Unit = {
-      array.update( j, array(j) & mask );
-    }
-    def get(j:Int, mask:Int):Boolean = {
-      (array(j) & mask) != 0;
-    }
-    def freeze: Array[Int] = {
-      val arr = new Array[Int]( array.length );
-      arraycopy(array, 0, arr, 0, arr.length);
-      arr
+  /**
+   * Sets <code>i<sup>th</sup></code> bit to true.
+   * No restriction on <code>i</code>
+   */
+  def +=(i: Int): Unit = {
+    ensureCapacity(i+1);
+    if (!contains(i)) {
+      arr(offset(i)) = arr(offset(i)) | mask(i);
+      size = i + 1;
     }
   }
 
-  /** size of this bitset in nbytes */
-  var size: Int = initSize;
-  protected val internal = new ByteArray();
-  internal.ensureBits( size );
+  /** Clears <code>i<sup>th</sup></code> bit  */
+  def -=(i: Int): Unit =
+    if (i < capacity && contains(i)) {
+      arr(offset(i)) = arr(offset(i)) & ~mask(i);
+      size = size - 1;
+    }
 
-  /** ensure that this bitset can store at least nbits bits */
-  def ensureSize(n: Int): Unit = {
-    internal.ensureBits( n );
-    if( size < n ) size = n;
+  def clear: Unit = {
+    java.util.Arrays.fill(arr, 0);
+    size = 0;
   }
 
-  /** calls set or clear for i-th bit */
-  final def set(i: Int, b: Boolean): Unit = if( b ) set(i) else clear(i);
+  def toImmutable: collection.immutable.BitSet =
+    new immutable.BitSet(size, capacity, arr, true);
 
-  /** sets i-th bit to true. Grows to size i+1 if needed. */
-  final def set(i: Int): Unit = {
-    ensureSize(i+1);
-    val j         = (i >>> 5);
-    val mask      = (1 << (i & 0x1F));
-    internal.or(j, mask);
-  }
+  var size: Int = 0;
 
-  /** clears i-th bit. Grows to size i+1 if needed. */
-  def clear(i: Int): Unit = {
-    ensureSize(i+1);
-    val j    = (i >>> 5);
-    val mask = (1 << (i & 0x1F));
-    internal.and(j, ~mask);
-  }
+  var capacity: Int = initSize;
 
-  /** gets i-th bit. Grows to size i+1 if needed. */
-  def apply(i: Int):Boolean = {
-    val j    = (i >>> 5);
-    val mask = (1 << (i & 0x1F));
-    internal.get(j, mask);
-  }
-
-  def toArray: Array[Int] = internal.freeze;
-
-  def makeImmutable = new scala.collection.immutable.BitSet(this);
+  protected var arr: Array[Int] = new Array[Int](memsize(initSize));
 
 }
