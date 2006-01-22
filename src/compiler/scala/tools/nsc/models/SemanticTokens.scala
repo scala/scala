@@ -1,13 +1,13 @@
 
 package scala.tools.nsc.models;
 
-import scala.tools.nsc.{Global => Compiler};
+import scala.tools.nsc.Global;
 import scala.tools.nsc.symtab.{Flags,Names};
 import scala.tools.nsc.util.{NameTransformer,Position,SourceFile};
 import scala.collection.mutable.{HashMap,HashSet};
 
 
-class SemanticTokens(val compiler: Compiler) {
+class SemanticTokens(val compiler: Global) {
   import compiler._;
 
   abstract class Kind {}
@@ -23,49 +23,51 @@ class SemanticTokens(val compiler: Compiler) {
 
   abstract class Token {
     def length : Int;
-
     def prev : HasNext;
     def next : HasPrev;
+
   }
 
   [_trait_] abstract class HasNext extends Token {
     var next0 : HasPrev = _;
     def next = next0;
+
   }
   [_trait_] abstract class HasPrev extends Token {
     var prev0 : HasNext = _;
     def prev = prev0;
   }
   abstract class Actual extends HasNext with HasPrev {
-    def convertToGap : Pair[Int,Actual] = {
+    def convertToGap : Pair[Int,Actual]  = {
       val nextGap = next.isInstanceOf[Gap];
       val prevGap = prev.isInstanceOf[Gap];
       if (prevGap) {
-	val ret = prev.length;
-	val gap = prev.asInstanceOf[Gap];
-	gap.setLength(gap.length + length);
-	if (nextGap) {
-	  gap.setLength(gap.length + next.length);
-	  gap.next0 = next.next;
-	  next.next.prev0 = gap;
-	} else {
-	  gap.next0 = next;
-	  next.prev0 = gap;
-	}
-	new Pair(ret,gap);
+        val ret = prev.length;
+        val gap = prev.asInstanceOf[Gap];
+        gap.setLength(gap.length + length);
+        if (nextGap) {
+          gap.setLength(gap.length + next.length);
+          gap.next0 = next.next;
+          next.next.prev0 = gap;
+      	} else {
+      	  gap.next0 = next;
+      	  next.prev0 = gap;
+      	}
+        new Pair(ret,gap);
       } else if (nextGap) {
-	val gap = next.asInstanceOf[Gap];
-	gap.setLength(gap.length + length);
-	gap.prev0 = prev;
-	prev.next0 = gap;
-	new Pair(0,gap);
+        val gap = next.asInstanceOf[Gap];
+        gap.setLength(gap.length + length);
+        gap.prev0 = prev;
+        prev.next0 = gap;
+        new Pair(0,gap);
       } else {
-	prev.next0 = next;
-	next.prev0 = prev;
-	val gap = new Gap(prev);
-	gap.setLength(length);
-	new Pair(0,gap);
+        prev.next0 = next;
+        next.prev0 = prev;
+        val gap = new Gap(prev);
+        gap.setLength(length);
+        new Pair(0,gap);
       }
+
     }
     def insert(prev1 : HasNext) = {
       next0 = prev1.next;
@@ -82,7 +84,7 @@ class SemanticTokens(val compiler: Compiler) {
     override def toString() = "gap-" + length;
 
     var length0 : Int = -1;
-    def length : Int = length0;
+    def length  : Int = length0;
     def setLength(length1 : Int) = length0 = length1;
 
     // already gap
@@ -92,12 +94,14 @@ class SemanticTokens(val compiler: Compiler) {
   class Process(val unit : CompilationUnit) {
     def source = unit.source;
 
+
+
     def dbg(tree : Tree) = {(
-    	"TREE=" + tree +
-    	(if (tree != null) (" CLASS=" + tree.getClass()) else "") +
-    	" SYM=" + tree.symbol +
-    	" POS=" +
-    	(new Position(source, if (tree != null) tree.pos else -1)).dbgString
+        "TREE=" + tree +
+          (if (tree != null) (" CLASS=" + tree.getClass()) else "") +
+            " SYM=" + tree.symbol +
+              " POS=" +
+                (new Position(source, if (tree != null) tree.pos else -1)).dbgString
     )}
 
     val symbols = new HashMap[Symbol,Info];
@@ -120,10 +124,10 @@ class SemanticTokens(val compiler: Compiler) {
       def info : Info = if (symbols.contains(symbol)) symbols(symbol) else new Info(symbol);
 
       def kind = {
-				val term0 = symbol;
-				if (false) null;
-				else if (term0.isVariable)       VAR;
-				else if (term0.isValueParameter) ARG;
+        val term0 = symbol;
+        if (false) null;
+        else if (term0.isVariable)       VAR;
+        else if (term0.isValueParameter) ARG;
 				else if (term0.isMethod)         DEF;
 				else if (term0.isClass)          CLASS;
 				else if (term0.isModule)         OBJECT;
@@ -154,17 +158,17 @@ class SemanticTokens(val compiler: Compiler) {
 
     def build(tree0 : Tree) : Unit = {
       if (tree0.pos != Position.NOPOS) tree0 match {
-      case tree : ImplDef     =>
-				val pos = tree.namePos(unit.source);
-				if (pos == Position.NOPOS) {
-				  // inner types.
-				  // System.err.println("NOPOS: " + tree.getClass() + " " + (new Position(unit.source, tree.pos)).dbgString);
-				  //Thread.dumpStack();
-				} else buildDef(tree.symbol, tree.namePos(unit.source));
-			        tree match {
-				  case cdef : ClassDef => build(cdef.tparams);
-				  case   _  => ;
-				}
+      case tree : ImplDef =>
+        val pos = tree.namePos(unit.source);
+        if (pos == Position.NOPOS) {
+          // inner types.
+            // System.err.println("NOPOS: " + tree.getClass() + " " + (new Position(unit.source, tree.pos)).dbgString);
+          //Thread.dumpStack();
+        } else buildDef(tree.symbol, tree.namePos(unit.source));
+        tree match {
+        case cdef : ClassDef => build(cdef.tparams);
+        case   _  => ;
+        }
 				build(tree.impl.parents);
 				build(tree.impl.body);
       case tree : ValOrDefDef => if (!tree.symbol.hasFlag(Flags.ACCESSOR)) {
@@ -172,7 +176,7 @@ class SemanticTokens(val compiler: Compiler) {
 			    val pos = if (tree.name.toString().equals("<init>")) Position.NOPOS else tree.namePos(unit.source);
 			    if (pos != Position.NOPOS) {
 			      if (!tree.hasFlag(Flags.SYNTHETIC))
-							buildDef(tree.symbol, pos);
+			        buildDef(tree.symbol, pos);
 			    }
 			  }
 
@@ -267,9 +271,12 @@ class SemanticTokens(val compiler: Compiler) {
 
 		  }
 		  case tpe0 : ThisType => tree match {
-		  case stt : SingletonTypeTree => stt.ref match {
-			  case ths : This => build(ths);
-			  }
+  		  case stt : SingletonTypeTree => stt.ref match {
+  			  case ths : This => build(ths);
+          case _ => System.err.println("UNKNOWN TPE11: " + tpe0 + " " + stt + " " + stt.ref + " " + stt.ref.getClass() + " " + unit.source.dbg(tree.pos));
+  			}
+        case tt : TypeTree => /* ignore */
+        case _ => System.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
 
 		  }
 		  case tpe0 : SingleType => {
@@ -298,7 +305,7 @@ class SemanticTokens(val compiler: Compiler) {
 			}
 			try {
 			  if (tree.pos >= unit.source.content.length)
-			    System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + tree.pos);
+			    System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + unit.source.dbg(tree.pos));
 			  else {
 					buildUse(tree.symbol, selectPos(tree), tree.tpe);
 			  }
@@ -331,9 +338,10 @@ class SemanticTokens(val compiler: Compiler) {
 	  case tree : AppliedTypeTree => ;
 	  case tree : SingletonTypeTree => ;
 	  case tree : Attributed => ;
+    case tree : AliasTypeDef => build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
 	  case EmptyTree => ;
 	  case _ => ;
-	    System.err.println("BAIL: " + tree0.pos + " " + tree0 + " " + tree0.getClass());
+	    System.err.println("BAIL: " + unit.source.dbg(tree0.pos) + " " + tree0 + " " + tree0.getClass());
     }
 	}
 
@@ -481,56 +489,56 @@ class SemanticTokens(val compiler: Compiler) {
 			}
 			str;
 	  };
-      object cursor {
-	var token  : Token = end;
-	var offset : Int   = 0;
+    object cursor {
+    	var token  : Token = end;
+    	var offset : Int   = 0;
 
-	def next : Unit = if (token == end) end else {
-	  offset = offset + token.length;
-	  token  = token.next;
-	}
-	def prev : Unit = if (token.prev == begin) token else {
-	  offset = offset - token.prev.length;
-	  token = token.prev;
-	}
-	def seek(soffset : Int) : Unit = if (soffset == 0) {
-	  token = begin.next;
-	  offset = 0;
-	} else {
-	  assert(soffset > 0);
-	  while (offset                >  soffset) prev;
-	  while (offset + token.length <= soffset && token != end) {
-	    val len0 = offset;
-	    next;
-	  }
-	}
-	def convertToGap = if (token.isInstanceOf[Actual]) {
-	  val ret = token.asInstanceOf[Actual].convertToGap;
-	  offset  = offset - ret._1;
-	  token   = ret._2;
-	}
+    	def next : Unit = if (token == end) end else {
+    	  offset = offset + token.length;
+    	  token  = token.next;
+    	}
+    	def prev : Unit = if (token.prev == begin) token else {
+    	  offset = offset - token.prev.length;
+    	  token = token.prev;
+    	}
+    	def seek(soffset : Int) : Unit = if (soffset == 0) {
+    	  token = begin.next;
+    	  offset = 0;
+    	} else {
+    	  assert(soffset > 0);
+    	  while (offset                >  soffset) prev;
+    	  while (offset + token.length <= soffset && token != end) {
+    	    val len0 = offset;
+    	    next;
+    	  }
+    	}
+    	def convertToGap = if (token.isInstanceOf[Actual]) {
+    	  val ret = token.asInstanceOf[Actual].convertToGap;
+    	  offset  = offset - ret._1;
+    	  token   = ret._2;
+    	}
+    }
+    // add or delete characters
+    def adjust(offset: Int, /* where */
+          		 length: Int, /* how many characters are modified */
+          		 to    : Int  /* length of new string */) = {
+      cursor.seek(offset);
+      if (cursor.token != end) {
+    	  cursor.convertToGap;
+    	  while (cursor.offset + cursor.token.length < offset + length && cursor.token.next != end) {
+    	    val save = cursor.offset;
+    	    cursor.next;
+    	      cursor.convertToGap;
+    	    assert(cursor.offset == save);
+    	  }
+     	  if (length != to && cursor.token != end) {
+     	    val diff = to - length;
+     	    val gap = cursor.token.asInstanceOf[Gap];
+     	    gap.setLength(gap.length + diff);
+     	  };
       }
-      // add or delete characters
-      def adjust(offset: Int, /* where */
-		 length: Int, /* how many characters are modified */
-		 to    : Int  /* length of new string */) = {
-       cursor.seek(offset);
-       if (cursor.token != end) {
-	 cursor.convertToGap;
-	 while (cursor.offset + cursor.token.length < offset + length && cursor.token.next != end) {
-	   val save = cursor.offset;
-	   cursor.next;
-	     cursor.convertToGap;
-	   assert(cursor.offset == save);
-	 }
-	 if (length != to && cursor.token != end) {
-	   val diff = to - length;
-	   val gap = cursor.token.asInstanceOf[Gap];
-	   gap.setLength(gap.length + diff);
-	 };
-       }
-     }
-    };
+    }
+	};
   }
 }
 

@@ -15,6 +15,9 @@ import scala.tools.nsc.reporters._;
 import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
 
 
+
+
+
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
 import util.Statistics;
@@ -377,24 +380,24 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       val startTime = System.currentTimeMillis();
       reporter.reset;
       for (val source <- sources)
-	addUnit(new CompilationUnit(source));
+        addUnit(new CompilationUnit(source));
 
       globalPhase = firstPhase;
       while (globalPhase != terminalPhase && reporter.errors == 0) {
-	val startTime = System.currentTimeMillis();
-	phase = globalPhase;
-	globalPhase.run;
-	if (settings.print contains globalPhase.name) treePrinter.printAll();
-	if (settings.browse contains globalPhase.name) treeBrowser.browse(units);
-	informTime(globalPhase.description, startTime);
-	globalPhase = globalPhase.next;
-	if (settings.check contains globalPhase.name) {
+        val startTime = System.currentTimeMillis();
+        phase = globalPhase;
+        globalPhase.run;
+        if (settings.print contains globalPhase.name) treePrinter.printAll();
+        if (settings.browse contains globalPhase.name) treeBrowser.browse(units);
+        informTime(globalPhase.description, startTime);
+        globalPhase = globalPhase.next;
+        if (settings.check contains globalPhase.name) {
           phase = globalPhase;
           if (globalPhase.name == "jvm") icodeChecker.checkICodes;
           else checker.checkTrees;
-	}
-	if (settings.statistics.value) statistics.print(phase);
-	advancePhase;
+        }
+        if (settings.statistics.value) statistics.print(phase);
+        advancePhase;
       }
 
       if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
@@ -404,10 +407,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (reporter.errors == 0) {
         assert(symData.isEmpty, symData.elements.toList);
       } else {
-	for (val Pair(sym, file) <- symSource.elements) {
-	  sym.reset(new loaders.SourcefileLoader(file));
-	  if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader);
-	}
+        for (val Pair(sym, file) <- symSource.elements) {
+          sym.reset(new loaders.SourcefileLoader(file));
+          if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader);
+        }
       }
       for (val Pair(sym, file) <- symSource.elements) resetPackageClass(sym.owner);
       informTime("total", startTime);
@@ -424,31 +427,31 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 				addUnit(unit);
 				var localPhase = firstPhase.asInstanceOf[GlobalPhase];
 				while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) &&
-			               reporter.errors == 0) {
+				  reporter.errors == 0) {
 				  atPhase(localPhase)(localPhase.applyPhase(unit));
 				  localPhase = localPhase.next.asInstanceOf[GlobalPhase];
-			}
-			refreshProgress;
+				}
+				refreshProgress;
       }
 
     def compileFiles(files: List[AbstractFile]): unit =
       try {
-	compileSources(files map getSourceFile)
+        compileSources(files map getSourceFile)
       } catch {
-	case ex: IOException => error(ex.getMessage());
+      case ex: IOException => error(ex.getMessage());
       }
 
     def compile(filenames: List[String]): unit =
       try {
-	compileSources(filenames map getSourceFile)
+        compileSources(filenames map getSourceFile)
       } catch {
-	case ex: IOException => error(ex.getMessage());
+      case ex: IOException => error(ex.getMessage());
       }
 
     private def resetPackageClass(pclazz: Symbol): unit = {
       assert(pclazz.isPackageClass, pclazz);
       atPhase(firstPhase) {
-	pclazz.setInfo(atPhase(typerPhase)(pclazz.info))
+        pclazz.setInfo(atPhase(typerPhase)(pclazz.info))
       }
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner);
     }

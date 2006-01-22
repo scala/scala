@@ -22,20 +22,20 @@ trait Namers requires Analyzer {
   class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) =>
-	val tparam = sym.deSkolemize;
-	mapOver(
-	  if (tparam == sym || !(tparams contains tparam)) tp
-	  else rawTypeRef(NoPrefix, tparam, args))
+      val tparam = sym.deSkolemize;
+      mapOver(
+          if (tparam == sym || !(tparams contains tparam)) tp
+          else rawTypeRef(NoPrefix, tparam, args))
       case SingleType(pre, sym) if (sym.isThisSkolem) =>
         ThisType(sym.deSkolemize)
       case PolyType(tparams1, restpe) =>
-	new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
+        new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
       case ClassInfoType(parents, decls, clazz) =>
-	val parents1 = List.mapConserve(parents)(this);
-	if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz);
+        val parents1 = List.mapConserve(parents)(this);
+        if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz);
       case _ =>
-	mapOver(tp)
-      }
+        mapOver(tp)
+    }
   }
 
   class Namer(val context: Context) {
@@ -83,17 +83,17 @@ trait Namers requires Analyzer {
 
     def enterInScope(sym: Symbol): Symbol = {
       if (!(sym.isSourceMethod && sym.owner.isClass)) {
-	val prev = context.scope.lookupEntry(sym.name);
-	if (prev != null && prev.owner == context.scope && !prev.sym.isSourceMethod) {
-	  if (sym.sourceFile == null && prev.sym.sourceFile == null) {}
-	  else if (sym.sourceFile != null && prev.sym.sourceFile != null &&
-		     sym.sourceFile.equals(prev.sym.sourceFile)) {}
-	  else {
-	    System.err.println("SYM: " + sym.sourceFile);
-	    System.err.println("PRV: " + prev.sym.sourceFile);
-	    doubleDefError(sym.pos, prev.sym);
-	  }
-	}
+      	val prev = context.scope.lookupEntry(sym.name);
+      	if (prev != null && prev.owner == context.scope && !prev.sym.isSourceMethod) {
+      	  if (sym.sourceFile == null && prev.sym.sourceFile == null) {}
+      	  else if (sym.sourceFile != null && prev.sym.sourceFile != null &&
+      		     sym.sourceFile.equals(prev.sym.sourceFile)) {}
+      	  else {
+      	    System.err.println("SYM: " + sym.sourceFile);
+      	    System.err.println("PRV: " + prev.sym.sourceFile);
+      	    doubleDefError(sym.pos, prev.sym);
+      	  }
+      	}
       }
       context.scope enter sym;
       sym
@@ -123,21 +123,20 @@ trait Namers requires Analyzer {
       if (c.isType && !currentRun.compiles(c) && context.scope == c.owner.info.decls) {
         updatePosFlags(c, pos, flags);
       } else {
-	c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag);
+        c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag);
       }
       if (c.owner.isPackageClass) {
-	val file = context.unit.source.getFile();
-	val clazz = c.asInstanceOf[ClassSymbol];
-	if (file != null) {
-	  if (clazz.sourceFile != null && !clazz.sourceFile.equals(file)) // double def.
-	    throw new Error(""+clazz.sourceFile + " vs. " + file + " SYM=" + c);
-	  else clazz.sourceFile = file;
-
-	}
-	if (clazz.sourceFile != null) {
-          assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
-	  currentRun.symSource(c) = clazz.sourceFile
-	}
+      	val file = context.unit.source.getFile();
+      	val clazz = c.asInstanceOf[ClassSymbol];
+      	if (file != null) {
+      	  if (clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
+            System.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
+          } else clazz.sourceFile = file;
+      	}
+      	if (clazz.sourceFile != null) {
+      	  assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
+      	  currentRun.symSource(c) = clazz.sourceFile
+      	}
       }
       c
     }
@@ -220,10 +219,10 @@ trait Namers requires Analyzer {
 	  case ClassDef(mods, name, tparams, _, impl) =>
 	    if ((mods.flags & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
-		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
-	          .setInfo(innerNamer.caseFactoryCompleter(tree));
-              setPrivateWithin(tree.symbol, mods);
-            }
+        		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
+        	          .setInfo(innerNamer.caseFactoryCompleter(tree));
+                      setPrivateWithin(tree.symbol, mods);
+      }
 	    tree.symbol = enterClassSymbol(tree.pos, mods.flags, name);
             setPrivateWithin(tree.symbol, mods);
 	    finishWith(tparams);

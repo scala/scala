@@ -186,19 +186,18 @@ object ClassPath {
     private def addArchivesInExtDirPath(path: String) = {
       val strtok = new StringTokenizer(path, File.pathSeparator);
       while (strtok.hasMoreTokens()) {
-	val file = AbstractFile.getDirectory(strtok.nextToken());
-	val files = (if (file != null) file.list() else null);
-	if (files != null) while(files.hasNext()) {
-	  val file0 = files.next().asInstanceOf[AbstractFile];
-	  val name = file0.getName();
-	  if (name.endsWith(".jar") || name.endsWith(".zip")) {
-	    val archive = AbstractFile.getDirectory(new File(file.getFile(), name));
-	    if (archive != null) entries += (new Library(archive));
-	  }
-	}
+        val file = AbstractFile.getDirectory(strtok.nextToken());
+        val files = (if (file != null) file.list() else null);
+        if (files != null) while(files.hasNext()) {
+          val file0 = files.next().asInstanceOf[AbstractFile];
+          val name = file0.getName();
+          if (name.endsWith(".jar") || name.endsWith(".zip")) {
+            val archive = AbstractFile.getDirectory(new File(file.getFile(), name));
+            if (archive != null) entries += (new Library(archive));
+          }
+        }
       }
     }
-
   } // class Build
 
 }

@@ -19,6 +19,7 @@ mixin class Symbols requires SymbolTable {
   var typeSymbolCount = 0;
   var classSymbolCount = 0;
 
+
   type AttrInfo = Pair[Type, List[Constant]];
 
   val emptySymbolArray = new Array[Symbol](0);
@@ -42,16 +43,27 @@ mixin class Symbols requires SymbolTable {
       if (pos == Position.NOPOS) Position.NOPOS;
       else if (isTypeParameter) pos - name.length;
       else if (isVariable || isMethod || isClass || isModule) {
-	var ret = pos;
-
-	if (buf(pos) == ',') ret = ret + 1;
-	else if (isClass)  ret = ret + ("class").length();
-	else if (isModule) ret = ret + ("object").length();
-	else ret = ret + ("var").length();
-	while (Character.isWhitespace(buf(ret))) ret = ret + 1;
-	ret;
+        var ret = pos;
+        if (buf(pos) == ',') ret = ret + 1;
+        else if (isClass)  ret = ret + ("class").length();
+        else if (isModule) ret = ret + ("object").length();
+        else ret = ret + ("var").length();
+        while (Character.isWhitespace(buf(ret))) ret = ret + 1;
+        ret;
       }
-      else if (isValue) pos;
+      else if (isValue) {
+        if (pos < (buf.length + ("val ").length())) {
+          if ((buf(pos + 0) == 'v') &&
+              (buf(pos + 1) == 'a') &&
+              (buf(pos + 2) == 'l') &&
+              (buf(pos + 3) == ' ')) {
+            var pos0 = pos + 4;
+            while (pos0 < buf.length && Character.isWhitespace(pos0)) pos0 = pos0 + 1;
+            pos0;
+
+          } else pos;
+        } else pos;
+      }
       else -1;
     }
 
