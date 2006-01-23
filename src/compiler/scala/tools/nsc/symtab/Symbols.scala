@@ -955,7 +955,7 @@ mixin class Symbols requires SymbolTable {
   class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
 
     private var source: AbstractFile = null;
-    override def sourceFile = source
+    override def sourceFile = if (owner.isPackageClass) source else super.sourceFile;
     override def sourceFile_=(f: AbstractFile): unit = { source = f }
 
     private var thissym: Symbol = this;

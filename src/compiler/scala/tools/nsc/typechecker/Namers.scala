@@ -82,17 +82,21 @@ trait Namers requires Analyzer {
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()));
 
     def enterInScope(sym: Symbol): Symbol = {
+      // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass)) {
       	val prev = context.scope.lookupEntry(sym.name);
       	if (prev != null && prev.owner == context.scope && !prev.sym.isSourceMethod) {
+/*
       	  if (sym.sourceFile == null && prev.sym.sourceFile == null) {}
+
       	  else if (sym.sourceFile != null && prev.sym.sourceFile != null &&
       		     sym.sourceFile.equals(prev.sym.sourceFile)) {}
       	  else {
       	    System.err.println("SYM: " + sym.sourceFile);
       	    System.err.println("PRV: " + prev.sym.sourceFile);
-      	    doubleDefError(sym.pos, prev.sym);
-      	  }
+*/
+     	    doubleDefError(sym.pos, prev.sym);
+//      	  }
       	}
       }
       context.scope enter sym;
@@ -151,7 +155,8 @@ trait Namers requires Analyzer {
         m = context.owner.newModule(pos, name);
         m.setFlag(flags);
         m.moduleClass.setFlag(flags | inConstructorFlag);
-        m.moduleClass.sourceFile = context.unit.source.getFile();
+        if (m.owner.isPackageClass)
+          m.moduleClass.sourceFile = context.unit.source.getFile();
 	enterInScope(m)
       }
       if (m.owner.isPackageClass) currentRun.symSource(m) = context.unit.source.getFile();
