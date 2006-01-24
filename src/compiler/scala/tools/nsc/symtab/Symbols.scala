@@ -957,7 +957,10 @@ mixin class Symbols requires SymbolTable {
 
     private var source: AbstractFile = null;
     override def sourceFile = if (owner.isPackageClass) source else super.sourceFile;
-    override def sourceFile_=(f: AbstractFile): unit = { source = f }
+    override def sourceFile_=(f: AbstractFile): unit = {
+      //System.err.println("set source file of " + this + ": " + f);
+      source = f
+    }
 
     private var thissym: Symbol = this;
     override def isClass: boolean = true;

@@ -350,10 +350,11 @@ abstract class ClassfileParser {
 	case nme.SourceFileATTR =>
 	  assert(attrLen == 2);
 	  val source = pool.getName(in.nextChar());
-	  if (sourcePath != null) sym match {
-	  case clazz: ClassSymbol =>
-	    clazz.sourceFile = sourcePath.lookupPath(source.toString(), false);
-	    // System.err.println("clazz=" + clazz + " @ " + clazz.sourceFile);
+          //System.out.println("SOURCE: " + source);//debug
+	  if (sourcePath != null) {
+            val sourceFile = sourcePath.lookupPath(source.toString(), false);
+	    clazz.sourceFile = sourceFile;
+            staticModule.moduleClass.sourceFile = sourceFile
 	  }
         case _ =>
           in.skip(attrLen)

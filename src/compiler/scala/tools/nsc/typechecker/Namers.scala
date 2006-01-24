@@ -132,10 +132,11 @@ trait Namers requires Analyzer {
       if (c.owner.isPackageClass) {
       	val file = context.unit.source.getFile();
       	val clazz = c.asInstanceOf[ClassSymbol];
-      	if (file != null) {
+      	if (c.owner.isPackageClass) {
       	  if (clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
             System.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
-          } else clazz.sourceFile = file;
+          }
+          clazz.sourceFile = file;
       	}
       	if (clazz.sourceFile != null) {
       	  assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));

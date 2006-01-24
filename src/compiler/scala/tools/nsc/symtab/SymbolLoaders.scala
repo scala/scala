@@ -185,15 +185,14 @@ abstract class SymbolLoaders {
   }
 */
 
-  class ClassfileLoader(classFile: AbstractFile, sourceFile0: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
+  class ClassfileLoader(classFile: AbstractFile, override val sourceFile: AbstractFile, sourcePath: AbstractFile) extends SymbolLoader {
     private object classfileParser extends ClassfileParser {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
-      override def sourcePath = sourcePath0; /* could be null */
+      override def sourcePath = ClassfileLoader.this.sourcePath; /* could be null */
     }
     protected def doComplete(root: Symbol): unit = classfileParser.parse(classFile, root);
     protected def kindString: String = "class file";
     protected def sourceString = classFile.toString();
-    override def sourceFile : AbstractFile = sourceFile0;
   }
 /*
   class SymblfileLoader(file: AbstractFile) extends SymbolLoader(file) {
