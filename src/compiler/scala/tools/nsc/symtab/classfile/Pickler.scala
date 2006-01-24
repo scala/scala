@@ -80,14 +80,11 @@ abstract class Pickler extends SubComponent {
 	ep = ep + 1;
 	true
     }
-    case class PositionSymbol(val sym : Symbol, val pos : Int);
 
     /** Store symbol in index. If symbol is local, also store everything it refers to. */
     def putSymbol(sym: Symbol): unit = if (putEntry(sym)) {
       if (isLocal(sym)) {
 	putEntry(sym.name);
-	if (sym.pos != Position.NOPOS) putEntry(new PositionSymbol(sym, sym.pos));
-
 	putSymbol(sym.owner);
         putSymbol(sym.privateWithin);
 	putType(sym.info);
@@ -150,12 +147,18 @@ abstract class Pickler extends SubComponent {
     private def writeRefs(refs: List[AnyRef]): unit = refs foreach writeRef;
 
     /** Write name, owner, flags, and info of a symbol */
-    private def writeSymInfo(sym: Symbol): unit = {
+    private def writeSymInfo(sym: Symbol): int = {
+      var posOffset = 0;
+      if (sym.pos != Position.NOPOS && sym.owner.isClass) {
+        writeNat(sym.pos);
+        posOffset = PosOffset
+      }
       writeRef(sym.name);
       writeRef(sym.owner);
       writeNat((sym.flags & PickledFlags).asInstanceOf[int]);
       if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin);
-      writeRef(sym.info)
+      writeRef(sym.info);
+      posOffset
     }
 
     /** Write a name in Utf8 format. */
@@ -182,16 +185,16 @@ abstract class Pickler extends SubComponent {
 	  if (!sym.owner.isRoot) writeRef(sym.owner);
 	  tag
 	case sym: ClassSymbol =>
-	  writeSymInfo(sym);
+	  val posOffset = writeSymInfo(sym);
 	  if (sym.thisSym != sym) writeRef(sym.typeOfThis);
-	  CLASSsym
+	  CLASSsym + posOffset;
 	case sym: TypeSymbol =>
-	  writeSymInfo(sym);
-	  if (sym.isAbstractType) TYPEsym else ALIASsym
+	  val posOffset = writeSymInfo(sym);
+	  (if (sym.isAbstractType) TYPEsym else ALIASsym) + posOffset
 	case sym: TermSymbol =>
-	  writeSymInfo(sym);
+	  val posOffset = writeSymInfo(sym);
 	  if (sym.alias != NoSymbol) writeRef(sym.alias);
-          if (sym.isModule) MODULEsym else VALsym
+          (if (sym.isModule) MODULEsym else VALsym) + posOffset
 	case NoType =>
 	  NOtpe
 	case NoPrefix =>
@@ -230,7 +233,6 @@ abstract class Pickler extends SubComponent {
           for (val c <- cs) writeRef(cs);
           ATTRIBUTE
 */
-	case PositionSymbol(sym, pos) => writeRef(sym); writeLong(pos); POS;
 	case _ =>
 	  throw new FatalError("bad entry: " + entry + " " + entry.getClass());//debug
       }

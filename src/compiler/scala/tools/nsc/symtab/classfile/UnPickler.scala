@@ -35,7 +35,6 @@ abstract class UnPickler {
 
     for (val i <- Iterator.range(0, index.length)) {
       if (isSymbolEntry(i)) { at(i, readSymbol); () }
-      else if (isPosition(i)) { at(i, readPosition); () }
     }
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
@@ -58,16 +57,14 @@ abstract class UnPickler {
 
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: int): boolean = {
-      val tag = bytes(index(i));
+      val tag = bytes(index(i)) % PosOffset;
       (firstSymTag <= tag && tag <= lastSymTag &&
        (tag != CLASSsym || !isRefinementSymbolEntry(i)))
     }
 
-    private def isPosition(i: int): boolean = bytes(index(i)) == POS;
-
     /** Does entry represent an (internal or external) symbol */
     private def isSymbolRef(i: int): boolean = {
-      val tag = bytes(index(i));
+      val tag = bytes(index(i)) % PosOffset;
       (firstSymTag <= tag && tag <= lastExtSymTag)
     }
     /** Does entry represent a refinement symbol?
@@ -76,8 +73,10 @@ abstract class UnPickler {
     private def isRefinementSymbolEntry(i: int): boolean = {
       val savedIndex = readIndex;
       readIndex = index(i);
-      if (readByte() != CLASSsym) assert(false);
-      readNat();
+      val tag = readByte();
+      if (tag % PosOffset != CLASSsym) assert(false);
+      readNat(); // read length
+      if (tag > PosOffset) readNat(); // read position
       val result = readNameRef() == nme.REFINE_CLASS_NAME.toTypeName;
       readIndex = savedIndex;
       result
@@ -109,16 +108,6 @@ abstract class UnPickler {
       }
     }
 
-    private def readPosition(): Integer = {
-      val tag = readByte();
-      val len = readNat();
-      val start = readIndex;
-      val sym = readSymbolRef();
-      val pos = readLong(len - (readIndex - start)).asInstanceOf[Int];
-      assert(sym.pos == Position.NOPOS);
-      sym.setPos(pos);
-      new Integer(pos);
-    }
     /** Read a symbol */
     private def readSymbol(): Symbol = {
       val tag = readByte();
@@ -138,6 +127,7 @@ abstract class UnPickler {
 	case NONEsym =>
 	  sym = NoSymbol
 	case _ =>
+          val pos = if (tag > PosOffset) readNat() else Position.NOPOS;
 	  val name = readNameRef();
 	  val owner = readSymbolRef();
 	  val flags = readNat();
@@ -147,19 +137,19 @@ abstract class UnPickler {
             privateWithin = at(inforef, readSymbol);
             inforef = readNat()
           }
-	  tag match {
+	  (tag % PosOffset) match {
 	    case TYPEsym =>
-	      sym = owner.newAbstractType(Position.NOPOS, name);
+	      sym = owner.newAbstractType(pos, name);
 	    case ALIASsym =>
-	      sym = owner.newAliasType(Position.NOPOS, name);
+	      sym = owner.newAliasType(pos, name);
 	    case CLASSsym =>
 	      sym =
                 if (name == classRoot.name && owner == classRoot.owner)
-                  if ((flags & MODULE) != 0) moduleRoot.moduleClass
-                  else classRoot
+                  (if ((flags & MODULE) != 0) moduleRoot.moduleClass
+                   else classRoot).setPos(pos)
 		else
-                  if ((flags & MODULE) != 0) owner.newModuleClass(Position.NOPOS, name)
-                  else owner.newClass(Position.NOPOS, name);
+                  if ((flags & MODULE) != 0) owner.newModuleClass(pos, name)
+                  else owner.newClass(pos, name);
 	      if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
 	    case MODULEsym =>
 	      val clazz = at(inforef, readType).symbol;
@@ -168,13 +158,13 @@ abstract class UnPickler {
 		else {
 		  assert(clazz.isInstanceOf[ModuleClassSymbol], clazz);
 		  val mclazz = clazz.asInstanceOf[ModuleClassSymbol];
-                  val m = owner.newModule(Position.NOPOS, name, mclazz);
+                  val m = owner.newModule(pos, name, mclazz);
                   mclazz.setSourceModule(m);
                   m
                 }
 	    case VALsym =>
 	      sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
-		    else owner.newValue(Position.NOPOS, name)
+		    else owner.newValue(pos, name)
 	    case _ =>
 	      errorBadSignature("bad symbol tag: " + tag);
 	  }
