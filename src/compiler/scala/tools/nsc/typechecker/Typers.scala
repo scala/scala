@@ -28,8 +28,8 @@ mixin class Typers requires Analyzer {
 
   def resetTyper: unit = {
     resetContexts
-    transformed.clear
-    superDefs.clear
+    if (transformed != null) transformed.clear
+    if (superDefs != null) superDefs.clear
   }
 
   def newTyper(context: Context): Typer = new Typer(context)
