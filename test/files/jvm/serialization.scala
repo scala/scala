@@ -93,7 +93,9 @@ object Test2_immutable {
     .incl(Pair("layers", 2))
     .incl(Pair("title", 3));
 
-  val x3 = new BitSet(4, Array(2), true);
+  val x3 = { val bs = new collection.mutable.BitSet(); bs += 2; bs += 3;
+            bs.toImmutable;
+           };
 
   val x4 = new ListSet[Int]().incl(3).incl(5);
 
@@ -141,9 +143,9 @@ object Test3_mutable {
   x1 ++= Test2_immutable.x1;
 
   val x2 = new BitSet();
-  x2.set(0);
-  x2.set(8);
-  x2.set(9);
+  x2 += 0;
+  x2 += 8;
+  x2 += 9;
 
   val x3 = new HashSet[String];
   x3 ++= Test2_immutable.x1.map(p => p._1);
