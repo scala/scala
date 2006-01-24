@@ -1,8 +1,9 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.AbstractFile;
@@ -18,7 +19,6 @@ mixin class Symbols requires SymbolTable {
   def symbolCount = ids;
   var typeSymbolCount = 0;
   var classSymbolCount = 0;
-
 
   type AttrInfo = Pair[Type, List[Constant]];
 
@@ -38,7 +38,7 @@ mixin class Symbols requires SymbolTable {
     def pos = rawpos;
     def setPos(pos: int): this.type = { this.rawpos = pos; this }
 
-    def namePos(source : SourceFile) = {
+    def namePos(source: SourceFile) = {
       val buf = source.content;
       if (pos == Position.NOPOS) Position.NOPOS;
       else if (isTypeParameter) pos - name.length;
@@ -49,7 +49,7 @@ mixin class Symbols requires SymbolTable {
         else if (isModule) ret = ret + ("object").length();
         else ret = ret + ("var").length();
         while (Character.isWhitespace(buf(ret))) ret = ret + 1;
-        ret;
+        ret
       }
       else if (isValue) {
         if (pos < (buf.length + ("val ").length())) {
@@ -58,7 +58,8 @@ mixin class Symbols requires SymbolTable {
               (buf(pos + 2) == 'l') &&
               (buf(pos + 3) == ' ')) {
             var pos0 = pos + 4;
-            while (pos0 < buf.length && Character.isWhitespace(pos0)) pos0 = pos0 + 1;
+            while (pos0 < buf.length && Character.isWhitespace(buf(pos0)))
+              pos0 = pos0 + 1;
             pos0;
 
           } else pos;
@@ -1071,4 +1072,5 @@ mixin class Symbols requires SymbolTable {
     assert(start != 0);
     override def toString() = "TypeHistory(" + phaseWithId(start) + "," + info + "," + prev + ")";
   }
+
 }
