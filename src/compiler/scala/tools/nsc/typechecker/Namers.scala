@@ -156,11 +156,12 @@ trait Namers requires Analyzer {
         m = context.owner.newModule(pos, name);
         m.setFlag(flags);
         m.moduleClass.setFlag(flags | inConstructorFlag);
-        if (m.owner.isPackageClass)
-          m.moduleClass.sourceFile = context.unit.source.getFile();
 	enterInScope(m)
       }
-      if (m.owner.isPackageClass) currentRun.symSource(m) = context.unit.source.getFile();
+      if (m.owner.isPackageClass) {
+        m.moduleClass.sourceFile = context.unit.source.getFile();
+        currentRun.symSource(m) = m.moduleClass.sourceFile
+      }
       m
     }
 
