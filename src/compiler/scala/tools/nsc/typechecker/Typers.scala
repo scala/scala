@@ -589,7 +589,7 @@ mixin class Typers requires Analyzer {
     }
 
     def typedModuleDef(mdef: ModuleDef): Tree = {
-      System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile);
+      //System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile);
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope()))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
