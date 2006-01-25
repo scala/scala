@@ -149,6 +149,7 @@ test_print_help() {
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
     echo "--msil          next files test the .NET backend";
+    echo "--quick         use the 'quick' build instead of distribution";
     echo "--no-run        run no test, use results of last run";
     echo "--show-log      show output of failed tests";
     echo "--show-diff     show differences between actual and expected output";
@@ -453,10 +454,10 @@ FILES_POS="";
 FILES_NEG="";
 FILES_MSIL="";
 
-LATEST="$PREFIX/dists/latest";
-SCALA="$LATEST/bin/scala2";
-SOCOS="$LATEST/bin/scalac2";
-SCALAP="$LATEST/bin/scalap2";
+LATEST="$PREFIX/dists/latest/bin";
+QUICK="$PREFIX/build/quick/exec"
+BIN_DIR="$LATEST"
+
 DIFF="diff";
 
 case `uname` in
@@ -473,6 +474,7 @@ while [ $# -gt 0 ]; do
         --pos        ) TEST_TYPE="pos"; shift 1;;
         --neg        ) TEST_TYPE="neg"; shift 1;;
         --msil       ) TEST_TYPE="msil"; shift 1;;
+        --quick      ) BIN_DIR="$QUICK"; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;
         --show-diff  ) SHOWDIFF="true"; shift 1;;
@@ -518,6 +520,10 @@ if [ "$TEST_ALL" = "true" ]; then
     esac;
 fi;
 
+SCALA="$BIN_DIR/scala2";
+SOCOS="$BIN_DIR/scalac2";
+SCALAP="$LATEST/scalap2";
+
 SCALA_SCALA_ARGS="-Xmx512M $SCALA_SCALA_ARGS";
 export SCALA_SCALA_ARGS;
 
@@ -529,10 +535,10 @@ if [ -n "$OBJDIR" ]; then
     fi
 fi
 
-printf_outline "Source directory is  : $SRCDIR\\n";
-printf_outline "Scala distribution is: $LATEST\\n";
+printf_outline "Source directory is : $SRCDIR\\n";
+printf_outline "Scala binaries in   : $BIN_DIR\\n";
 JVM_VERSION=`${JAVA_CMD:=java} -version 2>&1 | head -2 | tail -1`
-printf_outline "Java runtime is      : $JVM_VERSION\\n\\n";
+printf_outline "Java runtime is     : $JVM_VERSION\\n\\n";
 
 test_check_all;
 
