@@ -44,7 +44,8 @@ ok
 >>> bug 199
 
 <<< bug 213
-Exception in thread "Thread[main,5,main]" java.lang.ClassCastException
+Cannot cast unit to All
+Cannot cast empty string to AllRef
 >>> bug 213
 
 <<< bug 217
@@ -93,5 +94,3 @@ C
 a
 >>> bug 399
 
-
-1 error

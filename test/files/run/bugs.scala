@@ -221,8 +221,18 @@ class Bug213Bar extends Bug213Foo {
 object Bug213Test {
   def main(args: Array[String]): Unit = {
     val foo: Bug213Foo = new Bug213Bar;
-    foo.testAll;
-    foo.testAllRef;
+    try {
+      foo.testAll;
+    } catch {
+      case e: java.lang.ClassCastException =>
+        Console.println("Cannot cast unit to All");
+    }
+    try {
+      foo.testAllRef;
+    } catch {
+      case e: java.lang.ClassCastException =>
+        Console.println("Cannot cast empty string to AllRef");
+    }
     ()
   }
 }
