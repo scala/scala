@@ -59,6 +59,7 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
 
   /**
    * Checks if two bitsets are structurally identical.
+   * Uses accelerated (32 x faster) check if the other set is a BitSet
    *
    * @return true, iff both bitsets contain the same elements.
    */
@@ -69,7 +70,7 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
         var len = memsize(min(this.capacity, other.capacity));
         var i = 0;
         var res = true;
-        while((i < len) && res) {        // 32 x faster equality check
+        while((i < len) && res) {
           res = arr(i) == other.arr(i);
           i = i + 1;
         }
@@ -78,8 +79,39 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
    } || super.equals(that)
   );
 
-  /** returns number of Int cells needed to store n bits */
-  protected final def memsize(n:Int) = offset(n + 31);
+  /**
+   * Checks if this set is a subset of set <code>that</code>.
+   * Uses accelerated (32 x faster) check if the other set is a BitSet
+   *
+   * @param  that another set.
+   * @return true, iff the other set is a superset of this set.
+   */
+  override def subsetOf(that: Set[Int]): Boolean =
+    (that.isInstanceOf[BitSet] && {
+      val other = that.asInstanceOf[BitSet];
+      val len = memsize(min(this.capacity, other.capacity));
+      var i = 0;
+      var res = true;
+      while((i < len) && res) {
+        res = other.arr(i) == (other.arr(i) | arr(i));
+        i = i + 1;
+      }
+      res && (this.capacity <= other.capacity || {
+        // if this set is bigger check that the rest is empty
+        while (i < memsize(this.capacity) && res) {
+          res == arr(i) == 0;
+          i = i + 1
+        }
+        res
+      })
+    }) || super.subsetOf(that);
+
+
+  /** @return the number of Int cells needed to store <code>n</code> bits */
+  protected final def memsize(n: Int): Int = offset(n + 31);
+
+  /** @return the number of bits represented by <code>n</code> words */
+  protected final def nbits(n: Int): Int = n << 5;
 
   /** @return the position in the array where the bit resides */
   protected final def offset(n: Int): Int = n >>> 5;
