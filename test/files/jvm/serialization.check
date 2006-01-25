@@ -22,8 +22,8 @@ x = {buffers -> 20, layers -> 2, title -> 3}
 y = {buffers -> 20, layers -> 2, title -> 3}
 x equals y: true - y equals x: true
 
-x = {1}
-y = {1}
+x = {2, 3}
+y = {2, 3}
 x equals y: true - y equals x: true
 
 x = {5, 3}
