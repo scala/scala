@@ -29,13 +29,15 @@ class BitSet(initSize: Int) extends collection.BitSet with mutable.Set[Int] {
   /** ensure that this bitset can store at least <pre>n</pre> bits */
   def ensureCapacity(n: Int): Unit =
     if (capacity < n) {
-      val newn = memsize(n);
-      var newsize = (arr.length + 1) * 2; // works even in the case arr.length == 0
-      while(newn > newsize)
-        newsize = newsize * 2;
-      val newarr = new Array[Int](newsize);
-      arraycopy(arr, 0, newarr, 0, arr.length);
-      arr = newarr;
+      if (nbits(arr.length) < n) {
+        val newn = memsize(n);
+        var newsize = if (arr.length == 0) newn else arr.length * 2;
+        while (newn > newsize)
+          newsize = newsize * 2;
+        val newarr = new Array[Int](newsize);
+        arraycopy(arr, 0, newarr, 0, arr.length);
+        arr = newarr;
+      }
       capacity = n;
     }
 
@@ -45,18 +47,23 @@ class BitSet(initSize: Int) extends collection.BitSet with mutable.Set[Int] {
    */
   def +=(i: Int): Unit = {
     ensureCapacity(i+1);
-    if (!contains(i)) {
-      arr(offset(i)) = arr(offset(i)) | mask(i);
-      size = i + 1;
+    val oldInt = arr(offset(i));
+    val newInt = oldInt | mask(i);
+    if (oldInt != newInt) {
+      arr(offset(i)) = newInt;
+      size = size + 1;
     }
   }
 
   /** Clears <code>i<sup>th</sup></code> bit  */
-  def -=(i: Int): Unit =
-    if (i < capacity && contains(i)) {
-      arr(offset(i)) = arr(offset(i)) & ~mask(i);
+  def -=(i: Int): Unit = {
+    val oldInt = arr(offset(i));
+    val newInt = oldInt & ~mask(i);
+    if (oldInt != newInt) {
+      arr(offset(i)) = newInt;
       size = size - 1;
     }
+  }
 
   def clear: Unit = {
     java.util.Arrays.fill(arr, 0);
