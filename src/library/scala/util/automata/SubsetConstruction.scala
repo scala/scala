@@ -1,12 +1,42 @@
 package scala.util.automata ;
 
 class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
-
   //import nfa.{ _labelT, labels };
   import nfa.labels ;
   import scala.collection.{immutable, mutable, Map} ;
 
   import immutable.{ BitSet, TreeMap, TreeSet } ;
+
+  implicit def toOrdered(bs: BitSet): Ordered[BitSet] = new Ordered[BitSet] {
+    def compareTo [b >: BitSet <% Ordered[b]](other: b): Int = other match {
+      case that: BitSet => {
+        val it1 = bs.elements;
+        val it2 = that.elements;
+        var res = 0;
+        while((0 == res) && it1.hasNext) {
+          while((0 == res) && it2.hasNext) {
+            if (!it1.hasNext)
+              res = -1
+            else {
+              val i1 = it1.next;
+              val i2 = it2.next;
+              if (i1 < i2)
+                res = -1
+              else if (i1 > i2)
+                res = 1
+            }
+          }
+          if (it1.hasNext)
+            res = 1
+        }
+        if (it2.hasNext)
+          res = -1;
+        res
+      }
+
+      //case _ => -(other.compareTo(this))
+    }
+  }
 
   /** the set {0} */
   final val _initialBitSet = {
