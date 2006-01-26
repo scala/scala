@@ -34,11 +34,11 @@ PROPERTIES
   <!-- User properties -->
   <property file="${basedir}/build.properties"/>
   <!-- General properties -->
-  <property name="copyright" value="(c) 2002-06 LAMP/EPFL"/>
+  <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
   <property name="nsc.debug-info" value="yes"/>
-  <property name="nsc.excludes" value="build.excludes"/>
+  <property name="nsc.excludes" value="${basedir}/build.excludes"/>
   <property name="nsc.params" value=""/>
   <!-- Location of pre-compiled libraries properties -->
   <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
@@ -212,6 +212,7 @@ INITIALISATION
     </if>
     <!-- Finding out what is available -->
     <available property="excludes.avail" file="${nsc.excludes}"/>
+    <echo level="verbose">excludes.avail=${excludes.avail}</echo>
     <condition property="locker.avail">
       <available file="${locker.dir}/complete"/>
     </condition>
