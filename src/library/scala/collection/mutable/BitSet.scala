@@ -73,6 +73,12 @@ class BitSet(initSize: Int) extends collection.BitSet with mutable.Set[Int] {
   def toImmutable: collection.immutable.BitSet =
     new immutable.BitSet(size, capacity, arr, true);
 
+  override def clone(): BitSet = new BitSet(capacity) {
+    arraycopy(BitSet.this.arr, 0, arr, 0, arr.length);
+    size = BitSet.this.size;
+    capacity = BitSet.this.capacity;
+  }
+
   var size: Int = 0;
 
   var capacity: Int = initSize;
