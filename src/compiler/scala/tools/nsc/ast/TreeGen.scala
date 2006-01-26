@@ -46,6 +46,8 @@ abstract class TreeGen {
             qual
         }
       } else This(sym)
+    case _ =>
+      throw new Error("bad qualifier: " + tpe)
   }
 
   /** Builds a reference to given symbol with given stable prefix. */

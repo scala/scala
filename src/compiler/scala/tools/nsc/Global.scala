@@ -191,7 +191,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object analyzer extends Analyzer {
+  object analyzer extends AnyRef with Analyzer {
     val global: Global.this.type = Global.this;
   }
 

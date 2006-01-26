@@ -74,7 +74,10 @@ abstract class TreePrinters {
     }
 
     def symName(tree: Tree, name: Name): String =
-      if (tree.symbol != NoSymbol) tree.symbol.nameString else name.toString();
+      if (tree.symbol != NoSymbol) {
+        ((if (tree.symbol.isMixinConstructor) "/*"+tree.symbol.owner.name+"*/" else "") +
+         tree.symbol.nameString)
+      } else name.toString();
 
     def printOpt(prefix: String, tree: Tree): unit =
       if (!tree.isEmpty) { print(prefix); print(tree) }

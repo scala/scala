@@ -207,16 +207,32 @@ abstract class ExplicitOuter extends InfoTransform {
 	  atPos(tree.pos) {
 	    Apply(
 	      localTyper.typedOperator {
-		Select(Super(clazz, mixinClass.name), mixinClass.primaryConstructor)
+		Select(This(clazz), mixinClass.primaryConstructor)
 	      },
 	      List()) setType UnitClass.tpe; // don't type this with typed(...),
  	                                     // as constructor arguments might be missing
 	  }
+        /*
 	val mixinConstructorCalls =
 	  for (val mixinClass <- clazz.info.parents.tail;
                !(mixinClass.symbol hasFlag INTERFACE) && mixinClass.symbol != ScalaObjectClass) yield
 	    mixinConstructorCall(mixinClass.symbol);
 	tree match {
+        */
+	val mixinConstructorCalls: List[Tree] = {
+          val ps = clazz.info.parents;
+          if (ps.isEmpty) List()
+          else {
+            val superClass = ps.head.symbol;
+            for {
+              val mclazz <- clazz.info.baseClasses.tail.takeWhile(superClass ne).reverse;
+              mclazz.needsImplClass && mclazz != ScalaObjectClass
+            } yield mixinConstructorCall(mclazz)
+          }
+        }
+
+        //val result =
+        tree match {
 	  case Block(supercall :: stats, expr) =>
             assert(supercall match {
               case Apply(Select(Super(_, _), _), _) => true
@@ -225,9 +241,10 @@ abstract class ExplicitOuter extends InfoTransform {
 	    copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr);
 	  case Block(_, _) =>
 	    assert(false, tree);  tree
-	  case expr =>
-	    Block(mixinConstructorCalls, expr) setType expr.tpe setPos expr.pos;
 	}
+
+        //System.out.println("new constructor of "+clazz+": "+result);
+        //result
       }
 
       /** The first-step transformation method */
@@ -238,7 +255,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    val savedLocalTyper = localTyper;
 	    localTyper = localTyper.atOwner(tree, currentOwner);
 	    var decls1 = decls;
-	    if (!(currentOwner hasFlag INTERFACE)) {
+	    if (!(currentOwner hasFlag INTERFACE) || (currentOwner hasFlag lateINTERFACE)) {
 	      if (!isStatic(currentOwner))
 		decls1 = decls1 ::: outerDefs(currentOwner); // (1)
 	      if (currentOwner.isMixin)
@@ -248,32 +265,45 @@ abstract class ExplicitOuter extends InfoTransform {
 	    copy.Template(tree, parents, decls1);
 	  case constrDef @ DefDef(mods, name, tparams, vparamss, tpt, rhs)
 	  if (sym.isConstructor) =>
-	    val vparamss1 =
-	      if (isStatic(sym.owner)) vparamss
-	      else { // (4)
-		val outerField = outerMember(sym.owner.info).accessed;
-		val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
-		List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
-	      }
-	    val rhs1 =
-	      if ((sym.isPrimaryConstructor || sym.isMixinConstructor) && sym.owner != ArrayClass)
-		addMixinConstructorCalls(rhs, sym.owner); // (3)
-	      else rhs;
-	    copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1);
+            rhs match {
+              case Literal(_) =>
+                val rhs1 = Block(List(), rhs) setPos rhs.pos setType rhs.tpe;
+                transform(copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
+              case _ =>
+                val clazz = sym.owner.toInterface;
+	        val vparamss1 =
+	          if (isStatic(clazz)) vparamss
+	          else { // (4)
+		    val outerField = outerMember(clazz.info).accessed;
+		    val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
+		    List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
+	          }
+	        val rhs1 =
+	          if (sym.isPrimaryConstructor && sym.isClassConstructor && clazz != ArrayClass)
+		    addMixinConstructorCalls(rhs, clazz); // (3)
+	          else rhs;
+	        copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1)
+            }
 	  case This(qual) =>
 	    if (sym == currentOwner.enclClass || (sym hasFlag MODULE) && sym.isStatic) tree
 	    else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
 	  case Apply(sel @ Select(qual, name), args)
 	  if ((name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR) && !isStatic(sel.symbol.owner)) =>
-	    val outerVal =
-              atPos(tree.pos) {
-	        if (qual.isInstanceOf[This]) { assert(outerParam != NoSymbol); outerValue } // (8)
-		else {
-                  var pre = qual.tpe.prefix;
-                  if (pre == NoPrefix) pre = outerClass(sym.owner).thisType;
-                  gen.mkQualifier(pre)
-                }
+	    val outerVal = atPos(tree.pos) {
+              if (name == nme.MIXIN_CONSTRUCTOR) {
+                val mclazz = sym.owner.toInterface;
+                //System.out.println("adding mixin constructor for " + currentOwner.enclClass + " " + mclazz + " " + currentOwner.enclClass.thisType.baseType(mclazz));//DEBUG
+                var pre = currentOwner.enclClass.thisType.baseType(mclazz).prefix;
+                if (pre == NoPrefix) pre = outerClass(mclazz).thisType;
+                gen.mkQualifier(pre)
+              } else if (qual.isInstanceOf[This]) {
+                assert(outerParam != NoSymbol); outerValue
+              } else {
+                var pre = qual.tpe.prefix;
+                if (pre == NoPrefix) pre = outerClass(sym.owner).thisType;
+                gen.mkQualifier(pre)
               }
+            }
 	    copy.Apply(tree, sel, args ::: List(outerVal))
 	  case _ =>
 	    tree

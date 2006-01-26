@@ -29,7 +29,7 @@ mixin class Symbols requires SymbolTable {
 
     var rawowner = initOwner;
     var rawname = initName;
-    private var rawflags: long = 0;
+    var rawflags: long = 0;
     private var rawpos = initPos;
     val id = { ids = ids + 1; ids }
 

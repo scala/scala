@@ -119,12 +119,25 @@ public class PlainFile extends AbstractFile {
         if (names == null || names.length == 0) return EmptyIterator.object;
         class ListIterator implements Iterator {
             private int i;
+            File lookAhead = null;
             public boolean hasNext() {
-                return i < names.length;
+                if (lookAhead != null) return true;
+                else if (i == names.length) return false;
+                else {
+                    lookAhead = new File(file, names[i++]);
+                    if (lookAhead.exists()) return true;
+                    else {
+                        lookAhead = null;
+                        return hasNext();
+                    }
+                }
             }
             public Object next() {
-                if (i == names.length) throw new NoSuchElementException();
-                return new PlainFile(new File(file, names[i++]));
+                if (hasNext()) {
+                    File f = lookAhead;
+                    lookAhead = null;
+                    return new PlainFile(f);
+                } else throw new NoSuchElementException();
             }
             public void remove() {
                 throw new UnsupportedOperationException();
