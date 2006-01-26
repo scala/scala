@@ -18,7 +18,7 @@ package scala.tools.ant {
 
   import org.apache.tools.ant.{AntClassLoader, BuildException,
                                DirectoryScanner, Project}
-  import org.apache.tools.ant.taskdefs.MatchingTask
+  import org.apache.tools.ant.Task
   import org.apache.tools.ant.types.Path
   import org.apache.tools.ant.util.{FileUtils, MergingMapper,
                                     SourceFileScanner}
@@ -34,7 +34,7 @@ package scala.tools.ant {
     *  <li>description.</li></ul>
     *
     * @author Gilles Dubochet */
-  class ScalaBazaar extends MatchingTask {
+  class ScalaBazaar extends Task {
 
     /** The unique Ant file utilities instance to use in this task. */
     private val fileUtils = FileUtils.newFileUtils()
