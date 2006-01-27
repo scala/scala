@@ -221,7 +221,8 @@ test_run_jvm() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
     $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
-    $SCALA -classpath "$os_dstbase".obj:$CLASSPATH Test "jvm" &&
+    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
+    $SCALA -classpath $classpath Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
@@ -537,8 +538,8 @@ fi
 
 printf_outline "Source directory is : $SRCDIR\\n";
 printf_outline "Scala binaries in   : $BIN_DIR\\n";
-JVM_VERSION=`${JAVA_CMD:=java} -version 2>&1 | head -2 | tail -1`
-printf_outline "Java runtime is     : $JVM_VERSION\\n\\n";
+jvm_version=`${JAVA_CMD:=java} -version 2>&1 | head -3 | tail -1`
+printf_outline "Java runtime is     : $jvm_version\\n\\n";
 
 test_check_all;
 
