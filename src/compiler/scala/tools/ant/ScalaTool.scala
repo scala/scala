@@ -136,7 +136,7 @@ package scala.tools.ant {
       * @param input The value of <code>classpath</code>. */
     def setClasspath(input: String) =
       classpath = classpath :::
-	(List.fromArray(input.split(":")).map(p => "#PREFIX#/" + p))
+	(List.fromArray(input.split(":")).filter(p => p != "").map(p => "#PREFIX#/" + p))
 
     /** Sets the properties attribute. Used by Ant.
       * @param input The value for <code>properties</code>. */
