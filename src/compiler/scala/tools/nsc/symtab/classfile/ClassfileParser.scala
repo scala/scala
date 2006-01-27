@@ -335,27 +335,28 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar());
-	  val c1 = convertTo(c, symtype);
+          val c1 = convertTo(c, symtype);
           if (c1 != null) sym.setInfo(ConstantType(c1));
           else System.out.println("failure to convert "+c+" to "+symtype);//debug
         case nme.InnerClassesATTR =>
           parseInnerClasses()
         case nme.ScalaSignatureATTR =>
           unpickler.unpickle(in.buf, in.bp, clazz, staticModule);
-	  this.isScala = true;
+          this.isScala = true;
         case nme.JacoMetaATTR =>
           val meta = pool.getName(in.nextChar()).toString().trim();
           metaParser.parse(meta, sym, symtype);
-	  this.hasMeta = true;
-	case nme.SourceFileATTR =>
-	  assert(attrLen == 2);
-	  val source = pool.getName(in.nextChar());
-          //System.out.println("SOURCE: " + source);//debug
-	  if (sourcePath != null) {
-            val sourceFile = sourcePath.lookupPath(source.toString(), false);
-	    clazz.sourceFile = sourceFile;
-            staticModule.moduleClass.sourceFile = sourceFile
-	  }
+          this.hasMeta = true;
+        case nme.SourceFileATTR =>
+          assert(attrLen == 2);
+          val source = pool.getName(in.nextChar());
+          if (sourcePath != null) {
+            val sourceFile0 = sourcePath.lookupPath(source.toString(), false);
+            if (sourceFile0 != null && clazz.sourceFile == null) {
+              clazz.sourceFile = sourceFile0;
+            }
+            staticModule.moduleClass.sourceFile = clazz.sourceFile
+          }
         case _ =>
           in.skip(attrLen)
       }

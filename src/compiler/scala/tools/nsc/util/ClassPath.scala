@@ -67,7 +67,6 @@ object ClassPath {
             		if (source0 == null) null;
             		else new Source(source0, head.source.compile);
       	    };
-
       	    new Context(entry :: ret.entries);
       	  }
       	}

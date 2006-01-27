@@ -14,10 +14,6 @@ import scala.tools.nsc.reporters._;
 
 import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
 
-
-
-
-
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
 import util.Statistics;

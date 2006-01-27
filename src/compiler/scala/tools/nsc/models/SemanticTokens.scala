@@ -13,6 +13,7 @@ class SemanticTokens(val compiler: Global) {
   abstract class Kind {}
   object OBJECT  extends Kind;
   object CLASS   extends Kind;
+  object TRAIT   extends Kind;
   object   DEF   extends Kind;
   object   VAL   extends Kind;
   object   VAR   extends Kind;
@@ -28,9 +29,11 @@ class SemanticTokens(val compiler: Global) {
 
   }
 
+
   [_trait_] abstract class HasNext extends Token {
     var next0 : HasPrev = _;
     def next = next0;
+
 
   }
   [_trait_] abstract class HasPrev extends Token {
@@ -41,6 +44,7 @@ class SemanticTokens(val compiler: Global) {
     def convertToGap : Pair[Int,Actual]  = {
       val nextGap = next.isInstanceOf[Gap];
       val prevGap = prev.isInstanceOf[Gap];
+
       if (prevGap) {
         val ret = prev.length;
         val gap = prev.asInstanceOf[Gap];
@@ -48,6 +52,7 @@ class SemanticTokens(val compiler: Global) {
         if (nextGap) {
           gap.setLength(gap.length + next.length);
           gap.next0 = next.next;
+
           next.next.prev0 = gap;
       	} else {
       	  gap.next0 = next;
@@ -94,8 +99,6 @@ class SemanticTokens(val compiler: Global) {
   class Process(val unit : CompilationUnit) {
     def source = unit.source;
 
-
-
     def dbg(tree : Tree) = {(
         "TREE=" + tree +
           (if (tree != null) (" CLASS=" + tree.getClass()) else "") +
@@ -133,6 +136,7 @@ class SemanticTokens(val compiler: Global) {
 				else if (term0.isModule)         OBJECT;
 				else if (term0.isValue   )       VAL;
 				else if (term0.isTypeParameter)  TPARAM;
+        else if (term0.isType         )  TPARAM;
 				else {
 				  // System.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
 				  null;
@@ -147,7 +151,7 @@ class SemanticTokens(val compiler: Global) {
       info.uses += this;
 
       override def tpe : Type = if (tpe0 != null) tpe0 else super.tpe;
-      override def toString() = "use-" + name;
+      override def toString() = "use-" + name + "-" + symbol.getClass();
     }
     val list = new TokenList;
 
@@ -243,7 +247,7 @@ class SemanticTokens(val compiler: Global) {
 						  throw e;
 		      }
 		    case tpt : TypeTree =>
-		      //System.err.println("UNKNOWN TPT0: " + tpe0 + " " + tpe0.args + " " + tpt);
+		      //System.err.println("UNKNOWN TPT0: " + unit.source.dbg(tree.pos) + " " + tpt + " "+ tpe0 + " " + tpe0.args + " " + tpt);
 		    case sft : SelectFromTypeTree =>
 		      build(sft.qualifier); // XXX: broken
 			    if (false) System.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
@@ -257,7 +261,7 @@ class SemanticTokens(val compiler: Global) {
 		      if (tpt.original != null) buildT(tpt.original, tpe);
 		      else {
 						System.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
-  			}
+		      }
 		    case ident  : Ident  => buildT(ident,  tpe0.resultType);
 		    case select : Select => buildT(select, tpe0.resultType);
 		    case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass());
@@ -266,25 +270,25 @@ class SemanticTokens(val compiler: Global) {
 			  case cpt : CompoundTypeTree =>
 			  	buildTs(cpt.templ.parents, tpe0.parents);
 			  case _ : TypeTree =>
+			    System.err.println("UNKNOWN TPE13: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
 			  case _ =>
 				  System.err.println("UNKNOWN TPE5: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
-
 		  }
 		  case tpe0 : ThisType => tree match {
   		  case stt : SingletonTypeTree => stt.ref match {
   			  case ths : This => build(ths);
           case _ => System.err.println("UNKNOWN TPE11: " + tpe0 + " " + stt + " " + stt.ref + " " + stt.ref.getClass() + " " + unit.source.dbg(tree.pos));
   			}
-        case tt : TypeTree => /* ignore */
+        case tt : TypeTree =>
+          if (false) System.err.println("UNKNOWN TPE12: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
         case _ => System.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
 
 		  }
 		  case tpe0 : SingleType => {
-			  // System.err.println("UNKNOWN TPE8: " + dbg(tree) + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
+			  if (false) System.err.println("UNKNOWN TPE8: " + tree + " " + unit.source.dbg(tree.pos) + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
 
 		  }
 		  case ErrorType =>
-
 		  case _ => {
 			  System.err.println("UNKNOWN TPE4: " + dbg(tree) + " vs. " + tpe + " " + (if (tpe != null) "" + tpe.getClass() + " " + tpe.getClass().getSuperclass() else null));
 		  }
@@ -293,7 +297,10 @@ class SemanticTokens(val compiler: Global) {
 			  buildT (trees.head, types.head);
 			  buildTs(trees.tail, types.tail);
 		};
-	  case tree : AbsTypeDef => buildDef(tree.symbol, tree.namePos);
+	  case tree : AbsTypeDef =>
+    	//System.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + unit.source.dbg(tree.pos));
+	    buildDef(tree.symbol, tree.namePos);
+	    buildDef(tree.symbol, tree.pos);
 	  case tree : Bind =>       buildDef(tree.symbol, tree.pos);
 	                            build(tree.body);
 	  case tree : Ident      => buildUse(tree.symbol, tree.pos, tree.tpe);
@@ -304,9 +311,11 @@ class SemanticTokens(val compiler: Global) {
 			  case e : Error => System.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + unit.source.dbg(tree.qualifier.pos)); throw e;
 			}
 			try {
-			  if (tree.pos >= unit.source.content.length)
-			    System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + unit.source.dbg(tree.pos));
-			  else {
+			  if (tree.pos >= unit.source.content.length) {
+			    if (false) System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + unit.source.dbg(tree.pos));
+
+        } else {
+          //System.err.println("SELECT-0: " + tree.symbol + " " + unit.source.dbg(tree.pos) + " " + (tree.pos - selectPos(tree)));
 					buildUse(tree.symbol, selectPos(tree), tree.tpe);
 			  }
 			} catch {
@@ -315,10 +324,8 @@ class SemanticTokens(val compiler: Global) {
 	  case tree : GenericApply =>
   	  build(tree.fun0);
 			build(tree.args0);
-	  case tree : Typed        => build(tree.expr); build(tree.tpt);
-	  case tree : Import     => 	build(tree.expr);
-
-	  case tree : Block      => build(tree.stats); build(tree.expr);
+	  case tree : Typed => build(tree.expr); build(tree.tpt);
+	  case tree : Block => build(tree.stats); build(tree.expr);
 	  case tree : CaseDef    =>
 	    build(tree.pat); build(tree.guard); build(tree.body);
 	  case tree : Sequence   => build(tree.trees);
@@ -330,15 +337,21 @@ class SemanticTokens(val compiler: Global) {
 	  case tree : LabelDef   => build(tree.rhs);
 	  case tree : Throw      => build(tree.expr);
 	  case tree : Try        => build(tree.block); build(tree.catches); build(tree.finalizer);
-	  case tree : DocDef     => build(tree.definition);
 	  case tree : Alternative => build(tree.trees);
-	  case tree : Literal => ;
-	  case tree : This    => if (tree.symbol != null) buildUse(tree.symbol, tree.pos, tree.tpe);
+	  case tree : This    =>
+    	//System.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + unit.source.dbg(tree.pos) + " " + tree.tpe);
+	    if (tree.symbol != null) buildUse(tree.symbol, tree.pos, tree.tpe);
+	    //Thread.dumpStack();
+	  case tree : AliasTypeDef =>
+	    System.err.println("ALIAS: " + tree);
+	    build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
 	  case tree : Super   => ;
 	  case tree : AppliedTypeTree => ;
 	  case tree : SingletonTypeTree => ;
-	  case tree : Attributed => ;
-    case tree : AliasTypeDef => build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
+    case tree : Literal => ;
+    case tree : DocDef     => build(tree.definition);
+    case tree : Attributed => build(tree.definition);
+	  case tree : Import     => build(tree.expr);
 	  case EmptyTree => ;
 	  case _ => ;
 	    System.err.println("BAIL: " + unit.source.dbg(tree0.pos) + " " + tree0 + " " + tree0.getClass());
@@ -352,8 +365,9 @@ class SemanticTokens(val compiler: Global) {
 	def buildSym(term : Symbol, pos : Int, isDef : Boolean, tpe : Type) : Unit =
 	  if (term.hasFlag(Flags.ACCESSOR)) buildSym(term.accessed, pos, isDef, tpe);
 	  else if (pos == Position.NOPOS) {
-				System.err.println("NOPOS: " + term);
-				Thread.dumpStack();
+
+	    System.err.println("NOPOS: " + term);
+	    Thread.dumpStack();
 	  } else if (term != NoSymbol) {
 			val name = NameTransformer.decode(term.name.toString()).toString().trim();
 			val buf = unit.source.content;
@@ -361,11 +375,18 @@ class SemanticTokens(val compiler: Global) {
 			var idx = 0;
 		  if (cs.length + pos > buf.length) return;
 		  else while (idx < cs.length) {
-				if (buf(pos + idx) != cs(idx)) return;
+				if (buf(pos + idx) != cs(idx)) {
+      		//System.err.println("MISMATCH: " + name + "[" + idx + "] " + unit.source.dbg(pos));
+          //Thread.dumpStack();
+          return;
+        }
 				else idx = idx + 1;
 		  }
 		  if (cs.length + pos + 1 < buf.length) {
-			  if (Character.isJavaIdentifierPart(buf(pos + cs.length))) return;
+			  if (Character.isJavaIdentifierPart(buf(pos + cs.length))) {
+          //System.err.println("MISMATCH: " + name + "[last] " + unit.source.dbg(pos));
+          return;
+        }
 		  }
 		  try {
 		    list.put(pos, (if (isDef) new Def(term) else new Use(term, tpe)));

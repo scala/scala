@@ -19,6 +19,15 @@ object Position {
   val FIRSTLINE = 1;
 
   def line(source : SourceFile, offset : Int) = (new Position(source, offset)).line;
+
+  def lineToOffset(line : Int) = {
+    assert(line >= 1);
+    NOPOS - line;
+  }
+  def offsetToLine(pos : Int) = {
+    assert(pos < NOPOS);
+    NOPOS - pos;
+  }
 }
 
 
@@ -30,9 +39,14 @@ class Position( val source : SourceFile, val offset: Int) {
   def this(sourceName : String) = this(new SourceFile(sourceName, new Array[Char](0)), Position.NOPOS);
   def this(sourceName : String, _offset : Int) = this(new SourceFile(sourceName, new Array[Char](0)), _offset);
 
-  def hasOffset = offset != NOPOS;
+  private def hasOffset = offset > NOPOS;
+  private def isLine    = offset < NOPOS;
 
-  def   line: Int = if (hasOffset) source.offsetToLine(offset) + FIRSTLINE else NOLINE;
+
+  def   line: Int =
+    if (hasOffset) source.offsetToLine(offset) + FIRSTLINE
+    else if (isLine) Position.offsetToLine(offset) else NOLINE;
+
   // for display purposes only.
   def column: Int = if (hasOffset) {
     var column = 1;
@@ -52,8 +66,9 @@ class Position( val source : SourceFile, val offset: Int) {
 
 
   def dbgString =
-    if (!hasOffset) "NOP"
-    else if (offset >= source.content.length) "OB-" + offset else {
+    if (isLine) "line-" + line;
+    else if (!hasOffset) "NOP";
+    else if (offset >= source.content.length) "out-of-bounds-" + offset else {
       val ret = "offset=" + offset + " line=" + line;
       var add = "";
       while (offset + add.length() < source.content.length &&

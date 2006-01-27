@@ -46,7 +46,7 @@ public class PlainFile extends AbstractFile {
     protected PlainFile(File file) {
         this.file = file;
         assert file != null;
-	if (!file.exists()) throw new Error("non-existent file: " + file);
+        if (!file.exists()) throw new Error("non-existent file: " + file);
     }
 
     //########################################################################

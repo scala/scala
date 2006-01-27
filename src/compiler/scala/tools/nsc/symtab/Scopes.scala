@@ -102,11 +102,11 @@ mixin class Scopes requires SymbolTable {
     def enter(e: ScopeEntry): unit = {
       elemsCache = null;
       if (hashtable != null) {
-	val i = e.sym.name.start & HASHMASK;
-	elems.tail = hashtable(i);
-	hashtable(i) = elems;
+        val i = e.sym.name.start & HASHMASK;
+        elems.tail = hashtable(i);
+        hashtable(i) = elems;
       } else if (size >= MIN_HASH) {
-	createHash;
+        createHash;
       }
     }
 
@@ -128,10 +128,10 @@ mixin class Scopes requires SymbolTable {
 
     private def enterInHash(e: ScopeEntry): unit = {
       if (e != null) {
-	enterInHash(e.next);
-	val i = e.sym.name.start & HASHMASK;
-	e.tail = hashtable(i);
-	hashtable(i) = e;
+        enterInHash(e.next);
+        val i = e.sym.name.start & HASHMASK;
+        e.tail = hashtable(i);
+        hashtable(i) = e;
       }
     }
 
@@ -139,20 +139,20 @@ mixin class Scopes requires SymbolTable {
      */
     def unlink(e: ScopeEntry): unit = {
       if (elems == e) {
-	elems = e.next;
+        elems = e.next;
       } else {
-	var e1 = elems;
-	while (e1.next != e) e1 = e1.next;
-	e1.next = e.next;
+        var e1 = elems;
+        while (e1.next != e) e1 = e1.next;
+        e1.next = e.next;
       }
       if (hashtable != null) {
-	var e1 = hashtable(e.sym.name.start & HASHMASK);
-	if (e1 == e) {
-	  hashtable(e.sym.name.start & HASHMASK) = e.tail;
-	} else {
-	  while (e1.tail != e) e1 = e1.tail;
-	  e1.tail = e.tail;
-	}
+        var e1 = hashtable(e.sym.name.start & HASHMASK);
+        if (e1 == e) {
+          hashtable(e.sym.name.start & HASHMASK) = e.tail;
+        } else {
+          while (e1.tail != e) e1 = e1.tail;
+          e1.tail = e.tail;
+        }
       }
       elemsCache = null
     }
@@ -162,7 +162,7 @@ mixin class Scopes requires SymbolTable {
       var e = lookupEntry(sym.name);
       while (e != null) {
         if (e.sym == sym) unlink(e);
-	e = lookupNextEntry(e)
+        e = lookupNextEntry(e)
       }
     }
 
@@ -178,11 +178,11 @@ mixin class Scopes requires SymbolTable {
     def lookupEntry(name: Name): ScopeEntry = {
       var e: ScopeEntry = null;
       if (false & hashtable != null) {
-	e = hashtable(name.start & HASHMASK);
-	while (e != null && e.sym.name != name) e = e.tail;
+        e = hashtable(name.start & HASHMASK);
+        while (e != null && e.sym.name != name) e = e.tail;
       } else {
-	e = elems;
-	while (e != null && e.sym.name != name) e = e.next;
+        e = elems;
+        while (e != null && e.sym.name != name) e = e.next;
       }
       e
     }
@@ -191,9 +191,9 @@ mixin class Scopes requires SymbolTable {
     def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
       var e = entry;
       if (hashtable != null) //debug
-	do { e = e.tail } while (e != null && e.sym.name != entry.sym.name)
+      do { e = e.tail } while (e != null && e.sym.name != entry.sym.name)
       else
-	do { e = e.next } while (e != null && e.sym.name != entry.sym.name);
+        do { e = e.next } while (e != null && e.sym.name != entry.sym.name);
       e
     }
 

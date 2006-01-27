@@ -111,19 +111,19 @@ abstract class SymbolLoaders {
 				val name = newTermName(str);
         val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
         val module = owner.newModule(Position.NOPOS, name);
-	clazz.setInfo(completer);
-	module.setInfo(completer);
-	module.moduleClass.setInfo(moduleClassLoader);
-	owner.info.decls.enter(clazz);
-	owner.info.decls.enter(module);
+        clazz.setInfo(completer);
+        module.setInfo(completer);
+        module.moduleClass.setInfo(moduleClassLoader);
+        owner.info.decls.enter(clazz);
+        owner.info.decls.enter(module);
 /*
 	if (completer.sourceFile != null) {
           clazz.sourceFile = completer.sourceFile;
           module.moduleClass.sourceFile = completer.sourceFile
         }
 */
-	assert(clazz.linkedModule == module, module);
-	assert(module.linkedClass == clazz, clazz);
+        assert(clazz.linkedModule == module, module);
+        assert(module.linkedClass == clazz, clazz);
       }
 
       val classes  = new HashMap[String, ClassPath.Context];
@@ -190,7 +190,13 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
       override def sourcePath = sourcePath0; /* could be null */
     }
-    protected def doComplete(root: Symbol): unit = classfileParser.parse(classFile, root);
+    protected def doComplete(root: Symbol): unit = {
+      classfileParser.parse(classFile, root);
+      if (sourceFile != null) root match {
+      case clazz : ClassSymbol => clazz.sourceFile = sourceFile;
+      case _ =>
+      }
+    }
     protected def kindString: String = "class file";
     protected def sourceString = classFile.toString();
   }

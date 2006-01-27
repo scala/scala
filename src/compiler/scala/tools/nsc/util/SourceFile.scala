@@ -7,6 +7,7 @@
 ** $Id$
 \*                                                                      */
 
+
 package scala.tools.nsc.util;
 import scala.tools.util.AbstractFile;
 import scala.tools.util.CharArrayFile;

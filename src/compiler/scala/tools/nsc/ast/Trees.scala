@@ -11,8 +11,8 @@ import java.io.PrintWriter;
 import scala.tools.nsc.util.{Position,SourceFile};
 import symtab.Flags._;
 
-mixin class Trees requires Global {
 
+mixin class Trees requires Global {
   //statistics
   var nodeCount = 0;
 
@@ -139,23 +139,29 @@ mixin class Trees requires Global {
     def keyword : String;
     final def hasFlag(mask: long): boolean = (mods.flags & mask) != 0;
 
+
+    def verifyKeyword(keyword : String, source : SourceFile, pos : Int) : Boolean = {
+      assert(keyword != null);
+      source.beginsWith(pos, keyword + " ");
+    }
+
+    def verifyKeyword(source : SourceFile, pos : Int) : Boolean =
+      verifyKeyword(keyword, source, pos);
+
+
     def namePos(source : SourceFile) : Int = if (pos == Position.NOPOS) Position.NOPOS else {
       assert(keyword != null);
-      if (!source.beginsWith(pos, keyword + " ")) {
-	val p = new Position(source, pos);
-	if (true) return Position.NOPOS;
-	else throw new Error();
-      }
-      source.skipWhitespace(pos + keyword.length() + 1);
+      if (!verifyKeyword(source, pos)) Position.NOPOS;
+      else source.skipWhitespace(pos + keyword.length() + 1);
     }
   }
 
   /** Package clause */
   case class PackageDef(name: Name, stats: List[Tree])
        extends MemberDef {
-         def mods = NoMods;
-	 def keyword = "package";
-       }
+    def mods = NoMods;
+    def keyword = "package";
+  }
 
   def PackageDef(sym: Symbol, stats: List[Tree]): PackageDef =
     PackageDef(sym.name, stats) setSymbol sym;
@@ -168,8 +174,12 @@ mixin class Trees requires Global {
   /** Class definition */
   case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
        extends ImplDef {
-	 def keyword = "class";
-       }
+    def keyword = "class";
+
+    override def verifyKeyword(source : SourceFile, pos : Int) : Boolean =
+      super.verifyKeyword(source, pos) || verifyKeyword("trait", source, pos);
+
+  }
 
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     posAssigner.atPos(sym.pos) {
@@ -193,8 +203,8 @@ mixin class Trees requires Global {
   /** Singleton object definition */
   case class ModuleDef(mods: Modifiers, name: Name, impl: Template)
        extends ImplDef {
-	 def keyword = "object";
-       }
+    def keyword = "object";
+  }
 
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     posAssigner.atPos(sym.pos) {
@@ -265,7 +275,7 @@ mixin class Trees requires Global {
 	   ret;
 	 }
 	 def namePos = pos - name.length;
-       }
+  }
 
   def AbsTypeDef(sym: Symbol): AbsTypeDef =
     posAssigner.atPos(sym.pos) {
@@ -276,8 +286,8 @@ mixin class Trees requires Global {
   /** Type alias */
   case class AliasTypeDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree)
        extends MemberDef {
-	 def keyword = "type";
-       }
+    def keyword = "type";
+  }
 
   def AliasTypeDef(sym: Symbol, rhs: Tree): AliasTypeDef =
     posAssigner.atPos(sym.pos) {
@@ -298,8 +308,8 @@ mixin class Trees requires Global {
    */
   case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree {
-	 assert(rhs.isTerm);
-       }
+    assert(rhs.isTerm);
+  }
 
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
     posAssigner.atPos(sym.pos) {
@@ -526,10 +536,6 @@ mixin class Trees requires Global {
     }
     override def setPos(pos : Int) : this.type = {
       val ret = super.setPos(pos);
-      if (false && pos == 151 && original == null) {
-	System.err.println("TYPE: " + this + " POS=" + pos + " TPE=" + tpe);
-	Thread.dumpStack();
-      }
       ret;
     }
 
@@ -948,17 +954,17 @@ mixin class Trees requires Global {
           copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(tpt), transformTemplate(impl))
 	}
       case ModuleDef(mods, name, impl) =>
-	atOwner(tree.symbol.moduleClass) {
-          copy.ModuleDef(tree, mods, name, transformTemplate(impl))
+      atOwner(tree.symbol.moduleClass) {
+        copy.ModuleDef(tree, mods, name, transformTemplate(impl))
 	}
       case ValDef(mods, name, tpt, rhs) =>
-        atOwner(tree.symbol) {
-          copy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
+      atOwner(tree.symbol) {
+        copy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
 	}
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-        atOwner(tree.symbol) {
-          copy.DefDef(
-	    tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
+      atOwner(tree.symbol) {
+        copy.DefDef(
+            tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
 	}
       case AbsTypeDef(mods, name, lo, hi) =>
 	atOwner(tree.symbol) {
@@ -1187,13 +1193,13 @@ mixin class Trees requires Global {
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(_) =>
-	def subst(from: List[Symbol], to: List[Tree]): Tree =
-	  if (from.isEmpty) tree
-	  else if (tree.symbol == from.head) to.head
-	  else subst(from.tail, to.tail);
-	subst(from, to)
+      def subst(from: List[Symbol], to: List[Tree]): Tree =
+        if (from.isEmpty) tree
+        else if (tree.symbol == from.head) to.head
+        else subst(from.tail, to.tail);
+      subst(from, to)
       case _ =>
-	super.transform(tree)
+      super.transform(tree)
     }
   }
 
@@ -1210,9 +1216,9 @@ mixin class Trees requires Global {
     val symSubst = new SubstSymMap(from, to);
     override def traverse(tree: Tree): unit = {
       def subst(from: List[Symbol], to: List[Symbol]): unit = {
-	if (!from.isEmpty)
-	  if (tree.symbol == from.head) tree setSymbol to.head
-	  else subst(from.tail, to.tail)
+        if (!from.isEmpty)
+          if (tree.symbol == from.head) tree setSymbol to.head
+          else subst(from.tail, to.tail)
       }
       if (tree.tpe != null) tree.tpe = symSubst(tree.tpe);
       if (tree.hasSymbol) subst(from, to);
@@ -1224,7 +1230,7 @@ mixin class Trees requires Global {
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
     override def traverse(tree: Tree): unit = {
       if ((tree.isDef || tree.isInstanceOf[Function]) && tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
-	tree.symbol.owner = newowner;
+        tree.symbol.owner = newowner;
       super.traverse(tree)
     }
   }
@@ -1240,8 +1246,8 @@ mixin class Trees requires Global {
     private var pos: int = _;
     override def traverse(t: Tree): unit =
       if (t != EmptyTree && t.pos == Position.NOPOS) {
-	t.setPos(pos);
-	super.traverse(t);
+        t.setPos(pos);
+        super.traverse(t);
       }
     def atPos[T <: Tree](pos: int)(tree: T): T = {
       this.pos = pos;
