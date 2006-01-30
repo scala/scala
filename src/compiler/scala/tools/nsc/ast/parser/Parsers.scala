@@ -1617,7 +1617,7 @@ mixin class Parsers requires SyntaxAnalyzer {
           if (in.token == LPAREN && settings.migrate.value)
             syntaxErrorMigrate("mixin classes may not have parameters");
           if (!(in.token == SEMI || in.token == NEWLINE ||
-                in.token == COMMA || in.token == RBRACE))
+                in.token == COMMA || in.token == RBRACE || in.token == EOF))
             syntaxError(msg, true);
         }
         val parents = new ListBuffer[Tree];

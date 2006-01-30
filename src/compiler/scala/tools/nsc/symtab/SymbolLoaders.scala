@@ -63,6 +63,7 @@ abstract class SymbolLoaders {
 	} else error(source + " does not define " + root)
       } catch {
         case ex: IOException =>
+          ok = false;
 	  if (settings.debug.value) ex.printStackTrace();
           val msg = ex.getMessage();
           error(
@@ -76,11 +77,11 @@ abstract class SymbolLoaders {
 
     private def initRoot(root: Symbol): unit = {
       if (root.rawInfo == this) {
-        root.setInfo(if (ok) NoType else ErrorType);
-        if (root.isModule)
-          root.moduleClass.setInfo(if (ok) NoType else ErrorType)
-      }
-      if (root.isClass && !root.isModuleClass) root.rawInfo.load(root)
+        def markAbsent(sym: Symbol) =
+          if (sym != NoSymbol) sym.setInfo(if (ok) NoType else ErrorType);
+        markAbsent(root);
+        markAbsent(root.moduleClass)
+      } else if (root.isClass && !root.isModuleClass) root.rawInfo.load(root)
     }
   }
 

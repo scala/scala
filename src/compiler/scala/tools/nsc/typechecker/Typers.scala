@@ -116,7 +116,8 @@ mixin class Typers requires Analyzer {
 	    case ValDef(_, _, tpt, _) if (tpt.tpe == null) =>
 	      "recursive "+sym+" needs type"
 	    case DefDef(_, _, _, _, tpt, _) if (tpt.tpe == null) =>
-	      "recursive "+sym+" needs result type"
+              (if (sym.owner.isClass && sym.owner.info.member(sym.name).hasFlag(OVERLOADED)) "overloaded "
+               else "recursive ")+sym+" needs result type"
 	    case _ =>
 	      ex.getMessage()
 	  }
@@ -705,7 +706,7 @@ mixin class Typers requires Analyzer {
 		      superClazz.info.nonPrivateMember(alias.name) != alias)
 		    alias = NoSymbol
 		  if (alias != NoSymbol) {
-		    var ownAcc = clazz.info.decl(name)
+		    var ownAcc = clazz.info.decl(name).suchThat(.hasFlag(PARAMACCESSOR))
 		    if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed
 		    if (settings.debug.value) log(""+ownAcc+" has alias "+alias + alias.locationString);//debug
 		    ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
@@ -1037,11 +1038,12 @@ mixin class Typers requires Analyzer {
 	  while (defSym == NoSymbol && cx != NoContext) {
 	    pre = cx.enclClass.prefix
 	    defEntry = cx.scope.lookupEntry(name)
-	    if (defEntry != null) {
+	    if (defEntry != null && defEntry.sym.tpe != NoType) {
 	      defSym = defEntry.sym
 	    } else {
 	      cx = cx.enclClass
-	      defSym = pre.member(name) filter (sym => context.isAccessible(sym, pre, false))
+	      defSym = pre.member(name) filter (
+                sym => sym.tpe != NoType && context.isAccessible(sym, pre, false))
 	      if (defSym == NoSymbol) cx = cx.outer
 	    }
 	  }

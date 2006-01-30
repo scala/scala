@@ -51,6 +51,28 @@ final class ListBuffer[A] extends Buffer[A] {
     }
   }
 
+  /** Remove a single element from the buffer and return
+   *  the identity of the buffer. Same as ``this -= x; this''
+   *
+   *  @param x  the element to remove.
+   */
+  def - (x: A): Buffer[A] = { this -= x; this }
+
+  /** Remove a single element from this buffer.
+   *
+   *  @param x  the element to remove.
+   */
+  def -= (x: A): unit = {
+    if (exported) copy()
+    if (start.isEmpty) {}
+    else if (start.head == x) start = start.tail
+    else {
+      var cursor = start
+      while (!cursor.tail.isEmpty && cursor.tail.head != x) { cursor = cursor.tail }
+      if (!cursor.tail.isEmpty) cursor.asInstanceOf[scala.::[A]].tl = cursor.tail.tail
+    }
+  }
+
   /** Converts this buffer to a list
    */
   override def toList: List[A] = {
