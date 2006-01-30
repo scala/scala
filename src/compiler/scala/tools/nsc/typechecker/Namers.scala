@@ -237,7 +237,7 @@ trait Namers requires Analyzer {
 	    tree.symbol = enterModuleSymbol(tree.pos, mods.flags | MODULE | FINAL, name);
             setPrivateWithin(tree.symbol, mods);
             setPrivateWithin(tree.symbol.moduleClass, mods);
-	    tree.symbol.moduleClass.setInfo(innerNamer.typeCompleter(tree));
+	    tree.symbol.moduleClass.setInfo(innerNamer.moduleClassTypeCompleter(tree));
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>
             if (context.owner.isClass & (mods.flags & LOCAL) == 0) {
@@ -310,6 +310,12 @@ trait Namers requires Analyzer {
         if (settings.Xgadt.value) System.out.println("" + sym + ":" + tp);
         if (settings.debug.value) log("defined " + sym);
         validate(sym);
+      }
+    }
+
+    def moduleClassTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
+      override def complete(sym: Symbol): unit = {
+        tree.symbol.info // sets moduleClass info as a side effect.
       }
     }
 

@@ -1323,7 +1323,7 @@ mixin class Typers requires Analyzer {
 	    if (stableApplication) fun1 = stabilizeFun(fun1, mode, pt)
             // if function is overloaded, filter all alternatives that match
 	    // number of arguments and expected result type.
-	    // if (settings.debug.value) log("trans app "+fun1+":"+fun1.symbol+":"+fun1.tpe+" "+args);//DEBUG
+	    if (settings.debug.value) log("trans app "+fun1+":"+fun1.symbol+":"+fun1.tpe+" "+args);//DEBUG
 	    if (fun1.hasSymbol && fun1.symbol.hasFlag(OVERLOADED)) {
 	      val argtypes = args map (arg => AllClass.tpe)
 	      val pre = fun1.symbol.tpe.prefix
