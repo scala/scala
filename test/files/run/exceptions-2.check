@@ -1,0 +1,31 @@
+nested1: 
+Innermost finally
+Outermost finally
+nested2: 
+Innermost finally
+Outermost finally
+mixed: 
+Finally!
+10
+withValue1:
+Oh, oh
+10
+method2:
+10
+Exception occurred
+method3:
+Exception occurred with stack trace:
+java.lang.NullPointerException
+	at Test$.method3(exceptions-2.scala:108)
+	at Test$$anonfun5.apply(exceptions-2.scala:151)
+	at Test$$anonfun5.apply(exceptions-2.scala:151)
+	at Test$.execute(exceptions-2.scala:128)
+	at Test$.main(exceptions-2.scala:151)
+	at Test.main(exceptions-2.scala)
+=================
+NoExcep.method2:
+Hello, world
+NoExcep.method3:
+method3
+NoExcep.method4:
+..
