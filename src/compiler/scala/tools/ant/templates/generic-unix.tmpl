@@ -28,13 +28,12 @@ while [ -h "$SOURCE" ]; do
         SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
     fi;
 done;
-PREFIX=`dirname "$SOURCE"`/..;
-prefix=$PREFIX;
-PREFIX=`cd "$PREFIX"; pwd`;
+SCALA_HOME=`dirname "$SOURCE"`/..;
+SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
 CLASSPATH=@classpath@
 if [ "$CLASSPATH" == "" ] ; then
-  for jar in `ls $PREFIX/lib/*.jar` ; do
+  for jar in `ls $SCALA_HOME/lib/*.jar` ; do
     CLASSPATH=$CLASSPATH:$jar
   done
   CLASSPATH=${CLASSPATH:1}

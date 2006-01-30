@@ -28,9 +28,8 @@ while [ -h "$SOURCE" ]; do
         SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
     fi;
 done;
-PREFIX=`dirname "$SOURCE"`/..;
-prefix=$PREFIX;
-PREFIX=`cd "$PREFIX"; pwd`;
+SCALA_HOME=`dirname "$SOURCE"`/..;
+SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
 CLASSPATH=@classpath@
 if [ "$CLASSPATH" == "" ] ; then
@@ -56,4 +55,4 @@ for flag in "$@@" ; do
     fi
 done
 
-${JAVACMD:=java} @javaflags@ -Dscala.home="$PREFIX" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ -cp "$CLASSPATH" @class@ @toolflags@ "$@@"
+${JAVACMD:=java} @javaflags@ -Dscala.home="$SCALA_HOME" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ -cp "$CLASSPATH" @class@ @toolflags@ "$@@"

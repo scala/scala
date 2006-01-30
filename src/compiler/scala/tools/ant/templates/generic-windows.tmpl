@@ -10,10 +10,10 @@ rem ##########################################################################
 
 if "%OS%"=="Windows_NT" (
   @@setlocal
-  set _PREFIX=%~dp0..
+  set _SCALA_HOME=%~dp0..
 ) else (
-  set _PREFIX=%SCALA_HOME%
-  if "%_PREFIX%"=="" goto error1
+  set _SCALA_HOME=%SCALA_HOME%
+  if "%_SCALA_HOME%"=="" goto error1
 )
 
 set _JAVACMD=%JAVACMD%
@@ -22,7 +22,7 @@ set _JAVAFLAGS=@javaflags@
 
 set _CLASSPATH=@classpath@
 if not "%_CLASSPATH%"=="" goto args
-for %%f in ("%_PREFIX%\lib\*.jar") do call :add_cpath "%%f"
+for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
 
 :args
 set _ARGS=
