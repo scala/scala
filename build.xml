@@ -377,7 +377,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
                 class="scala.tools.nsc.Main"
                 version="${version.number}"
                 copyright="${copyright}"
-                classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
+                classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${msil.name}"
                 properties="scala.boot.class.path=#CLASSPATH#"
                 javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -460,7 +460,7 @@ BUILD QUICK-TEST LAYER
                 class="scala.tools.nsc.Main"
                 version="${version.number}"
                 copyright="${copyright}"
-                classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
+                classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${msil.name}"
                 properties="scala.boot.class.path=#CLASSPATH#"
                 javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -546,7 +546,7 @@ TEST
                class="scala.tools.nsc.Main"
                version="${version.number}"
                copyright="${copyright}"
-               classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
+               classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${msil.name}"
                properties="scala.boot.class.path=#CLASSPATH#"
                javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
