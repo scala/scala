@@ -467,7 +467,7 @@ abstract class GenICode extends SubComponent  {
 
           ctx.Try(
             bodyCtx => {
-              generatedType = toTypeKind(block.tpe);
+              generatedType = kind; //toTypeKind(block.tpe);
               val ctx1 = genLoad(block, bodyCtx, generatedType);
               genLoad(finalizer, ctx1, UNIT)
             },
