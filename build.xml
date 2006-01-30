@@ -379,7 +379,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
                 copyright="${copyright}"
                 classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
                 properties="scala.boot.class.path=#CLASSPATH#"
-                javaFlags="-Xmx256M -Xms16M -client"/>
+                javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
            perm="ugo+rx"/>
     <chmod file="${locker.dir}/${exec.dir.name}/${scala.exec.name}"
@@ -462,7 +462,7 @@ BUILD QUICK-TEST LAYER
                 copyright="${copyright}"
                 classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
                 properties="scala.boot.class.path=#CLASSPATH#"
-                javaFlags="-Xmx256M -Xms16M -client"/>
+                javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
            perm="ugo+rx"/>
     <chmod file="${quick.dir}/${exec.dir.name}/${scala.exec.name}"
@@ -548,7 +548,7 @@ TEST
                copyright="${copyright}"
                classpath="#PREFIX#/${lib.dir.name}:#PREFIX#/${comp.dir.name}:#PREFIX#/${fjbg.name}:#PREFIX#/${msil.name}"
                properties="scala.boot.class.path=#CLASSPATH#"
-               javaFlags="-Xmx256M -Xms16M -client"/>
+               javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
            perm="ugo+rx"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
@@ -631,7 +631,7 @@ GENERATES A DISTRIBUTION
                 copyright="${copyright}"
                 classpath=""
                 properties="scala.boot.class.path=#CLASSPATH#"
-                javaFlags="-Xmx256M -Xms16M -client"/>
+                javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${dist.current.dir}/bin/${scalac.exec.name}"
            perm="ugo+rx"/>
     <chmod file="${dist.current.dir}/bin/${scala.exec.name}"
