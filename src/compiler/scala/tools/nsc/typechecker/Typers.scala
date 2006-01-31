@@ -553,7 +553,7 @@ mixin class Typers requires Analyzer {
 	  else if (psym.isSealed && !phase.erasedTypes) {
 	    // are we in same scope as base type definition?
 	    val e = defscope.lookupEntry(psym.name)
-	    if (!(e != null && e.sym == psym && e.owner == defscope)) {
+	    if (c.owner.isPackageClass || !(e != null && e.sym == psym && e.owner == defscope)) {
 	      // we are not within same statement sequence
 	      var c = context
 	      while (c != NoContext && c.owner !=  psym) c = c.outer.enclClass
