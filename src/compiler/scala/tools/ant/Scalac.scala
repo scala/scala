@@ -483,13 +483,13 @@ package scala.tools.ant {
         reporter.printSummary()
       } catch {
         case exception: Throwable if (exception.getMessage != null) =>
-          if (scalacDebugging) exception.printStackTrace()
+          exception.printStackTrace()
           error("Compile failed because of an internal compiler error (" +
-          exception.getMessage + "); see the error output for details.")
+            exception.getMessage + "); see the error output for details.")
         case exception =>
-          if (scalacDebugging) exception.printStackTrace()
+          exception.printStackTrace()
           error("Compile failed because of an internal compiler error " +
-          "(no error message provided); see the error output for details.")
+            "(no error message provided); see the error output for details.")
       }
     }
 
