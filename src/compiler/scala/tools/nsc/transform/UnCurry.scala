@@ -30,7 +30,6 @@ import symtab.Flags._;
 abstract class UnCurry extends InfoTransform {
   import global._;                  // the global environment
   import definitions._;             // standard classes and methods
-  import typer.{typed};             // methods to type trees
   import posAssigner.atPos;         // for filling in tree positions
 
   val phaseName: String = "uncurry";
@@ -68,6 +67,7 @@ abstract class UnCurry extends InfoTransform {
     private var needTryLift = false;
     private var inPattern = false;
     private var inConstructorFlag = 0L;
+    private var localTyper: analyzer.Typer = typer;
 
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree));
@@ -156,7 +156,7 @@ abstract class UnCurry extends InfoTransform {
 	}
 	members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
       }
-      typer.atOwner(currentOwner).typed {
+      localTyper.atOwner(currentOwner).typed {
 	atPos(fun.pos) {
 	  Block(
 	    List(ClassDef(anonClass, List(List()), List(List()), members)),
@@ -192,7 +192,7 @@ abstract class UnCurry extends InfoTransform {
 	  if (formal.symbol != ByNameParamClass) arg
 	  else if (isByNameRef(arg)) arg setType functionType(List(), arg.tpe)
 	  else {
-            val fun = typer.atOwner(currentOwner).typed(
+            val fun = localTyper.atOwner(currentOwner).typed(
               Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
             new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
             transformFunction(fun)
@@ -277,7 +277,7 @@ abstract class UnCurry extends InfoTransform {
             sym.setInfo(MethodType(List(), tree.tpe));
             new ChangeOwnerTraverser(currentOwner, sym).traverse(tree);
 
-            transform(typed(atPos(tree.pos)(
+            transform(localTyper.typed(atPos(tree.pos)(
               Block(List(DefDef(sym, List(List()), tree)),
                     Apply(Ident(sym), Nil)))))
           } else
@@ -293,12 +293,16 @@ abstract class UnCurry extends InfoTransform {
           mainTransform(transformFunction(fun))
 
         case Template(_, _) =>
-          withInConstructorFlag(0) { super.transform(tree) }
+	  val savedLocalTyper = localTyper;
+	  localTyper = localTyper.atOwner(tree, currentOwner);
+          val tree1 = withInConstructorFlag(0) { super.transform(tree) }
+          localTyper = savedLocalTyper;
+          tree1
 
         case _ =>
           val tree1 = super.transform(tree);
 	  if (isByNameRef(tree1))
-	    typed(atPos(tree1.pos)(
+	    localTyper.typed(atPos(tree1.pos)(
 	      Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply), List())))
 	  else tree1;
       }

@@ -534,9 +534,6 @@ mixin class Typers requires Analyzer {
      *  - no two parents define same symbol.
      */
     def validateParentClasses(parents: List[Tree], selfType: Type): unit = {
-      var c = context
-      do { c = c.outer } while (c.owner == context.owner)
-      val defscope = c.scope
 
       def validateParentClass(parent: Tree, isFirst: boolean): unit =
 	if (!parent.tpe.isError) {
@@ -550,20 +547,13 @@ mixin class Typers requires Analyzer {
 	      error(parent.pos, ""+psym+" is not declared to be a mixin class")
 	  else if (psym.hasFlag(FINAL))
 	    error(parent.pos, "illegal inheritance from final class")
-	  else if (psym.isSealed && !phase.erasedTypes) {
-	    // are we in same scope as base type definition?
-	    val e = defscope.lookupEntry(psym.name)
-	    if (c.owner.isPackageClass || !(e != null && e.sym == psym && e.owner == defscope)) {
-	      // we are not within same statement sequence
-	      var c = context
-	      while (c != NoContext && c.owner !=  psym) c = c.outer.enclClass
-	      if (c == NoContext) error(parent.pos, "illegal inheritance from sealed "+psym)
-	    }
-	  }
+	  else if (!phase.erasedTypes && psym.isSealed &&
+                   context.unit.source.file != psym.sourceFile)
+	    error(parent.pos, "illegal inheritance from sealed "+psym)
 	  if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) {
-	    System.out.println(context.owner);//debug
-            System.out.println(context.owner.unsafeTypeParams);//debug
-            System.out.println(List.fromArray(context.owner.info.closure));//debug
+	    //System.out.println(context.owner);//DEBUG
+            //System.out.println(context.owner.unsafeTypeParams);//DEBUG
+            //System.out.println(List.fromArray(context.owner.info.closure));//DEBUG
 	    error(parent.pos, "illegal inheritance;\n self-type "+
 		  selfType+" does not conform to "+parent +
 		  "'s selftype "+parent.tpe.typeOfThis)
