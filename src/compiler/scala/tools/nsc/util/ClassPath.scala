@@ -21,7 +21,7 @@ import java.util.StringTokenizer;
  *
  *  @author Sean McDirmid
  */
-object ClassPath {
+class ClassPath(onlyPresentation : Boolean) {
 
   class Source(val location : AbstractFile, val compile : Boolean) {
     // assert(location           != null, "cannot find source location");
@@ -52,8 +52,9 @@ object ClassPath {
       	else {
       	  val ret = find0(entries.tail);
       	  val head = entries.head;
-      	    val clazz = if (head.location == null) null;
-      		        else head.location.lookupPath(name + (if (!isDir) ".class" else ""), isDir);
+      	  val clazz = if (head.location == null) null;
+      	              else head.location.lookupPath(name + (if (!isDir) ".class" else ""), isDir);
+
 
       	  val source0 = if (head.source == null) null; else {
       	    val source1 = head.source.location.lookupPath(name + (if (isDir) "" else ".scala"), isDir);
@@ -111,11 +112,17 @@ object ClassPath {
       else toString(entries0.head) + ":::" + toString(entries0.tail);
 
     def isSourceFile = {
+
       def head = entries.head;
       def clazz = head.location;
       def source = if (head.source == null) null else head.source.location;
-      if (entries.isEmpty || entries.isEmpty || source == null || !head.source.compile || !source.getFile().isFile()) false;
+      def isPredef = source.getName().equals("Predef.scala");
+
+      if (entries.isEmpty || entries.isEmpty || source == null) false;
+      else if (!onlyPresentation && !head.source.compile) false;
+      else if (source.isDirectory()) false;
       else if (clazz == null) true;
+      else if (onlyPresentation && !isPredef) true;
       else if (source.lastModified() > clazz.lastModified()) true;
       else false;
     }

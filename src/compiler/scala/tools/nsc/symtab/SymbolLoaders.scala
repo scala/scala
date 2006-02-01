@@ -87,7 +87,7 @@ abstract class SymbolLoaders {
 
   /** Load contents of a package
    */
-  class PackageLoader(directory: ClassPath.Context) extends SymbolLoader {
+  class PackageLoader(directory: global.classPath0.Context) extends SymbolLoader {
     // System.err.println("PACKAGE LOADER: " + directory);
 
     protected def sourceString = directory.toString();
@@ -127,8 +127,8 @@ abstract class SymbolLoaders {
         assert(module.linkedClass == clazz, clazz);
       }
 
-      val classes  = new HashMap[String, ClassPath.Context];
-      val packages = new HashMap[String, ClassPath.Context];
+      val classes  = new HashMap[String, global.classPath0.Context];
+      val packages = new HashMap[String, global.classPath0.Context];
       for (val dir <- directory.entries) if (dir.location != null) {
       	val it = dir.location.list();
       	while (it.hasNext()) {

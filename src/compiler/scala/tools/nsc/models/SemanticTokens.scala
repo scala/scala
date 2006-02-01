@@ -269,8 +269,9 @@ class SemanticTokens(val compiler: Global) {
 		  case tpe0 : RefinedType => tree match {
 			  case cpt : CompoundTypeTree =>
 			  	buildTs(cpt.templ.parents, tpe0.parents);
+
 			  case _ : TypeTree =>
-			    System.err.println("UNKNOWN TPE13: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
+			    // System.err.println("UNKNOWN TPE13: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
 			  case _ =>
 				  System.err.println("UNKNOWN TPE5: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
 		  }

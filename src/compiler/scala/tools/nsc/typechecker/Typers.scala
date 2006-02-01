@@ -1165,9 +1165,11 @@ mixin class Typers requires Analyzer {
           }
           typed(defn, mode, pt)
 
-        case DocDef(comment, defn) =>
-          typed(defn, mode, pt)
-
+        case DocDef(comment, defn) => {
+          val ret = typed(defn, mode, pt)
+          if (onlyPresentation) comments(defn . symbol) = comment;
+          ret
+        }
         case block @ Block(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner))
             .typedBlock(block, mode, pt)

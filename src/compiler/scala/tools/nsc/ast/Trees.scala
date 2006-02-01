@@ -525,12 +525,11 @@ mixin class Trees requires Global {
 
     def setOriginal(tree : Tree) : this.type = {
       tree match {
-	case tt : TypeTree =>
-	  System.err.println("Illegal: " + this + " to " + tree);
-	  Thread.dumpStack();
-	case _ =>
+      case tt : TypeTree =>
+        System.err.println("Illegal: " + this + " to " + tree);
+        Thread.dumpStack();
+      case _ =>
       }
-
       original = tree;
       setPos(tree.pos);
     }
@@ -538,8 +537,6 @@ mixin class Trees requires Global {
       val ret = super.setPos(pos);
       ret;
     }
-
-
     override def isEmpty = tpe == null || tpe == NoType;
   }
 
