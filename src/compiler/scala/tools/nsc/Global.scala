@@ -122,7 +122,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     new SourceReader(charset.newDecoder());
   }
 
-	val classPath0 = new ClassPath(onlyPresentation);
+  val classPath0 = new ClassPath(onlyPresentation);
 
   val classPath = new classPath0.Build(
     settings.classpath.value,

@@ -535,13 +535,19 @@ mixin class Typers requires Analyzer {
      */
     def validateParentClasses(parents: List[Tree], selfType: Type): unit = {
 
-      def validateParentClass(parent: Tree, isFirst: boolean): unit =
+      def validateParentClass(parent: Tree, superclazz: Symbol): unit =
 	if (!parent.tpe.isError) {
 	  val psym = parent.tpe.symbol.initialize
 	  if (!psym.isClass)
 	    error(parent.pos, "class type expected")
-	  else if (!isFirst && !psym.isMixin)
-            if (settings.migrate.value)
+	  else if (psym != superclazz)
+            if (psym.isMixin) {
+              val ps = psym.info.parents
+              if (!ps.isEmpty && !superclazz.isSubClass(ps.head.symbol))
+                error(parent.pos, "illegal inheritance; super"+superclazz+
+                      "\n is not a subclass of the super"+ps.head.symbol+
+                      "\n of the mixin " + psym);
+            } else if (settings.migrate.value)
               error(parent.pos, migrateMsg+psym+" needs to be a declared as a mixin class")
             else
 	      error(parent.pos, ""+psym+" is not declared to be a mixin class")
@@ -563,10 +569,7 @@ mixin class Typers requires Analyzer {
 	    error(parent.pos, ""+psym+" is inherited twice")
 	}
 
-      if (!parents.isEmpty) {
-        validateParentClass(parents.head, true)
-        for (val p <- parents.tail) validateParentClass(p, false)
-      }
+      for (val p <- parents) validateParentClass(p, parents.head.tpe.symbol)
     }
 
     def typedClassDef(cdef: ClassDef): Tree = {
