@@ -87,6 +87,20 @@ abstract class Constructors extends Transform {
 	  }
 	}
 
+      def copyParam(to: Symbol, from: Symbol): Tree = {
+        var result = mkAssign(to, Ident(from));
+        if (from.name == nme.OUTER)
+          result =
+            atPos(to.pos) {
+	      localTyper.typed {
+                If(Apply(Select(Ident(from), nme.eq), List(Literal(Constant(null)))),
+                   Throw(New(TypeTree(NullPointerExceptionClass.tpe), List(List()))),
+                   result);
+              }
+            }
+        result
+      }
+
       val defBuf = new ListBuffer[Tree];
       val constrStatBuf = new ListBuffer[Tree];
       val constrPrefixBuf = new ListBuffer[Tree];
@@ -142,7 +156,7 @@ abstract class Constructors extends Transform {
       for (val stat <- defBuf.elements) accessTraverser.traverse(stat);
 
       val paramInits = for (val acc <- paramAccessors; isAccessed(acc))
-		       yield mkAssign(acc, Ident(parameter(acc)));
+		       yield copyParam(acc, parameter(acc))
 
       defBuf += copy.DefDef(
 	constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,

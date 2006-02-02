@@ -761,6 +761,9 @@ mixin class Typers requires Analyzer {
       val lo1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.lo))
       val hi1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.hi))
       checkNonCyclic(tdef.symbol)
+      if (!(lo1.tpe <:< hi1.tpe))
+        error(tdef.pos,
+              "lower bound "+lo1.tpe+" does not conform to upper bound "+hi1.tpe)
       copy.AbsTypeDef(tdef, tdef.mods, tdef.name, lo1, hi1) setType NoType
     }
 
