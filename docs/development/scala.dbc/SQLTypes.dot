@@ -1,0 +1,48 @@
+digraph SQLTypes {
+  node [shape = record]
+  DataType [label = "{DataType|nullable: Boolean}"]
+  StringType [label = "{StringType|maxLength: Int}"]
+  CharacterStringType [label = "{CharacterStringType|encoding: String}"]
+  CharacterType [label = "{CharacterType|length: Int}"]
+  CharacterVaryingType [label = "{CharacterVaryingType|length: Int}"]
+  CharacterLargeObjectType [label = "CharacterLargeObjectType"]
+  BinaryStringType [label = "BinaryStringType"]
+  BinaryType [label = "{BinaryType|length: Int}"]
+  BinaryVaryingType [label = "{BinaryVaryingType|length: Int}"]
+  BinaryLargeObjectType [label = "BinaryLargeObjectType"]
+  BooleanType [label = "BooleanType"]
+  NumericType [label = "{NumericType|precisionRadix: Int\nprecision: Int}"]
+  ExactNumericType [label = "{ExactNumericType|scale: Int}"]
+  ApproximateNumericType [label = "ApproximateNumericType"]
+  DateTimeType [label = "DateTimeType"]
+  TimeType [label = "{TimeType|precisionRadix: Int\nsecondScale: Int}"]
+  TimeWithoutTimezoneType [label = "TimeWithoutTimezoneType"]
+  TimeWithTimezoneType [label = "TimeWithTimezoneType"]
+  TimestampType [label = "{TimestampType|precisionRadix: Int\nsecondScale: Int}"]
+  TimestampWithoutTimezoneType [label = "TimestampWithoutTimezoneType"]
+  TimestampWithTimezoneType [label = "TimestampWithTimezoneType"]
+  DateType [label = "DateType"]
+  IntervalType [label = "{IntervalType|precisionRadix: Int\nsecondScale: Int}"]
+  StringType -> DataType
+  BooleanType -> DataType
+  NumericType -> DataType
+  DateTimeType -> DataType
+  IntervalType -> DataType
+  CharacterStringType -> StringType
+  BinaryStringType -> StringType
+  ExactNumericType -> NumericType
+  ApproximateNumericType -> NumericType
+  TimeType -> DateTimeType
+  TimestampType -> DateTimeType
+  DateType -> DateTimeType
+  CharacterType -> CharacterStringType
+  CharacterVaryingType -> CharacterStringType
+  CharacterLargeObjectType -> CharacterStringType
+  BinaryType -> BinaryStringType
+  BinaryVaryingType -> BinaryStringType
+  BinaryLargeObjectType -> BinaryStringType
+  TimeWithoutTimezoneType -> TimeType
+  TimeWithTimezoneType -> TimeType
+  TimestampWithoutTimezoneType -> TimestampType
+  TimestampWithTimezoneType -> TimestampType
+}
