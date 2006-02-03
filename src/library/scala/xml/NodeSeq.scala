@@ -62,7 +62,7 @@ abstract class NodeSeq extends Seq[Node] {
 
   /** projection function. Similar to XPath, use this \\ 'foo to get a list
    *  of all elements of this sequence that are labelled with "foo".
-   *  Use \ "_" as a wildcard. The document order is preserved.
+   *  Use \\ "_" as a wildcard. The document order is preserved.
    */
 
   def \\ ( that:String ): NodeSeq = that match {

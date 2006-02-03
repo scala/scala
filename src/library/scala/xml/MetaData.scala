@@ -113,7 +113,7 @@ abstract class MetaData extends Iterable[MetaData] {
   /** returns key of this MetaData item */
   def key: String;
 
-  /** returns key of this MetaData item */
+  /** returns value of this MetaData item */
   def value: String;
 
   /** maps this sequence of meta data */
