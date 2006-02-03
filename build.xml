@@ -651,7 +651,8 @@ GENERATES A DISTRIBUTION
        name="scalac2"
        version="${version.number}"
        desc="The Scala compiler.  This is used to compile Scala programs
-into Java .class files.">
+into Java .class files."
+       depends="scalac2-support">
       <libset dir="${dist.current.dir}/lib" includes="scala2-compiler.jar"/>
       <binset dir="${dist.current.dir}/bin" includes="scalac2*"/>
       <manset dir="${docs.dir}/man" includes="scalac2.1"/>
