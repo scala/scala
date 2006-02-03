@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:complexType name="pathlist">
+        <xs:sequence>
+            <xs:element name="path" type="xs:anyURI"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="empty">
+        <xs:complexContent> 
+            <xs:restriction base="xs:anyType"/> 
+        </xs:complexContent> 
+    </xs:complexType>
+    <xs:element name="test">
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="name" type="xs:string"/>
+                <xs:element name="description" minOccurs="0" type="xs:string"/>
+                <xs:element name="root" minOccurs="0" type="xs:anyURI"/>
+                <xs:element name="libs" minOccurs="0" type="pathlist"/>
+                <xs:element name="expectfailure" minOccurs="0" type="empty"/>
+                <xs:element name="action">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="compile">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="sources" type="pathlist"/>
+                                        <xs:element name="result">
+                                            <xs:complexType>
+                                                <xs:choice>
+                                                    <xs:element name="suceeds" type="empty"/>
+                                                    <xs:element name="fails" type="xs:string"/>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="execute">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="params" minOccurs="0" type="xs:string"/>
+                                        <xs:element name="result">
+                                            <xs:complexType>
+                                                <xs:choice>
+                                                    <xs:element name="prints" minOccurs="0" type="xs:string"/>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
