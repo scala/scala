@@ -538,7 +538,7 @@ fi
 
 printf_outline "Source directory is : $SRCDIR\\n";
 printf_outline "Scala binaries in   : $BIN_DIR\\n";
-jvm_version=`${JAVA_CMD:=java} -version 2>&1 | head -3 | tail -1`
+jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
 printf_outline "Java runtime is     : $jvm_version\\n\\n";
 
 test_check_all;
