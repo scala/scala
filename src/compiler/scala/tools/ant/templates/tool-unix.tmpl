@@ -49,7 +49,7 @@ if $cygwin; then
 fi
 
 for flag in "$@@" ; do
-    if [ $flag == '-version' ] ; then
+    if [ "$flag" == '-version' ] ; then
         echo "@name@ version @version@ -- @copyright@"
         exit 0
     fi
