@@ -49,6 +49,8 @@ mixin class Types requires SymbolTable {
 
   val emptyTypeArray = new Array[Type](0);
 
+  final val X = true;
+
   /** The base class for all types */
   abstract class Type {
 
@@ -124,6 +126,9 @@ mixin class Types requires SymbolTable {
 
     /** Does this type denote a stable reference (i.e. singleton type)? */
     def isStable: boolean = false;
+
+    /** Does this type denote a reference type which can be null? */
+    def isNullable: boolean = false;
 
     /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
@@ -461,17 +466,20 @@ mixin class Types requires SymbolTable {
     override def baseType(clazz: Symbol): Type = this;
     override def toString(): String = "<error>";
     override def narrow: Type = this;
+    override def isNullable: boolean = true;
   }
 
   /** An object representing an unknown type */
   case object WildcardType extends Type {
     override def toString(): String = "?"
+    override def isNullable: boolean = true;
   }
 
   /** An object representing a non-existing type */
   case object NoType extends Type {
     override def isTrivial: boolean = true;
     override def toString(): String = "<notype>"
+    override def isNullable: boolean = true;
   }
 
   /** An object representing a non-existing prefix */
@@ -480,6 +488,7 @@ mixin class Types requires SymbolTable {
     override def isStable: boolean = true;
     override def prefixString = "";
     override def toString(): String = "<noprefix>";
+    override def isNullable: boolean = true;
   }
 
   /** A class for this-types of the form <sym>.this.type
@@ -542,6 +551,7 @@ mixin class Types requires SymbolTable {
     def supertype: Type = hi;
     override def bounds: TypeBounds = this;
     def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
+    override def isNullable: boolean = AllRefClass.tpe <:< lo;
     override def toString() = ">: " + lo + " <: " + hi;
   }
 
@@ -682,6 +692,9 @@ mixin class Types requires SymbolTable {
 
     override def narrow: Type = symbol.thisType;
 
+    override def isNullable: boolean =
+      parents forall (p => p.isNullable && !p.symbol.isAbstractType);
+
     override def toString(): String = (
       parents.mkString("", " with ", "") +
       (if (settings.debug.value || parents.isEmpty || decls.elems != null)
@@ -699,9 +712,16 @@ mixin class Types requires SymbolTable {
 
   /** A class representing a class info
    */
-  case class ClassInfoType(override val parents: List[Type],
-				    override val decls: Scope,
-				    override val symbol: Symbol) extends CompoundType;
+  case class ClassInfoType(
+    override val parents: List[Type],
+    override val decls: Scope,
+    override val symbol: Symbol) extends CompoundType {
+
+    override def isNullable: boolean =
+      symbol == AnyClass ||
+      symbol != AllClass && (symbol isSubClass ObjectClass) && !(symbol isSubClass NonNullClass);
+
+  }
 
   class PackageClassInfoType(decls: Scope, clazz: Symbol) extends ClassInfoType(List(), decls, clazz);
 
@@ -713,6 +733,7 @@ mixin class Types requires SymbolTable {
     override def singleDeref: Type = value.tpe;
     override def deconst: Type = value.tpe;
     override def toString(): String = value.tpe.toString() + "(" + value.stringValue + ")";
+    override def isNullable: boolean = value.value == null
   }
 
   /** A class for named types of the form <prefix>.<sym.name>[args]
@@ -799,6 +820,8 @@ mixin class Types requires SymbolTable {
 
     override def baseClasses: List[Symbol] = sym.info.baseClasses;
 
+    override def isNullable: boolean = sym.info.isNullable
+
     override def toString(): String = {
       if (!settings.debug.value) {
 	if (sym == RepeatedParamClass && !args.isEmpty)
@@ -859,6 +882,8 @@ mixin class Types requires SymbolTable {
     override def baseClasses: List[Symbol] = resultType.baseClasses;
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz);
     override def narrow: Type = resultType.narrow;
+
+    override def isNullable: boolean = resultType.isNullable;
 
     override def toString(): String =
       (if (typeParams.isEmpty) "=> "
@@ -1529,7 +1554,9 @@ mixin class Types requires SymbolTable {
          ||
          sym1 == AllClass
          ||
-         sym1 == AllRefClass && sym2 != AllClass && tp2 <:< AnyRefClass.tpe)
+         sym1 == AllRefClass &&
+         (if (X) tp2.isNullable
+          else sym2 != AllClass && tp2 <:< AnyRefClass.tpe))
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
@@ -1564,7 +1591,9 @@ mixin class Types requires SymbolTable {
       case Pair(TypeRef(pre1, sym1, args1), _) =>
         (sym1 == AllClass && tp2 <:< AnyClass.tpe
          ||
-         sym1 == AllRefClass && tp2.symbol != AllClass && tp2 <:< AnyRefClass.tpe)
+         sym1 == AllRefClass && (
+           if (X) tp2.isNullable
+           else tp2.symbol != AllClass && tp2 <:< AnyRefClass.tpe))
       case _ =>
         false
     }
@@ -1904,7 +1933,7 @@ mixin class Types requires SymbolTable {
           }
 	} catch {
           case _: MalformedClosure =>
-            if (ts forall (t => t <:< AnyRefClass.tpe)) AllRefClass.tpe
+            if (ts forall (t => if (X) t.isNullable else t <:< AnyRefClass.tpe)) AllRefClass.tpe
             else AllClass.tpe
         }
     }

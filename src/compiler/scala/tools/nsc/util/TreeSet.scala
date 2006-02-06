@@ -7,7 +7,7 @@ package scala.tools.nsc.util;
 
 /** Sets implemented as binary trees.
  */
-class TreeSet[T <: AnyRef](less: (T, T) => boolean) extends Set[T] {
+class TreeSet[T >: AllRef <: AnyRef](less: (T, T) => boolean) extends Set[T] {
 
   private class Tree(val elem: T) {
     var l: Tree = null;

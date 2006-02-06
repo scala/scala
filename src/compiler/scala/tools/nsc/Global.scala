@@ -221,6 +221,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object checkDefined extends CheckDefined {
+    val global: Global.this.type = Global.this;
+  }
+
   object explicitOuter extends ExplicitOuter {
     val global: Global.this.type = Global.this;
   }
@@ -279,6 +283,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     uncurry,
     tailCalls,
     transMatcher,
+    checkDefined,
     explicitOuter,
     erasure,
     lambdaLift,

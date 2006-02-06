@@ -88,6 +88,9 @@ object ScalaRunTime {
       false
   }
 
+  def checkDefined[T >: AllRef](x: T): T =
+    if (x == null) throw new UndefinedException else x
+
   def Seq[a](xs: a*): Seq[a] = null; // interpreted specially by new backend.
 
   def booleanValue(x: BoxedBoolean): Boolean = if (x eq null) false else x.booleanValue();

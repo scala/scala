@@ -208,7 +208,7 @@ mixin class Infer requires Analyzer {
       if (!found.isError && !req.isError) {
 	error(pos,
           "type mismatch" + foundReqMsg(found, req) +
-   	  (if (!(found.resultType eq found) && isCompatible(found.resultType, req))
+   	  (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
 	    "\n possible cause: missing arguments for method or constructor"
 	   else ""));
 	if (settings.explaintypes.value)
@@ -257,6 +257,9 @@ mixin class Infer requires Analyzer {
       val tp1 = normalize(tp);
       (tp1 <:< pt) || isCoercible(tp, pt)
     }
+
+    def isWeaklyCompatible(tp: Type, pt: Type): boolean =
+      pt.symbol == UnitClass || isCompatible(tp, pt);
 
     def isCoercible(tp: Type, pt: Type): boolean = false;
 
@@ -378,7 +381,7 @@ mixin class Infer requires Analyzer {
 	  if (undetparams.isEmpty) {
 	    (formals.length == argtpes.length &&
 	     isCompatible(argtpes, formals) &&
-	     isCompatible(restpe, pt))
+	     isWeaklyCompatible(restpe, pt))
 	  } else {
 	    try {
 	      val uninstantiated = new ListBuffer[Symbol];

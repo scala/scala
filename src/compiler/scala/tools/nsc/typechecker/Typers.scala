@@ -377,8 +377,7 @@ mixin class Typers requires Analyzer {
 	    } else {
 	      clazz.initialize
 	      if (clazz.hasFlag(CASE)) {   // (5.1)
-		val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setOriginal(tree)
-
+		val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setPos tree.pos
 
 		// tree.tpe.prefix.memberType(clazz.primaryConstructor); //!!!
 		inferConstructorInstance(tree1, clazz.unsafeTypeParams, pt)
@@ -1286,7 +1285,8 @@ mixin class Typers requires Analyzer {
               .setPos(tpt1.pos)
               .setType(appliedType(tpt1.tpe, context.undetparams map (.tpe)))
           }
-	  if (tpt1.tpe.symbol.isMixin) error(tree.pos, "mixin classes cannot be instantiated")
+	  if (tpt1.tpe.symbol hasFlag ABSTRACT)
+            error(tree.pos, ""+tpt1.tpe.symbol+" is abstract; cannot be instantiated")
           copy.New(tree, tpt1).setType(tpt1.tpe)
 
         case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>

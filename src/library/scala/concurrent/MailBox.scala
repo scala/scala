@@ -137,7 +137,7 @@ trait ListQueueCreator {
 /** Efficient queue module creator based on linked lists. */
 trait LinkedListQueueCreator {
   import scala.collection.mutable.LinkedList;
-  def queueCreate[a <: AnyRef]: QueueModule[a] = new QueueModule[a] {
+  def queueCreate[a >: AllRef <: AnyRef]: QueueModule[a] = new QueueModule[a] {
     type t = Pair[LinkedList[a], LinkedList[a]]; // fst = the list, snd = last elem
     def make: t = {
       val l = new LinkedList[a](null, null);
