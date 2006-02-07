@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc;
 
-import java.io._;
+//import java.io._;
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter};
 
 /** The main class for NSC, a compiler for the programming
