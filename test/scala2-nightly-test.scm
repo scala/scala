@@ -5,28 +5,23 @@ exec scsh -e main -s "$0" "$@"
 ;; Script to perform the nightly test/build of Scala.
 ;;
 ;; Always make sure that the latest version of this file is copied to
-;; ~scalatest/bin/scala-nightly-test.scm
+;; ~scalatest/bin/scala2-nightly-test.scm
 ;;
 ;; $Id$
 
-;; Makefile.private to use for the build.
-(define private-makefile "Makefile.private")
-(define source-private-makefile
-  (expand-file-name (string-append "~scalatest/support/" private-makefile)))
-
-;; CVS repository containing the Scala compiler.
-(define scala-cvs-repository-dir
-  (expand-file-name "~cvslamp/repositories/scala"))
-;; CVS module containing the compiler.
-(define scala-cvs-module-name "scala")
+;; SVN repository containing the Scala compiler.
+(define scala-svn-repository-dir
+  "http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk")
+;; SVN module containing the compiler.
+(define scala-svn-module-name "scala")
 
 ;; E-mail address to which the failure notification should be sent.
 (define notify-email "scala-devel@groupes.epfl.ch")
-; (define notify-email "Michel.Schinz@epfl.ch") ; DEBUG
+;;(define notify-email "stephane.micheloud@epfl.ch") ; DEBUG
 
 ;; Directory in which the distribution should be built.
 (define nightly-build-dir
-  (expand-file-name "~linuxsoft/archives/scala/nightly"))
+  (expand-file-name "~linuxsoft/archives/scala/nightly-scala2"))
 
 ;; End of configuration section.
 
@@ -43,17 +38,17 @@ exec scsh -e main -s "$0" "$@"
 
 (define (get-public-link file)
   (temp-file-iterate (lambda (link) (create-symlink file link) link)
-                     (expand-file-name "~/public_html/log-~a.txt")))
+                     (expand-file-name "~/public_html/log-scala2-~a.txt")))
 
 (define (get-checkout-dir base-dir date)
-  (expand-file-name (format-date "~Y-~m-~d" date) base-dir))
+  (expand-file-name (string-append (format-date "~Y-~m-~d" date) "-scala2") base-dir))
 
 (define (start-section title)
   (format #t "\n* ~a\n\n" title))
 
 (define (scala-test base-dir)
   (let* ((checkout-dir (get-checkout-dir base-dir (date)))
-         (log-file (expand-file-name "log" checkout-dir)))
+         (log-file (expand-file-name "log-scala2" checkout-dir)))
     (create-directory checkout-dir)
     (call-with-output-file log-file
       (lambda (log-port)
@@ -76,25 +71,21 @@ exec scsh -e main -s "$0" "$@"
         (let ((fail-if-error (lambda (code) (if (not (zero? code))
                                                 (return #f)))))
           (start-section "Checking out Scala module")
-          (fail-if-error (run (cvs -d ,scala-cvs-repository-dir
-                                   checkout
-                                   -P
-                                   ,scala-cvs-module-name)))
-          (with-cwd scala-cvs-module-name
-                    (start-section "Creating link(s)")
-                    (create-symlink source-private-makefile private-makefile)
+          (fail-if-error (run (svn co ,scala-svn-repository-dir
+                                   ,scala-svn-module-name)))
+          (with-cwd scala-svn-module-name
                     (start-section "Compiling Scala compiler")
-                    (fail-if-error (run (make)))
-                    (start-section "Testing Scala compiler (1)")
-                    (fail-if-error (run (make test)))
-                    (start-section "Testing Scala compiler (2)")
+                    (fail-if-error (run (ant clean.all)))
+                    (start-section "Creating small Scala distribution")
+                    (fail-if-error (run (ant dist)))
+                    (start-section "Testing Scala compiler")
                     (fail-if-error
-                     (run (./objects/main/bin/scalatest --color=none
-                                                        --show-log)))
-                    (start-section "Creating nightly distribution")
-                    (run (rm -rf ,nightly-build-dir))
-                    (create-directory nightly-build-dir)
-                    (fail-if-error (run (make distrib) (< /dev/null)))
+                     (run (./test/scalatest --color=none
+                                            --show-log)))
+;;                  (start-section "Creating nightly distribution")
+;;                  (run (rm -rf ,nightly-build-dir))
+;;                  (create-directory nightly-build-dir)
+;;                  (fail-if-error (run (ant dist) (< /dev/null)))
                     #t)))
       (lambda ()
         (start-section "Ending time")
@@ -103,7 +94,7 @@ exec scsh -e main -s "$0" "$@"
 (define (send-warning-mail log-file-name link-name)
   (send-mail
    notify-email
-   `(("Subject"  . "Failure of nightly scala test")
+   `(("Subject"  . "Failure of nightly Scala 2 test")
      ("To"       . ,notify-email)
      ("Reply-To" . ,notify-email))
    (string-append
