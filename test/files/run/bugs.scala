@@ -335,7 +335,7 @@ object Bug257Test {
 // version - A
 
 abstract class Bug266AFoo {
-  type T <: AnyRef;
+  type T >: AllRef <: AnyRef;
   abstract class I0 { def f(x: T): Unit; f(null); }
 }
 
