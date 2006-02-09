@@ -49,8 +49,6 @@ mixin class Types requires SymbolTable {
 
   val emptyTypeArray = new Array[Type](0);
 
-  final val X = true;
-
   /** The base class for all types */
   abstract class Type {
 
@@ -128,7 +126,10 @@ mixin class Types requires SymbolTable {
     def isStable: boolean = false;
 
     /** Does this type denote a reference type which can be null? */
-    def isNullable: boolean = false;
+    // def isNullable: boolean = false;
+
+    /** Is this type guaranteed to be non-null? */
+    // def isNonNull: boolean = false;
 
     /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
@@ -433,6 +434,7 @@ mixin class Types requires SymbolTable {
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz);
     override def closure: Array[Type] = supertype.closure;
     override def baseClasses: List[Symbol] = supertype.baseClasses;
+    // override def isNonNull = supertype.isNonNull;
   }
 
   /** A base class for types that represent a single value
@@ -466,20 +468,20 @@ mixin class Types requires SymbolTable {
     override def baseType(clazz: Symbol): Type = this;
     override def toString(): String = "<error>";
     override def narrow: Type = this;
-    override def isNullable: boolean = true;
+    // override def isNullable: boolean = true;
   }
 
   /** An object representing an unknown type */
   case object WildcardType extends Type {
     override def toString(): String = "?"
-    override def isNullable: boolean = true;
+    // override def isNullable: boolean = true;
   }
 
   /** An object representing a non-existing type */
   case object NoType extends Type {
     override def isTrivial: boolean = true;
     override def toString(): String = "<notype>"
-    override def isNullable: boolean = true;
+    // override def isNullable: boolean = true;
   }
 
   /** An object representing a non-existing prefix */
@@ -488,7 +490,7 @@ mixin class Types requires SymbolTable {
     override def isStable: boolean = true;
     override def prefixString = "";
     override def toString(): String = "<noprefix>";
-    override def isNullable: boolean = true;
+    // override def isNullable: boolean = true;
   }
 
   /** A class for this-types of the form <sym>.this.type
@@ -496,6 +498,7 @@ mixin class Types requires SymbolTable {
   abstract case class ThisType(sym: Symbol) extends SingletonType {
     //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym);
     override def isTrivial: boolean = sym.isPackageClass;
+    // override def isNonNull = true;
     override def symbol = sym;
     override def singleDeref: Type = sym.typeOfThis;
     override def prefixString =
@@ -513,6 +516,8 @@ mixin class Types requires SymbolTable {
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     override val isTrivial: boolean = pre.isTrivial;
+    // override def isNullable = supertype.isNullable;
+    // override def isNonNull = supertype.isNonNull;
     private var singleDerefCache: Type = _;
     private var singleDerefPhase: Phase = null;
     override def singleDeref: Type = {
@@ -534,6 +539,7 @@ mixin class Types requires SymbolTable {
 
   abstract case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
     override val isTrivial: boolean = thistpe.isTrivial && supertp.isTrivial;
+    // override def isNonNull = true;
     override def symbol = thistpe.symbol;
     override def singleDeref = supertp;
     override def prefix: Type = supertp.prefix;
@@ -551,14 +557,13 @@ mixin class Types requires SymbolTable {
     def supertype: Type = hi;
     override def bounds: TypeBounds = this;
     def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
-    override def isNullable: boolean = AllRefClass.tpe <:< lo;
+    // override def isNullable: boolean = AllRefClass.tpe <:< lo;
     override def toString() = ">: " + lo + " <: " + hi;
   }
 
   /** A common base class for intersection types and class types
    */
   abstract class CompoundType extends Type {
-    assert(!parents.exists (.isInstanceOf[TypeBounds]), this);//debug
 
     private var closureCache: Array[Type] = _;
     private var closurePhase: Phase = null;
@@ -692,8 +697,10 @@ mixin class Types requires SymbolTable {
 
     override def narrow: Type = symbol.thisType;
 
-    override def isNullable: boolean =
-      parents forall (p => p.isNullable && !p.symbol.isAbstractType);
+    // override def isNonNull: boolean = parents forall (.isNonNull);
+
+    // override def isNullable: boolean =
+    // parents forall (p => p.isNullable && !p.symbol.isAbstractType);
 
     override def toString(): String = (
       parents.mkString("", " with ", "") +
@@ -717,10 +724,11 @@ mixin class Types requires SymbolTable {
     override val decls: Scope,
     override val symbol: Symbol) extends CompoundType {
 
-    override def isNullable: boolean =
-      symbol == AnyClass ||
-      symbol != AllClass && (symbol isSubClass ObjectClass) && !(symbol isSubClass NonNullClass);
+    // override def isNullable: boolean =
+    // symbol == AnyClass ||
+    // symbol != AllClass && (symbol isSubClass ObjectClass) && !(symbol isSubClass NonNullClass);
 
+    // override def isNonNull: boolean = symbol == NonNullClass || super.isNonNull;
   }
 
   class PackageClassInfoType(decls: Scope, clazz: Symbol) extends ClassInfoType(List(), decls, clazz);
@@ -733,7 +741,8 @@ mixin class Types requires SymbolTable {
     override def singleDeref: Type = value.tpe;
     override def deconst: Type = value.tpe;
     override def toString(): String = value.tpe.toString() + "(" + value.stringValue + ")";
-    override def isNullable: boolean = value.value == null
+    // override def isNullable: boolean = value.value == null
+    // override def isNonNull: boolean = value.value != null
   }
 
   /** A class for named types of the form <prefix>.<sym.name>[args]
@@ -820,7 +829,7 @@ mixin class Types requires SymbolTable {
 
     override def baseClasses: List[Symbol] = sym.info.baseClasses;
 
-    override def isNullable: boolean = sym.info.isNullable
+    // override def isNullable: boolean = sym.info.isNullable
 
     override def toString(): String = {
       if (!settings.debug.value) {
@@ -883,7 +892,7 @@ mixin class Types requires SymbolTable {
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz);
     override def narrow: Type = resultType.narrow;
 
-    override def isNullable: boolean = resultType.isNullable;
+    // override def isNullable: boolean = resultType.isNullable;
 
     override def toString(): String =
       (if (typeParams.isEmpty) "=> "
@@ -1550,14 +1559,15 @@ mixin class Types requires SymbolTable {
          ||
          sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
          ||
+//         sym2 == NonNullClass && tp1.isNonNull
+//         ||
          sym2.isClass &&
            ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
          ||
          sym1 == AllClass
          ||
-         sym1 == AllRefClass &&
-         (if (X) tp2.isNullable
-          else sym2 != AllClass && tp2 <:< AnyRefClass.tpe))
+         // System.out.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
+         sym1 == AllRefClass && sym2.isClass && (sym2 isSubClass ObjectClass))
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
@@ -1592,9 +1602,12 @@ mixin class Types requires SymbolTable {
       case Pair(TypeRef(pre1, sym1, args1), _) =>
         (sym1 == AllClass && tp2 <:< AnyClass.tpe
          ||
-         sym1 == AllRefClass && (
+         sym1 == AllRefClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
+/*         ||
+         sym1 == AllRefClass && tp2.symbol != AllClass &&
+         tp2 <:< AnyRefClass.tpe))
            if (X) tp2.isNullable
-           else tp2.symbol != AllClass && tp2 <:< AnyRefClass.tpe))
+           else tp2.symbol != AllClass && tp2 <:< AnyRefClass.tpe))*/
       case _ =>
         false
     }
@@ -1934,7 +1947,7 @@ mixin class Types requires SymbolTable {
           }
 	} catch {
           case _: MalformedClosure =>
-            if (ts forall (t => if (X) t.isNullable else t <:< AnyRefClass.tpe)) AllRefClass.tpe
+            if (ts forall (t => AllRefClass.tpe <:< t)) AllRefClass.tpe
             else AllClass.tpe
         }
     }

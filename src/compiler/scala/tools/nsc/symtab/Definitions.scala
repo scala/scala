@@ -73,7 +73,7 @@ mixin class Definitions requires SymbolTable {
     var ArrayClass: Symbol = _;
     var TypeClass: Symbol = _;
     var SerializableClass: Symbol = _;
-    var NonNullClass: Symbol = _;
+    //var NonNullClass: Symbol = _;
     var PredefModule: Symbol = _;
     var ConsoleModule: Symbol = _;
     var MatchErrorClass: Symbol = _;
@@ -349,7 +349,7 @@ mixin class Definitions requires SymbolTable {
       ArrayClass = getClass("scala.Array");
       //TypeClass = getClass("scala.Type");
       SerializableClass = getClass("java.io.Serializable");
-      NonNullClass = getClass("scala.NonNull");
+      //NonNullClass = getClass("scala.NonNull");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
       MatchErrorClass = getClass("scala.MatchError");

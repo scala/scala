@@ -834,9 +834,19 @@ mixin class Typers requires Analyzer {
       copy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
-    def typedCases(tree: Tree, cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] = {
-      List.mapConserve(cases)(cdef =>
-	newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt))
+    def typedCases(tree: Tree, cases: List[CaseDef], pattp0: Type, pt: Type): List[CaseDef] = {
+      var pattp = pattp0
+      List.mapConserve(cases) ( cdef =>
+	  newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt))
+/* not yet!
+        cdef.pat match {
+          case Literal(Constant(null)) =>
+            if (!(pattp <:< NonNullClass.tpe))
+              pattp = intersectionType(List(pattp, NonNullClass.tpe), context.owner)
+          case _ =>
+        }
+        result
+*/
     }
 
     def typedFunction(fun: Function, mode: int, pt: Type): Tree = {

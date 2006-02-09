@@ -540,9 +540,9 @@ mixin class Infer requires Analyzer {
 		System.out.println("new bounds of " + tparam + " = " + tparam.info);//debug
 	      }
 	    }
-	  } else { System.out.println("no instance: "); instError }
-	} else { System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
-      } else { System.out.println("not fuly defined: " + pt); instError }
+	  } else { if (settings.debug.value) System.out.println("no instance: "); instError }
+	} else { if (settings.debug.value) System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
+      } else { if (settings.debug.value) System.out.println("not fuly defined: " + pt); instError }
     }
 
     /* -- Overload Resolution ----------------------------------------------------------- */
