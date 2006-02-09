@@ -12,16 +12,19 @@ exec scsh -e main -s "$0" "$@"
 ;; SVN repository containing the Scala compiler.
 (define scala-svn-repository-dir
   "http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk")
+
 ;; SVN module containing the compiler.
 (define scala-svn-module-name "scala")
 
 ;; E-mail address to which the failure notification should be sent.
 (define notify-email "scala-devel@groupes.epfl.ch")
 ;;(define notify-email "stephane.micheloud@epfl.ch") ; DEBUG
+;;(define notify-email "lex.spoon@epfl.ch") ; DEBUG
 
 ;; Directory in which the distribution should be built.
 (define nightly-build-dir
-  (expand-file-name "~linuxsoft/archives/scala/nightly-scala2"))
+;;  (expand-file-name "~lex/scala/nightly-scala2"))  ; DEBUG
+    "~linuxsoft/archives/scala/nightly-scala2"))
 
 ;; End of configuration section.
 
@@ -101,7 +104,9 @@ exec scsh -e main -s "$0" "$@"
     "Tonight's automatic Scala test failed. More details can be found\n"
     "in file "log-file-name"\n"
     "which is available through the following URL:\n\n"
-    "  http://lamp.epfl.ch/~scalatest/"link-name)))
+    "  http://lamp.epfl.ch/~scalatest/"link-name"\n"
+    "\n"
+    (run/string (fgrep "[FAILED]" ,log-file-name)))))
 
 (define (send-mail to headers body)
   (let ((mail-port (make-string-output-port)))
