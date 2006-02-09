@@ -26,7 +26,6 @@ import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
 import backend.jvm.GenJVM;
 
-
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
                                                              with CompilationUnits
@@ -83,6 +82,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     if (onlyPresentation) new HashMap[Symbol,String];
     else null;
 
+
 // reporting -------------------------------------------------------
 
   def error(msg: String) = reporter.error(null, msg);
@@ -98,6 +98,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def log(msg: Object): unit =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
+
+  def logError(msg: String, t : Throwable): Unit = {};
 
   def abort(msg: String) = throw new Error(msg);
 

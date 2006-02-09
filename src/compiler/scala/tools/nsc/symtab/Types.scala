@@ -1318,6 +1318,7 @@ mixin class Types requires SymbolTable {
     var result: Symbol = _;
     def init = { result = NoSymbol }
     def apply(tp: Type): Type = {
+      assert(tp != null);
       tp match {
 	case ThisType(sym) =>
           register(sym);

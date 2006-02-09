@@ -65,8 +65,9 @@ class Position( val source : SourceFile, val offset: Int) {
   } else 0;
 
 
-  def dbgString =
-    if (isLine) "line-" + line;
+  def dbgString = {
+    "source: " + (if (source == null) source else source . path) + " " +
+    (if (isLine) "line-" + line;
     else if (!hasOffset) "NOP";
     else if (offset >= source.content.length) "out-of-bounds-" + offset else {
       val ret = "offset=" + offset + " line=" + line;
@@ -74,7 +75,8 @@ class Position( val source : SourceFile, val offset: Int) {
       while (offset + add.length() < source.content.length &&
 	     add.length() < 10) add = add + source.content(offset + add.length());
       ret + " c[0..9]=\"" + add + "\"";
-    }
+    })
+  }
 
 
 

@@ -36,7 +36,7 @@ mixin class Analyzer
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       resetTyper;
       def apply(unit: CompilationUnit): unit =
-	unit.body = newTyper(startContext.make(unit)).typed(unit.body)
+        unit.body = newTyper(startContext.make(unit)).typed(unit.body)
     }
   }
 }

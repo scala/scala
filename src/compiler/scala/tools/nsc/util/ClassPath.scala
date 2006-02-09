@@ -35,9 +35,11 @@ class ClassPath(onlyPresentation : Boolean) {
     def source   : Source;
   }
 
+
   class Output(location0 : AbstractFile, val sourceFile : AbstractFile) extends Entry(location0) {
     def source = if (sourceFile != null) new Source(sourceFile, true); else null;
   }
+
   class Library(location0: AbstractFile) extends Entry(location0) {
     def doc : AbstractFile = null;
     def sourceFile : AbstractFile = null;

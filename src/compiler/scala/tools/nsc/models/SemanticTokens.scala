@@ -97,6 +97,7 @@ class SemanticTokens(val compiler: Global) {
   }
   def Process(unit : CompilationUnit) = new Process(unit);
   class Process(val unit : CompilationUnit) {
+    private var doLog = true;
     def source = unit.source;
 
     def dbg(tree : Tree) = {(
@@ -160,7 +161,7 @@ class SemanticTokens(val compiler: Global) {
     // ok start building....
     def build[T <: Tree](trees : List[T]) : Unit = for (val tree : T <- trees) build(tree);
 
-    def build(tree0 : Tree) : Unit = {
+    def build(tree0 : Tree) : Unit = try {
       if (tree0.pos != Position.NOPOS) tree0 match {
       case tree : ImplDef =>
         val pos = tree.namePos(unit.source);
@@ -227,13 +228,15 @@ class SemanticTokens(val compiler: Global) {
 				}
 	    build(tree.body);
 	  case tree : TypeTree =>
+      val treex = tree;
 	    val tree1 = if (tree.original != null) tree.original; else tree;
 	    if (tree.tpe != null) buildT(tree1, tree.tpe);
 	    def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != Position.NOPOS) tpe match {
 		  case tpe0 : TypeRef => tree match {
 		    case apt : AppliedTypeTree =>
 		      buildUse(tpe.symbol, apt.tpt.pos, tpe0);
-		      //System.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " " + " " + apt.args + " " + tpe0.args);
+		      //System.err.println("APT: " + treex + " vs. " + treex.original);
+		      //System.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " apt.args=" + apt.args + " tpe0.args=" + tpe0.args);
 
 		      buildTs (apt.args, tpe0.args);
 		    case ident : Ident => buildUse(tpe0.sym, ident.pos, tpe0);
@@ -294,10 +297,19 @@ class SemanticTokens(val compiler: Global) {
 			  System.err.println("UNKNOWN TPE4: " + dbg(tree) + " vs. " + tpe + " " + (if (tpe != null) "" + tpe.getClass() + " " + tpe.getClass().getSuperclass() else null));
 		  }
 		};
-    def buildTs(trees : List[Tree], types : List[Type]): Unit = if (!trees.isEmpty || !types.isEmpty) {
+    def buildTs(trees : List[Tree], types : List[Type]): Unit = if (!trees.isEmpty && !types.isEmpty) {
 			  buildT (trees.head, types.head);
 			  buildTs(trees.tail, types.tail);
-		};
+		} else if (trees.isEmpty != types.isEmpty) {
+ 			if (false && doLog) {
+        Console.println("" + treex + " vs. " + treex.original);
+        if (treex.original != null)
+          Console.println("" + treex.tpe + " vs. " + treex.original.tpe);
+ 			  logError("Tree vs. Type mismatch: " + trees + " " + types + " " + unit.source.dbg(tree.pos), null);
+        doLog = false;
+      }
+    };
+
 	  case tree : AbsTypeDef =>
     	//System.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + unit.source.dbg(tree.pos));
 	    buildDef(tree.symbol, tree.namePos);
@@ -357,7 +369,9 @@ class SemanticTokens(val compiler: Global) {
 	  case _ => ;
 	    System.err.println("BAIL: " + unit.source.dbg(tree0.pos) + " " + tree0 + " " + tree0.getClass());
     }
-	}
+	} catch {
+    case t : Throwable => logError("Error occured at " + unit.source.dbg(tree0.pos), t);
+  }
 
 
 	def buildUse(term : Symbol, pos : Int, tpe : Type) = buildSym(term, pos, false, tpe);

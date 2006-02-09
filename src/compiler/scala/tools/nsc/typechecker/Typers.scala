@@ -380,10 +380,22 @@ mixin class Typers requires Analyzer {
 		val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setPos tree.pos
 
 		// tree.tpe.prefix.memberType(clazz.primaryConstructor); //!!!
-		inferConstructorInstance(tree1, clazz.unsafeTypeParams, pt)
-		tree1
+			try {
+			  inferConstructorInstance(tree1, clazz.unsafeTypeParams, pt)
+      } catch {
+        case npe : NullPointerException =>
+          logError("CONTEXT: " + context . unit . source .dbg(tree.pos), npe);
+          throw npe;
+        case fe : FatalError =>
+          logError("CONTEXT: " + context . unit . source .dbg(tree.pos), fe);
+          throw fe;
+        case t : Throwable =>
+          logError("CONTEXT: " + context . unit . source .dbg(tree.pos), t);
+          throw t;
+      }
+      tree1
 	      } else if (clazz.isSubClass(SeqClass)) { // (5.2)
-		pt.baseType(clazz).baseType(SeqClass) match {
+	        pt.baseType(clazz).baseType(SeqClass) match {
 		  case TypeRef(pre, seqClass, args) =>
 		    tree.setType(MethodType(List(typeRef(pre, RepeatedParamClass, args)), pt))
 		  case NoType =>

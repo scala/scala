@@ -12,6 +12,8 @@ import Flags._;
 mixin class Definitions requires SymbolTable {
 
   object definitions {
+    def isDefinitionsInitialized = isInitialized;
+
 
     // root packages and classes
     var RootClass: Symbol = _;
@@ -294,7 +296,7 @@ mixin class Definitions requires SymbolTable {
 	  .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
 
       EmptyPackage =
-	RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
+        RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
       EmptyPackageClass = EmptyPackage.moduleClass;
       EmptyPackageClass.setInfo(ClassInfoType(List(), new Scope(), EmptyPackageClass));
 
@@ -304,6 +306,7 @@ mixin class Definitions requires SymbolTable {
       JavaPackage = getModule("java");
       JavaLangPackage = getModule("java.lang");
       ScalaPackage = getModule("scala");
+      assert(ScalaPackage != null, "Scala package is null");
       ScalaPackageClass = ScalaPackage.tpe.symbol;
 
       AnyClass = newClass(ScalaPackageClass, "Any", List());

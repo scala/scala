@@ -19,22 +19,25 @@ mixin class Contexts requires Analyzer {
   val startContext = {
     import definitions._;
     var sc = NoContext.make(
-      Template(List(), List()) setSymbol NoSymbol setType NoType,
-      definitions.RootClass,
-      definitions.RootClass.info.decls);
+        Template(List(), List()) setSymbol NoSymbol setType NoType,
+        definitions.RootClass,
+        definitions.RootClass.info.decls);
     def addImport(pkg: Symbol): unit = {
+      assert(pkg != null, "package is null");
       val qual = gen.mkStableRef(pkg);
       sc = sc.makeNewImport(
-	Import(qual, List(Pair(nme.WILDCARD, null)))
-           setSymbol NoSymbol.newImport(Position.NOPOS).setInfo(ImportType(qual))
-           setType NoType);
+          Import(qual, List(Pair(nme.WILDCARD, null)))
+          setSymbol NoSymbol.newImport(Position.NOPOS).setInfo(ImportType(qual))
+          setType NoType);
       sc.depth = sc.depth + 1
     }
     if (!settings.noimports.value) {
+      assert(isDefinitionsInitialized);
       addImport(JavaLangPackage);
+      assert(ScalaPackage != null, "Scala package is null");
       addImport(ScalaPackage);
       if (!settings.nopredefs.value)
-	addImport(PredefModule);
+        addImport(PredefModule);
     }
     sc
   }
