@@ -171,18 +171,21 @@ INITIALISATION
       </or>
     </condition>
     <if><isset property="os.cygwin"/>
-      <then><echo>SABBUS detected a Cygwin environnement</echo></then>
+      <then><echo>OS type:  Cygwin</echo></then>
       <elseif><isset property="os.win"/>
-        <then><echo>SABBUS detected a Windows environnement</echo></then>
+        <then><echo>OS type:  Windows</echo></then>
       </elseif>
       <elseif><isset property="os.unix"/>
-        <then><echo>SABBUS detected a UNIX environnement</echo></then>
+        <then><echo>OS type:  UNIX</echo></then>
       </elseif>
       <else>
         <fail>System environment could not be determined</fail>
       </else>
     </if>
-    <echo>Java environment: ${java.home}</echo>
+    <echo>OS name:  ${os.name} ${os.arch} ${os.version}</echo>
+    <echo>Java:     ${java.version} ('${java.home}')</echo>
+    <echo>Java VM:  ${java.vm.name} ${java.vm.version}</echo>
+    <echo>Ant:      ${ant.version}</echo>
   </target>
   
   <target name="setup" depends="init">
