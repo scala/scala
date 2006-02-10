@@ -173,7 +173,7 @@ mixin class Definitions requires SymbolTable {
 
     // special attributes
     var SerializableAttr: Type = _;
-
+    var BeanPropertyAttr: Type = _;
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname, true);
@@ -420,6 +420,7 @@ mixin class Definitions requires SymbolTable {
       ObjectRefClass = getClass("scala.runtime.ObjectRef");
 
       SerializableAttr = getClass("scala.serializable").tpe;
+      BeanPropertyAttr = getClass("scala.runtime.compat.BeanProperty").tpe;
     }
   }
 }

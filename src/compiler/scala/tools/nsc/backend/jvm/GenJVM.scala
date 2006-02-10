@@ -63,6 +63,7 @@ abstract class GenJVM extends SubComponent {
     val TransientAtt     = definitions.getClass("scala.transient").tpe;
     val VolatileAttr     = definitions.getClass("scala.volatile").tpe;
     val RemoteAttr       = definitions.getClass("scala.remote").tpe;
+    val BeanPropertyAttr = definitions.BeanPropertyAttr;
 
     val CloneableClass   = definitions.getClass("java.lang.Cloneable");
     val RemoteInterface  = definitions.getClass("java.rmi.Remote");
@@ -942,7 +943,21 @@ abstract class GenJVM extends SubComponent {
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
       else
-        sym.simpleName.toString().trim()) + suffix;
+        {
+          if ( sym.hasFlag(Flags.ACCESSOR) && sym.attributes.exists(a => a match{
+            case Pair(BeanPropertyAttr, _) => true
+            case _ => false
+          }))
+            {
+              if (sym.isSetter)
+                "set" + nme.setterToGetter(sym.simpleName).toString()
+              else "get" + sym.simpleName.toString()
+            }
+              else {
+                sym.simpleName.toString()
+          }.trim()
+        }
+      ) + suffix;
     }
 
     def javaNames(syms: List[Symbol]): Array[String] = {
