@@ -931,21 +931,25 @@ mixin class Parsers requires SyntaxAnalyzer {
      *  Enumerator  ::= Generator
      *                | Expr
      */
-    def enumerators(): List[Tree] = {
-      val enums = new ListBuffer[Tree] + generator();
+    def enumerators(): List[Enumerator] = {
+      val enums = new ListBuffer[Enumerator] + generator(false);
       while (in.token == SEMI || in.token == NEWLINE) {
 	in.nextToken();
-	enums += (if (in.token == VAL) generator() else expr())
+	enums += (if (in.token == VAL) generator(true) else Filter(expr()))
       }
       enums.toList
     }
 
     /** Generator ::= val Pattern1 `<-' Expr
      */
-    def generator(): Tree =
-      atPos(accept(VAL)) {
-	makeGenerator(pattern1(false), { accept(LARROW); expr() })
-      }
+    def generator(eqOK: boolean): Enumerator = {
+      val pos = accept(VAL);
+      val pat = pattern1(false);
+      val tok = in.token;
+      if (tok == EQUALS && eqOK) in.nextToken()
+      else accept(LARROW);
+      makeGenerator(pos, pat, tok == EQUALS, expr)
+    }
 
 //////// PATTERNS ////////////////////////////////////////////////////////////
 

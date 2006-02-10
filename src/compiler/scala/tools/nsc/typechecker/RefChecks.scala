@@ -504,6 +504,28 @@ abstract class RefChecks extends InfoTransform {
 	case ex: TypeError => unit.error(tree.pos, ex.getMessage());
       }
 
+      def isIrrefutable(pat: Tree, seltpe: Type): boolean = {
+        val result = pat match {
+          case Apply(_, args) =>
+            val clazz = pat.tpe.symbol;
+            clazz == seltpe.symbol &&
+            clazz.isClass && (clazz hasFlag CASE) &&
+            List.forall2(
+              args,
+              clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable)
+          case Typed(pat, tpt) =>
+            seltpe <:< tpt.tpe
+          case Ident(nme.WILDCARD) =>
+            true
+          case Bind(_, pat) =>
+            isIrrefutable(pat, seltpe)
+          case _ =>
+            false
+        }
+        //System.out.println("is irefutable? " + pat + ":" + pat.tpe + " against " + seltpe + ": " + result);//DEBUG
+        result
+      }
+
       val savedLocalTyper = localTyper;
       val sym = tree.symbol;
       var result = tree;
@@ -540,6 +562,15 @@ abstract class RefChecks extends InfoTransform {
 	case TypeApply(fn, args) =>
 	  checkBounds(fn.tpe.typeParams, args map (.tpe));
 	  if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor;
+
+        case Apply(
+          Select(qual, nme.filter),
+          List(Function(
+            List(ValDef(_, pname, tpt, _)),
+            Match(_, CaseDef(pat1, _, _) :: _))))
+          if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
+              isIrrefutable(pat1, tpt.tpe)) =>
+            result = qual
 
 	case New(tpt) =>
 	  enterReference(tree.pos, tpt.tpe.symbol);

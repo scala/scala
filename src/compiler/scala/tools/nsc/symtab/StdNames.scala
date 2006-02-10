@@ -68,6 +68,7 @@ mixin class StdNames requires SymbolTable {
     val SUPER_PREFIX_STRING = "super$";
     val EXPAND_SEPARATOR_STRING = "$$";
     val TUPLE_FIELD_PREFIX_STRING = "_";
+    val CHECK_IF_REFUTABLE_STRING = "check$ifrefutable$";
 
     def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name);
     def TUPLE_FIELD(index: int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index);
