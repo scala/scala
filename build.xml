@@ -182,6 +182,7 @@ INITIALISATION
         <fail>System environment could not be determined</fail>
       </else>
     </if>
+    <echo>Java environment: ${java.home}</echo>
   </target>
   
   <target name="setup" depends="init">
