@@ -6,12 +6,11 @@ import scala.{List=>L}
 
 object Test {
   // redefine some symbols to make it extra hard
-  /*
   class List
   class Pair
   class Tuple2
   def List[A](as:A*) = 5
-  */
+
   def firstDigit(x:int): int =
     x match {
     case 0 => 0
