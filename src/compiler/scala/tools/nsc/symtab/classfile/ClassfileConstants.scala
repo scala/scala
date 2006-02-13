@@ -26,6 +26,8 @@ object ClassfileConstants {
   final val JAVA_ACC_ABSTRACT     = 0x0400;
   final val JAVA_ACC_STRICT       = 0x0800;
   final val JAVA_ACC_SYNTHETIC    = 0x1000;
+  final val JAVA_ACC_ANNOTATION   = 0x2000;
+  final val JAVA_ACC_ENUM         = 0x4000;
 
   // tags describing the type of a literal in the constant pool
   final val CONSTANT_UTF8 = 1;
@@ -54,6 +56,7 @@ object ClassfileConstants {
   final val ENUM_TAG   = 'e';
   final val CLASS_TAG  = 'c';
   final val ARRAY_TAG  = '[';
+  final val VOID_TAG   = 'V';
   final val ANNOTATION_TAG = '@';
 
 }
