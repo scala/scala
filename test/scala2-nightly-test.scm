@@ -24,7 +24,7 @@ exec scsh -e main -s "$0" "$@"
 ;; Directory in which the distribution should be built.
 (define nightly-build-dir
 ;;  (expand-file-name "~lex/scala/nightly-scala2"))  ; DEBUG
-    "~linuxsoft/archives/scala/nightly-scala2"))
+    (expand-file-name "~linuxsoft/archives/scala/nightly-scala2"))
 
 ;; End of configuration section.
 
@@ -77,8 +77,6 @@ exec scsh -e main -s "$0" "$@"
           (fail-if-error (run (svn co ,scala-svn-repository-dir
                                    ,scala-svn-module-name)))
           (with-cwd scala-svn-module-name
-                    (start-section "Compiling Scala compiler")
-                    (fail-if-error (run (ant clean.all)))
                     (start-section "Creating small Scala distribution")
                     (fail-if-error (run (ant dist)))
                     (start-section "Testing Scala compiler")
