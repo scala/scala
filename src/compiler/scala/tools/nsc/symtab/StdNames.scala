@@ -325,6 +325,8 @@ mixin class StdNames requires SymbolTable {
     val JacoMetaATTR = newTermName("JacoMeta");
     val ScalaSignatureATTR = newTermName("ScalaSig");
     val JavaInterfaceATTR = newTermName("JacoInterface");
+    val RuntimeAnnotationATTR = newTermName("RuntimeVisibleAnnotations");
+    val ClassfileAnnotationATTR = newTermName("RuntimeInvisibleAnnotations");
 
     // '_' is temporary
     val _Attribute           = newTypeName("Attribute");
