@@ -27,6 +27,7 @@ object ClassfileConstants {
   final val JAVA_ACC_STRICT       = 0x0800;
   final val JAVA_ACC_SYNTHETIC    = 0x1000;
 
+  // tags describing the type of a literal in the constant pool
   final val CONSTANT_UTF8 = 1;
   final val CONSTANT_UNICODE = 2;
   final val CONSTANT_INTEGER = 3;
@@ -39,4 +40,20 @@ object ClassfileConstants {
   final val CONSTANT_METHODREF = 10;
   final val CONSTANT_INTFMETHODREF = 11;
   final val CONSTANT_NAMEANDTYPE = 12;
+
+  // tags desribing the type of a literal in attribute values
+  final val BYTE_TAG   = 'B';
+  final val CHAR_TAG   = 'C';
+  final val DOUBLE_TAG = 'D';
+  final val FLOAT_TAG  = 'F';
+  final val INT_TAG    = 'I';
+  final val LONG_TAG   = 'J';
+  final val SHORT_TAG  = 'S';
+  final val BOOL_TAG   = 'Z';
+  final val STRING_TAG = 's';
+  final val ENUM_TAG   = 'e';
+  final val CLASS_TAG  = 'c';
+  final val ARRAY_TAG  = '[';
+  final val ANNOTATION_TAG = '@';
+
 }
