@@ -203,22 +203,22 @@ abstract class ClassfileParser {
     def sig2type: Type = {
       val tag = name(index); index = index + 1;
       tag match {
-        case 'B' => definitions.ByteClass.tpe
-        case 'C' => definitions.CharClass.tpe
-        case 'D' => definitions.DoubleClass.tpe
-        case 'F' => definitions.FloatClass.tpe
-        case 'I' => definitions.IntClass.tpe
-        case 'J' => definitions.LongClass.tpe
-        case 'S' => definitions.ShortClass.tpe
-        case 'V' => definitions.UnitClass.tpe
-        case 'Z' => definitions.BooleanClass.tpe
+        case BYTE_TAG   => definitions.ByteClass.tpe
+        case CHAR_TAG   => definitions.CharClass.tpe
+        case DOUBLE_TAG => definitions.DoubleClass.tpe
+        case FLOAT_TAG  => definitions.FloatClass.tpe
+        case INT_TAG    => definitions.IntClass.tpe
+        case LONG_TAG   => definitions.LongClass.tpe
+        case SHORT_TAG  => definitions.ShortClass.tpe
+        case VOID_TAG   => definitions.UnitClass.tpe
+        case BOOL_TAG   => definitions.BooleanClass.tpe
         case 'L' =>
           val start = index;
           while (name(index) != ';') { index = index + 1 }
 	  val end = index;
           index = index + 1;
           definitions.getClass(name.subName(start, end)).tpe
-        case '[' =>
+        case ARRAY_TAG =>
           while ('0' <= name(index) && name(index) <= '9') index = index + 1;
           appliedType(definitions.ArrayClass.tpe, List(sig2type))
         case '(' =>
@@ -357,10 +357,62 @@ abstract class ClassfileParser {
             }
             staticModule.moduleClass.sourceFile = clazz.sourceFile
           }
+        case nme.RuntimeAnnotationATTR =>
+          parseAnnotations(attrLen);
         case _ =>
           in.skip(attrLen)
       }
     }
+    def parseTaggedConstant(): Any = {
+      val tag = in.nextByte();
+      val index = in.nextChar();
+      tag match {
+        case STRING_TAG => pool.getName(index).toString();
+        case BOOL_TAG   => pool.getConstant(index).intValue != 0;
+        case BYTE_TAG   => pool.getConstant(index).byteValue;
+        case CHAR_TAG   => pool.getConstant(index).charValue;
+        case SHORT_TAG  => pool.getConstant(index).shortValue;
+        case INT_TAG    => pool.getConstant(index).intValue
+        case LONG_TAG   => pool.getConstant(index).longValue;
+        case FLOAT_TAG  => pool.getConstant(index).floatValue;
+        case DOUBLE_TAG => pool.getConstant(index).doubleValue;
+        case CLASS_TAG  => sigToType(pool.getExternalName(index)).toString() + ".class";
+        case ENUM_TAG   =>
+          sigToType(pool.getExternalName(index)).toString + "." + pool.getName(in.nextChar);
+        case ARRAY_TAG  =>
+          val arr = new collection.mutable.ListBuffer[Any]();
+          for (val i <- Iterator.range(0, index)) {
+            arr += parseTaggedConstant()
+          }
+        arr.toList.mkString("{", ",", "}");
+      }
+    }
+    def parseAnnotations(len: Int): Unit = {
+      val buf = new StringBuffer();
+      val nAttr = in.nextChar();
+      for (val n <- Iterator.range(0,nAttr)) {
+        val attrNameIndex = in.nextChar();
+        val attrType = sigToType(pool.getExternalName(attrNameIndex));
+        buf.append("@").append(attrType.toString()).append("(");
+        val nargs = in.nextChar()
+        for (val i <- Iterator.range(0, nargs)) {
+          if (i > 0) buf.append(", ");
+          val name = pool.getName(in.nextChar());
+          buf.append(name).append(" = ");
+          val value = parseTaggedConstant();
+          buf.append(value);
+        }
+        buf.append(")");
+      }
+      global.informProgress("parsed attribute " + buf);
+    }
+//     def printAnnotations(len: Int): Unit = {
+//       System.out.print(sym.fullNameString + " : (")
+//       for(val i <- Iterator.range(0, len)) {
+//         System.out.print((if ( i == 0) "" else " ") + ((in.nextByte() + 0x100) & 0xFF))
+//       }
+//       System.out.println(")");
+//     }
     def parseInnerClasses(): unit = {
       for (val i <- Iterator.range(0, in.nextChar())) {
 	val innerIndex = in.nextChar();
