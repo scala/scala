@@ -37,4 +37,7 @@ final class MatchError(msg: String) extends Error(msg) {
       this(" in '" + source + "' at line " + line);
     def this(source: String, line: Int, obj: String) =
       this("for object " + obj + " in '" + source + "' at line " + line);
+
+    def this(ob:Any) =
+      this(ob.toString());
 }
