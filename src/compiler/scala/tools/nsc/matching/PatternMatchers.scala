@@ -189,7 +189,7 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
           //Console.println("X");
           val node = pConstrPat(tree.pos, tpe.tpe);
           env.newBoundVar( tree.symbol,
-                           tpe.tpe /*scalac: tree.tpe */,
+                           tpe.tpe, /*scalac: tree.tpe */
                            typed(Ident( node.casted )));
           node;
         }
@@ -663,7 +663,7 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
 
     //print();
     val ncases = numCases(root.and);
-    val matchError = ThrowMatchError(selector.pos, resultType);
+    val matchError = ThrowMatchError(selector.pos, Ident(root.symbol));
     // without a case, we return a match error if there is no default case
     if (ncases == 0)
       return defaultBody(root.and, matchError);
@@ -753,7 +753,7 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
       List(
         ValDef(root.symbol, selector),
         toTree(root.and),
-        ThrowMatchError(selector.pos,  resultType)),
+        ThrowMatchError(selector.pos,  Ident(root.symbol))),
       LabelDef(exit, List(result), Ident(result)))
   }
 

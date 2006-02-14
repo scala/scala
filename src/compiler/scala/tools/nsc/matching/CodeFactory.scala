@@ -185,30 +185,8 @@ mixin class CodeFactory requires TransMatcher  {
   }
 */
   def  Equals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.EQEQ), List(right));
-/*    { var left = left1;
-      var right = right1;
-*/
-/*
-    //Console.println("CodeFactory:: left.tpe =" + left.tpe + " right.tpe "+right.tpe+")");
-    val ltype = left.tpe.widen;
-    var rtype = right.tpe.widen;
-    if (isSameType(ltype, rtype)
-        && (isSameType(ltype, definitions.CharClass.info)
-            || isSameType(ltype,definitions.ByteClass.info)
-            || isSameType(ltype,definitions.ShortClass.info)))
-      {
-        //Console.println("getcoerce"+getCoerceToInt(rtype));
-        //Console.println("getcoerce.tpe"+getCoerceToInt(rtype).tpe);
-        right = Apply(Select(right, getCoerceToInt(rtype)), List());
-        rtype = definitions.IntClass.info;
-      }
-    val eqsym = getEqEq(ltype, rtype);
-*/
-    //Console.println("eqsym "+eqsym);
-    //Console.println("eqsym.tpe "+eqsym.tpe);
-//    Apply(Select(left1, nme.EQEQ/*eqsym*/), List(right1));
-//  }
 
+  //deprecated
   def ThrowMatchError(pos: Int, tpe: Type ) =
     atPos(pos) {
       Throw(
@@ -217,6 +195,16 @@ mixin class CodeFactory requires TransMatcher  {
           List(List(
             Literal(cunit.toString()),
             Literal(Position.line(cunit.source, pos))))))
+    }
+//new
+  def ThrowMatchError(pos: Int, obj: Tree ) =
+    atPos(pos) {
+      Throw(
+        New(
+          TypeTree(definitions.MatchErrorClass.tpe),
+          List(List(
+            obj
+          ))))
     }
 
 /*
