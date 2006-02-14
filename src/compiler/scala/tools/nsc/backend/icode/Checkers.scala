@@ -59,7 +59,7 @@ abstract class Checkers {
 
     def checkICodes: Unit = {
       Console.println("[[consistency check at beginning of phase " + globalPhase.name + "]]");
-      classes foreach check;
+      classes.values foreach check;
     }
 
     def check(cls: IClass): Unit = {

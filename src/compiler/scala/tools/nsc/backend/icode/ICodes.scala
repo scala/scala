@@ -7,7 +7,10 @@
 
 package scala.tools.nsc.backend.icode;
 
+import java.io.PrintWriter;
+
 import scala.tools.nsc.symtab._;
+import scala.collection.mutable.HashMap;
 
 /** Glue together ICode parts.
  */
@@ -24,7 +27,7 @@ abstract class ICodes extends AnyRef
   val global: Global;
 
   /** The ICode representation of classes */
-  var classes: List[IClass] = _;
+  var classes: HashMap[global.Symbol, IClass] = new HashMap();
 
   /** The ICode linearizer. */
   val linearizer: Linearizer =
@@ -37,6 +40,16 @@ abstract class ICodes extends AnyRef
     else
       global.abort("Unknown linearizer: " + global.settings.Xlinearizer.value);
 
-  def init = { classes = Nil }
+
+  /** Print all classes and basic blocks. Used for debugging. */
+  def dump: Unit = {
+    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(System.out, true),
+                                                      new global.icodes.DumpLinearizer());
+
+    global.icodes.classes.values foreach { c => printer.printClass(c); }
+  }
+
+
+  def init = { }
 }
 

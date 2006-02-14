@@ -33,6 +33,7 @@ class ClassPath(onlyPresentation : Boolean) {
     // assert(location           != null, "cannot find classpath location");
     // assert(location.getFile() != null, "cannot find classpath location " + " " + location + " " + location.getClass());
     def source   : Source;
+    override def toString() = location.toString();
   }
 
 
@@ -206,6 +207,8 @@ class ClassPath(onlyPresentation : Boolean) {
         }
       }
     }
+
+    override def toString() = entries.toList.mkString("", ":", "");
   } // class Build
 
 }

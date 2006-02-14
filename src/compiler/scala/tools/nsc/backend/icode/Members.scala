@@ -99,27 +99,6 @@ mixin class Members requires ICodes {
     /** This methods returns a string representation of the ICode */
     override def toString() : String = "ICode '" + label + "'";
 
-    /** This method print the code */
-//    def print() : unit = print(System.out);
-
-//     def print(out: java.io.PrintStream) : unit = {
-//       traverse((bb: BasicBlock) => {
-//         out.println("Block #" + bb.label);
-//         out.println("Substituable variables : ");
-//         if (bb.substituteVars != null)
-// 	  bb.substituteVars.foreach(out.print);
-//         else
-// 	  out.println(" {Empty} ");
-//         out.println("Instructions:");
-//         bb.traverse((ici: Instruction) =>
-// 	  out.println("  "+ici.toString()));
-//         out.print  ("Successors: ");
-//         bb.successors.foreach((bb: BasicBlock) => out.print(bb.label+", "));
-//         out.println (""); // ?? Del
-//         out.println ();
-//       });
-//     }
-
     /* Compute a unique new label */
     def nextLabel = {
       currentLabel = currentLabel + 1;
@@ -159,6 +138,8 @@ mixin class Members requires ICodes {
     override def toString() = symbol.fullNameString;
 
     def lookupField(s: Symbol) = fields find ((f) => f.symbol == s);
+    def lookupMethod(s: Symbol) = methods find ((m) => m.symbol == s);
+    def lookupMethod(s: Name) = methods find ((m) => m.symbol.name == s);
   }
 
   /** Represent a field in ICode */

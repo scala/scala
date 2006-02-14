@@ -37,6 +37,7 @@ object NameTransformer {
   enterOp(':', "$colon");
   enterOp('\\', "$bslash");
   enterOp('?', "$qmark");
+  enterOp('@', "$at");
 
   /** Replace operator symbols by corresponding "$op_name" */
   def encode(name: String): String = {

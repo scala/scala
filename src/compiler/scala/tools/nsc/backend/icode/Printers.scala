@@ -18,7 +18,7 @@ abstract class Printers {
   import global.icodes.opcodes._;
   import global.icodes._;
 
-  class TextPrinter(writer: PrintWriter) {
+  class TextPrinter(writer: PrintWriter, lin: Linearizer) {
     var margin = 0;
     var out = writer;
 
@@ -88,7 +88,7 @@ abstract class Printers {
         println(" {");
         println("locals: " + m.locals.mkString("", ", ", ""));
         println;
-        linearizer.linearize(m) foreach printBlock;
+        lin.linearize(m) foreach printBlock;
         println("}");
 
         indent;println("Exception handlers: ");
@@ -114,7 +114,7 @@ abstract class Printers {
 
     def printBlock(bb: BasicBlock): Unit = {
       print(bb.label); print(": "); indent; println;
-      bb traverse printInstruction;
+      bb.instructions foreach printInstruction;
       undent; println;
     }
 

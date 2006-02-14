@@ -57,7 +57,10 @@ mixin class BasicBlocks requires ICodes {
 
     /** Apply a function to all the instructions of the block. */
     def traverse(f: Instruction => unit) = {
-      assert(closed, "Traversing an open block!: ");
+      if (!closed) {
+        dump;
+        global.abort("Traversing an open block!: " + label);
+      }
       instrs foreach f;
     }
 
@@ -160,7 +163,6 @@ mixin class BasicBlocks requires ICodes {
       assert (!closed || ignore, "BasicBlock closed");
 
       if (!ignore) {
-//        Console.println("block " + label + ": " + instr);
         instr.pos = pos;
         instructionList = instr :: instructionList;
         _lastInstruction = instr;
@@ -172,7 +174,19 @@ mixin class BasicBlocks requires ICodes {
        assert(instructionList.length > 0,
               "Empty block.");
       closed = true;
-      instrs = toInstructionArray(instructionList.reverse);
+      instructionList = instructionList.reverse;
+      instrs = toInstructionArray(instructionList);
+    }
+
+    def open = {
+      closed = false;
+    }
+
+    def instructions: List[Instruction] = instructionList;
+
+    def clear: Unit = {
+      instructionList = Nil;
+      instrs = null;
     }
 
     def isEmpty: Boolean = instructionList.isEmpty;
@@ -222,8 +236,10 @@ mixin class BasicBlocks requires ICodes {
         case RETURN(_) => Nil;
         case THROW() => Nil;
         case _ =>
-          if (isClosed)
+          if (isClosed) {
+            dump;
 	    global.abort("The last instruction is not a control flow instruction: " + lastInstruction);
+          }
           else Nil;
       }
 

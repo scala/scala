@@ -155,4 +155,13 @@ mixin class Linearizers requires ICodes {
       if (!blocks.contains(b))
         blocks = b :: blocks;
   }
+
+  /** A 'dump' of the blocks in this method, which does not
+   *  require any well-formedness of the basic blocks (like
+   *  the last instruction being a jump).
+   */
+  class DumpLinearizer extends Linearizer {
+    def linearize(m: IMethod): List[BasicBlock] =
+      m.code.blocks.toList;
+  }
 }

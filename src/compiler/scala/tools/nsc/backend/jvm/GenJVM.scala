@@ -36,8 +36,10 @@ abstract class GenJVM extends SubComponent {
     override def erasedTypes = true;
     val codeGenerator = new BytecodeGenerator;
 
-    override def run: Unit =
-      classes foreach codeGenerator.genClass;
+    override def run: Unit = {
+      if (settings.debug.value) inform("[running phase " + name + " on icode]");
+      classes.values foreach codeGenerator.genClass;
+    }
 
     override def apply(unit: CompilationUnit): Unit =
       abort("JVM works on icode classes, not on compilation units!");

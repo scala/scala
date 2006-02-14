@@ -18,7 +18,7 @@ class Settings(error: String => unit) {
       concatPath(
         getProperty("java.class.path"),
         getProperty("scala.class.path")),
-      ".")
+      "")
 
   private val bootclasspathDefault =
     alternatePath(
@@ -57,7 +57,7 @@ class Settings(error: String => unit) {
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing")
   val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault)
-  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", ".")
+  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
@@ -84,6 +84,7 @@ class Settings(error: String => unit) {
   val log           = PhasesSetting ("-log", "Log operations in")
   val version       = BooleanSetting("-version", "Print product version and exit")
   val help          = BooleanSetting("-help", "Print a synopsis of standard options")
+  val inline        = BooleanSetting("-inline", "Perform inlining when possible")
 
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")

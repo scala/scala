@@ -15,6 +15,7 @@ class CompilerRun {
   def erasurePhase: Phase = NoPhase;
   def flattenPhase: Phase = NoPhase;
   def mixinPhase: Phase = NoPhase;
+  def icodePhase: Phase = NoPhase;
   def phaseNamed(name: String): Phase = NoPhase;
 }
 

@@ -75,20 +75,13 @@ abstract class GenICode extends SubComponent  {
         log("Generating class: " + tree.symbol.fullNameString);
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit);
         addClassFields(ctx, tree.symbol);
-        classes = ctx.clazz :: classes;
+        classes += tree.symbol -> ctx.clazz;
         gen(impl, ctx);
         ctx setClass null;
 
       // !! modules should be eliminated by refcheck... or not?
       case ModuleDef(mods, name, impl) =>
         abort("Modules should not reach backend!");
-
-        log("Generating module: " + tree.symbol.fullNameString);
-        ctx setClass (new IClass(tree.symbol) setCompilationUnit unit);
-        addClassFields(ctx, tree.symbol);
-        classes = ctx.clazz :: classes;
-        gen(impl, ctx);
-        ctx setClass null;
 
       case ValDef(mods, name, tpt, rhs) => ctx; // we use the symbol to add fields
 
@@ -646,7 +639,7 @@ abstract class GenICode extends SubComponent  {
                 log("synchronized block start");
               ctx1 = ctx1.Try(
                 bodyCtx => {
-                  val ctx1 = genLoad(args.head, bodyCtx, toTypeKind(tree.tpe.resultType));
+                  val ctx1 = genLoad(args.head, bodyCtx, expectedType /* toTypeKind(tree.tpe.resultType) */);
                   ctx1.bb.emit(LOAD_LOCAL(monitor, false));
                   ctx1.bb.emit(MONITOR_EXIT(), tree.pos);
                   ctx1
@@ -655,6 +648,7 @@ abstract class GenICode extends SubComponent  {
                   exhCtx.bb.emit(LOAD_LOCAL(monitor, false));
                   exhCtx.bb.emit(MONITOR_EXIT(), tree.pos);
                   exhCtx.bb.emit(THROW());
+                  exhCtx.bb.enterIgnoreMode;
                   exhCtx
                 })));
               if (settings.debug.value)
@@ -1303,20 +1297,21 @@ abstract class GenICode extends SubComponent  {
         if (block.size == 1 && optCont != None) {
           val Some(cont) = optCont;
           val pred = block.predecessors;
-          log("Preds: " + pred + " of " + block);
+          log("Preds: " + pred + " of " + block + " (" + optCont + ")");
           pred foreach { p =>
             p.lastInstruction match {
               case CJUMP(succ, fail, cond, kind) =>
                 if (settings.debug.value)
                   log("Pruning empty if branch.");
                 changed = true;
-                p.replaceInstruction(p.lastInstruction,
+                assert(p.replaceInstruction(p.lastInstruction,
                                      if (block == succ)
                                        CJUMP(cont, fail, cond, kind)
                                      else if (block == fail)
                                        CJUMP(succ, cont, cond, kind)
                                      else
-                                       abort("Could not find block in preds"));
+                                       abort("Could not find block in preds")),
+                       "Didn't find p.lastInstruction");
 
               case CZJUMP(succ, fail, cond, kind) =>
                 if (settings.debug.value)
@@ -1334,7 +1329,8 @@ abstract class GenICode extends SubComponent  {
                 if (settings.debug.value)
                   log("Pruning empty if branch.");
                 changed = true;
-                p.replaceInstruction(p.lastInstruction, JUMP(cont));
+                assert(p.replaceInstruction(p.lastInstruction, JUMP(cont)),
+                       "Didn't find p.lastInstruction");
 
               case SWITCH(tags, labels) =>
                 if (settings.debug.value)
@@ -1632,6 +1628,8 @@ abstract class GenICode extends SubComponent  {
           case _ => instr;
         }
       }
+
+      override def toString() = symbol.toString();
     }
 
     ///////////////// Fake instructions //////////////////////////

@@ -25,6 +25,7 @@ import transform._;
 import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
 import backend.jvm.GenJVM;
+import backend.opt.Inliners;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -267,6 +268,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object inliner extends Inliners {
+    val global: Global.this.type = Global.this
+  }
+
   object genJVM extends GenJVM {
     val global: Global.this.type = Global.this;
   }
@@ -293,6 +298,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     flatten,
     mixer,
     genicode,
+    inliner,
     genJVM,
     sampleTransform);
 
@@ -350,6 +356,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     override val erasurePhase = phaseNamed("erasure");
     override val flattenPhase = phaseNamed("flatten");
     override val mixinPhase = phaseNamed("mixin");
+    override val icodePhase = phaseNamed("icode");
 
     private var unitbuf = new ListBuffer[CompilationUnit];
     private var fileset = new HashSet[AbstractFile];
@@ -393,7 +400,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
         val startTime = System.currentTimeMillis();
         phase = globalPhase;
         globalPhase.run;
-        if (settings.print contains globalPhase.name) treePrinter.printAll();
+        if (settings.print contains globalPhase.name)
+          if (globalPhase.id >=  icodePhase.id) writeICode()
+          else treePrinter.printAll();
         if (settings.browse contains globalPhase.name) treeBrowser.browse(units);
         informTime(globalPhase.description, startTime);
         globalPhase = globalPhase.next;
@@ -408,7 +417,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
       if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
       if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
-      if (settings.Xshowicode.value) writeICode();
 
       if (reporter.errors == 0) {
         assert(symData.isEmpty, symData.elements.toList);
@@ -513,9 +521,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   private def writeICode(): Unit = {
-    val printer = new icodePrinter.TextPrinter(null);
-    icodes.classes.foreach((cls) => {
-      val file = getFile(cls.symbol, ".icode");
+    val printer = new icodePrinter.TextPrinter(null, icodes.linearizer);
+    icodes.classes.values.foreach((cls) => {
+      var file = getFile(cls.symbol, ".icode");
+      if (file.exists())
+        file = new File(file.getParentFile(), file.getName() + "1");
       try {
         val stream = new FileOutputStream(file);
         printer.setWriter(new PrintWriter(stream, true));
