@@ -16,9 +16,29 @@ mixin class Codification requires Analyzer {
 
   case class FreeValue(tree: Tree) extends reflect.Code;
 
-  type ReifyEnvironment = ListMap[Symbol, reflect.Symbol];
+  class ReifyEnvironment extends ListMap[Symbol, reflect.Symbol] {
+    var targets = ListMap.Empty[String, Option[reflect.LabelSymbol]]
+    def addTarget(name: String, target: reflect.LabelSymbol): Unit =
+      targets = targets.update(name, Some(target))
+    def getTarget(name: String): Option[reflect.LabelSymbol] =
+      targets.get(name) match {
+        case None =>
+          targets = targets.update(name, None)
+          None
+        case Some(None) => None
+        case Some(tgt) => tgt
+      }
+    def hasAllTargets: Boolean =
+      targets.elements.map(._2).forall {
+        case Some(_) => true
+        case None => false
+      }
+    override def update(sym: Symbol, rsym: reflect.Symbol): ReifyEnvironment = this.update(sym,rsym)
+  }
 
   class Reifier(env: ReifyEnvironment, currentOwner: reflect.Symbol) {
+
+    def testCompletion: Boolean = env.hasAllTargets
 
     def reify(tree: Tree): reflect.Code = tree match {
       case Ident(_) =>
@@ -31,6 +51,11 @@ mixin class Codification requires Analyzer {
         else reflect.Select(reify(qual), reify(tree.symbol))
       case Literal(constant) =>
         reflect.Literal(constant.value)
+      case Apply(name, args) if name.toString().startsWith("label$") =>
+        env.getTarget(name.toString()) match {
+          case None => throw new TypeError("cannot reify tree (no forward jumps allowed): " + tree)
+          case Some(label) => reflect.Goto(label)
+        }
       case Apply(fun, args) =>
         reflect.Apply(reify(fun), args map reify)
       case TypeApply(fun, args) =>
@@ -52,6 +77,13 @@ mixin class Codification requires Analyzer {
         val reifiedClass = reify(clazz)
         reflect.New(reifiedClass)
       case Typed(t, _) => reify(t)
+      case If(cond, thenp, elsep) => reflect.If(reify(cond), reify(thenp), reify(elsep))
+      case Assign(lhs, rhs) => reflect.Assign(reify(lhs), reify(rhs))
+      case LabelDef(name, Nil, body) =>
+        val sym = new reflect.LabelSymbol(name.toString())
+        env.addTarget(name.toString(), sym)
+        val res = reflect.Target(sym, reify(body))
+        res
       case _ =>
         throw new TypeError("cannot reify tree: " + tree)
     }
@@ -129,9 +161,14 @@ mixin class Codification requires Analyzer {
       case reflect.TypeField(_, _) => "scala.reflect.TypeField"
       case reflect.LocalValue(_, _, _) => "scala.reflect.LocalValue"
       case reflect.LocalMethod(_, _, _) => "scala.reflect.LocalMethod"
+      case reflect.LabelSymbol(_) => "scala.reflect.LabelSymbol"
       case reflect.This(_) => "scala.reflect.This"
       case reflect.Block(_,_) => "scala.reflect.Block"
       case reflect.New(_) => "scala.reflect.New"
+      case reflect.If(_,_,_) => "scala.reflect.If"
+      case reflect.Assign(_,_) => "scala.reflect.Assign"
+      case reflect.Target(_,_) => "scala.reflect.Target"
+      case reflect.Goto(_) => "scala.reflect.Goto"
       case reflect.NamedType(_) => "scala.reflect.NamedType"
       case reflect.PrefixedType(_, _) => "scala.reflect.PrefixedType"
       case reflect.SingleType(_, _) => "scala.reflect.SingleType"
@@ -159,6 +196,7 @@ mixin class Codification requires Analyzer {
     def inject(value: Any): Tree = value match {
       case FreeValue(tree) =>
         tree
+      case () => Literal(Constant(()))
       case x: String => Literal(Constant(x))
       case x: Boolean => Literal(Constant(x))
       case x: Byte => Literal(Constant(x))
@@ -185,7 +223,7 @@ mixin class Codification requires Analyzer {
   }
 
   def reify(tree: Tree): reflect.Code =
-    new Reifier(ListMap.Empty, reflect.NoSymbol).reify(tree);
+    new Reifier(new ReifyEnvironment(), reflect.NoSymbol).reify(tree);
 
   def inject(code: reflect.Code): Tree =
     new Injector(ListMap.Empty, new FreshNameCreator).inject(code);

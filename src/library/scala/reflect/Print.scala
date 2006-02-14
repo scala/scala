@@ -29,26 +29,34 @@ object Print extends Function1[Any, String] {
 
   def apply (code: Code): String = code match {
     case reflect.Ident(sym) => Print(sym)
-    case reflect.Select(qual, sym) => "(" + Print(qual) + "." + Print(sym) + ")"
-    case reflect.Literal(value) => "(value: " + value.toString + ")"
+    case reflect.Select(qual, sym) => Print(qual) + "." + Print(sym)
+    case reflect.Literal(value) => value match {
+      case s:String => "\"" + s + "\""
+      case _        => value.toString
+    }
     case reflect.Apply(fun, args) => Print(fun) + args.map(Print).mkString("(", ", ", ")")
     case reflect.TypeApply(fun, args) => Print(fun) + args.map(Print).mkString("[", ", ", "]")
-    case reflect.Function(params, body) => "(" + params.map(Print).mkString("(", ", ", ")") + " => " + Print(body) + ")"
-    case reflect.This(sym) => "(" + Print(sym) + ".this)"
-    case reflect.Block(stats, expr) => (stats ::: List(expr)).map(Print).mkString("{", ";\n", "}")
-    case reflect.New(clazz) => "(new " + Print(clazz) + ")"
+    case reflect.Function(params, body) => params.map(Print).mkString("(", ", ", ")") + " => " + Print(body)
+    case reflect.This(sym) => Print(sym)
+    case reflect.Block(stats, expr) => (stats ::: List(expr)).map(Print).mkString("{\n", ";\n", "\n}")
+    case reflect.New(tpt) => "new " + Print(tpt)
+    case reflect.If(condition, trueCase, falseCase) => "if (" + Print(condition) + ") " + Print(trueCase) + " else " + Print(falseCase)
+    case reflect.Assign(destination: Code, source: Code) => Print(destination) + " = " + Print(source)
+    case reflect.Target(sym, body) => "target " + Print(sym) + " {\n" + Print(body) + "\n}"
+    case reflect.Goto(target) => "goto " + Print(target)
     case _ => "???"
   }
 
   def apply (symbol: Symbol): String = symbol match {
-    case reflect.Class(name) => "(class: " + name + ")"
-    case reflect.Method(name, datatype) => "(method: " + name + ")" //+ ": " + datatype
-    case reflect.Field(name, datatype) => "(field: " + name + ")" //+ ": " + datatype
-    case reflect.TypeField(name, datatype) => "(typefield: " + name + ")" //+ ": " + datatype
-    case reflect.LocalValue(owner, name, datatype) => "(lvalue: " + name + ")" //+ ": " + datatype
-    case reflect.LocalMethod(owner, name, datatype) => "(lmethod: " + name + ")" //+ ": " + datatype
+    case reflect.Class(name) => name.substring(name.lastIndexOf('.')+1)
+    case reflect.Method(name, datatype) => name.substring(name.lastIndexOf('.')+1) //+ ": " + datatype
+    case reflect.Field(name, datatype) => name.substring(name.lastIndexOf('.')+1) //+ ": " + datatype
+    case reflect.TypeField(name, datatype) => name.substring(name.lastIndexOf('.')+1) //+ ": " + datatype
+    case reflect.LocalValue(owner, name, datatype) => name.substring(name.lastIndexOf('.')+1) //+ ": " + datatype
+    case reflect.LocalMethod(owner, name, datatype) => name.substring(name.lastIndexOf('.')+1) //+ ": " + datatype
     case reflect.NoSymbol => "NoSymbol"
     case reflect.RootSymbol => "RootSymbol"
+    case reflect.LabelSymbol(name) => name
     case _ => "???"
   }
 

@@ -49,3 +49,8 @@ case object RootSymbol extends Symbol {
   val name = "<root>";
   val tpe = NoPrefix
 }
+
+case class LabelSymbol(val name: String) extends Symbol {
+  val owner = NoSymbol;
+  val tpe = NamedType("scala.Unit")
+}

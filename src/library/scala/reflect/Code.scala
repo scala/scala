@@ -21,3 +21,7 @@ case class Function(params: List[Symbol], body: Code) extends Code;
 case class This(sym: Symbol) extends Code;
 case class Block(stats: List[Code], expr: Code) extends Code;
 case class New(sym: Code) extends Code;
+case class If(condition: Code, trueCase: Code, falseCase: Code) extends Code;
+case class Assign(destination: Code, source: Code) extends Code;
+case class Target(sym: LabelSymbol, body: Code) extends Code;
+case class Goto(target: LabelSymbol) extends Code;
