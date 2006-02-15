@@ -671,9 +671,10 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
     else if (ncases == 1) {
       root.and.or match {
         case ConstantPat(value) =>
-          return If(Equals(selector, Literal(value)),
-                    (root.and.or.and).bodyToTree(),
-                    defaultBody(root.and, matchError));
+          return Block(List(ValDef(root.symbol, selector)),
+                            If(Equals(Ident(root.symbol), Literal(value)),
+                               (root.and.or.and).bodyToTree(),
+                               defaultBody(root.and, matchError)));
         case _ =>
           return generalSwitchToTree();
       }
@@ -726,7 +727,7 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
     }
     return Switch(selector, tags, bodies, defaultBody1, resultType);
     */
-    nCases = CaseDef(Ident(nme.WILDCARD), defaultBody1) :: nCases;
+    nCases = CaseDef(Ident(nme.WILDCARD), Block(List(ValDef(root.symbol, selector)),defaultBody1)) :: nCases;
     return Match(selector, nCases)
   }
 
