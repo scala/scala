@@ -211,9 +211,9 @@ test_run_neg() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
     ( cd "$srcdir" && $SOCOS -d "$os_dstbase".obj "$@" "$testname".scala; );
-    status=$?;
+    if [ "$?" = 0 ]; then status=1; else status=0; fi;
     rm -rf "$dstbase".obj;
-    if [ "$status" = 0 ]; then return 1; else return 0; fi;
+    return $status;
 }
 
 # Tests the JVM backend.
@@ -455,8 +455,13 @@ FILES_POS="";
 FILES_NEG="";
 FILES_MSIL="";
 
-LATEST="$PREFIX/dists/latest/bin";
-QUICK="$PREFIX/build/quick/exec"
+if [ -d "$PREFIX/dists" ]; then
+    LATEST="$PREFIX/dists/latest/bin";
+    QUICK="$PREFIX/build/quick/exec"
+else
+    LATEST="$PREFIX/bin";
+    QUICK="$LATEST"
+fi;
 BIN_DIR="$LATEST"
 
 DIFF="diff";
@@ -545,7 +550,7 @@ test_check_all;
 
 TOTAL_COUNT=`echo "$FAILURE_COUNT+$SUCCESS_COUNT" | bc`;
 if [ $FAILURE_COUNT -eq 0 ]; then
-    printf_success "All $TOTAL_COUNT tests were successful\\n";
+    printf_success "All of $TOTAL_COUNT tests were successful\\n";
 else
     printf_failure "$FAILURE_COUNT of $TOTAL_COUNT tests failed\\n";
 fi;
