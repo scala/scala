@@ -16,10 +16,5 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
       unit.body = new Parser(unit).parse();
     }
   }
-  //Moez addition. I wished not to add/modify here, but the fact that Parsers
-  // are NOT accessible (because of Parsers' self type) except in SyntaxAnalyzer
-  // had bitten me, and thus I had to add the following code here.
-  def interpreterParse(unit: global.CompilationUnit): List[global.Tree] =
-    new Parser(unit).templateStatSeq()
 }
 
