@@ -1743,7 +1743,7 @@ mixin class Parsers requires SyntaxAnalyzer {
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of definition", true);
         }
-        if (in.token != RBRACE) acceptStatSep();
+        if (in.token != RBRACE && in.token != EOF) acceptStatSep();
       }
       stats.toList
     }
