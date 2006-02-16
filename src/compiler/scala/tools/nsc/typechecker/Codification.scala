@@ -6,6 +6,7 @@
 package scala.tools.nsc.typechecker;
 
 import symtab.Flags._;
+import scala.collection.mutable.HashMap;
 import scala.collection.immutable.ListMap;
 import scala.collection.mutable.ListBuffer;
 import scala.tools.nsc.util.FreshNameCreator;
@@ -16,14 +17,14 @@ mixin class Codification requires Analyzer {
 
   case class FreeValue(tree: Tree) extends reflect.Code;
 
-  class ReifyEnvironment extends ListMap[Symbol, reflect.Symbol] {
-    var targets = ListMap.Empty[String, Option[reflect.LabelSymbol]]
+  class ReifyEnvironment extends HashMap[Symbol, reflect.Symbol] {
+    var targets = new HashMap[String, Option[reflect.LabelSymbol]]()
     def addTarget(name: String, target: reflect.LabelSymbol): Unit =
-      targets = targets.update(name, Some(target))
+      targets.update(name, Some(target))
     def getTarget(name: String): Option[reflect.LabelSymbol] =
       targets.get(name) match {
         case None =>
-          targets = targets.update(name, None)
+          targets.update(name, None)
           None
         case Some(None) => None
         case Some(tgt) => tgt
@@ -33,7 +34,8 @@ mixin class Codification requires Analyzer {
         case Some(_) => true
         case None => false
       }
-    override def update(sym: Symbol, rsym: reflect.Symbol): ReifyEnvironment = this.update(sym,rsym)
+    override def update(sym: Symbol, rsym: reflect.Symbol) =
+      super.update(sym,rsym)
   }
 
   class Reifier(env: ReifyEnvironment, currentOwner: reflect.Symbol) {
@@ -65,7 +67,7 @@ mixin class Codification requires Analyzer {
         for (val vparam <- vparams) {
           val local = reflect.LocalValue(
             currentOwner, vparam.symbol.name.toString(), reify(vparam.symbol.tpe));
-          env1 = env1.update(vparam.symbol, local);
+          env1.update(vparam.symbol, local);
         }
         reflect.Function(vparams map (.symbol) map env1,
                          new Reifier(env1, currentOwner).reify(body))
