@@ -28,6 +28,9 @@ object SourceFile {
 class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   import SourceFile._;
 
+  def this(_file: AbstractFile) = {
+    this(_file, (new String(_file.read())).toCharArray)
+  }
 
   val file    = _file;
   val content = normalize(_content);
