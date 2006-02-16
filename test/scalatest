@@ -526,9 +526,9 @@ if [ "$TEST_ALL" = "true" ]; then
     esac;
 fi;
 
-SCALA="$BIN_DIR/scala2";
-SOCOS="$BIN_DIR/scalac2";
-SCALAP="$LATEST/scalap2";
+SCALA="$BIN_DIR/scala";
+SOCOS="$BIN_DIR/scalac";
+SCALAP="$LATEST/scalap";
 
 SCALA_SCALA_ARGS="-Xmx512M $SCALA_SCALA_ARGS";
 export SCALA_SCALA_ARGS;
