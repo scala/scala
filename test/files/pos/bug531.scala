@@ -1,9 +1,9 @@
 object Test extends Application {
   import scala.reflect._;
-  def titi: Unit = {
+  def titi = {
     var truc = 0
     val tata: TypedCode[()=>Unit] = () => {
-      truc = truc + 6
+      truc = 6
     }
     ()
   }

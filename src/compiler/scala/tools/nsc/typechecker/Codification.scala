@@ -102,6 +102,8 @@ mixin class Codification requires Analyzer {
       case None =>
         if (sym.isRoot || sym.isRootPackage || sym.isEmptyPackageClass || sym.isEmptyPackage)
           reflect.RootSymbol
+        else if (sym.owner.isTerm)
+          reflect.NoSymbol
         else reify(sym.owner) match {
           case reflect.NoSymbol =>
             reflect.NoSymbol;
@@ -197,7 +199,7 @@ mixin class Codification requires Analyzer {
 
     def inject(value: Any): Tree = value match {
       case FreeValue(tree) =>
-        tree
+        New(Ident(definitions.getClass("scala.reflect.Literal")), List(List(tree)))
       case () => Literal(Constant(()))
       case x: String => Literal(Constant(x))
       case x: Boolean => Literal(Constant(x))

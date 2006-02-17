@@ -1181,6 +1181,7 @@ mixin class Typers requires Analyzer {
                   error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
                   null
               })
+            //case Block(
           }
           if (attrInfo != null) {
             val attributed =
@@ -1463,7 +1464,7 @@ mixin class Typers requires Analyzer {
       try {
         if (settings.debug.value) {
           assert(pt != null, tree);//debug
-	  //System.out.println("typing "+tree);//DEBUG
+	  System.out.println("typing "+tree);//DEBUG
 	}
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt)
 	//System.out.println("typed "+tree1+":"+tree1.tpe);//debug
