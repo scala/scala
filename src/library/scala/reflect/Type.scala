@@ -10,6 +10,8 @@
 
 package scala.reflect;
 
+import Predef._;
+
 abstract class Type;
 
 case object NoPrefix extends Type;
