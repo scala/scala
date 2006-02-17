@@ -1,11 +1,13 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 package scala.reflect;
 
 import scala.Predef._;
@@ -17,7 +19,7 @@ abstract class Symbol {
 }
 
 abstract class GlobalSymbol(val fullname: String) extends Symbol {
-  private val pointIndex = fullname.lastIndexOf('.');
+  private val pointIndex = fullname.lastIndexOf(".");
   val owner: Symbol =
     if (pointIndex < 0) RootSymbol else Class(fullname.substring(0, pointIndex));
   val name: String =
