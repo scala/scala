@@ -604,8 +604,8 @@ mixin class Typers requires Analyzer {
     }
 
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
-      case ValDef(mods, name, tpe, rhs) if !(mods hasFlag LOCAL) && !stat.symbol.isModuleVar =>
-	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpe, rhs)
+      case ValDef(mods, name, tpt, rhs) if !(mods hasFlag LOCAL) && !stat.symbol.isModuleVar =>
+	val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
         val value = vdef.symbol
         val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
         assert(getter != NoSymbol, getter);//debug
@@ -614,6 +614,7 @@ mixin class Typers requires Analyzer {
 	    DefDef(getter, vparamss =>
 	      if (mods hasFlag DEFERRED) EmptyTree
 	      else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe)))
+          result.tpt setPos tpt.pos
           checkNoEscaping.privates(getter, result.tpt)
           result
 	}
@@ -857,7 +858,7 @@ mixin class Typers requires Analyzer {
           Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
 
       val Triple(clazz, argpts, respt) =
-        decompose(if (pt.symbol == TypedCodeClass) pt.typeArgs.head else pt)
+        decompose(if (pt.symbol isSubClass TypedCodeClass) pt.typeArgs.head else pt)
 
       val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
         if (vparam.tpt.isEmpty)
@@ -877,7 +878,10 @@ mixin class Typers requires Analyzer {
       val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
       val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
         .setType(funtpe)
-      if (pt.symbol == TypedCodeClass) typed(atPos(fun.pos)(codify(fun1)))
+      if (pt.symbol isSubClass TypedCodeClass) typed(atPos(fun.pos)(codify(fun1)))
+      // last line should be:
+      // if (pt.symbol isSubClass TypedCodeClass) typed(atPos(fun.pos)(Code(fun1)))
+      // except that we have to think how to preserve attributes
       else fun1
     }
 
@@ -1464,7 +1468,7 @@ mixin class Typers requires Analyzer {
       try {
         if (settings.debug.value) {
           assert(pt != null, tree);//debug
-	  System.out.println("typing "+tree);//DEBUG
+	  //System.out.println("typing "+tree);//debug
 	}
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt)
 	//System.out.println("typed "+tree1+":"+tree1.tpe);//debug
