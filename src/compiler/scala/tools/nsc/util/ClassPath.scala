@@ -66,7 +66,7 @@ class ClassPath(onlyPresentation : Boolean) {
       	  }
       	  if (clazz == null && source0 == null) ret;
       	  else {
-      	    object entry extends Entry(clazz) {
+      	    val entry = new Entry(clazz) {
       	      override def source =
             		if (source0 == null) null;
             		else new Source(source0, head.source.compile);

@@ -129,9 +129,6 @@ mixin class StdNames requires SymbolTable {
     def moduleVarName(name: Name): Name =
       newTermName(name.toString() + MODULE_SUFFIX);
 
-    def isModuleVarName(name: Name): boolean =
-      name.endsWith(MODULE_SUFFIX);
-
     def superName(name: Name) = newTermName("super$" + name);
 
     val ERROR = newTermName("<error>");

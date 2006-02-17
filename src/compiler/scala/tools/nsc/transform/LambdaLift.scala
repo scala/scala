@@ -112,6 +112,24 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
+    private def markCalled(sym: Symbol, owner: Symbol): unit = {
+      if (settings.debug.value) log("mark " + sym + " of " + sym.owner + " called by " + owner);
+      symSet(called, owner) addEntry sym;
+    }
+/*
+
+      if (owner == enclMethOrClass(sym.owner)) true
+      else if (owner.isPackageClass || !markCalled(sym, enclMethOrClass(outer(owner)))) false
+      else {
+	val ss = symSet(called, owner);
+	if (!(ss contains sym)) {
+	  ss addEntry sym;
+	  if (settings.debug.value) log("" + sym + " is called by " + owner);
+        }
+	!owner.isClass
+      }
+    }
+*/
     def freeVars(sym: Symbol): Iterator[Symbol] = free.get(sym) match {
       case Some(ss) => ss.elements
       case None => Iterator.empty
@@ -139,12 +157,13 @@ abstract class LambdaLift extends InfoTransform {
             } else if (sym.isLocal) {
 	      val owner = enclMethOrClass(currentOwner);
               if (sym.isTerm && !sym.isMethod) markFree(sym, owner)
-              else if (owner.isMethod && sym.isMethod) symSet(called, owner) addEntry sym;
+              else if (sym.isMethod) markCalled(sym, owner)
+                //symSet(called, owner) addEntry sym;
             }
 	  case Select(_, _) =>
             if (sym.isConstructor && sym.owner.isLocal) {
 	      val owner = enclMethOrClass(currentOwner);
-              if (owner.isMethod) symSet(called, owner) addEntry sym;
+              markCalled(sym, owner) //symSet(called, owner) addEntry sym;
             }
           case _ =>
         }
@@ -174,7 +193,7 @@ abstract class LambdaLift extends InfoTransform {
       } while (changedFreeVars);
 
       for (val sym <- renamable.elements) {
-        sym.name = unit.fresh.newName(sym.name.toString());
+        sym.name = unit.fresh.newName(sym.name.toString() + "$");
         if (settings.debug.value) log("renamed: " + sym.name);
       }
 

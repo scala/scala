@@ -133,7 +133,7 @@ mixin class Symbols requires SymbolTable {
     final def newAnonymousFunctionClass(pos: int) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName);
       anonfun.attributes =
-        Pair(definitions.SerializableAttr, List()) :: anonfun.attributes;
+        Pair(definitions.SerializableAttr.tpe, List()) :: anonfun.attributes;
       anonfun
     }
     final def newRefinementClass(pos: int) =
@@ -156,6 +156,7 @@ mixin class Symbols requires SymbolTable {
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod;
     final def isCapturedVariable  = isVariable && hasFlag(CAPTURED);
 
+    final def isGetter = isTerm && hasFlag(ACCESSOR) && !nme.isSetterName(name);
     final def isSetter = isTerm && hasFlag(ACCESSOR) && nme.isSetterName(name);
        //todo: make independent of name, as this can be forged.
     final def hasGetter = isTerm && nme.isLocalName(name);
@@ -211,7 +212,7 @@ mixin class Symbols requires SymbolTable {
     );
 
     /** Is this symbol a module variable ? */
-    final def isModuleVar: boolean = isVariable && nme.isModuleVarName(name);
+    final def isModuleVar: boolean = isVariable && hasFlag(MODULEVAR);
 
     /** Is this symbol static (i.e. with no outer instance)? */
     final def isStatic: boolean =
@@ -435,6 +436,9 @@ mixin class Symbols requires SymbolTable {
     def typeParams: List[Symbol] = {
       rawInfo.load(this); rawInfo.typeParams
     }
+
+    def getAttributes(clazz: Symbol): List[AttrInfo] =
+      attributes.filter(._1.symbol.isSubClass(clazz));
 
     /** Reset symbol to initial state
      */

@@ -10,4 +10,5 @@ package scala;
 
 trait Function0[+R] extends AnyRef {
   def apply(): R;
+  override def toString() = "<function>";
 }

@@ -172,8 +172,8 @@ mixin class Definitions requires SymbolTable {
     var ObjectRefClass: Symbol = _;
 
     // special attributes
-    var SerializableAttr: Type = _;
-    var BeanPropertyAttr: Type = _;
+    var SerializableAttr: Symbol = _;
+    var BeanPropertyAttr: Symbol = _;
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname, true);
@@ -200,8 +200,11 @@ mixin class Definitions requires SymbolTable {
       val result =
         if (module) sym.info.member(fullname.subName(i, j)).suchThat(.hasFlag(MODULE));
         else sym.info.member(fullname.subName(i, j).toTypeName);
-      if (result == NoSymbol)
+      if (result == NoSymbol) {
+        System.out.println(sym.info);
+        System.out.println(sym.info.members);
 	throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
+      }
       result
     }
 
@@ -419,8 +422,8 @@ mixin class Definitions requires SymbolTable {
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit");
       ObjectRefClass = getClass("scala.runtime.ObjectRef");
 
-      SerializableAttr = getClass("scala.serializable").tpe;
-      BeanPropertyAttr = getClass("scala.runtime.compat.BeanProperty").tpe;
+      SerializableAttr = getClass("scala.serializable");
+      BeanPropertyAttr = getClass("scala.reflect.BeanProperty");
     }
   }
 }

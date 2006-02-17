@@ -50,7 +50,8 @@ abstract class RefChecks extends InfoTransform {
   // var m$: T = null; or, if class member: local var m$: T = _;
   def newModuleVarDef(accessor: Symbol) = {
     val mvar = accessor.owner.newVariable(accessor.pos, nme.moduleVarName(accessor.name))
-      .setInfo(accessor.tpe.finalResultType);
+      .setInfo(accessor.tpe.finalResultType)
+      .setFlag(MODULEVAR);
     if (mvar.owner.isClass) {
       mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
       mvar.owner.info.decls.enter(mvar);

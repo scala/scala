@@ -271,6 +271,8 @@ abstract class TreeBuilder {
           List(ValFrom(pos, makeBind(pat.duplicate), rhs)),
           Block(pdefs, makeTupleTerm(ids)))
         makeFor(mapName, flatMapName, ValFrom(pos, makeTuple(pat :: pats, true), rhs1) :: rest1, body)
+      case _ =>
+        EmptyTree //may happen for erroneous input
     }
   }
 

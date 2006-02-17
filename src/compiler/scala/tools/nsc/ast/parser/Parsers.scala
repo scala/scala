@@ -134,8 +134,8 @@ mixin class Parsers requires SyntaxAnalyzer {
       pos;
     }
 
-    /** SEP = NL | `;'
-     *  NL  = `\n' // where allowed
+    /** StatementSeparator = NewLine | `;'
+     *  NewLine  = `\n' // where allowed
      */
     def acceptStatSep(): unit = if (in.token == NEWLINE) in.nextToken() else accept(SEMI);
 
@@ -337,11 +337,11 @@ mixin class Parsers requires SyntaxAnalyzer {
       Select(t, ident())
     }
 
-    /** StableRef  ::= StableId
+    /** Path       ::= StableId
      *              |  [Ident `.'] this
-     *  SimpleType ::=  StableRef [`.' type]
+     *  SimpleType ::= Path [`.' type]
      */
-    def stableRef(thisOK: boolean, typeOK: boolean): Tree = {
+    def path(thisOK: boolean, typeOK: boolean): Tree = {
       var t: Tree = null;
       if (in.token == THIS) {
 	t = atPos(in.skipToken()) { This(nme.EMPTY.toTypeName) }
@@ -401,11 +401,11 @@ mixin class Parsers requires SyntaxAnalyzer {
       }
 
     /** StableId ::= Id
-    *            |  StableRef `.' Id
+    *            |  Path `.' Id
     *            |  [Id '.'] super [MixinQualifier] ` `.' Id
     */
     def stableId(): Tree =
-      stableRef(false, false);
+      path(false, false);
 
     /** QualId ::= Id {`.' Id}
     */
@@ -546,7 +546,7 @@ mixin class Parsers requires SyntaxAnalyzer {
     /** SimpleType ::= SimpleType TypeArgs
      *              |  SimpleType `#' Id
      *              |  StableId
-     *              |  StableRef `.' type
+     *              |  Path `.' type
      *              |  `(' Type `)'
      */
     def simpleType(): Tree = {
@@ -558,7 +558,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 	  accept(RPAREN);
 	  t
 	} else {
-          val r = stableRef(false, true);
+          val r = path(false, true);
           val x = r match {
             case SingletonTypeTree(_) => r
             case _ => convertToTypeId(r);
@@ -611,11 +611,11 @@ mixin class Parsers requires SyntaxAnalyzer {
      *               | Expr1
      *  ResultExpr ::= Bindings `=>' Block
      *               | Expr1
-     *  Expr1      ::= if (' Expr `)' [NL] Expr [[`;'] else Expr]
+     *  Expr1      ::= if (' Expr `)' [NewLine] Expr [[`;'] else Expr]
      *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
-     *               | while `(' Expr `)' [NL] Expr
-     *               | do Expr [SEP] while `(' Expr `)'
-     *               | for (`(' Enumerators `)' | '{' Enumerators '}') [NL] (yield) Expr
+     *               | while `(' Expr `)' [NewLine] Expr
+     *               | do Expr [StatementSeparator] while `(' Expr `)'
+     *               | for (`(' Enumerators `)' | '{' Enumerators '}') [NewLine] (yield) Expr
      *               | throw Expr
      *               | return [Expr]
      *               | [SimpleExpr `.'] Id `=' Expr
@@ -742,9 +742,9 @@ mixin class Parsers requires SyntaxAnalyzer {
         t
     }
 
-    /** PostfixExpr   ::= [`.'] InfixExpr [Id [NL]]
+    /** PostfixExpr   ::= [`.'] InfixExpr [Id [NewLine]]
      *  InfixExpr     ::= PrefixExpr
-     *                  | InfixExpr Id [NL] InfixExpr
+     *                  | InfixExpr Id [NewLine] InfixExpr
      */
     def postfixExpr(): Tree = {
       val base = opstack;
@@ -789,7 +789,7 @@ mixin class Parsers requires SyntaxAnalyzer {
      *                |  SimpleExpr1
      * SimpleExpr1   ::= literal
      *                | xLiteral
-     *                | StableRef
+     *                | Path
      *                | `(' [Expr] `)'
      *                | BlockExpr
      *                | SimpleExpr `.' Id
@@ -807,7 +807,7 @@ mixin class Parsers requires SyntaxAnalyzer {
           t = xmlp.xLiteral;
           //Console.println("successfully parsed XML at "+t); // DEBUG
 	case IDENTIFIER | THIS | SUPER =>
-	  t = stableRef(true, false);
+	  t = path(true, false);
 	case LPAREN =>
 	  val pos = in.skipToken();
 	  if (in.token == RPAREN) {
@@ -927,8 +927,9 @@ mixin class Parsers requires SyntaxAnalyzer {
 	makeCaseDef(pat, guard, atPos(accept(ARROW))(block()))
       }
 
-    /** Enumerators ::= Generator {SEP Enumerator}
+    /** Enumerators ::= Generator {StatementSeparator Enumerator}
      *  Enumerator  ::= Generator
+     *                | val Pattern1 `=' Expr
      *                | Expr
      */
     def enumerators(): List[Enumerator] = {
@@ -1175,11 +1176,11 @@ mixin class Parsers requires SyntaxAnalyzer {
 
 //////// PARAMETERS //////////////////////////////////////////////////////////
 
-    /** ParamClauses ::= {[NL] `(' [Param {`,' Param}] ')'}
-     *                   [[NL] `(' implicit Param {`,' Param} `)']
+    /** ParamClauses ::= {[NewLine] `(' [Param {`,' Param}] ')'}
+     *                   [[NewLine] `(' implicit Param {`,' Param} `)']
      *  Param ::= Id `:' ParamType
-     *  ClassParamClauses ::= {[NL] `(' [ClassParam {`' ClassParam}] ')'}
-     *                        [[NL] [`(' implicit ClassParam {`,' ClassParam} `)']
+     *  ClassParamClauses ::= {[NewLine] `(' [ClassParam {`' ClassParam}] ')'}
+     *                        [[NewLine] `(' implicit ClassParam {`,' ClassParam} `)']
      *  ClassParam ::= [[modifiers] (val | var)] Param
      */
     def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: boolean): List[List[ValDef]] = {
@@ -1263,10 +1264,10 @@ mixin class Parsers requires SyntaxAnalyzer {
         } else t
       }
 
-    /** TypeParamClauseOpt ::= [[NL] `[' TypeParam {`,' TypeParam} `]']
-     *  TypeParam    ::= [`+' | `-'] FunTypeParam
-     *  FunTypeParamClauseOpt ::= [`[' FunTypeParam {`,' FunTypeParam} `]']
-     *  FunTypeParam ::= Id TypeBounds
+    /** TypeParamClauseOpt    ::= [[NewLine] `[' VariantTypeParam {`,' VariantTypeParam} `]']
+     *  VariantTypeParam      ::= [`+' | `-'] TypeParam
+     *  FunTypeParamClauseOpt ::= [[NewLine] `[' TypeParam {`,' TypeParam} `]']
+     *  TypeParam             ::= Id TypeBounds [<% Type]
      */
     def typeParamClauseOpt(owner: Name, implicitViews: ListBuffer[Tree]): List[AbsTypeDef] = {
       def typeParam(): AbsTypeDef = {
@@ -1400,15 +1401,15 @@ mixin class Parsers requires SyntaxAnalyzer {
         false
       }
 
-    /** Def    ::= val PatDef {`,' PatDef}
-     *           | var VarDef {`,' VatDef}
-     *           | def FunDef {`,' FunDef}
-     *           | type TypeDef {`,' TypeDef}
+    /** Def    ::= val PatDef
+     *           | var VarDef
+     *           | def FunDef
+     *           | type TypeDef
      *           | TmplDef
-     *  Dcl    ::= val ValDcl {`,' ValDcl}
-     *           | var ValDcl {`,' ValDcl}
-     *           | def FunDcl {`,' FunDcl}
-     *           | type TypeDcl {`,' TypeDcl}
+     *  Dcl    ::= val ValDcl
+     *           | var ValDcl
+     *           | def FunDcl
+     *           | type TypeDcl
      */
     def defOrDcl(mods: Modifiers): List[Tree] = {
       in.token match {
@@ -1519,7 +1520,7 @@ mixin class Parsers requires SyntaxAnalyzer {
       }
 
     /** ConstrExpr      ::=  SelfInvocation
-     *                    |  `{' SelfInvocation {SEP BlockStat} `}'
+     *                    |  `{' SelfInvocation {StatementSeparator BlockStat} `}'
      *  SelfInvocation  ::= this ArgumentExpr
      */
     def constrExpr(): Tree =
@@ -1541,7 +1542,7 @@ mixin class Parsers requires SyntaxAnalyzer {
     def selfInvocation(): Tree =
       atPos(accept(THIS)) { Apply(Ident(nme.CONSTRUCTOR), argumentExprs()) }
 
-    /** TypeDef ::= Id `=' Type
+    /** TypeDef ::= Id [TypeParamClause] `=' Type
      *  TypeDcl ::= Id TypeBounds
      */
     def typeDefOrDcl(mods: Modifiers): Tree =
@@ -1563,30 +1564,30 @@ mixin class Parsers requires SyntaxAnalyzer {
         }
       }
 
-      /**  TmplDef ::= ([case] class | trait) ClassDef
-       *            | [case] object ObjectDef
-       */
-      def tmplDef(mods: Modifiers): Tree = {
-        val mods1 = if (mods.hasFlag(Flags.MIXIN)) mods | Flags.ABSTRACT else mods;
-        in.token match {
-          case TRAIT =>
-            classDef(mods1 | Flags.MIXIN | Flags.ABSTRACT);
-          case CLASS =>
-            classDef(mods1);
-          case CASECLASS =>
-            classDef(mods1 | Flags.CASE);
-          case OBJECT =>
-            objectDef(mods1);
-          case CASEOBJECT =>
-            objectDef(mods1 | Flags.CASE);
-          case _ =>
-            syntaxError("illegal start of definition", true);
-	  EmptyTree
-        }
+    /**  TmplDef ::= ([case] class | trait) ClassDef
+     *            | [case] object ObjectDef
+     */
+    def tmplDef(mods: Modifiers): Tree = {
+      val mods1 = if (mods.hasFlag(Flags.MIXIN)) mods | Flags.ABSTRACT else mods;
+      in.token match {
+        case TRAIT =>
+          classDef(mods1 | Flags.MIXIN | Flags.ABSTRACT);
+        case CLASS =>
+          classDef(mods1);
+        case CASECLASS =>
+          classDef(mods1 | Flags.CASE);
+        case OBJECT =>
+          objectDef(mods1);
+        case CASEOBJECT =>
+          objectDef(mods1 | Flags.CASE);
+        case _ =>
+          syntaxError("illegal start of definition", true);
+	EmptyTree
       }
+    }
 
     /** ClassDef ::= ClassSig RequiresTypeOpt ClassTemplate
-     *  ClassSig ::= Id [TypeParamClause] {ClassParamClause}
+     *  ClassSig ::= Id [TypeParamClause] ClassParamClauses
      */
     def classDef(mods: Modifiers): Tree =
       atPos(in.skipToken()) {
@@ -1612,7 +1613,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 	ModuleDef(mods, name, template)
       }
 
-    /** ClassTemplate ::= [`extends' TemplateParents] [[NL] TemplateBody]
+    /** ClassTemplate ::= [`extends' TemplateParents] [[NewLine] TemplateBody]
      *  TemplateParents ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
      */
     def classTemplate(mods: Modifiers, name: Name, vparamss: List[List[ValDef]]): Template =
@@ -1658,7 +1659,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 
-    /** TemplateBody ::= `{' [TemplateStat {SEP TemplateStat}] `}'
+    /** TemplateBody ::= `{' [TemplateStat {StatementSeparator TemplateStat}] `}'
      */
     def templateBody(): List[Tree] = {
       accept(LBRACE);
@@ -1668,7 +1669,7 @@ mixin class Parsers requires SyntaxAnalyzer {
       body
     }
 
-    /** Refinement ::= `{' [RefineStat {SEP RefineStat}] `}'
+    /** Refinement ::= `{' [RefineStat {StatementSeparator RefineStat}] `}'
      */
     def refinement(): List[Tree] = {
       accept(LBRACE);
@@ -1691,8 +1692,8 @@ mixin class Parsers requires SyntaxAnalyzer {
       }
     }
 
-    /** TopStatSeq ::= [TopStat {SEP TopStat}]
-     *  TopStat ::= AttributeClauses Modifiers ClsDef
+    /** TopStatSeq ::= [TopStat {StatementSeparator TopStat}]
+     *  TopStat ::= AttributeClauses Modifiers TmplDef
      *            | Packaging
      *            | Import
      *            |
@@ -1722,7 +1723,7 @@ mixin class Parsers requires SyntaxAnalyzer {
       stats.toList
     }
 
-    /** TemplateStatSeq  ::= TemplateStat {SEP TemplateStat}
+    /** TemplateStatSeq  ::= TemplateStat {StatementSeparator TemplateStat}
      *  TemplateStat     ::= Import
      *                     | AttributeClauses Modifiers Def
      *                     | AttributeClauses Modifiers Dcl
@@ -1749,7 +1750,7 @@ mixin class Parsers requires SyntaxAnalyzer {
     }
 
     /** AttributeClauses   ::= {AttributeClause}
-     *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]' [NL]
+     *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]' [NewLine]
      */
     def attributeClauses(): List[Tree] = {
       var attrs = new ListBuffer[Tree];
@@ -1792,7 +1793,7 @@ mixin class Parsers requires SyntaxAnalyzer {
       defs map (defn =>
         (attrs :\ defn) ((attr, tree) => Attributed(attr, tree) setPos attr.pos));
 
-    /** RefineStatSeq    ::= RefineStat {SEP RefineStat}
+    /** RefineStatSeq    ::= RefineStat {StatementSeparator RefineStat}
      *  RefineStat       ::= Dcl
      *                     | type TypeDef
      *                     |
@@ -1810,7 +1811,7 @@ mixin class Parsers requires SyntaxAnalyzer {
       stats.toList
     }
 
-    /** BlockStatSeq ::= { BlockStat SEP } [Expr]
+    /** BlockStatSeq ::= { BlockStat StatementSeparator } [Expr]
      *  BlockStat    ::= Import
      *                 | Def
      *                 | LocalModifiers TmplDef
@@ -1846,7 +1847,7 @@ mixin class Parsers requires SyntaxAnalyzer {
       stats.toList
     }
 
-    /** CompilationUnit ::= package QualId SEP TopStatSeq
+    /** CompilationUnit ::= package QualId StatementSeparator TopStatSeq
      *                    | package QualId `{' TopStatSeq `}'
      *                    | TopStatSeq
      */

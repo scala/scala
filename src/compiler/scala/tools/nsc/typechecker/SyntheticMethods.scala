@@ -86,7 +86,7 @@ mixin class SyntheticMethods requires Analyzer {
 	Apply(gen.mkRef(target), This(clazz) :: (vparamss.head map Ident))));
     }
 
-    val SerializableAttr = definitions.SerializableAttr;
+    val SerializableAttr = definitions.SerializableAttr.tpe;
 
     def isSerializable(clazz: Symbol): Boolean =
       clazz.attributes.exists(p => p match {
@@ -113,7 +113,47 @@ mixin class SyntheticMethods requires Analyzer {
         result
     }
 
+    def beanSetterOrGetter(sym: Symbol): Symbol =
+      if (!Character.isLetter(sym.name(0))) {
+        unit.error(sym.pos, "attribute `BeanProperty' can be applied only to fields that start with a letter");
+        NoSymbol
+      } else {
+        var name0 = sym.name;
+        if (sym.isSetter) name0 = nme.setterToGetter(name0);
+        val prefix = if (sym.isSetter) "set" else "get";
+        val arity = if (sym.isSetter) 1 else 0;
+        val name1 = prefix + Character.toUpperCase(name0(0)) + name0.subName(1, name0.length);
+        val sym1 = clazz.info.decl(name1);
+        if (sym1 != NoSymbol && sym1.tpe.paramTypes.length == arity) {
+          unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz);
+          NoSymbol
+        } else {
+          clazz.newMethod(sym.pos, name1)
+            .setInfo(sym.info)
+            .setFlag(sym.getFlag(DEFERRED | OVERRIDE | STATIC))
+        }
+      }
+
     val ts = new ListBuffer[Tree];
+
+    def addBeanGetterMethod(sym: Symbol) = {
+      val getter = beanSetterOrGetter(sym);
+      if (getter != NoSymbol)
+        ts += typed(DefDef(
+          getter,
+          vparamss => if (sym hasFlag DEFERRED) EmptyTree else gen.mkRef(sym)))
+    }
+
+    def addBeanSetterMethod(sym: Symbol) = {
+      val setter = beanSetterOrGetter(sym);
+      if (setter != NoSymbol)
+        ts += typed(DefDef(
+          setter,
+          vparamss =>
+            if (sym hasFlag DEFERRED) EmptyTree
+            else Apply(gen.mkRef(sym), List(Ident(vparamss.head.head)))))
+    }
+
     if ((clazz hasFlag CASE) && !phase.erasedTypes) {
       // case classes are implicitly declared serializable
       clazz.attributes = Pair(SerializableAttr, List()) :: clazz.attributes;
@@ -145,6 +185,14 @@ mixin class SyntheticMethods requires Analyzer {
       // jw-04-2003/jw-0425-designpatterns_p.html)
       if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
     }
+    for (val sym <- clazz.info.decls.toList)
+      if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
+        if (sym.isGetter)
+          addBeanGetterMethod(sym)
+        else if (sym.isSetter)
+          addBeanSetterMethod(sym)
+        else if (sym.isMethod || sym.isType)
+          unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym);
     val synthetics = ts.toList;
     copy.Template(
       templ, templ.parents, if (synthetics.isEmpty) templ.body else templ.body ::: synthetics)
