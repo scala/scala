@@ -17,16 +17,22 @@ exec scsh -e main -s "$0" "$@"
 (define scala-svn-module-name "scala")
 
 ;; E-mail address to which the failure notification should be sent.
-(define notify-email "scala-devel@groupes.epfl.ch")
-;;(define notify-email "stephane.micheloud@epfl.ch") ; DEBUG
-;;(define notify-email "lex.spoon@epfl.ch") ; DEBUG
+(define notify-emails '("scala-devel@groupes.epfl.ch"))
+;;(define notify-emails '("stephane.micheloud@epfl.ch")) ; DEBUG
+
 
 ;; Directory in which the distribution should be built.
-(define nightly-build-dir
-;;  (expand-file-name "~lex/scala/nightly-scala2"))  ; DEBUG
-    (expand-file-name "~linuxsoft/archives/scala/nightly-scala2"))
+;(define nightly-build-dir
+;  (expand-file-name "~linuxsoft/archives/scala/nightly-scala2"))
 
 ;; End of configuration section.
+
+(define (flatten-with-commas lst)
+  (cond
+   ((null? lst) "")
+   (#t (fold (lambda (s accum) (string-append accum ", " s))
+	     (car lst)
+	     (cdr lst)))))
 
 (define (main cmd-line)
   (let ((prog (car cmd-line))
@@ -94,10 +100,10 @@ exec scsh -e main -s "$0" "$@"
 
 (define (send-warning-mail log-file-name link-name)
   (send-mail
-   notify-email
+   notify-emails
    `(("Subject"  . "Failure of nightly Scala 2 test")
-     ("To"       . ,notify-email)
-     ("Reply-To" . ,notify-email))
+     ("To"       . ,(flatten-with-commas notify-emails))
+     ("Reply-To" . ,(car notify-emails)))
    (string-append
     "Tonight's automatic Scala test failed. More details can be found\n"
     "in file "log-file-name"\n"
@@ -116,7 +122,7 @@ exec scsh -e main -s "$0" "$@"
     (newline mail-port)
     (write-string body mail-port)
     (newline mail-port)
-    (run (sendmail "-i" ,to)
+    (run (sendmail "-i" ,@to)
          (<< ,(string-output-port-output mail-port)))))
 
 ;;; Local Variables:
