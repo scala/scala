@@ -52,7 +52,7 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
 
   /** construct an interpreter that prints to the compiler's reporter */
   def this(compiler: Global) = {
-    this(compiler, str => compiler.reporter.info(null, str, true))
+    this(compiler, str: String => compiler.reporter.info(null, str, true))
   }
 
   private def reporter = compiler.reporter
