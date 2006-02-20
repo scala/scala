@@ -69,6 +69,7 @@ PROPERTIES
   <property name="scala.exec.name" value="${dist.name}"/>
   <property name="scalai.exec.name" value="scalai"/>
   <property name="scalac.exec.name" value="scalac"/>
+  <property name="scalaint.exec.name" value="scalaint"/>
   <property name="scalatok.exec.name" value="scalatok"/>
   <!-- Shorcut names -->
   <property name="locker.lib.dir" value="${locker.dir}/${lib.dir.name}"/>
@@ -78,8 +79,9 @@ PROPERTIES
   <property name="strap.lib.dir" value="${strap.dir}/${lib.dir.name}"/>
   <property name="strap.comp.dir" value="${strap.dir}/${comp.dir.name}"/>
   <!-- sbaz properties -->
-  <property name="scala.sbaz.name" value="scala2"/>
-  <property name="scalac.sbaz.name" value="scalac2"/>
+  <property name="scala.sbaz.name" value="scala"/>
+  <property name="scalac.sbaz.name" value="scalac"/>
+  <property name="scalaint.sbaz.name" value="scalaint"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -474,6 +476,15 @@ BUILD QUICK-TEST LAYER
            perm="ugo+rx"/>
     <chmod file="${quick.dir}/${exec.dir.name}/${scala.exec.name}"
            perm="ugo+rx"/>
+    <lockertool file="${quick.dir}/${exec.dir.name}/${scalaint.exec.name}"
+                name="Scala interpreter"
+                class="scala.tools.nsc.MainInterpreter"
+                version="${version.number}"
+                copyright="${copyright}"
+                classpath=""
+                javaFlags="-Xmx256M -Xms16M"/>
+    <chmod file="${quick.dir}/${exec.dir.name}/${scalaint.exec.name}"
+           perm="ugo+rx"/>
   </target>
   
   <target name="test.quick" depends="build">
@@ -560,6 +571,15 @@ TEST
            perm="ugo+rx"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
            perm="ugo+rx"/>
+    <quicktool file="${strap.dir}/${exec.dir.name}/${scalaint.exec.name}"
+               name="Scala interpreter"
+               class="scala.tools.nsc.MainInterpreter"
+               version="${version.number}"
+               copyright="${copyright}"
+               classpath=""
+               javaFlags="-Xmx256M -Xms16M"/>
+    <chmod file="${strap.dir}/${exec.dir.name}/${scalaint.exec.name}"
+           perm="ugo+rx"/>
   </target>
   
   <target name="test.stability" depends="build.strap">
@@ -643,6 +663,17 @@ GENERATES A DISTRIBUTION
            perm="ugo+rx"/>
     <chmod file="${dist.current.dir}/bin/${scala.exec.name}"
            perm="ugo+rx"/>
+    <lockertool file="${dist.current.dir}/bin/${scalaint.exec.name}"
+                name="Scala interpreter"
+                class="scala.tools.nsc.MainInterpreter"
+                version="${version.number}"
+                copyright="${copyright}"
+                classpath=""
+                javaFlags="-Xmx256M -Xms16M"/>
+    <chmod file="${dist.current.dir}/bin/${scalaint.exec.name}"
+           perm="ugo+rx"/>
+
+
     <if><isset property="os.unix"/>
       <then>
         <symlink link="${dist.latest.dir}"
@@ -659,9 +690,10 @@ GENERATES A DISTRIBUTION
        version="${version.number}"
        desc="The Scala compiler.  This is used to compile Scala programs
 into Java .class files."
-       depends="${scalac.sbaz.name}-support">
+       depends="scalac2-support">
       <libset dir="${dist.current.dir}/lib" includes="${dist.name}-compiler.jar"/>
       <binset dir="${dist.current.dir}/bin" includes="${scalac.exec.name}"/>
+      <binset dir="${dist.current.dir}/bin" includes="${scalac.exec.name}.bat"/>
       <manset dir="${docs.dir}/man" includes="${scalac.exec.name}.1"/>
     </quicksbaz>
 
@@ -675,6 +707,7 @@ by default, sets up a large CLASSPATH including the Scala library
 as well as all jars installed in the lib directory of the sbaz-
 managed directory.">
       <binset dir="${dist.current.dir}/bin" includes="${scala.exec.name}"/>
+      <binset dir="${dist.current.dir}/bin" includes="${scala.exec.name}.bat"/>
       <manset dir="${docs.dir}/man" includes="${scala.exec.name}.1"/>
     </quicksbaz>
 
@@ -685,6 +718,17 @@ managed directory.">
        version="${version.number}"
        desc="The base Scala library, required for running all Scala programs.">
       <libset dir="${dist.current.dir}/lib" includes="${dist.name}-library.jar"/>
+    </quicksbaz>
+
+    <quicksbaz
+      file="${dist.dir}/${scalaint.sbaz.name}-${version.number}.sbp"
+      adfile="${dist.dir}/${scalaint.sbaz.name}-${version.number}.advert"
+      name="${scalaint.sbaz.name}"
+      version="${version.number}"
+      depends="${scalac.sbaz.name}"
+      desc="A command-line interpreter for Scala.">
+      <binset dir="${dist.current.dir}/bin" includes="${scalaint.exec.name}"/>
+      <binset dir="${dist.current.dir}/bin" includes="${scalaint.exec.name}.bat"/>
     </quicksbaz>
   </target>
 
