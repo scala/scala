@@ -455,12 +455,11 @@ FILES_POS="";
 FILES_NEG="";
 FILES_MSIL="";
 
+QUICK="$PREFIX/build/quick/exec"
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
-    QUICK="$PREFIX/build/quick/exec"
 else
-    LATEST="$PREFIX/bin";
-    QUICK="$LATEST"
+    LATEST="$QUICK";
 fi;
 BIN_DIR="$LATEST"
 
