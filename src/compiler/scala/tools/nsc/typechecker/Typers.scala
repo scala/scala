@@ -335,7 +335,7 @@ mixin class Typers requires Analyzer {
 	val tparams1 = cloneSymbols(tparams)
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
-                      TypeTree(tparam.tpe) setPos tree.pos)) setPos tree.pos
+                      TypeTree(tparam.tpe) setOriginal tree /* setPos tree.pos */)) setPos tree.pos
 	context.undetparams = context.undetparams ::: tparams1
 	adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode) => // (4.1)
@@ -374,7 +374,7 @@ mixin class Typers requires Analyzer {
 	    } else {
 	      clazz.initialize
 	      if (clazz.hasFlag(CASE)) {   // (5.1)
-		val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setPos tree.pos
+		val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setOriginal tree
 
 		// tree.tpe.prefix.memberType(clazz.primaryConstructor); //!!!
 			try {
@@ -504,7 +504,7 @@ mixin class Typers requires Analyzer {
 	// If first parent is a mixin class, make it first mixin and add its superclass as first parent
 	while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isMixin) {
 	  mixins = typedType(supertpt) :: mixins
-	  supertpt = TypeTree(supertpt.tpe.parents.head) setPos supertpt.pos
+	  supertpt = TypeTree(supertpt.tpe.parents.head) setOriginal supertpt /* setPos supertpt.pos */
 	}
 	if (supertpt.hasSymbol) {
 	  val tparams = supertpt.symbol.typeParams
@@ -519,7 +519,7 @@ mixin class Typers requires Analyzer {
                   tparams,
 		  context.owner.unsafeTypeParams,
 		  vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
-		  superargs map (.duplicate))) setPos supertpt.pos
+		  superargs map (.duplicate))) setOriginal supertpt /* setPos supertpt.pos */
 	  }
 	}
 	//System.out.println("parents("+context.owner+") = "+supertpt :: mixins);//DEBUG
@@ -614,7 +614,7 @@ mixin class Typers requires Analyzer {
 	    DefDef(getter, vparamss =>
 	      if (mods hasFlag DEFERRED) EmptyTree
 	      else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe)))
-          result.tpt setPos tpt.pos
+          result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
           result
 	}
@@ -1185,7 +1185,6 @@ mixin class Typers requires Analyzer {
                   error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
                   null
               })
-            //case Block(
           }
           if (attrInfo != null) {
             val attributed =
@@ -1306,7 +1305,7 @@ mixin class Typers requires Analyzer {
           if (tpt1.hasSymbol && !tpt1.symbol.typeParams.isEmpty) {
 	    context.undetparams = cloneSymbols(tpt1.symbol.unsafeTypeParams)
             tpt1 = TypeTree()
-              .setPos(tpt1.pos)
+              .setOriginal(tpt1) /* .setPos(tpt1.pos) */
               .setType(appliedType(tpt1.tpe, context.undetparams map (.tpe)))
           }
 	  if (tpt1.tpe.symbol hasFlag ABSTRACT)
@@ -1478,12 +1477,13 @@ mixin class Typers requires Analyzer {
       } catch {
         case ex: TypeError =>
           //System.out.println("caught "+ex+" in typed");//DEBUG
-	  reportTypeError(tree.pos, ex)
-	  setError(tree)
-	case ex: Throwable =>
-	  if (settings.debug.value)
-	    System.out.println("exception when typing "+tree+", pt = "+pt)
-	  throw(ex)
+    	  reportTypeError(tree.pos, ex)
+    	  setError(tree)
+    	case ex: Throwable =>
+    	  if (settings.debug.value)
+    	    System.out.println("exception when typing "+tree+", pt = "+pt)
+        logError("AT: " + context.unit.source.dbg(tree.pos), ex);
+    	  throw(ex)
       }
 
     def atOwner(owner: Symbol): Typer =
