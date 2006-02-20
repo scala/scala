@@ -22,6 +22,12 @@ mixin class Trees requires Global {
     def isVariable  = ((flags & MUTABLE  ) != 0);
     def isArgument  = ((flags & PARAM    ) != 0);
     def isAccessor  = ((flags & ACCESSOR ) != 0);
+    def isOverride  = ((flags & OVERRIDE ) != 0);
+    def isAbstract  = ((flags & ABSTRACT) != 0);
+    def isCase      = ((flags & CASE    ) != 0);
+    def isSealed    = ((flags & SEALED) != 0);
+    def isFinal     = ((flags & FINAL   ) != 0);
+    def isMixin     = ((flags & MIXIN   ) != 0);
     def isPublic    = !isPrivate && !isProtected;
     def hasFlag(flag: int) = (flags & flag) != 0;
     def | (flag: int): Modifiers = {
@@ -29,6 +35,7 @@ mixin class Trees requires Global {
       if (flags1 == flags) this else Modifiers(flags1, privateWithin)
     }
   }
+
 
   def Modifiers(flags: int): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName);
   def Modifiers(flags: long): Modifiers = Modifiers(flags.asInstanceOf[int]);
@@ -140,20 +147,6 @@ mixin class Trees requires Global {
     final def hasFlag(mask: long): boolean = (mods.flags & mask) != 0;
 
 
-    def verifyKeyword(keyword : String, source : SourceFile, pos : Int) : Boolean = {
-      assert(keyword != null);
-      source.beginsWith(pos, keyword + " ");
-    }
-
-    def verifyKeyword(source : SourceFile, pos : Int) : Boolean =
-      verifyKeyword(keyword, source, pos);
-
-
-    def namePos(source : SourceFile) : Int = if (pos == Position.NOPOS) Position.NOPOS else {
-      assert(keyword != null);
-      if (!verifyKeyword(source, pos)) Position.NOPOS;
-      else source.skipWhitespace(pos + keyword.length() + 1);
-    }
   }
 
   /** Package clause */
@@ -176,8 +169,6 @@ mixin class Trees requires Global {
        extends ImplDef {
     def keyword = "class";
 
-    override def verifyKeyword(source : SourceFile, pos : Int) : Boolean =
-      super.verifyKeyword(source, pos) || verifyKeyword("trait", source, pos);
 
   }
 
@@ -223,13 +214,7 @@ mixin class Trees requires Global {
          assert(tpt.isType, tpt);
          assert(rhs.isTerm, rhs);
 	 def keyword = if (mods.isVariable) "var" else "val";
-	 override def namePos(source : SourceFile) =
-	   if (pos == Position.NOPOS) Position.NOPOS;
-	   else if (source.beginsWith(pos, "val ") || source.beginsWith(pos, "var "))
-	     source.skipWhitespace(pos + ("val ").length());
-	   else if (source.content(pos) == ',') source.skipWhitespace(pos + 1);
-	   else pos;
-       }
+  }
 
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef = {
@@ -524,12 +509,6 @@ mixin class Trees requires Global {
     var original : Tree = _;
 
     def setOriginal(tree : Tree) : this.type = {
-      tree match {
-      case tt : TypeTree =>
-        System.err.println("Illegal: " + this + " to " + tree);
-        Thread.dumpStack();
-      case _ =>
-      }
       original = tree;
       setPos(tree.pos);
     }
