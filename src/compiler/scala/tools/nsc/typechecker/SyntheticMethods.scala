@@ -86,13 +86,8 @@ mixin class SyntheticMethods requires Analyzer {
 	Apply(gen.mkRef(target), This(clazz) :: (vparamss.head map Ident))));
     }
 
-    val SerializableAttr = definitions.SerializableAttr.tpe;
-
     def isSerializable(clazz: Symbol): Boolean =
-      clazz.attributes.exists(p => p match {
-        case Pair(SerializableAttr, _) => true;
-        case _ => false
-      })
+      !clazz.getAttributes(definitions.SerializableAttr).isEmpty
 
     def readResolveMethod: Tree = {
       // !!! the synthetic method "readResolve" should be private,
@@ -156,7 +151,7 @@ mixin class SyntheticMethods requires Analyzer {
 
     if ((clazz hasFlag CASE) && !phase.erasedTypes) {
       // case classes are implicitly declared serializable
-      clazz.attributes = Pair(SerializableAttr, List()) :: clazz.attributes;
+      clazz.attributes = Pair(SerializableAttr.tpe, List()) :: clazz.attributes;
 
       for (val stat <- templ.body) {
         if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) &&
