@@ -504,7 +504,7 @@ mixin class Typers requires Analyzer {
 	// If first parent is a mixin class, make it first mixin and add its superclass as first parent
 	while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isMixin) {
 	  mixins = typedType(supertpt) :: mixins
-	  supertpt = TypeTree(supertpt.tpe.parents.head) setOriginal supertpt /* setPos supertpt.pos */
+	  supertpt = TypeTree(supertpt.tpe.parents.head) /* setOriginal supertpt */ setPos supertpt.pos
 	}
 	if (supertpt.hasSymbol) {
 	  val tparams = supertpt.symbol.typeParams
@@ -614,7 +614,7 @@ mixin class Typers requires Analyzer {
 	    DefDef(getter, vparamss =>
 	      if (mods hasFlag DEFERRED) EmptyTree
 	      else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe)))
-          result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
+          result.tpt.asInstanceOf[TypeTree] /* XXX: setOriginal tpt */ setPos tpt.pos
           checkNoEscaping.privates(getter, result.tpt)
           result
 	}
