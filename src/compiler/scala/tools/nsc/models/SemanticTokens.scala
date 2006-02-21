@@ -32,6 +32,23 @@ class SemanticTokens(val compiler: Global) {
     def prev: HasNext;
     def next: HasPrev;
   }
+  def eatKeyword(source : SourceFile, pos : Int, keywords : List[String]) : Int = {
+    if (keywords.isEmpty) pos;
+    else if (pos == source.content.length) Position.NOPOS;
+    else if (source.beginsWith(pos, " "))
+      eatKeywords(source, pos + 1);
+    else if (source.beginsWith(pos, keywords.head + " "))
+      eatKeywords(source, pos + keywords.head.length() + 1);
+    else eatKeyword(source, pos, keywords.tail);
+  }
+
+  def eatKeywords(source : SourceFile, pos : Int) : Int = {
+    val keywords =
+      "package" :: "val" :: "var" :: "def" :: "class" :: "override" :: "case" ::
+      "object" :: "sealed" :: "private" :: "protected" :: Nil;
+    if (pos != Position.NOPOS) eatKeyword(source, pos, keywords);
+    else pos;
+  }
 
   [_trait_] abstract class HasNext extends Token {
     var next0: HasPrev = _;
@@ -173,216 +190,279 @@ class SemanticTokens(val compiler: Global) {
       for (val tree : T <- trees) build(tree);
 
     def build(tree0: Tree) : Unit = try {
-      if (tree0.pos != Position.NOPOS) tree0 match {
+      /* if (tree0.pos != Position.NOPOS) */ tree0 match {
       case tree : ImplDef =>
-        val pos = tree.symbol.namePos(unit.source);
+        val pos = eatKeywords(unit.source, tree.pos);
         if (pos == Position.NOPOS) {
           // inner types.
             // System.err.println("NOPOS: " + tree.getClass() + " " + (new Position(unit.source, tree.pos)).dbgString);
           //Thread.dumpStack();
-        } else buildDef(tree.symbol, tree.symbol.namePos(unit.source));
+        } else buildDef(tree.symbol, eatKeywords(unit.source, tree.pos));
         tree match {
         case cdef : ClassDef => build(cdef.tparams);
         case   _  => ;
         }
         build(tree.impl.parents);
         build(tree.impl.body);
-      case tree : ValOrDefDef => if (!tree.symbol.hasFlag(Flags.ACCESSOR)) {
-        {
-          val pos = if (tree.name.toString().equals("<init>")) Position.NOPOS else tree.symbol.namePos(unit.source);
-          if (pos != Position.NOPOS) {
-            if (!tree.hasFlag(Flags.SYNTHETIC))
-              buildDef(tree.symbol, pos);
-          }
-        }
+      case tree : ValOrDefDef =>
+        if (!tree.symbol.hasFlag(Flags.ACCESSOR)) {
+			  {
+			    val pos = if (tree.name.toString().equals("<init>")) Position.NOPOS else
+            eatKeywords(unit.source, tree.pos);
+          if (false) System.err.println("VALDEF: tree=" + tree + " sym=" + tree.symbol + " pos0=" +
+            tree.symbol.pos + " alias=" + tree.symbol.alias + " pos1=" +
+            pos + " pos2=" + tree.pos + " " + unit.source.dbg(tree.pos) + " " + tree.symbol.hasFlag(Flags.SYNTHETIC));
 
-        if (tree.isInstanceOf[DefDef]) {
-          val ddef = tree.asInstanceOf[DefDef];
-          build(ddef.tparams);
+			    if (pos != Position.NOPOS && !tree.hasFlag(Flags.SYNTHETIC))
+			        buildDef(tree.symbol, pos);
+			  }
 
-          for (val l0 <- ddef.vparamss; val arg <- l0) {
-            val pos0 = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
-                       else unit.source.skipWhitespace(arg.pos + ("val ").length());
-            buildDef(arg.symbol, pos0);
-            build(arg.tpt);
+			  if (tree.isInstanceOf[DefDef]) {
+			    val ddef = tree.asInstanceOf[DefDef];
+			    build(ddef.tparams);
+
+			    for (val l0 <- ddef.vparamss; val arg <- l0) {
+			      val pos0 = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
+											 else unit.source.skipWhitespace(arg.pos + ("val ").length());
+			      buildDef(arg.symbol, pos0);
+			      build(arg.tpt);
+			    }
+			  }
+			  try {
+          //TPT=scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] 260 class scala.tools.nsc.ast.Trees$TypeTree scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] class scala.tools.nsc.symtab.Types$$anon$5
+          if (tree.tpt == null || tree.tpt.tpe == null) {
+           System.err.println("BAD: " + tree.tpt + " in " + tree);
+          } else {
+            //System.err.println("TPT=" + tree.tpt + " " + tree.tpt.pos + " " + tree.tpt.getClass() + " " + tree.tpt.tpe + " " + tree.tpt.tpe.getClass() + " " + tree.tpt.tpe.getClass().getSuperclass());
+  			    build(tree.tpt);
           }
-        }
-        try {
-          build(tree.tpt);
-        } catch {
-          case e: Error =>
-            System.err.println("VALDEF: " + tree + " " + tree.tpt + " " + tree.pos + " " + tree.tpt.pos);
-            throw e;
-        }
-        build(tree.rhs);
-      }
-    case tree : PackageDef =>
-      //System.err.println("PACKAGE: " + tree.name);
-      if (false) {
-        val pos = tree.symbol.namePos(unit.source);
-              if (pos != Position.NOPOS)
-          buildDef(tree.symbol, pos);
-      }
-      build(tree.stats);
-    case tree : Function   =>
-      for (val arg <- tree.vparams) if (arg.pos != Position.NOPOS) {
-          val name = arg.name.toString().trim();
-          val pos : Int =
-          if (unit.source.beginsWith(arg.pos, "val "))
-            unit.source.skipWhitespace(arg.pos + ("val ").length());
-          else if (unit.source.content(arg.pos) == ':') {
-            var posx = arg.pos;
-            while (Character.isWhitespace(unit.source.content(posx - 1))) posx = posx - 1;
-            posx - name.length();
-          } else arg.pos;
-          buildDef(arg.symbol, pos);
-          build(arg.tpt);
-        }
-      build(tree.body);
-    case tree : TypeTree =>
+			  } catch {
+			    case e: Error =>
+			      System.err.println("VALDEF: " + tree + " " + tree.tpt + " " + tree.pos + " " + tree.tpt.pos);
+			      throw e;
+			  }
+        //System.err.println("RHS: " + tree.rhs + " " + tree.rhs.getClass() + " " + tree.rhs.getClass().getSuperclass());
+			  build(tree.rhs);
+			}
+	  case tree : PackageDef =>
+			//System.err.println("PACKAGE: " + tree.name);
+			if (false) {
+			  val pos = eatKeywords(unit.source, tree.pos);
+		    if (pos != Position.NOPOS)
+			    buildDef(tree.symbol, pos);
+			}
+			build(tree.stats);
+	  case tree : Function   =>
+	    for (val arg <- tree.vparams) if (arg.pos != Position.NOPOS) {
+				  val name = arg.name.toString().trim();
+				  val pos : Int =
+			    if (unit.source.beginsWith(arg.pos, "val ")) unit.source.skipWhitespace(arg.pos + ("val ").length());
+			    else if (unit.source.content(arg.pos) == ':') {
+			      var posx = arg.pos;
+			      while (Character.isWhitespace(unit.source.content(posx - 1))) posx = posx - 1;
+			      posx - name.length();
+			    } else arg.pos;
+				  buildDef(arg.symbol, pos);
+				  build(arg.tpt);
+				}
+	    build(tree.body);
+	  case tree : TypeTree =>
       val treex = tree;
-      val tree1 = if (tree.original != null) tree.original; else tree;
-      if (tree.tpe != null) buildT(tree1, tree.tpe);
-      def buildT(tree: Tree, tpe: Type) : Unit = if (tree.pos != Position.NOPOS) tpe match {
-      case tpe0 : TypeRef => tree match {
-        case apt : AppliedTypeTree =>
-          buildUse(tpe.symbol, apt.tpt.pos, tpe0);
+	    val tree1 = if (tree.original != null) tree.original; else tree;
+      def classes(clazz : java.lang.Class) : List[java.lang.Class] =
+        if (clazz == null) Nil;
+        else clazz :: classes(clazz.getSuperclass());
+      if (tree.original == null) {
+        if (false) System.err.println("NO_ORIGINAL: " + tree + " " + tree.tpe + " " + classes(tree.tpe.getClass()));
+
+      }
+
+	    if (tree.tpe != null) buildT(tree1, tree.tpe);
+	    def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != Position.NOPOS) tpe match {
+		  case tpe0 : TypeRef => tree match {
+		    case apt : AppliedTypeTree =>
+		      buildUse(tpe.symbol, apt.tpt.pos, tpe0);
           //System.err.println("APT: " + treex + " vs. " + treex.original);
-          //System.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " apt.args=" + apt.args + " tpe0.args=" + tpe0.args);
+          //System.err.println("APT: " + treex.pos + " vs. " + treex.original.pos + " " + unit.source.dbg(treex.original.pos));
+		      //System.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " apt.args=" + apt.args + " tpe0.args=" + tpe0.args);
 
-          buildTs (apt.args, tpe0.args);
-        case ident : Ident => buildUse(tpe0.sym, ident.pos, tpe0);
-        case select : Select =>
-          // System.err.println("BUILD_SELECT: " + select + " @ " + tpe0);
-          try {
-            build(select);
+		      buildTs (apt.args, tpe0.args);
+		    case ident : Ident => buildUse(tpe0.sym, ident.pos, tpe0);
+		    case select : Select =>
+          if (select.symbol == NoSymbol)
+            if (false) System.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " SYM=" + select.symbol + " " + unit.source.dbg(select.pos));
+		      try {
+		        // build(select);
+            buildUse(tpe0.symbol, selectPos(select), tpe0);
+            //System.err.println("QUALIFIER: " + select.qualifier + " " + unit.source.dbg(select.qualifier.pos) + " " + tpe0.prefix + " " + tpe0.prefix.getClass() + " " + tpe0.prefix.getClass().getSuperclass() +" " + tpe0.prefix.widen + " " + tpe0.prefix.toLongString);
+						buildT(select.qualifier, tpe0.prefix);
           } catch {
-            case e : Error =>
-              System.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " " + unit.source.dbg(select.pos));
-              throw e;
+						case e : Error =>
+						  System.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " " + unit.source.dbg(select.pos));
+						  throw e;
+		      }
+		    case tpt : TypeTree =>
+          if (tpt.symbol != null) {
+            System.err.println("SYM0 " + tpt.symbol + " " + unit.source.dbg(tpt.pos));
+            buildUse(tpt.symbol, tpt.pos, tpe0);
+          } else if (tpe0.symbol != null) {
+            //System.err.println("TYPE_SYM1 " + tpe0.symbol + " " + unit.source.dbg(tpt.pos));
+            buildUse(tpe0.symbol, tpt.pos, tpe0);
+          } else {
+            System.err.println("UNKNOWN TPT0: " + unit.source.dbg(tpt.pos) + " tpt=" + tpt + " " + tpt.symbol + " tpe0="+ tpe0 + " " + tpe0.symbol + " tpe0.args=" + tpe0.args);
           }
-        case tpt : TypeTree =>
-          //System.err.println("UNKNOWN TPT0: " + unit.source.dbg(tree.pos) + " " + tpt + " "+ tpe0 + " " + tpe0.args + " " + tpt);
-        case sft : SelectFromTypeTree =>
-          build(sft.qualifier); // XXX: broken
-          if (false) System.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
-              sft.qualifier.symbol +
-              " qual.pos=" + unit.source.dbg(sft.qualifier.pos) + " symbol=" + sft.symbol + " type=" + tpe0 +
-              " type.sym=" + tpe0.symbol);
-        case _ => System.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + unit.source.content(tree.pos));
-      }
-      case tpe0 : MethodType => tree match {
-        case tpt: TypeTree =>
-          if (tpt.original != null) buildT(tpt.original, tpe);
-          else {
-            System.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
-          }
-        case ident  : Ident  => buildT(ident,  tpe0.resultType);
-        case select : Select => buildT(select, tpe0.resultType);
-        case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass());
-      }
-      case tpe0 : RefinedType => tree match {
-        case cpt : CompoundTypeTree =>
-          buildTs(cpt.templ.parents, tpe0.parents);
+		    case sft : SelectFromTypeTree =>
+		      build(sft.qualifier); // XXX: broken
+			    if (false) System.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
+						  sft.qualifier.symbol +
+						  " qual.pos=" + unit.source.dbg(sft.qualifier.pos) + " symbol=" + sft.symbol + " type=" + tpe0 +
+						  " type.sym=" + tpe0.symbol);
+		    case _ => System.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + unit.source.content(tree.pos));
+		  }
+		  case tpe0 : MethodType => tree match {
+		    case tpt: TypeTree =>
+		      if (tpt.original != null) buildT(tpt.original, tpe);
+		      else {
+						System.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
+		      }
+		    case ident  : Ident  => buildT(ident,  tpe0.resultType);
+		    case select : Select => buildT(select, tpe0.resultType);
+		    case _ => System.err.println("UNKNOWN TPE: " + tree + " vs. " + tpe0 + " " + tree.getClass());
+		  }
+		  case tpe0 : RefinedType => tree match {
+			  case cpt : CompoundTypeTree =>
+			  	buildTs(cpt.templ.parents, tpe0.parents);
 
-        case _ : TypeTree =>
-          // System.err.println("UNKNOWN TPE13: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
-        case _ =>
-          System.err.println("UNKNOWN TPE5: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
-      }
-      case tpe0 : ThisType => tree match {
-        case stt : SingletonTypeTree => stt.ref match {
-          case ths : This => build(ths);
+			  case _ : TypeTree =>
+			    // System.err.println("UNKNOWN TPE13: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
+			  case _ =>
+				  if (false) System.err.println("UNKNOWN TPE5: " + dbg(tree) + " tpe0=" + tpe0 + " " + tpe0.parents);
+		  }
+		  case tpe0 : ThisType => tree match {
+  		  case stt : SingletonTypeTree => stt.ref match {
+  			  case ths : This => build(ths);
           case _ => System.err.println("UNKNOWN TPE11: " + tpe0 + " " + stt + " " + stt.ref + " " + stt.ref.getClass() + " " + unit.source.dbg(tree.pos));
         }
+        case tt : This =>
+        case _ : Ident =>
+        case _ : Select =>
         case tt : TypeTree =>
           if (false) System.err.println("UNKNOWN TPE12: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
-        case _ => System.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
+        case _ =>
+          if (false) System.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
+		  }
+		  case tpe0 : SingleType => tree match {
+        case ident  : Ident  => buildUse(tpe0.sym, ident.pos, tpe0);
+        case select : Select =>
+        buildUse(tpe0.symbol, selectPos(select), tpe0);
+        //System.err.println("QUALIFIER-0: " + select.qualifier + " " + unit.source.dbg(select.qualifier.pos) + " " + tpe0.prefix + " " + tpe0.prefix.getClass() + " " + tpe0.prefix.getClass().getSuperclass() +" " + tpe0.prefix.widen + " " + tpe0.prefix.toLongString);
+        buildT(select.qualifier, tpe0.prefix);
 
-      }
-      case tpe0 : SingleType => {
-        if (false) System.err.println("UNKNOWN TPE8: " + tree + " " + unit.source.dbg(tree.pos) + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
+        case _ =>
+          if (false) System.err.println("UNKNOWN TPE8: " + tree + " " + unit.source.dbg(tree.pos) + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
 
-      }
-      case ErrorType =>
-      case _ => {
-        System.err.println("UNKNOWN TPE4: " + dbg(tree) + " vs. " + tpe + " " + (if (tpe != null) "" + tpe.getClass() + " " + tpe.getClass().getSuperclass() else null));
-      }
-    }
+		  }
+      case ctype : ConstantType =>
+        if (false) System.err.println("UNKNOWN CONSTANT_TYPE: " + tree + " " + ctype + " " + unit.source.dbg(tree.pos));
 
-    def buildTs(trees: List[Tree], types: List[Type]): Unit =
-      if (!trees.isEmpty && !types.isEmpty) {
-        buildT (trees.head, types.head);
-        buildTs(trees.tail, types.tail);
+		  case ErrorType =>
+		  case _ => {
+        if (false) System.err.println("UNKNOWN TPE4: " + tree + " " + tpe + " " + tpe.getClass() + " " + unit.source.dbg(tree.pos));
+		  }
+		};
+    def buildTs(trees : List[Tree], types : List[Type]): Unit = if (!trees.isEmpty && !types.isEmpty) {
+			  buildT (trees.head, types.head);
+			  buildTs(trees.tail, types.tail);
+		} else if (trees.isEmpty != types.isEmpty) {
+ 			if (false && doLog) {
+        Console.println("" + treex + " vs. " + treex.original);
+        if (treex.original != null)
+          Console.println("" + treex.tpe + " vs. " + treex.original.tpe);
+ 			  logError("Tree vs. Type mismatch: " + trees + " " + types + " " + unit.source.dbg(tree.pos), null);
+        doLog = false;
       }
-      else if (trees.isEmpty != types.isEmpty) {
-        if (false && doLog) {
-          Console.println("" + treex + " vs. " + treex.original);
-          if (treex.original != null)
-            Console.println("" + treex.tpe + " vs. " + treex.original.tpe);
-           logError("Tree vs. Type mismatch: " + trees + " " + types + " " + unit.source.dbg(tree.pos), null);
-           doLog = false;
-        }
-      };
+    };
 
-    case tree : AbsTypeDef =>
-      //System.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + unit.source.dbg(tree.pos));
-      buildDef(tree.symbol, tree.namePos);
-      buildDef(tree.symbol, tree.pos);
-    case tree : Bind =>       buildDef(tree.symbol, tree.pos);
-                              build(tree.body);
-    case tree : Ident      => buildUse(tree.symbol, tree.pos, tree.tpe);
-    case tree : Select     =>
-      try {
-        build(tree.qualifier);
-      } catch {
-        case e: Error => System.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + unit.source.dbg(tree.qualifier.pos)); throw e;
-      }
-      try {
-        if (tree.pos >= unit.source.content.length) {
-          if (false) System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + unit.source.dbg(tree.pos));
+	  case tree : AbsTypeDef =>
+    	//System.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + unit.source.dbg(tree.pos));
+	    buildDef(tree.symbol, tree.namePos);
+	    buildDef(tree.symbol, tree.pos);
+	    build(tree.lo);
+      build(tree.hi);
+	  case tree : Bind =>       buildDef(tree.symbol, tree.pos);
+	                            build(tree.body);
+	  case tree : Ident      => buildUse(tree.symbol, tree.pos, tree.tpe);
+	  case tree : Select     =>
+			try {
+      	build(tree.qualifier);
+			} catch {
+			  case e : Error => System.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + unit.source.dbg(tree.qualifier.pos)); throw e;
+			}
+			try {
+			  if (tree.pos >= unit.source.content.length) {
+			    if (false) System.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + unit.source.dbg(tree.pos));
 
         } else {
           //System.err.println("SELECT-0: " + tree.symbol + " " + unit.source.dbg(tree.pos) + " " + (tree.pos - selectPos(tree)));
-          buildUse(tree.symbol, selectPos(tree), tree.tpe);
-        }
-      } catch {
-        case e: Error => System.err.println("SELECTU: " + tree + " " + tree.symbol + " " + unit.source.dbg(tree.pos)); throw e;
+					buildUse(tree.symbol, selectPos(tree), tree.tpe);
+			  }
+			} catch {
+			  case e : Error => System.err.println("SELECTU: " + tree + " " + tree.symbol + " " + unit.source.dbg(tree.pos)); throw e;
+			}
+    case tree : TypeApply =>
+		  //System.err.println("TYPE_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
+      if (!tree.args0.isEmpty) {
+        //System.err.println("ARGS: " + unit.source.dbg(tree.args0.head.pos));
       }
-    case tree : GenericApply =>
       build(tree.fun0);
       build(tree.args0);
-    case tree : Typed => build(tree.expr); build(tree.tpt);
-    case tree : Block => build(tree.stats); build(tree.expr);
-    case tree : CaseDef    =>
-      build(tree.pat); build(tree.guard); build(tree.body);
-    case tree : Sequence   => build(tree.trees);
-    case tree : Assign     => build(tree.lhs); build(tree.rhs);
-    case tree : If         => build(tree.cond); build(tree.thenp); build(tree.elsep);
-    case tree : New        => build(tree.tpt);
-    case tree : Match      => build(tree.selector); build(tree.cases);
-    case tree : Return     => build(tree.expr);
-    case tree : LabelDef   => build(tree.rhs);
-    case tree : Throw      => build(tree.expr);
-    case tree : Try        => build(tree.block); build(tree.catches); build(tree.finalizer);
-    case tree : Alternative => build(tree.trees);
-    case tree : This    =>
-      //System.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + unit.source.dbg(tree.pos) + " " + tree.tpe);
-      if (tree.symbol != null) buildUse(tree.symbol, tree.pos, tree.tpe);
-      //Thread.dumpStack();
-    case tree : AliasTypeDef =>
-      System.err.println("ALIAS: " + tree);
-      build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
-    case tree : Super   => ;
-    case tree : AppliedTypeTree => ;
-    case tree : SingletonTypeTree => ;
-    case tree : Literal => ;
+    case tree : Apply =>
+      //System.err.println("NORM_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
+      build(tree.fun0);
+      build(tree.args0);
+	  case tree : GenericApply =>
+	    //System.err.println("GEN_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
+  	  build(tree.fun0);
+			build(tree.args0);
+	  case tree : Typed => build(tree.expr); build(tree.tpt);
+	  case tree : Block =>
+    	if (false) {
+				if (!tree.stats.isEmpty)
+          System.err.println("BLOCKS: " + tree.stats.head + " " + tree.stats.head.getClass());
+        System.err.println("BLOCKE: " + tree.expr + " " + tree.expr.getClass());
+      }
+	    build(tree.stats); build(tree.expr);
+	  case tree : CaseDef    =>
+	    build(tree.pat); build(tree.guard); build(tree.body);
+	  case tree : Sequence   => build(tree.trees);
+	  case tree : Assign     => build(tree.lhs); build(tree.rhs);
+	  case tree : If         => build(tree.cond); build(tree.thenp); build(tree.elsep);
+	  case tree : New        =>
+    	//System.err.println("NEW: " + tree.tpt + " " + tree.tpt.getClass());
+      build(tree.tpt);
+	  case tree : Match      => build(tree.selector); build(tree.cases);
+	  case tree : Return     => build(tree.expr);
+	  case tree : LabelDef   => build(tree.rhs);
+	  case tree : Throw      => build(tree.expr);
+	  case tree : Try        => build(tree.block); build(tree.catches); build(tree.finalizer);
+	  case tree : Alternative => build(tree.trees);
+	  case tree : This    =>
+    	//System.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + unit.source.dbg(tree.pos) + " " + tree.tpe);
+	    if (tree.symbol != null) buildUse(tree.symbol, tree.pos, tree.tpe);
+	    //Thread.dumpStack();
+	  case tree : AliasTypeDef =>
+	    System.err.println("ALIAS: " + tree);
+	    build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
     case tree : DocDef     => build(tree.definition);
     case tree : Attributed => build(tree.definition);
-    case tree : Import     => build(tree.expr);
-    case EmptyTree => ;
-    case _ => ;
-      System.err.println("BAIL: " + unit.source.dbg(tree0.pos) + " " + tree0 + " " + tree0.getClass());
+	  case tree : Import     => build(tree.expr);
+    case tree : AppliedTypeTree => ;
+    case tree : SingletonTypeTree => ;
+    case tree : Super   => ;
+    case tree : Literal => ;
+	  case EmptyTree => ;
+	  case _ => ;
+	    System.err.println("BAIL: " + unit.source.dbg(tree0.pos) + " " + tree0 + " " + tree0.getClass());
     }
   } catch {
     case t : Throwable => logError("Error occured at " + unit.source.dbg(tree0.pos), t);

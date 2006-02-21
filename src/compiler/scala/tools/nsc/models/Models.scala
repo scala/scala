@@ -8,8 +8,48 @@ package scala.tools.nsc.models;
 import scala.tools.nsc.Global;
 import scala.tools.nsc.util.Position;
 
-class Models(val global : Global) {
+abstract class Models {
+  val global : Global;
   import global._;
+
+  abstract class Kind {}
+  object OBJECT  extends Kind;
+  object CLASS   extends Kind;
+  object TRAIT   extends Kind;
+  object   DEF   extends Kind;
+  object   VAL   extends Kind;
+  object   VAR   extends Kind;
+  object   ARG   extends Kind;
+  object  TPARAM extends Kind;
+
+  val KINDS = TPARAM :: CLASS :: TRAIT :: OBJECT :: VAL :: VAR :: DEF :: Nil;
+
+  def labelFor(kind : Kind) : String = kind match {
+  case OBJECT => "Object";
+  case CLASS  => "Class";
+  case TRAIT  => "Trait";
+  case DEF    => "Def";
+  case VAL    => "Val";
+  case VAR    => "Var";
+  case ARG    => "Arg";
+  case TPARAM => "Type";
+  };
+
+
+  def kindOf(term0 : Symbol) = {
+         if (term0.isVariable)       VAR;
+    else if (term0.isValueParameter) ARG;
+    else if (term0.isMethod)         DEF;
+    else if (term0.isClass)          CLASS;
+    else if (term0.isModule)         OBJECT;
+    else if (term0.isValue   )       VAL;
+    else if (term0.isTypeParameter)  TPARAM;
+    else if (term0.isType         )  TPARAM;
+    else {
+      // System.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
+      null;
+    }
+  };
 
   abstract class Listener {
 	    def    add(from : Composite, model : HasTree) : Unit;
@@ -18,15 +58,78 @@ class Models(val global : Global) {
   }
   abstract class Model extends Listener;
 
+  // def textFor(tp : AbsTypeDef) : String = tp.toString();
 
-  abstract class HasTree(val parent : Composite) extends Model {
+
+  def textFor(tree : Tree) : String = {
+    var ret = "";
+    if (tree.symbol != NoSymbol) tree.symbol.name.toString();
+    if (ret.equals("<init>")) ret = "this";
+    tree match {
+      case cdef : ClassDef =>
+        ret = ret + "[" +
+          (for (val tparam <- cdef.tparams) yield textFor(tparam)) + "]";
+        cdef.mods;
+      case vdef : ValOrDefDef =>
+        vdef match {
+          case ddef : DefDef =>
+          ret = ret + "[" +
+            (for (val tparam <- ddef.tparams) yield textFor(tparam)) + "]";
+          for (val vparams <- ddef.vparamss) {
+            ret = ret + "(" +
+              (for (val vparam <- vparams) yield textFor(vparam)) + ")";
+          }
+          case _ =>
+        }
+        ret = ret + " : " + textFor(vdef.tpt);
+      case atd : AbsTypeDef =>
+      	ret = ret + ((if(atd.hi != null) " <: " + textFor(atd.hi) else "") +
+      	             (if(atd.lo != null) " >: " + textFor(atd.lo) else ""));
+      case _ => ret = ret + tree.toString();
+    }
+		ret;
+  }
+
+
+  abstract class HasTree(val parent : Composite) extends Model with Ordered[HasTree] {
     var tree : Tree = _;
     def update(tree0 : Tree): Boolean = {
       tree = tree0;
       false;
     }
     def replacedBy(tree0 : Tree) : Boolean = true;
+    def text : String = textFor(tree);
+    def mods = tree match {
+      case mdef : MemberDef => mdef.mods
+      case _ => NoMods
+    }
 
+    override def toString() : String = tree.symbol.toString();
+
+    def compareTo [b >: HasTree <% Ordered[b]](that: b): Int = that match {
+      case ht : HasTree => toString().compareTo(ht.toString());
+    }
+    def kind = kindOf(tree.symbol);
+
+
+    /*
+    	public static String getText(Trees$Tree tree) {
+		if (tree instanceof Trees$ValOrDefDef) {
+			if (tree instanceof Trees$DefDef) {
+				Trees$DefDef ddef = (Trees$DefDef) tree;
+				ret += (listToString(ddef.tparams(), "[", "]", TYPE_E2S) +
+						listToString(ddef.vparamss(), "", "", PARAM_E2S));
+			}
+			Trees$ValOrDefDef vdef = (Trees$ValOrDefDef) tree;
+			ret += (" : " + vdef.tpt());
+		}
+		if (tree instanceof Trees$AbsTypeDef) {
+			Trees$AbsTypeDef tp = (Trees$AbsTypeDef) tree;
+			ret += (tp.hi() != null ? " <: " + tp.hi() : "") +
+				     (tp.lo() != null ? " >: " + tp.lo() : "");
+		}
+		return ret;
+	}*/
 
 
     override def    add(from : Composite, model : HasTree) : Unit = { parent.add(from, model); }
@@ -214,6 +317,7 @@ class Models(val global : Global) {
     override def    add(from : Composite, model : HasTree) : Unit = if (listener != null) { listener.add(from, model); }
     override def remove(from : Composite, model : HasTree) : Unit = if (listener != null) { listener.remove(from, model); }
 
+		private val foo = 10;
 
     override def isMember(tree : Tree) : Boolean = super.isMember(tree) || tree.isInstanceOf[Import];
   }
