@@ -24,9 +24,16 @@ abstract class ConstantFolder {
     case _ => null
   });
 
-  private def fold(tree: Tree, x: Constant): Tree =
-    if (x != null && x.tag != UnitTag) tree setType ConstantType(x)
-    else tree;
+  private def fold(tree: Tree, compX: =>Constant): Tree =
+    try {
+      val x = compX
+      if (x != null && x.tag != UnitTag) tree setType ConstantType(x)
+      else tree;
+    } catch {
+      case _:ArithmeticException => tree   // the code will crash at runtime,
+	                                   // but that is better than the
+                                           // compiler itself crashing
+    }
 
   private def foldUnop(op: Name, x: Constant): Constant = Pair(op, x.tag) match {
     case Pair(nme.ZNOT, BooleanTag) => Constant(!x.booleanValue)
