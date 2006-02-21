@@ -9,4 +9,4 @@
 
 package scala.concurrent;
 
-case class TIMEOUT();
+case object TIMEOUT;

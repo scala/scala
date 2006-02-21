@@ -25,13 +25,13 @@ class MailBox extends AnyRef with ListQueueCreator {
     def isDefinedAt(msg: Message) = receiver.isDefinedAt(msg);
 
     def receive(): a = synchronized {
-      if (msg == null) wait();
+      while (msg == null) wait();
       receiver(msg)
     }
 
     def receiveWithin(msec: long): a = synchronized {
       if (msg == null) wait(msec);
-      receiver(if (msg != null) msg else TIMEOUT())
+      receiver(if (msg != null) msg else TIMEOUT)
     }
   }
 
