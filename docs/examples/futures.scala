@@ -1,17 +1,17 @@
-package examples;
+package examples
 
-import concurrent.ops._;
+import concurrent.ops._
 
 object futures {
-  def someLengthyComputation = 1;
-  def anotherLengthyComputation = 2;
-  def f(x: Int) = x + x;
-  def g(x: Int) = x * x;
+  def someLengthyComputation = 1
+  def anotherLengthyComputation = 2
+  def f(x: Int) = x + x
+  def g(x: Int) = x * x
 
   def main(args: Array[String]): Unit = {
-    val x = future(someLengthyComputation);
-    anotherLengthyComputation;
-    val y = f(x()) + g(x());
+    val x = future(someLengthyComputation)
+    anotherLengthyComputation
+    val y = f(x()) + g(x())
     Console.println(y)
   }
 }

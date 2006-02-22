@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2005, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -34,9 +34,9 @@ object pilib {
   * spawn &lt; p_1 | ... | p_n &gt;
   */
   trait Spawn {
-    def <(p: => unit): Spawn;
-    def |(p: => unit): Spawn;
-    def > : unit;
+    def <(p: => unit): Spawn
+    def |(p: => unit): Spawn
+    def > : unit
   }
   val spawn = new Spawn {
   //object spawn extends Spawn { // BUG !
@@ -50,7 +50,7 @@ object pilib {
   /** Untyped channel. */
   class UChan {
     /** Default log function. */
-    var log = (x: Any) => ();
+    var log = (x: Any) => ()
   }
 
   /** An untyped guarded process.
@@ -63,37 +63,37 @@ object pilib {
 
   /** Typed guarded process. */
   class GP[a](n: UChan, polarity: boolean, v: Any, c: Any => a) {
-    val untyped = UGP(n, polarity, v, c);
+    val untyped = UGP(n, polarity, v, c)
   }
 
   ////////////////////////// CHANNELS //////////////////////////////
 
   /**
-  * Name on which one can emit, receive or that can be emitted or received
-  * during a communication.
-    */
+   * Name on which one can emit, receive or that can be emitted or received
+   * during a communication.
+   */
   class Chan[a] extends UChan with Function1[a, Product[a]] {
 
-    var defaultValue: a = _;
+    var defaultValue: a = _
 
     /** Creates an input guarded process. */
     def input[b](c: a => b) =
-      new GP(this, true, (), x => c(x.asInstanceOf[a]));
+      new GP(this, true, (), x => c(x.asInstanceOf[a]))
 
     /** Creates an input guarded process. */
     def output[b](v: a, c: () => b) =
-      new GP(this, false, v, x => c());
+      new GP(this, false, v, x => c())
 
     /** Blocking read. */
     def read = {
-      var res: a = defaultValue;
-      choice ( input(x => res = x) );
+      var res: a = defaultValue
+      choice ( input(x => res = x) )
       res
     }
 
     /** Blocking write. */
     def write(x: a) =
-      choice ( output(x, () => ()) );
+      choice ( output(x, () => ()) )
 
     /** Syntactic sugar for input. */
     def *[b](f: a => b) =
@@ -101,17 +101,17 @@ object pilib {
 
     /** Syntactic sugar for output. */
     def apply(v: a) =
-      new Product(this, v);
+      new Product(this, v)
 
     /** Attach a function to be evaluated at each communication event
     * on this channel. Replace previous attached function.
     */
     def attach(f: a => unit) =
-      log = x => f(x.asInstanceOf[a]);
+      log = x => f(x.asInstanceOf[a])
   }
 
   class Product[a](c: Chan[a], v: a) {
-    def *[b](f: => b) = c.output(v, () => f);
+    def *[b](f: => b) = c.output(v, () => f)
   }
 
   //////////////////// SUM OF GUARDED PROCESSES //////////////////////
@@ -119,9 +119,9 @@ object pilib {
   case class Sum(gs: List[UGP]) {
 
     /** Continuation of the sum. */
-    var cont: () => Any = _;
+    var cont: () => Any = _
 
-    var initialized = false;
+    var initialized = false
 
     /**
     * Block if not initialized otherwise continue with the
@@ -134,15 +134,15 @@ object pilib {
 
     /** Set the values of parameters and awake the sleeping sum. */
     def set(f: () => Any) = synchronized {
-      cont = f;
-      initialized = true;
+      cont = f
+      initialized = true
       notify()
     }
   }
 
   /////////////////////////// COMMUNICATION  //////////////////////////
 
-  private var sums: List[Sum] = Nil;
+  private var sums: List[Sum] = Nil
 
   /** Test if two lists of guarded processes can communicate. */
   private def matches(gs1: List[UGP], gs2: List[UGP]): Option[Triple[() => unit, () => Any, () => Any]] =
@@ -150,30 +150,30 @@ object pilib {
       case Pair(Nil, _) => None
       case Pair(_, Nil) => None
       case Pair(UGP(a1, d1, v1, c1) :: rest1, UGP(a2, d2, v2, c2) :: rest2) =>
-	if (a1 == a2 && d1 == !d2)
-	  Some(Triple(() => if (d1) a1.log(v2) else a1.log(v1), () => c1(v2), () => c2(v1)))
-	else matches(gs1, rest2) match {
-	  case None => matches(rest1, gs2)
-	  case Some(t) => Some(t)
-	}
+        if (a1 == a2 && d1 == !d2)
+          Some(Triple(() => if (d1) a1.log(v2) else a1.log(v1), () => c1(v2), () => c2(v1)))
+        else matches(gs1, rest2) match {
+          case None => matches(rest1, gs2)
+          case Some(t) => Some(t)
+        }
     }
 
   /**
-  * Test if the given sum can react with one of the pending sums.
-  * If yes then do the reaction otherwise append the sum at the end
-  * of the pending sums.
-  */
+   * Test if the given sum can react with one of the pending sums.
+   * If yes then do the reaction otherwise append the sum at the end
+   * of the pending sums.
+   */
   private def compare(s1: Sum, ss: List[Sum]): List[Sum] =
     ss match {
       case Nil => ss ::: List(s1)
       case s2 :: rest => matches(s1.gs, s2.gs) match {
-	case None => s2 :: compare(s1, rest)
-	case Some(Triple(log, c1, c2)) => {
-	  log();
-	  s1.set(c1);
-	  s2.set(c2);
-	  rest
-	}
+        case None => s2 :: compare(s1, rest)
+        case Some(Triple(log, c1, c2)) => {
+          log()
+          s1.set(c1)
+          s2.set(c2)
+          rest
+        }
       }
     }
 

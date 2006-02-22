@@ -1,4 +1,4 @@
-package examples.pilib;
+package examples.pilib
 
 /**
 * Mobile phone protocol.
@@ -7,20 +7,20 @@ package examples.pilib;
 */
 object mobilePhoneProtocol {
 
-  import concurrent.pilib._;
+  import concurrent.pilib._
 
-  val random = new java.util.Random();
+  val random = new java.util.Random()
 
   // Internal messages exchanged by the protocol.
-  trait Message;
+  trait Message
 
   // Predefined messages used by the protocol.
-  case class Data() extends Message;
-  case class HoCmd() extends Message;  // handover command
-  case class HoAcc() extends Message;  // handover access
-  case class HoCom() extends Message;  // handover complete
+  case class Data()   extends Message;
+  case class HoCmd()  extends Message; // handover command
+  case class HoAcc()  extends Message; // handover access
+  case class HoCom()  extends Message; // handover complete
   case class HoFail() extends Message; // handover fail
-  case class ChRel() extends Message;  // release
+  case class ChRel()  extends Message; // release
   case class Voice(s: String) extends Message; // voice
   case class Channel(n: Chan[Message]) extends Message; // channel
 
@@ -28,27 +28,27 @@ object mobilePhoneProtocol {
 
     def CC(fa: Chan[Message], fp: Chan[Message], l: Chan[Channel]): unit =
       choice (
-	in * (v => { fa.write(Data()); fa.write(Voice(v)); CC(fa, fp, l) })
-	,
-	l * (m_new => {
-	  fa.write(HoCmd());
-	  fa.write(m_new);
-	  choice (
-	    fp * ({ case HoCom() => {
-	      System.out.println("Mobile has moved from one cell to another");
-	      fa.write(ChRel());
-	      val Channel(m_old) = fa.read;
-	      l.write(Channel(m_old));
-	      CC(fp, fa, l)
-	    }})
-	    ,
-	    fa * ({ case HoFail() => {
-	      System.out.println("Mobile has failed to move from one cell to another");
-	      l.write(m_new);
-	      CC(fa, fp, l)
-	    }})
-	  )
-	})
+        in * (v => { fa.write(Data()); fa.write(Voice(v)); CC(fa, fp, l) })
+        ,
+        l * (m_new => {
+          fa.write(HoCmd());
+          fa.write(m_new);
+          choice (
+            fp * ({ case HoCom() => {
+              System.out.println("Mobile has moved from one cell to another");
+              fa.write(ChRel());
+              val Channel(m_old) = fa.read;
+              l.write(Channel(m_old));
+              CC(fp, fa, l)
+            }})
+            ,
+            fa * ({ case HoFail() => {
+              System.out.println("Mobile has failed to move from one cell to another");
+              l.write(m_new);
+              CC(fa, fp, l)
+            }})
+          )
+        })
       );
 
     /*
@@ -74,58 +74,58 @@ object mobilePhoneProtocol {
     */
     def BSa(f: Chan[Message], m: Chan[Message]): unit =
       (f.read) match {
-	case Data() => {
-	  val v = f.read;
-	  m.write(Data());
-	  m.write(v);
-	  BSa(f, m)
-	}
-	case HoCmd() => {
-	  val v = f.read;
-	  m.write(HoCmd());
-	  m.write(v);
-	  choice (
-	    f * ({ case ChRel() => {
-	      f.write(Channel(m));
-	      BSp(f, m)
-	    }})
-	    ,
-	    m * ({ case HoFail() => {
-	      f.write(HoFail());
-	      BSa(f, m)
-	    }})
-	  )
-	}
+        case Data() => {
+          val v = f.read;
+          m.write(Data());
+          m.write(v);
+          BSa(f, m)
+        }
+        case HoCmd() => {
+          val v = f.read;
+          m.write(HoCmd());
+          m.write(v);
+          choice (
+            f * ({ case ChRel() => {
+              f.write(Channel(m));
+              BSp(f, m)
+            }})
+            ,
+            m * ({ case HoFail() => {
+              f.write(HoFail());
+              BSa(f, m)
+            }})
+          )
+        }
       };
 
     /**
-    * Passive base station.
-    */
+     * Passive base station.
+     */
     def BSp(f: Chan[Message], m: Chan[Message]): unit = {
-      val HoAcc = m.read;
-      f.write(HoCom());
+      val HoAcc = m.read
+      f.write(HoCom())
       BSa(f, m)
-    };
+    }
 
     /**
-    * Mobile station.
-    */
+     * Mobile station.
+     */
     def MS(m: Chan[Message]): unit =
       (m.read) match {
-	case Data() => {
-	  val Voice(v) = m.read;
-	  out.write(v);
-	  MS(m)
-	}
-	case HoCmd() =>
-	  (m.read) match {
-	    case Channel(m_new) => {
-	      if (random.nextInt(1) == 0)
-		choice ( m_new(HoAcc()) * (MS(m_new)) );
-	      else
-		choice ( m(HoFail()) * (MS(m)) );
-	    }
-	  }
+        case Data() => {
+          val Voice(v) = m.read;
+          out.write(v);
+          MS(m)
+        }
+        case HoCmd() =>
+          (m.read) match {
+            case Channel(m_new) => {
+              if (random.nextInt(1) == 0)
+                choice ( m_new(HoAcc()) * (MS(m_new)) );
+              else
+                choice ( m(HoFail()) * (MS(m)) );
+            }
+          }
       };
 
     def P(fa: Chan[Message], fp: Chan[Message]): unit = {

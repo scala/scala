@@ -1,63 +1,68 @@
-package examples;
+package examples
 
 object parsers2 {
 
-  abstract class Tree{}
-  case class Id (s: String)         extends Tree {}
-  case class Num(n: int)            extends Tree {}
-  case class Lst(elems: List[Tree]) extends Tree {}
+  abstract class Tree
+  case class Id (s: String)         extends Tree
+  case class Num(n: int)            extends Tree
+  case class Lst(elems: List[Tree]) extends Tree
 
-  abstract class ListParsers extends CharParsers {
+  def isLetter = c: char => Character.isLetter(c)
+  def isLetterOrDigit: char => boolean = Character.isLetterOrDigit
+  def isDigit: char => boolean = Character.isDigit
+
+  mixin class ListParsers extends CharParsers {
 
     def ident: Parser[Tree] =
       for (
-        val c: char <- chr(Character.isLetter);
-        val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
-      ) yield Id((c :: cs).mkString("", "", ""));
+        val c: char <- chr(isLetter);
+        val cs: List[char] <- rep(chr(d: char => Character.isLetterOrDigit(d)))
+      ) yield Id((c :: cs).mkString("", "", ""))
 
     def number: Parser[Tree] =
       for (
-        val d: char <- chr(Character.isDigit);
-        val ds: List[char] <- rep(chr(Character.isDigit))
-      ) yield Num(((d - '0') /: ds) ((x, digit) => x * 10 + digit - '0'));
+        val d: char <- chr(c: char => Character.isDigit(c));
+        val ds: List[char] <- rep(chr(c: char => Character.isDigit(c)))
+      ) yield Num(((d - '0') /: ds) ((x, digit) => x * 10 + digit - '0'))
 
     def list: Parser[Tree] =
       for (
         val _ <- chr('(');
         val es <- listElems ||| succeed(List());
         val _ <- chr(')')
-      ) yield Lst(es);
+      ) yield Lst(es)
 
     def listElems: Parser[List[Tree]] =
       for (
         val x <- expr;
         val xs <- chr(',') &&& listElems ||| succeed(List())
-      ) yield x :: xs;
+      ) yield x :: xs
 
     def expr: Parser[Tree] =
-      list ||| ident ||| number;
+      list ||| ident ||| number
 
   }
 
   class ParseString(s: String) extends Parsers {
-    type inputType = int;
-    val input = 0;
+    type inputType = int
+    val input = 0
     def any = new Parser[char] {
       def apply(in: int): Parser[char]#Result =
-        if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None;
+        if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None
     }
   }
 
   def main(args: Array[String]): unit =
     Console.println(
       if (args.length == 1) {
-        val ps = new ListParsers with ParseString(args(0));
+        val ps = new ParseString(args(0)) with ListParsers
         ps.expr(ps.input) match {
-          case Some(Pair(list, _)) => Console.println("parsed: " + list);
+          case Some(Pair(list, _)) => "parsed: " + list
           case None => "nothing parsed"
         }
-      } else "usage: scala examples.parsers2 <expr-string>"
-    );
+      }
+      else
+        "usage: scala examples.parsers2 <expr-string>"
+    )
 
 }
-
