@@ -54,7 +54,7 @@ abstract class ConstantFolder {
     case _ => null
   }
 
-  private def foldBinop(op: Name, x: Constant, y: Constant): Constant = {
+  private def foldBinop(op: Name, x: Constant, y: Constant): Constant = try {
     val optag = if (x.tag > y.tag) x.tag else y.tag;
     optag match {
       case BooleanTag =>
@@ -148,5 +148,7 @@ abstract class ConstantFolder {
       case _ =>
 	null
     }
+  } catch {
+    case ex: ArithmeticException => null
   }
 }

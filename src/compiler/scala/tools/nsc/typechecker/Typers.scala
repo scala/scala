@@ -610,10 +610,9 @@ mixin class Typers requires Analyzer {
         val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
         assert(getter != NoSymbol, getter);//debug
 	val getterDef: DefDef = {
-	  val result = atPos(vdef.pos)(
-	    DefDef(getter, vparamss =>
+	  val result = DefDef(getter, vparamss =>
 	      if (mods hasFlag DEFERRED) EmptyTree
-	      else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe)))
+	      else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe))
           result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
           result
@@ -1054,6 +1053,7 @@ mixin class Typers requires Analyzer {
 
 	  var cx = context
 	  while (defSym == NoSymbol && cx != NoContext) {
+            //if (phase.name == "uncurry") System.out.println("typing " + name + " " + cx.owner + " " + (if (cx.enclClass == null) "null" else cx.enclClass.owner));//DEBUG
 	    pre = cx.enclClass.prefix
 	    defEntry = cx.scope.lookupEntry(name)
 	    if (defEntry != null && defEntry.sym.tpe != NoType) {
@@ -1482,7 +1482,8 @@ mixin class Typers requires Analyzer {
     	case ex: Throwable =>
     	  if (settings.debug.value)
     	    System.out.println("exception when typing "+tree+", pt = "+pt)
-        logError("AT: " + context.unit.source.dbg(tree.pos), ex);
+            if (context != null && context.unit != null && context.unit.source != null && tree != null)
+              logError("AT: " + context.unit.source.dbg(tree.pos), ex);
     	  throw(ex)
       }
 

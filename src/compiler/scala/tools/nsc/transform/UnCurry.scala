@@ -67,7 +67,7 @@ abstract class UnCurry extends InfoTransform {
     private var needTryLift = false;
     private var inPattern = false;
     private var inConstructorFlag = 0L;
-    private var localTyper: analyzer.Typer = typer;
+    private var localTyper: analyzer.Typer = analyzer.newTyper(analyzer.startContext.make(unit));
 
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree));
@@ -218,6 +218,14 @@ abstract class UnCurry extends InfoTransform {
         t
       }
 
+      def withNewTyper(tree: Tree, owner: Symbol)(f: => Tree): Tree = {
+	val savedLocalTyper = localTyper;
+	localTyper = localTyper.atOwner(tree, owner);
+        val t = f
+        localTyper = savedLocalTyper;
+        t
+      }
+
       tree match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           withNeedLift(false) {
@@ -292,12 +300,11 @@ abstract class UnCurry extends InfoTransform {
         case fun @ Function(_, _) =>
           mainTransform(transformFunction(fun))
 
+        case PackageDef(_, _) =>
+          withNewTyper(tree, tree.symbol.moduleClass) { super.transform(tree) }
+
         case Template(_, _) =>
-	  val savedLocalTyper = localTyper;
-	  localTyper = localTyper.atOwner(tree, currentOwner);
-          val tree1 = withInConstructorFlag(0) { super.transform(tree) }
-          localTyper = savedLocalTyper;
-          tree1
+          withNewTyper(tree, currentOwner) { withInConstructorFlag(0) { super.transform(tree) } }
 
         case _ =>
           val tree1 = super.transform(tree);

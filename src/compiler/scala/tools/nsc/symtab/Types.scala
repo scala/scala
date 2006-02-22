@@ -1348,12 +1348,15 @@ mixin class Types requires SymbolTable {
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (sym.isModuleClass) adaptToNewRun(pre, sym.sourceModule).moduleClass;
+      if (sym.isModuleClass && !phase.flatClasses) adaptToNewRun(pre, sym.sourceModule).moduleClass;
       else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) sym
       else {
         val rebind0 = pre.member(sym.name);
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable);
-        if (rebind == NoSymbol) throw new MalformedType(pre, sym.name.toString());
+        if (rebind == NoSymbol) {
+          System.out.println(""+phase+" "+phase.flatClasses+sym.owner+sym.name);
+          throw new MalformedType(pre, sym.name.toString());
+        }
         rebind
       }
     }
