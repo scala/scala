@@ -5,4 +5,4 @@
 // $Id$
 package scala.tools.nsc;
 
-case class FatalError(msg: String) extends Exception;
+case class FatalError(msg: String) extends Exception(msg);
