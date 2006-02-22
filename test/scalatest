@@ -459,7 +459,11 @@ QUICK="$PREFIX/build/quick/exec"
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
 else
-    LATEST="$QUICK";
+    if [ -d "$PREFIX/build" ]; then
+        LATEST="$QUICK";
+    else
+        LATEST="$PREFIX/bin";
+    fi;
 fi;
 BIN_DIR="$LATEST"
 
