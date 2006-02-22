@@ -20,6 +20,7 @@ set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
 set _JAVAFLAGS=@javaflags@
 
+set _CPATH=.
 set _CLASSPATH=@classpath@
 if not "%_CLASSPATH%"=="" goto args
 for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
@@ -28,12 +29,22 @@ for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
 set _ARGS=
 :loop
 if "%1"=="" goto exec
+if "%1"=="-classpath" goto cpath
+if "%1"=="-cp" goto cpath
 if "%1"=="-version" goto version
 set _ARGS=%_ARGS% %1
 shift
 goto loop
 
+:cpath
+shift
+if "%1"=="" goto help
+set _CPATH=%1
+shift
+goto :loop
+
 :exec
+set _CLASSPATH=%_CLASSPATH%;%_CPATH%
 rem echo %_JAVACMD% %_JAVAFLAGS% -cp %_CLASSPATH% %_ARGS%
 %_JAVACMD% %_JAVAFLAGS% -cp %_CLASSPATH% %_ARGS%
 goto end
@@ -41,6 +52,11 @@ goto end
 :version
 echo Scala runtime version @version@ -- @copyright@
 %_JAVACMD% -version
+goto end
+
+:help
+echo Scala runtime version @version@ -- @copyright@
+%_JAVACMD% -help
 goto end
 
 rem ##########################################################################
