@@ -56,8 +56,10 @@ class ClassPath(onlyPresentation: Boolean) {
         else {
           val ret = find0(entries.tail);
           val head = entries.head;
+          val name0 = name + (if (!isDir) ".class" else "");
+          System.err.println("LOOKUP: " + name0 + " in " + head.location);
           val clazz = if (head.location == null) null;
-                      else head.location.lookupPath(name + (if (!isDir) ".class" else ""), isDir);
+                      else head.location.lookupPath(name0, isDir);
 
           val source0 = if (head.source == null) null; else {
             val source1 = head.source.location.lookupPath(
@@ -77,9 +79,6 @@ class ClassPath(onlyPresentation: Boolean) {
         }
       }
       val ret = find0(entries);
-      if (false && this.toString().indexOf("scala") != -1)
-        System.err.println("FIND " + name + " in " + this + " => " + ret);
-
       if (ret.entries.isEmpty) {
         System.err.println("BAD_FILE: " + name + " in " + this)
         null
