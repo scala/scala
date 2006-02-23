@@ -177,7 +177,9 @@ class ClassPath(onlyPresentation: Boolean) {
 
     def lookupPath(path: String, isDir: Boolean) = {
       val ctx = root.find(path, isDir)
+      System.err.println("CTX=" + ctx);
       if (ctx.entries.isEmpty) null
+      else if (ctx.entries.head == null) null;
       else ctx.entries.head.location
     }
 
