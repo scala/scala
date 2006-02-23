@@ -22,6 +22,8 @@ import java.util.StringTokenizer;
  *  @author Sean McDirmid
  */
 class ClassPath(onlyPresentation : Boolean) {
+  def this() = this(false);
+
 
   class Source(val location : AbstractFile, val compile : Boolean) {
     // assert(location           != null, "cannot find source location");
@@ -148,6 +150,16 @@ class ClassPath(onlyPresentation : Boolean) {
 
     def root = new Context(entries.toList);
 
+		def lookupPath(path : String, isDir : Boolean) = {
+      val txt = root.find(path, isDir);
+      if (txt.entries.isEmpty) null;
+      else txt.entries.head.location;
+    }
+
+    def this(classpath : String) = {
+      this();
+      addFilesInPath(classpath);
+    }
 
     def this(classpath : String, source : String, output : String, boot : String, extdirs : String) = {
       this();
@@ -162,14 +174,13 @@ class ClassPath(onlyPresentation : Boolean) {
 
       val strtok = new StringTokenizer(source, File.pathSeparator);
       if (!strtok.hasMoreTokens()) {
-	val output0 = (new Output(clazzes, null));
-  	entries += output0;
+        val output0 = (new Output(clazzes, null));
+        entries += output0;
       } else while (strtok.hasMoreTokens()) {
-	val sources = AbstractFile.getDirectory(strtok.nextToken());
-
-	val output0 = (new Output(clazzes, sources));
-	//System.err.println("OUTPUT: " + output);
-  	entries += output0;
+        val sources = AbstractFile.getDirectory(strtok.nextToken());
+        val output0 = (new Output(clazzes, sources));
+        //System.err.println("OUTPUT: " + output);
+        entries += output0;
       }
       addFilesInPath(classpath);
       //System.err.println("CLASSPATH: " + root);
