@@ -57,7 +57,6 @@ class ClassPath(onlyPresentation: Boolean) {
           val ret = find0(entries.tail);
           val head = entries.head;
           val name0 = name + (if (!isDir) ".class" else "");
-          System.err.println("LOOKUP: " + name0 + " in " + head.location);
           val clazz = if (head.location == null) null;
                       else head.location.lookupPath(name0, isDir);
 
@@ -176,8 +175,8 @@ class ClassPath(onlyPresentation: Boolean) {
 
     def lookupPath(path: String, isDir: Boolean) = {
       val ctx = root.find(path, isDir)
-      System.err.println("CTX=" + ctx);
-      if (ctx.entries.isEmpty) null
+      if (ctx == null) null
+      else if (ctx.entries.isEmpty) null
       else if (ctx.entries.head == null) null;
       else ctx.entries.head.location
     }
