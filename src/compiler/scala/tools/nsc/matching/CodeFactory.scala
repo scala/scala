@@ -186,6 +186,8 @@ mixin class CodeFactory requires TransMatcher  {
 */
   def  Equals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.EQEQ), List(right));
 
+  def  GreaterThan(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.GT), List(right));
+
   //deprecated
   def ThrowMatchError(pos: Int, tpe: Type ) =
     atPos(pos) {

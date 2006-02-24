@@ -189,6 +189,8 @@ mixin class PatternNodes requires TransMatcher {
            return "ConstrPat(" + casted + ")";
          case SequencePat(casted,  len) =>
            return "SequencePat(" + casted + ", " + len + "...)";
+         case RightIgnoringSequencePat(casted, castedRest,  minlen) =>
+           return "RightIgnoringSequencePat(" + casted + ", " + castedRest + ", "+ minlen + "...)";
          case SeqContainerPat(casted, seqpat) =>
            return "SeqContainerPat(" + casted + ", " + seqpat + ")";
          case ConstantPat(value) =>
@@ -304,7 +306,9 @@ mixin class PatternNodes requires TransMatcher {
   case class ConstantPat(value: Any /*AConstant*/ ) extends PatternNode;
   case class VariablePat(tree: Tree ) extends PatternNode;
   case class AltPat(subheader: Header ) extends PatternNode;
-  case class SequencePat( casted: Symbol,  len:int) extends PatternNode; // only used in PatternMatcher
+  case class SequencePat(casted: Symbol,  len:int) extends PatternNode; // only used in PatternMatcher
+
+  case class RightIgnoringSequencePat(casted: Symbol, castedRest: Symbol, minlen: int) extends PatternNode; //PM
   case class SeqContainerPat(casted: Symbol ,  seqpat: Tree ) extends PatternNode; //   in AlgebraicMatcher
 
   /** the environment for a body of a case

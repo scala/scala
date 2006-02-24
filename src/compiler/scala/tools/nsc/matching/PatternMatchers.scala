@@ -44,7 +44,7 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
    */
   def initialize(selector: Tree, owner: Symbol, doBinding: Boolean): Unit = {
 
-    //Console.println("pm.initialize selector.tpe = "+selector.tpe);
+    //Konsole.println("pm.initialize selector.tpe = "+selector.tpe);
 
     /*
     this.mk = new PatternNodeCreator {
@@ -61,14 +61,14 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
     }
     */
     this.root = pConstrPat(selector.pos, selector.tpe.widen);
-    //Console.println("selector.tpe "+selector.tpe);
-    //Console.println("selector.tpe.widen "+selector.tpe.widen);
-    //Console.println("root.symbol "+root.symbol);
-    //Console.println("root.symbol.tpe "+root.symbol.tpe);
+    //Konsole.println("selector.tpe "+selector.tpe);
+    //Konsole.println("selector.tpe.widen "+selector.tpe.widen);
+    //Konsole.println("root.symbol "+root.symbol);
+    //Konsole.println("root.symbol.tpe "+root.symbol.tpe);
     this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
                               Ident(root.symbol).setType(root.tpe));
-    //Console.println("resultType =  "+resultType);
+    //Konsole.println("resultType =  "+resultType);
     this.owner = owner;
     this.selector = selector;
 
@@ -133,8 +133,12 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
       case Apply(_, args) =>
         if ( isSeqApply(tree.asInstanceOf[Apply])  && !delegateSequenceMatching)
           args(0) match {
-            case ArrayValue(_, ts) => // test array values
-              ts;
+            case av @ ArrayValue(_, ts) => // test array values
+              if(isRightIgnoring(av)) {
+                ts.reverse.drop(1).reverse
+              } else {
+                ts;
+              }
             //case Sequence(ts) =>
             //  ts;
             case _ =>
@@ -172,6 +176,8 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
 	//Console.println(res);
 	//res;
   }
+
+   //protected var lastSequencePat: PatternNode = null; // hack to optimize sequence matching
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //if(tree!=null) Console.println("patternNode("+tree+","+header+")");
@@ -217,13 +223,16 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
           if (!delegateSequenceMatching) {
             args(0) match {
             //  case Sequence(ts)=>
-              case ArrayValue(_, ts)=>
-                //Console.println("doing pSeqpat ");
-                val res =  pSequencePat(tree.pos, tree.tpe, ts.length);
-                //Console.println("pSeqpat.casted =  "+res.casted);
-                //Console.println("pSeqpat.casted.pos =  "+res.casted.pos);
-                res
-            }
+              case av @ ArrayValue(_, ts)=>
+                if(isRightIgnoring(av)) {
+                  val castedRest = ts.last match {
+                    case b:Bind => b.symbol;
+                    case _      => null
+                  }
+                  pRightIgnoringSequencePat(tree.pos, tree.tpe, castedRest, ts.length-1);
+                } else
+                  pSequencePat(tree.pos, tree.tpe, ts.length);
+                 }
           } else {
             //Console.println("delegating ... ");
             val res = pConstrPat(tree.pos, tree.tpe);
@@ -326,7 +335,9 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
         //case Sequence(ts) =>
         case ArrayValue(_, ts) =>
             if ( !delegateSequenceMatching ) {
-                pSequencePat(tree.pos, tree.tpe, ts.length);
+              //lastSequencePat =
+              pSequencePat(tree.pos, tree.tpe, ts.length);
+              //lastSequencePat
             } else {
                 pSeqContainerPat(tree.pos, tree.tpe, tree);
             }
@@ -342,7 +353,18 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
             i = i + 1
           }
           pAltPat(tree.pos, subroot.and.asInstanceOf[Header]);
-
+/*
+      case Star(Ident(nme.WILDCARD))  =>
+        header.selector match {
+          case Apply(Select(t, apply), arg @ List(litconst)) =>
+            Console.println(t)
+            Console.println(apply)
+            Console.println(litconst)
+            val tree = Apply(Select(Select(t, "toList"), "drop"), arg)
+            throw new OptimizeSequencePattern(tree); // ? has to be caught and rethrown by each bind
+        }
+        // bind the rest /////////////////////////////////////////////////////
+*/
         case _ =>
           if(tree == null)
 		    scala.Predef.error("unit = " + cunit + "; tree = null");
@@ -416,6 +438,7 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
   protected def enter1(pat: Tree, index: Int, target: PatternNode, casted: Symbol,  env: CaseEnv): PatternNode = {
     //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
     val patArgs = patternArgs(pat);        // get pattern arguments
+    //System.err.println("patArgs = "+patArgs);
     var curHeader = target.and.asInstanceOf[Header];    // advance one step in intermediate representation
     if (curHeader == null) {                  // check if we have to add a new header
       //assert index >= 0 : casted;
@@ -474,6 +497,8 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
       case ConstrPat(newCasted) =>
         casted = newCasted;
       case SequencePat(newCasted, len) =>
+        casted = newCasted;
+      case RightIgnoringSequencePat(newCasted, _, len) =>
         casted = newCasted;
       case _ =>
     }
@@ -968,6 +993,39 @@ mixin class PatternMatchers requires (TransMatcher with PatternNodes) extends An
                          gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true))),
                   toTree(node.and))),
             toTree(node.or, selector.duplicate)));
+
+          case RightIgnoringSequencePat(casted, castedRest, minlen) =>
+          Or(
+            And(
+              And(gen.mkIsInstanceOf(selector.duplicate, node.getTpe()),
+                  GreaterThan(
+                    typed(
+                      Apply(
+                        Select(
+                          gen.mkAsInstanceOf(selector.duplicate,
+                                             node.getTpe(),
+                                             true),
+                          node.getTpe().member(nme.length) /*defs.Seq_length*/),
+                        List())
+                    ),
+                    typed(
+                      Literal(Constant(minlen))
+                    ))),
+              Block(
+                List(
+                  ValDef(casted,
+                         gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true)),
+                  ValDef(castedRest,
+                         Apply(
+                           Select(
+                             Select(
+                               gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true),
+                               "toList"),
+                             "drop"),
+                           List(Literal(Constant(minlen)))))),
+                toTree(node.and))),
+            toTree(node.or, selector.duplicate));
+
           case ConstantPat(value) =>
             //Console.println("selector = "+selector);
             //Console.println("selector.tpe = "+selector.tpe);

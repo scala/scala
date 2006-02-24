@@ -11,6 +11,7 @@ abstract class TransMatcher extends transform.Transform
 with PatternNodes
 with CodeFactory
 with PatternMatchers
+with NewMatchers
 with SequenceMatchers
 with AlgebraicMatchers
 with MatcherLabels
@@ -127,6 +128,27 @@ with RightTracers {
     generatedVars;
   }
 
+  protected def isDefault(p: Tree): Boolean = p match {
+    case Bind(_,q)            => isDefault(q);
+    case Ident(nme.WILDCARD)  => true
+    case _                    => false
+  };
+  protected def isDefaultStar(p: Tree): Boolean = p match {
+    case Bind(_,q)                  => isDefaultStar(q);
+    case Star(Ident(nme.WILDCARD))  => true
+    case _                          => false
+  };
+
+  // @todo: this should be isNotRegular :-/ premature opt src of all evil
+  // check special case Seq(_,...,_,_*)
+  protected def isRightIgnoring(p:ArrayValue): Boolean = p match {
+    case ArrayValue(s,trees) =>
+      val it = trees.elements;
+      var c: Tree = null;
+      while(it.hasNext && {c = it.next; isDefault(c)}) {}
+      (!it.hasNext) && isDefaultStar(c)
+  }
+
   class TransMatch extends Transformer {
 
     /** a casedef with sequence subpatterns like
@@ -138,11 +160,11 @@ with RightTracers {
      *  case    .. () .. => val x = Nil; body
      */
     def isRegular(pats:List[CaseDef]): Pair[List[CaseDef],Boolean] = {
-	   var existsReg = false;
-	   var isReg = false;
+      var existsReg = false;
+      var isReg = false;
       var nilVars:List[Symbol] = null;
 
-	  def isRegular1(pat: Tree): Tree = pat match {
+      def isRegular1(pat: Tree): Tree = pat match {
         case Alternative(trees)          =>
           copy.Alternative(pat, trees map { isRegular1 });
 
@@ -160,7 +182,7 @@ with RightTracers {
 		isReg = true; // cause there are ArrayValues now
 		copy.Sequence(pat, trees map { isRegular1 });
 
-	case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
+      case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
 	//Console.println("OPTIMIZING");
 	//Console.println(pat);
 	//Console.println(pat.tpe);
@@ -172,9 +194,11 @@ with RightTracers {
 	//Console.println(res);
 	res
 
-      case ArrayValue( s, trees )       =>
-	  //Console.println("XXX ArrayValue, trees="+trees);
-        copy.ArrayValue( pat, s, (trees map { isRegular1 }));
+      case av @ ArrayValue( s, trees )       =>
+        if(isRightIgnoring(av))
+          pat
+        else
+          copy.ArrayValue( pat, s, (trees map { isRegular1 }));
 
       case Apply( fn, List(Sequence(List())))      =>
         pat;
@@ -217,10 +241,13 @@ with RightTracers {
 
     def handle(sel:Tree, ocases:List[CaseDef]): Tree = {
 
-
+      // TEMPORARY
+      //new NewMatcher().toIR(sel, ocases)
+      //
       // 1. is there a regular pattern?
 
       val Pair(cases, containsReg) = isRegular(ocases);
+
 
       // @todo: remove unused variables
 
@@ -238,8 +265,9 @@ with RightTracers {
         }.construct( matcher, cases );
         matcher.tree
 		*/
-                System.out.println("" + sel + " match " + ocases);
-		scala.Predef.error("regular expressions not yet implemented");
+
+        System.out.println("" + sel + " match " + ocases);
+	scala.Predef.error("regular expressions not yet implemented");
       } else {
         val pm = new PatternMatcher();
         pm.initialize(sel, currentOwner, true );
