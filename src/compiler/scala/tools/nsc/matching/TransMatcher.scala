@@ -11,7 +11,7 @@ abstract class TransMatcher extends transform.Transform
 with PatternNodes
 with CodeFactory
 with PatternMatchers
-with NewMatchers
+//with NewMatchers
 with SequenceMatchers
 with AlgebraicMatchers
 with MatcherLabels
