@@ -128,6 +128,33 @@ with RightTracers {
     generatedVars;
   }
 
+    /** a casedef with sequence subpatterns like
+     *
+     *  case ..x @ ().. => body
+     *
+     * should be replaced straight away with
+     *
+     *  case    .. () .. => val x = Nil; body
+     */
+
+  def isRegularPattern(pat: Tree): Boolean = pat match {
+    case Alternative(trees)          =>
+      trees exists { isRegularPattern };
+    case Star(t)                 => true
+    case Ident(_)                => false
+    case Bind( n, pat1 )         => isRegularPattern( pat1 );
+    case Sequence( trees )       => true // cause there are ArrayValues now
+    case ArrayValue( tt, trees ) =>
+      trees exists { isRegularPattern };
+    case Apply( fn, List(Sequence(List())))      =>
+      false
+    case Apply( fn, trees )      =>
+      trees exists { isRegularPattern };
+    case Literal(_)              => false
+    case Select(_,_)             => false
+    case Typed(_,_)              => false
+  }
+
   protected def isDefault(p: Tree): Boolean = p match {
     case Bind(_,q)            => isDefault(q);
     case Ident(nme.WILDCARD)  => true
@@ -145,7 +172,8 @@ with RightTracers {
     case ArrayValue(s,trees) =>
       val it = trees.elements;
       var c: Tree = null;
-      while(it.hasNext && {c = it.next; isDefault(c)}) {}
+      while(it.hasNext && {c = it.next; //Console.println("isReg?("+c+" = "+isRegularPattern(c)); // DEBUG
+!isRegularPattern(c)}) {}
       (!it.hasNext) && isDefaultStar(c)
   }
 
