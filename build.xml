@@ -226,8 +226,15 @@ INITIALISATION
       <available file="${locker.dir}/complete"/>
     </condition>
     <!-- Defining version number -->
-    <tstamp prefix="start"/>
-    <property name="version.number" value="${start.DSTAMP}-${start.TSTAMP}"/>
+    <exec executable="svnversion" outputproperty="svn.version">
+      <arg line="${basedir}"/>
+    </exec>
+    <echo level="verbose">svn.version=${svn.version}</echo>
+    <propertyregex property="version"
+                   input="${svn.version}"
+                   regexp="\.*([0-9]*)\.*"
+                   select="\1"/>
+    <property name="version.number" value="2.0.${version}"/>
     <property name="dist.current.dir"
               value="${dist.dir}/${dist.name}-${version.number}"/>
     <property name="init.avail" value="yes"/>
