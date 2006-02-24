@@ -1,8 +1,8 @@
-import scala.concurrent.Actor
+import scala.concurrent._
 
 object test extends Actor {
   receive {
-    case testp.TIMEOUT => Console.println("TIMEOUT")
+    case TIMEOUT => Console.println("TIMEOUT")
     //case _       => Console.println("_")
   }
 }
