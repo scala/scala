@@ -34,7 +34,7 @@ shift
 goto loop
 
 :exec
-set _PROPS=-Dscala.home="%SCALA_HOME%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
 
 rem echo %_JAVACMD% %_JAVAFLAGS% %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 %_JAVACMD% %_JAVAFLAGS% %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ %_ARGS%
