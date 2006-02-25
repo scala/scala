@@ -330,6 +330,9 @@ abstract class Mixin extends InfoTransform {
 
     private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol;
+      if (tree.tpe.symbol.isImplClass &&
+          (tree.symbol == null || !tree.symbol.isImplClass))
+        tree.tpe = toInterface(tree.tpe);
       tree match {
         case Template(parents, body) =>
           val parents1 = currentOwner.info.parents map (t => TypeTree(t) setPos tree.pos);

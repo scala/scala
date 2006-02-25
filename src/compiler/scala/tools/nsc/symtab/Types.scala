@@ -190,11 +190,16 @@ mixin class Types requires SymbolTable {
     def memberInfo(sym: Symbol): Type =
       sym.info.asSeenFrom(this, sym.owner);
 
-    /** The type of `sym', seen as a memeber of this type. */
+    /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
-      val result = sym.tpe.asSeenFrom(this, sym.owner);
-      /*System.out.println("" + this + ".memberType(" + sym + ") = " + result);*/
-      result
+      sym.tpe match {
+        case OverloadedType(pre, alts) =>
+          assert(this =:= pre);
+          sym.tpe
+        case _ =>
+          //System.out.println("" + this + ".memberType(" + sym +":" + sym.tpe +")");//DEBUG
+          sym.tpe.asSeenFrom(this, sym.owner)
+      }
     }
 
     /** Substitute types `to' for occurrences of references to symbols `from'
@@ -408,10 +413,11 @@ mixin class Types requires SymbolTable {
       checkMalformedSwitch = savedCheckMalformedSwitch;
       if (util.Statistics.enabled) findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime;
       if (members == null) {
-        if (util.Statistics.enabled)	if (member == NoSymbol) noMemberCount = noMemberCount + 1;
+        if (util.Statistics.enabled) if (member == NoSymbol) noMemberCount = noMemberCount + 1;
 	member
       } else {
 	if (util.Statistics.enabled) multMemberCount = multMemberCount + 1;
+        //val pre = if (this.symbol.isClass) this.symbol.thisType else this;
 	baseClasses.head.newOverloaded(this, members.toList)
       }
     }
@@ -1228,6 +1234,7 @@ mixin class Types requires SymbolTable {
 	      if (symclazz == clazz && (pre.widen.symbol isSubClass symclazz))
 		pre.baseType(symclazz) match {
 		  case TypeRef(_, basesym, baseargs) =>
+//                    System.out.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs);//DEBUG
 		    if (basesym.typeParams.length != baseargs.length)
                       assert(false, "asSeenFrom(" + pre + "," + clazz + ")" + sym + " " + basesym + " " + baseargs); //debug
 		    instParam(basesym.typeParams, baseargs);

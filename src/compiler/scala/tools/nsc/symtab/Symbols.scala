@@ -111,7 +111,7 @@ mixin class Symbols requires SymbolTable {
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
       newValue(alternatives.head.pos, alternatives.head.name)
       .setFlag(OVERLOADED)
-      .setInfo(OverloadedType(pre, alternatives));
+      .setInfo(OverloadedType(pre, alternatives))
 
     final def newErrorValue(name: Name) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType);

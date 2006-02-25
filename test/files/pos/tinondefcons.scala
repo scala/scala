@@ -3,10 +3,11 @@
 
 
 class Atom[T](b: Boolean) {
+  var elem: T = _;
   def this(s: T) = this(true)
 }
 
 
 object AtomTest {
-  val x = new Atom("hello")
+  new Atom("hello").elem = "abc"
 }
