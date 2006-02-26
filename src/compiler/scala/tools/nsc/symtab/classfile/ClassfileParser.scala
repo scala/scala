@@ -18,6 +18,8 @@ import scala.tools.nsc.util.Position;
 import scala.tools.util.AbstractFile;
 import scala.tools.util.AbstractFileReader;
 
+import scala.collection.mutable.ListBuffer;
+
 import java.io.IOException;
 
 abstract class ClassfileParser {
@@ -316,7 +318,7 @@ abstract class ClassfileParser {
   def parseAttributes(sym: Symbol, symtype: Type): unit = {
     def convertTo(c: Constant, pt: Type): Constant = {
       if (pt.symbol == definitions.BooleanClass && c.tag == IntTag)
-        Constant(if (c.value == 0) false else true)
+        Constant(c.value != 0)
       else
         c convertTo pt
     }
@@ -358,7 +360,8 @@ abstract class ClassfileParser {
             staticModule.moduleClass.sourceFile = clazz.sourceFile
           }
         case nme.RuntimeAnnotationATTR =>
-          parseAnnotations(attrLen);
+          //parseAnnotations(attrLen);
+          in.skip(attrLen)
         case _ =>
           in.skip(attrLen)
       }
@@ -376,11 +379,11 @@ abstract class ClassfileParser {
         case LONG_TAG   => pool.getConstant(index).longValue;
         case FLOAT_TAG  => pool.getConstant(index).floatValue;
         case DOUBLE_TAG => pool.getConstant(index).doubleValue;
-        case CLASS_TAG  => sigToType(pool.getExternalName(index)).toString() + ".class";
+        case CLASS_TAG  => pool.getType(index).toString() + ".class";
         case ENUM_TAG   =>
-          sigToType(pool.getExternalName(index)).toString + "." + pool.getName(in.nextChar);
+          pool.getType(index).toString() + "." + pool.getName(in.nextChar);
         case ARRAY_TAG  =>
-          val arr = new collection.mutable.ListBuffer[Any]();
+          val arr = new ListBuffer[Any]();
           for (val i <- Iterator.range(0, index)) {
             arr += parseTaggedConstant()
           }
@@ -392,7 +395,7 @@ abstract class ClassfileParser {
       val nAttr = in.nextChar();
       for (val n <- Iterator.range(0,nAttr)) {
         val attrNameIndex = in.nextChar();
-        val attrType = sigToType(pool.getExternalName(attrNameIndex));
+        val attrType = pool.getType(attrNameIndex);
         buf.append("@").append(attrType.toString()).append("(");
         val nargs = in.nextChar()
         for (val i <- Iterator.range(0, nargs)) {
@@ -406,13 +409,6 @@ abstract class ClassfileParser {
       }
       global.informProgress("parsed attribute " + buf);
     }
-//     def printAnnotations(len: Int): Unit = {
-//       System.out.print(sym.fullNameString + " : (")
-//       for(val i <- Iterator.range(0, len)) {
-//         System.out.print((if ( i == 0) "" else " ") + ((in.nextByte() + 0x100) & 0xFF))
-//       }
-//       System.out.println(")");
-//     }
     def parseInnerClasses(): unit = {
       for (val i <- Iterator.range(0, in.nextChar())) {
 	val innerIndex = in.nextChar();
