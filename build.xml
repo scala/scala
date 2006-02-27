@@ -232,9 +232,10 @@ INITIALISATION
     <echo level="verbose">svn.version=${svn.version}</echo>
     <propertyregex property="version"
                    input="${svn.version}"
-                   regexp="\.*([0-9]*)\.*"
-                   select="\1"/>
+                   regexp="([0-9]*:)?([0-9]*)\.*"
+                   select="\2"/>
     <property name="version.number" value="2.0.${version}"/>
+    <echo level="verbose">version.number=${version.number}</echo>
     <property name="dist.current.dir"
               value="${dist.dir}/${dist.name}-${version.number}"/>
     <property name="init.avail" value="yes"/>
