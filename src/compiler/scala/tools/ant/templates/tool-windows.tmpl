@@ -14,6 +14,7 @@ if "%OS%"=="Windows_NT" (
 ) else (
   if "%SCALA_HOME%"=="" goto error1
 )
+set _SCALA_HOME=%SCALA_HOME%
 
 set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
@@ -58,7 +59,7 @@ rem ##########################################################################
 rem # errors
 
 :error1
-echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@version@".
+echo ERROR: environment variable SCALA_HOME is undefined. It should point to your sbaz directory.
 goto end
 
 :end
