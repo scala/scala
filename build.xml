@@ -37,7 +37,7 @@ PROPERTIES
   <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
-  <property name="nsc.debug-info" value="yes"/>
+  <property name="nsc.log-files" value="no"/>
   <property name="nsc.excludes" value="${basedir}/build.excludes"/>
   <property name="nsc.params" value=""/>
   <!-- Location of pre-compiled libraries properties -->
@@ -422,7 +422,7 @@ BUILD QUICK-TEST LAYER
            destdir="${quick.lib.dir}"
            usepredefs="no"
            addparams="${nsc.params}"
-           scalacdebugging="yes">
+           scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -432,7 +432,7 @@ BUILD QUICK-TEST LAYER
     <locker srcdir="${src.dir}/${lib.dir.name}"
            destdir="${quick.lib.dir}"
            addparams="${nsc.params}"
-           scalacdebugging="yes">
+           scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
@@ -455,7 +455,7 @@ BUILD QUICK-TEST LAYER
     <locker srcdir="${src.dir}/${comp.dir.name}"
            destdir="${quick.comp.dir}"
            addparams="${nsc.params}"
-           scalacdebugging="yes">
+           scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
