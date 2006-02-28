@@ -45,6 +45,7 @@ abstract class GenICode extends SubComponent  {
 
     override def run: Unit = {
       scalaPrimitives.init;
+      classes.clear;
       super.run
     }
 
