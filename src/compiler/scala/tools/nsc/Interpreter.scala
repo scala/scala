@@ -402,7 +402,16 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
     def loadAndRun: String = {
       val interpreterResultObject: Class = Class.forName(resultObjectName,true,classLoader)
       val resultValMethod: java.lang.reflect.Method = interpreterResultObject.getMethod("result",null)
-      resultValMethod.invoke(interpreterResultObject,null).toString()
+      try {
+	resultValMethod.invoke(interpreterResultObject,null).toString()
+      } catch {
+	case e => {
+	  def caus(e: Throwable): Throwable =
+	    if(e.getCause == null) e else caus(e.getCause)
+	  val orig = caus(e)
+	  stringFrom(str => orig.printStackTrace(str))
+	}
+      }
     }
 
     /** return a summary of the defined methods */
