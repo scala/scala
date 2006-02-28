@@ -348,7 +348,7 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
 
     def resultExtractionCode(code: PrintWriter): Unit = {
       for(val vname <- namesToPrintForUser) {
-        code.println(" + \"" + vname + ": " + typeOf(vname) +
+        code.print(" + \"" + vname + ": " + typeOf(vname) +
           " = \" + " + objectName + "." + vname + " + \"\\n\"")
       }
     }
