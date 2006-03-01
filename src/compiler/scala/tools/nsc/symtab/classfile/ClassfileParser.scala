@@ -19,6 +19,7 @@ import scala.tools.util.AbstractFile;
 import scala.tools.util.AbstractFileReader;
 
 import scala.collection.mutable.ListBuffer;
+import scala.collection.immutable.{Map, ListMap};
 
 import java.io.IOException;
 
@@ -40,6 +41,9 @@ abstract class ClassfileParser {
   private var isScala: boolean = _;        // does class file describe a scala class?
   private var hasMeta: boolean = _;        // does class file contain jaco meta attribute?s
   private var busy: boolean = false;       // lock to detect recursive reads
+  private var classTParams: Map[Name,Symbol] =
+    collection.immutable.ListMap.Empty[Name,Symbol];
+  private val fresh = new scala.tools.nsc.util.FreshNameCreator;
 
   private object metaParser extends MetaParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
@@ -315,6 +319,131 @@ abstract class ClassfileParser {
     }
   }
 
+
+  // returns the generic type represented by the signature
+  private def polySigToType(sym: Symbol, sig: Name): Type =
+    try { polySigToType0(sym, sig) }
+    catch {
+      case e: Throwable => System.err.println("" + sym + " - " + sig); throw e;
+    }
+  private def polySigToType0(sym: Symbol, sig: Name): Type = {
+    var index = 0;
+    val end = sig.length;
+    val newTParams = new ListBuffer[Symbol]();
+    def objToAny(tp: Type): Type =
+      if (tp.symbol == definitions.ObjectClass) definitions.AnyClass.tpe
+      else tp;
+    def subName(isDelimiter: Char => Boolean): Name = {
+      val start = index;
+      while (!isDelimiter(sig(index))) { index = index + 1; }
+      sig.subName(start, index)
+    }
+    def typeParams(tparams: Map[Name,Symbol], covariant: Boolean): List[Type] = {
+      assert(sig(index) == '<');
+      index = index + 1;
+      val xs = new ListBuffer[Type]();
+      while (sig(index) != '>') {
+        sig(index) match {
+          case variance @ ('+' | '-' | '*') =>
+            index = index + 1;
+            val bounds = variance match {
+              case '+' => TypeBounds(definitions.AllRefClass.typeConstructor,
+                                     sig2type(tparams, covariant));
+              case '-' => TypeBounds(sig2type(tparams, covariant),
+                                     definitions.AnyRefClass.typeConstructor);
+              case '*' => TypeBounds(definitions.AllRefClass.typeConstructor,
+                                     definitions.AnyRefClass.typeConstructor)
+            }
+            val name = fresh.newName("T_" + sym.name);
+            val newtparam =
+              if (covariant) clazz.newAbstractType(Position.NOPOS, name);
+              else {
+                val s = sym.newTypeParameter(Position.NOPOS, name);
+                newTParams += s;
+                s
+              }
+            newtparam.setInfo(bounds);
+            xs += newtparam.tpe
+          case _ => xs += sig2type(tparams, covariant);
+        }
+      }
+      index = index + 1;
+      xs.toList
+    }
+    def sig2type(tparams: Map[Name,Symbol], covariant: Boolean): Type = {
+      val tag = sig(index); index = index + 1;
+      tag match {
+        case BYTE_TAG   => definitions.ByteClass.tpe
+        case CHAR_TAG   => definitions.CharClass.tpe
+        case DOUBLE_TAG => definitions.DoubleClass.tpe
+        case FLOAT_TAG  => definitions.FloatClass.tpe
+        case INT_TAG    => definitions.IntClass.tpe
+        case LONG_TAG   => definitions.LongClass.tpe
+        case SHORT_TAG  => definitions.ShortClass.tpe
+        case VOID_TAG   => definitions.UnitClass.tpe
+        case BOOL_TAG   => definitions.BooleanClass.tpe
+        case 'L' =>
+          var tpe = definitions.getClass(subName(c => ((c == ';') || (c == '<')))).tpe;
+          if (sig(index) == '<')
+            tpe = appliedType(tpe, typeParams(tparams, covariant));
+          index = index + 1;
+          tpe
+        case ARRAY_TAG =>
+          while ('0' <= sig(index) && sig(index) <= '9') index = index + 1;
+          appliedType(definitions.ArrayClass.tpe, List(sig2type(tparams, covariant)))
+        case '(' =>
+          val paramtypes = new ListBuffer[Type]();
+          while (sig(index) != ')') {
+            paramtypes += objToAny(sig2type(tparams, false));
+          }
+          index = index + 1;
+          val restype = if (sym.isConstructor) {
+            assert(sig(index) == 'V');
+            index = index + 1;
+            clazz.tpe
+          } else
+            sig2type(tparams, true)
+          MethodType(paramtypes.toList, restype)
+        case 'T' =>
+          val n = subName(';'.==).toTypeName;
+          index = index + 1;
+          tparams(n).typeConstructor
+      }
+    }
+    var tparams = classTParams;
+    if (sig(index) == '<') {
+      index = index + 1;
+      while (sig(index) != '>') {
+        val tpname = subName(':'.==).toTypeName;
+        val s = sym.newTypeParameter(Position.NOPOS, tpname);
+        tparams = tparams + tpname -> s;
+        val ts = new ListBuffer[Type];
+        while (sig(index) == ':') {
+          index = index + 1;
+          if (sig(index) != ':') // guard against empty class bound
+            ts += sig2type(tparams, false);
+        }
+        s.setInfo(TypeBounds(definitions.AllRefClass.typeConstructor,
+                             intersectionType(ts.toList, sym)));
+        newTParams += s;
+      }
+      index = index + 1;
+    }
+    val tpe =
+      if (sym.isClass) {
+        classTParams = tparams;
+        val parents = new ListBuffer[Type]();
+        while (index < end) {
+          parents += sig2type(tparams, true);  // here the variance doesnt'matter
+        }
+        ClassInfoType(parents.toList, instanceDefs, sym);
+      }
+      else
+        sig2type(tparams, true);
+    if (newTParams.length == 0) tpe
+    else PolyType(newTParams.toList, tpe);
+  }
+
   def parseAttributes(sym: Symbol, symtype: Type): unit = {
     def convertTo(c: Constant, pt: Type): Constant = {
       if (pt.symbol == definitions.BooleanClass && c.tag == IntTag)
@@ -326,6 +455,16 @@ abstract class ClassfileParser {
       val attrName = pool.getName(in.nextChar());
       val attrLen = in.nextInt();
       attrName match {
+        case nme.SignatureATTR =>
+          if (global.settings.Xgenerics.value) {
+            val sig = pool.getExternalName(in.nextChar());
+            val newType = polySigToType(sym, sig);
+            sym.setInfo(newType)
+            if (settings.debug.value)
+              global.inform("" + sym + "; signatire = " + sig + " type = " + newType);
+            hasMeta = true;
+          } else
+            in.skip(attrLen);
         case nme.SyntheticATTR =>
           sym.setFlag(SYNTHETIC);
           in.skip(attrLen)
