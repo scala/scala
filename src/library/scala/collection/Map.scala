@@ -53,7 +53,7 @@ trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A,
      *  @return the value associated with the given key.
      */
     def apply(key: A): B = get(key) match {
-        case None => default
+        case None => default(key)
         case Some(value) => value
     }
 
@@ -174,7 +174,7 @@ trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A,
      *  The method implemented here yields an error,
      *  but it might be overridden in subclasses.
      */
-    def default: B =
-      error("key not found")
+    def default(key: A): B =
+      error("key not found: " + key)
 }
 
