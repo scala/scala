@@ -7,13 +7,13 @@
     I am SABBUS for Scala-core, the build system for the Scala compiler and core
     library. Please check the 'docs/README' file for more information about me.
   </description>
-  
+
   <echo>Running SABBUS for Scala-core</echo>
 
 <!-- ===========================================================================
 PROPERTIES
 ============================================================================ -->
-  
+
   <property environment="env"/>
   <condition property="memory.set">
     <contains string="${env.ANT_OPTS}" substring="-Xmx"/>
@@ -40,6 +40,9 @@ PROPERTIES
   <property name="nsc.log-files" value="no"/>
   <property name="nsc.excludes" value="${basedir}/build.excludes"/>
   <property name="nsc.params" value=""/>
+  <property name="nsc.timers" value="${basedir}/build.timers"/>
+  <!-- SVN configuration properties -->
+  <property name="svn.entries" value="${basedir}/.svn/entries"/>
   <!-- Location of pre-compiled libraries properties -->
   <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="starr.comp.jar" value="${lib.dir}/scala-compiler.jar"/>
@@ -88,6 +91,7 @@ INITIALISATION
 ============================================================================ -->
 
   <target name="init" unless="init.avail">
+    <tstamp prefix="start"/>
     <!-- Testing if everything is in place -->
     <echo level="verbose">starr.lib.jar=${starr.lib.jar}</echo>
     <fail message="STARR library in 'lib/' is not available">
@@ -192,7 +196,7 @@ INITIALISATION
     <echo>Java VM:  ${java.vm.name} ${java.vm.version}</echo>
     <echo>Ant:      ${ant.version}</echo>
   </target>
-  
+
   <target name="setup" depends="init">
     <!-- Creating boot-level tasks -->
     <taskdef name="starr"
@@ -226,21 +230,23 @@ INITIALISATION
       <available file="${locker.dir}/complete"/>
     </condition>
     <!-- Defining version number -->
-    <exec executable="svnversion" outputproperty="svn.version">
-      <arg line="${basedir}"/>
-    </exec>
-    <echo level="verbose">svn.version=${svn.version}</echo>
-    <propertyregex property="version"
-                   input="${svn.version}"
-                   regexp="([0-9]*:)?([0-9]*)\.*"
-                   select="\2"/>
-    <property name="version.number" value="2.0.${version}"/>
+    <loadfile property="entries"
+              srcFile="${svn.entries}"
+              failonerror="false"/>
+    <propertyregex property="revision"
+                   input="${entries}"
+                   regexp="revision=\042([0-9]*)\042\.*"
+                   select="\1"
+                   defaultValue="0000"/>
+    <property name="version.number" value="2.0.${revision}"/>
     <echo level="verbose">version.number=${version.number}</echo>
     <property name="dist.current.dir"
               value="${dist.dir}/${dist.name}-${version.number}"/>
+    <echo file="${nsc.timers}" append="true">${line.separator}revision ${revision} built on ${start.DSTAMP}-${start.TSTAMP}
+    </echo>
     <property name="init.avail" value="yes"/>
   </target>
-  
+
   <target name="setup.locker" depends="setup, build.locker">
     <path id="locker.classpath">
       <pathelement location="${locker.dir}/${lib.dir.name}"/>
@@ -254,7 +260,7 @@ INITIALISATION
              classname="scala.tools.ant.ScalaTool"
              classpathref="locker.classpath"/>
   </target>
-  
+
   <target name="setup.quick" depends="setup, build">
     <path id="quick.classpath">
       <pathelement location="${quick.dir}/${lib.dir.name}"/>
@@ -275,7 +281,7 @@ INITIALISATION
 <!-- ===========================================================================
 BUILD SUPPORT MACROS
 ============================================================================ -->
-  
+
   <macrodef name="build.support">
     <attribute name="build.dir"/>
     <sequential>
@@ -293,7 +299,7 @@ BUILD SUPPORT MACROS
       </copy>
     </sequential>
   </macrodef>
-  
+
   <macrodef name="build.links">
     <attribute name="build.dir"/>
     <sequential>
@@ -329,9 +335,10 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
 ============================================================================ -->
 
   <target name="newlocker" depends="clean.unfreeze, build.locker"/>
-  
+
   <target name="build.locker" depends="setup" unless="locker.avail">
     <property name="built.locker" value="yes"/>
+    <stopwatch name="timer.locker"/>
     <!-- Build library -->
     <mkdir dir="${locker.lib.dir}"/>
     <pico srcdir="${src.dir}/${lib.dir.name}"
@@ -383,6 +390,9 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
+    <stopwatch name="timer.locker" action="total"/>
+    <echo file="${nsc.timers}" append="true">locker: ${timer.locker}
+    </echo>
     <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${locker.dir}"/>
     <build.links build.dir="${locker.dir}"/>
@@ -407,8 +417,9 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
 <!-- ===========================================================================
 BUILD QUICK-TEST LAYER
 ============================================================================ -->
-  
+
   <target name="build" depends="setup.locker">
+    <stopwatch name="timer.quick"/>
     <!-- Build library -->
     <mkdir dir="${quick.lib.dir}"/>
     <pico srcdir="${src.dir}/${lib.dir.name}"
@@ -466,6 +477,9 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
+    <stopwatch name="timer.quick" action="total"/>
+    <echo file="${nsc.timers}" append="true">quick : ${timer.quick}
+    </echo>
     <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${quick.dir}"/>
     <build.links build.dir="${quick.dir}"/>
@@ -494,7 +508,7 @@ BUILD QUICK-TEST LAYER
     <chmod file="${quick.dir}/${exec.dir.name}/${scalaint.exec.name}"
            perm="ugo+rx"/>
   </target>
-  
+
   <target name="test.quick" depends="build">
     <echo>Ant test bench is not available yet</echo>
   </target>
@@ -502,11 +516,12 @@ BUILD QUICK-TEST LAYER
 <!-- ===========================================================================
 TEST
 ============================================================================ -->
-  
+
   <target name="test" depends="clean, test.stability, test.strap"/>
-  
+
   <target name="build.strap" depends="setup.quick">
     <!-- Build the bootstrap layer -->
+    <stopwatch name="timer.strap"/>
     <!-- Build library -->
     <mkdir dir="${strap.lib.dir}"/>
     <pico srcdir="${src.dir}/${lib.dir.name}"
@@ -561,6 +576,9 @@ TEST
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
+    <stopwatch name="timer.strap" action="total"/>
+    <echo file="${nsc.timers}" append="true">strap : ${timer.strap}
+    </echo>
     <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${strap.dir}"/>
     <build.links build.dir="${strap.dir}"/>
@@ -589,7 +607,7 @@ TEST
     <chmod file="${strap.dir}/${exec.dir.name}/${scalaint.exec.name}"
            perm="ugo+rx"/>
   </target>
-  
+
   <target name="test.stability" depends="build.strap">
     <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
@@ -617,7 +635,7 @@ TEST
     </fail>
     <echo>Build is stable</echo>
   </target>
-  
+
   <target name="test.strap" depends="build.strap">
     <echo>Ant test bench is not available yet</echo>
   </target>
@@ -625,7 +643,7 @@ TEST
 <!-- ===========================================================================
 DOCUMENT
 ============================================================================ -->
-  
+
   <target name="docs">
     <echo>Docs is not available yet.</echo>
   </target>
@@ -689,7 +707,7 @@ GENERATES A DISTRIBUTION
                  overwrite="yes"
                  failonerror="no"/>
       </then>
-    </if> 
+    </if>
 
     <quicksbaz
        file="${dist.dir}/${scalac.sbaz.name}-${version.number}.sbp"
@@ -743,7 +761,7 @@ managed directory.">
 <!-- ===========================================================================
 CLEAN
 ============================================================================ -->
-  
+
   <macrodef name="remove">
     <attribute name="dir"/>
     <sequential>
@@ -753,16 +771,16 @@ CLEAN
               failonerror="no"/>
     </sequential>
   </macrodef>
-  
+
   <target name="clean">
     <remove dir="${build.dir}"/>
   </target>
-  
+
   <target name="clean.all">
     <remove dir="${build.dir}"/>
     <remove dir="${dist.dir}"/>
   </target>
-  
+
   <target name="clean.unfreeze" depends="init">
     <delete file="${locker.dir}/complete"
             quiet="yes"
