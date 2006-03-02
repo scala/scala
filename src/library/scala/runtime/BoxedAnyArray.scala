@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -8,9 +8,12 @@
 
 // $Id$
 
+
 package scala.runtime;
 
-/** Arrays created by    new Array[T](length)    where T is a type variable
+
+/**
+ * Arrays created by    new Array[T](length)    where T is a type variable
  */
 [serializable]
 final class BoxedAnyArray(val length: Int) extends BoxedArray {

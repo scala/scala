@@ -1,16 +1,21 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scala.collection.mutable;
 
+
 import Predef._;
 
+/**
+ */
 final class ListBuffer[A] extends Buffer[A] {
   private var start: List[A] = Nil;
   private var last: ::[A] = _;

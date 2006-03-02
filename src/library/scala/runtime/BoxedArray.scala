@@ -1,13 +1,19 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2005, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                        2                 **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
+
 package scala.runtime;
 
-/** A class representing Array[T]
+
+/**
+ * A class representing Array[T]
  */
 abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] {
   /** The length of the array */

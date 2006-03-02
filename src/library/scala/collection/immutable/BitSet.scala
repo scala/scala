@@ -4,10 +4,13 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
 
+// $Id$
+
+
 package scala.collection.immutable;
+
 
 /** The class <code>BitSet</code>provides an immutable bitset view on an
  *  int array. Instances can conveniently be created from instances of

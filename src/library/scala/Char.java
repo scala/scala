@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -8,7 +8,9 @@
 
 // $Id$
 
+
 package scala;
+
 
 /** @meta class extends scala.AnyVal; */
 public abstract class Char    extends AnyVal implements java.io.Serializable {

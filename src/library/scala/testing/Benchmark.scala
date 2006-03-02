@@ -1,18 +1,16 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
 
+// $Id$
 
-/**
- * Scala benchmarking mini framework.
- */
 
 package scala.testing;
+
 
 /** <code>Benchmark</code> can be used to quickly turn an existing
  *  class into a benchmark. Here is a short example:

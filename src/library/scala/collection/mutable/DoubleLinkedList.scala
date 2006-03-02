@@ -8,7 +8,9 @@
 
 // $Id$
 
+
 package scala.collection.mutable;
+
 
 /** This extensible class may be used as a basis for implementing double
  *  linked lists. Type variable <code>A</code> refers to the element type

@@ -4,10 +4,13 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
 
+// $Id$
+
+
 package scala.collection;
+
 
 /**
  * The class <code>BitSet</code> provides the interface for a space-efficient

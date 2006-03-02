@@ -4,10 +4,13 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
 
+// $Id$
+
+
 package scala.collection.immutable;
+
 
 object TreeMap {
     def Empty[A <% Ordered[A], B] = new TreeMap[A, B];

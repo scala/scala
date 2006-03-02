@@ -1,13 +1,16 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id:Iterable.scala 5359 2005-12-16 16:33:49 +0100 (Fri, 16 Dec 2005) dubochet $
 \*                                                                      */
 
+// $Id$
+
+
 package scala;
+
 
 import Predef._;
 
@@ -53,6 +56,7 @@ object Iterable {
     max
   }
 }
+
 
 /** Collection classes supporting this trait provide a method
  *  <code>elements</code> which returns an iterator over all the

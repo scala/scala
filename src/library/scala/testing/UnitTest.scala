@@ -1,17 +1,21 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scala.testing;
 
-/** some simple methods to support unit testing with assertions
-**  to contain more JUnit style assertions which use Scala's features.
-*/
+
+/**
+ * Some simple methods to support unit testing with assertions
+ * to contain more JUnit style assertions which use Scala's features.
+ */
 object UnitTest {
 
   class Report( report_ok:()=>Unit, report_fail:(String,String)=>Unit ) {
