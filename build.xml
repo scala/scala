@@ -49,9 +49,6 @@ PROPERTIES
   <property name="jaco.jar" value="${lib.dir}/jaco.jar"/>
   <property name="fjbg.name" value="fjbg.jar"/>
   <property name="fjbg.jar" value="${lib.dir}/${fjbg.name}"/>
-  <property name="msil.name" value="msil.jar"/>
-  <property name="msil.jar" value="${lib.dir}/${msil.name}"/>
-  <property name="scala.dll" value="${lib.dir}/scala.dll"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
   <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
   <!-- Location of build products properties -->
@@ -118,13 +115,6 @@ INITIALISATION
                    classpath="${fjbg.jar}"/>
       </not></condition>
     </fail>
-    <echo level="verbose">msil.jar=${msil.jar}</echo>
-    <fail message="MSIL library in 'lib/' is not available">
-      <condition><not>
-        <available classname="ch.epfl.lamp.compiler.msil.Assembly"
-                   classpath="${msil.jar}"/>
-      </not></condition>
-    </fail>
     <echo level="verbose">jaco.jar=${jaco.jar}</echo>
     <fail message="JaCo compiler in 'lib/' is not available">
       <condition><not>
@@ -142,7 +132,6 @@ INITIALISATION
     <!-- Creating class-pathes -->
     <path id="common.classpath">
       <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${msil.jar}"/>
     </path>
     <path id="starr.classpath">
       <pathelement location="${starr.lib.jar}"/>
@@ -306,7 +295,6 @@ BUILD SUPPORT MACROS
       <if>
         <not><and>
           <available file="@{build.dir}/${fjbg.name}"/>
-          <available file="@{build.dir}/${msil.name}"/>
         </and></not>
         <then>
           <if><isset property="os.unix"/>
@@ -315,14 +303,9 @@ BUILD SUPPORT MACROS
                        resource="${fjbg.jar}"
                        overwrite="yes"
                        failonerror="no"/>
-              <symlink link="@{build.dir}/${msil.name}"
-                       resource="${msil.jar}"
-                       overwrite="yes"
-                       failonerror="no"/>
             </then>
             <else>
               <copy file="${fjbg.jar}" tofile="@{build.dir}/${fjbg.name}"/>
-              <copy file="${msil.jar}" tofile="@{build.dir}/${msil.name}"/>
             </else>
           </if>
         </then>
@@ -404,7 +387,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
                 class="scala.tools.nsc.Main"
                 version="${version.number}"
                 copyright="${copyright}"
-                classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${msil.name}"
+                classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
                 properties="scala.boot.class.path=#CLASSPATH#"
                 javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -491,7 +474,7 @@ BUILD QUICK-TEST LAYER
                 class="scala.tools.nsc.Main"
                 version="${version.number}"
                 copyright="${copyright}"
-                classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${msil.name}"
+                classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
                 properties="scala.boot.class.path=#CLASSPATH#"
                 javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -590,7 +573,7 @@ TEST
                class="scala.tools.nsc.Main"
                version="${version.number}"
                copyright="${copyright}"
-               classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${msil.name}"
+               classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
                properties="scala.boot.class.path=#CLASSPATH#"
                javaFlags="-Xmx256M -Xms16M"/>
     <chmod file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
@@ -672,7 +655,6 @@ GENERATES A DISTRIBUTION
       </manifest>
     </jar>
     <copy file="${fjbg.jar}" todir="${dist.current.dir}/lib"/>
-    <copy file="${msil.jar}" todir="${dist.current.dir}/lib"/>
     <mkdir dir="${dist.current.dir}/bin"/>
     <!-- Build executable files -->
     <mkdir dir="${dist.current.dir}/bin"/>
