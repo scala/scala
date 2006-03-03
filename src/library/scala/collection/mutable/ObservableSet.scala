@@ -20,10 +20,11 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class ObservableSet[A, This <: ObservableSet[A, This]]
-                    requires This
-                    extends scala.collection.mutable.Set[A]
-                    with Publisher[Message[A] with Undoable, This] {
+mixin class ObservableSet[A, This <: ObservableSet[A, This]] requires This
+      extends Set[A]
+      with Publisher[Message[A]
+      with Undoable, This]
+{
 
     abstract override def +=(elem: A): Unit = if (!contains(elem)) {
         super.+=(elem);

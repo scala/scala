@@ -22,7 +22,7 @@ package scala.collection.mutable;
  *  @version 1.0, 21/07/2003
  */
 [serializable]
-class ImmutableSetAdaptor[A](s: scala.collection.immutable.Set[A]) extends Set[A] {
+class ImmutableSetAdaptor[A](s: immutable.Set[A]) extends Set[A] {
 
     protected var set = s;
 

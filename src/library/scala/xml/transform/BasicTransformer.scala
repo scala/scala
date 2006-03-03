@@ -1,7 +1,7 @@
 package scala.xml.transform ;
 
-/** a trait for XML transformations */
-trait BasicTransformer extends Function1[Node,Node] {
+/** a class for XML transformations */
+abstract class BasicTransformer extends Function1[Node,Node] {
 
   protected case class NeedsCopy(result:Seq[Node]) extends java.lang.Throwable;
 

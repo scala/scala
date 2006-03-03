@@ -22,7 +22,7 @@ package scala.collection.mutable;
  *  @version 1.0, 21/07/2003
  */
 [serializable]
-class ImmutableMapAdaptor[A, B](m: scala.collection.immutable.Map[A, B]) extends Map[A, B] {
+class ImmutableMapAdaptor[A, B](m: immutable.Map[A, B]) extends Map[A, B] {
 
     protected var imap = m;
 

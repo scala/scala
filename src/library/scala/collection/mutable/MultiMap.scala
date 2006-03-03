@@ -19,8 +19,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait MultiMap[A, B] extends scala.collection.mutable.Map[A, scala.collection.mutable.Set[B]] {
-    protected def makeSet: scala.collection.mutable.Set[B] = new HashSet[B];
+mixin class MultiMap[A, B] extends Map[A, Set[B]] {
+    protected def makeSet: Set[B] = new HashSet[B];
 
     def add(key: A, value: B): Unit = get(key) match {
         case None => val set = makeSet;

@@ -26,7 +26,7 @@ object ScalaRunTime {
 
   def isValueTag(tag: String) = tag.charAt(0) == '.'
 
-  trait Try[a] {
+  abstract class Try[a] {
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b;
     def Finally(handler: Unit): a;
   }

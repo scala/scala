@@ -12,12 +12,12 @@
 package scala;
 
 
-/** A trait for partially ordered data.
+/** A class for partially ordered data.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 23/04/2004
  */
-trait PartiallyOrdered[+a] {
+mixin class PartiallyOrdered[+a] {
 
   /** Result of comparing `this' with operand `that'.
    *  Returns `None' if operands are not comparable.

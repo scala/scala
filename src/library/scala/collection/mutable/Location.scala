@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004
  */
-trait Location;
+abstract class Location;
 
 case object NA extends Location;
 

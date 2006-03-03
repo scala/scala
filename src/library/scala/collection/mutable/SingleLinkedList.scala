@@ -22,8 +22,9 @@ package scala.collection.mutable;
  */
 [serializable]
 abstract class SingleLinkedList[A, This >: AllRef <: SingleLinkedList[A, This]]
-               requires This
-               extends AnyRef with Seq[A] {
+         requires This
+         extends AnyRef with Seq[A]
+{
 
     var elem: A = _;
 

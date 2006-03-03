@@ -18,9 +18,8 @@ package scala.collection.mutable;
  *  @version 1.0, 08/07/2003
  */
 [serializable]
-class HashMap[A, B] extends scala.collection.mutable.Map[A, B]
-                    with HashTable[A]
-                    with DefaultMapModel[A, B] {
+class HashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapModel[A,B]
+{
 
     def -=(key: A): Unit = removeEntry(key);
 

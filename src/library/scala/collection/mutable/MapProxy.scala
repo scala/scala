@@ -19,7 +19,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-trait MapProxy[A, B] extends Map[A, B] with scala.collection.MapProxy[A, B] {
+mixin class MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
 
     def self: Map[A, B];
 

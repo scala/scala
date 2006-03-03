@@ -12,13 +12,13 @@
 package scala.collection.mutable;
 
 
-/** Classes that implement the <code>Undoable</code> trait provide an operation
+/** Classes that mix in the <code>Undoable</code> class provide an operation
  *  <code>undo</code> which can be used to undo the last operation.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait Undoable {
+mixin class Undoable {
 
     /** Undo the last operation.
      */

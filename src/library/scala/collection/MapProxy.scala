@@ -19,7 +19,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-trait MapProxy[A, +B] extends Map[A, B] with IterableProxy[Pair[A, B]] {
+mixin class MapProxy[A, +B] extends Map[A, B] with IterableProxy[Pair[A, B]] {
 
     def self: Map[A, B];
 

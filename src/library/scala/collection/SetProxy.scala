@@ -19,7 +19,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-trait SetProxy[A] extends Set[A] with IterableProxy[A] {
+mixin class SetProxy[A] extends Set[A] with IterableProxy[A] {
 
     def self: Set[A];
 

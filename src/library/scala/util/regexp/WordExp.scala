@@ -4,9 +4,9 @@ package scala.util.regexp ;
 
 /** regular word expressions.
  */
-trait WordExp extends Base {
+abstract class WordExp extends Base {
 
-  trait Label;
+  abstract class Label;
 
   type _regexpT <: RegExp ;
   type _labelT <: Label;

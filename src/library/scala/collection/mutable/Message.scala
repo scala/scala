@@ -12,9 +12,6 @@
 package scala.collection.mutable;
 
 
-import Predef._;
-
-
 /** Class <code>Message</code> represents messages that are issued by observable
  *  collection classes whenever a data structure is changed. Class <code>Message</code>
  *  has several subclasses for the various kinds of events: <code>Update</code>
@@ -24,7 +21,7 @@ import Predef._;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait Message[+A];
+mixin class Message[+A];
 
 /** This observable update refers to inclusion operations that add new elements
  *  to collection classes.
@@ -78,5 +75,6 @@ class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {
         res + ")";
     }
 
-    override def hashCode(): Int = error("scripts are not suitable as hash keys");
+  override def hashCode(): Int =
+    Predef.error("scripts are not suitable as hash keys");
 }

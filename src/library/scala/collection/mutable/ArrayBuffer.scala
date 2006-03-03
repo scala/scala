@@ -14,7 +14,7 @@ package scala.collection.mutable;
 
 import Predef._;
 
-/** An implementation of the Buffer trait using an array to
+/** An implementation of the Buffer class using an array to
  *  represent the assembled sequence internally.
  *
  *  @author  Matthias Zenger

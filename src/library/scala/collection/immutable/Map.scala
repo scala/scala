@@ -12,9 +12,9 @@
 package scala.collection.immutable;
 
 
-/** This trait extends the Map interface of collections that unambiguously map
+/** This class extends the Map interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
- *  This trait defines the interface for functional map implementations
+ *  This class defines the interface for functional map implementations
  *  relying on immutable data structures.
  *  Concrete map implementations have to provide functionality for the
  *  abstract methods in scala.collection.Map as well as for
@@ -24,7 +24,7 @@ package scala.collection.immutable;
  *  @author  Erik Stenman
  *  @version 1.1, 22/03/2004
  */
-trait Map[A, B] extends AnyRef with scala.collection.Map[A, B] {
+mixin class Map[A, B] extends AnyRef with collection.Map[A, B] {
 
     /** This method returns a new map instance of the same class
      *  mapping keys of the same type to values of type <code>C</code>.

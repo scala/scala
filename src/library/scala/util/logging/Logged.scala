@@ -3,7 +3,7 @@
 package scala.util.logging;
 
 /**
- *  Mixing in the trait Logged indicates that a class provides support
+ *  Mixing in the class Logged indicates that a class provides support
  *  for logging. For instance, a developer of a library writes
  *  <code>
    class MyClass with Logged { ... do stuff, call log }
@@ -15,7 +15,7 @@ package scala.util.logging;
    </code>
    * and the logging will be sent to the Console.
    */
-trait Logged {
+mixin class Logged {
   /** this method should log the message given as argument somewhere
    * as a side-effect
    */

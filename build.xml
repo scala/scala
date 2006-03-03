@@ -773,7 +773,7 @@ CLEAN
   </macrodef>
 
   <target name="clean">
-    <remove dir="${build.dir}"/>
+    <remove dir="${quick.dir}"/>
   </target>
 
   <target name="clean.all">

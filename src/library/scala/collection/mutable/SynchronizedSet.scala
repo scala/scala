@@ -12,13 +12,13 @@
 package scala.collection.mutable;
 
 
-/** This trait should be used as a mixin. It synchronizes the <code>Set</code>
+/** This class should be used as a mixin. It synchronizes the <code>Set</code>
  *  functions of the class into which it is mixed in.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] {
+mixin class SynchronizedSet[A] extends Set[A] {
 
     abstract override def size: Int = synchronized {
         super.size

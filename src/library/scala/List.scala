@@ -84,7 +84,7 @@ object List {
    *  @param elem the element composing the resulting list
    *  @return a list composed of n elements all equal to elem
    */
-  def make[a](n: int, elem: a): List[a] = {
+  def make[a](n: Int, elem: a): List[a] = {
     val b = new ListBuffer[a]
     var i = 0
     while (i < n) {
@@ -102,7 +102,7 @@ object List {
    *  @return the list obtained by applying the maker function to successive
    *          integers from 0 to n (exclusive).
    */
-  def tabulate[a](n: int, maker: int => a): List[a] = {
+  def tabulate[a](n: Int, maker: Int => a): List[a] = {
     val b = new ListBuffer[a]
     var i = 0
     while (i < n) {
@@ -351,11 +351,11 @@ object List {
   /** Lists with ordered elements are ordered
    */
   implicit def list2ordered[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
-    def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {
+    def compareTo [b >: List[a] <% Ordered[b]](y: b): Int = y match {
       case y1: List[a] => compareLists(x, y1);
       case _ => -(y compareTo x)
     }
-    private def compareLists(xs: List[a], ys: List[a]): int = {
+    private def compareLists(xs: List[a], ys: List[a]): Int = {
       if (xs.isEmpty && ys.isEmpty) 0
       else if (xs.isEmpty) -1
       else if (ys.isEmpty) 1
@@ -369,7 +369,7 @@ object List {
   def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = list2ordered(x);
 }
 
-/** A trait representing an ordered collection of elements of type
+/** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
  *  classes <code>scala.Nil</code> and <code>scala.::</code> that
  *  implement the abstract members <code>isEmpty</code>,
@@ -458,8 +458,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *
    *  @return a list of all indices in the list.
    */
-  def indices: List[int] = {
-    val b = new ListBuffer[int]
+  def indices: List[Int] = {
+    val b = new ListBuffer[Int]
     var i = 0
     var these = this
     while (!these.isEmpty) {

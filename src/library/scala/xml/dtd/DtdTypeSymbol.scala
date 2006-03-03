@@ -1,1 +1,3 @@
-package scala.xml.dtd; trait DtdTypeSymbol {}
+package scala.xml.dtd;
+
+mixin class DtdTypeSymbol;

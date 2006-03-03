@@ -4,7 +4,7 @@ package scala.util.regexp ;
 
 /** basic regular expressions */
 
-trait Base {
+abstract class Base {
 
   type _regexpT <: RegExp;
 

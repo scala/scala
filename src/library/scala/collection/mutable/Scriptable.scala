@@ -12,13 +12,13 @@
 package scala.collection.mutable;
 
 
-/** Classes that implement the <code>Scriptable</code> trait allow
+/** Classes that mix in the <code>Scriptable</code> class allow
  *  messages to be sent to objects of that class.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 09/05/2004
  */
-trait Scriptable[A] {
+mixin class Scriptable[A] {
 
     /** Send a message to this scriptable object.
      */

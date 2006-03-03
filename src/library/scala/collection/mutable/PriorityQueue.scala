@@ -14,7 +14,7 @@ package scala.collection.mutable;
 
 /** This class implements priority queues using a heap. The
  *  elements of the queue have to be ordered in terms of the
- *  <code>Ordered[T]</code> trait.
+ *  <code>Ordered[T]</code> class.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004

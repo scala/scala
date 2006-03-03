@@ -33,7 +33,7 @@ object pilib {
   * Run several processes in parallel using the following syntax:
   * spawn &lt; p_1 | ... | p_n &gt;
   */
-  trait Spawn {
+  abstract class Spawn {
     def <(p: => unit): Spawn
     def |(p: => unit): Spawn
     def > : unit

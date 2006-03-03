@@ -12,7 +12,7 @@
 package scala.reflect;
 
 
-import Predef._;
+import Predef.Pair;
 
 abstract class Type;
 

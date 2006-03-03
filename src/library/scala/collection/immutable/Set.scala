@@ -12,7 +12,7 @@
 package scala.collection.immutable;
 
 
-/** This trait represents immutable sets. Concrete set implementations
+/** This class represents immutable sets. Concrete set implementations
  *  just have to provide functionality for the abstract methods in
  *  <code>scala.collection.Set</code> as well as for <code>+</code> and
  *  <code>-</code>.
@@ -20,7 +20,7 @@ package scala.collection.immutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-trait Set[A] extends AnyRef with scala.collection.Set[A] {
+mixin class Set[A] extends AnyRef with collection.Set[A] {
 
     /** This method creates a new set with an additional element.
      */

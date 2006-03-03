@@ -1,6 +1,6 @@
 package scala.runtime.matching ;
 
-trait TestAlphabet;
+abstract class TestAlphabet;
 
 case class TestLabel(i: Int) extends TestAlphabet ;
 

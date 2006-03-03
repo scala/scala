@@ -12,7 +12,7 @@
 package scala.collection.mutable;
 
 
-/** This trait represents mutable sets. Concrete set implementations
+/** This class represents mutable sets. Concrete set implementations
  *  just have to provide functionality for the abstract methods in
  *  <code>scala.collection.Set</code> as well as for <code>add</code>,
  *  <code>remove</code>, and <code>clear</code>.
@@ -21,7 +21,9 @@ package scala.collection.mutable;
  *  @version 1.1, 09/05/2004
  */
 [cloneable]
-trait Set[A] extends AnyRef with scala.collection.Set[A] with Scriptable[Message[A]] {
+mixin class Set[A] extends AnyRef with collection.Set[A]
+      with Scriptable[Message[A]]
+{
 
     /** This method allows one to add or remove an element <code>elem</code>
      *  from this set depending on the value of parameter <code>included</code>.

@@ -36,7 +36,7 @@ package scala;
  *  @version 1.0, 10/09/03
  */
 
-[_trait_] class Application {
+mixin class Application {
 
     /** The time when execution of this program started.
      */

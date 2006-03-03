@@ -12,7 +12,7 @@ package scala.xml;
 
 import parsing.MarkupHandler;
 
-trait NodeTraverser extends MarkupHandler {
+abstract class NodeTraverser extends MarkupHandler {
 
   def traverse(n: Node): Unit = n match {
     case x:ProcInstr => procInstr(0, x.target, x.text)

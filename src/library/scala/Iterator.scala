@@ -160,7 +160,7 @@ object Iterator {
  *  @author  Matthias Zenger
  *  @version 1.2, 15/03/2004
  */
-trait Iterator[+A] {
+mixin class Iterator[+A] {
 
   /** Does this iterator provide another element?
    */
@@ -178,7 +178,7 @@ trait Iterator[+A] {
     def hasNext = remaining > 0 && Iterator.this.hasNext;
     def next: A =
       if (hasNext) { remaining = remaining - 1; Iterator.this.next }
-      else Predef.error("next on empty iterator");
+      else error("next on empty iterator");
   }
 
   /** Removes the first <code>n</code> elements from this iterator.

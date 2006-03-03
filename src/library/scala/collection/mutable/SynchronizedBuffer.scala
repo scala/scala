@@ -12,13 +12,13 @@
 package scala.collection.mutable;
 
 
-/** This trait should be used as a mixin. It synchronizes the <code>Buffer</code>
+/** This class should be used as a mixin. It synchronizes the <code>Buffer</code>
  *  methods of the class into which it is mixed in.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait SynchronizedBuffer[A] extends Buffer[A] {
+mixin class SynchronizedBuffer[A] extends Buffer[A] {
 
     abstract override def length: Int = synchronized {
         super.length;

@@ -8,9 +8,11 @@
 
 // $id: $
 
+
 package scala.xml.xsd;
 
-trait XsTypeSymbol extends scala.xml.TypeSymbol ;
+
+abstract class XsTypeSymbol extends xml.TypeSymbol;
 
 object xsdAny extends XsTypeSymbol ;
 
@@ -22,7 +24,7 @@ class ComplexTypeSymbol(val name: String) extends XsTypeSymbol {
   var decl: ComplexTypeDecl = null;
 }
 
-trait DerivSym;
+abstract class  DerivSym;
 
 case class Extends(sym:XsTypeSymbol) extends DerivSym;
 

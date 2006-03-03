@@ -20,7 +20,7 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 26/04/2004
  */
-trait Proxy {
+mixin class Proxy {
   def self: Any;
   override def hashCode(): Int = self.hashCode();
   override def equals(y: Any): Boolean = self.equals(y);

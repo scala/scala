@@ -5,7 +5,7 @@ package scala.util.regexp ;
 /** pointed regular hedge expressions, a useful subclass of
  *  regular hedge expressions.
  */
-trait PointedHedgeExp extends Base {
+abstract class PointedHedgeExp extends Base {
 
   type _regexpT <: RegExp;
   type _labelT;

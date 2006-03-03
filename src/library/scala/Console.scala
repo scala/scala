@@ -12,8 +12,6 @@
 package scala;
 
 
-import Predef._;
-
 /** The <code>Console</code> object implements functionality for
  *  printing Scala values on the terminal. There are also functions
  *  for reading specific values. <code>Console</code> also defines

@@ -12,7 +12,7 @@
 package scala;
 
 
-trait ScalaObject extends AnyRef {
+mixin class ScalaObject extends AnyRef {
 
   /** This method is needed for optimizing pattern matching expressions
    *  which match on constructors of case classes.

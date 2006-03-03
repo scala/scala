@@ -8,4 +8,8 @@
 
 // $id: $
 
-package scala.xml; trait TypeSymbol {}
+
+package scala.xml;
+
+
+abstract class TypeSymbol;

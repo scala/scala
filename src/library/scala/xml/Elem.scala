@@ -12,7 +12,7 @@ package scala.xml;
 
 import scala.collection.mutable.ArrayBuffer;
 
-/** The case class <code>Elem</code> implements the Node trait,
+/** The case class <code>Elem</code> extends the Node class,
  *  providing an immutable data object representing an XML element.
  *
  *  @param prefix (may be null)

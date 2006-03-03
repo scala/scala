@@ -12,8 +12,6 @@
 package scala;
 
 
-import Predef._;
-
 object Seq {
 
   /** builds a singleton sequence
@@ -51,8 +49,7 @@ object Seq {
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-[serializable]
-trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
+mixin class Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
 
   /** Returns the length of the sequence.
   *
@@ -150,7 +147,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
         }
       }
     } else
-      error("cannot create subsequence");
+      Predef.error("cannot create subsequence");
 
   /** Fills the given array <code>xs</code> with the elements of
   *  this sequence starting at position <code>start</code>.

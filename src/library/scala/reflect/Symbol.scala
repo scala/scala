@@ -12,8 +12,6 @@
 package scala.reflect;
 
 
-import scala.Predef._;
-
 abstract class Symbol {
   val owner: Symbol;
   val name: String;

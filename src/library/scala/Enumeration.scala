@@ -13,7 +13,6 @@ package scala;
 
 
 import scala.collection.mutable._;
-import Predef._;
 
 /**
  * <p>The class <code>Enumeration</code> provides the same functionality as the
@@ -115,7 +114,7 @@ abstract class Enumeration(initial: Int, names: String*) {
 
     protected final def Value(i: Int, name: String): Value = new Val(i, name);
 
-    trait Value extends Ordered[Value] {
+    abstract class Value extends Ordered[Value] {
         def id: Int;
         override def compareTo[S >: Value <% Ordered[S]](that: S): Int = that match {
           case that1: Value => id - that1.id

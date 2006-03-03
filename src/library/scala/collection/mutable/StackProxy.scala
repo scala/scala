@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004
  */
-trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
+mixin class StackProxy[A] extends Stack[A] with SeqProxy[A] {
 
     def self: Stack[A];
 

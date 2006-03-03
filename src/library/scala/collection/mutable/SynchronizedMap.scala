@@ -12,13 +12,13 @@
 package scala.collection.mutable;
 
 
-/** This trait should be used as a mixin. It synchronizes the <code>Map</code>
+/** This class should be used as a mixin. It synchronizes the <code>Map</code>
  *  functions of the class into which it is mixed in.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] {
+mixin class SynchronizedMap[A, B] extends Map[A, B] {
 
     abstract override def size: Int = synchronized {
         super.size;

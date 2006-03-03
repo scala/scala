@@ -12,12 +12,12 @@
 package scala;
 
 
-/** A trait for totally ordered data.
+/** A class for totally ordered data.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 23/04/2004
  */
-trait Ordered[+a] {
+mixin class Ordered[+a] {
 
   /** Result of comparing `this' with operand `that'.
    *  returns `x' where

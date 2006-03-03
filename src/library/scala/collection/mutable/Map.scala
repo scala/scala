@@ -12,7 +12,7 @@
 package scala.collection.mutable;
 
 
-/** This trait represents mutable maps. Concrete map implementations
+/** This class represents mutable maps. Concrete map implementations
  *  just have to provide functionality for the abstract methods in
  *  <code>scala.collection.Map</code> as well as for <code>update</code>,
  *  and <code>remove</code>.
@@ -21,7 +21,10 @@ package scala.collection.mutable;
  *  @version 1.1, 09/05/2004
  */
 [cloneable]
-trait Map[A, B] extends AnyRef with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, B]]] {
+mixin class Map[A, B] extends AnyRef
+      with collection.Map[A, B]
+      with Scriptable[Message[Pair[A, B]]]
+{
 
   /** This method allows one to add a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a

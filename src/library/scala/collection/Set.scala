@@ -12,20 +12,20 @@
 package scala.collection;
 
 
-/** This trait defines the interface of collections that do not contain
- *  duplicate elements. Trait <code>Set</code> may only be used for
+/** This class defines the interface of collections that do not contain
+ *  duplicate elements. Class <code>Set</code> may only be used for
  *  accessing elements from set implementations. Two different extensions
- *  of trait <code>Set</code> in the package <code>scala.collections.mutable</code>
+ *  of class <code>Set</code> in the package <code>scala.collections.mutable</code>
  *  and  <code>scala.collections.immutable</code> provide functionality for
- *  adding new elements to a set. The trait in the first package is implemented
- *  by sets the are modified destructively, whereas the trait in the second
+ *  adding new elements to a set. The class in the first package is implemented
+ *  by sets the are modified destructively, whereas the class in the second
  *  package is used by functional set implementations that rely on immutable
  *  data structures.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
+mixin class Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
 
     /** Returns the number of elements in this set.
     *

@@ -18,7 +18,7 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-trait BufferedIterator[+A] extends Iterator[A] {
+mixin class BufferedIterator[+A] extends Iterator[A] {
 
     /** Checks what the next available element is.
      *

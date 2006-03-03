@@ -20,9 +20,10 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-[serializable]
-abstract class DoubleLinkedList[A, This >: AllRef <: DoubleLinkedList[A, This]] requires This
-    extends SingleLinkedList[A, This] {
+abstract class DoubleLinkedList[A, This >: AllRef <: DoubleLinkedList[A, This]]
+         requires This
+         extends SingleLinkedList[A, This]
+{
 
     var prev: This = _;
 

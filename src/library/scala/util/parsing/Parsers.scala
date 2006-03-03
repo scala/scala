@@ -4,7 +4,7 @@ abstract class Parsers {
 
   type inputType;
 
-  trait Parser[a] {
+  abstract class Parser[a] {
 
     type Result = Option[Pair[a, inputType]];
 

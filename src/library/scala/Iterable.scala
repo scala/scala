@@ -11,8 +11,7 @@
 
 package scala;
 
-
-import Predef._;
+import Predef.error;
 
 object Iterable {
   def view[A <% Ordered[A]](x: Iterable[A]): Ordered[Iterable[A]] = new Ordered[Iterable[A]] {
@@ -58,14 +57,14 @@ object Iterable {
 }
 
 
-/** Collection classes supporting this trait provide a method
+/** Collection classes mixing in this class provide a method
  *  <code>elements</code> which returns an iterator over all the
  *  elements contained in the collection.
  *
  *  @author  Matthias Zenger
  *  @version 1.1, 04/02/2004
  */
-trait Iterable[+A] {
+mixin class Iterable[+A] {
 
     /** Creates a new iterator over all elements contained in this
      *  object.

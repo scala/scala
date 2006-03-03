@@ -12,8 +12,6 @@
 package scala.collection.mutable;
 
 
-import Predef._;
-
 /** This class can be used to construct data structures that are based
  *  on hashtables. Class <code>HashTable[A]</code> implements a hashtable
  *  that maps keys of type <code>A</code> to values of the fully abstract
@@ -31,7 +29,7 @@ import Predef._;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-[_trait_] abstract class HashTable[A] extends AnyRef {
+mixin class HashTable[A] extends AnyRef {
 
     /** The load factor for the hash table.
      */

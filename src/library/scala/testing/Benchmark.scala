@@ -30,7 +30,7 @@ package scala.testing;
  * This will run the benchmark 5 times and log the execution times in
  * a file called times.log
  */
-trait Benchmark {
+mixin class Benchmark {
 
   /** this method should be implemented by the concrete benchmark */
   def run: Unit;

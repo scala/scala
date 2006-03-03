@@ -20,10 +20,11 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class ObservableMap[A, B, This <: ObservableMap[A, B, This]]
-                    requires This
-                    extends scala.collection.mutable.Map[A, B]
-                    with Publisher[Message[Pair[A, B]] with Undoable, This] {
+mixin class ObservableMap[A, B, This <: ObservableMap[A, B, This]] requires This
+      extends Map[A, B]
+      with Publisher[Message[Pair[A, B]]
+      with Undoable, This]
+{
 
     abstract override def update(key: A, value: B): Unit = get(key) match {
         case None => super.update(key, value);

@@ -10,7 +10,6 @@
 
 package scala.xml;
 
-import Predef._;
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null
@@ -28,7 +27,7 @@ class NamespaceBinding(val prefix: String,
   private val serialVersionUID = 0 -  2518644165573446725L;
 
   if (null != prefix && 0 == prefix.length())
-    error("zero length prefix not allowed");
+    Predef.error("zero length prefix not allowed");
 
   def getURI(_prefix: String): String =
     if (prefix == _prefix) uri else parent.getURI(_prefix);

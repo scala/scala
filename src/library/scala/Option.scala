@@ -12,9 +12,6 @@
 package scala;
 
 
-import Predef._;
-
-
 /** This class represents optional values. Instances of <code>Option</code>
  *  are either instances of case class <code>Some</code> or it is case
  *  object <code>None</code>.
@@ -23,7 +20,7 @@ import Predef._;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Option[+A] extends Iterable[A] {
+abstract class Option[+A] extends Iterable[A] {
 
   def isEmpty: Boolean = this match {
     case None => true
@@ -31,7 +28,7 @@ trait Option[+A] extends Iterable[A] {
   }
 
   def get: A = this match {
-    case None => error("None.get")
+    case None => Predef.error("None.get")
     case Some(x) => x
   }
 

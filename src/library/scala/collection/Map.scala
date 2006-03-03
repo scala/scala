@@ -12,21 +12,24 @@
 package scala.collection;
 
 
-/** This trait defines the interface of collections that unambiguously map
+/** This class defines the interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
- *  Trait <code>Map</code> may only be used for
+ *  Class <code>Map</code> may only be used for
  *  accessing elements from map implementations. Two different extensions
- *  of trait <code>Map</code> in the package <code>scala.collections.mutable</code>
+ *  of class <code>Map</code> in the package <code>scala.collections.mutable</code>
  *  and  <code>scala.collections.immutable</code> provide functionality for
- *  adding new key/value mappings to a map. The trait in the first package is
- *  implemented by maps that are modified destructively, whereas the trait in
+ *  adding new key/value mappings to a map. The class in the first package is
+ *  implemented by maps that are modified destructively, whereas the class in
  *  the second package is used by functional map implementations that rely on
  *  immutable data structures.
  *
  *  @author  Matthias Zenger
  *  @version 1.1, 02/05/2004
  */
-trait Map[A, +B] extends AnyRef with PartialFunction[A, B] with Iterable[Pair[A, B]] {
+mixin class Map[A, +B] extends AnyRef
+      with PartialFunction[A, B]
+      with Iterable[Pair[A, B]]
+{
 
     /** Compute the number of key-to-value mappings.
      *

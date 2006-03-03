@@ -12,14 +12,15 @@
 package scala.collection.mutable;
 
 
-/** This trait is used internally. It implements the mutable <code>Map</code>
- *  trait in terms of three functions: <code>findEntry</code>, <code>addEntry</code>,
- *  and <code>entries</code>.
+/** This class is used internally. It implements the mutable <code>Map</code>
+ *  class in terms of three functions: <code>findEntry</code>,
+ *  <code>addEntry</code>, and <code>entries</code>.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait DefaultMapModel[A, B] extends AnyRef with scala.collection.mutable.Map[A, B] {
+mixin class DefaultMapModel[A, B] extends AnyRef with Map[A, B] {
+
     protected type Entry = DefaultEntry[A,B];
 
     protected def findEntry(key: A): Option[Entry];

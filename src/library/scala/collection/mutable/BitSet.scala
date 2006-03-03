@@ -22,7 +22,7 @@ package scala.collection.mutable;
  */
 
 [serializable]
-class BitSet(initSize: Int) extends collection.BitSet with mutable.Set[Int] {
+class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
 
   import scala.runtime.compat.Platform.arraycopy;
 

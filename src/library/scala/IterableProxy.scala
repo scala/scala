@@ -18,7 +18,7 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 26/04/2004
  */
-trait IterableProxy[+A] extends Iterable[A] with Proxy {
+mixin class IterableProxy[+A] extends Iterable[A] with Proxy {
 
     def self: Iterable[A];
 
