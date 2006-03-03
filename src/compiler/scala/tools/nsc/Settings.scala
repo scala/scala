@@ -52,6 +52,7 @@ class Settings(error: String => unit) {
     } else null
   }
 
+  val doc           = BooleanSetting("-doc", "Generate documentation");
   val debuginfo     = BooleanSetting("-g", "Generate debugging info")
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")

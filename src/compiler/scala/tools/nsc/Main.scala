@@ -7,6 +7,8 @@ package scala.tools.nsc;
 
 import scala.tools.nsc.util.{Position};
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter};
+import scala.tools.nsc.doc.DocGenerator;
+
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
@@ -48,13 +50,24 @@ object Main extends Object with EvalLoop {
       reporter.info(null, command.usageMsg, true)
     else {
       try {
-        val compiler = new Global(command.settings, reporter);
+        object compiler extends Global(command.settings, reporter);
         if (command.settings.resident.value)
           resident(compiler);
         else if (command.files.isEmpty)
             reporter.info(null, command.usageMsg, true)
-        else
-          (new compiler.Run) compile command.files;
+        else {
+          val run = new compiler.Run;
+          run compile command.files;
+
+
+          if (command.settings.doc.value) {
+						object generator extends DocGenerator {
+              val global : compiler.type = compiler;
+              val outdir = command.settings.outdir.value;
+            };
+            generator.process(run.units);
+          }
+        }
       } catch {
         case ex @ FatalError(msg) =>
           if (command.settings.debug.value)

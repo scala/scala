@@ -32,7 +32,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with CompilationUnits
 {
 
-
   // sub-components --------------------------------------------------
 
   object treePrinters extends TreePrinters {
@@ -83,7 +82,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     if (onlyPresentation) new HashMap[Symbol,String];
     else null;
 
-
 // reporting -------------------------------------------------------
 
   def error(msg: String) = reporter.error(null, msg);
@@ -99,6 +97,27 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def log(msg: Object): unit =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
+
+  class ErrorWithPosition(val pos : Int, val error : Throwable) extends Error;
+
+  def tryWith[T](pos : Int, body : => T) : T = try {
+    body;
+  } catch {
+    case e : ErrorWithPosition => throw e;
+    case te: TypeError => throw te;
+    case e : Error            => throw new ErrorWithPosition(pos, e);
+    case e : RuntimeException => throw new ErrorWithPosition(pos, e);
+  }
+  def catchWith[T](source : SourceFile, body : => T) : T = try {
+    body;
+  } catch {
+    case e : ErrorWithPosition =>
+      logError("POS: " + source.dbg(e.pos), e);
+      throw e.error;
+  }
+
+
+
 
   def logError(msg: String, t : Throwable): Unit = {};
 
@@ -305,7 +324,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;
 
-  def onlyPresentation = false;
+  def onlyPresentation = settings.doc.value;
 
   class Run extends CompilerRun {
     var currentUnit : CompilationUnit = _;

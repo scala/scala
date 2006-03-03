@@ -12,7 +12,10 @@ abstract class Models {
   val global : Global;
   import global._;
 
+  def acceptPrivate = true;
+
   abstract class Kind {}
+  object CONSTRUCTOR extends Kind;
   object OBJECT  extends Kind;
   object CLASS   extends Kind;
   object TRAIT   extends Kind;
@@ -22,7 +25,7 @@ abstract class Models {
   object   ARG   extends Kind;
   object  TPARAM extends Kind;
 
-  val KINDS = TPARAM :: CLASS :: TRAIT :: OBJECT :: VAL :: VAR :: DEF :: Nil;
+  val KINDS = CONSTRUCTOR :: TPARAM :: CLASS :: TRAIT :: OBJECT :: VAL :: VAR :: DEF :: Nil;
 
   def labelFor(kind : Kind) : String = kind match {
   case OBJECT => "Object";
@@ -33,13 +36,39 @@ abstract class Models {
   case VAR    => "Var";
   case ARG    => "Arg";
   case TPARAM => "Type";
+  case CONSTRUCTOR => "Constructor";
   };
+  def stringsFor(mods : Modifiers) = {
+    var modString : List[String] = Nil;
+    if (mods . isPrivate  ) modString = "private"   :: modString;
+    if (mods . isProtected) modString = "protected" :: modString;
+    if (mods . isOverride ) modString = "override"  :: modString;
+    if (mods . isAbstract ) modString = "abstract"  :: modString;
+    if (mods . isCase     ) modString = "case"      :: modString;
+    if (mods . isSealed   ) modString = "sealed"    :: modString;
+    if (mods . isFinal    ) modString = "final"    :: modString;
+    if (mods . isMixin    ) modString = "mixin"    :: modString;
+    modString;
+  }
 
+
+  def codeFor(kind : Kind) : String = kind match {
+    case CONSTRUCTOR => codeFor(DEF);
+    case _ => labelFor(kind).toLowerCase();
+  }
+
+  def pluralFor(kind : Kind) : String = kind match {
+  case CLASS  => "Classes";
+  case _ => labelFor(kind) + "s";
+  };
 
   def kindOf(term0 : Symbol) = {
          if (term0.isVariable)       VAR;
     else if (term0.isValueParameter) ARG;
-    else if (term0.isMethod)         DEF;
+    else if (term0.isMethod)         {
+      if (term0.nameString.equals("this")) CONSTRUCTOR;
+      else DEF;
+    }
     else if (term0.isClass)          CLASS;
     else if (term0.isModule)         OBJECT;
     else if (term0.isValue   )       VAL;
@@ -90,6 +119,10 @@ abstract class Models {
 		ret;
   }
 
+  def mods1(tree: Tree) = tree match {
+    case mdef : MemberDef => mdef.mods
+    case _ => NoMods
+  }
 
   abstract class HasTree(val parent : Composite) extends Model with Ordered[HasTree] {
     var tree : Tree = _;
@@ -99,38 +132,19 @@ abstract class Models {
     }
     def replacedBy(tree0 : Tree) : Boolean = true;
     def text : String = textFor(tree);
-    def mods = tree match {
-      case mdef : MemberDef => mdef.mods
-      case _ => NoMods
-    }
+    var mods0 = NoMods;
 
-    override def toString() : String = tree.symbol.toString();
+    def mods = if (mods0 != NoMods) mods0 else mods1(tree);
+
+    override def toString() : String = tree.toString();
 
     def compareTo [b >: HasTree <% Ordered[b]](that: b): Int = that match {
-      case ht : HasTree => toString().compareTo(ht.toString());
+      case ht : HasTree =>
+      	val result = tree.symbol.nameString.compareTo(ht.tree.symbol.nameString);
+		    if (result != 0) result;
+        else toString().compareTo(ht.toString());
     }
     def kind = kindOf(tree.symbol);
-
-
-    /*
-    	public static String getText(Trees$Tree tree) {
-		if (tree instanceof Trees$ValOrDefDef) {
-			if (tree instanceof Trees$DefDef) {
-				Trees$DefDef ddef = (Trees$DefDef) tree;
-				ret += (listToString(ddef.tparams(), "[", "]", TYPE_E2S) +
-						listToString(ddef.vparamss(), "", "", PARAM_E2S));
-			}
-			Trees$ValOrDefDef vdef = (Trees$ValOrDefDef) tree;
-			ret += (" : " + vdef.tpt());
-		}
-		if (tree instanceof Trees$AbsTypeDef) {
-			Trees$AbsTypeDef tp = (Trees$AbsTypeDef) tree;
-			ret += (tp.hi() != null ? " <: " + tp.hi() : "") +
-				     (tp.lo() != null ? " >: " + tp.lo() : "");
-		}
-		return ret;
-	}*/
-
 
     override def    add(from : Composite, model : HasTree) : Unit = { parent.add(from, model); }
     override def remove(from : Composite, model : HasTree) : Unit = { parent.remove(from, model); }
@@ -189,6 +203,8 @@ abstract class Models {
 				if (mmbr2 != null) {
 				  var found = false;
 				  for (val mmbr <- members) if (!found && mmbr.replacedBy(mmbr2)) {
+            //System.err.println("REPLACE: " + mmbr + " with " + mmbr2);
+            mmbr.mods0 = mods1(mmbr1);
 				    found = true;
 				    updated = mmbr.update(mmbr2) || updated;
 				    marked += mmbr;
@@ -197,7 +213,9 @@ abstract class Models {
 				    updated = true;
 				    val add = modelFor(mmbr2, this);
 				    add.update(mmbr2);
+            val sz = members.size;
 				    members += (add);
+            assert(members.size == sz + 1);
 				    marked += add;
 				  }
 				}
@@ -217,7 +235,7 @@ abstract class Models {
 
     override def replacedBy(tree0 : Tree) : Boolean = if (super.replacedBy(tree0) && tree0.isInstanceOf[MemberDef]) {
       val tree1 = tree0.asInstanceOf[MemberDef];
-      treex.name == tree1.name;
+      treex.toString().equals(tree1.toString());
     } else false;
 
     override def update(tree0 : Tree): Boolean = {
@@ -262,7 +280,8 @@ abstract class Models {
     def treey = tree.asInstanceOf[ImplDef];
     override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[ImplDef]);
     override def isMember(tree : Tree) : Boolean = (super.isMember(tree) ||
-      (tree.isInstanceOf[ValOrDefDef]
+      (tree.isInstanceOf[ValOrDefDef] &&
+        (acceptPrivate || !tree.asInstanceOf[ValOrDefDef].mods.isPrivate)
        /* && !tree.asInstanceOf[ValOrDefDef].mods.isPrivate */
        /* && !tree.asInstanceOf[ValOrDefDef].mods.isAccessor */) ||
       tree.isInstanceOf[AliasTypeDef]);
@@ -273,13 +292,18 @@ abstract class Models {
 				val ddef = tree.asInstanceOf[DefDef];
 				if (ddef.mods.isAccessor && ddef.symbol != null) {
 				  val sym = ddef.symbol.accessed;
-				  val ret = for (val member <- members; member.symbol == sym) yield member;
+				  val ret = for (val member <- members; member.symbol == sym) yield {
+            member;
+          }
 				  if (ret.isEmpty) null;
 				  else ret.head;
 				} else tree;
       } else super.member(tree, members);
+
       def sym = tree0.symbol;
       if (tree0 == null || sym.pos == Position.NOPOS) null;
+      else if (!acceptPrivate &&
+        tree0.isInstanceOf[ValOrDefDef] && tree0.asInstanceOf[ValOrDefDef].mods.isPrivate) null;
       else tree0;
     }
 
@@ -314,10 +338,9 @@ abstract class Models {
       case pdef : PackageDef => update0(pdef.stats);
       case _ =>
     }
+
     override def    add(from : Composite, model : HasTree) : Unit = if (listener != null) { listener.add(from, model); }
     override def remove(from : Composite, model : HasTree) : Unit = if (listener != null) { listener.remove(from, model); }
-
-		private val foo = 10;
 
     override def isMember(tree : Tree) : Boolean = super.isMember(tree) || tree.isInstanceOf[Import];
   }

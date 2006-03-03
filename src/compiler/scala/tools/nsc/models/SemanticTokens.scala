@@ -231,7 +231,7 @@ class SemanticTokens(val compiler: Global) {
 			  try {
           //TPT=scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] 260 class scala.tools.nsc.ast.Trees$TypeTree scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] class scala.tools.nsc.symtab.Types$$anon$5
           if (tree.tpt == null || tree.tpt.tpe == null) {
-           System.err.println("BAD: " + tree.tpt + " in " + tree);
+            //System.err.println("BAD: " + tree.tpt + " in " + tree);
           } else {
             //System.err.println("TPT=" + tree.tpt + " " + tree.tpt.pos + " " + tree.tpt.getClass() + " " + tree.tpt.tpe + " " + tree.tpt.tpe.getClass() + " " + tree.tpt.tpe.getClass().getSuperclass());
   			    build(tree.tpt);

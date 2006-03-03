@@ -61,8 +61,10 @@ object NameTransformer {
   }
 
   /** Replace $op_name by corresponding operator symbol */
-  def decode(name: String): String = {
+  def decode(name0: String): String = {
     //System.out.println("decode: " + name);//DEBUG
+    val name = if (name0.endsWith("<init>")) name0.substring(0, name0.length() - ("<init>").length()) + "this";
+               else name0;
     var buf: StringBuffer = null;
     val len = name.length();
     var i = 0;
