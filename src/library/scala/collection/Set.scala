@@ -87,5 +87,5 @@ mixin class Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
      *  @return a string showing all elements of this set.
      */
     override def toString(): String =
-      if (size == 0) "{}" else toList.mkString("{", ", ", "}");
+      if (isEmpty) "{}" else toList.mkString("{", ", ", "}");
 }

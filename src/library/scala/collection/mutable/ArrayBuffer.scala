@@ -35,11 +35,10 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
      *
      *  @param elem  the element to append.
      */
-    def +(elem: A): Buffer[A] = {
+    def +=(elem: A): Unit = {
         ensureSize(size+1);
         array(size) = elem;
         size = size + 1;
-        this
     }
 
     /** Appends a number of elements provided by an iterable object

@@ -90,11 +90,9 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
   */
   protected type aNode = GBTree[A,B];
 
-  private val empty: aNode = GBLeaf[A,B]();
-
   /** The nodes in the tree.
   */
-  protected def tree: aNode = empty;
+  protected def tree: aNode = GBLeaf[A,B]();
 
   /** This abstract method should be defined by a concrete implementation
   **   C[T] as something like:

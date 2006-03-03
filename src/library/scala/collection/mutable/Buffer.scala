@@ -33,13 +33,16 @@ mixin class Buffer[A] extends AnyRef
      *
      *  @param elem  the element to append.
      */
-    def +(elem: A): Buffer[A];
+    def +(elem: A): Buffer[A] = {
+      this += elem;
+      this
+    }
 
     /** Append a single element to this buffer.
      *
      *  @param elem  the element to append.
      */
-    def +=(elem: A): Unit = this + elem;
+    def +=(elem: A): Unit;
 
     /** Appends a number of elements provided by an iterable object
      *  via its <code>elements</code> method. The identity of the

@@ -22,9 +22,9 @@ package scala.collection.mutable;
  *  @version 1.0, 21/07/2003
  */
 [serializable]
-class ImmutableMapAdaptor[A, B](m: immutable.Map[A, B]) extends Map[A, B] {
-
-    protected var imap = m;
+class ImmutableMapAdaptor[A, B](protected var imap: immutable.Map[A, B])
+extends Map[A, B]
+{
 
     def size: Int = imap.size;
 
@@ -54,13 +54,11 @@ class ImmutableMapAdaptor[A, B](m: immutable.Map[A, B]) extends Map[A, B] {
 
     def -=(key: A): Unit = { imap = imap - key; }
 
-    override def clear: Unit = { imap = empty; }
+    override def clear: Unit = { imap = imap.empty; }
 
     override def map(f: (A, B) => B): Unit = { imap = imap.map(f); }
 
     override def filter(p: (A, B) => Boolean): Unit = { imap = imap.filter(p); }
 
     override def mappingToString(p: Pair[A, B]) = imap.mappingToString(p);
-
-    protected def empty: scala.collection.immutable.Map[A, B] = m;
 }

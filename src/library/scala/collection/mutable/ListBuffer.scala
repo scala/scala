@@ -21,13 +21,6 @@ final class ListBuffer[A] extends Buffer[A] {
   private var last: ::[A] = _;
   private var exported: boolean = false;
 
-  /** Append a single element to this buffer and return
-   *  the identity of the buffer. Same as ``this += x; this''
-   *
-   *  @param x  the element to append.
-   */
-  def + (x: A): Buffer[A] = { this += x; this }
-
   /** Prepend a single element to this buffer.
    *
    *  @param x  the element to prepend.

@@ -19,11 +19,9 @@ package scala.collection.mutable;
  *  @version 1.0, 08/07/2003
  */
 [serializable]
-class LinkedList[A](head: A, tail: LinkedList[A])
+class LinkedList[A](var elem: A, var next: LinkedList[A])
   extends SingleLinkedList[A, LinkedList[A]]
 {
-  elem = head;
-  next = tail;
 
   override def equals(obj: Any): Boolean = (
     obj.isInstanceOf[LinkedList[A]]

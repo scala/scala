@@ -25,7 +25,7 @@ abstract class DoubleLinkedList[A, This >: AllRef <: DoubleLinkedList[A, This]]
          extends SingleLinkedList[A, This]
 {
 
-    var prev: This = _;
+    var prev: This;
 
     override def append(that: This): Unit =
         if (that == null)

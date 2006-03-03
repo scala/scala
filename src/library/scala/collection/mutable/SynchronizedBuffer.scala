@@ -37,7 +37,7 @@ mixin class SynchronizedBuffer[A] extends Buffer[A] {
      *
      *  @param elem  the element to append.
      */
-    abstract override def +(elem: A): Buffer[A] = synchronized {
+    override def +(elem: A): Buffer[A] = synchronized {
         super.+(elem);
     }
 
@@ -45,7 +45,7 @@ mixin class SynchronizedBuffer[A] extends Buffer[A] {
      *
      *  @param elem  the element to append.
      */
-    override def +=(elem: A): Unit = synchronized {
+    abstract override def +=(elem: A): Unit = synchronized {
         super.+=(elem);
     }
 

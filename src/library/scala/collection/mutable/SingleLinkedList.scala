@@ -20,15 +20,14 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-[serializable]
 abstract class SingleLinkedList[A, This >: AllRef <: SingleLinkedList[A, This]]
          requires This
          extends AnyRef with Seq[A]
 {
 
-    var elem: A = _;
+    var elem: A;
 
-    var next: This = null;
+    var next: This;
 
     def length: Int = 1 + (if (next == null) 0 else next.length);
 
@@ -62,7 +61,6 @@ abstract class SingleLinkedList[A, This >: AllRef <: SingleLinkedList[A, This]]
         }
     }
 
-    override def toList: List[A] =
-        if (next == null) (elem :: Nil) else (elem :: next.toList);
+    override def toList: List[A] = elements toList;
 
 }

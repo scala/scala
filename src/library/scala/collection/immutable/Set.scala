@@ -26,6 +26,10 @@ mixin class Set[A] extends AnyRef with collection.Set[A] {
      */
     def +(elem: A): Set[A];
 
+    /** @return an empty set of the same type as this set
+     */
+    def empty: Set[A];
+
     /** <code>incl</code> can be used to add many elements to the set
      *  at the same time.
      */

@@ -41,6 +41,8 @@ class TreeSet[A <% Ordered[A]]() extends Tree[A, A] with Set[A] {
      */
     def +(elem: A): TreeSet[A] = updateOrAdd(elem, elem);
 
+    override def empty: Set[A] = New(0, GBLeaf[A,A]());
+
     /** <code>-</code> can be used to remove a single element from
      *  a set.
      */

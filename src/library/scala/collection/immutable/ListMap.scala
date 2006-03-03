@@ -30,7 +30,7 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
     /** This method returns a new ListMap instance mapping keys of the
      *  same type to values of type <code>C</code>.
      */
-    def empty[C] = new ListMap[A, C];
+    def empty[C] = ListMap.Empty[A, C];
 
     /** Returns the number of mappings in this map.
      *

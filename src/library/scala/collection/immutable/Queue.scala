@@ -25,15 +25,7 @@ object Queue {
 [serializable]
 class Queue[+A](elem: A*) extends Seq[A] {
   protected val in: List[A] = Nil;
-  protected val out: List[A] = itToList(elem.elements);
-
-  protected def itToList[B >: A](elems: Iterator[B]): List[B] =
-    if (elems.hasNext) {
-      val hd = elems.next;
-      hd :: itToList(elems)
-    }
-    else
-      Nil;
+  protected val out: List[A] = elem.elements.toList;
 
   protected def mkQueue[A](i: List[A], o: List[A]): Queue[A] =
     new Queue[A]() {

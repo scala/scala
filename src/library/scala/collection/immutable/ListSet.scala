@@ -36,6 +36,8 @@ class ListSet[A] extends AnyRef with Set[A] {
      */
     def size: Int = 0;
 
+    def empty = new ListSet[A];
+
     /** Checks if this set contains element <code>elem</code>.
      *
      *  @param  elem    the element to check for membership.

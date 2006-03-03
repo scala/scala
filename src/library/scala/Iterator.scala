@@ -430,11 +430,11 @@ mixin class Iterator[+A] {
    *  @return  a list which enumerates all elements of this iterator.
    */
   def toList: List[A] = {
-    var res: List[A] = Nil;
+    val res = new collection.mutable.ListBuffer[A];
     while (hasNext) {
-      res = next :: res;
+      res += next;
     }
-    res.reverse
+    res.toList
   }
 
 }

@@ -34,13 +34,13 @@ mixin class BufferProxy[A] extends Buffer[A] with Proxy {
      *
      *  @param elem  the element to append.
      */
-    def +(elem: A): Buffer[A] = self.+(elem);
+    override def +(elem: A): Buffer[A] = self.+(elem);
 
     /** Append a single element to this buffer.
      *
      *  @param elem  the element to append.
      */
-    override def +=(elem: A): Unit = self.+=(elem);
+    def +=(elem: A): Unit = self.+=(elem);
 
     /** Appends a number of elements provided by an iterable object
      *  via its <code>elements</code> method. The identity of the
