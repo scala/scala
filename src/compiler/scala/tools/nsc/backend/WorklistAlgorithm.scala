@@ -22,7 +22,7 @@ import scala.collection.mutable.MutableList;
  *
  * @see scala.tools.nsc.backend.icode.Linearizers
  */
-trait WorklistAlgorithm {
+mixin class WorklistAlgorithm {
   type Elem;
   type WList <: MutableList[Elem];
 

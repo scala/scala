@@ -5,22 +5,13 @@
 // $Id$
 package scala.tools.nsc.ast.parser;
 
-//import java.lang.{Integer, Long, Float, Double};
-
-//import scalac._;
-//import scalac.ast._;
-//import scalac.atree.AConstant;
-//import scalac.symtab.Modifiers;
-
-import scala.Iterator;
 import scala.collection.immutable.ListMap ;
 import scala.collection.mutable;
-//import scala.tools.scalac.util.NewArray;
 import scala.tools.nsc.util.Position;
 import scala.xml.{Text,TextBuffer};
 
 
-trait MarkupParsers requires SyntaxAnalyzer {
+mixin class MarkupParsers requires SyntaxAnalyzer {
 
   import global._ ;
   import posAssigner.atPos;

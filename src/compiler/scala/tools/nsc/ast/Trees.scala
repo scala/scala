@@ -90,7 +90,7 @@ mixin class Trees requires Global {
     }
   }
 
-  [_trait_] abstract class SymTree extends Tree {
+  mixin class SymTree extends Tree {
     override def hasSymbol = true;
     override var symbol: Symbol = NoSymbol;
   }
@@ -100,11 +100,11 @@ mixin class Trees requires Global {
     override def isDef = true;
   }
 
-  trait TermTree extends Tree {
+  mixin class TermTree extends Tree {
     override def isTerm = true
   }
 
-  trait TypTree extends Tree {
+  mixin class TypTree extends Tree {
     override def isType = true
   }
 
@@ -586,7 +586,7 @@ mixin class Trees requires Global {
   case AppliedTypeTree(tpt, args) =>                               (eliminated by typecheck)
 */
 
-  trait TreeCopier {
+  abstract class TreeCopier {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template): ClassDef;
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef;
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef;

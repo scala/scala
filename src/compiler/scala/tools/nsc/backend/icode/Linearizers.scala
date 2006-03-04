@@ -13,7 +13,7 @@ import scala.collection.mutable.{Stack, HashSet};
 mixin class Linearizers requires ICodes {
   import opcodes._;
 
-  trait Linearizer {
+  abstract class Linearizer {
     def linearize(c: IMethod): List[BasicBlock];
   }
 

@@ -427,7 +427,7 @@ mixin class Opcodes requires ICodes {
     }
 
     /** This class represents a method invocation style. */
-    trait InvokeStyle {
+    sealed abstract class InvokeStyle {
 
       /** Is this a dynamic method call? */
       def isDynamic: Boolean = this match {

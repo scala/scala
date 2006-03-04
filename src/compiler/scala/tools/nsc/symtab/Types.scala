@@ -1097,7 +1097,7 @@ mixin class Types requires SymbolTable {
 
   /** A prototype for mapping a function over all possible types
    */
-  trait TypeMap extends Function1[Type, Type] {
+  abstract class TypeMap extends Function1[Type, Type] {
     // deferred inherited: def apply(tp: Type): Type
 
     private def cloneDecls(result: Type, tp: Type, decls: Scope): Type = {

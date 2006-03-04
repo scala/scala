@@ -161,7 +161,7 @@ abstract class Models {
 	    def treex = tree.asInstanceOf[PackageDef];
 	}
 
-  [_trait_] abstract class Composite extends Model {
+  mixin class Composite extends Model {
     import scala.collection.mutable._;
 
 
@@ -245,7 +245,7 @@ abstract class Models {
   }
   abstract class MemberComposite(parent0: Composite) extends MemberMod(parent0) with Composite;
 
-  [_trait_] abstract class HasClassObjects extends Composite {
+  mixin class HasClassObjects extends Composite {
     override def isMember(tree : Tree) : Boolean = (super.isMember(tree) ||
       (tree.isInstanceOf[ImplDef]));
   }
