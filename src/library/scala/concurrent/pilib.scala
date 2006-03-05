@@ -8,7 +8,9 @@
 
 // $Id$
 
+
 package scala.concurrent;
+
 
 /**
 * Library for using Pi-calculus concurrent primitives in Scala. As an example,

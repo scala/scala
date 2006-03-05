@@ -1,14 +1,18 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
+
 package scala.xml.parsing;
 
-import scala.xml.factory.NodeFactory ;
+
+import scala.xml.factory.NodeFactory;
 import org.xml.sax.InputSource;
 
 /** nobinding adaptor providing callbacks to parser to create elements.

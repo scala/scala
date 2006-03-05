@@ -1,16 +1,16 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id $
 \*                                                                      */
+
+// $Id$
+
 
 package scala.xml.factory;
 
-import scala.collection.Map ;
-import scala.collection.mutable ;
 
 mixin class NodeFactory[A <: Node] {
 
@@ -18,7 +18,7 @@ mixin class NodeFactory[A <: Node] {
   val ignoreProcInstr = false;
 
   /* default behaviour is to use hash-consing */
-  val cache = new mutable.HashMap[int,List[A]]();
+  val cache = new collection.mutable.HashMap[int,List[A]]();
 
   protected def create(pre: String, name: String, attrs: MetaData, scope: NamespaceBinding, children:Seq[Node]): A;
 

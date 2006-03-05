@@ -6,7 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
+
 package scala.concurrent;
+
 
 class Pid(actor: Actor) {
   var target = actor;

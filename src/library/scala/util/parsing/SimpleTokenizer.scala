@@ -1,10 +1,22 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.util.parsing;
+
 
 class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[String] {
 
-  val tracing = false;
+  import scala.runtime.compat.Math.max;
 
-  private def max(x: int, y: char): int = if (x < y) y else x;
+  val tracing = false;
 
   private def delimArray: Array[boolean] = {
     val ds = List.fromString(delimiters);
