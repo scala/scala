@@ -14,7 +14,7 @@ package scala.util.parsing;
 
 class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[String] {
 
-  import scala.runtime.compat.Math.max;
+  private def max(x: int, y: char): int = if (x > y) x else y;
 
   val tracing = false;
 
