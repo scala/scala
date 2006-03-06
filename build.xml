@@ -231,7 +231,11 @@ INITIALISATION
     <echo level="verbose">version.number=${version.number}</echo>
     <property name="dist.current.dir"
               value="${dist.dir}/${dist.name}-${version.number}"/>
-    <echo file="${nsc.timers}" append="true">${line.separator}revision ${revision} built on ${start.DSTAMP}-${start.TSTAMP}
+    <if><isset property="os.win"/>
+      <then><property name="host.name" value="${env.COMPUTERNAME}"/></then>
+      <else><property name="host.name" value="${env.HOST}"/></else>
+    </if>
+    <echo file="${nsc.timers}" append="true">${line.separator}revision ${revision} built on ${start.DSTAMP}-${start.TSTAMP} running ${java.vm.name} ${java.vm.version} on ${host.name} (${os.name} ${os.arch} ${os.version})
     </echo>
     <property name="init.avail" value="yes"/>
   </target>
