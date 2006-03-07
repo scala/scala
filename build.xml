@@ -28,12 +28,14 @@ PROPERTIES
 
   <!-- Base properties -->
   <property name="docs.dir" value="${basedir}/docs"/>
+  <property name="examples.dir" value="${docs.dir}/examples"/>
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="test.dir" value="${basedir}/test"/>
   <!-- User properties -->
   <property file="${basedir}/build.properties"/>
   <!-- General properties -->
+  <property file="${basedir}/build.product.properties"/>
   <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
@@ -263,14 +265,24 @@ INITIALISATION
       failonerror="false"
     />
     <propertyregex
-      property="revision"
+      property="svn.revision"
       input="${entries}"
       regexp="revision=\042([0-9]*)\042\.*"
       select="\1"
       defaultValue="x"
     />
-    <property name="version.number" value="2.0.${revision}"/>
+    <!-- see http://www.xfree86.org/4.1.0/Versions2.html -->
+    <!-- or  http://mail-index.netbsd.org/tech-kern/2004/09/30/0020.html -->
+    <property name="version.number"
+              value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"/>
     <echo level="verbose" message="version.number=${version.number}"/>
+    <condition property="version.number.valid">
+      <length string="${version.number}" when="greater" length="6"/>
+    </condition>
+    <fail unless="version.number.valid">
+      Version number is invalid. Please check the 'version.*' properties
+      in file ${basedir}/build.product.properties.
+    </fail>
     <property
       name="dist.current.dir"
       value="${dist.dir}/${dist.name}-${version.number}"
@@ -278,7 +290,7 @@ INITIALISATION
     <echo
       file="${nsc.timers}"
       append="true"
-      message="${line.separator}Revision ${revision};${line.separator}  built ${start.human-time};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:"
+      message="${line.separator}Revision ${revision};${line.separator}  built ${start.human-time};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:${line.separator}"
     />
     <property name="init.avail" value="yes"/>
   </target>
@@ -759,7 +771,7 @@ TEST
   </target>
 
 <!-- ===========================================================================
-DOCUMENT
+DOCUMENTATION
 ============================================================================ -->
 
   <target
@@ -767,6 +779,46 @@ DOCUMENT
     description="Generated the API for library and compiler sources"
   >
     <echo level="error" message="Docs is not available yet."/>
+  </target>
+
+<!-- ===========================================================================
+EXAMPLES
+============================================================================ -->
+
+  <target name="examples" depends="setup">
+    <remove dir="${build.dir}/examples"/>
+    <mkdir dir="${build.dir}"/>
+    <pathconvert property="list" pathsep=",">
+      <path>
+        <fileset dir="${examples.dir}" includes="**/*.scala"/>
+      </path>
+      <mapper>
+        <globmapper from="${examples.dir}/*" to="*"/>
+      </mapper>
+    </pathconvert>
+    <for list="${list}" param="file">
+      <sequential>
+        <starr srcdir="${examples.dir}"
+               destdir="${build.dir}">
+          <classpath>
+            <pathelement location="${starr.lib.jar}"/>
+            <pathelement location="${build.dir}"/>
+          </classpath>
+          <include name="@{file}"/>
+        </starr>
+      </sequential>
+    </for>
+    <for list="${list}" param="file">
+      <sequential>
+        <basename property="classname" file="@{file}" suffix=".scala"/>
+        <java classname="examples.${classname}">
+          <classpath>
+            <pathelement location="${starr.lib.jar}"/>
+            <pathelement location="${build.dir}"/>
+          </classpath>
+        </java>
+      </sequential>
+    </for>
   </target>
 
 <!-- ===========================================================================
