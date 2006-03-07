@@ -64,6 +64,7 @@ object Test {
     } catch {
       case exception: Throwable => {
         Console.print(" raised exception " + exception);
+        exception.printStackTrace();
       }
     }
     Console.println;
