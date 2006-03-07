@@ -6,6 +6,7 @@
 ** $Id: ScalaTool.scala 5482 2006-01-09 19:22:46 +0100 (Mon, 09 Jan 2006) dubochet $
 \*                                                                            */
 
+
 package scala.tools.ant {
 
   import scala.collection.Map
@@ -24,14 +25,18 @@ package scala.tools.ant {
                                     SourceFileScanner}
   import org.apache.tools.ant.types.{EnumeratedAttribute, Reference, FileSet}
 
-  /** An Ant task that generates a SH or BAT script to execute a Scala program.
+  /** An Ant task that generates a Scala Bazaars package (sbp file) along
+    * with an advertisement of that package.
+    *
     * This task can take the following parameters as attributes:<ul>
     *  <li>file (mandatory),</li>
     *  <li>adfile,</li>
     *  <li>name (mandatory),</li>
     *  <li>version (mandatory),</li>
     *  <li>depends,</li>
-    *  <li>description.</li></ul>
+    *  <li>description,</li>
+    *  <li>link.</li>
+    *  </ul>
     *
     * @author Gilles Dubochet */
   class ScalaBazaar extends Task {
@@ -55,7 +60,10 @@ package scala.tools.ant {
     private var depends: List[String] = Nil
     /** An (optional) description of this package. */
     private var desc: Option[String] = None
-    /** An (optional) description of this package. */
+    /** An (optional) URL link pointing to the location of the package */
+    private var link: Option[String] = None
+
+    /** The sets of files to include in the package */
     private object fileSetsMap extends Map[String, List[FileSet]] {
       private var content = new HashMap[String, List[FileSet]]()
       def get(key: String): Option[List[FileSet]] = content.get(key)
@@ -106,6 +114,11 @@ package scala.tools.ant {
       * @param input The value of <code>description</code>. */
     def setDesc(input: String) =
       desc = Some(input)
+
+    /** Sets the link attribute of this package. Used by Ant.
+      * @param input The value of <code>link</code>. */
+    def setLink(input: String) =
+      link = Some(input)
 
     def addConfiguredLibset(input: FileSet) =
       fileSetsMap.update("lib", input)
@@ -226,7 +239,10 @@ package scala.tools.ant {
       val advert = {
         <availablePackage>
           {pack}
-          <link></link>
+          {link match {
+            case None => <link>INSERT LINK HERE</link>
+            case Some(str) => <link>{str}</link>
+          }}
         </availablePackage>
       };
 
