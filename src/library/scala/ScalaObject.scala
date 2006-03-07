@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 mixin class ScalaObject extends AnyRef {
@@ -17,6 +17,7 @@ mixin class ScalaObject extends AnyRef {
   /** This method is needed for optimizing pattern matching expressions
    *  which match on constructors of case classes.
    */
-  def $tag(): Int = 0;
+  [remote]
+  def $tag(): Int = 0
 
 }
