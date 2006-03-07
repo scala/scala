@@ -44,7 +44,7 @@ shift
 goto :loop
 
 :exec
-set _CLASSPATH=%_CLASSPATH%;%_CPATH%
+set _CLASSPATH=%_CPATH%;%_CLASSPATH%
 rem echo %_JAVACMD% %_JAVAFLAGS% -cp %_CLASSPATH% %_ARGS%
 %_JAVACMD% %_JAVAFLAGS% -cp %_CLASSPATH% %_ARGS%
 goto end
