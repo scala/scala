@@ -145,15 +145,15 @@ abstract class GenJVM extends SubComponent {
                                   ifaces,
                                   c.cunit.source.toString());
 
-      if (isTopLevelModule(c.symbol) || serialVUID != None) {
-        if (isTopLevelModule(c.symbol))
+      if (isStaticModule(c.symbol) || serialVUID != None) {
+        if (isStaticModule(c.symbol))
             addModuleInstanceField;
         addStaticInit(jclass);
 
-        if (c.symbol.linkedClass != NoSymbol)
-          log("No mirror class for module with linked class: " + c.symbol.fullNameString);
-        else
+        if (c.symbol.linkedClass == NoSymbol && isTopLevelModule(c.symbol))
           dumpMirrorClass;
+        else
+          log("No mirror class for module with linked class: " + c.symbol.fullNameString);
       }
 
       clasz.fields foreach genField;
@@ -162,8 +162,13 @@ abstract class GenJVM extends SubComponent {
       emitClass(jclass, c.symbol)
     }
 
-    def isTopLevelModule(sym: Symbol): Boolean = {
-      sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED) /* && !atPhase(currentRun.erasurePhase)(sym.isNestedClass) */
+    def isTopLevelModule(sym: Symbol): Boolean =
+      atPhase (currentRun.refchecksPhase) {
+        sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
+      }
+
+    def isStaticModule(sym: Symbol): Boolean = {
+      sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED)
     }
 
     def genField(f: IField): Unit  = {
@@ -253,7 +258,7 @@ abstract class GenJVM extends SubComponent {
                                           JType.EMPTY_ARRAY,
                                           new Array[String](0));
       val clinit = clinitMethod.getCode().asInstanceOf[JExtendedCode];
-      if (isTopLevelModule(clasz.symbol)) {
+      if (isStaticModule(clasz.symbol)) {
         clinit.emitNEW(cls.getName());
         clinit.emitDUP();
         clinit.emitINVOKESPECIAL(cls.getName(),
@@ -517,7 +522,7 @@ abstract class GenJVM extends SubComponent {
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
                   // we initialize the MODULE$ field immediately after the super ctor
-                  if (isTopLevelModule(clasz.symbol) && !isModuleInitialized &&
+                  if (isStaticModule(clasz.symbol) && !isModuleInitialized &&
                       jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
                       javaName(method) == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
                         isModuleInitialized = true;
