@@ -16,6 +16,12 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
   /** The applicable settings */
   val settings: Settings = new Settings(error);
 
+  /** The name of the command */
+  val cmdName = "scalac";
+
+  /** The file extension of files that the compiler can process */
+  val fileEnding = ".scala";
+
   /** A message explaining usage and options */
   def usageMsg: String = {
     val helpSyntaxColumnWidth: int =
@@ -29,12 +35,12 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
     }
     settings.allSettings
       .map(setting =>
-	format(setting.helpSyntax) + "  " + setting.helpDescription)
+           format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString(
-	"Usage: scalac <options | source files>\n" +
-	"where possible options include: \n  ",
-	"\n  ",
-	"\n");
+	              "Usage: " + cmdName + " <options | source files>\n" +
+	                "where possible options include: \n  ",
+                  "\n  ",
+                  "\n");
   }
 
   // initialization
@@ -44,17 +50,17 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
     val args0 = args;
     if (args.head.startsWith("-")) {
       if (interactive) {
-	error("no options can be given in interactive mode");
-	ok = false
+        error("no options can be given in interactive mode");
+        ok = false
       } else {
-	for (val setting <- settings.allSettings)
+        for (val setting <- settings.allSettings)
           args = setting.tryToSet(args);
-	if (args eq args0) {
-	  error("unknown option: '" + args.head + "'");
-	  ok = false
-	}
+        if (args eq args0) {
+          error("unknown option: '" + args.head + "'");
+          ok = false
+        }
       }
-    } else if (args.head.endsWith(".scala")) {
+    } else if (args.head.endsWith(fileEnding)) {
       fs = args.head :: fs;
       args = args.tail
     } else {

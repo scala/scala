@@ -26,10 +26,10 @@ object MainInterpreter {
     Console.println("Type :help to repeat this message later.")
   }
 
-  /** A simple, generic read-eval-print loop with a pluggable eval-print function.
-      Loop reading lines of input and invoking the eval-print function.
-      Stop looping when eval-print returns false.  */
-  def repl(evpr: String => Boolean): Unit = {
+  /** The main read-eval-print loop for the interpereter.  It calls
+      command() for each line of input, and stops when command()
+      returns false */
+  def repl: Unit = {
     val in = new BufferedReader(new InputStreamReader(System.in))
 
     while(true) {
@@ -38,7 +38,7 @@ object MainInterpreter {
       if(line == null)
         return ()  // assumes null means EOF
 
-      val keepGoing = evpr(line)
+      val keepGoing = command(line)
       if(!keepGoing)
         return ()  // the evpr function said to stop
     }
@@ -76,6 +76,7 @@ object MainInterpreter {
     }
   }
 
+
   /** run one command submitted by the user */
   def command(line: String): Boolean = {
     def withFile(command: String)(action: String => Unit): Unit = {
@@ -96,33 +97,44 @@ object MainInterpreter {
         case _ if line.startsWith(":load") => withFile(line)(f => interpretAllFrom(f))
         case _ => Console.println("Unknown command.  Type :help for help.")
       }
+    else if(line.startsWith("#!/")) // skip the first line of Unix scripts
+    	()
+    else if(line.startsWith("scalaint ")) // skip the second line of Unix scripts
+      ()
     else
       interpretOne(line)
     true
   }
 
-  /** the main interpreter loop */
-  def interpretLoop(compiler: Global): unit = {
-    interpreter = new Interpreter(compiler, str => Console.print(str))
-    repl(command)
-    interpreter.close
-  }
 
-  /** process the command-line arguments and do as they request */
-  def process(args: Array[String]): Unit = {
-    val command = new CompilerCommand(List.fromArray(args), error, false)
+	/** process command-line arguments and do as they request */
+  def main(args: Array[String]): unit = {
+    val command = new InterpreterCommand(List.fromArray(args), error)
+
     reporter.prompt = command.settings.prompt.value
     if (command.settings.help.value) {
       reporter.info(null, command.usageMsg, true)
+      return ()
     }
-    else {
-      printHelp
-      interpretLoop(new Global(command.settings, reporter))
-    }
-  }
 
-  def main(args: Array[String]): Unit = {
-    process(args)
+    val compiler = new Global(command.settings, reporter)
+    interpreter = new Interpreter(compiler, str=>Console.print(str))
+
+    try {
+      if(!command.files.isEmpty) {
+        interpreter.beQuiet
+        command.files match {
+          case List(filename) => interpretAllFrom(filename)
+          case _ => Console.println(
+              "Sorry, arguments to interpreter scripts are not currently supported.")
+        }
+      } else {
+        printHelp
+        repl
+      }
+    } finally {
+      interpreter.close
+    }
   }
 
 }

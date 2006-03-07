@@ -21,7 +21,7 @@ import symtab.Flags
     line of Scala code at the request of the user.
 
     The overall approach is based on compiling the requested code and then
-    using a Java classloader and using Java reflection to run the code
+    using a Java classloader and Java reflection to run the code
     and access its results.
 
     In more detail, a single compiler instance is used
@@ -56,6 +56,12 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   }
 
   private def reporter = compiler.reporter
+
+  /** whether to print out result lines */
+  private var printResults: Boolean = true
+
+  /** be quiet; do not print out the results of each submitted command */
+  def beQuiet = { printResults = false }
 
   /** directory to save .class files to */
   private val classfilePath = File.createTempFile("scalaint", "")
@@ -184,12 +190,14 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
 
     val interpreterResultString = req.loadAndRun
 
-    // print the result
-    output(interpreterResultString)
+    if(printResults) {
+      // print the result
+      output(interpreterResultString)
 
-		// print out types of functions; they are not printed in the
-		// request printout
-		output(req.defTypesSummary)
+      // print out types of functions; they are not printed in the
+      // request printout
+      output(req.defTypesSummary)
+    }
 
     // book-keeping
     prevRequests += req
