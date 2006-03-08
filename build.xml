@@ -814,50 +814,6 @@ DOCUMENTATION
   </target>
 
 <!-- ===========================================================================
-EXAMPLES
-============================================================================ -->
-
-  <target name="examples" depends="setup">
-    <remove dir="${build.dir}/examples"/>
-    <mkdir dir="${build.dir}"/>
-    <pathconvert property="list" pathsep=",">
-      <path>
-        <fileset dir="${docs.dir}" includes="examples/*.scala"
-                 excludes="**/*current.scala,**/fors.scala,**/parsers2.scala,**/typeinf.scala"/>
-      </path>
-      <mapper>
-        <globmapper from="${docs.dir}/*" to="*"/>
-      </mapper>
-    </pathconvert>
-    <for list="${list}" param="file">
-      <sequential>
-        <starr srcdir="${docs.dir}"
-               destdir="${build.dir}">
-          <classpath>
-            <pathelement location="${starr.lib.jar}"/>
-            <pathelement location="${build.dir}"/>
-          </classpath>
-          <include name="@{file}"/>
-        </starr>
-      </sequential>
-    </for>
-    <for list="${list}" param="file">
-      <sequential>
-        <var name="classname" unset="true"/>
-        <basename property="classname" file="@{file}" suffix=".scala"/>
-        <echo>classname=${classname}</echo>
-        <java classname="examples.${classname}"
-              output="${build.dir}/examples/${classname}.log">
-          <classpath>
-            <pathelement location="${starr.lib.jar}"/>
-            <pathelement location="${build.dir}"/>
-          </classpath>
-        </java>
-      </sequential>
-    </for>
-  </target>
-
-<!-- ===========================================================================
 GENERATES A DISTRIBUTION
 ============================================================================ -->
 
