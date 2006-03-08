@@ -235,6 +235,8 @@ package scala.tools.ant {
         </package>
       }
 
+      log("Creating package '" + name.get + "'")
+
       // Creates the advert file
       val advert = {
         <availablePackage>
@@ -255,11 +257,10 @@ package scala.tools.ant {
         for {
           val Pair(folder, fileSets) <- fileSetsMap.fileSets
           val fileSet <- fileSets
-          val file <-
-            List.fromArray(fileSet.getDirectoryScanner(getProject).getIncludedFiles)
-        } yield {Console.println(file.toString); Triple(folder, fileSet.getDir(getProject), file)}
+          val file <- List.fromArray(fileSet.getDirectoryScanner(getProject).getIncludedFiles)
+        } yield Triple(folder, fileSet.getDir(getProject), file)
+      val zip = new ZipOutputStream(new FileOutputStream(file.get, false))
       if (!zipContent.isEmpty) {
-        val zip = new ZipOutputStream(new FileOutputStream(file.get, false))
         for (val Triple(destFolder, srcFolder, file) <- zipContent) {
           log(file, Project.MSG_DEBUG)
           zip.putNextEntry(new ZipEntry(destFolder + "/" + file))
@@ -272,18 +273,17 @@ package scala.tools.ant {
           zip.closeEntry()
           input.close()
         }
-        zip.putNextEntry(new ZipEntry("meta/description"))
-        val packInput = new StringReader(pack.toString())
-        var byte = packInput.read()
-        while (byte != -1) {
-          zip.write (byte)
-          byte = packInput.read()
-        }
-        zip.closeEntry()
-        packInput.close()
-        zip.close
-      } else log("No files added to SBaz archive.", Project.MSG_VERBOSE)
-
+      } else log("Archive contains no files.", Project.MSG_VERBOSE)
+      zip.putNextEntry(new ZipEntry("meta/description"))
+      val packInput = new StringReader(pack.toString())
+      var byte = packInput.read()
+      while (byte != -1) {
+        zip.write (byte)
+        byte = packInput.read()
+      }
+      zip.closeEntry()
+      packInput.close()
+      zip.close
     }
 
   }
