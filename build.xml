@@ -35,7 +35,7 @@ PROPERTIES
   <!-- User properties -->
   <property file="${basedir}/build.properties"/>
   <!-- General properties -->
-  <property file="${basedir}/build.number"/>
+  <property name="number.file" value="${basedir}/build.number"/>
   <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
@@ -58,7 +58,7 @@ PROPERTIES
   <property name="locker.dir" value="${build.dir}/locker"/>
   <property name="quick.dir" value="${build.dir}/quick"/>
   <property name="strap.dir" value="${build.dir}/strap"/>
-  <property name="scaladoc.dir" value="${build.dir}/scaladoc"/>
+  <property name="api.dir" value="${build.dir}/api"/>
   <!-- Location of source and build elements names properties -->
   <property name="lib.dir.name" value="library"/>
   <property name="comp.dir.name" value="compiler"/>
@@ -82,22 +82,27 @@ PROPERTIES
   <property name="quick.comp.dir" value="${quick.dir}/${comp.dir.name}"/>
   <property name="strap.lib.dir" value="${strap.dir}/${lib.dir.name}"/>
   <property name="strap.comp.dir" value="${strap.dir}/${comp.dir.name}"/>
-  <property name="scaladoc.lib.dir" value="${scaladoc.dir}/${lib.dir.name}"/>
-  <property name="scaladoc.comp.dir" value="${scaladoc.dir}/${comp.dir.name}"/>
+  <property name="api.lib.dir" value="${api.dir}/${lib.dir.name}"/>
+  <property name="api.comp.dir" value="${api.dir}/${comp.dir.name}"/>
   <!-- sbaz properties -->
-  <property name="scala.sbaz.name" value="scala"/>
-  <property name="scalac.sbaz.name" value="scalac"/>
-  <property name="scalaint.sbaz.name" value="scalaint"/>
+  <property name="dist.sbaz.dir" value="${dist.dir}/sbaz"/>
+  <property name="lib.sbaz.name" value="${dist.name}-library"/>
+  <property name="dev.sbaz.name" value="${dist.name}-devel"/>
+  <property name="scala.sbaz.name" value="${dist.name}"/>
 
 <!-- ===========================================================================
 INITIALISATION
 ============================================================================ -->
 
   <target name="init" unless="init.avail">
-    <tstamp prefix="start">
+    <tstamp prefix="time">
       <format
-        property="human-time"
+        property="human"
         pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"
+      />
+      <format
+        property="short"
+        pattern="yyyyMMddHHmmss"
       />
     </tstamp>
     <!-- Testing if everything is in place -->
@@ -275,10 +280,65 @@ INITIALISATION
       select="\1"
       defaultValue="x"
     />
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"
-    />
+    <!-- OVER-ENGINEERING ALERT: Calculating version numbers might be over-engineered -->
+    <!-- But deciding of a versioning scheme was hard enough: let's hard code it! -->
+    <if>
+      <not><isset property="release"/></not>
+      <then>
+        <property file="${number.file}"/>
+        <property
+          name="version.number"
+          value="${version.major}.${version.minor}.${version.patch}.${svn.revision}.${time.short}"
+        />
+      </then>
+      <elseif>
+        <equals arg1="${release}" arg2="devel"/>
+        <then>
+          <property file="${number.file}"/>
+          <property
+            name="version.number"
+            value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"
+          />
+        </then>
+      </elseif>
+      <elseif>
+        <equals arg1="${release}" arg2="patch"/>
+        <then>
+          <propertyfile
+            file="${number.file}"
+            comment="Version last updated on ${time.human}"
+          >
+            <entry key="version.patch" type="int" default="0" operation="+"/>
+          </propertyfile>
+          <property file="${number.file}"/>
+          <property
+            name="version.number"
+            value="${version.major}.${version.minor}.${version.patch}"
+          />
+        </then>
+      </elseif>
+      <elseif>
+        <equals arg1="${release}" arg2="minor"/>
+        <then>
+          <propertyfile
+            file="${number.file}"
+            comment="Version last updated on ${time.human}"
+          >
+            <entry key="version.minor" type="int" default="0" operation="+"/>
+            <entry key="version.patch" type="int" value="0"/>
+          </propertyfile>
+          <property file="${number.file}"/>
+          <property
+            name="version.number"
+            value="${version.major}.${version.minor}.${version.patch}"
+          />
+        </then>
+      </elseif>
+      <else>
+        <fail message="The 'release' property must be set to 'devel', 'minor' or 'major'"/>
+      </else>
+    </if>
+    <!-- End of over-engineering alert -->
     <echo level="verbose" message="version.number=${version.number}"/>
     <property
       name="dist.current.dir"
@@ -287,7 +347,7 @@ INITIALISATION
     <echo
       file="${nsc.timers}"
       append="true"
-      message="${line.separator}Revision ${svn.revision};${line.separator}  built ${start.human-time};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:${line.separator}"
+      message="${line.separator}Revision ${svn.revision};${line.separator}  built ${time.human};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:${line.separator}"
     />
     <property name="init.avail" value="yes"/>
   </target>
@@ -816,14 +876,36 @@ DOCUMENTATION
     description="Generated the API for library sources"
     depends="setup.quick"
   >
-    <mkdir dir="${scaladoc.lib.dir}"/>
+    <mkdir dir="${api.lib.dir}"/>
     <quickdoc
       srcdir="${src.dir}/${lib.dir.name}"
-      destdir="${scaladoc.lib.dir}"
+      destdir="${api.lib.dir}"
       sourcepath=""
     >
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </quickdoc>
+  </target>
+  
+  <target
+    name="docs.compiler"
+    description="Generated the API for compiler sources"
+    depends="setup.quick"
+  >
+    <mkdir dir="${api.comp.dir}"/>
+    <quickdoc
+      srcdir="${src.dir}/${comp.dir.name}"
+      destdir="${api.comp.dir}"
+      sourcepath=""
+    >
+      <classpath>
+        <pathelement location="${quick.lib.dir}"/>
+        <pathelement location="${quick.comp.dir}"/>
+        <path refid="quick.classpath"/>
+        <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
@@ -836,28 +918,25 @@ GENERATES A DISTRIBUTION
 
   <target
     name="dist"
-    depends="test"
+    depends="test, docs"
     description="Creates a complete Scala distribution"
   >
     <mkdir dir="${dist.current.dir}"/>
+    <!-- Copy all requires libraries -->
     <mkdir dir="${dist.current.dir}/lib"/>
-    <jar
-      destfile="${dist.current.dir}/lib/${comp.jar.name}"
-      basedir="${strap.comp.dir}"
-    >
+    <jar destfile="${dist.current.dir}/lib/${comp.jar.name}">
+      <fileset dir="${strap.comp.dir}"/>
+      <zipfileset src="${fjbg.jar}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
     </jar>
-    <jar
-      destfile="${dist.current.dir}/lib/${lib.jar.name}"
-      basedir="${strap.lib.dir}"
-    >
+    <jar destfile="${dist.current.dir}/lib/${lib.jar.name}">
+      <fileset dir="${strap.lib.dir}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
     </jar>
-    <copy file="${fjbg.jar}" todir="${dist.current.dir}/lib"/>
     <mkdir dir="${dist.current.dir}/bin"/>
     <!-- Build executable files -->
     <mkdir dir="${dist.current.dir}/bin"/>
@@ -909,6 +988,14 @@ GENERATES A DISTRIBUTION
       file="${dist.current.dir}/bin/${scalaint.exec.name}"
       perm="ugo+rx"
     />
+    <!-- Copy the API and man -->
+    <copy todir="${dist.current.dir}/doc/${dist.name}/api">
+      <fileset dir="${api.lib.dir}"/>
+    </copy>
+    <copy todir="${dist.current.dir}/man">
+      <fileset dir="${docs.dir}/man"/>
+    </copy>
+    <!-- Recreate the 'latest' link to point to this distribution -->
     <if><isset property="os.unix"/>
       <then>
         <symlink
@@ -919,52 +1006,83 @@ GENERATES A DISTRIBUTION
         />
       </then>
     </if>
+    <!-- Create the SBaz packages -->
+    <mkdir dir="${dist.sbaz.dir}"/>
+    <!-- Create the Scala library package -->
     <quicksbaz
-      file="${dist.dir}/${scalac.sbaz.name}-${version.number}.sbp"
-      adfile="${dist.dir}/${scalac.sbaz.name}-${version.number}.advert"
-      name="${scalac.sbaz.name}"
+      file="${dist.sbaz.dir}/${lib.sbaz.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${lib.sbaz.name}-${version.number}.advert"
+      name="${lib.sbaz.name}"
       version="${version.number}"
-      desc="The Scala compiler.  This is used to compile Scala programs into Java .class files."
-      depends="scalac2-support"
+      desc="The Scala library. This is the minimal requirement to run any Scala program."
     >
-      <libset dir="${dist.current.dir}/lib" includes="${dist.name}-compiler.jar"/>
-      <binset dir="${dist.current.dir}/bin" includes="${scalac.exec.name}"/>
-      <binset dir="${dist.current.dir}/bin" includes="${scalac.exec.name}.bat"/>
-      <binset dir="${dist.current.dir}/bin" includes="${scaladoc.exec.name}"/>
-      <binset dir="${dist.current.dir}/bin" includes="${scaladoc.exec.name}.bat"/>
-      <manset dir="${docs.dir}/man" includes="${scalac.exec.name}.1"/>
+      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name}"/>
     </quicksbaz>
+    <!-- Create the Scala developper package -->
     <quicksbaz
-      file="${dist.dir}/${scala.sbaz.name}-${version.number}.sbp"
-      adfile="${dist.dir}/${scala.sbaz.name}-${version.number}.advert"
+      file="${dist.sbaz.dir}/${dev.sbaz.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${dev.sbaz.name}-${version.number}.advert"
+      name="${dev.sbaz.name}"
+      version="${version.number}"
+      desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
+      depends="${lib.sbaz.name}"
+    >
+      <binset dir="${dist.current.dir}/bin" includes="**"/>
+      <docset dir="${dist.current.dir}/doc" includes="**"/>
+      <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name}"/>
+      <manset dir="${dist.current.dir}/man" includes="**"/>
+    </quicksbaz>
+    <!-- Creates the empty umbrella Scala package -->
+    <quicksbaz
+      file="${dist.sbaz.dir}/${scala.sbaz.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${scala.sbaz.name}-${version.number}.advert"
       name="${scala.sbaz.name}"
       version="${version.number}"
-      desc="The Scala command runner. It is a wrapper around the Java VM that, by default, sets up a large CLASSPATH including the Scala library as well as all jars installed in the lib directory of the sbaz-managed directory."
-    >
-      <binset dir="${dist.current.dir}/bin" includes="${scala.exec.name}"/>
-      <binset dir="${dist.current.dir}/bin" includes="${scala.exec.name}.bat"/>
-      <manset dir="${docs.dir}/man" includes="${scala.exec.name}.1"/>
-    </quicksbaz>
+      desc="The base Scala package that contains everything needed to start using Scala."
+      depends="${lib.sbaz.name},${dev.sbaz.name}"
+    />
+    <!-- Creates a set of packages for backward-compatibility -->
+    <!-- Please, REMOVE THOSE as soon as possible -->
     <quicksbaz
-      file="${dist.dir}/${scala.sbaz.name}-library-${version.number}.sbp"
-      adfile="${dist.dir}/${scala.sbaz.name}-library-${version.number}.advert"
-      name="${scala.sbaz.name}-library"
-      version="${version.number}"
-      desc="The base Scala library, required for running all Scala programs."
-    >
-      <libset dir="${dist.current.dir}/lib" includes="${dist.name}-library.jar"/>
-    </quicksbaz>
+      file="${dist.sbaz.dir}/scala2-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/scala2-${version.number}.advert"
+      name="scala2"
+      version="${version.number}placeholder"
+      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
+      depends="${dev.sbaz.name}"
+    />
     <quicksbaz
-      file="${dist.dir}/${scalaint.sbaz.name}-${version.number}.sbp"
-      adfile="${dist.dir}/${scalaint.sbaz.name}-${version.number}.advert"
-      name="${scalaint.sbaz.name}"
-      version="${version.number}"
-      depends="${scalac.sbaz.name}"
-      desc="A command-line interpreter for Scala."
-    >
-      <binset dir="${dist.current.dir}/bin" includes="${scalaint.exec.name}"/>
-      <binset dir="${dist.current.dir}/bin" includes="${scalaint.exec.name}.bat"/>
-    </quicksbaz>
+      file="${dist.sbaz.dir}/scalac-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/scalac-${version.number}.advert"
+      name="scalac"
+      version="${version.number}placeholder"
+      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
+      depends="${dev.sbaz.name}"
+    />
+    <quicksbaz
+      file="${dist.sbaz.dir}/scalac2-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/scalac2-${version.number}.advert"
+      name="scalac2"
+      version="${version.number}placeholder"
+      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
+      depends="${dev.sbaz.name}"
+    />
+    <quicksbaz
+      file="${dist.sbaz.dir}/scalaint-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/scalaint-${version.number}.advert"
+      name="scalaint"
+      version="${version.number}placeholder"
+      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
+      depends="${dev.sbaz.name}"
+    />
+    <quicksbaz
+      file="${dist.sbaz.dir}/scalap-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/scalap-${version.number}.advert"
+      name="scalap"
+      version="${version.number}placeholder"
+      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
+      depends="${dev.sbaz.name}"
+    />
   </target>
 
 <!-- ===========================================================================
@@ -983,9 +1101,10 @@ CLEAN
     </sequential>
   </macrodef>
 
-  <target name="clean" description="Removes QUICK and STRAP build products">
+  <target name="clean" description="Removes QUICK, STRAP and API build products">
     <remove dir="${quick.dir}"/>
     <remove dir="${strap.dir}"/>
+    <remove dir="${api.dir}"/>
   </target>
 
   <target name="clean.build" description="Removes all build products">
@@ -1006,12 +1125,7 @@ CLEAN
       quiet="yes"
       failonerror="no"
     />
-    <if>
-      <not><isset property="unsafe"/></not>
-      <then>
-        <remove dir="${quick.dir}"/>
-      </then>
-    </if>
+    <remove dir="${quick.dir}"/>
   </target>
 
 </project>
