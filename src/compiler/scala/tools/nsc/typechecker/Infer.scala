@@ -239,9 +239,9 @@ mixin class Infer requires Analyzer {
 	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
 	if (sym1 == NoSymbol) {
 	  if (settings.debug.value) {
-	    System.out.println(context);//debug
-            System.out.println(tree);//debug
-            System.out.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType));//debug
+	    System.out.println(context);
+            System.out.println(tree);
+            System.out.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType));
 	  }
 	  errorTree(tree, sym.toString() + " cannot be accessed in " +
 		    (if (sym.isClassConstructor) context.enclClass.owner else pre.widen))
@@ -489,11 +489,13 @@ mixin class Infer requires Analyzer {
 
     /** Substitite free type variables `undetparams' of type constructor `tree' in pattern,
      *  given prototype `pt'.
-     *  return type substitution for type parameters.
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt: Type): unit = {
-      var restpe = skipImplicit(tree.tpe.resultType);
+      var restpe = tree.tpe.finalResultType;
       var tvars = undetparams map freshVar;
+
+      /** Compute type arguments for undetermined params and substitute them in given tree.
+       */
       def computeArgs =
 	try {
 	  val targs = solve(tvars, undetparams, undetparams map varianceInType(restpe), true);
@@ -506,7 +508,7 @@ mixin class Infer requires Analyzer {
 		      "\n --- because ---\n" + ex.getMessage());
 	}
       def instError = {
-	System.out.println("ici " + tree + " " + undetparams + " " + pt);//debug
+	if (settings.debug.value) System.out.println("ici " + tree + " " + undetparams + " " + pt);
 	if (settings.explaintypes.value) explainTypes(restpe.subst(undetparams, tvars), pt);
         errorTree(tree, "constructor cannot be instantiated to expected type" +
                   foundReqMsg(restpe, pt))
@@ -514,15 +516,15 @@ mixin class Infer requires Analyzer {
       if (restpe.subst(undetparams, tvars) <:< pt) {
 	computeArgs
       } else if (isFullyDefined(pt)) {
-	System.out.println("infer constr " + tree + ":" + restpe + ", pt = " + pt);//debug
+	if (settings.debug.value) log("infer constr " + tree + ":" + restpe + ", pt = " + pt);
 	val ptparams = freeTypeParams.collect(pt);
-	System.out.println("free type params = " + ptparams);//debug
+	if (settings.debug.value) log("free type params = " + ptparams);
 	val ptWithWildcards = pt.subst(ptparams, ptparams map (ptparam => WildcardType));
         tvars = undetparams map freshVar;
 	if (restpe.subst(undetparams, tvars) <:< ptWithWildcards) {
 	  computeArgs;
 	  restpe = skipImplicit(tree.tpe.resultType);
-	  System.out.println("new tree = " + tree + ":" + restpe);//debug
+	  if (settings.debug.value) log("new tree = " + tree + ":" + restpe);
 	  val ptvars = ptparams map freshVar;
 	  if (restpe <:< pt.subst(ptparams, ptvars)) {
 	    for (val tvar <- ptvars) {
@@ -537,12 +539,39 @@ mixin class Infer requires Analyzer {
 		tparam setInfo TypeBounds(
 		  lub(tparam.info.bounds.lo :: loBounds),
 		  glb(tparam.info.bounds.hi :: hiBounds));
-		System.out.println("new bounds of " + tparam + " = " + tparam.info);//debug
+		if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info);
 	      }
 	    }
 	  } else { if (settings.debug.value) System.out.println("no instance: "); instError }
 	} else { if (settings.debug.value) System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
       } else { if (settings.debug.value) System.out.println("not fuly defined: " + pt); instError }
+    }
+
+    /** A traverser to collect type parameters referred to in a type
+     */
+    object freeTypeParams extends TypeTraverser {
+      private var result: List[Symbol] = _;
+      private def includeIfTypeParam(sym: Symbol): unit = {
+        if (sym.isAbstractType && sym.owner.isTerm && !result.contains(sym))
+          result = sym :: result;
+      }
+      override def traverse(tp: Type): TypeTraverser = {
+        tp match {
+          case TypeRef(NoPrefix, sym, _) =>
+	    includeIfTypeParam(sym)
+	  case TypeRef(ThisType(_), sym, _) =>
+	    includeIfTypeParam(sym)
+	  case _ =>
+        }
+        mapOver(tp);
+        this
+      }
+      /** Collect all abstract type symbols referred to by type `tp' */
+      def collect(tp: Type): List[Symbol] = {
+        result = List();
+        traverse(tp);
+        result
+      }
     }
 
     /* -- Overload Resolution ----------------------------------------------------------- */
@@ -571,11 +600,13 @@ mixin class Infer requires Analyzer {
 	  if (improves(alt, best)) alt else best);
 	val competing = alts1 dropWhile (alt => best == alt || improves(best, alt));
 	if (best == NoSymbol) {
-	  tree match {//debug
-	    case Select(qual, _) =>
-	      System.out.println("qual: " + qual + ":" + qual.tpe + " with decls " + qual.tpe.decls + " with members " + qual.tpe.members + " with members " + qual.tpe.member(newTermName("$minus")));
-	    case _ =>
-	  }
+          if (settings.debug.value) {
+	    tree match {
+	      case Select(qual, _) =>
+	        System.out.println("qual: " + qual + ":" + qual.tpe + " with decls " + qual.tpe.decls + " with members " + qual.tpe.members + " with members " + qual.tpe.member(newTermName("$minus")));
+	      case _ =>
+	    }
+          }
 	  typeErrorTree(tree, tree.symbol.tpe, pt)
 	} else if (!competing.isEmpty) {
           if (!pt.isError)
@@ -598,7 +629,7 @@ mixin class Infer requires Analyzer {
      */
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-	if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);//debug
+	if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);
 	val alts1 = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
 	def improves(sym1: Symbol, sym2: Symbol) = (
 	  sym2 == NoSymbol || sym2.isError ||

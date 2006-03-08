@@ -221,6 +221,7 @@ mixin class StdNames requires SymbolTable {
     val asInstanceOfErased = newTermName("asInstanceOf$erased");
     val booleanValue = newTermName("booleanValue");
     val box = newTermName("box");
+    val boxArray = newTermName("boxArray");
     val caseArity = newTermName("caseArity");
     val caseElement = newTermName("caseElement");
     val caseName = newTermName("caseName");

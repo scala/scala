@@ -189,7 +189,7 @@ mixin class Namers requires Analyzer {
       tskolems
     }
 
-    def skolemize(tparams: List[AbsTypeDef]): unit = if (settings.Xgadt.value) {
+    def skolemize(tparams: List[AbsTypeDef]): unit = {
       val tskolems = newTypeSkolems(tparams map (.symbol));
       for (val Pair(tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
     }
@@ -208,7 +208,7 @@ mixin class Namers requires Analyzer {
         if (!tparams.isEmpty) {
 	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
 	  ltype = new LazyPolyType(tparams map (.symbol), ltype);
-          skolemize(tparams);
+          if (tree.symbol.isTerm || settings.Xgadt.value) skolemize(tparams);
 	}
 	tree.symbol.setInfo(ltype);
       }
@@ -486,12 +486,9 @@ mixin class Namers requires Analyzer {
 	      }
 	    else {
               val typer1 =
-                if (false && sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes) {
-                  //todo: find out instead why Template contexts can be nested in Template contexts?
-                  var c = context.enclClass;
-                  while (c.tree.isInstanceOf[Template]) c = c.outer;
-                  newTyper(c)
-                } else typer;
+                if (sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes)
+                  newTyper(context.makeConstructorContext)
+                else typer;
               typer1.typedType(tpt).tpe
             }
 
@@ -584,7 +581,7 @@ mixin class Namers requires Analyzer {
   }
 
   /* Type `elemtp' is contained in type `tp' is one of the following holds:
-   *  - elemtp and tp are the same
+   *  - elemtp is the same as some part of tp
    *  - tp is a function type and elemtp is not
    *  - tp and elemtp are function types, and arity of tp is greater than arity of elemtp
    *  - tp and elemtp are both parameterized types with same type constructor and prefix,

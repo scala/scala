@@ -49,19 +49,18 @@ abstract class TreeInfo {
   }
 
 
-  /** Is tree a pure definition?
+  /** Is tree a pure (i.e. non-side-effecting) definition?
    */
   def isPureDef(tree: Tree): boolean = tree match {
     case EmptyTree
        | ClassDef(_, _, _, _, _)
-       | ModuleDef(_, _, _)
        | AbsTypeDef(_, _, _, _)
        | AliasTypeDef(_, _, _, _)
        | Import(_, _)
        | DefDef(_, _, _, _, _, _) =>
       true
     case ValDef(mods, _, _, rhs) =>
-      mods.hasFlag(MUTABLE) && isPureExpr(rhs)
+      !mods.hasFlag(MUTABLE) && isPureExpr(rhs)
     case DocDef(_, definition) =>
       isPureDef(definition)
     case Attributed(_, definition) =>

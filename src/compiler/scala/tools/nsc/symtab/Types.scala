@@ -1408,29 +1408,6 @@ mixin class Types requires SymbolTable {
     }
   }
 
-  object freeTypeParams extends TypeTraverser {
-    private var result: List[Symbol] = _;
-    private def includeIfAbstract(sym: Symbol): unit = {
-      if (sym.isAbstractType && !result.contains(sym)) result = sym :: result;
-    }
-    override def traverse(tp: Type): TypeTraverser = {
-      tp match {
-        case TypeRef(NoPrefix, sym, _) =>
-	  includeIfAbstract(sym)
-	case TypeRef(ThisType(_), sym, _) =>
-	  includeIfAbstract(sym)
-	case _ =>
-      }
-      mapOver(tp);
-      this
-    }
-    def collect(tp: Type): List[Symbol] = {
-      result = List();
-      traverse(tp);
-      result
-    }
-  }
-
 // Helper Methods  -------------------------------------------------------------
 
   final def isValid(p: Phase): boolean =

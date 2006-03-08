@@ -402,7 +402,7 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
       }
 
       val names1 = getTypes(valAndVarNames, n=>compiler.nme.getterToLocal(n))
-      val names2 = getTypes(defNames, id)
+      val names2 = getTypes(defNames, identity)
       names1.incl(names2)
     }
 

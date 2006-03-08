@@ -297,8 +297,8 @@ abstract class RefChecks extends InfoTransform {
 	    // check that case classes do not inherit from case classes
 	    if (baseClass hasFlag CASE) {
 	      if (seenCaseClass != NoSymbol && seenCaseClass != baseClass)
-		unit.error(clazz.pos, "illegal combination of case " +
-			   seenCaseClass + " and case " + baseClass + " in one object");
+		unit.error(clazz.pos, "implementation restriction: case " +
+			   seenCaseClass + " and case " + baseClass + " cannot be combined in one object");
 	      seenCaseClass = baseClass
 	    }
 	  }

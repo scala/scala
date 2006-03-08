@@ -389,6 +389,7 @@ mixin class Definitions requires SymbolTable {
         AnyClass, "asInstanceOf", tparam => tparam.typeConstructor) setFlag FINAL;
       Any_isInstanceOfErased = newPolyMethod(
         AnyClass, "isInstanceOf$erased", tparam => BooleanClass.typeConstructor) setFlag FINAL;
+      //todo: do we need this?
       Any_asInstanceOfErased = newPolyMethod(
         AnyClass, "asInstanceOf$erased", tparam => tparam.typeConstructor) setFlag FINAL;
 

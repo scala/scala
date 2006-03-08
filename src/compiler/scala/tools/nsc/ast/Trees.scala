@@ -334,7 +334,7 @@ mixin class Trees requires Global {
 	!vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
       vparamss1 = List() :: vparamss1;
     val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR);
-    val superCall = (superRef /: argss) (Apply);
+    val superCall = posAssigner.atPos(parents.head.pos) { (superRef /: argss) (Apply) };
     val constr: Tree = DefDef(NoMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), superCall);
     Template(parents, List.flatten(vparamss) ::: constr :: body)
   }

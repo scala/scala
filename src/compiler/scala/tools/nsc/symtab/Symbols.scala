@@ -631,6 +631,13 @@ mixin class Symbols requires SymbolTable {
     final def overridingSymbol(ofclazz: Symbol): Symbol =
       matchingSymbol(ofclazz, ofclazz.thisType);
 
+    final def allOverriddenSymbols: List[Symbol] =
+      if (owner.isClass)
+        for (val bc <- owner.info.baseClasses;
+             val s = overriddenSymbol(bc);
+             s != NoSymbol) yield s
+      else List();
+
     /** The symbol accessed by a super in the definition of this symbol when seen from
      *  class `base'. This symbol is always concrete.
      *  pre: `this.owner' is in the base class sequence of `base'.

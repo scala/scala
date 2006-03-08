@@ -54,6 +54,10 @@ abstract class ClassfileParser {
   }
 
   def parse(file: AbstractFile, root: Symbol): unit = {
+    def handleError(e: Exception) = {
+      if (settings.debug.value) e.printStackTrace();//debug
+      throw new IOException("class file '" + in.file + "' is broken")
+    }
     assert(!busy);
     busy = true;
     this.in = new AbstractFileReader(file);
@@ -71,10 +75,8 @@ abstract class ClassfileParser {
       this.pool = new ConstantPool;
       parseClass()
     } catch {
-      case e: RuntimeException =>
-        e.printStackTrace();
-        if (settings.debug.value)
-        throw new IOException("class file '" + in.file + "' is broken")
+      case e: FatalError => handleError(e)
+      case e: RuntimeException => handleError(e)
     }
     busy = false
   }

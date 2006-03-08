@@ -137,7 +137,9 @@ mixin class Contexts requires Analyzer {
     }
 
     def makeConstructorContext = {
-      val baseContext = enclClass.outer;
+      var baseContext = enclClass.outer;
+      //todo: find out why we need next line
+      while (baseContext.tree.isInstanceOf[Template]) baseContext = baseContext.outer;
       val argContext = baseContext.makeNewScope(tree, owner);
       for (val sym <- scope.toList) argContext.scope enter sym;
       argContext
@@ -246,7 +248,7 @@ mixin class Contexts requires Analyzer {
 
     def restoreTypeBounds: unit = {
       for (val Pair(sym, info) <- savedTypeBounds) {
-        System.out.println("resetting " + sym + " to " + info);
+        if (settings.debug.value) log("resetting " + sym + " to " + info);
         sym.setInfo(info);
       }
       savedTypeBounds = List()

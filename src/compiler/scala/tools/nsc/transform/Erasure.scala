@@ -160,6 +160,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
+    /** generate  ScalaRuntime.boxArray(tree) */
+    private def boxArray(tree: Tree): Tree =
+      typed {
+        atPos(tree.pos) {
+          runtimeCall(nme.boxArray, List(tree))
+        }
+      }
+
     /** The method-name xxxValue, where Xxx is a numeric value class name */
     def unboxOp(tp: Type): Name = {
       val clazzName = tp.symbol.name.toString();
@@ -217,12 +225,28 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 		pt))
 	  }
 	}
+      else if (pt.symbol.isSubClass(BoxedArrayClass) && tree.tpe.symbol == ObjectClass)
+        typed {
+	  atPos(tree.pos) {
+	    evalOnce(tree, x =>
+	      gen.cast(
+		If(
+		  Apply(
+		    TypeApply(
+		      Select(x(), Object_isInstanceOf),
+		      List(TypeTree(BoxedArrayClass.tpe))),
+		    List()),
+                  x(),
+                  boxArray(x())),
+		pt))
+	  }
+        }
       else gen.cast(tree, pt);
 
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
     private def isUnboxedArrayMember(sym: Symbol) = (
       sym.name == nme.apply || sym.name == nme.length || sym.name == nme.update ||
-      sym.owner == ObjectClass
+      sym.owner == ObjectClass && sym.name != nme.toString
     );
 
     /** Is symbol a member of a boxed value class (which will not be expanded later)? */

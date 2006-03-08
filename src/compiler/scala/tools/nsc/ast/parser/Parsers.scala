@@ -146,18 +146,18 @@ mixin class Parsers requires SyntaxAnalyzer {
 /////// TOKEN CLASSES //////////////////////////////////////////////////////
 
     def isModifier: boolean = in.token match {
-      case ABSTRACT | FINAL | SEALED | MIXIN | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT => true
+      case ABSTRACT | FINAL | SEALED | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT => true
       case _ => false
     }
 
     def isLocalModifier: boolean = in.token match {
-      case ABSTRACT | FINAL | SEALED | MIXIN => true
+      case ABSTRACT | FINAL | SEALED => true
       case _ => false
     }
 
     def isDefIntro: boolean = in.token match {
       case VAL | VAR | DEF | TYPE | OBJECT |
-           CASEOBJECT | CLASS | CASECLASS | TRAIT => true
+           CASEOBJECT | CLASS | CASECLASS | MIXIN | TRAIT => true
       case _ => false
     }
 
@@ -615,14 +615,15 @@ mixin class Parsers requires SyntaxAnalyzer {
      *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
      *               | while `(' Expr `)' [NewLine] Expr
      *               | do Expr [StatementSeparator] while `(' Expr `)'
-     *               | for (`(' Enumerators `)' | '{' Enumerators '}') [NewLine] (yield) Expr
+     *               | for (`(' Enumerators `)' | '{' Enumerators '}') [NewLine] [yield] Expr
      *               | throw Expr
      *               | return [Expr]
      *               | [SimpleExpr `.'] Id `=' Expr
      *               | SimpleExpr ArgumentExprs `=' Expr
      *               | `.' SimpleExpr
      *               | PostfixExpr [`:' Type1]
-     *               | PostfixExpr match `{' caseClauses `}'
+     *               | PostfixExpr match `{' CaseClauses `}'
+     *               | MethodClosure
      *  Bindings   ::= Id [`:' Type1]
      *               | `(' [Binding {`,' Binding}] `)'
      *  Binding    ::= Id [`:' Type]
@@ -916,7 +917,7 @@ mixin class Parsers requires SyntaxAnalyzer {
       ts.toList
     }
 
-    /** caseClause : =>= case Pattern [if PostfixExpr] `=>' Block
+    /** CaseClause : =>= case Pattern [if PostfixExpr] `=>' Block
      */
     def caseClause(): CaseDef =
       atPos(accept(CASE)) {
@@ -1053,7 +1054,7 @@ mixin class Parsers requires SyntaxAnalyzer {
     /** SimplePattern    ::= varid
      *                    |  `_'
      *                    |  literal
-     *                    |  `<' xLiteralPattern
+     *                    |  XmlPattern
      *                    |  StableId [ `(' Patterns `)' ]
      *                    |  `(' [Pattern] `)'
      *  SimpleSeqPattern ::= varid
@@ -1118,8 +1119,6 @@ mixin class Parsers requires SyntaxAnalyzer {
       def loop(mods: int): int = in.token match {
 	case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
-	case MIXIN =>
-          loop(addMod(mods, Flags.MIXIN))
 	case FINAL =>
           loop(addMod(mods, Flags.FINAL))
 	case SEALED =>
@@ -1155,8 +1154,6 @@ mixin class Parsers requires SyntaxAnalyzer {
       def loop(mods: int): int = in.token match {
 	case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
-	case MIXIN =>
-          loop(addMod(mods, Flags.MIXIN))
 	case FINAL =>
           loop(addMod(mods, Flags.FINAL))
 	case SEALED =>
@@ -1204,7 +1201,15 @@ mixin class Parsers requires SyntaxAnalyzer {
 	  }
           val name = ident();
           accept(COLON);
-          val bynamemod = if (in.token == ARROW) Flags.BYNAMEPARAM else 0;
+          val bynamemod =
+            if (in.token == ARROW) {
+              if (owner.isTypeName && !mods.hasFlag(Flags.LOCAL))
+                syntaxError(
+                  in.currentPos,
+                  (if (mods.hasFlag(Flags.MUTABLE)) "`var'" else "`val'") +
+                  " parameters may not be call-by-name", false)
+              Flags.BYNAMEPARAM
+            } else 0;
           ValDef(mods | implicitmod | bynamemod, name, paramType(), EmptyTree)
 	}
       }
@@ -1521,7 +1526,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 
     /** ConstrExpr      ::=  SelfInvocation
      *                    |  `{' SelfInvocation {StatementSeparator BlockStat} `}'
-     *  SelfInvocation  ::= this ArgumentExpr
+     *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
      */
     def constrExpr(): Tree =
       if (in.token == LBRACE) {
@@ -1537,10 +1542,14 @@ mixin class Parsers requires SyntaxAnalyzer {
         }
       } else selfInvocation();
 
-    /** SelfInvocation  ::= this ArgumentExprs
+    /** SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
      */
     def selfInvocation(): Tree =
-      atPos(accept(THIS)) { Apply(Ident(nme.CONSTRUCTOR), argumentExprs()) }
+      atPos(accept(THIS)) {
+        var t = Apply(Ident(nme.CONSTRUCTOR), argumentExprs())
+        while (in.token == LPAREN) t = Apply(t, argumentExprs())
+        t
+      }
 
     /** TypeDef ::= Id [TypeParamClause] `=' Type
      *  TypeDcl ::= Id TypeBounds
@@ -1564,37 +1573,39 @@ mixin class Parsers requires SyntaxAnalyzer {
         }
       }
 
-    /**  TmplDef ::= ([case] class | trait) ClassDef
-     *            | [case] object ObjectDef
+    /**  TmplDef ::= [case] class ClassDef
+     *            |  [case] object ObjectDef
+     *            |  ([mixin class | trait]) MixinClassDef
      */
-    def tmplDef(mods: Modifiers): Tree = {
-      val mods1 = if (mods.hasFlag(Flags.MIXIN)) mods | Flags.ABSTRACT else mods;
-      in.token match {
-        case TRAIT =>
-          classDef(mods1 | Flags.MIXIN | Flags.ABSTRACT);
-        case CLASS =>
-          classDef(mods1);
-        case CASECLASS =>
-          classDef(mods1 | Flags.CASE);
-        case OBJECT =>
-          objectDef(mods1);
-        case CASEOBJECT =>
-          objectDef(mods1 | Flags.CASE);
-        case _ =>
-          syntaxError("illegal start of definition", true);
-	EmptyTree
-      }
+    def tmplDef(mods: Modifiers): Tree = in.token match {
+      case TRAIT =>
+        classDef(mods | Flags.MIXIN | Flags.ABSTRACT);
+      case MIXIN =>
+        in.nextToken();
+        if (in.token != CLASS) accept(CLASS);
+        classDef(mods | Flags.MIXIN | Flags.ABSTRACT);
+      case CLASS =>
+        classDef(mods);
+      case CASECLASS =>
+        classDef(mods | Flags.CASE);
+      case OBJECT =>
+        objectDef(mods);
+      case CASEOBJECT =>
+        objectDef(mods | Flags.CASE);
+      case _ =>
+        syntaxError("illegal start of definition", true);
+      EmptyTree
     }
 
-    /** ClassDef ::= ClassSig RequiresTypeOpt ClassTemplate
-     *  ClassSig ::= Id [TypeParamClause] ClassParamClauses
+    /** ClassDef      ::= Id [TypeParamClause] ClassParamClauses RequiresTypeOpt ClassTemplate
+     *  MixinClassDef ::= Id [TypeParamClause] RequiresTypeOpt MixinClassTemplate
      */
-    def classDef(mods: Modifiers): Tree =
+    def classDef(mods: Modifiers): ClassDef =
       atPos(in.skipToken()) {
 	val name = ident().toTypeName;
         val implicitViews = new ListBuffer[Tree];
 	val tparams = typeParamClauseOpt(name, implicitViews);
-	if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN);
+	//if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN);
 	val vparamss = paramClauses(name, implicitViews.toList, mods.hasFlag(Flags.CASE));
 	val thistpe = requiresTypeOpt();
 	val template = classTemplate(mods, name, vparamss);
@@ -1613,8 +1624,10 @@ mixin class Parsers requires SyntaxAnalyzer {
 	ModuleDef(mods, name, template)
       }
 
-    /** ClassTemplate ::= [`extends' TemplateParents] [[NewLine] TemplateBody]
-     *  TemplateParents ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
+    /** ClassTemplate      ::= [`extends' TemplateParents] [[NewLine] TemplateBody]
+     *  TemplateParents    ::= SimpleType {`(' [Exprs] `)'} {`with' SimpleType}
+     *  MixinClassTemplate ::= [`extends' MixinParents] [[NewLine] TemplateBody]
+     *  MixinParents       ::= SimpleType {`with' SimpleType}
      */
     def classTemplate(mods: Modifiers, name: Name, vparamss: List[List[ValDef]]): Template =
       atPos(in.currentPos) {
@@ -1708,6 +1721,7 @@ mixin class Parsers requires SyntaxAnalyzer {
         } else if (in.token == CLASS ||
                    in.token == CASECLASS ||
                    in.token == TRAIT ||
+                   in.token == MIXIN ||
                    in.token == OBJECT ||
                    in.token == CASEOBJECT ||
                    in.token == LBRACKET ||
@@ -1811,11 +1825,11 @@ mixin class Parsers requires SyntaxAnalyzer {
       stats.toList
     }
 
-    /** BlockStatSeq ::= { BlockStat StatementSeparator } [Expr]
+    /** BlockStatSeq ::= { BlockStat StatementSeparator } [ResultExpr]
      *  BlockStat    ::= Import
      *                 | Def
      *                 | LocalModifiers TmplDef
-     *                 | Expr
+     *                 | Expr1
      *                 |
      */
     def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = {
