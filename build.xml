@@ -71,6 +71,7 @@ PROPERTIES
   <property name="scala.exec.name" value="${dist.name}"/>
   <property name="scalai.exec.name" value="scalai"/>
   <property name="scalac.exec.name" value="scalac"/>
+  <property name="scaladoc.exec.name" value="scaladoc"/>
   <property name="scalaint.exec.name" value="scalaint"/>
   <property name="scalatok.exec.name" value="scalatok"/>
   <!-- Shorcut names -->
@@ -290,7 +291,7 @@ INITIALISATION
     <echo
       file="${nsc.timers}"
       append="true"
-      message="${line.separator}Revision ${revision};${line.separator}  built ${start.human-time};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:${line.separator}"
+      message="${line.separator}Revision ${svn.revision};${line.separator}  built ${start.human-time};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:${line.separator}"
     />
     <property name="init.avail" value="yes"/>
   </target>
@@ -595,6 +596,21 @@ BUILD QUICK-TEST LAYER
       perm="ugo+rx"
     />
     <lockertool
+      file="${quick.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      name="Scala doc generator"
+      class="scala.tools.nsc.Main"
+      toolflags="-doc"
+      version="${version.number}"
+      copyright="${copyright}"
+      classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
+      properties="scala.boot.class.path=#CLASSPATH#"
+      javaFlags="-Xmx256M -Xms16M"
+    />
+    <chmod
+      file="${quick.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      perm="ugo+rx"
+    />
+    <lockertool
       file="${quick.dir}/${exec.dir.name}/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
@@ -724,6 +740,22 @@ TEST
       perm="ugo+rx"
     />
     <quicktool
+      file="${strap.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      genericFile="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
+      name="Scala doc generator"
+      class="scala.tools.nsc.Main"
+      toolflags="-doc"
+      version="${version.number}"
+      copyright="${copyright}"
+      classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
+      properties="scala.boot.class.path=#CLASSPATH#"
+      javaFlags="-Xmx256M -Xms16M"
+    />
+    <chmod
+      file="${strap.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      perm="ugo+rx"
+    />
+    <quicktool
       file="${strap.dir}/${exec.dir.name}/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
@@ -790,15 +822,16 @@ EXAMPLES
     <mkdir dir="${build.dir}"/>
     <pathconvert property="list" pathsep=",">
       <path>
-        <fileset dir="${examples.dir}" includes="**/*.scala"/>
+        <fileset dir="${docs.dir}" includes="examples/*.scala"
+                 excludes="**/*current.scala,**/fors.scala,**/parsers2.scala,**/typeinf.scala"/>
       </path>
       <mapper>
-        <globmapper from="${examples.dir}/*" to="*"/>
+        <globmapper from="${docs.dir}/*" to="*"/>
       </mapper>
     </pathconvert>
     <for list="${list}" param="file">
       <sequential>
-        <starr srcdir="${examples.dir}"
+        <starr srcdir="${docs.dir}"
                destdir="${build.dir}">
           <classpath>
             <pathelement location="${starr.lib.jar}"/>
@@ -810,8 +843,11 @@ EXAMPLES
     </for>
     <for list="${list}" param="file">
       <sequential>
+        <var name="classname" unset="true"/>
         <basename property="classname" file="@{file}" suffix=".scala"/>
-        <java classname="examples.${classname}">
+        <echo>classname=${classname}</echo>
+        <java classname="examples.${classname}"
+              output="${build.dir}/examples/${classname}.log">
           <classpath>
             <pathelement location="${starr.lib.jar}"/>
             <pathelement location="${build.dir}"/>
@@ -871,6 +907,22 @@ GENERATES A DISTRIBUTION
       file="${dist.current.dir}/bin/${scala.exec.name}"
       perm="ugo+rx"
     />
+    <quicktool
+      file="${dist.current.dir}/bin/${scaladoc.exec.name}"
+      genericFile="${dist.current.dir}/bin/${scala.exec.name}"
+      name="Scala compiler"
+      class="scala.tools.nsc.Main"
+      toolflags="-doc"
+      version="${version.number}"
+      copyright="${copyright}"
+      classpath=""
+      properties="scala.boot.class.path=#CLASSPATH#"
+      javaFlags="-Xmx256M -Xms16M"
+    />
+    <chmod
+      file="${dist.current.dir}/bin/${scaladoc.exec.name}"
+      perm="ugo+rx"
+    />
     <lockertool
       file="${dist.current.dir}/bin/${scalaint.exec.name}"
       name="Scala interpreter"
@@ -905,6 +957,8 @@ GENERATES A DISTRIBUTION
       <libset dir="${dist.current.dir}/lib" includes="${dist.name}-compiler.jar"/>
       <binset dir="${dist.current.dir}/bin" includes="${scalac.exec.name}"/>
       <binset dir="${dist.current.dir}/bin" includes="${scalac.exec.name}.bat"/>
+      <binset dir="${dist.current.dir}/bin" includes="${scaladoc.exec.name}"/>
+      <binset dir="${dist.current.dir}/bin" includes="${scaladoc.exec.name}.bat"/>
       <manset dir="${docs.dir}/man" includes="${scalac.exec.name}.1"/>
     </quicksbaz>
     <quicksbaz
