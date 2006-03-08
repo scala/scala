@@ -3,7 +3,7 @@ package examples
 object parsers2 {
 
   abstract class Tree
-  case class Id (s: String)         extends Tree
+  case class Id(s: String)          extends Tree
   case class Num(n: int)            extends Tree
   case class Lst(elems: List[Tree]) extends Tree
 

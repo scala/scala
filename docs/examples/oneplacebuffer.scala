@@ -24,6 +24,15 @@ object oneplacebuffer {
     }
   }
 
+  def kill(delay: Int) = new java.util.Timer().schedule(
+    new java.util.TimerTask {
+      override def run() = {
+        Console.println("[killed]")
+        System.exit(0)
+      }
+    },
+    delay) // in milliseconds
+
   def main(args: Array[String]) = {
     val buf = new OnePlaceBuffer
     val random = new java.util.Random()
@@ -40,15 +49,9 @@ object oneplacebuffer {
       consumer
     }
 
-    def kill = new java.util.Timer().schedule(
-      new java.util.TimerTask {
-        override def run() = System.exit(0)
-      },
-      10000) // delay in milliseconds
-
     ops.spawn(producer(0))
     ops.spawn(consumer)
-    kill
+    kill(10000)
   }
 
 }

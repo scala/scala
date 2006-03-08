@@ -115,7 +115,7 @@ object auction {
             log("auctionConcluded")
           }
           case AuctionOver() => {
-            running = false;
+            running = false
             log("auctionOver")
           }
         }
@@ -123,11 +123,21 @@ object auction {
     }
   }
 
+  def kill(delay: Int) = new java.util.Timer().schedule(
+    new java.util.TimerTask {
+      override def run() = {
+        Console.println("[killed]")
+        System.exit(0)
+      }
+    },
+    delay) // in milliseconds
+
   def main(args: Array[String]) = {
     seller.start()
     auction.start()
     client(1, 20, 200).start()
     client(2, 10, 300).start()
+    kill(20000)
   }
 
 }

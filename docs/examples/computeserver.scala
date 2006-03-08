@@ -36,7 +36,18 @@ class ComputeServer(n: Int) {
 }
 
 object computeserver extends Application {
+
+  def kill(delay: Int) = new java.util.Timer().schedule(
+    new java.util.TimerTask {
+      override def run() = {
+        Console.println("[killed]")
+        System.exit(0)
+      }
+    },
+    delay) // in milliseconds
+
   val server = new ComputeServer(1)
   val f = server.future(42)
   Console.println(f())
+  kill(10000)
 }

@@ -24,13 +24,23 @@ object boundedbuffer {
     }
   }
 
+  def kill(delay: Int) = new java.util.Timer().schedule(
+    new java.util.TimerTask {
+      override def run() = {
+        Console.println("[killed]")
+        System.exit(0)
+      }
+    },
+    delay) // in milliseconds
+
   def main(args: Array[String]) = {
     val buf = new BoundedBuffer[String](10)
     var cnt = 0
     def produceString = { cnt = cnt + 1; cnt.toString() }
-    def consumeString(ss: String) = System.out.println(ss);
+    def consumeString(ss: String) = Console.println(ss)
     spawn { while (true) { val ssss = produceString; buf.put(ssss) } }
     spawn { while (true) { val s = buf.get; consumeString(s) } }
+    kill(5000)
   }
 
 }
