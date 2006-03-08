@@ -42,7 +42,7 @@ abstract class DocGenerator extends Models {
     def title: String
     def save(nodes: NodeSeq) = {
       val path0 = outdir + "/" + path + ".html"
-      System.err.println("Writing to " + path0)
+      //System.err.println("Writing to " + path0)
       val file = new File(path0)
       val parent = file.getParentFile()
       if (!parent.exists()) parent.mkdirs()
@@ -63,7 +63,7 @@ abstract class DocGenerator extends Models {
       case msym : ModuleSymbol => "$object";
       case csym : ClassSymbol =>  "";
       case _ =>
-        System.err.println("XXX: class or object " + orig + " not found in " + sym);
+        //System.err.println("XXX: class or object " + orig + " not found in " + sym);
         "XXXXX";
 
       })
@@ -465,8 +465,8 @@ abstract class DocGenerator extends Models {
       map = map.update(mmbr.kind, new TreeSet[HasTree]);
     val sz = map(mmbr.kind).size;
     map = map.update(mmbr.kind, map(mmbr.kind) + mmbr);
-    if (map(mmbr.kind).size == sz)
-      System.err.println(""+mmbr + " not added");
+    /*if (map(mmbr.kind).size == sz)
+      System.err.println(""+mmbr + " not added");*/
     map
   }
 

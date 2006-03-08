@@ -35,7 +35,7 @@ PROPERTIES
   <!-- User properties -->
   <property file="${basedir}/build.properties"/>
   <!-- General properties -->
-  <property file="${basedir}/build.product.properties"/>
+  <property file="${basedir}/build.number"/>
   <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
@@ -58,6 +58,7 @@ PROPERTIES
   <property name="locker.dir" value="${build.dir}/locker"/>
   <property name="quick.dir" value="${build.dir}/quick"/>
   <property name="strap.dir" value="${build.dir}/strap"/>
+  <property name="scaladoc.dir" value="${build.dir}/scaladoc"/>
   <!-- Location of source and build elements names properties -->
   <property name="lib.dir.name" value="library"/>
   <property name="comp.dir.name" value="compiler"/>
@@ -81,6 +82,8 @@ PROPERTIES
   <property name="quick.comp.dir" value="${quick.dir}/${comp.dir.name}"/>
   <property name="strap.lib.dir" value="${strap.dir}/${lib.dir.name}"/>
   <property name="strap.comp.dir" value="${strap.dir}/${comp.dir.name}"/>
+  <property name="scaladoc.lib.dir" value="${scaladoc.dir}/${lib.dir.name}"/>
+  <property name="scaladoc.comp.dir" value="${scaladoc.dir}/${comp.dir.name}"/>
   <!-- sbaz properties -->
   <property name="scala.sbaz.name" value="scala"/>
   <property name="scalac.sbaz.name" value="scalac"/>
@@ -272,18 +275,11 @@ INITIALISATION
       select="\1"
       defaultValue="x"
     />
-    <!-- see http://www.xfree86.org/4.1.0/Versions2.html -->
-    <!-- or  http://mail-index.netbsd.org/tech-kern/2004/09/30/0020.html -->
-    <property name="version.number"
-              value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"
+    />
     <echo level="verbose" message="version.number=${version.number}"/>
-    <condition property="version.number.valid">
-      <length string="${version.number}" when="greater" length="6"/>
-    </condition>
-    <fail unless="version.number.valid">
-      Version number is invalid. Please check the 'version.*' properties
-      in file ${basedir}/build.product.properties.
-    </fail>
     <property
       name="dist.current.dir"
       value="${dist.dir}/${dist.name}-${version.number}"
@@ -335,6 +331,11 @@ INITIALISATION
       classname="scala.tools.ant.ScalaBazaar"
       classpathref="quick.classpath"
     />
+    <taskdef
+      name="quickdoc"
+      classname="scala.tools.ant.Scaladoc"
+      classpathref="quick.classpath"
+    />
   </target>
 
 <!-- ===========================================================================
@@ -348,12 +349,16 @@ BUILD SUPPORT MACROS
         <fileset dir="${src.dir}/${lib.dir.name}">
           <include name="**/*.tmpl"/>
           <include name="**/*.xml"/>
+          <include name="**/*.js"/>
+          <include name="**/*.css"/>
         </fileset>
       </copy>
       <copy todir="@{build.dir}/${comp.dir.name}">
         <fileset dir="${src.dir}/${comp.dir.name}">
           <include name="**/*.tmpl"/>
           <include name="**/*.xml"/>
+          <include name="**/*.js"/>
+          <include name="**/*.css"/>
         </fileset>
       </copy>
     </sequential>
@@ -808,9 +813,21 @@ DOCUMENTATION
 
   <target
     name="docs"
-    description="Generated the API for library and compiler sources"
+    description="Generated the API for library sources"
+    depends="setup.quick"
   >
-    <echo level="error" message="Docs is not available yet."/>
+    <mkdir dir="${scaladoc.lib.dir}"/>
+    <quickdoc
+      srcdir="${src.dir}/${lib.dir.name}"
+      destdir="${scaladoc.lib.dir}"
+      sourcepath=""
+    >
+      <classpath>
+        <pathelement location="${quick.lib.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </quickdoc>
   </target>
 
 <!-- ===========================================================================
@@ -879,7 +896,7 @@ GENERATES A DISTRIBUTION
       file="${dist.current.dir}/bin/${scaladoc.exec.name}"
       perm="ugo+rx"
     />
-    <lockertool
+    <quicktool
       file="${dist.current.dir}/bin/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
