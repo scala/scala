@@ -40,8 +40,15 @@ object oneplacebuffer {
       consumer
     }
 
+    def kill = new java.util.Timer().schedule(
+      new java.util.TimerTask {
+        override def run() = System.exit(0)
+      },
+      10000) // delay in milliseconds
+
     ops.spawn(producer(0))
     ops.spawn(consumer)
+    kill
   }
 
 }
