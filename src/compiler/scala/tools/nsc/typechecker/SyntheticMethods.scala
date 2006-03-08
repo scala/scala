@@ -104,7 +104,7 @@ mixin class SyntheticMethods requires Analyzer {
         newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR);
         newAcc.owner.info.decls enter newAcc;
         val result = typed(DefDef(newAcc, vparamss => rhs.duplicate));
-        System.out.println("new acc method " + result)
+        log("new accessor method " + result)
         result
     }
 

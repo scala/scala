@@ -1101,9 +1101,8 @@ case object Nil extends List[All] {
  *  @version 1.0, 15/07/2003
  */
 [SerialVersionUID(0L - 8476791151983527571L)]
-final case class ::[b](hd: b, /*private[scala]*/ var tl: List[b]) extends List[b] {
+final case class ::[b](hd: b, private[scala] var tl: List[b]) extends List[b] {
   def head = hd;
   def tail = tl;
   def isEmpty: boolean = false;
 }
-
