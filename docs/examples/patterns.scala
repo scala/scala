@@ -1,12 +1,12 @@
-package examples;
+package examples
 
 object patterns {
 
-  trait Tree;
-  case class Branch(left: Tree, right: Tree) extends Tree;
-  case class Leaf(x: Int) extends Tree;
+  trait Tree
+  case class Branch(left: Tree, right: Tree) extends Tree
+  case class Leaf(x: Int) extends Tree
 
-  val tree1 = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)));
+  val tree1 = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)))
 
   def sumLeaves(t: Tree): Int = t match {
     case Branch(l, r) => sumLeaves(l) + sumLeaves(r)
@@ -14,12 +14,13 @@ object patterns {
   }
 
   def find[a,b](it: Iterator[Pair[a, b]], x: a): Option[b] = {
-    var result: Option[b] = _;
-    while (it.hasNext && result == null) {
-      val Pair(x1, y) = it.next;
-      if (x == x1) result = Some(y)
+    var result: Option[b] = None
+    var found = false
+    while (it.hasNext && !found) {
+      val Pair(x1, y) = it.next
+      if (x == x1) { found = true; result = Some(y) }
     }
-    if (result == null) None else result
+    result
   }
 
   def printFinds[a](xs: List[Pair[a, String]], x: a) =
@@ -29,7 +30,7 @@ object patterns {
     }
 
   def main(args: Array[String]): Unit = {
-    Console.println("sum of leafs=" + sumLeaves(tree1));
+    Console.println("sum of leafs=" + sumLeaves(tree1))
     printFinds(List(Pair(3, "three"), Pair(4, "four")), 4)
   }
 }

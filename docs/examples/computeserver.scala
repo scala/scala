@@ -1,6 +1,6 @@
-package examples;
+package examples
 
-import concurrent._, concurrent.ops._;
+import concurrent._, concurrent.ops._
 
 class ComputeServer(n: Int) {
 
