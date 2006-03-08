@@ -62,97 +62,97 @@ mixin class Constants requires SymbolTable {
     }
 
     def booleanValue: boolean =
-      if (tag == BooleanTag) value.asInstanceOf$erased[boolean]
+      if (tag == BooleanTag) value.asInstanceOf[boolean]
       else throw new Error("value " + value + " is not a boolean");
 
     def byteValue: byte = tag match {
-      case ByteTag   => value.asInstanceOf$erased[byte]
-      case ShortTag  => value.asInstanceOf$erased[short].asInstanceOf[byte]
-      case CharTag   => value.asInstanceOf$erased[char].asInstanceOf[byte]
-      case IntTag    => value.asInstanceOf$erased[int].asInstanceOf[byte]
-      case LongTag   => value.asInstanceOf$erased[long].asInstanceOf[byte]
-      case FloatTag  => value.asInstanceOf$erased[float].asInstanceOf[byte]
-      case DoubleTag => value.asInstanceOf$erased[double].asInstanceOf[byte]
+      case ByteTag   => value.asInstanceOf[byte]
+      case ShortTag  => value.asInstanceOf[short].asInstanceOf[byte]
+      case CharTag   => value.asInstanceOf[char].asInstanceOf[byte]
+      case IntTag    => value.asInstanceOf[int].asInstanceOf[byte]
+      case LongTag   => value.asInstanceOf[long].asInstanceOf[byte]
+      case FloatTag  => value.asInstanceOf[float].asInstanceOf[byte]
+      case DoubleTag => value.asInstanceOf[double].asInstanceOf[byte]
       case _         => throw new Error("value " + value + " is not a byte")
     }
 
     def shortValue: short = tag match {
-      case ByteTag   => value.asInstanceOf$erased[byte].asInstanceOf[short]
-      case ShortTag  => value.asInstanceOf$erased[short]
-      case CharTag   => value.asInstanceOf$erased[char].asInstanceOf[short]
-      case IntTag    => value.asInstanceOf$erased[int].asInstanceOf[short]
-      case LongTag   => value.asInstanceOf$erased[long].asInstanceOf[short]
-      case FloatTag  => value.asInstanceOf$erased[float].asInstanceOf[short]
-      case DoubleTag => value.asInstanceOf$erased[double].asInstanceOf[short]
+      case ByteTag   => value.asInstanceOf[byte].asInstanceOf[short]
+      case ShortTag  => value.asInstanceOf[short]
+      case CharTag   => value.asInstanceOf[char].asInstanceOf[short]
+      case IntTag    => value.asInstanceOf[int].asInstanceOf[short]
+      case LongTag   => value.asInstanceOf[long].asInstanceOf[short]
+      case FloatTag  => value.asInstanceOf[float].asInstanceOf[short]
+      case DoubleTag => value.asInstanceOf[double].asInstanceOf[short]
       case _         => throw new Error("value " + value + " is not a short")
     }
 
     def charValue: char = tag match {
-      case ByteTag   => value.asInstanceOf$erased[byte].asInstanceOf[char]
-      case ShortTag  => value.asInstanceOf$erased[short].asInstanceOf[char]
-      case CharTag   => value.asInstanceOf$erased[char]
-      case IntTag    => value.asInstanceOf$erased[int].asInstanceOf[char]
-      case LongTag   => value.asInstanceOf$erased[long].asInstanceOf[char]
-      case FloatTag  => value.asInstanceOf$erased[float].asInstanceOf[char]
-      case DoubleTag => value.asInstanceOf$erased[double].asInstanceOf[char]
+      case ByteTag   => value.asInstanceOf[byte].asInstanceOf[char]
+      case ShortTag  => value.asInstanceOf[short].asInstanceOf[char]
+      case CharTag   => value.asInstanceOf[char]
+      case IntTag    => value.asInstanceOf[int].asInstanceOf[char]
+      case LongTag   => value.asInstanceOf[long].asInstanceOf[char]
+      case FloatTag  => value.asInstanceOf[float].asInstanceOf[char]
+      case DoubleTag => value.asInstanceOf[double].asInstanceOf[char]
       case _         => throw new Error("value " + value + " is not a char")
     }
 
     def intValue: int = tag match {
-      case ByteTag   => value.asInstanceOf$erased[byte].asInstanceOf[int]
-      case ShortTag  => value.asInstanceOf$erased[short].asInstanceOf[int]
-      case CharTag   => value.asInstanceOf$erased[char].asInstanceOf[int]
-      case IntTag    => value.asInstanceOf$erased[int]
-      case LongTag   => value.asInstanceOf$erased[long].asInstanceOf[int]
-      case FloatTag  => value.asInstanceOf$erased[float].asInstanceOf[int]
-      case DoubleTag => value.asInstanceOf$erased[double].asInstanceOf[int]
+      case ByteTag   => value.asInstanceOf[byte].asInstanceOf[int]
+      case ShortTag  => value.asInstanceOf[short].asInstanceOf[int]
+      case CharTag   => value.asInstanceOf[char].asInstanceOf[int]
+      case IntTag    => value.asInstanceOf[int]
+      case LongTag   => value.asInstanceOf[long].asInstanceOf[int]
+      case FloatTag  => value.asInstanceOf[float].asInstanceOf[int]
+      case DoubleTag => value.asInstanceOf[double].asInstanceOf[int]
       case _         => throw new Error("value " + value + " is not an int")
     }
 
     def longValue: long = tag match {
-      case ByteTag   => value.asInstanceOf$erased[byte].asInstanceOf[long]
-      case ShortTag  => value.asInstanceOf$erased[short].asInstanceOf[long]
-      case CharTag   => value.asInstanceOf$erased[char].asInstanceOf[long]
-      case IntTag    => value.asInstanceOf$erased[int].asInstanceOf[long]
-      case LongTag   => value.asInstanceOf$erased[long]
-      case FloatTag  => value.asInstanceOf$erased[float].asInstanceOf[long]
-      case DoubleTag => value.asInstanceOf$erased[double].asInstanceOf[long]
+      case ByteTag   => value.asInstanceOf[byte].asInstanceOf[long]
+      case ShortTag  => value.asInstanceOf[short].asInstanceOf[long]
+      case CharTag   => value.asInstanceOf[char].asInstanceOf[long]
+      case IntTag    => value.asInstanceOf[int].asInstanceOf[long]
+      case LongTag   => value.asInstanceOf[long]
+      case FloatTag  => value.asInstanceOf[float].asInstanceOf[long]
+      case DoubleTag => value.asInstanceOf[double].asInstanceOf[long]
       case _         => throw new Error("value " + value + " is not a long")
     }
 
     def floatValue: float = tag match {
-      case ByteTag   => value.asInstanceOf$erased[byte].asInstanceOf[float]
-      case ShortTag  => value.asInstanceOf$erased[short].asInstanceOf[float]
-      case CharTag   => value.asInstanceOf$erased[char].asInstanceOf[float]
-      case IntTag    => value.asInstanceOf$erased[int].asInstanceOf[float]
-      case LongTag   => value.asInstanceOf$erased[long].asInstanceOf[float]
-      case FloatTag  => value.asInstanceOf$erased[float]
-      case DoubleTag => value.asInstanceOf$erased[double].asInstanceOf[float]
+      case ByteTag   => value.asInstanceOf[byte].asInstanceOf[float]
+      case ShortTag  => value.asInstanceOf[short].asInstanceOf[float]
+      case CharTag   => value.asInstanceOf[char].asInstanceOf[float]
+      case IntTag    => value.asInstanceOf[int].asInstanceOf[float]
+      case LongTag   => value.asInstanceOf[long].asInstanceOf[float]
+      case FloatTag  => value.asInstanceOf[float]
+      case DoubleTag => value.asInstanceOf[double].asInstanceOf[float]
       case _         => throw new Error("value " + value + " is not a float")
     }
 /*
     def doubleValue: double = {
       System.out.println("doubleValue " + tag + " " + value);
       tag match {
-        case ByteTag   => System.out.println("Byte"); value.asInstanceOf$erased[byte].asInstanceOf[double]
-        case ShortTag  => System.out.println("Short"); value.asInstanceOf$erased[short].asInstanceOf[double]
-        case CharTag   => System.out.println("Char"); value.asInstanceOf$erased[char].asInstanceOf[double]
-        case IntTag    => System.out.println("Int"); value.asInstanceOf$erased[int].asInstanceOf[double]
-        case LongTag   => System.out.println("Long"); value.asInstanceOf$erased[long].asInstanceOf[double]
-        case FloatTag  => System.out.println("Float"); value.asInstanceOf$erased[float].asInstanceOf[double]
-        case DoubleTag => System.out.println("Double"); value.asInstanceOf$erased[double]
+        case ByteTag   => System.out.println("Byte"); value.asInstanceOf[byte].asInstanceOf[double]
+        case ShortTag  => System.out.println("Short"); value.asInstanceOf[short].asInstanceOf[double]
+        case CharTag   => System.out.println("Char"); value.asInstanceOf[char].asInstanceOf[double]
+        case IntTag    => System.out.println("Int"); value.asInstanceOf[int].asInstanceOf[double]
+        case LongTag   => System.out.println("Long"); value.asInstanceOf[long].asInstanceOf[double]
+        case FloatTag  => System.out.println("Float"); value.asInstanceOf[float].asInstanceOf[double]
+        case DoubleTag => System.out.println("Double"); value.asInstanceOf[double]
         case _         => System.out.println("error"); throw new Error("value " + value + " is not a double")
       }
     }
 */
     def doubleValue: double = tag match {
-      case ByteTag   => value.asInstanceOf$erased[byte].asInstanceOf[double]
-      case ShortTag  => value.asInstanceOf$erased[short].asInstanceOf[double]
-      case CharTag   => value.asInstanceOf$erased[char].asInstanceOf[double]
-      case IntTag    => value.asInstanceOf$erased[int].asInstanceOf[double]
-      case LongTag   => value.asInstanceOf$erased[long].asInstanceOf[double]
-      case FloatTag  => value.asInstanceOf$erased[float].asInstanceOf[double]
-      case DoubleTag => value.asInstanceOf$erased[double]
+      case ByteTag   => value.asInstanceOf[byte].asInstanceOf[double]
+      case ShortTag  => value.asInstanceOf[short].asInstanceOf[double]
+      case CharTag   => value.asInstanceOf[char].asInstanceOf[double]
+      case IntTag    => value.asInstanceOf[int].asInstanceOf[double]
+      case LongTag   => value.asInstanceOf[long].asInstanceOf[double]
+      case FloatTag  => value.asInstanceOf[float].asInstanceOf[double]
+      case DoubleTag => value.asInstanceOf[double]
       case _         => throw new Error("value " + value + " is not a double")
     }
 
