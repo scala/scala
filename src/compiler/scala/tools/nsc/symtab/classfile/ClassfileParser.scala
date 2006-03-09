@@ -154,7 +154,10 @@ abstract class ClassfileParser {
         val start = starts(index);
         if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start);
         val name = getExternalName(in.getChar(start + 1));
-        c = definitions.getClass(name);
+        if (name.pos('.') == name.length)
+          c = definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
+        else
+          c = definitions.getClass(name);
         values(index) = c;
       }
       c

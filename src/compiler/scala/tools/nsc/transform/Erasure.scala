@@ -58,7 +58,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	  }
 	else if (sym == AnyClass || sym == AnyValClass) erasedTypeRef(ObjectClass)
 	else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
-	else if (sym.isClass) typeRef(apply(pre), sym, List())
+	else if (sym.isClass)
+          typeRef(apply(if (sym.owner.isClass) sym.owner.tpe else pre), sym, List())
 	else apply(sym.info)
       case PolyType(tparams, restpe) =>
 	apply(restpe)

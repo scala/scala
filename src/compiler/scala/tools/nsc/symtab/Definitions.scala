@@ -201,8 +201,7 @@ mixin class Definitions requires SymbolTable {
         if (module) sym.info.member(fullname.subName(i, j)).suchThat(.hasFlag(MODULE));
         else sym.info.member(fullname.subName(i, j).toTypeName);
       if (result == NoSymbol) {
-        System.out.println(sym.info);
-        System.out.println(sym.info.members);
+        if (settings.debug.value) { System.out.println(sym.info); System.out.println(sym.info.members); }//debug
 	throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
       }
       result

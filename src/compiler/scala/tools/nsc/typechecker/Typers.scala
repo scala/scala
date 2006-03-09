@@ -372,7 +372,7 @@ mixin class Typers requires Analyzer {
             if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))
               error(tree.pos, migrateMsg + " method can be converted to function only if an expected function type is given");
             else
-              error(tree.pos, "missing arguments for "+tree.symbol)
+              error(tree.pos, "missing arguments for "+tree.symbol+tree.symbol.locationString)
           }
           setError(tree)
         }
@@ -930,11 +930,14 @@ mixin class Typers requires Analyzer {
       val scope = if (inBlock) context.scope else context.owner.info.decls;
       var e = scope.elems;
       while (e != null && e.owner == scope) {
-        var e1 = scope.lookupNextEntry(e);
-        while (e1 != null && e1.owner == scope) {
-          if (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe))
-            error(e.sym.pos, ""+e1.sym+" is defined twice");
-          e1 = scope.lookupNextEntry(e1);
+        if (!e.sym.hasFlag(LOCAL)) {
+          var e1 = scope.lookupNextEntry(e);
+          while (e1 != null && e1.owner == scope) {
+            if (!e1.sym.hasFlag(LOCAL) &&
+                (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
+              error(e.sym.pos, ""+e1.sym+" is defined twice");
+            e1 = scope.lookupNextEntry(e1);
+          }
         }
         e = e.next
       }
