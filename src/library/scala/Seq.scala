@@ -176,15 +176,32 @@ mixin class Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A]
   *
   *  @return a string representation of this sequence.
   */
-  override def toString() = {
-    val iter = elements;
-    var res = stringPrefix + "(";
-    if (iter.hasNext) {
-      res = res + iter.next;
-      while (iter.hasNext)
-      res = res + ", " + iter.next;
+  override def toString() = mkString(stringPrefix+"(", ",", ")")
+
+  /** Returns a string representation of this sequence. The resulting string
+   *  begins with the string <code>start</code> and is finished by the string
+   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
+   *  the method <code>toString()</code>) are separated by the string
+   *  <code>sep</code>.
+   *  <p/>
+   *  Ex: <br/>
+   *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+   *
+   *  @param start starting string.
+   *  @param sep separator string.
+   *  @param end ending string.
+   *  @return a string representation of this sequence.
+   */
+  def mkString(start: String, sep: String, end: String): String = {
+    val buf = new StringBuffer()
+    buf.append(start)
+    val elems = elements
+    if (elems.hasNext) buf.append(elems.next)
+    while (elems.hasNext) {
+      buf.append(sep); buf.append(elems.next)
     }
-    res + ")"
+    buf.append(end)
+    buf.toString
   }
 
   /** Defines the prefix of the string representation.

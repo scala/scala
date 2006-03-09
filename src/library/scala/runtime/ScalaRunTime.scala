@@ -105,4 +105,17 @@ object ScalaRunTime {
   def doubleValue (x: BoxedNumber ): Double  = if (x eq null) 0.0D  else x.doubleValue();
   def arrayValue  (x: BoxedArray, elemTag: String): Object =
     if (x eq null) null else x.unbox(elemTag);
+
+  def boxArray(value: Object): BoxedArray = value match {
+    case x: Array[Byte] => new BoxedByteArray(x)
+    case x: Array[Short] => new BoxedShortArray(x)
+    case x: Array[Char] => new BoxedCharArray(x)
+    case x: Array[Int] => new BoxedIntArray(x)
+    case x: Array[Long] => new BoxedLongArray(x)
+    case x: Array[Float] => new BoxedFloatArray(x)
+    case x: Array[Double] => new BoxedDoubleArray(x)
+    case x: Array[Boolean] => new BoxedBooleanArray(x)
+    case x: Array[Object] => new BoxedObjectArray(x)
+    case x: BoxedArray => x
+  }
 }

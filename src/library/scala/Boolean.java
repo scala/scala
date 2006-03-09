@@ -40,10 +40,6 @@ public abstract class Boolean extends AnyVal implements java.io.Serializable {
     /** @meta method []scala.Boolean; */
     public boolean $bang      (            ) { return !value        ; }
 
-
-
-    public String  $plus      (String  that) { return  value +  that; }
-
     public boolean $eq$eq     (boolean that) { return  value == that; }
     public boolean $bang$eq   (boolean that) { return  value != that; }
     public boolean $bar$bar   (boolean that) { return  value || that; }

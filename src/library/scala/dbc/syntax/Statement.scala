@@ -70,11 +70,11 @@ object Statement {
     }
   }
 
-  implicit def view (fv:StatementField): SelectDerivedField = new SelectDerivedField {
+  implicit def view1 (fv:StatementField): SelectDerivedField = new SelectDerivedField {
     val fieldValue = fv;
   }
 
-  implicit def view (fv:String): SelectDerivedField = new SelectDerivedField {
+  implicit def view2 (fv:String): SelectDerivedField = new SelectDerivedField {
     val fieldValue: StatementField = StatementExpression.view(fv);
   }
 
@@ -91,7 +91,7 @@ object Statement {
     }
   }
 
-  implicit def view (sdf:SelectDerivedField): SelectDerivedColumns = new SelectDerivedColumns {
+  implicit def view3 (sdf:SelectDerivedField): SelectDerivedColumns = new SelectDerivedColumns {
     val selectList = List(new statement.DerivedColumn {
       val valueExpression = sdf.fieldValue.toStatement;
       val asClause = sdf.fieldRename;
@@ -99,9 +99,9 @@ object Statement {
     val selectTypes = if (sdf.fieldType.isEmpty) Nil else List(sdf.fieldType.get);
   }
 
-  implicit def view (sdfs:String): SelectDerivedColumns = {
+  implicit def view4 (sdfs:String): SelectDerivedColumns = {
     val sdf: SelectDerivedField = sdfs;
-    view(sdf);
+    view3(sdf);
   }
 
   // SELECT OF ...
@@ -161,7 +161,7 @@ object Statement {
     }
   }
 
-  implicit def view (sct:String): SelectSourceTable = new SelectSourceTable {
+  implicit def view5 (sct:String): SelectSourceTable = new SelectSourceTable {
     val fromRelation = new statement.Table {
       val tableName = sct;
       val tableRename = None;
@@ -169,7 +169,7 @@ object Statement {
     }
   }
 
-  implicit def view (sct:statement.Select): SelectSourceTable = new SelectSourceTable {
+  implicit def view6 (sct:statement.Select): SelectSourceTable = new SelectSourceTable {
     val fromRelation = sct;
   }
 
@@ -180,7 +180,7 @@ object Statement {
     }
   }
 
-  implicit def view (sct:String): SelectSourceTables = new SelectSourceTables {
+  implicit def view7 (sct:String): SelectSourceTables = new SelectSourceTables {
     val fromClause = List(new statement.Table {
       val tableName = sct;
       val tableRename = None;
@@ -188,11 +188,11 @@ object Statement {
     });
   }
 
-  implicit def view (sct:statement.Select): SelectSourceTables = new SelectSourceTables {
+  implicit def view8 (sct:statement.Select): SelectSourceTables = new SelectSourceTables {
     val fromClause = List(sct);
   }
 
-  implicit def view (sct:SelectSourceTable): SelectSourceTables = new SelectSourceTables {
+  implicit def view9 (sct:SelectSourceTable): SelectSourceTables = new SelectSourceTables {
     val fromClause = List(sct.fromRelation);
   }
 
@@ -235,7 +235,7 @@ object Statement {
     }
   }
 
-  implicit def view (sb:SelectBeyond): statement.Select = new statement.Select {
+  implicit def view10 (sb:SelectBeyond): statement.Select = new statement.Select {
     val setQuantifier = sb.setQuantifier;
     val selectList = sb.selectList;
     val fromClause = sb.fromClause;
@@ -260,11 +260,11 @@ object Statement {
     }
   }
 
-  implicit def view (se:StatementExpression): SelectGroupBy = new SelectGroupBy {
+  implicit def view11 (se:StatementExpression): SelectGroupBy = new SelectGroupBy {
     val groupByClause = List(se.toStatement);
   }
 
-  implicit def view (se:String): SelectGroupBy = new SelectGroupBy {
+  implicit def view12 (se:String): SelectGroupBy = new SelectGroupBy {
     val groupByClause = List(new statement.expression.Field {
       val tableName = None;
       val fieldName = se;

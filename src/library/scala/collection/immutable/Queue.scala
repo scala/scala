@@ -109,26 +109,9 @@ class Queue[+A](elem: A*) extends Seq[A] {
     } else
       out.head;
 
-  /** Returns a string representation of this queue. The resulting string
-   *  begins with the string <code>start</code> and is finished by the string
-   *    <code>end</code>. Inside, the string representations of elements (w.r.t.
-   *  the method <code>toString()</code>) are separated by the string
-   *  <code>sep</code>.
-   *  <p/>
-   *  Ex: <br/>
-   *  <code>Queue(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
-   *
-   *  @param start starting string.
-   *  @param sep separator string.
-   *  @param end ending string.
-   *  @return a string representation of this list.
-   */
-  def mkString(start: String, sep: String, end: String): String =
-    (out ::: in.reverse).mkString(start, sep, end);
-
   /** Returns a string representation of this queue.
    */
-  override def toString() = (out ::: in.reverse).mkString("Queue(", ",", ")");
+  override def toString() = mkString("Queue(", ",", ")");
 
   /** Compares two queues for equality by comparing
    *  each element in the queues.

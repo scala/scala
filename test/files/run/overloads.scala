@@ -24,11 +24,11 @@ object Funcs {
 
 object M1 {
     def f[A](x: A) = 11;
-    def f[A <: Ordered[A]](x: A) = 12;
+    def f[A <: Ordered[A]](x: Ordered[A]) = 12;
 }
 
 object M2 {
-    def f[A <: Ordered[A]](x: A) = 21;
+    def f[A <: Ordered[A]](x: Ordered[A]) = 21;
     def f[A](x: A) = 22;
 }
 

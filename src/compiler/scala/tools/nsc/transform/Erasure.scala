@@ -198,6 +198,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                   runtimeCall(newTermName(elemClass.name.toString() + "Tag"), List())
                 else
                   Literal(signature(pt.typeArgs.head));
+              //System.out.println("unboxing " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
               runtimeCall(nme.arrayValue, List(tree1, elemTag))
             } else {
 	      assert(isNumericValueClass(pt.symbol));
@@ -220,7 +221,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 		      Select(x(), Object_isInstanceOf),
 		      List(TypeTree(BoxedArrayClass.tpe))),
 		    List()),
-		  unbox(x(), pt),
+		  unbox(gen.cast(x(), BoxedArrayClass.tpe), pt),
 		  x()),
 		pt))
 	  }
@@ -246,7 +247,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
     private def isUnboxedArrayMember(sym: Symbol) = (
       sym.name == nme.apply || sym.name == nme.length || sym.name == nme.update ||
-      sym.owner == ObjectClass && sym.name != nme.toString
+      sym.owner == ObjectClass
     );
 
     /** Is symbol a member of a boxed value class (which will not be expanded later)? */

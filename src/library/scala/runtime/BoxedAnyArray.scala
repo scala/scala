@@ -76,7 +76,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Int](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedNumber].intValue();
+          val x = boxed(i).asInstanceOf[BoxedNumber];
+	  if (x ne null) newvalue(i) = x.intValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -84,7 +85,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Double](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedNumber].doubleValue();
+          val x = boxed(i).asInstanceOf[BoxedNumber];
+	  if (x ne null) newvalue(i) = x.doubleValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -92,7 +94,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Float](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedNumber].floatValue();
+          val x = boxed(i).asInstanceOf[BoxedNumber];
+	  if (x ne null) newvalue(i) = x.floatValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -100,7 +103,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Long](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedNumber].longValue();
+          val x = boxed(i).asInstanceOf[BoxedNumber];
+	  if (x ne null) newvalue(i) = x.longValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -108,7 +112,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Char](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedNumber].charValue();
+          val x = boxed(i).asInstanceOf[BoxedNumber];
+	  if (x ne null) newvalue(i) = x.charValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -116,7 +121,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Byte](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedNumber].byteValue();
+          val x = boxed(i).asInstanceOf[BoxedNumber];
+	  if (x ne null) newvalue(i) = x.byteValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -124,7 +130,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Short](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedNumber].shortValue();
+          val x = boxed(i).asInstanceOf[BoxedNumber];
+	  if (x ne null) newvalue(i) = x.shortValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -132,7 +139,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Boolean](length);
 	var i = 0;
 	while (i < length) {
-	  newvalue(i) = boxed(i).asInstanceOf[BoxedBoolean].value;
+          val x = boxed(i).asInstanceOf[BoxedBoolean];
+	  if (x ne null) newvalue(i) = x.value;
 	  i = i + 1
 	}
 	unboxed = newvalue;

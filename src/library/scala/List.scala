@@ -109,32 +109,36 @@ object List {
   }
 
   /** Concatenate all the elements of a given list of lists.
-   *  @param l the list of lists that are to be concatenated
+   *  @param xss the list of lists that are to be concatenated
    *  @return the concatenation of all the lists
    */
-  def flatten[a](l: List[List[a]]): List[a] = {
+  def flatten[a](xss: List[List[a]]): List[a] = concat(xss: _*)
+
+  /** Concatenate all the argument lists into a single list.
+   *  @param xss the lists that are to be concatenated
+   *  @return the concatenation of all the lists
+   */
+  def concat[a](xss: List[a]*): List[a] = {
     val b = new ListBuffer[a]
-    var xsc = l
-    while (!xsc.isEmpty) {
-      var xc = xsc.head
+    for (val xs <- xss) {
+      var xc = xs
       while (!xc.isEmpty) {
         b += xc.head
         xc = xc.tail
       }
-      xsc = xsc.tail
     }
     b.toList
   }
 
   /** Transforms a list of pair into a pair of lists.
    *
-   *  @param l the list of pairs to unzip
+   *  @param xs the list of pairs to unzip
    *  @return a pair of lists: the first list in the pair contains the list
    */
-  def unzip[a,b](l: List[Pair[a,b]]): Pair[List[a], List[b]] = {
+  def unzip[a,b](xs: List[Pair[a,b]]): Pair[List[a], List[b]] = {
     val b1 = new ListBuffer[a]
     val b2 = new ListBuffer[b]
-    var xc = l
+    var xc = xs
     while (!xc.isEmpty) {
       b1 += xc.head._1
       b2 += xc.head._2
@@ -946,28 +950,6 @@ sealed abstract class List[+a] extends Seq[a] {
   def reverse: List[a] =
     foldLeft(Nil : List[a])((xs, x) => x :: xs);
 
-  /** Returns a string representation of this list. The resulting string
-   *  begins with the string <code>start</code> and is finished by the string
-   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
-   *  the method <code>toString()</code>) are separated by the string
-   *  <code>sep</code>.
-   *  <p/>
-   *  Ex: <br/>
-   *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
-   *
-   *  @param start starting string.
-   *  @param sep separator string.
-   *  @param end ending string.
-   *  @return a string representation of this list.
-   */
-  def mkString(start: String, sep: String, end: String): String = this match {
-    case Nil => start + end
-    case last :: Nil => start + last + end
-    case fst :: tail => start + fst + sep + tail.mkString("", sep, end)
-  }
-
-  override def toString() = mkString("List(", ",", ")");
-
   /** Returns a list formed from this list and the specified list
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
@@ -1077,6 +1059,8 @@ sealed abstract class List[+a] extends Seq[a] {
     }
     b.toList
   }
+
+  override protected def stringPrefix: String = "List"
 }
 
 /** The empty list.

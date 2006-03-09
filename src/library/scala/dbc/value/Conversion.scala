@@ -18,7 +18,7 @@ object Conversion {
 
 	class Illegal (msg:String) extends Exception(msg);
 
-	implicit def view (value:Value): Byte = {
+	implicit def view1 (value:Value): Byte = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
 			v.nativeValue
@@ -27,7 +27,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): Short = {
+	implicit def view2 (value:Value): Short = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
 			v.nativeValue.coerce
@@ -39,7 +39,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): Int = {
+	implicit def view3 (value:Value): Int = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
 			v.nativeValue.coerce
@@ -54,7 +54,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): Long = {
+	implicit def view4 (value:Value): Long = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
 			v.nativeValue.coerce
@@ -72,7 +72,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): BigInteger = {
+	implicit def view5 (value:Value): BigInteger = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
 			new BigInteger(v.nativeValue.toString(),10)
@@ -93,7 +93,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): BigDecimal = {
+	implicit def view6 (value:Value): BigDecimal = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
 			new BigDecimal(v.nativeValue.toString())
@@ -117,7 +117,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): Float = {
+	implicit def view7 (value:Value): Float = {
 		if (value.dataType.nativeTypeId == DataType.FLOAT) {
 			val v = value.asInstanceOf[dbc.value.ApproximateNumeric[Float]];
 			v.nativeValue
@@ -126,7 +126,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): Double = {
+	implicit def view8 (value:Value): Double = {
 		if (value.dataType.nativeTypeId == DataType.FLOAT) {
 			val v = value.asInstanceOf[dbc.value.ApproximateNumeric[Float]];
 			v.nativeValue.coerce
@@ -138,7 +138,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): scala.Boolean = {
+	implicit def view9 (value:Value): scala.Boolean = {
 		if (value.dataType.nativeTypeId == DataType.BOOLEAN) {
 			val v = value.asInstanceOf[dbc.value.Boolean];
 			v.nativeValue
@@ -147,7 +147,7 @@ object Conversion {
 		}
 	}
 
-	implicit def view (value:Value): String = value match {
+	implicit def view10 (value:Value): String = value match {
 		case v:dbc.value.Character => v.nativeValue;
 		case v:dbc.value.CharacterLargeObject => v.nativeValue;
 		case v:dbc.value.CharacterVarying => v.nativeValue;

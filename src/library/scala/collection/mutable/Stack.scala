@@ -116,12 +116,6 @@ class Stack[A] extends MutableList[A] {
      */
     override def hashCode(): Int = error("unsuitable as hash key");
 
-    /** Returns a textual representation of a stack as a string.
-     *
-     *  @return the string representation of this stack.
-     */
-    override def toString(): String = toList.mkString("Stack(", ", ", ")");
-
     /** This method clones the stack.
      *
      *  @return  a stack with the same elements.
@@ -131,4 +125,6 @@ class Stack[A] extends MutableList[A] {
         res ++= this;
         res
     }
+
+    override protected def stringPrefix: String = "Stack"
 }

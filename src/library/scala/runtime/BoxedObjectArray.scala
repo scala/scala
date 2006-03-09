@@ -29,4 +29,37 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
   );
 
   override def hashCode(): Int = value.hashCode();
+
+  override def subArray(start: Int, end: Int): Array[Object] = {
+    val result = new Array[Object](end - start);
+    Array.copy(value, 0, result, 0, end - start)
+    result
+  }
+
+  override def filter(p: Any => Boolean): Array[Object] = {
+    val include = new Array[Boolean](value.length);
+    var len = 0;
+    var i = 0;
+    while (i < value.length) {
+      if (p(value(i))) { include(i) = true; len = len + 1 }
+      i = i + 1
+    }
+    val result = new Array[Object](len);
+    len = 0;
+    i = 0;
+    while (len < result.length) {
+      if (include(i)) { result(len) = value(i); len = len + 1 }
+      i = i + 1
+    }
+    result
+  }
+
+/*
+  def map(p: Any => Any): BoxedAnyArray = {
+    val include = new Array
+    var len = 0
+    for (val x <- value) if (p(x)) { tmp(len) = x; len = len + 1 }
+    slice(tmp, 0, len)
+  }
+*/
 }
