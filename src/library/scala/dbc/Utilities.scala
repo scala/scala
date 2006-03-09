@@ -18,10 +18,10 @@ package scala.dbc;
  */
 object Utilities {
 
-  def view (obj: statement.expression.Constant): Value =
+  implicit def constantToValue (obj: statement.expression.Constant): Value =
     obj.constantValue;
 
-  def view (obj: Value): statement.expression.Constant =
+  implicit def valueToConstant (obj: Value): statement.expression.Constant =
     new statement.expression.Constant {
       val constantValue = obj;
     }
