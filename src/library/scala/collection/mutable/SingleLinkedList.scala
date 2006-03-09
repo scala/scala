@@ -20,7 +20,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-abstract class SingleLinkedList[A, This >: AllRef <: SingleLinkedList[A, This]]
+abstract class SingleLinkedList[A, This >: Null <: SingleLinkedList[A, This]]
          requires This
          extends AnyRef with Seq[A]
 {

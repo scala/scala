@@ -7,7 +7,7 @@ package scala.tools.nsc.typechecker;
 
 /** The main attribution phase.
  */
-mixin class Analyzer
+trait Analyzer
 	 extends AnyRef
             with Contexts
     	    with Namers

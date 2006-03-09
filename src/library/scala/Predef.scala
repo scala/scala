@@ -20,6 +20,9 @@ object Predef {
 
   // aliases -------------------------------------------------------
 
+  type Bottom = All
+  type Null = AllRef
+
   type byte = scala.Byte;
   type short = scala.Short;
   type char = scala.Char;
@@ -149,11 +152,11 @@ object Predef {
 
   // errors and asserts -------------------------------------------------
 
-  def error(message: String): All = throw new Error(message);
+  def error(message: String): Bottom = throw new Error(message);
 
-  def exit: All = exit(0);
+  def exit: Bottom = exit(0);
 
-  def exit(status: Int): All = {
+  def exit(status: Int): Bottom = {
     java.lang.System.exit(status);
     throw new Throwable()
   }

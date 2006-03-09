@@ -12,7 +12,7 @@ import scala.tools.nsc.util.{Position,SourceFile};
 import symtab.Flags._;
 
 
-mixin class Trees requires Global {
+trait Trees requires Global {
   //statistics
   var nodeCount = 0;
 
@@ -27,7 +27,7 @@ mixin class Trees requires Global {
     def isCase      = ((flags & CASE    ) != 0);
     def isSealed    = ((flags & SEALED) != 0);
     def isFinal     = ((flags & FINAL   ) != 0);
-    def isMixin     = ((flags & MIXIN   ) != 0);
+    def isTrait     = ((flags & TRAIT   ) != 0);
     def isPublic    = !isPrivate && !isProtected;
     def hasFlag(flag: int) = (flags & flag) != 0;
     def | (flag: int): Modifiers = {
@@ -90,7 +90,7 @@ mixin class Trees requires Global {
     }
   }
 
-  mixin class SymTree extends Tree {
+  trait SymTree extends Tree {
     override def hasSymbol = true;
     override var symbol: Symbol = NoSymbol;
   }
@@ -100,11 +100,11 @@ mixin class Trees requires Global {
     override def isDef = true;
   }
 
-  mixin class TermTree extends Tree {
+  trait TermTree extends Tree {
     override def isTerm = true
   }
 
-  mixin class TypTree extends Tree {
+  trait TypTree extends Tree {
     override def isType = true
   }
 

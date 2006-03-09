@@ -65,7 +65,7 @@ object Iterable {
  *  @author  Matthias Zenger
  *  @version 1.1, 04/02/2004
  */
-mixin class Iterable[+A] {
+trait Iterable[+A] {
 
     /** Creates a new iterator over all elements contained in this
      *  object.

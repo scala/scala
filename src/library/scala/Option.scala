@@ -11,6 +11,7 @@
 
 package scala;
 
+import Predef._
 
 /** This class represents optional values. Instances of <code>Option</code>
  *  are either instances of case class <code>Some</code> or it is case
@@ -20,7 +21,7 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-abstract class Option[+A] extends Iterable[A] {
+sealed abstract class Option[+A] extends Iterable[A] {
 
   def isEmpty: Boolean = this match {
     case None => true
@@ -68,3 +69,18 @@ abstract class Option[+A] extends Iterable[A] {
   }
 
 }
+
+/** Class <code>Some[A]</code> represents existing values of type
+ *  <code>A</code>.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 16/07/2003
+ */
+final case class Some[+A](x: A) extends Option[A];
+
+/** This case object represents non-existent values.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 16/07/2003
+ */
+case object None extends Option[Bottom];

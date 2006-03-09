@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import scala.collection.mutable.ListBuffer;
 import symtab.Flags._;
 
-mixin class Infer requires Analyzer {
+trait Infer requires Analyzer {
   import global._;
   import definitions._;
   import posAssigner.atPos;

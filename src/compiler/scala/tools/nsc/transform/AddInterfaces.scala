@@ -115,7 +115,7 @@ abstract class AddInterfaces extends InfoTransform {
       val parents1 =
         if (parents.isEmpty) List()
         else {
-          assert(!parents.head.symbol.isMixin || clazz == RepeatedParamClass, clazz);
+          assert(!parents.head.symbol.isTrait || clazz == RepeatedParamClass, clazz);
           if (clazz hasFlag INTERFACE) erasedTypeRef(ObjectClass) :: parents.tail
           else if (clazz.isImplClass || clazz == ArrayClass) parents
 	  else parents map mixinToImplClass

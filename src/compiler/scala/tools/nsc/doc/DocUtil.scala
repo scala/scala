@@ -26,7 +26,7 @@ object DocUtil {
     nodes.concat(x)
   }
 
-  mixin class UrlContext {
+  trait UrlContext {
     def relative: String
 
     def aref(href0: String, target: String, text: String): NodeSeq = {

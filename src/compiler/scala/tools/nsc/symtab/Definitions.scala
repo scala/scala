@@ -9,7 +9,7 @@ import scala.tools.nsc.util.Position;
 import collection.mutable.HashMap;
 import Flags._;
 
-mixin class Definitions requires SymbolTable {
+trait Definitions requires SymbolTable {
 
   object definitions {
     def isDefinitionsInitialized = isInitialized;
@@ -318,10 +318,10 @@ mixin class Definitions requires SymbolTable {
       AnyRefClass = newAlias(ScalaPackageClass, "AnyRef", ObjectClass.typeConstructor);
 
       AllRefClass = newClass(ScalaPackageClass, "AllRef", List(AnyRefClass.typeConstructor))
-	.setFlag(ABSTRACT | MIXIN | FINAL);
+	.setFlag(ABSTRACT | TRAIT | FINAL);
 
       AllClass = newClass(ScalaPackageClass, "All", List(AnyClass.typeConstructor))
-	.setFlag(ABSTRACT | MIXIN | FINAL);
+	.setFlag(ABSTRACT | TRAIT | FINAL);
 
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");

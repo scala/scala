@@ -1057,10 +1057,10 @@ sealed abstract class List[+a] extends Seq[a] {
  *  @version 1.0, 15/07/2003
  */
 [SerialVersionUID(0 - 8256821097970055419L)]
-case object Nil extends List[All] {
+case object Nil extends List[Bottom] {
   def isEmpty = true;
   def head: All = error("head of empty list");
-  def tail: List[All] = error("tail of empty list");
+  def tail: List[Bottom] = error("tail of empty list");
 }
 
 /** A non empty list characterized by a head and a tail.

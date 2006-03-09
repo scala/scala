@@ -11,6 +11,7 @@
 
 package scala;
 
+import Predef._
 
 /** This class implements errors which are thrown whenever an
  *  object doesn't match any pattern of a pattern matching
@@ -23,7 +24,7 @@ package scala;
 object MatchError {
 
   // todo: change pattern matcher so that dummy type parameter T can be removed.
-  def fail[T](source: String, line: Int): All = throw new MatchError(source, line);
+  def fail[T](source: String, line: Int): Bottom = throw new MatchError(source, line);
 
   def report(source: String, line: Int, obj: Any) =
     try {

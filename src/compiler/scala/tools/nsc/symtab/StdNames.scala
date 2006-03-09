@@ -7,7 +7,7 @@ package scala.tools.nsc.symtab;
 
 import scala.tools.nsc.util.NameTransformer;
 
-mixin class StdNames requires SymbolTable {
+trait StdNames requires SymbolTable {
 
   object nme {
 

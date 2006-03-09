@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-mixin class Scopes requires SymbolTable {
+trait Scopes requires SymbolTable {
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
 

@@ -15,7 +15,7 @@ package scala;
 /**
  * Function with 2 parameters
  */
-mixin class Function2[-T0, -T1, +R] extends AnyRef {
+trait Function2[-T0, -T1, +R] extends AnyRef {
   def apply(v0: T0, v1: T1): R;
   override def toString() = "<function>";
 }

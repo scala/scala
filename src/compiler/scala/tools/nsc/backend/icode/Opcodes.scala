@@ -48,7 +48,7 @@ import scala.tools.nsc.util.Position;
  * erased types of Scala and references Symbols to refer named entities
  * in the source files.
  */
-mixin class Opcodes requires ICodes {
+trait Opcodes requires ICodes {
   import global.{Symbol, NoSymbol, Type, Name, Constant};
 
   /** This class represents an instruction of the intermediate code.

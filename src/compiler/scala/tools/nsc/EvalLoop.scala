@@ -1,6 +1,6 @@
 package scala.tools.nsc;
 
-mixin class EvalLoop {
+trait EvalLoop {
 
   def prompt: String;
 

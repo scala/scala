@@ -10,7 +10,7 @@ import scala.tools.util.AbstractFile;
 import scala.tools.nsc.util.{Position, SourceFile};
 import Flags._;
 
-mixin class Symbols requires SymbolTable {
+trait Symbols requires SymbolTable {
   import definitions._;
 
   private var ids = 0;
@@ -174,7 +174,7 @@ mixin class Symbols requires SymbolTable {
     final def isThisSym = isTerm && name == nme.this_;
     final def isThisSkolem = isTerm && deSkolemize != this;
     final def isError = hasFlag(IS_ERROR);
-    final def isMixin = isClass & hasFlag(MIXIN);
+    final def isTrait = isClass & hasFlag(TRAIT);
     final def isAliasType = isType && !isClass && !hasFlag(DEFERRED);
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM);
@@ -202,11 +202,11 @@ mixin class Symbols requires SymbolTable {
     final def isImplClass: boolean = isClass && hasFlag(IMPLCLASS);
 
     final def needsImplClass: boolean =
-      isMixin && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
+      isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
 
     final def isImplOnly: boolean = (
       hasFlag(PRIVATE) ||
-      (owner.isImplClass || owner.isMixin) &&
+      (owner.isImplClass || owner.isTrait) &&
       (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR) ||
        isConstructor)
     );
@@ -532,7 +532,7 @@ mixin class Symbols requires SymbolTable {
 
     /** The primary constructor of a class */
     def primaryConstructor: Symbol = {
-      val c = info.decl(if (isMixin || isImplClass) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR);
+      val c = info.decl(if (isTrait || isImplClass) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR);
       if (c hasFlag OVERLOADED) c.alternatives.head else c
     }
 
@@ -709,7 +709,8 @@ mixin class Symbols requires SymbolTable {
 
     /** String representation of symbol's definition key word */
     final def keyString: String =
-      if (isMixin && hasFlag(JAVA)) "interface"
+      if (isTrait && hasFlag(JAVA)) "interface"
+      else if (isTrait) "trait"
       else if (isClass) "class"
       else if (isType && !hasFlag(PARAM)) "type"
       else if (isVariable) "var"
@@ -726,6 +727,7 @@ mixin class Symbols requires SymbolTable {
       else if (isAnonymousClass) "<template>"
       else if (isRefinementClass) ""
       else if (isModuleClass) "singleton class"
+      else if (isTrait) "trait"
       else if (isClass) "class"
       else if (isType) "type"
       else if (isVariable) "variable"

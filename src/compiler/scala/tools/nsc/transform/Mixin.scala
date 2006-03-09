@@ -101,7 +101,7 @@ abstract class Mixin extends InfoTransform {
 
   def addMixedinMembers(clazz: Symbol): unit = {
     if (!(clazz hasFlag MIXEDIN) && (clazz != ObjectClass)) {
-      assert(!clazz.isMixin, clazz);
+      assert(!clazz.isTrait, clazz);
       clazz setFlag MIXEDIN;
       assert(!clazz.info.parents.isEmpty, clazz);
       val superclazz = clazz.info.parents.head.symbol;
@@ -216,7 +216,7 @@ abstract class Mixin extends InfoTransform {
         case Template(parents, body) =>
 	  localTyper = erasure.newTyper(rootContext.make(tree, currentOwner));
 	  atPhase(phase.next)(currentOwner.owner.info);//needed?
-          if (!currentOwner.isMixin) addMixedinMembers(currentOwner)
+          if (!currentOwner.isTrait) addMixedinMembers(currentOwner)
           else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner);
 	  tree
         case DefDef(mods, name, tparams, List(vparams), tpt, rhs) if currentOwner.isImplClass =>
@@ -300,7 +300,7 @@ abstract class Mixin extends InfoTransform {
 	if (sym hasFlag MIXEDIN) {
           if (clazz hasFlag lateINTERFACE) {
 	    addDefDef(sym, vparamss => EmptyTree)
-	  } else if (!clazz.isMixin) {
+	  } else if (!clazz.isTrait) {
 	    if (sym hasFlag ACCESSOR) {
               addDefDef(sym, vparams => {
 		val accessedRef = sym.tpe match {
@@ -325,7 +325,7 @@ abstract class Mixin extends InfoTransform {
 	}
       }
       val stats1 = add(stats, newDefs.toList);
-      if (clazz.isMixin) stats1 else stats1 map completeSuperAccessor;
+      if (clazz.isTrait) stats1 else stats1 map completeSuperAccessor;
     }
 
     private def postTransform(tree: Tree): Tree = {

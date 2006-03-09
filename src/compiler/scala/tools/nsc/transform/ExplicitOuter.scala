@@ -39,9 +39,9 @@ abstract class ExplicitOuter extends InfoTransform {
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
       //todo: needed?
-      if (sym.owner.isMixin && (sym hasFlag SUPERACCESSOR))
+      if (sym.owner.isTrait && (sym hasFlag SUPERACCESSOR))
         sym.makeNotPrivate(sym.owner);
-      if (sym.owner.isMixin && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED;
+      if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED;
       if (sym.isConstructor && !isStatic(sym.owner))
 	MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
       else tp;
@@ -51,7 +51,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	if (!isStatic(clazz)) {
 	  decls1 = new Scope(decls1.toList);
 	  val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER);
-	  if (clazz.isMixin || (decls.toList exists (.isClass)))
+	  if (clazz.isTrait || (decls.toList exists (.isClass)))
             outerAcc.expandName(clazz);
 	  decls1 enter (
 	    outerAcc setFlag (PARAMACCESSOR | ACCESSOR | STABLE)
@@ -60,7 +60,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    setFlag (LOCAL | PRIVATE | PARAMACCESSOR | (outerAcc getFlag EXPANDEDNAME))
 	    setInfo outerClass(clazz).thisType);
 	}
-	if (clazz.isMixin) {
+	if (clazz.isTrait) {
 	  decls1 = new Scope(decls1.toList);
 	  decls1 enter makeMixinConstructor(clazz);
 	}
@@ -258,7 +258,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	    if (!(currentOwner hasFlag INTERFACE) || (currentOwner hasFlag lateINTERFACE)) {
 	      if (!isStatic(currentOwner))
 		decls1 = decls1 ::: outerDefs(currentOwner); // (1)
-	      if (currentOwner.isMixin)
+	      if (currentOwner.isTrait)
 		decls1 = decls1 ::: List(mixinConstructorDef(currentOwner)) // (2)
 	    }
 	    localTyper = savedLocalTyper;
@@ -327,7 +327,7 @@ abstract class ExplicitOuter extends InfoTransform {
 	val tree1 = super.transform(tree);
 	tree1 match {
           case DefDef(_, _, _, _, _, _) =>
-            if (sym.owner.isMixin && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
+            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
               sym.makeNotPrivate(sym.owner); //(2)
             tree1
 	  case Select(qual, name) =>

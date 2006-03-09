@@ -9,7 +9,7 @@ package scala.tools.nsc.symtab;
 
 import classfile.PickleFormat._;
 
-mixin class Constants requires SymbolTable {
+trait Constants requires SymbolTable {
 
   import definitions._;
 

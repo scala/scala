@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker;
 import scala.collection.mutable.ListBuffer;
 import symtab.Flags._;
 
-mixin class EtaExpansion requires Analyzer {
+trait EtaExpansion requires Analyzer {
 
   import global._;
   import posAssigner.atPos;

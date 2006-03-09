@@ -16,7 +16,7 @@ package scala;
  *
  *  @author  Burak Emir
  */
-mixin class CaseClass extends AnyRef {
+trait CaseClass extends AnyRef {
 
   /** for a case class A(x_0,...,x_(k-1)), returns x_i for 0 &lt;= i &lt; k,
   **  null otherwise

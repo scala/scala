@@ -20,7 +20,7 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-mixin class PartialFunction[-A, +B] extends AnyRef with (A => B) {
+trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
 
     /** Checks if a value is contained in the functions domain.
      *

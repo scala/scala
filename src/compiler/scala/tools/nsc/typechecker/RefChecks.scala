@@ -230,7 +230,7 @@ abstract class RefChecks extends InfoTransform {
 	}
 */
       // 2. Check that only abstract classes have deferred members
-      if (clazz.isClass && !clazz.isMixin) {
+      if (clazz.isClass && !clazz.isTrait) {
 	def abstractClassError(mustBeMixin: boolean, msg: String): unit = {
 	  unit.error(clazz.pos,
 	    (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
@@ -464,12 +464,12 @@ abstract class RefChecks extends InfoTransform {
           val ddef =
 	    atPhase(phase.next) {
 	      localTyper.typed {
-                if (sym.owner.isMixin) newModuleAccessDcl(sym)
+                if (sym.owner.isTrait) newModuleAccessDcl(sym)
                 else newModuleAccessDef(sym, vdef.symbol)
               }
             }
 
-          if (sym.owner.isMixin) transformTrees(List(cdef, ddef))
+          if (sym.owner.isTrait) transformTrees(List(cdef, ddef))
           else transformTrees(List(cdef, vdef, ddef))
 	}
 
@@ -597,7 +597,7 @@ abstract class RefChecks extends InfoTransform {
 		  unit.error(tree.pos, "symbol accessed from super may not be abstract");
               }
               //System.out.println("super: " + tree + " in " + base);//DEBUG
-              if (base.isMixin && sym.isTerm && mix == nme.EMPTY.toTypeName) {
+              if (base.isTrait && sym.isTerm && mix == nme.EMPTY.toTypeName) {
                 val superAccName = nme.superName(sym.name);
 	        val superAcc = base.info.decl(superAccName) suchThat (.alias.==(sym));
 	        assert(superAcc != NoSymbol, "" + sym + " " + base + " " + superAccName);//debug

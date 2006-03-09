@@ -90,7 +90,7 @@ object ScalaRunTime {
       false
   }
 
-  //def checkDefined[T >: AllRef](x: T): T =
+  //def checkDefined[T >: Null](x: T): T =
   //  if (x == null) throw new UndefinedException else x
 
   def Seq[a](xs: a*): Seq[a] = null; // interpreted specially by new backend.

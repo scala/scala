@@ -21,10 +21,10 @@ package scala;
  */
 object Stream {
 
-  val empty: Stream[All] = new Stream[All] {
+  val empty: Stream[Bottom] = new Stream[Bottom] {
     def isEmpty = true;
-    def head: All = error("head of empty stream");
-    def tail: Stream[All] = error("tail of empty stream");
+    def head: Bottom = error("head of empty stream");
+    def tail: Stream[Bottom] = error("tail of empty stream");
     def printElems(buf: StringBuffer, prefix: String): StringBuffer = buf;
   }
 

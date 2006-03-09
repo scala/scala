@@ -604,7 +604,7 @@ abstract class ClassfileParser {
     if ((flags & JAVA_ACC_FINAL) != 0)
       res = res | FINAL;
     if ((flags & JAVA_ACC_INTERFACE) != 0)
-      res = res | MIXIN | INTERFACE | ABSTRACT;
+      res = res | TRAIT | INTERFACE | ABSTRACT;
     if ((flags & JAVA_ACC_SYNTHETIC) != 0)
       res = res | SYNTHETIC;
     if ((flags & JAVA_ACC_STATIC) != 0)

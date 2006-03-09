@@ -15,10 +15,10 @@ package scala.dbc.datatype;
 /** A type category for all SQL types that store strings of characters. */
 abstract class CharacterString extends String {
 
-	type NativeType = java.lang.String;
-	val nativeTypeId = DataType.STRING;
+  type NativeType = java.lang.String;
+  val nativeTypeId = DataType.STRING;
 
-	/** The name of the character set in which the string is encoded. */
-	def encoding: Option[java.lang.String] = None;
+  /** The name of the character set in which the string is encoded. */
+  def encoding: Option[java.lang.String] = None;
 
 }

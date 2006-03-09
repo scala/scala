@@ -38,7 +38,7 @@ import Tokens._;
  *  (4) Wraps naked case definitions in a match as follows:
  *        { cases }   ==>   (x => x.match {cases}), except when already argument to match
  */
-mixin class Parsers requires SyntaxAnalyzer {
+trait Parsers requires SyntaxAnalyzer {
 
   import global._;
   import posAssigner.atPos;
@@ -157,7 +157,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 
     def isDefIntro: boolean = in.token match {
       case VAL | VAR | DEF | TYPE | OBJECT |
-           CASEOBJECT | CLASS | CASECLASS | MIXIN | TRAIT => true
+           CASEOBJECT | CLASS | CASECLASS | TRAIT => true
       case _ => false
     }
 
@@ -324,8 +324,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 	in.nextToken();
 	name
       } else {
-        if (settings.migrate.value &&
-            in.token == REQUIRES || in.token == IMPLICIT || in.token == MIXIN)
+        if (settings.migrate.value && in.token == REQUIRES || in.token == IMPLICIT)
           syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
 	accept(IDENTIFIER);
 	nme.ERROR
@@ -852,7 +851,7 @@ mixin class Parsers requires SyntaxAnalyzer {
           if (settings.migrate.value) {
             if (in.token == MATCH)
               syntaxErrorMigrate("`match' must be preceded by a selector expression")
-            else if (in.token == REQUIRES || in.token == IMPLICIT || in.token == MIXIN)
+            else if (in.token == REQUIRES || in.token == IMPLICIT)
               syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
           }
 	  syntaxError("illegal start of simple expression", true);
@@ -1101,7 +1100,7 @@ mixin class Parsers requires SyntaxAnalyzer {
         r
       case _ =>
         if (settings.migrate.value &&
-            in.token == REQUIRES || in.token == IMPLICIT || in.token == MIXIN)
+            in.token == REQUIRES || in.token == IMPLICIT)
           syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
 	syntaxError("illegal start of simple pattern", true);
 	errorPatternTree
@@ -1575,15 +1574,11 @@ mixin class Parsers requires SyntaxAnalyzer {
 
     /**  TmplDef ::= [case] class ClassDef
      *            |  [case] object ObjectDef
-     *            |  ([mixin class | trait]) MixinClassDef
+     *            |  trait MixinClassDef
      */
     def tmplDef(mods: Modifiers): Tree = in.token match {
       case TRAIT =>
-        classDef(mods | Flags.MIXIN | Flags.ABSTRACT);
-      case MIXIN =>
-        in.nextToken();
-        if (in.token != CLASS) accept(CLASS);
-        classDef(mods | Flags.MIXIN | Flags.ABSTRACT);
+        classDef(mods | Flags.TRAIT | Flags.ABSTRACT);
       case CLASS =>
         classDef(mods);
       case CASECLASS =>
@@ -1609,7 +1604,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 	val vparamss = paramClauses(name, implicitViews.toList, mods.hasFlag(Flags.CASE));
 	val thistpe = requiresTypeOpt();
 	val template = classTemplate(mods, name, vparamss);
-	val mods1 = if (mods.hasFlag(Flags.MIXIN) && (template.body forall treeInfo.isInterfaceMember))
+	val mods1 = if (mods.hasFlag(Flags.TRAIT) && (template.body forall treeInfo.isInterfaceMember))
                       mods | Flags.INTERFACE
                     else mods;
 	ClassDef(mods1, name, tparams, thistpe, template)
@@ -1666,7 +1661,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 	var body =
 	  if (in.token == LBRACE) templateBody()
 	  else { acceptEmptyTemplateBody("`{' expected"); List() }
-	if (!mods.hasFlag(Flags.MIXIN)) Template(ps, vparamss, argss.toList, body)
+	if (!mods.hasFlag(Flags.TRAIT)) Template(ps, vparamss, argss.toList, body)
 	else Template(ps, body)
       }
 
@@ -1721,7 +1716,6 @@ mixin class Parsers requires SyntaxAnalyzer {
         } else if (in.token == CLASS ||
                    in.token == CASECLASS ||
                    in.token == TRAIT ||
-                   in.token == MIXIN ||
                    in.token == OBJECT ||
                    in.token == CASEOBJECT ||
                    in.token == LBRACKET ||
@@ -1800,7 +1794,7 @@ mixin class Parsers requires SyntaxAnalyzer {
 	case _ =>
           false
       }
-      if (attrs exists isMixinAttribute) Flags.MIXIN else 0
+      if (attrs exists isMixinAttribute) Flags.TRAIT else 0
     }
 
     def joinAttributes(attrs: List[Tree], defs: List[Tree]): List[Tree] =

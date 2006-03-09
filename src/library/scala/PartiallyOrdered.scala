@@ -17,7 +17,7 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.0, 23/04/2004
  */
-mixin class PartiallyOrdered[+a] {
+trait PartiallyOrdered[+a] {
 
   /** Result of comparing `this' with operand `that'.
    *  Returns `None' if operands are not comparable.

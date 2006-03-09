@@ -529,7 +529,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 */
 
     def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
-      if (base.isMixin) stats
+      if (base.isTrait) stats
       else {
         val bridges = bridgeDefs(base);
         if (bridges.isEmpty) stats else stats ::: bridges

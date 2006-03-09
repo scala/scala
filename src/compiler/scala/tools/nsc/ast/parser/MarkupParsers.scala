@@ -11,7 +11,7 @@ import scala.tools.nsc.util.Position;
 import scala.xml.{Text,TextBuffer};
 
 
-mixin class MarkupParsers requires SyntaxAnalyzer {
+trait MarkupParsers requires SyntaxAnalyzer {
 
   import global._ ;
   import posAssigner.atPos;

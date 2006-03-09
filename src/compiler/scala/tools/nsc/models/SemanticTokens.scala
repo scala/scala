@@ -50,12 +50,12 @@ class SemanticTokens(val compiler: Global) {
     else pos;
   }
 
-  mixin class HasNext extends Token {
+  trait HasNext extends Token {
     var next0: HasPrev = _;
     def next = next0;
   }
 
-  mixin class HasPrev extends Token {
+  trait HasPrev extends Token {
     var prev0: HasNext = _;
     def prev = prev0;
   }

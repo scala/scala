@@ -15,7 +15,7 @@ package scala;
 /**
  * Function with 1 parameter
  */
-mixin class Function1[-T0, +R] extends AnyRef {
+trait Function1[-T0, +R] extends AnyRef {
   def apply(v0: T0): R;
   override def toString() = "<function>";
 }

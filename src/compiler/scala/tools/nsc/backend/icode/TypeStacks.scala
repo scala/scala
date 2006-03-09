@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.backend.icode.Primitives;
 
-mixin class TypeStacks requires ICodes {
+trait TypeStacks requires ICodes {
   import opcodes._;
   import global.{Symbol, Type, definitions};
 

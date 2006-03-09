@@ -10,7 +10,7 @@ import scala.tools.nsc.util.{Position, SourceFile}
 import SourceFile.{LF, FF, CR, SU}
 import scala.tools.nsc.util.CharArrayReader
 
-mixin class Scanners requires SyntaxAnalyzer {
+trait Scanners requires SyntaxAnalyzer {
 
   import global._
 
@@ -167,6 +167,13 @@ mixin class Scanners requires SyntaxAnalyzer {
           next.copyFrom(this)
           this.copyFrom(prev)
         }
+      } else if (token == IDENTIFIER && name == nme.MIXINkw) { //todo: remove eventually
+        prev.copyFrom(this);
+        fetchToken();
+        if (token == CLASS)
+          unit.warning(pos, "`mixin' is no longer a reserved word; you should use `trait' instead of `mixin class'");
+        next.copyFrom(this)
+        this.copyFrom(prev)
       }
 
       if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
@@ -786,7 +793,6 @@ mixin class Scanners requires SyntaxAnalyzer {
       enterKeyword(nme.IMPLICITkw, IMPLICIT)
       enterKeyword(nme.IMPORTkw, IMPORT)
       enterKeyword(nme.MATCHkw, MATCH)
-      enterKeyword(nme.MIXINkw, MIXIN)
       enterKeyword(nme.NEWkw, NEW)
       enterKeyword(nme.NULLkw, NULL)
       enterKeyword(nme.OBJECTkw, OBJECT)

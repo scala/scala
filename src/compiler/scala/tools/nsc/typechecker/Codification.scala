@@ -11,7 +11,7 @@ import scala.collection.immutable.ListMap;
 import scala.collection.mutable.ListBuffer;
 import scala.tools.nsc.util.FreshNameCreator;
 
-mixin class Codification requires Analyzer {
+trait Codification requires Analyzer {
 
   import global._;
 

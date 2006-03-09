@@ -47,7 +47,7 @@ abstract class Models {
     if (mods . isCase     ) modString = "case"      :: modString;
     if (mods . isSealed   ) modString = "sealed"    :: modString;
     if (mods . isFinal    ) modString = "final"    :: modString;
-    if (mods . isMixin    ) modString = "mixin"    :: modString;
+    if (mods . isTrait    ) modString = "mixin"    :: modString;
     modString;
   }
 
@@ -161,7 +161,7 @@ abstract class Models {
 	    def treex = tree.asInstanceOf[PackageDef];
 	}
 
-  mixin class Composite extends Model {
+  trait Composite extends Model {
     import scala.collection.mutable._;
 
 
@@ -245,7 +245,7 @@ abstract class Models {
   }
   abstract class MemberComposite(parent0: Composite) extends MemberMod(parent0) with Composite;
 
-  mixin class HasClassObjects extends Composite {
+  trait HasClassObjects extends Composite {
     override def isMember(tree : Tree) : Boolean = (super.isMember(tree) ||
       (tree.isInstanceOf[ImplDef]));
   }

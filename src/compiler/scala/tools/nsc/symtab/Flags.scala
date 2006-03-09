@@ -48,7 +48,7 @@ object Flags {
   final val STATIC        = 0x00800000;   // static field, method or class
 
   final val CASEACCESSOR  = 0x01000000;   // symbol is a case parameter (or its accessor)
-  final val MIXIN         = 0x02000000;   // symbol is a mixin class
+  final val TRAIT         = 0x02000000;   // symbol is a trait
   final val BRIDGE        = 0x04000000;   // function is a bridge method. Set by Erasure
   final val ACCESSOR      = 0x08000000;   // a value or variable accessor
 
@@ -99,8 +99,8 @@ object Flags {
   final val TopLevelCreationFlags =
     MODULE | PACKAGE | FINAL | JAVA;
 
-  final val ExplicitFlags =                // these modifiers can be set explicitly in source programs.
-    PRIVATE | PROTECTED | ABSTRACT | MIXIN | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
+  final val ExplicitFlags =       // these modifiers can be set explicitly in source programs.
+    PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE;
 
   final val PrintableFlags =               // these modifiers appear in TreePrinter output.
     (ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | ACCESSOR |
@@ -161,7 +161,7 @@ object Flags {
       case STATIC        => "<static>"
 
       case CASEACCESSOR  => "<caseaccessor>"
-      case MIXIN         => "mixin"
+      case TRAIT         => "<trait>"
       case BRIDGE        => "<bridge>"
       case ACCESSOR      => "<accessor>"
 

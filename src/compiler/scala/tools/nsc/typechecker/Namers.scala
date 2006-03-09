@@ -10,7 +10,7 @@ import symtab.Flags;
 import symtab.Flags._;
 
 /** Methods to create symbols and to enter them into scopes. */
-mixin class Namers requires Analyzer {
+trait Namers requires Analyzer {
   import global._;
   import definitions._;
 
@@ -544,15 +544,13 @@ mixin class Namers requires Analyzer {
 	      Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2));
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
 	context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods");
-      if (sym.hasFlag(MIXIN) && !sym.isClass)
-	context.error(sym.pos, "`mixin' modifier can be used only for classes");
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
 	context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
 	  "\nit should be omitted for abstract members");
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isClass)
 	context.error(sym.pos, "`override' modifier not allowed for classes");
-      if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isMixin)
-	context.error(sym.pos, "`abstract override' modifier only allowed for members of mixin classes");
+      if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
+	context.error(sym.pos, "`abstract override' modifier only allowed for members of traits");
       if (sym.info.symbol == FunctionClass(0) &&
 	  sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
 	context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");

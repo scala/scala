@@ -18,7 +18,7 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-mixin class CountedIterator[+A] extends Iterator[A] {
+trait CountedIterator[+A] extends Iterator[A] {
 
   /** counts the elements in this iterator; counts start at 0
    */

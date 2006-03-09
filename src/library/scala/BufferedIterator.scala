@@ -12,13 +12,13 @@
 package scala;
 
 
-/** Buffered iterators are iterators which allow to inspect the next
+/** Buffered iterators are iterators which llow to inspect the next
  *  element without discarding it.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-mixin class BufferedIterator[+A] extends Iterator[A] {
+trait BufferedIterator[+A] extends Iterator[A] {
 
     /** Checks what the next available element is.
      *

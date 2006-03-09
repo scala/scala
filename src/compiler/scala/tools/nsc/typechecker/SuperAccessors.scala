@@ -46,7 +46,7 @@ abstract class SuperAccessors extends transform.Transform {
       case Select(sup @ Super(_, mix), name) =>
 	val clazz = sup.symbol;
 	if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
-	    (clazz.isMixin || clazz != currentOwner.enclClass || !validCurrentOwner)) {
+	    (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
 	  val supername = nme.superName(tree.symbol.name);
 	  var superAcc = clazz.info.decl(supername).suchThat(.alias.==(tree.symbol));
 	  if (superAcc == NoSymbol) {

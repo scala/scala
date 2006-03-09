@@ -173,7 +173,7 @@ object Iterator {
  *  @author  Matthias Zenger
  *  @version 1.2, 15/03/2004
  */
-mixin class Iterator[+A] {
+trait Iterator[+A] {
 
   /** Does this iterator provide another element?
    */

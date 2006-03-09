@@ -11,7 +11,7 @@ import scala.tools.nsc.util.Position
 import scala.collection.mutable.{HashMap, ListBuffer}
 
 /** Methods to create symbols and to enter them into scopes. */
-mixin class Typers requires Analyzer {
+trait Typers requires Analyzer {
   import global._
   import definitions._
   import posAssigner.atPos
@@ -510,8 +510,8 @@ mixin class Typers requires Analyzer {
       else {
 	var supertpt = typedTypeConstructor(templ.parents.head)
 	var mixins = templ.parents.tail map typedType
-	// If first parent is a mixin class, make it first mixin and add its superclass as first parent
-	while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isMixin) {
+	// If first parent is a trait, make it first mixin and add its superclass as first parent
+	while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isTrait) {
 	  mixins = typedType(supertpt) :: mixins
 	  supertpt = TypeTree(supertpt.tpe.parents.head) setOriginal supertpt /* setPos supertpt.pos */
 	}
@@ -558,16 +558,16 @@ mixin class Typers requires Analyzer {
 	  if (!psym.isClass)
 	    error(parent.pos, "class type expected")
 	  else if (psym != superclazz)
-            if (psym.isMixin) {
+            if (psym.isTrait) {
               val ps = psym.info.parents
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.symbol))
                 error(parent.pos, "illegal inheritance; super"+superclazz+
                       "\n is not a subclass of the super"+ps.head.symbol+
                       "\n of the mixin " + psym);
             } else if (settings.migrate.value)
-              error(parent.pos, migrateMsg+psym+" needs to be a declared as a mixin class")
+              error(parent.pos, migrateMsg+psym+" needs to be a declared as a trait")
             else
-	      error(parent.pos, ""+psym+" is not declared to be a mixin class")
+	      error(parent.pos, ""+psym+" is not declared to be a trait")
 	  else if (psym.hasFlag(FINAL))
 	    error(parent.pos, "illegal inheritance from final class")
 	  else if (!phase.erasedTypes && psym.isSealed &&
@@ -1295,7 +1295,6 @@ mixin class Typers requires Analyzer {
             val rhs1 = typed(rhs, lhs1.tpe)
             copy.Assign(tree, lhs1, rhs1) setType UnitClass.tpe
           } else {
-            System.out.println(""+lhs1+" "+varsym+" "+varsym.isValue+" "+flagsToString(varsym.flags));//debug
             if (!lhs1.tpe.isError) error(tree.pos, "assignment to non-variable ")
             setError(tree)
           }

@@ -19,7 +19,7 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-mixin class SeqProxy[+A] extends Seq[A] with IterableProxy[A] {
+trait SeqProxy[+A] extends Seq[A] with IterableProxy[A] {
 
     def self: Seq[A];
 

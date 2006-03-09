@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
-mixin class InfoTransformers requires SymbolTable {
+trait InfoTransformers requires SymbolTable {
 
   abstract class InfoTransformer {
     var prev: InfoTransformer = this;

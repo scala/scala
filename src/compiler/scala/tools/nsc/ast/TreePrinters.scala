@@ -118,9 +118,9 @@ abstract class TreePrinters {
         case ClassDef(mods, name, tparams, tp, impl) =>
           printAttributes(tree.symbol.attributes);
           printModifiers(tree, mods);
-	  print("class " + symName(tree, name));
+	  print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name));
           printTypeParams(tparams);
-          printOpt(": ", tp); print(" extends "); print(impl);
+          printOpt("requires ", tp); print(" extends "); print(impl);
 
         case PackageDef(packaged, stats) =>
           print("package "); print(packaged); printColumn(stats, " {", ";", "}")
