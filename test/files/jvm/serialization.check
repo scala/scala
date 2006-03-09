@@ -34,8 +34,8 @@ x = Queue(a,b,c)
 y = Queue(a,b,c)
 x equals y: true - y equals x: true
 
-x = Stack(c, b, a)
-y = Stack(c, b, a)
+x = Stack(c,b,a)
+y = Stack(c,b,a)
 x equals y: true - y equals x: true
 
 x = {42 -> FortyTwo}
@@ -58,16 +58,16 @@ x = {title, buffers, layers}
 y = {title, buffers, layers}
 x equals y: true - y equals x: true
 
-x = LinkedList(2, 3)
-y = LinkedList(2, 3)
+x = LinkedList(2,3)
+y = LinkedList(2,3)
 x equals y: true - y equals x: true
 
 x = Queue(20, 2, 3)
 y = Queue(20, 2, 3)
 x equals y: true - y equals x: true
 
-x = Stack(20, 2, 3)
-y = Stack(20, 2, 3)
+x = Stack(20,2,3)
+y = Stack(20,2,3)
 x equals y: true - y equals x: true
 
 x = <html><title>title</title><body></body></html>
