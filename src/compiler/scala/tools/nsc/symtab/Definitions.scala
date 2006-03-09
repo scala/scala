@@ -61,15 +61,15 @@ mixin class Definitions requires SymbolTable {
     var TypedCodeClass: Symbol = _;
     var PartialFunctionClass: Symbol = _;
     var IterableClass: Symbol = _;
-      def Iterable_next = getMember(IterableClass, "next");
-      def Iterable_hasNext = getMember(IterableClass, "hasNext");
+      def Iterable_next = getMember(IterableClass, nme.next);
+      def Iterable_hasNext = getMember(IterableClass, nme.hasNext);
     var IteratorClass: Symbol = _;
     var SeqClass: Symbol = _;
-      def Seq_length = getMember(SeqClass, "length");
+      def Seq_length = getMember(SeqClass, nme.length);
     var ListClass: Symbol = _;
-      def List_isEmpty = getMember(ListClass, "isEmpty");
-      def List_head = getMember(ListClass, "head");
-      def List_tail = getMember(ListClass, "tail");
+      def List_isEmpty = getMember(ListClass, nme.isEmpty);
+      def List_head = getMember(ListClass, nme.head);
+      def List_tail = getMember(ListClass, nme.tail);
     var ArrayClass: Symbol = _;
     var TypeClass: Symbol = _;
     var SerializableClass: Symbol = _;
@@ -78,7 +78,7 @@ mixin class Definitions requires SymbolTable {
     var ConsoleModule: Symbol = _;
     var MatchErrorClass: Symbol = _;
     var MatchErrorModule: Symbol = _;
-      def MatchError_fail = getMember(MatchErrorModule, "fail");
+      def MatchError_fail = getMember(MatchErrorModule, nme.fail);
       def MatchError_report = getMember(MatchErrorModule, "report");
     var ScalaRunTimeModule: Symbol = _;
       def SeqFactory = getMember(ScalaRunTimeModule, "Seq");
@@ -92,7 +92,7 @@ mixin class Definitions requires SymbolTable {
     var TupleClass: Array[Symbol] = _;
       def tupleField(n:int, j:int) = getMember(TupleClass(n), "_" + j);
     var FunctionClass: Array[Symbol] = _;
-      def functionApply(n:int) = getMember(FunctionClass(n), "apply");
+      def functionApply(n:int) = getMember(FunctionClass(n), nme.apply);
 
     def tupleType(elems: List[Type]) =
       if (elems.length <= MaxTupleArity) {
@@ -376,21 +376,21 @@ mixin class Definitions requires SymbolTable {
       Any_!= = newMethod(
         AnyClass, "!=", List(AnyClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
       Any_equals = newMethod(
-        AnyClass, "equals", List(AnyClass.typeConstructor), BooleanClass.typeConstructor);
+        AnyClass, nme.equals_, List(AnyClass.typeConstructor), BooleanClass.typeConstructor);
       Any_hashCode = newMethod(
-        AnyClass, "hashCode", List(), IntClass.typeConstructor);
+        AnyClass, nme.hashCode_, List(), IntClass.typeConstructor);
       Any_toString = newMethod(
-        AnyClass, "toString", List(), StringClass.typeConstructor);
+        AnyClass, nme.toString_, List(), StringClass.typeConstructor);
 
       Any_isInstanceOf = newPolyMethod(
-        AnyClass, "isInstanceOf", tparam => BooleanClass.typeConstructor) setFlag FINAL;
+        AnyClass, nme.isInstanceOf, tparam => BooleanClass.typeConstructor) setFlag FINAL;
       Any_asInstanceOf = newPolyMethod(
-        AnyClass, "asInstanceOf", tparam => tparam.typeConstructor) setFlag FINAL;
+        AnyClass, nme.asInstanceOf, tparam => tparam.typeConstructor) setFlag FINAL;
       Any_isInstanceOfErased = newPolyMethod(
-        AnyClass, "isInstanceOf$erased", tparam => BooleanClass.typeConstructor) setFlag FINAL;
+        AnyClass, nme.isInstanceOfErased, tparam => BooleanClass.typeConstructor) setFlag FINAL;
       //todo: do we need this?
       Any_asInstanceOfErased = newPolyMethod(
-        AnyClass, "asInstanceOf$erased", tparam => tparam.typeConstructor) setFlag FINAL;
+        AnyClass, nme.asInstanceOfErased, tparam => tparam.typeConstructor) setFlag FINAL;
 
       // members of class java.lang.{Object, String}
       Object_== = newMethod(
@@ -402,7 +402,7 @@ mixin class Definitions requires SymbolTable {
       Object_ne = newMethod(
         ObjectClass, "ne", List(AnyRefClass.typeConstructor), BooleanClass.typeConstructor) setFlag FINAL;
       Object_synchronized = newPolyMethod(
-        ObjectClass, "synchronized", tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL;
+        ObjectClass, nme.synchronized_, tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL;
       Object_isInstanceOf = newPolyMethod(
 	ObjectClass, "$isInstanceOf",
         tparam => MethodType(List(), BooleanClass.typeConstructor)) setFlag FINAL;
