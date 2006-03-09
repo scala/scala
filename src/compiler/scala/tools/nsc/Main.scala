@@ -1,13 +1,13 @@
-/* NSC -- new scala compiler
- * Copyright 2005-06 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc;
+package scala.tools.nsc
 
-import scala.tools.nsc.util.{Position};
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter};
-import scala.tools.nsc.doc.DocGenerator;
+import scala.tools.nsc.util.{Position}
+import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.doc.DocGenerator
 
 
 /** The main class for NSC, a compiler for the programming
@@ -16,26 +16,26 @@ import scala.tools.nsc.doc.DocGenerator;
 object Main extends Object with EvalLoop {
 
   val PRODUCT: String =
-    System.getProperty("scala.product", "scalac");
+    System.getProperty("scala.product", "scalac")
   val VERSION: String =
-    System.getProperty("scala.version", "unknown version");
+    System.getProperty("scala.version", "unknown version")
   val COPYRIGHT: String =
-    System.getProperty("scala.copyright", "(c) 2002-06 LAMP/EPFL");
-  val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT;
-  val prompt = "\nnsc> ";
+    System.getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
+  val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
+  val prompt = "\nnsc> "
 
-  private var reporter: ConsoleReporter = _;
+  private var reporter: ConsoleReporter = _
 
   def error(msg: String): unit =
     reporter.error(new Position(PRODUCT),
-                   msg + "\n  " + PRODUCT + " -help  gives more information");
+                   msg + "\n  " + PRODUCT + " -help  gives more information")
 
-  def errors() = reporter.errors;
+  def errors() = reporter.errors
 
   def resident(compiler: Global): unit = {
     loop(line => {
-      val args = List.fromString(line, ' ');
-      val command = new CompilerCommand(args, error, true);
+      val args = List.fromString(line, ' ')
+      val command = new CompilerCommand(args, error, true)
       (new compiler.Run) compile command.files
     })
   }
@@ -56,31 +56,29 @@ object Main extends Object with EvalLoop {
         else if (command.files.isEmpty)
             reporter.info(null, command.usageMsg, true)
         else {
-          val run = new compiler.Run;
-          run compile command.files;
-
-
+          val run = new compiler.Run
+          run compile command.files
           if (command.settings.doc.value) {
-						object generator extends DocGenerator {
+            object generator extends DocGenerator {
               val global : compiler.type = compiler;
               val outdir = command.settings.outdir.value;
             };
-            generator.process(run.units);
+            generator.process(run.units)
           }
         }
       } catch {
         case ex @ FatalError(msg) =>
           if (command.settings.debug.value)
             ex.printStackTrace();
-        reporter.error(null, "fatal error: " + msg);
+        reporter.error(null, "fatal error: " + msg)
       }
       reporter.printSummary()
     }
   }
 
   def main(args: Array[String]): unit = {
-    process(args);
-    System.exit(if (reporter.errors > 0) 1 else 0);
+    process(args)
+    System.exit(if (reporter.errors > 0) 1 else 0)
   }
 
 }
