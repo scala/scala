@@ -57,8 +57,7 @@ abstract class Field {
 
 object Field {
 
-  implicit def view (field:Field): Value = field.content;
-
+  implicit def fieldToValue (field:Field): Value = field.content;
 
 
 }
