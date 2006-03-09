@@ -1,0 +1,18 @@
+constrs.scala:6 error: type T is not a member of test
+    def this(y: int)(z: int)(t: this.T) = { this(this.u + y + z); System.out.println(x) }
+                                    ^
+constrs.scala:6 error: value u is not a member of test
+    def this(y: int)(z: int)(t: this.T) = { this(this.u + y + z); System.out.println(x) }
+                                                     ^
+constrs.scala:10 error: called constructor must precede calling constructor
+    def this() = this("abc")
+                 ^
+constrs.scala:12 error: called constructor must precede calling constructor
+    def this(x: boolean) = this(x)
+                           ^
+constrs.scala:16 error: type mismatch;
+ found   : scala.Int(1)
+ required: a
+    def this() = this(1)
+                      ^
+5 errors found

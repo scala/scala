@@ -1,11 +1,6 @@
-bug85.scala:6 error: type mismatch;
- found   : A.this.C
- required: A.this.B#C
-  val b: B = new B(new C());
-                   ^
 bug85.scala:7 error: type mismatch;
  found   : A.this.b.C
  required: A.this.C
   val c: C = b.c;
               ^
-two errors found
+one error found
