@@ -32,17 +32,20 @@ PROPERTIES
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="test.dir" value="${basedir}/test"/>
+  <property name="properties" value="${basedir}/build.properties"/>
+  <echo level="verbose" message="properties=${properties}"/>
   <!-- User properties -->
-  <property file="${basedir}/build.properties"/>
+  <property file="${properties}"/>
   <!-- General properties -->
   <property name="number.file" value="${basedir}/build.number"/>
   <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
+  <property name="logs.dir" value="${basedir}/logs"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
   <property name="nsc.log-files" value="no"/>
   <property name="nsc.excludes" value="${basedir}/build.excludes"/>
   <property name="nsc.params" value=""/>
-  <property name="nsc.timers" value="${basedir}/build.timers"/>
+  <property name="nsc.timers" value="${logs.dir}/build.timers"/>
   <!-- SVN configuration properties -->
   <property name="svn.entries" value="${basedir}/.svn/entries"/>
   <!-- Location of pre-compiled libraries properties -->
@@ -166,7 +169,7 @@ INITIALISATION
       <pathelement location="${starr.comp.jar}"/>
       <path refid="common.classpath"/>
     </path>
-    <!-- Creating boot-level tasks -->
+    <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml">
       <classpath>
         <pathelement location="${ant-contrib.jar}"/>
@@ -210,6 +213,7 @@ INITIALISATION
         <fail>System environment could not be determined</fail>
       </else>
     </if>
+    <!-- Printing out some information about what environment I am running in -->
     <echo
       level="info"
       message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"
@@ -226,6 +230,20 @@ INITIALISATION
       level="info"
       message="Ant:  ${ant.version}."
     />
+    <!-- Finding out SVN revision -->
+    <loadfile
+      property="entries"
+      srcFile="${svn.entries}"
+      failonerror="false"
+    />
+    <propertyregex
+      property="svn.revision"
+      input="${entries}"
+      regexp="revision=\042([0-9]*)\042\.*"
+      select="\1"
+      defaultValue="x"
+    />
+    <property name="init.avail" value="yes"/>
   </target>
 
   <target name="setup" depends="init">
@@ -267,89 +285,20 @@ INITIALISATION
     <condition property="locker.avail">
       <available file="${locker.dir}/complete"/>
     </condition>
-    <!-- Defining version number -->
-    <loadfile
-      property="entries"
-      srcFile="${svn.entries}"
-      failonerror="false"
-    />
-    <propertyregex
-      property="svn.revision"
-      input="${entries}"
-      regexp="revision=\042([0-9]*)\042\.*"
-      select="\1"
-      defaultValue="x"
-    />
-    <!-- OVER-ENGINEERING ALERT: Calculating version numbers might be over-engineered -->
-    <!-- But deciding of a versioning scheme was hard enough: let's hard code it! -->
-    <if>
-      <not><isset property="release"/></not>
-      <then>
-        <property file="${number.file}"/>
-        <property
-          name="version.number"
-          value="${version.major}.${version.minor}.${version.patch}.${svn.revision}.${time.short}"
-        />
-      </then>
-      <elseif>
-        <equals arg1="${release}" arg2="devel"/>
-        <then>
-          <property file="${number.file}"/>
-          <property
-            name="version.number"
-            value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"
-          />
-        </then>
-      </elseif>
-      <elseif>
-        <equals arg1="${release}" arg2="patch"/>
-        <then>
-          <propertyfile
-            file="${number.file}"
-            comment="Version last updated on ${time.human}"
-          >
-            <entry key="version.patch" type="int" default="0" operation="+"/>
-          </propertyfile>
-          <property file="${number.file}"/>
-          <property
-            name="version.number"
-            value="${version.major}.${version.minor}.${version.patch}"
-          />
-        </then>
-      </elseif>
-      <elseif>
-        <equals arg1="${release}" arg2="minor"/>
-        <then>
-          <propertyfile
-            file="${number.file}"
-            comment="Version last updated on ${time.human}"
-          >
-            <entry key="version.minor" type="int" default="0" operation="+"/>
-            <entry key="version.patch" type="int" value="0"/>
-          </propertyfile>
-          <property file="${number.file}"/>
-          <property
-            name="version.number"
-            value="${version.major}.${version.minor}.${version.patch}"
-          />
-        </then>
-      </elseif>
-      <else>
-        <fail message="The 'release' property must be set to 'devel', 'minor' or 'major'"/>
-      </else>
-    </if>
-    <!-- End of over-engineering alert -->
-    <echo level="verbose" message="version.number=${version.number}"/>
+    <!-- Generating version number -->
+    <property file="${number.file}"/>
     <property
-      name="dist.current.dir"
-      value="${dist.dir}/${dist.name}-${version.number}"
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}.${svn.revision}.${time.short}"
     />
+    <echo level="verbose" message="version.number=${version.number}"/>
+    <!-- Setup timer -->
+    <mkdir dir="${logs.dir}"/>
     <echo
       file="${nsc.timers}"
       append="true"
       message="${line.separator}Revision ${svn.revision};${line.separator}  built ${time.human};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:${line.separator}"
     />
-    <property name="init.avail" value="yes"/>
   </target>
 
   <target name="setup.locker" depends="setup, build.locker">
@@ -915,12 +864,56 @@ DOCUMENTATION
 <!-- ===========================================================================
 GENERATES A DISTRIBUTION
 ============================================================================ -->
+  
+  <target name="dist.devel" depends="init">
+    <property file="${number.file}"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"
+    />
+    <runtarget target="dist"/>
+  </target>
+  
+  <target name="dist.patch" depends="init">
+    <propertyfile
+      file="${number.file}"
+      comment="Version last updated on ${time.human}"
+    >
+      <entry key="version.patch" type="int" default="0" operation="+"/>
+    </propertyfile>
+    <property file="${number.file}"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}"
+    />
+    <runtarget target="dist"/>
+  </target>
+  
+  <target name="dist.minor" depends="init">
+    <propertyfile
+      file="${number.file}"
+      comment="Version last updated on ${time.human}"
+    >
+      <entry key="version.minor" type="int" default="0" operation="+"/>
+      <entry key="version.patch" type="int" value="0"/>
+    </propertyfile>
+    <property file="${number.file}"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}"
+    />
+    <runtarget target="dist"/>
+  </target>
 
   <target
     name="dist"
     depends="test, docs"
     description="Creates a complete Scala distribution"
   >
+    <property
+      name="dist.current.dir"
+      value="${dist.dir}/${dist.name}-${version.number}"
+    />
     <mkdir dir="${dist.current.dir}"/>
     <!-- Copy all requires libraries -->
     <mkdir dir="${dist.current.dir}/lib"/>

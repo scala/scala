@@ -13,6 +13,7 @@ build script or user-created if needed.
 scala/
       build/ †                Temporary staging area for build products.
       build.excludes †        An optional build configuration file.
+      build.number            The version number of the current distribution.
       build.properties †      An optional build configuration file.
       build.xml               The main Ant build script.
       dist/ †                 The destination folder of Scala distributions.
@@ -21,17 +22,16 @@ scala/
            examples/          Scala example files.
            man/               UNIX manual files.
       lib/                    Pre-compiled libraries for the build.
+          ant-contrib.jar     Support libraries for the build tool.
           fjbg.jar            The Java byte-code generation library.
           jaco.jar            The JaCo Java compiler.
-          msil.jar            The CLR byte-code generation library.
           scala-compiler.jar  The last stable version of the Scala compiler.
           scala-library.jar   The last stable version of the Scala library.
-          scala.dll           The Scala library for Windows.
+      logs/ †                 Build tool log files.
       README                  The file you are currently reading.
       sandbox/ †              A folder to test code etc.
       src/                    All the source files of Scala.
           compiler/           The sources of the Scala compiler.
-          exec/               The sources of the executable wrapper-scripts.
           library/            The sources of the Scala library.
       test/                   The Scala test suite.
 
@@ -62,8 +62,7 @@ Part III. Requirements for SABBUS
 --------------------------------------------------------------------------------
 
 The Scala build system is based on Apache Ant. Most required pre-compiled libraries are part of the repository (in 'lib/'). The following however is assumed to be installed on the build machine:
-  - A Java runtime environment (JRE) or SDK 1.4 or above (with 1.5 highly
-    recommended for performance reasons).
+  - A Java runtime environment (JRE) or SDK 1.4 or above.
   - Apache Ant version 1.6 or above.
 
 Part IV. Common use-cases
@@ -98,15 +97,33 @@ Part IV. Common use-cases
       make sure it is stable).
     - (planned) Runs the test suite.
 
+'ant docs'
+  Generates the HTML documentation for the library from the sources using the
+  scaladoc tool in quick.
+
+'ant docs.compiler'
+  Generates the HTML documentation for the compiler from the sources using the
+  scaladoc tool in quick.
+
 'ant dist'
   Builds a distribution.
     - Runs all the tests as above (and refuses to build a distribution if it
       fails).
     - Creates a local distribution in 'dists/latest'.
     - Creates all relevant Scala Bazaar archives and advertisement files.
-    - (planned) Creates the IzPack installer.
+
+'ant dist.devel' or 'ant dist.patch' or 'ant dist.minor'
+  Builds a distribution to be publicly released and manages version numbers.
+    - Patch and Minor versions are public releases. The version number is
+      automatically bumped up and is formatted as 'major.minor.patch'.
+    - Devel versions are betas for semi-public release. Numbers are formatted as
+      'major.minor.patch.svn'. Version '2.3.4.5875' is a beta for either patch
+      '2.3.5' or minor version '2.4.0'.
 
 'ant clean'
+  Removes all temporary build files (locker is preserved).
+
+'ant clean.build'
   Removes all build files (including locker).
 
 'ant clean.all'
