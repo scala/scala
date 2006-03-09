@@ -24,21 +24,22 @@ object Seq {
     def apply(i:Int) = x; // caller's responsibility to check isDefinedAt
   }
 
-  def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] = new Ordered[Seq[A]] with Proxy {
-    def self: Any = xs;
-    def compareTo[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
-      case ys: Seq[A] =>
-        var res = 0;
-        val xsit = xs.elements;
-        val ysit = ys.elements;
-        while (xsit.hasNext && ysit.hasNext && (res == 0)) {
-          res = xsit.next compareTo ysit.next;
-        }
-        if (res != 0) res else if (xsit.hasNext) 1 else -1
-      case _ =>
-        -(that compareTo xs)
+  implicit def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] =
+    new Ordered[Seq[A]] with Proxy {
+      def self: Any = xs;
+      def compareTo[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
+        case ys: Seq[A] =>
+          var res = 0;
+          val xsit = xs.elements;
+          val ysit = ys.elements;
+          while (xsit.hasNext && ysit.hasNext && (res == 0)) {
+            res = xsit.next compareTo ysit.next;
+          }
+          if (res != 0) res else if (xsit.hasNext) 1 else -1
+        case _ =>
+          -(that compareTo xs)
+      }
     }
-  }
 }
 
 
@@ -156,15 +157,8 @@ mixin class Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A]
   *  @param  start starting index.
   *  @return the given array <code>xs</code> filled with this list.
   */
-  def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = {
-    val it = elements;
-    var i = start;
-    while (it.hasNext) {
-      xs(i) = it.next;
-      i = i + 1;
-    }
-    xs
-  }
+  def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] =
+    elements.copyToArray(xs, start);
 
   /** Transform this sequence into a list of all elements.
   *

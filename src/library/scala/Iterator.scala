@@ -36,20 +36,28 @@ object Iterator {
 
   def fromValues[a](xs: a*) = xs.elements;
 
-  def fromArray[a](xs: Array[a]) = new Iterator[a] {
-    private var i = 0;
-    def hasNext: Boolean = i < xs.length;
-    def next: a =
-      if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
-      else Predef.error("next on empty iterator");
+  def fromArray[a](xs: Array[a]): BufferedIterator[a] =
+    fromArray(xs, 0, xs.length);
+
+  def fromArray[a](xs: Array[a], start: Int, length: Int): BufferedIterator[a] =
+    new BufferedIterator[a] {
+      private var i = start;
+      val end = if ((start + length) < xs.length) start else xs.length;
+      def hasNext: Boolean = i < end;
+      def next: a = if (hasNext) { val x = xs(i) ; i = i + 1 ; x }
+                    else Predef.error("next on empty iterator");
+      def head: a = if (hasNext) xs(i);
+                    else Predef.error("head on empty iterator");
   }
 
-  def fromString(str: String): Iterator[Char] = new Iterator[Char] {
-    private var i = 0;
-    private val len = str.length();
-    def hasNext = i < len;
-    def next = { val c = str charAt i; i = i + 1; c };
-  }
+  def fromString(str: String): BufferedIterator[Char] =
+    new BufferedIterator[Char] {
+      private var i = 0;
+      private val len = str.length();
+      def hasNext = i < len;
+      def next = { val c = str charAt i; i = i + 1; c };
+      def head = str charAt i;
+    }
 
   def fromCaseClass(n:CaseClass): Iterator[Any] = new Iterator[Any] {
     private var c:Int = 0;
@@ -67,7 +75,7 @@ object Iterator {
    *  @param end the end value of the iterator
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int): Iterator[Int] =
+  def range(lo: Int, end: Int): BufferedIterator[Int] =
     range(lo, end, 1);
 
   /** Create an iterator with elements
@@ -80,9 +88,9 @@ object Iterator {
    *  @param step the increment value of the iterator (must be positive or negative)
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int, step: Int): Iterator[Int] = {
+  def range(lo: Int, end: Int, step: Int): BufferedIterator[Int] = {
     assert(step != 0);
-    new Iterator[Int] {
+    new BufferedIterator[Int] {
       private var i = lo;
       def hasNext: Boolean = if (step > 0) i < end else i > end;
       def next: Int =
@@ -102,14 +110,15 @@ object Iterator {
    *  @param step the increment function of the iterator
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int, step: Int => Int): Iterator[Int] = new Iterator[Int] {
-    private var i = lo;
-    def hasNext: Boolean =  i < end;
-    def next: Int =
-      if (i < end) { val j = i; i = step(i); j } else Predef.error("next on empty iterator");
-    def head: Int =
-      if (i < end) i else Predef.error("head on empty iterator");
-  }
+  def range(lo: Int, end: Int, step: Int => Int): BufferedIterator[Int] =
+    new BufferedIterator[Int] {
+      private var i = lo;
+      def hasNext: Boolean =  i < end;
+      def next: Int =
+        if (i < end) { val j = i; i = step(i); j } else Predef.error("next on empty iterator");
+      def head: Int =
+        if (i < end) i else Predef.error("head on empty iterator");
+    }
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
@@ -118,7 +127,7 @@ object Iterator {
    *  @param lo the start value of the iterator
    *  @return the iterator starting at value <code>lo</code>.
    */
-  def from(lo: Int): Iterator[Int] =
+  def from(lo: Int): BufferedIterator[Int] =
     from(lo, 1);
 
   /** Create an iterator with elements
@@ -129,11 +138,13 @@ object Iterator {
    *  @param step the increment value of the iterator
    *  @return the iterator starting at value <code>lo</code>.
    */
-  def from(lo: Int, step: Int) = new Iterator[Int] {
-    private var i = lo;
-    def hasNext: Boolean = true;
-    def next: Int = { val j = i; i = i + step; j }
-  }
+  def from(lo: Int, step: Int): BufferedIterator[Int] =
+    new BufferedIterator[Int] {
+      private var i = lo;
+      def hasNext: Boolean = true;
+      def next: Int = { val j = i; i = i + step; j }
+      def head: Int = i;
+    }
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
@@ -143,11 +154,13 @@ object Iterator {
    *  @param step the increment function of the iterator
    *  @return the iterator starting at value <code>lo</code>.
    */
-  def from(lo: Int, step: Int => Int) = new Iterator[Int] {
-    private var i = lo;
-    def hasNext: Boolean = true;
-    def next: Int = { val j = i; i = step(i); j }
-  }
+  def from(lo: Int, step: Int => Int): BufferedIterator[Int] =
+    new BufferedIterator[Int] {
+      private var i = lo;
+      def hasNext: Boolean = true;
+      def next: Int = { val j = i; i = step(i); j }
+      def head: Int = i;
+    }
 
 }
 
@@ -232,7 +245,7 @@ mixin class Iterator[+A] {
    *  @param   p the redicate used to filter the iterator.
    *  @return  the elements of this iterator satisfying <code>p</code>.
    */
-  def filter(p: A => Boolean): Iterator[A] = new BufferedIterator[A] {
+  def filter(p: A => Boolean): BufferedIterator[A] = new BufferedIterator[A] {
     private val source = Iterator.this.buffered;
     private def skip: Unit =
       while (source.hasNext && !p(source.head)) { source.next; () }

@@ -28,8 +28,7 @@ object List {
    *  @param xs the elements to put in the list
    *  @return the list containing elements xs.
    */
-  def apply[A](xs: A*): List[A] =
-    fromArray(xs.asInstanceOf[Array[A]]);
+  def apply[A](xs: A*): List[A] = xs.toList;
 
   /** Create a sorted list of all integers in a range.
    *
@@ -153,11 +152,7 @@ object List {
    *  @return a list that contains the elements returned by successive
    *  calls to <code>it.next</code>
    */
-  def fromIterator[a](it: Iterator[a]): List[a] = {
-    val b = new ListBuffer[a]
-    while (it.hasNext) b += it.next
-    b.toList
-  }
+  def fromIterator[a](it: Iterator[a]): List[a] = it.toList;
 
   /** Converts an array into a list.
    *
@@ -209,15 +204,8 @@ object List {
    *  @param str the string to convert.
    *  @return the string as a list of characters.
    */
-  def fromString(str: String): List[Char] = {
-    var res: List[Char] = Nil;
-    var i = str.length();
-    while (i > 0) {
-      i = i - 1;
-      res = str.charAt(i) :: res;
-    }
-    res
-  }
+  def fromString(str: String): List[Char] =
+    Iterator.fromString(str).toList;
 
   /** Returns the given list of characters as a string.
    *
