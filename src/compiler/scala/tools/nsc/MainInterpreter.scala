@@ -99,7 +99,7 @@ object MainInterpreter {
       }
     else if(line.startsWith("#!/")) // skip the first line of Unix scripts
     	()
-    else if(line.startsWith("scalaint ")) // skip the second line of Unix scripts
+    else if(line.startsWith("exec scalaint ")) // skip the second line of Unix scripts
       ()
     else
       interpretOne(line)
