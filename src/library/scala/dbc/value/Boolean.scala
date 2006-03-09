@@ -22,6 +22,6 @@ abstract class Boolean extends Value {
 
 object Boolean {
 
-	def view (obj:value.Boolean): scala.Boolean = obj.nativeValue;
+	implicit def booleanToBoolean (obj:value.Boolean): scala.Boolean = obj.nativeValue;
 
 }

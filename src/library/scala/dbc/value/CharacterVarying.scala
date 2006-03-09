@@ -30,6 +30,6 @@ abstract class CharacterVarying extends Value {
 object CharacterVarying {
 
 	/** A character varying string value as a native string. */
-	def view (obj:value.CharacterVarying): String = obj.nativeValue;
+	implicit def characterVaryingToString (obj:value.CharacterVarying): String = obj.nativeValue;
 
 }

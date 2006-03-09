@@ -22,7 +22,7 @@ abstract class ApproximateNumeric [Type] extends Value {
 
 object ApproximateNumeric {
 
-  def view (obj:value.ApproximateNumeric[Float]): Float = obj.nativeValue;
-  def view (obj:value.ApproximateNumeric[Double]): Double = obj.nativeValue;
+  implicit def approximateNumericToFloar (obj:value.ApproximateNumeric[Float]): Float = obj.nativeValue;
+  implicit def approximateNumericToDouble (obj:value.ApproximateNumeric[Double]): Double = obj.nativeValue;
 
 }

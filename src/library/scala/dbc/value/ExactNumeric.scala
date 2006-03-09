@@ -25,11 +25,11 @@ abstract class ExactNumeric [Type] extends Value {
 
 object ExactNumeric {
 
-	def view (obj:value.ExactNumeric[Byte]): Byte = obj.nativeValue;
-  def view (obj:value.ExactNumeric[Short]): Short = obj.nativeValue;
-  def view (obj:value.ExactNumeric[Int]): Int = obj.nativeValue;
-  def view (obj:value.ExactNumeric[Long]): Long = obj.nativeValue;
-  def view (obj:value.ExactNumeric[BigInteger]): BigInteger = obj.nativeValue;
-  def view (obj:value.ExactNumeric[BigDecimal]): BigDecimal = obj.nativeValue;
+  implicit def exactNumericToByte (obj:value.ExactNumeric[Byte]): Byte = obj.nativeValue;
+  implicit def exactNumericToShort (obj:value.ExactNumeric[Short]): Short = obj.nativeValue;
+  implicit def exactNumericToInt (obj:value.ExactNumeric[Int]): Int = obj.nativeValue;
+  implicit def exactNumericToLong (obj:value.ExactNumeric[Long]): Long = obj.nativeValue;
+  implicit def exactNumericToBigInteger (obj:value.ExactNumeric[BigInteger]): BigInteger = obj.nativeValue;
+  implicit def exactNumericToBigDecimal (obj:value.ExactNumeric[BigDecimal]): BigDecimal = obj.nativeValue;
 
 }

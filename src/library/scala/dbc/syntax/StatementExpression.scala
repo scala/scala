@@ -211,7 +211,7 @@ object StatementExpression {
     }
   }
 
-  implicit def view (ef:String): StatementField = new StatementField {
+  implicit def stringToStatementField (ef:String): StatementField = new StatementField {
     val fieldName = ef;
   }
 

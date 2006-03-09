@@ -30,6 +30,6 @@ abstract class CharacterLargeObject extends Value {
 object CharacterLargeObject {
 
 	/** A character large object value as a native string. */
-	def view (obj:value.CharacterLargeObject): String = obj.nativeValue;
+	implicit def characterLargeObjectToString (obj:value.CharacterLargeObject): String = obj.nativeValue;
 
 }

@@ -30,6 +30,6 @@ abstract class Character extends Value {
 object Character {
 
 	/** A character string value as a native string. */
-	def view (obj:value.Character): String = obj.nativeValue;
+	implicit def characterToString (obj:value.Character): String = obj.nativeValue;
 
 }
