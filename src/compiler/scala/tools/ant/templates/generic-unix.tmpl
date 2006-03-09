@@ -31,13 +31,46 @@ done;
 SCALA_HOME=`dirname "$SOURCE"`/..;
 SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
-CLASSPATH=@classpath@
-if [ "$CLASSPATH" == "" ] ; then
+## buraq: previous version of this script computed the MYCLASSPATH and
+##        then appended it to the bootclasspath. Unfortunately, this
+##        won't work for library code that uses reflection to obtain
+##        a class living on the classpath. For this reason, we have
+##        to merge everything in the -cp classpath. This requires
+##        intercepting the user's -cp, if any, or the user's $CLASSPATH, 
+##        if set, appending our libs to it and passing the whole thing by -cp
+
+MYCLASSPATH=@classpath@
+if [ "$MYCLASSPATH" == "" ] ; then
   for jar in `ls $SCALA_HOME/lib/*.jar` ; do
-    CLASSPATH=$CLASSPATH:$jar
+    MYCLASSPATH="$MYCLASSPATH:$jar"
   done
-  CLASSPATH=${CLASSPATH:1}
 fi
+
+QQ_USERCLASSPATH=""
+QQ_USERARGS=""
+QQ_NEXT=0
+for i in $@@
+do
+  if [ $QQ_NEXT -eq 1 ]
+  then
+    QQ_USERCLASSPATH=$i;
+    QQ_NEXT=0
+  else if [ $i = "-cp" ]
+       then
+        QQ_NEXT=1
+       else
+        QQ_USERARGS="$QQ_USERARGS $i"
+        QQ_NEXT=0
+       fi
+  fi
+done
+
+#echo $ARGS
+#for j in $ARGS
+#do
+#  echo $j
+#done
+
 
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
@@ -48,6 +81,20 @@ if $cygwin; then
     CLASSPATH=`cygpath --path --$format "$CLASSPATH"`
 fi
 
+## Lex suggested the userclasspath come before our stuff, since it gets
+## preferred.
+
+if [ "$QQ_USERCLASSPATH" != "" ]
+then
+  MYCLASSPATH="$QQ_USERCLASSPATH:$MYCLASSPATH"
+else if [ "$CLASSPATH" != "" ]
+  then
+  MYCLASSPATH="$CLASSPATH:$MYCLASSPATH"
+  fi
+fi
+
+QQ_USERARGS="-cp $MYCLASSPATH $QQ_USERARGS"
+
 for flag in "$@@" ; do
     if [ $flag == '-version' ] ; then
         echo "Scala runtime version @version@ -- @copyright@"
@@ -56,4 +103,4 @@ for flag in "$@@" ; do
     fi
 done
 
-${JAVACMD:=java} @javaflags@ -Xbootclasspath/a:"$CLASSPATH" "$@@"
+${JAVACMD:=java} @javaflags@ $QQ_USERARGS
