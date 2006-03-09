@@ -46,7 +46,7 @@ if [ "$MYCLASSPATH" == "" ] ; then
   done
 fi
 
-QQ_USERCLASSPATH=""
+QQ_USERCLASSPATH="."
 QQ_USERARGS=""
 QQ_NEXT=0
 for i in $@@
@@ -55,7 +55,7 @@ do
   then
     QQ_USERCLASSPATH=$i;
     QQ_NEXT=0
-  else if [ $i = "-cp" ]
+  else if [ $i = "-cp" || $i = "-classpath" ]
        then
         QQ_NEXT=1
        else
@@ -84,12 +84,14 @@ fi
 ## Lex suggested the userclasspath come before our stuff, since it gets
 ## preferred.
 
-if [ "$QQ_USERCLASSPATH" != "" ]
+if [ "$QQ_USERCLASSPATH" != "." ]
 then
   MYCLASSPATH="$QQ_USERCLASSPATH:$MYCLASSPATH"
 else if [ "$CLASSPATH" != "" ]
   then
   MYCLASSPATH="$CLASSPATH:$MYCLASSPATH"
+  else
+  MYCLASSPATH=".:$MYCLASSPATH"
   fi
 fi
 
