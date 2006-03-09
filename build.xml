@@ -988,9 +988,12 @@ GENERATES A DISTRIBUTION
       file="${dist.current.dir}/bin/${scalaint.exec.name}"
       perm="ugo+rx"
     />
-    <!-- Copy the API and man -->
+    <!-- Copy the API, examples and man -->
     <copy todir="${dist.current.dir}/doc/${dist.name}/api">
       <fileset dir="${api.lib.dir}"/>
+    </copy>
+    <copy todir="${dist.current.dir}/doc/${dist.name}/examples">
+      <fileset dir="${examples.dir}"/>
     </copy>
     <copy todir="${dist.current.dir}/man">
       <fileset dir="${docs.dir}/man"/>
