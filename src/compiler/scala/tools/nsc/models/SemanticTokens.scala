@@ -507,9 +507,12 @@ class SemanticTokens(val compiler: Global) {
   def selectPos(tree : Select): Int = if (tree.pos == Position.NOPOS) Position.NOPOS else {
     val buf = unit.source.content;
     if (tree.pos >= buf.length) {
+      if (false) {
         System.err.println("" + tree + "@" + tree.pos + " not in " + unit.source.file.getName() + "[" + buf.length + "]");
         Thread.dumpStack();
         throw new Error();
+      }
+      return 0;
     }
 
     val pos =
@@ -568,13 +571,15 @@ class SemanticTokens(val compiler: Global) {
             sem.symbol.getClass() == tok.symbol.getClass() &&
             sem.symbol.pos == tok.symbol.pos) return;
 
-        System.err.println("NOT_GAP: " + sem.symbol + " " + sem.symbol.getClass() + " " + unit.source.dbg(sem.symbol.pos) + " " + sem.symbol.flags);
-        System.err.println("NOT_GAP: " + tok.symbol + " " + tok.symbol.getClass() + " " + unit.source.dbg(tok.symbol.pos) + " " + tok.symbol.flags);
-        System.err.println("LIST: " + this);
-        System.err.println("POS: " + unit.source.dbg(offset));
+        if (false) {
+          System.err.println("NOT_GAP: " + sem.symbol + " " + sem.symbol.getClass() + " " + unit.source.dbg(sem.symbol.pos) + " " + sem.symbol.flags);
+          System.err.println("NOT_GAP: " + tok.symbol + " " + tok.symbol.getClass() + " " + unit.source.dbg(tok.symbol.pos) + " " + tok.symbol.flags);
+          System.err.println("LIST: " + this);
+          System.err.println("POS: " + unit.source.dbg(offset));
 
-        Thread.dumpStack();
-        throw new Error();
+          Thread.dumpStack();
+          throw new Error();
+        }
       } else {
         val gap = cursor.token.asInstanceOf[Gap];
         if (!(offset - cursor.offset + tok.length <= gap.length)) {
