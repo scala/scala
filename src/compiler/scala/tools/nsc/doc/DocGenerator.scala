@@ -58,7 +58,7 @@ abstract class DocGenerator extends Models {
       else aref(urlFor(sym), target, sym.nameString);
     } catch {
       case e : Error =>
-        System.err.println("SYM=" + sym);
+        //System.err.println("SYM=" + sym);
         Text(sym.toString());
     }
 
