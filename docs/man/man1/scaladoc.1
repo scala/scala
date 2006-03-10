@@ -1,0 +1,112 @@
+.\" ##########################################################################
+.\" #                      __                                                #
+.\" #      ________ ___   / /  ___     Scala 2 On-line Manual Pages          #
+.\" #     / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL              #
+.\" #   __\ \/ /__/ __ |/ /__/ __ |                                          #
+.\" #  /____/\___/_/ |_/____/_/ | |    http://scala.epfl.ch/                 #
+.\" #                           |/                                           #
+.\" ##########################################################################
+.\"
+.\" Process this file with nroff -man scaladoc.1
+.\"
+.TH scaladoc 1  "April 29, 2005" "version 0.1" "USER COMMANDS"
+.\"
+.\" ################################# NAME ###################################
+.\"
+.SH NAME
+scaladoc \- Doc Generator for the Scala 2 language
+.\"
+.\" ############################### SYNOPSIS #################################
+.\"
+.SH SYNOPSIS
+\fBscaladoc\fR [ <\fIoptions\fR> ] <\fIsource files\fR>
+.\"
+.\" ############################### PARAMETERS ###############################
+.\"
+.SH PARAMETERS
+.TP
+<\fIoptions\fR>
+Command line options. See \fBOPTIONS\fR below.
+.TP
+<\fIsource files\fR>
+One or more source files to be compiled (such as MyClass.scala).
+.\"
+.\" ############################## DESCRIPTION ###############################
+.\"
+.SH DESCRIPTION
+The \fBscaladoc\fR tool reads class and object definitions, written in the
+Scala programming language, and generates their API as HTML files.
+.PP
+By default, the generator puts each HTML file in the same directory as its
+source file. You can specify a separate destination directory with -d (see
+\fBOPTIONS\fR, below).
+.\"
+.\" ############################### OPTIONS ##################################
+.\"
+.SH OPTIONS
+The generator has a set of standard options that are supported on the current
+development environment and will be supported in future releases.
+.SS Standard Options
+.TP
+\fB\-d\fR <\fIdirectory\fR>
+Specify where to place generated class files.
+.TP
+\fB\-version\fR
+Print product version and exit.
+.TP
+\fB\-? -help\fR
+Print a synopsis of standard options.
+
+.\"
+.\" ############################### EXAMPLES #################################
+.\"
+.SH EXAMPLES
+.TP
+Generate documentation for a Scala program
+.BR
+\fBscaladoc\fR HelloWorld.scala
+.TP
+Generation documentation for a Scala program to the destination directory
+\fBclasses\fR
+.BR
+\fBscaladoc\fR \-d api HelloWorld.scala
+.TP
+Generate documentation for all Scala files found in the source directory
+\fBsrc\fR to the destination directory \fBapi\fR
+.BR
+\fBscaladoc\fR \-d api src/*.scala 
+.\"
+.\" ############################# EXIT STATUS ################################
+.\"
+.SH "EXIT STATUS"
+\fBscaladoc\fR returns a zero exist status if it succeeds to process the
+specified input files. Non zero is returned in case of failure.
+.\"
+.\" ############################## AUTHOR(S) #################################
+.\"
+.SH AUTHOR
+Written by Stephane Micheloud.
+.\"
+.\" ################################ BUGS ####################################
+.\"
+.SH "REPORTING BUGS"
+Report bugs to <scala@listes.epfl.ch>.
+.\"
+.\" ############################# COPYRIGHT ##################################
+.\"
+.SH COPYRIGHT
+Copyright \(co 2002-2006 LAMP/EPFL
+.PP
+This is free software; see the distribution for copying conditions.  There is
+NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.\"
+.\" ############################## SEE ALSO ##################################
+.\"
+.SH "SEE ALSO"
+.BR scala(1)
+.\" ,
+.\" .BR scalac(1),
+.\" .BR scalaint(1)
+.\"
+.\" ##########################################################################
+.\" $Id: $
