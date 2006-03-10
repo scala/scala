@@ -44,7 +44,7 @@ abstract class DocGenerator extends Models {
     def title : String;
     def save(nodes : NodeSeq) = {
       val path0 = outdir + "/" + path + ".html";
-      //System.err.println("Writing to " + path0);
+      System.err.println("Writing to " + path0);
       val file = new File(path0);
       val parent = file.getParentFile();
       if (!parent.exists()) parent.mkdirs();
@@ -53,9 +53,13 @@ abstract class DocGenerator extends Models {
       writer.write(str, 0, str.length());
       writer.close();
     }
-    def urlFor(sym : Symbol, target : String) : NodeSeq = {
+    def urlFor(sym : Symbol, target : String) : NodeSeq = try {
       if (sym.sourceFile == null) Text(sym.fullNameString('.'));
       else aref(urlFor(sym), target, sym.nameString);
+    } catch {
+      case e : Error =>
+        System.err.println("SYM=" + sym);
+        Text(sym.toString());
     }
 
 
