@@ -56,7 +56,7 @@ do
   then
     QQ_USERCLASSPATH=$i;
     QQ_NEXT=0
-  else if [ $i = "-cp" || $i = "-classpath" ]
+  else if [[ $i = "-cp" || $i = "-classpath" ]]
        then
         QQ_NEXT=1
        else
