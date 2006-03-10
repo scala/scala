@@ -44,6 +44,7 @@ if [ "$MYCLASSPATH" == "" ] ; then
   for jar in `ls $SCALA_HOME/lib/*.jar` ; do
     MYCLASSPATH="$MYCLASSPATH:$jar"
   done
+  MYCLASSPATH=${MYCLASSPATH:1}
 fi
 
 QQ_USERCLASSPATH="."
