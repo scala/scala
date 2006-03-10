@@ -386,7 +386,6 @@ abstract class DocGenerator extends Models {
 
 
   }
-
   def process(units : Iterator[CompilationUnit]) : Unit = {
     var members = emptyMap;
 
