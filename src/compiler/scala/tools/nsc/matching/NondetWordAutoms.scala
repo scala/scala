@@ -1,7 +1,7 @@
 package scala.tools.nsc.matching ;
 import java.util._ ;
 
-mixin class NondetWordAutoms {
+trait NondetWordAutoms {
 /** a nondeterministic word automaton.
  *  states are represented (implicitly) as Integer objects.
  */

@@ -24,7 +24,7 @@ package scala.collection.immutable;
  *  @author  Erik Stenman
  *  @version 1.1, 22/03/2004
  */
-mixin class Map[A, B] extends AnyRef with collection.Map[A, B] {
+trait Map[A, B] extends AnyRef with collection.Map[A, B] {
 
     /** This method returns a new map instance of the same class
      *  mapping keys of the same type to values of type <code>C</code>.

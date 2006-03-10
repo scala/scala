@@ -324,7 +324,7 @@ trait Parsers requires SyntaxAnalyzer {
 	in.nextToken();
 	name
       } else {
-        if (settings.migrate.value && in.token == REQUIRES || in.token == IMPLICIT)
+        if (settings.migrate.value && in.token == MATCH || in.token == REQUIRES || in.token == IMPLICIT)
           syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
 	accept(IDENTIFIER);
 	nme.ERROR
@@ -1100,7 +1100,7 @@ trait Parsers requires SyntaxAnalyzer {
         r
       case _ =>
         if (settings.migrate.value &&
-            in.token == REQUIRES || in.token == IMPLICIT)
+            in.token == MATCH || in.token == REQUIRES || in.token == IMPLICIT)
           syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
 	syntaxError("illegal start of simple pattern", true);
 	errorPatternTree

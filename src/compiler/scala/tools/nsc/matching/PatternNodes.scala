@@ -10,7 +10,7 @@ package scala.tools.nsc.matching ;
 
 import scala.tools.nsc.util.Position;
 
-mixin class PatternNodes requires TransMatcher {
+trait PatternNodes requires TransMatcher {
 
   import global._;
 

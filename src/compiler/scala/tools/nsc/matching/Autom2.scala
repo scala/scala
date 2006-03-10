@@ -4,7 +4,7 @@ package scala.tools.nsc.matching ;
 
 import scala.tools.nsc.util.Position;
 
-mixin class Autom2 requires TransMatcher {
+trait Autom2 requires TransMatcher {
 
   import global._;
 

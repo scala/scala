@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 09/05/2004
  */
-mixin class Scriptable[A] {
+trait Scriptable[A] {
 
     /** Send a message to this scriptable object.
      */

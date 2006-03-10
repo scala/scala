@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class SynchronizedMap[A, B] extends Map[A, B] {
+trait SynchronizedMap[A, B] extends Map[A, B] {
 
     abstract override def size: Int = synchronized {
         super.size;

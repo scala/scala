@@ -26,7 +26,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.1, 02/05/2004
  */
-mixin class Map[A, +B] extends AnyRef
+trait Map[A, +B] extends AnyRef
       with PartialFunction[A, B]
       with Iterable[Pair[A, B]]
 {

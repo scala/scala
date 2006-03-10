@@ -104,7 +104,7 @@ class MailBox extends AnyRef with ListQueueCreator {
 /**
 * Module for dealing with queues.
 */
-mixin class QueueModule[a] {
+trait QueueModule[a] {
   /** Type of queues. */
   type t;
   /** Create an empty queue. */
@@ -116,7 +116,7 @@ mixin class QueueModule[a] {
 }
 
 /** Inefficient but simple queue module creator. */
-mixin class ListQueueCreator {
+trait ListQueueCreator {
   def queueCreate[a]: QueueModule[a] = new QueueModule[a] {
     type t = List[a];
     def make: t = Nil;
@@ -137,7 +137,7 @@ mixin class ListQueueCreator {
 }
 
 /** Efficient queue module creator based on linked lists. */
-mixin class LinkedListQueueCreator {
+trait LinkedListQueueCreator {
   import scala.collection.mutable.LinkedList;
   def queueCreate[a >: Null <: AnyRef]: QueueModule[a] = new QueueModule[a] {
     type t = Pair[LinkedList[a], LinkedList[a]]; // fst = the list, snd = last elem

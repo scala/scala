@@ -12,4 +12,4 @@
 package scala.xml.dtd;
 
 
-mixin class DtdTypeSymbol;
+trait DtdTypeSymbol;

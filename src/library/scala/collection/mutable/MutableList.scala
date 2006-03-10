@@ -19,7 +19,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
+trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
 
     protected var first: LinkedList[A] = null;
     protected var last: LinkedList[A] = null;

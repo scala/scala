@@ -19,7 +19,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 09/05/2004
  */
-mixin class SetProxy[A] extends Set[A] with collection.SetProxy[A] {
+trait SetProxy[A] extends Set[A] with collection.SetProxy[A] {
 
     def self: Set[A];
 

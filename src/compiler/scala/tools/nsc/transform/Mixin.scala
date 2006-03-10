@@ -363,7 +363,7 @@ abstract class Mixin extends InfoTransform {
             case Super(_, mix) =>
               if (mix == nme.EMPTY.toTypeName) {
                 if (currentOwner.enclClass.isImplClass)
-                  assert(false, "illegal super in mixin class: " + currentOwner.enclClass + " " + tree);
+                  assert(false, "illegal super in trait: " + currentOwner.enclClass + " " + tree);
               }
               if (sym.owner hasFlag lateINTERFACE)
                 staticCall(atPhase(phase.prev)(sym.overridingSymbol(implClass(sym.owner))))

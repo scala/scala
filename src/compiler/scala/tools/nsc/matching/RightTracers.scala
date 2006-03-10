@@ -11,7 +11,7 @@ import java.util._ ;
 import scala.tools.nsc.util.Position;
 import scala.tools.nsc.symtab.Flags;
 
-mixin class RightTracers requires TransMatcher {
+trait RightTracers requires TransMatcher {
 
   import global._ ;
   import java.util._ ;

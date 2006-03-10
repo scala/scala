@@ -2,7 +2,9 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Sean McDirmid
  */
-// $Id: $package scala.tools.nsc.doc;
+// $Id: $
+
+package scala.tools.nsc.doc;
 
 import scala.tools.nsc._;
 import java.io._;

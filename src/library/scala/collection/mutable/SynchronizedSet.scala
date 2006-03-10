@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class SynchronizedSet[A] extends Set[A] {
+trait SynchronizedSet[A] extends Set[A] {
 
     abstract override def size: Int = synchronized {
         super.size

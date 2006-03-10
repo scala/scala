@@ -15,7 +15,7 @@ package scala.xml.parsing;
 /**
  * Helper functions for parsing XML fragments
  */
-mixin class TokenTests {
+trait TokenTests {
 
   /** (#x20 | #x9 | #xD | #xA) */
   final def isSpace( ch:Char ):Boolean = ch match {

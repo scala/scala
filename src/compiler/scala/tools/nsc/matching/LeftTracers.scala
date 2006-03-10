@@ -10,7 +10,7 @@ import java.util._ ;
 
 import scala.tools.nsc.util.Position;
 
-mixin class LeftTracers requires TransMatcher {
+trait LeftTracers requires TransMatcher {
 
 import global._;
 

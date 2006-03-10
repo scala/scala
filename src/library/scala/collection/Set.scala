@@ -25,7 +25,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
+trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
 
     /** Returns the number of elements in this set.
     *

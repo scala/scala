@@ -23,7 +23,7 @@ import Predef._;
  *  @version 1.1, 02/03/2004
  */
 [cloneable]
-mixin class Buffer[A] extends AnyRef
+trait Buffer[A] extends AnyRef
       with Seq[A]
       with Scriptable[Message[Pair[Location, A]]]
 {

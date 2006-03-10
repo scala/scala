@@ -21,10 +21,10 @@ package scala;
  */
 object Stream {
 
-  val empty: Stream[Bottom] = new Stream[Bottom] {
+  val empty: Stream[Nothing] = new Stream[Nothing] {
     def isEmpty = true;
-    def head: Bottom = error("head of empty stream");
-    def tail: Stream[Bottom] = error("tail of empty stream");
+    def head: Nothing = error("head of empty stream");
+    def tail: Stream[Nothing] = error("tail of empty stream");
     def printElems(buf: StringBuffer, prefix: String): StringBuffer = buf;
   }
 
@@ -124,7 +124,7 @@ object Stream {
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
  */
-mixin class Stream[+a] extends Seq[a] {
+trait Stream[+a] extends Seq[a] {
 
   def isEmpty: Boolean;
   def head: a;

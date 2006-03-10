@@ -21,7 +21,7 @@ package scala.collection.mutable;
  *  @version 1.1, 09/05/2004
  */
 [cloneable]
-mixin class Set[A] extends AnyRef with collection.Set[A]
+trait Set[A] extends AnyRef with collection.Set[A]
       with Scriptable[Message[A]]
 {
 

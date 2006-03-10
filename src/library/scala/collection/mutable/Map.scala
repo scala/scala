@@ -21,7 +21,7 @@ package scala.collection.mutable;
  *  @version 1.1, 09/05/2004
  */
 [cloneable]
-mixin class Map[A, B] extends AnyRef
+trait Map[A, B] extends AnyRef
       with collection.Map[A, B]
       with Scriptable[Message[Pair[A, B]]]
 {

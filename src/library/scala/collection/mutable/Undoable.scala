@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class Undoable {
+trait Undoable {
 
     /** Undo the last operation.
      */

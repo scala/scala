@@ -7,7 +7,7 @@ package scala.tools.nsc.matching ;
 
 import java.util._ ;
 
-mixin class DetWordAutoms requires TransMatcher  {
+trait DetWordAutoms requires TransMatcher  {
 
 import global._;
 class DetWordAutom {

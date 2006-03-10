@@ -14,7 +14,7 @@ import java.util._ ;
  *  is the "Builder" for "Director" class TransMatch.
  */
 
-mixin class SequenceMatchers requires TransMatcher  {
+trait SequenceMatchers requires TransMatcher  {
 
   import global._;
 

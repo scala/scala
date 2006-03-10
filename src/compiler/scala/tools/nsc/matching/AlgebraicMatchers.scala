@@ -9,7 +9,7 @@ package scala.tools.nsc.matching;
 /** the pattern matcher, tweaked to work with regular patterns
  *  @author Burak Emir
  */
-mixin class AlgebraicMatchers  requires TransMatcher {
+trait AlgebraicMatchers  requires TransMatcher {
 
   import global._;
 

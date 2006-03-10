@@ -19,6 +19,6 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class Subscriber[-A, -B] {
+trait Subscriber[-A, -B] {
     def notify(pub: B, event: A): Unit;
 }

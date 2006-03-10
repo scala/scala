@@ -21,7 +21,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class Message[+A];
+trait Message[+A];
 
 /** This observable update refers to inclusion operations that add new elements
  *  to collection classes.

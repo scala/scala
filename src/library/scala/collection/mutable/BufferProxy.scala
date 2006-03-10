@@ -19,7 +19,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/04/2004
  */
-mixin class BufferProxy[A] extends Buffer[A] with Proxy {
+trait BufferProxy[A] extends Buffer[A] with Proxy {
 
     def self: Buffer[A];
 

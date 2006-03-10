@@ -12,7 +12,7 @@
 package scala.xml.factory;
 
 
-mixin class NodeFactory[A <: Node] {
+trait NodeFactory[A <: Node] {
 
   val ignoreComments  = false;
   val ignoreProcInstr = false;

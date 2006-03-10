@@ -29,7 +29,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class HashTable[A] extends AnyRef {
+trait HashTable[A] extends AnyRef {
 
     /** The load factor for the hash table.
      */

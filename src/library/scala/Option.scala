@@ -83,4 +83,4 @@ final case class Some[+A](x: A) extends Option[A];
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-case object None extends Option[Bottom];
+case object None extends Option[Nothing];

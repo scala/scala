@@ -25,7 +25,7 @@ package scala.util.logging;
    </code>
    * and the logging will be sent to the Console.
    */
-mixin class Logged {
+trait Logged {
   /** this method should log the message given as argument somewhere
    * as a side-effect
    */

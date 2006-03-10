@@ -364,7 +364,7 @@ package scala.tools.ant {
       * ant file.
       * @param message A message describing the error.
       * @throws BuildException A build error exception thrown in every case. */
-    private def error(message: String): All =
+    private def error(message: String): Nothing =
       throw new BuildException(message, getLocation())
 
 /******************************************************************************\

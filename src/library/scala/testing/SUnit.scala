@@ -39,7 +39,7 @@ package scala.testing;
 object SUnit {
 
   /** a Test can be run with its result being collected */
-  mixin class Test {
+  trait Test {
     def run(r: TestResult):Unit;
   }
 
@@ -132,7 +132,7 @@ object SUnit {
   }
 
   /** this class defined useful assert methods */
-  mixin class Assert {
+  trait Assert {
     /** equality */
     def assertEquals[A](msg:String, expected:A, actual: => A): Unit =
       if( expected != actual ) fail(msg);

@@ -5,7 +5,7 @@ package scala.tools.nsc.matching ;
 
 import scala.tools.nsc.util.Position;
 
-mixin class CodeFactory requires TransMatcher  {
+trait CodeFactory requires TransMatcher  {
 
   import global._ ;
 

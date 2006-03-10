@@ -20,7 +20,7 @@ package scala.collection.immutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-mixin class Set[A] extends AnyRef with collection.Set[A] {
+trait Set[A] extends AnyRef with collection.Set[A] {
 
     /** This method creates a new set with an additional element.
      */

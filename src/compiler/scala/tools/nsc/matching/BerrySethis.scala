@@ -4,7 +4,7 @@ import java.util.{ HashSet, HashMap, TreeSet, TreeMap, Vector };
 
 //import scala.compiler.printer.XMLAutomPrinter;
 
-mixin class BerrySethis requires TransMatcher {
+trait BerrySethis requires TransMatcher {
 
 import global._;
 /** a Berry-Sethi style construction for nfas.

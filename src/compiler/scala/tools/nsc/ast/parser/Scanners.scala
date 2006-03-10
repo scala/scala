@@ -21,7 +21,7 @@ trait Scanners requires SyntaxAnalyzer {
     var token: int = EMPTY
 
     /** the token's position */
-    protected var pos: int = 0
+    var pos: int = 0
 
     /** the first character position after the previous token */
     var lastPos: int = 0
@@ -171,7 +171,7 @@ trait Scanners requires SyntaxAnalyzer {
         prev.copyFrom(this);
         fetchToken();
         if (token == CLASS)
-          unit.warning(pos, "`mixin' is no longer a reserved word; you should use `trait' instead of `mixin class'");
+          unit.warning(prev.pos, "`mixin' is no longer a reserved word; you should use `trait' instead of `mixin class'");
         next.copyFrom(this)
         this.copyFrom(prev)
       }

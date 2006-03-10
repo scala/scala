@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-mixin class SynchronizedBuffer[A] extends Buffer[A] {
+trait SynchronizedBuffer[A] extends Buffer[A] {
 
     abstract override def length: Int = synchronized {
         super.length;
