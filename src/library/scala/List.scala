@@ -473,11 +473,11 @@ sealed abstract class List[+a] extends Seq[a] {
       }
   }
 
-  /** Transform this sequence into a list of all elements.
-  *
-  *  @return  a list which enumerates all elements of this sequence.
-  */
-  //override def toList: List[a] = this; //!!!
+  /** Overrides the method in Iterable for efficiency.
+   *
+   *  @return  the list itself
+   */
+  override def toList: List[a] = this;
 
   /** Returns the list without its last element.
    *
