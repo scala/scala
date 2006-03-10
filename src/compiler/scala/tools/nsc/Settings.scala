@@ -85,8 +85,8 @@ class Settings(error: String => unit) {
   val log           = PhasesSetting ("-log", "Log operations in")
   val version       = BooleanSetting("-version", "Print product version and exit")
   val help          = BooleanSetting("-help", "Print a synopsis of standard options")
-  val inline        = BooleanSetting("-inline", "Perform inlining when possible")
 
+  val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
   val Xshowicode    = BooleanSetting("-Xshowicode", "Print the generated ICode")
