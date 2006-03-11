@@ -12,6 +12,7 @@ import java.lang.{Float, Double};
 import Flags._;
 import PickleFormat._;
 import collection.mutable.HashMap;
+import java.io.IOException;
 
 abstract class UnPickler {
   val global: Global;
@@ -20,9 +21,10 @@ abstract class UnPickler {
   def unpickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol): unit = try {
     new UnPickle(bytes, offset, classRoot, moduleRoot);
   } catch {
+    case ex: IOException =>
+      throw ex
     case ex: Throwable =>
-      ex.printStackTrace();//debug
-
+      if (settings.debug.value) ex.printStackTrace();
       throw new RuntimeException("error reading Scala signature of " + classRoot.nameString + ": " + ex.getMessage());
   }
 
@@ -43,10 +45,10 @@ abstract class UnPickler {
       val major = readNat();
       val minor = readNat();
       if (major != MajorVersion || minor > MinorVersion)
-        throw new TypeError("Scala signature " + classRoot.name +
-                            " has wrong version\n expected: " +
-                            MajorVersion + "." + MinorVersion +
-                            "\n found: " + major + "." + minor)
+        throw new IOException("Scala signature " + classRoot.name +
+                              " has wrong version\n expected: " +
+                              MajorVersion + "." + MinorVersion +
+                              "\n found: " + major + "." + minor)
     }
 
     /** The scope associated with given symbol */

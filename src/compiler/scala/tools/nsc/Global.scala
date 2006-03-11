@@ -87,6 +87,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   def error(msg: String) = reporter.error(null, msg);
   def warning(msg: String) = reporter.warning(null, msg);
   def inform(msg: String) = System.err.println(msg);
+  def inform[T](msg: String, value: T): T = { inform(msg+value); value }
 
     //reporter.info(null, msg, true);
   def informProgress(msg: String) =

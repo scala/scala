@@ -273,7 +273,8 @@ trait Typers requires Analyzer {
       if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
 	inferExprAlternative(tree, pt)
       val sym = tree.symbol
-      if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
+      if (tree.tpe.isError) tree
+      else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         checkStable(tree)
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
         errorTree(tree, ""+sym+" is not a value")
@@ -407,6 +408,8 @@ trait Typers requires Analyzer {
 		  case NoType =>
 		    errorTree(tree, "expected pattern type "+pt +
 			      " does not conform to sequence "+clazz)
+                  case ErrorType =>
+                    setError(tree)
 		}
 	      } else {
 		if (!tree.tpe.isError)
@@ -552,7 +555,7 @@ trait Typers requires Analyzer {
      */
     def validateParentClasses(parents: List[Tree], selfType: Type): unit = {
 
-      def validateParentClass(parent: Tree, superclazz: Symbol): unit =
+      def validateParentClass(parent: Tree, superclazz: Symbol): unit = {
 	if (!parent.tpe.isError) {
 	  val psym = parent.tpe.symbol.initialize
 	  if (!psym.isClass)
@@ -585,8 +588,10 @@ trait Typers requires Analyzer {
 	  if (parents exists (p => p != parent && p.tpe.symbol == psym && !psym.isError))
 	    error(parent.pos, ""+psym+" is inherited twice")
 	}
+      }
 
-      for (val p <- parents) validateParentClass(p, parents.head.tpe.symbol)
+      if (!parents.head.tpe.isError)
+        for (val p <- parents) validateParentClass(p, parents.head.tpe.symbol)
     }
 
     def typedClassDef(cdef: ClassDef): Tree = {
@@ -1172,7 +1177,6 @@ trait Typers requires Analyzer {
 	val tree1 = if (qual == EmptyTree) tree
                     else atPos(tree.pos)(Select(qual, name));
 		      // atPos necessary because qualifier might come from startContext
-        //System.out.println("check acc: "+defSym+" "+pre);//DEBUG
 	stabilize(checkAccessible(tree1, defSym, pre, qual), pre, mode, pt)
       }
 

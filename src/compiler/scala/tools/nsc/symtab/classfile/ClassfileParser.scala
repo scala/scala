@@ -56,7 +56,7 @@ abstract class ClassfileParser {
   def parse(file: AbstractFile, root: Symbol): unit = {
     def handleError(e: Exception) = {
       if (settings.debug.value) e.printStackTrace();//debug
-      throw new IOException("class file '" + in.file + "' is broken")
+      throw new IOException("class file '" + in.file + "' is broken\n(" + e.getMessage() + ")")
     }
     assert(!busy);
     busy = true;

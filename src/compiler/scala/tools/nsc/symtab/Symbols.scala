@@ -751,9 +751,11 @@ trait Symbols requires SymbolTable {
      *  Never translates expansions of operators back to operator symbol.
      *  Never adds id.
      */
-    final def fullNameString(separator: char): String =
+    final def fullNameString(separator: char): String = {
+      assert(owner != NoSymbol, this)
       if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
       else owner.fullNameString(separator) + separator + simpleName;
+    }
 
     final def fullNameString: String = fullNameString('.');
 

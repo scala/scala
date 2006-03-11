@@ -415,6 +415,19 @@ sealed abstract class List[+a] extends Seq[a] {
       b.prependToList(this)
     }
 
+  /** Converts the list to an Array */
+  def toArray[b >: a]: Array[b] = {
+    val xs = new Array[b](length)
+    var i = 0
+    var these = this
+    while (!these.isEmpty) {
+      xs(i) = these.head
+      i = i + 1
+      these = these.tail
+    }
+    xs
+  }
+
   /** Reverse the given prefix and append the current list to that.
    *  This function is equivalent to an application of <code>reverse</code>
    *  on the prefix followed by a call to <code>:::</code>, but more

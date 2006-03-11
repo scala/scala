@@ -513,6 +513,10 @@ trait Types requires SymbolTable {
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
       else if (sym.isPackageClass) sym.fullNameString + "."
       else sym.nameString + ".this.";
+    override def toString(): String =
+      if (sym.isRoot) "<root>"
+      else if (sym.isEmptyPackageClass) "<empty>"
+      else super.toString()
     override def narrow: Type = this;
   }
 
