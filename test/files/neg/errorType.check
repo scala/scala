@@ -1,0 +1,3 @@
+errorType.scala:4 error: value blah is not a member of Test.this.Foo
+  val x = foo.blah match {
+             ^
