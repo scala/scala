@@ -992,15 +992,20 @@ GENERATES A DISTRIBUTION
       <fileset dir="${docs.dir}/man"/>
     </copy>
     <!-- Recreate the 'latest' link to point to this distribution -->
-    <if><isset property="os.unix"/>
+    <if><isset property="os.win"/>
       <then>
+        <copy todir="${dist.latest.dir}">
+          <fileset dir="${dist.current.dir}"/>
+        </copy>
+      </then>
+      <else>
         <symlink
           link="${dist.latest.dir}"
           resource="${dist.current.dir}"
           overwrite="yes"
           failonerror="no"
         />
-      </then>
+      </else>
     </if>
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>

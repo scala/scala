@@ -8,6 +8,10 @@ rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
+rem We assume the following conventions:
+rem - System/user environment variables start with a letter
+rem - Local batch variables start with a '_'
+
 if "%OS%"=="Windows_NT" (
   @@setlocal
   set _SCALA_HOME=%~dp0..
@@ -74,7 +78,7 @@ rem ##########################################################################
 rem # errors
 
 :error1
-echo ERROR: environment variable SCALA_HOME is undefined. It should point to the directory containing the file "VERSION-@version@".
+echo ERROR: environment variable SCALA_HOME is undefined. It should point to your installation directory.
 goto end
 
 :end

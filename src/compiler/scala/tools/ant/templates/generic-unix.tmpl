@@ -41,37 +41,41 @@ SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
 MYCLASSPATH=@classpath@
 if [ "$MYCLASSPATH" == "" ] ; then
-  for jar in `ls $SCALA_HOME/lib/*.jar` ; do
-    MYCLASSPATH="$MYCLASSPATH:$jar"
-  done
-  MYCLASSPATH=${MYCLASSPATH:1}
+    for jar in `ls $SCALA_HOME/lib/*.jar` ; do
+        MYCLASSPATH="$MYCLASSPATH:$jar"
+    done
+    MYCLASSPATH=${MYCLASSPATH:1}
 fi
 
 QQ_USERCLASSPATH="."
 QQ_USERARGS=""
 QQ_NEXT=0
-for i in $@@
-do
-  if [ $QQ_NEXT -eq 1 ]
-  then
-    QQ_USERCLASSPATH=$i;
-    QQ_NEXT=0
-  else if [[ $i = "-cp" || $i = "-classpath" ]]
-       then
-        QQ_NEXT=1
-       else
-        QQ_USERARGS="$QQ_USERARGS $i"
+for i in $@@ ; do
+    if [ $QQ_NEXT -eq 1 ] ; then
+        QQ_USERCLASSPATH=$i
         QQ_NEXT=0
-       fi
-  fi
+    else
+        if [[ $i = "-cp" || $i = "-classpath" ]] ; then
+            QQ_NEXT=1
+        else
+            QQ_USERARGS="$QQ_USERARGS $i"
+            QQ_NEXT=0
+        fi
+    fi
 done
 
-#echo $ARGS
-#for j in $ARGS
-#do
-#  echo $j
-#done
+## Lex suggested the user classpath comes before
+## the Scala libraries, since it gets preferred.
 
+if [ "$QQ_USERCLASSPATH" != "." ] ; then
+    MYCLASSPATH="$QQ_USERCLASSPATH:$MYCLASSPATH"
+else
+    if [ "$CLASSPATH" != "" ] ; then
+        MYCLASSPATH="$CLASSPATH:$MYCLASSPATH"
+    else
+        MYCLASSPATH=".:$MYCLASSPATH"
+    fi
+fi
 
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
@@ -79,21 +83,7 @@ if $cygwin; then
     else
         format=windows
     fi
-    CLASSPATH=`cygpath --path --$format "$CLASSPATH"`
-fi
-
-## Lex suggested the userclasspath come before our stuff, since it gets
-## preferred.
-
-if [ "$QQ_USERCLASSPATH" != "." ]
-then
-  MYCLASSPATH="$QQ_USERCLASSPATH:$MYCLASSPATH"
-else if [ "$CLASSPATH" != "" ]
-  then
-  MYCLASSPATH="$CLASSPATH:$MYCLASSPATH"
-  else
-  MYCLASSPATH=".:$MYCLASSPATH"
-  fi
+    MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
 fi
 
 QQ_USERARGS="-cp $MYCLASSPATH $QQ_USERARGS"

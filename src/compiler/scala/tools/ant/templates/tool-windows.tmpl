@@ -8,39 +8,58 @@ rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
+rem We assume the following conventions:
+rem - System/user environment variables start with a letter
+rem - Local batch variables start with a '_'
+
 if "%OS%"=="Windows_NT" (
   @@setlocal
-  set SCALA_HOME=%~dp0..%
+  set _SCALA_HOME=%~dp0..
 ) else (
-  if "%SCALA_HOME%"=="" goto error1
+  set _SCALA_HOME=%SCALA_HOME%
+  if "%_SCALA_HOME%"=="" goto error1
 )
-set _SCALA_HOME=%SCALA_HOME%
 
 set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
 set _JAVAFLAGS=@javaflags@
 
+set _CPATH=.
 set _CLASSPATH=@classpath@
 if not "%_CLASSPATH%"=="" goto args
-for %%f in ("%SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
+for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
 
 :args
 set _ARGS=
 :loop
 if "%1"=="" goto exec
+if "%1"=="-classpath" goto cpath
+if "%1"=="-cp" goto cpath
 if "%1"=="-version" goto version
 set _ARGS=%_ARGS% %1
 shift
 goto loop
 
-:exec
-set _PROPS=-Dscala.home="%SCALA_HOME%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
+:cpath
+shift
+if "%1"=="" goto help
+set _CPATH=%1
+shift
+goto :loop
 
+:exec
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
+
+set _CLASSPATH=%_CPATH%;%_CLASSPATH%
 rem echo %_JAVACMD% %_JAVAFLAGS% %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 %_JAVACMD% %_JAVAFLAGS% %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 goto end
 
 :version
+echo @name@ version @version@ -- @copyright@
+goto end
+
+:help
 echo @name@ version @version@ -- @copyright@
 goto end
 
@@ -59,7 +78,7 @@ rem ##########################################################################
 rem # errors
 
 :error1
-echo ERROR: environment variable SCALA_HOME is undefined. It should point to your sbaz directory.
+echo ERROR: environment variable SCALA_HOME is undefined. It should point to your installation directory.
 goto end
 
 :end
