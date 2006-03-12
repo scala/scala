@@ -1,3 +1,5 @@
-version.major=2
+#Version last updated on Sunday, 12 March 2006, 23:37:34 (CET)
+#Sun Mar 12 23:37:34 CET 2006
 version.minor=0
-version.patch=0
+version.patch=1
+version.major=2
