@@ -1097,6 +1097,10 @@ trait Types requires SymbolTable {
       if (lobounds.forall(.<:<(tp)) && hibounds.forall(tp.<:<)) {
         inst = tp; true
       } else false;
+
+    override def toString() =
+      lobounds.mkString("[ _>:(", ",", ") ")+
+      hibounds.mkString("| _<:(", ",", ") | _= ")+ inst;
   }
 
   /** A prototype for mapping a function over all possible types
@@ -1240,7 +1244,11 @@ trait Types requires SymbolTable {
 		  case TypeRef(_, basesym, baseargs) =>
 //                    System.out.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs);//DEBUG
 		    if (basesym.typeParams.length != baseargs.length)
-                      assert(false, "asSeenFrom(" + pre + "," + clazz + ")" + sym + " " + basesym + " " + baseargs); //debug
+                      throw new TypeError(
+                        "something is wrong (wrong class file?): "+basesym+
+                        " with type parameters "+
+                        basesym.typeParams.map(.name).mkString("[",",","]")+
+                        " gets applied to arguments "+baseargs.mkString("(",",",")"))
 		    instParam(basesym.typeParams, baseargs);
 		  case _ =>
                     throwError

@@ -246,6 +246,7 @@ trait Infer requires Analyzer {
 	  errorTree(tree, sym.toString() + " cannot be accessed in " +
 		    (if (sym.isClassConstructor) context.enclClass.owner else pre.widen))
 	} else {
+          //System.out.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
           var owntype = pre.memberType(sym1);
           if (pre.isInstanceOf[SuperType])
             owntype = owntype.substSuper(pre, site.symbol.thisType);
@@ -295,8 +296,9 @@ trait Infer requires Analyzer {
     def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
 		      pt: Type): List[Type] = {
       /** Map type variable to its instance, or, if `variance' is covariant/contravariant,
-       *  to its upper/lower bound; */
+       *  to its upper/lower bound */
       def instantiateToBound(tvar: TypeVar, variance: int): Type = try {
+        //System.out.println("instantiate "+tvar+tvar.constr+" variance = "+variance);//DEBUG
 	if (tvar.constr.inst != NoType) {
 	  instantiate(tvar.constr.inst)
 	} else if ((variance & COVARIANT) != 0 && !tvar.constr.hibounds.isEmpty) {
@@ -304,6 +306,10 @@ trait Infer requires Analyzer {
 	  instantiate(tvar.constr.inst)
 	} else if ((variance & CONTRAVARIANT) != 0 && !tvar.constr.lobounds.isEmpty) {
 	  tvar.constr.inst = lub(tvar.constr.lobounds);
+	  instantiate(tvar.constr.inst)
+        } else if (!tvar.constr.hibounds.isEmpty && !tvar.constr.lobounds.isEmpty &&
+                   glb(tvar.constr.hibounds) <:< lub(tvar.constr.lobounds)) {
+	  tvar.constr.inst = glb(tvar.constr.hibounds);
 	  instantiate(tvar.constr.inst)
 	} else {
 	  WildcardType

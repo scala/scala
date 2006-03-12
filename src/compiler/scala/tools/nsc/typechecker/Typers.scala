@@ -567,10 +567,11 @@ trait Typers requires Analyzer {
                 error(parent.pos, "illegal inheritance; super"+superclazz+
                       "\n is not a subclass of the super"+ps.head.symbol+
                       "\n of the mixin " + psym);
-            } else if (settings.migrate.value)
+            } else if (settings.migrate.value) {
               error(parent.pos, migrateMsg+psym+" needs to be a declared as a trait")
-            else
-	      error(parent.pos, ""+psym+" is not declared to be a trait")
+            }else {
+	      error(parent.pos, ""+psym+" needs to be a trait be mixed in")
+            }
 	  else if (psym.hasFlag(FINAL))
 	    error(parent.pos, "illegal inheritance from final class")
 	  else if (!phase.erasedTypes && psym.isSealed &&
