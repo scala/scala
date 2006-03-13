@@ -146,7 +146,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
 /** A wrapper that provides a command-line interface */
 object MainInterpreter {
  	def main(args: Array[String]): Unit = {
-     (new InterpreterLoop(new BufferedReader(new InputStreamReader(System.in)),
-                          new PrintWriter(new java.io.FileWriter("out")))).main(args)
+     (new InterpreterLoop).main(args)
  	}
 }
