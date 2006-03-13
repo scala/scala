@@ -68,9 +68,14 @@ abstract class DocGenerator extends Models {
          "XXX";
        } else if (sym.owner.isPackageClass) sym.fullNameString('/');
        else urlFor0(sym.owner, orig) + "." + Utility.escape(sym.nameString)) + (sym match {
-      case msym : ModuleSymbol => "$object";
+      case msym : ModuleSymbol =>
+      	if (msym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) "";
+        else "$object";
       case csym : ClassSymbol =>
-        if (csym.isModuleClass) "$object";
+        if (csym.isModuleClass) {
+          if (csym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) "";
+          else "$object";
+        }
         else "";
       case _ =>
         //System.err.println("XXX: class or object " + orig + " not found in " + sym);
