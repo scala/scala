@@ -150,6 +150,15 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
     } else
       Predef.error("cannot create subsequence");
 
+  /** Transform this sequence into a list of all elements.
+  *
+  *  @return  a list which enumerates all elements of this sequence.
+  */
+  def toList: List[A] = elements.toList;
+
+  /** Converts this sequence to an Array */
+  def toArray[B >: A]: Array[B] = elements.copyToArray(new Array[B](length), 0);
+
   /** Fills the given array <code>xs</code> with the elements of
   *  this sequence starting at position <code>start</code>.
   *
@@ -159,12 +168,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   */
   def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] =
     elements.copyToArray(xs, start);
-
-  /** Transform this sequence into a list of all elements.
-  *
-  *  @return  a list which enumerates all elements of this sequence.
-  */
-  def toList: List[A] = elements.toList;
 
   /** Customizes the <code>toString</code> method.
   *

@@ -427,7 +427,8 @@ trait Iterator[+A] {
    *
    *  @param  xs the array to fill.
    *  @param  start starting index.
-   *  @return the given array <code>xs</code> filled with this list.
+   *  @return the given array <code>xs</code> filled with the elements of this iterator.
+   *  @pre The array must be large enough to hold all elements.
    */
   def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = {
     var i = start;
