@@ -630,7 +630,7 @@ BUILD QUICK-TEST LAYER
       class="scala.tools.nsc.MainInterpreter"
       version="${version.number}"
       copyright="${copyright}"
-      classpath=""
+      classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <chmod
