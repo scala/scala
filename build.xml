@@ -875,26 +875,21 @@ GENERATES A DISTRIBUTION
   </target>
   
   <target name="dist.patch" depends="init">
-    <property file="${number.file}"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}"
-    />
     <propertyfile
       file="${number.file}"
       comment="Version last updated on ${time.human}"
     >
       <entry key="version.patch" type="int" default="0" operation="+"/>
     </propertyfile>
-    <runtarget target="dist"/>
-  </target>
-  
-  <target name="dist.minor" depends="init">
     <property file="${number.file}"/>
     <property
       name="version.number"
       value="${version.major}.${version.minor}.${version.patch}"
     />
+    <runtarget target="dist"/>
+  </target>
+  
+  <target name="dist.minor" depends="init">
     <propertyfile
       file="${number.file}"
       comment="Version last updated on ${time.human}"
@@ -902,6 +897,11 @@ GENERATES A DISTRIBUTION
       <entry key="version.minor" type="int" default="0" operation="+"/>
       <entry key="version.patch" type="int" value="0"/>
     </propertyfile>
+    <property file="${number.file}"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}"
+    />
     <runtarget target="dist"/>
   </target>
 
