@@ -30,7 +30,8 @@ import symtab.Flags
     includes the line of code and which has public member(s) to export
     all variables defined by that code.  To extract the result of an
     interpreted line to show the user, a second "result object" is created
-    which exports a single member named "result".  To accomodate user expressions
+    which imports the variables exported by the above object and then
+    exports a single member named "result".  To accomodate user expressions
     that read from variables or methods defined in previous statements, "import"
     statements are used.
 
@@ -45,7 +46,8 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   import compiler.Traverser
   import compiler.{Tree, TermTree,
                    ValOrDefDef, ValDef, DefDef, Assign,
-                   ClassDef, ModuleDef, Ident, Select, AliasTypeDef}
+                   ClassDef, ModuleDef, Ident, Select, AliasTypeDef,
+                   Import}
   import compiler.CompilationUnit
   import compiler.Symbol
 	import compiler.Name
@@ -67,7 +69,6 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   private val classfilePath = File.createTempFile("scalaint", "")
   classfilePath.delete  // the file is created as a file; make it a directory
   classfilePath.mkdirs
-
 
 
   /* set up the compiler's output directory */
@@ -99,14 +100,28 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   }
 
   /** next line number to use */
-  var nextLineNo = 0
+  private var nextLineNo = 0
 
   /** allocate a fresh line name */
-  def newLineName = {
+  private def newLineName = {
     val num = nextLineNo
     nextLineNo = nextLineNo + 1
     "line" + num
   }
+
+  /** import statements that should be used for submitted code */
+  private def importLines: List[String] =
+    for {
+      val req <- prevRequests.toList
+      req.isInstanceOf[ImportReq]
+    }
+    yield req.line
+
+  //private var importLinesRev: List[String] = List("import scala.collection.immutable._")
+
+
+  /** a string of import code corresponding to all of the current importLines */
+  private def codeForImports: String = importLines.mkString("", ";\n", ";\n")
 
   /** generate a string using a routine that wants to write on a stream */
   private def stringFrom(writer: PrintWriter=>Unit): String = {
@@ -119,18 +134,26 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
 
   /** parse a line into a sequence of trees */
   private def parse(line: String): List[Tree] = {
+    // simple parse: just parse it, nothing else
+    def simpleParse(code: String): List[Tree] = {
+      val unit =
+        new CompilationUnit(
+          new SourceFile("<console>",code.toCharArray()))
+
+      new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq
+    }
+
+    // parse the main code along with the imports
     reporter.reset
-
-    val unit =
-      new CompilationUnit(
-        new SourceFile("<console>",line.toCharArray()))
-
-    val trees = new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq
-
+    val trees = simpleParse(codeForImports + line)
     if(reporter.errors > 0)
       return Nil // the result did not parse, so stop
 
-    trees
+    // parse the imports alone
+    val importTrees = simpleParse(codeForImports)
+
+    // return just the new trees, not the import trees
+    trees.drop(importTrees.length)
   }
 
 
@@ -161,7 +184,9 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
       case List(_:ModuleDef) => new ModuleReq(line, lineName)
       case List(_:ClassDef) => new ClassReq(line, lineName)
       case List(_:AliasTypeDef) => new TypeAliasReq(line, lineName)
+      case List(_:Import) => new ImportReq(line, lineName)
       case _ => {
+        //reporter.error(null, trees.toString)
         reporter.error(null, "That kind of statement combination is not supported by the interpreter.")
         null
       }
@@ -241,7 +266,7 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
 
 
   /** One line of code submitted by the user for interpretation */
-  private abstract class Request(line: String, val lineName: String) {
+  private abstract class Request(val line: String, val lineName: String) {
     val trees = parse(line)
 
     /** name to use for the object that will compute "line" */
@@ -274,7 +299,7 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
       else
         baseNames
     }
-      //XXXshorten all these for loops
+
     /** list of modules defined */
     val moduleNames = {
       val explicit =
@@ -316,6 +341,9 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
     /** generate the source code for the object that computes this request */
     def objectSourceCode: String =
 			stringFrom(code => {
+        // add the user-specified imports first
+        code.println(codeForImports)
+
 			  // write an import for each imported variable
         for{val imv <- usedNames
             val lastDefiner <- reqBinding(imv).toList } {
@@ -409,16 +437,17 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
     /** load and run the code using reflection */
     def loadAndRun: String = {
       val interpreterResultObject: Class = Class.forName(resultObjectName,true,classLoader)
-      val resultValMethod: java.lang.reflect.Method = interpreterResultObject.getMethod("result",null)
+      val resultValMethod: java.lang.reflect.Method =
+        interpreterResultObject.getMethod("result",null)
       try {
-	resultValMethod.invoke(interpreterResultObject,null).toString()
+        resultValMethod.invoke(interpreterResultObject,null).toString()
       } catch {
-	case e => {
-	  def caus(e: Throwable): Throwable =
-	    if(e.getCause == null) e else caus(e.getCause)
-	  val orig = caus(e)
-	  stringFrom(str => orig.printStackTrace(str))
-	}
+        case e => {
+          def caus(e: Throwable): Throwable =
+            if(e.getCause == null) e else caus(e.getCause)
+            val orig = caus(e)
+            stringFrom(str => orig.printStackTrace(str))
+        }
       }
     }
 
@@ -432,11 +461,13 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   }
 
   /** A sequence of definition's.  val's, var's, def's. */
-  private class DefReq(line: String, lineName: String) extends Request(line, lineName) {
+  private class DefReq(line: String, lineName: String)
+  extends Request(line, lineName) {
   }
 
   /** Assignment of a single variable: lhs = exp */
-  private class AssignReq(val lhs: Name, line: String, lineName: String) extends Request(line, lineName) {
+  private class AssignReq(val lhs: Name, line: String, lineName: String)
+  extends Request(line, lineName) {
     override def resultExtractionCode(code: PrintWriter): Unit = {
       super.resultExtractionCode(code)
       val bindReq = reqBinding(lhs).get
@@ -446,12 +477,14 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   }
 
   /** A single expression */
-  private class ExprReq(line: String, lineName: String) extends Request(line, lineName) {
+  private class ExprReq(line: String, lineName: String)
+  extends Request(line, lineName) {
     override val needsVarName = true
   }
 
   /** A module definition */
-  private class ModuleReq(line: String, lineName: String) extends Request(line, lineName) {
+  private class ModuleReq(line: String, lineName: String)
+  extends Request(line, lineName) {
     def moduleName = trees match {
       case List(ModuleDef(_, name, _)) => name
     }
@@ -462,7 +495,8 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   }
 
   /** A class definition */
-  private class ClassReq(line: String, lineName: String) extends Request(line, lineName) {
+  private class ClassReq(line: String, lineName: String)
+  extends Request(line, lineName) {
     def newClassName = trees match {
       case List(ClassDef(_, name, _, _, _)) => name
     }
@@ -474,7 +508,8 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   }
 
   /** a type alias */
-  private class TypeAliasReq(line: String, lineName: String) extends Request(line, lineName) {
+  private class TypeAliasReq(line: String, lineName: String)
+  extends Request(line, lineName) {
     def newTypeName = trees match {
       case List(AliasTypeDef(_, name, _, _)) => name
     }
@@ -482,6 +517,16 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
     override def resultExtractionCode(code: PrintWriter): Unit = {
       super.resultExtractionCode(code)
       code.println(" + \"defined type alias " + newTypeName + "\\n\"")
+    }
+  }
+
+  /** an import */
+  private class ImportReq(line: String, lineName: String)
+  extends Request(line, lineName) {
+    override val boundNames = Nil
+    override val usedNames = Nil
+    override def resultExtractionCode(code: PrintWriter): Unit = {
+      code.println("+ \"" + line + "\"")
     }
   }
 }
