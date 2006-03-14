@@ -108,12 +108,15 @@ abstract class TreeGen {
     }
 
   /** Builds an instance test with given value and type. */
-  def mkIsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = {
+  def mkIsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = { // buraq: we ignore erase, no rtt
+    val sym = definitions.Any_isInstanceOf;
+    /*
     val sym =
       if(erased)
         definitions.Any_isInstanceOfErased
       else
         definitions.Any_isInstanceOf;
+        */
     Apply(
       TypeApply(
         Select(value, sym),
@@ -122,7 +125,7 @@ abstract class TreeGen {
   }
 
   def mkIsInstanceOf(value: Tree, tpe: Type): Tree = {
-    mkIsInstanceOf(value, tpe, global.phase.erasedTypes);
+    mkIsInstanceOf(value, tpe, false/*global.phase.erasedTypes*/); // buraq: ignore which phase it is
   }
 
   /** Builds a cast with given value and type. */
