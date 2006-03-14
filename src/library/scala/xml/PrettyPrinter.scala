@@ -53,7 +53,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     var i = s.indexOf(' ');
     if(i > tmp || i == -1) throw new BrokenException(); // cannot break
 
-    var last:List[Int] = i::Nil;
+    var last:List[Int] = Nil;
     while(i < tmp) {
       last = i::last;
       i = s.indexOf(' ', i );
@@ -144,11 +144,14 @@ class PrettyPrinter( width:Int, step:Int ) {
   /** @param tail: what we'd like to sqeeze in */
   protected def traverse(node: Node, pscope: NamespaceBinding, ind: Int): Unit =  node match {
 
+      case Text(s) if s.trim() == "" =>
+
       case _:Atom[Any] | _:Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
-        makeBox( ind, node.toString() );
+        makeBox( ind, node.toString().trim() );
 
       case _:Node =>
-        val test = { val sb = new StringBuffer(); Utility.toXML(node, pscope, sb, false); sb.toString()};
+        val test = { val sb = new StringBuffer(); Utility.toXML(node, pscope, sb, false);
+                    val tb = TextBuffer.fromString(sb.toString()); tb.toText(0)._data};
         if(childrenAreLeaves(node) && fits(test)) {
           makeBox( ind, test );
         } else {
@@ -203,13 +206,14 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   def format(n: Node, pscope:NamespaceBinding, sb: StringBuffer): Unit = { // entry point
+    var lastwasbreak = false;
     reset();
     traverse( n, pscope, 0 );
     var cur = 0;
-    //Console.println( items.reverse );
     for( val b <- items.reverse ) b match {
       case Break =>
-        sb.append('\n');  // on windows: \r\n ?
+        if(!lastwasbreak) sb.append('\n');  // on windows: \r\n ?
+        lastwasbreak = true
         cur = 0;
 //        while( cur < last ) {
 //          sb.append(' ');
@@ -217,12 +221,14 @@ class PrettyPrinter( width:Int, step:Int ) {
 //        }
 
       case Box(i, s) =>
+        lastwasbreak = false
         while( cur < i ) {
           sb.append(' ');
           cur = cur + 1;
         }
         sb.append( s );
       case Para( s ) =>
+        lastwasbreak = false
         sb.append( s );
     }
   }

@@ -83,7 +83,7 @@ abstract class Node extends NodeSeq {
 
   /** descendant axis (all descendants of this node, not including not itself) */
   def descendant: List[Node] =
-    child.toList.flatMap { x => x::x.descendant } ;
+    child.toList.flatMap { x => if(x.typeTag$ != -1) x::x.descendant else Nil } ;
 
   /** descendant axis (all descendants of this node, including this node) */
   def descendant_or_self: List[Node] = this :: descendant;
