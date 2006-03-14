@@ -12,8 +12,7 @@
 package scala;
 
 
-/** Buffered iterators are iterators which allow to inspect the next
- *  element without discarding it.
+/** Counted iterators keep track of the number of elements seen so far
  *
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
