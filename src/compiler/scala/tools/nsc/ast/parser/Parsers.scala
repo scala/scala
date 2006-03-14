@@ -988,10 +988,10 @@ trait Parsers requires SyntaxAnalyzer {
      *                 |  `_' `:' Type1
      *                 |  [SeqPattern2]
      */
-    def pattern1(seqOK: boolean): Tree =
-      if (seqOK && !isExprIntro) {
-	atPos(in.currentPos) { Sequence(List()) }
-      } else {
+    def pattern1(seqOK: boolean): Tree = {
+      //if (false && /*disabled, no regexp matching*/ seqOK && !isExprIntro) {
+	//atPos(in.currentPos) { Sequence(List()) }
+      //} else {
 	val p = pattern2(seqOK);
 	p match {
 	  case Ident(name) if (treeInfo.isVariableName(name) && in.token == COLON) =>
@@ -999,7 +999,8 @@ trait Parsers requires SyntaxAnalyzer {
 	  case _ =>
 	    p
 	}
-      }
+      //}
+    }
 
     /*   Pattern2    ::=  varid [ @ Pattern3 ]
      *                |   Pattern3
@@ -1089,8 +1090,9 @@ trait Parsers requires SyntaxAnalyzer {
       case LPAREN =>
 	val pos = in.skipToken();
 	val p =
-	  if (seqOK) atPos(pos) { makeSequence(patterns()) }
-	  else if (in.token != RPAREN) pattern(false);
+	  //if (false /*disabled, no regexp matching*/ && seqOK) atPos(pos) { makeSequence(patterns()) }
+	  //else
+          if (in.token != RPAREN) pattern(false);
 	  else Literal(()).setPos(pos);
 	accept(RPAREN);
 	p
@@ -1628,7 +1630,7 @@ trait Parsers requires SyntaxAnalyzer {
       atPos(in.currentPos) {
         def acceptEmptyTemplateBody(msg: String): unit = {
           if (in.token == LPAREN && settings.migrate.value)
-            syntaxErrorMigrate("mixin classes may not have parameters");
+            syntaxErrorMigrate("traites may not have parameters");
           if (!(in.token == SEMI || in.token == NEWLINE ||
                 in.token == COMMA || in.token == RBRACE || in.token == EOF))
             syntaxError(msg, true);
