@@ -17,7 +17,7 @@ object NodeSeq {
   def fromSeq(s:Seq[Node]):NodeSeq = new NodeSeq {
     def theSeq = s;
   }
-  implicit def view(s:Seq[Node]):NodeSeq = fromSeq(s);
+  implicit def view(s:Seq[Node]): NodeSeq = fromSeq(s);
 }
 
 /** a wrapper around Seq[Node] that adds XPath and comprehension methods */
@@ -90,7 +90,7 @@ abstract class NodeSeq extends Seq[Node] {
 
   def asList = elements.toList;
 
-  def map(f: Node => Node): NodeSeq = { val x = asList map f; x }
+  def map(f: Node => NodeSeq): NodeSeq = flatMap(f)
 
   def flatMap(f:Node => NodeSeq): NodeSeq = { val y = asList flatMap { x => f(x).asList }; y }
 
