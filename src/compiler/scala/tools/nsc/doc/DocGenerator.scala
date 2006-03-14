@@ -315,7 +315,7 @@ abstract class DocGenerator extends Models {
             (!ddef.vparamss.tail.isEmpty  || !ddef.vparamss.head.isEmpty)) {
           val nodes = for (val vparams <- ddef.vparamss)
             yield surround("(", ")", forTrees(vparams));
-          nodes.flatMap(x => x.asList);
+          nodes.flatMap(x => x.toList);
         } else NodeSeq.Empty;
       case _ => NodeSeq.Empty;
     }
