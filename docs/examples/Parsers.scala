@@ -91,7 +91,7 @@ class Tokenizer(in: Iterator[char], delimiters: String) extends Iterator[String]
   }
 }
 
-mixin class TokenParsers extends Parsers {
+trait TokenParsers extends Parsers {
   type inputType = Stream[String]
   def nextToken() = new Parser[String] {
     def apply(in: inputType): Result =
@@ -99,7 +99,7 @@ mixin class TokenParsers extends Parsers {
   }
 }
 
-mixin class CharParsers extends Parsers {
+trait CharParsers extends Parsers {
   def any: Parser[char]
   def chr(ch: char) =
     for (val c <- any; c == ch) yield c

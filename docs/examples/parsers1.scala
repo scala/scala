@@ -44,7 +44,7 @@ object parsers1 {
     def rep1(p: Parser): Parser = p &&& rep(p)  // p+ = p p*
   }
 
-  mixin class ListParsers extends Parsers {
+  trait ListParsers extends Parsers {
     def chr(p: char => boolean): Parser
     def chr(c: char): Parser = chr(d: char => d == c)
 
@@ -58,7 +58,7 @@ object parsers1 {
     def expr      : Parser = ident ||| number ||| list
   }
 
-  mixin class ExprParsers extends Parsers {
+  trait ExprParsers extends Parsers {
     def chr(p: char => boolean): Parser
     def chr(c: char): Parser = chr(d: char => d == c)
 

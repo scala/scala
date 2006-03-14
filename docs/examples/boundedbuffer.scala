@@ -40,7 +40,7 @@ object boundedbuffer {
     def consumeString(ss: String) = Console.println(ss)
     spawn { while (true) { val ssss = produceString; buf.put(ssss) } }
     spawn { while (true) { val s = buf.get; consumeString(s) } }
-    kill(5000)
+    kill(1000)
   }
 
 }
