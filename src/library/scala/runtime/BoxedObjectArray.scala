@@ -53,13 +53,4 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
     }
     result
   }
-
-/*
-  def map(p: Any => Any): BoxedAnyArray = {
-    val include = new Array
-    var len = 0
-    for (val x <- value) if (p(x)) { tmp(len) = x; len = len + 1 }
-    slice(tmp, 0, len)
-  }
-*/
 }

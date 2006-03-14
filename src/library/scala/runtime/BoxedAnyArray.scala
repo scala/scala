@@ -219,4 +219,28 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     var dest1 = adapt(dest)
     Array.copy(if (unboxed != null) unboxed else boxed, from, dest1, to, len)
   }
+
+  override def subArray(start: Int, end: Int): Object = {
+    val result = new BoxedAnyArray(end - start);
+    Array.copy(this, 0, result, 0, end - start)
+    result
+  }
+
+  override def filter(p: Any => Boolean): Object = {
+    val include = new Array[Boolean](length);
+    var len = 0;
+    var i = 0;
+    while (i < length) {
+      if (p(this(i))) { include(i) = true; len = len + 1 }
+      i = i + 1
+    }
+    val result = new BoxedAnyArray(len);
+    len = 0;
+    i = 0;
+    while (len < result.length) {
+      if (include(i)) { result(len) = this(i); len = len + 1 }
+      i = i + 1
+    }
+    result
+  }
 }

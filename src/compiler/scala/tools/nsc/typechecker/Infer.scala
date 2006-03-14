@@ -667,16 +667,20 @@ trait Infer requires Analyzer {
     /** Try inference twice, once without views and once with views, unless views are already disabled.
      */
     def tryTwice(infer: => unit): unit = {
-      if (context.reportGeneralErrors) {
+      if (context.implicitsEnabled) {
+        val reportGeneralErrors = context.reportGeneralErrors;
 	context.reportGeneralErrors = false;
+	context.implicitsEnabled = false;
 	try {
 	  infer
 	} catch {
 	  case ex: TypeError =>
-	    context.reportGeneralErrors = true;
+	    context.reportGeneralErrors = reportGeneralErrors;
+	    context.implicitsEnabled = true;
 	    infer
 	}
-	context.reportGeneralErrors = true
+	context.reportGeneralErrors = reportGeneralErrors
+	context.implicitsEnabled = true
       } else infer
     }
 

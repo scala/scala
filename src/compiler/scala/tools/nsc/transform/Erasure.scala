@@ -125,6 +125,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     } else
       transformMixinInfo(erasure(tp));
 
+  val deconstMap = new TypeMap {
+   def apply(tp: Type): Type = tp match {
+     case PolyType(_, _) => mapOver(tp)
+     case MethodType(_, _) => mapOver(tp)
+     case _ => tp.deconst
+   }
+  }
+
 // -------- boxing/unboxing --------------------------------------------------------
 
   override def newTyper(context: Context) = new Eraser(context);
@@ -477,6 +485,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           val otpe = erasure(other.tpe);
 	  val bridgeNeeded = atPhase(phase.next) (
 	    !(other.tpe =:= member.tpe) &&
+            !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
             { var e = bridgesScope.lookupEntry(member.name);
               while (e != null && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
 		e = bridgesScope.lookupNextEntry(e);

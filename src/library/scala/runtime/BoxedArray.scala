@@ -46,11 +46,11 @@ abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] 
     Array.copy(value, from, dest, to, len)
   }
 
-  def subArray(from: Int, end: Int): Object = null
+  def subArray(from: Int, end: Int): Object
 
-  def filter(p: Any => Boolean): Object = null
+  def filter(p: Any => Boolean): Object
 
-  def map[b](f: Any => b): Array[b] = {
+  final def map[b](f: Any => b): Array[b] = {
     val len = length
     val result = new Array[b](len)
     var i = 0
@@ -61,7 +61,7 @@ abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] 
     result
   }
 
-  def flatMap[b](f: Any => Array[b]): Array[b] = {
+  final def flatMap[b](f: Any => Array[b]): Array[b] = {
     val len = length
     val tmp = new Array[Array[b]](len)
     var i = 0

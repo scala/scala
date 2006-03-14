@@ -71,6 +71,7 @@ trait Contexts requires Analyzer {
                                              // after the this constructor call?
     var reportAmbiguousErrors = false;
     var reportGeneralErrors = false;
+    var implicitsEnabled = false;
     var checking = false;
 
     var savedTypeBounds: List[Pair[Symbol, Type]] = List();
@@ -102,6 +103,7 @@ trait Contexts requires Analyzer {
       c.imports = imports;
       c.reportAmbiguousErrors = this.reportAmbiguousErrors;
       c.reportGeneralErrors = this.reportGeneralErrors;
+      c.implicitsEnabled = this.implicitsEnabled;
       c.checking = this.checking;
       c.outer = this;
       c
@@ -111,6 +113,7 @@ trait Contexts requires Analyzer {
       val c = make(unit, EmptyTree, owner, scope, imports);
       c.reportAmbiguousErrors = true;
       c.reportGeneralErrors = true;
+      c.implicitsEnabled = true;
       c
     }
 
@@ -133,6 +136,7 @@ trait Contexts requires Analyzer {
       val c = make(tree);
       c.reportAmbiguousErrors = reportAmbiguousErrors;
       c.reportGeneralErrors = false;
+      c.implicitsEnabled = false;
       c
     }
 

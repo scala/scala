@@ -31,5 +31,29 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
   );
 
   override def hashCode(): Int = value.hashCode();
+
+  def subArray(start: Int, end: Int): Array[Short] = {
+    val result = new Array[Short](end - start);
+    Array.copy(value, 0, result, 0, end - start)
+    result
+  }
+
+  def filter(p: Any => Boolean): Array[Short] = {
+    val include = new Array[Boolean](value.length);
+    var len = 0;
+    var i = 0;
+    while (i < value.length) {
+      if (p(value(i))) { include(i) = true; len = len + 1 }
+      i = i + 1
+    }
+    val result = new Array[Short](len);
+    len = 0;
+    i = 0;
+    while (len < result.length) {
+      if (include(i)) { result(len) = value(i); len = len + 1 }
+      i = i + 1
+    }
+    result
+  }
 }
 

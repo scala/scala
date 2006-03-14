@@ -964,7 +964,9 @@ trait Symbols requires SymbolTable {
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a type skolem");
     }
-    override def nameString: String = super.nameString + "&";
+    override def nameString: String =
+      if (settings.debug.value) (super.nameString + "&")
+      else super.nameString;
   }
 
   /** A class for class symbols */

@@ -156,7 +156,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   */
   def toList: List[A] = elements.toList;
 
-  /** Converts this sequence to an Array */
+  /** Converts this sequence to a fresh Array */
   def toArray[B >: A]: Array[B] = elements.copyToArray(new Array[B](length), 0);
 
   /** Fills the given array <code>xs</code> with the elements of

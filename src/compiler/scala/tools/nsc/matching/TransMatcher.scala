@@ -121,7 +121,7 @@ with RightTracers {
                _ : Literal =>  ; // no variables
 
         case _ =>
-          error("unknown pattern node:" + tree + " = " + tree.getClass());
+          cunit.error(tree.pos, "unknown pattern node:" + tree + " = " + tree.getClass());
       }
     }
     traverse(pat);
@@ -243,7 +243,7 @@ with RightTracers {
       //case _   =>
       //  Console.println(pat);
       //  Console.println(pat.getClass());
-      //  scala.Predef.error(" what is this ? ")
+      //  scala.Predef.error"( what is this ? ")
 	  }
 
 	   var res:List[CaseDef] = Nil;
@@ -295,7 +295,8 @@ with RightTracers {
 		*/
 
         System.out.println("" + sel + " match " + ocases);
-	scala.Predef.error("regular expressions not yet implemented");
+	cunit.error(sel.pos, "regular expressions not yet implemented");
+        sel
       } else {
         val pm = new PatternMatcher();
         pm.initialize(sel, currentOwner, true );

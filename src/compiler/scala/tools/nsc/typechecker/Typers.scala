@@ -22,6 +22,8 @@ trait Typers requires Analyzer {
   var implcnt = 0
   var impltime = 0l
 
+  final val xviews = false
+
   private val transformed = new HashMap[Tree, Tree]
 
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
@@ -40,7 +42,7 @@ trait Typers requires Analyzer {
     val infer = new Inferencer(context0) {
       override def isCoercible(tp: Type, pt: Type): boolean = (
         tp.isError || pt.isError ||
-	context0.reportGeneralErrors && // this condition prevents chains of views
+	context0.implicitsEnabled && // this condition prevents chains of views
 	inferView(Position.NOPOS, tp, pt, false) != EmptyTree
       )
     }
@@ -56,10 +58,10 @@ trait Typers requires Analyzer {
       }
     }
 
-    private def inferView(pos: int, from: Type, name: Name, reportAmbiguous: boolean): Tree = {
+    private def inferView(pos: int, from: Type, name: Name, tp: Type, reportAmbiguous: boolean): Tree = {
       val to = refinedType(List(WildcardType), NoSymbol)
       val psym = (if (name.isTypeName) to.symbol.newAbstractType(pos, name)
-		  else to.symbol.newValue(pos, name)) setInfo WildcardType
+		  else to.symbol.newValue(pos, name)) setInfo tp
       to.decls.enter(psym)
       inferView(pos, from, to, reportAmbiguous)
     }
@@ -101,6 +103,10 @@ trait Typers requires Analyzer {
     val SUPERCONSTRmode = 0x100; // Set for the `super' in a superclass constructor call
                                  // super.<init>
 
+    val SNDTRYmode    = 0x200;   // indicates that an application is typed for the 2nd
+                                 // time. In that case functions may no longer be
+                                 // be coerced with implicit views.
+
     private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode
 
     /** Report a type error.
@@ -121,7 +127,7 @@ trait Typers requires Analyzer {
 	case _ =>
 	  ex.getMessage()
       }
-      if (settings.debug.value) ex.printStackTrace()
+      //if (settings.debug.value) ex.printStackTrace()//DEBUG
       if (context.reportGeneralErrors) error(pos, msg)
       else throw new TypeError(msg)
     }
@@ -369,7 +375,7 @@ trait Typers requires Analyzer {
         } else if (!tree.symbol.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else {
-          if (context.reportGeneralErrors) {
+          if (context.implicitsEnabled) {
             if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))
               error(tree.pos, migrateMsg + " method can be converted to function only if an expected function type is given");
             else
@@ -451,7 +457,7 @@ trait Typers requires Analyzer {
                     return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
                 case _ =>
               }
-	      if (context.reportGeneralErrors && !tree.tpe.isError && !pt.isError) {
+	      if (context.implicitsEnabled && !tree.tpe.isError && !pt.isError) {
 		// (13); the condition prevents chains of views
                 if (settings.debug.value) log("inferring view from "+tree.tpe+" to "+pt)
 	        val coercion = inferView(tree.pos, tree.tpe, pt, true)
@@ -470,14 +476,18 @@ trait Typers requires Analyzer {
 //      adapt(tree, mode, pt)
 //    }
 
-    def adaptToName(qual: Tree, name: Name): Tree =
+    def adaptToMember(qual: Tree, name: Name, tp: Type): Tree =
       if (qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
-          !phase.erasedTypes && !qual.tpe.widen.isError &&
-          qual.tpe.nonLocalMember(name) == NoSymbol) {
-	val coercion = inferView(qual.pos, qual.tpe, name, true)
-	if (coercion != EmptyTree) typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
+          !phase.erasedTypes && !qual.tpe.widen.isError) {
+	val coercion = inferView(qual.pos, qual.tpe, name, tp, true)
+	if (coercion != EmptyTree)
+          typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
         else qual
       } else qual
+
+    def adaptToName(qual: Tree, name: Name) =
+      if (qual.tpe.nonLocalMember(name) != NoSymbol) qual
+      else adaptToMember(qual, name, WildcardType)
 
     private def completeParentType(tpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
       enclTparams foreach context.scope.enter
@@ -980,10 +990,12 @@ trait Typers requires Analyzer {
         argTyper.typed(arg, mode & stickyModes, pt)
       }
 
+      def typedArgs(args: List[Tree]) =
+        List.mapConserve(args)(arg => typedArg(arg, WildcardType))
+
       def typedApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
         case OverloadedType(pre, alts) =>
-          val args1 = List.mapConserve(args)(arg =>
-            typedArg(arg, WildcardType))
+          val args1 = typedArgs(args)
           inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt)
           typedApply(adapt(fun, funmode, WildcardType), args1)
         case MethodType(formals0, restpe) =>
@@ -1032,6 +1044,31 @@ trait Typers requires Analyzer {
           setError(tree)
         case _ =>
 	  errorTree(tree, ""+fun+" does not take parameters")
+      }
+
+      def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
+        val reportGeneralErrors = context.reportGeneralErrors
+        val reportAmbiguousErrors = context.reportAmbiguousErrors
+        try {
+          context.reportGeneralErrors = false
+          context.reportAmbiguousErrors = false
+          typedApply(fun, args)
+        } catch {
+          case ex: TypeError =>
+            val args1 = typedArgs(args)
+            val Select(qual, name) = fun
+            context.reportGeneralErrors = reportGeneralErrors
+            context.reportAmbiguousErrors = reportAmbiguousErrors
+            val qual1 = adaptToMember(qual, name, MethodType(args1 map (.tpe), pt))
+            if (qual1 eq qual) typedApply(fun, args)
+            else
+              typed1(
+                Apply(Select(qual1, name) setPos fun.pos, args) setPos tree.pos,
+                mode | SNDTRYmode, pt)
+        } finally {
+          context.reportGeneralErrors = reportGeneralErrors
+          context.reportAmbiguousErrors = reportAmbiguousErrors
+        }
       }
 
       /** Attribute a selection where `tree' is `qual.name'.
@@ -1397,7 +1434,11 @@ trait Typers requires Analyzer {
 		fun1 = adapt(fun1 setSymbol sym setType pre.memberType(sym), funmode, WildcardType)
             }
 	    if (util.Statistics.enabled) appcnt = appcnt + 1
-            typedApply(fun1, args)
+            if (xviews &&
+                fun1.isInstanceOf[Select] &&
+                !fun1.tpe.isInstanceOf[ImplicitMethodType] &&
+                (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) tryTypedApply(fun1, args)
+            else typedApply(fun1, args)
 	  }
 
         case Super(qual, mix) =>
@@ -1417,7 +1458,7 @@ trait Typers requires Analyzer {
               else {
                 val ps = clazz.info.parents dropWhile (p => p.symbol.name != mix)
                 if (ps.isEmpty) {
-                  System.out.println(clazz.info.parents map (.symbol.name));//debug
+                  if (settings.debug.value) System.out.println(clazz.info.parents map (.symbol.name));//debug
                   error(tree.pos, ""+mix+" does not name a base class of "+clazz)
                   ErrorType
                 } else ps.head
@@ -1498,7 +1539,7 @@ trait Typers requires Analyzer {
             errorTree(tree, ""+tpt1.tpe+" does not take type parameters")
           } else {
             //System.out.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-	    System.out.println(""+tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
+	    if (settings.debug.value) System.out.println(""+tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
             errorTree(tree, "wrong number of type arguments for "+tpt1.tpe+", should be "+tparams.length)
 	  }
         case _ =>
@@ -1694,7 +1735,7 @@ trait Typers requires Analyzer {
           if (arg != EmptyTree) arg
           else errorTree(tree, "no implicit argument matching parameter type "+pt+" was found.")
         }
-      Apply(tree, formals map implicitArg) setPos tree.pos
+        Apply(tree, formals map implicitArg) setPos tree.pos
     }
   }
 }
