@@ -80,7 +80,7 @@ trait AlgebraicMatchers  requires TransMatcher {
       ),
       If( super.toTree(root.and),
          LabelDef(exit, List(result), Ident(result)),
-         ThrowMatchError( _m.pos, resultType ))
+         ThrowMatchError( _m.pos, Ident(root.symbol) ))
     );
   }
 
