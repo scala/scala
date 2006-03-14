@@ -46,7 +46,7 @@ abstract class NodeSeq extends Seq[Node] {
     var res: NodeSeq = NodeSeq.Empty;
     that match {
       case "_" =>
-        res = for( val x <- this; val y <- x.child: NodeSeq) yield { y }
+        res = for( val x <- this; val y <- x.child; y.typeTag$ != -1) yield { y }
 
       case _ if (that.charAt(0) == '@') && (this.length == 1) =>
         val k = that.substring(1);
@@ -88,13 +88,11 @@ abstract class NodeSeq extends Seq[Node] {
     (s:String,x:Node) => s + x.toString()
   }
 
-  def asList = elements.toList;
-
   def map(f: Node => NodeSeq): NodeSeq = flatMap(f)
 
-  def flatMap(f:Node => NodeSeq): NodeSeq = { val y = asList flatMap { x => f(x).asList }; y }
+  def flatMap(f:Node => NodeSeq): NodeSeq = { val y = toList flatMap { x => f(x).toList }; y }
 
-  def filter(f:Node => Boolean): NodeSeq = { val x = asList filter f; x }
+  def filter(f:Node => Boolean): NodeSeq = { val x = toList filter f; x }
 
   def text: String = {
     val sb = new StringBuffer();
