@@ -4,30 +4,29 @@
  */
 // $Id: $
 
-package scala.tools.nsc.doc;
+package scala.tools.nsc.doc
 
-import scala.tools.nsc._;
-import java.io._;
-import scala.tools.nsc.models._;
-import scala.collection.immutable._;
-import scala.xml._;
+import java.io._
+
+import scala.collection.immutable._
+import scala.tools.nsc._
+import scala.tools.nsc.models._
+import scala.xml._
 
 abstract class DocGenerator extends Models {
-  import global._;
-  import DocUtil._;
-  def outdir : String;
-  def contentFrame = "contentFrame";
-  def classesFrame = "classesFrame";
-  def modulesFrame = "modulesFrame";
+  import global._
+  import DocUtil._
+  def outdir: String
+  def contentFrame = "contentFrame"
+  def classesFrame = "classesFrame"
+  def modulesFrame = "modulesFrame"
   def emptyMap = ListMap.Empty[Kind,TreeSet[HasTree]];
-
 
   override def acceptPrivate = false;
 
-
   abstract class Frame extends UrlContext {
-    def path : String; // relative to outdir
-    def relative : String = {
+    def path: String; // relative to outdir
+    def relative: String = {
       assert(path != null);
       var idx = 0;
       var ct = "";
@@ -37,12 +36,13 @@ abstract class DocGenerator extends Models {
         ct = ct + (if (idx != -1) "../" else "");
         idx = idx + (if (idx == -1) 0 else 1);
       }
-      ct;
+      ct
     }
 
-    def body : NodeSeq;
-    def title : String;
-    def save(nodes : NodeSeq) = {
+    def body: NodeSeq
+    def title: String
+
+    def save(nodes: NodeSeq) = {
       val path0 = outdir + "/" + path + ".html";
       //System.err.println("Writing to " + path0);
       val file = new File(path0);
@@ -51,17 +51,17 @@ abstract class DocGenerator extends Models {
       val writer = new FileWriter(file);
       val str = dtype + "\n" + nodes.toString();
       writer.write(str, 0, str.length());
-      writer.close();
+      writer.close()
     }
+
     def urlFor(sym : Symbol, target : String) : NodeSeq = try {
       if (sym.sourceFile == null) Text(sym.fullNameString('.'));
       else aref(urlFor(sym), target, sym.nameString);
     } catch {
       case e : Error =>
         //System.err.println("SYM=" + sym);
-        Text(sym.toString());
+        Text(sym.toString())
     }
-
 
     def urlFor0(sym : Symbol, orig : Symbol) : String = {
       (if (sym == NoSymbol) {
@@ -69,30 +69,30 @@ abstract class DocGenerator extends Models {
        } else if (sym.owner.isPackageClass) sym.fullNameString('/');
        else urlFor0(sym.owner, orig) + "." + Utility.escape(sym.nameString)) + (sym match {
       case msym : ModuleSymbol =>
-      	if (msym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) "";
-        else "$object";
+        if (msym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) ""
+        else "$object"
       case csym : ClassSymbol =>
         if (csym.isModuleClass) {
-          if (csym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) "";
-          else "$object";
+          if (csym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) ""
+          else "$object"
         }
         else "";
       case _ =>
         //System.err.println("XXX: class or object " + orig + " not found in " + sym);
-        "XXXXX";
-
+        "XXXXX"
       })
     }
-    def urlFor(sym : Symbol) : String = {
+
+    def urlFor(sym: Symbol): String = {
       sym match {
-      case msym : ModuleSymbol => urlFor0(sym,sym) + ".html";
-      case csym : ClassSymbol =>  urlFor0(sym,sym) + ".html";
-      case _ => urlFor(sym.owner) + "#" + Utility.escape(sym.nameString);
+      case msym : ModuleSymbol => urlFor0(sym,sym) + ".html"
+      case csym : ClassSymbol =>  urlFor0(sym,sym) + ".html"
+      case _ => urlFor(sym.owner) + "#" + Utility.escape(sym.nameString)
       }
     }
-    def hasBody = true;
+    def hasBody = true
 
-    save(page(title, body, hasBody));
+    save(page(title, body, hasBody))
   }
 
   abstract class ListModuleFrame extends Frame {
@@ -102,14 +102,14 @@ abstract class DocGenerator extends Models {
     def body : NodeSeq = {
       val x = div0("Scala 2") concat
         aref("all-classes.html", classesFrame, "All objects and classes");
-      val y = <P/><B>Packages</B>
-       <TABLE class="list"><TR><TD style="white-space:nowrap;">
+      val y = <p/><b>Packages</b>
+       <table class="list"><tr><td style="white-space:nowrap;">
        { {
         for (val top <- modules.elements.toList) yield
           {br(aref(urlFor(top._2), classesFrame, top._2.fullNameString('.')))};
        } }
-       </TD></TR></TABLE>;
-      x.concat(y);
+       </td></tr></table>;
+      x.concat(y)
     }
   }
 
@@ -118,102 +118,102 @@ abstract class DocGenerator extends Models {
     val title = "All Packages";
     def modules : TreeMap[String,ModuleClassSymbol];
     def body : NodeSeq = {
-      <SPAN><DIV class="page-title">
+      <span><div class="page-title">
         Scala 2
-        <BR/>API Specification
-        </DIV>
+        <br/>API Specification
+        </div>
         This document is the API specification for Scala 2.
-        <P/><HR/>
-        <TABLE cellpadding="3" class="member">
-        <TR><TD colspan="2" class="title">
+        <p/><hr/>
+        <table cellpadding="3" class="member">
+        <tr><td colspan="2" class="title">
               Package Summary
-            </TD>
-        </TR>{ {
+            </td>
+        </tr>{ {
           for (val top <- modules.elements.toList) yield
-            <TR><TD class="signature">
-            <CODE>{Text("package")}
-            {(aref(top._2.fullNameString('/') + "$content.html", "_self", top._2.fullNameString('.')))}</CODE>
-            </TD></TR>;
+            <tr><td class="signature">
+            <code>{Text("package")}
+            {(aref(top._2.fullNameString('/') + "$content.html", "_self", top._2.fullNameString('.')))}</code>
+            </td></tr>;
         } }
-      </TABLE>
-      </SPAN>;
+      </table>
+      </span>;
     }
   }
 
   abstract class ListClassFrame extends Frame {
-    def classes : ListMap[Kind,TreeSet[HasTree]];
+    def classes: ListMap[Kind,TreeSet[HasTree]];
 
-    def navLabel   : String;
+    def navLabel: String;
 
      def body : NodeSeq = {
-      val nav = <TABLE class="navigation"><TR><TD valign="top" class="navigation-links">
+      val nav = <table class="navigation"><tr><td valign="top" class="navigation-links">
                 {aref(path + "$content.html", contentFrame, navLabel)}
-                </TD></TR></TABLE><P/>;
+                </td></tr></table><p/>;
 
+      val body = <span> { { for (val kind <- KINDS; classes.contains(kind)) yield {
+        val x = <b>{Text(pluralFor(kind))}</b>;
 
-      val body = <SPAN> { { for (val kind <- KINDS; classes.contains(kind)) yield {
-        val x = <B>{Text(pluralFor(kind))}</B>;
-
-        val y = <TABLE class="list"><TR><TD style="white-space;nowrap;">
+        val y = <table class="list"><tr><td style="white-space;nowrap;">
                 { {
                   for (val mmbr <- classes(kind).toList) yield
                     br(urlFor(mmbr.tree.symbol, contentFrame));
                 } }
-                </TD></TR></TABLE>;
+                </td></tr></table>;
         val ret :NodeSeq = x.concat(y);
         ret;
-      } } } </SPAN>;
+      } } } </span>;
 
-      nav.concat(body);
+      nav.concat(body)
     }
   }
 
   abstract class ContentFrame0 extends Frame {
+
     def extendsFor(mmbr : HasTree) : NodeSeq = mmbr match {
     case mmbr : ImplMod =>
       if (!mmbr.treey.impl.parents.isEmpty)
-        <SPAN><dd><code>{Text(" extends ")}</code>
+        <span><dd><code>{Text(" extends ")}</code>
             {forType(mmbr.treey.impl.parents.head.tpe)}</dd>
         { { for (val parent <- mmbr.treey.impl.parents.tail)
           yield <dd><code>{Text(" with ")}</code>
                     {forType(parent.tpe)}</dd>;
-        } } </SPAN>;
-      else NodeSeq.Empty;
-      case _ => NodeSeq.Empty;
+        } } </span>;
+      else NodeSeq.Empty
+      case _ => NodeSeq.Empty
     }
-    def fullHeader(mmbr : HasTree) : NodeSeq = <SPAN>{ {
+
+    def fullHeader(mmbr: HasTree): NodeSeq = <span>{ {
         if (!mmbr.isInstanceOf[ImplMod]) {
             <a name = {Utility.escape(mmbr.tree.symbol.nameString)}></a>;
         } else NodeSeq.Empty;
-      } }<DL><DT>
+      } }<dl><dt>
       { { for (val str <- stringsFor(mmbr.mods)) yield (Text(str + " ")) } }
-      <CODE>{ Text(codeFor(mmbr.kind)) }</CODE>
-      <EM>{ Text(mmbr.tree.symbol.nameString) }</EM>
+      <code>{ Text(codeFor(mmbr.kind)) }</code>
+      <em>{ Text(mmbr.tree.symbol.nameString) }</em>
       { typesFor(mmbr) }{  argsFor(mmbr)}{resultFor(mmbr) }
-      </DT> { extendsFor(mmbr) }
-      </DL> { fullComment(mmbr) } <HR/>
-            { lists(mmbr) }  </SPAN>;
+      </dt> { extendsFor(mmbr) }
+      </dl> { fullComment(mmbr) } <hr/>
+            { lists(mmbr) }  </span>;
 
     def lists(mmbr : HasTree) = mmbr match {
-    case cmod : ImplMod => <SPAN>{ listMembersShort(mmbr) }
-                                 { listMembersFull (mmbr) }</SPAN>
-    case _ => NodeSeq.Empty;
+      case cmod : ImplMod => <span>{ listMembersShort(mmbr) }
+                                   { listMembersFull (mmbr) }</span>
+      case _ => NodeSeq.Empty
     }
-
 
     def listMembersShort(mmbr : HasTree) : NodeSeq = if (mmbr.isInstanceOf[Composite]) {
       val map = organize(mmbr.asInstanceOf[Composite], emptyMap);
-      <SPAN> { {
+      <span> { {
         for (val kind <- KINDS; map.contains(kind)) yield {
-          val x = <TABLE cellpadding="3" class="member">
-          <TR><TD colspan="2" class="title">{Text(labelFor(kind))} Summary</TD></TR>
+          val x = <table cellpadding="3" class="member">
+          <tr><td colspan="2" class="title">{Text(labelFor(kind))} Summary</td></tr>
            { {
             for (val mmbr <- map(kind).toList) yield shortHeader(mmbr);
            } }
-          </TABLE>;
+          </table>;
           br(x);
         }
-      } } </SPAN>
+      } } </span>
     } else NodeSeq.Empty;
 
     def listMembersFull(mmbr : HasTree) : NodeSeq = if (mmbr.isInstanceOf[Composite]) {
@@ -227,33 +227,32 @@ abstract class DocGenerator extends Models {
           def title = labelFor(kind0) + " " + mmbr.tree.symbol.nameString + " in " + codeFor(mmbrx.kind) + " " + mmbr.tree.symbol.owner.fullNameString('.');
         }
       }
-      <SPAN> { {
+      <span> { {
         for (val kind <- KINDS; map.contains(kind) && kind != OBJECT && kind != CLASS) yield {
           val header = <table cellpadding="3" class="member-detail">
             <tr><td class="member-title">{Text(labelFor(kind))} Detail</td></tr>
           </table>;
-          val body = for (val mmbr <- map(kind).toList) yield <SPAN>{fullHeader(mmbr)}</SPAN>;
+          val body = for (val mmbr <- map(kind).toList) yield <span>{fullHeader(mmbr)}</span>;
           header.concat(body);
         }
-      } } </SPAN>;
+      } } </span>;
     } else NodeSeq.Empty;
 
     def shortHeader(mmbr : HasTree) : NodeSeq = {
-      <TR>
-        <TD valign="top" class="modifiers">
-          { { for (val str <- stringsFor(mmbr.mods)) yield <CODE>{(Text(str + " "))}</CODE>; } }
-        </TD>
-        <TD class="signature">
-          <CODE>{Text(codeFor(mmbr.kind))}</CODE>
-          <EM>{urlFor(mmbr.tree.symbol, contentFrame)}</EM>
+      <tr>
+        <td valign="top" class="modifiers">
+          { { for (val str <- stringsFor(mmbr.mods)) yield <code>{(Text(str + " "))}</code>; } }
+        </td>
+        <td class="signature">
+          <code>{Text(codeFor(mmbr.kind))}</code>
+          <em>{urlFor(mmbr.tree.symbol, contentFrame)}</em>
           { typesFor(mmbr) }
           {  argsFor(mmbr) }
           {resultFor(mmbr) }
-          <BR>{shortComment(mmbr)}</BR>
-        </TD>
-      </TR>;
+          <br>{shortComment(mmbr)}</br>
+        </td>
+      </tr>;
     }
-
 
     def fullComment(mmbr : HasTree) : NodeSeq = {
       if (comments.contains(mmbr.tree.symbol))
@@ -273,9 +272,8 @@ abstract class DocGenerator extends Models {
       } else NodeSeq.Empty;
     }
 
-    def forType(tpe : Type) : NodeSeq = {
+    def forType(tpe: Type): NodeSeq =
       urlFor(tpe.symbol, contentFrame);
-    }
 
     def forTree(tree : Tree) : NodeSeq = tree match {
       case vdef : ValDef =>
@@ -289,7 +287,7 @@ abstract class DocGenerator extends Models {
       case EmptyTree => NodeSeq.Empty;
       case _ => Text("XX=" + tree.getClass() + " " + tree.toString());
     }
-    def forTrees(trees : List[Tree]) : NodeSeq = {
+    def forTrees(trees: List[Tree]) : NodeSeq = {
       if (trees.isEmpty) NodeSeq.Empty;
       else {
         val head = forTree(trees.head);
@@ -298,7 +296,7 @@ abstract class DocGenerator extends Models {
       }
     }
 
-    def surround(open : String, close : String, node : NodeSeq) : NodeSeq =
+    def surround(open: String, close: String, node: NodeSeq): NodeSeq =
       Text(open).concat(node).concat(Text(close));
 
     def typesFor(ht : HasTree) : NodeSeq = {
@@ -331,71 +329,68 @@ abstract class DocGenerator extends Models {
   }
 
   abstract class ListClassContentFrame extends ContentFrame0 {
-    def classes : ListMap[Kind,TreeSet[HasTree]];
-    def module : ModuleClassSymbol;
+    def classes: ListMap[Kind,TreeSet[HasTree]]
+    def module: ModuleClassSymbol
 
     def path  = module.fullNameString('/') + "$content";
     def title = "All Classes and Objects in " + module.fullNameString('.');
 
     def body : NodeSeq = {
-      <SPAN><DIV class="page-title">
+      <span><div class="page-title">
         Scala 2
-        <BR/>API Specification
-        </DIV>
+        <br/>API Specification
+        </div>
         This document is the API specification for Scala 2.
-        <P/>
+        <p/>
         { {
           for (val kind <- KINDS; classes.contains(kind)) yield {
-            <SPAN><HR/><TABLE cellpadding="3" class="member">
-            <TR><TD colspan="2" class="title">
+            <span><hr/><table cellpadding="3" class="member">
+            <tr><td colspan="2" class="title">
                 {labelFor(kind)} Summary
-             </TD></TR>{ {
+             </td></tr>{ {
               for (val mmbr <- classes(kind).toList) yield shortHeader(mmbr);
               } }
-            </TABLE></SPAN>
+            </table></span>
           }
         } }
-      </SPAN>;
+      </span>;
     }
   }
 
   abstract class ContentFrame extends ContentFrame0 {
-    def clazz : ImplMod;
-    def kind  : Kind;
-    def body : NodeSeq = <SPAN>{navigation}{header0}{fullHeader(clazz)}</SPAN>;
+    def clazz: ImplMod;
+    def kind: Kind;
+    def body: NodeSeq = <span>{navigation}{header0}{fullHeader(clazz)}</span>;
 
     final def path = urlFor0(clazz.tree.symbol,clazz.tree.symbol);
 
-    // <TD class="navigation-enabled">{aref("help.html"     , "_self", "Help"    )}</TD>
+    // <td class="navigation-enabled">{aref("help.html"     , "_self", "Help"    )}</td>
     def navigation : NodeSeq =
-    <TABLE class="navigation">
-      <TR>
-        <TD valign="top" class="navigation-links">
-          <TABLE><TR>
-          <TD class="navigation-enabled">{aref("root-page.html", "_self", "Overview")}</TD>
-          <TD class="navigation-enabled">{aref("index.html"    , "_self", "Index"   )}</TD>
-          </TR></TABLE>
-        </TD>
-        <TD align="right" valign="top" style="white-space:nowrap;" rowspan="2">
+    <table class="navigation">
+      <tr>
+        <td valign="top" class="navigation-links">
+          <table><tr>
+          <td class="navigation-enabled">{aref("root-page.html", "_self", "Overview")}</td>
+          <td class="navigation-enabled">{aref("index.html"    , "_self", "Index"   )}</td>
+          </tr></table>
+        </td>
+        <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">
         {div0("Scala 2")}
-        </TD>
-      </TR>
-      <TR><TD></TD></TR>
-    </TABLE>;
+        </td>
+      </tr>
+      <tr><td></td></tr>
+    </table>;
 
-    def header0 : NodeSeq = <SPAN>
-      <HR/> in {aref(urlFor(clazz.tree.symbol.owner), "_self", clazz.tree.symbol.owner.fullNameString('.'))}
-      <DIV class="entity">
+    def header0 : NodeSeq = <span>
+      <hr/> in {aref(urlFor(clazz.tree.symbol.owner), "_self", clazz.tree.symbol.owner.fullNameString('.'))}
+      <div class="entity">
         {Text(codeFor(kind))}
-        <SPAN class="entity">{Text(clazz.tree.symbol.nameString)}</SPAN>
-      </DIV><HR/>
-    </SPAN>;
-
-
-
-
+        <span class="entity">{Text(clazz.tree.symbol.nameString)}</span>
+      </div><hr/>
+    </span>;
   }
-  def process(units : Iterator[CompilationUnit]) : Unit = {
+
+  def process(units: Iterator[CompilationUnit]): Unit = {
     var members = emptyMap;
 
     var topLevel = ListMap.Empty[ModuleClassSymbol,ListMap[Kind,TreeSet[HasTree]]];
@@ -419,10 +414,10 @@ abstract class DocGenerator extends Models {
     };
 
     new ListModuleFrame {
-      def modules = modules0;
+      def modules = modules0
     };
     new ListModuleContentFrame {
-      def modules = modules0;
+      def modules = modules0
     };
 
     new ListClassFrame {
@@ -432,9 +427,9 @@ abstract class DocGenerator extends Models {
           allClasses = merge(allClasses, top._2);
         allClasses;
       }
-      def title = "List of all classes and objects";
-      def path = "all-classes";
-      def navLabel = "root-page";
+      def title = "List of all classes and objects"
+      def path = "all-classes"
+      def navLabel = "root-page"
     };
     // class from for each module.
     for (val top <- topLevel.elements) {
@@ -442,10 +437,10 @@ abstract class DocGenerator extends Models {
       val members = top._2;
 
       new ListClassFrame {
-        def title = "List of classes and objects in package " + module.fullNameString('.');
-        def classes = top._2;
-        def path = module.fullNameString('/');
-        def navLabel = module.fullNameString('.');
+        def title = "List of classes and objects in package " + module.fullNameString('.')
+        def classes = top._2
+        def path = module.fullNameString('/')
+        def navLabel = module.fullNameString('.')
       };
       val module0 = module;
       new ListClassContentFrame {
@@ -492,19 +487,13 @@ abstract class DocGenerator extends Models {
     }
   }
 
-
-
-
-
-
-
-
-  def organize(c : Composite, map0 : ListMap[Kind,TreeSet[HasTree]]) = {
+  def organize(c: Composite, map0: ListMap[Kind,TreeSet[HasTree]]) = {
     var map = map0;
-    //System.err.println("MEMBERS: " + c.members.toList);
+    //System.err.println("MemBERS: " + c.members.toList);
     for (val mmbr <- c.members.toList) map = organize0(mmbr, map);
-    map;
+    map
   }
+
   def organize0(mmbr : HasTree, map0 : ListMap[Kind,TreeSet[HasTree]]) = {
     var map = map0;
     if (!map.contains(mmbr.kind))
@@ -513,9 +502,8 @@ abstract class DocGenerator extends Models {
     map = map.update(mmbr.kind, map(mmbr.kind) + mmbr);
     /*if (map(mmbr.kind).size == sz)
       System.err.println(""+mmbr + " not added");*/
-    map;
+    map
   }
-
 
   def parse(str : String) : NodeSeq = {
     new SpecialNode {
@@ -562,15 +550,14 @@ abstract class DocGenerator extends Models {
       else new Tuple2(attr.substring(0, div), attr.substring(div + 1, attr.length()));
       attributes = attributes ::: (tuple :: Nil);
     }
-    if (isShort) <SPAN>{parse(body)}</SPAN>;
-    else <SPAN><DL><DD>{parse(body)}</DD></DL><DL>
+    if (isShort) <span>{parse(body)}</span>;
+    else <span><dl><dd>{parse(body)}</dd></dl><dl>
     { {
       for (val attr <- attributes) yield
-        <DT style="margin-top:10px;"><B>{Text(attr._1 + ":")}</B></DT>
-        <DD>{(parse(attr._2))}</DD>;
-    } } </DL></SPAN>;
+        <dt style="margin-top:10px;"><b>{Text(attr._1 + ":")}</b></dt>
+        <dd>{(parse(attr._2))}</dd>;
+    } } </dl></span>;
   };
-
 
   val index = {
     <frameset cols="25%, 75%">
@@ -583,9 +570,6 @@ abstract class DocGenerator extends Models {
   }
 
   val root = <b></b>;
-
-
-
 
   private val JDOC_START = "/**";
   private val JDOC_END   = "*/";

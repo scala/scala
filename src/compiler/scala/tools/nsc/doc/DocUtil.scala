@@ -22,7 +22,7 @@ object DocUtil {
   }
 
   def br(nodes: NodeSeq): NodeSeq = {
-    val x = <BR/>;
+    val x = <br/>;
     nodes.concat(x)
   }
 
@@ -38,8 +38,9 @@ object DocUtil {
       <a href={(relative + href)} target={(target)}>{t0}</a>
     }
 
-    val header = <meta http-equiv="content-type" content="text/html; charset=iso-8859-1"/>
-      <meta name="generator" content="scaladoc (1.4.0.4)"/>
+    val header =
+      <meta http-equiv="content-type" content="text/html; charset=iso-8859-1"/>
+      <meta name="generator" content="scaladoc (2.1.0)"/>
       <link rel="stylesheet" type="text/css" href={ relative + "style.css" }/>
       <script type="text/javascript" src={relative + "script.js"}></script>;
 
