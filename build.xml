@@ -4,11 +4,11 @@
 <project name="scala-core" default="build">
 
   <description>
-    I am SABBUS for Scala-core, the build system for the Scala compiler and core
+    I am SABBUS for ${ant.project.name}, the build system for the Scala compiler and core
     library. Please check the 'docs/README' file for more information about me.
   </description>
 
-  <echo level="info" message="Running SABBUS for Scala-core..."/>
+  <echo level="info" message="Running SABBUS for ${ant.project.name}..."/>
 
 <!-- ===========================================================================
 PROPERTIES
