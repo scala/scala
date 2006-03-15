@@ -94,8 +94,12 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
     else
       new java.net.URLClassLoader(Predef.Array(classfilePath.toURL), parentClassLoader)
   }
-	protected def parentClassLoader : ClassLoader = null;
-
+  protected def parentClassLoader : ClassLoader = {
+     new java.net.URLClassLoader(
+                    compiler.settings.classpath.value.split(File.pathSeparator).
+                            map(s => new File(s).toURL),
+                    ClassLoader.getSystemClassLoader)
+  }
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()
 
@@ -205,7 +209,7 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
 	    strings. */
   def interpret(line: String): Unit = {
     // parse
-		val trees = parse(line)
+    val trees = parse(line)
     if(trees.isEmpty) return ()  // parse error or empty input
 
     val lineName = newLineName
