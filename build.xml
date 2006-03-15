@@ -983,6 +983,9 @@ GENERATES A DISTRIBUTION
       perm="ugo+rx"
     />
     <!-- Copy the API, examples and man -->
+    <copy todir="${dist.current.dir}/doc/${dist.name}">
+      <fileset dir="${docs.dir}" includes="README,LICENSE"/>
+    </copy>
     <copy todir="${dist.current.dir}/doc/${dist.name}/api">
       <fileset dir="${api.lib.dir}"/>
     </copy>

@@ -31,12 +31,50 @@ done;
 SCALA_HOME=`dirname "$SOURCE"`/..;
 SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
-CLASSPATH=@classpath@
-if [ "$CLASSPATH" == "" ] ; then
-  for jar in `ls $SCALA_HOME/lib/*.jar` ; do
-    CLASSPATH=$CLASSPATH:$jar
-  done
-  CLASSPATH=${CLASSPATH:1}
+## buraq: previous version of this script computed the MYCLASSPATH and
+##        then appended it to the bootclasspath. Unfortunately, this
+##        won't work for library code that uses reflection to obtain
+##        a class living on the classpath. For this reason, we have
+##        to merge everything in the -cp classpath. This requires
+##        intercepting the user's -cp, if any, or the user's $CLASSPATH, 
+##        if set, appending our libs to it and passing the whole thing by -cp
+
+MYCLASSPATH=@classpath@
+if [ "$MYCLASSPATH" == "" ] ; then
+    for jar in `ls $SCALA_HOME/lib/*.jar` ; do
+        MYCLASSPATH="$MYCLASSPATH:$jar"
+    done
+    MYCLASSPATH=${MYCLASSPATH:1}
+fi
+
+QQ_USERCLASSPATH="."
+QQ_USERARGS=""
+QQ_NEXT=0
+for i in $@@ ; do
+    if [ $QQ_NEXT -eq 1 ] ; then
+        QQ_USERCLASSPATH=$i
+        QQ_NEXT=0
+    else
+        if [[ $i = "-cp" || $i = "-classpath" ]] ; then
+            QQ_NEXT=1
+        else
+            QQ_USERARGS="$QQ_USERARGS $i"
+            QQ_NEXT=0
+        fi
+    fi
+done
+
+## Lex suggested the user classpath comes before
+## the Scala libraries, since it gets preferred.
+
+if [ "$QQ_USERCLASSPATH" != "." ] ; then
+    MYCLASSPATH="$QQ_USERCLASSPATH:$MYCLASSPATH"
+else
+    if [ "$CLASSPATH" != "" ] ; then
+        MYCLASSPATH="$CLASSPATH:$MYCLASSPATH"
+    else
+        MYCLASSPATH=".:$MYCLASSPATH"
+    fi
 fi
 
 if $cygwin; then
@@ -45,7 +83,7 @@ if $cygwin; then
     else
         format=windows
     fi
-    CLASSPATH=`cygpath --path --$format "$CLASSPATH"`
+    MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
 fi
 
 for flag in "$@@" ; do
@@ -55,4 +93,4 @@ for flag in "$@@" ; do
     fi
 done
 
-${JAVACMD:=java} @javaflags@ -Dscala.home="$SCALA_HOME" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ -cp "$CLASSPATH" @class@ @toolflags@ "$@@"
+${JAVACMD:=java} @javaflags@ -Dscala.home="$SCALA_HOME" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ -cp $MYCLASSPATH @class@ @toolflags@ $QQ_USERARGS
