@@ -36,10 +36,10 @@ object Iterator {
 
   def fromValues[a](xs: a*) = xs.elements;
 
-  def fromArray[a](xs: Array[a]): BufferedIterator[a] =
+  def fromArray[a](xs: Array[a]): Iterator[a] =
     fromArray(xs, 0, xs.length);
 
-  def fromArray[a](xs: Array[a], start: Int, length: Int): BufferedIterator[a] =
+  def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
     new BufferedIterator[a] {
       private var i = start;
       val end = if ((start + length) < xs.length) start else xs.length;
@@ -50,7 +50,7 @@ object Iterator {
                     else Predef.error("head on empty iterator");
   }
 
-  def fromString(str: String): BufferedIterator[Char] =
+  def fromString(str: String): Iterator[Char] =
     new BufferedIterator[Char] {
       private var i = 0;
       private val len = str.length();
@@ -75,7 +75,7 @@ object Iterator {
    *  @param end the end value of the iterator
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int): BufferedIterator[Int] =
+  def range(lo: Int, end: Int): Iterator[Int] =
     range(lo, end, 1);
 
   /** Create an iterator with elements
@@ -88,7 +88,7 @@ object Iterator {
    *  @param step the increment value of the iterator (must be positive or negative)
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int, step: Int): BufferedIterator[Int] = {
+  def range(lo: Int, end: Int, step: Int): Iterator[Int] = {
     assert(step != 0);
     new BufferedIterator[Int] {
       private var i = lo;
@@ -110,7 +110,7 @@ object Iterator {
    *  @param step the increment function of the iterator
    *  @return the iterator with values in range [lo;end).
    */
-  def range(lo: Int, end: Int, step: Int => Int): BufferedIterator[Int] =
+  def range(lo: Int, end: Int, step: Int => Int): Iterator[Int] =
     new BufferedIterator[Int] {
       private var i = lo;
       def hasNext: Boolean =  i < end;
@@ -127,7 +127,7 @@ object Iterator {
    *  @param lo the start value of the iterator
    *  @return the iterator starting at value <code>lo</code>.
    */
-  def from(lo: Int): BufferedIterator[Int] =
+  def from(lo: Int): Iterator[Int] =
     from(lo, 1);
 
   /** Create an iterator with elements
@@ -138,7 +138,7 @@ object Iterator {
    *  @param step the increment value of the iterator
    *  @return the iterator starting at value <code>lo</code>.
    */
-  def from(lo: Int, step: Int): BufferedIterator[Int] =
+  def from(lo: Int, step: Int): Iterator[Int] =
     new BufferedIterator[Int] {
       private var i = lo;
       def hasNext: Boolean = true;
@@ -154,7 +154,7 @@ object Iterator {
    *  @param step the increment function of the iterator
    *  @return the iterator starting at value <code>lo</code>.
    */
-  def from(lo: Int, step: Int => Int): BufferedIterator[Int] =
+  def from(lo: Int, step: Int => Int): Iterator[Int] =
     new BufferedIterator[Int] {
       private var i = lo;
       def hasNext: Boolean = true;
@@ -242,17 +242,25 @@ trait Iterator[+A] {
    *  satisfy the predicate <code>p</code>. The order of the elements
    *  is preserved.
    *
-   *  @param   p the redicate used to filter the iterator.
+   *  @param p the predicate used to filter the iterator.
    *  @return  the elements of this iterator satisfying <code>p</code>.
    */
-  def filter(p: A => Boolean): BufferedIterator[A] = new BufferedIterator[A] {
-    private val source = Iterator.this.buffered;
+  def filter(p: A => Boolean): Iterator[A] = new BufferedIterator[A] {
+    private var hd: A = _;
+    private var ahead: Boolean = false;
+    private var hasMore = Iterator.this.hasNext;
     private def skip: Unit =
-      while (source.hasNext && !p(source.head)) { source.next; () }
-    def hasNext: Boolean = { skip; source.hasNext }
-    def next: A = { skip; source.next }
-    def head: A = { skip; source.head; }
-  }
+      while (!ahead && hasMore) {
+        hd = Iterator.this.next;
+        hasMore = Iterator.this.hasNext;
+        ahead = p(hd)
+      }
+    def hasNext: Boolean = { skip; ahead || hasMore }
+    def next: A =
+      if (hasNext) { ahead = false; hd }
+      else Predef.error("next on empty iterator");
+    def head: A = { skip; hd }
+ }
 
   /** Return an iterator formed from this iterator and the specified iterator
    *  <code>that</code> by associating each element of the former with
@@ -376,7 +384,6 @@ trait Iterator[+A] {
         def next: A =
             if (ahead) { ahead = false; hd } else head;
         def hasNext: Boolean = ahead || Iterator.this.hasNext;
-        override def buffered: BufferedIterator[A] = this;
     }
 
     /** Returns a counted iterator from this iterator.

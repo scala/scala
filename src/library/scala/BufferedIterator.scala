@@ -25,4 +25,6 @@ trait BufferedIterator[+A] extends Iterator[A] {
      *  @return the current element
      */
     def head: A;
+
+    override def buffered: BufferedIterator[A] = this;
 }
