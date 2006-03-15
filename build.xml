@@ -631,7 +631,7 @@ BUILD QUICK-TEST LAYER
       version="${version.number}"
       copyright="${copyright}"
       classpath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
-      javaFlags="-Xmx256M -Xms16M"
+      properties="scala.boot.class.path=#CLASSPATH#"
     />
     <chmod
       file="${quick.dir}/${exec.dir.name}/${scalaint.exec.name}"
@@ -776,6 +776,7 @@ TEST
       version="${version.number}"
       copyright="${copyright}"
       classpath=""
+      properties="scala.boot.class.path=#CLASSPATH#"
       javaFlags="-Xmx256M -Xms16M"
     />
     <chmod
