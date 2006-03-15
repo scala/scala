@@ -266,7 +266,7 @@ abstract class TreeBuilder {
         val rhss = valeqs map { case ValEq(_, _, rhs) => rhs }
         val defpats = pats map (x => makeBind(x.duplicate))
         val pdefs = List.flatten(List.map2(defpats, rhss)(makePatDef))
-        val ids = (makeBind(pat) :: defpats) map makeValue
+        val ids = (pat :: defpats) map makeValue
         val rhs1 = makeForYield(
           List(ValFrom(pos, makeBind(pat.duplicate), rhs)),
           Block(pdefs, makeTupleTerm(ids)))
