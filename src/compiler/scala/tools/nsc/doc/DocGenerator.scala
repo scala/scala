@@ -268,7 +268,11 @@ abstract class DocGenerator extends Models {
         tree.tpe.symbol != definitions.AnyClass &&
           tree.tpe.symbol != definitions.AllClass) {
         if (before) nodes.concat(forTree(tree));
-        else forTree(tree).concat(nodes);
+        else {
+          val ret = forTree(tree).concat(nodes);
+          //System.err.println("RET: " + ret);
+          ret;
+        }
       } else NodeSeq.Empty;
     }
 
@@ -365,13 +369,13 @@ abstract class DocGenerator extends Models {
     final def path = urlFor0(clazz.tree.symbol,clazz.tree.symbol);
 
     // <td class="navigation-enabled">{aref("help.html"     , "_self", "Help"    )}</td>
+    // <td class="navigation-enabled">{aref("root-page.html", "_self", "Overview")}</td>
+    // <td class="navigation-enabled">{aref("index.html"    , null, "Index"   )}</td>
     def navigation : NodeSeq =
     <table class="navigation">
       <tr>
         <td valign="top" class="navigation-links">
           <table><tr>
-          <td class="navigation-enabled">{aref("root-page.html", "_self", "Overview")}</td>
-          <td class="navigation-enabled">{aref("index.html"    , "_self", "Index"   )}</td>
           </tr></table>
         </td>
         <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">

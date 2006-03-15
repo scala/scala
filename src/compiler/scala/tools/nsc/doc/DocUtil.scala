@@ -31,11 +31,13 @@ object DocUtil {
 
     def aref(href0: String, target: String, text: String): NodeSeq = {
       val href = Utility.escape(href0)
-      if (target.indexOf('<') != -1) throw new Error(target)
+      if (target != null && target.indexOf('<') != -1) throw new Error(target)
 
       val t0 = Text(text)
-
-      <a href={(relative + href)} target={(target)}>{t0}</a>
+			if (target != null)
+			  <a href={(relative + href)} target={(target)}>{t0}</a>;
+      else
+        <a href={(relative + href)}>{t0}</a>;
     }
 
     val header =
