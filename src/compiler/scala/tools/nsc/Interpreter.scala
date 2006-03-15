@@ -88,8 +88,13 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
          shadow the old ones, and old code objects to refer to the old
          definitions.
   */
-  private val classLoader = new java.net.URLClassLoader(Predef.Array(classfilePath.toURL))
-
+  private val classLoader = {
+    if (parentClassLoader == null)
+      new java.net.URLClassLoader(Predef.Array(classfilePath.toURL))
+    else
+      new java.net.URLClassLoader(Predef.Array(classfilePath.toURL), parentClassLoader)
+  }
+	protected def parentClassLoader : ClassLoader = null;
 
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()

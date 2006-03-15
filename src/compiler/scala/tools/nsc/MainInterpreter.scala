@@ -108,7 +108,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       interpretOne(line)
     true
   }
-
+	def parentClassLoader0 : ClassLoader = null;
 
 	/** process command-line arguments and do as they request */
   def main(args: Array[String]): unit = {
@@ -121,7 +121,9 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
 
     val compiler = new Global(command.settings, reporter)
-    interpreter = new Interpreter(compiler, str=>Console.print(str))
+    interpreter = new Interpreter(compiler, out.print) {
+      override protected def parentClassLoader = parentClassLoader0;
+    }
 
     try {
       if(!command.files.isEmpty) {
