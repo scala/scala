@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc
 
-import java.io.{BufferedReader, FileReader, IOException, InputStreamReader, PrintWriter}
+import java.io.{BufferedReader, File, FileReader, IOException, InputStreamReader, PrintWriter}
 import scala.tools.nsc.util.{Position}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
@@ -108,7 +108,12 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       interpretOne(line)
     true
   }
-	def parentClassLoader0 : ClassLoader = null;
+
+  /* As soon as the Eclipse plugin no longer needs it, delete uglinessxxx,
+   * parentClassLoader0, and the parentClassLoader method in Interpreter
+   */
+  var uglinessxxx: ClassLoader = _
+	def parentClassLoader0 : ClassLoader = uglinessxxx;
 
 	/** process command-line arguments and do as they request */
   def main(args: Array[String]): unit = {
@@ -121,6 +126,13 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
 
     val compiler = new Global(command.settings, reporter)
+
+    uglinessxxx =
+         new java.net.URLClassLoader(
+                    compiler.settings.classpath.value.split(File.pathSeparator).
+                            map(s => new File(s).toURL),
+                    ClassLoader.getSystemClassLoader)
+
     interpreter = new Interpreter(compiler, out.print) {
       override protected def parentClassLoader = parentClassLoader0;
     }
