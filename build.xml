@@ -865,7 +865,7 @@ DOCUMENTATION
 <!-- ===========================================================================
 GENERATES A DISTRIBUTION
 ============================================================================ -->
-  
+
   <target name="dist.devel" depends="init">
     <property file="${number.file}"/>
     <property
@@ -874,7 +874,7 @@ GENERATES A DISTRIBUTION
     />
     <runtarget target="dist"/>
   </target>
-  
+
   <target name="dist.patch" depends="init">
     <propertyfile
       file="${number.file}"
@@ -889,7 +889,7 @@ GENERATES A DISTRIBUTION
     />
     <runtarget target="dist"/>
   </target>
-  
+
   <target name="dist.minor" depends="init">
     <propertyfile
       file="${number.file}"
