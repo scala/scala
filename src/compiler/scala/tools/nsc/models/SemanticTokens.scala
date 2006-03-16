@@ -44,7 +44,7 @@ class SemanticTokens(val compiler: Global) {
 
   def eatKeywords(source : SourceFile, pos : Int) : Int = {
     val keywords =
-      "package" :: "val" :: "var" :: "def" :: "class" :: "override" :: "case" ::
+      "package" :: "val" :: "var" :: "def" :: "class" :: "trait" :: "override" :: "case" ::
       "object" :: "sealed" :: "private" :: "protected" :: Nil;
     if (pos != Position.NOPOS) eatKeyword(source, pos, keywords);
     else pos;
