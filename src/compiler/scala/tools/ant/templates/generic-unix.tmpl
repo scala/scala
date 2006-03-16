@@ -89,7 +89,7 @@ fi
 QQ_USERARGS="-cp $MYCLASSPATH $QQ_USERARGS"
 
 for flag in "$@@" ; do
-    if [ $flag == '-version' ] ; then
+    if [ "$flag" == '-version' ] ; then
         echo "Scala runtime version @version@ -- @copyright@"
         ${JAVACMD:=java} -version
         exit 0
