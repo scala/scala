@@ -84,6 +84,7 @@ if $cygwin; then
         format=windows
     fi
     MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
+    SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
 fi
 
 for flag in "$@@" ; do
