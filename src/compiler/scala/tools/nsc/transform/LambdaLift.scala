@@ -305,7 +305,7 @@ abstract class LambdaLift extends InfoTransform {
             copy.ValDef(tree, mods, name, tpt1, rhs1)
           } else tree
         case Return(Block(stats, value)) =>
-          Block(stats, copy.Return(tree, value)) setType tree.tpe setPos tree.pos;
+          Block(stats, copy.Return(tree, value)) setType tree.tpe setPos tree.pos
 	case Return(expr) =>
 	  if (sym != currentOwner.enclMethod) {
             System.out.println(sym);//debug

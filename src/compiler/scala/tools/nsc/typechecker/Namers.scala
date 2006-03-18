@@ -56,7 +56,9 @@ trait Namers requires Analyzer {
       sym.flags = flags | lockedFlag;
       if (sym.isModule && sym.moduleClass != NoSymbol)
         updatePosFlags(sym.moduleClass, pos, (flags & ModuleToClassFlags) | MODULE | FINAL);
-      if (sym.owner.isPackageClass && sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader])
+      if (sym.owner.isPackageClass &&
+          (sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
+           sym.linkedSym.rawInfo.isComplete && sym.validForRun != currentRun))
         // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
         sym.linkedSym.setInfo(NoType);
       sym
@@ -149,6 +151,7 @@ trait Namers requires Analyzer {
     private def enterModuleSymbol(pos: int, flags: int, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name);
       if (m.isModule && !m.isPackage && !currentRun.compiles(m) && (context.scope == m.owner.info.decls)) {
+
         updatePosFlags(m, pos, flags)
       } else {
         if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && (context.scope == m.owner.info.decls))
@@ -307,7 +310,6 @@ trait Namers requires Analyzer {
         if (settings.debug.value) log("defining " + sym);
         val tp = typeSig(tree);
         sym.setInfo(tp);
-        if (settings.Xgadt.value) System.out.println("" + sym + ":" + tp);
         if (settings.debug.value) log("defined " + sym);
         validate(sym);
       }
@@ -384,7 +386,6 @@ trait Namers requires Analyzer {
       val clazz = context.owner;
       val parents = typer.parentTypes(templ) map (p => if (p.tpe.isError) AnyRefClass.tpe else p.tpe);
       val decls = new Scope();
-      log("members of " + clazz + "=" + decls.hashCode());//debug
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
       ClassInfoType(parents, decls, clazz)
     }

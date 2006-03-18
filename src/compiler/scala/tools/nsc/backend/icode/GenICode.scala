@@ -736,9 +736,14 @@ abstract class GenICode extends SubComponent  {
               ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos);
               generatedType = toTypeKind(tree.symbol.info);
             } else {
-              val Some(l) = ctx.method.lookupLocal(tree.symbol);
-              ctx.bb.emit(LOAD_LOCAL(l, tree.symbol.isValueParameter), tree.pos);
-              generatedType = l.kind;
+              try {
+                val Some(l) = ctx.method.lookupLocal(tree.symbol);
+                ctx.bb.emit(LOAD_LOCAL(l, tree.symbol.isValueParameter), tree.pos);
+                generatedType = l.kind;
+              } catch {
+                case ex: MatchError =>
+                  throw new Error("symbol "+tree.symbol+" does not exist in "+ctx.method)
+              }
             }
           }
           ctx

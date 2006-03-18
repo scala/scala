@@ -38,6 +38,7 @@ trait Definitions requires SymbolTable {
     var StringClass: Symbol = _;
     var ThrowableClass: Symbol = _;
     var NullPointerExceptionClass: Symbol = _;
+    var NonLocalReturnExceptionClass: Symbol = _;
 
     // the scala value classes
     var UnitClass: Symbol = _;
@@ -326,6 +327,7 @@ trait Definitions requires SymbolTable {
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");
       NullPointerExceptionClass = getClass("java.lang.NullPointerException");
+      NonLocalReturnExceptionClass = getClass("scala.runtime.NonLocalReturnException");
 
       // the scala value classes
       UnitClass = getValueClass("Unit", 'V');

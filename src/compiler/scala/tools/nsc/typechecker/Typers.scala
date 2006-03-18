@@ -107,6 +107,8 @@ trait Typers requires Analyzer {
                                  // time. In that case functions may no longer be
                                  // be coerced with implicit views.
 
+    val LHSmode       = 0x400;   // Set for the left-hand side of an assignment
+
     private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode
 
     /** Report a type error.
@@ -355,7 +357,7 @@ trait Typers requires Analyzer {
                       TypeTree(tparam.tpe) setOriginal tree /* setPos tree.pos */)) setPos tree.pos
 	context.undetparams = context.undetparams ::: tparams1
 	adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
-      case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode)) == EXPRmode) => // (4.1)
+      case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
 	val tree1 =
 	  if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
 	    val tparams = context.undetparams
@@ -1046,6 +1048,22 @@ trait Typers requires Analyzer {
 	  errorTree(tree, ""+fun+" does not take parameters")
       }
 
+      def tryTypedArgs(args: List[Tree]) = {
+        val reportGeneralErrors = context.reportGeneralErrors
+        val reportAmbiguousErrors = context.reportAmbiguousErrors
+        try {
+          context.reportGeneralErrors = false
+          context.reportAmbiguousErrors = false
+          typedArgs(args)
+        } catch {
+          case ex: TypeError =>
+            null
+        } finally {
+          context.reportGeneralErrors = reportGeneralErrors
+          context.reportAmbiguousErrors = reportAmbiguousErrors
+        }
+      }
+
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val reportGeneralErrors = context.reportGeneralErrors
         val reportAmbiguousErrors = context.reportAmbiguousErrors
@@ -1321,9 +1339,10 @@ trait Typers requires Analyzer {
         case Assign(lhs, rhs) =>
           def isGetter(sym: Symbol) = sym.info match {
             case PolyType(List(), _) => sym.owner.isClass && !sym.isStable
+            case _: ImplicitMethodType => sym.owner.isClass && !sym.isStable
             case _ => false
           }
-          val lhs1 = typed(lhs)
+          val lhs1 = typed(lhs, EXPRmode | LHSmode, WildcardType)
           val varsym = lhs1.symbol
           if (varsym != null && isGetter(varsym)) {
             lhs1 match {

@@ -251,6 +251,8 @@ abstract class Pickler extends SubComponent {
       if (settings.debug.value) log("" + ep + " entries");//debug
       for (val i <- Iterator.range(0, ep)) writeEntry(entries(i));
     }
+
+    override def toString() = "" + rootName + " in " + rootOwner;
   }
 }
 

@@ -233,6 +233,7 @@ trait StdNames requires SymbolTable {
     val elements = newTermName("elements");
     val eq = newTermName("eq");
     val equals_ = newTermName("equals");
+    val ex = newTermName("ex");
     val fail = newTermName("fail");
     val report = newTermName("report");
     val false_ = newTermName("false");

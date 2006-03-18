@@ -6,6 +6,7 @@
 package scala.tools.nsc.transform;
 
 import symtab.Flags._;
+import scala.collection.mutable.HashMap
 
 /*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
@@ -25,6 +26,7 @@ import symtab.Flags._;
  *       (a_1:_*) => (a_1)g
  *  - convert implicit method types to method types
  *  - convert non-trivial catches in try statements to matches
+ *  - convert non-local returns to throws with enclosing try statements.
  */
 /*</export>*/
 abstract class UnCurry extends InfoTransform {
@@ -35,6 +37,8 @@ abstract class UnCurry extends InfoTransform {
   val phaseName: String = "uncurry";
   def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit);
   override def changesBaseClasses = false;
+
+// ------ Type transformation --------------------------------------------------------
 
   private val uncurry = new TypeMap {
     def apply(tp: Type): Type = tp match {
@@ -74,7 +78,7 @@ abstract class UnCurry extends InfoTransform {
     } catch {
       case ex: Throwable =>
 	System.out.println("exception when traversing " + tree);
-      throw ex
+        throw ex
     }
 
     /* Is tree a reference `x' to a call by name parameter that neeeds to be converted to
@@ -96,6 +100,75 @@ abstract class UnCurry extends InfoTransform {
       case _ =>
 	uncurry(tp)
     }
+
+// ------- Handling non-local returns -------------------------------------------------
+
+    /** The type of a non-local return expression for given method */
+    private def nonLocalReturnExceptionType(meth: Symbol) =
+      appliedType(
+        NonLocalReturnExceptionClass.typeConstructor,
+        List(meth.tpe.finalResultType))
+
+    /** A hashmap from method symbols to non-local return keys */
+    private val nonLocalReturnKeys = new HashMap[Symbol, Symbol];
+
+    /** Return non-local return key for given method */
+    private def nonLocalReturnKey(meth: Symbol) = nonLocalReturnKeys.get(meth) match {
+      case Some(k) => k
+      case None =>
+        val k = meth.newValue(meth.pos, unit.fresh.newName("nonLocalReturnKey"))
+          .setFlag(SYNTHETIC).setInfo(ObjectClass.tpe)
+        nonLocalReturnKeys(meth) = k
+        k
+    }
+
+    /** Generate a non-local return throw with given return expression from given method.
+     *  I.e. for the method's non-local return key, generate:
+     *
+     *    throw new NonLocalReturnException(key, expr)
+     */
+    private def nonLocalReturnThrow(expr: Tree, meth: Symbol) =
+      localTyper.atOwner(currentOwner).typed {
+        Throw(
+          New(
+            TypeTree(nonLocalReturnExceptionType(meth)),
+            List(List(Ident(nonLocalReturnKey(meth)), expr))))
+      }
+
+    /** Transform (body, key) to:
+     *
+     *  {
+     *    val key = new Object()
+     *    try {
+     *      body
+     *    } catch {
+     *      case ex: NonLocalReturnException =>
+     *        if (ex.key().eq(key)) ex.value()
+     *        else throw ex
+     *    }
+     *  }
+     */
+    private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
+      localTyper.atOwner(currentOwner).typed {
+        val extpe = nonLocalReturnExceptionType(meth);
+        val ex = meth.newValue(body.pos, nme.ex) setInfo extpe;
+        val pat = Bind(ex, Typed(Ident(nme.WILDCARD), TypeTree(extpe)));
+        val rhs =
+          If(
+            Apply(
+              Select(
+                Apply(Select(Ident(ex), "key"), List()),
+                Object_eq),
+              List(Ident(key))),
+            Apply(Select(Ident(ex), "value"), List()),
+            Throw(Ident(ex)));
+        val keyDef = ValDef(key, New(TypeTree(ObjectClass.tpe), List(List())))
+        val tryCatch = Try(body, List(CaseDef(pat, EmptyTree, rhs)), EmptyTree)
+        Block(List(keyDef), tryCatch)
+      }
+    }
+
+// ------ Transforming anonymous functions and by-name-arguments ----------------
 
     /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
      *
@@ -199,6 +272,8 @@ abstract class UnCurry extends InfoTransform {
           })
       }
     }
+
+// ------ The tree transformers --------------------------------------------------------
 
     def mainTransform(tree: Tree): Tree = {
 
@@ -327,7 +402,11 @@ abstract class UnCurry extends InfoTransform {
 	}
       tree match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-          copy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs);
+          val rhs1 = nonLocalReturnKeys.get(tree.symbol) match {
+            case None => rhs
+            case Some(k) => atPos(rhs.pos)(nonLocalReturnTry(rhs, k, tree.symbol))
+          }
+          copy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs1);
         case Try(body, catches, finalizer) =>
           if (catches forall treeInfo.isCatchCase) tree
           else {
@@ -343,7 +422,7 @@ abstract class UnCurry extends InfoTransform {
                   Match(Ident(exname), cases))
               }
             if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
-            val catches1 = typer.atOwner(currentOwner).typedCases(
+            val catches1 = localTyper.atOwner(currentOwner).typedCases(
               tree, List(catchall), ThrowableClass.tpe, WildcardType);
             copy.Try(tree, body, catches1, finalizer)
           }
@@ -357,6 +436,9 @@ abstract class UnCurry extends InfoTransform {
 	  applyUnary(tree)
 	case TypeApply(_, _) =>
 	  applyUnary(tree)
+        case Return(expr) if (tree.symbol != currentOwner.enclMethod) =>
+          if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
+          atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
 	case _ =>
 	  tree
       }
