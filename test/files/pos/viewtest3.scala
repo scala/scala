@@ -20,9 +20,9 @@ class Node[a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
 }
 
 case class Str(elem: String) extends Ordered[Str] {
-  def compareTo[b >: Str <% Ordered[b]](that: b): int = that match {
-    case that1: Str => this.elem compareTo that1.elem
-    case _ => -(that compareTo this)
+  def compare[b >: Str <% Ordered[b]](that: b): int = that match {
+    case that1: Str => this.elem compare that1.elem
+    case _ => -(that compare this)
   }
 }
 

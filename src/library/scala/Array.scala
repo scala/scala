@@ -15,6 +15,11 @@ package scala;
 import runtime._
 
 object Array {
+
+  /** Copy one array to another
+   *  Equaivalent to System.arraycopy(src, srcPos, dest, destPos, length),
+   *  except that this works also for plymorphic and boxed arrays
+   */
   def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = src match {
     case xs: BoxedArray =>
       xs.copyTo(srcPos, dest, destPos, length)
@@ -27,6 +32,8 @@ object Array {
       }
   }
 
+  /** Concatenate all argument arrays into a single array
+   */
   def concat[T](xs: Array[T]*) = {
     var len = 0
     for (val x <- xs) {
@@ -38,6 +45,18 @@ object Array {
       copy(x, 0, result, start, x.length)
       start = start + x.length
     }
+    result
+  }
+
+  /** Create a an array containing of successive integers.
+   *
+   *  @param from the value of the first element of the array
+   *  @param end  the value of the last element fo the array plus 1
+   *  @return the sorted array of all integers in range [from;end).
+   */
+  def range(start: Int, end: Int): Array[Int] = {
+    val result = new Array[Int](end - start);
+    for (val i <- Iterator.range(start, end)) result(i) = i
     result
   }
 }

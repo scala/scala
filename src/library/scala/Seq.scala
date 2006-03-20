@@ -27,17 +27,17 @@ object Seq {
   implicit def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] =
     new Ordered[Seq[A]] with Proxy {
       def self: Any = xs;
-      def compareTo[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
+      def compare[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
         case ys: Seq[A] =>
           var res = 0;
           val xsit = xs.elements;
           val ysit = ys.elements;
           while (xsit.hasNext && ysit.hasNext && (res == 0)) {
-            res = xsit.next compareTo ysit.next;
+            res = xsit.next compare ysit.next;
           }
           if (res != 0) res else if (xsit.hasNext) 1 else -1
         case _ =>
-          -(that compareTo xs)
+          -(that compare xs)
       }
     }
 }

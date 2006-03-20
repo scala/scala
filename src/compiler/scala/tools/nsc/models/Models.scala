@@ -138,11 +138,11 @@ abstract class Models {
 
     override def toString() : String = tree.toString();
 
-    def compareTo [b >: HasTree <% Ordered[b]](that: b): Int = that match {
+    def compare [b >: HasTree <% Ordered[b]](that: b): Int = that match {
       case ht : HasTree =>
-      	val result = tree.symbol.nameString.compareTo(ht.tree.symbol.nameString);
+      	val result = tree.symbol.nameString.compare(ht.tree.symbol.nameString);
 		    if (result != 0) result;
-        else toString().compareTo(ht.toString());
+        else toString().compare(ht.toString());
     }
     def kind = kindOf(tree.symbol);
 

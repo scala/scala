@@ -79,9 +79,9 @@ object BigInt {
    */
   implicit def bigInt2ordered(x: BigInt): Ordered[BigInt] = new Ordered[BigInt] with Proxy {
     def self: Any = x;
-    def compareTo [b >: BigInt <% Ordered[b]](y: b): Int = y match {
+    def compare [b >: BigInt <% Ordered[b]](y: b): Int = y match {
       case y: BigInt => x.bigInteger.compareTo(y.bigInteger)
-      case _ => -(y compareTo x)
+      case _ => -(y compare x)
     }
   }
 }
@@ -108,7 +108,7 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
 
   /** Compares this BigInt with the specified BigInt
    */
-  def compareTo (that: BigInt): int = this.bigInteger.compareTo(that.bigInteger)
+  def compare (that: BigInt): int = this.bigInteger.compareTo(that.bigInteger)
 
   /** Less-than-or-equals comparison of BigInts
    */

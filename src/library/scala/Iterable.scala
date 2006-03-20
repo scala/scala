@@ -16,19 +16,19 @@ import Predef.error;
 object Iterable {
   implicit def view[A <% Ordered[A]](x: Iterable[A]): Ordered[Iterable[A]] =
     new Ordered[Iterable[A]] {
-      def compareTo[B >: Iterable[A] <% Ordered[B]](that: B): Int = that match {
+      def compare[B >: Iterable[A] <% Ordered[B]](that: B): Int = that match {
         case y: Iterable[A] =>
           val xs = x.elements;
 	  val ys = y.elements;
 	  var res = 0;
 	  while (xs.hasNext && ys.hasNext && (res == 0)) {
-            res = xs.next compareTo ys.next;
+            res = xs.next compare ys.next;
           }
 	  if (xs.hasNext) 1
 	  else if (ys.hasNext) -1
           else res;
         case _ =>
-          -(that compareTo x)
+          -(that compare x)
       }
     }
 

@@ -2,9 +2,9 @@ package test;
 
 class Point1(x: int) extends Object with Ordered[Point1] {
   val xCoord = x;
-  def compareTo [b >: Point1 <% Ordered[b]](that: b): int = that match {
-    case that1: Point1 => this.xCoord.compareTo(that1.xCoord)
-    case _ => -that.compareTo(this)
+  def compare [b >: Point1 <% Ordered[b]](that: b): int = that match {
+    case that1: Point1 => this.xCoord.compare(that1.xCoord)
+    case _ => -that.compare(this)
   }
 }
 class Point2(x: int, y: int) extends Point1(x) with Ordered[Point2] {}

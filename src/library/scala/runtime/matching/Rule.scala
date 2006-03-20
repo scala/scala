@@ -15,7 +15,7 @@ package scala.runtime.matching ;
 /* hedge grammar rules */
 abstract class Rule extends Ordered[Rule] {
 
-  def compareTo [b >: Rule <% Ordered[b]](that: b): int = that match {
+  def compare [b >: Rule <% Ordered[b]](that: b): int = that match {
     case r:Rule =>
       if( rule_smaller( this, r ) )
         -1
@@ -23,7 +23,7 @@ abstract class Rule extends Ordered[Rule] {
         0
       else
         1
-    case _ => -(that compareTo this)
+    case _ => -(that compare this)
   }
 
   final def rule_smaller( r1:Rule, r2:Rule ):boolean = r1 match {

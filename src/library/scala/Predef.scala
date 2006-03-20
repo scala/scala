@@ -187,187 +187,187 @@ object Predef {
 
   implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
     def self: Any = x;
-    def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
+    def compare [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
         if (x < y1) -1
         else if (x > y1) 1
         else 0
-      case _ => -(y compareTo x)
+      case _ => -(y compare x)
     }
   }
 
   implicit def char2ordered(x: char): Ordered[char] = new Ordered[char] with Proxy {
     def self: Any = x;
-    def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
+    def compare [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
         if (x < y1) -1
         else if (x > y1) 1
         else 0
-      case _ => -(y compareTo x)
+      case _ => -(y compare x)
     }
   }
 
   implicit def long2ordered(x: long): Ordered[long] = new Ordered[long] with Proxy {
     def self: Any = x;
-    def compareTo [b >: long <% Ordered[b]](y: b): int = y match {
+    def compare [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
         if (x < y1) -1
         else if (x > y1) 1
         else 0
-      case _ => -(y compareTo x)
+      case _ => -(y compare x)
     }
   }
 
   implicit def float2ordered(x: float): Ordered[float] = new Ordered[float] with Proxy {
     def self: Any = x;
-    def compareTo [b >: float <% Ordered[b]](y: b): int = y match {
+    def compare [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
         if (x < y1) -1
         else if (x > y1) 1
         else 0
-      case _ => -(y compareTo x)
+      case _ => -(y compare x)
     }
   }
 
   implicit def double2ordered(x: double): Ordered[double] = new Ordered[double] with Proxy {
     def self: Any = x;
-    def compareTo [b >: double <% Ordered[b]](y: b): int = y match {
+    def compare [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
         if (x < y1) -1
         else if (x > y1) 1
         else 0
-      case _ => -(y compareTo x)
+      case _ => -(y compare x)
     }
   }
 
   implicit def boolean2ordered(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy {
     def self: Any = x;
-    def compareTo [b >: boolean <% Ordered[b]](y: b): int = y match {
+    def compare [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
         if (x == y1) 0
         else if (x) 1
         else -1
-      case _ => -(y compareTo x)
+      case _ => -(y compare x)
     }
   }
 
   implicit def seq2ordered[a <% Ordered[a]](xs: Array[a]): Ordered[Seq[a]] =
     new Ordered[Seq[a]] with Proxy {
       val self = xs
-      def compareTo[b >: Seq[a] <% Ordered[b]](that: b): Int = that match {
+      def compare[b >: Seq[a] <% Ordered[b]](that: b): Int = that match {
         case that: Seq[a] =>
           var res = 0
           val these = xs.elements
           val those = that.elements
           while (res == 0 && these.hasNext)
-            res = if (those.hasNext) these.next compareTo those.next else 1
+            res = if (those.hasNext) these.next compare those.next else 1
           res
         case _ =>
-          -(that compareTo xs)
+          -(that compare xs)
       }
     }
 
   implicit def tuple22ordered[a1 <% Ordered[a1], a2 <% Ordered[a2]](x: Tuple2[a1, a2]): Ordered[Tuple2[a1, a2]] =
     new Ordered[Tuple2[a1, a2]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple2[a1, a2] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple2[a1, a2] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple2[a1, a2] =>
-          val res = x._1 compareTo y._1
-          if (res == 0) x._2 compareTo y._2
+          val res = x._1 compare y._1
+          if (res == 0) x._2 compare y._2
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def tuple32ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3]](x: Tuple3[a1, a2, a3]): Ordered[Tuple3[a1, a2, a3]] =
     new Ordered[Tuple3[a1, a2, a3]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple3[a1, a2, a3] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple3[a1, a2, a3] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple3[a1, a2, a3] =>
-          val res = x._1 compareTo y._1;
-          if (res == 0) Tuple2(x._2, x._3) compareTo Tuple2(y._2, y._3)
+          val res = x._1 compare y._1;
+          if (res == 0) Tuple2(x._2, x._3) compare Tuple2(y._2, y._3)
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def tuple42ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4]](x: Tuple4[a1, a2, a3, a4]): Ordered[Tuple4[a1, a2, a3, a4]] =
     new Ordered[Tuple4[a1, a2, a3, a4]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple4[a1, a2, a3, a4] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple4[a1, a2, a3, a4] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple4[a1, a2, a3, a4] =>
-          val res = x._1 compareTo y._1;
-          if (res == 0) Tuple3(x._2, x._3, x._4) compareTo Tuple3(y._2, y._3, y._4)
+          val res = x._1 compare y._1;
+          if (res == 0) Tuple3(x._2, x._3, x._4) compare Tuple3(y._2, y._3, y._4)
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def tuple52ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5]](x: Tuple5[a1, a2, a3, a4, a5]): Ordered[Tuple5[a1, a2, a3, a4, a5]] =
     new Ordered[Tuple5[a1, a2, a3, a4, a5]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple5[a1, a2, a3, a4, a5] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple5[a1, a2, a3, a4, a5] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple5[a1, a2, a3, a4, a5] =>
-          val res = x._1 compareTo y._1;
-          if (res == 0) Tuple4(x._2, x._3, x._4, x._5) compareTo Tuple4(y._2, y._3, y._4, y._5)
+          val res = x._1 compare y._1;
+          if (res == 0) Tuple4(x._2, x._3, x._4, x._5) compare Tuple4(y._2, y._3, y._4, y._5)
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def tuple62ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6]](x: Tuple6[a1, a2, a3, a4, a5, a6]): Ordered[Tuple6[a1, a2, a3, a4, a5, a6]] =
     new Ordered[Tuple6[a1, a2, a3, a4, a5, a6]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple6[a1, a2, a3, a4, a5, a6] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple6[a1, a2, a3, a4, a5, a6] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple6[a1, a2, a3, a4, a5, a6] =>
-          val res = x._1 compareTo y._1;
-          if (res == 0) Tuple5(x._2, x._3, x._4, x._5, x._6) compareTo Tuple5(y._2, y._3, y._4, y._5, y._6)
+          val res = x._1 compare y._1;
+          if (res == 0) Tuple5(x._2, x._3, x._4, x._5, x._6) compare Tuple5(y._2, y._3, y._4, y._5, y._6)
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def tuple72ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6], a7 <% Ordered[a7]](x: Tuple7[a1, a2, a3, a4, a5, a6, a7]): Ordered[Tuple7[a1, a2, a3, a4, a5, a6, a7]] =
     new Ordered[Tuple7[a1, a2, a3, a4, a5, a6, a7]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple7[a1, a2, a3, a4, a5, a6, a7] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple7[a1, a2, a3, a4, a5, a6, a7] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple7[a1, a2, a3, a4, a5, a6, a7] =>
-          val res = x._1 compareTo y._1;
-          if (res == 0) Tuple6(x._2, x._3, x._4, x._5, x._6, x._7) compareTo Tuple6(y._2, y._3, y._4, y._5, y._6, y._7)
+          val res = x._1 compare y._1;
+          if (res == 0) Tuple6(x._2, x._3, x._4, x._5, x._6, x._7) compare Tuple6(y._2, y._3, y._4, y._5, y._6, y._7)
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def tuple82ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6], a7 <% Ordered[a7], a8 <% Ordered[a8]](x: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8]): Ordered[Tuple8[a1, a2, a3, a4, a5, a6, a7, a8]] =
     new Ordered[Tuple8[a1, a2, a3, a4, a5, a6, a7, a8]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8] =>
-          val res = x._1 compareTo y._1;
-          if (res == 0) Tuple7(x._2, x._3, x._4, x._5, x._6, x._7, x._8) compareTo Tuple7(y._2, y._3, y._4, y._5, y._6, y._7, y._8)
+          val res = x._1 compare y._1;
+          if (res == 0) Tuple7(x._2, x._3, x._4, x._5, x._6, x._7, x._8) compare Tuple7(y._2, y._3, y._4, y._5, y._6, y._7, y._8)
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def tuple92ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6], a7 <% Ordered[a7], a8 <% Ordered[a8], a9 <% Ordered[a9]](x: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9]): Ordered[Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9]] =
     new Ordered[Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9]] with Proxy {
       val self = x
-      def compareTo[T >: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9] <% Ordered[T]](y: T): Int = y match {
+      def compare[T >: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9] =>
-          val res = x._1 compareTo y._1;
-          if (res == 0) Tuple8(x._2, x._3, x._4, x._5, x._6, x._7, x._8, x._9) compareTo Tuple8(y._2, y._3, y._4, y._5, y._6, y._7, y._8, y._9)
+          val res = x._1 compare y._1;
+          if (res == 0) Tuple8(x._2, x._3, x._4, x._5, x._6, x._7, x._8, x._9) compare Tuple8(y._2, y._3, y._4, y._5, y._6, y._7, y._8, y._9)
           else res
-        case _ => -(y compareTo x)
+        case _ => -(y compare x)
       }
     }
 
   implicit def string2ordered(x: String): Ordered[String] = new Ordered[String] with Proxy {
     def self: Any = x;
-    def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
-      case y1: String => x compareTo y1;
-      case _ => -(y compareTo x)
+    def compare [b >: String <% Ordered[b]](y: b): int = y match {
+      case y1: String => x compare y1;
+      case _ => -(y compare x)
     }
   }
 
@@ -404,4 +404,13 @@ object Predef {
   implicit def long2double(x: long): double = x.toDouble;
 
   implicit def float2double(x: float): double = x.toDouble;
+
+  implicit def byte2Byte(x: byte) = new java.lang.Byte(x)
+  implicit def short2Short(x: short) = new java.lang.Short(x)
+  implicit def char2Character(x: char) = new java.lang.Character(x)
+  implicit def int2Integer(x: int) = new java.lang.Integer(x)
+  implicit def long2Long(x: long) = new java.lang.Long(x)
+  implicit def float2Float(x: float) = new java.lang.Float(x)
+  implicit def double2Double(x: double) = new java.lang.Double(x)
+  implicit def boolean2Boolean(x: boolean) = new java.lang.Boolean(x)
 }

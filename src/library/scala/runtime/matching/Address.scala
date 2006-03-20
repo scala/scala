@@ -24,10 +24,10 @@ class Address( l:Int* ) extends Ordered[Address] {
 
   private val list:List[Int] = l.toList;
 
-  def compareTo [b >: Address <% Ordered[b]](y: b): int = y match {
-    case o:Address => list.reverse.compareTo(o.list.reverse)
+  def compare [b >: Address <% Ordered[b]](y: b): int = y match {
+    case o:Address => list.reverse.compare(o.list.reverse)
 			    //(xs => List.view(xs)(Predef.int2ordered));
-    case _ => -(y compareTo this)
+    case _ => -(y compare this)
   }
 
   def down: Address = new Address( ( 1 :: list ):_* );

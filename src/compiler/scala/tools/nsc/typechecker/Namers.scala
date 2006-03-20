@@ -199,7 +199,7 @@ trait Namers requires Analyzer {
 
     def applicableTypeParams(owner: Symbol): List[Symbol] =
       if (owner.isTerm || owner.isPackageClass) List()
-      else applicableTypeParams(owner.owner) ::: owner.unsafeTypeParams;
+      else applicableTypeParams(owner.owner) ::: owner.typeParams;
 
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner));
 
@@ -349,7 +349,7 @@ trait Namers requires Analyzer {
       override def complete(sym: Symbol): unit = {
 	val clazz = tree.symbol;
 	var tpe = clazz.primaryConstructor.tpe;
-	val tparams = clazz.unsafeTypeParams;
+	val tparams = clazz.typeParams;
 	if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
 	sym.setInfo(tpe);
       }
@@ -477,7 +477,7 @@ trait Namers requires Analyzer {
 	    checkContractive(sym, result)
 
 	  case ValDef(_, _, tpt, rhs) =>
-	    if (tpt.isEmpty)
+	    if (tpt.isEmpty) {
 	      if (rhs.isEmpty) {
 		context.error(tpt.pos, "missing parameter type");
 		ErrorType
@@ -485,7 +485,7 @@ trait Namers requires Analyzer {
 		tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
 		tpt.tpe
 	      }
-	    else {
+	    } else {
               val typer1 =
                 if (sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes)
                   newTyper(context.makeConstructorContext)
@@ -545,6 +545,8 @@ trait Namers requires Analyzer {
 	      Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2));
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
 	context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods");
+      if (sym.hasFlag(IMPLICIT) && sym.owner.isPackage)
+	context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects");
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
 	context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
 	  "\nit should be omitted for abstract members");

@@ -20,7 +20,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
   import immutable.{ BitSet, TreeMap, TreeSet } ;
 
   implicit def toOrdered(bs: BitSet): Ordered[BitSet] = new Ordered[BitSet] {
-    def compareTo [b >: BitSet <% Ordered[b]](other: b): Int = other match {
+    def compare [b >: BitSet <% Ordered[b]](other: b): Int = other match {
       case that: BitSet => {
         val it1 = bs.elements;
         val it2 = that.elements;
@@ -46,7 +46,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
         res
       }
 
-      //case _ => -(other.compareTo(this))
+      //case _ => -(other.compare(this))
     }
   }
 

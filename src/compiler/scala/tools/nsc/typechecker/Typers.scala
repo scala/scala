@@ -22,7 +22,7 @@ trait Typers requires Analyzer {
   var implcnt = 0
   var impltime = 0l
 
-  final val xviews = false
+  final val xviews = true
 
   private val transformed = new HashMap[Tree, Tree]
 
@@ -396,7 +396,7 @@ trait Typers requires Analyzer {
 	      if (clazz.hasFlag(CASE)) {   // (5.1)
 		val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setOriginal tree
 		try {
-		  inferConstructorInstance(tree1, clazz.unsafeTypeParams, pt)
+		  inferConstructorInstance(tree1, clazz.typeParams, pt)
                 } catch {
                   case npe : NullPointerException =>
                     logError("CONTEXT: " + context . unit . source .dbg(tree.pos), npe);
@@ -427,7 +427,7 @@ trait Typers requires Analyzer {
 	    }
 	  } else if ((mode & FUNmode) != 0) {
 	    tree
-	  } else if (tree.hasSymbol && !tree.symbol.unsafeTypeParams.isEmpty) { // (7)
+	  } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty) { // (7)
             errorTree(tree, ""+clazz+" takes type parameters")
           } else tree match { // (6)
             case TypeTree() => tree
@@ -1402,7 +1402,7 @@ trait Typers requires Analyzer {
         case New(tpt: Tree) =>
           var tpt1 = typedTypeConstructor(tpt)
           if (tpt1.hasSymbol && !tpt1.symbol.typeParams.isEmpty) {
-	    context.undetparams = cloneSymbols(tpt1.symbol.unsafeTypeParams)
+	    context.undetparams = cloneSymbols(tpt1.symbol.typeParams)
             tpt1 = TypeTree()
               .setOriginal(tpt1) /* .setPos(tpt1.pos) */
               .setType(appliedType(tpt1.tpe, context.undetparams map (.tpe)))
@@ -1755,6 +1755,8 @@ trait Typers requires Analyzer {
           else errorTree(tree, "no implicit argument matching parameter type "+pt+" was found.")
         }
         Apply(tree, formals map implicitArg) setPos tree.pos
+      case ErrorType =>
+        tree
     }
   }
 }
