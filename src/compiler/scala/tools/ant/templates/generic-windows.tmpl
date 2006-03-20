@@ -14,7 +14,7 @@ rem - Local batch variables start with a '_'
 
 if "%OS%"=="Windows_NT" (
   @@setlocal
-  set _SCALA_HOME=%~dp0..
+  set _SCALA_HOME=%~dps0..
 ) else (
   set _SCALA_HOME=%SCALA_HOME%
   if "%_SCALA_HOME%"=="" goto error1
