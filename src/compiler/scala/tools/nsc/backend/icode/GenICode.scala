@@ -416,6 +416,10 @@ abstract class GenICode extends SubComponent  {
         case Return(expr) =>
           val returnedKind = toTypeKind(expr.tpe);
           val ctx1 = genLoad(expr, ctx, returnedKind);
+          for (val m <- ctx1.monitors) {
+            ctx1.bb.emit(LOAD_LOCAL(m, false));
+            ctx1.bb.emit(MONITOR_EXIT());
+          }
           ctx1.bb.emit(RETURN(returnedKind), tree.pos);
           ctx1.bb.enterIgnoreMode;
           generatedType = expectedType;
@@ -456,6 +460,7 @@ abstract class GenICode extends SubComponent  {
                             ctx: Context =>
                               val ctx1 = genLoad(finalizer, ctx, UNIT);
                               ctx1.bb.emit(THROW());
+                              ctx1.bb.enterIgnoreMode;
                               ctx1
                             }) :: handlers;
 
@@ -635,6 +640,7 @@ abstract class GenICode extends SubComponent  {
               ctx1.bb.emit(DUP(ANY_REF_CLASS));
               ctx1.bb.emit(STORE_LOCAL(monitor, false));
               ctx1.bb.emit(MONITOR_ENTER(), tree.pos);
+              ctx1.enterSynchronized(monitor);
 
               if (settings.debug.value)
                 log("synchronized block start");
@@ -654,6 +660,7 @@ abstract class GenICode extends SubComponent  {
                 })));
               if (settings.debug.value)
                 log("synchronized block end with block " + ctx1.bb + " closed=" + ctx1.bb.isClosed);
+              ctx1.exitSynchronized(monitor);
             } else if (scalaPrimitives.isCoercion(code)) {
               ctx1 = genLoad(receiver, ctx1, toTypeKind(receiver.tpe));
               genCoercion(tree, ctx1, code);
@@ -1410,6 +1417,9 @@ abstract class GenICode extends SubComponent  {
       /** current exception handlers */
       var handlers: List[ExceptionHandler] = Nil;
 
+      /** The current monitors, if inside synchronized blocks. */
+      var monitors: List[Local] = Nil;
+
       var handlerCount = 0;
 
       override def toString(): String = {
@@ -1420,6 +1430,7 @@ abstract class GenICode extends SubComponent  {
         buf.append("\tbb: ").append(bb).append('\n');
         buf.append("\tlabels: ").append(labels).append('\n');
         buf.append("\texception handlers: ").append(handlers).append('\n');
+        buf.append("\tmonitors: ").append(monitors).append('\n');
         buf.toString()
       }
 
@@ -1434,6 +1445,7 @@ abstract class GenICode extends SubComponent  {
         this.defdef = other.defdef;
         this.handlers = other.handlers;
         this.handlerCount = other.handlerCount;
+        this.monitors = other.monitors;
       }
 
       def setPackage(p: Name): this.type = {
@@ -1453,6 +1465,17 @@ abstract class GenICode extends SubComponent  {
 
       def setBasicBlock(b: BasicBlock): this.type = {
         this.bb = b;
+        this
+      }
+
+      def enterSynchronized(monitor: Local): this.type = {
+        monitors = monitor :: monitors;
+        this
+      }
+
+      def exitSynchronized(monitor: Local): this.type = {
+        assert(monitors.head == monitor,
+               "Bad nesting of monitors: " + monitors + " trying to exit from: " + monitor);
         this
       }
 
@@ -1660,6 +1683,7 @@ abstract class GenICode extends SubComponent  {
 
     case class PCJUMP(success: Label, failure: Label, cond: TestOp, kind: TypeKind)
          extends PseudoJUMP(success) {
+       override def toString(): String ="PCJUMP (" + kind + ") " + success.symbol.simpleName + " : " + failure.symbol.simpleName;
 
        if (!failure.anchored)
          failure.addCallingInstruction(this);
@@ -1667,6 +1691,7 @@ abstract class GenICode extends SubComponent  {
 
     case class PCZJUMP(success: Label, failure: Label, cond: TestOp, kind: TypeKind)
          extends PseudoJUMP(success) {
+       override def toString(): String ="PCZJUMP (" + kind + ") " + success.symbol.simpleName + " : " + failure.symbol.simpleName;
 
        if (!failure.anchored)
          failure.addCallingInstruction(this);
