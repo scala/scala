@@ -366,7 +366,7 @@ object Predef {
   implicit def string2ordered(x: String): Ordered[String] = new Ordered[String] with Proxy {
     def self: Any = x;
     def compare [b >: String <% Ordered[b]](y: b): int = y match {
-      case y1: String => x compare y1;
+      case y1: String => x compareTo y1;
       case _ => -(y compare x)
     }
   }
