@@ -60,34 +60,34 @@ package scala.tools.ant {
     /** The path to the exec script file. ".bat" will be appended for the
       * Windows BAT file, if generated. */
     private var file: Option[File] = None
-    /** The name of this tool. By default this is equal to the file name. */
-    private var name: Option[String] = None
-    /** The main class to run. */
+    /** The main class to run. If this is not set, a generic script will be generated */
     private var mainClass: Option[String] = None
+    /** The name of this tool. Can only be set when a main class is defined,
+      * default this is equal to the file name. */
+    private var name: Option[String] = None
     /** Supported platforms for the script. Either "unix" or "windows". Defaults
       * to both. */
     private var platforms: List[String] = Nil
     /** The optional version number. If set, when "-version" is passed to the
-      * script, this value will be printed. */
+      * script, this value will be printed.  */
     private var version: String = ""
     /** The optional copyright notice, that will be printed in the script. */
     private var copyright: String = "This file is copyrighted by its owner"
     /** An (optional) path to all JARs that this script depend on. Paths must be
       * relative to the scala home directory. If not set, all JAR archives in
       * "lib/" are automatically added. */
-    private var classpath: List[String] = Nil
+    private var extclasspath: List[String] = Nil
     /** Comma-separated Java system properties to pass to the JRE. Properties
-      * are formated as name=value. Properties scala.home and scala.tool.name
-      * are always set. */
+      * are formated as name=value. Properties scala.home, scala.class.path,
+      * scala.boot.class.path and scala.ext.class.path are always set;
+      * scala.tool.name and scala.tool.version are set when this script is
+      * non-generic. */
     private var properties: List[Pair[String,String]] = Nil
     /** Additional flags passed to the JRE ("java [javaFlags] class"). */
     private var javaFlags: String = ""
-    /** Additional flags passed to the tool ("java class [toolFlags]"). */
+    /** Additional flags passed to the tool ("java class [toolFlags]"). Can only
+      * be set when a main class is defined */
     private var toolFlags: String = ""
-    /** The path to the generic runtime script file. ".bat" will be appended for
-      * the Windows BAT file, if generated. If not set, no generic runtime
-      * script will be generated. */
-    private var genericFile: Option[File] = None
 
 /******************************************************************************\
 **                             Properties setters                             **
@@ -132,10 +132,10 @@ package scala.tools.ant {
     def setCopyright(input: String) =
       copyright = input
 
-    /** Sets the classpath attribute. Used by Ant.
+    /** Sets the extension classpath attribute. Used by Ant.
       * @param input The value of <code>classpath</code>. */
-    def setClasspath(input: String) =
-      classpath = classpath ::: List.fromArray(input.split(":"))
+    def setExtclasspath(input: String) =
+      extclasspath = extclasspath ::: List.fromArray(input.split(":"))
 
     /** Sets the properties attribute. Used by Ant.
       * @param input The value for <code>properties</code>. */
@@ -158,11 +158,6 @@ package scala.tools.ant {
     def setToolflags(input: String) =
       toolFlags = input
 
-    /** Sets the version attribute. Used by Ant.
-      * @param input The value of <code>version</code>. */
-    def setGenericfile(input: File) =
-      genericFile = Some(input)
-
 /******************************************************************************\
 **                             Properties getters                             **
 \******************************************************************************/
@@ -175,13 +170,13 @@ package scala.tools.ant {
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
-    private def getUnixClasspath: String =
-      classpath.mkString("", ":", "")
+    private def getUnixExtClasspath: String =
+      extclasspath.mkString("", ":", "")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
-    private def getWinClasspath: String =
-      classpath.map(.replace('/', '\\')).
+    private def getWinExtClasspath: String =
+      extclasspath.map(.replace('/', '\\')).
                 mkString("", ";", "")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
@@ -190,12 +185,6 @@ package scala.tools.ant {
       properties.map({
         case Pair(name,value) => "-D" + name + "=\"" + value + "\""
       }).mkString("", " ", "")
-
-    /** Gets the value of the file attribute in a Scala-friendly form.
-      * @returns The file as a file. */
-    private def getGenericFile: File =
-      if (genericFile.isEmpty) error("Member 'file' is empty.")
-      else getProject().resolveFile(genericFile.get.toString())
 
 /******************************************************************************\
 **                       Compilation and support methods                      **
@@ -263,6 +252,24 @@ package scala.tools.ant {
         replaceAll("#([^#]*)#", "%_$1%")
       )
 
+    private def pipeTemplate(template: String, patches: Map[String,String]) = {
+      val resourceRoot = "scala/tools/ant/templates/"
+      if (platforms.contains("unix")) {
+        val unixPatches = expandUnixVar(patches.
+          update("extclasspath", getUnixExtClasspath))
+        val unixTemplateResource = resourceRoot + template + "-unix.tmpl"
+        val unixTemplate = readResource(unixTemplateResource, unixPatches)
+        writeFile(getFile, unixTemplate)
+      }
+      if (platforms.contains("windows")) {
+        val winPatches = expandWinVar(patches.
+          update("extclasspath", getWinExtClasspath))
+        val winTemplateResource = resourceRoot + template + "-windows.tmpl"
+        val winTemplate = readResource(winTemplateResource, winPatches)
+        writeFile(new File(getFile.getAbsolutePath() + ".bat"), winTemplate)
+      }
+    }
+
 
 /******************************************************************************\
 **                           The big execute method                           **
@@ -272,43 +279,29 @@ package scala.tools.ant {
     override def execute() = {
       // Tests if all mandatory attributes are set and valid.
       if (file.isEmpty) error("Attribute 'file' is not set.")
-      if (name.isEmpty) name = Some(file.get.getName())
-      if (mainClass.isEmpty) error("Attribute 'mainclass' is not set.")
       if (platforms.isEmpty) platforms = Platforms.values
-      // Gets the input streams for the script templates.
-      val resourceRoot = "scala/tools/ant/templates/"
-      val patches = ListMap.Empty.
-        update("name", name.get).
-        update("class", mainClass.get).
-        update("version", version).
-        update("copyright", copyright).
-        update("properties", getProperties).
-        update("javaflags", javaFlags).
-        update("toolflags", toolFlags)
-      if (platforms.contains("unix")) {
-        val unixPatches = expandUnixVar(
-          patches.update("classpath", getUnixClasspath))
-        val unixTemplateResource = resourceRoot + "tool-unix.tmpl"
-        val unixTemplate = readResource(unixTemplateResource, unixPatches)
-        writeFile(getFile, unixTemplate)
-        if (!genericFile.isEmpty) {
-          val unixTemplateResource = resourceRoot + "generic-unix.tmpl"
-          val unixTemplate = readResource(unixTemplateResource, unixPatches)
-          writeFile(getGenericFile, unixTemplate)
-        }
-      }
-      if (platforms.contains("windows")) {
-        val winPatches = expandWinVar(
-          patches.update("classpath", getWinClasspath))
-        val winTemplateResource = resourceRoot + "tool-windows.tmpl"
-        val winTemplate = readResource(winTemplateResource, winPatches)
-        writeFile(new File(getFile.getAbsolutePath() + ".bat"), winTemplate)
-        if (!genericFile.isEmpty) {
-          val winTemplateResource = resourceRoot + "generic-windows.tmpl"
-          val winTemplate = readResource(winTemplateResource, winPatches)
-          writeFile(new File(getGenericFile.getAbsolutePath() + ".bat"),
-                    winTemplate)
-        }
+      if (mainClass.isEmpty) {
+        if (toolFlags != "")
+          error("Attribute 'toolflags' cannot be set in a generic file.")
+        if (!name.isEmpty)
+          error("Attribute 'name' cannot be set in a generic file.")
+        val patches = ListMap.Empty.
+          update("version", version).
+          update("copyright", copyright).
+          update("properties", getProperties).
+          update("javaflags", javaFlags)
+        pipeTemplate("generic", patches)
+      } else {
+        val patches = ListMap.Empty.
+          update("name", name.get).
+          update("class", mainClass.get).
+          update("version", version).
+          update("copyright", copyright).
+          update("properties", getProperties).
+          update("javaflags", javaFlags).
+          update("toolflags", toolFlags)
+        if (name.isEmpty) name = Some(file.get.getName())
+        pipeTemplate("tool", patches)
       }
     }
 

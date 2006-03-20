@@ -15,13 +15,12 @@ package scala.dbc;
 import java.sql._;
 
 /** A link to a database. The <code>Database</code> abstract class must
- * be specialised for every different DBMS.
- *
- * @author  Gilles Dubochet
- */
+ 	* be specialised for every different DBMS.
+ 	* @author  Gilles Dubochet
+	**/
 case class Database(dbms: Vendor) {
 
-  class Closed extends Exception;
+  class Closed extends Exception {}
 
   /** A lock used for operations that need to be atomic for this database
    *  instance. */
@@ -62,7 +61,7 @@ case class Database(dbms: Vendor) {
           usedConnections = connection :: usedConnections;
           lock.release;
           connection;
-        }
+				}
       }
     }
   }
@@ -116,7 +115,7 @@ case class Database(dbms: Vendor) {
       val sqlResult = connection.createStatement().executeQuery(statement.sqlString);
       closeConnection(connection);
       statement.typeCheck(this);
-    }
+		}
 
   /** Executes a statement that updates the state of the database.
    *
