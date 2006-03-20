@@ -359,6 +359,10 @@ abstract class GenJVM extends SubComponent {
     /** Generate exception handlers for the current method. */
     def genExceptionHandlers: Unit = {
 
+      /** Return a list of pairs of intervals where the handler is active.
+       *  The intervals in the list have to be inclusive in the beginning and
+       *  exclusive in the end: [start, end).
+       */
       def ranges(e: ExceptionHandler): List[Pair[Int, Int]] = {
         var covered = e.covered;
         var ranges: List[Pair[Int, Int]] = Nil;
@@ -383,8 +387,12 @@ abstract class GenJVM extends SubComponent {
           }
         });
 
+        /* Add the last interval. Note that since the intervals are
+         * open-ended to the right, we have to give a number past the actual
+         * code!
+         */
         if (start >= 0) {
-          ranges = Pair(start, end) :: ranges;
+          ranges = Pair(start, jcode.getPC()) :: ranges;
         }
 
         if (covered != Nil)
