@@ -44,16 +44,6 @@ fi
 
 MYCLASSPATH="$EXTENSION_CLASSPATH"
 
-if $cygwin; then
-    if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
-        format=mixed
-    else
-        format=windows
-    fi
-    MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
-    SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-fi
-
 for flag in "$@@" ; do
     if [ "$flag" == '-version' ] ; then
         echo "@name@ version @version@ -- @copyright@"

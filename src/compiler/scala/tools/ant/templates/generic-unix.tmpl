@@ -47,7 +47,7 @@ if [ "$CLASSPATH" != "" ] ; then
 fi
 
 QQ_CP_ARGUMENT=0
-for i in $@@ ; do
+for i in "$@@" ; do
     if [ "$QQ_CP_ARGUMENT" -eq 1 ] ; then
         USER_CLASSPATH=$i
         QQ_CP_ARGUMENT=0
