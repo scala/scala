@@ -8,9 +8,9 @@ rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
-rem We assume the following conventions:
+rem We adopt the following conventions:
 rem - System/user environment variables start with a letter
-rem - Local batch variables start with a '_'
+rem - Local batch variables start with an underscore ('_')
 
 if "%OS%"=="Windows_NT" (
   @@setlocal
@@ -20,11 +20,17 @@ if "%OS%"=="Windows_NT" (
   if "%_SCALA_HOME%"=="" goto error1
 )
 
+rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
-set _JAVAFLAGS=@javaflags@
 
-set _CPATH=.
+set _EXTENSION_CLASSPATH=@extclasspath@
+set _BOOT_CLASSPATH=
+
+rem We use the value of the CLASSPATH environment variable if defined
+set _USER_CLASSPATH=%CLASSPATH%
+if "%_USER_CLASSPATH%"=="" set _USER_CLASSPATH=.
+
 set _CLASSPATH=@classpath@
 if not "%_CLASSPATH%"=="" goto args
 for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
@@ -43,14 +49,16 @@ goto loop
 :cpath
 shift
 if "%1"=="" goto help
-set _CPATH=%1
+set _USER_CLASSPATH=%1
 shift
 goto :loop
 
 :exec
-set _CLASSPATH=%_CPATH%;%_CLASSPATH%
-rem echo %_JAVACMD% %_JAVAFLAGS% -cp %_CLASSPATH% %_ARGS%
-%_JAVACMD% %_JAVAFLAGS% -cp %_CLASSPATH% %_ARGS%
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.boot.class.path="%_BOOT_CLASSPATH%" -Dscala.class.path="%_USER_CLASSPATH%" -Dscala.ext.path="%_EXTENSION_CLASSPATH%" -Denv.classpath="%CLASSPATH%" @properties@
+
+set _CLASSPATH=%_USER_CLASSPATH%;%_CLASSPATH%
+rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp %_CLASSPATH% %_ARGS%
+%_JAVACMD% @javaflags@ %_PROPS% -cp %_CLASSPATH% %_ARGS%
 goto end
 
 :version
