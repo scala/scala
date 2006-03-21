@@ -22,7 +22,7 @@ trait Typers requires Analyzer {
   var implcnt = 0
   var impltime = 0l
 
-  final val xviews = true
+  final val xviews = false
 
   private val transformed = new HashMap[Tree, Tree]
 
@@ -35,6 +35,14 @@ trait Typers requires Analyzer {
   }
 
   def newTyper(context: Context): Typer = new Typer(context)
+
+  object UnTyper extends Traverser {
+    override def traverse(tree: Tree) = {
+      if (tree != EmptyTree) tree.tpe = null;
+      if (tree.hasSymbol && tree.symbol.isError) tree.symbol = null;
+      super.traverse(tree)
+    }
+  }
 
   class Typer(context0: Context) {
     import context0.unit
@@ -480,8 +488,8 @@ trait Typers requires Analyzer {
 
     def adaptToMember(qual: Tree, name: Name, tp: Type): Tree =
       if (qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
-          !phase.erasedTypes && !qual.tpe.widen.isError) {
-	val coercion = inferView(qual.pos, qual.tpe, name, tp, true)
+          !phase.erasedTypes && !qual.tpe.widen.isError && !tp.isError) {
+	val coercion = inferView(qual.pos, qual.tpe.widen, name, tp, true)
 	if (coercion != EmptyTree)
           typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
         else qual
@@ -1073,16 +1081,19 @@ trait Typers requires Analyzer {
           typedApply(fun, args)
         } catch {
           case ex: TypeError =>
-            val args1 = typedArgs(args)
             val Select(qual, name) = fun
+            var qual1 = qual;
+            var args1 = tryTypedArgs(args)
             context.reportGeneralErrors = reportGeneralErrors
             context.reportAmbiguousErrors = reportAmbiguousErrors
-            val qual1 = adaptToMember(qual, name, MethodType(args1 map (.tpe), pt))
-            if (qual1 eq qual) typedApply(fun, args)
-            else
-              typed1(
-                Apply(Select(qual1, name) setPos fun.pos, args) setPos tree.pos,
-                mode | SNDTRYmode, pt)
+            if (args1 != null && !args1.exists(.tpe.isError) && !pt.isError) {
+              qual1 = adaptToMember(qual, name, MethodType(args1 map (.tpe), pt))
+            }
+            val args2 = args map UnTyper.apply;
+            val tree1 =
+              if (qual1 eq qual) Apply(UnTyper.apply(fun), args2)
+              else Apply(Select(UnTyper.apply(qual1), name) setPos fun.pos, args2)
+            typed1(tree1 setPos tree.pos, mode | SNDTRYmode, pt)
         } finally {
           context.reportGeneralErrors = reportGeneralErrors
           context.reportAmbiguousErrors = reportAmbiguousErrors
