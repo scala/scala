@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.util
 
 
@@ -28,6 +38,9 @@ package scala.util
   * the stack of bindings from the parent thread, and
   * from then on the bindings for the new thread
   * are independent of those for the original thread.
+  *
+  *  @author  Lex Spoon
+  *  @version 1.0, 21/03/2006
   */
 class Fluid[T](init: T) {
   private val tl = new InheritableThreadLocal
