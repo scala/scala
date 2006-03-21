@@ -607,7 +607,7 @@ BUILD QUICK-TEST LAYER
       class="scala.tools.nsc.Main"
       version="${version.number}"
       copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
+      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <lockertool
@@ -617,7 +617,7 @@ BUILD QUICK-TEST LAYER
       toolflags="-doc"
       version="${version.number}"
       copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
+      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <lockertool
@@ -767,7 +767,7 @@ TEST
       class="scala.tools.nsc.Main"
       version="${version.number}"
       copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
+      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <quicktool
@@ -777,7 +777,7 @@ TEST
       toolflags="-doc"
       version="${version.number}"
       copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}"
+      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <quicktool

@@ -44,17 +44,25 @@ fi
 
 MYCLASSPATH="$EXTENSION_CLASSPATH"
 
+BOOT_CLASSPATH=""
+if [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
+    BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
+fi
+
+if [ "$BOOT_CLASSPATH" != "" ] ; then
+    if [ "$MYCLASSPATH" == "" ] ; then
+        MYCLASSPATH="$BOOT_CLASSPATH"
+    else
+        MYCLASSPATH="$BOOT_CLASSPATH:$MYCLASSPATH"
+    fi
+fi
+
 for flag in "$@@" ; do
     if [ "$flag" == '-version' ] ; then
         echo "@name@ version @version@ -- @copyright@"
         exit 0
     fi
 done
-
-BOOT_CLASSPATH=""
-if [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
-    BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
-fi
 
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
@@ -63,15 +71,9 @@ if $cygwin; then
         format=windows
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    USER_CLASSPATH=`cygpath --path --$format "$USER_CLASSPATH"`
     BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
     EXTENSION_CLASSPATH=`cygpath --path --$format "$EXTENSION_CLASSPATH"`
     MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
 fi
 
-QQ_BOOT_ARG=""
-if [ "$BOOT_CLASSPATH" != "" ] ; then
-    QQ_BOOT_ARG="-Xbootclasspath/a:$BOOT_CLASSPATH"
-fi
-
-${JAVACMD:=java} $QQ_BOOT_ARG @javaflags@ -cp "$MYCLASSPATH" -Dscala.home="$SCALA_HOME" -Dscala.class.path="$USER_CLASSPATH" -Dscala.boot.class.path="$BOOT_CLASSPATH" -Dscala.ext.path="$EXTENSION_CLASSPATH" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ @class@ @toolflags@ $@@
+${JAVACMD:=java} @javaflags@ -cp "$MYCLASSPATH" -Dscala.home="$SCALA_HOME" -Dscala.boot.class.path="$BOOT_CLASSPATH" -Dscala.ext.path="$EXTENSION_CLASSPATH" -Denv.classpath="$CLASSPATH" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ @class@ @toolflags@ $@@
