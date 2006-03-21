@@ -10,6 +10,7 @@
 
 
 package scala;
+import scala.util.Fluid;
 
 
 /** The <code>Console</code> object implements functionality for
@@ -52,33 +53,82 @@ object Console {
     final val REVERSED   = "\033[7m";
     final val INVISIBLE  = "\033[8m";
 
-    private var out: PrintStream = java.lang.System.out;
-    private var in: BufferedReader =
-        new BufferedReader(new InputStreamReader(java.lang.System.in));
+    private val outFluid = new Fluid[PrintStream](java.lang.System.out);
+    private val inFluid = new Fluid[BufferedReader](
+        new BufferedReader(new InputStreamReader(java.lang.System.in)));
+
+    private def out = outFluid.value
+    private def in = inFluid.value
 
     /** Set the default output stream.
      *
      *  @param out the new output stream.
      */
-    def setOut(out: PrintStream): Unit = {
-        this.out = out;
-    }
+    def setOut(out: PrintStream): Unit = outFluid.set(out)
 
-    /** Set the default input stream.
+    /** Set the default output stream for the duration
+     *  of execution of one thunk.
      *
-     *  @param in the new input stream.
+     *  @param out the new output stream.
+     *  @param thunk the code to execute with
+     *               the new output stream active
      */
-    def setIn(in: InputStream): Unit = {
-        this.in = new BufferedReader(new InputStreamReader(in));
-    }
+    def withOut[T](out: PrintStream)(thunk: =>T): T =
+      outFluid.withValue(out)(thunk)
+
+    /** Set the default output stream.
+     *
+     *  @param@ out the new output stream.
+     */
+    def setOut(out: OutputStream): Unit =
+      setOut(new PrintStream(out))
+
+    /** Set the default output stream for the duration
+     *  of execution of one thunk.
+     *
+     *  @param out the new output stream.
+     *  @param thunk the code to execute with
+     *               the new output stream active
+     */
+    def withOut[T](out: OutputStream)(thunk: =>T): T =
+      withOut(new PrintStream(out))(thunk)
+
 
     /** Set the default input stream.
      *
      *  @param reader specifies the new input stream.
      */
     def setIn(reader: Reader): Unit = {
-        this.in = new BufferedReader(reader);
+      inFluid.set(new BufferedReader(reader))
     }
+
+    /** Set the default input stream for the duration
+     *  of execution of one thunk.
+     *
+     *  @param in the new input stream.
+     *  @param thunk the code to execute with
+     *               the new input stream active
+     */
+    def withIn[T](reader: Reader)(thunk: =>T): T =
+      inFluid.withValue(new BufferedReader(reader))(thunk)
+
+
+    /** Set the default input stream.
+     *
+     *  @param in the new input stream.
+     */
+    def setIn(in: InputStream): Unit =
+      setIn(new InputStreamReader(in))
+
+    /** Set the default input stream for the duration
+     *  of execution of one thunk.
+     *
+     *  @param in the new input stream.
+     *  @param thunk the code to execute with
+     *               the new input stream active
+     */
+   def withIn[T](in: InputStream)(thunk: =>T): T =
+     withIn(new InputStreamReader(in))(thunk)
 
     /** Print an object on the terminal.
      *
