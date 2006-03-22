@@ -286,7 +286,7 @@ abstract class DocGenerator extends Models {
     }
 
     def forType(tpe: Type): NodeSeq =
-      urlFor(tpe.symbol, contentFrame);
+      urlFor(tpe, contentFrame);
 
     def forTree(tree : Tree) : NodeSeq = tree match {
       case vdef : ValDef =>
