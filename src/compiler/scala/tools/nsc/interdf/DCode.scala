@@ -41,7 +41,7 @@ with ICodeToDCode
     /* standard pattern match:
          case THIS(lhs, clasz)  =>
          case CONSTANT(lhs, const)  =>
-         CASE VAR(lhs, rhs) =>
+         case VAR(lhs, rhs) =>
          case LOAD_ARRAY_ITEM(lhs, ary, idx, kind)  =>
          case LOAD_LOCAL(lhs, local, isArg)  =>
          case LOAD_FIELD(lhs, from, field, isStatic)  =>
