@@ -2,12 +2,14 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author emir
  */
+
 // $Id$
+
 package scala.tools.nsc
 
 import java.io.{BufferedReader, File, FileReader, IOException, InputStreamReader, PrintWriter}
-import scala.tools.nsc.util.{Position}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.util.{Position}
 
 /** The main loop of the Scala interpreter.  After instantiation, clients
   * should call the main() method
@@ -79,7 +81,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
   }
 
-
   /** run one command submitted by the user */
   def command(line: String): Boolean = {
     def withFile(command: String)(action: String => Unit): Unit = {
@@ -92,17 +93,23 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       action(filename)
     }
 
-    if (line.startsWith(":"))
-      line match {
-        case ":help" => printHelp
-        case ":quit" => return false
-        case _ if line.startsWith(":compile") => withFile(line)(f => interpreter.compile(f))
-        case _ if line.startsWith(":load") => withFile(line)(f => interpretAllFrom(f))
-        case _ => out.println("Unknown command.  Type :help for help.")
-      }
-    else if(line.startsWith("#!/")) // skip the first line of Unix scripts
-    	()
-    else if(line.startsWith("exec scalaint ")) // skip the second line of Unix scripts
+    val helpRegexp    = ":h(e(l(p)?)?)?";
+    val quitRegexp    = ":q(u(i(t)?)?)?";
+    val compileRegexp = ":c(o(m(p(i(l(e)?)?)?)?)?)?.*";
+    val loadRegexp    = ":l(o(a(d)?)?)?.*";
+    if (line.matches(helpRegexp))
+      printHelp
+    else if (line.matches(quitRegexp))
+      return false
+    else if (line.matches(compileRegexp))
+      withFile(line)(f => interpreter.compile(f))
+    else if (line.matches(loadRegexp))
+      withFile(line)(f => interpretAllFrom(f))
+    else if (line.startsWith(":"))
+      out.println("Unknown command.  Type :help for help.")
+    else if (line.startsWith("#!/")) // skip the first line of Unix scripts
+      ()
+    else if (line.startsWith("exec scalaint ")) // skip the second line of Unix scripts
       ()
     else
       interpretOne(line)
@@ -138,7 +145,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
 
     try {
-      if(!command.files.isEmpty) {
+      if (!command.files.isEmpty) {
         interpreter.beQuiet
         command.files match {
           case List(filename) => interpretAllFrom(filename)
@@ -156,10 +163,9 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
 
 }
 
-
 /** A wrapper that provides a command-line interface */
 object MainInterpreter {
- 	def main(args: Array[String]): Unit = {
-     (new InterpreterLoop).main(args)
- 	}
+  def main(args: Array[String]): Unit = {
+    (new InterpreterLoop).main(args)
+  }
 }
