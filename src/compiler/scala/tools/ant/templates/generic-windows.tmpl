@@ -25,17 +25,13 @@ set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
 
 set _EXTENSION_CLASSPATH=@extclasspath@
+if "%_EXTENSION_CLASSPATH%"=="" for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
+
 set _BOOT_CLASSPATH=
+if exist "%_SCALA_HOME%/lib/scala-library.jar" set _BOOT_CLASSPATH=%_SCALA_HOME%/lib/scala-library.jar
 
-rem We use the value of the CLASSPATH environment variable if defined
-set _USER_CLASSPATH=%CLASSPATH%
-if "%_USER_CLASSPATH%"=="" set _USER_CLASSPATH=.
+set _USER_CLASSPATH=.
 
-set _CLASSPATH=@classpath@
-if not "%_CLASSPATH%"=="" goto args
-for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
-
-:args
 set _ARGS=
 :loop
 if "%1"=="" goto exec
@@ -54,11 +50,13 @@ shift
 goto :loop
 
 :exec
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.boot.class.path="%_BOOT_CLASSPATH%" -Dscala.class.path="%_CLASSPATH%" -Dscala.ext.path="%_EXTENSION_CLASSPATH%" -Denv.classpath="%CLASSPATH%" @properties@
+if not "%_EXTENSION_CLASSPATH%"=="" set _MYCLASSPATH=%_USER_CLASSPATH%;%_EXTENSION_CLASSPATH%
+if not "%_BOOT_CLASSPATH%"=="" set _MYCLASSPATH=%_BOOT_CLASSPATH%;%_MYCLASSPATH%
 
-set _CLASSPATH=%_USER_CLASSPATH%;%_CLASSPATH%
-rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp %_CLASSPATH% %_ARGS%
-%_JAVACMD% @javaflags@ %_PROPS% -cp %_CLASSPATH% %_ARGS%
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.boot.class.path="%_BOOT_CLASSPATH%" -Dscala.class.path="%_USER_CLASSPATH%" -Dscala.ext.path="%_EXTENSION_CLASSPATH%" -Denv.classpath="%CLASSPATH%" @properties@
+
+rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
+%_JAVACMD% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
 goto end
 
 :version
@@ -75,10 +73,10 @@ rem ##########################################################################
 rem # subroutines
 
 :add_cpath
-  if "%_CLASSPATH%"=="" (
-    set _CLASSPATH=%~1
+  if "%_EXTENSION_CLASSPATH%"=="" (
+    set _EXTENSION_CLASSPATH=%~1
   ) else (
-    set _CLASSPATH=%_CLASSPATH%;%~1
+    set _EXTENSION_CLASSPATH=%_EXTENSION_CLASSPATH%;%~1
   )
 goto :eof
 
