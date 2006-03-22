@@ -25,13 +25,13 @@ set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
 
 set _EXTENSION_CLASSPATH=@extclasspath@
-set _BOOT_CLASSPATH=@bootclasspath@
+set _BOOT_CLASSPATH=
 
 rem We use the value of the CLASSPATH environment variable if defined
 set _USER_CLASSPATH=%CLASSPATH%
 if "%_USER_CLASSPATH%"=="" set _USER_CLASSPATH=.
 
-set _CLASSPATH=@classpath@
+set _CLASSPATH=
 if not "%_CLASSPATH%"=="" goto args
 for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
 
@@ -56,9 +56,9 @@ goto :loop
 :exec
 set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.boot.class.path="%_BOOT_CLASSPATH%" -Dscala.ext.path="%_EXTENSION_CLASSPATH%" -Denv.classpath="%CLASSPATH%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
 
-set _CLASSPATH=%_USER_CLASSPATH%;%_CLASSPATH%
-rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ %_ARGS%
-%_JAVACMD% @javaflags@ %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+rem set _CLASSPATH=%_USER_CLASSPATH%;%_CLASSPATH%
+rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ -classpath %_USER_CLASSPATH% %_ARGS%
+%_JAVACMD% @javaflags@ %_PROPS% -cp "%_CLASSPATH%" @class@ @toolflags@ -classpath %_USER_CLASSPATH% %_ARGS%
 goto end
 
 :version
