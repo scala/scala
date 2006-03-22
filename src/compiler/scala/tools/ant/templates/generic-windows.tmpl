@@ -30,7 +30,8 @@ if "%_EXTENSION_CLASSPATH%"=="" for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :
 set _BOOT_CLASSPATH=
 if exist "%_SCALA_HOME%/lib/scala-library.jar" set _BOOT_CLASSPATH=%_SCALA_HOME%/lib/scala-library.jar
 
-set _USER_CLASSPATH=.
+set _USER_CLASSPATH=%CLASSPATH%
+if "%_USER_CLASSPATH%"=="" set _USER_CLASSPATH=.
 
 set _ARGS=
 :loop
