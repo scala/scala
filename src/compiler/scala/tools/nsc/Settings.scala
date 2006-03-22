@@ -20,9 +20,7 @@ class Settings(error: String => unit) {
   private val classpathDefault =
     alternatePath(
       getProperty("env.classpath"),
-      alternatePath(
-        getProperty("scala.class.path"),
-        "."))
+      ".")
 
   private val bootclasspathDefault =
     alternatePath(
