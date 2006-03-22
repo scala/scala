@@ -63,6 +63,15 @@ abstract class DocGenerator extends Models {
         Text(sym.toString())
     }
 
+    def urlFor(tpe: Type, target: String): NodeSeq = try {
+      if (tpe.symbol.sourceFile == null) Text(tpe.toString());
+      else aref(urlFor(tpe.symbol), target, tpe.toString());
+    } catch {
+      case e : Error =>
+        //System.err.println("SYM=" + sym);
+        Text(tpe.symbol.toString())
+    }
+
     def urlFor0(sym : Symbol, orig : Symbol) : String = {
       (if (sym == NoSymbol) {
          "XXX";
@@ -286,7 +295,7 @@ abstract class DocGenerator extends Models {
       case tree : AbsTypeDef =>
         ifT(tree.lo, Text(" <: "), false).
           concat(Text(tree.symbol.nameString)).concat(ifT(tree.hi, Text(" <: "), true));
-      case tpt : TypeTree => urlFor(tpt.tpe.symbol, contentFrame);
+      case tpt : TypeTree => urlFor(tpt.tpe, contentFrame);
       case id  : Ident  => Text("YY: " + id.symbol.nameString);
       case EmptyTree => NodeSeq.Empty;
       case _ => Text("XX=" + tree.getClass() + " " + tree.toString());
