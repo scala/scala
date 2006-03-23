@@ -1043,6 +1043,7 @@ GENERATES A DISTRIBUTION
       name="${sbaz.lib.name}"
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
+      link="${sbaz.univ.link}/${sbaz.lib.name}-${version.number}.sbp"
     >
       <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name}"/>
     </quicksbaz>
@@ -1054,7 +1055,7 @@ GENERATES A DISTRIBUTION
       version="${version.number}"
       desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
       depends="${sbaz.lib.name}"
-      link="${sbaz.univ.link}"
+      link="${sbaz.univ.link}/${sbaz.dev.name}-${version.number}.sbp"
     >
       <binset dir="${dist.current.dir}/bin" includes="**"/>
       <docset dir="${dist.current.dir}/doc" includes="**"/>
@@ -1069,7 +1070,7 @@ GENERATES A DISTRIBUTION
       version="${version.number}"
       desc="The base Scala package that contains everything needed to start using Scala."
       depends="${sbaz.lib.name},${sbaz.dev.name}"
-      link="${sbaz.univ.link}"
+      link="${sbaz.univ.link}/${sbaz.scala.name}-${version.number}.sbp"
     />
   </target>
 
