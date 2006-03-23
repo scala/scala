@@ -1,8 +1,7 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2006 LAMP/EPFL
- * @author emir
+ * @author Burak Emir
  */
-
 // $Id$
 
 package scala.tools.nsc
@@ -40,11 +39,11 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       out.print("\nscala> ")
       out.flush
       var line = in.readLine()
-      if(line == null)
+      if (line == null)
         return ()  // assumes null means EOF
 
       val keepGoing = command(line)
-      if(!keepGoing)
+      if (!keepGoing)
         return ()  // the evpr function said to stop
     }
   }
@@ -71,7 +70,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
     if (fileIn == null) return ()
     val in = new BufferedReader(fileIn)
-    while(true) {
+    while (true) {
       val line = in.readLine
       if (line == null) {
         fileIn.close
@@ -120,11 +119,17 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
    * parentClassLoader0, and the parentClassLoader method in Interpreter
    */
   var uglinessxxx: ClassLoader = _
-	def parentClassLoader0 : ClassLoader = uglinessxxx;
+  def parentClassLoader0: ClassLoader = uglinessxxx
 
-	/** process command-line arguments and do as they request */
+  /** process command-line arguments and do as they request */
   def main(args: Array[String]): unit = {
-    val command = new InterpreterCommand(List.fromArray(args), error)
+    def error1(msg: String): Unit = out.println("scalaint: " + msg)
+    val command = new InterpreterCommand(List.fromArray(args), error1)
+    if (!command.ok) {
+      // some error occured while processing the arguments
+      out.flush()
+      return ()
+    }
 
     reporter.prompt = command.settings.prompt.value
     if (command.settings.help.value) {

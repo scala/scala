@@ -1,35 +1,36 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc;
+
+package scala.tools.nsc
 
 
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], error: String => unit, interactive: boolean) {
-  private var fs: List[String] = List();
+  private var fs: List[String] = List()
 
   /** All files to compile */
-  def files: List[String] = fs.reverse;
+  def files: List[String] = fs.reverse
 
   /** The applicable settings */
-  val settings: Settings = new Settings(error);
+  val settings: Settings = new Settings(error)
 
   /** The name of the command */
-  val cmdName = "scalac";
+  val cmdName = "scalac"
 
   /** The file extension of files that the compiler can process */
-  val fileEnding = ".scala";
+  val fileEnding = ".scala"
 
   /** A message explaining usage and options */
   def usageMsg: String = {
     val helpSyntaxColumnWidth: int =
       Iterable.max(settings.allSettings map (. helpSyntax.length()));
     def format(s: String): String = {
-      val buf = new StringBuffer();
-      buf.append(s);
-      var i = s.length();
+      val buf = new StringBuffer()
+      buf.append(s)
+      var i = s.length()
       while (i < helpSyntaxColumnWidth) { buf.append(' '); i = i + 1 }
       buf.toString()
     }
@@ -37,34 +38,34 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString(
-	              "Usage: " + cmdName + " <options | source files>\n" +
-	                "where possible options include: \n  ",
-                  "\n  ",
-                  "\n");
+                "Usage: " + cmdName + " <options | source files>\n" +
+                "where possible options include: \n  ",
+                "\n  ",
+                "\n");
   }
 
   // initialization
-  var args = arguments;
-  var ok = true;
+  var args = arguments
+  var ok = true
   while (!args.isEmpty && ok) {
-    val args0 = args;
+    val args0 = args
     if (args.head.startsWith("-")) {
       if (interactive) {
-        error("no options can be given in interactive mode");
+        error("no options can be given in interactive mode")
         ok = false
       } else {
         for (val setting <- settings.allSettings)
           args = setting.tryToSet(args);
         if (args eq args0) {
-          error("unknown option: '" + args.head + "'");
+          error("unknown option: '" + args.head + "'")
           ok = false
         }
       }
     } else if (args.head.endsWith(fileEnding)) {
-      fs = args.head :: fs;
+      fs = args.head :: fs
       args = args.tail
     } else {
-      error("don't know what to do with " + args.head);
+      error("don't know what to do with " + args.head)
       ok = false
     }
   }
