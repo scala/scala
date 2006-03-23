@@ -70,6 +70,7 @@ PROPERTIES
   <!-- Location of structure of the distribution properties -->
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="dist.latest.dir" value="${dist.dir}/latest"/>
+  <property name="dist.sbaz.dir" value="${dist.dir}/sbaz"/>
   <property name="dist.name" value="scala"/>
   <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
   <property name="lib-dbc.jar.name" value="${dist.name}-dbc.jar"/>
@@ -94,10 +95,10 @@ PROPERTIES
   <property name="api.lib.dir" value="${api.dir}/${lib.dir.name}"/>
   <property name="api.comp.dir" value="${api.dir}/${comp.dir.name}"/>
   <!-- sbaz properties -->
-  <property name="dist.sbaz.dir" value="${dist.dir}/sbaz"/>
-  <property name="lib.sbaz.name" value="${dist.name}-library"/>
-  <property name="dev.sbaz.name" value="${dist.name}-devel"/>
-  <property name="scala.sbaz.name" value="${dist.name}"/>
+  <property name="sbaz.lib.name" value="${dist.name}-library"/>
+  <property name="sbaz.dev.name" value="${dist.name}-devel"/>
+  <property name="sbaz.scala.name" value="${dist.name}"/>
+  <property name="sbaz.univ.link" value="http://scala-webapps.epfl.ch/sbaz/scala-dev"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -1037,9 +1038,9 @@ GENERATES A DISTRIBUTION
     <mkdir dir="${dist.sbaz.dir}"/>
     <!-- Create the Scala library package -->
     <quicksbaz
-      file="${dist.sbaz.dir}/${lib.sbaz.name}-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/${lib.sbaz.name}-${version.number}.advert"
-      name="${lib.sbaz.name}"
+      file="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.advert"
+      name="${sbaz.lib.name}"
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
     >
@@ -1047,12 +1048,13 @@ GENERATES A DISTRIBUTION
     </quicksbaz>
     <!-- Create the Scala developper package -->
     <quicksbaz
-      file="${dist.sbaz.dir}/${dev.sbaz.name}-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/${dev.sbaz.name}-${version.number}.advert"
-      name="${dev.sbaz.name}"
+      file="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.advert"
+      name="${sbaz.dev.name}"
       version="${version.number}"
       desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
-      depends="${lib.sbaz.name}"
+      depends="${sbaz.lib.name}"
+      link="${sbaz.univ.link}"
     >
       <binset dir="${dist.current.dir}/bin" includes="**"/>
       <docset dir="${dist.current.dir}/doc" includes="**"/>
@@ -1061,54 +1063,13 @@ GENERATES A DISTRIBUTION
     </quicksbaz>
     <!-- Creates the empty umbrella Scala package -->
     <quicksbaz
-      file="${dist.sbaz.dir}/${scala.sbaz.name}-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/${scala.sbaz.name}-${version.number}.advert"
-      name="${scala.sbaz.name}"
+      file="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.advert"
+      name="${sbaz.scala.name}"
       version="${version.number}"
       desc="The base Scala package that contains everything needed to start using Scala."
-      depends="${lib.sbaz.name},${dev.sbaz.name}"
-    />
-    <!-- Creates a set of packages for backward-compatibility -->
-    <!-- Please, REMOVE THOSE as soon as possible -->
-    <quicksbaz
-      file="${dist.sbaz.dir}/scala2-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/scala2-${version.number}.advert"
-      name="scala2"
-      version="${version.number}placeholder"
-      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
-      depends="${dev.sbaz.name}"
-    />
-    <quicksbaz
-      file="${dist.sbaz.dir}/scalac-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/scalac-${version.number}.advert"
-      name="scalac"
-      version="${version.number}placeholder"
-      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
-      depends="${dev.sbaz.name}"
-    />
-    <quicksbaz
-      file="${dist.sbaz.dir}/scalac2-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/scalac2-${version.number}.advert"
-      name="scalac2"
-      version="${version.number}placeholder"
-      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
-      depends="${dev.sbaz.name}"
-    />
-    <quicksbaz
-      file="${dist.sbaz.dir}/scalaint-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/scalaint-${version.number}.advert"
-      name="scalaint"
-      version="${version.number}placeholder"
-      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
-      depends="${dev.sbaz.name}"
-    />
-    <quicksbaz
-      file="${dist.sbaz.dir}/scalap-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/scalap-${version.number}.advert"
-      name="scalap"
-      version="${version.number}placeholder"
-      desc="A placeholder package used for upgrading. You may safely remove it if you have it installed."
-      depends="${dev.sbaz.name}"
+      depends="${sbaz.lib.name},${sbaz.dev.name}"
+      link="${sbaz.univ.link}"
     />
   </target>
 
