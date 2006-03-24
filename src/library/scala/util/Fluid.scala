@@ -68,7 +68,7 @@ class Fluid[T](init: T) {
   /** Change the currently bound value, discarding the old value.
     * Usually withValue() gives better semantics.
     */
-  def set(newval: T) = { tl.set(newval) }
+  def value_=(newval: T) = { tl.set(newval) }
 
   override def toString: String = "Fluid(" + value  +")"
 }

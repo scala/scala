@@ -64,7 +64,7 @@ object Console {
      *
      *  @param out the new output stream.
      */
-    def setOut(out: PrintStream): Unit = outFluid.set(out)
+    def setOut(out: PrintStream): Unit = outFluid.value = out
 
     /** Set the default output stream for the duration
      *  of execution of one thunk.
@@ -99,7 +99,7 @@ object Console {
      *  @param reader specifies the new input stream.
      */
     def setIn(reader: Reader): Unit = {
-      inFluid.set(new BufferedReader(reader))
+      inFluid.value = new BufferedReader(reader)
     }
 
     /** Set the default input stream for the duration
