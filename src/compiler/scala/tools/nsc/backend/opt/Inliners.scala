@@ -45,13 +45,23 @@ abstract class Inliners extends SubComponent {
    */
   class Inliner {
 
+    /* fresh name counter */
+    var count = 0;
+
+    def freshName(s: String) = {
+      val ret = s + this.count;
+      this.count = this.count + 1;
+      ret
+    }
+
     def inline(caller: IMethod,
                block:  BasicBlock,
                instr:  Instruction,
                callee: IMethod): Unit = {
-       if (settings.debug.value)
-         log("Inlining " + callee + " in " + caller + " at pos: " +
-             classes(caller.symbol.owner).cunit.position(instr.pos));
+       log("Inlining " + callee + " in " + caller + " at pos: " +
+           classes(caller.symbol.owner).cunit.position(instr.pos));
+
+       val a = new analysis.MethodTFA(callee);
 
        /* The exception handlers that are active at the current block. */
        val activeHandlers = caller.exh.filter(.covered.contains(block));
@@ -59,17 +69,20 @@ abstract class Inliners extends SubComponent {
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap;
 
-       val instrBefore = block.instructions.takeWhile( i => i != instr);
-       val instrAfter  = block.instructions.drop(instrBefore.length + 1);
+       val instrBefore = block.toList.takeWhile( i => i != instr);
+       val instrAfter  = block.toList.drop(instrBefore.length + 1);
 
-       if (settings.debug.value) {
-         log("instrBefore: " + instrBefore);
-         log("instrAfter: " + instrAfter);
-       }
        assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instrcution in block!");
 
        // store the '$this' into the special local
-       val inlinedThis = new Local(caller.symbol.newVariable(instr.pos,"$inlThis"), REFERENCE(definitions.ObjectClass));
+       val inlinedThis = new Local(caller.symbol.newVariable(instr.pos, freshName("$inlThis")), REFERENCE(definitions.ObjectClass));
+
+       /** buffer for the returned value */
+       val retVal =
+         if (callee.returnType != UNIT)
+           new Local(caller.symbol.newVariable(instr.pos, freshName("$retVal")), callee.returnType);
+         else
+           null;
 
        /** Add a new block in the current context. */
        def newBlock = {
@@ -100,6 +113,9 @@ abstract class Inliners extends SubComponent {
            case CZJUMP(success, failure, cond, kind) =>
              CZJUMP(inlinedBlock(success), inlinedBlock(failure), cond, kind);
 
+           case SWITCH(tags, labels) =>
+             SWITCH(tags, labels map inlinedBlock);
+
            case RETURN(kind) =>
              JUMP(afterBlock);
 
@@ -108,10 +124,14 @@ abstract class Inliners extends SubComponent {
 
        addLocals(caller, callee.locals);
        addLocal(caller, inlinedThis);
+       if (retVal ne null)
+         addLocal(caller, retVal);
        callee.code.blocks.foreach { b =>
-         if (b != callee.code.startBlock)
-           inlinedBlock += b -> newBlock;
+         inlinedBlock += b -> newBlock;
        }
+
+       // analyse callee
+       a.run;
 
        // re-emit the instructions before the call
        block.open;
@@ -124,27 +144,45 @@ abstract class Inliners extends SubComponent {
        }
        block.emit(STORE_LOCAL(inlinedThis, false));
 
-       // inline the start block of the callee
-       callee.code.startBlock.traverse { i =>
-         block.emit(map(i), 0);
-       }
+       // jump to the start block of the callee
+       block.emit(JUMP(inlinedBlock(callee.code.startBlock)));
        block.close;
 
        // duplicate the other blocks in the callee
-       callee.code.traverse { bb =>
-         if (bb != callee.code.startBlock) {
-           bb.traverse( i => inlinedBlock(bb).emit(map(i), 0) );
-           inlinedBlock(bb).close;
+       linearizer.linearize(callee).foreach { bb =>
+         var info = a.in(bb);
+         bb traverse { i =>
+           i match {
+             case RETURN(kind) => kind match {
+                 case UNIT =>
+                 	 if (!info._2.types.isEmpty) {
+                 	   log("** Dumping useless stack elements");
+                 	   info._2.types foreach { t => inlinedBlock(bb).emit(DROP(t)); }
+                   }
+                 case _ =>
+                   if (info._2.length > 1) {
+                     log("** Dumping useless stack elements");
+                     inlinedBlock(bb).emit(STORE_LOCAL(retVal, false));
+                     info._2.types.drop(1) foreach { t => inlinedBlock(bb).emit(DROP(t)); }
+                     inlinedBlock(bb).emit(LOAD_LOCAL(retVal, false));
+                   }
+               }
+             case _ => ();
+           }
+           inlinedBlock(bb).emit(map(i), 0);
+           info = a.interpret(info, i);
          }
+         inlinedBlock(bb).close;
        }
 
        instrAfter.foreach(afterBlock.emit);
        afterBlock.close;
+       count = count + 1;
      }
 
 
-    /** Add a local to this method, performing alfa-renaming
-     *  if necessary.
+    /** Add a local to this method, alfa-renaming is not
+     *  necessary because we use symbols to refer to locals.
      */
     def addLocals(m: IMethod, ls: List[Local]): Unit = {
       m.locals = m.locals ::: ls;
@@ -153,38 +191,112 @@ abstract class Inliners extends SubComponent {
     def addLocal(m: IMethod, l: Local): Unit =
       m.locals = m.locals ::: List(l);
 
-    val InlineAttr = if (settings.inline.value) global.definitions.getClass("scala.inline").tpe;
+    val InlineAttr = if (settings.inline.value) global.definitions.getClass("scala.inline").tpe else null;
 
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
+      	log("Analyzing " + cls);
         cls.methods.foreach { m => analyzeMethod(m)
      }}
 
 
-    def analyzeMethod(m: IMethod): Unit = {
+    def analyzeMethod(m: IMethod): Unit = try {
       var retry = false;
       var count = 0;
 
       do {
         retry = false;
-        if (m.code ne null)
-          m.code.traverse { bb =>
+        if (m.code ne null) {
+          this.count = 0;
+          if (settings.debug.value)
+            log("Analyzing " + m + " count " + count);
+          val a = new analysis.MethodTFA(m);
+          a.run;
+          linearizer.linearize(m).foreach { bb =>
+            var info = a.in(bb);
             bb.traverse { i =>
-              if (!retry)
+              if (!retry) {
                 i match {
-                  case CALL_METHOD(msym, _) =>
-                    if (definitions.isFunctionType(msym.owner.tpe)
-                        || msym.attributes.exists(a => a._1 == InlineAttr))
-                      classes(msym.owner).lookupMethod(msym.name) match {
+                  case CALL_METHOD(msym, Dynamic) =>
+                    val receiver = info._2.types.drop(msym.info.paramTypes.length).head match {
+                      case REFERENCE(s) => s;
+                      case _ => NoSymbol;
+                    }
+                    var concreteMethod = msym;
+                    if (receiver != msym.owner && receiver != NoSymbol) {
+                      concreteMethod = msym.overridingSymbol(receiver);
+                      log("" + i + " has actual receiver: " + receiver);
+                    }
+
+                    if (   classes.contains(receiver)
+                        && (isClosureClass(receiver)
+                            || concreteMethod.isFinal
+                            || msym.attributes.exists(a => a._1 == InlineAttr))) {
+                      classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
-                          retry = true;
-                          count = count + 1;
-                          inline(m, bb, i, inc);
+                          if (inc != m && (inc.code ne null)
+                              && isSafeToInline(m, inc, info._2)) {
+                            retry = true;
+                            count = count + 1;
+                            inline(m, bb, i, inc);
+                          }
                         case None =>
                           log("Couldn't find " + msym.name);
                       }
+                    }
+
                   case _ => ();
-                }}}
+                }
+                info = a.interpret(info, i);
+              }}}}
       } while (retry && count < 5);
+    } catch {
+      case e =>
+        Console.println("############# Cought exception: " + e + " #################");
+        e.printStackTrace();
+        dump(m);
+        throw e;
     }
-  }
-}
+
+    def isClosureClass(cls: Symbol): Boolean = {
+      val res =
+        cls.isFinal &&
+        cls.tpe.parents.exists { t =>
+          val TypeRef(_, sym, _) = t;
+          definitions.FunctionClass exists sym.==
+        }
+      Console.println("isClosureClass: " + cls + " is: " + res);
+      res
+    }
+
+
+    /** A method is safe to inline when:
+     *    - it does not contain calls to private methods when
+     *      called from another class
+     *    - it is not inlined into a position with non-empty stack,
+     *      while having a top-level finalizer (see liftedTry problem)
+     */
+    def isSafeToInline(caller: IMethod, callee: IMethod, stack: TypeStack): Boolean = {
+      if (caller.symbol.owner != callee.symbol.owner) {
+        var callsPrivateMember = false;
+        for (val b <- callee.code.blocks)
+          for (val i <- b.toList)
+            i match {
+              case CALL_METHOD(m, style) =>
+                if (m.hasFlag(Flags.PRIVATE) || style.isSuper)
+                  callsPrivateMember = true;
+              case LOAD_FIELD(f, _) =>
+                if (f.hasFlag(Flags.PRIVATE)) callsPrivateMember = true;
+              case _ => ()
+            }
+        if (callsPrivateMember) return false;
+      }
+
+      if (stack.length > (1 + callee.symbol.info.paramTypes.length) &&
+          (callee.exh exists (.covered.contains(callee.code.startBlock))))
+        false;
+      else
+        true
+    }
+
+  } /* class Inliner */
+} /* class Inliners */

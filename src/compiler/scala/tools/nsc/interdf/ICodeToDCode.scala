@@ -214,7 +214,7 @@ trait ICodeToDCode requires DCode {
           }
         }
       }
-      val Pair(ins, outStack) = convLoop(icblk.instructions, startStack)
+      val Pair(ins, outStack) = convLoop(icblk.toList, startStack)
       tripblk.instrs = ins
       outStack
     }

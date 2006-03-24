@@ -189,10 +189,10 @@ abstract class Checkers {
 
         /** Checks that tpe is a subtype of one of the allowed types */
         def checkType(tpe: TypeKind, allowed: TypeKind*) =
-          if (isOneOf(tpe, allowed: _*))
+          if (isOneOf(tpe, allowed: _*) || tpe <:< CASE_CLASS) /* hack */
             ()
           else
-            error(tpe.toString() + " is not one of: " + allowed);
+            error(tpe.toString() + " is not one of: " + allowed.toList.mkString("{", ", ", "}"));
 
         /** Checks that the 2 topmost elements on stack are of the
          *  kind TypeKind.
@@ -313,16 +313,18 @@ abstract class Checkers {
              checkStack(1);
              val fieldType = toTypeKind(field.tpe);
              val actualType = stack.pop;
-             if (!(actualType <:< fieldType))
+             if (!(actualType <:< fieldType) &&
+                   actualType != CASE_CLASS)
                typeError(fieldType, actualType);
            } else {
              checkStack(2);
              stack.pop2 match {
                case Pair(value, obj) =>
                  checkField(obj, field);
-               val fieldType = toTypeKind(field.tpe);
-               if (fieldType != SCALA_ALL_REF && !(value <:< fieldType))
-               typeError(fieldType, value);
+                 val fieldType = toTypeKind(field.tpe);
+                 if (fieldType != SCALA_ALL_REF && !(value <:< fieldType)
+                     && value != CASE_CLASS)
+                 typeError(fieldType, value);
              }
            }
 
@@ -561,30 +563,5 @@ abstract class Checkers {
     def isOneOf(k1: TypeKind, kinds: TypeKind*) =
       kinds.exists( k => k1 <:< k);
 
-
-    /**
-     * Dummy TypeKind to represent the ConcatClass in a platform-independent
-     * way. For JVM it would have been a REFERENCE to 'StringBuffer'.
-     */
-    case object ConcatClass extends TypeKind {
-      override def toString() = "ConcatClass";
-
-      /**
-       * Approximate `lub'. The common type of two references is
-       * always AnyRef. For 'real' least upper bound wrt to subclassing
-       * use method 'lub'.
-       */
-      override def maxType(other: TypeKind): TypeKind =
-        other match {
-          case REFERENCE(_) => REFERENCE(definitions.AnyRefClass);
-            case _ =>
-              abort("Uncomparbale type kinds: ConcatClass with " + other);
-        }
-
-      /** Checks subtyping relationship. */
-      override def <:<(other: TypeKind): Boolean = (this eq other);
-
-      override def isReferenceType: Boolean = false;
-    }
   }
 }

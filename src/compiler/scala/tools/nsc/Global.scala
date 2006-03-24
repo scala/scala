@@ -26,6 +26,7 @@ import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
 import backend.jvm.GenJVM;
 import backend.opt.Inliners;
+import backend.icode.analysis.TypeFlowAnalysis;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -62,6 +63,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   object icodes extends ICodes {
     val global: Global.this.type = Global.this
+  }
+
+  object analysis extends TypeFlowAnalysis {
+    val global: Global.this.type = Global.this;
   }
 
   object checkers extends Checkers {
@@ -428,7 +433,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
         globalPhase = globalPhase.next;
         if (settings.check contains globalPhase.name) {
           phase = globalPhase;
-          if (globalPhase.name == "jvm") icodeChecker.checkICodes;
+          if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes;
           else checker.checkTrees;
         }
         if (settings.statistics.value) statistics.print(phase);

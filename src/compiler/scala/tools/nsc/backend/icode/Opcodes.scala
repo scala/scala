@@ -175,7 +175,8 @@ trait Opcodes requires ICodes {
      */
     case class STORE_FIELD(field: Symbol, isStatic: boolean) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "STORE_FIELD "+field.toString(); //+isStatic?" (static)":"";
+      override def toString(): String =
+        "STORE_FIELD "+field.toString() + (if (isStatic) " (static)" else " (dynamic)");
 
       override def consumed = 2;
       override def produced = 0;
@@ -439,6 +440,11 @@ trait Opcodes requires ICodes {
       def isStatic: Boolean = this match {
         case Static(_) => true;
         case _ =>  false;
+      }
+
+      def isSuper: Boolean = this match {
+        case SuperCall(_) => true
+        case _ => false
       }
 
       /** Is this an instance method call? */

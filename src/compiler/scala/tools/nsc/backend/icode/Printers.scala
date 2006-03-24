@@ -114,13 +114,13 @@ abstract class Printers {
 
     def printBlock(bb: BasicBlock): Unit = {
       print(bb.label); print(": "); indent; println;
-      bb.instructions foreach printInstruction;
+      bb.toList foreach printInstruction;
       undent; println;
     }
 
     def printInstruction(i: Instruction): Unit = {
-      if (settings.debug.value)
-        print("/* " + Position.line(clazz.cunit.source, i.pos) + " */ ");
+//      if (settings.debug.value)
+//        print("/* " + Position.line(clazz.cunit.source, i.pos) + " */ ");
       println(i.toString());
     }
   }

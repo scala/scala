@@ -49,6 +49,12 @@ abstract class ICodes extends AnyRef
     global.icodes.classes.values foreach { c => printer.printClass(c); }
   }
 
+  def dump(m: global.icodes.IMethod) = {
+    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(System.out, true),
+                                                      new global.icodes.DumpLinearizer());
+    printer.printMethod(m);
+  }
+
 
   def init = { }
 }

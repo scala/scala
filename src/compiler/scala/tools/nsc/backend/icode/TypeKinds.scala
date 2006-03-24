@@ -216,6 +216,8 @@ trait TypeKinds requires ICodes {
            "REFERENCE to null class symbol.");
     assert(cls != definitions.ArrayClass,
            "REFERENCE to Array is not allowed, should be ARRAY[..] instead");
+    assert(cls != NoSymbol,
+           "REFERENCE to NoSymbol not allowed!");
 
     override def toString(): String =
       "REFERENCE(" + cls.fullNameString + ")";
@@ -289,6 +291,31 @@ trait TypeKinds requires ICodes {
       case _               => false;
     }
 
+  }
+
+ /**
+  * Dummy TypeKind to represent the ConcatClass in a platform-independent
+  * way. For JVM it would have been a REFERENCE to 'StringBuffer'.
+  */
+  case object ConcatClass extends TypeKind {
+    override def toString() = "ConcatClass";
+
+    /**
+     * Approximate `lub'. The common type of two references is
+     * always AnyRef. For 'real' least upper bound wrt to subclassing
+     * use method 'lub'.
+     */
+    override def maxType(other: TypeKind): TypeKind =
+      other match {
+        case REFERENCE(_) => REFERENCE(definitions.AnyRefClass);
+          case _ =>
+            abort("Uncomparbale type kinds: ConcatClass with " + other);
+      }
+
+    /** Checks subtyping relationship. */
+    override def <:<(other: TypeKind): Boolean = (this eq other);
+
+    override def isReferenceType: Boolean = false;
   }
 
   ////////////////// Conversions //////////////////////////////

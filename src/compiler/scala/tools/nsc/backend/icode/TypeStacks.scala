@@ -37,6 +37,8 @@ trait TypeStacks requires ICodes {
       if (t != UNIT)
         types = t :: types;
 
+    def head: TypeKind = types.head;
+
     /** Removes the value on top of the stack, and returns it. It assumes
      *  the stack contains at least one element.
      */
@@ -55,6 +57,9 @@ trait TypeStacks requires ICodes {
      *  is large enough. Topmost element first.
      */
     def pop3: Triple[TypeKind, TypeKind, TypeKind] = Triple(pop, pop, pop);
+
+    /** Drop the first n elements of the stack. */
+    def pop(n: Int): Unit = types = types.drop(n);
 
     /**
      * A TypeStack aggress with another one if they have the same
@@ -83,9 +88,8 @@ trait TypeStacks requires ICodes {
     }
 
     /* This method returns a String representation of the stack */
-    override def toString() = {
-      (types.foldLeft(new StringBuffer("")) ((buf, k) => buf.append(" ").append(k))).toString();
-    }
+    override def toString() = types.mkString("<", ",", ">");
+
 
     override def equals(other: Any): Boolean = (
       other.isInstanceOf[TypeStack] &&

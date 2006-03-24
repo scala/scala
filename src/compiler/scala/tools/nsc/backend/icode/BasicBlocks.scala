@@ -10,6 +10,7 @@ package scala.tools.nsc.backend.icode;
 import scala.tools.nsc.ast._;
 import scala.collection.mutable.Map;
 import scala.tools.nsc.util.Position;
+import scala.tools.nsc.backend.icode.analysis.ProgramPoint;
 
 trait BasicBlocks requires ICodes {
   import opcodes._;
@@ -19,17 +20,15 @@ trait BasicBlocks requires ICodes {
    *  either executed all, or none. No jumps
    *  to/from the "middle" of the basic block are allowed.
    */
-  class BasicBlock (theLabel: int, val code: Code) {
+  class BasicBlock (theLabel: int, val code: Code)
+        extends AnyRef
+        with ProgramPoint[BasicBlock] {
 
     /** The type stack at the begining of the block */
     var initialStack : TypeStack = null;
 
     /** The label of the block */
     val label = theLabel;
-
-    /** The substitute variables of the block
-     *  in the case of a recursive method */
-    var substituteVars : List[Symbol] = null;
 
     /** The stack at the end of the block */
     var endStack : TypeStack = null;
@@ -49,6 +48,13 @@ trait BasicBlocks requires ICodes {
     private var closed: boolean = false;
 
     private var instrs: Array[Instruction] = _;
+    private var touched = false;
+
+    def toList: List[Instruction] = {
+      if (closed && touched)
+        instructionList = List.fromArray(instrs);
+      instructionList
+    }
 
     // public:
 
@@ -126,7 +132,7 @@ trait BasicBlocks requires ICodes {
         var i = 0;
         while (i < instrs.length) {
           map get instrs(i) match {
-            case Some(instr) => replaceInstruction(i, instr);
+            case Some(instr) => touched = replaceInstruction(i, instr);
             case None => ();
           }
           i = i + 1;
@@ -163,6 +169,7 @@ trait BasicBlocks requires ICodes {
       assert (!closed || ignore, "BasicBlock closed");
 
       if (!ignore) {
+        touched = true;
         instr.pos = pos;
         instructionList = instr :: instructionList;
         _lastInstruction = instr;
@@ -180,13 +187,13 @@ trait BasicBlocks requires ICodes {
 
     def open = {
       closed = false;
+      ignore = false;
     }
-
-    def instructions: List[Instruction] = instructionList;
 
     def clear: Unit = {
       instructionList = Nil;
       instrs = null;
+      preds  = null;
     }
 
     def isEmpty: Boolean = instructionList.isEmpty;
@@ -248,7 +255,7 @@ trait BasicBlocks requires ICodes {
      *  in different code 'chunks' than the rest of the method.
      */
     def predecessors: List[BasicBlock] = {
-      if (preds == null)
+//      if (preds == null)
         preds = code.blocks.elements.filter (p => (p.successors contains this)).toList;
       preds
     }
