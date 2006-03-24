@@ -1045,7 +1045,7 @@ GENERATES A DISTRIBUTION
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.univ.link}/${sbaz.lib.name}-${version.number}.sbp"
     >
-      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name}"/>
+      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${lib-dbc.jar.name}"/>
     </quicksbaz>
     <!-- Create the Scala developper package -->
     <quicksbaz
