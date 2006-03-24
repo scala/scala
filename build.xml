@@ -15,13 +15,6 @@ PROPERTIES
 ============================================================================ -->
 
   <property environment="env"/>
-  <condition property="memory.set">
-    <contains string="${env.ANT_OPTS}" substring="-Xmx"/>
-  </condition>
-  <fail unless="memory.set">
-    SABBUS requires additional memory. Please set the 'ANT_OPTS' environment
-    property to '-Xmx512M' or more.
-  </fail>
 
   <!-- Prevents system classpath from being used -->
   <property name="build.sysclasspath" value="ignore"/>
@@ -182,6 +175,17 @@ INITIALISATION
         <pathelement location="${ant-contrib.jar}"/>
       </classpath>
     </taskdef>
+    <!-- Making sure enough memory is available -->
+    <propertyregex
+      property="memory.set"
+      input="${env.ANT_OPTS}"
+      regexp="-Xmx([1-9][0-9]{3,}|[6-9][0-9]{2}|5[2-9][0-9]|51[2-9])(M|m)"
+      select="\1"
+    />
+    <fail unless="memory.set">
+      SABBUS requires additional memory. Please set the 'ANT_OPTS' environment
+      property to '-Xmx512M' or more.
+    </fail>
     <!-- Finding out what system architecture is being used -->
     <condition property="os.win">
       <os family="windows"/>
