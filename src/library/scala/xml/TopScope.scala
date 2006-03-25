@@ -9,8 +9,6 @@
 // $Id$
 package scala.xml;
 
-import Predef._
-
 /** top level namespace scope. only contains the predefined binding
  *  for the &quot;xml&quot; prefix which is bound to
  *  &quot;http://www.w3.org/XML/1998/namespace&quot;
@@ -19,7 +17,7 @@ case object TopScope extends NamespaceBinding(null, null, null) {
 
   override def getURI(prefix1: String): String =
     if(prefix1 == "xml" /*XML.xml*/)
-      XML.namespace;
+      "http://www.w3.org/XML/1998/namespace"
     else
       null;
 

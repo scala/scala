@@ -11,7 +11,6 @@
 
 package scala.collection.mutable;
 
-import Predef._
 /** This class is used internally to represent mutable lists. It is the
  *  basis for the implementation of the classes <code>Buffer</code>,
  *  <code>Stack</code>, and <code>Queue</code>.

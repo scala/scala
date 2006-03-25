@@ -11,7 +11,6 @@
 
 package scala.collection.mutable;
 
-import Predef._
 /** This extensible class may be used as a basis for implementing linked
  *  list. Type variable <code>A</code> refers to the element type of the
  *  list, type variable <code>This</code> is used to model self types of

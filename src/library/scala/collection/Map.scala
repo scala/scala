@@ -11,8 +11,6 @@
 
 package scala.collection;
 
-import Predef._ // strange that we need this (buraq)
-
 /** This class defines the interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
  *  Class <code>Map</code> may only be used for

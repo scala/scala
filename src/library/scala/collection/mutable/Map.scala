@@ -11,9 +11,6 @@
 
 package scala.collection.mutable;
 
-import Predef._ // strange that we need this (buraq)
-//import scala.{Tuple2 => Pair}
-
 /** This class represents mutable maps. Concrete map implementations
  *  just have to provide functionality for the abstract methods in
  *  <code>scala.collection.Map</code> as well as for <code>update</code>,

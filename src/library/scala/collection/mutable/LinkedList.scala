@@ -11,8 +11,6 @@
 
 package scala.collection.mutable;
 
-import Predef._
-
 /** This class implements single linked lists where both the head (<code>elem</code>)
  *  and the tail (<code>next</code>) are mutable.
  *
