@@ -11,15 +11,23 @@
 
 package scala.xml;
 
-
+/** top level namespace scope. only contains the predefined binding
+ *  for the &quot;xml&quot; prefix which is bound to
+ *  &quot;http://www.w3.org/XML/1998/namespace&quot;
+ */
 case object TopScope extends NamespaceBinding(null, null, null) {
 
-  /*
-  override def contains(pre:String) = false;
-  */
-  override def getURI(_prefix: String) = null;
+  override def getURI(_prefix: String) =
+    if(_prefix == "xml")
+      return "http://www.w3.org/XML/1998/namespace";
+    else
+      return null;
 
   override def getPrefix(_uri: String) = null;
+    if(_uri == "http://www.w3.org/XML/1998/namespace")
+	  return "xml";
+    else
+      return null;
 
   override def toString() = "";
 
