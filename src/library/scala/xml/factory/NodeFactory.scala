@@ -18,11 +18,11 @@ trait NodeFactory[A <: Node] {
   val ignoreProcInstr = false;
 
   /* default behaviour is to use hash-consing */
-  val cache = new collection.mutable.HashMap[int,List[A]]();
+  val cache = new collection.mutable.HashMap[Int, List[A]]();
 
   protected def create(pre: String, name: String, attrs: MetaData, scope: NamespaceBinding, children:Seq[Node]): A;
 
-  protected def construct(hash:Int, old:List[A], pre: String, name: String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]): A = {
+  protected def construct(hash: Int, old:List[A], pre: String, name: String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]): A = {
     val el = create(pre, name, attrSeq, scope, children);
     cache.update( hash, el::old );
     el
