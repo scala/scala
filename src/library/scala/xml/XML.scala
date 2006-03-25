@@ -15,10 +15,16 @@ package scala.xml;
 import scala.xml.parsing.NoBindingFactoryAdapter ;
 import org.xml.sax.InputSource;
 
-/** functions to load and save XML elements. use this when data binding is not
+/** constants, and functions to load and save XML elements. use this when data binding is not
 **  desired, i.e. when XML is handled using Symbol nodes
 **/
 object XML  {
+
+  val prefix    = "xml"
+  val namespace = "http://www.w3.org/XML/1998/namespace"
+  val preserve  = "preserve";
+  val space     = "space";
+  val lang      = "lang";
 
   import java.io._ ;
 

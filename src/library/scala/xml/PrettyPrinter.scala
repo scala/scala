@@ -149,9 +149,16 @@ class PrettyPrinter( width:Int, step:Int ) {
       case _:Atom[Any] | _:Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
         makeBox( ind, node.toString().trim() );
 
-      case _:Node =>
-        val test = { val sb = new StringBuffer(); Utility.toXML(node, pscope, sb, false);
-                    val tb = TextBuffer.fromString(sb.toString()); tb.toText(0)._data};
+      case _ =>
+        val test = {
+	  val sb = new StringBuffer();
+	  Utility.toXML(node, pscope, sb, false);
+          val tb = if(node.attribute(XML.namespace, XML.space) == XML.preserve)
+	    sb.toString();
+	  else
+	    TextBuffer.fromString(sb.toString());
+	  tb.toText(0)._data
+	};
         if(childrenAreLeaves(node) && fits(test)) {
           makeBox( ind, test );
         } else {
