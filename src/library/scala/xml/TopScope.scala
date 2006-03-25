@@ -17,17 +17,17 @@ package scala.xml;
  */
 case object TopScope extends NamespaceBinding(null, null, null) {
 
-  override def getURI(_prefix: String) =
-    if(_prefix == "xml")
-      return "http://www.w3.org/XML/1998/namespace";
+  override def getURI(prefix1: String) =
+    if(prefix1 == XML.prefix)
+      XML.namespace;
     else
-      return null;
+      null;
 
-  override def getPrefix(_uri: String) = null;
-    if(_uri == "http://www.w3.org/XML/1998/namespace")
-	  return "xml";
+  override def getPrefix(uri1: String) =
+    if(uri1 == XML.namespace)
+	  XML.prefix;
     else
-      return null;
+      null;
 
   override def toString() = "";
 
