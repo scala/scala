@@ -18,14 +18,14 @@ import Predef._
 case object TopScope extends NamespaceBinding(null, null, null) {
 
   override def getURI(prefix1: String): String =
-    if(prefix1 == XML.prefix)
+    if(prefix1 == "xml" /*XML.xml*/)
       XML.namespace;
     else
       null;
 
   override def getPrefix(uri1: String): String =
-    if(uri1 == XML.namespace)
-	  XML.prefix;
+    if(uri1 == "http://www.w3.org/XML/1998/namespace" /*XML.namespace*/)
+	  "xml" //XML.xml
     else
       null;
 

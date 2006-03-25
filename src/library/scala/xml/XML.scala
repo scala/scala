@@ -20,7 +20,7 @@ import org.xml.sax.InputSource;
 **/
 object XML  {
 
-  val prefix    = "xml"
+  val xml       = "xml"
   val xmlns     = "xmlns"
   val namespace = "http://www.w3.org/XML/1998/namespace"
   val preserve  = "preserve";

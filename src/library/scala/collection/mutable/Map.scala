@@ -11,6 +11,8 @@
 
 package scala.collection.mutable;
 
+import Predef._ // strange that we need this (buraq)
+//import scala.{Tuple2 => Pair}
 
 /** This class represents mutable maps. Concrete map implementations
  *  just have to provide functionality for the abstract methods in
@@ -25,7 +27,6 @@ trait Map[A, B] extends AnyRef
       with collection.Map[A, B]
       with Scriptable[Message[Pair[A, B]]]
 {
-
   /** This method allows one to add a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a
    *  mapping for <code>key</code>, it will be overridden by this

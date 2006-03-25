@@ -128,7 +128,7 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   /** returns prefix of qualified name if any */
   final def prefix(name: String): Option[String] = {
-    val i = name.indexOf(':');
+    val i = name.indexOf(':'.asInstanceOf[Int]);
     if( i != -1 ) Some( name.substring(0, i) ) else None
   }
 
@@ -189,7 +189,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param sb
    */
   def appendQuoted(s: String, sb: StringBuffer) = {
-    val ch = if (s.indexOf('"') == -1) '"' else '\'';
+    val ch = if (s.indexOf('"'.asInstanceOf[Int]) == -1) '"' else '\'';
     sb.append(ch).append(s).append(ch)
   }
 
@@ -201,7 +201,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   def appendEscapedQuoted(s: String, sb: StringBuffer) = {
     sb.append('"');
-    val z:Seq[Char] = s;
+    val z:Seq[Char] = Predef.string2seq(s);
     for( val c <- z ) c match {
       case '"' => sb.append('\\'); sb.append('"');
       case _   => sb.append( c );

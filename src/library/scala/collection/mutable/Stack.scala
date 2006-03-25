@@ -11,6 +11,7 @@
 
 package scala.collection.mutable;
 
+import Predef._;
 
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.

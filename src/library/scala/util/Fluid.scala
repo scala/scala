@@ -10,6 +10,7 @@
 
 package scala.util
 
+import Predef._
 
 /** Fluids provide a binding mechanism where the current
   * value is found through <em>dynamic scope</em>, but where

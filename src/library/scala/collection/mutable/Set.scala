@@ -11,6 +11,7 @@
 
 package scala.collection.mutable;
 
+import Predef._
 
 /** This class represents mutable sets. Concrete set implementations
  *  just have to provide functionality for the abstract methods in

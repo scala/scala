@@ -72,7 +72,7 @@ trait TokenTests {
    */
   def isName(s: String): Boolean = {
     if( s.length() > 0 ) {
-      val z:Seq[Char] = s;
+      val z:Seq[Char] = Predef.string2seq(s);
       val y           = z.elements;
       if (isNameStart(y.next)) {
         while (y.hasNext && isNameChar(y.next)) {};
@@ -126,13 +126,13 @@ trait TokenTests {
   } // isValidIANAEncoding(String): Boolean
 
   def checkSysID( s:String ): Boolean = {
-    s.indexOf('"') == -1 || s.indexOf('\'') == -1
+    s.indexOf('"'.asInstanceOf[Int]) == -1 || s.indexOf('\''.asInstanceOf[Int]) == -1
   }
 
   def checkPubID(s: String): Boolean = {
     //Console.println("checkPubID of \""+s+"\"");
     if (s.length() > 0) {
-      val z: Seq[Char] = s;
+      val z: Seq[Char] = Predef.string2seq(s);
       val y = z.elements;
       var c = ' ';
       while (y.hasNext && isPubIDChar(c)) {

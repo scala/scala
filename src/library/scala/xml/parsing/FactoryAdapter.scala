@@ -11,7 +11,6 @@
 
 package scala.xml.parsing;
 
-
 import java.io._ ;
 import scala.collection.mutable.{HashMap,Stack};
 
@@ -124,7 +123,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
       tagStack.push(curTag);
       curTag = qname; //localName ;
 
-      val colon = qname.indexOf(':');
+      val colon = qname.indexOf(':'.asInstanceOf[Int]);
       val localName = if(-1 == colon) qname else qname.substring(colon+1,qname.length());
 
       //Console.println("FactoryAdapter::startElement - localName ="+localName);
@@ -139,18 +138,18 @@ abstract class FactoryAdapter extends DefaultHandler() {
         //val attrType = attributes.getType(i); // unused for now
         val qname = attributes.getQName(i);
         val value = attributes.getValue(i);
-        val colon = qname.indexOf(':');
+        val colon = qname.indexOf(':'.asInstanceOf[Int]);
         if(-1 != colon) {                     // prefixed attribute
           val pre = qname.substring(0, colon);
           val key = qname.substring(colon+1, qname.length());
-          if(XML.xmlns == pre)
+          if("xmlns" /*XML.xmlns*/ == pre)
             scpe = value.length() match {
               case 0 => new NamespaceBinding(key, null,  scpe);
               case _ => new NamespaceBinding(key, value, scpe);
             }
           else
               m = new PrefixedAttribute(pre, key, value, m);
-        } else if(XML.xmlns == qname)
+        } else if("xmlns" /*XML.xmlns*/ == qname)
           scpe = value.length() match {
             case 0 => new NamespaceBinding(null, null,  scpe);
             case _ => new NamespaceBinding(null, value, scpe);
@@ -195,7 +194,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
         child = hStack.pop;
       }
 
-      val colon = qname.indexOf(':');
+      val colon = qname.indexOf(':'.asInstanceOf[Int]);
       val localName = if(-1 == colon) qname else qname.substring(colon+1,qname.length());
 
       val scp = scopeStack.pop;
@@ -249,7 +248,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
 
         var systemId = ex.getSystemId();
         if (systemId != null) {
-            val index = systemId.lastIndexOf('/');
+            val index = systemId.lastIndexOf('/'.asInstanceOf[Int]);
             if (index != -1)
                 systemId = systemId.substring(index + 1);
             //System.err.print(systemId);

@@ -8,7 +8,6 @@
 
 // $Id$
 
-
 package scala.xml;
 
 
@@ -153,11 +152,10 @@ class PrettyPrinter( width:Int, step:Int ) {
         val test = {
 	  val sb = new StringBuffer();
 	  Utility.toXML(node, pscope, sb, false);
-          val tb = if(node.attribute(XML.namespace, XML.space) == XML.preserve)
+          if(node.attribute("http://www.w3.org/XML/1998/namespace", "space") == "preserve")
 	    sb.toString();
 	  else
-	    TextBuffer.fromString(sb.toString());
-	  tb.toText(0)._data
+	    TextBuffer.fromString(sb.toString()).toText(0)._data;
 	};
         if(childrenAreLeaves(node) && fits(test)) {
           makeBox( ind, test );

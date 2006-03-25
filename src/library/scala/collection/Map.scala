@@ -11,6 +11,7 @@
 
 package scala.collection;
 
+import Predef._ // strange that we need this (buraq)
 
 /** This class defines the interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
@@ -30,7 +31,6 @@ trait Map[A, +B] extends AnyRef
       with PartialFunction[A, B]
       with Iterable[Pair[A, B]]
 {
-
     /** Compute the number of key-to-value mappings.
      *
      *  @return the number of mappings
