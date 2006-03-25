@@ -7,9 +7,9 @@
 \*                                                                      */
 
 // $Id$
-
-
 package scala.xml;
+
+import Predef._
 
 /** top level namespace scope. only contains the predefined binding
  *  for the &quot;xml&quot; prefix which is bound to
@@ -17,13 +17,13 @@ package scala.xml;
  */
 case object TopScope extends NamespaceBinding(null, null, null) {
 
-  override def getURI(prefix1: String) =
+  override def getURI(prefix1: String): String =
     if(prefix1 == XML.prefix)
       XML.namespace;
     else
       null;
 
-  override def getPrefix(uri1: String) =
+  override def getPrefix(uri1: String): String =
     if(uri1 == XML.namespace)
 	  XML.prefix;
     else

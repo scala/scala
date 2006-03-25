@@ -11,7 +11,7 @@
 
 package scala.xml;
 
-
+import Predef._
 import scala.xml.parsing.NoBindingFactoryAdapter ;
 import org.xml.sax.InputSource;
 
@@ -21,6 +21,7 @@ import org.xml.sax.InputSource;
 object XML  {
 
   val prefix    = "xml"
+  val xmlns     = "xmlns"
   val namespace = "http://www.w3.org/XML/1998/namespace"
   val preserve  = "preserve";
   val space     = "space";

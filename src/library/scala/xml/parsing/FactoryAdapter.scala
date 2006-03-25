@@ -143,14 +143,14 @@ abstract class FactoryAdapter extends DefaultHandler() {
         if(-1 != colon) {                     // prefixed attribute
           val pre = qname.substring(0, colon);
           val key = qname.substring(colon+1, qname.length());
-          if("xmlns" == pre)
+          if(XML.xmlns == pre)
             scpe = value.length() match {
               case 0 => new NamespaceBinding(key, null,  scpe);
               case _ => new NamespaceBinding(key, value, scpe);
             }
           else
-              m = new PrefixedAttribute(pre, key, value, m)
-        } else if("xmlns" == qname)
+              m = new PrefixedAttribute(pre, key, value, m);
+        } else if(XML.xmlns == qname)
           scpe = value.length() match {
             case 0 => new NamespaceBinding(null, null,  scpe);
             case _ => new NamespaceBinding(null, value, scpe);
