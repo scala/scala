@@ -18,7 +18,7 @@ package scala.xml.parsing;
 trait TokenTests {
 
   /** (#x20 | #x9 | #xD | #xA) */
-  final def isSpace( ch:Char ):Boolean = ch match {
+  final def isSpace( ch:Char ): Boolean = ch match {
     case '\u0009' | '\u000A' | '\u000D' | '\u0020' => true
     case _                                         => false;
   }
@@ -70,7 +70,7 @@ trait TokenTests {
    *
    *  see  [5] of XML 1.0 specification
    */
-  def isName(s: String): boolean = {
+  def isName(s: String): Boolean = {
     if( s.length() > 0 ) {
       val z:Seq[Char] = s;
       val y           = z.elements;
@@ -81,7 +81,7 @@ trait TokenTests {
     } else false;
   }
 
-  def isPubIDChar(ch: Char): boolean = {
+  def isPubIDChar(ch: Char): Boolean = {
     //Console.println("char: '" + ch + "'");
     ch match {
       case '\u0020' | '\u000D' | '\u000A' => true;
@@ -125,7 +125,7 @@ trait TokenTests {
       return false;
   } // isValidIANAEncoding(String): Boolean
 
-  def checkSysID( s:String ):boolean = {
+  def checkSysID( s:String ): Boolean = {
     s.indexOf('"') == -1 || s.indexOf('\'') == -1
   }
 

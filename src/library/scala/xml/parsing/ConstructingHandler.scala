@@ -15,7 +15,7 @@ package scala.xml.parsing;
 /** implementation of MarkupHandler that constructs nodes */
 abstract class ConstructingHandler extends MarkupHandler {
 
-  val preserveWS: boolean;
+  val preserveWS: Boolean;
 
   def elem(pos: int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
     Elem(pre, label, attrs, pscope, nodes:_*);

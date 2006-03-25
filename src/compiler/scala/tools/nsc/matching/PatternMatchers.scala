@@ -15,6 +15,28 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
   import typer.typed ;
   import symtab.Flags;
 
+  // -- begin new data structure for matcher
+
+  abstract class Node{}
+
+  class Test(var tpe: Type, var casted: Symbol) extends Node {
+    var thenp: Node  = _
+    var vbles = List[Symbol]();
+    def bindTo(v: Symbol): this.type = { vbles = v::vbles; this }
+    override def toString() = tpe.toString+"?"
+  }
+  class Load(var expr: Tree) extends Node {
+    def tpe = expr.tpe;
+    var thenp: PatNodeList = Snil
+  }
+  case class Return(b:Tree) extends Node {}
+
+  abstract class PatNodeList {};
+  case class Snoc(sx:PatNodeList, x:Test) extends PatNodeList;
+  case object Snil extends PatNodeList;
+
+    // -- end
+
  class PatternMatcher  {
 
 

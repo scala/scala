@@ -29,7 +29,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
   override def log(msg:String) = {};
 
   /*
-  override def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {
+  override def checkChildren(pos: Int, pre: String, label:String,ns:NodeSeq): Unit = {
     Console.println("checkChildren()");
     val decl = lookupElemDecl(label);
     // @todo: nice error message

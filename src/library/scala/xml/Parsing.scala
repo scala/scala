@@ -70,7 +70,7 @@ object Parsing {
    *
    *  see  [5] of XML 1.0 specification
    */
-  def isName( s:String ):boolean = {
+  def isName( s:String ): Boolean = {
     if( s.length() > 0 ) {
       val z:Seq[Char] = s;
       val y           = z.elements;
@@ -90,11 +90,11 @@ object Parsing {
     case _ => false;
   }
 
-  def checkSysID( s:String ):boolean = {
+  def checkSysID(s: String): Boolean = {
     s.indexOf('"') == -1 || s.indexOf('\'') == -1
   }
 
-  def checkPubID( s:String ):boolean = {
+  def checkPubID(s: String): Boolean = {
     if( s.length() > 0 ) {
       val z:Seq[Char] = s;
       val y = z.elements;

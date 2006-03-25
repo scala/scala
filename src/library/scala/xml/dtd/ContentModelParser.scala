@@ -21,7 +21,7 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   def parse(s:String): ContentModel = { initScanner( s ); contentspec }
 
   //                                              zzz   parser methods   zzz
-  def accept( tok:int ) = {
+  def accept(tok: Int) = {
     if( token != tok ) {
       if(( tok == STAR )&&( token == END ))                  // common mistake
         error("in DTDs, \n"+
@@ -34,7 +34,7 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   }
 
   // s [ '+' | '*' | '?' ]
-  def maybeSuffix(s:RegExp) = token match {
+  def maybeSuffix(s: RegExp) = token match {
     case STAR => nextToken; Star( s )
     case PLUS => nextToken; Sequ( s, Star( s ))
     case OPT  => nextToken; Alt( Eps, s )

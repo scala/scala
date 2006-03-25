@@ -66,7 +66,7 @@ class Scanner extends Tokens with parsing.TokenTests {
   }
   */
 
-  final def readToken:int =
+  final def readToken: Int =
     if(isSpace(c)) {
       while( isSpace(c) ) {
         c = it.next;

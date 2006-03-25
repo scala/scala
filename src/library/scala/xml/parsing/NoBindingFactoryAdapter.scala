@@ -24,7 +24,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
 
   /** returns true. Every XML node may contain text that the application needs
   **/
-  def nodeContainsText( label:java.lang.String ):boolean = true;
+  def nodeContainsText( label:java.lang.String ): Boolean = true;
 
 
   // methods for NodeFactory[Elem]

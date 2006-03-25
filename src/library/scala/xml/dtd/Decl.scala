@@ -172,7 +172,7 @@ case object IMPLIED extends DefaultDecl {
   final def toString(sb:StringBuffer) = sb.append("#IMPLIED");
 }
 
-case class DEFAULT(fixed:boolean, attValue:String) extends DefaultDecl {
+case class DEFAULT(fixed: Boolean, attValue:String) extends DefaultDecl {
   final override def toString(): String =
     toString(new StringBuffer()).toString();
 

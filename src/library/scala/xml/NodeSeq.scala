@@ -26,7 +26,7 @@ abstract class NodeSeq extends Seq[Node] {
   def theSeq: Seq[Node];
   def length = theSeq.length;
   def elements = theSeq.elements ;
-  def apply(i: int ): Node = theSeq.apply( i );
+  def apply(i: Int): Node = theSeq.apply( i );
 
   def apply(f: Node => Boolean): NodeSeq = filter(f);
 

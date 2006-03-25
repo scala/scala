@@ -46,14 +46,14 @@ abstract class FactoryAdapter extends DefaultHandler() {
   var scopeStack  = new Stack[NamespaceBinding];
 
   var curTag : String = null ;
-  var capture:boolean = false;
+  var capture: Boolean = false;
 
   // abstract methods
 
   /** Tests if an XML element contains text.
    * @return true if element named <code>localName</code> contains text.
    */
-  def nodeContainsText( localName:String ):boolean ; // abstract
+  def nodeContainsText(localName: String): Boolean ; // abstract
 
   /** creates an new non-text(tree) node.
    * @param elemName
@@ -84,23 +84,23 @@ abstract class FactoryAdapter extends DefaultHandler() {
 
         if (capture) {
           if( normalizeWhitespace ) { // normalizing whitespace is not compliant, but useful */
-	    var i:int = offset;
-            var ws:boolean = false;
+	    var i: Int = offset
+            var ws = false
 	    while (i < offset + length) {
               if ( Character.isWhitespace( ch(i) ) ) {
                 if (!ws) {
-                  buffer.append(' ');
-                  ws = true;
+                  buffer.append(' ')
+                  ws = true
                 }
               } else {
-                buffer.append(ch(i));
-                ws = false;
+                buffer.append(ch(i))
+                ws = false
               }
-	      i = i+1;
+	      i = i+1
             }
           } else { // compliant:report every character
 
-              buffer.append( ch, offset, length );
+              buffer.append( ch, offset, length )
 
           }
 	}
