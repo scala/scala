@@ -575,8 +575,8 @@ trait Symbols requires SymbolTable {
      *  case class factory
      */
     final def linkedClass: Symbol = {
-      if (owner.isPackageClass)
-  owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo ne NoType)
+      if (this != NoSymbol && owner.isPackageClass)
+        owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo ne NoType)
       else NoSymbol;
     }
 

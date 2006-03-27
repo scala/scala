@@ -340,5 +340,7 @@ trait Contexts requires Analyzer {
 
   case class ImplicitInfo(val name: Name, val tpe: Type, val sym: Symbol);
 
+  val NoImplicitInfo = ImplicitInfo(null, null, null)
+
   case class ImportType(expr: Tree) extends Type;
 }

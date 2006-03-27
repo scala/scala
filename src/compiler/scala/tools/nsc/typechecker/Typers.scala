@@ -7,6 +7,7 @@
 package scala.tools.nsc.typechecker
 
 import symtab.Flags._
+import util.HashSet
 import scala.tools.nsc.util.Position
 import scala.collection.mutable.{HashMap, ListBuffer}
 
@@ -22,7 +23,7 @@ trait Typers requires Analyzer {
   var implcnt = 0
   var impltime = 0l
 
-  final val xviews = false
+  final val xviews = true
 
   private val transformed = new HashMap[Tree, Tree]
 
@@ -39,7 +40,7 @@ trait Typers requires Analyzer {
   object UnTyper extends Traverser {
     override def traverse(tree: Tree) = {
       if (tree != EmptyTree) tree.tpe = null;
-      if (tree.hasSymbol && tree.symbol.isError) tree.symbol = null;
+      if (tree.hasSymbol) tree.symbol = NoSymbol;
       super.traverse(tree)
     }
   }
@@ -122,24 +123,20 @@ trait Typers requires Analyzer {
     /** Report a type error.
      *  @param pos    The position where to report the error
      *  @param ex     The exception that caused the error */
-    def reportTypeError(pos: int, ex: TypeError): unit = {
-      val msg = ex match {
-	case CyclicReference(sym, info: TypeCompleter) =>
-	  info.tree match {
-	    case ValDef(_, _, tpt, _) if (tpt.tpe == null) =>
-	      "recursive "+sym+" needs type"
-	    case DefDef(_, _, _, _, tpt, _) if (tpt.tpe == null) =>
+    def reportTypeError(pos: int, ex: TypeError): unit = ex match {
+      case CyclicReference(sym, info: TypeCompleter) =>
+        context.unit.error(pos,
+          info.tree match {
+            case ValDef(_, _, tpt, _) if (tpt.tpe == null) =>
+              "recursive "+sym+" needs type"
+            case DefDef(_, _, _, _, tpt, _) if (tpt.tpe == null) =>
               (if (sym.owner.isClass && sym.owner.info.member(sym.name).hasFlag(OVERLOADED)) "overloaded "
                else "recursive ")+sym+" needs result type"
-	    case _ =>
-	      ex.getMessage()
-	  }
-	case _ =>
-	  ex.getMessage()
-      }
-      //if (settings.debug.value) ex.printStackTrace()//DEBUG
-      if (context.reportGeneralErrors) error(pos, msg)
-      else throw new TypeError(msg)
+            case _ =>
+              ex.getMessage()
+          })
+      case _ =>
+	context.error(pos, ex.getMessage())
     }
 
     /** Check that tree is a stable expression.
@@ -1003,57 +1000,69 @@ trait Typers requires Analyzer {
       def typedArgs(args: List[Tree]) =
         List.mapConserve(args)(arg => typedArg(arg, WildcardType))
 
-      def typedApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
-        case OverloadedType(pre, alts) =>
-          val args1 = typedArgs(args)
-          inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt)
-          typedApply(adapt(fun, funmode, WildcardType), args1)
-        case MethodType(formals0, restpe) =>
-          val formals = formalTypes(formals0, args.length)
-          if (formals.length != args.length) {
-	    //System.out.println(""+formals.length+" "+args.length);//DEBUG
-            errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
-          } else {
-            val tparams = context.undetparams
-            context.undetparams = List()
-            if (tparams.isEmpty) {
-              val args1 = List.map2(args, formals)(typedArg)
-	      def ifPatternSkipFormals(tp: Type) = tp match {
-		case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
-		case _ => tp
-	      }
-              constfold(copy.Apply(tree, fun, args1).setType(ifPatternSkipFormals(restpe)))
-	    } else {
-	      assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
-              val lenientTargs = protoTypeArgs(tparams, formals, restpe, pt)
-              val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
-                if (targ == WildcardType) tparam.tpe else targ)
-              def typedArgToPoly(arg: Tree, formal: Type): Tree = {
-	        val lenientPt = formal.subst(tparams, lenientTargs)
-	        val arg1 = typedArg(arg, lenientPt)
-	        val argtparams = context.undetparams
-	        context.undetparams = List()
-	        if (!argtparams.isEmpty) {
-	          val strictPt = formal.subst(tparams, strictTargs)
-	          inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
-	        }
-	        arg1
-              }
-              val args1 = List.map2(args, formals)(typedArgToPoly)
-              if (args1 exists (.tpe.isError)) setError(tree)
-              else {
-                if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(.tpe)+", pt = "+pt+", lobounds = "+tparams.map(.tpe.bounds.lo));//debug
-                val undetparams = inferMethodInstance(fun, tparams, args1, pt)
-                val result = typedApply(fun, args1)
-                context.undetparams = undetparams
-                result
+      def typedApply(fun0: Tree, args: List[Tree]): Tree = {
+        var fun = fun0;
+	if (fun.hasSymbol && (fun.symbol hasFlag OVERLOADED)) {
+          // preadapt symbol to number of arguments given
+	  val argtypes = args map (arg => AllClass.tpe)
+	  val pre = fun.symbol.tpe.prefix
+          val sym = fun.symbol filter (alt =>
+            isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt))
+          if (sym != NoSymbol)
+	    fun = adapt(fun setSymbol sym setType pre.memberType(sym), funmode, WildcardType)
+        }
+        fun.tpe match {
+          case OverloadedType(pre, alts) =>
+            val args1 = typedArgs(args)
+            inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt)
+            typedApply(adapt(fun, funmode, WildcardType), args1)
+          case MethodType(formals0, restpe) =>
+            val formals = formalTypes(formals0, args.length)
+            if (formals.length != args.length) {
+              //System.out.println(""+formals.length+" "+args.length);//DEBUG
+              errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
+            } else {
+              val tparams = context.undetparams
+              context.undetparams = List()
+              if (tparams.isEmpty) {
+                val args1 = List.map2(args, formals)(typedArg)
+                def ifPatternSkipFormals(tp: Type) = tp match {
+                  case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
+                  case _ => tp
+                }
+                constfold(copy.Apply(tree, fun, args1).setType(ifPatternSkipFormals(restpe)))
+              } else {
+                assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
+                val lenientTargs = protoTypeArgs(tparams, formals, restpe, pt)
+                val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
+                  if (targ == WildcardType) tparam.tpe else targ)
+                def typedArgToPoly(arg: Tree, formal: Type): Tree = {
+                  val lenientPt = formal.subst(tparams, lenientTargs)
+                  val arg1 = typedArg(arg, lenientPt)
+                  val argtparams = context.undetparams
+                  context.undetparams = List()
+                  if (!argtparams.isEmpty) {
+                    val strictPt = formal.subst(tparams, strictTargs)
+                    inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
+                  }
+                  arg1
+                }
+                val args1 = List.map2(args, formals)(typedArgToPoly)
+                if (args1 exists (.tpe.isError)) setError(tree)
+                else {
+                  if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(.tpe)+", pt = "+pt+", lobounds = "+tparams.map(.tpe.bounds.lo));//debug
+                  val undetparams = inferMethodInstance(fun, tparams, args1, pt)
+                  val result = typedApply(fun, args1)
+                  context.undetparams = undetparams
+                  result
+                }
               }
             }
-          }
-        case ErrorType =>
-          setError(tree)
-        case _ =>
-	  errorTree(tree, ""+fun+" does not take parameters")
+          case ErrorType =>
+            setError(tree)
+          case _ =>
+            errorTree(tree, ""+fun+" does not take parameters")
+        }
       }
 
       def tryTypedArgs(args: List[Tree]) = {
@@ -1072,31 +1081,25 @@ trait Typers requires Analyzer {
         }
       }
 
+      /** Try to apply function to arguments; if it does not work try to insert an implicit
+       *  conversion
+       */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val reportGeneralErrors = context.reportGeneralErrors
-        val reportAmbiguousErrors = context.reportAmbiguousErrors
         try {
           context.reportGeneralErrors = false
-          context.reportAmbiguousErrors = false
           typedApply(fun, args)
         } catch {
           case ex: TypeError =>
             val Select(qual, name) = fun
-            var qual1 = qual;
-            var args1 = tryTypedArgs(args)
+            val args1 = tryTypedArgs(args map UnTyper.apply)
             context.reportGeneralErrors = reportGeneralErrors
-            context.reportAmbiguousErrors = reportAmbiguousErrors
-            if (args1 != null && !args1.exists(.tpe.isError) && !pt.isError) {
-              qual1 = adaptToMember(qual, name, MethodType(args1 map (.tpe), pt))
-            }
-            val args2 = args map UnTyper.apply;
-            val tree1 =
-              if (qual1 eq qual) Apply(UnTyper.apply(fun), args2)
-              else Apply(Select(UnTyper.apply(qual1), name) setPos fun.pos, args2)
-            typed1(tree1 setPos tree.pos, mode | SNDTRYmode, pt)
+            val qual1 = if (args1 == null || pt.isError) qual
+                        else adaptToMember(qual, name, MethodType(args1 map (.tpe), pt))
+            val tree1 = Apply(Select(qual1, name) setPos fun.pos, args map UnTyper.apply) setPos tree.pos
+            typed1(tree1, mode | SNDTRYmode, pt)
         } finally {
           context.reportGeneralErrors = reportGeneralErrors
-          context.reportAmbiguousErrors = reportAmbiguousErrors
         }
       }
 
@@ -1211,8 +1214,11 @@ trait Typers requires Analyzer {
 	    if (impSym.tpe != NoType) {
 	      var impSym1 = NoSymbol
 	      var imports1 = imports.tail
-	      def ambiguousImportError = ambiguousError(
-		"it is imported twice in the same scope by\n"+imports.head +  "\nand "+imports1.head)
+	      def ambiguousImport() = {
+                if (!(imports.head.qual.tpe =:= imports1.head.qual.tpe))
+                  ambiguousError(
+		    "it is imported twice in the same scope by\n"+imports.head +  "\nand "+imports1.head)
+              }
 	      while (!imports1.isEmpty &&
                      (!imports.head.isExplicitImport(name) ||
                       imports1.head.depth == imports.head.depth)) {
@@ -1220,11 +1226,11 @@ trait Typers requires Analyzer {
 		if (impSym1 != NoSymbol) {
 		  if (imports1.head.isExplicitImport(name)) {
 		    if (imports.head.isExplicitImport(name) ||
-                        imports1.head.depth != imports.head.depth) ambiguousImportError
+                        imports1.head.depth != imports.head.depth) ambiguousImport()
                     impSym = impSym1;
 		    imports = imports1
 		  } else if (!imports.head.isExplicitImport(name) &&
-                             imports1.head.depth == imports.head.depth) ambiguousImportError
+                             imports1.head.depth == imports.head.depth) ambiguousImport()
 		}
 		imports1 = imports1.tail
 	      }
@@ -1455,14 +1461,6 @@ trait Typers requires Analyzer {
             // if function is overloaded, filter all alternatives that match
 	    // number of arguments and expected result type.
 	    if (settings.debug.value) log("trans app "+fun1+":"+fun1.symbol+":"+fun1.tpe+" "+args);//DEBUG
-	    if (fun1.hasSymbol && (fun1.symbol hasFlag OVERLOADED)) {
-	      val argtypes = args map (arg => AllClass.tpe)
-	      val pre = fun1.symbol.tpe.prefix
-              val sym = fun1.symbol filter (alt =>
-                isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt))
-              if (sym != NoSymbol)
-		fun1 = adapt(fun1 setSymbol sym setType pre.memberType(sym), funmode, WildcardType)
-            }
 	    if (util.Statistics.enabled) appcnt = appcnt + 1
             if (xviews &&
                 fun1.isInstanceOf[Select] &&
@@ -1669,77 +1667,96 @@ trait Typers requires Analyzer {
       case _ => tp.isError
     }
 
-    private def typedImplicit(pos: int, info: ImplicitInfo, pt: Type, local: boolean): Tree =
-      if (isCompatible(depoly(info.tpe), pt) && !containsError(info.tpe)) {
-	var tree: Tree = EmptyTree
+    /** Try to construct a typed tree from given implicit info with given expected type
+     *  @param pos     Position for error reporting
+     *  @param info    The given implicit info describing the implicit definition
+     *  @param pt      The expected type
+     *  @param isLocal Is implicit definition visible without prefix?
+     *  @returns A typed tree if the implicit info can be made to conform to `pt', EmptyTree otherwise.
+     *  @pre info.tpe does not contain an error
+     */
+    private def typedImplicit(pos: int, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree =
+      if (isCompatible(depoly(info.tpe), pt)) {
+        val tree = Ident(info.name) setPos pos
         def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
           if (settings.debug.value)
-            log(""+tree+" is not a valid implicit value because:\n"+reason +
-                sym1+" "+sym2);
+            log(""+tree+" is not a valid implicit value because:\n"+reason + sym1+" "+sym2);
           EmptyTree
         }
-	try {
-          tree = Ident(info.name) setPos pos
-          if (!local) tree setSymbol info.sym
-	  tree = typed1(tree, EXPRmode, pt)
-	  if (settings.debug.value)
-            log("typed implicit "+tree+":"+tree.tpe+", pt = "+pt);//debug
-	  val tree1 = adapt(tree, EXPRmode, pt)
-	  if (settings.debug.value)
-            log("adapted implicit "+tree.symbol+":"+tree1.tpe+" to "+pt);//debug
-	  if (tree1.tpe != ErrorType && info.sym == tree.symbol) tree1
-          else fail("syms differ: ", tree.symbol, info.sym)
-	} catch {
+        try {
+          if (!isLocal) tree setSymbol info.sym
+	  val tree1 = typed1(tree, EXPRmode, pt)
+	  if (settings.debug.value) log("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt);
+	  val tree2 = adapt(tree1, EXPRmode, pt)
+	  if (settings.debug.value) log("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt);
+	  if (!tree2.tpe.isError && info.sym == tree1.symbol) tree2
+          else fail("syms differ: ", tree1.symbol, info.sym)
+        } catch {
 	  case ex: TypeError => fail(ex.getMessage(), NoSymbol, NoSymbol)
-	}
+        }
       } else EmptyTree
 
+    /** Infer implicit argument or view
+     *  @param  pos     position for error reporting
+     *  @param  pt      the expected type of the implicit
+     *  @param  isView  are we searching for a view? (this affects the error message)
+     *  @param  reportAmbiguous  should ambiguous errors be reported? False iff we search for a view
+     *              to find out whether one type is coercible to another (@see isCoercible)
+     */
     private def inferImplicit(pos: int, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
 
       if (util.Statistics.enabled) implcnt = implcnt + 1
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l
 
-      def isBetter(sym1: Symbol, tpe1: Type, sym2: Symbol, tpe2: Type): boolean = (
-        sym2.isError ||
-	(sym1.owner != sym2.owner) && (sym1.owner isSubClass sym2.owner) && (tpe1 matches tpe2)
-      )
       val tc = newTyper(context.makeImplicit(reportAmbiguous))
 
-      def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], local: boolean): Tree = {
-	var iss = implicitInfoss
-	var tree: Tree = EmptyTree
-	while (tree == EmptyTree && !iss.isEmpty) {
-	  var is = iss.head
-	  iss = iss.tail
-	  while (!is.isEmpty) {
-	    tree = tc.typedImplicit(pos, is.head, pt, local)
-            if (settings.debug.value) log("tested "+is.head.sym + is.head.sym.locationString+":"+is.head.tpe+"="+tree);//debug
-	    val is0 = is
-	    is = is.tail
-	    if (tree != EmptyTree) {
-	      while (!is.isEmpty) {
-		val tree1 = tc.typedImplicit(pos, is.head, pt, local)
-		if (tree1 != EmptyTree) {
-		  if (isBetter(is.head.sym, tree1.tpe, is0.head.sym, tree.tpe))
-		    tree = tree1
-		  else if (!isBetter(is0.head.sym, tree.tpe, is.head.sym, tree1.tpe))
-		    error(
-		      pos,
-		      "ambiguous implicit value:\n" +
-		      " both "+is0.head.sym + is0.head.sym.locationString+" of type "+tree.tpe +
-		      "\n and "+is.head.sym + is.head.sym.locationString+" of type "+tree1.tpe +
-		      (if (isView)
-			  "\n are possible conversion functions from "+
-			 pt.typeArgs(0)+" to "+pt.typeArgs(1)
-		       else
-			 "\n match expected type "+pt))
-		}
-		is = is.tail
-	      }
-	    }
-	  }
-	}
-	tree
+      def ambiguousError(info1: ImplicitInfo, info2: ImplicitInfo) =
+	error(
+	  pos,
+	  "ambiguous implicit value:\n" +
+	  " both "+info1.sym + info1.sym.locationString+" of type "+info1.tpe+
+	  "\n and "+info2.sym + info2.sym.locationString+" of type "+info2.tpe+
+	  (if (isView) "\n are possible conversion functions from "+ pt.typeArgs(0)+" to "+pt.typeArgs(1)
+	   else "\n match expected type "+pt))
+
+      /** Search list of implicit info lists for one matching prototype `pt'
+       *  If found return a tree from found implicit info which is typed with expected type `pt'.
+       *  Otherwise return EmptyTree
+       *  @param implicitInfoss    The given list of lists of implicit infos
+       *  @isLocal                 Is implicit definition visible without prefix?
+       *                           If this is the case then symbols in preceding lists shadow
+       *                           symbols of the same name in succeeding lists.
+       */
+      def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], isLocal: boolean): Tree = {
+        def isSubClassOrObject(sym1: Symbol, sym2: Symbol) = {
+          (sym1 isSubClass sym2) ||
+          sym1.isModuleClass && sym2.isModuleClass &&
+          (sym1.sourceModule.linkedClass isSubClass sym2.sourceModule.linkedClass)
+        }
+        def improves(info1: ImplicitInfo, info2: ImplicitInfo) =
+          (info2 == NoImplicitInfo) ||
+          (info1 != NoImplicitInfo) &&
+          isSubClassOrObject(info1.sym.owner, info2.sym.owner) &&
+          isStrictlyBetter(info1.tpe, info2.tpe)
+        val shadowed = new HashSet[Name](8)
+        def isApplicable(info: ImplicitInfo): boolean =
+          !containsError(info.tpe) &&
+          !(isLocal && shadowed.contains(info.name)) &&
+          tc.typedImplicit(pos, info, pt, isLocal) != EmptyTree
+        def applicableInfos(is: List[ImplicitInfo]) = {
+          val result = is filter isApplicable
+          if (isLocal)
+            for (val i <- is) shadowed addEntry i.name
+          result
+        }
+        val applicable = List.flatten(implicitInfoss map applicableInfos)
+	val best = (NoImplicitInfo /: applicable) ((best, alt) => if (improves(alt, best)) alt else best)
+	val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
+        if (best == NoImplicitInfo) EmptyTree
+        else {
+          if (!competing.isEmpty) ambiguousError(best, competing.head)
+          tc.typedImplicit(pos, best, pt, isLocal)
+        }
       }
 
       def implicitsOfType(tp: Type): List[List[ImplicitInfo]] = {

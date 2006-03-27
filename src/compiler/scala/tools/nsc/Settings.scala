@@ -89,6 +89,7 @@ class Settings(error: String => unit) {
   val log           = PhasesSetting ("-log", "Log operations in")
   val version       = BooleanSetting("-version", "Print product version and exit")
   val help          = BooleanSetting("-help", "Print a synopsis of standard options")
+//  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
 
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
@@ -190,7 +191,7 @@ class Settings(error: String => unit) {
    *  (the empty list, unless set)
    */
   case class PhasesSetting(name: String, descr: String)
-  extends Setting(name, descr + " <phases> (see below)") {
+  extends Setting(name, descr + " <phase>") { // (see -showphases)") {
     var value: List[String] = List()
 
     def tryToSet(args: List[String]): List[String] = args match {

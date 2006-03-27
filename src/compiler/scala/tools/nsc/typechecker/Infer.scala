@@ -423,6 +423,13 @@ trait Infer requires Analyzer {
 	false
     }
 
+    /** Is type `tpe1' a strictly better alternative than type `ftpe2'? */
+    def isStrictlyBetter(tpe1: Type, tpe2: Type) = {
+      def isNullary(tpe: Type) = tpe.paramSectionCount == 0 || tpe.paramTypes.isEmpty
+      isNullary(tpe1) && !isNullary(tpe2) ||
+      specializes(tpe1, tpe2) && !specializes(tpe2, tpe1)
+    }
+
     /** error if arguments not within bounds. */
     def checkBounds(pos: int, tparams: List[Symbol], targs: List[Type], prefix: String): unit =
       if (!isWithinBounds(tparams, targs)) {
@@ -598,8 +605,7 @@ trait Infer requires Analyzer {
 	      val tp2 = pre.memberType(sym2);
 	      (tp2 == ErrorType ||
 	       !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
-	       ((tp2.paramSectionCount > 0 && !tp2.paramTypes.isEmpty) && (tp1.paramSectionCount == 0 || tp1.paramTypes.isEmpty)) ||
-               specializes(tp1, tp2) && !specializes(tp2, tp1))
+               isStrictlyBetter(tp1, tp2))
              })
         );
 	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
@@ -636,15 +642,15 @@ trait Infer requires Analyzer {
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
 	if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);
-	val alts1 = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
+	val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
 	def improves(sym1: Symbol, sym2: Symbol) = (
 	  sym2 == NoSymbol || sym2.isError ||
 	  ((sym1.owner isSubClass sym2.owner) &&
 	   specializes(pre.memberType(sym1), pre.memberType(sym2)))
 	);
-	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
+	val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
 	  if (improves(alt, best)) alt else best);
-	val competing = alts1 dropWhile (alt => best == alt || improves(best, alt));
+	val competing = applicable dropWhile (alt => best == alt || improves(best, alt));
 	if (best == NoSymbol) {
 	  if (pt == WildcardType) {
 	    errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))

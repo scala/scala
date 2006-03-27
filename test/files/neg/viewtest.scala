@@ -54,6 +54,7 @@ object O {
 	}
       }
     }
+  implicit def view4[a](x: a): a = x;
 }
 
 trait Tree[+a <% Ordered[a]] {

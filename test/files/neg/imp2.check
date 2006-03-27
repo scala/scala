@@ -1,0 +1,7 @@
+imp2.scala:18 error: reference to f is ambiguous;
+it is imported twice in the same scope by
+import b.{_}
+and import a.{_}
+  val x = f
+          ^
+one error found
