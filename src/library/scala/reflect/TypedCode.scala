@@ -11,5 +11,5 @@
 
 package scala.reflect;
 
-
-class TypedCode[T](val code: Code) {}
+// This file is OBSOLETE, delete when build bootstraps without it
+class TypedCode[T](val code: Any) {}

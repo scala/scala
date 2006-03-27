@@ -12,18 +12,8 @@
 package scala.reflect;
 
 
-abstract class Code;
+class Code[Type](val tree: Tree) {}
 
-case class Ident(sym: Symbol) extends Code;
-case class Select(qual: Code, sym: Symbol) extends Code;
-case class Literal(value: Any) extends Code;
-case class Apply(fun: Code, args: List[Code]) extends Code;
-case class TypeApply(fun: Code, args: List[Type]) extends Code;
-case class Function(params: List[Symbol], body: Code) extends Code;
-case class This(sym: Symbol) extends Code;
-case class Block(stats: List[Code], expr: Code) extends Code;
-case class New(sym: Code) extends Code;
-case class If(condition: Code, trueCase: Code, falseCase: Code) extends Code;
-case class Assign(destination: Code, source: Code) extends Code;
-case class Target(sym: LabelSymbol, body: Code) extends Code;
-case class Goto(target: LabelSymbol) extends Code;
+object Code {
+	def lift[A](tree: A): Code[A] = throw new Error("Code was not lifted by compiler")
+}

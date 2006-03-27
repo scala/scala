@@ -59,7 +59,8 @@ trait Definitions requires SymbolTable {
       def ScalaObjectClass_tag = getMember(ScalaObjectClass,  nme.tag );
     var AttributeClass: Symbol = _;
     var RefClass: Symbol = _;
-    var TypedCodeClass: Symbol = _;
+    var CodeClass: Symbol = _;
+    var CodeModule: Symbol = _;
     var PartialFunctionClass: Symbol = _;
     var IterableClass: Symbol = _;
       def Iterable_next = getMember(IterableClass, nme.next);
@@ -344,7 +345,8 @@ trait Definitions requires SymbolTable {
       ScalaObjectClass = getClass("scala.ScalaObject");
       AttributeClass = getClass("scala.Attribute");
       RefClass = getClass("scala.Ref");
-      TypedCodeClass = getClass("scala.reflect.TypedCode");
+      CodeClass = getClass("scala.reflect.Code");
+      CodeModule = getModule("scala.reflect.Code");
       PartialFunctionClass = getClass("scala.PartialFunction");
       IterableClass = getClass("scala.Iterable");
       IteratorClass = getClass("scala.Iterator");

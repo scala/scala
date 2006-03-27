@@ -237,6 +237,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this;
   }
 
+  object codify extends Codify {
+    val global: Global.this.type = Global.this;
+  }
+
   object uncurry extends UnCurry {
     val global: Global.this.type = Global.this;
   }
@@ -312,6 +316,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     superAccessors,
     pickler,
     refchecks,
+    codify,
     uncurry,
     tailCalls,
     transMatcher,

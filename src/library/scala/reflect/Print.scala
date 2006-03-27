@@ -15,10 +15,10 @@ package scala.reflect;
 object Print extends Function1[Any, String] {
 
   def apply (any: Any): String = {
-    if (any.isInstanceOf[TypedCode[Any]])
-      apply(any.asInstanceOf[TypedCode[Any]])
-    else if (any.isInstanceOf[Code])
-      apply(any.asInstanceOf[Code])
+    if (any.isInstanceOf[Code[Any]])
+      apply(any.asInstanceOf[Code[Any]])
+    else if (any.isInstanceOf[Tree])
+      apply(any.asInstanceOf[Tree])
     else if (any.isInstanceOf[Symbol])
       apply(any.asInstanceOf[Symbol])
     else if (any.isInstanceOf[Type])
@@ -26,10 +26,10 @@ object Print extends Function1[Any, String] {
     else "UnknownAny"
   }
 
-  def apply (typedCode: TypedCode[Any]): String =
-    Print(typedCode.code);
+  def apply (code: Code[Any]): String =
+    Print(code.tree);
 
-  def apply (code: Code): String = code match {
+  def apply (tree: Tree): String = tree match {
     case reflect.Ident(sym) => Print(sym)
     case reflect.Select(qual, sym) => Print(qual) + "." + Print(sym)
     case reflect.Literal(value) => value match {
@@ -43,7 +43,7 @@ object Print extends Function1[Any, String] {
     case reflect.Block(stats, expr) => (stats ::: List(expr)).map(Print).mkString("{\n", ";\n", "\n}")
     case reflect.New(tpt) => "new " + Print(tpt)
     case reflect.If(condition, trueCase, falseCase) => "if (" + Print(condition) + ") " + Print(trueCase) + " else " + Print(falseCase)
-    case reflect.Assign(destination: Code, source: Code) => Print(destination) + " = " + Print(source)
+    case reflect.Assign(destination: Tree, source: Tree) => Print(destination) + " = " + Print(source)
     case reflect.Target(sym, body) => "target " + Print(sym) + " {\n" + Print(body) + "\n}"
     case reflect.Goto(target) => "goto " + Print(target)
     case _ => "???"

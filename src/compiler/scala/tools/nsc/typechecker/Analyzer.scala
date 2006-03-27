@@ -15,8 +15,7 @@ trait Analyzer
 	    with Infer
 	    with Variances
             with EtaExpansion
-	    with SyntheticMethods
-	    with Codification {
+	    with SyntheticMethods {
 
   val global: Global;
   import global._;

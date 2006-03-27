@@ -1,21 +1,40 @@
 /* NSC -- new scala compiler
  * Copyright 2005 LAMP/EPFL
- * @author  Martin Odersky
+ * @author
  */
-// $Id$
-package scala.tools.nsc.typechecker;
+// $Id: LambdaLift.scala 5775 2006-02-17 15:17:25 +0100 (Fri, 17 Feb 2006) odersky $
+package scala.tools.nsc.transform;
 
+import symtab._;
+import Flags._;
+import util.TreeSet;
 import symtab.Flags._;
-import scala.collection.mutable.HashMap;
 import scala.collection.immutable.ListMap;
-import scala.collection.mutable.ListBuffer;
+import scala.collection.mutable.{HashMap, ListBuffer};
 import scala.tools.nsc.util.FreshNameCreator;
 
-trait Codification requires Analyzer {
+abstract class Codify extends Transform {
 
-  import global._;
+  import global._;                  // the global environment
+  import definitions._;             // standard classes and methods
+  import typer.{typed, atOwner};    // methods to type trees
+  import posAssigner.atPos;         // for filling in tree positions
 
-  case class FreeValue(tree: Tree) extends reflect.Code;
+  /** the following two members override abstract members in Transform */
+  val phaseName: String = "codify";
+
+  def newTransformer(unit: CompilationUnit): Transformer = new AddRefFields(unit);
+
+  class AddRefFields(unit: CompilationUnit) extends Transformer {
+    override def transform(tree: Tree): Tree = tree match {
+      case Apply(TypeApply(Select(x@Ident(_), nme.lift_), _), List(tree)) if x.symbol == CodeModule =>
+        typed(atPos(tree.pos)(codify(tree)))
+      case _ =>
+        super.transform(tree)
+    }
+  }
+
+  case class FreeValue(tree: Tree) extends reflect.Tree;
 
   class ReifyEnvironment extends HashMap[Symbol, reflect.Symbol] {
     var targets = new HashMap[String, Option[reflect.LabelSymbol]]()
@@ -40,9 +59,7 @@ trait Codification requires Analyzer {
 
   class Reifier(env: ReifyEnvironment, currentOwner: reflect.Symbol) {
 
-    def testCompletion: Boolean = env.hasAllTargets
-
-    def reify(tree: Tree): reflect.Code = tree match {
+    def reify(tree: Tree): reflect.Tree = tree match {
       case Ident(_) =>
         val rsym = reify(tree.symbol);
         if (rsym == reflect.NoSymbol) FreeValue(tree)
@@ -116,34 +133,8 @@ trait Codification requires Analyzer {
         }
     }
 
-    def reify(tp: Type): reflect.Type = null /*tp match {
-      case NoPrefix =>
-        reflect.NoPrefix
-      case NoType =>
-        reflect.NoType
-      case TypeRef(pre, sym, args) =>
-        val tp = if (sym.owner.isPackageClass) reflect.NamedType(sym.fullNameString);
-                 else reflect.PrefixedType(reify(pre), reify(sym));
-        if (args.isEmpty) tp else reflect.AppliedType(tp, args map reify)
-      case SingleType(pre, sym) =>
-        reflect.SingleType(reify(pre), reify(sym))
-      case ThisType(clazz) =>
-        reflect.ThisType(reify(clazz))
-      case TypeBounds(lo, hi) =>
-        reflect.TypeBounds(reify(lo), reify(hi))
-      case MethodType(formals, restp) =>
-        val formals1 = formals map reify;
-        val restp1 = reify(restp);
-        if (tp.isInstanceOf[ImplicitMethodType]) new reflect.ImplicitMethodType(formals1, restp1)
-        else reflect.MethodType(formals1, restp1)
-      //case PolyType(typeParams, ClassInfoType(parents, decls, symbol)) => reflect.PolyType(typeParams map reify, Nil, resultType)
-      //case PolyType(typeParams, SingleType(pre, sym)) => reflect.PolyType(typeParams map reify, Nil, resultType)
-      case PolyType(typeParams, MethodType(paramsList, resultType)) =>
-        System.err.println("poly polyyyy");
-        reflect.PolyType(Nil, Nil , reify(resultType)) //typeParams map mkTypeBounds
-      case _ =>
-        throw new TypeError("cannot reify type: " + tp)
-    }*/
+    def reify(tp: Type): reflect.Type = null
+
   }
 
   type InjectEnvironment = ListMap[reflect.Symbol, Name];
@@ -195,8 +186,6 @@ trait Codification requires Analyzer {
       case _ => ""
     }
 
-    def injectType(name: String): Tree = TypeTree(definitions.getClass(name).initialize.tpe);
-
     def inject(value: Any): Tree = value match {
       case FreeValue(tree) =>
         New(Ident(definitions.getClass("scala.reflect.Literal")), List(List(tree)))
@@ -224,26 +213,51 @@ trait Codification requires Analyzer {
       case null => gen.mkRef(definitions.getModule("scala.reflect.NoType"))
       case _ => throw new Error("don't know how to inject " + value);
     }
+
   }
 
-  def reify(tree: Tree): reflect.Code =
+  def reify(tree: Tree): reflect.Tree =
     new Reifier(new ReifyEnvironment(), reflect.NoSymbol).reify(tree);
 
-  def inject(code: reflect.Code): Tree =
+  def inject(code: reflect.Tree): Tree =
     new Injector(ListMap.Empty, new FreshNameCreator).inject(code);
 
-  /** returns
-   *  < new TypedCode[T](tree1) >
-   * where T = tree.tpe
-   *       tree1 = inject(reify(tree))
-   */
-  def codify(tree: Tree): Tree = {
-    val reified = reify(tree);
-    if (settings.debug.value) log("reified = " + reified);
-    val injected = inject(reified);
-    if (settings.debug.value) log("injected = " + injected);
-    New(TypeTree(appliedType(definitions.TypedCodeClass.typeConstructor, List(tree.tpe))),
-        List(List(injected)));
+  def codify (tree: Tree): Tree =
+    New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(tree.tpe))),List(List(inject(reify(tree)))))
 
-  }
 }
+
+// case EmptyTree =>
+// case LiftPoint(tree) =>
+// case PackageDef(name, stats) =>
+// case ClassDef(mods, name, tparams, tpt, impl) =>
+// case ValDef(mods, name, tpt, rhs) =>
+// case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+// case AbsTypeDef(mods, name, lo, hi) =>
+// case AliasTypeDef(mods, name, tparams, rhs) =>
+// case LabelDef(name, params, rhs) =>
+// case Template(parents, body) =>
+// case Block(stats, expr) =>
+// case ArrayValue(elemtpt, trees) =>
+// case Assign(lhs, rhs) =>
+// case If(cond, thenp, elsep) =>
+// case Match(selector, cases) =>
+// case Return(expr) =>
+// case Try(block, catches, finalizer) =>
+// case Throw(expr) =>
+// case New(tpt) =>
+// case Typed(expr, tpt) =>
+// case TypeApply(fun, args) =>
+// case Apply(fun, args) =>
+// case Super(qual, mix) =>
+// case This(qual) =>
+// case Select(qualifier, selector) =>
+// case Ident(name) =>
+// case Literal(value) =>
+// case TypeTree() =>
+// /* Pattern matching */
+// case CaseDef(pat, guard, body) =>
+// case Sequence(trees) =>
+// case Alternative(trees) =>
+// case Star(elem) =>
+// case Bind(name, body) =>
