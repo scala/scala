@@ -69,7 +69,8 @@ class Settings(error: String => unit) {
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
-  val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", "ISO-8859-1")
+  val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files",
+                                      java.nio.charset.Charset.defaultCharset.name)
   val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
   val debug         = BooleanSetting("-debug", "Output debugging messages")
