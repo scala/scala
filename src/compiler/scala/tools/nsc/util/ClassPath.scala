@@ -43,6 +43,7 @@ class ClassPath(onlyPresentation: Boolean) {
     def source = if (sourceFile != null) new Source(sourceFile, true) else null
   }
 
+
   class Library(location0: AbstractFile) extends Entry(location0) {
     def doc: AbstractFile = null
     def sourceFile: AbstractFile = null
@@ -77,6 +78,7 @@ class ClassPath(onlyPresentation: Boolean) {
           }
         }
       }
+
       val ret = find0(entries)
       if (ret.entries.isEmpty) {
         System.err.println("BAD_FILE: " + name + " in " + this)
@@ -114,7 +116,9 @@ class ClassPath(onlyPresentation: Boolean) {
       def head = entries.head
       def clazz = head.location
       def source = if (head.source == null) null else head.source.location
-      def isPredef = source.getName().equals("Predef.scala")
+      def isPredef = source.getName().equals("Predef.scala") ||
+                     source.getPath().startsWith("scala/runtime");
+
 
       if (entries.isEmpty || entries.isEmpty || source == null) false
       else if (!onlyPresentation && !head.source.compile) false
