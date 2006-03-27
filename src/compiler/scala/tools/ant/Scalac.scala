@@ -468,7 +468,7 @@ package scala.tools.ant {
       try {
         (new compiler.Run).compile(sourceFiles.map(f:File=>f.toString()))
         if (reporter.errors > 0)
-          error (
+          log (
             "Compile failed with " +
             reporter.errors + " error" +
             (if (reporter.errors > 1) "s" else "") +
