@@ -23,7 +23,7 @@ trait Typers requires Analyzer {
   var implcnt = 0
   var impltime = 0l
 
-  final val xviews = true
+  final val xviews = false
 
   private val transformed = new HashMap[Tree, Tree]
 
@@ -903,29 +903,33 @@ trait Typers requires Analyzer {
       val Triple(clazz, argpts, respt) =
         decompose(if (pt.symbol isSubClass TypedCodeClass) pt.typeArgs.head else pt)
 
-      val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
-        if (vparam.tpt.isEmpty)
-          vparam.tpt.tpe =
-            if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
-	    else argpt
-        namer.enterSym(vparam)
-	vparam.symbol
+      if (fun.vparams.length != argpts.length)
+        errorTree(fun, "wrong number of parameters; expected = "+argpts.length)
+      else {
+        val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
+          if (vparam.tpt.isEmpty)
+            vparam.tpt.tpe =
+              if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
+              else argpt
+          namer.enterSym(vparam)
+          vparam.symbol
+        }
+        val vparams = List.mapConserve(fun.vparams)(typedValDef)
+        for (val vparam <- vparams) {
+          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
+        }
+        val body = checkNoEscaping.locals(context.scope, respt, typed(fun.body, respt))
+        val formals = vparamSyms map (.tpe)
+        val restpe = body.tpe.deconst
+        val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
+        val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
+          .setType(funtpe)
+        if (pt.symbol isSubClass TypedCodeClass) typed(atPos(fun.pos)(codify(fun1)))
+        // last line should be:
+        // if (pt.symbol isSubClass TypedCodeClass) typed(atPos(fun.pos)(Code(fun1)))
+        // except that we have to think how to preserve attributes
+        else fun1
       }
-      val vparams = List.mapConserve(fun.vparams)(typedValDef)
-      for (val vparam <- vparams) {
-	checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
-      }
-      val body = checkNoEscaping.locals(context.scope, respt, typed(fun.body, respt))
-      val formals = vparamSyms map (.tpe)
-      val restpe = body.tpe.deconst
-      val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
-      val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
-        .setType(funtpe)
-      if (pt.symbol isSubClass TypedCodeClass) typed(atPos(fun.pos)(codify(fun1)))
-      // last line should be:
-      // if (pt.symbol isSubClass TypedCodeClass) typed(atPos(fun.pos)(Code(fun1)))
-      // except that we have to think how to preserve attributes
-      else fun1
     }
 
     def typedRefinement(stats: List[Tree]): List[Tree] = {
