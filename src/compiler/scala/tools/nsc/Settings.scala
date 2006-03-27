@@ -18,9 +18,12 @@ class Settings(error: String => unit) {
     else null
 
   private val classpathDefault =
-    alternatePath(
-      getProperty("env.classpath"),
-      ".")
+		if (System.getProperty("env.classpath") != null)
+			alternatePath(
+	      getProperty("env.classpath"),
+				".")
+		else getProperty("java.class.path")
+
 
   private val bootclasspathDefault =
     alternatePath(
