@@ -122,7 +122,7 @@ trait Opcodes requires ICodes {
 
     /** Load a field on the stack. The object to which it refers should be
      * on the stack.
-     * Stack: ...:ref
+     * Stack: ...:ref       (assuming isStatic = false)
      *    ->: ...:value
      */
     case class LOAD_FIELD(field: Symbol, isStatic: boolean) extends Instruction {
@@ -130,7 +130,7 @@ trait Opcodes requires ICodes {
       override def toString(): String =
         "LOAD_FIELD " + (if (isStatic) field.fullNameString else field.toString());
 
-      override def consumed = 1;
+      override def consumed = if(isStatic) 0 else 1;
       override def produced = 1;
     }
 
@@ -170,7 +170,7 @@ trait Opcodes requires ICodes {
     }
 
     /** Store a value into a field.
-     * Stack: ...:ref:value
+     * Stack: ...:ref:value   (assuming isStatic=false)
      *    ->: ...
      */
     case class STORE_FIELD(field: Symbol, isStatic: boolean) extends Instruction {
@@ -178,7 +178,7 @@ trait Opcodes requires ICodes {
       override def toString(): String =
         "STORE_FIELD "+field.toString() + (if (isStatic) " (static)" else " (dynamic)");
 
-      override def consumed = 2;
+      override def consumed = if(isStatic) 1 else 2;
       override def produced = 0;
     }
 
@@ -232,7 +232,10 @@ trait Opcodes requires ICodes {
 
         result;
       }
-      override def produced = 1;
+      override def produced =
+        if(toTypeKind(method.tpe.resultType) == UNIT)
+          0
+       else 1
     }
 
     /** Create a new instance of a class through the specified constructor
@@ -361,7 +364,7 @@ trait Opcodes requires ICodes {
       /** Returns a string representation of this instruction */
       override def toString(): String ="RETURN (" + kind + ")";
 
-      override def consumed = 0;
+      override def consumed = if(kind == UNIT) 0 else 1;
       override def produced = 0;
     }
 
