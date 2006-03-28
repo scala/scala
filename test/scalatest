@@ -443,8 +443,8 @@ FAILED="false";
 ERRORS=0;
 SUCCESS_COUNT=0;
 FAILURE_COUNT=0;
-TESTROOT="$PREFIX/test/files";
-SRCDIR="$PREFIX/test/files";
+TESTROOT="$PREFIX/test";
+SRCDIR="$TESTROOT/files";
 OBJDIR="""";
 
 TEST_ALL="true";
@@ -488,6 +488,7 @@ while [ $# -gt 0 ]; do
         --show-log   ) SHOWLOG="true"; shift 1;;
         --show-diff  ) SHOWDIFF="true"; shift 1;;
         --failed     ) FAILED="true"; shift 1;;
+        --pending    ) SRCDIR="$TESTROOT/pending"; shift 1;;
         --errors=    ) abort "illegal empty argument for option --errors";;
         --errors=*   ) ERRORS=`expr "$1" : "--errors=\([0-9]*\)$"`;shift 1;;
         --flags=     ) abort "illegal empty argument for option --flags";;
