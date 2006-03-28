@@ -2,9 +2,10 @@
 **   /  |/ / ____/ ____/                                                      **
 **  / | | /___  / /___                                                        **
 ** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
-**
-** $Id$
+**                                                                            **
 \*                                                                            */
+
+// $Id$
 
 package scala.tools.ant {
 
@@ -30,7 +31,8 @@ package scala.tools.ant {
     *  <li>platforms,</li>
     *  <li>version,</li>
     *  <li>copyright,</li>
-    *  <li>classpath,</li>
+    *  <li>bootclasspath,</li>
+    *  <li>extclasspath,</li>
     *  <li>properties,</li>
     *  <li>javaflags,</li>
     *  <li>toolflags,</li>
@@ -73,6 +75,8 @@ package scala.tools.ant {
     private var version: String = ""
     /** The optional copyright notice, that will be printed in the script. */
     private var copyright: String = "This file is copyrighted by its owner"
+    /** The optional boot classpath */
+    private var bootclasspath: List[String] = Nil
     /** An (optional) path to all JARs that this script depend on. Paths must be
       * relative to the scala home directory. If not set, all JAR archives in
       * "lib/" are automatically added. */
@@ -132,8 +136,13 @@ package scala.tools.ant {
     def setCopyright(input: String) =
       copyright = input
 
+    /** Sets the boot classpath attribute. Used by Ant.
+      * @param input The value of <code>bootclasspath</code>. */
+    def setBootclasspath(input: String) =
+      bootclasspath = bootclasspath ::: List.fromArray(input.split(":"))
+
     /** Sets the extension classpath attribute. Used by Ant.
-      * @param input The value of <code>classpath</code>. */
+      * @param input The value of <code>extclasspath</code>. */
     def setExtclasspath(input: String) =
       extclasspath = extclasspath ::: List.fromArray(input.split(":"))
 
@@ -167,6 +176,17 @@ package scala.tools.ant {
     private def getFile: File =
       if (file.isEmpty) error("Member 'file' is empty.")
       else getProject().resolveFile(file.get.toString())
+
+    /** Gets the value of the bootclasspath attribute in a Scala-friendly form.
+      * @returns The boot class path as a list of files. */
+    private def getUnixBootClasspath: String =
+      bootclasspath.mkString("", ":", "")
+
+    /** Gets the value of the bootclasspath attribute in a Scala-friendly form.
+      * @returns The boot class path as a list of files. */
+    private def getWinBootClasspath: String =
+      bootclasspath.map(.replace('/', '\\')).
+                mkString("", ";", "")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
@@ -256,6 +276,7 @@ package scala.tools.ant {
       val resourceRoot = "scala/tools/ant/templates/"
       if (platforms.contains("unix")) {
         val unixPatches = expandUnixVar(patches.
+          update("bootclasspath", getUnixBootClasspath).
           update("extclasspath", getUnixExtClasspath))
         val unixTemplateResource = resourceRoot + template + "-unix.tmpl"
         val unixTemplate = readResource(unixTemplateResource, unixPatches)
@@ -263,6 +284,7 @@ package scala.tools.ant {
       }
       if (platforms.contains("windows")) {
         val winPatches = expandWinVar(patches.
+          update("bootclasspath", getWinBootClasspath).
           update("extclasspath", getWinExtClasspath))
         val winTemplateResource = resourceRoot + template + "-windows.tmpl"
         val winTemplate = readResource(winTemplateResource, winPatches)

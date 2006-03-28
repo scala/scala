@@ -36,7 +36,7 @@ USER_CLASSPATH="."
 USER_ARGS=""
 
 if [ "$EXTENSION_CLASSPATH" == "" ] ; then
-    for jar in `ls $SCALA_HOME/lib/*.jar` ; do
+    for jar in `ls "$SCALA_HOME"/lib/*.jar` ; do
         EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$jar"
     done
     EXTENSION_CLASSPATH=${EXTENSION_CLASSPATH:1}
@@ -72,8 +72,8 @@ else
     fi
 fi
 
-BOOT_CLASSPATH=""
-if [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
+BOOT_CLASSPATH="@bootclasspath@"
+if [[ "$BOOT_CLASSPATH" == "" && -f "$SCALA_HOME/lib/scala-library.jar" ]] ; then
     BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
 fi
 
