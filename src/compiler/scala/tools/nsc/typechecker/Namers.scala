@@ -85,9 +85,10 @@ trait Namers requires Analyzer {
 
     def enterInScope(sym: Symbol): Symbol = {
       // allow for overloaded methods
-      if (!(sym.isSourceMethod && sym.owner.isClass)) {
+      if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
       	val prev = context.scope.lookupEntry(sym.name);
-      	if (prev != null && prev.owner == context.scope && !prev.sym.isSourceMethod) {
+      	if (prev != null && prev.owner == context.scope &&
+            (!prev.sym.isSourceMethod || sym.owner.isPackageClass)) {
 /*
       	  if (sym.sourceFile == null && prev.sym.sourceFile == null) {}
 
@@ -134,12 +135,10 @@ trait Namers requires Analyzer {
       if (c.owner.isPackageClass) {
       	val file = context.unit.source.getFile();
       	val clazz = c.asInstanceOf[ClassSymbol];
-      	if (c.owner.isPackageClass) {
-      	  if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
-            System.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
-          }
-          clazz.sourceFile = file;
-      	}
+      	if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
+          System.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
+        }
+        clazz.sourceFile = file;
       	if (clazz.sourceFile != null) {
       	  assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
       	  currentRun.symSource(c) = clazz.sourceFile

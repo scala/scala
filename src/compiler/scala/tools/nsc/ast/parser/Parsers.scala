@@ -1838,7 +1838,10 @@ trait Parsers requires SyntaxAnalyzer {
           if (in.token != RBRACE && in.token != CASE) acceptStatSep();
         } else if (isDefIntro) {
           stats ++= defOrDcl(NoMods);
-          acceptStatSep();
+          if (in.token == RBRACE || in.token == CASE)
+            syntaxError("block must end in result expression, not in definition", false)
+          else
+            acceptStatSep();
           if (in.token == RBRACE || in.token == CASE) {
             stats += Literal(()).setPos(in.currentPos)
           }
