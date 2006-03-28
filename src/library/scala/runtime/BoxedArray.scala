@@ -46,6 +46,13 @@ abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] 
     Array.copy(value, from, dest, to, len)
   }
 
+  override def toArray[b>:Object]: Array[b] = {
+    val len = length
+    val res = new Array[b](len)
+    copyTo(0, res, 0, len)
+    res
+  }
+
   def subArray(from: Int, end: Int): Object
 
   def filter(p: Any => Boolean): Object
