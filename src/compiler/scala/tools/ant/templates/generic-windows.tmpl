@@ -36,6 +36,7 @@ if "%_BOOT_CLASSPATH%"=="" (
   )
 )
 
+rem We use the value of the CLASSPATH environment variable if defined
 set _USER_CLASSPATH=%CLASSPATH%
 if "%_USER_CLASSPATH%"=="" set _USER_CLASSPATH=.
 
@@ -52,7 +53,7 @@ goto loop
 
 :cpath
 shift
-if "%1"=="" goto help
+if (%1)==() goto help
 set _USER_CLASSPATH=%1
 shift
 goto :loop
@@ -61,7 +62,8 @@ goto :loop
 if not "%_EXTENSION_CLASSPATH%"=="" set _MYCLASSPATH=%_USER_CLASSPATH%;%_EXTENSION_CLASSPATH%
 if not "%_BOOT_CLASSPATH%"=="" set _MYCLASSPATH=%_BOOT_CLASSPATH%;%_MYCLASSPATH%
 
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.boot.class.path="%_BOOT_CLASSPATH%" -Dscala.class.path="%_USER_CLASSPATH%" -Dscala.ext.path="%_EXTENSION_CLASSPATH%" -Denv.classpath="%CLASSPATH%" @properties@
+rem Variable _USER_CLASSPATH is set to CLASSPATH, %1 or . and DO NOT need to be quoted
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.boot.class.path="%_BOOT_CLASSPATH%" -Dscala.class.path=%_USER_CLASSPATH% -Dscala.ext.path="%_EXTENSION_CLASSPATH%" -Denv.classpath="%CLASSPATH%" @properties@
 
 rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
 %_JAVACMD% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
