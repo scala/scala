@@ -90,6 +90,7 @@ PROPERTIES
   <!-- sbaz properties -->
   <property name="sbaz.lib.name" value="${dist.name}-library"/>
   <property name="sbaz.dev.name" value="${dist.name}-devel"/>
+  <property name="sbaz.test.name" value="${dist.name}-test"/>
   <property name="sbaz.scala.name" value="${dist.name}"/>
   <property name="sbaz.univ.link" value="http://scala-webapps.epfl.ch/sbaz/scala-dev"/>
 
@@ -1076,6 +1077,20 @@ GENERATES A DISTRIBUTION
       depends="${sbaz.lib.name},${sbaz.dev.name}"
       link="${sbaz.univ.link}/${sbaz.scala.name}-${version.number}.sbp"
     />
+    <!-- Creates the Scala test package -->
+    <quicksbaz
+      file="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.advert"
+      name="${sbaz.test.name}"
+      version="${version.number}"
+      desc="The Scala test package contains everything needed to test Scala."
+      link="${sbaz.univ.link}/${sbaz.test.name}-${version.number}.sbp"
+    >
+      <miscset
+        dir="${basedir}/test"
+        includes="files/**/*.check,files/**/*.scala,scalatest"
+      />
+    </quicksbaz>
   </target>
 
 <!-- ===========================================================================
