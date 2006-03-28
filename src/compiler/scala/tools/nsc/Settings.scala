@@ -18,11 +18,11 @@ class Settings(error: String => unit) {
     else null
 
   private val classpathDefault =
-		if (System.getProperty("env.classpath") != null)
-			alternatePath(
-	      getProperty("env.classpath"),
-				".")
-		else getProperty("java.class.path")
+    if (System.getProperty("env.classpath") != null)
+      alternatePath(
+        getProperty("env.classpath"),
+        ".")
+    else getProperty("java.class.path")
 
 
   private val bootclasspathDefault =
@@ -57,6 +57,10 @@ class Settings(error: String => unit) {
     } else null
   }
 
+  private val encodingDefault =
+    new java.io.OutputStreamWriter(
+      new java.io.ByteArrayOutputStream()).getEncoding
+
   val doc           = BooleanSetting("-doc", "Generate documentation");
   val debuginfo     = BooleanSetting("-g", "Generate debugging info")
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
@@ -69,8 +73,7 @@ class Settings(error: String => unit) {
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
-  val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files",
-                                      java.nio.charset.Charset.defaultCharset.name)
+  val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault)
   val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
   val debug         = BooleanSetting("-debug", "Output debugging messages")
@@ -148,15 +151,12 @@ class Settings(error: String => unit) {
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) =>
         if (rest.isEmpty) {
-	  error("missing argument")
-	  List()
-	} else {
-	  value = rest.head
-	  rest.tail
-
-
-
-	}
+          error("missing argument")
+          List()
+        } else {
+          value = rest.head
+          rest.tail
+        }
       case _ => args
     }
 
