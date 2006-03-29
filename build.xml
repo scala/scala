@@ -92,7 +92,7 @@ PROPERTIES
   <property name="sbaz.dev.name" value="${dist.name}-devel"/>
   <property name="sbaz.test.name" value="${dist.name}-test"/>
   <property name="sbaz.scala.name" value="${dist.name}"/>
-  <property name="sbaz.univ.link" value="http://scala-webapps.epfl.ch/sbaz/scala-dev"/>
+  <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -1048,7 +1048,7 @@ GENERATES A DISTRIBUTION
       name="${sbaz.lib.name}"
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
-      link="${sbaz.univ.link}/${sbaz.lib.name}-${version.number}.sbp"
+      link="${sbaz.universe}/${sbaz.lib.name}-${version.number}.sbp"
     >
       <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${lib-dbc.jar.name}"/>
     </quicksbaz>
@@ -1060,7 +1060,7 @@ GENERATES A DISTRIBUTION
       version="${version.number}"
       desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
       depends="${sbaz.lib.name}"
-      link="${sbaz.univ.link}/${sbaz.dev.name}-${version.number}.sbp"
+      link="${sbaz.universe}/${sbaz.dev.name}-${version.number}.sbp"
     >
       <binset dir="${dist.current.dir}/bin" includes="**"/>
       <docset dir="${dist.current.dir}/doc" includes="**"/>
@@ -1075,7 +1075,7 @@ GENERATES A DISTRIBUTION
       version="${version.number}"
       desc="The base Scala package that contains everything needed to start using Scala."
       depends="${sbaz.lib.name},${sbaz.dev.name}"
-      link="${sbaz.univ.link}/${sbaz.scala.name}-${version.number}.sbp"
+      link="${sbaz.universe}/${sbaz.scala.name}-${version.number}.sbp"
     />
     <!-- Creates the Scala test package -->
     <quicksbaz
@@ -1084,7 +1084,7 @@ GENERATES A DISTRIBUTION
       name="${sbaz.test.name}"
       version="${version.number}"
       desc="The Scala test package contains everything needed to test Scala."
-      link="${sbaz.univ.link}/${sbaz.test.name}-${version.number}.sbp"
+      link="${sbaz.universe}/${sbaz.test.name}-${version.number}.sbp"
     >
       <miscset
         dir="${basedir}/test"
