@@ -77,6 +77,7 @@ PROPERTIES
   <!-- Shorcut names -->
   <property name="locker.lib.dir" value="${locker.dir}/${lib.dir.name}"/>
   <property name="locker.comp.dir" value="${locker.dir}/${comp.dir.name}"/>
+  <property name="locker.exec.dir" value="${locker.dir}/${exec.dir.name}"/>
   <property name="quick.lib.dir" value="${quick.dir}/${lib.dir.name}"/>
   <property name="quick.comp.dir" value="${quick.dir}/${comp.dir.name}"/>
   <property name="quick.dbc.dir" value="${quick.dir}/${dbc.dir.name}"/>
@@ -490,16 +491,16 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       classname="scala.tools.ant.ScalaTool"
       classpathref="locker.classpath"
     />
-    <mkdir dir="${locker.dir}/${exec.dir.name}"/>
+    <mkdir dir="${locker.exec.dir}"/>
     <lockertool
-      file="${locker.dir}/${exec.dir.name}/${scala.exec.name}"
+      file="${locker.exec.dir}/${scala.exec.name}"
       version="${version.number}"
       copyright="${copyright}"
       extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${dbc.dir.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <lockertool
-      file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
+      file="${locker.exec.dir}/${scalac.exec.name}"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
       version="${version.number}"
@@ -508,7 +509,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       javaFlags="-Xmx256M -Xms16M"
     />
     <lockertool
-      file="${locker.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      file="${locker.exec.dir}/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.Main"
       toolflags="-doc"
@@ -518,7 +519,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       javaFlags="-Xmx256M -Xms16M"
     />
     <lockertool
-      file="${locker.dir}/${exec.dir.name}/${scalaint.exec.name}"
+      file="${locker.exec.dir}/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
       version="${version.number}"
@@ -526,19 +527,19 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
     />
     <chmod
-      file="${locker.dir}/${exec.dir.name}/${scalac.exec.name}"
+      file="${locker.exec.dir}/${scalac.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${locker.dir}/${exec.dir.name}/${scala.exec.name}"
+      file="${locker.exec.dir}/${scala.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${locker.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      file="${locker.exec.dir}/${scaladoc.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${locker.dir}/${exec.dir.name}/${scalaint.exec.name}"
+      file="${locker.exec.dir}/${scalaint.exec.name}"
       perm="ugo+rx"
     />
     <!-- Mark LOCKER as being completely built -->
@@ -645,23 +646,23 @@ BUILD QUICK-TEST LAYER
     <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${quick.dir}"/>
     <build.links build.dir="${quick.dir}"/>
-    <echo>${quick.dir}/${exec.dir.name}</echo>
+    <echo>${quick.exec.dir}</echo>
     <!-- Build executable files -->
     <taskdef
       name="quicktool"
       classname="scala.tools.ant.ScalaTool"
       classpathref="quick.classpath"
     />
-    <mkdir dir="${quick.dir}/${exec.dir.name}"/>
+    <mkdir dir="${quick.exec.dir}"/>
     <quicktool
-      file="${quick.dir}/${exec.dir.name}/${scala.exec.name}"
+      file="${quick.exec.dir}/${scala.exec.name}"
       version="${version.number}"
       copyright="${copyright}"
       extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${dbc.dir.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <quicktool
-      file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
+      file="${quick.exec.dir}/${scalac.exec.name}"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
       version="${version.number}"
@@ -670,7 +671,7 @@ BUILD QUICK-TEST LAYER
       javaFlags="-Xmx256M -Xms16M"
     />
     <quicktool
-      file="${quick.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      file="${quick.exec.dir}/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.Main"
       toolflags="-doc"
@@ -680,7 +681,7 @@ BUILD QUICK-TEST LAYER
       javaFlags="-Xmx256M -Xms16M"
     />
     <quicktool
-      file="${quick.dir}/${exec.dir.name}/${scalaint.exec.name}"
+      file="${quick.exec.dir}/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
       version="${version.number}"
@@ -688,19 +689,19 @@ BUILD QUICK-TEST LAYER
       extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
     />
     <chmod
-      file="${quick.dir}/${exec.dir.name}/${scalac.exec.name}"
+      file="${quick.exec.dir}/${scalac.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${quick.dir}/${exec.dir.name}/${scala.exec.name}"
+      file="${quick.exec.dir}/${scala.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${quick.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      file="${quick.exec.dir}/${scaladoc.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${quick.dir}/${exec.dir.name}/${scalaint.exec.name}"
+      file="${quick.exec.dir}/${scalaint.exec.name}"
       perm="ugo+rx"
     />
   </target>
@@ -817,16 +818,16 @@ TEST
       classname="scala.tools.ant.ScalaTool"
       classpathref="quick.classpath"
     />
-    <mkdir dir="${strap.dir}/${exec.dir.name}"/>
+    <mkdir dir="${strap.exec.dir}"/>
     <straptool
-      file="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
+      file="${strap.exec.dir}/${scala.exec.name}"
       version="${version.number}"
       copyright="${copyright}"
       extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${dbc.dir.name}"
       javaFlags="-Xmx256M -Xms16M"
     />
     <straptool
-      file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
+      file="${strap.exec.dir}/${scalac.exec.name}"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
       version="${version.number}"
@@ -835,7 +836,7 @@ TEST
       javaFlags="-Xmx256M -Xms16M"
     />
     <straptool
-      file="${strap.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      file="${strap.exec.dir}/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.Main"
       toolflags="-doc"
@@ -845,7 +846,7 @@ TEST
       javaFlags="-Xmx256M -Xms16M"
     />
     <straptool
-      file="${strap.dir}/${exec.dir.name}/${scalaint.exec.name}"
+      file="${strap.exec.dir}/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
       version="${version.number}"
@@ -853,19 +854,19 @@ TEST
       extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
     />
     <chmod
-      file="${strap.dir}/${exec.dir.name}/${scalac.exec.name}"
+      file="${strap.exec.dir}/${scalac.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${strap.dir}/${exec.dir.name}/${scala.exec.name}"
+      file="${strap.exec.dir}/${scala.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${strap.dir}/${exec.dir.name}/${scaladoc.exec.name}"
+      file="${strap.exec.dir}/${scaladoc.exec.name}"
       perm="ugo+rx"
     />
     <chmod
-      file="${strap.dir}/${exec.dir.name}/${scalaint.exec.name}"
+      file="${strap.exec.dir}/${scalaint.exec.name}"
       perm="ugo+rx"
     />
   </target>
