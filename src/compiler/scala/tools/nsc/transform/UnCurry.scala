@@ -247,8 +247,8 @@ abstract class UnCurry extends InfoTransform {
 	val args1 =
           formals.last match {
             case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
-	      def mkArrayValue(args: List[Tree]) =
-                atPos(pos)(ArrayValue(TypeTree(elempt), args) setType formals.last);
+	      def mkArrayValue(ts: List[Tree]) =
+                atPos(pos)(ArrayValue(TypeTree(elempt), ts) setType formals.last);
 
 	      if (args.isEmpty)
                 List(mkArrayValue(args))
