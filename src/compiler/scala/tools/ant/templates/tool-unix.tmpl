@@ -32,21 +32,24 @@ SCALA_HOME=`dirname "$SOURCE"`/..;
 SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
 EXTENSION_CLASSPATH="@extclasspath@"
-if [ "$EXTENSION_CLASSPATH" == "" ] ; then
+if [ "$EXTENSION_CLASSPATH" = "" ] ; then
     for jar in `ls "$SCALA_HOME"/lib/*.jar` ; do
-        EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$jar"
+        if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+            EXTENSION_CLASSPATH="$jar"
+        else
+            EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$jar"
+        fi
     done
-    EXTENSION_CLASSPATH=${EXTENSION_CLASSPATH:1}
 fi
 
 BOOT_CLASSPATH="@bootclasspath@"
-if [[ "$BOOT_CLASSPATH" == "" && -f "$SCALA_HOME/lib/scala-library.jar" ]] ; then
+if [ "$BOOT_CLASSPATH" = "" ] && [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
     BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
 fi
 
 MYCLASSPATH="$EXTENSION_CLASSPATH"
 if [ "$BOOT_CLASSPATH" != "" ] ; then
-    if [ "$MYCLASSPATH" == "" ] ; then
+    if [ "$MYCLASSPATH" = "" ] ; then
         MYCLASSPATH="$BOOT_CLASSPATH"
     else
         MYCLASSPATH="$BOOT_CLASSPATH:$MYCLASSPATH"
@@ -54,7 +57,7 @@ if [ "$BOOT_CLASSPATH" != "" ] ; then
 fi
 
 for flag in "$@@" ; do
-    if [ "$flag" == '-version' ] ; then
+    if [ "$flag" = '-version' ] ; then
         echo "@name@ version @version@ -- @copyright@"
         exit 0
     fi

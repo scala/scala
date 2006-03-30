@@ -35,11 +35,14 @@ EXTENSION_CLASSPATH="@extclasspath@"
 USER_CLASSPATH="."
 USER_ARGS=""
 
-if [ "$EXTENSION_CLASSPATH" == "" ] ; then
+if [ "$EXTENSION_CLASSPATH" = "" ] ; then
     for jar in `ls "$SCALA_HOME"/lib/*.jar` ; do
-        EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$jar"
+        if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+            EXTENSION_CLASSPATH="$jar"
+        else
+            EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$jar"
+        fi
     done
-    EXTENSION_CLASSPATH=${EXTENSION_CLASSPATH:1}
 fi
 
 if [ "$CLASSPATH" != "" ] ; then
@@ -52,7 +55,7 @@ for i in "$@@" ; do
         USER_CLASSPATH=$i
         QQ_CP_ARGUMENT=0
     else
-        if [[ $i = "-cp" || $i = "-classpath" ]] ; then
+        if [ $i = "-cp" ] || [ $i = "-classpath" ] ; then
             QQ_CP_ARGUMENT=1
         else
             USER_ARGS="$USER_ARGS $i"
@@ -62,10 +65,10 @@ for i in "$@@" ; do
 done
 
 MYCLASSPATH=""
-if [ "$EXTENSION_CLASSPATH" == "" ] ; then
+if [ "$EXTENSION_CLASSPATH" = "" ] ; then
     MYCLASSPATH="$USER_CLASSPATH"
 else
-    if [ "$USER_CLASSPATH" == "" ] ; then
+    if [ "$USER_CLASSPATH" = "" ] ; then
         MYCLASSPATH="$EXTENSION_CLASSPATH"
     else
         MYCLASSPATH="$USER_CLASSPATH:$EXTENSION_CLASSPATH"
@@ -73,12 +76,12 @@ else
 fi
 
 BOOT_CLASSPATH="@bootclasspath@"
-if [[ "$BOOT_CLASSPATH" == "" && -f "$SCALA_HOME/lib/scala-library.jar" ]] ; then
+if [ "$BOOT_CLASSPATH" = "" ] && [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
     BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
 fi
 
 if [ "$BOOT_CLASSPATH" != "" ] ; then
-    if [ "$MYCLASSPATH" == "" ] ; then
+    if [ "$MYCLASSPATH" = "" ] ; then
         MYCLASSPATH="$BOOT_CLASSPATH"
     else
         MYCLASSPATH="$BOOT_CLASSPATH:$MYCLASSPATH"
@@ -86,7 +89,7 @@ if [ "$BOOT_CLASSPATH" != "" ] ; then
 fi
 
 for flag in "$@@" ; do
-    if [ "$flag" == '-version' ] ; then
+    if [ "$flag" = '-version' ] ; then
         echo "Scala runtime version @version@ -- @copyright@"
         ${JAVACMD:=java} -version
         exit 0
