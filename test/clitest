@@ -1,0 +1,371 @@
+#!/bin/sh
+##############################################################################
+#                      __                                                    #
+#      ________ ___   / /  ___     Scala Tools Launch Script                 #
+#     / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL                  #
+#   __\ \/ /__/ __ |/ /__/ __ |                                              #
+#  /____/\___/_/ |_/____/_/ | |                                              #
+#                           |/                                               #
+##############################################################################
+
+# $Id: $
+
+##############################################################################
+# Error functions
+
+# Prints a warning message on stderr.
+warning() {
+    echo "$0: warning:" "$@" 1>&2;
+}
+
+# Prints an error message on stderr.
+error() {
+    echo "$0:" "$@" 1>&2;
+}
+
+# Prints an error message on stderr and exits with a non-zero status.
+abort() {
+    error "$@";
+    exit 1;
+}
+
+##############################################################################
+# Printing functions
+
+# Initializes the printf functions
+printf_initialization() {
+    case "$1" in
+        many )
+            printf_font_outline="printf \\033[1;39m";
+            printf_font_success="printf \\033[1;32m";
+            printf_font_failure="printf \\033[1;31m";
+            printf_font_warning="printf \\033[1;33m";
+            printf_font_default="printf \\033[0;39m";
+            ;;
+        some )
+            printf_font_outline="printf \\033[1m";
+            printf_font_success="printf \\033[0m";
+            printf_font_failure="printf \\033[1m";
+            printf_font_warning="printf \\033[1m";
+            printf_font_default="printf \\033[0m";
+            ;;
+        none )
+            printf_font_outline="";
+            printf_font_success="";
+            printf_font_failure="";
+            printf_font_warning="";
+            printf_font_default="";
+            ;;
+        * )
+            abort "unknown color mode \`$1'";
+            ;;
+    esac;
+}
+
+# Prints formated text in outline font.
+printf_outline() {
+    $printf_font_outline;
+    printf "$@";
+    $printf_font_default;
+}
+
+##############################################################################
+# Implementation of clitest
+
+# Prints the clitest usage.
+test_print_usage() {
+    [ $# = 0 ] || abort "internal error";
+    echo "Usage: $0 [OPTION]..."
+}
+
+# Prints the clitest help.
+test_print_help() {
+    [ $# = 0 ] || abort "internal error";
+    test_print_usage;
+    echo "";
+    echo "--info          display information messages";
+    echo "--verbose       display verbose messages";
+    echo "--help, -?      display this help and exit";
+    echo "--version       output version information and exit";
+}
+
+# Prints the clitest version.
+test_print_version() {
+    [ $# = 0 ] || abort "internal error";
+    echo "$SCRIPT 1.0";
+}
+
+##############################################################################
+# Initialization
+
+unset SCRIPT;
+UNAME=`uname`;
+SOURCE=$0;
+SCRIPT=`basename "$SOURCE"`;
+while [ -h "$SOURCE" ]; do
+    SCRIPT=`basename "$SOURCE"`;
+    LOOKUP=`ls -ld "$SOURCE"`;
+    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
+    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
+        SOURCE=${TARGET:-.};
+    else
+        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
+    fi;
+done;
+PREFIX=`dirname "$SOURCE"`/..;
+prefix=$PREFIX;
+PREFIX=`cd "$PREFIX"; pwd`;
+
+QUICK="$PREFIX/build/quick/exec"
+if [ -d "$PREFIX/dists" ]; then
+    LATEST="$PREFIX/dists/latest/bin";
+else
+    if [ -d "$PREFIX/build" ]; then
+        LATEST="$QUICK";
+    else
+        LATEST="$PREFIX/bin";
+    fi;
+fi;
+BIN_DIR="$LATEST"
+
+if [ -n "`which mktemp`" ] ; then
+    TMP_DIR=`mktemp -d`
+else
+    TMP_DIR=${TMPDIR-/tmp}/tmp.123
+fi
+
+ECHO="echo -e"
+DIFF="diff";
+
+case `uname` in
+    CYGWIN* )
+        DIFF="diff --text --strip-trailing-cr";
+        ;;
+esac;
+
+LEVEL="silent";
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --info       ) LEVEL="info"; shift 1;;
+        --verbose    ) LEVEL="verbose"; shift 1;;
+        --help| -?   ) test_print_help; exit 0;;
+        --version    ) test_print_version; exit 0;;
+        -*           ) abort "unknown option $1";;
+        *            ) test_print_usage; exit 0;;
+    esac;
+done;
+
+SCALA=${BIN_DIR}/scala
+SCALAC=${BIN_DIR}/scalac
+SCALAINT=${BIN_DIR}/scalaint
+
+printf_initialization "${COLOR:-many}";
+
+printf_outline "Test directory is : ${TMP_DIR}\\n";
+printf_outline "Scala binaries in : ${BIN_DIR}\\n";
+jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
+printf_outline "Java runtime is   : $jvm_version\\n\\n";
+
+##############################################################################
+# Variables
+
+SOURCE_DIR=${TMP_DIR}/src
+OUTPUT_DIR=${TMP_DIR}/classes
+
+SCALA_PACKAGE1=test1
+SCALA_PACKAGE2=test2
+
+SCALA_MAIN1=${SCALA_PACKAGE1}.Main
+SCALA_MAIN2=${SCALA_PACKAGE2}.Main
+
+SOURCE_DIR_PACKAGE1=${SOURCE_DIR}/`echo ${SCALA_PACKAGE1} | tr '.' '/'`
+SOURCE_DIR_PACKAGE2=${SOURCE_DIR}/`echo ${SCALA_PACKAGE2} | tr '.' '/'`
+
+SOURCE_FILE1=${SOURCE_DIR_PACKAGE1}/Main.scala
+SOURCE_FILE2=${SOURCE_DIR_PACKAGE2}/Main.scala
+
+LOG_FILE=${TMP_DIR}/${SCRIPT}.log
+CHECK_FILE=${TMP_DIR}/${SCRIPT}.check
+
+##############################################################################
+# Tests
+
+rm -rf ${TMP_DIR}/*
+mkdir -p ${SOURCE_DIR_PACKAGE1} ${SOURCE_DIR_PACKAGE2}
+mkdir -p ${OUTPUT_DIR}
+
+(cat << EOF
+package ${SCALA_PACKAGE1}
+object Main {
+  def main(args: Array[String]) = {
+    val arg = if (args.length > 0) args(0) else "?"
+    Console.println("1: test " + arg + " passed")
+  }
+}
+EOF
+) > ${SOURCE_FILE1}
+
+################################# scalac #####################################
+printf_outline "Test the 'scalac' command\\n"
+
+printf "\\tCase 0: do not use any classpath information (0 dependency)\\n"
+env CLASSAPTH= ${SCALAC} -d ${OUTPUT_DIR} ${SOURCE_FILE1} 2>> ${LOG_FILE}
+
+if [ "$?" = "0" ] ; then
+
+    ################################## scala #################################
+    printf_outline "\\nTest the 'scala' command\\n"
+
+    printf "\\tCase 1: use the CLASSPATH environment variable\\n"
+    env CLASSPATH=${OUTPUT_DIR} ${SCALA} ${SCALA_MAIN1} 1 \
+        1>> ${LOG_FILE}
+
+    printf "\\tCase 2: use the -classpath option\\n"
+    env CLASSPATH= ${SCALA} -cp ${OUTPUT_DIR} ${SCALA_MAIN1} 2 \
+        1>> ${LOG_FILE}
+
+    printf "\\tCase 3: use the current directory as default classpath\\n"
+    (cd ${OUTPUT_DIR} &&
+    env CLASSPATH= ${SCALA} ${SCALA_MAIN1} 3 1>> ${LOG_FILE})
+
+    ############################## scalaint ##################################
+    printf_outline "\\nTest the 'scalaint' command\\n"
+
+    printf "\\tCase 1: use the CLASSPATH environment variable\\n"
+    (env CLASSPATH=${OUTPUT_DIR} \
+    printf "${SCALA_MAIN1}.main(Array(\"1\"))\n:q" | ${SCALAINT} \
+        1>> ${LOG_FILE})
+    printf "\\n" >> ${LOG_FILE}  # newline
+
+    printf "\\tCase 2: use the -classpath option\\n"
+    (env CLASSPATH= \
+    printf "${SCALA_MAIN1}.main(Array(\"2\"))\n:q" | ${SCALAINT} \
+        -classpath ${OUTPUT_DIR} 1>> ${LOG_FILE})
+    printf "\\n" >> ${LOG_FILE}  # newline
+
+    printf "\\tCase 3: use the current directory as default classpath\\n"
+    (cd ${OUTPUT_DIR} &&
+    printf "${SCALA_MAIN1}.main(Array(\"3\"))\n:q" | ${SCALAINT} 1>> ${LOG_FILE})
+    printf "\\n" >> ${LOG_FILE}  # newline
+
+fi
+
+##############################################################################
+
+(cat << EOF
+package ${SCALA_PACKAGE2}
+object Main {
+  def main(args: Array[String]) = {
+    Console.print("2: ")
+    ${SCALA_MAIN1}.main(args)
+  }
+}
+EOF
+) > ${SOURCE_FILE2}
+
+################################# scalac #####################################
+printf_outline "\\nTest the 'scalac' command\n"
+
+printf "\\tCase 0: do not use any classpath information (1 dependency)\\n"
+env CLASSPATH= ${SCALAC} ${SOURCE_FILE2} 2>> ${LOG_FILE}
+
+printf "\\tCase 1: use the CLASSPATH environment variable\\n"
+env CLASSPATH=${OUTPUT_DIR} ${SCALAC} \
+        -d ${OUTPUT_DIR} ${SOURCE_FILE2} 2>> ${LOG_FILE}
+
+printf "\\tCase 2: use the -classpath option\\n"
+env CLASSPATH= ${SCALAC} -classpath ${OUTPUT_DIR} \
+        -d ${OUTPUT_DIR} ${SOURCE_FILE2} 2>> ${LOG_FILE}
+
+printf "\\tCase 3: use the current directory as default classpath\\n"
+(cd ${OUTPUT_DIR} &&
+env CLASSPATH= ${SCALAC} ${SOURCE_FILE2} 2>> ${LOG_FILE})
+
+if [ "$?" = "0" ] ; then
+
+    ############################## scala #####################################
+    printf_outline "\\nTest the 'scala' command\\n"
+
+    printf "\\tCase 1: use the CLASSPATH environment variable\\n"
+    env CLASSPATH=${OUTPUT_DIR} ${SCALA} ${SCALA_MAIN2} 1 \
+        1>> ${LOG_FILE}
+
+    printf "\\tCase 2: use the -classpath option\\n"
+    env CLASSPATH= ${SCALA} -cp ${OUTPUT_DIR} ${SCALA_MAIN2} 2 \
+        1>> ${LOG_FILE}
+
+    printf "\\tCase 3: use the current directory as default classpath\\n"
+    (cd ${OUTPUT_DIR} &&
+    env CLASSPATH= ${SCALA} ${SCALA_MAIN2} 3 1>> ${LOG_FILE})
+
+fi
+
+##############################################################################
+# Check file
+
+(cat << EOF
+1: test 1 passed
+1: test 2 passed
+1: test 3 passed
+This is an interpreter for Scala.
+Type in expressions to have them evaluated.
+Type :quit to exit the interpreter.
+Type :compile followed by a filename to compile a complete Scala file.
+Type :load followed by a filename to load a sequence of interpreter commands.
+Type :help to repeat this message later.
+
+scala> 1: test 1 passed
+line0: scala.Unit = ()
+
+scala> 
+This is an interpreter for Scala.
+Type in expressions to have them evaluated.
+Type :quit to exit the interpreter.
+Type :compile followed by a filename to compile a complete Scala file.
+Type :load followed by a filename to load a sequence of interpreter commands.
+Type :help to repeat this message later.
+
+scala> 1: test 2 passed
+line0: scala.Unit = ()
+
+scala> 
+This is an interpreter for Scala.
+Type in expressions to have them evaluated.
+Type :quit to exit the interpreter.
+Type :compile followed by a filename to compile a complete Scala file.
+Type :load followed by a filename to load a sequence of interpreter commands.
+Type :help to repeat this message later.
+
+scala> 1: test 3 passed
+line0: scala.Unit = ()
+
+scala> 
+${TMP_DIR}/src/test2/Main.scala:5 error: not found: value test1
+    test1.Main.main(args)
+    ^
+one error found
+2: 1: test 1 passed
+2: 1: test 2 passed
+2: 1: test 3 passed
+EOF
+) > ${CHECK_FILE}
+
+printf_outline "\\nDifferences between check file and log file:\\n"
+${DIFF} ${CHECK_FILE} ${LOG_FILE}
+
+##############################################################################
+# Epilog
+
+if [ "$LEVEL" = "info" ] ; then
+    printf_outline "\\nSource files:\\n"
+    cat ${SOURCE_FILE1} ${SOURCE_FILE2}
+elif [ "$LEVEL" = "verbose" ] ; then
+    printf_outline "\\nSource files:\\n"
+    cat ${SOURCE_FILE1} ${SOURCE_FILE2}
+    printf_outline "\\nTest directory:\\n"
+    tree ${TMP_DIR}
+fi
+
+rm -rf ${TMP_DIR}
+
+##############################################################################
