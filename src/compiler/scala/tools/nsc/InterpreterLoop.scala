@@ -6,7 +6,7 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedReader, File, FileReader, IOException, InputStreamReader, PrintWriter}
+import java.io._
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.{Position}
 
@@ -17,9 +17,47 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
   def this() = this(new BufferedReader(new InputStreamReader(System.in)),
                     new PrintWriter(System.out))
 
-  val reporter = new ConsoleReporter(in, out)
+  var settings: Settings = _ // set by main()
+  var interpreter: Interpreter = null // set by createInterpreter()
 
-  var interpreter: Interpreter = _
+  /** A reverse list of commands to replay if the user
+    * requests a :replay */
+  var replayCommandsRev: List[String] = Nil
+
+  /** A list of commands to replay if the user requests a :replay */
+  def replayCommands = replayCommandsRev.reverse
+
+  /** Record a command for replay should the user requset a :replay */
+  def addReplay(cmd: String) =
+    replayCommandsRev = cmd :: replayCommandsRev
+
+
+  /** Close the interpreter, if there is one, and set
+    * interpreter to null. */
+  def closeInterpreter = {
+    if(interpreter != null) {
+      interpreter.close
+      interpreter = null
+    }
+  }
+
+  /* As soon as the Eclipse plugin no longer needs it, delete uglinessxxx,
+   * parentClassLoader0, and the parentClassLoader method in Interpreter
+   */
+  var uglinessxxx: ClassLoader = _
+  def parentClassLoader0: ClassLoader = uglinessxxx
+
+
+  /** Create a new interpreter.  Close the old one, if there
+    * is one. */
+  def createInterpreter = {
+    closeInterpreter
+
+    interpreter = new Interpreter(settings, out) {
+      override protected def parentClassLoader = parentClassLoader0;
+    }
+  }
+
 
   /** print a friendly help message */
   def printHelp = {
@@ -28,6 +66,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     out.println("Type :quit to exit the interpreter.")
     out.println("Type :compile followed by a filename to compile a complete Scala file.")
     out.println("Type :load followed by a filename to load a sequence of interpreter commands.")
+    out.println("Type :replay to reset execution and replay all previous commands.")
     out.println("Type :help to repeat this message later.")
   }
 
@@ -45,17 +84,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       val keepGoing = command(line)
       if (!keepGoing)
         return ()  // the evpr function said to stop
-    }
-  }
-
-  /** interpret one line of code submitted by the user */
-  def interpretOne(line: String): Unit = {
-    try {
-      interpreter.interpret(line)
-    } catch {
-      case e: Exception =>
-        out.println("Exception occurred: " + e.getMessage())
-        //e.printStackTrace()
     }
   }
 
@@ -80,6 +108,17 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
   }
 
+  /** create a new interpreter and replay all commands so far */
+  def replay = {
+    closeInterpreter
+    createInterpreter
+    for(val cmd <- replayCommands) {
+      out.println("Replaying: " + cmd)
+      command(cmd)
+      out.println
+    }
+  }
+
   /** run one command submitted by the user */
   def command(line: String): Boolean = {
     def withFile(command: String)(action: String => Unit): Unit = {
@@ -89,44 +128,63 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
         return ()
       }
       val filename = command.substring(spaceIdx).trim
+      if(! new File(filename).exists) {
+        out.println("That file does not exist")
+        return ()
+      }
+
       action(filename)
     }
 
-    val helpRegexp    = ":h(e(l(p)?)?)?";
-    val quitRegexp    = ":q(u(i(t)?)?)?";
-    val compileRegexp = ":c(o(m(p(i(l(e)?)?)?)?)?)?.*";
-    val loadRegexp    = ":l(o(a(d)?)?)?.*";
+    val helpRegexp    = ":h(e(l(p)?)?)?"
+    val quitRegexp    = ":q(u(i(t)?)?)?"
+    val compileRegexp = ":c(o(m(p(i(l(e)?)?)?)?)?)?.*"
+    val loadRegexp    = ":l(o(a(d)?)?)?.*"
+    val replayRegexp  = ":r(e(p(l(a(y)?)?)?)?)?.*"
+
     if (line.matches(helpRegexp))
       printHelp
     else if (line.matches(quitRegexp))
       return false
-    else if (line.matches(compileRegexp))
-      withFile(line)(f => interpreter.compile(f))
-    else if (line.matches(loadRegexp))
-      withFile(line)(f => interpretAllFrom(f))
+    else if (line.matches(compileRegexp)) {
+      withFile(line)(f => {
+        interpreter.compile(f)
+        addReplay(line)
+      })
+    }
+    else if (line.matches(loadRegexp)) {
+      withFile(line)(f => {
+        interpretAllFrom(f)
+        addReplay(line)
+      })
+    }
+    else if (line.matches(replayRegexp))
+      replay
     else if (line.startsWith(":"))
       out.println("Unknown command.  Type :help for help.")
     else if (line.startsWith("#!/")) // skip the first line of Unix scripts
       ()
-    else if (line.startsWith("exec scalaint ")) // skip the second line of Unix scripts
-      ()
-    else
-      interpretOne(line)
+    else {
+      if(interpreter.interpret(line))
+        addReplay(line)
+    }
     true
   }
 
-  /* As soon as the Eclipse plugin no longer needs it, delete uglinessxxx,
-   * parentClassLoader0, and the parentClassLoader method in Interpreter
-   */
-  var uglinessxxx: ClassLoader = _
-  def parentClassLoader0: ClassLoader = uglinessxxx
 
   /** process command-line arguments and do as they request */
   def main(args: Array[String]): unit = {
     def error1(msg: String): Unit = out.println("scalaint: " + msg)
     val command = new InterpreterCommand(List.fromArray(args), error1)
+    settings = command.settings
 
-    reporter.prompt = command.settings.prompt.value
+    uglinessxxx =
+      new java.net.URLClassLoader(
+                 settings.classpath.value.split(File.pathSeparator).
+                         map(s => new File(s).toURL),
+                 ClassLoader.getSystemClassLoader)
+
+
 
     if (!command.ok || command.settings.help.value) {
       // either the command line is wrong, or the user
@@ -136,18 +194,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       return ()
     }
 
-
-    val compiler = new Global(command.settings, reporter)
-
-    uglinessxxx =
-         new java.net.URLClassLoader(
-                    compiler.settings.classpath.value.split(File.pathSeparator).
-                            map(s => new File(s).toURL),
-                    ClassLoader.getSystemClassLoader)
-
-    interpreter = new Interpreter(compiler, out.print) {
-      override protected def parentClassLoader = parentClassLoader0;
-    }
+    createInterpreter
 
     try {
       if (!command.files.isEmpty) {
@@ -162,7 +209,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
         repl
       }
     } finally {
-      interpreter.close
+      closeInterpreter
     }
   }
 

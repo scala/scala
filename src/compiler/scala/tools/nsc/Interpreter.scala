@@ -6,10 +6,10 @@
 
 package scala.tools.nsc
 
-import reporters.Reporter
+import reporters._
 import nsc.util.SourceFile
 import scala.tools.util.PlainFile
-import java.io.{File, Writer, PrintWriter, StringWriter}
+import java.io._
 import nsc.ast.parser.SyntaxAnalyzer
 import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
@@ -42,7 +42,7 @@ import symtab.Flags
     The main weakness is that redefining classes and methods is not handled
     properly, because rebinding at the Java level is technically difficult.
 */
-class Interpreter(val compiler: Global, output: (String => Unit)) {
+class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) {
   import symtab.Names
   import compiler.Traverser
   import compiler.{Tree, TermTree,
@@ -53,12 +53,15 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   import compiler.Symbol
 	import compiler.Name
 
-  /** construct an interpreter that prints to the compiler's reporter */
-  def this(compiler: Global) = {
-    this(compiler, str: String => compiler.reporter.info(null, str, true))
-  }
+  /** construct an interpreter that reports to Console */
+  def this(settings: Settings) =
+    this(settings,
+         new ConsoleReporter,
+         new PrintWriter(new ConsoleWriter, true))
 
-  private def reporter = compiler.reporter
+  /** construct an interpreter that uses the specified in and out streams */
+  def this(settings: Settings, out: PrintWriter) =
+    this(settings, new ConsoleReporter(null, out), out)
 
   /** whether to print out result lines */
   private var printResults: Boolean = true
@@ -73,7 +76,10 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
 
 
   /* set up the compiler's output directory */
-  compiler.settings.outdir.value = classfilePath.getPath
+  settings.outdir.value = classfilePath.getPath
+
+  /** the compiler to compile expressions with */
+  val compiler = new Global(settings, reporter)
 
   /** class loader used to load compiled code */
   /* A single class loader is used for all commands interpreted by this Interpreter.
@@ -207,35 +213,41 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   /** interpret one line of input.  All feedback, including parse errors
 	    and evaluation results, are printed via the supplied compiler's
    	  reporter.  Values defined are available for future interpreted
-	    strings. */
-  def interpret(line: String): Unit = {
+	    strings.
+
+	    The return value is whether the line was interpreter successfully,
+	    e.g. that there were no parse errors.*/
+  def interpret(line: String): boolean = {
     // parse
     val trees = parse(line)
-    if(trees.isEmpty) return ()  // parse error or empty input
+    if(trees.isEmpty) return false  // parse error or empty input
 
     val lineName = newLineName
 
     // figure out what kind of request
     val req = buildRequest(trees, line, lineName)
-    if(req == null) return ()  // a disallowed statement type
+    if(req == null) return false  // a disallowed statement type
 
 
     if(!req.compile)
-      return ()  // an error happened during compilation, e.g. a type error
+      return false  // an error happened during compilation, e.g. a type error
 
-    val interpreterResultString = req.loadAndRun
+    val Pair(interpreterResultString, succeeded) = req.loadAndRun
 
     if(printResults) {
       // print the result
-      output(interpreterResultString)
+      out.print(interpreterResultString)
 
       // print out types of functions; they are not printed in the
       // request printout
-      output(req.defTypesSummary)
+      out.print(req.defTypesSummary)
     }
 
     // book-keeping
-    prevRequests += req
+    if(succeeded)
+      prevRequests += req
+
+    succeeded
   }
 
 
@@ -445,18 +457,20 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
     }
 
     /** load and run the code using reflection */
-    def loadAndRun: String = {
+    def loadAndRun: Pair[String,boolean] = {
       val interpreterResultObject: Class = Class.forName(resultObjectName,true,classLoader)
       val resultValMethod: java.lang.reflect.Method =
         interpreterResultObject.getMethod("result",null)
       try {
-        resultValMethod.invoke(interpreterResultObject,null).toString()
+        Pair(resultValMethod.invoke(interpreterResultObject,null).toString(),
+             true)
       } catch {
         case e => {
           def caus(e: Throwable): Throwable =
             if(e.getCause == null) e else caus(e.getCause)
             val orig = caus(e)
-            stringFrom(str => orig.printStackTrace(str))
+            Pair(stringFrom(str => orig.printStackTrace(str)),
+                 false)
         }
       }
     }
