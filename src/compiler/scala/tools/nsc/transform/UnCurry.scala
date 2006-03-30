@@ -247,15 +247,17 @@ abstract class UnCurry extends InfoTransform {
 	val args1 =
           formals.last match {
             case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
-	      def mkSequence(args: List[Tree]) =
+	      def mkArrayValue(args: List[Tree]) =
                 atPos(pos)(ArrayValue(TypeTree(elempt), args) setType formals.last);
-	      if (args.isEmpty) List(mkSequence(args))
+
+	      if (args.isEmpty)
+                List(mkArrayValue(args))
 	      else {
 	        val suffix = args.last match {
 		  case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
 		    arg setType seqType(arg.tpe)
 		  case _ =>
-		    mkSequence(args.drop(formals.length - 1))
+		    mkArrayValue(args.drop(formals.length - 1))
 	        }
 	        args.take(formals.length - 1) ::: List(suffix)
 	      }
