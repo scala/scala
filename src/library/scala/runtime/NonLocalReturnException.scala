@@ -6,8 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
+
 
 package scala.runtime
+
 
 class NonLocalReturnException[T](val key: Object, val value: T) extends RuntimeException
