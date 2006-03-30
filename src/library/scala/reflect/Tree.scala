@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Tree.scala 5880 2006-03-03 00:05:17 +0100 (Fri, 03 Mar 2006) mihaylov $
+// $Id$
 
 
 package scala.reflect;

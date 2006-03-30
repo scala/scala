@@ -2,7 +2,7 @@
  * Copyright 2005 LAMP/EPFL
  * @author
  */
-// $Id: LambdaLift.scala 5775 2006-02-17 15:17:25 +0100 (Fri, 17 Feb 2006) odersky $
+// $Id$
 package scala.tools.nsc.transform;
 
 import symtab._;

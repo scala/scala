@@ -3,7 +3,7 @@
 **  / | | /___  / /___                                                        **
 ** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
 **
-** $Id: Scalac.scala 5676 2006-02-01 13:51:26Z mcdirmid $
+** $Id$
 \*                                                                            */
 
 package scala.tools.ant {
