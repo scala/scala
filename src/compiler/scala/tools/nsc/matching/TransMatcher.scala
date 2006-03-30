@@ -267,6 +267,8 @@ with RightTracers {
 
 
 
+    /** handles all translation of pattern matching
+     */
     def handle(sel:Tree, ocases:List[CaseDef]): Tree = {
 
       // TEMPORARY
