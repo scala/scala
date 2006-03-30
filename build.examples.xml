@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id: build.xml 6625 2006-03-08 10:08:40Z michelou $ -->
+<!-- $Id$ -->
 
 <project name="scala-examples" default="build">
 
