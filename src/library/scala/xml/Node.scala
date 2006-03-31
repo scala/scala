@@ -43,52 +43,76 @@ abstract class Node extends NodeSeq {
   /** used internally. Atom/Molecule = -1 PI = -2 Comment = -3 EntityRef = -5  */
   def typeTag$: Int = 0;
 
-  /** the namespace bindings */
+  /**
+   *  method returning the namespace bindings of this node. by default, this is TopScope,
+   *   which means there are no namespace bindings except the predefined one for "xml".
+   */
   def scope: NamespaceBinding = TopScope;
 
-  def namespace = getNamespace(prefix);
-
-  def getNamespace(_pre: String) =
-    if (scope == null) null else scope.getURI(_pre);
+  /**
+   *  convenience, same as getNamespace(this.prefix)
+   */
+  def namespace = getNamespace(this.prefix);
 
   /**
-   * Looks up an unprefixed attribute in attributes of this node.
+   *  convenience method, same as scope.getURI( pre ) but additionally checks if scope is null.
+   *  @param   pre the prefix whose namespace name we would like to obtain
+   *  @return  the namespace if scope != null and prefix was found, else null
+   */
+  def getNamespace(pre: String) = if (scope == null) null else scope.getURI(pre);
+
+  /**
+   * Convenience method, looks up an unprefixed attribute in attributes of this node.
+   * Same as attributes.getValue(key);
    *
    * @param  key of queried attribute.
    * @return value of <code>UnprefixedAttribute</code> with given key
    *         in attributes, if it exists, otherwise <code>null</code>.
    */
-  final def attribute(key: String) =
-    attributes.getValue(key);
+  final def attribute(key: String) = attributes.getValue(key);
 
   /**
-   * Looks up a prefixed attribute in attributes of this node.
+   * Convenience method, looks up a prefixed attribute in attributes of this node.
+   * Same as attributes.getValue(uri, this, key);
    *
    * @param  uri namespace of queried attribute (may not be null).
    * @param  key of queried attribute.
    * @return value of <code>PrefixedAttribute</code> with given namespace
    *         and given key, otherwise <code>null</code>.
    */
-  final def attribute(uri: String, key: String) =
-    attributes.getValue(uri, this, key);
+  final def attribute(uri: String, key: String) = attributes.getValue(uri, this, key);
 
   /**
-   * Attribute axis - all attributes of this node, in order defined by attrib
+   * Returns attribute meaning all attributes of this node, prefixed and unprefixed,
+   *  in no particular order. In class Node, this defaults to Null (the empty attribute list).
+   *  @return all attributes of this node
    */
   def attributes: MetaData =
     Null;
 
-  /** child axis (all children of this node) */
+  /**
+   *  returns child axis i.e. all children of this node
+   *  @return all children of this node
+   */
   def child:      Seq[Node];
 
-  /** descendant axis (all descendants of this node, not including not itself) */
+  /**
+   *  Descendant axis (all descendants of this node, not including node itself)
+   *  includes all text nodes, element nodes, comments and processing instructions.
+   */
   def descendant: List[Node] =
-    child.toList.flatMap { x => if(x.typeTag$ != -1) x::x.descendant else Nil } ;
+    child.toList.flatMap { x => x::x.descendant } ;
 
-  /** descendant axis (all descendants of this node, including this node) */
+  /**
+   *  Descendant axis (all descendants of this node, including thisa node)
+   *  includes all text nodes, element nodes, comments and processing instructions.
+   */
   def descendant_or_self: List[Node] = this :: descendant;
 
-  /** structural equality */
+  /**
+   *  returns true if x is structurally equal to this node. Compares prefix, label,
+   *  attributes and children
+   */
   override def equals(x: Any): Boolean = x match {
     case that: Node =>
       ((that.prefix == this.prefix )
@@ -97,12 +121,18 @@ abstract class Node extends NodeSeq {
        && that.child.sameElements(this.child)) // sameElements
     case _ => false
   }
-  /** returns a hashcode */
+
+  /**
+   *  Returns a hashcode. A standard implementation of hashcodes is obtained by calling
+   *  Utility.hashCode(pre, label, attributes.hashCode(), child);
+   */
   override def hashCode(): Int;
-    //Utility.hashCode(pre, label, attributes.hashCode(), child);
 
+  // implementations of NodeSeq methods
 
-  /** method for NodeSeq */
+  /**
+   *  returns a sequence consisting of only this node
+   */
   final def theSeq = this :: Nil;
 
   /**
@@ -110,16 +140,14 @@ abstract class Node extends NodeSeq {
    *
    * @param stripComment if true, strips comment nodes from result
    */
-  def toString(stripComment: Boolean): String  =
-    Utility.toXML(this, stripComment);
+  def toString(stripComment: Boolean): String = Utility.toXML(this, stripComment);
 
   /**
    * Same as <code>toString(false)</code>.
    *
    * @see "toString(Boolean)"
    */
-  override def toString(): String =
-    toString(false);
+  override def toString(): String = toString(false);
 
   /**
    * Appends qualified name of this node to <code>StringBuffer</code>.
@@ -140,6 +168,9 @@ abstract class Node extends NodeSeq {
    */
   def xmlType(): TypeSymbol = null;
 
+  /**
+   * Returns a text representation of this node
+   */
   override def text: String;
 
 }
