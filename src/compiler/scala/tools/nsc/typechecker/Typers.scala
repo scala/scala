@@ -387,8 +387,8 @@ trait Typers requires Analyzer {
               error(tree.pos, migrateMsg + " method can be converted to function only if an expected function type is given");
             else
               error(tree.pos, "missing arguments for "+tree.symbol+tree.symbol.locationString+
-                    if (tree.symbol.isConstructor) ""
-                    else ";\nprefix this method with `&' if you want to treat it as a partially applied function")
+                    (if (tree.symbol.isConstructor) ""
+                     else ";\nprefix this method with `&' if you want to treat it as a partially applied function"))
           }
           setError(tree)
         }
