@@ -1,0 +1,4 @@
+bug415.scala:8 error: malformed type: A#T
+  val y: String  = a.x;
+                    ^
+one error found

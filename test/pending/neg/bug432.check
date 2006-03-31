@@ -1,0 +1,4 @@
+bug432.scala:2 error: Tata is already defined as case class Tata
+object Tata
+^
+one error found

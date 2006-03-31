@@ -1,0 +1,9 @@
+bug414.scala:5 error: stable identifier required, but Empty found.
+                case Empty =>
+                     ^
+bug414.scala:7 error: type mismatch;
+ found   : scala.Unit
+ required: a
+                case _ =>
+                       ^
+two errors found

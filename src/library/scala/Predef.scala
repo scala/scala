@@ -207,6 +207,36 @@ object Predef {
     }
   }
 
+  implicit def byte2ordered(x: byte): Ordered[byte] = new Ordered[byte] with Proxy {
+    def self: Any = x;
+    def compare [b >: byte <% Ordered[b]](y: b): int = y match {
+      case y1: byte =>
+        if (x < y1) -1
+        else if (x > y1) 1
+        else 0
+      case _ => -(y compare x)
+    }
+  }
+
+  implicit def short2ordered(x: short): Ordered[short] = new Ordered[short] with Proxy {
+    def self: Any = x;
+    def compare [b >: short <% Ordered[b]](y: b): int = y match {
+      case y1: short =>
+        if (x < y1) -1
+        else if (x > y1) 1
+        else 0
+      case _ => -(y compare x)
+    }
+  }
+
+  implicit def unit2ordered(x: unit): Ordered[unit] = new Ordered[unit] with Proxy {
+    def self: Any = x;
+    def compare [b >: unit <% Ordered[b]](y: b): int = y match {
+      case y1: unit => 0
+      case _ => -(y compare x)
+    }
+  }
+
   implicit def long2ordered(x: long): Ordered[long] = new Ordered[long] with Proxy {
     def self: Any = x;
     def compare [b >: long <% Ordered[b]](y: b): int = y match {
