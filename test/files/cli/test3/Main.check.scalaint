@@ -1,0 +1,84 @@
+scalaint: unknown option: '-cpp'
+Usage: scalaint <options | source files>
+where possible options include: 
+  -doc                        Generate documentation
+  -g                          Generate debugging info
+  -nowarn                     Generate no warnings
+  -noassert                   Generate no assertions and assumptions
+  -verbose                    Output messages about what the compiler is doing
+  -classpath <path>           Specify where to find user class files
+  -sourcepath <path>          Specify where to find input source files
+  -bootclasspath <path>       Override location of bootstrap class files
+  -extdirs <dirs>             Override location of installed extensions
+  -d <directory>              Specify where to place generated class files
+  -encoding <encoding>        Specify character encoding used by source files
+  -target:<target>            Specify which backend to use (jvm,msil)
+  -migrate                    Assist in migrating from Scala version 1.0
+  -debug                      Output debugging messages
+  -statistics                 Print compiler statistics
+  -explaintypes               Explain type errors in more detail
+  -resident                   Compiler stays resident, files to compile are read from standard input
+  -uniqid                     Print identifiers with unique names (debugging option)
+  -printtypes                 Print tree types (debugging option)
+  -prompt                     Display a prompt after each error (debugging option)
+  -noimports                  Compile without any implicit imports
+  -nopredefs                  Compile without any implicit predefined values
+  -skip:<phase>               Skip <phase>
+  -check:<phase>              Check the tree at start of <phase>
+  -print:<phase>              Print out program after <phase>
+  -printer:<printer>          Printer to use (text,html)
+  -printfile <file>           Specify file in which to print trees
+  -graph:<phase>              Graph the program after <phase>
+  -browse:<phase>             Browse the abstract syntax tree after <phase>
+  -stop:<phase>               Stop after phase <phase>
+  -log:<phase>                Log operations in <phase>
+  -version                    Print product version and exit
+  -help                       Print a synopsis of standard options
+  -Xinline                    Perform inlining when possible
+  -Xshowcls <class>           Show class info
+  -Xshowobj <object>          Show object info
+  -Xshowicode                 Print the generated ICode
+  -Xgadt                      enable gadt for classes
+  -Xlinearizer:<Xlinearizer>  Linearizer to use (normal,dfs,rpo)
+  -Xgenerics                  Use generic Java types
+
+
+This is an interpreter for Scala.
+Type in expressions to have them evaluated.
+Type :quit to exit the interpreter.
+Type :compile followed by a filename to compile a complete Scala file.
+Type :load followed by a filename to load a sequence of interpreter commands.
+Type :replay to reset execution and replay all previous commands.
+Type :help to repeat this message later.
+
+scala> 3: 1: test 1 passed
+3: 2: 1: test 1 passed
+line0: scala.Unit = ()
+
+scala> 
+This is an interpreter for Scala.
+Type in expressions to have them evaluated.
+Type :quit to exit the interpreter.
+Type :compile followed by a filename to compile a complete Scala file.
+Type :load followed by a filename to load a sequence of interpreter commands.
+Type :replay to reset execution and replay all previous commands.
+Type :help to repeat this message later.
+
+scala> 3: 1: test 2 passed
+3: 2: 1: test 2 passed
+line0: scala.Unit = ()
+
+scala> 
+This is an interpreter for Scala.
+Type in expressions to have them evaluated.
+Type :quit to exit the interpreter.
+Type :compile followed by a filename to compile a complete Scala file.
+Type :load followed by a filename to load a sequence of interpreter commands.
+Type :replay to reset execution and replay all previous commands.
+Type :help to repeat this message later.
+
+scala> 3: 1: test 3 passed
+3: 2: 1: test 3 passed
+line0: scala.Unit = ()
+
+scala> 

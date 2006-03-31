@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
 
 /**
@@ -181,11 +181,9 @@ object pilib {
 
   /** Pi-calculus non-deterministic choice. */
   def choice[a](s: GP[a]*): a = {
-    val sum = Sum(s.asInstanceOf[List[GP[a]]] map { x => x.untyped });
+    val sum = Sum(s.toList map { x => x.untyped });
     synchronized { sums = compare(sum, sums) };
     (sum.continue).asInstanceOf[a]
   }
 
-
 }
-

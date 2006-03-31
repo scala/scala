@@ -83,7 +83,10 @@ test_print_help() {
     [ $# = 0 ] || abort "internal error";
     test_print_usage;
     echo "";
+    echo "--debug         redirect all outputs to standard output";
     echo "--info          display information messages";
+    echo "--java          run same tests for Java";
+    echo "--objdir=<dir>  specify where to place generated files";
     echo "--verbose       display verbose messages";
     echo "--help, -?      display this help and exit";
     echo "--version       output version information and exit";
@@ -92,7 +95,137 @@ test_print_help() {
 # Prints the clitest version.
 test_print_version() {
     [ $# = 0 ] || abort "internal error";
-    echo "$SCRIPT 1.0";
+    echo "$SCRIPT 1.1";
+}
+
+test_run() {
+    [ $# = 1 ] || abort "internal error";
+    cmd="$1"; shift 1;
+    [ "$DEBUG" = "debug" ] && ( printf_outline "[DEBUG]"; echo "$cmd");
+    eval "$cmd";
+}
+
+test_diff() {
+    [ $# = 2 ] || abort "internal error";
+    check="$1"; shift 1;
+    log="$1"; shift 1;
+    [ "$DEBUG" = "debug" ] && return;
+    sed -e "s#$TEST_DIR/##g" $log > $TMP_FILE;
+    $DIFF $check $TMP_FILE > $DIFF_FILE
+    if [ -n "`cat $DIFF_FILE`" ] ; then
+        printf_outline "\\nDifferences between check and log files:\\n";
+        cat $DIFF_FILE;
+    fi
+}
+
+test_compile() {
+    [ $# = 3 ] || abort "internal error";
+    source="$1"; shift 1;
+    check="$1"; shift 1;
+    info="$1"; shift 1;
+    [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR;
+    [ -f "$LOG_FILE" ] && rm $LOG_FILE;
+
+    if [ "$LANG" = "java" ] ; then
+       suffix=".javac"
+    elif [ "$LANG" = "java5" ] ; then
+       suffix=".javac5";
+    else
+       suffix=".scalac"
+    fi
+
+    file=`echo $source | sed -e "s#$PREFIX/##g"`;
+    if [ "$LEVEL" = "info" ] || [ "$LEVEL" = "verbose" ] ; then
+        printf_outline "\\nSource file: $file\\n"
+        cat $source;
+    fi
+    printf "\\n";
+
+    printf "Compile $file ($info) with unknown option '-dd'\\n"
+    test_run "env CLASSPATH= $SCALAC -dd $OUTPUT_DIR $source 2>> $LOG_FILE";
+
+    printf "Compile $file ($info) with no classpath information\\n"
+    test_run "env CLASSPATH= $SCALAC -d $OUTPUT_DIR $source 2>> $LOG_FILE";
+
+    printf "Compile $file ($info) with variable CLASSPATH\\n"
+    test_run "env CLASSPATH=$OUTPUT_DIR $SCALAC \
+        -d $OUTPUT_DIR $source 2>> $LOG_FILE";
+
+    printf "Compile $file ($info) with option -classpath\\n"
+    test_run "env CLASSPATH= $SCALAC -classpath $OUTPUT_DIR \
+        -d $OUTPUT_DIR $source 2>> $LOG_FILE";
+
+    printf "Compile $file ($info) with current directory as default classpath\\n"
+    test_run "(cd $OUTPUT_DIR &&
+        env CLASSPATH= $SCALAC $source 2>> $LOG_FILE)";
+
+    test_diff "$check$suffix" "$LOG_FILE";
+
+    if [ "$LEVEL" = "verbose" ] ; then
+        printf_outline "\\nTest directory:\\n"
+        tree $TMP_DIR
+    fi
+}
+
+test_execute() {
+    [ $# = 2 ] || abort "internal error";
+    main="$1"; shift 1;
+    check="$1"; shift 1;
+    [ -f "$LOG_FILE" ] && rm $LOG_FILE;
+    printf "\\n";
+
+    printf "Execute $main with unknown option '-cpp'\\n"
+    test_run "env CLASSPATH= $SCALA -cpp $OUTPUT_DIR $main 2 \
+        2>> $LOG_FILE 1>> $LOG_FILE";
+
+    printf "Execute $main with variable CLASSPATH\\n"
+    test_run "env CLASSPATH=$OUTPUT_DIR $SCALA $main 1 \
+        2>> $LOG_FILE 1>> $LOG_FILE";
+
+    printf "Execute $main with option -classpath\\n"
+    test_run "env CLASSPATH= $SCALA -cp $OUTPUT_DIR $main 2 \
+        2>> $LOG_FILE 1>> $LOG_FILE";
+
+    printf "Execute $main with current directory as default classpath\\n"
+    test_run "(cd $OUTPUT_DIR &&
+    env CLASSPATH= $SCALA $main 3 2>> $LOG_FILE 1>> $LOG_FILE)";
+
+    test_diff "$check.scala" "$LOG_FILE";
+}
+
+test_interpret() {
+    [ $# = 2 ] || abort "internal error";
+    main="$1"; shift 1;
+    check="$1"; shift 1;
+    ([ "$LANG" = "java" ] || [ "$LANG" = "java5" ]) && return;
+    [ -f "$LOG_FILE" ] && rm $LOG_FILE;
+    printf "\\n"
+
+    printf "Interpret $main with unknown option '-cpp'\\n"
+    test_run "(env CLASSPATH= \
+        printf $main'.main(Array(\"0\"))\n:q' | $SCALAINT \
+        -cpp $OUTPUT_DIR 2>> $LOG_FILE 1>> $LOG_FILE)";
+    printf "\\n" >> $LOG_FILE  # newline
+
+    printf "Interpret $main with variable CLASSPATH\\n"
+    test_run "(env CLASSPATH=$OUTPUT_DIR \
+        printf $main'.main(Array(\"1\"))\n:q' | $SCALAINT \
+        2>> $LOG_FILE 1>> $LOG_FILE)";
+    printf "\\n" >> $LOG_FILE  # newline
+
+    printf "Interpret $main with option -classpath\\n"
+    test_run "(env CLASSPATH= \
+        printf $main'.main(Array(\"2\"))\n:q' | $SCALAINT \
+        -classpath $OUTPUT_DIR 2>> $LOG_FILE 1>> $LOG_FILE)";
+    printf "\\n" >> $LOG_FILE  # newline
+
+    printf "Interpret $main with current directory as default classpath\\n"
+    test_run "(cd $OUTPUT_DIR &&
+        printf $main'.main(Array(\"3\"))\n:q' | $SCALAINT \
+        2>> $LOG_FILE 1>> $LOG_FILE)";
+    printf "\\n" >> $LOG_FILE # newline
+
+    test_diff "$check.scalaint" "$LOG_FILE";
 }
 
 ##############################################################################
@@ -134,7 +267,10 @@ else
     TMP_DIR=${TMPDIR-/tmp}/tmp.123
 fi
 
-ECHO="echo -e"
+TEST_DIR=$PREFIX/test
+SOURCE_DIR=$TEST_DIR/files/cli
+OUTPUT_DIR=$TMP_DIR/classes
+
 DIFF="diff";
 
 case `uname` in
@@ -143,229 +279,110 @@ case `uname` in
         ;;
 esac;
 
-LEVEL="silent";
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --info       ) LEVEL="info"; shift 1;;
-        --verbose    ) LEVEL="verbose"; shift 1;;
-        --help| -?   ) test_print_help; exit 0;;
-        --version    ) test_print_version; exit 0;;
-        -*           ) abort "unknown option $1";;
-        *            ) test_print_usage; exit 0;;
-    esac;
-done;
-
 SCALA=${BIN_DIR}/scala
 SCALAC=${BIN_DIR}/scalac
 SCALAINT=${BIN_DIR}/scalaint
+SUFFIX=".scala"
+
+DEBUG="";
+LANG="";
+LEVEL="";
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --debug    ) DEBUG="debug"; LEVEL="verbose"; shift 1;;
+        --info     ) LEVEL="info"; shift 1;;
+        --java     ) LANG="java"; shift 1;;
+        --objdir=* ) OUTPUT_DIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
+        --verbose  ) LEVEL="verbose"; shift 1;;
+        --help     ) test_print_help; exit 0;;
+        --version  ) test_print_version; exit 0;;
+        -*         ) abort "unknown option $1";;
+        *          ) test_print_usage; exit 0;;
+    esac;
+done;
+
+if [ "$LANG" = "java" ] ; then
+    SCALAC=`which javac`
+    BIN_DIR=`dirname $SCALAC`
+    SCALA=$BIN_DIR/java
+    SUFFIX=".java"
+fi
+[ -x "$SCALAC" ] || ( printf "Command $SCALAC not found\\n"; exit 1 );
 
 printf_initialization "${COLOR:-many}";
 
-printf_outline "Test directory is : ${TMP_DIR}\\n";
-printf_outline "Scala binaries in : ${BIN_DIR}\\n";
+printf_outline "Output directory is : $OUTPUT_DIR\\n";
+if [ "$LANG" = "java" ] ; then
+    printf_outline "Java binaries in    : $BIN_DIR\\n";
+else
+    printf_outline "Scala binaries in   : $BIN_DIR\\n";
+fi
 jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
-printf_outline "Java runtime is   : $jvm_version\\n\\n";
+printf_outline "Java runtime is     : $jvm_version\\n";
+
+[ `echo "$jvm_version" | grep -c "1.5"` = "1" ] && LANG="java5";
 
 ##############################################################################
 # Variables
 
-SOURCE_DIR=${TMP_DIR}/src
-OUTPUT_DIR=${TMP_DIR}/classes
-
 SCALA_PACKAGE1=test1
 SCALA_PACKAGE2=test2
+SCALA_PACKAGE3=test3
 
 SCALA_MAIN1=${SCALA_PACKAGE1}.Main
 SCALA_MAIN2=${SCALA_PACKAGE2}.Main
+SCALA_MAIN3=${SCALA_PACKAGE3}.Main
 
 SOURCE_DIR_PACKAGE1=${SOURCE_DIR}/`echo ${SCALA_PACKAGE1} | tr '.' '/'`
 SOURCE_DIR_PACKAGE2=${SOURCE_DIR}/`echo ${SCALA_PACKAGE2} | tr '.' '/'`
+SOURCE_DIR_PACKAGE3=${SOURCE_DIR}/`echo ${SCALA_PACKAGE3} | tr '.' '/'`
 
-SOURCE_FILE1=${SOURCE_DIR_PACKAGE1}/Main.scala
-SOURCE_FILE2=${SOURCE_DIR_PACKAGE2}/Main.scala
+SOURCE_FILE1=${SOURCE_DIR_PACKAGE1}/Main$SUFFIX
+SOURCE_FILE2=${SOURCE_DIR_PACKAGE2}/Main$SUFFIX
+SOURCE_FILE3=${SOURCE_DIR_PACKAGE3}/Main$SUFFIX
 
-LOG_FILE=${TMP_DIR}/${SCRIPT}.log
-CHECK_FILE=${TMP_DIR}/${SCRIPT}.check
+CHECK_FILE1=${SOURCE_DIR_PACKAGE1}/Main.check
+CHECK_FILE2=${SOURCE_DIR_PACKAGE2}/Main.check
+CHECK_FILE3=${SOURCE_DIR_PACKAGE3}/Main.check
+
+if [ "$DEBUG" = "debug" ] ; then
+    LOG_FILE=/dev/tty
+else
+    LOG_FILE=${TMP_DIR}/${SCRIPT}.log
+fi
+DIFF_FILE=${TMP_DIR}/${SCRIPT}.diff
+TMP_FILE=${TMP_DIR}/${SCRIPT}.tmp
 
 ##############################################################################
-# Tests
 
-rm -rf ${TMP_DIR}/*
-mkdir -p ${SOURCE_DIR_PACKAGE1} ${SOURCE_DIR_PACKAGE2}
-mkdir -p ${OUTPUT_DIR}
-
-(cat << EOF
-package ${SCALA_PACKAGE1}
-object Main {
-  def main(args: Array[String]) = {
-    val arg = if (args.length > 0) args(0) else "?"
-    Console.println("1: test " + arg + " passed")
-  }
-}
-EOF
-) > ${SOURCE_FILE1}
-
-################################# scalac #####################################
-printf_outline "Test the 'scalac' command\\n"
-
-printf "\\tCase 0: do not use any classpath information (0 dependency)\\n"
-env CLASSAPTH= ${SCALAC} -d ${OUTPUT_DIR} ${SOURCE_FILE1} 2>> ${LOG_FILE}
+test_compile "$SOURCE_FILE1" "$CHECK_FILE1" "no dependency";
 
 if [ "$?" = "0" ] ; then
-
-    ################################## scala #################################
-    printf_outline "\\nTest the 'scala' command\\n"
-
-    printf "\\tCase 1: use the CLASSPATH environment variable\\n"
-    env CLASSPATH=${OUTPUT_DIR} ${SCALA} ${SCALA_MAIN1} 1 \
-        1>> ${LOG_FILE}
-
-    printf "\\tCase 2: use the -classpath option\\n"
-    env CLASSPATH= ${SCALA} -cp ${OUTPUT_DIR} ${SCALA_MAIN1} 2 \
-        1>> ${LOG_FILE}
-
-    printf "\\tCase 3: use the current directory as default classpath\\n"
-    (cd ${OUTPUT_DIR} &&
-    env CLASSPATH= ${SCALA} ${SCALA_MAIN1} 3 1>> ${LOG_FILE})
-
-    ############################## scalaint ##################################
-    printf_outline "\\nTest the 'scalaint' command\\n"
-
-    printf "\\tCase 1: use the CLASSPATH environment variable\\n"
-    (env CLASSPATH=${OUTPUT_DIR} \
-    printf "${SCALA_MAIN1}.main(Array(\"1\"))\n:q" | ${SCALAINT} \
-        1>> ${LOG_FILE})
-    printf "\\n" >> ${LOG_FILE}  # newline
-
-    printf "\\tCase 2: use the -classpath option\\n"
-    (env CLASSPATH= \
-    printf "${SCALA_MAIN1}.main(Array(\"2\"))\n:q" | ${SCALAINT} \
-        -classpath ${OUTPUT_DIR} 1>> ${LOG_FILE})
-    printf "\\n" >> ${LOG_FILE}  # newline
-
-    printf "\\tCase 3: use the current directory as default classpath\\n"
-    (cd ${OUTPUT_DIR} &&
-    printf "${SCALA_MAIN1}.main(Array(\"3\"))\n:q" | ${SCALAINT} 1>> ${LOG_FILE})
-    printf "\\n" >> ${LOG_FILE}  # newline
-
+    test_execute "$SCALA_MAIN1" "$CHECK_FILE1";
+    test_interpret "$SCALA_MAIN1" "$CHECK_FILE1";
 fi
 
 ##############################################################################
 
-(cat << EOF
-package ${SCALA_PACKAGE2}
-object Main {
-  def main(args: Array[String]) = {
-    Console.print("2: ")
-    ${SCALA_MAIN1}.main(args)
-  }
-}
-EOF
-) > ${SOURCE_FILE2}
-
-################################# scalac #####################################
-printf_outline "\\nTest the 'scalac' command\n"
-
-printf "\\tCase 0: do not use any classpath information (1 dependency)\\n"
-env CLASSPATH= ${SCALAC} ${SOURCE_FILE2} 2>> ${LOG_FILE}
-
-printf "\\tCase 1: use the CLASSPATH environment variable\\n"
-env CLASSPATH=${OUTPUT_DIR} ${SCALAC} \
-        -d ${OUTPUT_DIR} ${SOURCE_FILE2} 2>> ${LOG_FILE}
-
-printf "\\tCase 2: use the -classpath option\\n"
-env CLASSPATH= ${SCALAC} -classpath ${OUTPUT_DIR} \
-        -d ${OUTPUT_DIR} ${SOURCE_FILE2} 2>> ${LOG_FILE}
-
-printf "\\tCase 3: use the current directory as default classpath\\n"
-(cd ${OUTPUT_DIR} &&
-env CLASSPATH= ${SCALAC} ${SOURCE_FILE2} 2>> ${LOG_FILE})
+test_compile "$SOURCE_FILE2" "$CHECK_FILE2" "1 dependency";
 
 if [ "$?" = "0" ] ; then
-
-    ############################## scala #####################################
-    printf_outline "\\nTest the 'scala' command\\n"
-
-    printf "\\tCase 1: use the CLASSPATH environment variable\\n"
-    env CLASSPATH=${OUTPUT_DIR} ${SCALA} ${SCALA_MAIN2} 1 \
-        1>> ${LOG_FILE}
-
-    printf "\\tCase 2: use the -classpath option\\n"
-    env CLASSPATH= ${SCALA} -cp ${OUTPUT_DIR} ${SCALA_MAIN2} 2 \
-        1>> ${LOG_FILE}
-
-    printf "\\tCase 3: use the current directory as default classpath\\n"
-    (cd ${OUTPUT_DIR} &&
-    env CLASSPATH= ${SCALA} ${SCALA_MAIN2} 3 1>> ${LOG_FILE})
-
+    test_execute "$SCALA_MAIN2" "$CHECK_FILE2";
+    test_interpret "$SCALA_MAIN2" "$CHECK_FILE2";
 fi
 
 ##############################################################################
-# Check file
 
-(cat << EOF
-1: test 1 passed
-1: test 2 passed
-1: test 3 passed
-This is an interpreter for Scala.
-Type in expressions to have them evaluated.
-Type :quit to exit the interpreter.
-Type :compile followed by a filename to compile a complete Scala file.
-Type :load followed by a filename to load a sequence of interpreter commands.
-Type :help to repeat this message later.
+test_compile "$SOURCE_FILE3" "$CHECK_FILE3" "2 dependencies";
 
-scala> 1: test 1 passed
-line0: scala.Unit = ()
-
-scala> 
-This is an interpreter for Scala.
-Type in expressions to have them evaluated.
-Type :quit to exit the interpreter.
-Type :compile followed by a filename to compile a complete Scala file.
-Type :load followed by a filename to load a sequence of interpreter commands.
-Type :help to repeat this message later.
-
-scala> 1: test 2 passed
-line0: scala.Unit = ()
-
-scala> 
-This is an interpreter for Scala.
-Type in expressions to have them evaluated.
-Type :quit to exit the interpreter.
-Type :compile followed by a filename to compile a complete Scala file.
-Type :load followed by a filename to load a sequence of interpreter commands.
-Type :help to repeat this message later.
-
-scala> 1: test 3 passed
-line0: scala.Unit = ()
-
-scala> 
-${TMP_DIR}/src/test2/Main.scala:5 error: not found: value test1
-    test1.Main.main(args)
-    ^
-one error found
-2: 1: test 1 passed
-2: 1: test 2 passed
-2: 1: test 3 passed
-EOF
-) > ${CHECK_FILE}
-
-printf_outline "\\nDifferences between check file and log file:\\n"
-${DIFF} ${CHECK_FILE} ${LOG_FILE}
+if [ "$?" = "0" ] ; then
+    test_execute "$SCALA_MAIN3" "$CHECK_FILE3";
+    test_interpret "$SCALA_MAIN3" "$CHECK_FILE3";
+fi
 
 ##############################################################################
 # Epilog
 
-if [ "$LEVEL" = "info" ] ; then
-    printf_outline "\\nSource files:\\n"
-    cat ${SOURCE_FILE1} ${SOURCE_FILE2}
-elif [ "$LEVEL" = "verbose" ] ; then
-    printf_outline "\\nSource files:\\n"
-    cat ${SOURCE_FILE1} ${SOURCE_FILE2}
-    printf_outline "\\nTest directory:\\n"
-    tree ${TMP_DIR}
-fi
-
-rm -rf ${TMP_DIR}
+rm -rf $TMP_DIR
 
 ##############################################################################

@@ -1,0 +1,46 @@
+scalac error: unknown option: '-dd'
+  scalac -help  gives more information
+Usage: scalac <options | source files>
+where possible options include: 
+  -doc                        Generate documentation
+  -g                          Generate debugging info
+  -nowarn                     Generate no warnings
+  -noassert                   Generate no assertions and assumptions
+  -verbose                    Output messages about what the compiler is doing
+  -classpath <path>           Specify where to find user class files
+  -sourcepath <path>          Specify where to find input source files
+  -bootclasspath <path>       Override location of bootstrap class files
+  -extdirs <dirs>             Override location of installed extensions
+  -d <directory>              Specify where to place generated class files
+  -encoding <encoding>        Specify character encoding used by source files
+  -target:<target>            Specify which backend to use (jvm,msil)
+  -migrate                    Assist in migrating from Scala version 1.0
+  -debug                      Output debugging messages
+  -statistics                 Print compiler statistics
+  -explaintypes               Explain type errors in more detail
+  -resident                   Compiler stays resident, files to compile are read from standard input
+  -uniqid                     Print identifiers with unique names (debugging option)
+  -printtypes                 Print tree types (debugging option)
+  -prompt                     Display a prompt after each error (debugging option)
+  -noimports                  Compile without any implicit imports
+  -nopredefs                  Compile without any implicit predefined values
+  -skip:<phase>               Skip <phase>
+  -check:<phase>              Check the tree at start of <phase>
+  -print:<phase>              Print out program after <phase>
+  -printer:<printer>          Printer to use (text,html)
+  -printfile <file>           Specify file in which to print trees
+  -graph:<phase>              Graph the program after <phase>
+  -browse:<phase>             Browse the abstract syntax tree after <phase>
+  -stop:<phase>               Stop after phase <phase>
+  -log:<phase>                Log operations in <phase>
+  -version                    Print product version and exit
+  -help                       Print a synopsis of standard options
+  -Xinline                    Perform inlining when possible
+  -Xshowcls <class>           Show class info
+  -Xshowobj <object>          Show object info
+  -Xshowicode                 Print the generated ICode
+  -Xgadt                      enable gadt for classes
+  -Xlinearizer:<Xlinearizer>  Linearizer to use (normal,dfs,rpo)
+  -Xgenerics                  Use generic Java types
+
+one error found
