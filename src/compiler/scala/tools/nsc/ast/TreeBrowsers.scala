@@ -355,6 +355,9 @@ abstract class TreeBrowsers {
 
       case ArrayValue(elemtpt, trees) =>
         Pair("ArrayValue", EMPTY);
+
+      case Star(t) =>
+        Pair("Star", EMPTY);
     }
 
     /** Return a list of children for the given tree node */
@@ -496,6 +499,9 @@ abstract class TreeBrowsers {
 
       case EmptyTree =>
         Nil;
+
+      case Star(t) =>
+        List(t)
     }
 
     /** Return a textual representation of this t's symbol */
