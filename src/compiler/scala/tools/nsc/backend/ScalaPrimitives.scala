@@ -82,9 +82,6 @@ abstract class ScalaPrimitives {
   // Any operations
   final val IS = 80;                           // x.is[y]
   final val AS = 81;                           // x.as[y]
-  final val EQUALS = 82;                       // x.equals(y)
-  final val HASHCODE = 83;                     // x.hashcode()
-  final val TOSTRING = 84;                     // x.toString()
   final val ISERASED = 85;                     // x.is$erased[y]
   final val ASERASED = 86;                     // x.as$erased[y]
 
@@ -206,9 +203,6 @@ abstract class ScalaPrimitives {
     // scala.Any
     addPrimitive(Any_==, EQ);
     addPrimitive(Any_!=, NE);
-    addPrimitive(Any_equals, EQUALS);
-    addPrimitive(Any_hashCode, HASHCODE);
-    addPrimitive(Any_toString, TOSTRING);
     addPrimitive(Any_isInstanceOf, IS);
     addPrimitive(Any_asInstanceOf, AS);
     addPrimitive(Any_isInstanceOfErased, ISERASED);
@@ -222,9 +216,6 @@ abstract class ScalaPrimitives {
     addPrimitive(Object_synchronized, SYNCHRONIZED);
     addPrimitive(Object_isInstanceOf, IS);
     addPrimitive(Object_asInstanceOf, AS);
-    addPrimitive(Object_equals, EQUALS);
-    addPrimitive(Object_hashCode, HASHCODE);
-    addPrimitive(Object_toString, TOSTRING);
 
     // java.lang.String
     addPrimitive(String_+, CONCAT);
@@ -237,16 +228,10 @@ abstract class ScalaPrimitives {
     // scala.Unit
     addPrimitives(UnitClass, nme.EQ, EQ);
     addPrimitives(UnitClass, nme.NE, NE);
-    addPrimitives(UnitClass, nme.equals_, EQUALS);
-    addPrimitives(UnitClass, nme.hashCode_, HASHCODE);
-    addPrimitives(UnitClass, nme.toString_, TOSTRING);
 
     // scala.Boolean
     addPrimitives(BooleanClass, nme.EQ, EQ);
     addPrimitives(BooleanClass, nme.NE, NE);
-    addPrimitives(BooleanClass, nme.equals_, EQUALS);
-    addPrimitives(BooleanClass, nme.hashCode_, HASHCODE);
-    addPrimitives(BooleanClass, nme.toString_, TOSTRING);
     addPrimitive(Boolean_not, ZNOT);
     addPrimitive(Boolean_or, ZOR);
     addPrimitive(Boolean_and, ZAND);
@@ -259,9 +244,6 @@ abstract class ScalaPrimitives {
     addCoercions(ByteClass);
     addPrimitives(ByteClass, nme.EQ, EQ);
     addPrimitives(ByteClass, nme.NE, NE);
-    addPrimitives(ByteClass, nme.equals_, EQUALS);
-    addPrimitives(ByteClass, nme.hashCode_, HASHCODE);
-    addPrimitives(ByteClass, nme.toString_, TOSTRING);
     addPrimitives(ByteClass, nme.NOT, NOT);
     addPrimitives(ByteClass, nme.ADD, ADD);
     addPrimitives(ByteClass, nme.SUB, SUB);
@@ -291,9 +273,6 @@ abstract class ScalaPrimitives {
     addCoercions(ShortClass);
     addPrimitives(ShortClass, nme.EQ, EQ);
     addPrimitives(ShortClass, nme.NE, NE);
-    addPrimitives(ShortClass, nme.equals_, EQUALS);
-    addPrimitives(ShortClass, nme.hashCode_, HASHCODE);
-    addPrimitives(ShortClass, nme.toString_, TOSTRING);
     addPrimitives(ShortClass, nme.NOT, NOT);
     addPrimitives(ShortClass, nme.ADD, ADD);
     addPrimitives(ShortClass, nme.SUB, SUB);
@@ -323,9 +302,6 @@ abstract class ScalaPrimitives {
     addCoercions(CharClass);
     addPrimitives(CharClass, nme.EQ, EQ);
     addPrimitives(CharClass, nme.NE, NE);
-    addPrimitives(CharClass, nme.equals_, EQUALS);
-    addPrimitives(CharClass, nme.hashCode_, HASHCODE);
-    addPrimitives(CharClass, nme.toString_, TOSTRING);
     addPrimitives(CharClass, nme.NOT, NOT);
     addPrimitives(CharClass, nme.ADD, ADD);
     addPrimitives(CharClass, nme.SUB, SUB);
@@ -355,9 +331,6 @@ abstract class ScalaPrimitives {
     addCoercions(IntClass);
     addPrimitives(IntClass, nme.EQ, EQ);
     addPrimitives(IntClass, nme.NE, NE);
-    addPrimitives(IntClass, nme.equals_, EQUALS);
-    addPrimitives(IntClass, nme.hashCode_, HASHCODE);
-    addPrimitives(IntClass, nme.toString_, TOSTRING);
     addPrimitives(IntClass, nme.NOT, NOT);
     addPrimitives(IntClass, nme.ADD, ADD);
     addPrimitives(IntClass, nme.SUB, SUB);
@@ -387,9 +360,6 @@ abstract class ScalaPrimitives {
     addCoercions(LongClass);
     addPrimitives(LongClass, nme.EQ, EQ);
     addPrimitives(LongClass, nme.NE, NE);
-    addPrimitives(LongClass, nme.equals_, EQUALS);
-    addPrimitives(LongClass, nme.hashCode_, HASHCODE);
-    addPrimitives(LongClass, nme.toString_, TOSTRING);
     addPrimitives(LongClass, nme.NOT, NOT);
     addPrimitives(LongClass, nme.ADD, ADD);
     addPrimitives(LongClass, nme.SUB, SUB);
@@ -419,9 +389,6 @@ abstract class ScalaPrimitives {
     addCoercion(FloatClass);
     addPrimitives(FloatClass, nme.EQ, EQ);
     addPrimitives(FloatClass, nme.NE, NE);
-    addPrimitives(FloatClass, nme.equals_, EQUALS);
-    addPrimitives(FloatClass, nme.hashCode_, HASHCODE);
-    addPrimitives(FloatClass, nme.toString_, TOSTRING);
     addPrimitives(FloatClass, nme.ADD, ADD);
     addPrimitives(FloatClass, nme.SUB, SUB);
     addPrimitives(FloatClass, nme.MUL, MUL);
@@ -443,9 +410,6 @@ abstract class ScalaPrimitives {
     // scala.Double
     addPrimitives(DoubleClass, nme.EQ, EQ);
     addPrimitives(DoubleClass, nme.NE, NE);
-    addPrimitives(DoubleClass, nme.equals_, EQUALS);
-    addPrimitives(DoubleClass, nme.hashCode_, HASHCODE);
-    addPrimitives(DoubleClass, nme.toString_, TOSTRING);
     addPrimitives(DoubleClass, nme.ADD, ADD);
     addPrimitives(DoubleClass, nme.SUB, SUB);
     addPrimitives(DoubleClass, nme.MUL, MUL);

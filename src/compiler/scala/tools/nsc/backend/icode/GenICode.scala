@@ -994,17 +994,7 @@ abstract class GenICode extends SubComponent  {
 
 
     /** Is the given symbol a primitive operation? */
-    def isPrimitive(fun: Symbol): Boolean = {
-      import scalaPrimitives._;
-
-      if (scalaPrimitives.isPrimitive(fun))
-        scalaPrimitives.getPrimitive(fun) match {
-          case EQUALS | HASHCODE | TOSTRING  => false;
-          case _ => true;
-        }
-      else
-        false;
-    }
+    def isPrimitive(fun: Symbol): Boolean = scalaPrimitives.isPrimitive(fun);
 
     def genCoercion(tree: Tree, ctx: Context, code: Int) = {
       import scalaPrimitives._;
