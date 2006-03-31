@@ -180,7 +180,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
       //  ts;
       case av @ ArrayValue(_, ts) => // test array values
         if(isRightIgnoring(av))
-          List()
+          ts.reverse.drop(1).reverse
         else
           ts;
       case _ =>
