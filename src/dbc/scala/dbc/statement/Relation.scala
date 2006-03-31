@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Relation.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.statement;
@@ -20,12 +20,12 @@ abstract class Relation extends Statement {
 
   def typeCheck (relation: result.Relation): Unit = {
       val sameType: Boolean = (
-	relation.metadata.length == fieldTypes.length &&
-	(relation.metadata.zip(fieldTypes).forall({case Pair(field,expectedType) =>
-	  isCompatibleType(field.datatype, expectedType)}))
+        relation.metadata.length == fieldTypes.length &&
+        (relation.metadata.zip(fieldTypes).forall({case Pair(field,expectedType) =>
+          isCompatibleType(field.datatype, expectedType)}))
       );
       if (!sameType)
-	throw new exception.IncompatibleSchema(fieldTypes,relation.metadata.map(field=>field.datatype));
+        throw new exception.IncompatibleSchema(fieldTypes,relation.metadata.map(field=>field.datatype));
   }
 
   def fieldTypes: List[DataType];

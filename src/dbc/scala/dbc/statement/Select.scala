@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Select.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.statement;
@@ -75,8 +75,8 @@ abstract class Select extends Relation {
     (groupByClause match {
       case None => ""
       case Some(gbl) => gbl match {
-	case Nil => error("Empty group by clause is not allowed")
-	case _ =>
+        case Nil => error("Empty group by clause is not allowed")
+        case _ =>
           (" GROUP BY " +
            gbl.tail.foldLeft(gbl.head.sqlInnerString)
            ((name:String, gb) => name + ", " + gb.sqlInnerString))

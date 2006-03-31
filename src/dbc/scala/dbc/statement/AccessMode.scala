@@ -6,21 +6,21 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:AccessMode.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.statement;
 
 
 abstract class AccessMode {
-	def sqlString: String;
+  def sqlString: String;
 }
 
 object AccessMode {
-	case object ReadOnly extends AccessMode {
-		def sqlString = "READ ONLY";
-	}
-	case object ReadWrite extends AccessMode {
-		def sqlString = "READ WRITE"
-	}
+  case object ReadOnly extends AccessMode {
+    def sqlString = "READ ONLY";
+  }
+  case object ReadWrite extends AccessMode {
+    def sqlString = "READ WRITE"
+  }
 }

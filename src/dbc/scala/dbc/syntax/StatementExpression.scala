@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:StatementExpression.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.syntax;
@@ -164,7 +164,7 @@ abstract class StatementExpression {
       val operator = "IN";
       val leftOperand = StatementExpression.this.toStatement;
       val rightOperand = new statement.expression.Select {
-	val selectStatement = se;
+        val selectStatement = se;
       };
     }
   }
@@ -192,7 +192,7 @@ object StatementExpression {
       val operator = "EXISTS";
       val operatorIsLeft = true;
       val operand = new statement.expression.Select {
-	val selectStatement = se;
+        val selectStatement = se;
       };
     }
   }

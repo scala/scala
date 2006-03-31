@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Factory.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.datatype;
@@ -65,184 +65,184 @@ object Factory {
     metadata.getColumnType(index) match {
       /* Boolean data types. */
       case BOOLEAN => new datatype.Boolean {
-	override val nullable = isNullable(metadata,index);
+        override val nullable = isNullable(metadata,index);
       }
       case BIT => new datatype.Boolean {
-	override val nullable = isNullable(metadata,index);
+        override val nullable = isNullable(metadata,index);
       }
       /* Fixed precision numeric data types. */
       case DECIMAL => {
-	Pair(bytePrecision(metadata.getPrecision(index),metadata.isSigned(index),true),metadata.getScale(index) == 0) match {
-	  case Pair(bp,true) if (bp <= java_lang_Integer_SIZE) =>
-	    new datatype.ExactNumeric[Int](DataType.INT) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	  case Pair(bp,true) if (bp <= java_lang_Long_SIZE) =>
-	    new datatype.ExactNumeric[Long](DataType.LONG) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	  case Pair(_,true) =>
-	    new datatype.ExactNumeric[BigInteger](DataType.BIG_INTEGER) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	  case Pair(_,false) =>
-	    new datatype.ExactNumeric[BigDecimal](DataType.BIG_DECIMAL) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	}
+        Pair(bytePrecision(metadata.getPrecision(index),metadata.isSigned(index),true),metadata.getScale(index) == 0) match {
+          case Pair(bp,true) if (bp <= java_lang_Integer_SIZE) =>
+            new datatype.ExactNumeric[Int](DataType.INT) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+          case Pair(bp,true) if (bp <= java_lang_Long_SIZE) =>
+            new datatype.ExactNumeric[Long](DataType.LONG) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+          case Pair(_,true) =>
+            new datatype.ExactNumeric[BigInteger](DataType.BIG_INTEGER) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+          case Pair(_,false) =>
+            new datatype.ExactNumeric[BigDecimal](DataType.BIG_DECIMAL) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+        }
       }
       case NUMERIC => {
-	Pair(bytePrecision(metadata.getPrecision(index),metadata.isSigned(index),true),metadata.getScale(index) == 0) match {
-	  case Pair(bp,true) if (bp <= java_lang_Integer_SIZE) =>
-	    new datatype.ExactNumeric[Int](DataType.INT) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	  case Pair(bp,true) if (bp <= java_lang_Long_SIZE) =>
-	    new datatype.ExactNumeric[Long](DataType.LONG) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	  case Pair(_,true) =>
-	    new datatype.ExactNumeric[BigInteger](DataType.BIG_INTEGER) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	  case Pair(_,false) =>
-	    new datatype.ExactNumeric[BigDecimal](DataType.BIG_DECIMAL) {
-	      override val nullable = isNullable(metadata,index);
-	      val precisionRadix = 10;
-	      val precision = metadata.getPrecision(index);
-	      val signed = metadata.isSigned(index);
-	      val scale = metadata.getScale(index);
-	    }
-	}
+        Pair(bytePrecision(metadata.getPrecision(index),metadata.isSigned(index),true),metadata.getScale(index) == 0) match {
+          case Pair(bp,true) if (bp <= java_lang_Integer_SIZE) =>
+            new datatype.ExactNumeric[Int](DataType.INT) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+          case Pair(bp,true) if (bp <= java_lang_Long_SIZE) =>
+            new datatype.ExactNumeric[Long](DataType.LONG) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+          case Pair(_,true) =>
+            new datatype.ExactNumeric[BigInteger](DataType.BIG_INTEGER) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+          case Pair(_,false) =>
+            new datatype.ExactNumeric[BigDecimal](DataType.BIG_DECIMAL) {
+              override val nullable = isNullable(metadata,index);
+              val precisionRadix = 10;
+              val precision = metadata.getPrecision(index);
+              val signed = metadata.isSigned(index);
+              val scale = metadata.getScale(index);
+            }
+        }
       }
       /* Fixed precision integer data types. */
       case BIGINT =>
-	new datatype.ExactNumeric[Long](DataType.LONG) {
-	  override val nullable = isNullable(metadata,index);
-	  val precisionRadix = 2;
-	  val precision = 64;
-	  val signed = metadata.isSigned(index);
-	  val scale = 0;
-	}
+        new datatype.ExactNumeric[Long](DataType.LONG) {
+          override val nullable = isNullable(metadata,index);
+          val precisionRadix = 2;
+          val precision = 64;
+          val signed = metadata.isSigned(index);
+          val scale = 0;
+        }
       case INTEGER =>
-	new datatype.ExactNumeric[Int](DataType.INT) {
-	  override val nullable = isNullable(metadata,index);
-	  val precisionRadix = 2;
-	  val precision = 32;
-	  val signed = metadata.isSigned(index);
-	  val scale = 0;
-	}
+        new datatype.ExactNumeric[Int](DataType.INT) {
+          override val nullable = isNullable(metadata,index);
+          val precisionRadix = 2;
+          val precision = 32;
+          val signed = metadata.isSigned(index);
+          val scale = 0;
+        }
       case SMALLINT =>
-	new datatype.ExactNumeric[Short](DataType.SHORT) {
-	  override val nullable = isNullable(metadata,index);
-	  val precisionRadix = 2;
-	  val precision = 16;
-	  val signed = metadata.isSigned(index);
-	  val scale = 0;
-	}
+        new datatype.ExactNumeric[Short](DataType.SHORT) {
+          override val nullable = isNullable(metadata,index);
+          val precisionRadix = 2;
+          val precision = 16;
+          val signed = metadata.isSigned(index);
+          val scale = 0;
+        }
       case TINYINT =>
-	new datatype.ExactNumeric[Byte](DataType.BYTE) {
-	  override val nullable = isNullable(metadata,index);
-	  val precisionRadix = 2;
-	  val precision = 8;
-	  val signed = metadata.isSigned(index);
-	  val scale = 0;
-	}
+        new datatype.ExactNumeric[Byte](DataType.BYTE) {
+          override val nullable = isNullable(metadata,index);
+          val precisionRadix = 2;
+          val precision = 8;
+          val signed = metadata.isSigned(index);
+          val scale = 0;
+        }
       /* Floating point numeric data types. */
       case REAL =>
-	new datatype.ApproximateNumeric[Float](DataType.FLOAT) {
-	  override val nullable = isNullable(metadata,index);
-	  val precisionRadix = 2;
-	  val precision = 64;
-	  val signed = metadata.isSigned(index);
-	}
+        new datatype.ApproximateNumeric[Float](DataType.FLOAT) {
+          override val nullable = isNullable(metadata,index);
+          val precisionRadix = 2;
+          val precision = 64;
+          val signed = metadata.isSigned(index);
+        }
       case DOUBLE =>
-	new datatype.ApproximateNumeric[Double](DataType.DOUBLE) {
-	  override val nullable = isNullable(metadata,index);
-	  val precisionRadix = 2;
-	  val precision = 128;
-	  val signed = metadata.isSigned(index);
-	}
+        new datatype.ApproximateNumeric[Double](DataType.DOUBLE) {
+          override val nullable = isNullable(metadata,index);
+          val precisionRadix = 2;
+          val precision = 128;
+          val signed = metadata.isSigned(index);
+        }
       case FLOAT =>
-	new datatype.ApproximateNumeric[Double](DataType.DOUBLE) {
-	  override val nullable = isNullable(metadata,index);
-	  val precisionRadix = 2;
-	  val precision = 128;
-	  val signed = metadata.isSigned(index);
-	}
+        new datatype.ApproximateNumeric[Double](DataType.DOUBLE) {
+          override val nullable = isNullable(metadata,index);
+          val precisionRadix = 2;
+          val precision = 128;
+          val signed = metadata.isSigned(index);
+        }
       /* Character string data types. */
       case CHAR => new datatype.Character {
-	override val nullable = isNullable(metadata,index);
-	val length = metadata.getColumnDisplaySize(index);
+        override val nullable = isNullable(metadata,index);
+        val length = metadata.getColumnDisplaySize(index);
       }
       case CLOB => new datatype.CharacterLargeObject {
-	override val nullable = isNullable(metadata,index);
+        override val nullable = isNullable(metadata,index);
       }
       case LONGVARCHAR => {
-	if (metadata.getColumnDisplaySize(index) >= 0)
-	  new datatype.CharacterVarying {
-	    override val nullable = isNullable(metadata,index);
-	    def length = metadata.getColumnDisplaySize(index);
-	  }
-	else // A PostgreSQL Hack
-	  new datatype.CharacterLargeObject {
-	    override val nullable = isNullable(metadata,index);
-	  }
+        if (metadata.getColumnDisplaySize(index) >= 0)
+          new datatype.CharacterVarying {
+            override val nullable = isNullable(metadata,index);
+            def length = metadata.getColumnDisplaySize(index);
+          }
+        else // A PostgreSQL Hack
+          new datatype.CharacterLargeObject {
+            override val nullable = isNullable(metadata,index);
+          }
       }
       case VARCHAR => {
-	if (metadata.getColumnDisplaySize(index) >= 0)
-	  new datatype.CharacterVarying {
-	    override val nullable = isNullable(metadata,index);
-	    def length = metadata.getColumnDisplaySize(index);
-	  }
-	else // A PostgreSQL Hack
-	  new datatype.CharacterLargeObject {
-	    override val nullable = isNullable(metadata,index);
-	  }
+        if (metadata.getColumnDisplaySize(index) >= 0)
+          new datatype.CharacterVarying {
+            override val nullable = isNullable(metadata,index);
+            def length = metadata.getColumnDisplaySize(index);
+          }
+        else // A PostgreSQL Hack
+          new datatype.CharacterLargeObject {
+            override val nullable = isNullable(metadata,index);
+          }
       }
       /* Undefined cases. */
       case OTHER => new datatype.Unknown {
-	override val nullable = isNullable(metadata, index);
+        override val nullable = isNullable(metadata, index);
       }
       /* Unsupported data types. */
       case REF | ARRAY | STRUCT =>
-	error ("I don't support composite data types yet.");
+        error ("I don't support composite data types yet.");
       case DATALINK | DISTINCT | JAVA_OBJECT | NULL =>
-	error ("I won't support strange data types.");
+        error ("I won't support strange data types.");
       /* Unsupported binary string data types. */
       case BINARY | BLOB | LONGVARBINARY | VARBINARY =>
-	error ("I don't support binary string data types yet.");
+        error ("I don't support binary string data types yet.");
       /* Unsupported date and time data types. */
       case DATE | TIME | TIMESTAMP =>
-	error ("I don't support date and time data types yet.");
+        error ("I don't support date and time data types yet.");
       /* Default case */
       case x => error ("I don't know about this ("+metadata.getColumnTypeName(index)+") JDBC type.")
     }

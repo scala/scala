@@ -6,27 +6,27 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:IsolationLevel.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.statement;
 
 
 abstract class IsolationLevel {
-	def sqlString: String;
+  def sqlString: String;
 }
 
 object IsolationLevel {
-	case object ReadUncommitted extends IsolationLevel {
-		def sqlString = "ISOLATION LEVEL READ UNCOMMITTED"
-	}
-	case object ReadCommitted extends IsolationLevel {
-		def sqlString = "ISOLATION LEVEL READ COMMITTED"
-	}
-	case object RepeatableRead extends IsolationLevel {
-		def sqlString = "ISOLATION LEVEL REPEATABLE READ"
-	}
-	case object Serializable extends IsolationLevel {
-		def sqlString = "ISOLATION LEVEL SERIALIZABLE"
-	}
+  case object ReadUncommitted extends IsolationLevel {
+    def sqlString = "ISOLATION LEVEL READ UNCOMMITTED"
+  }
+  case object ReadCommitted extends IsolationLevel {
+    def sqlString = "ISOLATION LEVEL READ COMMITTED"
+  }
+  case object RepeatableRead extends IsolationLevel {
+    def sqlString = "ISOLATION LEVEL REPEATABLE READ"
+  }
+  case object Serializable extends IsolationLevel {
+    def sqlString = "ISOLATION LEVEL SERIALIZABLE"
+  }
 }

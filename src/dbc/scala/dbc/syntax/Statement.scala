@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Statement.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.syntax;
@@ -84,10 +84,10 @@ object Statement {
     def and (sdc:SelectDerivedColumns): SelectDerivedColumns = new SelectDerivedColumns {
       val selectList = SelectDerivedColumns.this.selectList ::: sdc.selectList;
       val selectTypes =
-	if (SelectDerivedColumns.this.selectTypes.isEmpty | sdc.selectTypes.isEmpty)
-	  Nil
-	else
-	  SelectDerivedColumns.this.selectTypes ::: sdc.selectTypes;
+        if (SelectDerivedColumns.this.selectTypes.isEmpty | sdc.selectTypes.isEmpty)
+          Nil
+        else
+          SelectDerivedColumns.this.selectTypes ::: sdc.selectTypes;
     }
   }
 
@@ -125,38 +125,38 @@ object Statement {
     def fromRelation: statement.Relation;
     def innerJoin (sst: SelectSourceTable): SelectSourceTable = new SelectSourceTable {
       val fromRelation = new statement.Jointure {
-	val leftRelation = SelectSourceTable.this.fromRelation;
-	val rightRelation = sst.fromRelation;
-	val joinType = statement.JoinType.Inner;
-	val joinCondition = None;
-	val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
+        val leftRelation = SelectSourceTable.this.fromRelation;
+        val rightRelation = sst.fromRelation;
+        val joinType = statement.JoinType.Inner;
+        val joinCondition = None;
+        val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
       }
     }
     def leftOuterJoin (sst: SelectSourceTable): SelectSourceTable = new SelectSourceTable {
       val fromRelation = new statement.Jointure {
-	val leftRelation = SelectSourceTable.this.fromRelation;
-	val rightRelation = sst.fromRelation;
-	val joinType = statement.JoinType.Outer.Left;
-	val joinCondition = None;
-	val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
+        val leftRelation = SelectSourceTable.this.fromRelation;
+        val rightRelation = sst.fromRelation;
+        val joinType = statement.JoinType.Outer.Left;
+        val joinCondition = None;
+        val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
       }
     }
     def rightOuterJoin (sst: SelectSourceTable): SelectSourceTable = new SelectSourceTable {
       val fromRelation = new statement.Jointure {
-	val leftRelation = SelectSourceTable.this.fromRelation;
-	val rightRelation = sst.fromRelation;
-	val joinType = statement.JoinType.Outer.Right;
-	val joinCondition = None;
-	val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
+        val leftRelation = SelectSourceTable.this.fromRelation;
+        val rightRelation = sst.fromRelation;
+        val joinType = statement.JoinType.Outer.Right;
+        val joinCondition = None;
+        val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
       }
     }
     def fullOuterJoin (sst: SelectSourceTable): SelectSourceTable = new SelectSourceTable {
       val fromRelation = new statement.Jointure {
-	val leftRelation = SelectSourceTable.this.fromRelation;
-	val rightRelation = sst.fromRelation;
-	val joinType = statement.JoinType.Outer.Full;
-	val joinCondition = None;
-	val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
+        val leftRelation = SelectSourceTable.this.fromRelation;
+        val rightRelation = sst.fromRelation;
+        val joinType = statement.JoinType.Outer.Full;
+        val joinCondition = None;
+        val fieldTypes = leftRelation.fieldTypes ::: rightRelation.fieldTypes;
       }
     }
   }
@@ -249,14 +249,14 @@ object Statement {
     def groupByClause: List[statement.Expression];
     def then (se:StatementExpression): SelectGroupBy = new SelectGroupBy {
       val groupByClause =
-	SelectGroupBy.this.groupByClause ::: List(se.toStatement);
+        SelectGroupBy.this.groupByClause ::: List(se.toStatement);
     }
     def then (se:String): SelectGroupBy = new SelectGroupBy {
       val groupByClause =
-	SelectGroupBy.this.groupByClause ::: List(new statement.expression.Field {
-	  val tableName = None;
-	  val fieldName = se;
-	});
+        SelectGroupBy.this.groupByClause ::: List(new statement.expression.Field {
+          val tableName = None;
+          val fieldName = se;
+        });
     }
   }
 

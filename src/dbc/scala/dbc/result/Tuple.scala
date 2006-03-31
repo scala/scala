@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Tuple.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.result;
@@ -24,10 +24,10 @@ abstract class Tuple {
   /** The field at the given index. If there is no such field (that is the index is out of bounds), <code>None</code> is returned instead. */
     def apply (index:Int): Field =
       try {
-	fields(index)
+        fields(index)
       } catch {
-	case e =>
-	  throw new java.lang.IndexOutOfBoundsException("Field at index "+index+" does not exist in relation");
+        case e =>
+          throw new java.lang.IndexOutOfBoundsException("Field at index "+index+" does not exist in relation");
       }
 
   /** The field with the given column name. If there is no such field, <code>None</code> is returned instead. */

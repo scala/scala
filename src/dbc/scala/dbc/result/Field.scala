@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Field.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.result;
@@ -24,28 +24,28 @@ abstract class Field {
   def content: Value;
 
   final def value[Type <: Value]: Type =
-  	content.asInstanceOf[Type];
+    content.asInstanceOf[Type];
 
   final def exactNumericValue[NativeType] =
-  	content.asInstanceOf[dbc.value.ExactNumeric[NativeType]];
+    content.asInstanceOf[dbc.value.ExactNumeric[NativeType]];
 
   final def approximateNumericValue[NativeType] =
-  	content.asInstanceOf[dbc.value.ApproximateNumeric[NativeType]];
+    content.asInstanceOf[dbc.value.ApproximateNumeric[NativeType]];
 
   final def booleanValue =
-  	content.asInstanceOf[dbc.value.Boolean];
+    content.asInstanceOf[dbc.value.Boolean];
 
   final def characterValue =
-  	content.asInstanceOf[dbc.value.Character];
+    content.asInstanceOf[dbc.value.Character];
 
   final def characterLargeObjectValue =
-  	content.asInstanceOf[dbc.value.CharacterLargeObject];
+    content.asInstanceOf[dbc.value.CharacterLargeObject];
 
   final def characterVaryingValue =
-  	content.asInstanceOf[dbc.value.CharacterVarying];
+    content.asInstanceOf[dbc.value.CharacterVarying];
 
   final def unknownValue =
-  	content.asInstanceOf[dbc.value.Unknown];
+    content.asInstanceOf[dbc.value.Unknown];
 
   /** The tuple that contains this field. */
   def originatingTuple: Tuple;

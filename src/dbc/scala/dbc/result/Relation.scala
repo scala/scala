@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Relation.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.result;
@@ -29,12 +29,12 @@ abstract class Relation extends Object with Iterable[Tuple] {
   def metadata: List[FieldMetadata] =
     for (val count <- List.range(1, sqlMetadata.getColumnCount()+1)) yield
       new FieldMetadata {
-	val name: String = sqlMetadata.getColumnName(count);
-	val index: Int = count;
-	val datatype: DataType = dbc.datatype.Factory.create(sqlMetadata,count);
-	val catalog: String = sqlMetadata.getCatalogName(count);
-	val schema: String = sqlMetadata.getSchemaName(count);
-	val table: String = sqlMetadata.getTableName(count);
+        val name: String = sqlMetadata.getColumnName(count);
+        val index: Int = count;
+        val datatype: DataType = dbc.datatype.Factory.create(sqlMetadata,count);
+        val catalog: String = sqlMetadata.getCatalogName(count);
+        val schema: String = sqlMetadata.getSchemaName(count);
+        val table: String = sqlMetadata.getTableName(count);
       }
 
   /** Metadata about the field at the given index. If there is no such
@@ -56,16 +56,16 @@ abstract class Relation extends Object with Iterable[Tuple] {
     def hasNext: Boolean = !(result.isLast());
     def next: Tuple = {
       if (result.next()) {
-	new Tuple {
-	  val me = this;
-	  val originatingRelation = Relation.this;
-	  val fields: List[Field] = for (val fieldMetadata <- metadata) yield
-	    new Field {
-	      val metadata = fieldMetadata;
-	      val content = dbc.value.Factory.create(result,metadata.index,metadata.datatype);
-	      val originatingTuple = me;
-	    }
-	}
+        new Tuple {
+          val me = this;
+          val originatingRelation = Relation.this;
+          val fields: List[Field] = for (val fieldMetadata <- metadata) yield
+            new Field {
+              val metadata = fieldMetadata;
+              val content = dbc.value.Factory.create(result,metadata.index,metadata.datatype);
+              val originatingTuple = me;
+            }
+        }
       } else error("next on empty iterator")
     }
   }

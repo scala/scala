@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Database.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc;
@@ -15,9 +15,8 @@ package scala.dbc;
 import java.sql._;
 
 /** A link to a database. The <code>Database</code> abstract class must
- 	* be specialised for every different DBMS.
- 	* @author  Gilles Dubochet
-	**/
+  * be specialised for every different DBMS.
+  * @author  Gilles Dubochet **/
 case class Database(dbms: Vendor) {
 
   class Closed extends Exception {}
@@ -61,7 +60,7 @@ case class Database(dbms: Vendor) {
           usedConnections = connection :: usedConnections;
           lock.release;
           connection;
-				}
+        }
       }
     }
   }
@@ -115,13 +114,11 @@ case class Database(dbms: Vendor) {
       val sqlResult = connection.createStatement().executeQuery(statement.sqlString);
       closeConnection(connection);
       statement.typeCheck(this);
-		}
+    }
 
   /** Executes a statement that updates the state of the database.
-   *
-   *  @param statusStatement The statement to execute.
-   *  @return The status of the database after the statement has been executed.
-   */
+    * @param statusStatement The statement to execute.
+    * @return The status of the database after the statement has been executed. */
   def executeStatement(statusStatement: statement.Status): result.Status[Unit] =
     executeStatement(statusStatement, false);
 

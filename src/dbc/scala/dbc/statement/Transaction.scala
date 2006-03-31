@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Transaction.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.statement;
@@ -14,42 +14,42 @@ package scala.dbc.statement;
 
 /** A statement that changes the status of the database. */
 case class Transaction [ResultType] (
-	transactionBody: (scala.dbc.Database=>ResultType),
-	accessMode: Option[AccessMode],
-	isolationLevel: Option[IsolationLevel]
+  transactionBody: (scala.dbc.Database=>ResultType),
+  accessMode: Option[AccessMode],
+  isolationLevel: Option[IsolationLevel]
 ) extends Statement {
 
-	/** A SQL-99 compliant string representation of the statement. */
-	def sqlStartString: String = (
-		"START TRANSACTION" +
-		(Pair(accessMode,isolationLevel) match {
-			case Pair(None,None) => ""
-			case Pair(Some(am),None) => " " + am.sqlString
-			case Pair(None,Some(il)) => " " + il.sqlString
-			case Pair(Some(am),Some(il)) => " " + am.sqlString + ", " + il.sqlString
-		})
-	);
+  /** A SQL-99 compliant string representation of the statement. */
+  def sqlStartString: String = (
+    "START TRANSACTION" +
+    (Pair(accessMode,isolationLevel) match {
+      case Pair(None,None) => ""
+      case Pair(Some(am),None) => " " + am.sqlString
+      case Pair(None,Some(il)) => " " + il.sqlString
+      case Pair(Some(am),Some(il)) => " " + am.sqlString + ", " + il.sqlString
+    })
+  );
 
-	def sqlCommitString: String = {
-		"COMMIT"
-	}
+  def sqlCommitString: String = {
+    "COMMIT"
+  }
 
-	def sqlAbortString: String = {
-		"ROLLBACK"
-	}
+  def sqlAbortString: String = {
+    "ROLLBACK"
+  }
 
-	//def transactionBody: (()=>Unit);
+  //def transactionBody: (()=>Unit);
 
-	//def accessMode: Option[AccessMode];
+  //def accessMode: Option[AccessMode];
 
-	//def isolationLevel: Option[IsolationLevel];
+  //def isolationLevel: Option[IsolationLevel];
 
-	def execute (database: scala.dbc.Database): scala.dbc.result.Status[ResultType] = {
-		database.executeStatement(this);
-	}
+  def execute (database: scala.dbc.Database): scala.dbc.result.Status[ResultType] = {
+    database.executeStatement(this);
+  }
 
-	def execute (database: scala.dbc.Database, debug: Boolean): scala.dbc.result.Status[ResultType] = {
-		database.executeStatement(this,debug);
-	}
+  def execute (database: scala.dbc.Database, debug: Boolean): scala.dbc.result.Status[ResultType] = {
+    database.executeStatement(this,debug);
+  }
 
 }

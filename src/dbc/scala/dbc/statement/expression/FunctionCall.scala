@@ -6,27 +6,27 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:FunctionCall.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.statement.expression;
 
 
 case class FunctionCall (
-	functionName: String,
-	arguments: List[Expression]
+  functionName: String,
+  arguments: List[Expression]
 ) extends Expression {
 
-	/** A SQL-99 compliant string representation of the relation sub-
-		* statement. This only has a meaning inside another statement. */
-	def sqlInnerString: String = {
-		functionName + "(" + arguments.mkString("",", ","") + ")"
-	}
+  /** A SQL-99 compliant string representation of the relation sub-
+    * statement. This only has a meaning inside another statement. */
+  def sqlInnerString: String = {
+    functionName + "(" + arguments.mkString("",", ","") + ")"
+  }
 
-	/** The name of the function to call. */
-	//def functionName: String;
+  /** The name of the function to call. */
+  //def functionName: String;
 
-	/** A list of all argument expressions to pass to the function, in order. */
-	//def arguments: List[Expression];
+  /** A list of all argument expressions to pass to the function, in order. */
+  //def arguments: List[Expression];
 
 }

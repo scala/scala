@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:Boolean.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.datatype;
@@ -15,17 +15,17 @@ package scala.dbc.datatype;
 /** The SQL type for a truth value. */
 class Boolean extends DataType {
 
-	def isEquivalent (datatype:DataType) = datatype match {
-		case dt:Boolean => true
-		case _ => false
-	}
+  def isEquivalent (datatype:DataType) = datatype match {
+    case dt:Boolean => true
+    case _ => false
+  }
 
-	def isSubtypeOf (datatype:DataType) = isEquivalent(datatype);
+  def isSubtypeOf (datatype:DataType) = isEquivalent(datatype);
 
-	type NativeType = scala.Boolean;
-	val nativeTypeId = DataType.BOOLEAN;
+  type NativeType = scala.Boolean;
+  val nativeTypeId = DataType.BOOLEAN;
 
-	/** A SQL-99 compliant string representation of the type. */
-	override def sqlString: java.lang.String = "BOOLEAN";
+  /** A SQL-99 compliant string representation of the type. */
+  override def sqlString: java.lang.String = "BOOLEAN";
 
 }
