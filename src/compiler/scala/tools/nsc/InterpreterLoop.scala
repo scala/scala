@@ -70,6 +70,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     out.println("Type :help to repeat this message later.")
   }
 
+
   /** The main read-eval-print loop for the interpereter.  It calls
       command() for each line of input, and stops when command()
       returns false */
@@ -81,9 +82,12 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       if (line == null)
         return ()  // assumes null means EOF
 
-      val keepGoing = command(line)
+      val Pair(keepGoing, shouldReplay) = command(line)
+
       if (!keepGoing)
-        return ()  // the evpr function said to stop
+        return ()
+      if(shouldReplay)
+        addReplay(line)
     }
   }
 
@@ -119,8 +123,10 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
   }
 
-  /** run one command submitted by the user */
-  def command(line: String): Boolean = {
+  /** Run one command submitted by the user.  Two values are returned:
+    * (1) whether to keep running, and (2) whether to record the
+    * command for replay. */
+  def command(line: String): Pair[Boolean, Boolean] = {
     def withFile(command: String)(action: String => Unit): Unit = {
       val spaceIdx = command.indexOf(' ')
       if (spaceIdx <= 0) {
@@ -142,20 +148,22 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     val loadRegexp    = ":l(o(a(d)?)?)?.*"
     val replayRegexp  = ":r(e(p(l(a(y)?)?)?)?)?.*"
 
+    var shouldReplay = false
+
     if (line.matches(helpRegexp))
       printHelp
     else if (line.matches(quitRegexp))
-      return false
+      return Pair(false, false)
     else if (line.matches(compileRegexp)) {
       withFile(line)(f => {
         interpreter.compile(f)
-        addReplay(line)
+        shouldReplay = true
       })
     }
     else if (line.matches(loadRegexp)) {
       withFile(line)(f => {
         interpretAllFrom(f)
-        addReplay(line)
+        shouldReplay = true
       })
     }
     else if (line.matches(replayRegexp))
@@ -166,9 +174,9 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       ()
     else {
       if(interpreter.interpret(line))
-        addReplay(line)
+        shouldReplay = true
     }
-    true
+    Pair(true, shouldReplay)
   }
 
 
