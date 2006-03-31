@@ -30,7 +30,7 @@ object Conversion {
 	implicit def view2 (value:Value): Short = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
-			v.nativeValue.coerce
+			v.nativeValue.toShort
 		} else if (value.dataType.nativeTypeId == DataType.SHORT) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Short]];
 			v.nativeValue
@@ -42,10 +42,10 @@ object Conversion {
 	implicit def view3 (value:Value): Int = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
-			v.nativeValue.coerce
+			v.nativeValue.toInt
 		} else if (value.dataType.nativeTypeId == DataType.SHORT) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Short]];
-			v.nativeValue.coerce
+			v.nativeValue.toInt
 		} else if (value.dataType.nativeTypeId == DataType.INT) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Int]];
 			v.nativeValue
@@ -57,13 +57,13 @@ object Conversion {
 	implicit def view4 (value:Value): Long = {
 		if (value.dataType.nativeTypeId == DataType.BYTE) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Byte]];
-			v.nativeValue.coerce
+			v.nativeValue.toLong
 		} else if (value.dataType.nativeTypeId == DataType.SHORT) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Short]];
-			v.nativeValue.coerce
+			v.nativeValue.toLong
 		} else if (value.dataType.nativeTypeId == DataType.INT) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Int]];
-			v.nativeValue.coerce
+			v.nativeValue.toLong
 		} else if (value.dataType.nativeTypeId == DataType.LONG) {
 			val v = value.asInstanceOf[dbc.value.ExactNumeric[Long]];
 			v.nativeValue
@@ -129,7 +129,7 @@ object Conversion {
 	implicit def view8 (value:Value): Double = {
 		if (value.dataType.nativeTypeId == DataType.FLOAT) {
 			val v = value.asInstanceOf[dbc.value.ApproximateNumeric[Float]];
-			v.nativeValue.coerce
+			v.nativeValue.toFloat
 		} else if (value.dataType.nativeTypeId == DataType.DOUBLE) {
 			val v = value.asInstanceOf[dbc.value.ApproximateNumeric[Double]];
 			v.nativeValue
