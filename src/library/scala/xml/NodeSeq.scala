@@ -70,16 +70,19 @@ abstract class NodeSeq extends Seq[Node] {
 
   def \\ ( that:String ): NodeSeq = that match {
       case "_" => for( val x <- this;
-                       val y <- x.descendant_or_self: NodeSeq )
+                       val y <- x.descendant_or_self: NodeSeq;
+                      y.typeTag$ != -1 )
                   yield { y }
       case _ if that.charAt(0) == '@' =>
         val attrib = that.substring(1);
         (for(val x <- this;
              val y <- x.descendant_or_self: NodeSeq;
+             y.typeTag$ != -1;
              val z <- y \ that)
          yield { z }):NodeSeq
       case _ => for( val x <- this;
                      val y <- x.descendant_or_self: NodeSeq;
+                     y.typeTag$ != -1;
                      y.label == that)
                   yield { y }
   }
