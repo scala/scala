@@ -3,7 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id$
-//todo: rewrite or disallow new T where T is a mixin (currently: <init> not a member of T)
+//todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
 package scala.tools.nsc.typechecker
 
 import symtab.Flags._
@@ -23,7 +23,7 @@ trait Typers requires Analyzer {
   var implcnt = 0
   var impltime = 0l
 
-  final val xviews = false
+  final val xviews = true
 
   private val transformed = new HashMap[Tree, Tree]
 
@@ -386,7 +386,9 @@ trait Typers requires Analyzer {
             if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))
               error(tree.pos, migrateMsg + " method can be converted to function only if an expected function type is given");
             else
-              error(tree.pos, "missing arguments for "+tree.symbol+tree.symbol.locationString)
+              error(tree.pos, "missing arguments for "+tree.symbol+tree.symbol.locationString+
+                    if (tree.symbol.isConstructor) ""
+                    else ";\nprefix this method with `&' if you want to treat it as a partially applied function")
           }
           setError(tree)
         }
@@ -1430,6 +1432,17 @@ trait Typers requires Analyzer {
           if (tpt1.tpe.symbol hasFlag ABSTRACT)
             error(tree.pos, ""+tpt1.tpe.symbol+" is abstract; cannot be instantiated")
           copy.New(tree, tpt1).setType(tpt1.tpe)
+
+        case Typed(expr, Function(List(), EmptyTree)) =>
+          val expr1 = typed1(expr, mode, pt);
+          expr1.tpe match {
+            case MethodType(formals, _) =>
+              adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
+            case ErrorType =>
+              expr1
+            case _ =>
+              errorTree(expr1, "`&' must be applied to method type; cannot be applied to " + expr1.tpe)
+          }
 
         case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
           val expr1 = typed(expr, mode & stickyModes, seqType(pt))

@@ -313,6 +313,7 @@ trait Parsers requires SyntaxAnalyzer {
     final val PLUS : Name = "+";
     final val BANG : Name = "!";
     final val TILDE: Name = "~";
+    final val AMP  : Name = "&";
     final val STAR : Name = "*";
     final val BAR  : Name = "|";
     final val OPT  : Name = "?";
@@ -768,7 +769,7 @@ trait Parsers requires SyntaxAnalyzer {
       reduceStack(true, base, top, 0, true)
     }
 
-    /** PrefixExpr   ::= [`-' | `+' | `~' | `!'] SimpleExpr
+    /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
     */
     def prefixExpr(): Tree =
       if (in.token == IDENTIFIER && in.name == MINUS) {
@@ -781,6 +782,10 @@ trait Parsers requires SyntaxAnalyzer {
 	val pos = in.currentPos;
 	val name = ident();
 	atPos(pos) { Select(simpleExpr(), name) }
+      } else if (in.token == IDENTIFIER && in.name == AMP) {
+	val pos = in.currentPos;
+	val name = ident();
+	atPos(pos) { Typed(simpleExpr(), Function(List(), EmptyTree)) }
       } else {
 	simpleExpr()
       }
