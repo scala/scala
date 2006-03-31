@@ -1,0 +1,24 @@
+passed ok
+equality
+passed ok
+passed ok
+passed ok
+passed ok
+passed ok
+xpath \
+passed ok
+passed ok
+passed ok
+passed ok
+passed ok
+passed ok
+passed ok
+passed ok
+xpath \\ DESCENDANTS
+passed ok
+passed ok
+<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>
+passed ok
+attribute value normalization
+passed ok
+passed ok
