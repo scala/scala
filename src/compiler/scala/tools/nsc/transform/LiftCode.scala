@@ -13,7 +13,7 @@ import scala.collection.immutable.ListMap;
 import scala.collection.mutable.{HashMap, ListBuffer};
 import scala.tools.nsc.util.FreshNameCreator;
 
-abstract class Codify extends Transform {
+abstract class LiftCode extends Transform {
 
   import global._;                  // the global environment
   import definitions._;             // standard classes and methods
@@ -21,7 +21,7 @@ abstract class Codify extends Transform {
   import posAssigner.atPos;         // for filling in tree positions
 
   /** the following two members override abstract members in Transform */
-  val phaseName: String = "codify";
+  val phaseName: String = "liftcode";
 
   def newTransformer(unit: CompilationUnit): Transformer = new AddRefFields(unit);
 
