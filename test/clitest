@@ -83,6 +83,8 @@ test_print_help() {
     [ $# = 0 ] || abort "internal error";
     test_print_usage;
     echo "";
+    echo "--quick         use the 'quick' build instead of distribution";
+    echo '--installed     use the installed programs on $PATH'
     echo "--debug         redirect all outputs to standard output";
     echo "--info          display information messages";
     echo "--java          run same tests for Java";
@@ -249,14 +251,14 @@ PREFIX=`dirname "$SOURCE"`/..;
 prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
-QUICK="$PREFIX/build/quick/exec"
+QUICK="$PREFIX/build/quick/exec/"
 if [ -d "$PREFIX/dists" ]; then
-    LATEST="$PREFIX/dists/latest/bin";
+    LATEST="$PREFIX/dists/latest/bin/";
 else
     if [ -d "$PREFIX/build" ]; then
         LATEST="$QUICK";
     else
-        LATEST="$PREFIX/bin";
+        LATEST="$PREFIX/bin/";
     fi;
 fi;
 BIN_DIR="$LATEST"
@@ -279,17 +281,14 @@ case `uname` in
         ;;
 esac;
 
-SCALA=${BIN_DIR}/scala
-SCALAC=${BIN_DIR}/scalac
-SCALAINT=${BIN_DIR}/scalaint
-SUFFIX=".scala"
-
 DEBUG="";
 LANG="";
 LEVEL="";
 while [ $# -gt 0 ]; do
     case "$1" in
         --debug    ) DEBUG="debug"; LEVEL="verbose"; shift 1;;
+        --quick    ) BIN_DIR="$QUICK"; shift 1;;
+        --installed) BIN_DIR=""; shift 1;;
         --info     ) LEVEL="info"; shift 1;;
         --java     ) LANG="java"; shift 1;;
         --objdir=* ) OUTPUT_DIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
@@ -300,6 +299,11 @@ while [ $# -gt 0 ]; do
         *          ) test_print_usage; exit 0;;
     esac;
 done;
+
+SCALA="${BIN_DIR}scala"
+SCALAC="${BIN_DIR}scalac"
+SCALAINT="${BIN_DIR}scalaint"
+SUFFIX=".scala"
 
 if [ "$LANG" = "java" ] ; then
     SCALAC=`which javac`
