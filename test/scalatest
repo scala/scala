@@ -150,6 +150,7 @@ test_print_help() {
     echo "--neg           next files test a compilation failure";
     echo "--msil          next files test the .NET backend";
     echo "--quick         use the 'quick' build instead of distribution";
+    echo '--installed     use the installed programs on $PATH'
     echo "--no-run        run no test, use results of last run";
     echo "--show-log      show output of failed tests";
     echo "--show-diff     show differences between actual and expected output";
@@ -433,6 +434,7 @@ PREFIX=`dirname "$SOURCE"`/..;
 prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
 
+
 ##############################################################################
 # Invocation of $SCRIPT
 
@@ -465,7 +467,8 @@ else
         LATEST="$PREFIX/bin";
     fi;
 fi;
-BIN_DIR="$LATEST"
+BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
+                    # it can also be set to the empty string
 
 DIFF="diff";
 
@@ -483,7 +486,8 @@ while [ $# -gt 0 ]; do
         --pos        ) TEST_TYPE="pos"; shift 1;;
         --neg        ) TEST_TYPE="neg"; shift 1;;
         --msil       ) TEST_TYPE="msil"; shift 1;;
-        --quick      ) BIN_DIR="$QUICK"; shift 1;;
+        --quick      ) BIN_DIR="$QUICK/"; shift 1;;
+        --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;
         --show-diff  ) SHOWDIFF="true"; shift 1;;
@@ -530,8 +534,8 @@ if [ "$TEST_ALL" = "true" ]; then
     esac;
 fi;
 
-SCALA="$BIN_DIR/scala";
-SOCOS="$BIN_DIR/scalac";
+SCALA="${BIN_DIR}scala";
+SOCOS="${BIN_DIR}scalac";
 SCALAP="$LATEST/scalap";
 
 SCALA_SCALA_ARGS="-Xmx512M $SCALA_SCALA_ARGS";
