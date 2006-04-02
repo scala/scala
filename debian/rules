@@ -1,0 +1,50 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+export DH_ALWAYS_EXCLUDE=.svn
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	ANT_OPTS=-Xmx512M ant dist
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_clean -A
+	rm -rf build dists
+	rm -f build-stamp
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs -A
+
+	install dists/latest/lib/scala-library.jar $(CURDIR)/debian/scala-library/usr/share/java/
+	install dists/latest/lib/scala-dbc.jar $(CURDIR)/debian/scala-library/usr/share/java/
+
+	install -m 644 dists/latest/lib/scala-compiler.jar $(CURDIR)/debian/scala-dev/usr/share/java/
+	install debian/command-scripts/* $(CURDIR)/debian/scala-dev/usr/bin/
+
+	dh_installdocs -A
+	dh_installman -pscala-dev docs/man/*/*
+	dh_installchangelogs  -A
+	dh_compress -A
+	dh_fixperms -A
+
+
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installdeb -A
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+
+binary: binary-indep
+
+.PHONY: build clean binary-indep binary install
