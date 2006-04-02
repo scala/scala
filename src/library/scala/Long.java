@@ -13,169 +13,160 @@ package scala;
 
 
 /** @meta class extends scala.AnyVal; */
-public abstract class Long    extends AnyVal implements java.io.Serializable {
+public abstract class Long extends AnyVal {
 
-    public final long    value;
+    // prevent inheriting from the class
+    private Long() {}
 
-    public Long   (long    value) {
-        this.value = value;
-    }
-
-    public boolean equals(java.lang.Object other) {
-        return other instanceof Long    && value == ((Long   )other).value;
-    }
-    public int hashCode() {
-        long bits = value;
-        return (int)(bits ^ (bits >>> 32));
-    }
-    public String toString() {
-        return String.valueOf(value);
-    }
+    public boolean equals(java.lang.Object other) { return super.equals(other); }
+    public int hashCode() { return super.hashCode(); }
+    public String toString() { return super.toString(); }
 
     /** @meta method []scala.Byte; */
-    public byte toByte() { return (byte)value; }
+    abstract public byte toByte();
 
     /** @meta method []scala.Short; */
-    public short toShort() { return (short)value; }
+    abstract public short toShort();
 
     /** @meta method []scala.Char; */
-    public char toChar() { return (char)value; }
+    abstract public char toChar();
 
     /** @meta method []scala.Int; */
-    public int toInt() { return (int)value; }
+    abstract public int toInt();
 
     /** @meta method []scala.Long; */
-    public long toLong() { return (long)value; }
+    abstract public long toLong();
 
     /** @meta method []scala.Float; */
-    public float toFloat() { return (float)value; }
+    abstract public float toFloat();
 
     /** @meta method []scala.Double; */
-    public double toDouble() { return (double)value; }
+    abstract public double toDouble();
+
+    /** @meta method []scala.Double; */
+    abstract public double  coerce();
+
+    /** @meta method []scala.Float; */
+    abstract public float   coerce();
 
     /** @meta method (scala.Any)scala.Boolean; */
-    public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
+    abstract public boolean $eq$eq  (java.lang.Object other);
     /** @meta method (scala.Any)scala.Boolean; */
-    public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
+    abstract public boolean $bang$eq(java.lang.Object other);
 
-    /** @meta method []scala.Long   ; */
-    public long    $plus      (            ) { return +value        ; }
-    /** @meta method []scala.Long   ; */
-    public long    $minus     (            ) { return -value        ; }
+    /** @meta method []scala.Long; */
+    abstract public long     $plus();
+    /** @meta method []scala.Long; */
+    abstract public long     $minus();
+    /** @meta method []scala.Long; */
+    abstract public long     $tilde();
 
-    public String  $plus      (String  that) { return  value +  that; }
+    abstract public String  $plus      (String  that);
 
-    public boolean $eq$eq     (double  that) { return  value == that; }
-    public boolean $bang$eq   (double  that) { return  value != that; }
-    public boolean $less      (double  that) { return  value <  that; }
-    public boolean $greater   (double  that) { return  value >  that; }
-    public boolean $less$eq   (double  that) { return  value <= that; }
-    public boolean $greater$eq(double  that) { return  value >= that; }
-    public double  $plus      (double  that) { return  value +  that; }
-    public double  $minus     (double  that) { return  value -  that; }
-    public double  $times     (double  that) { return  value *  that; }
-    public double  $div       (double  that) { return  value /  that; }
-    public double  $percent   (double  that) { return  value %  that; }
+    abstract public boolean $eq$eq     (double  that);
+    abstract public boolean $bang$eq   (double  that);
+    abstract public boolean $less      (double  that);
+    abstract public boolean $greater   (double  that);
+    abstract public boolean $less$eq   (double  that);
+    abstract public boolean $greater$eq(double  that);
+    abstract public double  $plus      (double  that);
+    abstract public double  $minus     (double  that);
+    abstract public double  $times     (double  that);
+    abstract public double  $div       (double  that);
+    abstract public double  $percent   (double  that);
 
-    /** @meta method []scala.Double ; */
-    public double  coerce     (            ) { return  value        ; }
+    abstract public boolean $eq$eq     (float   that);
+    abstract public boolean $bang$eq   (float   that);
+    abstract public boolean $less      (float   that);
+    abstract public boolean $greater   (float   that);
+    abstract public boolean $less$eq   (float   that);
+    abstract public boolean $greater$eq(float   that);
+    abstract public float   $plus      (float   that);
+    abstract public float   $minus     (float   that);
+    abstract public float   $times     (float   that);
+    abstract public float   $div       (float   that);
+    abstract public float   $percent   (float   that);
 
-    public boolean $eq$eq     (float   that) { return  value == that; }
-    public boolean $bang$eq   (float   that) { return  value != that; }
-    public boolean $less      (float   that) { return  value <  that; }
-    public boolean $greater   (float   that) { return  value >  that; }
-    public boolean $less$eq   (float   that) { return  value <= that; }
-    public boolean $greater$eq(float   that) { return  value >= that; }
-    public float   $plus      (float   that) { return  value +  that; }
-    public float   $minus     (float   that) { return  value -  that; }
-    public float   $times     (float   that) { return  value *  that; }
-    public float   $div       (float   that) { return  value /  that; }
-    public float   $percent   (float   that) { return  value %  that; }
+    abstract public long    $less$less (int     that);
+    abstract public long    $less$less (long    that);
+    abstract public long    $greater$greater(int     that);
+    abstract public long    $greater$greater(long    that);
+    abstract public long    $greater$greater$greater(int     that);
+    abstract public long    $greater$greater$greater(long    that);
 
-    /** @meta method []scala.Float  ; */
-    public float   coerce     (            ) { return  value        ; }
-    /** @meta method []scala.Long   ; */
-    public long    $tilde     (            ) { return ~value        ; }
+    abstract public boolean $eq$eq     (long    that);
+    abstract public boolean $bang$eq   (long    that);
+    abstract public boolean $less      (long    that);
+    abstract public boolean $greater   (long    that);
+    abstract public boolean $less$eq   (long    that);
+    abstract public boolean $greater$eq(long    that);
+    abstract public long    $plus      (long    that);
+    abstract public long    $minus     (long    that);
+    abstract public long    $times     (long    that);
+    abstract public long    $div       (long    that);
+    abstract public long    $percent   (long    that);
+    abstract public long    $bar       (long    that);
+    abstract public long    $amp       (long    that);
+    abstract public long    $up        (long    that);
 
-    public long    $less$less (int     that) { return  value << that; }
-    public long    $less$less (long    that) { return  value << that; }
-    public long    $greater$greater(int     that) { return  value >> that; }
-    public long    $greater$greater(long    that) { return  value >> that; }
-    public long    $greater$greater$greater(int     that) { return  value >>>that; }
-    public long    $greater$greater$greater(long    that) { return  value >>>that; }
+    abstract public boolean $eq$eq     (int     that);
+    abstract public boolean $bang$eq   (int     that);
+    abstract public boolean $less      (int     that);
+    abstract public boolean $greater   (int     that);
+    abstract public boolean $less$eq   (int     that);
+    abstract public boolean $greater$eq(int     that);
+    abstract public long    $plus      (int     that);
+    abstract public long    $minus     (int     that);
+    abstract public long    $times     (int     that);
+    abstract public long    $div       (int     that);
+    abstract public long    $percent   (int     that);
+    abstract public long    $bar       (int     that);
+    abstract public long    $amp       (int     that);
+    abstract public long    $up        (int     that);
 
-    public boolean $eq$eq     (long    that) { return  value == that; }
-    public boolean $bang$eq   (long    that) { return  value != that; }
-    public boolean $less      (long    that) { return  value <  that; }
-    public boolean $greater   (long    that) { return  value >  that; }
-    public boolean $less$eq   (long    that) { return  value <= that; }
-    public boolean $greater$eq(long    that) { return  value >= that; }
-    public long    $plus      (long    that) { return  value +  that; }
-    public long    $minus     (long    that) { return  value -  that; }
-    public long    $times     (long    that) { return  value *  that; }
-    public long    $div       (long    that) { return  value /  that; }
-    public long    $percent   (long    that) { return  value %  that; }
-    public long    $bar       (long    that) { return  value |  that; }
-    public long    $amp       (long    that) { return  value &  that; }
-    public long    $up        (long    that) { return  value ^  that; }
+    abstract public boolean $eq$eq     (char    that);
+    abstract public boolean $bang$eq   (char    that);
+    abstract public boolean $less      (char    that);
+    abstract public boolean $greater   (char    that);
+    abstract public boolean $less$eq   (char    that);
+    abstract public boolean $greater$eq(char    that);
+    abstract public long    $plus      (char    that);
+    abstract public long    $minus     (char    that);
+    abstract public long    $times     (char    that);
+    abstract public long    $div       (char    that);
+    abstract public long    $percent   (char    that);
+    abstract public long    $bar       (char    that);
+    abstract public long    $amp       (char    that);
+    abstract public long    $up        (char    that);
 
-    public boolean $eq$eq     (int    that) { return  value == that; }
-    public boolean $bang$eq   (int    that) { return  value != that; }
-    public boolean $less      (int    that) { return  value <  that; }
-    public boolean $greater   (int    that) { return  value >  that; }
-    public boolean $less$eq   (int    that) { return  value <= that; }
-    public boolean $greater$eq(int    that) { return  value >= that; }
-    public long    $plus      (int    that) { return  value +  that; }
-    public long    $minus     (int    that) { return  value -  that; }
-    public long    $times     (int    that) { return  value *  that; }
-    public long    $div       (int    that) { return  value /  that; }
-    public long    $percent   (int    that) { return  value %  that; }
-    public long    $bar       (int    that) { return  value |  that; }
-    public long    $amp       (int    that) { return  value &  that; }
-    public long    $up        (int    that) { return  value ^  that; }
+    abstract public boolean $eq$eq     (short   that);
+    abstract public boolean $bang$eq   (short   that);
+    abstract public boolean $less      (short   that);
+    abstract public boolean $greater   (short   that);
+    abstract public boolean $less$eq   (short   that);
+    abstract public boolean $greater$eq(short   that);
+    abstract public long    $plus      (short   that);
+    abstract public long    $minus     (short   that);
+    abstract public long    $times     (short   that);
+    abstract public long    $div       (short   that);
+    abstract public long    $percent   (short   that);
+    abstract public long    $bar       (short   that);
+    abstract public long    $amp       (short   that);
+    abstract public long    $up        (short   that);
 
-    public boolean $eq$eq     (short    that) { return  value == that; }
-    public boolean $bang$eq   (short    that) { return  value != that; }
-    public boolean $less      (short    that) { return  value <  that; }
-    public boolean $greater   (short    that) { return  value >  that; }
-    public boolean $less$eq   (short    that) { return  value <= that; }
-    public boolean $greater$eq(short    that) { return  value >= that; }
-    public long    $plus      (short    that) { return  value +  that; }
-    public long    $minus     (short    that) { return  value -  that; }
-    public long    $times     (short    that) { return  value *  that; }
-    public long    $div       (short    that) { return  value /  that; }
-    public long    $percent   (short    that) { return  value %  that; }
-    public long    $bar       (short    that) { return  value |  that; }
-    public long    $amp       (short    that) { return  value &  that; }
-    public long    $up        (short    that) { return  value ^  that; }
+    abstract public boolean $eq$eq     (byte    that);
+    abstract public boolean $bang$eq   (byte    that);
+    abstract public boolean $less      (byte    that);
+    abstract public boolean $greater   (byte    that);
+    abstract public boolean $less$eq   (byte    that);
+    abstract public boolean $greater$eq(byte    that);
+    abstract public long    $plus      (byte    that);
+    abstract public long    $minus     (byte    that);
+    abstract public long    $times     (byte    that);
+    abstract public long    $div       (byte    that);
+    abstract public long    $percent   (byte    that);
+    abstract public long    $bar       (byte    that);
+    abstract public long    $amp       (byte    that);
+    abstract public long    $up        (byte    that);
 
-    public boolean $eq$eq     (char    that) { return  value == that; }
-    public boolean $bang$eq   (char    that) { return  value != that; }
-    public boolean $less      (char    that) { return  value <  that; }
-    public boolean $greater   (char    that) { return  value >  that; }
-    public boolean $less$eq   (char    that) { return  value <= that; }
-    public boolean $greater$eq(char    that) { return  value >= that; }
-    public long    $plus      (char    that) { return  value +  that; }
-    public long    $minus     (char    that) { return  value -  that; }
-    public long    $times     (char    that) { return  value *  that; }
-    public long    $div       (char    that) { return  value /  that; }
-    public long    $percent   (char    that) { return  value %  that; }
-    public long    $bar       (char    that) { return  value |  that; }
-    public long    $amp       (char    that) { return  value &  that; }
-    public long    $up        (char    that) { return  value ^  that; }
-
-    public boolean $eq$eq     (byte    that) { return  value == that; }
-    public boolean $bang$eq   (byte    that) { return  value != that; }
-    public boolean $less      (byte    that) { return  value <  that; }
-    public boolean $greater   (byte    that) { return  value >  that; }
-    public boolean $less$eq   (byte    that) { return  value <= that; }
-    public boolean $greater$eq(byte    that) { return  value >= that; }
-    public long    $plus      (byte    that) { return  value +  that; }
-    public long    $minus     (byte    that) { return  value -  that; }
-    public long    $times     (byte    that) { return  value *  that; }
-    public long    $div       (byte    that) { return  value /  that; }
-    public long    $percent   (byte    that) { return  value %  that; }
-    public long    $bar       (byte    that) { return  value |  that; }
-    public long    $amp       (byte    that) { return  value &  that; }
-    public long    $up        (byte    that) { return  value ^  that; }
 }

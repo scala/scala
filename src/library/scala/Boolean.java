@@ -13,39 +13,29 @@ package scala;
 
 
 /** @meta class extends scala.AnyVal; */
-public abstract class Boolean extends AnyVal implements java.io.Serializable {
+public abstract class Boolean extends AnyVal {
 
-    public final boolean value;
+    // prevent inheriting from the class
+    private Boolean() {}
 
-    public Boolean(boolean value) {
-        this.value = value;
-    }
-
-    public boolean equals(java.lang.Object other) {
-        return other instanceof Boolean && value == ((Boolean)other).value;
-    }
-    public int hashCode() {
-        int  bits = value ? 1231 : 1237;
-        return bits;
-    }
-    public String toString() {
-        return String.valueOf(value);
-    }
+    public boolean equals(java.lang.Object other) { return super.equals(other); }
+    public int hashCode() { return super.hashCode(); }
+    public String toString() { return super.toString(); }
 
     /** @meta method (scala.Any)scala.Boolean; */
-    public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
+    abstract public boolean $eq$eq  (java.lang.Object other);
     /** @meta method (scala.Any)scala.Boolean; */
-    public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
+    abstract public boolean $bang$eq(java.lang.Object other);
 
     /** @meta method []scala.Boolean; */
-    public boolean $bang      (            ) { return !value        ; }
+    abstract public boolean $bang();
 
-    public boolean $eq$eq     (boolean that) { return  value == that; }
-    public boolean $bang$eq   (boolean that) { return  value != that; }
-    public boolean $bar$bar   (boolean that) { return  value || that; }
-    public boolean $amp$amp   (boolean that) { return  value && that; }
-    public boolean $bar       (boolean that) { return  value |  that; }
-    public boolean $amp       (boolean that) { return  value &  that; }
-    public boolean $up        (boolean that) { return  value ^  that; }
+    abstract public boolean $eq$eq  (boolean that);
+    abstract public boolean $bang$eq(boolean that);
+    abstract public boolean $bar$bar(boolean that);
+    abstract public boolean $amp$amp(boolean that);
+    abstract public boolean $bar    (boolean that);
+    abstract public boolean $amp    (boolean that);
+    abstract public boolean $up     (boolean that);
 
 }

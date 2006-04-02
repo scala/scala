@@ -12,28 +12,19 @@
 package scala;
 
 
-public abstract class Unit    extends AnyVal {
+public abstract class Unit extends AnyVal {
 
-    public final void    value() {}
+    //public final void value() {}
 
-    public Unit   (             ) {
+    private Unit() {}
 
-    }
-
-    public boolean equals(java.lang.Object other) {
-        return other instanceof Unit;
-    }
-    public int hashCode() {
-        int  bits = 4041;
-        return bits;
-    }
-    public String toString() {
-        return "()";
-    }
+    public boolean equals(java.lang.Object other) { return super.equals(other); }
+    public int hashCode() { return super.hashCode(); }
+    public String toString() { return super.toString();}
 
     /** @meta method (scala.Any)scala.Boolean; */
-    public boolean $eq$eq  (java.lang.Object other) { return  equals(other); }
+    abstract public boolean $eq$eq  (java.lang.Object other);
     /** @meta method (scala.Any)scala.Boolean; */
-    public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
+    abstract public boolean $bang$eq(java.lang.Object other);
 
 }
