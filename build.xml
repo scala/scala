@@ -913,14 +913,15 @@ DOCUMENTATION
   >
     <mkdir dir="${api.lib.dir}"/>
     <quickdoc
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.dir}"
       destdir="${api.lib.dir}"
       sourcepath=""
     >
       <classpath>
-        <pathelement location="${quick.lib.dir}"/>
+        <pathelement location="${quick.dir}/${lib.dir.name}"/>
       </classpath>
-      <include name="**/*.scala"/>
+      <include name="${dbc.dir.name}/**/*.scala"/>
+      <include name="${lib.dir.name}/**/*.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quickdoc>
   </target>
