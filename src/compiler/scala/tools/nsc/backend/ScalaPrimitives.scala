@@ -225,10 +225,6 @@ abstract class ScalaPrimitives {
     addPrimitives(ArrayClass, nme.apply, APPLY);
     addPrimitives(ArrayClass, nme.update, UPDATE);
 
-    // scala.Unit
-    addPrimitives(UnitClass, nme.EQ, EQ);
-    addPrimitives(UnitClass, nme.NE, NE);
-
     // scala.Boolean
     addPrimitives(BooleanClass, nme.EQ, EQ);
     addPrimitives(BooleanClass, nme.NE, NE);
