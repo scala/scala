@@ -17,10 +17,6 @@ public abstract class Char extends AnyVal {
 
     private Char() {}
 
-    public boolean equals(java.lang.Object other) { return super.equals(other); }
-    public int hashCode() { return super.hashCode(); }
-    public String toString() { return super.toString(); }
-
     /** @meta method []scala.Byte; */
     abstract public byte toByte();
 
@@ -42,15 +38,21 @@ public abstract class Char extends AnyVal {
     /** @meta method []scala.Double; */
     abstract public double toDouble();
 
-    /** @meta method (scala.Any)scala.Boolean; */
-    abstract public boolean $eq$eq  (java.lang.Object other);
-    /** @meta method (scala.Any)scala.Boolean; */
-    abstract public boolean $bang$eq(java.lang.Object other);
+    /** @meta method []scala.Int; */
+    abstract public int     coerce();
+    /** @meta method []scala.Long; */
+    abstract public long    coerce();
+    /** @meta method []scala.Float; */
+    abstract public float   coerce();
+    /** @meta method []scala.Double; */
+    abstract public double  coerce();
 
-    /** @meta method []scala.Int    ; */
-    abstract public int     $plus      (            );
-    /** @meta method []scala.Int    ; */
-    abstract public int     $minus     (            );
+    /** @meta method []scala.Int; */
+    abstract public int     $plus();
+    /** @meta method []scala.Int; */
+    abstract public int     $minus();
+    /** @meta method []scala.Int; */
+    abstract public int     $tilde();
 
     abstract public String  $plus      (String  that);
 
@@ -66,9 +68,6 @@ public abstract class Char extends AnyVal {
     abstract public double  $div       (double  that);
     abstract public double  $percent   (double  that);
 
-    /** @meta method []scala.Double ; */
-    abstract public double  coerce     (            );
-
     abstract public boolean $eq$eq     (float   that);
     abstract public boolean $bang$eq   (float   that);
     abstract public boolean $less      (float   that);
@@ -80,11 +79,6 @@ public abstract class Char extends AnyVal {
     abstract public float   $times     (float   that);
     abstract public float   $div       (float   that);
     abstract public float   $percent   (float   that);
-
-    /** @meta method []scala.Float  ; */
-    abstract public float   coerce     (            );
-    /** @meta method []scala.Int    ; */
-    abstract public int     $tilde     (            );
 
     abstract public int     $less$less (int     that);
     abstract public int     $less$less (long    that);
@@ -107,9 +101,6 @@ public abstract class Char extends AnyVal {
     abstract public long    $bar       (long    that);
     abstract public long    $amp       (long    that);
     abstract public long    $up        (long    that);
-
-    /** @meta method []scala.Long   ; */
-    abstract public long    coerce     (            );
 
     abstract public boolean $eq$eq     (int     that);
     abstract public boolean $bang$eq   (int     that);
@@ -170,9 +161,5 @@ public abstract class Char extends AnyVal {
     abstract public int     $bar       (byte     that);
     abstract public int     $amp       (byte     that);
     abstract public int     $up        (byte     that);
-
-
-    /** @meta method []scala.Int    ; */
-    abstract public int     coerce     (            );
 
 }

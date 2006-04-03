@@ -14,13 +14,8 @@ package scala;
 
 public abstract class Unit extends AnyVal {
 
-    //public final void value() {}
-
+    // prevent inheriting from the class
     private Unit() {}
-
-    public boolean equals(java.lang.Object other) { return super.equals(other); }
-    public int hashCode() { return super.hashCode(); }
-    public String toString() { return super.toString();}
 
     /** @meta method (scala.Any)scala.Boolean; */
     abstract public boolean $eq$eq  (java.lang.Object other);

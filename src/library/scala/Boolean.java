@@ -18,15 +18,6 @@ public abstract class Boolean extends AnyVal {
     // prevent inheriting from the class
     private Boolean() {}
 
-    public boolean equals(java.lang.Object other) { return super.equals(other); }
-    public int hashCode() { return super.hashCode(); }
-    public String toString() { return super.toString(); }
-
-    /** @meta method (scala.Any)scala.Boolean; */
-    abstract public boolean $eq$eq  (java.lang.Object other);
-    /** @meta method (scala.Any)scala.Boolean; */
-    abstract public boolean $bang$eq(java.lang.Object other);
-
     /** @meta method []scala.Boolean; */
     abstract public boolean $bang();
 
