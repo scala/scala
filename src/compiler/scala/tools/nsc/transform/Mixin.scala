@@ -49,7 +49,7 @@ abstract class Mixin extends InfoTransform {
 	  val other = bcs.head.info.nonPrivateDecl(member.name);
 	  log("rebindsuper " + bcs.head + " " + other + " " + other.tpe + " " + other.hasFlag(DEFERRED));
         }
-        sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED));
+        sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE));
         bcs = bcs.tail
       }
       assert(sym != NoSymbol, member);

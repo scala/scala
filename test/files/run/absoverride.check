@@ -1,0 +1,15 @@
+<sync>
+next: j
+</sync>
+log: j
+j
+<sync>
+next: v
+</sync>
+log: v
+v
+<sync>
+next: m
+</sync>
+log: m
+m

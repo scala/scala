@@ -620,7 +620,7 @@ trait Symbols requires SymbolTable {
      *  @param site      The base type from which member types are computed
      */
     final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol =
-      ofclazz.info.nonPrivateDecl(name).suchThat(sym =>
+      ofclazz.info.nonPrivateDecl(name).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)));
 
     /** The symbol overridden by this symbol in given class `ofclazz' */
