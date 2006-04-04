@@ -42,16 +42,9 @@ public final class BoxedInt extends BoxedNumber
     public final float floatValue() { return (float)value; }
     public final double doubleValue() { return (double)value; }
 
-    public final boolean $eq$eq(java.lang.Object other) {
-        return equals(other);
-    }
-
-    public final boolean $bang$eq(java.lang.Object other) {
-        return !equals(other);
-    }
-
     public final boolean equals(java.lang.Object other) {
-	return other instanceof BoxedNumber && value == ((BoxedNumber) other).intValue();
+	return other instanceof BoxedNumber &&
+            value == ((BoxedNumber) other).intValue();
     }
 
     public final int hashCode() {
@@ -61,4 +54,5 @@ public final class BoxedInt extends BoxedNumber
     public final String toString() {
 	return String.valueOf(value);
     }
+
 }
