@@ -485,14 +485,17 @@ trait Typers requires Analyzer {
 //      adapt(tree, mode, pt)
 //    }
 
-    def adaptToMember(qual: Tree, name: Name, tp: Type): Tree =
+    def adaptToMember(qual: Tree, name: Name, tp: Type): Tree = {
+      val qtpe = qual.tpe.widen;
       if (qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
-          !phase.erasedTypes && !qual.tpe.widen.isError && !tp.isError) {
-        val coercion = inferView(qual.pos, qual.tpe.widen, name, tp, true)
+          !phase.erasedTypes && !qtpe.isError && !tp.isError &&
+          qtpe.symbol != AllRefClass && qtpe.symbol != AllClass && qtpe != WildcardType) {
+        val coercion = inferView(qual.pos, qtpe, name, tp, true)
         if (coercion != EmptyTree)
           typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
         else qual
       } else qual
+    }
 
     def adaptToName(qual: Tree, name: Name) =
       if (qual.tpe.nonLocalMember(name) != NoSymbol) qual
@@ -911,7 +914,9 @@ trait Typers requires Analyzer {
         val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
           if (vparam.tpt.isEmpty)
             vparam.tpt.tpe =
-              if (argpt == NoType) { error(vparam.pos, "missing parameter type"); ErrorType }
+              if (argpt == NoType || argpt == WildcardType) {
+                error(vparam.pos, "missing parameter type"); ErrorType
+              }
               else argpt
           namer.enterSym(vparam)
           vparam.symbol
@@ -1782,7 +1787,7 @@ trait Typers requires Analyzer {
 
       def implicitsOfClass(clazz: Symbol): List[ImplicitInfo] = (
         clazz.initialize.linkedModule.moduleClass.info.members.toList.filter(.hasFlag(IMPLICIT)) map
-          (sym => ImplicitInfo(sym.name, clazz.linkedModule.tpe.memberType(sym), sym))
+          (sym => new ImplicitInfo(sym.name, clazz.linkedModule.tpe, sym))
       )
 
       var tree = searchImplicit(context.implicitss, true)

@@ -1586,7 +1586,8 @@ trait Types requires SymbolTable {
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else { constr1.hibounds = tp2 :: constr1.hibounds; true }
       case Pair(_, RefinedType(parents2, ref2)) =>
-        (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes)
+        (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes) &&
+        (!parents2.exists(.symbol.isAbstractType) || tp1.symbol != AllRefClass)
       case Pair(RefinedType(parents1, ref1), _) =>
         parents1 exists (.<:<(tp2))
       /* todo: replace following with

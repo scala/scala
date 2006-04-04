@@ -263,7 +263,7 @@ trait Contexts requires Analyzer {
 
     private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
       for (val sym <- syms; sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
-      yield ImplicitInfo(sym.name, pre.memberType(sym), sym);
+      yield new ImplicitInfo(sym.name, pre, sym);
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val pre = imp.qual.tpe;
@@ -274,7 +274,7 @@ trait Contexts requires Analyzer {
 	  var impls = collect(sels1) filter (info => info.name != from);
 	  if (to != nme.WILDCARD) {
 	    val sym = imp.importedSymbol(to);
-	    if (sym.hasFlag(IMPLICIT)) impls = ImplicitInfo(to, pre.memberType(sym), sym) :: impls;
+	    if (sym.hasFlag(IMPLICIT)) impls = new ImplicitInfo(to, pre, sym) :: impls;
 	  }
 	  impls
       }
@@ -338,9 +338,15 @@ trait Contexts requires Analyzer {
     override def toString() = tree.toString();
   }
 
-  case class ImplicitInfo(val name: Name, val tpe: Type, val sym: Symbol);
+  class ImplicitInfo(val name: Name, pre: Type, val sym: Symbol) {
+    private var tpeCache: Type = null;
+    def tpe: Type = {
+      if (tpeCache == null) tpeCache = pre.memberType(sym)
+      tpeCache
+    }
+  }
 
-  val NoImplicitInfo = ImplicitInfo(null, null, null)
+  val NoImplicitInfo = new ImplicitInfo(null, null, null)
 
   case class ImportType(expr: Tree) extends Type;
 }
