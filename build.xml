@@ -1146,9 +1146,13 @@ GENERATES A DISTRIBUTION
       desc="The Scala test package contains everything needed to test Scala."
       link="${sbaz.universe}/${sbaz.test.name}-${version.number}.sbp"
     >
+      <binset
+        dir="${basedir}/test"
+        includes="scalatest"
+      />
       <miscset
         dir="${basedir}/test"
-        includes="files/**/*.check,files/**/*.scala,scalatest"
+        includes="files/**/*.check,files/**/*.scala"
       />
     </quicksbaz>
   </target>

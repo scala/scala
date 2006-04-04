@@ -413,6 +413,25 @@ test_add_file() {
     esac;
 }
 
+test_get_location() {
+    [ $# = 1 ] || abort "internal error";
+    source="$1"; shift 1;
+    script=`basename "$source"`;
+    while [ -h "$source" ]; do
+        script=`basename "$source"`;
+        lookup=`ls -ld "$source"`;
+        target=`expr "$lookup" : '.*-> \(.*\)$'`;
+        if expr "${target:-.}/" : '/.*/$' > /dev/null; then
+            source=${target:-.};
+        else
+            source=`dirname "$source"`/${target:-.};
+       fi;
+    done;
+    location=`dirname "$source"`;
+    location=`cd "$location"; pwd`;
+    echo $location;
+}
+
 ##############################################################################
 # Definition of UNAME, SOURCE, SCRIPT and PREFIX
 
@@ -431,9 +450,7 @@ while [ -h "$SOURCE" ]; do
     fi;
 done;
 PREFIX=`dirname "$SOURCE"`/..;
-prefix=$PREFIX;
 PREFIX=`cd "$PREFIX"; pwd`;
-
 
 ##############################################################################
 # Invocation of $SCRIPT
@@ -445,7 +462,13 @@ FAILED="false";
 ERRORS=0;
 SUCCESS_COUNT=0;
 FAILURE_COUNT=0;
-TESTROOT="$PREFIX/test";
+if [ -d "$PREFIX/test" ]; then
+    TESTROOT="$PREFIX/test";
+elif [ -d "$PREFIX/misc/scala-test" ]; then
+    TESTROOT="$PREFIX/misc/scala-test";
+else
+    abort "Test directory not found";
+fi;
 SRCDIR="$TESTROOT/files";
 OBJDIR="""";
 
@@ -460,12 +483,12 @@ FILES_MSIL="";
 QUICK="$PREFIX/build/quick/exec"
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
+elif [ -d "$PREFIX/build" ]; then
+    LATEST="$QUICK";
+elif [ -d "$PREFIX/bin" ]; then
+    LATEST="$PREFIX/bin";
 else
-    if [ -d "$PREFIX/build" ]; then
-        LATEST="$QUICK";
-    else
-        LATEST="$PREFIX/bin";
-    fi;
+    abort "Scala binaries not be found";
 fi;
 BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
                     # it can also be set to the empty string
@@ -536,7 +559,7 @@ fi;
 
 SCALA="${BIN_DIR}scala";
 SOCOS="${BIN_DIR}scalac";
-SCALAP="$LATEST/scalap";
+SCALAP="${BIN_DIR}scalap";
 
 SCALA_SCALA_ARGS="-Xmx512M $SCALA_SCALA_ARGS";
 export SCALA_SCALA_ARGS;
@@ -550,7 +573,12 @@ if [ -n "$OBJDIR" ]; then
 fi
 
 printf_outline "Source directory is : $SRCDIR\\n";
-printf_outline "Scala binaries in   : $BIN_DIR\\n";
+bin_dir=$BIN_DIR
+if [ -z "$bin_dir" ]; then
+    bin_dir=`which "$SOCOS"` && bin_dir=`dirname "$bin_dir"`/;
+    bin_dir=`test_get_location ${bin_dir}scalac`;
+fi;
+printf_outline "Scala binaries in   : $bin_dir\\n";
 jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
 printf_outline "Java runtime is     : $jvm_version\\n\\n";
 
