@@ -2,7 +2,7 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Sean McDirmid
  */
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.doc
 
@@ -78,11 +78,11 @@ abstract class DocGenerator extends Models {
        } else if (sym.owner.isPackageClass) sym.fullNameString('/');
        else urlFor0(sym.owner, orig) + "." + Utility.escape(sym.nameString)) + (sym match {
       case msym : ModuleSymbol =>
-        if (msym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) ""
+        if (msym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) "$package"
         else "$object"
       case csym : ClassSymbol =>
         if (csym.isModuleClass) {
-          if (csym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) ""
+          if (csym.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) "$package"
           else "$object"
         }
         else "";
@@ -154,9 +154,16 @@ abstract class DocGenerator extends Models {
 
     def navLabel: String;
 
+    private def path0 = {
+      val p = path;
+      if (p.endsWith("$package"))
+      p.substring(0, p.length() - ("$package").length());
+      else p;
+    }
+
      def body : NodeSeq = {
       val nav = <table class="navigation"><tr><td valign="top" class="navigation-links">
-                {aref(path + "$content.html", contentFrame, navLabel)}
+                {aref(path0 + "$content.html", contentFrame, navLabel)}
                 </td></tr></table><p/>;
 
       val body = <span> { { for (val kind <- KINDS; classes.contains(kind)) yield {
@@ -444,6 +451,7 @@ abstract class DocGenerator extends Models {
       def path = "all-classes"
       def navLabel = "root-page"
     };
+
     // class from for each module.
     for (val top <- topLevel.elements) {
       val module = top._1;
@@ -452,7 +460,7 @@ abstract class DocGenerator extends Models {
       new ListClassFrame {
         def title = "List of classes and objects in package " + module.fullNameString('.')
         def classes = top._2
-        def path = module.fullNameString('/')
+        def path = module.fullNameString('/') + "$package"
         def navLabel = module.fullNameString('.')
       };
       val module0 = module;
