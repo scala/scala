@@ -1,0 +1,9 @@
+bug563.scala:6 error: missing parameter type
+            map(n,ptr => new Cell(ptr.elem));
+                  ^
+bug563.scala:6 error: no type parameters for method map: (scala.List[A],(A) => R)scala.List[R] exist so that it can be applied to arguments (scala.List[scala.Cell[scala.Int]],(<error>) => <error>)
+ --- because ---
+result type scala.List[R] is incompatible with expected type scala.Unit
+            map(n,ptr => new Cell(ptr.elem));
+            ^
+two errors found
