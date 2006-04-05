@@ -42,8 +42,9 @@ package scala.util
   *  @version 1.0, 21/03/2006
   */
 class Fluid[T](init: T) {
-  private val tl = new InheritableThreadLocal
-  tl.set(init)
+  private val tl = new InheritableThreadLocal {
+   override def initialValue = init.asInstanceOf[Object]
+  }
 
   /** Retrieve the current value */
   def value: T = tl.get.asInstanceOf[T]
@@ -53,7 +54,7 @@ class Fluid[T](init: T) {
     * thunk.
     *
     * @param newval The value to which to set the fluid
-    * @param thunk The
+    * @param thunk The code to evaluate under the new setting
     */
   def withValue[S](newval: T)(thunk: =>S): S = {
     val oldval = value
