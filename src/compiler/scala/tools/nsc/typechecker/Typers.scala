@@ -1141,8 +1141,9 @@ trait Typers requires Analyzer {
           if (qual1 ne qual) return typed(copy.Select(tree, qual1, name), mode, pt)
         }
         if (sym.info == NoType) {
-          if (settings.debug.value) log("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nfound = "+sym)
+          if (settings.debug.value) System.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nfound = "+sym)
           if (!qual.tpe.widen.isError)
+            if (context.unit == null) assert(false, "("+qual+":"+qual.tpe+")."+name)
             error(tree.pos,
               decode(name)+" is not a member of "+qual.tpe.widen +
               (if (Position.line(context.unit.source, qual.pos) <
