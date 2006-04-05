@@ -17,7 +17,7 @@ public class BoxedLong extends BoxedNumber
 {
 
     public static BoxedLong box(long value) {
-	return new BoxedLong(value);
+        return new BoxedLong(value);
     }
 
     public final long value;
@@ -38,8 +38,8 @@ public class BoxedLong extends BoxedNumber
     }
 
     public int hashCode() {
-	long bits = value;
-	return (int)(bits ^ (bits >>> 32));
+        long bits = value;
+        return (int)(bits ^ (bits >>> 32));
     }
 
     public String toString() {

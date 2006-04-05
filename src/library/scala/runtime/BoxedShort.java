@@ -21,13 +21,13 @@ public final class BoxedShort extends BoxedNumber
     private static BoxedShort[] canonical = new BoxedShort[MaxHashed - MinHashed + 1];
 
     static {
-	for (int i = MinHashed; i <= MaxHashed; i++)
-	    canonical[i - MinHashed] = new BoxedShort((short)i);
+      for (int i = MinHashed; i <= MaxHashed; i++)
+          canonical[i - MinHashed] = new BoxedShort((short)i);
     }
 
     public static BoxedShort box(short value) {
-	if (MinHashed <= value && value <= MaxHashed) return canonical[value - MinHashed];
-	else return new BoxedShort(value);
+        if (MinHashed <= value && value <= MaxHashed) return canonical[value - MinHashed];
+        else return new BoxedShort(value);
     }
 
     public final short value;
@@ -43,16 +43,16 @@ public final class BoxedShort extends BoxedNumber
     public double doubleValue() { return (double)value; }
 
     public boolean equals(java.lang.Object other) {
-	return other instanceof BoxedNumber &&
+        return other instanceof BoxedNumber &&
             value == ((BoxedNumber) other).shortValue();
     }
 
     public int hashCode() {
-	return value;
+        return value;
     }
 
     public String toString() {
-	return String.valueOf(value);
+        return String.valueOf(value);
     }
 
 }

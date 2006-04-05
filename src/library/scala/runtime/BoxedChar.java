@@ -21,13 +21,13 @@ public class BoxedChar extends BoxedNumber
     private static BoxedChar[] canonical = new BoxedChar[MaxHashed - MinHashed + 1];
 
     static {
-	for (int i = MinHashed; i <= MaxHashed; i++)
-	    canonical[i - MinHashed] = new BoxedChar((char)i);
+        for (int i = MinHashed; i <= MaxHashed; i++)
+            canonical[i - MinHashed] = new BoxedChar((char)i);
     }
 
     public static BoxedChar box(char value) {
-	if (MinHashed <= value && value <= MaxHashed) return canonical[value - MinHashed];
-	else return new BoxedChar(value);
+        if (MinHashed <= value && value <= MaxHashed) return canonical[value - MinHashed];
+        else return new BoxedChar(value);
     }
 
     public final char value;
@@ -43,16 +43,16 @@ public class BoxedChar extends BoxedNumber
     public double doubleValue() { return (double)value; }
 
     public boolean equals(java.lang.Object other) {
-	return other instanceof BoxedNumber &&
+        return other instanceof BoxedNumber &&
             value == ((BoxedNumber) other).charValue();
     }
 
     public int hashCode() {
-	return value;
+        return value;
     }
 
     public String toString() {
-	return String.valueOf(value);
+        return String.valueOf(value);
     }
 
 }
