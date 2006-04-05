@@ -110,6 +110,23 @@ INITIALISATION
         pattern="yyyyMMdd-HHmmss"
       />
     </tstamp>
+    <echo level="verbose" message="ant.jar=${ant.jar}"/>
+    <echo level="verbose" message="ant-contrib.jar=${ant-contrib.jar}"/>
+    <fail message="Additional Ant tasks in 'lib/' is not available">
+      <condition><not>
+        <available
+          classname="net.sf.antcontrib.AntContribVersion"
+          classpath="${ant-contrib.jar}"
+        />
+      </not></condition>
+    </fail>
+    <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+      <classpath>
+        <pathelement location="${ant-contrib.jar}"/>
+      </classpath>
+    </taskdef>
+    <stopwatch name="timer.dist"/>
     <!-- Testing if everything is in place -->
     <echo level="verbose" message="starr.lib.jar=${starr.lib.jar}"/>
     <fail message="STARR library in 'lib/' is not available">
@@ -152,16 +169,6 @@ INITIALISATION
         <available classname="jaco.pizza.Main" classpath="${jaco.jar}"/>
       </not></condition>
     </fail>
-    <echo level="verbose" message="ant.jar=${ant.jar}"/>
-    <echo level="verbose" message="ant-contrib.jar=${ant-contrib.jar}"/>
-    <fail message="Additional Ant tasks in 'lib/' is not available">
-      <condition><not>
-        <available
-          classname="net.sf.antcontrib.AntContribVersion"
-          classpath="${ant-contrib.jar}"
-        />
-      </not></condition>
-    </fail>
     <!-- Creating class-pathes -->
     <path id="common.classpath">
       <pathelement location="${fjbg.jar}"/>
@@ -181,12 +188,6 @@ INITIALISATION
       <pathelement location="${quick.dir}/${comp.dir.name}"/>
       <path refid="common.classpath"/>
     </path>
-    <!-- Setting-up Ant contrib tasks -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml">
-      <classpath>
-        <pathelement location="${ant-contrib.jar}"/>
-      </classpath>
-    </taskdef>
     <!-- Making sure enough memory is available -->
     <propertyregex
       property="memory.set"
@@ -1155,6 +1156,12 @@ GENERATES A DISTRIBUTION
         includes="files/**/*.check,files/**/*.scala"
       />
     </quicksbaz>
+    <stopwatch name="timer.dist" action="total"/>
+    <echo
+      file="${nsc.timers}"
+      append="true"
+      message="    building DIST:   ${timer.dist};${line.separator}"
+    />
   </target>
 
 <!-- ===========================================================================
