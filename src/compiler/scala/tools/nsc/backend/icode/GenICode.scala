@@ -1343,8 +1343,14 @@ abstract class GenICode extends SubComponent  {
                                      SWITCH(tags, labels map (l => if (l == block) cont else l)));
             }
           }
-          if (changed)
+          if (changed) {
             method.code.removeBlock(block);
+            for (val e <- method.exh) {
+              e.covered = e.covered filter (.!=(block))
+              if (e.startBlock eq block)
+                e setStartBlock cont;
+            }
+          }
         }
       }
 
@@ -1466,6 +1472,7 @@ abstract class GenICode extends SubComponent  {
       def exitSynchronized(monitor: Local): this.type = {
         assert(monitors.head == monitor,
                "Bad nesting of monitors: " + monitors + " trying to exit from: " + monitor);
+        monitors = monitors.tail;
         this
       }
 

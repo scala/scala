@@ -3,7 +3,7 @@
  * @author  Iulian Dragos
  */
 
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.backend.opt;
 
@@ -54,6 +54,9 @@ abstract class Inliners extends SubComponent {
       ret
     }
 
+    /** Inline the 'callee' method inside the 'caller' in the given
+     *  basic block, at the given instruction (which has to be a CALL_METHOD).
+     */
     def inline(caller: IMethod,
                block:  BasicBlock,
                instr:  Instruction,
@@ -69,7 +72,7 @@ abstract class Inliners extends SubComponent {
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap;
 
-       val instrBefore = block.toList.takeWhile( i => i != instr);
+       val instrBefore = block.toList.takeWhile( i => i ne instr);
        val instrAfter  = block.toList.drop(instrBefore.length + 1);
 
        assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instrcution in block!");
@@ -89,6 +92,13 @@ abstract class Inliners extends SubComponent {
          val b = caller.code.newBlock;
          activeHandlers.foreach (.addBlock(b));
          b
+       }
+
+       def translateExh(e: ExceptionHandler) = {
+         var handler: ExceptionHandler = e.dup;
+         handler.covered = handler.covered.map(inlinedBlock);
+         handler.setStartBlock(inlinedBlock(e.startBlock));
+         handler
        }
 
        val afterBlock = newBlock;
@@ -178,6 +188,9 @@ abstract class Inliners extends SubComponent {
        instrAfter.foreach(afterBlock.emit);
        afterBlock.close;
        count = count + 1;
+
+       // add exception handlers of the callee
+       caller.exh = (callee.exh map translateExh) ::: caller.exh;
      }
 
 
@@ -199,6 +212,8 @@ abstract class Inliners extends SubComponent {
      }}
 
 
+    val tfa = new analysis.MethodTFA();
+
     def analyzeMethod(m: IMethod): Unit = try {
       var retry = false;
       var count = 0;
@@ -209,11 +224,11 @@ abstract class Inliners extends SubComponent {
           this.count = 0;
           if (settings.debug.value)
             log("Analyzing " + m + " count " + count);
-          val a = new analysis.MethodTFA(m);
-          a.run;
-          linearizer.linearize(m).foreach { bb =>
-            var info = a.in(bb);
-            bb.traverse { i =>
+          tfa.init(m);
+          tfa.run;
+          for (val bb <- linearizer.linearize(m)) {
+            var info = tfa.in(bb);
+            for (val i <- bb.toList) {
               if (!retry) {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
@@ -234,10 +249,16 @@ abstract class Inliners extends SubComponent {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc != m && (inc.code ne null)
-                              && isSafeToInline(m, inc, info._2)) {
+                              && {
+                                val res = isSafeToInline(m, inc, info._2)
+                                log("isSafeToInline: " + inc + " " + res); res }) {
                             retry = true;
                             count = count + 1;
                             inline(m, bb, i, inc);
+
+                            /* Remove this method from the cache, as the calls-private relation
+                               might have changed after the inlining. */
+                            callsPrivate -= m;
                           }
                         case None =>
                           log("Couldn't find " + msym.name);
@@ -246,7 +267,7 @@ abstract class Inliners extends SubComponent {
 
                   case _ => ();
                 }
-                info = a.interpret(info, i);
+                info = tfa.interpret(info, i);
               }}}}
       } while (retry && count < 5);
     } catch {
@@ -264,37 +285,62 @@ abstract class Inliners extends SubComponent {
           val TypeRef(_, sym, _) = t;
           definitions.FunctionClass exists sym.==
         }
-      Console.println("isClosureClass: " + cls + " is: " + res);
       res
     }
 
+    /** Cache whether a method calls private members. */
+    val callsPrivate: Map[IMethod, Boolean] = new HashMap;
 
     /** A method is safe to inline when:
      *    - it does not contain calls to private methods when
      *      called from another class
      *    - it is not inlined into a position with non-empty stack,
      *      while having a top-level finalizer (see liftedTry problem)
+     * Note:
+     *    - synthetic private members are made public in this pass.
      */
     def isSafeToInline(caller: IMethod, callee: IMethod, stack: TypeStack): Boolean = {
-      if (caller.symbol.owner != callee.symbol.owner) {
-        var callsPrivateMember = false;
-        for (val b <- callee.code.blocks)
-          for (val i <- b.toList)
-            i match {
-              case CALL_METHOD(m, style) =>
-                if (m.hasFlag(Flags.PRIVATE) || style.isSuper)
-                  callsPrivateMember = true;
-              case LOAD_FIELD(f, _) =>
-                if (f.hasFlag(Flags.PRIVATE)) callsPrivateMember = true;
-              case _ => ()
-            }
-        if (callsPrivateMember) return false;
-      }
+      var callsPrivateMember = false;
+
+      callsPrivate get (callee) match {
+        case Some(b) => callsPrivateMember = b;
+        case None =>
+          for (val b <- callee.code.blocks)
+            for (val i <- b.toList)
+              i match {
+                case CALL_METHOD(m, style) =>
+                  if (m.hasFlag(Flags.PRIVATE) ||
+                      (style.isSuper && !m.isClassConstructor))
+                    callsPrivateMember = true;
+
+                case LOAD_FIELD(f, _) =>
+                  if (f.hasFlag(Flags.PRIVATE))
+                    if (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR)) {
+                      log("Making not-private symbol out of synthetic: " + f);
+                      f.setFlag(Flags.notPRIVATE)
+                    } else
+                      callsPrivateMember = true;
+
+                case STORE_FIELD(f, _) =>
+                  if (f.hasFlag(Flags.PRIVATE))
+                    if (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR)) {
+                      log("Making not-private symbol out of synthetic: " + f);
+                      f.setFlag(Flags.notPRIVATE)
+                    } else
+                      callsPrivateMember = true;
+
+                case _ => ()
+              }
+          callsPrivate += callee -> callsPrivateMember;
+        }
+
+      if (callsPrivateMember && (caller.symbol.owner != callee.symbol.owner))
+        return false;
 
       if (stack.length > (1 + callee.symbol.info.paramTypes.length) &&
-          (callee.exh exists (.covered.contains(callee.code.startBlock))))
+          (callee.exh exists (.covered.contains(callee.code.startBlock)))) {
         false;
-      else
+      } else
         true
     }
 

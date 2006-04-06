@@ -103,9 +103,10 @@ abstract class TypeFlowAnalysis {
     val STRING = icodes.REFERENCE(TypeFlowAnalysis.this.global.definitions.StringClass);
     var method: IMethod = _;
 
-    def this(m: icodes.IMethod) = {
-      this();
+    /** Initialize the in/out maps for the analysis of the given method. */
+    def init(m: icodes.IMethod): Unit = {
       this.method = m;
+
       init {
         worklist += m.code.startBlock;
         worklist ++= (m.exh map (.startBlock));
@@ -120,6 +121,11 @@ abstract class TypeFlowAnalysis {
           in(e.startBlock) = Pair(in(e.startBlock)._1, stack);
         }
       }
+    }
+
+    def this(m: icodes.IMethod) = {
+      this();
+      init(m)
     }
 
     def run = {

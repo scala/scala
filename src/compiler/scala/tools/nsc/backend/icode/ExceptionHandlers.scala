@@ -20,8 +20,7 @@ import scala.collection.mutable.HashSet;
 trait ExceptionHandlers requires ICodes {
   import global.{Symbol, NoSymbol};
 
-  class ExceptionHandler(val method: IMethod, label: String, val cls: Symbol) {
-    private var coveredBlocks: List[BasicBlock] = Nil;
+  class ExceptionHandler(val method: IMethod, val label: String, val cls: Symbol) {
     private var _startBlock: BasicBlock = _;
     var finalizer: Finalizer = _;
 
@@ -29,17 +28,28 @@ trait ExceptionHandlers requires ICodes {
     def startBlock = _startBlock;
 
     def addBlock(b: BasicBlock): ExceptionHandler = {
-      coveredBlocks = b :: coveredBlocks;
+      covered = b :: covered;
       this
     }
 
-    def covered: List[BasicBlock] = coveredBlocks;
+    var covered: List[BasicBlock] = Nil;
 
     override def toString() = "exh_" + label + "(" + cls.simpleName + ")";
+
+    def this(other: ExceptionHandler) = {
+      this(other.method, other.label, other.cls);
+      covered    = other.covered;
+      setStartBlock(other.startBlock);
+      finalizer  = other.finalizer;
+    }
+
+    def dup: ExceptionHandler = new ExceptionHandler(this);
   }
 
   class Finalizer(method: IMethod, label: String) extends ExceptionHandler(method, label, NoSymbol) {
     override def toString() = "finalizer_" + label;
+
+    override def dup: Finalizer = new Finalizer(method, label);
   }
 
   object NoFinalizer extends Finalizer(null, "<no finalizer>") {

@@ -158,6 +158,8 @@ trait Members requires ICodes {
    */
   class IMethod(val symbol: Symbol) {
     var code: Code = null;
+
+    /** The list of exception handlers, ordered from innermost to outermost. */
     var exh: List[ExceptionHandler] = Nil;
     var sourceFile: String = _;
     var returnType: TypeKind = _;

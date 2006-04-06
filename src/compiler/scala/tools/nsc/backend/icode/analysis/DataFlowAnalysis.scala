@@ -7,7 +7,7 @@ import scala.collection.mutable.{Map, HashMap, Set, HashSet};
 trait DataFlowAnalysis[L <: CompleteLattice] {
   /** A type for program points. */
   type P <: ProgramPoint[P];
-	val  lattice: L;
+  val  lattice: L;
 
   val worklist: Set[P] = new HashSet;
 
