@@ -73,57 +73,49 @@ trait Definitions requires SymbolTable {
       def List_head = getMember(ListClass, nme.head);
       def List_tail = getMember(ListClass, nme.tail);
     var ArrayClass: Symbol = _;
-    var TypeClass: Symbol = _;
     var SerializableClass: Symbol = _;
-    //var NonNullClass: Symbol = _;
     var PredefModule: Symbol = _;
     var ConsoleModule: Symbol = _;
     var MatchErrorClass: Symbol = _;
     var MatchErrorModule: Symbol = _;
       def MatchError_fail = getMember(MatchErrorModule, nme.fail);
-      def MatchError_report = getMember(MatchErrorModule, "report");
+      def MatchError_report = getMember(MatchErrorModule, nme.report);
     var ScalaRunTimeModule: Symbol = _;
-      def SeqFactory = getMember(ScalaRunTimeModule, "Seq");
+      def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined");
     var RepeatedParamClass: Symbol = _;
     var ByNameParamClass: Symbol = _;
-    //var TraitClass: Symbol = _;
 
     val MaxTupleArity = 9;
-    val MaxFunctionArity = 9;
-    var TupleClass: Array[Symbol] = _;
+    val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1);
       def tupleField(n:int, j:int) = getMember(TupleClass(n), "_" + j);
-    var FunctionClass: Array[Symbol] = _;
+      def isTupleType(tp: Type): boolean = tp match {
+        case TypeRef(_, sym, elems) =>
+          elems.length <= MaxTupleArity && sym == TupleClass(elems.length);
+        case _ =>
+          false
+      }
+      def tupleType(elems: List[Type]) =
+        if (elems.length <= MaxTupleArity) {
+	  val sym = TupleClass(elems.length);
+	  typeRef(sym.typeConstructor.prefix, sym, elems)
+        } else NoType;
+
+    val MaxFunctionArity = 9;
+    val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1);
       def functionApply(n:int) = getMember(FunctionClass(n), nme.apply);
-
-    def tupleType(elems: List[Type]) =
-      if (elems.length <= MaxTupleArity) {
-	val sym = TupleClass(elems.length);
-	typeRef(sym.typeConstructor.prefix, sym, elems)
-      } else NoType;
-
-
-    def functionType(formals: List[Type], restpe: Type) =
-      if (formals.length <= MaxFunctionArity) {
-	val sym = FunctionClass(formals.length);
-	typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
-      } else NoType;
-
-
-    def isTupleType(tp: Type): boolean = tp match {
-      case TypeRef(_, sym, elems) =>
-        elems.length <= MaxTupleArity && sym == TupleClass(elems.length);
-      case _ =>
-        false
-    }
-
-    def isFunctionType(tp: Type): boolean = tp match {
-      case TypeRef(_, sym, args) =>
-        ((args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
-        (sym == FunctionClass(args.length - 1)))
-      case _ =>
-        false
-    }
+      def functionType(formals: List[Type], restpe: Type) =
+        if (formals.length <= MaxFunctionArity) {
+	  val sym = FunctionClass(formals.length);
+	  typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
+        } else NoType;
+      def isFunctionType(tp: Type): boolean = tp match {
+        case TypeRef(_, sym, args) =>
+          ((args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
+           (sym == FunctionClass(args.length - 1)))
+          case _ =>
+            false
+      }
 
     def seqType(arg: Type) =
       typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg));
@@ -177,11 +169,9 @@ trait Definitions requires SymbolTable {
     var SerializableAttr: Symbol = _;
     var BeanPropertyAttr: Symbol = _;
 
-    def getModule(fullname: Name): Symbol =
-      getModuleOrClass(fullname, true);
+    def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true);
 
-    def getClass(fullname: Name): Symbol =
-      getModuleOrClass(fullname, false);
+    def getClass(fullname: Name): Symbol = getModuleOrClass(fullname, false);
 
     def getMember(owner: Symbol, name: Name) = {
       val result = owner.info.nonPrivateMember(name);
@@ -433,7 +423,9 @@ trait Definitions requires SymbolTable {
       AnyRefClass =
         newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor);
 
-      AllRefClass = newClass(ScalaPackageClass, nme.AllRef, List(AnyRefClass.typeConstructor))
+      val anyrefparam = List(AnyRefClass.typeConstructor);
+
+      AllRefClass = newClass(ScalaPackageClass, nme.AllRef, anyrefparam)
 	.setFlag(ABSTRACT | TRAIT | FINAL);
 
       AllClass = newClass(ScalaPackageClass, nme.All, anyparam)
@@ -469,9 +461,7 @@ trait Definitions requires SymbolTable {
       SeqClass = getClass("scala.Seq");
       ListClass = getClass("scala.List");
       ArrayClass = getClass("scala.Array");
-      //TypeClass = getClass("scala.Type");
       SerializableClass = getClass("java.io.Serializable");
-      //NonNullClass = getClass("scala.NonNull");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
       MatchErrorClass = getClass("scala.MatchError");
@@ -482,12 +472,9 @@ trait Definitions requires SymbolTable {
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
-      //TraitClass = getClass("scala._trait_");
-      TupleClass = new Array(MaxTupleArity + 1);
-      for (val i <- List.range(1, MaxTupleArity + 1))
+      for (val i <- Iterator.range(1, MaxTupleArity + 1))
 	TupleClass(i) = getClass("scala.Tuple" + i);
-      FunctionClass = new Array(MaxFunctionArity + 1);
-      for (val i <- List.range(0, MaxFunctionArity + 1))
+      for (val i <- Iterator.range(0, MaxFunctionArity + 1))
 	FunctionClass(i) = getClass("scala.Function" + i);
 
       initValueClasses;
@@ -495,8 +482,8 @@ trait Definitions requires SymbolTable {
       val booltype = BooleanClass.typeConstructor;
 
       // members of class scala.Any
-      Any_== = newMethod(AnyClass, "==", anyparam, booltype) setFlag FINAL;
-      Any_!= = newMethod(AnyClass, "!=", anyparam, booltype) setFlag FINAL;
+      Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL;
+      Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype) setFlag FINAL;
       Any_equals = newMethod(AnyClass, nme.equals_, anyparam, booltype);
       Any_hashCode = newMethod(
         AnyClass, nme.hashCode_, List(), IntClass.typeConstructor);
@@ -514,14 +501,10 @@ trait Definitions requires SymbolTable {
         AnyClass, nme.asInstanceOfErased, tparam => tparam.typeConstructor) setFlag FINAL;
 
       // members of class java.lang.{Object, String}
-      Object_== = newMethod(
-        ObjectClass, "==", List(AnyRefClass.typeConstructor), booltype) setFlag FINAL;
-      Object_!= = newMethod(
-        ObjectClass, "!=", List(AnyRefClass.typeConstructor), booltype) setFlag FINAL;
-      Object_eq = newMethod(
-        ObjectClass, "eq", List(AnyRefClass.typeConstructor), booltype) setFlag FINAL;
-      Object_ne = newMethod(
-        ObjectClass, "ne", List(AnyRefClass.typeConstructor), booltype) setFlag FINAL;
+      Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype) setFlag FINAL;
+      Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype) setFlag FINAL;
+      Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype) setFlag FINAL;
+      Object_ne = newMethod(ObjectClass, "ne", anyrefparam, booltype) setFlag FINAL;
       Object_synchronized = newPolyMethod(
         ObjectClass, nme.synchronized_, tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL;
       Object_isInstanceOf = newPolyMethod(
