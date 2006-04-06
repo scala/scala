@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: AllRef$.java 5880 2006-03-02 23:05:17Z mihaylov $
 
 
 package scala;
@@ -18,4 +18,4 @@ package scala;
  * signatures, it is erased to this one.
  */
 
-public class All$ {}
+sealed abstract class AllRef$

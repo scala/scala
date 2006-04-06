@@ -94,7 +94,7 @@ abstract class GenJVM extends SubComponent {
         case _ =>
           log("Could not find pickle information for " + sym);
       }
-      if (!jclass.getName().endsWith("$"))
+      if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
       val outfile = getFile(jclass, ".class");
       jclass.writeTo(outfile);
