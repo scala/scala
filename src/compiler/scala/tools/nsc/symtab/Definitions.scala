@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -13,7 +13,6 @@ trait Definitions requires SymbolTable {
 
   object definitions {
     def isDefinitionsInitialized = isInitialized;
-
 
     // root packages and classes
     var RootClass: Symbol = _;
@@ -56,9 +55,11 @@ trait Definitions requires SymbolTable {
 
     // the scala reference classes
     var ScalaObjectClass: Symbol = _;
-      def ScalaObjectClass_tag = getMember(ScalaObjectClass,  nme.tag );
+      def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag);
     var AttributeClass: Symbol = _;
     var RefClass: Symbol = _;
+    //var RemoteRefClass: Symbol = _
+    var TypedCodeClass: Symbol = _;
     var CodeClass: Symbol = _;
     var CodeModule: Symbol = _;
     var PartialFunctionClass: Symbol = _;
@@ -80,6 +81,8 @@ trait Definitions requires SymbolTable {
     var MatchErrorModule: Symbol = _;
       def MatchError_fail = getMember(MatchErrorModule, nme.fail);
       def MatchError_report = getMember(MatchErrorModule, nme.report);
+    //var RemoteExecutionModule: Symbol = _
+    //  def RemoteExecution_detach = getMember(RemoteExecutionModule, "detach")
     var ScalaRunTimeModule: Symbol = _;
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined");
@@ -97,8 +100,8 @@ trait Definitions requires SymbolTable {
       }
       def tupleType(elems: List[Type]) =
         if (elems.length <= MaxTupleArity) {
-	  val sym = TupleClass(elems.length);
-	  typeRef(sym.typeConstructor.prefix, sym, elems)
+          val sym = TupleClass(elems.length);
+          typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType;
 
     val MaxFunctionArity = 9;
@@ -106,8 +109,8 @@ trait Definitions requires SymbolTable {
       def functionApply(n:int) = getMember(FunctionClass(n), nme.apply);
       def functionType(formals: List[Type], restpe: Type) =
         if (formals.length <= MaxFunctionArity) {
-	  val sym = FunctionClass(formals.length);
-	  typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
+          val sym = FunctionClass(formals.length);
+          typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
         } else NoType;
       def isFunctionType(tp: Type): boolean = tp match {
         case TypeRef(_, sym, args) =>
@@ -176,7 +179,7 @@ trait Definitions requires SymbolTable {
     def getMember(owner: Symbol, name: Name) = {
       val result = owner.info.nonPrivateMember(name);
       if (result == NoSymbol)
-    	throw new FatalError(owner.toString() + " does not have a member " + name);
+        throw new FatalError(owner.toString() + " does not have a member " + name);
       result
     }
 
@@ -194,7 +197,7 @@ trait Definitions requires SymbolTable {
         else sym.info.member(fullname.subName(i, j).toTypeName);
       if (result == NoSymbol) {
         if (settings.debug.value) { System.out.println(sym.info); System.out.println(sym.info.members); }//debug
-	throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
+        throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
       }
       result
     }
@@ -210,9 +213,9 @@ trait Definitions requires SymbolTable {
       val clazz = newClass(owner, name, List());
       val tparam = newTypeParam(clazz, 0) setFlag COVARIANT;
       clazz.setInfo(
-	PolyType(
-	  List(tparam),
-	  ClassInfoType(List(parent(tparam)), new Scope(), clazz)))
+        PolyType(
+          List(tparam),
+          ClassInfoType(List(parent(tparam)), new Scope(), clazz)))
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {
@@ -394,8 +397,8 @@ trait Definitions requires SymbolTable {
       if (isInitialized) return;
       isInitialized = true;
       RootClass =
-	NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
-	  .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
+        NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
+          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
 
       EmptyPackage =
         RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
@@ -426,10 +429,10 @@ trait Definitions requires SymbolTable {
       val anyrefparam = List(AnyRefClass.typeConstructor);
 
       AllRefClass = newClass(ScalaPackageClass, nme.AllRef, anyrefparam)
-	.setFlag(ABSTRACT | TRAIT | FINAL);
+        .setFlag(ABSTRACT | TRAIT | FINAL);
 
       AllClass = newClass(ScalaPackageClass, nme.All, anyparam)
-	.setFlag(ABSTRACT | TRAIT | FINAL);
+        .setFlag(ABSTRACT | TRAIT | FINAL);
 
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");
@@ -453,6 +456,7 @@ trait Definitions requires SymbolTable {
       ScalaObjectClass = getClass("scala.ScalaObject");
       AttributeClass = getClass("scala.Attribute");
       RefClass = getClass("scala.Ref");
+      //RemoteRefClass = getClass("scala.distributed.RemoteRef");
       CodeClass = getClass("scala.reflect.Code");
       CodeModule = getModule("scala.reflect.Code");
       PartialFunctionClass = getClass("scala.PartialFunction");
@@ -466,6 +470,7 @@ trait Definitions requires SymbolTable {
       ConsoleModule = getModule("scala.Console");
       MatchErrorClass = getClass("scala.MatchError");
       MatchErrorModule = getModule("scala.MatchError");
+      //RemoteExecutionModule = getModule("scala.distributed.RemoteExecution");
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime");
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
@@ -473,9 +478,9 @@ trait Definitions requires SymbolTable {
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
       for (val i <- Iterator.range(1, MaxTupleArity + 1))
-	TupleClass(i) = getClass("scala.Tuple" + i);
+        TupleClass(i) = getClass("scala.Tuple" + i);
       for (val i <- Iterator.range(0, MaxFunctionArity + 1))
-	FunctionClass(i) = getClass("scala.Function" + i);
+        FunctionClass(i) = getClass("scala.Function" + i);
 
       initValueClasses;
 
@@ -508,10 +513,10 @@ trait Definitions requires SymbolTable {
       Object_synchronized = newPolyMethod(
         ObjectClass, nme.synchronized_, tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL;
       Object_isInstanceOf = newPolyMethod(
-	ObjectClass, "$isInstanceOf",
+        ObjectClass, "$isInstanceOf",
         tparam => MethodType(List(), booltype)) setFlag FINAL;
       Object_asInstanceOf = newPolyMethod(
-	ObjectClass, "$asInstanceOf",
+        ObjectClass, "$asInstanceOf",
         tparam => MethodType(List(), tparam.typeConstructor)) setFlag FINAL;
       String_+ = newMethod(
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL;
