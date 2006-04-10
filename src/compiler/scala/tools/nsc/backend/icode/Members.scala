@@ -35,8 +35,6 @@ trait Members requires ICodes {
 
     // Constructor code
     startBlock = newBlock;
-    startBlock.initStack(new TypeStack);
-
 
     def removeBlock(b: BasicBlock) = {
       if (settings.debug.value) {

@@ -113,7 +113,9 @@ abstract class Printers {
     }
 
     def printBlock(bb: BasicBlock): Unit = {
-      print(bb.label); print(": "); indent; println;
+      print(bb.label);
+      if (bb.loopHeader) print("[loop header]");
+      print(": "); indent; println;
       bb.toList foreach printInstruction;
       undent; println;
     }

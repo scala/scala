@@ -662,7 +662,7 @@ trait Parsers requires SyntaxAnalyzer {
           Try(body, catches, finalizer)
         }
       case WHILE =>
-        val lname: Name = unit.fresh.newName("label$");
+        val lname: Name = unit.fresh.newName("while$");
         val pos = in.skipToken();
         accept(LPAREN);
         val cond = expr();
@@ -671,7 +671,7 @@ trait Parsers requires SyntaxAnalyzer {
         val body = expr();
         atPos(pos) { makeWhile(lname, cond, body) }
       case DO =>
-        val lname: Name = unit.fresh.newName("label$");
+        val lname: Name = unit.fresh.newName("doWhile$");
         val pos = in.skipToken();
         val body = expr();
         if (in.token == SEMI || in.token == NEWLINE) in.nextToken();

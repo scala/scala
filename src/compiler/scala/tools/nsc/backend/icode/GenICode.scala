@@ -336,6 +336,9 @@ abstract class GenICode extends SubComponent  {
       val resCtx: Context = tree match {
         case LabelDef(name, params, rhs) =>
           val ctx1 = ctx.newBlock;
+          if (isLoopHeaderLabel(name))
+            ctx1.bb.loopHeader = true;
+
           ctx1.labels.get(tree.symbol) match {
             case Some(label) =>
               label.anchor(ctx1.bb);
@@ -1381,6 +1384,9 @@ abstract class GenICode extends SubComponent  {
       List.forall2(tree.params, ctx.defdef.vparamss.head)
         { (x, y) => x.symbol == y.symbol }
     );
+
+    def isLoopHeaderLabel(name: Name): Boolean =
+      name.startsWith("while$") || name.startsWith("doWhile$");
 
 
     /////////////////////// Context ////////////////////////////////

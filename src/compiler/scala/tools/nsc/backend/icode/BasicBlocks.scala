@@ -24,19 +24,16 @@ trait BasicBlocks requires ICodes {
         extends AnyRef
         with ProgramPoint[BasicBlock] {
 
-    /** The type stack at the begining of the block */
-    var initialStack : TypeStack = null;
-
     /** The label of the block */
     val label = theLabel;
-
-    /** The stack at the end of the block */
-    var endStack : TypeStack = null;
 
     /** When set, the 'emit' methods will be ignored. */
     var ignore: Boolean = false;
 
     var preds: List[BasicBlock] = null;
+
+    /** Is this block the head of a while? */
+    var loopHeader = false;
 
     /** ICode instructions, used as temporary storage while emitting code.
      * Once closed is called, only the `instrs' array should be used.
@@ -85,14 +82,6 @@ trait BasicBlocks requires ICodes {
       else
         instructionList.length;
 
-    /** Initialize the stack of the block, must be done before evaluation
-     *  the type stack  */
-    def initStack(stack : TypeStack) = {
-      if (initialStack == null) {
-        initialStack = stack;
-        endStack = null;
-      }
-    }
 
     ///////////////////// Substitutions ///////////////////////
 
