@@ -57,7 +57,6 @@ trait Definitions requires SymbolTable {
     var ScalaObjectClass: Symbol = _;
       def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag);
     var AttributeClass: Symbol = _;
-    var RefClass: Symbol = _;
     //var RemoteRefClass: Symbol = _
     var TypedCodeClass: Symbol = _;
     var CodeClass: Symbol = _;
@@ -455,7 +454,6 @@ trait Definitions requires SymbolTable {
       // the scala reference classes
       ScalaObjectClass = getClass("scala.ScalaObject");
       AttributeClass = getClass("scala.Attribute");
-      RefClass = getClass("scala.Ref");
       //RemoteRefClass = getClass("scala.distributed.RemoteRef");
       CodeClass = getClass("scala.reflect.Code");
       CodeModule = getModule("scala.reflect.Code");
