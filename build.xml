@@ -163,12 +163,6 @@ INITIALISATION
         />
       </not></condition>
     </fail>
-    <echo level="verbose" message="jaco.jar=${jaco.jar}"/>
-    <fail message="JaCo compiler in 'lib/' is not available">
-      <condition><not>
-        <available classname="jaco.pizza.Main" classpath="${jaco.jar}"/>
-      </not></condition>
-    </fail>
     <!-- Creating class-pathes -->
     <path id="common.classpath">
       <pathelement location="${fjbg.jar}"/>
@@ -281,11 +275,6 @@ INITIALISATION
       name="starrtool"
       classname="scala.tools.ant.ScalaTool"
       classpathref="starr.classpath"
-    />
-    <taskdef
-      name="pico"
-      classname="jaco.pizza.ant.Pico"
-      classpath="${jaco.jar}"
     />
     <!-- Removing any outdated stuff -->
     <if>
@@ -417,16 +406,15 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <stopwatch name="timer.locker"/>
     <!-- Build library -->
     <mkdir dir="${locker.lib.dir}"/>
-    <pico
+    <javac
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${locker.lib.dir}"
-      scalahack="yes"
     >
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
       </classpath>
       <include name="**/*.java"/>
-    </pico>
+    </javac>
     <starr
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${locker.lib.dir}"
@@ -453,17 +441,16 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     </starr>
     <!-- Build compiler -->
     <mkdir dir="${locker.comp.dir}"/>
-    <pico
+    <javac
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${locker.comp.dir}"
-      scalahack="yes"
     >
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
         <pathelement location="${locker.comp.dir}"/>
       </classpath>
       <include name="**/*.java"/>
-    </pico>
+    </javac>
     <starr
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${locker.comp.dir}"
@@ -558,16 +545,15 @@ BUILD QUICK-TEST LAYER
     <stopwatch name="timer.quick"/>
     <!-- Build library -->
     <mkdir dir="${quick.lib.dir}"/>
-    <pico
+    <javac
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${quick.lib.dir}"
-      scalahack="yes"
     >
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
       <include name="**/*.java"/>
-    </pico>
+    </javac>
     <locker
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${quick.lib.dir}"
@@ -612,17 +598,16 @@ BUILD QUICK-TEST LAYER
     </locker>
     <!-- Build compiler -->
     <mkdir dir="${quick.comp.dir}"/>
-    <pico
+    <javac
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${quick.comp.dir}"
-      scalahack="yes"
     >
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
       </classpath>
       <include name="**/*.java"/>
-    </pico>
+    </javac>
     <locker
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${quick.comp.dir}"
@@ -728,16 +713,15 @@ TEST
     <stopwatch name="timer.strap"/>
     <!-- Build library -->
     <mkdir dir="${strap.lib.dir}"/>
-    <pico
+    <javac
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${strap.lib.dir}"
-      scalahack="yes"
     >
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
       <include name="**/*.java"/>
-    </pico>
+    </javac>
     <quick
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${strap.lib.dir}"
@@ -779,17 +763,16 @@ TEST
     </quick>
     <!-- Build compiler -->
     <mkdir dir="${strap.comp.dir}"/>
-    <pico
+    <javac
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${strap.comp.dir}"
-      scalahack="yes"
     >
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
         <pathelement location="${strap.comp.dir}"/>
       </classpath>
       <include name="**/*.java"/>
-    </pico>
+    </javac>
     <quick
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${strap.comp.dir}"
