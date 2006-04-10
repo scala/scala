@@ -33,6 +33,10 @@ PROPERTIES
   <property name="number.file" value="${basedir}/build.number"/>
   <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
   <property name="logs.dir" value="${basedir}/logs"/>
+  <!-- Javac configuration properties -->
+  <property name="jc.source" value="1.4"/>
+  <property name="jc.target" value="1.4"/>
+  <property name="jc.deprecation" value="true"/>
   <!-- NSC configuration properties -->
   <property name="nsc.logging" value="none"/>
   <property name="nsc.log-files" value="no"/>
@@ -409,6 +413,9 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <javac
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${locker.lib.dir}"
+      source="${jc.source}"
+      target="${jc.target}"
+      deprecation="${jc.deprecation}"
     >
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
@@ -444,6 +451,9 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <javac
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${locker.comp.dir}"
+      source="${jc.source}"
+      target="${jc.target}"
+      deprecation="${jc.deprecation}"
     >
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
@@ -548,6 +558,9 @@ BUILD QUICK-TEST LAYER
     <javac
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${quick.lib.dir}"
+      source="${jc.source}"
+      target="${jc.target}"
+      deprecation="${jc.deprecation}"
     >
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
@@ -601,6 +614,9 @@ BUILD QUICK-TEST LAYER
     <javac
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${quick.comp.dir}"
+      source="${jc.source}"
+      target="${jc.target}"
+      deprecation="${jc.deprecation}"
     >
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
@@ -716,6 +732,9 @@ TEST
     <javac
       srcdir="${src.dir}/${lib.dir.name}"
       destdir="${strap.lib.dir}"
+      source="${jc.source}"
+      target="${jc.target}"
+      deprecation="${jc.deprecation}"
     >
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
@@ -766,6 +785,9 @@ TEST
     <javac
       srcdir="${src.dir}/${comp.dir.name}"
       destdir="${strap.comp.dir}"
+      source="${jc.source}"
+      target="${jc.target}"
+      deprecation="${jc.deprecation}"
     >
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
