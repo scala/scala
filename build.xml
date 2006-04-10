@@ -63,6 +63,9 @@ PROPERTIES
   <property name="lib.dir.name" value="library"/>
   <property name="comp.dir.name" value="compiler"/>
   <property name="dbc.dir.name" value="dbc"/>
+  <property name="src.lib.dir" value="${src.dir}/${lib.dir.name}"/>
+  <property name="src.comp.dir" value="${src.dir}/${comp.dir.name}"/>
+  <property name="src.dbc.dir" value="${src.dir}/${dbc.dir.name}"/>
   <property name="exec.dir.name" value="exec"/>
   <!-- Location of structure of the distribution properties -->
   <property name="dist.dir" value="${basedir}/dists"/>
@@ -352,7 +355,7 @@ BUILD SUPPORT MACROS
     <attribute name="build.dir"/>
     <sequential>
       <copy todir="@{build.dir}/${lib.dir.name}">
-        <fileset dir="${src.dir}/${lib.dir.name}">
+        <fileset dir="${src.lib.dir}">
           <include name="**/*.tmpl"/>
           <include name="**/*.xml"/>
           <include name="**/*.js"/>
@@ -360,7 +363,7 @@ BUILD SUPPORT MACROS
         </fileset>
       </copy>
       <copy todir="@{build.dir}/${comp.dir.name}">
-        <fileset dir="${src.dir}/${comp.dir.name}">
+        <fileset dir="${src.comp.dir}">
           <include name="**/*.tmpl"/>
           <include name="**/*.xml"/>
           <include name="**/*.js"/>
@@ -411,7 +414,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <!-- Build library -->
     <mkdir dir="${locker.lib.dir}"/>
     <javac
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${locker.lib.dir}"
       source="${jc.source}"
       target="${jc.target}"
@@ -423,7 +426,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.java"/>
     </javac>
     <starr
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${locker.lib.dir}"
       usepredefs="no"
     >
@@ -434,7 +437,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </starr>
     <starr
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${locker.lib.dir}"
     >
       <classpath>
@@ -449,7 +452,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <!-- Build compiler -->
     <mkdir dir="${locker.comp.dir}"/>
     <javac
-      srcdir="${src.dir}/${comp.dir.name}"
+      srcdir="${src.comp.dir}"
       destdir="${locker.comp.dir}"
       source="${jc.source}"
       target="${jc.target}"
@@ -462,7 +465,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.java"/>
     </javac>
     <starr
-      srcdir="${src.dir}/${comp.dir.name}"
+      srcdir="${src.comp.dir}"
       destdir="${locker.comp.dir}"
     >
       <classpath>
@@ -556,7 +559,7 @@ BUILD QUICK-TEST LAYER
     <!-- Build library -->
     <mkdir dir="${quick.lib.dir}"/>
     <javac
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${quick.lib.dir}"
       source="${jc.source}"
       target="${jc.target}"
@@ -568,7 +571,7 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.java"/>
     </javac>
     <locker
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${quick.lib.dir}"
       usepredefs="no"
       addparams="${nsc.params}"
@@ -581,7 +584,7 @@ BUILD QUICK-TEST LAYER
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </locker>
     <locker
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${quick.lib.dir}"
       addparams="${nsc.params}"
       scalacdebugging="${nsc.log-files}"
@@ -597,7 +600,7 @@ BUILD QUICK-TEST LAYER
     </locker>
     <mkdir dir="${quick.dbc.dir}"/>
     <locker
-      srcdir="${src.dir}/${dbc.dir.name}"
+      srcdir="${src.dbc.dir}"
       destdir="${quick.dbc.dir}"
       addparams="${nsc.params}"
       scalacdebugging="${nsc.log-files}"
@@ -612,7 +615,7 @@ BUILD QUICK-TEST LAYER
     <!-- Build compiler -->
     <mkdir dir="${quick.comp.dir}"/>
     <javac
-      srcdir="${src.dir}/${comp.dir.name}"
+      srcdir="${src.comp.dir}"
       destdir="${quick.comp.dir}"
       source="${jc.source}"
       target="${jc.target}"
@@ -625,7 +628,7 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.java"/>
     </javac>
     <locker
-      srcdir="${src.dir}/${comp.dir.name}"
+      srcdir="${src.comp.dir}"
       destdir="${quick.comp.dir}"
       addparams="${nsc.params}"
       scalacdebugging="${nsc.log-files}"
@@ -730,7 +733,7 @@ TEST
     <!-- Build library -->
     <mkdir dir="${strap.lib.dir}"/>
     <javac
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${strap.lib.dir}"
       source="${jc.source}"
       target="${jc.target}"
@@ -742,7 +745,7 @@ TEST
       <include name="**/*.java"/>
     </javac>
     <quick
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${strap.lib.dir}"
       usepredefs="no"
       addparams="${nsc.params}"
@@ -754,7 +757,7 @@ TEST
       <include name="scala/runtime/ScalaRunTime.scala"/>
     </quick>
     <quick
-      srcdir="${src.dir}/${lib.dir.name}"
+      srcdir="${src.lib.dir}"
       destdir="${strap.lib.dir}"
       addparams="${nsc.params}"
     >
@@ -769,7 +772,7 @@ TEST
     </quick>
     <mkdir dir="${strap.dbc.dir}"/>
     <quick
-      srcdir="${src.dir}/${dbc.dir.name}"
+      srcdir="${src.dbc.dir}"
       destdir="${strap.dbc.dir}"
       addparams="${nsc.params}"
     >
@@ -783,7 +786,7 @@ TEST
     <!-- Build compiler -->
     <mkdir dir="${strap.comp.dir}"/>
     <javac
-      srcdir="${src.dir}/${comp.dir.name}"
+      srcdir="${src.comp.dir}"
       destdir="${strap.comp.dir}"
       source="${jc.source}"
       target="${jc.target}"
@@ -796,7 +799,7 @@ TEST
       <include name="**/*.java"/>
     </javac>
     <quick
-      srcdir="${src.dir}/${comp.dir.name}"
+      srcdir="${src.comp.dir}"
       destdir="${strap.comp.dir}"
       addparams="${nsc.params}"
     >
@@ -938,7 +941,7 @@ DOCUMENTATION
   >
     <mkdir dir="${api.comp.dir}"/>
     <quickdoc
-      srcdir="${src.dir}/${comp.dir.name}"
+      srcdir="${src.comp.dir}"
       destdir="${api.comp.dir}"
       sourcepath=""
     >
