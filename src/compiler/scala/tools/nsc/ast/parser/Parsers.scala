@@ -151,7 +151,7 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     def isLocalModifier: boolean = in.token match {
-      case ABSTRACT | FINAL | SEALED => true
+      case ABSTRACT | FINAL | SEALED | IMPLICIT => true
       case _ => false
     }
 
@@ -166,13 +166,15 @@ trait Parsers requires SyntaxAnalyzer {
       case _ => false
     }
 
-    def isExprIntro: boolean = in.token match {
+    def isExprIntroToken(token: int): boolean = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
 	   STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
 	   THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
 	   DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART => true
       case _ => false
     }
+
+    def isExprIntro: boolean = isExprIntroToken(in.token)
 
 /////// COMMENT AND ATTRIBUTE COLLECTION //////////////////////////////////////
 
@@ -467,8 +469,15 @@ trait Parsers requires SyntaxAnalyzer {
         in.nextToken();
       }
 
-    def newLineOptWhenFollowedBy(token: int): unit =
-      if (in.token == NEWLINE && in.next.token == token) newLineOpt();
+    def newLineOptWhenFollowedBy(token: int): unit = {
+      // note: next is defined here because current == NEWLINE
+      if (in.token == NEWLINE && in.next.token == token) newLineOpt()
+    }
+
+    def newLineOptWhenFollowing(p: int => boolean): unit = {
+      // note: next is defined here because current == NEWLINE
+      if (in.token == NEWLINE && p(in.next.token)) newLineOpt()
+    }
 
 //////// TYPES ///////////////////////////////////////////////////////////////
 
@@ -755,7 +764,7 @@ trait Parsers requires SyntaxAnalyzer {
 	  true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
 	opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
 	ident();
-        newLineOpt();
+        newLineOptWhenFollowing(isExprIntroToken);
 	if (isExprIntro) {
 	  top = prefixExpr();
 	} else {
@@ -1116,9 +1125,9 @@ trait Parsers requires SyntaxAnalyzer {
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
 
     /** Modifiers ::= {Modifier}
-     *  Modifier  ::= LocalClassModifier
+     *  Modifier  ::= LocalModifier
      *             |  private [ "[" Id "]" ]
-     *             |  protected | override | implicit
+     *             |  protected | override
      */
     def modifiers(): Modifiers = {
       var privateWithin: Name = nme.EMPTY.toTypeName;
@@ -1153,10 +1162,10 @@ trait Parsers requires SyntaxAnalyzer {
       Modifiers(mods, privateWithin)
     }
 
-    /** LocalClassModifiers ::= {LocalClassModifier}
-     *  LocalClassModifier  ::= abstract | mixin | final | sealed
+    /** LocalModifiers ::= {LocalModifier}
+     *  LocalModifier  ::= abstract | final | sealed | implicit
      */
-    def localClassModifiers(): Modifiers = {
+    def localModifiers(): Modifiers = {
       def loop(mods: int): int = in.token match {
 	case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
@@ -1164,6 +1173,8 @@ trait Parsers requires SyntaxAnalyzer {
           loop(addMod(mods, Flags.FINAL))
 	case SEALED =>
           loop(addMod(mods, Flags.SEALED))
+	case IMPLICIT =>
+          loop(addMod(mods, Flags.IMPLICIT))
 	case _ =>
           mods
       }
@@ -1828,12 +1839,22 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** BlockStatSeq ::= { BlockStat StatementSeparator } [ResultExpr]
      *  BlockStat    ::= Import
-     *                 | Def
+     *                 | [implicit] Def
      *                 | LocalModifiers TmplDef
      *                 | Expr1
      *                 |
      */
     def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = {
+      def localDef(mods: Modifiers) = {
+        if (!(mods hasFlag ~Flags.IMPLICIT)) stats ++= defOrDcl(mods)
+        else stats += tmplDef(mods)
+        if (in.token == RBRACE || in.token == CASE)
+          syntaxError("block must end in result expression, not in definition", false)
+        else
+          acceptStatSep()
+        if (in.token == RBRACE || in.token == CASE)
+          stats += Literal(()).setPos(in.currentPos)
+      }
       while ((in.token != RBRACE) && (in.token != EOF) && (in.token != CASE)) {
         if (in.token == IMPORT) {
           stats ++= importClause();
@@ -1842,20 +1863,9 @@ trait Parsers requires SyntaxAnalyzer {
           stats += expr(false, true);
           if (in.token != RBRACE && in.token != CASE) acceptStatSep();
         } else if (isDefIntro) {
-          stats ++= defOrDcl(NoMods);
-          if (in.token == RBRACE || in.token == CASE)
-            syntaxError("block must end in result expression, not in definition", false)
-          else
-            acceptStatSep();
-          if (in.token == RBRACE || in.token == CASE) {
-            stats += Literal(()).setPos(in.currentPos)
-          }
+          localDef(NoMods)
         } else if (isLocalModifier) {
-          stats += tmplDef(localClassModifiers());
-          acceptStatSep();
-          if (in.token == RBRACE || in.token == CASE) {
-            stats += Literal(()).setPos(in.currentPos)
-          }
+          localDef(localModifiers())
         } else if (in.token == SEMI || in.token == NEWLINE) {
           in.nextToken();
         } else {

@@ -487,7 +487,7 @@ abstract class ClassfileParser {
         case nme.InnerClassesATTR =>
           parseInnerClasses()
         case nme.ScalaSignatureATTR =>
-          unpickler.unpickle(in.buf, in.bp, clazz, staticModule);
+          unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString());
           this.isScala = true;
         case nme.JacoMetaATTR =>
           val meta = pool.getName(in.nextChar).toString().trim();

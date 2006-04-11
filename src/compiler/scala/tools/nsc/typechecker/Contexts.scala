@@ -183,8 +183,10 @@ trait Contexts requires Analyzer {
 	 "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
 	 "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
          "\nmatch " + rest);
-      if (reportAmbiguousErrors) unit.error(pos, msg)
-      else throw new TypeError(msg);
+      if (reportAmbiguousErrors) {
+        if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
+          unit.error(pos, msg)
+      } else throw new TypeError(msg);
     }
 
     def outerContext(clazz: Symbol): Context = {

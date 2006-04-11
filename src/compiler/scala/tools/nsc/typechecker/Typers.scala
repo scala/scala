@@ -142,7 +142,7 @@ trait Typers requires Analyzer {
     /** Check that tree is a stable expression.
      */
     def checkStable(tree: Tree): Tree =
-      if (treeInfo.isPureExpr(tree) || tree.tpe.isError) tree
+      if (treeInfo.isPureExpr(tree)) tree
       else errorTree(tree, "stable identifier required, but "+tree+" found.")
 
     /** Check that type `tp' is not a subtype of itself.
@@ -225,9 +225,10 @@ trait Typers requires Analyzer {
         apply(tree.tpe)
         if (badSymbol == NoSymbol) tree
         else {
-          error(tree.pos,
-                (if (badSymbol.hasFlag(PRIVATE)) "private " else "") + badSymbol +
-                " escapes its defining scope as part of type "+tree.tpe)
+          if (!badSymbol.isErroneous)
+            error(tree.pos,
+                  (if (badSymbol.hasFlag(PRIVATE)) "private " else "") + badSymbol +
+                  " escapes its defining scope as part of type "+tree.tpe)
           setError(tree)
         }
       }
@@ -372,7 +373,7 @@ trait Typers requires Analyzer {
           } else tree
         typed(applyImplicitArgs(tree1), mode, pt)
       case mt: MethodType
-      if (((mode & (EXPRmode | FUNmode)) == EXPRmode) &&
+      if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
         if (!tree.symbol.isConstructor && pt != WildcardType && isCompatible(mt, pt) &&
             (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) { // (4.2)
@@ -381,15 +382,14 @@ trait Typers requires Analyzer {
           typed(etaExpand(tree), mode, pt)
         } else if (!tree.symbol.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
+        } else if (context.implicitsEnabled) {
+          if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))
+            errorTree(tree, migrateMsg + " method can be converted to function only if an expected function type is given");
+          else
+            errorTree(tree, "missing arguments for "+tree.symbol+tree.symbol.locationString+
+                      (if (tree.symbol.isConstructor) ""
+                       else ";\nprefix this method with `&' if you want to treat it as a partially applied function"))
         } else {
-          if (context.implicitsEnabled) {
-            if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))
-              error(tree.pos, migrateMsg + " method can be converted to function only if an expected function type is given");
-            else
-              error(tree.pos, "missing arguments for "+tree.symbol+tree.symbol.locationString+
-                    (if (tree.symbol.isConstructor) ""
-                     else ";\nprefix this method with `&' if you want to treat it as a partially applied function"))
-          }
           setError(tree)
         }
       case _ =>
@@ -427,9 +427,7 @@ trait Typers requires Analyzer {
                     setError(tree)
                 }
               } else {
-                if (!tree.tpe.isError)
-                  error(tree.pos, ""+clazz+" is neither a case class nor a sequence class")
-                setError(tree)
+                errorTree(tree, ""+clazz+" is neither a case class nor a sequence class")
               }
             }
           } else if ((mode & FUNmode) != 0) {
@@ -968,7 +966,8 @@ trait Typers requires Analyzer {
           while (e1 != null && e1.owner == scope) {
             if (!e1.sym.hasFlag(LOCAL) &&
                 (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
-              error(e.sym.pos, ""+e1.sym+" is defined twice");
+              if (!e.sym.isErroneous && !e1.sym.isErroneous)
+                error(e.sym.pos, ""+e1.sym+" is defined twice");
             e1 = scope.lookupNextEntry(e1);
           }
         }
@@ -1142,13 +1141,14 @@ trait Typers requires Analyzer {
         }
         if (sym.info == NoType) {
           if (settings.debug.value) System.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nfound = "+sym)
-          if (!qual.tpe.widen.isError)
+          if (!qual.tpe.widen.isErroneous) {
             if (context.unit == null) assert(false, "("+qual+":"+qual.tpe+")."+name)
             error(tree.pos,
               decode(name)+" is not a member of "+qual.tpe.widen +
               (if (Position.line(context.unit.source, qual.pos) <
                    Position.line(context.unit.source, tree.pos))
                 "\npossible cause: maybe a semicolon is missing before `"+name+"'?" else ""))
+          }
           setError(tree)
         } else {
           val tree1 = tree match {

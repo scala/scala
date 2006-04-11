@@ -307,11 +307,7 @@ abstract class LambdaLift extends InfoTransform {
         case Return(Block(stats, value)) =>
           Block(stats, copy.Return(tree, value)) setType tree.tpe setPos tree.pos
 	case Return(expr) =>
-	  if (sym != currentOwner.enclMethod) {
-            System.out.println(sym);//debug
-            System.out.println(currentOwner.enclMethod);//debug
-	    unit.error(tree.pos, "non-local return not yet implemented");
-          }
+	  assert(sym == currentOwner.enclMethod, sym)
           tree
 	case Apply(fn, args) =>
 	  copy.Apply(tree, fn, addFreeArgs(tree.pos, sym, args));

@@ -27,7 +27,14 @@ trait CompilationUnits requires Global {
 
     def position(pos: int) = new Position(source, pos);
 
-    def error(pos: int, msg: String) = reporter.error(position(pos), msg);
+    val errorPositions = new HashSet[int]
+
+    def error(pos: int, msg: String) = {
+      if (!(errorPositions contains pos)) {
+        errorPositions += pos;
+        reporter.error(position(pos), msg);
+      }
+    }
     def warning(pos: int, msg: String) = reporter.warning(position(pos), msg);
     override def toString() = source.toString();
 

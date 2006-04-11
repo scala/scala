@@ -18,14 +18,14 @@ abstract class UnPickler {
   val global: Global;
   import global._;
 
-  def unpickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol): unit = try {
+  def unpickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol, filename: String): unit = try {
     new UnPickle(bytes, offset, classRoot, moduleRoot);
   } catch {
     case ex: IOException =>
       throw ex
     case ex: Throwable =>
       if (settings.debug.value) ex.printStackTrace();
-      throw new RuntimeException("error reading Scala signature of " + classRoot.nameString + ": " + ex.getMessage());
+      throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
   }
 
   private class UnPickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {

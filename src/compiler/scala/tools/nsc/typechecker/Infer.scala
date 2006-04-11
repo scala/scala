@@ -61,7 +61,7 @@ trait Infer requires Analyzer {
       assert(constr.inst != null);//debug
       if (constr.inst != NoType) instantiate(constr.inst)
       else throw new DeferredNoInstance(() =>
-	"no unique instantiation of type variable " + origin + " could be found");
+        "no unique instantiation of type variable " + origin + " could be found");
     case _ =>
       instantiateMap.mapOver(tp)
   }
@@ -88,46 +88,46 @@ trait Infer requires Analyzer {
    *  @throws NoInstance
    */
   private def solve(tvars: List[TypeVar], tparams: List[Symbol], variances: List[int],
-		    upper: boolean): List[Type] = {
+                    upper: boolean): List[Type] = {
     val config = tvars zip (tparams zip variances);
 
     def solveOne(tvar: TypeVar, tparam: Symbol, variance: int): unit = {
       if (tvar.constr.inst == NoType) {
-	val up = if (variance != CONTRAVARIANT) upper else !upper;
-	tvar.constr.inst = null;
-	val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo;
-	var cyclic = false;
-	for (val Pair(tvar2, Pair(tparam2, variance2)) <- config) {
-	  if (tparam2 != tparam &&
+        val up = if (variance != CONTRAVARIANT) upper else !upper;
+        tvar.constr.inst = null;
+        val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo;
+        var cyclic = false;
+        for (val Pair(tvar2, Pair(tparam2, variance2)) <- config) {
+          if (tparam2 != tparam &&
               ((bound contains tparam2) ||
-	       up && (tparam2.info.bounds.lo =:= tparam.tpe) ||
-	       !up && (tparam2.info.bounds.hi =:= tparam.tpe))) {
-	    if (tvar2.constr.inst == null) cyclic = true;
-	    solveOne(tvar2, tparam2, variance2);
+               up && (tparam2.info.bounds.lo =:= tparam.tpe) ||
+               !up && (tparam2.info.bounds.hi =:= tparam.tpe))) {
+            if (tvar2.constr.inst == null) cyclic = true;
+            solveOne(tvar2, tparam2, variance2);
           }
-	}
-	if (!cyclic) {
-	  if (up) {
-	    if (bound.symbol != AnyClass) {
-	      tvar.constr.hibounds =
-		bound.subst(tparams, tvars) :: tvar.constr.hibounds;
-	    }
-	    for (val tparam2 <- tparams)
-	      if (tparam2.info.bounds.lo =:= tparam.tpe)
-		tvar.constr.hibounds =
-		  tparam2.tpe.subst(tparams, tvars) :: tvar.constr.hibounds;
-	  } else {
-	    if (bound.symbol != AllClass && bound.symbol != tparam) {
-	      tvar.constr.lobounds =
-		bound.subst(tparams, tvars) :: tvar.constr.lobounds;
-	    }
-	    for (val tparam2 <- tparams)
-	      if (tparam2.info.bounds.hi =:= tparam.tpe)
-		tvar.constr.lobounds =
-		  tparam2.tpe.subst(tparams, tvars) :: tvar.constr.lobounds;
-	  }
-	}
-	tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
+        }
+        if (!cyclic) {
+          if (up) {
+            if (bound.symbol != AnyClass) {
+              tvar.constr.hibounds =
+                bound.subst(tparams, tvars) :: tvar.constr.hibounds;
+            }
+            for (val tparam2 <- tparams)
+              if (tparam2.info.bounds.lo =:= tparam.tpe)
+                tvar.constr.hibounds =
+                  tparam2.tpe.subst(tparams, tvars) :: tvar.constr.hibounds;
+          } else {
+            if (bound.symbol != AllClass && bound.symbol != tparam) {
+              tvar.constr.lobounds =
+                bound.subst(tparams, tvars) :: tvar.constr.lobounds;
+            }
+            for (val tparam2 <- tparams)
+              if (tparam2.info.bounds.hi =:= tparam.tpe)
+                tvar.constr.lobounds =
+                  tparam2.tpe.subst(tparams, tvars) :: tvar.constr.lobounds;
+          }
+        }
+        tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
       }
     }
     for (val Pair(tvar, Pair(tparam, variance)) <- config) solveOne(tvar, tparam, variance);
@@ -165,9 +165,9 @@ trait Infer requires Analyzer {
       if (tree.hasSymbol)
         if (context.reportGeneralErrors) {
           val name = newTermName("<error: " + tree.symbol + ">");
-	  tree.setSymbol(
-	    if (tree.isType) context.owner.newErrorClass(name.toTypeName)
-	    else context.owner.newErrorValue(name));
+          tree.setSymbol(
+            if (tree.isType) context.owner.newErrorClass(name.toTypeName)
+            else context.owner.newErrorValue(name));
         } else {
           tree.setSymbol(if (tree.isType) stdErrorClass else stdErrorValue)
         }
@@ -179,11 +179,11 @@ trait Infer requires Analyzer {
 
     def treeSymTypeMsg(tree: Tree): String =
       if (tree.symbol == null)
-	"expression of type " + tree.tpe
+        "expression of type " + tree.tpe
       else if (tree.symbol.hasFlag(OVERLOADED))
-	"overloaded method " + tree.symbol + " with alternatives " + tree.tpe
+        "overloaded method " + tree.symbol + " with alternatives " + tree.tpe
       else (
-	tree.symbol.toString() +
+        tree.symbol.toString() +
         (if (tree.tpe.paramSectionCount > 0) ": " else " of type ") +
         tree.tpe
       );
@@ -200,19 +200,19 @@ trait Infer requires Analyzer {
       context.error(pos, msg);
 
     def errorTree(tree: Tree, msg: String): Tree = {
-      error(tree.pos, msg);
+      if (!tree.isErroneous) error(tree.pos, msg);
       setError(tree)
     }
 
     def typeError(pos: int, found: Type, req: Type): unit =
-      if (!found.isError && !req.isError) {
-	error(pos,
+      if (!found.isErroneous && !req.isErroneous) {
+        error(pos,
           "type mismatch" + foundReqMsg(found, req) +
-   	  (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
-	    "\n possible cause: missing arguments for method or constructor"
-	   else ""));
-	if (settings.explaintypes.value)
-	  explainTypes(found, req);
+             (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
+            "\n possible cause: missing arguments for method or constructor"
+           else ""));
+        if (settings.explaintypes.value)
+          explainTypes(found, req);
       }
 
     def typeErrorTree(tree: Tree, found: Type, req: Type): Tree = {
@@ -226,32 +226,32 @@ trait Infer requires Analyzer {
      *  in current context. */
     def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
       if (sym.isError) {
-	tree setSymbol sym setType ErrorType
+        tree setSymbol sym setType ErrorType
       } else {
         sym.toplevelClass match {
-	case clazz : ClassSymbol =>
-	  // System.err.println("TOP: " + clazz + " " + clazz.sourceFile);
-	  if (clazz.sourceFile != null)
-	    global.currentRun.currentUnit.depends += clazz.sourceFile;
+        case clazz : ClassSymbol =>
+          // System.err.println("TOP: " + clazz + " " + clazz.sourceFile);
+          if (clazz.sourceFile != null)
+            global.currentRun.currentUnit.depends += clazz.sourceFile;
 
-	case _ =>
-	}
-	val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
-	if (sym1 == NoSymbol) {
-	  if (settings.debug.value) {
-	    System.out.println(context);
+        case _ =>
+        }
+        val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]));
+        if (sym1 == NoSymbol) {
+          if (settings.debug.value) {
+            System.out.println(context);
             System.out.println(tree);
             System.out.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType));
-	  }
-	  errorTree(tree, sym.toString() + " cannot be accessed in " +
-		    (if (sym.isClassConstructor) context.enclClass.owner else pre.widen))
-	} else {
+          }
+          errorTree(tree, sym.toString() + " cannot be accessed in " +
+                    (if (sym.isClassConstructor) context.enclClass.owner else pre.widen))
+        } else {
           //System.out.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
           var owntype = pre.memberType(sym1);
           if (pre.isInstanceOf[SuperType])
             owntype = owntype.substSuper(pre, site.symbol.thisType);
-	  tree setSymbol sym1 setType owntype
-	}
+          tree setSymbol sym1 setType owntype
+        }
       }
 
     def isCompatible(tp: Type, pt: Type): boolean = {
@@ -277,11 +277,11 @@ trait Infer requires Analyzer {
     private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type): List[Type] = {
       val tvars = tparams map freshVar;
       if (isCompatible(restpe.subst(tparams, tvars), pt)) {
-	try {
-	  solve(tvars, tparams, tparams map varianceInType(restpe), false);
-	} catch {
-	  case ex: NoInstance => null
-	}
+        try {
+          solve(tvars, tparams, tparams map varianceInType(restpe), false);
+        } catch {
+          case ex: NoInstance => null
+        }
       } else null
     }
 
@@ -294,35 +294,35 @@ trait Infer requires Analyzer {
     *  If instantiation of a type parameter fails,
     *  take WildcardType for the proto-type argument. */
     def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
-		      pt: Type): List[Type] = {
+                      pt: Type): List[Type] = {
       /** Map type variable to its instance, or, if `variance' is covariant/contravariant,
        *  to its upper/lower bound */
       def instantiateToBound(tvar: TypeVar, variance: int): Type = try {
         //System.out.println("instantiate "+tvar+tvar.constr+" variance = "+variance);//DEBUG
-	if (tvar.constr.inst != NoType) {
-	  instantiate(tvar.constr.inst)
-	} else if ((variance & COVARIANT) != 0 && !tvar.constr.hibounds.isEmpty) {
-	  tvar.constr.inst = glb(tvar.constr.hibounds);
-	  instantiate(tvar.constr.inst)
-	} else if ((variance & CONTRAVARIANT) != 0 && !tvar.constr.lobounds.isEmpty) {
-	  tvar.constr.inst = lub(tvar.constr.lobounds);
-	  instantiate(tvar.constr.inst)
+        if (tvar.constr.inst != NoType) {
+          instantiate(tvar.constr.inst)
+        } else if ((variance & COVARIANT) != 0 && !tvar.constr.hibounds.isEmpty) {
+          tvar.constr.inst = glb(tvar.constr.hibounds);
+          instantiate(tvar.constr.inst)
+        } else if ((variance & CONTRAVARIANT) != 0 && !tvar.constr.lobounds.isEmpty) {
+          tvar.constr.inst = lub(tvar.constr.lobounds);
+          instantiate(tvar.constr.inst)
         } else if (!tvar.constr.hibounds.isEmpty && !tvar.constr.lobounds.isEmpty &&
                    glb(tvar.constr.hibounds) <:< lub(tvar.constr.lobounds)) {
-	  tvar.constr.inst = glb(tvar.constr.hibounds);
-	  instantiate(tvar.constr.inst)
-	} else {
-	  WildcardType
-	}
+          tvar.constr.inst = glb(tvar.constr.hibounds);
+          instantiate(tvar.constr.inst)
+        } else {
+          WildcardType
+        }
       } catch {
-	case ex: NoInstance => WildcardType
+        case ex: NoInstance => WildcardType
       }
       val tvars = tparams map freshVar;
       if (isCompatible(restpe.subst(tparams, tvars), pt))
-	List.map2(tparams, tvars) ((tparam, tvar) =>
-	  instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
+        List.map2(tparams, tvars) ((tparam, tvar) =>
+          instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
       else
-	tvars map (tvar => WildcardType)
+        tvars map (tvar => WildcardType)
     }
 
     /** Return inferred type arguments, given type parameters, formal parameters,
@@ -342,39 +342,39 @@ trait Infer requires Analyzer {
     *                            parameters).
     */
     private def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
-			     argtpes: List[Type], pt: Type,
-			     uninstantiated: ListBuffer[Symbol]): List[Type] = {
+                             argtpes: List[Type], pt: Type,
+                             uninstantiated: ListBuffer[Symbol]): List[Type] = {
       val tvars = tparams map freshVar;
       if (formals.length != argtpes.length) {
-	throw new NoInstance("parameter lists differ in length");
+        throw new NoInstance("parameter lists differ in length");
       }
       // check first whether type variables can be fully defined from
       // expected result type.
       if (!isCompatible(restpe.subst(tparams, tvars), pt)) {
-	throw new DeferredNoInstance(() =>
-	  "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
+        throw new DeferredNoInstance(() =>
+          "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
       }
       for (val tvar <- tvars)
-	if (!isFullyDefined(tvar)) tvar.constr.inst = NoType;
+        if (!isFullyDefined(tvar)) tvar.constr.inst = NoType;
 
       // Then define remaining type variables from argument types.
       List.map2(argtpes, formals) {(argtpe, formal) =>
-	if (!isCompatible(argtpe.deconst.subst(tparams, tvars),
-			  formal.subst(tparams, tvars))) {
-	  if (settings.explaintypes.value)
-	    explainTypes(argtpe.deconst.subst(tparams, tvars), formal.subst(tparams, tvars));
-	  throw new DeferredNoInstance(() =>
-	    "argument expression's type is not compatible with formal parameter type" +
-	    foundReqMsg(argtpe.deconst.subst(tparams, tvars), formal.subst(tparams, tvars)))
-	}
-	()
+        if (!isCompatible(argtpe.deconst.subst(tparams, tvars),
+                          formal.subst(tparams, tvars))) {
+          if (settings.explaintypes.value)
+            explainTypes(argtpe.deconst.subst(tparams, tvars), formal.subst(tparams, tvars));
+          throw new DeferredNoInstance(() =>
+            "argument expression's type is not compatible with formal parameter type" +
+            foundReqMsg(argtpe.deconst.subst(tparams, tvars), formal.subst(tparams, tvars)))
+        }
+        ()
       }
       val targs = solve(tvars, tparams, tparams map varianceInTypes(formals), false);
       List.map2(tparams, targs) {(tparam, targ) =>
-	if (targ.symbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
-	  uninstantiated += tparam;
-	  tparam.tpe
-	} else targ}
+        if (targ.symbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
+          uninstantiated += tparam;
+          tparam.tpe
+        } else targ}
     }
 
 
@@ -382,45 +382,45 @@ trait Infer requires Analyzer {
      *  function type `ftpe' is applicable to `argtpes' and its result conform to `pt'? */
     def isApplicable(undetparams: List[Symbol], ftpe: Type, argtpes: List[Type], pt: Type): boolean =
       ftpe match {
-	case MethodType(formals0, restpe) =>
-	  val formals = formalTypes(formals0, argtpes.length);
-	  if (undetparams.isEmpty) {
-	    (formals.length == argtpes.length &&
-	     isCompatible(argtpes, formals) &&
-	     isWeaklyCompatible(restpe, pt))
-	  } else {
-	    try {
-	      val uninstantiated = new ListBuffer[Symbol];
-	      val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated);
-	      val result = (
-		exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) != null &&
-		isWithinBounds(undetparams, targs)
+        case MethodType(formals0, restpe) =>
+          val formals = formalTypes(formals0, argtpes.length);
+          if (undetparams.isEmpty) {
+            (formals.length == argtpes.length &&
+             isCompatible(argtpes, formals) &&
+             isWeaklyCompatible(restpe, pt))
+          } else {
+            try {
+              val uninstantiated = new ListBuffer[Symbol];
+              val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated);
+              val result = (
+                exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) != null &&
+                isWithinBounds(undetparams, targs)
               );
-	      result
-	    } catch {
-	      case ex: NoInstance => false
-	    }
-	  }
-	case PolyType(tparams, restpe) =>
-	  val tparams1 = cloneSymbols(tparams);
-	  isApplicable(tparams1 ::: undetparams, restpe.substSym(tparams, tparams1), argtpes, pt)
-	case ErrorType =>
-	  true
-	case _ =>
-	  false
+              result
+            } catch {
+              case ex: NoInstance => false
+            }
+          }
+        case PolyType(tparams, restpe) =>
+          val tparams1 = cloneSymbols(tparams);
+          isApplicable(tparams1 ::: undetparams, restpe.substSym(tparams, tparams1), argtpes, pt)
+        case ErrorType =>
+          true
+        case _ =>
+          false
       }
 
     /** Does type `ftpe1' specialize type `ftpe2'
      *  when both are alternatives in an overloaded function? */
     def specializes(ftpe1: Type, ftpe2: Type): boolean = ftpe1 match {
       case MethodType(formals, _) =>
-	isApplicable(List(), ftpe2, formals, WildcardType)
+        isApplicable(List(), ftpe2, formals, WildcardType)
       case PolyType(tparams, MethodType(formals, _)) =>
-	isApplicable(List(), ftpe2, formals, WildcardType)
+        isApplicable(List(), ftpe2, formals, WildcardType)
       case ErrorType =>
-	true
+        true
       case _ =>
-	false
+        false
     }
 
     /** Is type `tpe1' a strictly better alternative than type `ftpe2'? */
@@ -433,10 +433,11 @@ trait Infer requires Analyzer {
     /** error if arguments not within bounds. */
     def checkBounds(pos: int, tparams: List[Symbol], targs: List[Type], prefix: String): unit =
       if (!isWithinBounds(tparams, targs)) {
-	error(pos,
-	      prefix + "type arguments " + targs.mkString("[", ",", "]") +
-	      " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
-	      (tparams map (.defString)).mkString("[", ",", "]"));
+        if (!(targs exists (.isErroneous)) && !(tparams exists (.isErroneous)))
+          error(pos,
+                prefix + "type arguments " + targs.mkString("[", ",", "]") +
+                " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
+                (tparams map (.defString)).mkString("[", ",", "]"));
         if (settings.explaintypes.value) {
           val bounds = tparams map (.info.subst(tparams, targs).bounds);
           List.map2(targs, bounds)((targ, bound) => explainTypes(bound.lo, targ));
@@ -467,37 +468,38 @@ trait Infer requires Analyzer {
      *  `targs', Error if `targs' is null */
     private def substExpr(tree: Tree, undetparams: List[Symbol], targs: List[Type], pt: Type): unit =
       if (targs == null) {
-	error(tree.pos, "polymorphic expression cannot be instantiated to expected type" +
-	      foundReqMsg(PolyType(undetparams, skipImplicit(tree.tpe)), pt));
+        if (!tree.tpe.isErroneous && !pt.isErroneous)
+          error(tree.pos, "polymorphic expression cannot be instantiated to expected type" +
+                foundReqMsg(PolyType(undetparams, skipImplicit(tree.tpe)), pt));
       } else {
-	checkBounds(tree.pos, undetparams, targs, "inferred ");
-	new TreeTypeSubstituter(undetparams, targs).traverse(tree);
+        checkBounds(tree.pos, undetparams, targs, "inferred ");
+        new TreeTypeSubstituter(undetparams, targs).traverse(tree);
       }
 
     /** Substitite free type variables `undetparams' of application `fn(args)', given prototype `pt'.
      *  Return the list of type parameters that remain uninstantiated. */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol], args: List[Tree], pt: Type): List[Symbol] = fn.tpe match {
       case MethodType(formals, restpe) =>
-	try {
-	  val argtpes = args map (.tpe.deconst);
-	  val uninstantiated = new ListBuffer[Symbol];
-	  val targs = methTypeArgs(
-	    undetparams, formalTypes(formals, argtpes.length), restpe, argtpes, pt, uninstantiated);
-	  checkBounds(fn.pos, undetparams, targs, "inferred ");
-	  val treeSubst = new TreeTypeSubstituter(undetparams, targs);
-	  treeSubst.traverse(fn);
-	  treeSubst.traverseTrees(args);
-	  uninstantiated.toList;
-	} catch {
-	  case ex: NoInstance =>
-	    errorTree(fn,
-	      "no type parameters for " +
-	      applyErrorMsg(
-		fn, " exist so that it can be applied to arguments ",
-		args map (.tpe.widen), WildcardType) +
-	      "\n --- because ---\n" + ex.getMessage());
-	    List()
-	}
+        try {
+          val argtpes = args map (.tpe.deconst);
+          val uninstantiated = new ListBuffer[Symbol];
+          val targs = methTypeArgs(
+            undetparams, formalTypes(formals, argtpes.length), restpe, argtpes, pt, uninstantiated);
+          checkBounds(fn.pos, undetparams, targs, "inferred ");
+          val treeSubst = new TreeTypeSubstituter(undetparams, targs);
+          treeSubst.traverse(fn);
+          treeSubst.traverseTrees(args);
+          uninstantiated.toList;
+        } catch {
+          case ex: NoInstance =>
+            errorTree(fn,
+              "no type parameters for " +
+              applyErrorMsg(
+                fn, " exist so that it can be applied to arguments ",
+                args map (.tpe.widen), WildcardType) +
+              "\n --- because ---\n" + ex.getMessage());
+            List()
+        }
     }
 
     /** Substitite free type variables `undetparams' of type constructor `tree' in pattern,
@@ -510,53 +512,53 @@ trait Infer requires Analyzer {
       /** Compute type arguments for undetermined params and substitute them in given tree.
        */
       def computeArgs =
-	try {
-	  val targs = solve(tvars, undetparams, undetparams map varianceInType(restpe), true);
+        try {
+          val targs = solve(tvars, undetparams, undetparams map varianceInType(restpe), true);
           checkBounds(tree.pos, undetparams, targs, "inferred ");
-	  new TreeTypeSubstituter(undetparams, targs).traverse(tree)
-	} catch {
-	  case ex: NoInstance =>
+          new TreeTypeSubstituter(undetparams, targs).traverse(tree)
+        } catch {
+          case ex: NoInstance =>
             errorTree(tree, "constructor of type " + restpe +
-		      " can be instantiated in more than one way to expected type " + pt +
-		      "\n --- because ---\n" + ex.getMessage());
-	}
+                      " can be instantiated in more than one way to expected type " + pt +
+                      "\n --- because ---\n" + ex.getMessage());
+        }
       def instError = {
-	if (settings.debug.value) System.out.println("ici " + tree + " " + undetparams + " " + pt);
-	if (settings.explaintypes.value) explainTypes(restpe.subst(undetparams, tvars), pt);
+        if (settings.debug.value) System.out.println("ici " + tree + " " + undetparams + " " + pt);
+        if (settings.explaintypes.value) explainTypes(restpe.subst(undetparams, tvars), pt);
         errorTree(tree, "constructor cannot be instantiated to expected type" +
                   foundReqMsg(restpe, pt))
       }
       if (restpe.subst(undetparams, tvars) <:< pt) {
-	computeArgs
+        computeArgs
       } else if (isFullyDefined(pt)) {
-	if (settings.debug.value) log("infer constr " + tree + ":" + restpe + ", pt = " + pt);
-	val ptparams = freeTypeParams.collect(pt);
-	if (settings.debug.value) log("free type params = " + ptparams);
-	val ptWithWildcards = pt.subst(ptparams, ptparams map (ptparam => WildcardType));
+        if (settings.debug.value) log("infer constr " + tree + ":" + restpe + ", pt = " + pt);
+        val ptparams = freeTypeParams.collect(pt);
+        if (settings.debug.value) log("free type params = " + ptparams);
+        val ptWithWildcards = pt.subst(ptparams, ptparams map (ptparam => WildcardType));
         tvars = undetparams map freshVar;
-	if (restpe.subst(undetparams, tvars) <:< ptWithWildcards) {
-	  computeArgs;
-	  restpe = skipImplicit(tree.tpe.resultType);
-	  if (settings.debug.value) log("new tree = " + tree + ":" + restpe);
-	  val ptvars = ptparams map freshVar;
-	  if (restpe <:< pt.subst(ptparams, ptvars)) {
-	    for (val tvar <- ptvars) {
-	      val tparam = tvar.origin.symbol;
-	      val Pair(loBounds, hiBounds) =
- 		if (tvar.constr.inst != NoType && isFullyDefined(tvar.constr.inst))
-		  Pair(List(tvar.constr.inst), List(tvar.constr.inst))
-		else
-		  Pair(tvar.constr.lobounds, tvar.constr.hibounds);
-	      if (!loBounds.isEmpty || !hiBounds.isEmpty) {
+        if (restpe.subst(undetparams, tvars) <:< ptWithWildcards) {
+          computeArgs;
+          restpe = skipImplicit(tree.tpe.resultType);
+          if (settings.debug.value) log("new tree = " + tree + ":" + restpe);
+          val ptvars = ptparams map freshVar;
+          if (restpe <:< pt.subst(ptparams, ptvars)) {
+            for (val tvar <- ptvars) {
+              val tparam = tvar.origin.symbol;
+              val Pair(loBounds, hiBounds) =
+                 if (tvar.constr.inst != NoType && isFullyDefined(tvar.constr.inst))
+                  Pair(List(tvar.constr.inst), List(tvar.constr.inst))
+                else
+                  Pair(tvar.constr.lobounds, tvar.constr.hibounds);
+              if (!loBounds.isEmpty || !hiBounds.isEmpty) {
                 context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam);
-		tparam setInfo TypeBounds(
-		  lub(tparam.info.bounds.lo :: loBounds),
-		  glb(tparam.info.bounds.hi :: hiBounds));
-		if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info);
-	      }
-	    }
-	  } else { if (settings.debug.value) System.out.println("no instance: "); instError }
-	} else { if (settings.debug.value) System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
+                tparam setInfo TypeBounds(
+                  lub(tparam.info.bounds.lo :: loBounds),
+                  glb(tparam.info.bounds.hi :: hiBounds));
+                if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info);
+              }
+            }
+          } else { if (settings.debug.value) System.out.println("no instance: "); instError }
+        } else { if (settings.debug.value) System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
       } else { if (settings.debug.value) System.out.println("not fuly defined: " + pt); instError }
     }
 
@@ -571,10 +573,10 @@ trait Infer requires Analyzer {
       override def traverse(tp: Type): TypeTraverser = {
         tp match {
           case TypeRef(NoPrefix, sym, _) =>
-	    includeIfTypeParam(sym)
-	  case TypeRef(ThisType(_), sym, _) =>
-	    includeIfTypeParam(sym)
-	  case _ =>
+            includeIfTypeParam(sym)
+          case TypeRef(ThisType(_), sym, _) =>
+            includeIfTypeParam(sym)
+          case _ =>
         }
         mapOver(tp);
         this
@@ -596,38 +598,38 @@ trait Infer requires Analyzer {
      */
     def inferExprAlternative(tree: Tree, pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-	var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt));
+        var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt));
         if (alts1.isEmpty) alts1 = alts;
-	def improves(sym1: Symbol, sym2: Symbol): boolean = (
-	  sym2 == NoSymbol ||
-	  ((sym1.owner isSubClass sym2.owner) &&
-	     {val tp1 = pre.memberType(sym1);
-	      val tp2 = pre.memberType(sym2);
-	      (tp2 == ErrorType ||
-	       !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
+        def improves(sym1: Symbol, sym2: Symbol): boolean = (
+          sym2 == NoSymbol ||
+          ((sym1.owner isSubClass sym2.owner) &&
+             {val tp1 = pre.memberType(sym1);
+              val tp2 = pre.memberType(sym2);
+              (tp2 == ErrorType ||
+               !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
                isStrictlyBetter(tp1, tp2))
              })
         );
-	val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
-	  if (improves(alt, best)) alt else best);
-	val competing = alts1 dropWhile (alt => best == alt || improves(best, alt));
-	if (best == NoSymbol) {
+        val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
+          if (improves(alt, best)) alt else best);
+        val competing = alts1 dropWhile (alt => best == alt || improves(best, alt));
+        if (best == NoSymbol) {
           if (settings.debug.value) {
-	    tree match {
-	      case Select(qual, _) =>
-	        System.out.println("qual: " + qual + ":" + qual.tpe + " with decls " + qual.tpe.decls + " with members " + qual.tpe.members + " with members " + qual.tpe.member(newTermName("$minus")));
-	      case _ =>
-	    }
+            tree match {
+              case Select(qual, _) =>
+                System.out.println("qual: " + qual + ":" + qual.tpe + " with decls " + qual.tpe.decls + " with members " + qual.tpe.members + " with members " + qual.tpe.member(newTermName("$minus")));
+              case _ =>
+            }
           }
-	  typeErrorTree(tree, tree.symbol.tpe, pt)
-	} else if (!competing.isEmpty) {
-          if (!pt.isError)
-	    context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt);
-	  setError(tree);
+          typeErrorTree(tree, tree.symbol.tpe, pt)
+        } else if (!competing.isEmpty) {
+          if (!pt.isErroneous)
+            context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt);
+          setError(tree);
           ()
-	} else {
-	  tree.setSymbol(best).setType(pre.memberType(best))
-	}
+        } else {
+          tree.setSymbol(best).setType(pre.memberType(best))
+        }
       }
     }
 
@@ -641,32 +643,32 @@ trait Infer requires Analyzer {
      */
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-	if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);
-	val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
-	def improves(sym1: Symbol, sym2: Symbol) = (
-	  sym2 == NoSymbol || sym2.isError ||
-	  ((sym1.owner isSubClass sym2.owner) &&
-	   specializes(pre.memberType(sym1), pre.memberType(sym2)))
-	);
-	val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
-	  if (improves(alt, best)) alt else best);
-	val competing = applicable dropWhile (alt => best == alt || improves(best, alt));
-	if (best == NoSymbol) {
-	  if (pt == WildcardType) {
-	    errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
-	  } else {
-	    inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
-	  }
-	} else if (!competing.isEmpty) {
-          if (!(argtpes exists (.isError)) && !pt.isError)
-	    context.ambiguousError(tree.pos, pre, best, competing.head,
-				   "argument types " + argtpes.mkString("(", ",", ")") +
-				   (if (pt == WildcardType) "" else " and expected result type " + pt));
-	  setError(tree);
-	  ()
-	} else {
-	  tree.setSymbol(best).setType(pre.memberType(best))
-	}
+        if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt);
+        val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt));
+        def improves(sym1: Symbol, sym2: Symbol) = (
+          sym2 == NoSymbol || sym2.isError ||
+          ((sym1.owner isSubClass sym2.owner) &&
+           specializes(pre.memberType(sym1), pre.memberType(sym2)))
+        );
+        val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
+          if (improves(alt, best)) alt else best);
+        val competing = applicable dropWhile (alt => best == alt || improves(best, alt));
+        if (best == NoSymbol) {
+          if (pt == WildcardType) {
+            errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
+          } else {
+            inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
+          }
+        } else if (!competing.isEmpty) {
+          if (!(argtpes exists (.isErroneous)) && !pt.isErroneous)
+            context.ambiguousError(tree.pos, pre, best, competing.head,
+                                   "argument types " + argtpes.mkString("(", ",", ")") +
+                                   (if (pt == WildcardType) "" else " and expected result type " + pt));
+          setError(tree);
+          ()
+        } else {
+          tree.setSymbol(best).setType(pre.memberType(best))
+        }
       }
     }
 
@@ -675,18 +677,18 @@ trait Infer requires Analyzer {
     def tryTwice(infer: => unit): unit = {
       if (context.implicitsEnabled) {
         val reportGeneralErrors = context.reportGeneralErrors;
-	context.reportGeneralErrors = false;
-	context.implicitsEnabled = false;
-	try {
-	  infer
-	} catch {
-	  case ex: TypeError =>
-	    context.reportGeneralErrors = reportGeneralErrors;
-	    context.implicitsEnabled = true;
-	    infer
-	}
-	context.reportGeneralErrors = reportGeneralErrors
-	context.implicitsEnabled = true
+        context.reportGeneralErrors = false;
+        context.implicitsEnabled = false;
+        try {
+          infer
+        } catch {
+          case ex: TypeError =>
+            context.reportGeneralErrors = reportGeneralErrors;
+            context.implicitsEnabled = true;
+            infer
+        }
+        context.reportGeneralErrors = reportGeneralErrors
+        context.implicitsEnabled = true
       } else infer
     }
 
@@ -696,22 +698,22 @@ trait Infer requires Analyzer {
      */
     def inferPolyAlternatives(tree: Tree, nparams: int): unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
-	val sym = tree.symbol filter (alt => alt.typeParams.length == nparams);
-	if (sym == NoSymbol) {
-	  errorTree(tree,
-		    if (alts exists (alt => alt.typeParams.length > 0))
-		      "wrong number of type parameters for " + treeSymTypeMsg(tree)
-		    else treeSymTypeMsg(tree) + " does not take type parameters")
-	} else if (sym.hasFlag(OVERLOADED)) {
-	  val tparams = sym.alternatives.head.typeParams;
-	  val tpe =
-	    PolyType(tparams,
-		     OverloadedType(AntiPolyType(pre, tparams map (.tpe)), sym.alternatives));
-	  sym.setInfo(tpe);
-	  tree.setSymbol(sym).setType(tpe);
-	} else {
-	  tree.setSymbol(sym).setType(pre.memberType(sym))
-	}
+        val sym = tree.symbol filter (alt => alt.typeParams.length == nparams);
+        if (sym == NoSymbol) {
+          errorTree(tree,
+                    if (alts exists (alt => alt.typeParams.length > 0))
+                      "wrong number of type parameters for " + treeSymTypeMsg(tree)
+                    else treeSymTypeMsg(tree) + " does not take type parameters")
+        } else if (sym.hasFlag(OVERLOADED)) {
+          val tparams = sym.alternatives.head.typeParams;
+          val tpe =
+            PolyType(tparams,
+                     OverloadedType(AntiPolyType(pre, tparams map (.tpe)), sym.alternatives));
+          sym.setInfo(tpe);
+          tree.setSymbol(sym).setType(tpe);
+        } else {
+          tree.setSymbol(sym).setType(pre.memberType(sym))
+        }
     }
   }
 }

@@ -66,6 +66,8 @@ trait Trees requires Global {
     def isType = false;
     def isEmpty = false;
 
+    def isErroneous = tpe != null && tpe.isErroneous;
+
     override def toString(): String = {
       val buffer = new StringWriter();
       val printer = treePrinters.create(new PrintWriter(buffer));

@@ -7,6 +7,7 @@ package scala.tools.nsc.transform;
 
 import symtab.Flags._;
 import scala.collection.mutable.HashMap
+import scala.tools.nsc.util.HashSet
 
 /*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
@@ -219,7 +220,9 @@ abstract class UnCurry extends InfoTransform {
 	  case Match(_, cases) =>
 	    val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
 	    def transformCase(cdef: CaseDef): CaseDef =
-	      resetAttrs(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)));
+	      substParam(
+                resetAttrs(
+                  CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true))))
 	    if (cases exists treeInfo.isDefaultCase) Literal(true)
 	    else
               Match(
@@ -448,11 +451,19 @@ abstract class UnCurry extends InfoTransform {
   }
 
   private val resetAttrs = new Traverser {
+    val erasedSyms = new HashSet[Symbol](8)
     override def traverse(tree: Tree): unit = tree match {
       case EmptyTree | TypeTree() =>
 	;
+      case Bind(_, body) =>
+        if (tree.hasSymbol && tree.symbol != NoSymbol) {
+          erasedSyms.addEntry(tree.symbol);
+          tree.symbol = NoSymbol;
+        }
+	tree.tpe = null;
+	super.traverse(tree)
       case _ =>
-	if (tree.hasSymbol) tree.symbol = NoSymbol;
+	if (tree.hasSymbol && erasedSyms.contains(tree.symbol)) tree.symbol = NoSymbol;
 	tree.tpe = null;
 	super.traverse(tree)
     }

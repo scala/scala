@@ -122,6 +122,13 @@ trait Types requires SymbolTable {
     /** Is this type produced as a repair for an error? */
     def isError: boolean = symbol.isError;
 
+    /** Is this type produced as a repair for an error? */
+    def isErroneous: boolean = {
+      ErroneousTraverser.result = false;
+      ErroneousTraverser.traverse(this);
+      ErroneousTraverser.result
+    }
+
     /** Does this type denote a stable reference (i.e. singleton type)? */
     def isStable: boolean = false;
 
@@ -1335,6 +1342,18 @@ trait Types requires SymbolTable {
           case SingleType(_, sym1) if (sym == sym1) => result = true
           case _ => mapOver(tp)
         }
+      }
+      this
+    }
+  }
+
+  /** A map to implement the contains method */
+  object ErroneousTraverser extends TypeTraverser {
+    var result: boolean = _;
+    def traverse(tp: Type): TypeTraverser = {
+      if (!result) {
+        result = tp.isError
+        mapOver(tp)
       }
       this
     }

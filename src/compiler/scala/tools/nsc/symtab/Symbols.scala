@@ -174,6 +174,7 @@ trait Symbols requires SymbolTable {
     final def isThisSym = isTerm && name == nme.this_;
     final def isThisSkolem = isTerm && deSkolemize != this;
     final def isError = hasFlag(IS_ERROR);
+    final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTrait = isClass & hasFlag(TRAIT);
     final def isAliasType = isType && !isClass && !hasFlag(DEFERRED);
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
