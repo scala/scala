@@ -1,0 +1,4 @@
+bug565.scala:2 error: only classes can have declared but undefined members
+  var s0: String
+  ^
+one error found
