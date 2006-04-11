@@ -130,28 +130,24 @@ abstract class SymbolLoaders {
       val classes  = new HashMap[String, global.classPath0.Context];
       val packages = new HashMap[String, global.classPath0.Context];
       for (val dir <- directory.entries) if (dir.location != null) {
-      	val it = dir.location.list();
-      	while (it.hasNext()) {
-      	  val file = it.next().asInstanceOf[AbstractFile];
-      	    if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
-      	      packages(file.getName()) = directory.find(file.getName(), true);
-      	    else if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      	      val name = file.getName().substring(0, file.getName().length() - (".class").length());
-      	      if (isValid(name) && !classes.isDefinedAt(name)) {
-                val clazz = directory.find(name, false);
-            		if (clazz != null) classes(name) = clazz;
-              }
-      	    }
+        for (val file <- dir.location) {
+      	  if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
+      	    packages(file.name) = directory.find(file.name, true);
+      	  else if (!file.isDirectory && file.name.endsWith(".class")) {
+      	    val name = file.name.substring(0, file.name.length() - (".class").length());
+      	    if (isValid(name) && !classes.isDefinedAt(name)) {
+              val clazz = directory.find(name, false);
+              if (clazz != null) classes(name) = clazz;
+            }
+      	  }
       	}
       }
       for (val dir <- directory.entries) if (dir.source != null) {
-      	val jt = dir.source.location.list();
-      	while (jt.hasNext()) {
-      	  val file = jt.next().asInstanceOf[AbstractFile];
-      	  if (file.isDirectory() && directory.validPackage(file.getName()) && !packages.isDefinedAt(file.getName()))
-      	    packages(file.getName()) = directory.find(file.getName(), true);
-      	  else if (dir.source.compile && !file.isDirectory() && file.getName().endsWith(".scala")) {
-      	    val name = file.getName().substring(0, file.getName().length() - (".scala").length());
+        for (val file <- dir.source.location) {
+      	  if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
+      	    packages(file.name) = directory.find(file.name, true);
+      	  else if (dir.source.compile && !file.isDirectory && file.name.endsWith(".scala")) {
+      	    val name = file.name.substring(0, file.name.length() - (".scala").length());
       	    if (isValid(name) && !classes.isDefinedAt(name)) {
               val source = directory.find(name, false);
               if (source != null) classes(name) = source;

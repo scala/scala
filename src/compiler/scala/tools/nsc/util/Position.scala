@@ -86,7 +86,7 @@ class Position( val source : SourceFile, val offset: Int) {
   override def toString(): String = {
     val sb = new StringBuffer();
     if (source != null) {
-      sb.append(source.file.getPath());
+      sb.append(source.file.path);
       if (hasOffset) {
 	sb.append(line);
 	sb.append(':');

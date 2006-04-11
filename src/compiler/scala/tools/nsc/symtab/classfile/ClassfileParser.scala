@@ -84,13 +84,13 @@ abstract class ClassfileParser {
   private def statics: Symbol = staticModule.moduleClass;
 
   private def parseHeader: unit = {
-    val magic = in.nextInt();
+    val magic = in.nextInt;
     if (magic != JAVA_MAGIC)
       throw new IOException("class file '" + in.file + "' "
                             + "has wrong magic number 0x" + Integer.toHexString(magic)
                             + ", should be 0x" + Integer.toHexString(JAVA_MAGIC));
-    val minorVersion = in.nextChar();
-    val majorVersion = in.nextChar();
+    val minorVersion = in.nextChar;
+    val majorVersion = in.nextChar;
     if ((majorVersion < JAVA_MAJOR_VERSION) ||
         ((majorVersion == JAVA_MAJOR_VERSION) &&
          (minorVersion < JAVA_MINOR_VERSION)))
@@ -103,7 +103,7 @@ abstract class ClassfileParser {
   }
 
   class ConstantPool {
-    private val len = in.nextChar();
+    private val len = in.nextChar;
     private val starts = new Array[int](len);
     private val values = new Array[Object](len);
     private val internalized = new Array[Name](len);
@@ -111,9 +111,9 @@ abstract class ClassfileParser {
       while (i < starts.length) {
         starts(i) = in.bp;
 	i = i + 1;
-        in.nextByte() match {
+        in.nextByte match {
           case CONSTANT_UTF8 | CONSTANT_UNICODE =>
-            in.skip(in.nextChar());
+            in.skip(in.nextChar);
           case CONSTANT_CLASS | CONSTANT_STRING =>
             in.skip(2);
           case CONSTANT_FIELDREF | CONSTANT_METHODREF | CONSTANT_INTFMETHODREF | CONSTANT_NAMEANDTYPE | CONSTANT_INTEGER | CONSTANT_FLOAT =>
@@ -240,17 +240,17 @@ abstract class ClassfileParser {
   }
 
   def parseClass(): unit = {
-    val jflags = in.nextChar();
+    val jflags = in.nextChar;
     var sflags = transFlags(jflags);
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT;
-    val c = pool.getClassSymbol(in.nextChar());
+    val c = pool.getClassSymbol(in.nextChar);
     if (c != clazz)
       throw new IOException("class file '" + in.file + "' contains wrong " + clazz);
-    val superType = pool.getSuperClass(in.nextChar()).tpe;
-    val ifaceCount = in.nextChar();
+    val superType = pool.getSuperClass(in.nextChar).tpe;
+    val ifaceCount = in.nextChar;
     val parents = (superType ::
       (for (val i <- List.range(0, ifaceCount))
-       yield pool.getSuperClass(in.nextChar()).tpe));
+       yield pool.getSuperClass(in.nextChar).tpe));
     instanceDefs = new Scope();
     staticDefs = new Scope();
     val classInfo = ClassInfoType(parents, instanceDefs, clazz);
@@ -271,9 +271,9 @@ abstract class ClassfileParser {
       staticModule.setFlag(JAVA);
       staticModule.moduleClass.setFlag(JAVA);
       in.bp = curbp;
-      val fieldCount = in.nextChar();
+      val fieldCount = in.nextChar;
       for (val i <- Iterator.range(0, fieldCount)) parseField();
-      val methodCount = in.nextChar();
+      val methodCount = in.nextChar;
       for (val i <- Iterator.range(0, methodCount)) parseMethod();
       if (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol && (sflags & INTERFACE) == 0) {
         //System.out.println("adding constructor to " + clazz);//DEBUG
@@ -285,14 +285,14 @@ abstract class ClassfileParser {
   }
 
   def parseField(): unit = {
-    val jflags = in.nextChar();
+    val jflags = in.nextChar;
     var sflags = transFlags(jflags);
     if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE;
     if ((sflags & PRIVATE) != 0) {
       in.skip(4); skipAttributes();
     } else {
-      val name = pool.getName(in.nextChar());
-      val info = pool.getType(in.nextChar());
+      val name = pool.getName(in.nextChar);
+      val info = pool.getType(in.nextChar);
       val sym = getOwner(jflags)
         .newValue(Position.NOPOS, name).setFlag(sflags).setInfo(info);
       setPrivateWithin(sym, jflags);
@@ -302,14 +302,14 @@ abstract class ClassfileParser {
   }
 
   def parseMethod(): unit = {
-    val jflags = in.nextChar();
+    val jflags = in.nextChar;
     var sflags = transFlags(jflags);
     if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE;
     if ((sflags & PRIVATE) != 0) {
       in.skip(4); skipAttributes();
     } else {
-      val name = pool.getName(in.nextChar());
-      var info = pool.getType(in.nextChar());
+      val name = pool.getName(in.nextChar);
+      var info = pool.getType(in.nextChar);
       if (name == nme.CONSTRUCTOR)
 	info match {
 	  case MethodType(formals, restpe) =>
@@ -457,12 +457,12 @@ abstract class ClassfileParser {
         c convertTo pt
     }
     def parseAttribute(): unit = {
-      val attrName = pool.getName(in.nextChar());
-      val attrLen = in.nextInt();
+      val attrName = pool.getName(in.nextChar);
+      val attrLen = in.nextInt;
       attrName match {
         case nme.SignatureATTR =>
           if (global.settings.Xgenerics.value) {
-            val sig = pool.getExternalName(in.nextChar());
+            val sig = pool.getExternalName(in.nextChar);
             val newType = polySigToType(sym, sig);
             sym.setInfo(newType)
             if (settings.debug.value)
@@ -480,7 +480,7 @@ abstract class ClassfileParser {
           sym.setFlag(DEPRECATED);
           in.skip(attrLen)
         case nme.ConstantValueATTR =>
-          val c = pool.getConstant(in.nextChar());
+          val c = pool.getConstant(in.nextChar);
           val c1 = convertTo(c, symtype);
           if (c1 != null) sym.setInfo(ConstantType(c1));
           else System.out.println("failure to convert "+c+" to "+symtype);//debug
@@ -490,12 +490,12 @@ abstract class ClassfileParser {
           unpickler.unpickle(in.buf, in.bp, clazz, staticModule);
           this.isScala = true;
         case nme.JacoMetaATTR =>
-          val meta = pool.getName(in.nextChar()).toString().trim();
+          val meta = pool.getName(in.nextChar).toString().trim();
           metaParser.parse(meta, sym, symtype);
           this.hasMeta = true;
         case nme.SourceFileATTR =>
           assert(attrLen == 2);
-          val source = pool.getName(in.nextChar());
+          val source = pool.getName(in.nextChar);
           if (sourcePath != null) {
             val sourceFile0 = sourcePath.lookupPath(source.toString(), false);
             if (sourceFile0 != null && clazz.sourceFile == null) {
@@ -511,8 +511,8 @@ abstract class ClassfileParser {
       }
     }
     def parseTaggedConstant(): Any = {
-      val tag = in.nextByte();
-      val index = in.nextChar();
+      val tag = in.nextByte;
+      val index = in.nextChar;
       tag match {
         case STRING_TAG => pool.getName(index).toString();
         case BOOL_TAG   => pool.getConstant(index).intValue != 0;
@@ -536,15 +536,15 @@ abstract class ClassfileParser {
     }
     def parseAnnotations(len: Int): Unit = {
       val buf = new StringBuffer();
-      val nAttr = in.nextChar();
+      val nAttr = in.nextChar;
       for (val n <- Iterator.range(0,nAttr)) {
-        val attrNameIndex = in.nextChar();
+        val attrNameIndex = in.nextChar;
         val attrType = pool.getType(attrNameIndex);
         buf.append("@").append(attrType.toString()).append("(");
-        val nargs = in.nextChar()
+        val nargs = in.nextChar
         for (val i <- Iterator.range(0, nargs)) {
           if (i > 0) buf.append(", ");
-          val name = pool.getName(in.nextChar());
+          val name = pool.getName(in.nextChar);
           buf.append(name).append(" = ");
           val value = parseTaggedConstant();
           buf.append(value);
@@ -554,11 +554,11 @@ abstract class ClassfileParser {
       global.informProgress("parsed attribute " + buf);
     }
     def parseInnerClasses(): unit = {
-      for (val i <- Iterator.range(0, in.nextChar())) {
-	val innerIndex = in.nextChar();
-	val outerIndex = in.nextChar();
-	val nameIndex = in.nextChar();
-	val jflags = in.nextChar();
+      for (val i <- Iterator.range(0, in.nextChar)) {
+	val innerIndex = in.nextChar;
+	val outerIndex = in.nextChar;
+	val nameIndex = in.nextChar;
+	val jflags = in.nextChar;
 	if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0 &&
 	    (jflags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) != 0 &&
 	    pool.getClassSymbol(outerIndex) == sym) {
@@ -569,19 +569,19 @@ abstract class ClassfileParser {
 	}
       }
     }
-    val attrCount = in.nextChar();
+    val attrCount = in.nextChar;
     for (val i <- Iterator.range(0, attrCount)) parseAttribute()
   }
 
   def skipAttributes(): unit = {
-    val attrCount = in.nextChar();
+    val attrCount = in.nextChar;
     for (val i <- Iterator.range(0, attrCount)) {
-      in.skip(2); in.skip(in.nextInt())
+      in.skip(2); in.skip(in.nextInt)
     }
   }
 
   def skipMembers(): unit = {
-    val memberCount = in.nextChar();
+    val memberCount = in.nextChar;
     for (val i <- Iterator.range(0, memberCount)) {
       in.skip(6); skipAttributes()
     }

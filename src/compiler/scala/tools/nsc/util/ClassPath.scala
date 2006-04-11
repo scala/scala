@@ -88,15 +88,15 @@ class ClassPath(onlyPresentation: Boolean) {
 
     def isPackage: Boolean =
       if (entries.isEmpty) false
-      else if (entries.head.location != null) entries.head.location.isDirectory()
-      else entries.head.source.location.isDirectory()
+      else if (entries.head.location != null) entries.head.location.isDirectory
+      else entries.head.source.location.isDirectory
 
     def name =
       if (entries.isEmpty) "<none>"
       else {
         val head = entries.head
-        val name = if (head.location != null) head.location.getName()
-                   else head.source.location.getName()
+        val name = if (head.location != null) head.location.name
+                   else head.source.location.name
         if (isPackage) name
         else name.substring(0, name.length() - (".class").length())
       }
@@ -116,20 +116,20 @@ class ClassPath(onlyPresentation: Boolean) {
       def head = entries.head
       def clazz = head.location
       def source = if (head.source == null) null else head.source.location
-      def isPredef = source.getName().equals("Predef.scala") ||
-                     source.getPath().startsWith("scala/runtime");
+      def isPredef = source.name.equals("Predef.scala") ||
+                     source.path.startsWith("scala/runtime");
 
 
       if (entries.isEmpty || entries.isEmpty || source == null) false
       else if (!onlyPresentation && !head.source.compile) false
-      else if (source.isDirectory()) false
+      else if (source.isDirectory) false
       else if (clazz == null) true
       else if (onlyPresentation && !isPredef) true
-      else if (source.lastModified() > clazz.lastModified()) true
+      else if (source.lastModified > clazz.lastModified) true
       else false
     }
 
-    def sourceFile = if (entries.head.source != null && !entries.head.source.location.isDirectory())
+    def sourceFile = if (entries.head.source != null && !entries.head.source.location.isDirectory)
       entries.head.source.location else null
 
     def classFile = if (!isSourceFile) entries.head.location else null
@@ -205,13 +205,13 @@ class ClassPath(onlyPresentation: Boolean) {
       val strtok = new StringTokenizer(path, File.pathSeparator)
       while (strtok.hasMoreTokens()) {
         val file = AbstractFile.getDirectory(strtok.nextToken())
-        val files = (if (file != null) file.list() else null)
-        if (files != null) while(files.hasNext()) {
-          val file0 = files.next().asInstanceOf[AbstractFile]
-          val name = file0.getName()
-          if (name.endsWith(".jar") || name.endsWith(".zip")) {
-            val archive = AbstractFile.getDirectory(new File(file.getFile(), name))
-            if (archive != null) entries += (new Library(archive))
+        if (file != null) {
+          for (val file0 <- file) {
+            val name = file0.name
+            if (name.endsWith(".jar") || name.endsWith(".zip")) {
+              val archive = AbstractFile.getDirectory(new File(file.file, name))
+              if (archive != null) entries += (new Library(archive))
+            }
           }
         }
       }

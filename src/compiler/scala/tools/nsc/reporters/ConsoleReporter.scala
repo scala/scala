@@ -75,7 +75,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
       if (pos.line != Position.NOLINE)
 	buf.insert(0, ":" + pos.line);
       val file = pos.source.file;
-      buf.insert(0, if (shortname) file.getName() else file.getPath());
+      buf.insert(0, if (shortname) file.name else file.path);
       printMessage(buf.toString());
       printSourceLine(pos);
     } else printMessage(msg);

@@ -508,7 +508,8 @@ class SemanticTokens(val compiler: Global) {
     val buf = unit.source.content;
     if (tree.pos >= buf.length) {
       if (false) {
-        System.err.println("" + tree + "@" + tree.pos + " not in " + unit.source.file.getName() + "[" + buf.length + "]");
+        System.err.println("" + tree + "@" + tree.pos + " not in " +
+                           unit.source.file.name + "[" + buf.length + "]");
         Thread.dumpStack();
         throw new Error();
       }

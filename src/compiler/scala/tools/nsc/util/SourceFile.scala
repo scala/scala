@@ -29,7 +29,7 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   import SourceFile._;
 
   def this(_file: AbstractFile) = {
-    this(_file, (new String(_file.read())).toCharArray)
+    this(_file, (new String(_file.read)).toCharArray)
   }
 
   val file    = _file;
@@ -53,7 +53,7 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   // constants
 
   // NOTE: all indexes are based on zero!!!!
-  override def toString(): String = file.getName() /* + ":" + content.length */ ;
+  override def toString(): String = file.name /* + ":" + content.length */ ;
 
 
   def dbg(offset : Int) = (new Position(this, offset)).dbgString;
@@ -69,7 +69,8 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
       if (!isIndex) assert(toFind != Position.NOPOS);
       if ( isIndex) assert(toFind > Position.NOLINE - Position.FIRSTLINE);
 
-      if (!isIndex && (toFind >= content.length)) throw new Error(toFind + " not valid offset in " + file.getName() + ":" + content.length);
+      if (!isIndex && (toFind >= content.length))
+        throw new Error(toFind + " not valid offset in " + file.name + ":" + content.length);
 
       def get(isIndex : Boolean) = if (isIndex) index else offset;
 
@@ -108,7 +109,7 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
     }
     return true;
   }
-  def path = getFile().getPath();
+  def path = getFile().path;
 
   def skipWhitespace(offset : Int): Int =
     if (Character.isWhitespace(content(offset))) skipWhitespace(offset + 1) else offset;
