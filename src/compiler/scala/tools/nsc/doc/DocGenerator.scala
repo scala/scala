@@ -17,24 +17,26 @@ abstract class DocGenerator extends Models {
   import global._
   import DocUtil._
   def outdir: String
+  def windowTitle: String
+  def documentTitle: String
   def contentFrame = "contentFrame"
   def classesFrame = "classesFrame"
   def modulesFrame = "modulesFrame"
-  def emptyMap = ListMap.Empty[Kind,TreeSet[HasTree]];
+  def emptyMap = ListMap.Empty[Kind,TreeSet[HasTree]]
 
   override def acceptPrivate = false;
 
   abstract class Frame extends UrlContext {
     def path: String; // relative to outdir
     def relative: String = {
-      assert(path != null);
-      var idx = 0;
-      var ct = "";
+      assert(path != null)
+      var idx = 0
+      var ct = ""
       while (idx != -1) {
         idx = path.indexOf('/', idx);
         //System.err.println(path + " idx=" + idx);
         ct = ct + (if (idx != -1) "../" else "");
-        idx = idx + (if (idx == -1) 0 else 1);
+        idx = idx + (if (idx == -1) 0 else 1)
       }
       ct
     }
@@ -54,7 +56,7 @@ abstract class DocGenerator extends Models {
       writer.close()
     }
 
-    def urlFor(sym : Symbol, target : String) : NodeSeq = try {
+    def urlFor(sym: Symbol, target: String): NodeSeq = try {
       if (sym.sourceFile == null) Text(sym.fullNameString('.'));
       else aref(urlFor(sym), target, sym.nameString);
     } catch {
@@ -72,7 +74,7 @@ abstract class DocGenerator extends Models {
         Text(tpe.symbol.toString())
     }
 
-    def urlFor0(sym : Symbol, orig : Symbol) : String = {
+    def urlFor0(sym: Symbol, orig: Symbol): String = {
       (if (sym == NoSymbol) {
          "XXX";
        } else if (sym.owner.isPackageClass) sym.fullNameString('/');
@@ -104,12 +106,17 @@ abstract class DocGenerator extends Models {
     save(page(title, body, hasBody))
   }
 
+  val doctitle: NodeSeq =
+    <div class="doctitle-larger">
+      {load(documentTitle)}
+    </div>;
+
   abstract class ListModuleFrame extends Frame {
     val path  = "modules";
     val title = "List of all packages";
     def modules : TreeMap[String,ModuleClassSymbol];
     def body : NodeSeq = {
-      val x = div0("Scala 2") concat
+      val x = doctitle concat
         aref("all-classes.html", classesFrame, "All objects and classes");
       val y = <p/><b>Packages</b>
        <table class="list"><tr><td style="white-space:nowrap;">
@@ -150,15 +157,15 @@ abstract class DocGenerator extends Models {
   }
 
   abstract class ListClassFrame extends Frame {
-    def classes: ListMap[Kind,TreeSet[HasTree]];
+    def classes: ListMap[Kind,TreeSet[HasTree]]
 
-    def navLabel: String;
+    def navLabel: String
 
     private def path0 = {
-      val p = path;
+      val p = path
       if (p.endsWith("$package"))
-      p.substring(0, p.length() - ("$package").length());
-      else p;
+        p.substring(0, p.length() - ("$package").length())
+      else p
     }
 
      def body : NodeSeq = {
@@ -254,7 +261,7 @@ abstract class DocGenerator extends Models {
       } } </span>;
     } else NodeSeq.Empty;
 
-    def shortHeader(mmbr : HasTree) : NodeSeq = {
+    def shortHeader(mmbr: HasTree): NodeSeq = {
       <tr>
         <td valign="top" class="modifiers">
           { { for (val str <- stringsFor(mmbr.mods)) yield <code>{(Text(str + " "))}</code>; } }
@@ -270,15 +277,15 @@ abstract class DocGenerator extends Models {
       </tr>;
     }
 
-    def fullComment(mmbr : HasTree) : NodeSeq = {
+    def fullComment(mmbr: HasTree): NodeSeq = {
       if (comments.contains(mmbr.tree.symbol))
         comment(comments(mmbr.tree.symbol), false) else NodeSeq.Empty;
     };
-    def shortComment(mmbr : HasTree) : NodeSeq = {
+    def shortComment(mmbr: HasTree): NodeSeq = {
       if (comments.contains(mmbr.tree.symbol))
         comment(comments(mmbr.tree.symbol), true) else NodeSeq.Empty;
     };
-    def ifT (cond : Boolean, nodes : NodeSeq) = if (cond) nodes else NodeSeq.Empty;
+    def ifT (cond: Boolean, nodes: NodeSeq) = if (cond) nodes else NodeSeq.Empty;
     def ifT (tree : Tree, nodes : NodeSeq, before : Boolean) = {
       if (tree != EmptyTree &&
         tree.tpe.symbol != definitions.AnyClass &&
@@ -295,7 +302,7 @@ abstract class DocGenerator extends Models {
     def forType(tpe: Type): NodeSeq =
       urlFor(tpe, contentFrame);
 
-    def forTree(tree : Tree) : NodeSeq = tree match {
+    def forTree(tree: Tree): NodeSeq = tree match {
       case vdef : ValDef =>
         Text(vdef.symbol.name.toString()).concat(Text(" : ")).concat(forTree(vdef.tpt));
       case sel : Select => forTree(sel.qualifier).concat(Text(sel.symbol.nameString));
@@ -319,17 +326,17 @@ abstract class DocGenerator extends Models {
     def surround(open: String, close: String, node: NodeSeq): NodeSeq =
       Text(open).concat(node).concat(Text(close));
 
-    def typesFor(ht : HasTree) : NodeSeq = {
+    def typesFor(ht: HasTree): NodeSeq = {
       val tparams = ht.tree match {
-        case cdef : ClassDef => cdef.tparams;
-        case ddef : DefDef   => ddef.tparams;
-        case adef : AliasTypeDef => adef.tparams;
-        case _ => Nil;
+        case cdef: ClassDef     => cdef.tparams
+        case ddef: DefDef       => ddef.tparams
+        case adef: AliasTypeDef => adef.tparams
+        case _ => Nil
       }
       if (tparams.isEmpty) Text("");
       else surround("[", "]", forTrees(tparams));
     }
-    def  argsFor(ht : HasTree) : NodeSeq = ht.tree match {
+    def  argsFor(ht: HasTree): NodeSeq = ht.tree match {
       case ddef : DefDef =>
         if (!ddef.vparamss.isEmpty &&
             (!ddef.vparamss.tail.isEmpty  || !ddef.vparamss.head.isEmpty)) {
@@ -339,12 +346,13 @@ abstract class DocGenerator extends Models {
         } else NodeSeq.Empty;
       case _ => NodeSeq.Empty;
     }
-    def resultFor(ht : HasTree) : NodeSeq = ht.tree match {
+    def resultFor(ht: HasTree): NodeSeq = ht.tree match {
       case vdef : ValOrDefDef =>
         if (!vdef.symbol.nameString.equals("this"))
           Text(" : ").concat(forTree(vdef.tpt));
         else NodeSeq.Empty;
-      case _ => NodeSeq.Empty;
+      case _ =>
+        NodeSeq.Empty
     }
   }
 
@@ -355,7 +363,7 @@ abstract class DocGenerator extends Models {
     def path  = module.fullNameString('/') + "$content";
     def title = "All Classes and Objects in " + module.fullNameString('.');
 
-    def body : NodeSeq = {
+    def body: NodeSeq = {
       <span><div class="page-title">
         Scala 2
         <br/>API Specification
@@ -378,8 +386,8 @@ abstract class DocGenerator extends Models {
   }
 
   abstract class ContentFrame extends ContentFrame0 {
-    def clazz: ImplMod;
-    def kind: Kind;
+    def clazz: ImplMod
+    def kind: Kind
     def body: NodeSeq = <span>{navigation}{header0}{fullHeader(clazz)}</span>;
 
     final def path = urlFor0(clazz.tree.symbol,clazz.tree.symbol);
@@ -387,7 +395,7 @@ abstract class DocGenerator extends Models {
     // <td class="navigation-enabled">{aref("help.html"     , "_self", "Help"    )}</td>
     // <td class="navigation-enabled">{aref("root-page.html", "_self", "Overview")}</td>
     // <td class="navigation-enabled">{aref("index.html"    , null, "Index"   )}</td>
-    def navigation : NodeSeq =
+    def navigation: NodeSeq =
     <table class="navigation">
       <tr>
         <td valign="top" class="navigation-links">
@@ -395,13 +403,13 @@ abstract class DocGenerator extends Models {
           </tr></table>
         </td>
         <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">
-        {div0("Scala 2")}
+          {doctitle}
         </td>
       </tr>
       <tr><td></td></tr>
     </table>;
 
-    def header0 : NodeSeq = <span>
+    def header0: NodeSeq = <span>
       <hr/> in {aref(urlFor(clazz.tree.symbol.owner), "_self", clazz.tree.symbol.owner.fullNameString('.'))}
       <div class="entity">
         {Text(codeFor(kind))}
@@ -454,8 +462,8 @@ abstract class DocGenerator extends Models {
 
     // class from for each module.
     for (val top <- topLevel.elements) {
-      val module = top._1;
-      val members = top._2;
+      val module = top._1
+      val members = top._2
 
       new ListClassFrame {
         def title = "List of classes and objects in package " + module.fullNameString('.')
@@ -482,10 +490,10 @@ abstract class DocGenerator extends Models {
     }
 
     new Frame {
-      def title = "Scala Library Documentation";
-      def body = index;
-      def path = "index";
-      override def hasBody = false;
+      def title = windowTitle
+      def body = index
+      def path = "index"
+      override def hasBody = false
     };
     for (val base <- "style.css" :: "script.js" :: Nil) {
       val input = getClass().getClassLoader().getResourceAsStream("scala/tools/nsc/doc/" + base);
@@ -503,7 +511,7 @@ abstract class DocGenerator extends Models {
           }
         }
         input.close();
-        output.close();
+        output.close()
       }
     }
   }
@@ -528,10 +536,10 @@ abstract class DocGenerator extends Models {
 
   def parse(str : String) : NodeSeq = {
     new SpecialNode {
-      def label = "#PCDATA";
-      def toString(sb:StringBuffer): StringBuffer = {
+      def label = "#PCDATA"
+      def toString(sb: StringBuffer): StringBuffer = {
         sb.append(str.trim());
-        sb;
+        sb
       }
 
     }

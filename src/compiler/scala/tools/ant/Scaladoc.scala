@@ -2,9 +2,10 @@
 **   /  |/ / ____/ ____/                                                      **
 **  / | | /___  / /___                                                        **
 ** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
-**
-** $Id$
+**                                                                            **
 \*                                                                            */
+
+// $Id$
 
 package scala.tools.ant {
 
@@ -38,7 +39,9 @@ package scala.tools.ant {
     *  <li>bootclasspathref,</li>
     *  <li>extdirs,</li>
     *  <li>extdirsref,</li>
-    *  <li>encoding.</li>
+    *  <li>encoding,</li>
+    *  <li>windowtitle,</li>
+    *  <li>documenttitle.</li>
     * </ul>
     * It also takes the following parameters as nested elements:<ul>
     *  <li>src (for srcdir),</li>
@@ -48,7 +51,8 @@ package scala.tools.ant {
     *  <li>extdirs.</li>
     * </ul>
     *
-    * @author Gilles Dubochet */
+    * @author Gilles Dubochet, Stephane Micheloud
+    */
   class Scaladoc extends MatchingTask {
 
     /** The unique Ant file utilities instance to use in this task. */
@@ -74,6 +78,11 @@ package scala.tools.ant {
 
     /** The character encoding of the files to compile. */
     private var encoding: Option[String] = None
+
+    /** The window title of the generated HTML documentation. */
+    private var windowtitle: Option[String] = None
+    /** The document title of the generated HTML documentation. */
+    private var documenttitle: Option[String] = None
 
 /******************************************************************************\
 **                             Properties setters                             **
@@ -176,10 +185,20 @@ package scala.tools.ant {
     def setExtdirsref(input: Reference) =
       createExtdirs().setRefid(input)
 
-    /** Sets the encoding attribute. Used by Ant.
+    /** Sets the <code>encoding</code> attribute. Used by Ant.
       * @param input The value of <code>encoding</code>. */
     def setEncoding(input: String): Unit =
       encoding = Some(input)
+
+    /** Sets the <code>windowtitle</code> attribute.
+      * @param input The value of <code>windowtitle</code>. */
+    def setWindowtitle(input: String): Unit =
+      windowtitle = Some(input)
+
+    /** Sets the <code>documenttitle</code> attribute.
+      * @param input The value of <code>documenttitle</code>. */
+    def setDocumenttitle(input: String): Unit =
+      documenttitle = Some(input)
 
 /******************************************************************************\
 **                             Properties getters                             **
@@ -189,8 +208,7 @@ package scala.tools.ant {
       * @returns The class path as a list of files. */
     private def getClasspath: List[File] =
       if (classpath.isEmpty) error("Member 'classpath' is empty.")
-      else
-        List.fromArray(classpath.get.list()).map(nameToFile)
+      else List.fromArray(classpath.get.list()).map(nameToFile)
 
     /** Gets the value of the origin attribute in a Scala-friendly form.
       * @returns The origin path as a list of files. */
@@ -312,7 +330,6 @@ package scala.tools.ant {
 
     /** Performs the compilation. */
     override def execute() = {
-
       // Tests if all mandatory attributes are set and valid.
       if (origin.isEmpty) error("Attribute 'srcdir' is not set.")
       if (getOrigin.isEmpty) error("Attribute 'srcdir' is not set.")
@@ -366,15 +383,19 @@ package scala.tools.ant {
         settings.bootclasspath.value = asString(getBootclasspath)
       if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
       if (!encoding.isEmpty) settings.encoding.value = encoding.get
+      if (!windowtitle.isEmpty) settings.windowtitle.value = windowtitle.get
+      if (!documenttitle.isEmpty) settings.documenttitle.value = documenttitle.get
 
       // Compiles the actual code
       object compiler extends Global(settings, reporter)
       try {
         val run = new compiler.Run
-        run.compile(sourceFiles.map(f:File=>f.toString()))
+        run.compile(sourceFiles.map(f: File => f.toString()))
         object generator extends DocGenerator {
           val global = compiler
           val outdir = settings.outdir.value
+          val windowTitle = settings.windowtitle.value
+          val documentTitle = settings.documenttitle.value
         }
         generator.process(run.units)
         if (reporter.errors > 0)

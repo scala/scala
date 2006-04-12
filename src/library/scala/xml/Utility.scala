@@ -9,33 +9,32 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
 
-import java.lang.StringBuffer;
-import scala.collection.mutable;
+import java.lang.StringBuffer
+import scala.collection.mutable
 
 /**
- * Utility functions for processing instances of bound and not bound XML
- * classes, as well as escaping text nodes
+ * Utility functions for processing instances of bound and
+ * not bound XML classes, as well as escaping text nodes.
  */
 object Utility extends AnyRef with parsing.TokenTests {
 
-  def view(s: String): Text = Text(s);
+  def view(s: String): Text = Text(s)
 
   /* escapes the characters &lt; &gt; &amp; and &quot; from string */
   final def escape(text: String): String =
-    escape(text, new StringBuffer()).toString();
-
+    escape(text, new StringBuffer()).toString()
 
   /* appends escaped string to s */
   final def escape(text: String, s: StringBuffer): StringBuffer = {
     for (val c <- Iterator.fromString(text)) c match {
-      case '<' => s.append("&lt;");
-      case '>' => s.append("&gt;");
-      case '&' => s.append("&amp;");
-      case '"' => s.append("&quot;");
-      case _   => s.append(c);
+      case '<' => s.append("&lt;")
+      case '>' => s.append("&gt;")
+      case '&' => s.append("&amp;")
+      case '"' => s.append("&quot;")
+      case _   => s.append(c)
     }
     s
   }
@@ -48,8 +47,8 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
 
   def collectNamespaces(nodes: Seq[Node]): mutable.Set[String] = {
-    var m = new mutable.HashSet[String]();
-    val it = nodes.elements;
+    var m = new mutable.HashSet[String]()
+    val it = nodes.elements
     while (it.hasNext)
       collectNamespaces(it.next, m);
     m
@@ -84,9 +83,9 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @todo define a way to escape literal characters to &amp;xx; references
    */
   def toXML(n: Node, stripComment: Boolean): String = {
-    val sb = new StringBuffer();
-    toXML(n, TopScope, sb, stripComment);
-    sb.toString();
+    val sb = new StringBuffer()
+    toXML(n, TopScope, sb, stripComment)
+    sb.toString()
   }
 
 
@@ -101,34 +100,33 @@ object Utility extends AnyRef with parsing.TokenTests {
     x match {
 
       case c: Comment if !stripComment =>
-	c.toString(sb)
+        c.toString(sb)
 
       case x: SpecialNode =>
-	x.toString(sb)
+        x.toString(sb)
 
       case _  =>
         // print tag with namespace declarations
-        sb.append('<');
-        x.nameToString(sb);
+        sb.append('<')
+        x.nameToString(sb)
         if (x.attributes != null) {
           x.attributes.toString(sb)
         }
-        x.scope.toString(sb, pscope);
-        sb.append('>');
-        for (val c <- x.child.elements) {
-          toXML(c, x.scope, sb, stripComment);
-        }
-        sb.append("</");
-        x.nameToString(sb);
+        x.scope.toString(sb, pscope)
         sb.append('>')
-
+        for (val c <- x.child.elements) {
+          toXML(c, x.scope, sb, stripComment)
+        }
+        sb.append("</")
+        x.nameToString(sb)
+        sb.append('>')
     }
   }
 
 
   /** returns prefix of qualified name if any */
   final def prefix(name: String): Option[String] = {
-    val i = name.indexOf(':'.asInstanceOf[Int]);
+    val i = name.indexOf(':'.asInstanceOf[Int])
     if( i != -1 ) Some( name.substring(0, i) ) else None
   }
 
@@ -161,21 +159,21 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
 
   def systemLiteralToString(s: String): String = {
-    val sb = new StringBuffer();
-    systemLiteralToString(sb, s);
-    sb.toString();
- }
+    val sb = new StringBuffer()
+    systemLiteralToString(sb, s)
+    sb.toString()
+  }
 
   def systemLiteralToString(sb: StringBuffer, s: String): StringBuffer = {
-    sb.append("SYSTEM ");
-    appendQuoted(s, sb);
+    sb.append("SYSTEM ")
+    appendQuoted(s, sb)
   }
 
   def publicLiteralToString(s: String): String = {
-    val sb = new StringBuffer();
-    systemLiteralToString(sb, s);
-    sb.toString();
- }
+    val sb = new StringBuffer()
+    systemLiteralToString(sb, s)
+    sb.toString()
+  }
 
   def publicLiteralToString(sb: StringBuffer, s: String): StringBuffer = {
     sb.append("PUBLIC \"").append(s).append('"')
@@ -200,11 +198,11 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param sb
    */
   def appendEscapedQuoted(s: String, sb: StringBuffer) = {
-    sb.append('"');
-    val z:Seq[Char] = Predef.string2seq(s);
+    sb.append('"')
+    val z:Seq[Char] = Predef.string2seq(s)
     for( val c <- z ) c match {
-      case '"' => sb.append('\\'); sb.append('"');
-      case _   => sb.append( c );
+      case '"' => sb.append('\\'); sb.append('"')
+      case _   => sb.append(c)
     }
     sb.append('"')
   }
@@ -212,36 +210,36 @@ object Utility extends AnyRef with parsing.TokenTests {
   def getName(s: String, index: Int): String = {
     var i = index;
     val sb = new StringBuffer();
-    if(i < s.length()) {
+    if (i < s.length()) {
       var c = s.charAt(i);
-      if(isNameStart(s.charAt(i)))
-        while(i < s.length() && { c = s.charAt(i); isNameChar(c)}) {
+      if (isNameStart(s.charAt(i)))
+        while (i < s.length() && { c = s.charAt(i); isNameChar(c)}) {
           sb.append(c);
-          i = i + 1;
+          i = i + 1
         }
-      sb.toString();
+      sb.toString()
     } else null
   }
 
   /** returns null if the value is a correct attribute value, error message if it isn't */
   def checkAttributeValue(value: String): String = {
-    var i = 0;
-    while(i < value.length()) {
+    var i = 0
+    while (i < value.length()) {
       value.charAt(i) match {
         case '<' =>
           return "< not allowed in attribute value";
         case '&' =>
           val n = getName(value, i+1);
-          if(n== null)
+          if (n== null)
             return "malformed entity reference in attribute value ["+value+"]";
           i = i + n.length() + 1;
-          if(i >= value.length() || value.charAt(i) != ';')
+          if (i >= value.length() || value.charAt(i) != ';')
             return "malformed entity reference in attribute value ["+value+"]";
         case _   =>
       }
-      i = i + 1;
+      i = i + 1
     }
-    return null;
+    null
   }
 
 }

@@ -203,7 +203,7 @@ test_print_failure() {
 test_run_pos() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    $SCALAC -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
     rm -rf "$dstbase".obj;
 }
 
@@ -211,7 +211,7 @@ test_run_pos() {
 test_run_neg() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    ( cd "$srcdir" && $SOCOS -d "$os_dstbase".obj "$@" "$testname".scala; );
+    ( cd "$srcdir" && $SCALAC -d "$os_dstbase".obj "$@" "$testname".scala; );
     if [ "$?" = 0 ]; then status=1; else status=0; fi;
     rm -rf "$dstbase".obj;
     return $status;
@@ -221,7 +221,7 @@ test_run_neg() {
 test_run_jvm() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    $SCALAC -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
     $SCALA -classpath $classpath Test "jvm" &&
     rm -rf "$dstbase".obj;
@@ -235,7 +235,7 @@ test_run_dis() {
     fi;
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    $SCALAC -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
     $SCALAP -classpath "$os_dstbase".obj `cat "$argsfile"` &&
     rm -rf "$dstbase".obj;
 }
@@ -245,7 +245,7 @@ test_run_msil() {
     assemblies=`get_os_pathlist "/home/linuxsoft/apps/msil"`;
     rm -f "$dstbase".il &&
     rm -f "$dstbase".EXE &&
-    $SOCOS -nowarn -target:msil -o "$os_dstbase" -r $assemblies "$@" \
+    $SCALAC -nowarn -target:msil -o "$os_dstbase" -r $assemblies "$@" \
         "$os_srcbase".scala &&
     case "$UNAME" in
         CYGWIN* )
@@ -558,7 +558,7 @@ if [ "$TEST_ALL" = "true" ]; then
 fi;
 
 SCALA="${BIN_DIR}scala";
-SOCOS="${BIN_DIR}scalac";
+SCALAC="${BIN_DIR}scalac -encoding iso-8859-1";
 SCALAP="${BIN_DIR}scalap";
 
 SCALA_SCALA_ARGS="-Xmx512M $SCALA_SCALA_ARGS";
@@ -575,7 +575,7 @@ fi
 printf_outline "Source directory is : $SRCDIR\\n";
 bin_dir=$BIN_DIR
 if [ -z "$bin_dir" ]; then
-    bin_dir=`which "$SOCOS"` && bin_dir=`dirname "$bin_dir"`/;
+    bin_dir=`which "$SCALAC"` && bin_dir=`dirname "$bin_dir"`/;
     bin_dir=`test_get_location ${bin_dir}scalac`;
 fi;
 printf_outline "Scala binaries in   : $bin_dir\\n";

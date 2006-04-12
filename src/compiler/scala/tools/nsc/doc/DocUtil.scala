@@ -2,9 +2,12 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Sean McDirmid
  */
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.doc
+
+import java.io.StringReader
+import org.xml.sax.InputSource
 
 import scala.collection.immutable._
 import scala.xml._
@@ -13,6 +16,13 @@ object DocUtil {
 
   def dquote(str: String): NodeSeq =
     DQUOTE :: Text(str) :: DQUOTE :: Nil
+
+  def load(str: String): NodeSeq = {
+    val xmlStr = str.replaceAll("&lt;", "<").replaceAll("&gt;",">")
+                    .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
+    val xmlSrc = new InputSource(new StringReader(xmlStr))
+    XML.load(xmlSrc)
+  }
 
   object DQUOTE extends SpecialNode {
     def toString(sb: StringBuffer) = {

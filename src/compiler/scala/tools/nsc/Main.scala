@@ -16,9 +16,9 @@ import scala.tools.nsc.doc.DocGenerator
 object Main extends Object with EvalLoop {
 
   val PRODUCT: String =
-    System.getProperty("scala.product", "scalac")
+    System.getProperty("scala.tool.name", "scalac")
   val VERSION: String =
-    System.getProperty("scala.version", "unknown version")
+    System.getProperty("scala.tool.version", "unknown version")
   val COPYRIGHT: String =
     System.getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
   val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
@@ -60,8 +60,10 @@ object Main extends Object with EvalLoop {
           run compile command.files
           if (command.settings.doc.value) {
             object generator extends DocGenerator {
-              val global : compiler.type = compiler;
-              val outdir = command.settings.outdir.value;
+              val global : compiler.type = compiler
+              val outdir = command.settings.outdir.value
+              val windowTitle = command.settings.windowtitle.value
+              val documentTitle = command.settings.documenttitle.value
             };
             generator.process(run.units)
           }

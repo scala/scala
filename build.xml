@@ -925,6 +925,8 @@ DOCUMENTATION
       srcdir="${src.dir}"
       destdir="${api.lib.dir}"
       sourcepath=""
+      windowtitle="Scala Library Documentation"
+      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;${version.number}&lt;/div&gt;&lt;/div&gt;"
     >
       <classpath>
         <pathelement location="${quick.dir}/${lib.dir.name}"/>
@@ -934,7 +936,7 @@ DOCUMENTATION
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quickdoc>
   </target>
-  
+
   <target name="docs.compiler"
     description="Generated the API for compiler sources"
     depends="setup.quick"
@@ -944,6 +946,8 @@ DOCUMENTATION
       srcdir="${src.comp.dir}"
       destdir="${api.comp.dir}"
       sourcepath=""
+      windowtitle="Scala Compiler Documentation"
+      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;${version.number}&lt;/div&gt;&lt;/div&gt;"
     >
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
