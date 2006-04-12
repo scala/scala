@@ -15,6 +15,7 @@ trait Contexts requires Analyzer {
     override def implicitss: List[List[ImplicitInfo]] = List();
   }
   NoContext.enclClass = NoContext;
+  NoContext.enclMethod = NoContext;
 
   val startContext = {
     import definitions._;
@@ -61,6 +62,7 @@ trait Contexts requires Analyzer {
     var outer: Context = _;                 // The next outer context
     var enclClass: Context = _;             // The next outer context whose tree is a
                                             // template or package definition
+    var enclMethod: Context = _;            // The next outer context whose tree is a method
     var variance: int = _;                  // Variance relative to enclosing class.
     private var _undetparams: List[Symbol] = List(); // Undetermined type parameters
     var depth: int = 0;
@@ -97,6 +99,12 @@ trait Contexts requires Analyzer {
 	  c.enclClass = this.enclClass;
           c.prefix = if (c.owner != this.owner && c.owner.isTerm) NoPrefix else this.prefix;
           c.inConstructorSuffix = this.inConstructorSuffix;
+      }
+      tree match {
+        case DefDef(_, _, _, _, _, _) =>
+          c.enclMethod = c
+        case _ =>
+          c.enclMethod = this.enclMethod
       }
       c.variance = this.variance;
       c.depth = if (scope == this.scope) this.depth else this.depth + 1;

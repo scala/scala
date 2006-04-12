@@ -786,6 +786,7 @@ trait Typers requires Analyzer {
           checkNoEscaping.privates(meth,
               typedType(ddef.tpt)))
       checkNonCyclic(ddef, tpt1)
+      ddef.tpt.setType(tpt1.tpe)
       val rhs1 =
         if (ddef.name == nme.CONSTRUCTOR) {
           if (!meth.hasFlag(SYNTHETIC) &&
@@ -1405,14 +1406,16 @@ trait Typers requires Analyzer {
           copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
 
         case Return(expr) =>
-          val enclFun = if (tree.symbol != NoSymbol) tree.symbol else context.owner.enclMethod
-          if (!enclFun.isMethod || enclFun.isConstructor)
+          val enclMethod = context.enclMethod;
+          if (enclMethod == NoContext || enclMethod.owner.isConstructor)
             errorTree(tree, "return outside method definition")
-          else if (!context.owner.isInitialized)
-            errorTree(tree, "method "+context.owner+" has return statement; needs result type")
+          else if (!enclMethod.owner.isInitialized)
+            errorTree(tree, "method "+enclMethod.owner+" has return statement; needs result type")
           else {
-            val expr1: Tree = typed(expr, enclFun.tpe.finalResultType)
-            copy.Return(tree, expr1) setSymbol enclFun setType AllClass.tpe
+            val DefDef(_, _, _, _, restpt, _) = enclMethod.tree
+            assert(restpt.tpe != null, restpt)
+            val expr1: Tree = typed(expr, restpt.tpe)
+            copy.Return(tree, expr1) setSymbol enclMethod.owner setType AllClass.tpe
           }
 
         case Try(block, catches, finalizer) =>
