@@ -3,11 +3,12 @@
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc;
 
 import scala.tools.nsc.util.{SourceFile, Position};
 import scala.tools.nsc.util.FreshNameCreator;
-import scala.tools.util.AbstractFile;
+import scala.tools.nsc.io.AbstractFile;
 import scala.collection.mutable.HashSet;
 
 trait CompilationUnits requires Global {

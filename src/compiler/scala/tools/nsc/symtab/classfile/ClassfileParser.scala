@@ -2,7 +2,9 @@
  * Copyright 2005 LAMP/EPFL
  * @author  Martin Odersky
  */
+
 // $Id$
+
 /* Ideas to extend this to an icode reader:
 
   1. Parse classfile a second time, creating a hashmap `code' that associates method symbols with code.
@@ -12,12 +14,11 @@
 
     code(new) = code(meth)
 */
+
 package scala.tools.nsc.symtab.classfile;
 
 import scala.tools.nsc.util.Position;
-import scala.tools.util.AbstractFile;
-import scala.tools.util.AbstractFileReader;
-
+import scala.tools.nsc.io.{AbstractFile, AbstractFileReader};
 import scala.collection.mutable.ListBuffer;
 import scala.collection.immutable.{Map, ListMap};
 

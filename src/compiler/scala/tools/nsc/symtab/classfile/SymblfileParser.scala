@@ -3,11 +3,10 @@
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc.symtab.classfile;
 
-import scala.tools.util.{AbstractFile, AbstractFileReader};
-
-import java.io.IOException;
+import scala.tools.nsc.io.{AbstractFile, AbstractFileReader};
 
 abstract class SymblfileParser {
 

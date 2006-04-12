@@ -8,7 +8,7 @@ package scala.tools.nsc
 
 import reporters._
 import nsc.util.SourceFile
-import scala.tools.util.PlainFile
+import scala.tools.nsc.io.PlainFile
 import java.io._
 import nsc.ast.parser.SyntaxAnalyzer
 import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}

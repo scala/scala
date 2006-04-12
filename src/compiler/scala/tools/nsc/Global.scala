@@ -7,7 +7,7 @@ package scala.tools.nsc;
 
 import java.io._;
 import java.nio.charset._;
-import scala.tools.util.{SourceReader,AbstractFile};
+import scala.tools.nsc.io.{SourceReader,AbstractFile};
 import scala.tools.nsc.util.ClassPath;
 import scala.tools.nsc.util.{Position,SourceFile};
 import scala.tools.nsc.reporters._;

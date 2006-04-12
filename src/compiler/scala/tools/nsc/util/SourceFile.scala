@@ -9,8 +9,9 @@
 
 
 package scala.tools.nsc.util;
-import scala.tools.util.AbstractFile;
-import scala.tools.util.CharArrayFile;
+
+
+import scala.tools.nsc.io.{AbstractFile, CharArrayFile};
 
 /** Uses positions that are offsets rather than line/column pairs.
  *

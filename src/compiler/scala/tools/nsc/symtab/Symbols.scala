@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.symtab;
 
-import scala.tools.util.AbstractFile;
+import scala.tools.nsc.io.AbstractFile;
 import scala.tools.nsc.util.{Position, SourceFile};
 import Flags._;
 

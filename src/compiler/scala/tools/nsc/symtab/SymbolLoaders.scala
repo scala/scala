@@ -3,13 +3,12 @@
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc.symtab;
 
-import java.io.IOException;
-import java.io.File;
-import scala.tools.nsc.util.Position;
-import scala.tools.nsc.util.ClassPath;
-import scala.tools.util.{AbstractFile};
+import java.io.{File, IOException};
+import scala.tools.nsc.util.{Position, ClassPath};
+import scala.tools.nsc.io.AbstractFile;
 import scala.tools.nsc.util.NameTransformer;
 import scala.collection.mutable.HashMap;
 import classfile.{ClassfileParser, SymblfileParser};

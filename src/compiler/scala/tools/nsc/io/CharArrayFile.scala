@@ -7,7 +7,7 @@
 // $Id$
 
 
-package scala.tools.util;
+package scala.tools.nsc.io;
 
 
 /**

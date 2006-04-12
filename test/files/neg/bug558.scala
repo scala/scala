@@ -1,5 +1,5 @@
 package scala.tools.nsc.models;
-import scala.tools.util._;
+import scala.tools.nsc.io.AbstractFile;
 
 abstract class NewModel {
   abstract class SymbolURL {

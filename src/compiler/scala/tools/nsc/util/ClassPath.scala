@@ -11,10 +11,9 @@
 package scala.tools.nsc.util
 
 import scala.collection.mutable.ArrayBuffer
-import scala.tools.util.AbstractFile
+import scala.tools.nsc.io.AbstractFile
 
 import java.io.File
-import java.io.FileNotFoundException
 import java.util.StringTokenizer
 
 /** Richer classpath abstraction than files.

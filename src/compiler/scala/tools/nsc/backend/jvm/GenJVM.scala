@@ -98,7 +98,7 @@ abstract class GenJVM extends SubComponent {
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
       val outfile = getFile(jclass, ".class");
       jclass.writeTo(outfile);
-      val file = scala.tools.util.AbstractFile.getFile(outfile);
+      val file = scala.tools.nsc.io.AbstractFile.getFile(outfile);
       informProgress("wrote " + outfile + " " +
                      (if (file != null) "" + file.file + " " + file.file.exists()
                       else "no file"));
