@@ -451,19 +451,6 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     </starr>
     <!-- Build compiler -->
     <mkdir dir="${locker.comp.dir}"/>
-    <javac
-      srcdir="${src.comp.dir}"
-      destdir="${locker.comp.dir}"
-      source="${jc.source}"
-      target="${jc.target}"
-      deprecation="${jc.deprecation}"
-    >
-      <classpath>
-        <pathelement location="${locker.lib.dir}"/>
-        <pathelement location="${locker.comp.dir}"/>
-      </classpath>
-      <include name="**/*.java"/>
-    </javac>
     <starr
       srcdir="${src.comp.dir}"
       destdir="${locker.comp.dir}"
@@ -614,19 +601,6 @@ BUILD QUICK-TEST LAYER
     </locker>
     <!-- Build compiler -->
     <mkdir dir="${quick.comp.dir}"/>
-    <javac
-      srcdir="${src.comp.dir}"
-      destdir="${quick.comp.dir}"
-      source="${jc.source}"
-      target="${jc.target}"
-      deprecation="${jc.deprecation}"
-    >
-      <classpath>
-        <pathelement location="${quick.lib.dir}"/>
-        <pathelement location="${quick.comp.dir}"/>
-      </classpath>
-      <include name="**/*.java"/>
-    </javac>
     <locker
       srcdir="${src.comp.dir}"
       destdir="${quick.comp.dir}"
@@ -785,19 +759,6 @@ TEST
     </quick>
     <!-- Build compiler -->
     <mkdir dir="${strap.comp.dir}"/>
-    <javac
-      srcdir="${src.comp.dir}"
-      destdir="${strap.comp.dir}"
-      source="${jc.source}"
-      target="${jc.target}"
-      deprecation="${jc.deprecation}"
-    >
-      <classpath>
-        <pathelement location="${strap.lib.dir}"/>
-        <pathelement location="${strap.comp.dir}"/>
-      </classpath>
-      <include name="**/*.java"/>
-    </javac>
     <quick
       srcdir="${src.comp.dir}"
       destdir="${strap.comp.dir}"
