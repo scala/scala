@@ -887,7 +887,7 @@ DOCUMENTATION
       destdir="${api.lib.dir}"
       sourcepath=""
       windowtitle="Scala Library Documentation"
-      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;${version.number}&lt;/div&gt;&lt;/div&gt;"
+      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;v${version.number}&lt;/div&gt;&lt;/div&gt;"
     >
       <classpath>
         <pathelement location="${quick.dir}/${lib.dir.name}"/>
@@ -908,7 +908,7 @@ DOCUMENTATION
       destdir="${api.comp.dir}"
       sourcepath=""
       windowtitle="Scala Compiler Documentation"
-      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;${version.number}&lt;/div&gt;&lt;/div&gt;"
+      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;v${version.number}&lt;/div&gt;&lt;/div&gt;"
     >
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
