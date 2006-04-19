@@ -1,0 +1,90 @@
+How to Install Sun Java as a Debian package
+===========================================
+
+In short:
+
+  (root)     > apt-get install java-package
+  (non-root) > fakeroot make-jpkg <java-binary-package-name>.bin
+  (root)     > dpkg -i <created-package-name>.deb
+
+
+Step 1 - Get the Sun JVM
+------------------------
+Get the latest Sun JVM from here http://java.sun.com/, i.e.
+
+  jdk-1_5_0_06-linux-i586.bin   (48974825 bytes)
+
+
+Step 2 - Install the Required Builder Package
+---------------------------------------------
+Installing Java on Debian is not the simplest thing in the world but
+fortunatly the package 'java-package' will do most of the work for you
+(assuming it works):
+
+  > apt-get -u install java-package
+
+Make sure that your repository is fully upto date before installing
+this package or you might run into problems installing the latest JVM.
+You also need fakeroot if you don't have it.
+
+
+Step 3 - Create the .deb Package File
+-------------------------------------
+You have to perform this step as a non-root user so I suggest using
+your own account. Create a temporary directory and copy the java .bin
+installer file into it. Then run the command:
+
+  > fakeroot make-jpkg jdk-1_5_0_06-linux-i586.bin
+
+changing the name of the Java .bin package if you need to.
+
+
+Step 4 - Install the Java .deb Package
+--------------------------------------
+You need to be root to perform this step so switch now. Then execute
+the following command:
+
+  > dpkg -i sun-j2sdk1.5_1.5.0+update06_i386.deb
+
+Of course you need to specify the correct package name if yours doesn't
+match the name specified in the above command.
+
+
+Step 5 - Check it Works
+-----------------------
+This should be the simplest step. Just execute the command:
+
+  > java -version
+
+as both root and another user to make sure everything is installed correctly.
+
+  java version "1.5.0_06"
+  Java(TM) 2 Runtime Environment, Standard Edition (build 1.5.0_06-b05)
+  Java HotSpot(TM) Client VM (build 1.5.0_06-b05, mixed mode, sharing)
+
+
+Other Tasks
+-----------
+1) Removing the Java Packages
+
+   Should you ever want to remove any of the Java packages you have
+   installed you can do that with a command like this:
+
+     > apt-get remove sun-j2sdk1.5
+
+   which would remove the package installed above. If you can't remeber
+   what packages you have installed try searching the apt-cache for the
+   word sun e.g.
+
+     > apt-cache search sun
+
+   that should turn up the package but will match quite a lot of others
+   as well.
+
+
+Useful Links
+------------
+http://www.crazysquirrel.com/computing/debian/java.jspx
+
+
+$Id: $
