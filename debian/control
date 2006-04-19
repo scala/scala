@@ -34,4 +34,4 @@ Description: The Scala development tools
  This package includes the various tools used to develop
  code written in Scala.  It includes a compiler (scalac),
  a convenient command-runner (scala), an interpreter
- (scalaint), and a source-scanning document generator (scaladoc).
+ (scalaint), and a source-scanning documentation generator (scaladoc).
