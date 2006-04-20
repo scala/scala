@@ -31,7 +31,7 @@ PROPERTIES
   <property file="${properties}"/>
   <!-- General properties -->
   <property name="number.file" value="${basedir}/build.number"/>
-  <property name="copyright" value="(c) 2002-2006 LAMP/EPFL"/>
+  <property name="copyright.holder" value="LAMP/EPFL"/>
   <property name="logs.dir" value="${basedir}/logs"/>
   <!-- Javac configuration properties -->
   <property name="jc.source" value="1.4"/>
@@ -116,7 +116,15 @@ INITIALISATION
         property="short"
         pattern="yyyyMMdd-HHmmss"
       />
+      <format
+       property="this.year"
+       pattern="yyyy"
+     />
     </tstamp>
+    <property
+      name="copyright"
+      value="(c) 2002-${time.this.year} ${copyright.holder}"
+    />
     <echo level="verbose" message="ant.jar=${ant.jar}"/>
     <echo level="verbose" message="ant-contrib.jar=${ant-contrib.jar}"/>
     <fail message="Additional Ant tasks in 'lib/' is not available">
