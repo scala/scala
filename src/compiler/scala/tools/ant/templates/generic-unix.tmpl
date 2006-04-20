@@ -89,6 +89,7 @@ if [ "$BOOT_CLASSPATH" != "" ] ; then
 fi
 
 for flag in "$@@" ; do
+    #TODO: take version only if it is before the tool class name
     if [ "$flag" = '-version' ] ; then
         echo "Scala runtime version @version@ -- @copyright@"
         ${JAVACMD:=java} -version
@@ -109,4 +110,4 @@ if $cygwin; then
     MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
 fi
 
-${JAVACMD:=java} @javaflags@ -cp "$MYCLASSPATH" -Dscala.home="$SCALA_HOME" -Dscala.class.path="$USER_CLASSPATH" -Dscala.boot.class.path="$BOOT_CLASSPATH" -Dscala.ext.path="$EXTENSION_CLASSPATH" -Denv.classpath="$CLASSPATH" @properties@ $USER_ARGS
+${JAVACMD:=java} @javaflags@ -cp "$MYCLASSPATH" -Dscala.home="$SCALA_HOME" @properties@ $USER_ARGS

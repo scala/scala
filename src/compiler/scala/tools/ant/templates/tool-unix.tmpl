@@ -56,13 +56,6 @@ if [ "$BOOT_CLASSPATH" != "" ] ; then
     fi
 fi
 
-for flag in "$@@" ; do
-    if [ "$flag" = '-version' ] ; then
-        echo "@name@ version @version@ -- @copyright@"
-        exit 0
-    fi
-done
-
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
         format=mixed
@@ -75,4 +68,4 @@ if $cygwin; then
     MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
 fi
 
-${JAVACMD:=java} @javaflags@ -cp "$MYCLASSPATH" -Dscala.home="$SCALA_HOME" -Dscala.boot.class.path="$BOOT_CLASSPATH" -Dscala.ext.path="$EXTENSION_CLASSPATH" -Denv.classpath="$CLASSPATH" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ @class@ @toolflags@ $@@
+${JAVACMD:=java} @javaflags@ -cp "$MYCLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ @class@ @toolflags@ "$@@"

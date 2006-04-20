@@ -43,13 +43,12 @@ set _ARGS=
 :loop
 rem Argument %1 may contain quotes so we use parentheses here
 if (%1)==() goto exec
-if (%1)==(-version) goto version
 set _ARGS=%_ARGS% %1
 shift
 goto loop
 
 :exec
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscala.boot.class.path="%_BOOT_CLASSPATH%" -Dscala.ext.path="%_EXTENSION_CLASSPATH%" -Denv.classpath="%CLASSPATH%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@
 
 rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp "%_MYCLASSPATH%" @class@ @toolflags@ %_ARGS%
 %_JAVACMD% @javaflags@ %_PROPS% -cp "%_MYCLASSPATH%" @class@ @toolflags@ %_ARGS%

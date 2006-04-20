@@ -28,16 +28,14 @@ class Settings(error: String => unit) {
     alternatePath(
       concatPath(
         getProperty("sun.boot.class.path"),
-        alternatePath(
-          getProperty("scala.boot.class.path"),
-          guessedScalaBootClassPath)),
+        guessedScalaBootClassPath),
       "")
 
   private val extdirsDefault =
     alternatePath(
       concatPath(
         getProperty("java.ext.dirs"),
-        getProperty("scala.ext.dirs")),
+        guessedScalaExtDirs),
       "")
 
   private def alternatePath(p1: String, p2: => String) =
@@ -56,6 +54,14 @@ class Settings(error: String => unit) {
     } else null
   }
 
+  private def guessedScalaExtDirs = {
+    val scalaHome = System.getProperty("scala.home")
+    if (scalaHome != null) {
+      val guess = new File(new File(scalaHome), "lib")
+      if (guess.exists()) guess.getPath else null
+    } else null
+  }
+
   private val encodingDefault =
     new java.io.OutputStreamWriter(
       new java.io.ByteArrayOutputStream()).getEncoding
@@ -69,8 +75,6 @@ class Settings(error: String => unit) {
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing")
   val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault)
-  // This is a hack: it should really be part of the extension path, but since extension only accepts dirs, I add it to the end of classpath.
-  classpath.value = concatPath(classpath.value, getProperty("scala.ext.path"))
   val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
