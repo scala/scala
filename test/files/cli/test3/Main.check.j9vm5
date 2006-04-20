@@ -1,0 +1,5 @@
+env: -cpp: No such file or directory
+env: test3.Main: No such file or directory
+env: -cp: No such file or directory
+3: 1: test 3 passed
+3: 2: 1: test 3 passed

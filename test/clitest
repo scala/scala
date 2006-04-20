@@ -87,7 +87,9 @@ test_print_help() {
     echo '--installed     use the installed programs on $PATH'
     echo "--debug         redirect all outputs to standard output";
     echo "--info          display information messages";
-    echo "--java          run same tests for Java";
+    echo "--javac         run same tests with the Sun Java compiler";
+    echo "--jikes         run same tests with the IBM Java compiler";
+    echo "--jredir=<dir>  specify the Sun JRE installation directory (jikes)";
     echo "--objdir=<dir>  specify where to place generated files";
     echo "--verbose       display verbose messages";
     echo "--help, -?      display this help and exit";
@@ -116,6 +118,8 @@ test_diff() {
     $DIFF $check $TMP_FILE > $DIFF_FILE
     if [ -n "`cat $DIFF_FILE`" ] ; then
         printf_outline "\\nDifferences between check and log files:\\n";
+        file=`echo $check | sed -e "s#$PREFIX/##g"`;
+        printf "$file\\n";
         cat $DIFF_FILE;
     fi
 }
@@ -127,14 +131,7 @@ test_compile() {
     info="$1"; shift 1;
     [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR;
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
-
-    if [ "$LANG" = "java" ] ; then
-       suffix=".javac"
-    elif [ "$LANG" = "java5" ] ; then
-       suffix=".javac5";
-    else
-       suffix=".scalac"
-    fi
+    suffix=".$COMPILER"
 
     file=`echo $source | sed -e "s#$PREFIX/##g"`;
     if [ "$LEVEL" = "info" ] || [ "$LEVEL" = "verbose" ] ; then
@@ -144,22 +141,22 @@ test_compile() {
     printf "\\n";
 
     printf "Compile $file ($info) with unknown option '-dd'\\n"
-    test_run "env CLASSPATH= $SCALAC -dd $OUTPUT_DIR $source 2>> $LOG_FILE";
+    test_run "env CLASSPATH= $COMPILER_COMMAND -dd $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Compile $file ($info) with no classpath information\\n"
-    test_run "env CLASSPATH= $SCALAC -d $OUTPUT_DIR $source 2>> $LOG_FILE";
+    test_run "env CLASSPATH= $COMPILER_COMMAND -d $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Compile $file ($info) with variable CLASSPATH\\n"
-    test_run "env CLASSPATH=$OUTPUT_DIR $SCALAC \
-        -d $OUTPUT_DIR $source 2>> $LOG_FILE";
+    test_run "env CLASSPATH=$OUTPUT_DIR $COMPILER_COMMAND \
+        -d $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Compile $file ($info) with option -classpath\\n"
-    test_run "env CLASSPATH= $SCALAC -classpath $OUTPUT_DIR \
-        -d $OUTPUT_DIR $source 2>> $LOG_FILE";
+    test_run "env CLASSPATH= $COMPILER_COMMAND -classpath $OUTPUT_DIR \
+        -d $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Compile $file ($info) with current directory as default classpath\\n"
     test_run "(cd $OUTPUT_DIR &&
-        env CLASSPATH= $SCALAC $source 2>> $LOG_FILE)";
+        env CLASSPATH= $COMPILER_COMMAND $source 2>> $LOG_FILE 1>> $LOG_FILE)";
 
     test_diff "$check$suffix" "$LOG_FILE";
 
@@ -173,6 +170,8 @@ test_execute() {
     [ $# = 2 ] || abort "internal error";
     main="$1"; shift 1;
     check="$1"; shift 1;
+    suffix=".$LANG"
+
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
     printf "\\n";
 
@@ -190,40 +189,40 @@ test_execute() {
 
     printf "Execute $main with current directory as default classpath\\n"
     test_run "(cd $OUTPUT_DIR &&
-    env CLASSPATH= $SCALA $main 3 2>> $LOG_FILE 1>> $LOG_FILE)";
+    env CLASSPATH= $RUNTIME_COMMAND $main 3 2>> $LOG_FILE 1>> $LOG_FILE)";
 
-    test_diff "$check.scala" "$LOG_FILE";
+    test_diff "$check$suffix" "$LOG_FILE";
 }
 
 test_interpret() {
     [ $# = 2 ] || abort "internal error";
     main="$1"; shift 1;
     check="$1"; shift 1;
-    ([ "$LANG" = "java" ] || [ "$LANG" = "java5" ]) && return;
+    [ "$LANG" = "scala" ] || return;
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
     printf "\\n"
 
     printf "Interpret $main with unknown option '-cpp'\\n"
     test_run "(env CLASSPATH= \
-        printf $main'.main(Array(\"0\"))\n:q' | $SCALAINT \
+        printf $main'.main(Array(\"0\"))\n:q' | $INTERPRETER_COMMAND \
         -cpp $OUTPUT_DIR 2>> $LOG_FILE 1>> $LOG_FILE)";
     printf "\\n" >> $LOG_FILE  # newline
 
     printf "Interpret $main with variable CLASSPATH\\n"
     test_run "(env CLASSPATH=$OUTPUT_DIR \
-        printf $main'.main(Array(\"1\"))\n:q' | $SCALAINT \
+        printf $main'.main(Array(\"1\"))\n:q' | $INTERPRETER_COMMAND \
         2>> $LOG_FILE 1>> $LOG_FILE)";
     printf "\\n" >> $LOG_FILE  # newline
 
     printf "Interpret $main with option -classpath\\n"
     test_run "(env CLASSPATH= \
-        printf $main'.main(Array(\"2\"))\n:q' | $SCALAINT \
+        printf $main'.main(Array(\"2\"))\n:q' | $INTERPRETER_COMMAND \
         -classpath $OUTPUT_DIR 2>> $LOG_FILE 1>> $LOG_FILE)";
     printf "\\n" >> $LOG_FILE  # newline
 
     printf "Interpret $main with current directory as default classpath\\n"
     test_run "(cd $OUTPUT_DIR &&
-        printf $main'.main(Array(\"3\"))\n:q' | $SCALAINT \
+        printf $main'.main(Array(\"3\"))\n:q' | $INTERPRETER_COMMAND \
         2>> $LOG_FILE 1>> $LOG_FILE)";
     printf "\\n" >> $LOG_FILE # newline
 
@@ -282,7 +281,8 @@ case `uname` in
 esac;
 
 DEBUG="";
-LANG="";
+LANG="scala";
+COMPILER="scalac";
 LEVEL="";
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -290,7 +290,9 @@ while [ $# -gt 0 ]; do
         --quick    ) BIN_DIR="$QUICK"; shift 1;;
         --installed) BIN_DIR=""; shift 1;;
         --info     ) LEVEL="info"; shift 1;;
-        --java     ) LANG="java"; shift 1;;
+        --javac    ) LANG="java"; COMPILER="javac"; shift 1;;
+        --jikes    ) LANG="java"; COMPILER="jikes"; shift 1;;
+        --jredir=* ) JRE_DIR=`expr "$1" : "--jredir=\(.*\)"`; shift 1;;
         --objdir=* ) OUTPUT_DIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
         --verbose  ) LEVEL="verbose"; shift 1;;
         --help     ) test_print_help; exit 0;;
@@ -300,31 +302,44 @@ while [ $# -gt 0 ]; do
     esac;
 done;
 
-SCALA="${BIN_DIR}scala"
-SCALAC="${BIN_DIR}scalac"
-SCALAINT="${BIN_DIR}scalaint"
-SUFFIX=".scala"
-
-if [ "$LANG" = "java" ] ; then
-    SCALAC=`which javac`
-    BIN_DIR=`dirname $SCALAC`
-    SCALA=$BIN_DIR/java
+if [ "$LANG" = "scala" ]; then
+    RUNTIME_COMMAND="${BIN_DIR}scala"
+    COMPILER_COMMAND="${BIN_DIR}$COMPILER"
+    INTERPRETER_COMMAND="${BIN_DIR}scalaint"
+    SUFFIX=".scala"
+elif [ "$LANG" = "java" ]; then
+    RUNTIME_COMMAND=`which java`
+    COMPILER_COMMAND=`which $COMPILER`
+    BIN_DIR=`dirname $COMPILER_COMMAND`
     SUFFIX=".java"
+else
+    abort "unknown language '$LANG'"
 fi
-[ -x "$SCALAC" ] || ( printf "Command $SCALAC not found\\n"; exit 1 );
+[ -x "$COMPILER_COMMAND" ] || ( printf "Command $COMPILER_COMMAND not found\\n"; exit 1 );
 
 printf_initialization "${COLOR:-many}";
 
 printf_outline "Output directory is : $OUTPUT_DIR\\n";
-if [ "$LANG" = "java" ] ; then
-    printf_outline "Java binaries in    : $BIN_DIR\\n";
-else
-    printf_outline "Scala binaries in   : $BIN_DIR\\n";
-fi
+printf_outline "Compiler command is : $COMPILER_COMMAND\\n";
+printf_outline "Runtime command is  : $RUNTIME_COMMAND\\n";
+
 jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
 printf_outline "Java runtime is     : $jvm_version\\n";
-
-[ `echo "$jvm_version" | grep -c "1.5"` = "1" ] && LANG="java5";
+if [ "$LANG" = "java" ]; then
+    [ `echo "$jvm_version" | grep -c "J9"` = "1" ] && LANG="j9vm";
+    if [ "$COMPILER" = "jikes" ]; then
+         if [ "$LANG" = "java" ]; then
+             jre_home=`dirname $SCALA`/..;
+         elif [ -n "$JRE_DIR" ]; then
+             jre_home=$JRE_DIR;
+         else
+             abort "Jikes requires Sun JVM (use option '--jredir')";
+         fi;
+         cpath=`find $jre_home -name "rt.jar"`;
+         COMPILER_COMMAND="${COMPILER_COMMAND} -bootclasspath $cpath";
+    fi;
+    [ `echo "$jvm_version" | grep -c "1.5"` = "1" ] && LANG="${LANG}5";
+fi
 
 ##############################################################################
 # Variables
