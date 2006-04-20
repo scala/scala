@@ -157,7 +157,7 @@ object maps {
     def month = m
     def day = d
 
-    def compareTo[b >: Date <% Ordered[b]](that: b): int = that match {
+    override def compare [b >: Date <% Ordered[b]](that: b): Int = that match {
       case other: Date =>
         if ((year == other.year) &&
             (month == other.month) &&
