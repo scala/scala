@@ -293,11 +293,12 @@ abstract class FactoryAdapter extends DefaultHandler() {
       }
 
       // parse file
-      try {
+      //try {
         //System.err.println("[parsing \"" + source + "\"]");
         scopeStack.push(TopScope);
         parser.parse( source, this );
         scopeStack.pop;
+      /*
       } catch {
         case ( e:SAXParseException ) => {
           // ignore
@@ -313,6 +314,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
 	  }
         }
       } // catch
+*/
       //System.err.println("[FactoryAdapter: total #elements = "+elemCount+"]");
       rootElem
 
