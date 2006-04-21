@@ -169,7 +169,9 @@ abstract class Node extends NodeSeq {
   def xmlType(): TypeSymbol = null;
 
   /**
-   * Returns a text representation of this node
+   * Returns a text representation of this node. Note that this is not equivalent to
+   * the XPath node-test called text(), it is rather an implementation of the
+   * XPath function string()
    */
   override def text: String;
 
