@@ -314,6 +314,7 @@ package scala.tools.ant {
           update("javaflags", javaFlags)
         pipeTemplate("generic", patches)
       } else {
+        if (name.isEmpty) name = Some(file.get.getName)
         val patches = ListMap.Empty.
           update("name", name.get).
           update("class", mainClass.get).
@@ -322,7 +323,6 @@ package scala.tools.ant {
           update("properties", getProperties).
           update("javaflags", javaFlags).
           update("toolflags", toolFlags)
-        if (name.isEmpty) name = Some(file.get.getName())
         pipeTemplate("tool", patches)
       }
     }
