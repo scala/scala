@@ -131,10 +131,12 @@ test_compile() {
     info="$1"; shift 1;
     [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR;
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
-    suffix=".$COMPILER"
-    [ "$LANG" = "java5" ] && suffix="${suffix}5";
-    [ "$LANG" = "java6" ] && suffix="${suffix}6";
-
+    if [ "$COMPILER" = "javac" ]; then
+        [ "$LANG" = "java5" ] && suffix=".${COMPILER}5";
+        [ "$LANG" = "java6" ] && suffix=".${COMPILER}6";
+    else
+        suffix=".$COMPILER";
+    fi;
     file=`echo $source | sed -e "s#$PREFIX/##g"`;
     if [ "$LEVEL" = "info" ] || [ "$LEVEL" = "verbose" ] ; then
         printf_outline "\\nSource file: $file\\n"
