@@ -227,7 +227,8 @@ trait Opcodes requires ICodes {
         result = result + (style match {
           case Dynamic => 1
           case Static(true) => 1
-          case _ => 0
+          case Static(false) => 0
+          case SuperCall(_) => 0
         });
 
         result;
@@ -235,7 +236,9 @@ trait Opcodes requires ICodes {
       override def produced =
         if(toTypeKind(method.tpe.resultType) == UNIT)
           0
-       else 1
+        else if(method.isConstructor)
+          0
+        else 1
     }
 
     /** Create a new instance of a class through the specified constructor
