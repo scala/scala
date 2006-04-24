@@ -26,7 +26,3 @@ files/cli/test2/Main.java:5: package test1 does not exist
     test1.Main.main(args);
          ^
 1 error
-files/cli/test2/Main.java:5: package test1 does not exist
-    test1.Main.main(args);
-         ^
-1 error

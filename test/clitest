@@ -132,6 +132,8 @@ test_compile() {
     [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR;
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
     suffix=".$COMPILER"
+    [ "$LANG" = "java5" ] && suffix="${suffix}5";
+    [ "$LANG" = "java6" ] && suffix="${suffix}6";
 
     file=`echo $source | sed -e "s#$PREFIX/##g"`;
     if [ "$LEVEL" = "info" ] || [ "$LEVEL" = "verbose" ] ; then
@@ -171,20 +173,24 @@ test_execute() {
     main="$1"; shift 1;
     check="$1"; shift 1;
     suffix=".$LANG"
+    [ "$LANG" = "java6" ] && suffix=".java5";
 
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
     printf "\\n";
 
     printf "Execute $main with unknown option '-cpp'\\n"
-    test_run "env CLASSPATH= $SCALA -cpp $OUTPUT_DIR $main 2 \
+    test_run "env CLASSPATH= \
+        $RUNTIME_COMMAND -cpp $OUTPUT_DIR $main 2 \
         2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Execute $main with variable CLASSPATH\\n"
-    test_run "env CLASSPATH=$OUTPUT_DIR $SCALA $main 1 \
+    test_run "env CLASSPATH=$OUTPUT_DIR \
+        $RUNTIME_COMMAND $main 1 \
         2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Execute $main with option -classpath\\n"
-    test_run "env CLASSPATH= $SCALA -cp $OUTPUT_DIR $main 2 \
+    test_run "env CLASSPATH= \
+        $RUNTIME_COMMAND -cp $OUTPUT_DIR $main 2 \
         2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Execute $main with current directory as default classpath\\n"
@@ -268,7 +274,13 @@ else
     TMP_DIR=${TMPDIR-/tmp}/tmp.123
 fi
 
-TEST_DIR=$PREFIX/test
+if [ -d "$PREFIX/test" ]; then
+    TEST_DIR="$PREFIX/test";
+elif [ -d "$PREFIX/misc/scala-test" ]; then
+    TEST_DIR="$PREFIX/misc/scala-test";
+else
+    abort "Test directory not found";
+fi;
 SOURCE_DIR=$TEST_DIR/files/cli
 OUTPUT_DIR=$TMP_DIR/classes
 
@@ -329,7 +341,7 @@ if [ "$LANG" = "java" ]; then
     [ `echo "$jvm_version" | grep -c "J9"` = "1" ] && LANG="j9vm";
     if [ "$COMPILER" = "jikes" ]; then
          if [ "$LANG" = "java" ]; then
-             jre_home=`dirname $SCALA`/..;
+             jre_home=`dirname $RUNTIME_COMMAND`/..;
          elif [ -n "$JRE_DIR" ]; then
              jre_home=$JRE_DIR;
          else
@@ -338,7 +350,8 @@ if [ "$LANG" = "java" ]; then
          cpath=`find $jre_home -name "rt.jar"`;
          COMPILER_COMMAND="${COMPILER_COMMAND} -bootclasspath $cpath";
     fi;
-    [ `echo "$jvm_version" | grep -c "1.5"` = "1" ] && LANG="${LANG}5";
+    [ `echo "$jvm_version" | grep -c "1\.5"` = "1" ] && LANG="${LANG}5";
+    [ `echo "$jvm_version" | grep -c "1\.6"` = "1" ] && LANG="${LANG}6";
 fi
 
 ##############################################################################
