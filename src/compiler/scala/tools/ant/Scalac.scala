@@ -467,22 +467,7 @@ package scala.tools.ant {
       val compiler = new Global(settings, reporter)
       try {
         (new compiler.Run).compile(sourceFiles.map(f:File=>f.toString()))
-        if (reporter.errors > 0)
-          log (
-            "Compile failed with " +
-            reporter.errors + " error" +
-            (if (reporter.errors > 1) "s" else "") +
-            "; see the compiler error output for details."
-          )
-        else if (reporter.warnings > 0)
-          log (
-            "Compile suceeded with " +
-            reporter.warnings + " warning" +
-            (if (reporter.warnings > 1) "s" else "") +
-            "; see the compiler output for details."
-          )
-        reporter.printSummary()
-      } catch {
+       } catch {
         case exception: Throwable if (exception.getMessage != null) =>
           exception.printStackTrace()
           error("Compile failed because of an internal compiler error (" +
@@ -492,6 +477,22 @@ package scala.tools.ant {
           error("Compile failed because of an internal compiler error " +
             "(no error message provided); see the error output for details.")
       }
+      reporter.printSummary()
+      if (reporter.errors > 0) {
+        error (
+            "Compile failed with " +
+            reporter.errors + " error" +
+            (if (reporter.errors > 1) "s" else "") +
+            "; see the compiler error output for details."
+        )
+      } else if (reporter.warnings > 0)
+        log (
+            "Compile suceeded with " +
+            reporter.warnings + " warning" +
+            (if (reporter.warnings > 1) "s" else "") +
+            "; see the compiler output for details."
+        )
+
     }
 
   }
