@@ -99,7 +99,7 @@ test_print_help() {
 # Prints the clitest version.
 test_print_version() {
     [ $# = 0 ] || abort "internal error";
-    echo "$SCRIPT 1.1";
+    echo "$SCRIPT 1.2";
 }
 
 test_run() {
@@ -145,10 +145,12 @@ test_compile() {
     printf "\\n";
 
     printf "Compile $file ($info) with unknown option '-dd'\\n"
-    test_run "env CLASSPATH= $COMPILER_COMMAND -dd $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
+    test_run "env CLASSPATH= $COMPILER_COMMAND \
+        -dd $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Compile $file ($info) with no classpath information\\n"
-    test_run "env CLASSPATH= $COMPILER_COMMAND -d $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
+    test_run "env CLASSPATH= $COMPILER_COMMAND \
+        -d $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Compile $file ($info) with variable CLASSPATH\\n"
     test_run "env CLASSPATH=$OUTPUT_DIR $COMPILER_COMMAND \
@@ -165,8 +167,8 @@ test_compile() {
     test_diff "$check$suffix" "$LOG_FILE";
 
     if [ "$LEVEL" = "verbose" ] ; then
-        printf_outline "\\nTest directory:\\n"
-        tree $TMP_DIR
+        printf_outline "\\nTest directory:\\n";
+        tree $TMP_DIR;
     fi
 }
 
@@ -174,7 +176,7 @@ test_execute() {
     [ $# = 2 ] || abort "internal error";
     main="$1"; shift 1;
     check="$1"; shift 1;
-    suffix=".$LANG"
+    suffix=".$LANG";
     [ "$LANG" = "java6" ] && suffix=".java5";
 
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
@@ -192,7 +194,7 @@ test_execute() {
 
     printf "Execute $main with option -classpath\\n"
     test_run "env CLASSPATH= \
-        $RUNTIME_COMMAND -cp $OUTPUT_DIR $main 2 \
+        $RUNTIME_COMMAND -classpath $OUTPUT_DIR $main 2 \
         2>> $LOG_FILE 1>> $LOG_FILE";
 
     printf "Execute $main with current directory as default classpath\\n"
@@ -312,7 +314,7 @@ while [ $# -gt 0 ]; do
         --help     ) test_print_help; exit 0;;
         --version  ) test_print_version; exit 0;;
         -*         ) abort "unknown option $1";;
-        *          ) test_print_usage; exit 0;;
+        *          ) test_add_file "$1"; shift 1;; #test_print_usage; exit 0;;
     esac;
 done;
 
@@ -330,6 +332,7 @@ else
     abort "unknown language '$LANG'"
 fi
 [ -x "$COMPILER_COMMAND" ] || ( printf "Command $COMPILER_COMMAND not found\\n"; exit 1 );
+[ -x "$RUNTIME_COMMAND"  ] || ( printf "Command $RUNTIME_COMMAND not found\\n"; exit 1 );
 
 printf_initialization "${COLOR:-many}";
 
@@ -356,29 +359,6 @@ if [ "$LANG" = "java" ]; then
     [ `echo "$jvm_version" | grep -c "1\.6"` = "1" ] && LANG="${LANG}6";
 fi
 
-##############################################################################
-# Variables
-
-SCALA_PACKAGE1=test1
-SCALA_PACKAGE2=test2
-SCALA_PACKAGE3=test3
-
-SCALA_MAIN1=${SCALA_PACKAGE1}.Main
-SCALA_MAIN2=${SCALA_PACKAGE2}.Main
-SCALA_MAIN3=${SCALA_PACKAGE3}.Main
-
-SOURCE_DIR_PACKAGE1=${SOURCE_DIR}/`echo ${SCALA_PACKAGE1} | tr '.' '/'`
-SOURCE_DIR_PACKAGE2=${SOURCE_DIR}/`echo ${SCALA_PACKAGE2} | tr '.' '/'`
-SOURCE_DIR_PACKAGE3=${SOURCE_DIR}/`echo ${SCALA_PACKAGE3} | tr '.' '/'`
-
-SOURCE_FILE1=${SOURCE_DIR_PACKAGE1}/Main$SUFFIX
-SOURCE_FILE2=${SOURCE_DIR_PACKAGE2}/Main$SUFFIX
-SOURCE_FILE3=${SOURCE_DIR_PACKAGE3}/Main$SUFFIX
-
-CHECK_FILE1=${SOURCE_DIR_PACKAGE1}/Main.check
-CHECK_FILE2=${SOURCE_DIR_PACKAGE2}/Main.check
-CHECK_FILE3=${SOURCE_DIR_PACKAGE3}/Main.check
-
 if [ "$DEBUG" = "debug" ] ; then
     LOG_FILE=/dev/tty
 else
@@ -389,30 +369,19 @@ TMP_FILE=${TMP_DIR}/${SCRIPT}.tmp
 
 ##############################################################################
 
-test_compile "$SOURCE_FILE1" "$CHECK_FILE1" "no dependency";
-
-if [ "$?" = "0" ] ; then
-    test_execute "$SCALA_MAIN1" "$CHECK_FILE1";
-    test_interpret "$SCALA_MAIN1" "$CHECK_FILE1";
-fi
-
-##############################################################################
-
-test_compile "$SOURCE_FILE2" "$CHECK_FILE2" "1 dependency";
-
-if [ "$?" = "0" ] ; then
-    test_execute "$SCALA_MAIN2" "$CHECK_FILE2";
-    test_interpret "$SCALA_MAIN2" "$CHECK_FILE2";
-fi
-
-##############################################################################
-
-test_compile "$SOURCE_FILE3" "$CHECK_FILE3" "2 dependencies";
-
-if [ "$?" = "0" ] ; then
-    test_execute "$SCALA_MAIN3" "$CHECK_FILE3";
-    test_interpret "$SCALA_MAIN3" "$CHECK_FILE3";
-fi
+#for testfile in "$SOURCE_DIR/test2/Main.scala"; do
+for testfile in "" `find "$SOURCE_DIR" -name "Main$SUFFIX" -a -type f -print`; do
+    [ -z "$testfile" ] && continue;
+    checkfile=`dirname "$testfile"`/`basename "$testfile" "$SUFFIX"`.check
+    info=`awk '$1 ~ /^\/\//{i=index($0,"@info ");if(i>0){print substr($0,i+6)}}' "$testfile"`;
+    test_compile "$testfile" "$checkfile" "$info";
+    if [ "$?" = "0" ] ; then
+        scala_main=`echo "$testfile" | \
+            sed -e "s#${SOURCE_DIR}/\(.*\)\${SUFFIX}#\1#g" -e "s#\/#\.#g"`;
+        test_execute "$scala_main" "$checkfile";
+        test_interpret "$scala_main" "$checkfile";
+    fi
+done;
 
 ##############################################################################
 # Epilog

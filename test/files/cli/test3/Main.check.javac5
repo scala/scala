@@ -22,10 +22,10 @@ where possible options include:
   -X                         Print a synopsis of nonstandard options
   -J<flag>                   Pass <flag> directly to the runtime system
 
-files/cli/test3/Main.java:5: package test1 does not exist
+files/cli/test3/Main.java:6: package test1 does not exist
     test1.Main.main(args);
          ^
-files/cli/test3/Main.java:7: package test2 does not exist
+files/cli/test3/Main.java:8: package test2 does not exist
     test2.Main.main(args);
          ^
 2 errors

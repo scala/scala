@@ -1,3 +1,4 @@
+// @info 2 dependencies
 package test3
 object Main {
   def main(args: Array[String]) = {

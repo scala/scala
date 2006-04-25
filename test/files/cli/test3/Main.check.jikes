@@ -4,11 +4,11 @@ For more help, try -help or -version.
 
 Found 2 semantic errors compiling "files/cli/test3/Main.java":
 
-     5.     test1.Main.main(args);
+     6.     test1.Main.main(args);
             ^---^
 *** Semantic Error: No accessible field named "test1" was found in type "test3.Main".
 
 
-     7.     test2.Main.main(args);
+     8.     test2.Main.main(args);
             ^---^
 *** Semantic Error: No accessible field named "test2" was found in type "test3.Main".
