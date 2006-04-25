@@ -46,7 +46,3 @@ where possible options include:
   -Xgenerics                      Use generic Java types
 
 one error found
-files/cli/test2/Main.scala:5 error: not found: value test1
-    test1.Main.main(args)
-    ^
-one error found
