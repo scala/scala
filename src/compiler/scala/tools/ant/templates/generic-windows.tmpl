@@ -14,7 +14,11 @@ rem - Local batch variables start with an underscore ('_')
 
 if "%OS%"=="Windows_NT" (
   @@setlocal
-  set _SCALA_HOME=%~dps0..
+  set _BIN_DIR=
+  for %%i in (%~sf0) do set _BIN_DIR=%_BIN_DIR%%%~dpsi
+  set _SCALA_HOME=%_BIN_DIR%..
+  rem The following works on WinXP SP2 or newer (http://support.microsoft.com/?kbid=833431)
+  rem set _SCALA_HOME=%~dsp0..
 ) else (
   set _SCALA_HOME=%SCALA_HOME%
   if "%_SCALA_HOME%"=="" goto error1
