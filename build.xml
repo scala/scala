@@ -442,7 +442,6 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
         <pathelement location="${locker.lib.dir}"/>
       </classpath>
       <include name="scala/Predef.scala"/>
-      <include name="scala/runtime/ScalaRunTime.scala"/>
     </starr>
     <starr
       srcdir="${src.lib.dir}"
@@ -453,7 +452,6 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       </classpath>
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/runtime/ScalaRunTime.scala"/>
       <exclude name="scala/dbc/**"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </starr>
@@ -576,7 +574,6 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${quick.lib.dir}"/>
       </classpath>
       <include name="scala/Predef.scala"/>
-      <include name="scala/runtime/ScalaRunTime.scala"/>
     </locker>
     <locker
       srcdir="${src.lib.dir}"
@@ -589,7 +586,6 @@ BUILD QUICK-TEST LAYER
       </classpath>
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/runtime/ScalaRunTime.scala"/>
       <exclude name="scala/dbc/**"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </locker>
@@ -736,7 +732,6 @@ TEST
         <pathelement location="${strap.lib.dir}"/>
       </classpath>
       <include name="scala/Predef.scala"/>
-      <include name="scala/runtime/ScalaRunTime.scala"/>
     </quick>
     <quick
       srcdir="${src.lib.dir}"
@@ -748,7 +743,6 @@ TEST
       </classpath>
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/runtime/ScalaRunTime.scala"/>
       <exclude name="scala/dbc/**"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
