@@ -6,13 +6,15 @@
 
 package scala.tools.nsc
 
-import reporters._
-import nsc.util.SourceFile
-import scala.tools.nsc.io.PlainFile
-import java.io._
-import nsc.ast.parser.SyntaxAnalyzer
+import java.io.{File, PrintWriter, StringWriter}
+
 import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
+
+import ast.parser.SyntaxAnalyzer
+import io.PlainFile
+import reporters.{ConsoleReporter, Reporter}
+import util.SourceFile
 import symtab.Flags
 
 /** An interpreter for Scala code.
@@ -51,7 +53,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
                    Import}
   import compiler.CompilationUnit
   import compiler.Symbol
-	import compiler.Name
+  import compiler.Name
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
@@ -73,7 +75,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private val classfilePath = File.createTempFile("scalaint", "")
   classfilePath.delete  // the file is created as a file; make it a directory
   classfilePath.mkdirs
-
 
   /* set up the compiler's output directory */
   settings.outdir.value = classfilePath.getPath
@@ -135,7 +136,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
   //private var importLinesRev: List[String] = List("import scala.collection.immutable._")
 
-
   /** a string of import code corresponding to all of the current importLines */
   private def codeForImports: String = importLines.mkString("", ";\n", ";\n")
 
@@ -172,7 +172,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     trees.drop(importTrees.length)
   }
 
-
   /** Compile one source file */
   def compile(filename: String): Unit = {
     val jfile = new File(filename)
@@ -194,7 +193,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
          implemented in class Request. */
       case List(Assign(Ident(lhs), _)) => new AssignReq(lhs, line, lineName)
 
-
       case _ if trees.forall(t => t.isInstanceOf[ValOrDefDef]) => new DefReq(line, lineName)
       case List(_:TermTree) | List(_:Ident) | List(_:Select) => new ExprReq(line, lineName)
       case List(_:ModuleDef) => new ModuleReq(line, lineName)
@@ -211,12 +209,12 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   }
 
   /** interpret one line of input.  All feedback, including parse errors
-	    and evaluation results, are printed via the supplied compiler's
-   	  reporter.  Values defined are available for future interpreted
-	    strings.
+      and evaluation results, are printed via the supplied compiler's
+      reporter.  Values defined are available for future interpreted
+      strings.
 
-	    The return value is whether the line was interpreter successfully,
-	    e.g. that there were no parse errors.*/
+      The return value is whether the line was interpreter successfully,
+      e.g. that there were no parse errors.*/
   def interpret(line: String): boolean = {
     // parse
     val trees = parse(line)
@@ -227,7 +225,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     // figure out what kind of request
     val req = buildRequest(trees, line, lineName)
     if(req == null) return false  // a disallowed statement type
-
 
     if(!req.compile)
       return false  // an error happened during compilation, e.g. a type error
@@ -249,7 +246,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     succeeded
   }
-
 
   /** Delete a directory tree recursively.  Use with care! */
   private def deleteRecursively(path: File): Unit = {
@@ -274,8 +270,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     deleteRecursively(classfilePath)
   }
 
-
-  /** A traverser that finds all mentioned identifiers, i.e. things that need to be imported.
+  /** A traverser that finds all mentioned identifiers, i.e. things
+      that need to be imported.
       It might return extra names.  */
   private class ImportVarsTraverser(definedVars: List[Name]) extends Traverser {
     val importVars = new HashSet[Name]()
@@ -285,7 +281,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       case _ => super.traverse(ast)
     }
   }
-
 
   /** One line of code submitted by the user for interpretation */
   private abstract class Request(val line: String, val lineName: String) {
@@ -302,7 +297,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     def needsVarName: Boolean = false
 
     /** list of methods defined */
-		val defNames =
+    val defNames =
       for {
         val DefDef(mods, name, _, _, _, _) <- trees
         mods.isPublic
@@ -335,7 +330,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       explicit ::: caseClasses
     }
 
-	  /** list of classes defined */
+    /** list of classes defined */
     val classNames =
       for(val ClassDef(mods, name, _, _, _) <- trees; mods.isPublic)
         yield name
@@ -345,10 +340,9 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       for(val AliasTypeDef(mods, name, _, _) <- trees; mods.isPublic)
         yield name
 
-
     /** all (public) names defined by these statements */
-    val boundNames = defNames ::: valAndVarNames ::: moduleNames ::: classNames ::: typeNames
-
+    val boundNames =
+      defNames ::: valAndVarNames ::: moduleNames ::: classNames ::: typeNames
 
     /** list of names used by this expression */
     val usedNames: List[Name] = {
@@ -362,11 +356,11 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     /** generate the source code for the object that computes this request */
     def objectSourceCode: String =
-			stringFrom(code => {
+      stringFrom(code => {
         // add the user-specified imports first
         code.println(codeForImports)
 
-			  // write an import for each imported variable
+        // write an import for each imported variable
         for{val imv <- usedNames
             val lastDefiner <- reqBinding(imv).toList } {
          code.println("import " + lastDefiner.objectName + "." + imv)
@@ -383,18 +377,17 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
         //end
         code.println(";}")
-			})
+      })
 
     /** Types of variables defined by this request.  They are computed
         after compilation of the main object */
     var typeOf: Map[Name, String] = _
 
-
     /** generate source code for the object that retrieves the result
         from objectSourceCode */
     def resultObjectSourceCode: String =
-    	stringFrom(code => {
-    	  code.println("object " + resultObjectName)
+      stringFrom(code => {
+        code.println("object " + resultObjectName)
         code.println("{ val result:String = {")
         code.println(objectName + ";")  // evaluate the object, to make sure its constructor is run
         code.print("\"\"")  // print an initial empty string, so later code can
@@ -402,7 +395,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         resultExtractionCode(code)
         code.println("}")
         code.println(";}")
-    	})
+      })
 
     def resultExtractionCode(code: PrintWriter): Unit = {
       for(val vname <- namesToPrintForUser) {
@@ -410,7 +403,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
           " = \" + " + objectName + "." + vname + " + \"\\n\"")
       }
     }
-
 
     /** Compile the object file.  Returns whether the compilation succeeded.
         If all goes well, types is computed and set */
@@ -444,7 +436,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
           val typeString =
             compiler.atPhase(objRun.typerPhase.next) {
-              resObjSym.info.decls.toList.find(s=>s.name == nameMap(name)).get.tpe.toString()
+              resObjSym.info.decls.toList.find(s =>
+                s.name == nameMap(name)).get.tpe.toString()
             }
 
           map + name -> typeString
@@ -457,12 +450,13 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     }
 
     /** load and run the code using reflection */
-    def loadAndRun: Pair[String,boolean] = {
-      val interpreterResultObject: Class = Class.forName(resultObjectName,true,classLoader)
+    def loadAndRun: Pair[String, Boolean] = {
+      val interpreterResultObject: Class =
+        Class.forName(resultObjectName, true, classLoader)
       val resultValMethod: java.lang.reflect.Method =
-        interpreterResultObject.getMethod("result",null)
+        interpreterResultObject.getMethod("result", null)
       try {
-        Pair(resultValMethod.invoke(interpreterResultObject,null).toString(),
+        Pair(resultValMethod.invoke(interpreterResultObject, null).toString(),
              true)
       } catch {
         case e => {
@@ -553,4 +547,5 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       code.println("+ \"" + line + "\"")
     }
   }
+
 }

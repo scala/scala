@@ -7,6 +7,7 @@
 package scala.tools.nsc
 
 import java.io._
+
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.{Position}
 
@@ -31,22 +32,19 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
   def addReplay(cmd: String) =
     replayCommandsRev = cmd :: replayCommandsRev
 
-
   /** Close the interpreter, if there is one, and set
     * interpreter to null. */
-  def closeInterpreter = {
-    if(interpreter != null) {
+  def closeInterpreter =
+    if (interpreter != null) {
       interpreter.close
       interpreter = null
     }
-  }
 
   /* As soon as the Eclipse plugin no longer needs it, delete uglinessxxx,
    * parentClassLoader0, and the parentClassLoader method in Interpreter
    */
   var uglinessxxx: ClassLoader = _
   def parentClassLoader0: ClassLoader = uglinessxxx
-
 
   /** Create a new interpreter.  Close the old one, if there
     * is one. */
@@ -57,7 +55,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       override protected def parentClassLoader = parentClassLoader0;
     }
   }
-
 
   /** print a friendly help message */
   def printHelp = {
@@ -70,11 +67,10 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     out.println("Type :help to repeat this message later.")
   }
 
-
   /** The main read-eval-print loop for the interpereter.  It calls
       command() for each line of input, and stops when command()
       returns false */
-  def repl(): Unit = {
+  def repl(): Unit =
     while(true) {
       out.print("\nscala> ")
       out.flush
@@ -89,7 +85,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       if(shouldReplay)
         addReplay(line)
     }
-  }
 
   /** interpret all lines from a specified file */
   def interpretAllFrom(filename: String): Unit = {
@@ -134,11 +129,10 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
         return ()
       }
       val filename = command.substring(spaceIdx).trim
-      if(! new File(filename).exists) {
+      if (! new File(filename).exists) {
         out.println("That file does not exist")
         return ()
       }
-
       action(filename)
     }
 
@@ -191,8 +185,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
                  settings.classpath.value.split(File.pathSeparator).
                          map(s => new File(s).toURL),
                  ClassLoader.getSystemClassLoader)
-
-
 
     if (!command.ok || command.settings.help.value) {
       // either the command line is wrong, or the user
