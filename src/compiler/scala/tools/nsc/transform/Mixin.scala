@@ -260,7 +260,7 @@ abstract class Mixin extends InfoTransform {
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
       val newDefs = new ListBuffer[Tree];
       def addDef(pos: int, tree: Tree): unit = {
-        if (settings.debug.value) log("add new def to " + clazz + ": " + tree);
+        if (settings.debug.value) System.out.println("add new def to " + clazz + ": " + tree);
         newDefs += localTyper.typed {
 	  atPos(pos) {
 	    tree

@@ -201,7 +201,11 @@ trait Types requires SymbolTable {
     def memberType(sym: Symbol): Type = {
       sym.tpe match {
         case OverloadedType(pre, alts) =>
-          assert(this =:= pre);
+          val pre1 = pre match {
+            case ClassInfoType(_, _, clazz) => clazz.tpe
+            case _ => pre
+          }
+          assert(this =:= pre1);
           sym.tpe
         case _ =>
           //System.out.println("" + this + ".memberType(" + sym +":" + sym.tpe +")");//DEBUG
@@ -2035,7 +2039,7 @@ trait Types requires SymbolTable {
 
   /** Make symbol `sym' a member of scope `tp.decls' where `thistp' is the narrowed
    *  owner type of the scope */
-  private def addMember(thistp: Type, tp: Type, sym: Symbol): unit = {
+  def addMember(thistp: Type, tp: Type, sym: Symbol): unit = {
     if (settings.debug.value) log("add member " + sym);//debug
     if (!(thistp specializes sym)) {
       if (sym.isTerm)

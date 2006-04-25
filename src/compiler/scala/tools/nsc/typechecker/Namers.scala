@@ -22,8 +22,8 @@ trait Namers requires Analyzer {
   class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) =>
-      val tparam = sym.deSkolemize;
-      mapOver(
+        val tparam = sym.deSkolemize;
+        mapOver(
           if (tparam == sym || !(tparams contains tparam)) tp
           else rawTypeRef(NoPrefix, tparam, args))
       case SingleType(pre, sym) if (sym.isThisSkolem) =>
@@ -551,6 +551,8 @@ trait Namers requires Analyzer {
 	  "\nit should be omitted for abstract members");
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isClass)
 	context.error(sym.pos, "`override' modifier not allowed for classes");
+      if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isConstructor)
+	context.error(sym.pos, "`override' modifier not allowed for constructors");
       if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
 	context.error(sym.pos, "`abstract override' modifier only allowed for members of traits");
       if (sym.info.symbol == FunctionClass(0) &&

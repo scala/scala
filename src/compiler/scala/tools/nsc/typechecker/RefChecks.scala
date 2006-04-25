@@ -175,7 +175,9 @@ abstract class RefChecks extends InfoTransform {
 	} else if (!(other hasFlag DEFERRED) && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
 	  overrideError("needs `override' modifier");
 	} else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
-	  overrideError("needs `abstract override' modifiers");
+	  overrideError("needs `abstract override' modifiers")
+        } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) && (other hasFlag ACCESSOR) && other.accessed.isVariable) {
+          overrideError("cannot override a mutable variable")
 	} else if (other.isStable) {
           if (!member.isStable) // (1.4)
 	    overrideError("needs to be an immutable value")
@@ -558,7 +560,7 @@ abstract class RefChecks extends InfoTransform {
 
 	case TypeTree() =>
 	  new TypeTraverser {
-	    def traverse(tp: Type) = tp match {
+	    def traverse(tp: Type): TypeTraverser = tp match {
 	      case TypeRef(pre, sym, args) => checkBounds(sym.typeParams, args); this
 	      case _ => this
 	    }

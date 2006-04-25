@@ -846,6 +846,19 @@ trait Typers requires Analyzer {
       copy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
     }
 
+    def anonymousClassRefinement(clazz: Symbol): Type = {
+      val tp = refinedType(clazz.info.parents, clazz.owner)
+      val thistp = tp.symbol.thisType
+      for (val sym <- clazz.info.decls.toList) {
+        if (!sym.hasFlag(PRIVATE) && !sym.isClass && !sym.isConstructor &&
+            tp.nonPrivateMember(sym.name).filter(other =>
+              !other.isTerm || (thistp.memberType(other) matches thistp.memberType(sym)))
+            != NoSymbol)
+          addMember(thistp, tp, sym)
+      }
+      tp
+    }
+
     def typedBlock(block: Block, mode: int, pt: Type): Block = {
       namer.enterSyms(block.stats)
       block.stats foreach enterLabelDef
@@ -854,9 +867,9 @@ trait Typers requires Analyzer {
       val block1 = copy.Block(block, stats1, expr1)
         .setType(if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst)
       if (isFullyDefined(pt)) block1
-      else { //todo: correct?
+      else {
         if (block1.tpe.symbol.isAnonymousClass)
-          block1 setType intersectionType(block1.tpe.parents, block1.tpe.symbol.owner)
+          block1 setType anonymousClassRefinement(block1.tpe.symbol)
         checkNoEscaping.locals(context.scope, pt, block1)
       }
     }
