@@ -79,7 +79,7 @@ trait SyntheticMethods requires Analyzer {
     }
 
     def forwardingMethod(name: Name): Tree = {
-      val target = getMember(ScalaRunTimeModule, "_" + name).initialize;
+      val target = getMember(ScalaRunTimeModule, "_" + name);
       val method = syntheticMethod(
 	name, 0, MethodType(target.tpe.paramTypes.tail, target.tpe.resultType));
       typed(DefDef(method, vparamss =>
