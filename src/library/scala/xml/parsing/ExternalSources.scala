@@ -53,7 +53,7 @@ trait ExternalSources requires (ExternalSources with MarkupParser with MarkupHan
 
       def reset: Source = new MyClass;
 
-      override var descr = url.toExternalForm();
+      /*override var*/ descr = url.toExternalForm();
     }
 
     return new MyClass;

@@ -647,8 +647,8 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     }
     xToken('>');
     this.dtd = new DTD {
-      override var externalID = extID;
-      override val decls      = handle.decls.reverse;
+      /*override var*/ externalID = extID;
+      /*override val */decls      = handle.decls.reverse;
     }
     //this.dtd.initializeEntities();
     handle.endDTD(n);
