@@ -449,7 +449,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
 
       if (reporter.errors == 0) {
-        assert(symData.isEmpty, symData.elements.toList);
+        assert(stopped || symData.isEmpty, symData.elements.toList);
       } else {
         for (val Pair(sym, file) <- symSource.elements) {
           sym.reset(new loaders.SourcefileLoader(file));
