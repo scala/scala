@@ -1124,7 +1124,7 @@ GENERATES A DISTRIBUTION
     >
       <binset
         dir="${basedir}/test"
-        includes="clitest,scalatest"
+        includes="clitest,diff.exe,scalatest,scalatest.bat"
       />
       <miscset
         dir="${basedir}/test"
