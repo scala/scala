@@ -61,9 +61,13 @@ object XML  {
   final def load( sysID:String ): scala.xml.Elem =
     new NoBindingFactoryAdapter().loadXML( new InputSource( sysID ));
 
-  /** loads XML from a given input source*/
+  /** loads XML from a given input source */
   final def load( source:InputSource ): scala.xml.Elem =
     new NoBindingFactoryAdapter().loadXML( source );
+
+  /** loads XML from a string */
+  final def loadString( string:String ): scala.xml.Elem =
+    load(new StringReader(string))
 
   /** saves XML to filename with encoding ISO-8859-1 */
   final def save( filename:String, doc:Elem ):Unit = {
