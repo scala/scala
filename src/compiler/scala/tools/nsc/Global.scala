@@ -122,10 +122,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       throw e.error;
   }
 
-
-
-
-  def logError(msg: String, t : Throwable): Unit = {};
+  def logError(msg: String, t: Throwable): Unit = {};
 
   def abort(msg: String) = throw new Error(msg);
 
@@ -222,7 +219,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object analyzer extends Analyzer {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object superAccessors extends SuperAccessors {
@@ -234,7 +231,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object refchecks extends RefChecks {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object liftcode extends LiftCode {
@@ -242,59 +239,59 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object uncurry extends UnCurry {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object tailCalls extends TailCalls {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object transMatcher extends TransMatcher {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
 //  object checkDefined extends CheckDefined {
-//    val global: Global.this.type = Global.this;
+//    val global: Global.this.type = Global.this
 //  }
 
   object explicitOuter extends ExplicitOuter {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object erasure extends Erasure {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object lambdaLift extends LambdaLift {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object constructors extends Constructors {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object flatten extends Flatten {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object mixer extends Mixin {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object sampleTransform extends SampleTransform {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object genicode extends GenICode {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object icodePrinter extends backend.icode.Printers {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object scalaPrimitives extends ScalaPrimitives {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object inliner extends Inliners {
@@ -302,7 +299,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object genJVM extends GenJVM {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object icodeChecker extends checkers.ICodeChecker();
@@ -338,7 +335,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   def onlyPresentation = settings.doc.value;
 
   class Run extends CompilerRun {
-    var currentUnit : CompilationUnit = _;
+    var currentUnit: CompilationUnit = _;
     curRun = this;
     override val firstPhase = syntaxAnalyzer.newPhase(NoPhase);
     phase = firstPhase;
@@ -355,23 +352,22 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       }
     }
     // progress tracking
-    def progress(current : Int, total : Int) : Unit = {}
+    def progress(current: Int, total: Int): Unit = {}
 
-    private var phasec : Int = 0;
-    private var unitc  : Int = 0;
-    def advancePhase : Unit = {
+    private var phasec: Int = 0;
+    private var unitc: Int = 0;
+    def advancePhase: Unit = {
       unitc = 0;
       phasec = phasec + 1;
       refreshProgress;
     }
-    def advanceUnit : Unit = {
+    def advanceUnit: Unit = {
       unitc = unitc + 1;
       refreshProgress;
     }
     private def refreshProgress = if (fileset.size > 0)
       progress((phasec * fileset.size) + unitc,
-	       (phaseDescriptors.length+1) * fileset.size);
-
+               (phaseDescriptors.length+1) * fileset.size);
 
     override def phaseNamed(name: String): Phase = {
       var p: Phase = firstPhase;
@@ -382,6 +378,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     override val namerPhase = phaseNamed("namer");
     override val typerPhase = phaseNamed("typer");
     override val refchecksPhase = phaseNamed("refchecks");
+
     override val explicitOuterPhase = phaseNamed("explicitouter");
     override val erasurePhase = phaseNamed("erasure");
     override val flattenPhase = phaseNamed("flatten");
