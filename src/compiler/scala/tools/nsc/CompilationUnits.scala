@@ -13,10 +13,7 @@ import scala.collection.mutable.HashSet;
 
 trait CompilationUnits requires Global {
 
-  class CompilationUnit(val source: SourceFile, val mixinOnly: boolean) {
-
-    /** short constructor */
-    def this(source: SourceFile) = this(source, false);
+  class CompilationUnit(val source: SourceFile) {
 
     /** the fresh name creator */
     val fresh = new FreshNameCreator;

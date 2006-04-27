@@ -17,19 +17,23 @@ trait Contexts requires Analyzer {
   NoContext.enclClass = NoContext;
   NoContext.enclMethod = NoContext;
 
-  val startContext = {
+  private val startContext = NoContext.make(
+    Template(List(), List()) setSymbol NoSymbol setType NoType,
+    definitions.RootClass,
+    definitions.RootClass.info.decls);
+
+  def rootContext(unit: CompilationUnit): Context = rootContext(unit, EmptyTree, false);
+
+  def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: boolean): Context = {
     import definitions._;
-    var sc = NoContext.make(
-        Template(List(), List()) setSymbol NoSymbol setType NoType,
-        definitions.RootClass,
-        definitions.RootClass.info.decls);
+    var sc = startContext;
     def addImport(pkg: Symbol): unit = {
-      assert(pkg != null, "package is null");
+      assert(pkg != null);
       val qual = gen.mkStableRef(pkg);
       sc = sc.makeNewImport(
-          Import(qual, List(Pair(nme.WILDCARD, null)))
-          setSymbol NoSymbol.newImport(Position.NOPOS).setInfo(ImportType(qual))
-          setType NoType);
+        Import(qual, List(Pair(nme.WILDCARD, null)))
+        .setSymbol(NoSymbol.newImport(Position.NOPOS).setInfo(ImportType(qual)))
+        .setType(NoType));
       sc.depth = sc.depth + 1
     }
     if (!settings.noimports.value) {
@@ -37,10 +41,14 @@ trait Contexts requires Analyzer {
       addImport(JavaLangPackage);
       assert(ScalaPackage != null, "Scala package is null");
       addImport(ScalaPackage);
-      if (!settings.nopredefs.value)
+      if (!settings.nopredefs.value/* || unit.source.file.name != "Predef.scala"*/)
         addImport(PredefModule);
     }
-    sc
+    val c = sc.make(unit, tree, sc.owner, sc.scope, sc.imports);
+    c.reportAmbiguousErrors = !erasedTypes;
+    c.reportGeneralErrors = !erasedTypes;
+    c.implicitsEnabled = !erasedTypes;
+    c
   }
 
   def resetContexts: unit = {

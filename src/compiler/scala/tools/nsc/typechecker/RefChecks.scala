@@ -25,6 +25,7 @@ import transform.InfoTransform;
  *   - Calls to case factory methods are replaced by new's.
  *   - References to parameter accessors with aliases are replaced by super references to
  *     these aliases.
+ *   - eliminate branches in a conditional if the condition is a constant
  */
 abstract class RefChecks extends InfoTransform {
 
@@ -578,6 +579,14 @@ abstract class RefChecks extends InfoTransform {
           if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
               isIrrefutable(pat1, tpt.tpe)) =>
             result = qual
+
+        case If(cond, thenpart, elsepart) =>
+          cond.tpe match {
+            case ConstantType(value) =>
+              result = if (value.booleanValue) thenpart else elsepart;
+              if (result == EmptyTree) result = Literal(()).setPos(tree.pos).setType(UnitClass.tpe)
+            case _ =>
+          }
 
 	case New(tpt) =>
 	  enterReference(tree.pos, tpt.tpe.symbol);

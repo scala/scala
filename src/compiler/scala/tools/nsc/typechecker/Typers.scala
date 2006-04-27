@@ -1156,7 +1156,7 @@ trait Typers requires Analyzer {
           val qual1 = adaptToName(qual, name)
           if (qual1 ne qual) return typed(copy.Select(tree, qual1, name), mode, pt)
         }
-        if (sym.info == NoType) {
+        if (!sym.exists) {
           if (settings.debug.value) System.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nfound = "+sym)
           if (!qual.tpe.widen.isErroneous) {
             if (context.unit == null) assert(false, "("+qual+":"+qual.tpe+")."+name)
@@ -1198,12 +1198,12 @@ trait Typers requires Analyzer {
             //if (phase.name == "uncurry") System.out.println("typing " + name + " " + cx.owner + " " + (if (cx.enclClass == null) "null" else cx.enclClass.owner));//DEBUG
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
-            if (defEntry != null && defEntry.sym.tpe != NoType) {
+            if (defEntry != null && defEntry.sym.exists) {
               defSym = defEntry.sym
             } else {
               cx = cx.enclClass
               defSym = pre.member(name) filter (
-                sym => sym.tpe != NoType && context.isAccessible(sym, pre, false))
+                sym => sym.exists && context.isAccessible(sym, pre, false))
               if (defSym == NoSymbol) cx = cx.outer
             }
           }
@@ -1223,14 +1223,14 @@ trait Typers requires Analyzer {
 
           // imported symbols take precedence over package-owned symbols in different
           // compilation units
-          if (defSym.tpe != NoType && impSym.tpe != NoType &&
+          if (defSym.exists && impSym.exists &&
               defSym.owner.isPackageClass &&
               (!currentRun.compiles(defSym) ||
                context.unit != null && defSym.sourceFile != context.unit.source.file))
             defSym = NoSymbol
 
-          if (defSym.tpe != NoType) {
-            if (impSym.tpe != NoType)
+          if (defSym.exists) {
+            if (impSym.exists)
               ambiguousError(
                 "it is both defined in "+defSym.owner +
                 " and imported subsequently by \n"+imports.head)
@@ -1239,7 +1239,7 @@ trait Typers requires Analyzer {
             else
               qual = atPos(tree.pos)(gen.mkQualifier(pre))
           } else {
-            if (impSym.tpe != NoType) {
+            if (impSym.exists) {
               var impSym1 = NoSymbol
               var imports1 = imports.tail
               def ambiguousImport() = {
@@ -1251,7 +1251,7 @@ trait Typers requires Analyzer {
                      (!imports.head.isExplicitImport(name) ||
                       imports1.head.depth == imports.head.depth)) {
                 var impSym1 = imports1.head.importedSymbol(name)
-                if (impSym1 != NoSymbol) {
+                if (impSym1.exists) {
                   if (imports1.head.isExplicitImport(name)) {
                     if (imports.head.isExplicitImport(name) ||
                         imports1.head.depth != imports.head.depth) ambiguousImport()

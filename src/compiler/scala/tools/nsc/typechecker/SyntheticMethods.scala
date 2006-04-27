@@ -149,45 +149,48 @@ trait SyntheticMethods requires Analyzer {
             else Apply(gen.mkRef(sym), List(Ident(vparamss.head.head)))))
     }
 
-    if ((clazz hasFlag CASE) && !phase.erasedTypes) {
-      // case classes are implicitly declared serializable
-      clazz.attributes = Pair(SerializableAttr.tpe, List()) :: clazz.attributes;
+    if (!phase.erasedTypes) {
 
-      for (val stat <- templ.body) {
-        if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) &&
-            (stat.symbol.hasFlag(PRIVATE | PROTECTED) || stat.symbol.privateWithin != NoSymbol)) {
-          ts += newAccessorMethod(stat);
-          stat.symbol.resetFlag(CASEACCESSOR)
+      if (clazz hasFlag CASE) {
+        // case classes are implicitly declared serializable
+        clazz.attributes = Pair(SerializableAttr.tpe, List()) :: clazz.attributes;
+
+        for (val stat <- templ.body) {
+          if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) &&
+              (stat.symbol.hasFlag(PRIVATE | PROTECTED) || stat.symbol.privateWithin != NoSymbol)) {
+                ts += newAccessorMethod(stat);
+                stat.symbol.resetFlag(CASEACCESSOR)
+              }
         }
-      }
 
-      ts += tagMethod;
-      if (clazz.isModuleClass) {
-	if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod;
-      } else {
-	if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_);
-	if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_);
-        if (!hasImplementation(nme.equals_)) ts += forwardingMethod(nme.equals_);
+        ts += tagMethod;
+        if (clazz.isModuleClass) {
+	  if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod;
+        } else {
+	  if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_);
+	  if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_);
+          if (!hasImplementation(nme.equals_)) ts += forwardingMethod(nme.equals_);
+        }
+        if (!hasImplementation(nme.caseElement)) ts += caseElementMethod;
+        if (!hasImplementation(nme.caseArity)) ts += caseArityMethod;
+        if (!hasImplementation(nme.caseName)) ts += caseNameMethod;
       }
-      if (!hasImplementation(nme.caseElement)) ts += caseElementMethod;
-      if (!hasImplementation(nme.caseArity)) ts += caseArityMethod;
-      if (!hasImplementation(nme.caseName)) ts += caseNameMethod;
+      if (clazz.isModuleClass && isSerializable(clazz)) {
+        // If you serialize a singleton and then deserialize it twice,
+        // you will have two instances of your singleton, unless you implement
+        // the readResolve() method (see http://www.javaworld.com/javaworld/
+        // jw-04-2003/jw-0425-designpatterns_p.html)
+        if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
+      }
+      for (val sym <- clazz.info.decls.toList)
+        if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
+          if (sym.isGetter)
+            addBeanGetterMethod(sym)
+          else if (sym.isSetter)
+            addBeanSetterMethod(sym)
+          else if (sym.isMethod || sym.isType)
+            unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym);
     }
-    if (!phase.erasedTypes && clazz.isModuleClass && isSerializable(clazz)) {
-      // If you serialize a singleton and then deserialize it twice,
-      // you will have two instances of your singleton, unless you implement
-      // the readResolve() method (see http://www.javaworld.com/javaworld/
-      // jw-04-2003/jw-0425-designpatterns_p.html)
-      if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
-    }
-    for (val sym <- clazz.info.decls.toList)
-      if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
-        if (sym.isGetter)
-          addBeanGetterMethod(sym)
-        else if (sym.isSetter)
-          addBeanSetterMethod(sym)
-        else if (sym.isMethod || sym.isType)
-          unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym);
     val synthetics = ts.toList;
     copy.Template(
       templ, templ.parents, if (synthetics.isEmpty) templ.body else templ.body ::: synthetics)

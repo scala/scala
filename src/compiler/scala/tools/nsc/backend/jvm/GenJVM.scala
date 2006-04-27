@@ -60,7 +60,6 @@ abstract class GenJVM extends SubComponent {
 
     // Scala attributes
     val SerializableAttr = definitions.SerializableAttr.tpe;
-    val BeanPropertyAttr = definitions.BeanPropertyAttr.tpe;
     val SerialVersionUID = definitions.getClass("scala.SerialVersionUID").tpe;
     val CloneableAttr    = definitions.getClass("scala.cloneable").tpe;
     val TransientAtt     = definitions.getClass("scala.transient").tpe;
@@ -966,21 +965,7 @@ abstract class GenJVM extends SubComponent {
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
       else
-        {
-          if ( sym.hasFlag(Flags.ACCESSOR) && sym.attributes.exists(a => a match{
-            case Pair(BeanPropertyAttr, _) => true
-            case _ => false
-          }))
-            {
-              if (sym.isSetter)
-                "set" + nme.setterToGetter(sym.simpleName).toString()
-              else "get" + sym.simpleName.toString()
-            }
-              else {
-                sym.simpleName.toString()
-          }.trim()
-        }
-      ) + suffix;
+        sym.simpleName.toString().trim()) + suffix
     }
 
     def javaNames(syms: List[Symbol]): Array[String] = {

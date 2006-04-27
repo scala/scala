@@ -613,9 +613,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       atPhase(phase.next) {
         val tree2 = mixinTransformer.transform(tree1);
         if (settings.debug.value) log("tree after addinterfaces: \n" + tree2);
-        newTyper(startContext.make(
-	  unit, tree, startContext.owner, startContext.scope, startContext.imports))
-	  .typed(tree2)
+        newTyper(rootContext(unit, tree, true)).typed(tree2)
       }
     }
   }

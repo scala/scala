@@ -29,7 +29,7 @@ abstract class TreeCheckers extends Analyzer {
       ret;
     } else false;
 
-    val context = startContext.make(unit);
+    val context = rootContext(unit);
     context.checking = true;
     tpeOfTree.clear;
     val checker = new TreeChecker(context);

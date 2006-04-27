@@ -72,7 +72,7 @@ abstract class UnCurry extends InfoTransform {
     private var needTryLift = false;
     private var inPattern = false;
     private var inConstructorFlag = 0L;
-    private var localTyper: analyzer.Typer = analyzer.newTyper(analyzer.startContext.make(unit));
+    private var localTyper: analyzer.Typer = analyzer.newTyper(analyzer.rootContext(unit));
 
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree));

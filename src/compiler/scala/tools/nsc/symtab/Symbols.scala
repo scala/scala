@@ -271,6 +271,9 @@ trait Symbols requires SymbolTable {
       }
     );
 
+    final def exists: boolean =
+      this != NoSymbol && (!owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType });
+
     final def isInitialized: boolean =
       validForRun == currentRun;
 

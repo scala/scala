@@ -25,7 +25,7 @@ trait Analyzer
     val phaseName = "namer";
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       def apply(unit: CompilationUnit): unit =
-	new Namer(startContext.make(unit)).enterSym(unit.body);
+	new Namer(rootContext(unit)).enterSym(unit.body);
     }
   }
 
@@ -35,7 +35,7 @@ trait Analyzer
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       resetTyper;
       def apply(unit: CompilationUnit): unit =
-        unit.body = newTyper(startContext.make(unit)).typed(unit.body)
+        unit.body = newTyper(rootContext(unit)).typed(unit.body)
     }
   }
 }
