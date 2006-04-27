@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,12 +8,12 @@ package scala.tools.nsc.symtab;
 import util._;
 
 abstract class SymbolTable extends Names
-			      with Symbols
-			      with Types
+                              with Symbols
+                              with Types
                               with Scopes
                               with Definitions
-			      with Constants
-			      with InfoTransformers
+                              with Constants
+                              with InfoTransformers
                               with StdNames {
   def settings: Settings;
   def rootLoader: LazyType;
