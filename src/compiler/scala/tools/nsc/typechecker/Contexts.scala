@@ -260,7 +260,7 @@ trait Contexts requires Analyzer {
       ) && (
         sym.privateWithin == NoSymbol
         ||
-        accessWithin(sym.privateWithin)
+        phase.erasedTypes || accessWithin(sym.privateWithin)
       )
     }
 
