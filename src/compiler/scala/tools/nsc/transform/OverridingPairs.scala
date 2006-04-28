@@ -103,8 +103,8 @@ abstract class OverridingPairs {
 	  } while (nextEntry != null &&
 		   ((nextEntry.sym hasFlag PRIVATE) ||
 		    (overriding.owner == nextEntry.sym.owner) ||
-		    (hasCommonParent(overriding, nextEntry.sym)) ||
 		    (!matches(overriding, nextEntry.sym)) ||
+		    (hasCommonParent(overriding, nextEntry.sym)) ||
 		    (overriding hasFlag LOCAL)))
 	}
 	if (nextEntry != null) {
