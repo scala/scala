@@ -45,6 +45,8 @@ abstract class GenJVM extends SubComponent {
       abort("JVM works on icode classes, not on compilation units!");
   }
 
+  var pickledBytes = 0 // statistics
+
   /**
    * Java bytecode generator.
    *
@@ -86,6 +88,7 @@ abstract class GenJVM extends SubComponent {
                                                   nme.ScalaSignatureATTR.toString(),
                                                   pickle.bytes,
                                                   pickle.writeIndex);
+          pickledBytes = pickledBytes + pickle.writeIndex;
           jclass.addAttribute(scalaAttr);
           currentRun.symData -= sym;
           currentRun.symData -= sym.linkedSym;
