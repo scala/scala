@@ -213,9 +213,13 @@ rem Tests the JVM backend.
   goto :eof
 
 :chk_test
-  set _DSTDIR=%_OBJDIR%%_SRCDIR%
+  if "%_OBJDIR%"=="" (
+    set _DSTDIR=%_SRCDIR%
+  ) else (
+    set _DSTDIR=%_OBJDIR%
+  )
   set _TESTNAME=%~n1
-  set _DSTBASE=%_DSTDIR%%_TESTNAME%-%_KIND%
+  set _DSTBASE=%_DSTDIR%\%_TESTNAME%-%_KIND%
   set _LOGFILE=%_DSTBASE%.log
 
   if not '%_HEADER%'=='' call :prt_header %_HEADER% & set _HEADER=
@@ -226,6 +230,7 @@ rem Tests the JVM backend.
   goto :eof
   :status
   call :prt_status %_KIND% %~nx1
+  del /s/q %_LOGFILE% 1>NUL
   goto :eof
 
 :chk_file
