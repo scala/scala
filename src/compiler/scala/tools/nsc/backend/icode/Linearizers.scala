@@ -136,7 +136,12 @@ trait Linearizers requires ICodes {
       m.exh foreach (b => rpo(b.startBlock));
       rpo(m.code.startBlock);
 
-      blocks
+      // if the start block has predecessors, it won't be the first one
+      // in the linearization, so we need to enforce it here
+      if (m.code.startBlock.predecessors eq Nil)
+        blocks
+      else
+        m.code.startBlock :: (blocks.remove(.==(m.code.startBlock)))
     }
 
     def rpo(b: BasicBlock): Unit =
