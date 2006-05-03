@@ -371,8 +371,10 @@ trait TypeKinds requires ICodes {
     primitiveTypeMap += definitions.CharClass -> CHAR;
     primitiveTypeMap += definitions.IntClass -> INT;
     primitiveTypeMap += definitions.LongClass -> LONG;
-    primitiveTypeMap += definitions.FloatClass -> FLOAT;
-    primitiveTypeMap += definitions.DoubleClass -> DOUBLE;
+    if (!forCLDC) {
+      primitiveTypeMap += definitions.FloatClass -> FLOAT;
+      primitiveTypeMap += definitions.DoubleClass -> DOUBLE;
+    }
 //    primitiveTypeMap += definitions.StringClass -> STRING;
   }
 

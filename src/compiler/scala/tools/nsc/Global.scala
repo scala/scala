@@ -334,6 +334,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   def onlyPresentation = settings.doc.value;
 
+  def forCLDC: Boolean = settings.target.value == "cldc"
+
   class Run extends CompilerRun {
     var currentUnit: CompilationUnit = _;
     curRun = this;

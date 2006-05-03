@@ -68,8 +68,8 @@ abstract class GenJVM extends SubComponent {
     val VolatileAttr     = definitions.getClass("scala.volatile").tpe;
     val RemoteAttr       = definitions.getClass("scala.remote").tpe;
 
-    val CloneableClass   = definitions.getClass("java.lang.Cloneable");
-    val RemoteInterface  = definitions.getClass("java.rmi.Remote");
+    val CloneableClass   = if (forCLDC) null else definitions.getClass("java.lang.Cloneable");
+    val RemoteInterface  = if (forCLDC) null else definitions.getClass("java.rmi.Remote");
 
     var clasz: IClass = _;
     var method: IMethod = _;
@@ -123,13 +123,13 @@ abstract class GenJVM extends SubComponent {
         parents = definitions.ObjectClass.tpe :: parents;
 
       c.symbol.attributes foreach { a => a match {
-          case Pair(SerializableAttr, _) =>
+          case Pair(SerializableAttr, _) if (!forCLDC) =>
             parents = parents ::: List(definitions.SerializableClass.tpe);
-          case Pair(CloneableAttr, _) =>
+          case Pair(CloneableAttr, _) if (!forCLDC) =>
             parents = parents ::: List(CloneableClass.tpe);
-          case Pair(SerialVersionUID, value :: _) =>
+          case Pair(SerialVersionUID, value :: _) if (!forCLDC) =>
             serialVUID = Some(value.longValue);
-          case Pair(RemoteAttr, _) =>
+          case Pair(RemoteAttr, _) if (!forCLDC) =>
             parents = parents ::: List(RemoteInterface.tpe);
             remoteClass = true;
           case _ => ();

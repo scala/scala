@@ -14,10 +14,13 @@ abstract class SymbolTable extends Names
                               with Definitions
                               with Constants
                               with InfoTransformers
-                              with StdNames {
+                              with StdNames
+{
   def settings: Settings;
   def rootLoader: LazyType;
   def log(msg: Object): unit;
+
+  def forCLDC: Boolean;
 
   private var ph: Phase = NoPhase;
   def phase: Phase = ph;

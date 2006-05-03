@@ -261,8 +261,10 @@ abstract class ScalaPrimitives {
     addPrimitives(ByteClass, nme.toChar,   B2C);
     addPrimitives(ByteClass, nme.toInt,    B2I);
     addPrimitives(ByteClass, nme.toLong,   B2L);
-    addPrimitives(ByteClass, nme.toFloat,  B2F);
-    addPrimitives(ByteClass, nme.toDouble, B2D);
+    if (!forCLDC) {
+      addPrimitives(ByteClass, nme.toFloat,  B2F);
+      addPrimitives(ByteClass, nme.toDouble, B2D);
+    }
 
     // scala.Short
     addPrimitives(ShortClass, nme.EQ, EQ);
@@ -289,8 +291,10 @@ abstract class ScalaPrimitives {
     addPrimitives(ShortClass, nme.toChar,   S2C);
     addPrimitives(ShortClass, nme.toInt,    S2I);
     addPrimitives(ShortClass, nme.toLong,   S2L);
-    addPrimitives(ShortClass, nme.toFloat,  S2F);
-    addPrimitives(ShortClass, nme.toDouble, S2D);
+    if (!forCLDC) {
+      addPrimitives(ShortClass, nme.toFloat,  S2F);
+      addPrimitives(ShortClass, nme.toDouble, S2D);
+    }
 
     // scala.Char
     addPrimitives(CharClass, nme.EQ, EQ);
@@ -317,8 +321,10 @@ abstract class ScalaPrimitives {
     addPrimitives(CharClass, nme.toChar,   C2C);
     addPrimitives(CharClass, nme.toInt,    C2I);
     addPrimitives(CharClass, nme.toLong,   C2L);
-    addPrimitives(CharClass, nme.toFloat,  C2F);
-    addPrimitives(CharClass, nme.toDouble, C2D);
+    if (!forCLDC) {
+      addPrimitives(CharClass, nme.toFloat,  C2F);
+      addPrimitives(CharClass, nme.toDouble, C2D);
+    }
 
     // scala.Int
     addPrimitives(IntClass, nme.EQ, EQ);
@@ -345,8 +351,10 @@ abstract class ScalaPrimitives {
     addPrimitives(IntClass, nme.toChar,   I2C);
     addPrimitives(IntClass, nme.toInt,    I2I);
     addPrimitives(IntClass, nme.toLong,   I2L);
-    addPrimitives(IntClass, nme.toFloat,  I2F);
-    addPrimitives(IntClass, nme.toDouble, I2D);
+    if (!forCLDC) {
+      addPrimitives(IntClass, nme.toFloat,  I2F);
+      addPrimitives(IntClass, nme.toDouble, I2D);
+    }
 
     // scala.Long
     addPrimitives(LongClass, nme.EQ, EQ);
@@ -373,51 +381,54 @@ abstract class ScalaPrimitives {
     addPrimitives(LongClass, nme.toChar,   L2C);
     addPrimitives(LongClass, nme.toInt,    L2I);
     addPrimitives(LongClass, nme.toLong,   L2L);
-    addPrimitives(LongClass, nme.toFloat,  L2F);
-    addPrimitives(LongClass, nme.toDouble, L2D);
+    if (!forCLDC) {
+      addPrimitives(LongClass, nme.toFloat,  L2F);
+      addPrimitives(LongClass, nme.toDouble, L2D);
+    }
 
-    // scala.Float
-    addPrimitives(FloatClass, nme.EQ, EQ);
-    addPrimitives(FloatClass, nme.NE, NE);
-    addPrimitives(FloatClass, nme.ADD, ADD);
-    addPrimitives(FloatClass, nme.SUB, SUB);
-    addPrimitives(FloatClass, nme.MUL, MUL);
-    addPrimitives(FloatClass, nme.DIV, DIV);
-    addPrimitives(FloatClass, nme.MOD, MOD);
-    addPrimitives(FloatClass, nme.LT, LT);
-    addPrimitives(FloatClass, nme.LE, LE);
-    addPrimitives(FloatClass, nme.GT, GT);
-    addPrimitives(FloatClass, nme.GE, GE);
+    if (!forCLDC) {
+      // scala.Float
+      addPrimitives(FloatClass, nme.EQ, EQ);
+      addPrimitives(FloatClass, nme.NE, NE);
+      addPrimitives(FloatClass, nme.ADD, ADD);
+      addPrimitives(FloatClass, nme.SUB, SUB);
+      addPrimitives(FloatClass, nme.MUL, MUL);
+      addPrimitives(FloatClass, nme.DIV, DIV);
+      addPrimitives(FloatClass, nme.MOD, MOD);
+      addPrimitives(FloatClass, nme.LT, LT);
+      addPrimitives(FloatClass, nme.LE, LE);
+      addPrimitives(FloatClass, nme.GT, GT);
+      addPrimitives(FloatClass, nme.GE, GE);
       // conversions
-    addPrimitives(FloatClass, nme.toByte,   F2B);
-    addPrimitives(FloatClass, nme.toShort,  F2S);
-    addPrimitives(FloatClass, nme.toChar,   F2C);
-    addPrimitives(FloatClass, nme.toInt,    F2I);
-    addPrimitives(FloatClass, nme.toLong,   F2L);
-    addPrimitives(FloatClass, nme.toFloat,  F2F);
-    addPrimitives(FloatClass, nme.toDouble, F2D);
+      addPrimitives(FloatClass, nme.toByte,   F2B);
+      addPrimitives(FloatClass, nme.toShort,  F2S);
+      addPrimitives(FloatClass, nme.toChar,   F2C);
+      addPrimitives(FloatClass, nme.toInt,    F2I);
+      addPrimitives(FloatClass, nme.toLong,   F2L);
+      addPrimitives(FloatClass, nme.toFloat,  F2F);
+      addPrimitives(FloatClass, nme.toDouble, F2D);
 
-    // scala.Double
-    addPrimitives(DoubleClass, nme.EQ, EQ);
-    addPrimitives(DoubleClass, nme.NE, NE);
-    addPrimitives(DoubleClass, nme.ADD, ADD);
-    addPrimitives(DoubleClass, nme.SUB, SUB);
-    addPrimitives(DoubleClass, nme.MUL, MUL);
-    addPrimitives(DoubleClass, nme.DIV, DIV);
-    addPrimitives(DoubleClass, nme.MOD, MOD);
-    addPrimitives(DoubleClass, nme.LT, LT);
-    addPrimitives(DoubleClass, nme.LE, LE);
-    addPrimitives(DoubleClass, nme.GT, GT);
-    addPrimitives(DoubleClass, nme.GE, GE);
+      // scala.Double
+      addPrimitives(DoubleClass, nme.EQ, EQ);
+      addPrimitives(DoubleClass, nme.NE, NE);
+      addPrimitives(DoubleClass, nme.ADD, ADD);
+      addPrimitives(DoubleClass, nme.SUB, SUB);
+      addPrimitives(DoubleClass, nme.MUL, MUL);
+      addPrimitives(DoubleClass, nme.DIV, DIV);
+      addPrimitives(DoubleClass, nme.MOD, MOD);
+      addPrimitives(DoubleClass, nme.LT, LT);
+      addPrimitives(DoubleClass, nme.LE, LE);
+      addPrimitives(DoubleClass, nme.GT, GT);
+      addPrimitives(DoubleClass, nme.GE, GE);
       // conversions
-    addPrimitives(DoubleClass, nme.toByte,   D2B);
-    addPrimitives(DoubleClass, nme.toShort,  D2S);
-    addPrimitives(DoubleClass, nme.toChar,   D2C);
-    addPrimitives(DoubleClass, nme.toInt,    D2I);
-    addPrimitives(DoubleClass, nme.toLong,   D2L);
-    addPrimitives(DoubleClass, nme.toFloat,  D2F);
-    addPrimitives(DoubleClass, nme.toDouble, D2D);
-
+      addPrimitives(DoubleClass, nme.toByte,   D2B);
+      addPrimitives(DoubleClass, nme.toShort,  D2S);
+      addPrimitives(DoubleClass, nme.toChar,   D2C);
+      addPrimitives(DoubleClass, nme.toInt,    D2I);
+      addPrimitives(DoubleClass, nme.toLong,   D2L);
+      addPrimitives(DoubleClass, nme.toFloat,  D2F);
+      addPrimitives(DoubleClass, nme.toDouble, D2D);
+    }
     // and the type map!
     initPrimitiveTypeMap;
   }

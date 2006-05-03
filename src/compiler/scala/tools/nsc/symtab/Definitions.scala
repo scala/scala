@@ -274,10 +274,12 @@ trait Definitions requires SymbolTable {
       val intparam = List(inttype)
       val longtype = LongClass.typeConstructor
       val longparam = List(longtype)
-      val floattype = FloatClass.typeConstructor
-      val floatparam = List(floattype)
-      val doubletype = DoubleClass.typeConstructor
-      val doubleparam = List(doubletype)
+
+      val floattype = if (forCLDC) null else FloatClass.typeConstructor
+      val floatparam =if (forCLDC) null else  List(floattype)
+      val doubletype = if (forCLDC) null else DoubleClass.typeConstructor
+      val doubleparam = if (forCLDC) null else List(doubletype)
+
       val stringtype = StringClass.typeConstructor
 
       // init scala.Boolean
@@ -291,6 +293,8 @@ trait Definitions requires SymbolTable {
       newMethod(BooleanClass, nme.XOR,  boolparam, booltype);
 
       def initValueClass(clazz: Symbol, isCardinal: Boolean): Unit = {
+        assert (clazz != null)
+
         def addBinops(params: List[Type], restype: Type, isCardinal: Boolean) = {
           newMethod(clazz, nme.EQ,  params, booltype)
           newMethod(clazz, nme.NE,  params, booltype)
@@ -316,8 +320,11 @@ trait Definitions requires SymbolTable {
         newParameterlessMethod(clazz, nme.toChar,   chartype)
         newParameterlessMethod(clazz, nme.toInt,    inttype)
         newParameterlessMethod(clazz, nme.toLong,   longtype)
-        newParameterlessMethod(clazz, nme.toFloat,  floattype)
-        newParameterlessMethod(clazz, nme.toDouble, doubletype)
+
+        if (!forCLDC) {
+          newParameterlessMethod(clazz, nme.toFloat,  floattype)
+          newParameterlessMethod(clazz, nme.toDouble, doubletype)
+        }
 
         // def +(s: String): String
         newMethod(clazz, nme.ADD, List(stringtype), stringtype)
@@ -347,14 +354,16 @@ trait Definitions requires SymbolTable {
 
         // binary operations
         val restype2 = if (isCardinal) longtype else restype
-        val restype3 = if (clazz eq DoubleClass) doubletype else floattype
         addBinops(byteparam,   restype,    isCardinal)
         addBinops(shortparam,  restype,    isCardinal)
         addBinops(charparam,   restype,    isCardinal)
         addBinops(intparam,    restype,    isCardinal)
         addBinops(longparam,   restype2,   isCardinal)
-        addBinops(floatparam,  restype3,   false)
-        addBinops(doubleparam, doubletype, false)
+        if (!forCLDC) {
+          val restype3 = if (clazz eq DoubleClass) doubletype else floattype
+          addBinops(floatparam,  restype3,   false)
+          addBinops(doubleparam, doubletype, false)
+        }
       }
 
       initValueClass(ByteClass,   true)
@@ -362,8 +371,10 @@ trait Definitions requires SymbolTable {
       initValueClass(CharClass,   true)
       initValueClass(IntClass,    true)
       initValueClass(LongClass,   true)
-      initValueClass(FloatClass,  false)
-      initValueClass(DoubleClass, false)
+      if (!forCLDC) {
+        initValueClass(FloatClass,  false)
+        initValueClass(DoubleClass, false)
+      }
     }
 
     /** Is symbol a value class? */
@@ -448,8 +459,10 @@ trait Definitions requires SymbolTable {
       CharClass =    newValueClass(nme.Char, 'C');
       IntClass =     newValueClass(nme.Int, 'I');
       LongClass =    newValueClass(nme.Long, 'L');
-      FloatClass =   newValueClass(nme.Float, 'F');
-      DoubleClass =  newValueClass(nme.Double, 'D');
+      if (!forCLDC) {
+        FloatClass =   newValueClass(nme.Float, 'F');
+        DoubleClass =  newValueClass(nme.Double, 'D');
+      }
 
       // the scala reference classes
       ScalaObjectClass = getClass("scala.ScalaObject");
@@ -463,7 +476,7 @@ trait Definitions requires SymbolTable {
       SeqClass = getClass("scala.Seq");
       ListClass = getClass("scala.List");
       ArrayClass = getClass("scala.Array");
-      SerializableClass = getClass("java.io.Serializable");
+      SerializableClass = if (forCLDC) null else getClass("java.io.Serializable");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");
       MatchErrorClass = getClass("scala.MatchError");
