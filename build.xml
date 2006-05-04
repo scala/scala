@@ -967,9 +967,18 @@ GENERATES A DISTRIBUTION
     <runtarget target="dist"/>
   </target>
 
+  <target name="dist.quick"
+    depends="build.strap, dist.latest"
+    description="Creates a quick Scala distribution (no tests and docs)"
+  />
+
   <target name="dist"
-    depends="test, docs"
+    depends="test, docs, dist.latest"
     description="Creates a complete Scala distribution"
+  />
+
+  <target name="dist.latest"
+    description="Creates the latest Scala distribution"
   >
     <property
       name="dist.current.dir"

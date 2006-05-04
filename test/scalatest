@@ -572,8 +572,8 @@ fi
 printf_outline "Source directory is : $SRCDIR\\n";
 bin_dir=$BIN_DIR
 if [ -z "$bin_dir" ]; then
-    bin_dir=`which "$SCALAC"` && bin_dir=`dirname "$bin_dir"`/;
-    bin_dir=`test_get_location ${bin_dir}scalac`;
+    scalac=`which $SCALAC`;
+    bin_dir=`test_get_location $scalac`;
 fi;
 printf_outline "Scala binaries in   : $bin_dir\\n";
 jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
