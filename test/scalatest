@@ -561,9 +561,6 @@ SCALA="${BIN_DIR}scala";
 SCALAC="${BIN_DIR}scalac -encoding iso-8859-1";
 SCALAP="${BIN_DIR}scalap";
 
-SCALA_SCALA_ARGS="-Xmx512M $SCALA_SCALA_ARGS";
-export SCALA_SCALA_ARGS;
-
 if [ -n "$OBJDIR" ]; then
     if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
         OBJDIR=`cd "$OBJDIR"; pwd`;
