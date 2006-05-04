@@ -1,8 +1,9 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc.ast.parser
 
 import Tokens._
@@ -97,19 +98,19 @@ trait Scanners requires SyntaxAnalyzer {
     /** A new line was inserted where in version 1.0 it would not be.
      *  Only significant if settings.migrate.value is set
      */
-    var newNewLine = false;
+    var newNewLine = false
 
     /** Parser is currently skipping ahead because of an error.
      *  Only significant if settings.migrate.value is set
      */
-    var skipping = false;
+    var skipping = false
 
 // Get next token ------------------------------------------------------------
 
     /** read next token and return last position
      */
     def skipToken(): int = {
-      val p = pos; nextToken();
+      val p = pos; nextToken()
       // XXX: account for off by one error //???
       p - 1
     }
@@ -168,8 +169,8 @@ trait Scanners requires SyntaxAnalyzer {
           this.copyFrom(prev)
         }
       } else if (token == IDENTIFIER && name == nme.MIXINkw) { //todo: remove eventually
-        prev.copyFrom(this);
-        fetchToken();
+        prev.copyFrom(this)
+        fetchToken()
         if (token == CLASS)
           unit.warning(prev.pos, "`mixin' is no longer a reserved word; you should use `trait' instead of `mixin class'");
         next.copyFrom(this)
@@ -202,19 +203,19 @@ trait Scanners requires SyntaxAnalyzer {
      */
     private def fetchToken(): unit = {
       if (token == EOF) return
-      lastPos = in.cpos - 1; // Position.encode(in.cline, in.ccol)
+      lastPos = in.cpos - 1 // Position.encode(in.cline, in.ccol)
       //var index = bp
       while (true) {
         in.ch match {
           case ' ' | '\t' | CR | LF | FF =>
             in.next
           case _ =>
-	    pos = in.cpos; // Position.encode(in.cline, in.ccol)
-	    in.ch match {
+            pos = in.cpos // Position.encode(in.cline, in.ccol)
+            in.ch match {
               case '\u21D2' =>
                 in.next; token = ARROW
                 return
-	      case 'A' | 'B' | 'C' | 'D' | 'E' |
+              case 'A' | 'B' | 'C' | 'D' | 'E' |
                    'F' | 'G' | 'H' | 'I' | 'J' |
                    'K' | 'L' | 'M' | 'N' | 'O' |
                    'P' | 'Q' | 'R' | 'S' | 'T' |
@@ -227,9 +228,9 @@ trait Scanners requires SyntaxAnalyzer {
                    'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
                    'z' =>
                 putChar(in.ch)
-	        in.next
-	        getIdentRest;  // scala-mode: wrong indent for multi-line case blocks
-	        return;
+                in.next
+                getIdentRest  // scala-mode: wrong indent for multi-line case blocks
+                return
 
             case '<' => // is XMLSTART?
               val last = in.last
@@ -269,7 +270,7 @@ trait Scanners requires SyntaxAnalyzer {
                 } else {
                   base = 8
                 }
-		getNumber
+                getNumber
                 return;       // scala-mode: return is a keyword
               case '1' | '2' | '3' | '4' |
                    '5' | '6' | '7' | '8' | '9' =>
@@ -306,17 +307,17 @@ trait Scanners requires SyntaxAnalyzer {
                       return
                     }
                   case _ =>
-		    if (Character.isUnicodeIdentifierStart(in.ch)) {
+                    if (Character.isUnicodeIdentifierStart(in.ch)) {
                       putChar(in.ch)
                       in.next
                       if (in.ch != '\'') {
-			getIdentRest
-			token = SYMBOLLIT
-			return
+                        getIdentRest
+                        token = SYMBOLLIT
+                        return
                       }
-		    } else {
+                    } else {
                       getlitch()
-		    }
+                    }
                 }
                 if (in.ch == '\'') {
                   in.next
@@ -327,12 +328,12 @@ trait Scanners requires SyntaxAnalyzer {
                 }
                 return
               case '.' =>
-		in.next;
-		if ('0' <= in.ch && in.ch <= '9') {
-		  putChar('.'); getFraction
-		} else {
-		  token = DOT
-		}
+                in.next
+                if ('0' <= in.ch && in.ch <= '9') {
+                  putChar('.'); getFraction
+                } else {
+                  token = DOT
+                }
                 return
               case ';' =>
                 in.next; token = SEMI
@@ -361,24 +362,24 @@ trait Scanners requires SyntaxAnalyzer {
               case SU =>
                 if (!in.hasNext) token = EOF
                 else {
-                  syntaxError("illegal character");
+                  syntaxError("illegal character")
                   in.next
                 }
                 return
               case _ =>
-		if (Character.isUnicodeIdentifierStart(in.ch)) {
+                if (Character.isUnicodeIdentifierStart(in.ch)) {
                   putChar(in.ch)
-		  in.next
+                  in.next
                   getIdentRest
-		} else if (isSpecial(in.ch)) {
+                } else if (isSpecial(in.ch)) {
                   putChar(in.ch)
                   getOperatorRest
                 } else {
-                  syntaxError("illegal character");
+                  syntaxError("illegal character")
                   in.next
                 }
                 return
-	    }
+            }
         }
       }
     }
@@ -396,7 +397,7 @@ trait Scanners requires SyntaxAnalyzer {
         if (in.ch == '*') docBuffer = new StringBuffer("/**")
         while (openComments > 0) {
           do {
-	    do {
+            do {
               if (in.ch == '/') {
                 in.next; putDocChar(in.ch)
                 if (in.ch == '*') {
@@ -404,14 +405,16 @@ trait Scanners requires SyntaxAnalyzer {
                   openComments = openComments + 1
                 }
               }
-              in.next; putDocChar(in.ch)
+              if (in.ch != '*' && in.ch != SU) {
+                in.next; putDocChar(in.ch)
+              }
             } while (in.ch != '*' && in.ch != SU)
             while (in.ch == '*') {
               in.next; putDocChar(in.ch)
             }
           } while (in.ch != '/' && in.ch != SU)
           if (in.ch == '/') in.next
-	  else syntaxError("unclosed comment")
+          else syntaxError("unclosed comment")
           openComments = openComments - 1
         }
         true
@@ -460,102 +463,102 @@ trait Scanners requires SyntaxAnalyzer {
 
     private def getIdentRest: unit =
       while (true) {
-	in.ch match {
+        in.ch match {
           case 'A' | 'B' | 'C' | 'D' | 'E' |
-	       'F' | 'G' | 'H' | 'I' | 'J' |
-	       'K' | 'L' | 'M' | 'N' | 'O' |
-	       'P' | 'Q' | 'R' | 'S' | 'T' |
-	       'U' | 'V' | 'W' | 'X' | 'Y' |
-	       'Z' | '$' |
-	       'a' | 'b' | 'c' | 'd' | 'e' |
-	       'f' | 'g' | 'h' | 'i' | 'j' |
-	       'k' | 'l' | 'm' | 'n' | 'o' |
-	       'p' | 'q' | 'r' | 's' | 't' |
-	       'u' | 'v' | 'w' | 'x' | 'y' |
-	       'z' |
-	       '0' | '1' | '2' | '3' | '4' |
-	       '5' | '6' | '7' | '8' | '9' =>
-	    putChar(in.ch)
-	    in.next
-	  case '_' =>
-	    putChar(in.ch)
-	    in.next
-	    getIdentOrOperatorRest
-	    return
-      case SU =>
-	      setName
-		  token = name2token(name)
-		  return
-	  case _ =>
-	    if(java.lang.Character.isUnicodeIdentifierPart(in.ch)) {
-	      putChar(in.ch)
-	      in.next
-	    } else {
-	      setName
-	      token = name2token(name)
-	      return
-	    }
-	}
+               'F' | 'G' | 'H' | 'I' | 'J' |
+               'K' | 'L' | 'M' | 'N' | 'O' |
+               'P' | 'Q' | 'R' | 'S' | 'T' |
+               'U' | 'V' | 'W' | 'X' | 'Y' |
+               'Z' | '$' |
+               'a' | 'b' | 'c' | 'd' | 'e' |
+               'f' | 'g' | 'h' | 'i' | 'j' |
+               'k' | 'l' | 'm' | 'n' | 'o' |
+               'p' | 'q' | 'r' | 's' | 't' |
+               'u' | 'v' | 'w' | 'x' | 'y' |
+               'z' |
+               '0' | '1' | '2' | '3' | '4' |
+               '5' | '6' | '7' | '8' | '9' =>
+            putChar(in.ch)
+            in.next
+          case '_' =>
+            putChar(in.ch)
+            in.next
+            getIdentOrOperatorRest
+            return
+          case SU =>
+            setName
+            token = name2token(name)
+            return
+          case _ =>
+            if (java.lang.Character.isUnicodeIdentifierPart(in.ch)) {
+              putChar(in.ch)
+              in.next
+            } else {
+              setName
+              token = name2token(name)
+              return
+            }
+        }
       }
 
     private def getOperatorRest: unit =
       while (true) {
-	in.ch match {
-	  case '~' | '!' | '@' | '#' | '%' |
-	       '^' | '*' | '+' | '-' | '<' |
-	       '>' | '?' | ':' | '=' | '&' |
-	       '|' | '\\' =>
-	    putChar(in.ch)
-	    in.next
-	  case '/' =>
-	    in.next
-	    if (skipComment()) {
-	      setName
-	      token = name2token(name)
-	      return
-	    } else {
-	      putChar('/')
-	    }
-	  case _ =>
-	    if (isSpecial(in.ch)) {
-	      putChar(in.ch)
-	      in.next
-	    } else {
-	      setName
-	      token = name2token(name)
-	      return
-	    }
-	}
+        in.ch match {
+          case '~' | '!' | '@' | '#' | '%' |
+               '^' | '*' | '+' | '-' | '<' |
+               '>' | '?' | ':' | '=' | '&' |
+               '|' | '\\' =>
+            putChar(in.ch)
+            in.next
+          case '/' =>
+            in.next
+            if (skipComment()) {
+              setName
+              token = name2token(name)
+              return
+            } else {
+              putChar('/')
+            }
+          case _ =>
+            if (isSpecial(in.ch)) {
+              putChar(in.ch)
+              in.next
+            } else {
+              setName
+              token = name2token(name)
+              return
+            }
+        }
       }
 
     private def getIdentOrOperatorRest: unit =
       if (isIdentPart(in.ch))
-	getIdentRest
+        getIdentRest
       else in.ch match {
-	case '~' | '!' | '@' | '#' | '%' |
-	     '^' | '*' | '+' | '-' | '<' |
-	     '>' | '?' | ':' | '=' | '&' |
-	     '|' | '\\' | '/' =>
-	  getOperatorRest
-	case _ =>
-	  if (isSpecial(in.ch)) getOperatorRest
-	  else {
-	    setName
-	    token = name2token(name)
-	  }
+        case '~' | '!' | '@' | '#' | '%' |
+             '^' | '*' | '+' | '-' | '<' |
+             '>' | '?' | ':' | '=' | '&' |
+             '|' | '\\' | '/' =>
+          getOperatorRest
+        case _ =>
+          if (isSpecial(in.ch)) getOperatorRest
+          else {
+            setName
+            token = name2token(name)
+          }
       }
 
     private def getStringLit(delimiter: char): unit = {
       in.next
       while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
-	getlitch()
+        getlitch()
       }
       if (in.ch == delimiter) {
-	token = STRINGLIT
-	setName
-	in.next
+        token = STRINGLIT
+        setName
+        in.next
       } else {
-	syntaxError("unclosed string literal")
+        syntaxError("unclosed string literal")
       }
     }
 
@@ -565,40 +568,40 @@ trait Scanners requires SyntaxAnalyzer {
     */
     protected def getlitch() =
       if (in.ch == '\\') {
-	in.next
-	if ('0' <= in.ch && in.ch <= '7') {
-	  val leadch: char = in.ch
-	  var oct: int = in.digit2int(in.ch, 8)
-	  in.next
-	  if ('0' <= in.ch && in.ch <= '7') {
-	    oct = oct * 8 + in.digit2int(in.ch, 8)
-	    in.next
-	    if (leadch <= '3' && '0' <= in.ch && in.ch <= '7') {
-	      oct = oct * 8 + in.digit2int(in.ch, 8)
-	      in.next
-	    }
-	  }
-	  putChar(oct.asInstanceOf[char])
-	} else {
-	  in.ch match {
-	    case 'b'  => putChar('\b')
-	    case 't'  => putChar('\t')
-	    case 'n'  => putChar('\n')
-	    case 'f'  => putChar('\f')
-	    case 'r'  => putChar('\r')
-	    case '\"' => putChar('\"')
-	    case '\'' => putChar('\'')
-	    case '\\' => putChar('\\')
-	    case _    =>
-	      syntaxError(in.cpos - 1, // Position.encode(in.cline, in.ccol - 1),
-			  "invalid escape character")
-	      putChar(in.ch)
-	  }
-	  in.next
+        in.next
+        if ('0' <= in.ch && in.ch <= '7') {
+          val leadch: char = in.ch
+          var oct: int = in.digit2int(in.ch, 8)
+          in.next
+          if ('0' <= in.ch && in.ch <= '7') {
+            oct = oct * 8 + in.digit2int(in.ch, 8)
+            in.next
+            if (leadch <= '3' && '0' <= in.ch && in.ch <= '7') {
+              oct = oct * 8 + in.digit2int(in.ch, 8)
+              in.next
+            }
+          }
+          putChar(oct.asInstanceOf[char])
+        } else {
+          in.ch match {
+            case 'b'  => putChar('\b')
+            case 't'  => putChar('\t')
+            case 'n'  => putChar('\n')
+            case 'f'  => putChar('\f')
+            case 'r'  => putChar('\r')
+            case '\"' => putChar('\"')
+            case '\'' => putChar('\'')
+            case '\\' => putChar('\\')
+            case _    =>
+              syntaxError(in.cpos - 1, // Position.encode(in.cline, in.ccol - 1),
+                          "invalid escape character")
+              putChar(in.ch)
+          }
+          in.next
         }
       } else  {
-	putChar(in.ch)
-	in.next
+        putChar(in.ch)
+        in.next
       }
 
     /** read fractional part and exponent of floating point number
@@ -607,37 +610,37 @@ trait Scanners requires SyntaxAnalyzer {
     protected def getFraction = {
       token = DOUBLELIT
       while ('0' <= in.ch && in.ch <= '9') {
-	putChar(in.ch)
-	in.next
+        putChar(in.ch)
+        in.next
       }
       if (in.ch == 'e' || in.ch == 'E') {
-	val lookahead = in.copy
-	lookahead.next
-	if (lookahead.ch == '+' || lookahead.ch == '-') {
-	  lookahead.next
-	}
-	if ('0' <= lookahead.ch && lookahead.ch <= '9') {
-	  putChar(in.ch)
-	  in.next
-	  if (in.ch == '+' || in.ch == '-') {
-	    putChar(in.ch)
-	    in.next
-	  }
-	  while ('0' <= in.ch && in.ch <= '9') {
-	    putChar(in.ch)
-	    in.next
-	  }
-	}
-	token = DOUBLELIT
+        val lookahead = in.copy
+        lookahead.next
+        if (lookahead.ch == '+' || lookahead.ch == '-') {
+          lookahead.next
+        }
+        if ('0' <= lookahead.ch && lookahead.ch <= '9') {
+          putChar(in.ch)
+          in.next
+          if (in.ch == '+' || in.ch == '-') {
+            putChar(in.ch)
+            in.next
+          }
+          while ('0' <= in.ch && in.ch <= '9') {
+            putChar(in.ch)
+            in.next
+          }
+        }
+        token = DOUBLELIT
       }
-      if ((in.ch == 'd') || (in.ch == 'D')) {
-	putChar(in.ch)
-	in.next
-	token = DOUBLELIT
-      } else if ((in.ch == 'f') || (in.ch == 'F')) {
-	putChar(in.ch)
-	in.next
-	token = FLOATLIT
+      if (in.ch == 'd' || in.ch == 'D') {
+        putChar(in.ch)
+        in.next
+        token = DOUBLELIT
+      } else if (in.ch == 'f' || in.ch == 'F') {
+        putChar(in.ch)
+        in.next
+        token = FLOATLIT
       }
       setName
     }
@@ -646,31 +649,31 @@ trait Scanners requires SyntaxAnalyzer {
      */
     def intVal(negated: boolean): long = {
       if (token == CHARLIT && !negated) {
-	if (name.length > 0) name(0) else 0
+        if (name.length > 0) name(0) else 0
       } else {
-	var value: long = 0
-	val divider = if (base == 10) 1 else 2
-	val limit: long =
-	  if (token == LONGLIT) Long.MAX_VALUE else Integer.MAX_VALUE
-	var i = 0
-	val len = name.length
-	while (i < len) {
-	  val d = in.digit2int(name(i), base)
-	  if (d < 0) {
-	    syntaxError("malformed integer number")
-	    return 0
-	  }
-	  if (value < 0 ||
-	      limit / (base / divider) < value ||
-	      limit - (d / divider) < value * (base / divider) &&
-	      !(negated && limit == value * base - 1 + d)) {
-		syntaxError("integer number too large")
-		return 0
-	      }
-	  value = value * base + d
-	  i = i + 1
-	}
-	if (negated) -value else value
+        var value: long = 0
+        val divider = if (base == 10) 1 else 2
+        val limit: long =
+          if (token == LONGLIT) Long.MAX_VALUE else Integer.MAX_VALUE
+        var i = 0
+        val len = name.length
+        while (i < len) {
+          val d = in.digit2int(name(i), base)
+          if (d < 0) {
+            syntaxError("malformed integer number")
+            return 0
+          }
+          if (value < 0 ||
+              limit / (base / divider) < value ||
+              limit - (d / divider) < value * (base / divider) &&
+              !(negated && limit == value * base - 1 + d)) {
+                syntaxError("integer number too large")
+                return 0
+              }
+          value = value * base + d
+          i = i + 1
+        }
+        if (negated) -value else value
       }
     }
 
@@ -680,16 +683,16 @@ trait Scanners requires SyntaxAnalyzer {
     */
     def floatVal(negated: boolean): double = {
       val limit: double =
-	if (token == DOUBLELIT) Double.MAX_VALUE else Float.MAX_VALUE
+        if (token == DOUBLELIT) Double.MAX_VALUE else Float.MAX_VALUE
       try {
-	val value = Double.valueOf(name.toString()).doubleValue()
-	if (value > limit)
-	  syntaxError("floating point number too large")
-	if (negated) -value else value
+        val value = Double.valueOf(name.toString()).doubleValue()
+        if (value > limit)
+          syntaxError("floating point number too large")
+        if (negated) -value else value
       } catch {
-	case _: NumberFormatException =>
-	  syntaxError("malformed floating point number")
-	  0.0
+        case _: NumberFormatException =>
+          syntaxError("malformed floating point number")
+          0.0
       }
     }
 
@@ -699,37 +702,37 @@ trait Scanners requires SyntaxAnalyzer {
     */
     protected def getNumber:unit = {
       while (in.digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
-	putChar(in.ch)
-	in.next
+        putChar(in.ch)
+        in.next
       }
       token = INTLIT
       if (base <= 10 && in.ch == '.') {
         val lookahead = in.copy
-	lookahead.next
+        lookahead.next
         lookahead.ch match {
           case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
-	       '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
-	    putChar(in.ch)
-	    in.next
-	    return getFraction
+               '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
+            putChar(in.ch)
+            in.next
+            return getFraction
           case _ =>
-	    if (!isIdentStart(lookahead.ch)) {
-	      putChar(in.ch)
-	      in.next
-	      return getFraction
-	    }
+            if (!isIdentStart(lookahead.ch)) {
+              putChar(in.ch)
+              in.next
+              return getFraction
+            }
         }
       }
       if (base <= 10 &&
-	  (in.ch == 'e' || in.ch == 'E' ||
-	   in.ch == 'f' || in.ch == 'F' ||
-	   in.ch == 'd' || in.ch == 'D')) {
-	return getFraction
+          (in.ch == 'e' || in.ch == 'E' ||
+           in.ch == 'f' || in.ch == 'F' ||
+           in.ch == 'd' || in.ch == 'D')) {
+        return getFraction
       }
       setName
       if (in.ch == 'l' || in.ch == 'L') {
-	in.next
-	token = LONGLIT
+        in.next
+        token = LONGLIT
       }
     }
 
@@ -767,14 +770,14 @@ trait Scanners requires SyntaxAnalyzer {
       // Enter keywords
 
       def enterKeyword(n: Name, tokenId: int): unit = {
-	while (tokenId >= tokenName.length) {
-	  val newTokName = new Array[Name](tokenName.length * 2)
-	  System.arraycopy(tokenName, 0, newTokName, 0, newTokName.length)
-	  tokenName = newTokName
-	}
-	tokenName(tokenId) = n
-	if (n.start > maxKey) maxKey = n.start
-	if (tokenId >= tokenCount) tokenCount = tokenId + 1
+        while (tokenId >= tokenName.length) {
+          val newTokName = new Array[Name](tokenName.length * 2)
+          System.arraycopy(tokenName, 0, newTokName, 0, newTokName.length)
+          tokenName = newTokName
+        }
+        tokenName(tokenId) = n
+        if (n.start > maxKey) maxKey = n.start
+        if (tokenId >= tokenCount) tokenCount = tokenId + 1
       }
 
       enterKeyword(nme.ABSTRACTkw, ABSTRACT)
@@ -830,10 +833,10 @@ trait Scanners requires SyntaxAnalyzer {
       // Build keyword array
       key = new Array[byte](maxKey+1)
       for (val i <- Iterator.range(0, maxKey + 1))
-	key(i) = IDENTIFIER
+        key(i) = IDENTIFIER
       for (val j <- Iterator.range(0, tokenCount))
-	if (tokenName(j) != null)
-	  key(tokenName(j).start) = j.asInstanceOf[byte]
+        if (tokenName(j) != null)
+          key(tokenName(j).start) = j.asInstanceOf[byte]
 
     }
 
@@ -846,83 +849,83 @@ trait Scanners requires SyntaxAnalyzer {
     /** Returns the string representation of given token. */
     def token2string(token: int): String = token match {
       case IDENTIFIER =>
-	"identifier"/* + \""+name+"\""*/
+        "identifier"/* + \""+name+"\""*/
       case CHARLIT =>
-	"character literal"
+        "character literal"
       case INTLIT =>
-	"integer literal"
+        "integer literal"
       case LONGLIT =>
-	"long literal"
+        "long literal"
       case FLOATLIT =>
-	"float literal"
+        "float literal"
       case DOUBLELIT =>
-	"double literal"
+        "double literal"
       case STRINGLIT =>
-	"string literal"
+        "string literal"
       case SYMBOLLIT =>
-	"symbol literal"
+        "symbol literal"
       case LPAREN =>
-	"'('"
+        "'('"
       case RPAREN =>
-	"')'"
+        "')'"
       case LBRACE =>
-	"'{'"
+        "'{'"
       case RBRACE =>
-	"'}'"
+        "'}'"
       case LBRACKET =>
-	"'['"
+        "'['"
       case RBRACKET =>
-	"']'"
+        "']'"
       case EOF =>
-	"eof"
+        "eof"
       case ERROR =>
-	"something"
+        "something"
       case SEMI =>
-	"';'"
+        "';'"
       case NEWLINE =>
-	"';'"
+        "';'"
       case COMMA =>
-	"','"
+        "','"
       case CASECLASS =>
-	"case class"
+        "case class"
       case CASEOBJECT =>
-	"case object"
+        "case object"
       case XMLSTART =>
         "$XMLSTART$<"
       case _ =>
-	try {
-	  "'" + tokenName(token) + "'"
-	} catch {
-	  case _: ArrayIndexOutOfBoundsException =>
-	    "'<" + token + ">'"
-	  case _: NullPointerException =>
-	    "'<(" + token + ")>'"
-	}
+        try {
+          "'" + tokenName(token) + "'"
+        } catch {
+          case _: ArrayIndexOutOfBoundsException =>
+            "'<" + token + ">'"
+          case _: NullPointerException =>
+            "'<(" + token + ")>'"
+        }
     }
 
     override def toString() = token match {
       case IDENTIFIER =>
-	"id(" + name + ")"
+        "id(" + name + ")"
       case CHARLIT =>
-	"char(" + intVal + ")"
+        "char(" + intVal + ")"
       case INTLIT =>
-	"int(" + intVal + ")"
+        "int(" + intVal + ")"
       case LONGLIT =>
-	"long(" + intVal + ")"
+        "long(" + intVal + ")"
       case FLOATLIT =>
-	"float(" + floatVal + ")"
+        "float(" + floatVal + ")"
       case DOUBLELIT =>
-	"double(" + floatVal + ")"
+        "double(" + floatVal + ")"
       case STRINGLIT =>
-	"string(" + name + ")"
+        "string(" + name + ")"
       case SEMI =>
-	";"
+        ";"
       case NEWLINE =>
-	";"
+        ";"
       case COMMA =>
-	","
+        ","
       case _ =>
-	token2string(token)
+        token2string(token)
     }
 
     /** INIT: read lookahead character and token.
