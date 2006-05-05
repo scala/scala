@@ -35,6 +35,7 @@ object ScalaRunTime {
   val UnitTYPE = java.lang.Void.TYPE
 
   def isValueTag(tag: String) = tag.charAt(0) == '.'
+  def isValueClass(clazz: Class) = clazz.isPrimitive()
 
   abstract class Try[a] {
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b;
@@ -115,6 +116,8 @@ object ScalaRunTime {
   def doubleValue (x: BoxedNumber ): Double  = if (x eq null) 0.0D  else x.doubleValue();
   def arrayValue  (x: BoxedArray, elemTag: String): Object =
     if (x eq null) null else x.unbox(elemTag);
+  def arrayValue  (x: BoxedArray, elemClass: Class): Object =
+    if (x eq null) null else x.unbox(elemClass);
 
   def boxArray(value: Object): BoxedArray = value match {
     case x: Array[Byte] => new BoxedByteArray(x)

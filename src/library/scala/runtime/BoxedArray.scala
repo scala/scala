@@ -27,6 +27,8 @@ abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] 
    */
   def unbox(elemTag: String): Object
 
+  def unbox(elemClass: Class): Object
+
   override def isDefinedAt(x: Int): Boolean   =  0 <= x && x < length
 
   def elements = new Iterator[Object] {

@@ -22,6 +22,7 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
   def update(index: Int, elem: Object): Unit = { value(index) = elem }
 
   def unbox(elemTag: String): Object = value;
+  def unbox(elemClass: Class): Object = value;
 
   override def equals(other: Any): Boolean = (
     value == other ||

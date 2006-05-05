@@ -24,6 +24,7 @@ final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
   }
 
   def unbox(elemTag: String): Object = value;
+  def unbox(elemClass: Class): Object = value;
 
   override def equals(other: Any) = (
     value == other ||

@@ -198,14 +198,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               gen.mkRuntimeCall(nme.booleanValue, List(tree1))
             } else if (pt.symbol == ArrayClass) {
               val tree1 = adaptToType(tree, BoxedArrayClass.tpe);
+/*
               val elemClass = pt.typeArgs.head.symbol;
               val elemTag =
                 if (isValueClass(elemClass))
                   gen.mkRuntimeCall(newTermName(elemClass.name.toString() + "Tag"), List())
                 else
                   Literal(signature(pt.typeArgs.head));
+*/
               //System.out.println("unboxing " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
-              gen.mkRuntimeCall(nme.arrayValue, List(tree1, elemTag))
+              //gen.mkRuntimeCall(nme.arrayValue, List(tree1, elemTag))
+              gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
             } else {
 	      assert(isNumericValueClass(pt.symbol));
               val tree1 = adaptToType(tree, BoxedNumberClass.tpe);

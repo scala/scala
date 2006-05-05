@@ -24,6 +24,7 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
   }
 
   def unbox(elemTag: String): Object = value;
+  def unbox(elemClass: Class): Object = value;
 
   override def equals(other: Any) = (
     value == other ||

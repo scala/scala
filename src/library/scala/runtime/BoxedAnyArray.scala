@@ -21,26 +21,26 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   private var boxed = new Array[Object](length);
   private val hash = boxed.hashCode();
   private var unboxed: Object = null;
-  private var elemTag: String = null;
+  private var elemClass: Class = null;
 
   def apply(index: Int): Object = synchronized {
     if (unboxed == null)
       boxed(index);
-    else if (elemTag eq ScalaRunTime.IntTag)
+    else if (elemClass eq ScalaRunTime.IntTYPE)
       BoxedInt.box(unboxed.asInstanceOf[Array[Int]](index))
-    else if (elemTag eq ScalaRunTime.DoubleTag)
+    else if (elemClass eq ScalaRunTime.DoubleTYPE)
       BoxedDouble.box(unboxed.asInstanceOf[Array[Double]](index))
-    else if (elemTag eq ScalaRunTime.FloatTag)
+    else if (elemClass eq ScalaRunTime.FloatTYPE)
       BoxedFloat.box(unboxed.asInstanceOf[Array[Float]](index))
-    else if (elemTag eq ScalaRunTime.LongTag)
+    else if (elemClass eq ScalaRunTime.LongTYPE)
       BoxedLong.box(unboxed.asInstanceOf[Array[Long]](index))
-    else if (elemTag eq ScalaRunTime.CharTag)
+    else if (elemClass eq ScalaRunTime.CharTYPE)
       BoxedChar.box(unboxed.asInstanceOf[Array[Char]](index))
-    else if (elemTag eq ScalaRunTime.ByteTag)
+    else if (elemClass eq ScalaRunTime.ByteTYPE)
       BoxedByte.box(unboxed.asInstanceOf[Array[Byte]](index))
-    else if (elemTag eq ScalaRunTime.ShortTag)
+    else if (elemClass eq ScalaRunTime.ShortTYPE)
       BoxedShort.box(unboxed.asInstanceOf[Array[Short]](index))
-    else if (elemTag eq ScalaRunTime.BooleanTag)
+    else if (elemClass eq ScalaRunTime.BooleanTYPE)
       BoxedBoolean.box(unboxed.asInstanceOf[Array[Boolean]](index))
     else
       unboxed.asInstanceOf[Array[Object]](index)
@@ -49,30 +49,41 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   def update(index: Int, elem: Object): Unit = synchronized {
     if (unboxed == null)
       boxed(index) = elem;
-    else if (elemTag eq ScalaRunTime.IntTag)
+    else if (elemClass eq ScalaRunTime.IntTYPE)
       unboxed.asInstanceOf[Array[Int]](index) = elem.asInstanceOf[BoxedNumber].intValue()
-    else if (elemTag eq ScalaRunTime.DoubleTag)
+    else if (elemClass eq ScalaRunTime.DoubleTYPE)
       unboxed.asInstanceOf[Array[Double]](index) = elem.asInstanceOf[BoxedNumber].doubleValue()
-    else if (elemTag eq ScalaRunTime.FloatTag)
+    else if (elemClass eq ScalaRunTime.FloatTYPE)
       unboxed.asInstanceOf[Array[Float]](index) = elem.asInstanceOf[BoxedNumber].floatValue()
-    else if (elemTag eq ScalaRunTime.LongTag)
+    else if (elemClass eq ScalaRunTime.LongTYPE)
       unboxed.asInstanceOf[Array[Long]](index) = elem.asInstanceOf[BoxedNumber].longValue()
-    else if (elemTag eq ScalaRunTime.CharTag)
+    else if (elemClass eq ScalaRunTime.CharTYPE)
       unboxed.asInstanceOf[Array[Char]](index) = elem.asInstanceOf[BoxedNumber].charValue()
-    else if (elemTag eq ScalaRunTime.ByteTag)
+    else if (elemClass eq ScalaRunTime.ByteTYPE)
       unboxed.asInstanceOf[Array[Byte]](index) = elem.asInstanceOf[BoxedNumber].byteValue()
-    else if (elemTag eq ScalaRunTime.ShortTag)
+    else if (elemClass eq ScalaRunTime.ShortTYPE)
       unboxed.asInstanceOf[Array[Short]](index) = elem.asInstanceOf[BoxedNumber].shortValue()
-    else if (elemTag eq ScalaRunTime.BooleanTag)
+    else if (elemClass eq ScalaRunTime.BooleanTYPE)
       unboxed.asInstanceOf[Array[Boolean]](index) = elem.asInstanceOf[BoxedBoolean].value
     else
       unboxed.asInstanceOf[Array[Object]](index) = elem
   }
 
-  def unbox(elemTag: String): Object = synchronized {
+  def unbox(elemTag: String): Object =
+    if (elemTag eq ScalaRunTime.IntTag) unbox(ScalaRunTime.IntTYPE)
+    else if (elemTag eq ScalaRunTime.DoubleTag) unbox(ScalaRunTime.DoubleTYPE)
+    else if (elemTag eq ScalaRunTime.FloatTag) unbox(ScalaRunTime.FloatTYPE)
+    else if (elemTag eq ScalaRunTime.LongTag) unbox(ScalaRunTime.LongTYPE)
+    else if (elemTag eq ScalaRunTime.CharTag) unbox(ScalaRunTime.CharTYPE)
+    else if (elemTag eq ScalaRunTime.ByteTag) unbox(ScalaRunTime.ByteTYPE)
+    else if (elemTag eq ScalaRunTime.ShortTag) unbox(ScalaRunTime.ShortTYPE)
+    else if (elemTag eq ScalaRunTime.BooleanTag) unbox(ScalaRunTime.BooleanTYPE)
+    else unbox(Class.forName(elemTag))
+
+  def unbox(elemClass: Class): Object = synchronized {
     if (unboxed == null) {
-      this.elemTag = elemTag;
-      if (elemTag eq ScalaRunTime.IntTag) {
+      this.elemClass = elemClass;
+      if (elemClass eq ScalaRunTime.IntTYPE) {
 	val newvalue = new Array[Int](length);
 	var i = 0;
 	while (i < length) {
@@ -81,7 +92,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag eq ScalaRunTime.DoubleTag) {
+      } else if (elemClass eq ScalaRunTime.DoubleTYPE) {
 	val newvalue = new Array[Double](length);
 	var i = 0;
 	while (i < length) {
@@ -90,7 +101,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag eq ScalaRunTime.FloatTag) {
+      } else if (elemClass eq ScalaRunTime.FloatTYPE) {
 	val newvalue = new Array[Float](length);
 	var i = 0;
 	while (i < length) {
@@ -99,7 +110,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag eq ScalaRunTime.LongTag) {
+      } else if (elemClass eq ScalaRunTime.LongTYPE) {
 	val newvalue = new Array[Long](length);
 	var i = 0;
 	while (i < length) {
@@ -108,7 +119,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag eq ScalaRunTime.CharTag) {
+      } else if (elemClass eq ScalaRunTime.CharTYPE) {
 	val newvalue = new Array[Char](length);
 	var i = 0;
 	while (i < length) {
@@ -117,7 +128,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag eq ScalaRunTime.ByteTag) {
+      } else if (elemClass eq ScalaRunTime.ByteTYPE) {
 	val newvalue = new Array[Byte](length);
 	var i = 0;
 	while (i < length) {
@@ -126,7 +137,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag eq ScalaRunTime.ShortTag) {
+      } else if (elemClass eq ScalaRunTime.ShortTYPE) {
 	val newvalue = new Array[Short](length);
 	var i = 0;
 	while (i < length) {
@@ -135,7 +146,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag eq ScalaRunTime.BooleanTag) {
+      } else if (elemClass eq ScalaRunTime.BooleanTYPE) {
 	val newvalue = new Array[Boolean](length);
 	var i = 0;
 	while (i < length) {
@@ -144,10 +155,11 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	  i = i + 1
 	}
 	unboxed = newvalue;
-      } else if (elemTag == boxed.getClass().getComponentType()) {
+      } else if (elemClass == boxed.getClass().getComponentType()) {
+        // todo: replace with ScalaRunTime.Object.class
 	unboxed = boxed;
       } else {
-	unboxed = java.lang.reflect.Array.newInstance(Class.forName(elemTag), length);
+	unboxed = java.lang.reflect.Array.newInstance(elemClass, length);
 	System.arraycopy(boxed, 0, unboxed, 0, length);
       }
       boxed = null
@@ -174,7 +186,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
           if (that.unboxed == null) {
             that.boxed
           } else {
-            if (ScalaRunTime.isValueTag(that.elemTag)) unbox(that.elemTag);
+            if (ScalaRunTime.isValueClass(that.elemClass)) unbox(that.elemClass);
             that.unboxed
           }
         case that: BoxedArray =>
@@ -202,7 +214,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
       other match {
         case that: BoxedAnyArray =>
           if (that.unboxed != null) that.unboxed
-          else if (ScalaRunTime.isValueTag(this.elemTag)) that.unbox(this.elemTag)
+          else if (ScalaRunTime.isValueClass(this.elemClass)) that.unbox(this.elemClass)
           else that.boxed
         case that: BoxedArray =>
           adapt(that.value)
