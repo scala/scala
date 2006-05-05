@@ -18,50 +18,54 @@ package scala;
  */
 object Predef {
 
+  // classOf dummy -------------------------------------------------
+
+  def classOf[T]: java.lang.Class = null
+
   // aliases -------------------------------------------------------
 
   type Nothing = All
   type Null = AllRef
 
-  type byte = scala.Byte;
-  type short = scala.Short;
-  type char = scala.Char;
-  type int = scala.Int;
-  type long = scala.Long;
-  type float = scala.Float;
-  type double = scala.Double;
-  type boolean = scala.Boolean;
-  type unit = scala.Unit;
+  type byte = scala.Byte
+  type short = scala.Short
+  type char = scala.Char
+  type int = scala.Int
+  type long = scala.Long
+  type float = scala.Float
+  type double = scala.Double
+  type boolean = scala.Boolean
+  type unit = scala.Unit
 
-  type String = java.lang.String;
-  type NullPointerException = java.lang.NullPointerException;
-  type Throwable = java.lang.Throwable;
+  type String = java.lang.String
+  type NullPointerException = java.lang.NullPointerException
+  type Throwable = java.lang.Throwable
 
-  type Pair[+a, +b] = Tuple2[a, b];
-  def Pair[a, b](x: a, y: b) = Tuple2(x, y);
+  type Pair[+a, +b] = Tuple2[a, b]
+  def Pair[a, b](x: a, y: b) = Tuple2(x, y)
 
-  type Triple[+a, +b, +c] = Tuple3[a, b, c];
-  def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
+  type Triple[+a, +b, +c] = Tuple3[a, b, c]
+  def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
 
-  def Tuple[a1, a2](x1: a1, x2: a2) = Tuple2(x1, x2);
-  def Tuple[a1, a2, a3](x1: a1, x2: a2, x3: a3) = Tuple3(x1, x2, x3);
-  def Tuple[a1, a2, a3, a4](x1: a1, x2: a2, x3: a3, x4: a4) = Tuple4(x1, x2, x3, x4);
-  def Tuple[a1, a2, a3, a4, a5](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5) = Tuple5(x1, x2, x3, x4, x5);
-  def Tuple[a1, a2, a3, a4, a5, a6](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6) = Tuple6(x1, x2, x3, x4, x5, x6);
-  def Tuple[a1, a2, a3, a4, a5, a6, a7](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7) = Tuple7(x1, x2, x3, x4, x5, x6, x7);
-  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8);
-  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8, a9](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8, x9: a9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9);
+  def Tuple[a1, a2](x1: a1, x2: a2) = Tuple2(x1, x2)
+  def Tuple[a1, a2, a3](x1: a1, x2: a2, x3: a3) = Tuple3(x1, x2, x3)
+  def Tuple[a1, a2, a3, a4](x1: a1, x2: a2, x3: a3, x4: a4) = Tuple4(x1, x2, x3, x4)
+  def Tuple[a1, a2, a3, a4, a5](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5) = Tuple5(x1, x2, x3, x4, x5)
+  def Tuple[a1, a2, a3, a4, a5, a6](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6) = Tuple6(x1, x2, x3, x4, x5, x6)
+  def Tuple[a1, a2, a3, a4, a5, a6, a7](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7) = Tuple7(x1, x2, x3, x4, x5, x6, x7)
+  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)
+  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8, a9](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8, x9: a9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9)
 
 /*
-  def id[a](x: a): a = x;
-  def fst[a](x: a, y: Any): a = x;
-  def scd[a](x: Any, y: a): a = y;
+  def id[a](x: a): a = x
+  def fst[a](x: a, y: Any): a = x
+  def scd[a](x: Any, y: a): a = y
 */
 //todo: remove from here!
-  val namespace$default = "";
-  val $scope = scala.xml.TopScope;
+  val namespace$default = ""
+  val $scope = scala.xml.TopScope
 
-  type Function[-a,+b] = Function1[a,b];
+  type Function[-a,+b] = Function1[a,b]
 
   // arrays -----------------------------------------------------------
 
@@ -71,13 +75,13 @@ object Predef {
    *  @return the array containing elements xs.
    */
   def Array[A <: AnyRef](xs: A*): Array[A] = {
-    val array = new Array[A](xs.length);
-    var i = 0;
+    val array = new Array[A](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
 
-  val Array = scala.Array;
+  val Array = scala.Array
 
 /* The following metod clashes with the previous one, and has therefore been
  * removed. Note that this is a choice between efficiency and generality.
@@ -88,105 +92,105 @@ object Predef {
  * it was preferred to restrict the definition of the factory method.
 
    def Array[A](xs: A*): Array[A] = {
-    val array = new Array[A](xs.length);
-    var i = 0;
+    val array = new Array[A](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
 */
 
   def Array(xs: boolean*): Array[boolean] = {
-    val array = new Array[boolean](xs.length);
-    var i = 0;
+    val array = new Array[boolean](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: byte*): Array[byte] = {
-    val array = new Array[byte](xs.length);
-    var i = 0;
+    val array = new Array[byte](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: short*): Array[short] = {
-    val array = new Array[short](xs.length);
-    var i = 0;
+    val array = new Array[short](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: char*): Array[char] = {
-    val array = new Array[char](xs.length);
-    var i = 0;
+    val array = new Array[char](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: int*): Array[int] = {
-    val array = new Array[int](xs.length);
-    var i = 0;
+    val array = new Array[int](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: long*): Array[long] = {
-    val array = new Array[long](xs.length);
-    var i = 0;
+    val array = new Array[long](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: float*): Array[float] = {
-    val array = new Array[float](xs.length);
-    var i = 0;
+    val array = new Array[float](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: double*): Array[double] = {
-    val array = new Array[double](xs.length);
-    var i = 0;
+    val array = new Array[double](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
   def Array(xs: unit*): Array[unit] = {
-    val array = new Array[unit](xs.length);
-    var i = 0;
+    val array = new Array[unit](xs.length)
+    var i = 0
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
-    array;
+    array
   }
 
   // errors and asserts -------------------------------------------------
 
-  def error(message: String): Nothing = throw new Error(message);
+  def error(message: String): Nothing = throw new Error(message)
 
-  def exit: Nothing = exit(0);
+  def exit: Nothing = exit(0)
 
   def exit(status: Int): Nothing = {
-    java.lang.System.exit(status);
+    java.lang.System.exit(status)
     throw new Throwable()
   }
 
   def assert(assertion: Boolean): Unit = {
     if (!assertion)
-      throw new Error("assertion failed");
+      throw new Error("assertion failed")
   }
 
   def assert(assertion: Boolean, message: Any): Unit = {
     if (!assertion)
-      throw new Error("assertion failed: " + message);
+      throw new Error("assertion failed: " + message)
   }
 
   def assume(assumption: Boolean): Unit = {
     if (!assumption)
-      throw new Error("assumption failed");
+      throw new Error("assumption failed")
   }
 
   def assume(assumption: Boolean, message: Any): Unit = {
     if (!assumption)
-      throw new Error("assumption failed: " + message);
+      throw new Error("assumption failed: " + message)
   }
 
   // views -------------------------------------------------------------
 
-  implicit def identity[a](x: a): a = x;
+  implicit def identity[a](x: a): a = x
 
   implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
         if (x < y1) -1
@@ -197,7 +201,7 @@ object Predef {
   }
 
   implicit def char2ordered(x: char): Ordered[char] = new Ordered[char] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: char <% Ordered[b]](y: b): int = y match {
       case y1: char =>
         if (x < y1) -1
@@ -208,7 +212,7 @@ object Predef {
   }
 
   implicit def byte2ordered(x: byte): Ordered[byte] = new Ordered[byte] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: byte <% Ordered[b]](y: b): int = y match {
       case y1: byte =>
         if (x < y1) -1
@@ -219,7 +223,7 @@ object Predef {
   }
 
   implicit def short2ordered(x: short): Ordered[short] = new Ordered[short] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: short <% Ordered[b]](y: b): int = y match {
       case y1: short =>
         if (x < y1) -1
@@ -230,7 +234,7 @@ object Predef {
   }
 
   implicit def unit2ordered(x: unit): Ordered[unit] = new Ordered[unit] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: unit <% Ordered[b]](y: b): int = y match {
       case y1: unit => 0
       case _ => -(y compare x)
@@ -238,7 +242,7 @@ object Predef {
   }
 
   implicit def long2ordered(x: long): Ordered[long] = new Ordered[long] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: long <% Ordered[b]](y: b): int = y match {
       case y1: long =>
         if (x < y1) -1
@@ -249,7 +253,7 @@ object Predef {
   }
 
   implicit def float2ordered(x: float): Ordered[float] = new Ordered[float] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: float <% Ordered[b]](y: b): int = y match {
       case y1: float =>
         if (x < y1) -1
@@ -260,7 +264,7 @@ object Predef {
   }
 
   implicit def double2ordered(x: double): Ordered[double] = new Ordered[double] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: double <% Ordered[b]](y: b): int = y match {
       case y1: double =>
         if (x < y1) -1
@@ -271,7 +275,7 @@ object Predef {
   }
 
   implicit def boolean2ordered(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: boolean <% Ordered[b]](y: b): int = y match {
       case y1: boolean =>
         if (x == y1) 0
@@ -314,7 +318,7 @@ object Predef {
       val self = x
       def compare[T >: Tuple3[a1, a2, a3] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple3[a1, a2, a3] =>
-          val res = x._1 compare y._1;
+          val res = x._1 compare y._1
           if (res == 0) Tuple2(x._2, x._3) compare Tuple2(y._2, y._3)
           else res
         case _ => -(y compare x)
@@ -326,7 +330,7 @@ object Predef {
       val self = x
       def compare[T >: Tuple4[a1, a2, a3, a4] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple4[a1, a2, a3, a4] =>
-          val res = x._1 compare y._1;
+          val res = x._1 compare y._1
           if (res == 0) Tuple3(x._2, x._3, x._4) compare Tuple3(y._2, y._3, y._4)
           else res
         case _ => -(y compare x)
@@ -338,7 +342,7 @@ object Predef {
       val self = x
       def compare[T >: Tuple5[a1, a2, a3, a4, a5] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple5[a1, a2, a3, a4, a5] =>
-          val res = x._1 compare y._1;
+          val res = x._1 compare y._1
           if (res == 0) Tuple4(x._2, x._3, x._4, x._5) compare Tuple4(y._2, y._3, y._4, y._5)
           else res
         case _ => -(y compare x)
@@ -350,7 +354,7 @@ object Predef {
       val self = x
       def compare[T >: Tuple6[a1, a2, a3, a4, a5, a6] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple6[a1, a2, a3, a4, a5, a6] =>
-          val res = x._1 compare y._1;
+          val res = x._1 compare y._1
           if (res == 0) Tuple5(x._2, x._3, x._4, x._5, x._6) compare Tuple5(y._2, y._3, y._4, y._5, y._6)
           else res
         case _ => -(y compare x)
@@ -362,7 +366,7 @@ object Predef {
       val self = x
       def compare[T >: Tuple7[a1, a2, a3, a4, a5, a6, a7] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple7[a1, a2, a3, a4, a5, a6, a7] =>
-          val res = x._1 compare y._1;
+          val res = x._1 compare y._1
           if (res == 0) Tuple6(x._2, x._3, x._4, x._5, x._6, x._7) compare Tuple6(y._2, y._3, y._4, y._5, y._6, y._7)
           else res
         case _ => -(y compare x)
@@ -374,7 +378,7 @@ object Predef {
       val self = x
       def compare[T >: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8] =>
-          val res = x._1 compare y._1;
+          val res = x._1 compare y._1
           if (res == 0) Tuple7(x._2, x._3, x._4, x._5, x._6, x._7, x._8) compare Tuple7(y._2, y._3, y._4, y._5, y._6, y._7, y._8)
           else res
         case _ => -(y compare x)
@@ -386,7 +390,7 @@ object Predef {
       val self = x
       def compare[T >: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9] <% Ordered[T]](y: T): Int = y match {
         case y: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9] =>
-          val res = x._1 compare y._1;
+          val res = x._1 compare y._1
           if (res == 0) Tuple8(x._2, x._3, x._4, x._5, x._6, x._7, x._8, x._9) compare Tuple8(y._2, y._3, y._4, y._5, y._6, y._7, y._8, y._9)
           else res
         case _ => -(y compare x)
@@ -394,46 +398,46 @@ object Predef {
     }
 
   implicit def string2ordered(x: String): Ordered[String] = new Ordered[String] with Proxy {
-    def self: Any = x;
+    def self: Any = x
     def compare [b >: String <% Ordered[b]](y: b): int = y match {
-      case y1: String => x compareTo y1;
+      case y1: String => x compareTo y1
       case _ => -(y compare x)
     }
   }
 
   implicit def string2seq(str: String): Seq[Char] = new Seq[Char] {
-    def length = str.length();
-    def elements = Iterator.fromString(str);
-    def apply(n: Int) = str.charAt(n);
-    override def hashCode(): Int = str.hashCode();
-    override def equals(y: Any): Boolean = (str == y);
-    override protected def stringPrefix: String = "String";
+    def length = str.length()
+    def elements = Iterator.fromString(str)
+    def apply(n: Int) = str.charAt(n)
+    override def hashCode(): Int = str.hashCode()
+    override def equals(y: Any): Boolean = (str == y)
+    override protected def stringPrefix: String = "String"
   }
 
-  implicit def byte2short(x: byte): short = x.toShort;
-  implicit def byte2int(x: byte): int = x.toInt;
-  implicit def byte2long(x: byte): long = x.toLong;
-  implicit def byte2float(x: byte): float = x.toFloat;
-  implicit def byte2double(x: byte): double = x.toDouble;
+  implicit def byte2short(x: byte): short = x.toShort
+  implicit def byte2int(x: byte): int = x.toInt
+  implicit def byte2long(x: byte): long = x.toLong
+  implicit def byte2float(x: byte): float = x.toFloat
+  implicit def byte2double(x: byte): double = x.toDouble
 
-  implicit def short2int(x: short): int = x.toInt;
-  implicit def short2long(x: short): long = x.toLong;
-  implicit def short2float(x: short): float = x.toFloat;
-  implicit def short2double(x: short): double = x.toDouble;
+  implicit def short2int(x: short): int = x.toInt
+  implicit def short2long(x: short): long = x.toLong
+  implicit def short2float(x: short): float = x.toFloat
+  implicit def short2double(x: short): double = x.toDouble
 
-  implicit def char2int(x: char): int = x.toInt;
-  implicit def char2long(x: char): long = x.toLong;
-  implicit def char2float(x: char): float = x.toFloat;
-  implicit def char2double(x: char): double = x.toDouble;
+  implicit def char2int(x: char): int = x.toInt
+  implicit def char2long(x: char): long = x.toLong
+  implicit def char2float(x: char): float = x.toFloat
+  implicit def char2double(x: char): double = x.toDouble
 
-  implicit def int2long(x: int): long = x.toLong;
-  implicit def int2float(x: int): float = x.toFloat;
-  implicit def int2double(x: int): double = x.toDouble;
+  implicit def int2long(x: int): long = x.toLong
+  implicit def int2float(x: int): float = x.toFloat
+  implicit def int2double(x: int): double = x.toDouble
 
-  implicit def long2float(x: long): float = x.toFloat;
-  implicit def long2double(x: long): double = x.toDouble;
+  implicit def long2float(x: long): float = x.toFloat
+  implicit def long2double(x: long): double = x.toDouble
 
-  implicit def float2double(x: float): double = x.toDouble;
+  implicit def float2double(x: float): double = x.toDouble
 
   implicit def byte2Byte(x: byte) = new java.lang.Byte(x)
   implicit def short2Short(x: short) = new java.lang.Short(x)

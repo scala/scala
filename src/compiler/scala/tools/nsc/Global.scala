@@ -278,6 +278,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object cleanup extends CleanUp {
+    val global: Global.this.type = Global.this
+  }
+
   object sampleTransform extends SampleTransform {
     val global: Global.this.type = Global.this
   }
@@ -324,6 +328,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     constructors,
     flatten,
     mixer,
+    cleanup,
     genicode,
     inliner,
     genJVM,

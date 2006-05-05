@@ -130,7 +130,10 @@ abstract class Pickler extends SubComponent {
     private def putTypes(tps: List[Type]): unit = tps foreach putType;
 
     private def putConstant(c: Constant) =
-      if (putEntry(c) && c.tag == StringTag) putEntry(newTermName(c.stringValue));
+      if (putEntry(c)) {
+        if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
+        else if (c.tag == ClassTag) putEntry(c.typeValue)
+      }
 
 /*
     private def putAttribute(attr: AttrInfo): unit = if (putEntry(attr)) {
@@ -226,6 +229,7 @@ abstract class Pickler extends SubComponent {
 	  else if (c.tag == FloatTag) writeLong(Float.floatToIntBits(c.floatValue))
 	  else if (c.tag == DoubleTag) writeLong(Double.doubleToLongBits(c.doubleValue));
 	  else if (c.tag == StringTag) writeRef(newTermName(c.stringValue));
+	  else if (c.tag == ClassTag) writeRef(c.typeValue);
 	  LITERAL + c.tag
 /*
         case Pair(tp, cs) =>

@@ -143,7 +143,7 @@ trait SequenceMatchers requires TransMatcher  {
       new WordAutomInScala{
         val dfa = dfa1;
         val owner = _m.owner;
-        val optim = settings.target == "jvm";
+        val optim = settings.target.value startsWith "jvm";
         val elementType = elementType1;
       }
     scalaAut.translate();

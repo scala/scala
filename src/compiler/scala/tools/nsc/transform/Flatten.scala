@@ -90,7 +90,7 @@ abstract class Flatten extends InfoTransform {
         case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
           atPhase(phase.next) {
             atPos(tree.pos) {
-              gen.mkRef(sym)
+              gen.mkAttributedRef(sym)
             }
           }
         case _ =>

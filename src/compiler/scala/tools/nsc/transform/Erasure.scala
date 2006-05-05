@@ -155,8 +155,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	atPos(tree.pos) {
           val sym = tree.tpe.symbol;
 	  if (sym == UnitClass) {
-            if (treeInfo.isPureExpr(tree)) gen.mkRef(BoxedUnit_UNIT)
-            else Block(List(tree), gen.mkRef(BoxedUnit_UNIT))
+            if (treeInfo.isPureExpr(tree)) gen.mkAttributedRef(BoxedUnit_UNIT)
+            else Block(List(tree), gen.mkAttributedRef(BoxedUnit_UNIT))
           } else if (sym == ArrayClass) {
 	    val elemClass = tree.tpe.typeArgs.head.symbol;
 	    val boxedClass = if (isValueClass(elemClass)) boxedArrayClass(elemClass)
@@ -164,7 +164,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
           } else {
             val boxedModule = boxedClass(tree.tpe.symbol).linkedModule;
-            Apply(Select(gen.mkRef(boxedModule), nme.box), List(tree))
+            Apply(Select(gen.mkAttributedRef(boxedModule), nme.box), List(tree))
 	  }
         }
       }
@@ -173,7 +173,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def boxArray(tree: Tree): Tree =
       typed {
         atPos(tree.pos) {
-          runtimeCall(nme.boxArray, List(tree))
+          gen.mkRuntimeCall(nme.boxArray, List(tree))
         }
       }
 
@@ -185,9 +185,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         clazzName.substring(1) + "Value")
     }
 
-    private def runtimeCall(meth: Name, args: List[Tree]): Tree =
-      Apply(Select(gen.mkRef(ScalaRunTimeModule), meth), args);
-
     /** Unbox `tree' of boxed type to expected type `pt' */
     private def unbox(tree: Tree, pt: Type): Tree =
       typed {
@@ -198,21 +195,21 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           } else {
             if (pt.symbol == BooleanClass) {
               val tree1 = adaptToType(tree, boxedClass(BooleanClass).tpe);
-              runtimeCall(nme.booleanValue, List(tree1))
+              gen.mkRuntimeCall(nme.booleanValue, List(tree1))
             } else if (pt.symbol == ArrayClass) {
               val tree1 = adaptToType(tree, BoxedArrayClass.tpe);
               val elemClass = pt.typeArgs.head.symbol;
               val elemTag =
                 if (isValueClass(elemClass))
-                  runtimeCall(newTermName(elemClass.name.toString() + "Tag"), List())
+                  gen.mkRuntimeCall(newTermName(elemClass.name.toString() + "Tag"), List())
                 else
                   Literal(signature(pt.typeArgs.head));
               //System.out.println("unboxing " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
-              runtimeCall(nme.arrayValue, List(tree1, elemTag))
+              gen.mkRuntimeCall(nme.arrayValue, List(tree1, elemTag))
             } else {
 	      assert(isNumericValueClass(pt.symbol));
               val tree1 = adaptToType(tree, BoxedNumberClass.tpe);
-              runtimeCall(unboxOp(pt), List(tree1))
+              gen.mkRuntimeCall(unboxOp(pt), List(tree1))
             }
           }
         }
@@ -223,14 +220,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	typed {
 	  atPos(tree.pos) {
 	    evalOnce(tree, x =>
-	      gen.cast(
+	      gen.mkAttributedCast(
 		If(
 		  Apply(
 		    TypeApply(
 		      Select(x(), Object_isInstanceOf),
 		      List(TypeTree(BoxedArrayClass.tpe))),
 		    List()),
-		  unbox(gen.cast(x(), BoxedArrayClass.tpe), pt),
+		  unbox(gen.mkAttributedCast(x(), BoxedArrayClass.tpe), pt),
 		  x()),
 		pt))
 	  }
@@ -239,7 +236,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         typed {
 	  atPos(tree.pos) {
 	    evalOnce(tree, x =>
-	      gen.cast(
+	      gen.mkAttributedCast(
 		If(
 		  Apply(
 		    TypeApply(
@@ -251,7 +248,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 		pt))
 	  }
         }
-      else gen.cast(tree, pt);
+      else gen.mkAttributedCast(tree, pt);
 
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
     private def isUnboxedArrayMember(sym: Symbol) = (

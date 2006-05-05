@@ -246,7 +246,7 @@ abstract class Mixin extends InfoTransform {
       }
     }
 
-    private def selfRef(pos: int) = gen.Ident(self) setPos pos;
+    private def selfRef(pos: int) = gen.mkAttributedIdent(self) setPos pos;
 
     private def staticRef(sym: Symbol) = {
       sym.owner.info;
@@ -254,7 +254,7 @@ abstract class Mixin extends InfoTransform {
       if (sym.owner.sourceModule == NoSymbol) {
 	assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner + " " + sym.owner.owner.info.decls.toList);//debug
       }
-      Select(gen.mkRef(sym.owner.sourceModule), sym);
+      Select(gen.mkAttributedRef(sym.owner.sourceModule), sym);
     }
 
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
@@ -319,7 +319,7 @@ abstract class Mixin extends InfoTransform {
 	    } else {
 	      assert(sym.alias != NoSymbol, sym);
 	      addDefDef(sym, vparams =>
-		Apply(staticRef(sym.alias), gen.This(clazz) :: (vparams map Ident)))
+		Apply(staticRef(sym.alias), gen.mkAttributedThis(clazz) :: (vparams map Ident)))
 	    }
 	  }
 	}
@@ -350,7 +350,7 @@ abstract class Mixin extends InfoTransform {
                 val qual1 =
                   if (!qual.isInstanceOf[Super]) qual
                   else if (currentOwner.enclClass.isImplClass) selfRef(qual.pos)
-                  else gen.This(currentOwner.enclClass);
+                  else gen.mkAttributedThis(currentOwner.enclClass);
                 Apply(staticRef(target), qual1 :: args)
               }
             }

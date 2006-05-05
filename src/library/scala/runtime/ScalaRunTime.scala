@@ -24,6 +24,16 @@ object ScalaRunTime {
   val DoubleTag = ".Double";
   val BooleanTag = ".Boolean";
 
+  val ByteTYPE = java.lang.Byte.TYPE
+  val ShortTYPE = java.lang.Short.TYPE
+  val CharTYPE = java.lang.Character.TYPE
+  val IntTYPE = java.lang.Integer.TYPE
+  val LongTYPE = java.lang.Long.TYPE
+  val FloatTYPE = java.lang.Float.TYPE
+  val DoubleTYPE = java.lang.Double.TYPE
+  val BooleanTYPE = java.lang.Boolean.TYPE
+  val UnitTYPE = java.lang.Void.TYPE
+
   def isValueTag(tag: String) = tag.charAt(0) == '.'
 
   abstract class Try[a] {

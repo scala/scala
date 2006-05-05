@@ -34,6 +34,7 @@ trait Definitions requires SymbolTable {
     var AllRefClass: Symbol = _;
     var AllClass: Symbol = _;
 
+    var ClassClass: Symbol = _;
     var StringClass: Symbol = _;
     var ThrowableClass: Symbol = _;
     var NullPointerExceptionClass: Symbol = _;
@@ -75,6 +76,7 @@ trait Definitions requires SymbolTable {
     var ArrayClass: Symbol = _;
     var SerializableClass: Symbol = _;
     var PredefModule: Symbol = _;
+      def Predef_classOf = getMember(PredefModule, nme.classOf)
     var ConsoleModule: Symbol = _;
     var MatchErrorClass: Symbol = _;
     var MatchErrorModule: Symbol = _;
@@ -444,6 +446,7 @@ trait Definitions requires SymbolTable {
       AllClass = newClass(ScalaPackageClass, nme.All, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL);
 
+      ClassClass = getClass("java.lang.Class");
       StringClass = getClass("java.lang.String");
       ThrowableClass = getClass("java.lang.Throwable");
       NullPointerExceptionClass = getClass("java.lang.NullPointerException");

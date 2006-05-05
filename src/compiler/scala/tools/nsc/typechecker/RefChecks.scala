@@ -61,20 +61,12 @@ abstract class RefChecks extends InfoTransform {
   }
 
   // def m: T = { if (m$ == null) m$ = new m$class; m$ }
-  def newModuleAccessDef(accessor: Symbol, mvar: Symbol) = {
-    var mvarRef = if (mvar.owner.isClass) Select(This(mvar.owner), mvar) else Ident(mvar);
+  def newModuleAccessDef(accessor: Symbol, mvar: Symbol) =
     DefDef(accessor, vparamss =>
-      Block(
-	List(
-	  If(
-	    Apply(Select(mvarRef, nme.eq), List(Literal(Constant(null)))),
-	    Assign(mvarRef,
-                   New(TypeTree(mvar.tpe),
-                       List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
-                            yield This(accessor.owner.enclClass)))),//???
-	    EmptyTree)),
-	mvarRef))
-  }
+      gen.mkCached(mvar,
+        New(TypeTree(mvar.tpe),
+            List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
+                 yield This(accessor.owner.enclClass)))))
 
   // def m: T;
   def newModuleAccessDcl(accessor: Symbol) =
@@ -619,7 +611,7 @@ abstract class RefChecks extends InfoTransform {
                 val tree1 = Select(This(base), superAcc);
                 if (settings.debug.value) log("super-replacement: " + tree + "=>" + tree1);
                 result = atPos(tree.pos) {
-                  Select(gen.This(base), superAcc) setType superAcc.tpe
+                  Select(gen.mkAttributedThis(base), superAcc) setType superAcc.tpe
                 }
 	      }
             case This(_) =>

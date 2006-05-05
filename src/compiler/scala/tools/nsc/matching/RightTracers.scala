@@ -256,7 +256,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
                        tmapBody.get(I).asInstanceOf[Tree] ) :: ncases;
       //i = i + 1
     }
-    //gen.Switch( gen.Ident( pos, targetSym ),
+    //gen.Switch( gen.mkAttributedIdent( pos, targetSym ),
     //           tags,
     //           targets,
     //           code_error()/*cannot happen*/ );
@@ -314,7 +314,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
       //j = j + 1;
     }
     if( n > 0 )
-      //gen.Switch( gen.Ident( pos, targetSym ), tags, targets, code_error() );
+      //gen.Switch( gen.mkAttributedIdent( pos, targetSym ), tags, targets, code_error() );
       Match(Ident( targetSym ), ncases);
     else
       code_error();
@@ -438,7 +438,7 @@ abstract class RightTracerInScala  extends Autom2Scala {
     var it = vars.iterator();
     while(it.hasNext()) {
       val vble = it.next().asInstanceOf[Symbol];
-      val rhs = gen.Ident( curSym );
+      val rhs = gen.mkAttributedIdent( curSym );
       stms = prependToHelpVar( vble , rhs) :: stms;
     }
 

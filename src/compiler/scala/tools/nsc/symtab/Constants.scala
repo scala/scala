@@ -2,7 +2,6 @@
  * Copyright 2005 LAMP/EPFL
  * @author  Martin Odersky
  */
-
 // $Id$
 
 package scala.tools.nsc.symtab;
@@ -24,9 +23,10 @@ trait Constants requires SymbolTable {
   final val DoubleTag  = LITERALdouble - LITERAL;
   final val StringTag  = LITERALstring - LITERAL;
   final val NullTag    = LITERALnull - LITERAL;
-  final val ZeroTag    = LITERALzero - LITERAL;
+  final val ClassTag   = LITERALclass - LITERAL;
 
   case class Constant(value: Any) {
+
     val tag: int =
       if (value.isInstanceOf[unit]) UnitTag
       else if (value.isInstanceOf[boolean]) BooleanTag
@@ -38,6 +38,7 @@ trait Constants requires SymbolTable {
       else if (value.isInstanceOf[float]) FloatTag
       else if (value.isInstanceOf[double]) DoubleTag
       else if (value.isInstanceOf[String]) StringTag
+      else if (value.isInstanceOf[Type]) ClassTag
       else if (value == null) NullTag
       else throw new Error("bad constant value: " + value);
 
@@ -53,6 +54,7 @@ trait Constants requires SymbolTable {
       case DoubleTag  => DoubleClass.tpe
       case StringTag  => StringClass.tpe
       case NullTag    => AllRefClass.tpe
+      case ClassTag   => ClassClass.tpe
     }
 
     /** We need the equals method to take account of tags as well as values */
@@ -184,10 +186,13 @@ trait Constants requires SymbolTable {
     }
 
     def stringValue: String =
-      if (value == null) "null" else value.toString();
+      if (value == null) "null"
+      else if (tag == ClassTag) signature(typeValue)
+      else value.toString();
+
+    def typeValue: Type = value.asInstanceOf[Type]
 
     override def hashCode(): int =
       if (value == null) 0 else value.hashCode() * 41 + 17;
   }
-
 }

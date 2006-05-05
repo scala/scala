@@ -474,8 +474,6 @@ trait Trees requires Global {
       // if (pos == 74) Thread.dumpStack();
       ret;
     }
-
-
   }
 
   def Select(qualifier: Tree, sym: Symbol): Select =

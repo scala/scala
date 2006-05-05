@@ -60,7 +60,7 @@ abstract class SuperAccessors extends transform.Transform {
 	    accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
 	  }
 	  atPos(sup.pos) {
-	    Select(gen.This(clazz), superAcc) setType tree.tpe;
+	    Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
 	  }
 	} else tree
       case Apply(fn, args) =>

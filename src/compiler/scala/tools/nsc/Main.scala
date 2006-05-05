@@ -54,7 +54,7 @@ object Main extends Object with EvalLoop {
         if (command.settings.resident.value)
           resident(compiler);
         else if (command.files.isEmpty)
-            reporter.info(null, command.usageMsg, true)
+          reporter.info(null, command.usageMsg, true)
         else {
           val run = new compiler.Run
           run compile command.files

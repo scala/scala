@@ -201,7 +201,7 @@ abstract class LiftCode extends Transform {
       case x: Double => Literal(Constant(x))
       case c: CaseClass =>
         val name = objectName(c);
-        if (name.length() != 0) gen.mkRef(definitions.getModule(name))
+        if (name.length() != 0) gen.mkAttributedRef(definitions.getModule(name))
         else {
           val name = className(c);
           if (name.length() == 0) throw new Error("don't know how to inject " + value);
@@ -210,7 +210,7 @@ abstract class LiftCode extends Transform {
             injectedArgs += inject(c.caseElement(i));
           New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
         }
-      case null => gen.mkRef(definitions.getModule("scala.reflect.NoType"))
+      case null => gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
       case _ => throw new Error("don't know how to inject " + value);
     }
 
@@ -261,3 +261,4 @@ abstract class LiftCode extends Transform {
 // case Alternative(trees) =>
 // case Star(elem) =>
 // case Bind(name, body) =>
+

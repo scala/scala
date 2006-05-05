@@ -244,6 +244,7 @@ abstract class UnPickler {
 	case LITERALdouble  => Constant(Double.longBitsToDouble(readLong(len)))
 	case LITERALstring  => Constant(readNameRef().toString())
 	case LITERALnull    => Constant(null)
+	case LITERALclass   => Constant(readTypeRef())
 	case _              => errorBadSignature("bad constant tag: " + tag)
       }
     };

@@ -10,6 +10,8 @@ import util.ListBuffer;
 import symtab.Flags;
 import Tokens._;
 
+//todo verify when stableId's should be just plain qualified type ids
+
 /** Performs the following context-free rewritings:
  *  (1) Places all pattern variables in Bind nodes. In a pattern, for identifiers `x':
  *                 x  => x @ _
@@ -236,7 +238,6 @@ trait Parsers requires SyntaxAnalyzer {
       case Select(qual, name) =>
 	Select(qual, name.toTypeName).setPos(tree.pos)
       case _ =>
-        System.out.println(tree);//debug
 	syntaxError(tree.pos, "identifier expected", false);
 	errorTypeTree
     }
@@ -348,14 +349,14 @@ trait Parsers requires SyntaxAnalyzer {
       if (in.token == THIS) {
 	t = atPos(in.skipToken()) { This(nme.EMPTY.toTypeName) }
 	if (!thisOK || in.token == DOT)
-	  t =  { selectors(t, typeOK, accept(DOT)) }
+	  t =  selectors(t, typeOK, accept(DOT))
       } else if (in.token == SUPER) {
 	t = atPos(in.skipToken()) {
 	  Super(nme.EMPTY.toTypeName, mixinQualifierOpt())
 	}
 	t = atPos(accept(DOT)) { selector(t) }
 	if (in.token == DOT)
-	  t = { selectors(t, typeOK, in.skipToken()) }
+	  t = selectors(t, typeOK, in.skipToken())
       } else {
 	val i = atPos(in.currentPos) { Ident(ident()) }
 	t = i;
@@ -365,15 +366,15 @@ trait Parsers requires SyntaxAnalyzer {
 	    in.nextToken();
 	    t = atPos(i.pos) { This(i.name.toTypeName) }
 	    if (!thisOK || in.token == DOT)
-	      t = { selectors(t, typeOK, accept(DOT)) }
+	      t = selectors(t, typeOK, accept(DOT))
 	  } else if (in.token == SUPER) {
 	    in.nextToken();
 	    t = atPos(i.pos) { Super(i.name.toTypeName, mixinQualifierOpt()) }
-	    t = atPos(accept(DOT)) { selector(t)}
+	    t = atPos(accept(DOT)) {selector(t)}
 	    if (in.token == DOT)
-	      t = { selectors(t, typeOK, in.skipToken()) }
+	      t = selectors(t, typeOK, in.skipToken())
 	  } else {
-	    t = { selectors(t, typeOK, pos) }
+	    t = selectors(t, typeOK, pos)
 	  }
 	}
       }
@@ -804,6 +805,7 @@ trait Parsers requires SyntaxAnalyzer {
      * SimpleExpr1   ::= literal
      *                | xLiteral
      *                | Path
+     *                | StableId `.' class
      *                | `(' [Expr] `)'
      *                | BlockExpr
      *                | SimpleExpr `.' Id
@@ -874,7 +876,7 @@ trait Parsers requires SyntaxAnalyzer {
       while (true) {
 	in.token match {
 	  case DOT =>
-	    t = atPos(in.skipToken()) { selector(t) }
+            t = atPos(in.skipToken()) { selector(t) }
 	  case LBRACKET =>
 	    t match {
 	      case Ident(_) | Select(_, _) =>

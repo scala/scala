@@ -1005,7 +1005,10 @@ trait Typers requires Analyzer {
           if (tparams.length == args.length) {
             val targs = args map (.tpe)
             checkBounds(tree.pos, tparams, targs, "")
-            copy.TypeApply(tree, fun, args) setType restpe.subst(tparams, targs)
+            if (fun.symbol == Predef_classOf)
+              Literal(Constant(targs.head)) setPos tree.pos setType ClassClass.tpe
+            else
+              copy.TypeApply(tree, fun, args) setType restpe.subst(tparams, targs)
           } else {
             errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun))
           }
@@ -1237,7 +1240,7 @@ trait Typers requires Analyzer {
             else if (!defSym.owner.isClass || defSym.owner.isPackageClass || defSym.isTypeParameterOrSkolem)
               pre = NoPrefix
             else
-              qual = atPos(tree.pos)(gen.mkQualifier(pre))
+              qual = atPos(tree.pos)(gen.mkAttributedQualifier(pre))
           } else {
             if (impSym.exists) {
               var impSym1 = NoSymbol
@@ -1568,7 +1571,6 @@ trait Typers requires Analyzer {
           else
             typedIdent(name)
 
-        // todo: try with case Literal(Constant(()))
         case Literal(value) =>
           tree setType (
             if (value.tag == UnitTag) UnitClass.tpe

@@ -226,6 +226,7 @@ trait StdNames requires SymbolTable {
     val caseElement = newTermName("caseElement");
     val caseName = newTermName("caseName");
     val checkCastability = newTermName("checkCastability");
+    val classOf = newTermName("classOf");
     val coerce = newTermName("coerce");
     val defaultValue = newTermName("defaultValue");
     val dummy = newTermName("$dummy");
@@ -235,11 +236,11 @@ trait StdNames requires SymbolTable {
     val equals_ = newTermName("equals");
     val ex = newTermName("ex");
     val fail = newTermName("fail");
-    val report = newTermName("report");
     val false_ = newTermName("false");
     val filter = newTermName("filter");
     val finalize_ = newTermName("finalize");
     val flatMap = newTermName("flatMap");
+    val forName = newTermName("forName");
     val foreach = newTermName("foreach");
     val getClass_ = newTermName("getClass");
     val hasAsInstance = newTermName("hasAsInstance");
@@ -263,6 +264,7 @@ trait StdNames requires SymbolTable {
     val null_ = newTermName("null");
     val predef = newTermName("predef");
     val print = newTermName("print");
+    val report = newTermName("report");
     val runtime = newTermName("runtime");
     val readResolve = newTermName("readResolve");
     val scala_ = newTermName("scala");

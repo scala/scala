@@ -96,8 +96,8 @@ abstract class ExplicitOuter extends InfoTransform {
     /** The first outer selection from currently transformed tree
      */
     protected def outerValue: Tree =
-      if (outerParam != NoSymbol) gen.Ident(outerParam)
-      else outerSelect(gen.This(currentOwner.enclClass));
+      if (outerParam != NoSymbol) gen.mkAttributedIdent(outerParam)
+      else outerSelect(gen.mkAttributedThis(currentOwner.enclClass));
 
     /** The path
      *     `base'.$outer ... .$outer
@@ -295,13 +295,13 @@ abstract class ExplicitOuter extends InfoTransform {
                 //System.out.println("adding mixin constructor for " + currentOwner.enclClass + " " + mclazz + " " + currentOwner.enclClass.thisType.baseType(mclazz));//DEBUG
                 var pre = currentOwner.enclClass.thisType.baseType(mclazz).prefix;
                 if (pre == NoPrefix) pre = outerClass(mclazz).thisType;
-                gen.mkQualifier(pre)
+                gen.mkAttributedQualifier(pre)
               } else if (qual.isInstanceOf[This]) {
                 assert(outerParam != NoSymbol); outerValue
               } else {
                 var pre = qual.tpe.prefix;
                 if (pre == NoPrefix) pre = outerClass(sym.owner).thisType;
-                gen.mkQualifier(pre)
+                gen.mkAttributedQualifier(pre)
               }
             }
 	    copy.Apply(tree, sel, args ::: List(outerVal))

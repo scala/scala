@@ -57,10 +57,10 @@ abstract class Constructors extends Transform {
         override def transform(tree: Tree): Tree = tree match {
           case Apply(Select(This(_), _), List())
           if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-            gen.Ident(parameter(tree.symbol.accessed)) setPos tree.pos;
-          case Select(This(_), _)
-          if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-            gen.Ident(parameter(tree.symbol)) setPos tree.pos;
+            gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos;
+	  case Select(This(_), _)
+	  if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
+	    gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case This(_) =>
             thisRefSeen = true;
             super.transform(tree)

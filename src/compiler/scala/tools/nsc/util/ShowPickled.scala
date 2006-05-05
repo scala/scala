@@ -44,7 +44,7 @@ object ShowPickled extends Names {
     case LITERALdouble => "LITERALdouble";
     case LITERALstring => "LITERALstring";
     case LITERALnull => "LITERALnull";
-    case LITERALzero => "LITERALzero";
+    case LITERALclass => "LITERALclass";
     case _ => "***BAD TAG***(" + tag + ")";
   }
 

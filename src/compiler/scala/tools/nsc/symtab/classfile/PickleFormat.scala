@@ -43,7 +43,7 @@ object PickleFormat {
  *                  | 32 LITERALdouble len_Nat value_Long
  *                  | 33 LITERALstring len_Nat name_Ref
  *                  | 34 LITERALnull len_Nat
- *                  | 35 LITERALzero len_Nat
+ *                  | 35 LITERALclass len_Nat type_Ref
  *                  | 40 ATTRIBUTE sym_Ref type_Ref {constant_Ref}  <not yet>
  *                  | 72 PosTYPEsym len_Nat pos_Nat SymbolInfo
  *                  | 73 PosALIASsym len_Nat pos_Nat SymbolInfo
@@ -94,7 +94,7 @@ object PickleFormat {
   final val LITERALdouble = 32;
   final val LITERALstring = 33;
   final val LITERALnull = 34;
-  final val LITERALzero = 35;
+  final val LITERALclass = 35;
   final val ATTRIBUTE = 40;
 
   final val firstSymTag = NONEsym;

@@ -260,6 +260,7 @@ abstract class TreePrinters {
           print(x.tag match {
             case NullTag => "null"
             case StringTag => "\"" + x.stringValue + "\""
+            case ClassTag => x.stringValue + ".class"
             case CharTag => "\'" + x.charValue + "\'"
 	    case LongTag => x.longValue.toString() + "L";
             case _ => x.value.toString()

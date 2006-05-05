@@ -238,21 +238,21 @@ abstract class LambdaLift extends InfoTransform {
 
     private def memberRef(sym: Symbol) = {
       val clazz = sym.owner.enclClass
-      val qual = if (clazz == currentOwner.enclClass) gen.This(clazz)
-                 else {
-                   sym resetFlag(LOCAL | PRIVATE)
-                   if (clazz.isStaticOwner) gen.mkQualifier(clazz.thisType)
-                   else outerPath(outerValue, clazz)
-                 }
+      val qual = if (clazz == currentOwner.enclClass) gen.mkAttributedThis(clazz)
+		 else {
+		   sym resetFlag(LOCAL | PRIVATE);
+		   if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
+		   else outerPath(outerValue, clazz)
+		 }
       Select(qual, sym) setType sym.tpe
     }
 
     private def proxyRef(sym: Symbol) = {
       if (sym.owner.isLabel) //
-        gen.Ident(sym)      // bq: account for the fact that LambdaLift does not know how to handle references to LabelDef parameters.
+        gen.mkAttributedIdent(sym)      // bq: account for the fact that LambdaLift does not know how to handle references to LabelDef parameters.
       else {                 //
         val psym = proxy(sym);
-        if (psym.isLocal) gen.Ident(psym) else memberRef(psym)
+        if (psym.isLocal) gen.mkAttributedIdent(psym) else memberRef(psym)
       }
     }
 
@@ -334,7 +334,7 @@ abstract class LambdaLift extends InfoTransform {
             atPos(tree.pos) {
               val tp = tree.tpe
               val elemTree = typed { Select(tree1 setType sym.tpe, nme.elem) }
-              if (elemTree.tpe.symbol != tp.symbol) gen.cast(elemTree, tp) else elemTree
+              if (elemTree.tpe.symbol != tp.symbol) gen.mkAttributedCast(elemTree, tp) else elemTree
             }
           else tree1
         case _ =>

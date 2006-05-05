@@ -212,7 +212,7 @@ trait CodeFactory requires TransMatcher  {
 /*
  Apply(
       TypeApply(
-        gen.mkRef(definitions.MatchError_fail),
+        gen.mkAttributedRef(definitions.MatchError_fail),
         List(TypeTree(tpe))
       ),
       List(
@@ -225,7 +225,7 @@ trait CodeFactory requires TransMatcher  {
   /* // ?!
   def ThrowMatchError(pos:int , tree:Tree ) =
    Apply(
-     gen.mkRef(definitions.MatchError_report),
+     gen.mkAttributedRef(definitions.MatchError_report),
      List(
        Literal(cunit.toString()),
        Literal(Position.line(cunit.source, pos)),
@@ -242,7 +242,7 @@ trait CodeFactory requires TransMatcher  {
   def newPair(left: Tree, right: Tree) =
     New(
       Apply(
-        gen.mkRef(definitions.TupleClass(2)),
+        gen.mkAttributedRef(definitions.TupleClass(2)),
         List(left,right)
       )
     );

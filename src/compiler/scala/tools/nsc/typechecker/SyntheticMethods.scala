@@ -44,7 +44,7 @@ trait SyntheticMethods requires Analyzer {
     def caseElementMethod: Tree = {
       val method = syntheticMethod(
 	nme.caseElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe));
-      val caseFields = clazz.caseFieldAccessors map gen.mkRef;
+      val caseFields = clazz.caseFieldAccessors map gen.mkAttributedRef;
       typed(
 	DefDef(method, vparamss =>
 	  if (caseFields.isEmpty) Literal(Constant(null))
@@ -83,7 +83,7 @@ trait SyntheticMethods requires Analyzer {
       val method = syntheticMethod(
 	name, 0, MethodType(target.tpe.paramTypes.tail, target.tpe.resultType));
       typed(DefDef(method, vparamss =>
-	Apply(gen.mkRef(target), This(clazz) :: (vparamss.head map Ident))));
+	Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))));
     }
 
     def isSerializable(clazz: Symbol): Boolean =
@@ -94,7 +94,7 @@ trait SyntheticMethods requires Analyzer {
       // but then it is renamed !!!
       val method = newSyntheticMethod(nme.readResolve, PROTECTED,
                                       MethodType(List(), ObjectClass.tpe));
-      typed(DefDef(method, vparamss => gen.mkRef(clazz.sourceModule)))
+      typed(DefDef(method, vparamss => gen.mkAttributedRef(clazz.sourceModule)))
     }
 
     def newAccessorMethod(tree: Tree): Tree = tree match {
@@ -136,7 +136,7 @@ trait SyntheticMethods requires Analyzer {
       if (getter != NoSymbol)
         ts += typed(DefDef(
           getter,
-          vparamss => if (sym hasFlag DEFERRED) EmptyTree else gen.mkRef(sym)))
+          vparamss => if (sym hasFlag DEFERRED) EmptyTree else gen.mkAttributedRef(sym)))
     }
 
     def addBeanSetterMethod(sym: Symbol) = {
@@ -146,7 +146,7 @@ trait SyntheticMethods requires Analyzer {
           setter,
           vparamss =>
             if (sym hasFlag DEFERRED) EmptyTree
-            else Apply(gen.mkRef(sym), List(Ident(vparamss.head.head)))))
+            else Apply(gen.mkAttributedRef(sym), List(Ident(vparamss.head.head)))))
     }
 
     if (!phase.erasedTypes) {

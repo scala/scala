@@ -18,16 +18,16 @@ abstract class TreeGen {
 
   /** Builds a reference to value whose type is given stable prefix.
    */
-  def mkQualifier(tpe: Type): Tree = tpe match {
+  def mkAttributedQualifier(tpe: Type): Tree = tpe match {
     case NoPrefix =>
       EmptyTree
     case ThisType(clazz) =>
-      if (clazz.isRoot || clazz.isEmptyPackageClass) EmptyTree else This(clazz)
+      if (clazz.isRoot || clazz.isEmptyPackageClass) EmptyTree else mkAttributedThis(clazz)
     case SingleType(pre, sym) =>
       if (sym.isThisSkolem) {
-        mkQualifier(ThisType(sym.deSkolemize))
+        mkAttributedQualifier(ThisType(sym.deSkolemize))
       } else {
-        val qual = mkStableRef(pre, sym);
+        val qual = mkAttributedStableRef(pre, sym);
         qual.tpe match {
           case MethodType(List(), restpe) =>
             Apply(qual, List()) setType restpe
@@ -38,27 +38,27 @@ abstract class TreeGen {
     case TypeRef(pre, sym, args) =>
       assert(phase.erasedTypes);
       if (sym.isModuleClass && !sym.isRoot) {
-        val qual = Select(mkQualifier(sym.owner.tpe), sym.sourceModule);
+        val qual = mkAttributedSelect(mkAttributedQualifier(sym.owner.tpe), sym.sourceModule);
         qual.tpe match {
 	  case MethodType(List(), restpe) =>
 	    Apply(qual, List()) setType restpe
           case _ =>
             qual
         }
-      } else This(sym)
+      } else mkAttributedThis(sym)
     case _ =>
       throw new Error("bad qualifier: " + tpe)
   }
 
   /** Builds a reference to given symbol with given stable prefix. */
-  def mkRef(pre: Type, sym: Symbol): Tree  = {
-    val qual = mkQualifier(pre);
-    if (qual == EmptyTree) Ident(sym) else Select(qual, sym)
+  def mkAttributedRef(pre: Type, sym: Symbol): Tree  = {
+    val qual = mkAttributedQualifier(pre);
+    if (qual == EmptyTree) mkAttributedIdent(sym) else mkAttributedSelect(qual, sym)
   }
 
   /** Builds a reference to given symbol. */
-  def mkRef(sym: Symbol): Tree =
-    if (sym.owner.isClass) mkRef(sym.owner.thisType, sym) else Ident(sym);
+  def mkAttributedRef(sym: Symbol): Tree =
+    if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym) else mkAttributedIdent(sym);
 
   /** Replaces tree type with a stable type if possible */
   def stabilize(tree: Tree): Tree = tree match {
@@ -66,43 +66,46 @@ abstract class TreeGen {
       if (tree.symbol.isStable) tree.setType(singleType(tree.symbol.owner.thisType, tree.symbol))
       else tree
     case Select(qual, _) =>
-      if (tree.symbol.isStable && qual.tpe.isStable) tree.setType(singleType(qual.tpe, tree.symbol))
+      assert(tree.symbol != null);
+      assert(qual.tpe != null)
+      if (tree.symbol.isStable && qual.tpe.isStable)
+        tree.setType(singleType(qual.tpe, tree.symbol))
       else tree
     case _ =>
       tree
   }
 
   /** Cast `tree' to type `pt' */
-  def cast(tree: Tree, pt: Type): Tree = {
+  def mkAttributedCast(tree: Tree, pt: Type): Tree = {
     if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt);
     assert(!tree.tpe.isInstanceOf[MethodType], tree);
     typer.typed {
       atPos(tree.pos) {
-	Apply(TypeApply(Select(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
+	Apply(TypeApply(mkAttributedSelect(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
       }
     }
   }
 
   /** Builds a reference with stable type to given symbol */
-  def mkStableRef(pre: Type, sym: Symbol): Tree  = stabilize(mkRef(pre, sym));
-  def mkStableRef(sym: Symbol): Tree  = stabilize(mkRef(sym));
+  def mkAttributedStableRef(pre: Type, sym: Symbol): Tree  = stabilize(mkAttributedRef(pre, sym));
+  def mkAttributedStableRef(sym: Symbol): Tree  = stabilize(mkAttributedRef(sym));
 
-  def This(sym: Symbol): Tree =
-    global.This(sym.name) setSymbol sym setType sym.thisType;
+  def mkAttributedThis(sym: Symbol): Tree =
+    This(sym.name) setSymbol sym setType sym.thisType;
 
-  def Ident(sym: Symbol): Tree = {
+  def mkAttributedIdent(sym: Symbol): Tree = {
     assert(sym.isTerm);
-    global.Ident(sym.name) setSymbol sym setType sym.tpe;
+    Ident(sym.name) setSymbol sym setType sym.tpe;
   }
 
-  def Select(qual: Tree, sym: Symbol): Tree =
+  def mkAttributedSelect(qual: Tree, sym: Symbol): Tree =
     if (qual.symbol != null &&
         (qual.symbol.name.toTermName == nme.ROOT ||
          qual.symbol.name.toTermName == nme.EMPTY_PACKAGE_NAME)) {
-      this.Ident(sym)
+      mkAttributedIdent(sym)
     } else {
       assert(sym.isTerm);
-      val result = global.Select(qual, sym.name) setSymbol sym;
+      val result = Select(qual, sym.name) setSymbol sym;
       if (qual.tpe != null) result setType qual.tpe.memberType(sym);
       result
     }
@@ -119,7 +122,7 @@ abstract class TreeGen {
         */
     Apply(
       TypeApply(
-        Select(value, sym),
+        mkAttributedSelect(value, sym),
         List(TypeTree(tpe))),
       List())
   }
@@ -138,7 +141,7 @@ abstract class TreeGen {
 
     Apply(
       TypeApply(
-        Select(value, sym),
+        mkAttributedSelect(value, sym),
         List(TypeTree(tpe))),
       List())
   }
@@ -150,14 +153,27 @@ abstract class TreeGen {
 
   /** Builds a list with given head and tail. */
   def mkNewCons(head: Tree, tail: Tree):  Tree =
-    New(Apply(mkRef(definitions.ConsClass), List(head,tail)));
+    New(Apply(mkAttributedRef(definitions.ConsClass), List(head,tail)));
 
   /** Builds a list with given head and tail. */
   def mkNil: Tree =
-    mkRef(definitions.NilModule);
+    mkAttributedRef(definitions.NilModule);
 
   /** Builds a pair */
   def mkNewPair(left: Tree, right: Tree) =
-    New(Apply(mkRef(definitions.TupleClass(2)), List(left,right)));
+    New(Apply(mkAttributedRef(definitions.TupleClass(2)), List(left,right)));
 
+  def mkCached(cvar: Symbol, expr: Tree): Tree = {
+    val cvarRef = if (cvar.owner.isClass) Select(This(cvar.owner), cvar) else Ident(cvar);
+    Block(
+      List(
+	If(Apply(Select(cvarRef, nme.eq), List(Literal(Constant(null)))),
+           Assign(cvarRef, expr),
+           EmptyTree)),
+      cvarRef
+    )
+  }
+
+  def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
+    Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args);
 }

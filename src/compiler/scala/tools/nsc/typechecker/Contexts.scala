@@ -29,7 +29,7 @@ trait Contexts requires Analyzer {
     var sc = startContext;
     def addImport(pkg: Symbol): unit = {
       assert(pkg != null);
-      val qual = gen.mkStableRef(pkg);
+      val qual = gen.mkAttributedStableRef(pkg);
       sc = sc.makeNewImport(
         Import(qual, List(Pair(nme.WILDCARD, null)))
         .setSymbol(NoSymbol.newImport(Position.NOPOS).setInfo(ImportType(qual)))
