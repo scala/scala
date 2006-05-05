@@ -71,4 +71,6 @@ final class Array[a](_length: Int) extends Seq[a] {
   def filter(p: a => Boolean): Array[a] = throw new Error();
   def map[b](f: a => b): Array[b] = throw new Error();
   def flatMap[b](f: a => Array[b]): Array[b] = throw new Error();
+  def zip[b](that: Array[b]): Array[Tuple2[a,b]] = throw new Error();
+  def zipWithIndex: Array[Tuple2[a,Int]] = throw new Error();
 }

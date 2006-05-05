@@ -277,6 +277,25 @@ trait Iterator[+A] {
     def next = Pair(Iterator.this.next, that.next);
   }
 
+
+  /** Return an iterator that pairs each element of this iterator
+   *  with its index, counting from 0.
+   *
+   *  @param   <code>start</code> the index of the first element
+   *
+   *  @return  an iterator yielding <code>(a0,0), (a0,1)...</code>
+   *           where <code>ai</code> are the elements from this iterator.
+   */
+  def zipWithIndex = new Iterator[Pair[A, int]] {
+    var idx = 0
+    def hasNext = Iterator.this.hasNext
+    def next = {
+      val ret = Pair(Iterator.this.next, idx)
+      idx = idx + 1
+      ret
+    }
+  }
+
   /** Apply a function <code>f</code> to all elements of this
    *  iterable object.
    *

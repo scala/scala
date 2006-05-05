@@ -79,5 +79,29 @@ abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] 
     Array.concat(tmp: _*)
   }
 
+  final def zip[b](that: Array[b]): Array[Tuple2[Object,b]] = {
+    val len = length
+    if(len != that.length)
+      throw new Error("zipping arrays of different length")
+    val result = new Array[Tuple2[Object,b]](len)
+    var i = 0
+    while (i < len) {
+      result(i) = new Tuple2(this(i), that(i))
+      i = i + 1
+    }
+    result
+  }
+
+  final def zipWithIndex: Array[Tuple2[Object,Int]] = {
+    val len = length
+    val result = new Array[Tuple2[Object,Int]](len)
+    var i = 0
+    while (i < len) {
+      result(i) = new Tuple2(this(i), i)
+      i = i + 1
+    }
+    result
+  }
+
   override final def stringPrefix: String = "Array"
 }

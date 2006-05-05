@@ -101,6 +101,26 @@ object Stream {
       else cons(lo, loop(step(lo)));
     loop(start)
   }
+
+  /**
+   * Create an infinite stream starting at <code>start</code>
+   * and incrementing by step <code>step</code>
+   *
+   * @param start the start value of the stream
+   * @param step the increment value of the stream
+   * @return the stream starting at value <code>start</code>.
+   */
+  def from(start: Int, step: Int): Stream[Int] =
+        cons(start, from(start+step, step))
+
+  /**
+   * Create an infinite stream starting at <code>start</code>
+   * and incrementing by 1.
+   *
+   * @param start the start value of the stream
+   * @return the stream starting at value <code>start</code>.
+   */
+  def from(start: Int): Stream[Int] = from(start, 1)
 }
 
 /**
@@ -230,6 +250,9 @@ trait Stream[+a] extends Seq[a] {
   def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
     if (this.isEmpty || that.isEmpty) Stream.empty
     else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail));
+
+  def zipWithIndex: Stream[Tuple2[a, int]] =
+    zip(Stream.from(0))
 
   def print: unit =
     if (isEmpty) Console.println("Stream.empty")

@@ -958,6 +958,28 @@ sealed abstract class List[+a] extends Seq[a] {
     b.toList
   }
 
+   /** Return an list that pairs each element of this list
+    *  with its index, counting from 0.
+    *
+    *  @param   <code>start</code> the index of the first element
+    *
+    *  @return  an iterator yielding <code>(a0,0), (a0,1)...</code>
+    *           where <code>ai</code> are the elements from this iterator.
+    */
+  def zipWithIndex = {
+    val b = new ListBuffer[Pair[a,int]]
+    var these = this
+    var idx = 0
+
+    while(!these.isEmpty) {
+      b += Pair(these.head, idx)
+      these = these.tail
+      idx = idx + 1
+    }
+
+    b.toList
+  }
+
   /** Returns a list formed from this list and the specified list
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
