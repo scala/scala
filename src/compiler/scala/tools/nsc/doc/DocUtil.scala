@@ -57,7 +57,7 @@ object DocUtil {
       <script type="text/javascript" src={relative + "script.js"}></script>;
 
     def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
-      if (!hasBody) nodes else <body>{nodes}</body>;
+      if (!hasBody) nodes else <body onload="init()">{nodes}</body>;
 
     val dtype = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">";
 

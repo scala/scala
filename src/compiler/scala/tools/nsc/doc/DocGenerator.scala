@@ -66,8 +66,13 @@ abstract class DocGenerator extends Models {
     }
 
     def urlFor(tpe: Type, target: String): NodeSeq = try {
-      if (tpe.symbol.sourceFile == null) Text(tpe.toString());
-      else aref(urlFor(tpe.symbol), target, tpe.toString());
+      if (tpe.symbol.hasFlag(symtab.Flags.JAVA))
+        <a class={tpe.toString().replace('.', '_')} href=""
+          target="contentFrame">{tpe.toString()}</a>
+      else if (tpe.symbol.sourceFile == null)
+        Text(tpe.toString())
+      else
+        aref(urlFor(tpe.symbol), target, tpe.toString());
     } catch {
       case e : Error =>
         //System.err.println("SYM=" + sym);
