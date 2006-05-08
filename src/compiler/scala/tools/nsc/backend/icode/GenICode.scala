@@ -160,7 +160,7 @@ abstract class GenICode extends SubComponent  {
 //                 "Assignment to inexistent local or field: " + lhs.symbol);
         val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info));
         val Some(l) = ctx.method.lookupLocal(lhs.symbol);
-        ctx1.bb.emit(STORE_LOCAL(l, lhs.symbol.isValueParameter), tree.pos);
+        ctx1.bb.emit(STORE_LOCAL(l), tree.pos);
         ctx1
 
       case _ =>
@@ -346,7 +346,7 @@ abstract class GenICode extends SubComponent  {
 
             case None =>
               ctx1.labels += tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (.symbol)));
-              ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
+              ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
               if (settings.debug.value)
                 log("Adding label " + tree.symbol);
           }
@@ -364,7 +364,7 @@ abstract class GenICode extends SubComponent  {
 
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol;
-          val local = new Local(sym, toTypeKind(sym.info));
+          val local = new Local(sym, toTypeKind(sym.info), false);
           ctx.method.addLocal(local);
 
           if (rhs == EmptyTree) {
@@ -377,7 +377,7 @@ abstract class GenICode extends SubComponent  {
           if (rhs != EmptyTree)
             ctx1 = genLoad(rhs, ctx, local.kind);
 
-          ctx1.bb.emit(STORE_LOCAL(local, false), tree.pos);
+          ctx1.bb.emit(STORE_LOCAL(local), tree.pos);
           generatedType = UNIT;
           ctx1
 
@@ -420,7 +420,7 @@ abstract class GenICode extends SubComponent  {
           val returnedKind = toTypeKind(expr.tpe);
           val ctx1 = genLoad(expr, ctx, returnedKind);
           for (val m <- ctx1.monitors) {
-            ctx1.bb.emit(LOAD_LOCAL(m, false));
+            ctx1.bb.emit(LOAD_LOCAL(m));
             ctx1.bb.emit(MONITOR_EXIT());
           }
           ctx1.bb.emit(RETURN(returnedKind), tree.pos);
@@ -447,12 +447,12 @@ abstract class GenICode extends SubComponent  {
                 })
 
               case Bind(name, _) =>
-                val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe));
+                val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false);
                 ctx.method.addLocal(exception);
 
                 Pair(pat.symbol.tpe.symbol, {
                      ctx: Context =>
-                       ctx.bb.emit(STORE_LOCAL(exception, false), pat.pos);
+                       ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
                        val ctx1 = genLoad(finalizer, ctx, UNIT);
                        genLoad(body, ctx1, kind)
                      })
@@ -636,12 +636,12 @@ abstract class GenICode extends SubComponent  {
               ctx1 = afterCtx;
             } else if (code == scalaPrimitives.SYNCHRONIZED) {
               val monitor = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("monitor")).setInfo(definitions.ObjectClass.tpe),
-                                      ANY_REF_CLASS);
+                                      ANY_REF_CLASS, false);
               ctx.method.addLocal(monitor);
 
               ctx1 = genLoadQualifier(fun, ctx1);
               ctx1.bb.emit(DUP(ANY_REF_CLASS));
-              ctx1.bb.emit(STORE_LOCAL(monitor, false));
+              ctx1.bb.emit(STORE_LOCAL(monitor));
               ctx1.bb.emit(MONITOR_ENTER(), tree.pos);
               ctx1.enterSynchronized(monitor);
 
@@ -650,12 +650,12 @@ abstract class GenICode extends SubComponent  {
               ctx1 = ctx1.Try(
                 bodyCtx => {
                   val ctx1 = genLoad(args.head, bodyCtx, expectedType /* toTypeKind(tree.tpe.resultType) */);
-                  ctx1.bb.emit(LOAD_LOCAL(monitor, false));
+                  ctx1.bb.emit(LOAD_LOCAL(monitor));
                   ctx1.bb.emit(MONITOR_EXIT(), tree.pos);
                   ctx1
                 }, List(
                 Pair(NoSymbol, exhCtx => {
-                  exhCtx.bb.emit(LOAD_LOCAL(monitor, false));
+                  exhCtx.bb.emit(LOAD_LOCAL(monitor));
                   exhCtx.bb.emit(MONITOR_EXIT(), tree.pos);
                   exhCtx.bb.emit(THROW());
                   exhCtx.bb.enterIgnoreMode;
@@ -748,7 +748,7 @@ abstract class GenICode extends SubComponent  {
             } else {
               try {
                 val Some(l) = ctx.method.lookupLocal(tree.symbol);
-                ctx.bb.emit(LOAD_LOCAL(l, tree.symbol.isValueParameter), tree.pos);
+                ctx.bb.emit(LOAD_LOCAL(l), tree.pos);
                 generatedType = l.kind;
               } catch {
                 case ex: MatchError =>
@@ -904,7 +904,7 @@ abstract class GenICode extends SubComponent  {
       arg = args.reverse; param = label.params.reverse;
       while (arg != Nil) {
         val Some(l) = ctx.method.lookupLocal(param.head);
-        ctx1.bb.emit(STORE_LOCAL(l, param.head.isValueParameter), arg.head.pos);
+        ctx1.bb.emit(STORE_LOCAL(l), arg.head.pos);
         arg = arg.tail;
         param = param.tail;
       }
@@ -1122,7 +1122,7 @@ abstract class GenICode extends SubComponent  {
           case LabelDef(name, params, rhs) =>
             if (!ctx.labels.contains(tree.symbol)) {
               ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
-              ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info))));
+              ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
             }
             super.traverse(rhs);
 
@@ -1232,7 +1232,7 @@ abstract class GenICode extends SubComponent  {
         case None =>
           eqEqTempVar = ctx.method.symbol.newVariable(l.pos, eqEqTemp);
           eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor);
-          eqEqTempLocal = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass));
+          eqEqTempLocal = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false);
           ctx.method.addLocal(eqEqTempLocal);
       }
 
@@ -1240,17 +1240,17 @@ abstract class GenICode extends SubComponent  {
       ctx1 = genLoad(r, ctx1, ANY_REF_CLASS);
       val tmpNullCtx = ctx1.newBlock;
       val tmpNonNullCtx = ctx1.newBlock;
-      ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal, false), l.pos);
+      ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos);
       ctx1.bb.emit(DUP(ANY_REF_CLASS));
       ctx1.bb.emit(CZJUMP(tmpNullCtx.bb, tmpNonNullCtx.bb, EQ, ANY_REF_CLASS));
       ctx1.bb.close;
 
       tmpNullCtx.bb.emit(DROP(ANY_REF_CLASS), l.pos); // type of AnyRef
-      tmpNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal, false));
+      tmpNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal));
       tmpNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS));
       tmpNullCtx.bb.close;
 
-      tmpNonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal, false), l.pos);
+      tmpNonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos);
       tmpNonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic));
       tmpNonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL));
       tmpNonNullCtx.bb.close;
@@ -1279,7 +1279,7 @@ abstract class GenICode extends SubComponent  {
 
         case vparams :: Nil =>
           for (val p <- vparams)
-            ctx.method.addParam(new Local(p.symbol, toTypeKind(p.symbol.info)));
+            ctx.method.addParam(new Local(p.symbol, toTypeKind(p.symbol.info), true));
           ctx.method.params = ctx.method.params.reverse;
 
         case _ =>

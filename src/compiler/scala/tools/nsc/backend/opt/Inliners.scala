@@ -78,12 +78,12 @@ abstract class Inliners extends SubComponent {
        assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instrcution in block!");
 
        // store the '$this' into the special local
-       val inlinedThis = new Local(caller.symbol.newVariable(instr.pos, freshName("$inlThis")), REFERENCE(definitions.ObjectClass));
+       val inlinedThis = new Local(caller.symbol.newVariable(instr.pos, freshName("$inlThis")), REFERENCE(definitions.ObjectClass), false);
 
        /** buffer for the returned value */
        val retVal =
          if (callee.returnType != UNIT)
-           new Local(caller.symbol.newVariable(instr.pos, freshName("$retVal")), callee.returnType);
+           new Local(caller.symbol.newVariable(instr.pos, freshName("$retVal")), callee.returnType, false);
          else
            null;
 
@@ -106,13 +106,7 @@ abstract class Inliners extends SubComponent {
        /** Map an instruction from the callee to one suitable for the caller. */
        def map(i: Instruction): Instruction = i match {
            case THIS(clasz) =>
-             LOAD_LOCAL(inlinedThis, false);
-
-           case LOAD_LOCAL(local, isArg) if (isArg) =>
-             LOAD_LOCAL(local, false);
-
-           case STORE_LOCAL(local, isArg) if (isArg) =>
-             STORE_LOCAL(local, false);
+             LOAD_LOCAL(inlinedThis);
 
            case JUMP(where) =>
              JUMP(inlinedBlock(where));
@@ -150,9 +144,9 @@ abstract class Inliners extends SubComponent {
 
        // store the arguments into special locals
        callee.params.reverse.foreach { param =>
-         block.emit(STORE_LOCAL(param, false));
+         block.emit(STORE_LOCAL(param));
        }
-       block.emit(STORE_LOCAL(inlinedThis, false));
+       block.emit(STORE_LOCAL(inlinedThis));
 
        // jump to the start block of the callee
        block.emit(JUMP(inlinedBlock(callee.code.startBlock)));
@@ -165,16 +159,14 @@ abstract class Inliners extends SubComponent {
            i match {
              case RETURN(kind) => kind match {
                  case UNIT =>
-                 	 if (!info._2.types.isEmpty) {
-                 	   log("** Dumping useless stack elements");
-                 	   info._2.types foreach { t => inlinedBlock(bb).emit(DROP(t)); }
+                   if (!info._2.types.isEmpty) {
+                     info._2.types foreach { t => inlinedBlock(bb).emit(DROP(t)); }
                    }
                  case _ =>
                    if (info._2.length > 1) {
-                     log("** Dumping useless stack elements");
-                     inlinedBlock(bb).emit(STORE_LOCAL(retVal, false));
+                     inlinedBlock(bb).emit(STORE_LOCAL(retVal));
                      info._2.types.drop(1) foreach { t => inlinedBlock(bb).emit(DROP(t)); }
-                     inlinedBlock(bb).emit(LOAD_LOCAL(retVal, false));
+                     inlinedBlock(bb).emit(LOAD_LOCAL(retVal));
                    }
                }
              case _ => ();
@@ -198,17 +190,18 @@ abstract class Inliners extends SubComponent {
      *  necessary because we use symbols to refer to locals.
      */
     def addLocals(m: IMethod, ls: List[Local]): Unit = {
-      m.locals = m.locals ::: ls;
+      m.locals = m.locals ::: ls map { l => new Local(l.sym, l.kind, false) };
     }
 
     def addLocal(m: IMethod, l: Local): Unit =
-      m.locals = m.locals ::: List(l);
+      addLocals(m, List(l));
 
     val InlineAttr = if (settings.inline.value) global.definitions.getClass("scala.inline").tpe else null;
 
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
+      if (settings.debug.value)
       	log("Analyzing " + cls);
-        cls.methods.foreach { m => analyzeMethod(m)
+      cls.methods.foreach { m => analyzeMethod(m)
      }}
 
 
@@ -239,7 +232,8 @@ abstract class Inliners extends SubComponent {
                     var concreteMethod = msym;
                     if (receiver != msym.owner && receiver != NoSymbol) {
                       concreteMethod = msym.overridingSymbol(receiver);
-                      log("" + i + " has actual receiver: " + receiver);
+                      if (settings.debug.value)
+                        log("" + i + " has actual receiver: " + receiver);
                     }
 
                     if (   classes.contains(receiver)
@@ -249,9 +243,7 @@ abstract class Inliners extends SubComponent {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc != m && (inc.code ne null)
-                              && {
-                                val res = isSafeToInline(m, inc, info._2)
-                                log("isSafeToInline: " + inc + " " + res); res }) {
+                              && isSafeToInline(m, inc, info._2)) {
                             retry = true;
                             count = count + 1;
                             inline(m, bb, i, inc);
@@ -261,7 +253,7 @@ abstract class Inliners extends SubComponent {
                             callsPrivate -= m;
                           }
                         case None =>
-                          log("Couldn't find " + msym.name);
+                          ();
                       }
                     }
 
@@ -316,7 +308,8 @@ abstract class Inliners extends SubComponent {
                 case LOAD_FIELD(f, _) =>
                   if (f.hasFlag(Flags.PRIVATE))
                     if (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR)) {
-                      log("Making not-private symbol out of synthetic: " + f);
+                      if (settings.debug.value)
+                        log("Making not-private symbol out of synthetic: " + f);
                       f.setFlag(Flags.notPRIVATE)
                     } else
                       callsPrivateMember = true;
@@ -324,7 +317,8 @@ abstract class Inliners extends SubComponent {
                 case STORE_FIELD(f, _) =>
                   if (f.hasFlag(Flags.PRIVATE))
                     if (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR)) {
-                      log("Making not-private symbol out of synthetic: " + f);
+                      if (settings.debug.value)
+                        log("Making not-private symbol out of synthetic: " + f);
                       f.setFlag(Flags.notPRIVATE)
                     } else
                       callsPrivateMember = true;

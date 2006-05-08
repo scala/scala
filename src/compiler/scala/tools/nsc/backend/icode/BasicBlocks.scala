@@ -115,6 +115,32 @@ trait BasicBlocks requires ICodes {
       changed
     }
 
+    def replaceInstruction(iold: Instruction, is: List[Instruction]): Boolean = {
+      assert(closed, "Instructions can be replaced only after the basic block is closed");
+
+      var i = 0;
+      var changed = false;
+
+      while (i < instrs.length && (instrs(i) ne iold))
+        i = i + 1;
+
+      if (i < instrs.length) {
+        val newInstrs = new Array[Instruction](instrs.length + is.length - 1);
+        changed = true;
+        System.arraycopy(instrs, 0, newInstrs, 0, i);
+        var j = i;
+        for (val x <- is) {
+          newInstrs(j) = x;
+          j = j + 1;
+        }
+        if (i + 1 < instrs.length - 1)
+          System.arraycopy(instrs, i + 1, newInstrs, j, instrs.length - i - 1)
+        instrs = newInstrs;
+      }
+
+      changed
+    }
+
     /** Replace all instructions found in the map. */
     def subst(map: Map[Instruction, Instruction]) =
       if (!closed) substOnList(map) else {

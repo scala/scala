@@ -25,8 +25,8 @@ import transform._;
 import backend.icode.{ICodes, GenICode, Checkers};
 import backend.ScalaPrimitives;
 import backend.jvm.GenJVM;
-import backend.opt.Inliners;
-import backend.icode.analysis.TypeFlowAnalysis;
+import backend.opt.{Inliners, ClosureElimination};
+import backend.icode.analysis._;
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -66,6 +66,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object analysis extends TypeFlowAnalysis {
+    val global: Global.this.type = Global.this;
+  }
+
+  object copyPropagation extends CopyPropagation {
     val global: Global.this.type = Global.this;
   }
 
@@ -302,6 +306,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object closser extends ClosureElimination {
+    val global: Global.this.type = Global.this
+  }
+
   object genJVM extends GenJVM {
     val global: Global.this.type = Global.this
   }
@@ -331,6 +339,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     cleanup,
     genicode,
     inliner,
+    closser,
     genJVM,
     sampleTransform);
 
@@ -558,8 +567,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val printer = new icodePrinter.TextPrinter(null, icodes.linearizer);
     icodes.classes.values.foreach((cls) => {
       var file = getFile(cls.symbol, ".icode");
-      if (file.exists())
-        file = new File(file.getParentFile(), file.getName() + "1");
+//      if (file.exists())
+//        file = new File(file.getParentFile(), file.getName() + "1");
       try {
         val stream = new FileOutputStream(file);
         printer.setWriter(new PrintWriter(stream, true));

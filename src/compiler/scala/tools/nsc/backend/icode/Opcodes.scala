@@ -17,11 +17,11 @@ import scala.tools.nsc.util.Position;
   case THIS(clasz) =>
   case CONSTANT(const) =>
   case LOAD_ARRAY_ITEM(kind) =>
-  case LOAD_LOCAL(local, isArg) =>
+  case LOAD_LOCAL(local) =>
   case LOAD_FIELD(field, isStatic) =>
   case LOAD_MODULE(module) =>
   case STORE_ARRAY_ITEM(kind) =>
-  case STORE_LOCAL(local, isArg) =>
+  case STORE_LOCAL(local) =>
   case STORE_FIELD(field, isStatic) =>
   case CALL_PRIMITIVE(primitive) =>
   case CALL_METHOD(method, style) =>
@@ -112,7 +112,7 @@ trait Opcodes requires ICodes {
      * Stack: ...
      *    ->: ...:value
      */
-    case class LOAD_LOCAL(local: Local, isArgument: boolean) extends Instruction {
+    case class LOAD_LOCAL(local: Local) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String = "LOAD_LOCAL "+local.toString(); //+isArgument?" (argument)":"";
 
@@ -161,7 +161,7 @@ trait Opcodes requires ICodes {
      * Stack: ...:value
      *    ->: ...
      */
-    case class STORE_LOCAL(local: Local, isArgument: boolean) extends Instruction {
+    case class STORE_LOCAL(local: Local) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String = "STORE_LOCAL "+local.toString(); //+isArgument?" (argument)":"";
 
@@ -195,6 +195,7 @@ trait Opcodes requires ICodes {
         case Test(_,_,true) => 1;
         case Test(_,_,false) => 2;
         case Comparison(_,_) => 2;
+        case Arithmetic(NOT,_) => 1;
         case Arithmetic(_,_) => 2;
         case Logical(_,_) => 2;
         case Shift(_,_) => 2;

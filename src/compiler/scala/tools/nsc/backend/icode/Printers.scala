@@ -87,6 +87,7 @@ abstract class Printers {
       if (!m.isDeferred) {
         println(" {");
         println("locals: " + m.locals.mkString("", ", ", ""));
+        println("startBlock: " + m.code.startBlock);
         println;
         lin.linearize(m) foreach printBlock;
         println("}");

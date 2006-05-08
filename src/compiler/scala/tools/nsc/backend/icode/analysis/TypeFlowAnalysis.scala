@@ -163,7 +163,7 @@ abstract class TypeFlowAnalysis {
           val Pair(INT, ARRAY(elem)) = stack.pop2;
           stack.push(elem);
 
-        case LOAD_LOCAL(local, isArg) =>
+        case LOAD_LOCAL(local) =>
           val t = bindings(local);
           stack push (if (t == typeLattice.bottom) local.kind  else t);
 
@@ -178,7 +178,7 @@ abstract class TypeFlowAnalysis {
         case STORE_ARRAY_ITEM(kind) =>
           stack.pop3;
 
-        case STORE_LOCAL(local, isArg) =>
+        case STORE_LOCAL(local) =>
           val t = stack.pop;
           bindings += local -> t;
 

@@ -457,11 +457,8 @@ abstract class GenJVM extends SubComponent {
           case LOAD_ARRAY_ITEM(kind) =>
             jcode.emitALOAD(javaType(kind));
 
-          case LOAD_LOCAL(local, isArg) =>
-            if (isArg)
-              jcode.emitLOAD(indexOf(local), javaType(local.kind));
-            else
-              jcode.emitLOAD(indexOf(local), javaType(local.kind));
+          case LOAD_LOCAL(local) =>
+            jcode.emitLOAD(indexOf(local), javaType(local.kind));
 
           case LOAD_FIELD(field, isStatic) =>
             var owner = javaName(field.owner);
@@ -489,11 +486,8 @@ abstract class GenJVM extends SubComponent {
           case STORE_ARRAY_ITEM(kind) =>
             jcode.emitASTORE(javaType(kind));
 
-          case STORE_LOCAL(local, isArg) =>
-            if (isArg)
-              jcode.emitSTORE(indexOf(local), javaType(local.kind));
-            else
-              jcode.emitSTORE(indexOf(local), javaType(local.kind));
+          case STORE_LOCAL(local) =>
+            jcode.emitSTORE(indexOf(local), javaType(local.kind));
 
           case STORE_FIELD(field, isStatic) =>
             val owner = javaName(field.owner); // + (if (field.owner.hasFlag(Flags.MODULE)) "$" else "");

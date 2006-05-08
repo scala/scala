@@ -264,7 +264,7 @@ abstract class Checkers {
                     a + ", " + b + " found");
             }
 
-         case LOAD_LOCAL(local, isArg) =>
+         case LOAD_LOCAL(local) =>
            checkLocal(local);
            stack.push(local.kind);
 
@@ -298,7 +298,7 @@ abstract class Checkers {
                       " but " + a + ", " + b + ", " + c + " found");
            }
 
-         case STORE_LOCAL(local, isArg) =>
+         case STORE_LOCAL(local) =>
            checkLocal(local);
            checkStack(1);
 

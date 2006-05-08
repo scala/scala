@@ -107,6 +107,7 @@ class Settings(error: String => unit) {
 //  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
 
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
+  val Xcloselim     = BooleanSetting("-Xcloselim", "Perform closure elimination")
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
   val Xshowicode    = BooleanSetting("-Xshowicode", "Print the generated ICode")

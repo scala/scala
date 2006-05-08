@@ -208,7 +208,7 @@ trait Members requires ICodes {
   }
 
   /** Represent local variables and parameters */
-  class Local(val sym: Symbol, val kind: TypeKind) {
+  class Local(val sym: Symbol, val kind: TypeKind, val arg: Boolean) {
     var index: Int = -1;
 
     override def equals(other: Any): Boolean = (
