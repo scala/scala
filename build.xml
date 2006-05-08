@@ -1148,6 +1148,60 @@ GENERATES A DISTRIBUTION
     />
   </target>
 
+  <target name="dist.nightly" depends="dist.devel">
+    <property
+      name="dist.archive.nightly"
+      value="${dist.name}-${version.number}"
+    />
+    <fail message="Directory '${dist.dir}/${dist.archive.nightly}' is not available">
+      <condition><not>
+        <available
+          file="${dist.dir}/${dist.archive.nightly}"
+          type="dir"
+        />
+      </not></condition>
+    </fail>
+    <!-- Create gzip compressed tarball -->
+    <mytar
+      dir="${dist.dir}"
+      archive="${dist.archive.nightly}"
+      compression="gzip"
+    />
+    <!-- Create md5 checksums -->
+    <checksum
+      file="${dist.dir}/${dist.archive.nightly}.tar.gz"
+      forceOverwrite="yes"
+      fileext=".md5"
+    />
+    <!-- Create zip archive -->
+    <zip
+      destfile="${dist.dir}/${dist.archive.nightly}.zip"
+      basedir="${dist.dir}"
+      includes="${dist.archive.nightly}/**"
+    />
+    <checksum
+      file="${dist.dir}/${dist.archive.nightly}.zip"
+      forceOverwrite="yes"
+      fileext=".md5"
+    />
+  </target>
+
+  <!-- create Unix tarballs while preserving permissions and symlinks -->
+  <!-- Ant task 'tar' can't do that.. -->
+  <macrodef name="mytar">
+    <attribute name="dir"/>
+    <attribute name="archive"/>
+    <attribute name="compression"/>
+    <sequential>
+      <exec dir="@{dir}" executable="tar">
+        <arg line="cf @{archive}.tar -C @{archive} ."/>
+      </exec>
+      <exec dir="@{dir}" executable="@{compression}">
+        <arg line="-f9 @{archive}.tar"/>
+      </exec>
+    </sequential>
+  </macrodef>
+
 <!-- ===========================================================================
 CLEAN
 ============================================================================ -->
