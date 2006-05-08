@@ -464,7 +464,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <classpath>
         <pathelement location="${locker.lib.dir}"/>
         <pathelement location="${locker.comp.dir}"/>
-        <path refid="starr.classpath"/>
+        <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
@@ -614,7 +614,7 @@ BUILD QUICK-TEST LAYER
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
-        <path refid="locker.classpath"/>
+        <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
@@ -769,7 +769,7 @@ TEST
       <classpath>
         <pathelement location="${strap.lib.dir}"/>
         <pathelement location="${strap.comp.dir}"/>
-        <path refid="quick.classpath"/>
+        <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
@@ -915,7 +915,7 @@ DOCUMENTATION
       <classpath>
         <pathelement location="${quick.lib.dir}"/>
         <pathelement location="${quick.comp.dir}"/>
-        <path refid="quick.classpath"/>
+        <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
