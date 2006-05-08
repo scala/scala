@@ -392,7 +392,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *     but their erased types are the same.
      */
     private def checkNoDoubleDefs(root: Symbol): unit = {
-      def doubleDefError(sym1: Symbol, sym2: Symbol) = {
+      def doubleDefError(sym1: Symbol, sym2: Symbol): unit = {
 	val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym1));
 	val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym2));
 	unit.error(
@@ -406,7 +406,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	    (if (sym2.owner == root) " at line " + Position.line(unit.source, sym2.pos) else sym2.locationString) +
 	  "\nhave same type" +
 	  (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
+        sym2.setInfo(ErrorType)
       }
+
 
       val decls = root.info.decls;
       var e = decls.elems;

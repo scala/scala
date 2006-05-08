@@ -86,6 +86,21 @@ trait SyntheticMethods requires Analyzer {
 	Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))));
     }
 
+    def equalsMethod: Tree = {
+      val target = getMember(ScalaRunTimeModule, nme._equals);
+      val method = syntheticMethod(
+       nme.equals_, 0, MethodType(target.tpe.paramTypes.tail, target.tpe.resultType));
+      typed(DefDef(method, vparamss =>
+        Apply(
+          Select(
+            TypeApply(
+              Select(Ident(vparamss.head.head), Any_isInstanceOf),
+              List(TypeTree(clazz.tpe))),
+            Boolean_and),
+	  List(
+            Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))));
+    }
+
     def isSerializable(clazz: Symbol): Boolean =
       !clazz.getAttributes(definitions.SerializableAttr).isEmpty
 
@@ -169,7 +184,7 @@ trait SyntheticMethods requires Analyzer {
         } else {
 	  if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_);
 	  if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_);
-          if (!hasImplementation(nme.equals_)) ts += forwardingMethod(nme.equals_);
+          if (!hasImplementation(nme.equals_)) ts += equalsMethod //forwardingMethod(nme.equals_);
         }
         if (!hasImplementation(nme.caseElement)) ts += caseElementMethod;
         if (!hasImplementation(nme.caseArity)) ts += caseArityMethod;

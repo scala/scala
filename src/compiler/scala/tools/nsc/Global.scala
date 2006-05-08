@@ -343,6 +343,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     genJVM,
     sampleTransform);
 
+  protected def insertBefore(c: SubComponent, cs: List[SubComponent], before: SubComponent): List[SubComponent] = cs match {
+    case List() => List(c)
+    case c1 :: cs1 => if (c1 == before) c :: cs else c1 :: insertBefore(c, cs1, before)
+  }
+
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;
 

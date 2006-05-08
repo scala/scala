@@ -979,6 +979,15 @@ trait Types requires SymbolTable {
     } else sym
   }
 
+  /** Convert a `super' prefix to a this-type if `sym' is abstract or final */
+  private def removeSuper(tp: Type, sym: Symbol): Type = tp match {
+    case SuperType(thistp, _) =>
+      if (sym.isFinal || sym.hasFlag(DEFERRED)) thistp
+      else tp
+    case _ =>
+      tp
+  }
+
   /** The canonical creator for this-types */
   def ThisType(sym: Symbol): Type =
     if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType);
@@ -989,8 +998,12 @@ trait Types requires SymbolTable {
       sym.tpe.resultType
     else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString())
-    else
-      unique(new SingleType(pre, rebind(pre, sym)) with UniqueType)
+    else {
+      var sym1 = rebind(pre, sym)
+      val pre1 = removeSuper(pre, sym1)
+      if (pre1 ne pre) sym1 = rebind(pre1, sym1)
+      unique(new SingleType(pre1, sym1) with UniqueType)
+    }
   }
 
   /** The canonical creator for super-types */
@@ -1024,7 +1037,7 @@ trait Types requires SymbolTable {
 
   /** The canonical creator for typerefs */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
-    val sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym;
+    var sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym;
     if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.nameString);
 //    if (sym1.hasFlag(LOCKED))
@@ -1039,7 +1052,9 @@ trait Types requires SymbolTable {
       sym1.resetFlag(LOCKED);
       result
     } else {
-      rawTypeRef(pre, sym1, args)
+      val pre1 = removeSuper(pre, sym1)
+      if ((pre1 ne pre) && sym1.isAbstractType) sym1 = rebind(pre1, sym1)
+      rawTypeRef(pre1, sym1, args)
     }
   }
 

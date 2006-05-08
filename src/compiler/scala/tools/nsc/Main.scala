@@ -24,7 +24,7 @@ object Main extends Object with EvalLoop {
   val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
   val prompt = "\nnsc> "
 
-  private var reporter: ConsoleReporter = _
+  var reporter: ConsoleReporter = _
 
   def error(msg: String): unit =
     reporter.error(new Position(PRODUCT),
