@@ -94,7 +94,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     this.owner = owner;
     this.selector = selector;
 
-    this.optimize = this.optimize && (settings.target.value == "jvm");
+    //this.optimize = this.optimize && (settings.target.value == "jvm");
     this.doBinding = doBinding;
   }
 
