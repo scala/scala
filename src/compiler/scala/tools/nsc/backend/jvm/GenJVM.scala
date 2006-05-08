@@ -78,7 +78,7 @@ abstract class GenJVM extends SubComponent {
     var jmethod: JMethod = _;
     var jcode: JExtendedCode = _;
 
-    val fjbgContext = new FJBGContext();
+    val fjbgContext = if (settings.target.value == "jvm-1.5") new FJBGContext(49, 0) else new FJBGContext();
 
     def emitClass(jclass: JClass, sym: Symbol): Unit = {
       def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
@@ -451,6 +451,12 @@ abstract class GenJVM extends SubComponent {
               case DoubleTag  => jcode.emitPUSH(const.doubleValue);
               case StringTag  => jcode.emitPUSH(const.stringValue);
               case NullTag    => jcode.emitACONST_NULL();
+              case ClassTag   =>
+                val kind = toTypeKind(const.typeValue);
+                if (kind.isValueType)
+                  jcode.emitPUSH(classLiteral(kind));
+                else
+                  jcode.emitPUSH(javaType(kind).asInstanceOf[JReferenceType]);
               case _          => abort("Unknown constant value: " + const);
             }
 
@@ -887,6 +893,20 @@ abstract class GenJVM extends SubComponent {
     negate += GT -> LE;
     negate += LE -> GT;
     negate += GE -> LT;
+
+    /** Map from type kinds to the Java reference types. It is used for
+     *  loading class constants. @see Predef.classOf. */
+    val classLiteral: Map[TypeKind, JObjectType] = new HashMap();
+
+    classLiteral += UNIT   -> new JObjectType("java.lang.Void");
+    classLiteral += BOOL   -> new JObjectType("java.lang.Boolean");
+    classLiteral += BYTE   -> new JObjectType("java.lang.Byte");
+    classLiteral += SHORT  -> new JObjectType("java.lang.Short");
+    classLiteral += CHAR   -> new JObjectType("java.lang.Character");
+    classLiteral += INT    -> new JObjectType("java.lang.Integer");
+    classLiteral += LONG   -> new JObjectType("java.lang.Long");
+    classLiteral += FLOAT  -> new JObjectType("java.lang.Float");
+    classLiteral += DOUBLE -> new JObjectType("java.lang.Double");
 
     def makeLabels(bs: List[BasicBlock]) = {
       //labels.clear;
