@@ -15,7 +15,7 @@ where possible options include:
   -encoding <encoding>            Specify character encoding used by source files
   -windowtitle <windowtitle>      Specify window title of generated HTML documentation
   -documenttitle <documenttitle>  Specify document title of generated HTML documentation
-  -target:<target>                Specify which backend to use (jvm,msil)
+  -target:<target>                Specify which backend to use (jvm-1.5,jvm-1.4,msil,cldc)
   -migrate                        Assist in migrating from Scala version 1.0
   -debug                          Output debugging messages
   -statistics                     Print compiler statistics
@@ -38,6 +38,7 @@ where possible options include:
   -version                        Print product version and exit
   -help                           Print a synopsis of standard options
   -Xinline                        Perform inlining when possible
+  -Xcloselim                      Perform closure elimination
   -Xshowcls <class>               Show class info
   -Xshowobj <object>              Show object info
   -Xshowicode                     Print the generated ICode

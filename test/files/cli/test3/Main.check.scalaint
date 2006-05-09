@@ -14,7 +14,7 @@ where possible options include:
   -encoding <encoding>            Specify character encoding used by source files
   -windowtitle <windowtitle>      Specify window title of generated HTML documentation
   -documenttitle <documenttitle>  Specify document title of generated HTML documentation
-  -target:<target>                Specify which backend to use (jvm,msil)
+  -target:<target>                Specify which backend to use (jvm-1.5,jvm-1.4,msil,cldc)
   -migrate                        Assist in migrating from Scala version 1.0
   -debug                          Output debugging messages
   -statistics                     Print compiler statistics
@@ -37,6 +37,7 @@ where possible options include:
   -version                        Print product version and exit
   -help                           Print a synopsis of standard options
   -Xinline                        Perform inlining when possible
+  -Xcloselim                      Perform closure elimination
   -Xshowcls <class>               Show class info
   -Xshowobj <object>              Show object info
   -Xshowicode                     Print the generated ICode
@@ -53,8 +54,8 @@ Type :load followed by a filename to load a sequence of interpreter commands.
 Type :replay to reset execution and replay all previous commands.
 Type :help to repeat this message later.
 
-scala> 3: 1: test 1 passed
-3: 2: 1: test 1 passed
+scala> 3: 1: test 1 passed (1)
+3: 2: 1: test 1 passed (1)
 line0: scala.Unit = ()
 
 scala> 
@@ -66,8 +67,8 @@ Type :load followed by a filename to load a sequence of interpreter commands.
 Type :replay to reset execution and replay all previous commands.
 Type :help to repeat this message later.
 
-scala> 3: 1: test 2 passed
-3: 2: 1: test 2 passed
+scala> 3: 1: test 2 passed (1)
+3: 2: 1: test 2 passed (1)
 line0: scala.Unit = ()
 
 scala> 
@@ -79,8 +80,8 @@ Type :load followed by a filename to load a sequence of interpreter commands.
 Type :replay to reset execution and replay all previous commands.
 Type :help to repeat this message later.
 
-scala> 3: 1: test 3 passed
-3: 2: 1: test 3 passed
+scala> 3: 1: test 3 passed (1)
+3: 2: 1: test 3 passed (1)
 line0: scala.Unit = ()
 
 scala> 

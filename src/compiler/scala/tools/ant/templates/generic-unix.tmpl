@@ -55,7 +55,7 @@ for i in "$@@" ; do
         USER_CLASSPATH=$i
         QQ_CP_ARGUMENT=0
     else
-        if [ $i = "-cp" ] || [ $i = "-classpath" ] ; then
+        if [ "$i" = "-cp" ] || [ "$i" = "-classpath" ] ; then
             QQ_CP_ARGUMENT=1
         else
             USER_ARGS="$USER_ARGS $i"

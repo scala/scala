@@ -199,7 +199,12 @@ test_execute() {
 
     printf "Execute $main with current directory as default classpath\\n"
     test_run "(cd $OUTPUT_DIR &&
-    env CLASSPATH= $RUNTIME_COMMAND $main 3 2>> $LOG_FILE 1>> $LOG_FILE)";
+        env CLASSPATH= $RUNTIME_COMMAND $main 3 2>> $LOG_FILE 1>> $LOG_FILE)";
+
+    printf "Execute $main with quoted argument\\n"
+    test_run "env CLASSPATH= \
+        $RUNTIME_COMMAND -classpath $OUTPUT_DIR $main 4 \"a b c\" \
+        2>> $LOG_FILE 1>> $LOG_FILE";
 
     test_diff "$check$suffix" "$LOG_FILE";
 }
@@ -331,8 +336,8 @@ elif [ "$LANG" = "java" ]; then
 else
     abort "unknown language '$LANG'"
 fi
-[ -x "$COMPILER_COMMAND" ] || ( printf "Command $COMPILER_COMMAND not found\\n"; exit 1 );
-[ -x "$RUNTIME_COMMAND"  ] || ( printf "Command $RUNTIME_COMMAND not found\\n"; exit 1 );
+[ -x "$COMPILER_COMMAND" ] || abort "Command $COMPILER_COMMAND not found";
+[ -x "$RUNTIME_COMMAND"  ] || abort "Command $RUNTIME_COMMAND not found";
 
 printf_initialization "${COLOR:-many}";
 
