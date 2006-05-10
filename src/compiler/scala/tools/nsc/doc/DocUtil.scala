@@ -21,6 +21,7 @@ object DocUtil {
     val xmlStr = str.replaceAll("&lt;", "<").replaceAll("&gt;",">")
                     .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
     val xmlSrc = new InputSource(new StringReader(xmlStr))
+    System.err.println("loading: " + xmlStr);
     XML.load(xmlSrc)
   }
 

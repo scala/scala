@@ -113,7 +113,7 @@ abstract class DocGenerator extends Models {
 
   val doctitle: NodeSeq =
     <div class="doctitle-larger">
-      {load(documentTitle)}
+      {/* load */ (documentTitle)}
     </div>;
 
   abstract class ListModuleFrame extends Frame {
@@ -433,8 +433,10 @@ abstract class DocGenerator extends Models {
       case cdef:  ImplDef =>
         assert(cdef.symbol.owner != NoSymbol);
         val sym = cdef.symbol.owner.asInstanceOf[ModuleClassSymbol];
-        if (!topLevel.contains(sym)) topLevel = topLevel.update(sym, emptyMap);
-        topLevel = topLevel.update(sym, organize0(mmbr, topLevel(sym)));
+        if (!sym.isEmptyPackageClass) {
+          if (!topLevel.contains(sym)) topLevel = topLevel.update(sym, emptyMap);
+          topLevel = topLevel.update(sym, organize0(mmbr, topLevel(sym)));
+        }
       case _ => throw new Error("unknown: " + mmbr.tree + " " + mmbr.tree.getClass());
       }
     }
@@ -466,7 +468,7 @@ abstract class DocGenerator extends Models {
     };
 
     // class from for each module.
-    for (val top <- topLevel.elements) if (!top._1.isEmptyPackageClass) {
+    for (val top <- topLevel.elements) {
       val module = top._1;
       val members = top._2;
 
