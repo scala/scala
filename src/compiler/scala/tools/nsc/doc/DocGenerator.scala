@@ -466,15 +466,15 @@ abstract class DocGenerator extends Models {
     };
 
     // class from for each module.
-    for (val top <- topLevel.elements) {
-      val module = top._1
-      val members = top._2
+    for (val top <- topLevel.elements) if (!top._1.isEmptyPackageClass) {
+      val module = top._1;
+      val members = top._2;
 
       new ListClassFrame {
         def title = "List of classes and objects in package " + module.fullNameString('.')
-        def classes = top._2
-        def path = module.fullNameString('/') + "$package"
-        def navLabel = module.fullNameString('.')
+        def classes = top._2;
+        def path = module.fullNameString('/') + "$package";
+        def navLabel = module.fullNameString('.');
       };
       val module0 = module;
       new ListClassContentFrame {
