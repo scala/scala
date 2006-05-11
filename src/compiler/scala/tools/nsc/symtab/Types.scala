@@ -1671,6 +1671,7 @@ trait Types requires SymbolTable {
 
   /** Does member `sym1' of `tp1' have a stronger type than member `sym2' of `tp2'? */
   private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): boolean = {
+//    System.out.println("specializes " + tp1 + " " + tp2)//DEBUG
     val info1 = tp1.memberInfo(sym1);
     val info2 = tp2.memberInfo(sym2).substThis(tp2.symbol, tp1);
     (sym2.isTerm &&
@@ -1886,9 +1887,9 @@ trait Types requires SymbolTable {
                    ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType)));
               if (settings.debug.value) log("common symbols: " + syms + ":" + symtypes);//debug
               if (proto.isTerm)
-                proto.cloneSymbol.setInfo(lub(symtypes))
+                proto.cloneSymbol(lubType.symbol).setInfo(lub(symtypes))
               else if (symtypes.tail forall (symtypes.head =:=))
-                proto.cloneSymbol.setInfo(symtypes.head)
+                proto.cloneSymbol(lubType.symbol).setInfo(symtypes.head)
               else {
                 def lubBounds(bnds: List[TypeBounds]): TypeBounds =
                   TypeBounds(glb(bnds map (.lo)), lub(bnds map (.hi)));
@@ -1955,7 +1956,7 @@ trait Types requires SymbolTable {
                 glbThisType.memberInfo(alt) matches prototp) yield alt;
               val symtypes = syms map glbThisType.memberInfo;
               assert(!symtypes.isEmpty);
-              proto.cloneSymbol.setInfo(
+              proto.cloneSymbol(glbType.symbol).setInfo(
                 if (proto.isTerm) glb(symtypes)
                 else {
                   def isTypeBound(tp: Type) = tp match {

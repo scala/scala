@@ -341,7 +341,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     inliner,
     closser,
     genJVM,
-    sampleTransform);
+    sampleTransform)
 
   protected def insertBefore(c: SubComponent, cs: List[SubComponent], before: SubComponent): List[SubComponent] = cs match {
     case List() => List(c)
