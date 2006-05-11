@@ -100,7 +100,7 @@ if $cygwin; then
         format=windows
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    MERGED_CLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
+    MERGED_CLASSPATH=`cygpath --path --$format "$MERGED_CLASSPATH"`
 fi
 
 ${JAVACMD:=java} @javaflags@ -cp "$MERGED_CLASSPATH" -Dscala.home="$SCALA_HOME" @properties@ $USER_ARGS
