@@ -49,8 +49,12 @@ class Settings(error: String => unit) {
   private def guessedScalaBootClassPath = {
     val scalaHome = System.getProperty("scala.home")
     if (scalaHome != null) {
-      val guess = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
-      if (guess.exists()) guess.getPath() else null
+      val guessJar = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
+      if (guessJar.exists()) guessJar.getPath()
+      else {
+        val guessDir = new File(new File(new File(scalaHome), "lib"), "library")
+        if (guessDir.exists()) guessDir.getPath() else null
+      }
     } else null
   }
 

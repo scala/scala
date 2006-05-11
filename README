@@ -3,6 +3,10 @@
                            Structure and build system
 ================================================================================
 
+This document describes the Scala core (core library and compiler) repository
+and how to build it. For information about Scala as a languages, you can visit
+the web site http://scala.epfl.ch/
+
 Part I. The repository layout
 --------------------------------------------------------------------------------                            
 
@@ -27,7 +31,6 @@ scala/
           jaco.jar            The JaCo Java compiler.
           scala-compiler.jar  The last stable version of the Scala compiler.
           scala-library.jar   The last stable version of the Scala library.
-      logs/ †                 Build tool log files.
       README                  The file you are currently reading.
       sandbox/ †              A folder to test code etc.
       src/                    All the source files of Scala.
@@ -110,10 +113,18 @@ Part IV. Common use-cases
     - Runs all the tests as above (and refuses to build a distribution if it
       fails).
     - Creates a local distribution in 'dists/latest'.
-    - Creates all relevant Scala Bazaar archives and advertisement files.
+
+'ant pack'
+  Builds a distribution, and packages it for distribution.
+    - Runs all the tests as above (and refuses to build a distribution if it
+      fails).
+    - Creates a local distribution in 'dists/latest'.
+    - Creates all relevant Scala Bazaar archives, advertisement files and
+      ZIP/TAR archives.
 
 'ant dist.devel' or 'ant dist.patch' or 'ant dist.minor'
-  Builds a distribution to be publicly released and manages version numbers.
+  Builds a distribution (with packaging) to be publicly released and manages
+  version numbers.
     - Patch and Minor versions are public releases. The version number is
       automatically bumped up and is formatted as 'major.minor.patch'.
     - Devel versions are betas for semi-public release. Numbers are formatted as
@@ -132,4 +143,6 @@ Part IV. Common use-cases
 Part V. Contributing to Scala
 --------------------------------------------------------------------------------                            
 
-More to come ...
+If you wish to contribute, you need to directly take contact with the Scala
+team. You will find email addresses for everyone currently working on the
+project at http://scala.epfl.ch/community/

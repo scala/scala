@@ -26,13 +26,16 @@ if "%_JAVACMD%"=="" set _JAVACMD=java
 
 set _EXTENSION_CLASSPATH=@extclasspath@
 if "%_EXTENSION_CLASSPATH%"=="" (
-  for %%f in ("%_SCALA_HOME%\lib\*.jar") do call :add_cpath "%%f"
+  for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
 )
 
 set _BOOT_CLASSPATH=@bootclasspath@
 if "%_BOOT_CLASSPATH%"=="" (
   if exist "%_SCALA_HOME%\lib\scala-library.jar" (
     set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\scala-library.jar
+  )
+  if exist "%_SCALA_HOME%\lib\library" (
+    set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\library
   )
 )
 

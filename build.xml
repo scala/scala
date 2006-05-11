@@ -4,7 +4,7 @@
 <project name="scala-core" default="build">
 
   <description>
-    I am SABBUS for ${ant.project.name}, the build system for the Scala compiler and core
+    I am SABBUS for Scala core, the build system for the Scala compiler and core
     library. Please check the 'docs/README' file for more information about me.
   </description>
 
@@ -19,221 +19,97 @@ PROPERTIES
   <!-- Prevents system classpath from being used -->
   <property name="build.sysclasspath" value="ignore"/>
 
-  <!-- Base properties -->
+  <!-- Defines the repository layout -->
   <property name="docs.dir" value="${basedir}/docs"/>
-  <property name="examples.dir" value="${docs.dir}/examples"/>
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="test.dir" value="${basedir}/test"/>
-  <property name="properties" value="${basedir}/build.properties"/>
-  <echo level="verbose" message="properties=${properties}"/>
-  <!-- User properties -->
+  <!-- Loads custom properties definitions -->
+  <property name="properties.file" value="${basedir}/build.properties"/>
   <property file="${properties}"/>
-  <!-- General properties -->
+  <!-- Defines the product being built -->
+  <property name="copyright.string" value="copyright 2002-2006 LAMP EPFL"/>
   <property name="number.file" value="${basedir}/build.number"/>
-  <property name="copyright.holder" value="LAMP/EPFL"/>
-  <property name="logs.dir" value="${basedir}/logs"/>
-  <!-- Javac configuration properties -->
-  <property name="jc.source" value="1.4"/>
-  <property name="jc.target" value="1.4"/>
-  <property name="jc.deprecation" value="true"/>
-  <!-- NSC configuration properties -->
-  <property name="nsc.logging" value="none"/>
+  <!-- Configuring how the compiler is run -->
   <property name="nsc.log-files" value="no"/>
-  <property name="nsc.excludes" value="${basedir}/build.excludes"/>
+  <property name="nsc.excludes.file" value="${basedir}/build.excludes"/>
   <property name="nsc.params" value=""/>
-  <property name="nsc.timers" value="${logs.dir}/build.timers"/>
-  <!-- SVN configuration properties -->
-  <property name="svn.entries" value="${basedir}/.svn/entries"/>
-  <!-- Location of pre-compiled libraries properties -->
-  <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
-  <property name="starr.comp.jar" value="${lib.dir}/scala-compiler.jar"/>
-  <property name="jaco.jar" value="${lib.dir}/jaco.jar"/>
-  <property name="fjbg.name" value="fjbg.jar"/>
-  <property name="fjbg.jar" value="${lib.dir}/${fjbg.name}"/>
+  <!-- Sets location of pre-compiled libraries -->
+  <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
+  <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
+  <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
   <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
-  <!-- Location of build products properties -->
+  <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
   <property name="locker.dir" value="${build.dir}/locker"/>
   <property name="quick.dir" value="${build.dir}/quick"/>
   <property name="strap.dir" value="${build.dir}/strap"/>
-  <property name="api.dir" value="${build.dir}/api"/>
-  <!-- Location of source and build elements names properties -->
-  <property name="lib.dir.name" value="library"/>
-  <property name="comp.dir.name" value="compiler"/>
-  <property name="dbc.dir.name" value="dbc"/>
-  <property name="src.lib.dir" value="${src.dir}/${lib.dir.name}"/>
-  <property name="src.comp.dir" value="${src.dir}/${comp.dir.name}"/>
-  <property name="src.dbc.dir" value="${src.dir}/${dbc.dir.name}"/>
-  <property name="exec.dir.name" value="exec"/>
-  <!-- Location of structure of the distribution properties -->
+  <property name="api-lib.dir" value="${build.dir}/api-library"/>
+  <property name="api-comp.dir" value="${build.dir}/api-compiler"/>
+  <property name="examples.dir" value="${build.dir}/examples"/>
+  <!--  Sets location and structure of the distribution -->
   <property name="dist.dir" value="${basedir}/dists"/>
-  <property name="dist.latest.dir" value="${dist.dir}/latest"/>
-  <property name="dist.sbaz.dir" value="${dist.dir}/sbaz"/>
-  <property name="dist.name" value="scala"/>
-  <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
-  <property name="lib-dbc.jar.name" value="${dist.name}-dbc.jar"/>
-  <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
-  <property name="scala.exec.name" value="${dist.name}"/>
-  <property name="scalai.exec.name" value="scalai"/>
+  <property name="lib.jar.name" value="scala-library.jar"/>
+  <property name="dbc.jar.name" value="scala-dbc.jar"/>
+  <property name="comp.jar.name" value="scala-compiler.jar"/>
+  <property name="scala.exec.name" value="scala"/>
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
   <property name="scalaint.exec.name" value="scalaint"/>
-  <property name="scalatok.exec.name" value="scalatok"/>
-  <!-- Shorcut names -->
-  <property name="locker.lib.dir" value="${locker.dir}/${lib.dir.name}"/>
-  <property name="locker.comp.dir" value="${locker.dir}/${comp.dir.name}"/>
-  <property name="locker.exec.dir" value="${locker.dir}/${exec.dir.name}"/>
-  <property name="quick.lib.dir" value="${quick.dir}/${lib.dir.name}"/>
-  <property name="quick.comp.dir" value="${quick.dir}/${comp.dir.name}"/>
-  <property name="quick.dbc.dir" value="${quick.dir}/${dbc.dir.name}"/>
-  <property name="quick.exec.dir" value="${quick.dir}/${exec.dir.name}"/>
-  <property name="strap.lib.dir" value="${strap.dir}/${lib.dir.name}"/>
-  <property name="strap.comp.dir" value="${strap.dir}/${comp.dir.name}"/>
-  <property name="strap.dbc.dir" value="${strap.dir}/${dbc.dir.name}"/>
-  <property name="strap.exec.dir" value="${strap.dir}/${exec.dir.name}"/>
-  <property name="api.lib.dir" value="${api.dir}/${lib.dir.name}"/>
-  <property name="api.comp.dir" value="${api.dir}/${comp.dir.name}"/>
-  <!-- sbaz properties -->
-  <property name="sbaz.lib.name" value="${dist.name}-library"/>
-  <property name="sbaz.dev.name" value="${dist.name}-devel"/>
-  <property name="sbaz.test.name" value="${dist.name}-test"/>
-  <property name="sbaz.scala.name" value="${dist.name}"/>
-  <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
 
 <!-- ===========================================================================
 INITIALISATION
 ============================================================================ -->
 
   <target name="init" unless="init.avail">
-    <tstamp prefix="time">
-      <format
-        property="human"
-        pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"
-      />
-      <format
-        property="short"
-        pattern="yyyyMMdd-HHmmss"
-      />
-      <format
-       property="this.year"
-       pattern="yyyy"
-     />
-    </tstamp>
-    <property
-      name="copyright"
-      value="(c) 2002-${time.this.year} ${copyright.holder}"
-    />
-    <echo level="verbose" message="ant.jar=${ant.jar}"/>
-    <echo level="verbose" message="ant-contrib.jar=${ant-contrib.jar}"/>
-    <fail message="Additional Ant tasks in 'lib/' is not available">
-      <condition><not>
-        <available
-          classname="net.sf.antcontrib.AntContribVersion"
-          classpath="${ant-contrib.jar}"
-        />
-      </not></condition>
-    </fail>
-    <!-- Setting-up Ant contrib tasks -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml">
-      <classpath>
-        <pathelement location="${ant-contrib.jar}"/>
-      </classpath>
-    </taskdef>
-    <stopwatch name="timer.dist"/>
-    <!-- Testing if everything is in place -->
-    <echo level="verbose" message="starr.lib.jar=${starr.lib.jar}"/>
-    <fail message="STARR library in 'lib/' is not available">
+  <!-- Making sure lib/ contains everything that is needed -->
+    <fail message="A required library is missing in 'lib/'. The README file describes what should be there.">
       <condition><not><and>
-        <available
-          classname="scala.Predef" 
-          classpath="${starr.lib.jar}"
-        />
-        <available
-          classname="scala.List"
-          classpath="${starr.lib.jar}"
-        />
-        <available
-          classname="scala.runtime.ObjectRef"
-          classpath="${starr.lib.jar}"
-        />
+        <available file="${lib.starr.jar}"/>
+        <available file="${comp.starr.jar}"/>
+        <available file="${fjbg.jar}"/>
+        <available file="${ant-contrib.jar}"/>
       </and></not></condition>
     </fail>
-    <echo level="verbose" message="starr.comp.jar=${starr.comp.jar}"/>
-    <fail message="STARR compiler in 'lib/' is not available">
-      <condition><not>
-        <available
-          classname="scala.tools.ant.Scalac"
-          classpath="${starr.comp.jar}:${starr.lib.jar}"
-        />
-      </not></condition>
-    </fail>
-    <echo level="verbose" message="fjbg.jar=${fjbg.jar}"/>
-    <fail message="FJBG library in 'lib/' is not available">
-      <condition><not>
-        <available
-          classname="ch.epfl.lamp.fjbg.JCode"
-          classpath="${fjbg.jar}"
-        />
-      </not></condition>
-    </fail>
-    <!-- Creating class-pathes -->
-    <path id="common.classpath">
-      <pathelement location="${fjbg.jar}"/>
-    </path>
-    <path id="starr.classpath">
-      <pathelement location="${starr.lib.jar}"/>
-      <pathelement location="${starr.comp.jar}"/>
-      <path refid="common.classpath"/>
-    </path>
-    <path id="locker.classpath">
-      <pathelement location="${locker.dir}/${lib.dir.name}"/>
-      <pathelement location="${locker.dir}/${comp.dir.name}"/>
-      <path refid="common.classpath"/>
-    </path>
-    <path id="quick.classpath">
-      <pathelement location="${quick.dir}/${lib.dir.name}"/>
-      <pathelement location="${quick.dir}/${comp.dir.name}"/>
-      <path refid="common.classpath"/>
-    </path>
-    <!-- Making sure enough memory is available -->
+  <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml"
+             classpath="${ant-contrib.jar}"/>
+  <!-- Making sure enough memory is available -->
     <propertyregex
-      property="memory.set"
-      input="${env.ANT_OPTS}"
-      regexp="-Xmx([1-9][0-9]{3,}|[6-9][0-9]{2}|5[2-9][0-9]|51[2-9])(M|m)"
-      select="\1"
-    />
-    <fail unless="memory.set">
-      SABBUS requires additional memory. Please set the 'ANT_OPTS' environment
-      property to '-Xmx512M' or more.
-    </fail>
-    <!-- Finding out what system architecture is being used -->
-    <condition property="os.win">
-      <os family="windows"/>
-    </condition>
-    <if><isset property="os.win"/>
-      <then>
-        <exec
-          executable="cygpath"
-          vmlauncher="no"
-          errorproperty="cygpath.err"
-          outputproperty="cygpath.out"
-        >
-          <arg value="--windir"/>
-        </exec>
-        <condition property="os.cygwin">
-          <equals arg1="${cygpath.err}" arg2=""/>
-        </condition>
-      </then>
-    </if>
-    <condition property="os.unix">
-      <or>
-        <os family="unix"/>
-        <os family="mac"/>
-        <isset property="os.cygwin"/>
-      </or>
-    </condition>
+      property="memory.set" input="${env.ANT_OPTS}" select="\1"
+      regexp="-Xmx([1-9][0-9]{3,}|[6-9][0-9]{2}|5[2-9][0-9]|51[2-9])(M|m)"/>
+    <fail
+      unless="memory.set"
+      message="SABBUS requires additional memory. Please set the 'ANT_OPTS' environment property to '-Xmx512M' or more."/>
+  <!-- This is the start time for the distribution -->
+    <stopwatch name="timer.dist"/>
+    <tstamp prefix="time">
+      <format property="human" pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"/>
+      <format property="short" pattern="yyyyMMdd-HHmmss"/>
+    </tstamp>
+  <!-- Creating class-pathes -->
+    <path id="starr.classpath">
+      <pathelement location="${lib.starr.jar}"/>
+      <pathelement location="${comp.starr.jar}"/>
+    </path>
+  <!-- Finding out what system architecture is being used -->
+    <condition property="os.win"><os family="windows"/></condition>
+    <if><isset property="os.win"/><then>
+      <exec
+        executable="cygpath" vmlauncher="no"
+        errorproperty="cygpath.err" outputproperty="cygpath.out">
+        <arg value="--windir"/>
+      </exec>
+      <condition property="os.cygwin">
+        <equals arg1="${cygpath.err}" arg2=""/>
+      </condition>
+    </then></if>
+    <condition property="os.unix"><or>
+      <os family="unix"/>
+      <os family="mac"/>
+      <isset property="os.cygwin"/>
+    </or></condition>
     <if><isset property="os.cygwin"/>
       <then><property name="os.type" value="Cygwin"/></then>
       <elseif><isset property="os.win"/>
@@ -242,56 +118,44 @@ INITIALISATION
       <elseif><isset property="os.unix"/>
         <then><property name="os.type" value="UNIX"/></then>
       </elseif>
-      <else>
-        <fail>System environment could not be determined</fail>
-      </else>
+      <else><fail>System environment could not be determined</fail></else>
     </if>
-    <!-- Printing out some information about what environment I am running in -->
-    <echo
-      level="info"
-      message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"
-    />
-    <echo
-      level="info"
-      message="Java: ${java.version} ('${java.home}');"
-    />
-    <echo
-      level="info"
-      message="JVM:  ${java.vm.name} ${java.vm.version};"
-    />
-    <echo
-      level="info"
-      message="Ant:  ${ant.version}."
-    />
-    <!-- Finding out SVN revision -->
+  <!-- Finding out SVN revision -->
     <loadfile
       property="entries"
-      srcFile="${svn.entries}"
-      failonerror="false"
-    />
+      srcFile="${basedir}/.svn/entries"
+      failonerror="false"/>
     <propertyregex
-      property="svn.revision"
-      input="${entries}"
+      property="svn.number" input="${entries}" select="\1"
       regexp="revision=\042([0-9]*)\042\.*"
-      select="\1"
-      defaultValue="x"
-    />
+      defaultValue="x"/>
     <property name="init.avail" value="yes"/>
+  <!-- Printing out some information about what environment I am running in -->
+    <echo level="info"
+      message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"/>
+    <echo level="info"
+      message="Java: ${java.version} ('${java.home}');"/>
+    <echo level="info"
+      message="JVM:  ${java.vm.name} ${java.vm.version};"/>
+    <echo level="info"
+      message="Ant:  ${ant.version}."/>
   </target>
 
+<!-- ===========================================================================
+SETUP
+============================================================================ -->
+
   <target name="setup" depends="init">
-    <!-- Creating boot-level tasks -->
+  <!-- Creating boot-level tasks -->
     <taskdef
       name="starr"
       classname="scala.tools.ant.Scalac"
-      classpathref="starr.classpath"
-    />
+      classpathref="starr.classpath"/>
     <taskdef
       name="starrtool"
       classname="scala.tools.ant.ScalaTool"
-      classpathref="starr.classpath"
-    />
-    <!-- Removing any outdated stuff -->
+      classpathref="starr.classpath" />
+  <!-- Removing any outdated stuff -->
     <if>
       <and>
         <available file="${locker.dir}/complete"/>
@@ -300,59 +164,53 @@ INITIALISATION
         </uptodate></not>
       </and>
       <then>
-        <echo
-          level="warning"
-          message="STARR updated: LOCKER is obsolete and will be rebuilt."
-        />
+        <echo level="warning"
+          message="STARR updated: LOCKER is obsolete and will be rebuilt."/>
         <runtarget target="clean.build"/>
       </then>
     </if>
-    <!-- Finding out what is available -->
-    <available property="excludes.avail" file="${nsc.excludes}"/>
-    <echo level="verbose" message="excludes.avail=${excludes.avail}"/>
+  <!-- Finding out what is available -->
+    <available property="excludes.avail" file="${nsc.excludes.file}"/>
     <condition property="locker.avail">
       <available file="${locker.dir}/complete"/>
     </condition>
-    <!-- Generating version number -->
+  <!-- Generating version number -->
     <property file="${number.file}"/>
     <property
       name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${svn.revision}.${time.short}"
-    />
-    <echo level="verbose" message="version.number=${version.number}"/>
-    <!-- Setup timer -->
-    <mkdir dir="${logs.dir}"/>
-    <echo
-      file="${nsc.timers}"
-      append="true"
-      message="${line.separator}Revision ${svn.revision};${line.separator}  built ${time.human};${line.separator}  by ${java.vm.name} ${java.vm.version};${line.separator}  on ${os.name} ${os.arch} ${os.version}:${line.separator}"
-    />
+      value="${version.major}.${version.minor}.${version.patch}.${svn.number}.${time.short}"/>
+  <!-- And print-out what we are building -->
+    <echo level="info" message="Build number is '${version.number}'"/>
+    <echo level="info" message="Built ${time.human} from SVN revision ${svn.number}"/>
   </target>
 
   <target name="setup.locker" depends="setup, build.locker">
+    <path id="locker.classpath">
+      <pathelement location="${locker.dir}/lib/library"/>
+      <pathelement location="${locker.dir}/lib/compiler"/>
+      <pathelement location="${fjbg.jar}"/>
+    </path>
     <taskdef
       name="locker"
       classname="scala.tools.ant.Scalac"
-      classpathref="locker.classpath"
-    />
+      classpathref="locker.classpath"/>
   </target>
 
   <target name="setup.quick" depends="setup, build">
+    <path id="quick.classpath">
+      <pathelement location="${quick.dir}/lib/library"/>
+      <pathelement location="${quick.dir}/lib/compiler"/>
+      <pathelement location="${fjbg.jar}"/>
+    </path>
     <taskdef
-      name="quick"
-      classname="scala.tools.ant.Scalac"
-      classpathref="quick.classpath"
-    />
+      name="quick" classname="scala.tools.ant.Scalac"
+      classpathref="quick.classpath"/>
     <taskdef
-      name="quicksbaz"
-      classname="scala.tools.ant.ScalaBazaar"
-      classpathref="quick.classpath"
-    />
+      name="quicksbaz" classname="scala.tools.ant.ScalaBazaar"
+      classpathref="quick.classpath"/>
     <taskdef
-      name="quickdoc"
-      classname="scala.tools.ant.Scaladoc"
-      classpathref="quick.classpath"
-    />
+      name="quickdoc" classname="scala.tools.ant.Scaladoc"
+      classpathref="quick.classpath"/>
   </target>
 
 <!-- ===========================================================================
@@ -362,16 +220,16 @@ BUILD SUPPORT MACROS
   <macrodef name="build.support">
     <attribute name="build.dir"/>
     <sequential>
-      <copy todir="@{build.dir}/${lib.dir.name}">
-        <fileset dir="${src.lib.dir}">
+      <copy todir="@{build.dir}/lib/library">
+        <fileset dir="${src.dir}/library">
           <include name="**/*.tmpl"/>
           <include name="**/*.xml"/>
           <include name="**/*.js"/>
           <include name="**/*.css"/>
         </fileset>
       </copy>
-      <copy todir="@{build.dir}/${comp.dir.name}">
-        <fileset dir="${src.comp.dir}">
+      <copy todir="@{build.dir}/lib/compiler">
+        <fileset dir="${src.dir}/compiler">
           <include name="**/*.tmpl"/>
           <include name="**/*.xml"/>
           <include name="**/*.js"/>
@@ -384,26 +242,15 @@ BUILD SUPPORT MACROS
   <macrodef name="build.links">
     <attribute name="build.dir"/>
     <sequential>
-      <if>
-        <not><and>
-          <available file="@{build.dir}/${fjbg.name}"/>
-        </and></not>
-        <then>
-          <if><isset property="os.unix"/>
-            <then>
-              <symlink
-                link="@{build.dir}/${fjbg.name}"
-                resource="${fjbg.jar}"
-                overwrite="yes"
-                failonerror="no"
-              />
-            </then>
-            <else>
-              <copy file="${fjbg.jar}" tofile="@{build.dir}/${fjbg.name}"/>
-            </else>
-          </if>
-        </then>
-      </if>
+      <if><not><available file="@{build.dir}/lib/fjbg.jar"/></not><then>
+        <if><isset property="os.unix"/><then>
+          <symlink
+            link="@{build.dir}/lib/fjbg.jar"
+            resource="${fjbg.jar}" overwrite="yes" failonerror="no"/>
+        </then><else>
+          <copy file="${fjbg.jar}" tofile="@{build.dir}/lib/fjbg.jar"/>
+        </else></if>
+      </then></if>
     </sequential>
   </macrodef>
 
@@ -413,130 +260,93 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
 
   <target name="newlocker"
     depends="clean.unfreeze, build.locker"
-    description="Rebuilds LOCKER from the current sources"
-  />
+    description="Rebuilds LOCKER from the current sources"/>
 
   <target name="build.locker" depends="setup" unless="locker.avail">
     <property name="built.locker" value="yes"/>
     <stopwatch name="timer.locker"/>
-    <!-- Build library -->
-    <mkdir dir="${locker.lib.dir}"/>
+  <!-- Build library -->
+    <mkdir dir="${locker.dir}/lib/library"/>
     <javac
-      srcdir="${src.lib.dir}"
-      destdir="${locker.lib.dir}"
-      source="${jc.source}"
-      target="${jc.target}"
-      deprecation="${jc.deprecation}"
-    >
-      <classpath>
-        <pathelement location="${locker.lib.dir}"/>
-      </classpath>
-      <include name="**/*.java"/>
-    </javac>
+      srcdir="${src.dir}/library"
+      destdir="${locker.dir}/lib/library"
+      source="1.4" target="1.4" deprecation="yes"
+      classpath="${locker.dir}/lib/library"
+      includes="**/*.java"/>
     <starr
-      srcdir="${src.lib.dir}"
-      destdir="${locker.lib.dir}"
+      srcdir="${src.dir}/library"
+      destdir="${locker.dir}/lib/library"
       usepredefs="no"
-    >
-      <classpath>
-        <pathelement location="${locker.lib.dir}"/>
-      </classpath>
-      <include name="scala/Predef.scala"/>
-    </starr>
+      classpath="${locker.dir}/lib/library"
+      includes="scala/Predef.scala"/>
     <starr
-      srcdir="${src.lib.dir}"
-      destdir="${locker.lib.dir}"
-    >
-      <classpath>
-        <pathelement location="${locker.lib.dir}"/>
-      </classpath>
+      srcdir="${src.dir}/library"
+      destdir="${locker.dir}/lib/library"
+      classpath="${locker.dir}/lib/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </starr>
-    <!-- Build compiler -->
-    <mkdir dir="${locker.comp.dir}"/>
+  <!-- Build compiler -->
+    <mkdir dir="${locker.dir}/lib/compiler"/>
     <starr
-      srcdir="${src.comp.dir}"
-      destdir="${locker.comp.dir}"
-    >
+      srcdir="${src.dir}/compiler"
+      destdir="${locker.dir}/lib/compiler">
       <classpath>
-        <pathelement location="${locker.lib.dir}"/>
-        <pathelement location="${locker.comp.dir}"/>
+        <pathelement location="${locker.dir}/lib/library"/>
+        <pathelement location="${locker.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </starr>
+  <!-- Timing the build -->
     <stopwatch name="timer.locker" action="total"/>
-    <echo
-      file="${nsc.timers}"
-      append="true"
-      message="    building LOCKER: ${timer.locker};${line.separator}"
-    />
-    <!-- Copy support files to build folder and links external libraries-->
+  <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${locker.dir}"/>
     <build.links build.dir="${locker.dir}"/>
-    <!-- Build executable files -->
+  <!-- Build executable files -->
     <taskdef
       name="lockertool"
       classname="scala.tools.ant.ScalaTool"
-      classpathref="locker.classpath"
-    />
-    <mkdir dir="${locker.exec.dir}"/>
+      classpathref="locker.classpath"/>
+    <mkdir dir="${locker.dir}/bin"/>
     <lockertool
-      file="${locker.exec.dir}/${scala.exec.name}"
+      file="${locker.dir}/bin/${scala.exec.name}"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"/>
     <lockertool
-      file="${locker.exec.dir}/${scalac.exec.name}"
+      file="${locker.dir}/bin/${scalac.exec.name}"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <lockertool
-      file="${locker.exec.dir}/${scaladoc.exec.name}"
+      file="${locker.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.Main"
       toolflags="-doc"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <lockertool
-      file="${locker.exec.dir}/${scalaint.exec.name}"
+      file="${locker.dir}/bin/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-    />
-    <chmod
-      file="${locker.exec.dir}/${scalac.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${locker.exec.dir}/${scala.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${locker.exec.dir}/${scaladoc.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${locker.exec.dir}/${scalaint.exec.name}"
-      perm="ugo+rx"
-    />
-    <!-- Mark LOCKER as being completely built -->
+      copyright="${copyright.string}"/>
+    <chmod perm="ugo+rx"
+      file="${locker.dir}/bin/${scalac.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${locker.dir}/bin/${scala.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${locker.dir}/bin/${scaladoc.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${locker.dir}/bin/${scalaint.exec.name}"/>
+  <!-- Mark LOCKER as being completely built -->
     <touch file="${locker.dir}/complete" verbose="no"/>
   </target>
 
@@ -544,320 +354,241 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
 BUILD QUICK-TEST LAYER
 ============================================================================ -->
 
-  <target name="build"
-    depends="setup.locker"
-    description="Builds a quick-test (QUICK) version of the compiler"
-  >
+  <target name="build" depends="setup.locker"
+    description="Builds a quick-test (QUICK) version of the compiler">
     <stopwatch name="timer.quick"/>
-    <!-- Build library -->
-    <mkdir dir="${quick.lib.dir}"/>
+  <!-- Build library -->
+    <mkdir dir="${quick.dir}/lib/library"/>
     <javac
-      srcdir="${src.lib.dir}"
-      destdir="${quick.lib.dir}"
-      source="${jc.source}"
-      target="${jc.target}"
-      deprecation="${jc.deprecation}"
-    >
-      <classpath>
-        <pathelement location="${quick.lib.dir}"/>
-      </classpath>
-      <include name="**/*.java"/>
-    </javac>
+      srcdir="${src.dir}/library"
+      destdir="${quick.dir}/lib/library"
+      source="1.4" target="1.4" deprecation="yes"
+      classpath="${quick.dir}/lib/library"
+      includes="**/*.java"/>
     <locker
-      srcdir="${src.lib.dir}"
-      destdir="${quick.lib.dir}"
-      usepredefs="no"
+      srcdir="${src.dir}/library"
+      destdir="${quick.dir}/lib/library"
+      usepredefs="no" addparams="${nsc.params}"
+      scalacdebugging="${nsc.log-files}"
+      classpath="${quick.dir}/lib/library"
+      includes="scala/Predef.scala"/>
+    <locker
+      srcdir="${src.dir}/library"
+      destdir="${quick.dir}/lib/library"
       addparams="${nsc.params}"
       scalacdebugging="${nsc.log-files}"
-    >
-      <classpath>
-        <pathelement location="${quick.lib.dir}"/>
-      </classpath>
-      <include name="scala/Predef.scala"/>
-    </locker>
-    <locker
-      srcdir="${src.lib.dir}"
-      destdir="${quick.lib.dir}"
-      addparams="${nsc.params}"
-      scalacdebugging="${nsc.log-files}"
-    >
-      <classpath>
-        <pathelement location="${quick.lib.dir}"/>
-      </classpath>
+      classpath="${quick.dir}/lib/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
-    <mkdir dir="${quick.dbc.dir}"/>
+  <!-- Build DBC -->
+    <mkdir dir="${quick.dir}/lib/dbc"/>
     <locker
-      srcdir="${src.dbc.dir}"
-      destdir="${quick.dbc.dir}"
+      srcdir="${src.dir}/dbc"
+      destdir="${quick.dir}/lib/dbc"
       addparams="${nsc.params}"
-      scalacdebugging="${nsc.log-files}"
-    >
+      scalacdebugging="${nsc.log-files}">
       <classpath>
-        <pathelement location="${quick.lib.dir}"/>
-        <pathelement location="${quick.dbc.dir}"/>
+        <pathelement location="${quick.dir}/lib/library"/>
+        <pathelement location="${quick.dir}/lib/dbc"/>
       </classpath>
       <include name="scala/dbc/**/*.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
-    <!-- Build compiler -->
-    <mkdir dir="${quick.comp.dir}"/>
+  <!-- Build compiler -->
+    <mkdir dir="${quick.dir}/lib/compiler"/>
     <locker
-      srcdir="${src.comp.dir}"
-      destdir="${quick.comp.dir}"
+      srcdir="${src.dir}/compiler"
+      destdir="${quick.dir}/lib/compiler"
       addparams="${nsc.params}"
-      scalacdebugging="${nsc.log-files}"
-    >
+      scalacdebugging="${nsc.log-files}">
       <classpath>
-        <pathelement location="${quick.lib.dir}"/>
-        <pathelement location="${quick.comp.dir}"/>
+        <pathelement location="${quick.dir}/lib/library"/>
+        <pathelement location="${quick.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
+  <!-- Timing the build -->
     <stopwatch name="timer.quick" action="total"/>
-    <echo
-      file="${nsc.timers}"
-      append="true"
-      message="    building QUICK:  ${timer.quick};${line.separator}"
-    />
-    <!-- Copy support files to build folder and links external libraries-->
+  <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${quick.dir}"/>
     <build.links build.dir="${quick.dir}"/>
-    <echo>${quick.exec.dir}</echo>
-    <!-- Build executable files -->
+  <!-- Build executable files -->
     <taskdef
       name="quicktool"
       classname="scala.tools.ant.ScalaTool"
-      classpathref="quick.classpath"
-    />
-    <mkdir dir="${quick.exec.dir}"/>
+      classpathref="quick.classpath"/>
+    <mkdir dir="${quick.dir}/bin"/>
     <quicktool
-      file="${quick.exec.dir}/${scala.exec.name}"
+      file="${quick.dir}/bin/${scala.exec.name}"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <quicktool
-      file="${quick.exec.dir}/${scalac.exec.name}"
+      file="${quick.dir}/bin/${scalac.exec.name}"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <quicktool
-      file="${quick.exec.dir}/${scaladoc.exec.name}"
+      file="${quick.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.Main"
       toolflags="-doc"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <quicktool
-      file="${quick.exec.dir}/${scalaint.exec.name}"
+      file="${quick.dir}/bin/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-    />
-    <chmod
-      file="${quick.exec.dir}/${scalac.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${quick.exec.dir}/${scala.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${quick.exec.dir}/${scaladoc.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${quick.exec.dir}/${scalaint.exec.name}"
-      perm="ugo+rx"
-    />
+      copyright="${copyright.string}"/>
+    <chmod perm="ugo+rx"
+      file="${quick.dir}/bin/${scalac.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${quick.dir}/bin/${scala.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${quick.dir}/bin/${scaladoc.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${quick.dir}/bin/${scalaint.exec.name}"/>
   </target>
 
   <target name="test.quick" depends="build">
-    <echo
-      level="error"
-      message="Ant test bench is not available yet."
-    />
+    <echo level="error"
+      message="Ant test bench is not available yet."/>
   </target>
 
 <!-- ===========================================================================
 TEST
 ============================================================================ -->
 
-  <target name="test"
-    depends="clean.build, test.stability, test.strap"
-    description="Tests the build for stability (rebuilds everything)"
-  />
+  <target name="test" depends="clean.build, test.stability, test.strap"
+    description="Tests the build for stability (rebuilds everything)"/>
 
+  <!-- Build the bootstrap layer -->
   <target name="build.strap" depends="setup.quick">
-    <!-- Build the bootstrap layer -->
     <stopwatch name="timer.strap"/>
-    <!-- Build library -->
-    <mkdir dir="${strap.lib.dir}"/>
+  <!-- Build library -->
+    <mkdir dir="${strap.dir}/lib/library"/>
     <javac
-      srcdir="${src.lib.dir}"
-      destdir="${strap.lib.dir}"
-      source="${jc.source}"
-      target="${jc.target}"
-      deprecation="${jc.deprecation}"
-    >
-      <classpath>
-        <pathelement location="${strap.lib.dir}"/>
-      </classpath>
-      <include name="**/*.java"/>
-    </javac>
+      srcdir="${src.dir}/library"
+      destdir="${strap.dir}/lib/library"
+      source="1.4" target="1.4" deprecation="yes"
+      classpath="${strap.dir}/lib/library"
+      includes="**/*.java"/>
     <quick
-      srcdir="${src.lib.dir}"
-      destdir="${strap.lib.dir}"
-      usepredefs="no"
-      addparams="${nsc.params}"
-    >
-      <classpath>
-        <pathelement location="${strap.lib.dir}"/>
-      </classpath>
-      <include name="scala/Predef.scala"/>
-    </quick>
+      srcdir="${src.dir}/library"
+      destdir="${strap.dir}/lib/library"
+      usepredefs="no" addparams="${nsc.params}"
+      classpath="${strap.dir}/lib/library"
+      includes="scala/Predef.scala"/>
     <quick
-      srcdir="${src.lib.dir}"
-      destdir="${strap.lib.dir}"
+      srcdir="${src.dir}/library"
+      destdir="${strap.dir}/lib/library"
       addparams="${nsc.params}"
-    >
-      <classpath>
-        <pathelement location="${strap.lib.dir}"/>
-      </classpath>
+      classpath="${strap.dir}/lib/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
-    <mkdir dir="${strap.dbc.dir}"/>
+  <!-- Build DBC -->
+    <mkdir dir="${strap.dir}/lib/dbc"/>
     <quick
-      srcdir="${src.dbc.dir}"
-      destdir="${strap.dbc.dir}"
-      addparams="${nsc.params}"
-    >
+      srcdir="${src.dir}/dbc"
+      destdir="${strap.dir}/lib/dbc"
+      addparams="${nsc.params}">
       <classpath>
-        <pathelement location="${strap.lib.dir}"/>
-        <pathelement location="${strap.dbc.dir}"/>
+        <pathelement location="${strap.dir}/lib/library"/>
+        <pathelement location="${strap.dir}/lib/dbc"/>
       </classpath>
       <include name="scala/dbc/**/*.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
-    <!-- Build compiler -->
-    <mkdir dir="${strap.comp.dir}"/>
+  <!-- Build compiler -->
+    <mkdir dir="${strap.dir}/lib/compiler"/>
     <quick
-      srcdir="${src.comp.dir}"
-      destdir="${strap.comp.dir}"
-      addparams="${nsc.params}"
-    >
+      srcdir="${src.dir}/compiler"
+      destdir="${strap.dir}/lib/compiler"
+      addparams="${nsc.params}">
       <classpath>
-        <pathelement location="${strap.lib.dir}"/>
-        <pathelement location="${strap.comp.dir}"/>
+        <pathelement location="${strap.dir}/lib/library"/>
+        <pathelement location="${strap.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
+  <!-- Timing the build -->
     <stopwatch name="timer.strap" action="total"/>
-    <echo
-      file="${nsc.timers}"
-      append="true"
-      message="    building STRAP:  ${timer.strap}.${line.separator}"
-    />
-    <!-- Copy support files to build folder and links external libraries-->
+  <!-- Copy support files to build folder and links external libraries-->
     <build.support build.dir="${strap.dir}"/>
     <build.links build.dir="${strap.dir}"/>
-    <!-- Build executable files -->
+  <!-- Build executable files -->
     <taskdef
       name="straptool"
       classname="scala.tools.ant.ScalaTool"
-      classpathref="quick.classpath"
-    />
-    <mkdir dir="${strap.exec.dir}"/>
+      classpathref="quick.classpath"/>
+    <mkdir dir="${strap.dir}/bin"/>
     <straptool
-      file="${strap.exec.dir}/${scala.exec.name}"
+      file="${strap.dir}/bin/${scala.exec.name}"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <straptool
-      file="${strap.exec.dir}/${scalac.exec.name}"
+      file="${strap.dir}/bin/${scalac.exec.name}"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <straptool
-      file="${strap.exec.dir}/${scaladoc.exec.name}"
+      file="${strap.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.Main"
       toolflags="-doc"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
+      copyright="${copyright.string}"
+      javaFlags="-Xmx256M -Xms16M"/>
     <straptool
-      file="${strap.exec.dir}/${scalaint.exec.name}"
+      file="${strap.dir}/bin/${scalaint.exec.name}"
       name="Scala interpreter"
       class="scala.tools.nsc.MainInterpreter"
       version="${version.number}"
-      copyright="${copyright}"
-      extclasspath="#SCALA_HOME#/${lib.dir.name}:#SCALA_HOME#/${comp.dir.name}:#SCALA_HOME#/${fjbg.name}:#SCALA_HOME#/${dbc.dir.name}"
-    />
-    <chmod
-      file="${strap.exec.dir}/${scalac.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${strap.exec.dir}/${scala.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${strap.exec.dir}/${scaladoc.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${strap.exec.dir}/${scalaint.exec.name}"
-      perm="ugo+rx"
-    />
+      copyright="${copyright.string}"/>
+    <chmod perm="ugo+rx"
+      file="${strap.dir}/bin/${scalac.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${strap.dir}/bin/${scala.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${strap.dir}/bin/${scaladoc.exec.name}"/>
+    <chmod perm="ugo+rx"
+      file="${strap.dir}/bin/${scalaint.exec.name}"/>
   </target>
 
+  <!-- Compares quick and test level -->
   <target name="test.stability" depends="build.strap">
-    <!-- Compares quick and test level -->
     <checksum totalproperty="quick.md5">
-      <fileset dir="${quick.dir}">
-        <include name="${lib.dir.name}/**"/>
-        <include name="${comp.dir.name}/**"/>
+      <fileset dir="${quick.dir}/lib">
+        <include name="library/**"/>
+        <include name="compiler/**"/>
       </fileset>
     </checksum>
     <delete quiet="yes" failonerror="no">
       <fileset dir="${quick.dir}" includes="**/*.MD5"/>
     </delete>
     <checksum totalproperty="strap.md5">
-      <fileset dir="${strap.dir}">
-        <include name="${lib.dir.name}/**"/>
-        <include name="${comp.dir.name}/**"/>
+      <fileset dir="${strap.dir}/lib">
+        <include name="library/**"/>
+        <include name="compiler/**"/>
       </fileset>
     </checksum>
     <delete quiet="yes" failonerror="no">
@@ -879,47 +610,39 @@ TEST
 DOCUMENTATION
 ============================================================================ -->
 
-  <target name="docs"
-    description="Generated the API for library sources"
-    depends="setup.quick"
-  >
-    <mkdir dir="${api.lib.dir}"/>
+  <target name="docs" depends="setup.quick"
+    description="Generated the API for library sources">
+    <mkdir dir="${api-lib.dir}"/>
     <quickdoc
-      srcdir="${src.dir}"
-      destdir="${api.lib.dir}"
+      srcdir="${src.dir}/library"
+      destdir="${api-lib.dir}"
       sourcepath=""
       windowtitle="Scala Library Documentation"
-      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;v${version.number}&lt;/div&gt;&lt;/div&gt;"
-    >
-      <classpath>
-        <pathelement location="${quick.dir}/${lib.dir.name}"/>
-      </classpath>
-      <include name="${dbc.dir.name}/**/*.scala"/>
-      <include name="${lib.dir.name}/**/*.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      documenttitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;"
+      classpath="${quick.dir}/lib/library">
+      <include name="dbc/**/*.scala"/>
+      <include name="library/**/*.scala"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quickdoc>
   </target>
 
-  <target name="docs.compiler"
-    description="Generated the API for compiler sources"
-    depends="setup.quick"
-  >
-    <mkdir dir="${api.comp.dir}"/>
+  <target name="docs.compiler" depends="setup.quick"
+    description="Generated the API for compiler sources">
+    <mkdir dir="${api-comp.dir}"/>
     <quickdoc
-      srcdir="${src.comp.dir}"
-      destdir="${api.comp.dir}"
+      srcdir="${src.dir}/compiler"
+      destdir="${api-comp.dir}"
       sourcepath=""
       windowtitle="Scala Compiler Documentation"
-      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;v${version.number}&lt;/div&gt;&lt;/div&gt;"
-    >
+      documenttitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;">
       <classpath>
-        <pathelement location="${quick.lib.dir}"/>
-        <pathelement location="${quick.comp.dir}"/>
+        <pathelement location="${quick.dir}/lib/library"/>
+        <pathelement location="${quick.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quickdoc>
   </target>
 
@@ -929,278 +652,176 @@ GENERATES A DISTRIBUTION
 
   <target name="dist.devel" depends="init">
     <property file="${number.file}"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${svn.revision}"
-    />
-    <runtarget target="dist"/>
+    <property name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}.${svn.number}"/>
+    <runtarget target="pack"/>
   </target>
 
   <target name="dist.patch" depends="init">
-    <propertyfile
-      file="${number.file}"
-      comment="Version last updated on ${time.human}"
-    >
+    <propertyfile file="${number.file}">
       <entry key="version.patch" type="int" default="0" operation="+"/>
     </propertyfile>
     <property file="${number.file}"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}"
-    />
-    <runtarget target="dist"/>
+    <property name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}"/>
+    <runtarget target="pack"/>
   </target>
 
   <target name="dist.minor" depends="init">
-    <propertyfile
-      file="${number.file}"
-      comment="Version last updated on ${time.human}"
-    >
+    <propertyfile file="${number.file}">
       <entry key="version.minor" type="int" default="0" operation="+"/>
       <entry key="version.patch" type="int" value="0"/>
     </propertyfile>
     <property file="${number.file}"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}"
-    />
-    <runtarget target="dist"/>
+    <property name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}"/>
+    <runtarget target="pack"/>
   </target>
 
-  <target name="dist.quick"
-    depends="build.strap, dist.latest"
-    description="Creates a quick Scala distribution (no tests and docs)"
-  />
-
   <target name="dist"
-    depends="test, docs, dist.latest"
-    description="Creates a complete Scala distribution"
-  />
+    depends="build.dist"
+    description="Creates a complete Scala distribution"/>
+  
+  <target name="pack"
+    depends="build.archive, build.sbaz"
+    description="Packs a distribution for SBaz and ZIP/TAR"/>
 
-  <target name="dist.latest"
-    description="Creates the latest Scala distribution"
-  >
-    <property
-      name="dist.current.dir"
-      value="${dist.dir}/${dist.name}-${version.number}"
-    />
+  <target name="build.dist"
+    depends="test,docs"
+    description="Creates the latest Scala distribution">
+    <property name="dist.current.dir"
+      value="${dist.dir}/scala-${version.number}"/>
     <mkdir dir="${dist.current.dir}"/>
-    <!-- Copy all requires libraries -->
+  <!-- Copy all requires libraries -->
     <mkdir dir="${dist.current.dir}/lib"/>
     <jar destfile="${dist.current.dir}/lib/${comp.jar.name}">
-      <fileset dir="${strap.comp.dir}"/>
+      <fileset dir="${strap.dir}/lib/compiler"/>
       <zipfileset src="${fjbg.jar}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${lib.jar.name}">
-      <fileset dir="${strap.lib.dir}"/>
+      <fileset dir="${strap.dir}/lib/library"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
     </jar>
-    <jar destfile="${dist.current.dir}/lib/${lib-dbc.jar.name}">
-      <fileset dir="${strap.dbc.dir}"/>
+    <jar destfile="${dist.current.dir}/lib/${dbc.jar.name}">
+      <fileset dir="${strap.dir}/lib/dbc"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
     </jar>
+  <!-- Copy executable files -->
     <mkdir dir="${dist.current.dir}/bin"/>
-    <!-- Build executable files -->
-    <mkdir dir="${dist.current.dir}/bin"/>
-    <quicktool
-      file="${dist.current.dir}/bin/${scala.exec.name}"
-      version="${version.number}"
-      copyright="${copyright}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
-    <quicktool
-      file="${dist.current.dir}/bin/${scalac.exec.name}"
-      name="Scala compiler"
-      class="scala.tools.nsc.Main"
-      version="${version.number}"
-      copyright="${copyright}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
-    <quicktool
-      file="${dist.current.dir}/bin/${scaladoc.exec.name}"
-      name="Scala doc generator"
-      class="scala.tools.nsc.Main"
-      toolflags="-doc"
-      version="${version.number}"
-      copyright="${copyright}"
-      javaFlags="-Xmx256M -Xms16M"
-    />
-    <quicktool
-      file="${dist.current.dir}/bin/${scalaint.exec.name}"
-      name="Scala interpreter"
-      class="scala.tools.nsc.MainInterpreter"
-      version="${version.number}"
-      copyright="${copyright}"
-    />
-    <chmod
-      file="${dist.current.dir}/bin/${scalac.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${dist.current.dir}/bin/${scala.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${dist.current.dir}/bin/${scaladoc.exec.name}"
-      perm="ugo+rx"
-    />
-    <chmod
-      file="${dist.current.dir}/bin/${scalaint.exec.name}"
-      perm="ugo+rx"
-    />
-    <!-- Copy the API, examples and man -->
-    <copy todir="${dist.current.dir}/doc/${dist.name}">
+    <copy todir="${dist.current.dir}/bin">
+      <fileset dir="${strap.dir}/bin"/>
+    </copy>
+    <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scalac.exec.name}"/>
+    <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scala.exec.name}"/>
+    <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scaladoc.exec.name}"/>
+    <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scalaint.exec.name}"/>
+  <!-- Copy the API, examples and man -->
+    <copy todir="${dist.current.dir}/doc/scala">
       <fileset dir="${docs.dir}" includes="README,LICENSE"/>
     </copy>
-    <copy todir="${dist.current.dir}/doc/${dist.name}/api">
-      <fileset dir="${api.lib.dir}"/>
+    <copy todir="${dist.current.dir}/doc/scala/api">
+      <fileset dir="${api-lib.dir}"/>
     </copy>
-    <copy todir="${dist.current.dir}/doc/${dist.name}/examples">
-      <fileset dir="${examples.dir}"/>
+    <copy todir="${dist.current.dir}/doc/scala/examples">
+      <fileset dir="${docs.dir}/examples"/>
     </copy>
     <copy todir="${dist.current.dir}/man">
       <fileset dir="${docs.dir}/man"/>
     </copy>
-    <!-- Recreate the 'latest' link to point to this distribution -->
+  <!-- Recreate the 'latest' link to point to this distribution -->
     <if><isset property="os.win"/>
       <then>
-        <copy todir="${dist.latest.dir}">
-          <fileset dir="${dist.current.dir}"/>
-        </copy>
+        <copy file="${dist.current.dir}" tofile="${dist.dir}/latest"/>
       </then>
       <else>
         <symlink
-          link="${dist.latest.dir}"
+          link="${dist.dir}/latest"
           resource="${dist.current.dir}"
-          overwrite="yes"
-          failonerror="no"
-        />
+          overwrite="yes" failonerror="no"/>
       </else>
     </if>
-    <!-- Create the SBaz packages -->
-    <mkdir dir="${dist.sbaz.dir}"/>
-    <!-- Create the Scala library package -->
+  <!-- Print-out distribution time -->
+    <stopwatch name="timer.dist" action="total"/>
+  </target>
+  
+  <!-- Create the SBaz packages -->
+  <target name="build.sbaz" depends="build.dist">
+    <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
+    <mkdir dir="${dist.dir}"/>
+  <!-- Create the Scala library package -->
     <quicksbaz
-      file="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.advert"
-      name="${sbaz.lib.name}"
+      file="${dist.dir}/scala-library-${version.number}.sbp"
+      adfile="${dist.dir}/scala-library-${version.number}.advert"
+      name="scala-library"
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
-      link="${sbaz.universe}/${sbaz.lib.name}-${version.number}.sbp"
-    >
-      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${lib-dbc.jar.name}"/>
+      link="${sbaz.universe}/scala-library-${version.number}.sbp">
+      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name}"/>
     </quicksbaz>
-    <!-- Create the Scala developper package -->
+  <!-- Create the Scala developper package -->
     <quicksbaz
-      file="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.advert"
-      name="${sbaz.dev.name}"
+      file="${dist.dir}/scala-devel-${version.number}.sbp"
+      adfile="${dist.dir}/scala-devel-${version.number}.advert"
+      name="scala-devel"
       version="${version.number}"
       desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
-      depends="${sbaz.lib.name}"
-      link="${sbaz.universe}/${sbaz.dev.name}-${version.number}.sbp"
-    >
+      depends="scala-library"
+      link="${sbaz.universe}/scala-devel-${version.number}.sbp">
       <binset dir="${dist.current.dir}/bin" includes="**"/>
       <docset dir="${dist.current.dir}/doc" includes="**"/>
       <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name}"/>
       <manset dir="${dist.current.dir}/man" includes="**"/>
     </quicksbaz>
-    <!-- Creates the empty umbrella Scala package -->
+  <!-- Creates the empty umbrella Scala package -->
     <quicksbaz
-      file="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.advert"
-      name="${sbaz.scala.name}"
+      file="${dist.dir}/scala-${version.number}.sbp"
+      adfile="${dist.dir}/scala-${version.number}.advert"
+      name="scala"
       version="${version.number}"
       desc="The base Scala package that contains everything needed to start using Scala."
-      depends="${sbaz.lib.name},${sbaz.dev.name}"
-      link="${sbaz.universe}/${sbaz.scala.name}-${version.number}.sbp"
-    />
-    <!-- Creates the Scala test package -->
+      depends="scala-library,scala-devel"
+      link="${sbaz.universe}/scala-${version.number}.sbp"/>
+  <!-- Creates the Scala test package -->
     <quicksbaz
-      file="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"
-      adfile="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.advert"
-      name="${sbaz.test.name}"
+      file="${dist.dir}/scala-test-${version.number}.sbp"
+      adfile="${dist.dir}/scala-test-${version.number}.advert"
+      name="scala-test"
       version="${version.number}"
       desc="The Scala test package contains everything needed to test Scala."
-      link="${sbaz.universe}/${sbaz.test.name}-${version.number}.sbp"
-    >
-      <binset
-        dir="${basedir}/test"
-        includes="clitest,diff.exe,lib*.dll,scalatest,scalatest.bat"
-      />
+      link="${sbaz.universe}/scala-test-${version.number}.sbp">
+      <binset dir="${basedir}/test"
+        includes="clitest,diff.exe,lib*.dll,scalatest,scalatest.bat"/>
       <miscset
         dir="${basedir}/test"
-        includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*"
-      />
+        includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*"/>
     </quicksbaz>
-    <stopwatch name="timer.dist" action="total"/>
-    <echo
-      file="${nsc.timers}"
-      append="true"
-      message="    building DIST:   ${timer.dist};${line.separator}"
-    />
   </target>
 
-  <target name="dist.nightly" depends="dist.devel">
-    <property
-      name="dist.archive.nightly"
-      value="${dist.name}-${version.number}"
-    />
-    <fail message="Directory '${dist.dir}/${dist.archive.nightly}' is not available">
-      <condition><not>
-        <available
-          file="${dist.dir}/${dist.archive.nightly}"
-          type="dir"
-        />
-      </not></condition>
-    </fail>
-    <!-- Create gzip compressed tarball -->
-    <mytar
-      dir="${dist.dir}"
-      archive="${dist.archive.nightly}"
-      compression="gzip"
-    />
-    <!-- Create md5 checksums -->
+  <target name="build.archive" depends="build.dist">
+    <tar
+      basedir="${dist.current.dir}"
+      destfile="${dist.dir}/scala-${version.number}.tgz"
+      compression="gzip"/>
     <checksum
-      file="${dist.dir}/${dist.archive.nightly}.tar.gz"
+      file="${dist.dir}/scala-${version.number}.tgz"
       forceOverwrite="yes"
-      fileext=".md5"
-    />
-    <!-- Create zip archive -->
+      fileext=".md5"/>
+  <!-- Create zip archive -->
     <zip
-      destfile="${dist.dir}/${dist.archive.nightly}.zip"
-      basedir="${dist.dir}"
-      includes="${dist.archive.nightly}/**"
-    />
+      basedir="${dist.current.dir}"
+      destfile="${dist.dir}/scala-${version.number}.zip"/>
     <checksum
-      file="${dist.dir}/${dist.archive.nightly}.zip"
+      file="${dist.dir}/scala-${version.number}.zip"
       forceOverwrite="yes"
-      fileext=".md5"
-    />
+      fileext=".md5"/>
   </target>
-
-  <!-- create Unix tarballs while preserving permissions and symlinks -->
-  <!-- Ant task 'tar' can't do that.. -->
-  <macrodef name="mytar">
-    <attribute name="dir"/>
-    <attribute name="archive"/>
-    <attribute name="compression"/>
-    <sequential>
-      <exec dir="@{dir}" executable="tar">
-        <arg line="cf @{archive}.tar -C @{archive} ."/>
-      </exec>
-      <exec dir="@{dir}" executable="@{compression}">
-        <arg line="-f9 @{archive}.tar"/>
-      </exec>
-    </sequential>
-  </macrodef>
 
 <!-- ===========================================================================
 CLEAN
@@ -1209,12 +830,7 @@ CLEAN
   <macrodef name="remove">
     <attribute name="dir"/>
     <sequential>
-      <delete
-        dir="@{dir}"
-        includeemptydirs="yes"
-        quiet="yes"
-        failonerror="no"
-      />
+      <delete dir="@{dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
     </sequential>
   </macrodef>
 
@@ -1229,18 +845,13 @@ CLEAN
   </target>
 
   <target name="clean.all"
-    description="Removes all build products and distributions"
-  >
+    description="Removes all build products and distributions">
     <remove dir="${build.dir}"/>
     <remove dir="${dist.dir}"/>
   </target>
 
   <target name="clean.unfreeze" depends="init">
-    <delete
-      file="${locker.dir}/complete"
-      quiet="yes"
-      failonerror="no"
-    />
+    <delete file="${locker.dir}/complete" quiet="yes" failonerror="no"/>
     <remove dir="${quick.dir}"/>
   </target>
 

@@ -16,6 +16,17 @@ case "`uname`" in
     Darwin*) darwin=true ;;
 esac
 
+# Prints out version if the "-version" flag is passed
+for flag in "$@@" ; do
+    #TODO: take version only if it is before the tool class name
+    if [ "$flag" = '-version' ] ; then
+        echo "Scala runtime version @version@ -- @copyright@"
+        ${JAVACMD:=java} -version
+        exit 0
+    fi
+done
+
+# Finding the root folder for this Scala distribution
 SOURCE=$0;
 SCRIPT=`basename "$SOURCE"`;
 while [ -h "$SOURCE" ]; do
@@ -31,71 +42,56 @@ done;
 SCALA_HOME=`dirname "$SOURCE"`/..;
 SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
-EXTENSION_CLASSPATH="@extclasspath@"
-USER_CLASSPATH="."
+# Will contain (at the end of the script) all arguments that weren't explicitly handled
 USER_ARGS=""
 
-if [ "$EXTENSION_CLASSPATH" = "" ] ; then
-    for jar in `ls "$SCALA_HOME"/lib/*.jar` ; do
-        if [ "$EXTENSION_CLASSPATH" = "" ] ; then
-            EXTENSION_CLASSPATH="$jar"
+# Constructing the user class-path in three overriding steps
+# Step 1: Class-path set to default value "."
+USER_CLASSPATH="."
+# Step 2: Class-path overridden to value of "CLASSPATH" environment variable
+if [ "$CLASSPATH" != "" ] ; then
+      USER_CLASSPATH="$CLASSPATH"
+fi
+# Step 3: Class-path overridden to value of "-classpath" script parameter 
+IS_CP_ARGUMENT=0
+for arg in "$@@" ; do
+    if [ "$IS_CP_ARGUMENT" -eq 1 ] ; then
+        USER_CLASSPATH=$arg
+        IS_CP_ARGUMENT=0
+    else
+        if [ "$arg" = "-cp" ] || [ "$arg" = "-classpath" ] ; then
+            IS_CP_ARGUMENT=1
         else
-            EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$jar"
+            USER_ARGS="$USER_ARGS $arg"
+            IS_CP_ARGUMENT=0
+        fi
+    fi
+done
+
+# Constructing the extension classpath
+EXTENSION_CLASSPATH="@extclasspath@"
+if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+    for ext in `ls -L "$SCALA_HOME"/lib/*` ; do
+        if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+            EXTENSION_CLASSPATH="$ext"
+        else
+            EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$ext"
         fi
     done
 fi
 
-if [ "$CLASSPATH" != "" ] ; then
-      USER_CLASSPATH="$CLASSPATH"
-fi
-
-QQ_CP_ARGUMENT=0
-for i in "$@@" ; do
-    if [ "$QQ_CP_ARGUMENT" -eq 1 ] ; then
-        USER_CLASSPATH=$i
-        QQ_CP_ARGUMENT=0
-    else
-        if [ "$i" = "-cp" ] || [ "$i" = "-classpath" ] ; then
-            QQ_CP_ARGUMENT=1
-        else
-            USER_ARGS="$USER_ARGS $i"
-            QQ_CP_ARGUMENT=0
-        fi
-    fi
-done
-
-MYCLASSPATH=""
-if [ "$EXTENSION_CLASSPATH" = "" ] ; then
-    MYCLASSPATH="$USER_CLASSPATH"
-else
-    if [ "$USER_CLASSPATH" = "" ] ; then
-        MYCLASSPATH="$EXTENSION_CLASSPATH"
-    else
-        MYCLASSPATH="$USER_CLASSPATH:$EXTENSION_CLASSPATH"
-    fi
-fi
-
+# Setting the boot class-path to be the standard library (either as a JAR or a folder)
 BOOT_CLASSPATH="@bootclasspath@"
-if [ "$BOOT_CLASSPATH" = "" ] && [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
-    BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
-fi
-
-if [ "$BOOT_CLASSPATH" != "" ] ; then
-    if [ "$MYCLASSPATH" = "" ] ; then
-        MYCLASSPATH="$BOOT_CLASSPATH"
-    else
-        MYCLASSPATH="$BOOT_CLASSPATH:$MYCLASSPATH"
+if [ "$BOOT_CLASSPATH" = "" ] ; then
+    if [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
+        BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
+    elif [ -d "$SCALA_HOME/lib/library" ] ; then
+        BOOT_CLASSPATH="$SCALA_HOME/lib/library"
     fi
 fi
 
-for flag in "$@@" ; do
-    #TODO: take version only if it is before the tool class name
-    if [ "$flag" = '-version' ] ; then
-        echo "Scala runtime version @version@ -- @copyright@"
-        ${JAVACMD:=java} -version
-        exit 0
-    fi
-done
+# The merge of all three previous classpaths. All Scala code must currently be in a single class loader.
+MERGED_CLASSPATH="$BOOT_CLASSPATH:$USER_CLASSPATH:$EXTENSION_CLASSPATH"
 
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
@@ -104,10 +100,7 @@ if $cygwin; then
         format=windows
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    USER_CLASSPATH=`cygpath --path --$format "$USER_CLASSPATH"`
-    BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
-    EXTENSION_CLASSPATH=`cygpath --path --$format "$EXTENSION_CLASSPATH"`
-    MYCLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
+    MERGED_CLASSPATH=`cygpath --path --$format "$MYCLASSPATH"`
 fi
 
-${JAVACMD:=java} @javaflags@ -cp "$MYCLASSPATH" -Dscala.home="$SCALA_HOME" @properties@ $USER_ARGS
+${JAVACMD:=java} @javaflags@ -cp "$MERGED_CLASSPATH" -Dscala.home="$SCALA_HOME" @properties@ $USER_ARGS

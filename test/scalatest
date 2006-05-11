@@ -480,7 +480,7 @@ FILES_POS="";
 FILES_NEG="";
 FILES_MSIL="";
 
-QUICK="$PREFIX/build/quick/exec"
+QUICK="$PREFIX/build/quick/bin"
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
 elif [ -d "$PREFIX/build" ]; then

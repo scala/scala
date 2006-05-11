@@ -207,7 +207,7 @@ class ClassPath(onlyPresentation: Boolean) {
         if (file != null) {
           for (val file0 <- file) {
             val name = file0.name
-            if (name.endsWith(".jar") || name.endsWith(".zip")) {
+            if (name.endsWith(".jar") || name.endsWith(".zip") || file0.isDirectory) {
               val archive = AbstractFile.getDirectory(new File(file.file, name))
               if (archive != null) entries += (new Library(archive))
             }
