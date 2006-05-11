@@ -1,24 +1,26 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
- * @author
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Martin Odersky
  */
 // $Id: Mixin.scala 7249 2006-04-25 16:01:59 +0200 (Tue, 25 Apr 2006) odersky $
-package scala.tools.nsc.transform;
 
-import symtab._;
-import Flags._;
-import scala.tools.nsc.util.Position;
-import scala.collection.mutable.{ListBuffer, HashMap};
+package scala.tools.nsc.transform
+
+import symtab._
+import Flags._
+import scala.tools.nsc.util.Position
+import scala.collection.mutable.{ListBuffer, HashMap}
 
 abstract class CleanUp extends Transform {
-  import global._;
-  import definitions._;
-  import posAssigner.atPos;
+  import global._
+  import definitions._
+  import posAssigner.atPos
 
   /** the following two members override abstract members in Transform */
-  val phaseName: String = "cleanup";
+  val phaseName: String = "cleanup"
 
-  protected def newTransformer(unit: CompilationUnit): Transformer = new CleanUpTransformer(unit);
+  protected def newTransformer(unit: CompilationUnit): Transformer =
+    new CleanUpTransformer(unit)
 
   class CleanUpTransformer(unit: CompilationUnit) extends Transformer {
 
@@ -93,5 +95,6 @@ abstract class CleanUp extends Transform {
       case _ =>
         super.transform(tree)
     }
-  }
+  } // CleanUpTransformer
+
 }
