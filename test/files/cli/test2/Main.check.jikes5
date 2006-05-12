@@ -1,0 +1,9 @@
+Error: "-dd" is an invalid option.
+use: jikes [options] [@files] file.java...
+For more help, try -help or -version.
+
+Found 1 semantic error compiling "files/cli/test2/Main.java":
+
+     6.     test1.Main.main(args);
+            ^---^
+*** Semantic Error: No accessible field named "test1" was found in type "test2.Main".

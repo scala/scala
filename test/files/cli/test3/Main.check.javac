@@ -17,17 +17,17 @@ where possible options include:
   -target <release>         Generate class files for specific VM version
   -help                     Print a synopsis of standard options
 
-files/cli/test3/Main.java:5: package test1 does not exist
+files/cli/test3/Main.java:6: package test1 does not exist
     test1.Main.main(args);
          ^
-files/cli/test3/Main.java:7: package test2 does not exist
+files/cli/test3/Main.java:8: package test2 does not exist
     test2.Main.main(args);
          ^
 2 errors
-files/cli/test3/Main.java:5: package test1 does not exist
+files/cli/test3/Main.java:6: package test1 does not exist
     test1.Main.main(args);
          ^
-files/cli/test3/Main.java:7: package test2 does not exist
+files/cli/test3/Main.java:8: package test2 does not exist
     test2.Main.main(args);
          ^
 2 errors

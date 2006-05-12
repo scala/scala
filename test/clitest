@@ -131,7 +131,8 @@ test_compile() {
     info="$1"; shift 1;
     [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR;
     [ -f "$LOG_FILE" ] && rm $LOG_FILE;
-    if [ "$COMPILER" = "javac" ]; then
+    if [ "$COMPILER" = "javac" ] || [ "$COMPILER" = "jikes" ]; then
+        suffix=".${COMPILER}";
         [ "$LANG" = "java5" ] && suffix=".${COMPILER}5";
         [ "$LANG" = "java6" ] && suffix=".${COMPILER}6";
     else
@@ -329,9 +330,10 @@ if [ "$LANG" = "scala" ]; then
     INTERPRETER_COMMAND="${BIN_DIR}scalaint"
     SUFFIX=".scala"
 elif [ "$LANG" = "java" ]; then
-    RUNTIME_COMMAND=`which java`
-    COMPILER_COMMAND=`which $COMPILER`
-    BIN_DIR=`dirname $COMPILER_COMMAND`
+    RUNTIME_COMMAND=`which ${JAVACMD:=java}`
+    BIN_DIR=`dirname $RUNTIME_COMMAND`;
+    [ "$COMPILER" = "javac" ] && COMPILER_COMMAND=$BIN_DIR/$COMPILER;
+    [ "$COMPILER" = "jikes" ] && COMPILER_COMMAND=`which $COMPILER`;
     SUFFIX=".java"
 else
     abort "unknown language '$LANG'"
@@ -347,8 +349,9 @@ printf_outline "Runtime command is  : $RUNTIME_COMMAND\\n";
 
 jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
 printf_outline "Java runtime is     : $jvm_version\\n";
-if [ "$LANG" = "java" ]; then
-    [ `echo "$jvm_version" | grep -c "J9"` = "1" ] && LANG="j9vm";
+if [ "$LANG" = "scala" ]; then
+    [ `echo "$jvm_version" | grep -c "J9"` = "1" ] && LANG="${LANG}_j9";
+elif [ "$LANG" = "java" ]; then
     if [ "$COMPILER" = "jikes" ]; then
          if [ "$LANG" = "java" ]; then
              jre_home=`dirname $RUNTIME_COMMAND`/..;
@@ -362,6 +365,7 @@ if [ "$LANG" = "java" ]; then
     fi;
     [ `echo "$jvm_version" | grep -c "1\.5"` = "1" ] && LANG="${LANG}5";
     [ `echo "$jvm_version" | grep -c "1\.6"` = "1" ] && LANG="${LANG}6";
+    [ `echo "$jvm_version" | grep -c "J9"` = "1" ] && LANG="${LANG}_j9";
 fi
 
 if [ "$DEBUG" = "debug" ] ; then

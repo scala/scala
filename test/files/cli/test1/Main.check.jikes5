@@ -1,0 +1,3 @@
+Error: "-dd" is an invalid option.
+use: jikes [options] [@files] file.java...
+For more help, try -help or -version.

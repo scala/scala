@@ -1,0 +1,36 @@
+JVMJ9VM007E Command-line option unrecognised: -cpp
+Could not create the Java virtual machine.
+
+Usage: java [-options] class [args...]
+           (to execute a class)
+   or  java [-jar] [-options] jarfile [args...]
+           (to execute a jar file)
+
+where options include:
+    -cp -classpath <directories and zip/jar files separated by :>
+              set search path for application classes and resources
+    -D<name>=<value>
+              set a system property
+    -verbose[:class|gc|jni]
+              enable verbose output
+    -version  print product version
+    -version:<value>
+        require the specified version to run
+    -showversion  print product version and continue
+    -jre-restrict-search | -no-jre-restrict-search
+              include/exclude user private JREs in the version search
+    -agentlib:<libname>[=<options>]
+              load native agent library <libname>, e.g. -agentlib:hprof
+              see also, -agentlib:jdwp=help and -agentlib:hprof=help
+    -agentpath:<pathname>[=<options>]
+              load native agent library by full pathname
+    -javaagent:<jarpath>[=<options>]
+              load Java programming language agent, see java.lang.instrument
+    -? -help  print this help message
+    -X        print help on non-standard options
+    -assert   print help on assert options
+
+The java class is not found:  test2.Main
+The java class is not found:  test2.Main
+The java class is not found:  test2.Main
+The java class is not found:  test2.Main
