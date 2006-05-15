@@ -150,7 +150,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       return Pair(false, false)
     else if (line.matches(compileRegexp)) {
       withFile(line)(f => {
-        interpreter.compile(f)
+        interpreter.compileFile(f)
         shouldReplay = true
       })
     }
