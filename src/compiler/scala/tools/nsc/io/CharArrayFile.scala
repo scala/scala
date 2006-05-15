@@ -22,7 +22,9 @@ class CharArrayFile(name: String, path: String, chars: Array[Char])
 
   /** Reads the content of this abstract file into a byte array. */
   override def read: Array[Byte] = {
-    Predef.error("!!! not yet implemented");
+    //Why was this marked as not an implementation?  It looks
+    //great to me.  -Lex
+    //Predef.error("!!! not yet implemented");
     new String(chars).getBytes(); // !!!
   }
 
