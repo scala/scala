@@ -13,7 +13,7 @@ import java.io.{BufferedReader,FileReader}
  * TODO: It would be better if error output went to stderr instead
  * of stdout....
  */
-object ScriptMain {
+object MainScript {
   /** Read the contents of the specified file, skipping the header
     * part if there is one.  The header part starts with "#!"
     * and ends with a line that begins with "!#".
