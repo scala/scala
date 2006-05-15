@@ -806,9 +806,11 @@ GENERATES A DISTRIBUTION
 
   <target name="build.archive" depends="build.dist">
     <tar
-      basedir="${dist.current.dir}"
       destfile="${dist.dir}/scala-${version.number}.tgz"
-      compression="gzip"/>
+      compression="gzip">
+      <tarfileset dir="${dist.current.dir}" includes="bin/**" mode="755"/>
+      <tarfileset dir="${dist.current.dir}" excludes="bin/**"/>
+    </tar>
     <checksum
       file="${dist.dir}/scala-${version.number}.tgz"
       forceOverwrite="yes"
