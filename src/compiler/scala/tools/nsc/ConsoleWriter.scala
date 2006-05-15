@@ -8,7 +8,8 @@ class ConsoleWriter extends Writer {
   def flush = Console.flush
 
   def write(cbuf: Array[char], off: int, len: int): Unit =
-    write(new String(cbuf.subArray(off, off+len-1)))
+    if(len > 0)
+      write(new String(cbuf.subArray(off, off+len-1)))
 
   override def write(str: String): Unit = Console.print(str)
 }
