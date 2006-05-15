@@ -93,7 +93,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
      The main disadvantage is:
 
        - Objects, classes, and methods cannot be rebound.  Instead, definitions
-         shadow the old ones, and old code objects to refer to the old
+         shadow the old ones, and old code objects refer to the old
          definitions.
   */
   private val classLoader = {
@@ -173,7 +173,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   }
 
   /** Compile one source file */
-  def compile(filename: String): Unit = {
+  def compileFile(filename: String): Unit = {
     val jfile = new File(filename)
     if(!jfile.exists) {
       reporter.error(null, "no such file: " + filename)
@@ -181,6 +181,15 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     }
     val cr = new compiler.Run
     cr.compileSources(List(new SourceFile(PlainFile.fromFile(jfile))))
+  }
+
+  /** Compile a string.  Returns true if there are no
+    * compilation errors, or false otherwise. */
+  def compileString(code: String): Boolean = {
+    val cr = new compiler.Run
+    reporter.reset
+    cr.compileSources(List(new SourceFile("<script>", code.toCharArray)))
+    return (reporter.errors == 0)
   }
 
   /** build a request from the user.  "tree" is "line" after being parsed */
@@ -245,6 +254,61 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       prevRequests += req
 
     succeeded
+  }
+
+  /** A counter used for numbering objects created by bind() */
+  private var binderNum = 0
+
+  /** Bind a specified name to a specified value.  The name may
+    * later be used by expressions passed to interpret
+    */
+  def bind(name: String, boundType: String, value: Any) = {
+    // XXX check that name is a valid variable name */
+    val binderName = "binder" + binderNum
+    binderNum = binderNum + 1
+    /*
+    /** Find a narrow Scala type for the specified object */
+    def scalaType(obj: Any): String =
+      obj match {
+        case ary:scala.runtime.BoxedArray => { //XXX what if obj is actually a non-boxed array??
+          val elementType =
+            if(ary.length == 0)
+              "Nothing"  // XXX this might not work; what should be done?
+            else
+              scalaType(ary(0))
+          "Array[" + elementType + "]"
+        }
+        case _:Boolean => "Boolean"
+        case _:Byte => "Byte"
+        case _:Char => "Char"
+        case _:Double => "Double"
+        case _:Float => "Float"
+        case _:Int => "Int"
+        case _:Long => "Long"
+        case _:Short => "Short"
+        case obj:AnyRef => obj.getClass.getName
+      }
+    val boundType = scalaType(value)
+      */
+    compileString(
+        "object " + binderName +
+        "{ var value: " + boundType + " = _; " +
+        " def set(x: Any) = value=x.asInstanceOf[" + boundType + "]; }")
+
+    val binderObject =
+      Class.forName(binderName, true, classLoader)
+    val setterMethod =
+      (binderObject
+          .getDeclaredMethods
+          .toList
+          .find(meth => meth.getName == "set")
+          .get)
+    var argsHolder: Array[Any] = null // XXX this roundabout approach is to try and make sure the value is boxed
+    argsHolder = List(value).toArray
+    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[Object]])
+
+
+    interpret("val " + name + " = " + binderName + ".value")
   }
 
   /** Delete a directory tree recursively.  Use with care! */
@@ -547,5 +611,4 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       code.println("+ \"" + line + "\"")
     }
   }
-
 }
