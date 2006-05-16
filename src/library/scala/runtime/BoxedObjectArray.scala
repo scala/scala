@@ -31,8 +31,13 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
 
   override def hashCode(): Int = value.hashCode();
 
+  private def create(length: int): Array[Object] = {
+    val elemClass = value.getClass().getComponentType()
+    java.lang.reflect.Array.newInstance(elemClass, length).asInstanceOf[Array[Object]]
+  }
+
   override def subArray(start: Int, end: Int): Array[Object] = {
-    val result = new Array[Object](end - start);
+    val result = create(end - start)
     Array.copy(value, 0, result, 0, end - start)
     result
   }
@@ -45,7 +50,7 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
       if (p(value(i))) { include(i) = true; len = len + 1 }
       i = i + 1
     }
-    val result = new Array[Object](len);
+    val result = create(len);
     len = 0;
     i = 0;
     while (len < result.length) {
