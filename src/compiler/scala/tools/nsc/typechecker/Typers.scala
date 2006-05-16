@@ -654,8 +654,10 @@ trait Typers requires Analyzer {
           result
         }
         def setterDef: DefDef = {
-          val setter = value.owner.info.decl(nme.getterToSetter(getter.name));
+          val setter = value.owner.info.decl(nme.getterToSetter(getter.name)).suchThat(.isSetter)
+
           assert(setter != NoSymbol, getter);//debug
+
           atPos(vdef.pos)(
             DefDef(setter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
