@@ -148,6 +148,7 @@ trait StdNames requires SymbolTable {
     val ZERO = newTermName("<zero>");
     val STAR = newTermName("*");
     val ROOT = newTermName("<root>");
+    val ROOTPKG = newTermName("_root_");
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>");
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>");
     val SELF = newTermName("$this");

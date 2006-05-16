@@ -192,15 +192,6 @@ trait Parsers requires SyntaxAnalyzer {
 
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
 
-    def scalaDot(name: Name): Tree =
-      Select(Ident(nme.scala_), name);
-    def scalaAnyRefConstr: Tree =
-      scalaDot(nme.AnyRef.toTypeName);
-    def scalaScalaObjectConstr: Tree =
-      scalaDot(nme.ScalaObject.toTypeName);
-    def caseClassConstr: Tree =
-      scalaDot(nme.CaseClass.toTypeName);
-
     /** Convert tree to formal parameter list
     */
     def convertToParams(t: Tree): List[ValDef] = t match {

@@ -15,6 +15,7 @@ trait Definitions requires SymbolTable {
     def isDefinitionsInitialized = isInitialized;
 
     // root packages and classes
+    var RootPackage: Symbol = _;
     var RootClass: Symbol = _;
     var EmptyPackage: Symbol = _;
     var EmptyPackageClass: Symbol = _;
@@ -411,6 +412,9 @@ trait Definitions requires SymbolTable {
       RootClass =
         NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
           .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
+      RootPackage = NoSymbol.newValue(Position.NOPOS, nme.ROOTPKG)
+          .setFlag(FINAL | MODULE | PACKAGE | JAVA)
+          .setInfo(PolyType(List(), RootClass.tpe));
 
       EmptyPackage =
         RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
@@ -419,6 +423,7 @@ trait Definitions requires SymbolTable {
 
       EmptyPackage.setInfo(EmptyPackageClass.tpe);
       RootClass.info.decls.enter(EmptyPackage);
+      RootClass.info.decls.enter(RootPackage);
 
       JavaPackage = getModule("java");
       JavaLangPackage = getModule("java.lang");

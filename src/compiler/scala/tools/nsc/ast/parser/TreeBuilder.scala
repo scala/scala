@@ -18,6 +18,15 @@ abstract class TreeBuilder {
 
   def freshName(): Name = freshName("x$");
 
+  def scalaDot(name: Name): Tree =
+    Select(Ident(nme.scala_) setSymbol definitions.ScalaPackage, name)
+  def scalaAnyRefConstr: Tree =
+    scalaDot(nme.AnyRef.toTypeName);
+  def scalaScalaObjectConstr: Tree =
+    scalaDot(nme.ScalaObject.toTypeName);
+  def caseClassConstr: Tree =
+    scalaDot(nme.CaseClass.toTypeName);
+
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _
    *    x: T               becomes      x @ (_: T)
@@ -63,9 +72,7 @@ abstract class TreeBuilder {
 
   private def makeTuple(trees: List[Tree], isType: boolean): Tree = {
     val tupString = "Tuple" + trees.length;
-    Apply(
-      Select(Ident(nme.scala_), if (isType) newTypeName(tupString) else newTermName(tupString)),
-      trees)
+    Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
   }
 
   private def makeTupleTerm(trees: List[Tree]): Tree = trees match {
@@ -369,9 +376,7 @@ abstract class TreeBuilder {
 
   /** Create a tree representing a function type */
   def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
-    AppliedTypeTree(
-      Select(Ident(nme.scala_), newTypeName("Function" + argtpes.length)),
-      argtpes ::: List(restpe));
+    AppliedTypeTree(scalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {

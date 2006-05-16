@@ -654,7 +654,12 @@ trait Typers requires Analyzer {
           result
         }
         def setterDef: DefDef = {
-          val setter = value.owner.info.decl(nme.getterToSetter(getter.name)).suchThat(.isSetter)
+          var setter = value.owner.info.decl(nme.getterToSetter(getter.name)).filter(
+            .tpe.=:=(MethodType(List(value.tpe.resultType), UnitClass.tpe)));
+          // note can't use .suchThat(.isSetter) above,
+          // because generated setters of abstract variables are not setters in this sense.
+          if (setter hasFlag OVERLOADED) setter = setter.alternatives.head;
+          // we will get a double definition error later anyway!
 
           assert(setter != NoSymbol, getter);//debug
 
@@ -1564,7 +1569,9 @@ trait Typers requires Analyzer {
           if (util.Statistics.enabled) selcnt = selcnt + 1
           var qual1 = typedQualifier(qual)
           if (name.isTypeName) qual1 = checkStable(qual1)
-          typedSelect(qual1, name)
+          val tree1 = typedSelect(qual1, name)
+          if (qual1.symbol == RootPackage) copy.Ident(tree1, name)
+          else tree1
 
         case Ident(name) =>
           idcnt = idcnt + 1

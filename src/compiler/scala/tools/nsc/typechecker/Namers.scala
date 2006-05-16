@@ -88,7 +88,9 @@ trait Namers requires Analyzer {
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
       	val prev = context.scope.lookupEntry(sym.name);
       	if (prev != null && prev.owner == context.scope &&
-            (!prev.sym.isSourceMethod || sym.owner.isPackageClass)) {
+            (!prev.sym.isSourceMethod ||
+             nme.isSetterName(sym.name) ||
+             sym.owner.isPackageClass)) {
 /*
       	  if (sym.sourceFile == null && prev.sym.sourceFile == null) {}
 

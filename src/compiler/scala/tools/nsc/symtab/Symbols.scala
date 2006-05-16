@@ -95,7 +95,7 @@ trait Symbols requires SymbolTable {
       m.setModuleClass(new ModuleClassSymbol(m))
     }
     final def newPackage(pos: int, name: Name) = {
-      assert(isPackageClass);
+      assert(name == nme.ROOT || isPackageClass);
       val m = newModule(pos, name).setFlag(JAVA | PACKAGE);
       m.moduleClass.setFlag(JAVA | PACKAGE);
       m

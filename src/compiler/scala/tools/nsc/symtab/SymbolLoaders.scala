@@ -93,7 +93,8 @@ abstract class SymbolLoaders {
 
     protected def doComplete(root: Symbol): unit = {
       assert(root.isPackageClass, root);
-      root.setInfo(new PackageClassInfoType(new Scope(), root));
+      val scope = new Scope()
+      root.setInfo(new PackageClassInfoType(scope, root));
 
       /** Is the given name a valid input file base name? */
       def isValid(name: String): boolean =
@@ -107,8 +108,8 @@ abstract class SymbolLoaders {
       }
 
       def enterClassAndModule(str: String, completer: SymbolLoader): unit = {
-				val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
-				val name = newTermName(str);
+	val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
+	val name = newTermName(str);
         val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
         val module = owner.newModule(Position.NOPOS, name);
         clazz.setInfo(completer);
