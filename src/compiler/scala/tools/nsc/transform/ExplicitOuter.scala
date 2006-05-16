@@ -74,7 +74,7 @@ abstract class ExplicitOuter extends InfoTransform {
   }
 
   private def outerMember(tp: Type): Symbol = {
-    var e = tp.decls.elems;
+    var e = tp.symbol.info.decls.elems;
     while (e != null && !(e.sym.originalName.startsWith(nme.OUTER) && (e.sym hasFlag ACCESSOR)))
       e = e.next;
     assert(e != null, tp);
