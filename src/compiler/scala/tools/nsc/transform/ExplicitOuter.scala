@@ -75,6 +75,8 @@ abstract class ExplicitOuter extends InfoTransform {
 
   private def outerMember(tp: Type): Symbol = {
     var e = tp.symbol.info.decls.elems;
+      // note: tp.decls does not work here, because tp might be a ThisType, in which case
+      // its decls would be the decls of the required type of the class.
     while (e != null && !(e.sym.originalName.startsWith(nme.OUTER) && (e.sym hasFlag ACCESSOR)))
       e = e.next;
     assert(e != null, tp);
