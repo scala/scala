@@ -1,0 +1,4 @@
+bug593.scala:1 error: `extends' or `{' expected
+trait Wrapper[T](x : T) {
+                ^
+one error found

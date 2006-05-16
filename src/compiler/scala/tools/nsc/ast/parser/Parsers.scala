@@ -1621,7 +1621,8 @@ trait Parsers requires SyntaxAnalyzer {
         val implicitViews = new ListBuffer[Tree];
 	val tparams = typeParamClauseOpt(name, implicitViews);
 	//if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN);
-	val vparamss = paramClauses(name, implicitViews.toList, mods.hasFlag(Flags.CASE));
+	val vparamss = if (mods.hasFlag(Flags.TRAIT)) List()
+                       else paramClauses(name, implicitViews.toList, mods.hasFlag(Flags.CASE));
 	val thistpe = requiresTypeOpt();
 	val template = classTemplate(mods, name, vparamss);
 	val mods1 = if (mods.hasFlag(Flags.TRAIT) && (template.body forall treeInfo.isInterfaceMember))

@@ -31,7 +31,7 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
 
   override def hashCode(): Int = value.hashCode();
 
-  private def create(length: int): Array[Object] = {
+  private def create(length: Int): Array[Object] = {
     val elemClass = value.getClass().getComponentType()
     java.lang.reflect.Array.newInstance(elemClass, length).asInstanceOf[Array[Object]]
   }
