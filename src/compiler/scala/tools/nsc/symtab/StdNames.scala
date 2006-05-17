@@ -284,6 +284,7 @@ trait StdNames requires SymbolTable {
     val tag = newTermName("$tag");
     val wait_ = newTermName("wait");
     val lift_ = newTermName("lift")
+    val value = newTermName("value");
 
     val ZNOT = encode("!");
     val ZAND = encode("&&");

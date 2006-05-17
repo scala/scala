@@ -8,6 +8,7 @@
 package scala.tools.nsc.backend.jvm;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 
 import scala.collection.mutable.{Map, HashMap};
 import scala.tools.nsc.symtab._;
@@ -169,7 +170,77 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField;
       clasz.methods foreach genMethod;
 
+      addAttributes(jclass, c.symbol.attributes);
+
       emitClass(jclass, c.symbol)
+    }
+
+
+    def addAttributes(jmember: JMember, attributes: List[AttrInfo]): Unit = {
+      if (attributes.isEmpty) return;
+
+      val cpool = jmember.getConstantPool();
+      val buf: ByteBuffer = ByteBuffer.allocate(2048);
+      var nattr = 0;
+
+      // put some radom value; the actual number is determined at the end
+      buf.putShort(0xbaba.toShort)
+
+      for (val Pair(typ, consts) <- attributes; typ.symbol.hasFlag(Flags.JAVA)) {
+        nattr = nattr + 1;
+        val jtype = javaType(toTypeKind(typ));
+        buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort);
+        assert(consts.length == 1, consts.toString())
+        buf.putShort(1.toShort); // for now only 1 constructor parameter
+        buf.putShort(cpool.addUtf8("value").toShort);
+        for (val const <- consts) {
+          const.tag match {
+            case BooleanTag =>
+              buf.put('Z'.toByte)
+              buf.putShort(cpool.addInteger(if(const.booleanValue) 1 else 0).toShort)
+            case ByteTag    =>
+              buf.put('B'.toByte)
+              buf.putShort(cpool.addInteger(const.byteValue).toShort)
+            case ShortTag   =>
+              buf.put('S'.toByte)
+              buf.putShort(cpool.addInteger(const.shortValue).toShort)
+            case CharTag    =>
+              buf.put('C'.toByte)
+              buf.putShort(cpool.addInteger(const.charValue).toShort)
+            case IntTag     =>
+              buf.put('I'.toByte)
+              buf.putShort(cpool.addInteger(const.intValue).toShort)
+            case LongTag    =>
+              buf.put('J'.toByte)
+              buf.putShort(cpool.addLong(const.longValue).toShort)
+            case FloatTag   =>
+              buf.put('F'.toByte)
+              buf.putShort(cpool.addFloat(const.floatValue).toShort)
+            case DoubleTag  =>
+              buf.put('D'.toByte)
+              buf.putShort(cpool.addDouble(const.doubleValue).toShort)
+            case StringTag  =>
+              buf.put('s'.toByte);
+              buf.putShort(cpool.addUtf8(const.stringValue).toShort)
+            case ClassTag   =>
+              buf.put('c'.toByte);
+              buf.putShort(cpool.addUtf8(javaType(toTypeKind(const.typeValue)).getSignature()).toShort)
+            //case NullTag    => AllRefClass.tpe
+          }
+        }
+      }
+      if (nattr > 0) {
+        val length = buf.position();
+        buf.putShort(0, nattr.toShort)
+        val arr = buf.array().subArray(0, length);
+
+        val attr = jmember.getContext().JOtherAttribute(jmember.getJClass(),
+                                                        jmember,
+                                                        nme.RuntimeAnnotationATTR.toString(),
+                                                        arr,
+                                                        length)
+        jmember.addAttribute(attr)
+      }
     }
 
     def isTopLevelModule(sym: Symbol): Boolean =
@@ -191,9 +262,12 @@ abstract class GenJVM extends SubComponent {
         case Pair(VolatileAttr, _) => attributes = attributes | JAccessFlags.ACC_VOLATILE;
         case _ => ();
       }}
-      jclass.addNewField(javaFlags(f.symbol) | attributes,
-                         javaName(f.symbol),
-                         javaType(toTypeKind(f.symbol.tpe)));
+      val jfield =
+        jclass.addNewField(javaFlags(f.symbol) | attributes,
+                           javaName(f.symbol),
+                           javaType(toTypeKind(f.symbol.tpe)));
+
+      addAttributes(jfield, f.symbol.attributes)
     }
 
     def genMethod(m: IMethod): Unit = {
@@ -231,7 +305,7 @@ abstract class GenJVM extends SubComponent {
           // }
           val cp = jclass.getConstantPool();
           val reInx = cp.addClass(JAVA_RMI_REMOTEEXCEPTION);
-          val contents = java.nio.ByteBuffer.allocate(4); // u2 + u2[1]
+          val contents = ByteBuffer.allocate(4); // u2 + u2[1]
           contents.putShort(1.asInstanceOf[Short]);
           contents.putShort(reInx.asInstanceOf[Short]);
           if (settings.debug.value)
@@ -251,6 +325,8 @@ abstract class GenJVM extends SubComponent {
         genCode(m);
         genLocalVariableTable;
       }
+
+      addAttributes(jmethod, m.symbol.attributes)
     }
 
     def addModuleInstanceField: Unit = {
@@ -1075,7 +1151,7 @@ abstract class GenJVM extends SubComponent {
         val pc = jcode.getPC();
         var anonCounter = 0;
 
-        val lvTab = java.nio.ByteBuffer.allocate(2 + 10 * vars.length);
+        val lvTab = ByteBuffer.allocate(2 + 10 * vars.length);
         lvTab.putShort(vars.length.asInstanceOf[Short]);
         for (val lv <- vars) {
             val name = if (lv.getName() == null) {

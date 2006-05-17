@@ -242,12 +242,14 @@ abstract class ClassfileParser {
 
   def parseClass(): unit = {
     val jflags = in.nextChar;
+    val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0;
     var sflags = transFlags(jflags);
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT;
     val c = pool.getClassSymbol(in.nextChar);
     if (c != clazz)
       throw new IOException("class file '" + in.file + "' contains wrong " + clazz);
-    val superType = pool.getSuperClass(in.nextChar).tpe;
+    val superType = if (isAttribute) { in.nextChar; definitions.AttributeClass.tpe }
+                    else pool.getSuperClass(in.nextChar).tpe;
     val ifaceCount = in.nextChar;
     val parents = (superType ::
       (for (val i <- List.range(0, ifaceCount))
@@ -276,12 +278,24 @@ abstract class ClassfileParser {
       for (val i <- Iterator.range(0, fieldCount)) parseField();
       val methodCount = in.nextChar;
       for (val i <- Iterator.range(0, methodCount)) parseMethod();
-      if (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol && (sflags & INTERFACE) == 0) {
-        //System.out.println("adding constructor to " + clazz);//DEBUG
-        instanceDefs.enter(
-          clazz.newConstructor(Position.NOPOS)
-            .setFlag(clazz.flags & ConstrFlags).setInfo(MethodType(List(), clazz.tpe)));
-      }
+      if ((instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol
+           && (sflags & INTERFACE) == 0) ||
+          isAttribute)
+        {
+          //System.out.println("adding constructor to " + clazz);//DEBUG
+          val constrParamTypes =
+            if (isAttribute) {
+              val value = instanceDefs.lookup(nme.value)
+              if (value == NoSymbol) List ()
+              else List(value.tpe.resultType)
+              //System.out.println("" + value + " : " + value.tpe)
+            }
+            else List()
+          instanceDefs.enter(
+            clazz.newConstructor(Position.NOPOS)
+            .setFlag(clazz.flags & ConstrFlags)
+            .setInfo(MethodType(constrParamTypes, clazz.tpe)));
+        }
     }
   }
 
@@ -600,11 +614,12 @@ abstract class ClassfileParser {
       res = res | PRIVATE
     else if ((flags & JAVA_ACC_PROTECTED) != 0)
       res = res | PROTECTED
-    if ((flags & JAVA_ACC_ABSTRACT) != 0)
+    if ((flags & JAVA_ACC_ABSTRACT) != 0 && (flags & JAVA_ACC_ANNOTATION) == 0)
       res = res | DEFERRED;
     if ((flags & JAVA_ACC_FINAL) != 0)
       res = res | FINAL;
-    if ((flags & JAVA_ACC_INTERFACE) != 0)
+    if (((flags & JAVA_ACC_INTERFACE) != 0) &&
+        ((flags & JAVA_ACC_ANNOTATION) == 0))
       res = res | TRAIT | INTERFACE | ABSTRACT;
     if ((flags & JAVA_ACC_SYNTHETIC) != 0)
       res = res | SYNTHETIC;
