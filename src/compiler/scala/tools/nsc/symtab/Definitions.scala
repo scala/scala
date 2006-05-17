@@ -60,7 +60,7 @@ trait Definitions requires SymbolTable {
       def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag);
     var AttributeClass: Symbol = _;
     //var RemoteRefClass: Symbol = _
-    var TypedCodeClass: Symbol = _;
+    //var TypedCodeClass: Symbol = _;
     var CodeClass: Symbol = _;
     var CodeModule: Symbol = _;
     var PartialFunctionClass: Symbol = _;
@@ -476,8 +476,10 @@ trait Definitions requires SymbolTable {
       ScalaObjectClass = getClass("scala.ScalaObject");
       AttributeClass = getClass("scala.Attribute");
       //RemoteRefClass = getClass("scala.distributed.RemoteRef");
-      CodeClass = getClass("scala.reflect.Code");
-      CodeModule = getModule("scala.reflect.Code");
+      if (!forCLDC) {
+        CodeClass = getClass("scala.reflect.Code");
+        CodeModule = getModule("scala.reflect.Code");
+      }
       PartialFunctionClass = getClass("scala.PartialFunction");
       IterableClass = getClass("scala.Iterable");
       IteratorClass = getClass("scala.Iterator");
@@ -551,7 +553,7 @@ trait Definitions requires SymbolTable {
       ObjectRefClass = getClass("scala.runtime.ObjectRef");
 
       SerializableAttr = getClass("scala.serializable");
-      BeanPropertyAttr = getClass("scala.reflect.BeanProperty");
+      BeanPropertyAttr = if (forCLDC) null else getClass("scala.reflect.BeanProperty");
     }
   }
 }

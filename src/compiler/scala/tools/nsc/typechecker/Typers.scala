@@ -926,7 +926,7 @@ trait Typers requires Analyzer {
           Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
 
       val Triple(clazz, argpts, respt) =
-        decompose(if (pt.symbol isSubClass CodeClass) pt.typeArgs.head else pt)
+        decompose(if (!forCLDC && (pt.symbol isSubClass CodeClass)) pt.typeArgs.head else pt)
 
       if (fun.vparams.length != argpts.length)
         errorTree(fun, "wrong number of parameters; expected = "+argpts.length)
@@ -951,7 +951,7 @@ trait Typers requires Analyzer {
         val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
         val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
           .setType(funtpe)
-        if (pt.symbol isSubClass CodeClass) {
+        if (!forCLDC && (pt.symbol isSubClass CodeClass)) {
           val liftPoint = Apply(Select(Ident(CodeModule), nme.lift_), List(fun1))
           typed(atPos(fun.pos)(liftPoint))
         } else fun1

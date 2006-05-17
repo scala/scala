@@ -197,14 +197,15 @@ trait SyntheticMethods requires Analyzer {
         // jw-04-2003/jw-0425-designpatterns_p.html)
         if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
       }
-      for (val sym <- clazz.info.decls.toList)
-        if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
-          if (sym.isGetter)
-            addBeanGetterMethod(sym)
-          else if (sym.isSetter)
-            addBeanSetterMethod(sym)
-          else if (sym.isMethod || sym.isType)
-            unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym);
+      if (!forCLDC)
+        for (val sym <- clazz.info.decls.toList)
+          if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
+            if (sym.isGetter)
+              addBeanGetterMethod(sym)
+            else if (sym.isSetter)
+              addBeanSetterMethod(sym)
+            else if (sym.isMethod || sym.isType)
+              unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym);
     }
     val synthetics = ts.toList;
     copy.Template(
