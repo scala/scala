@@ -866,7 +866,7 @@ trait Symbols requires SymbolTable {
     }
   }
 
-  /** A class for term symbols */
+  /** A class for module symbols */
   class ModuleSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TermSymbol(initOwner, initPos, initName) {
 
     private var flatname = nme.EMPTY;
