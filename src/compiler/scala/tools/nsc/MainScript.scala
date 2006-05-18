@@ -1,14 +1,32 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id: $
+
 package scala.tools.nsc
+
 import java.io.{BufferedReader,FileReader}
 
-/** A main routine to support putting Scala code into scripts.  An example
- *  script would look like this:
+/** A main routine to support putting Scala code into scripts.
+ *
+ *  An shell script example on Unix would look like this:
  *
  *    #!/bin/sh
- *    scalascript $0 "$@"
+ *    exec scalascript "$0" "$@"
  *    !#
  *    Console.println("Hello, world!")
+ *    argv.toList foreach Console.println
  *
+ * A batch file example on Windows XP would look like this:
+ *
+ *    ::#!
+ *    @echo off
+ *    call scalascript %0 %*
+ *    goto :eof
+ *    ::!#
+ *    Console.println("Hello, world!")
+ *    argv.toList foreach Console.println
  *
  * TODO: It would be better if error output went to stderr instead
  * of stdout....
@@ -18,6 +36,9 @@ object MainScript {
     * part if there is one.  The header part starts with "#!"
     * and ends with a line that begins with "!#".
     */
+  val startRegexp = "^(::)?#!.*"
+  val endRegexp = "^(::)?!#.*"
+
   def readFileSkippingHeader(filename: String): String = {
     val file =
       new BufferedReader(
@@ -26,15 +47,15 @@ object MainScript {
 
     // skip the header, if there is one
     val firstLine = file.readLine
-    if(firstLine == null)
+    if (firstLine == null)
       return ""
-    else if(firstLine.startsWith("#!")) {
+    else if (firstLine.matches(startRegexp)) {
       // skip until !# is seen
-      def lp:Unit = {
+      def lp: Unit = {
         val line = file.readLine
-        if(line == null)
+        if (line == null)
           ()
-        else if(!line.startsWith("!#"))
+        else if (!line.matches(endRegexp))
           lp
       }
       lp
@@ -45,7 +66,7 @@ object MainScript {
     // now read the rest of the file
     def lp: Unit = {
       val line = file.readLine
-      if(line == null)
+      if (line == null)
         return ()
       contents.append(line)
       contents.append("\n")
@@ -77,21 +98,21 @@ object MainScript {
   def parseArgs(args: List[String])
       :Tuple3[List[String], String, List[String]] =
   {
-    if(args.length == 0)
+    if (args.length == 0)
       usageExit
 
-    if(args(0).startsWith("-")) {
+    if (args(0).startsWith("-")) {
       // the line includes compiler arguments
       val hyphenIndex = args.indexOf("-")
-      if(hyphenIndex < 0)
+      if (hyphenIndex < 0)
         usageExit
-      if(hyphenIndex == (args.length - 1))
+      if (hyphenIndex == (args.length - 1))
         usageExit
 
       Tuple3(
         args.subseq(0, hyphenIndex).toList,
-        args(hyphenIndex+1),
-        args.subseq(hyphenIndex+2, args.length - hyphenIndex - 2).toList)
+        args(hyphenIndex + 1),
+        args.subseq(hyphenIndex + 2, args.length - hyphenIndex - 2).toList)
     } else {
       Tuple3(
         Nil,
@@ -115,7 +136,7 @@ object MainScript {
     if (!command.ok || command.settings.help.value) {
       // either the command line is wrong, or the user
       // explicitly requested a help listing
-      if(!command.ok)
+      if (!command.ok)
         Console.println
       usageExit
     }
@@ -130,9 +151,10 @@ object MainScript {
 
     val interpreter = new Interpreter(command.settings)
     interpreter.beQuiet
-    if(!interpreter.compileString(toRun))
+    if (!interpreter.compileString(toRun))
       return () // compilation error
     interpreter.bind("argv", "Array[String]", scriptArgs)
     interpreter.interpret("scala.scripting.Main.main(argv)")
   }
+
 }
