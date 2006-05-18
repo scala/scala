@@ -188,7 +188,7 @@ abstract class GenJVM extends SubComponent {
 
       for (val Pair(typ, consts) <- attributes; typ.symbol.hasFlag(Flags.JAVA)) {
         nattr = nattr + 1;
-        val jtype = javaType(toTypeKind(typ));
+        val jtype = javaType(typ);
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort);
         assert(consts.length == 1, consts.toString())
         buf.putShort(1.toShort); // for now only 1 constructor parameter
@@ -220,11 +220,15 @@ abstract class GenJVM extends SubComponent {
               buf.put('D'.toByte)
               buf.putShort(cpool.addDouble(const.doubleValue).toShort)
             case StringTag  =>
-              buf.put('s'.toByte);
+              buf.put('s'.toByte)
               buf.putShort(cpool.addUtf8(const.stringValue).toShort)
             case ClassTag   =>
-              buf.put('c'.toByte);
-              buf.putShort(cpool.addUtf8(javaType(toTypeKind(const.typeValue)).getSignature()).toShort)
+              buf.put('c'.toByte)
+              buf.putShort(cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort)
+            case EnumTag =>
+              buf.put('e'.toByte)
+              buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
+              buf.putShort(cpool.addUtf8(const.symbolValue.name.toString()).toShort)
             //case NullTag    => AllRefClass.tpe
           }
         }
@@ -265,7 +269,7 @@ abstract class GenJVM extends SubComponent {
       val jfield =
         jclass.addNewField(javaFlags(f.symbol) | attributes,
                            javaName(f.symbol),
-                           javaType(toTypeKind(f.symbol.tpe)));
+                           javaType(f.symbol.tpe));
 
       addAttributes(jfield, f.symbol.attributes)
     }
@@ -278,7 +282,7 @@ abstract class GenJVM extends SubComponent {
       endPC.clear;
       computeLocalVarsIndex(m);
 
-      var resTpe = javaType(toTypeKind(m.symbol.tpe.resultType));
+      var resTpe = javaType(m.symbol.tpe.resultType);
       if (m.symbol.isClassConstructor)
         resTpe = JType.VOID;
 
@@ -389,7 +393,7 @@ abstract class GenJVM extends SubComponent {
         val mirrorMethod = mirrorClass
         .addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
                       javaName(m),
-                      javaType(toTypeKind(m.tpe.resultType)),
+                      javaType(m.tpe.resultType),
                       javaTypes(paramJavaTypes),
                       paramNames);
         val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
@@ -533,6 +537,11 @@ abstract class GenJVM extends SubComponent {
                   jcode.emitPUSH(classLiteral(kind));
                 else
                   jcode.emitPUSH(javaType(kind).asInstanceOf[JReferenceType]);
+              case EnumTag   =>
+                val sym = const.symbolValue
+                jcode.emitGETSTATIC(javaName(sym.owner),
+                                    javaName(sym),
+                                    javaType(const.tpe))
               case _          => abort("Unknown constant value: " + const);
             }
 
@@ -1100,7 +1109,6 @@ abstract class GenJVM extends SubComponent {
 
     def javaType(t: TypeKind): JType = t match {
       case UNIT            => JType.VOID;
-
       case BOOL            => JType.BOOLEAN;
       case BYTE            => JType.BYTE;
       case SHORT           => JType.SHORT;
@@ -1113,14 +1121,15 @@ abstract class GenJVM extends SubComponent {
       case ARRAY(elem)     => new JArrayType(javaType(elem));
     }
 
+    def javaType(t: Type): JType = javaType(toTypeKind(t))
+
     def javaType(s: Symbol): JType =
       if (s.isMethod)
         new JMethodType(
-          if (s.isClassConstructor)
-            JType.VOID else javaType(toTypeKind(s.tpe.resultType)),
-          javaTypes(s.tpe.paramTypes map toTypeKind))
+          if (s.isClassConstructor) JType.VOID else javaType(s.tpe.resultType),
+          s.tpe.paramTypes.map(javaType).toArray)
       else
-        javaType(toTypeKind(s.tpe));
+        javaType(s.tpe);
 
     def javaTypes(ts: List[TypeKind]): Array[JType] = {
       val res = new Array[JType](ts.length);
@@ -1128,13 +1137,6 @@ abstract class GenJVM extends SubComponent {
       ts foreach ( t => { res(i) = javaType(t); i = i + 1; } );
       res
     }
-
-//     def javaTypes(syms: List[Symbol]): Array[JType] = {
-//       val res = new Array[JType](syms.length);
-//       var i = 0;
-//       syms foreach ( s => { res(i) = javaType(toTypeKind(s.tpe)); i = i + 1; } );
-//       res
-//     }
 
     def getFile(cls: JClass, suffix: String): String = {
       val path = cls.getName().replace('.', File.separatorChar);

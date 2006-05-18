@@ -24,6 +24,7 @@ trait Constants requires SymbolTable {
   final val StringTag  = LITERALstring - LITERAL;
   final val NullTag    = LITERALnull - LITERAL;
   final val ClassTag   = LITERALclass - LITERAL;
+  final val EnumTag    = ClassTag + 1
 
   case class Constant(value: Any) {
 
@@ -39,6 +40,7 @@ trait Constants requires SymbolTable {
       else if (value.isInstanceOf[double]) DoubleTag
       else if (value.isInstanceOf[String]) StringTag
       else if (value.isInstanceOf[Type]) ClassTag
+      else if (value.isInstanceOf[Symbol]) EnumTag
       else if (value == null) NullTag
       else throw new Error("bad constant value: " + value);
 
@@ -55,6 +57,7 @@ trait Constants requires SymbolTable {
       case StringTag  => StringClass.tpe
       case NullTag    => AllRefClass.tpe
       case ClassTag   => ClassClass.tpe
+      case EnumTag    => symbolValue.owner.linkedClass.tpe
     }
 
     /** We need the equals method to take account of tags as well as values */
@@ -132,21 +135,7 @@ trait Constants requires SymbolTable {
       case DoubleTag => value.asInstanceOf[double].asInstanceOf[float]
       case _         => throw new Error("value " + value + " is not a float")
     }
-/*
-    def doubleValue: double = {
-      System.out.println("doubleValue " + tag + " " + value);
-      tag match {
-        case ByteTag   => System.out.println("Byte"); value.asInstanceOf[byte].asInstanceOf[double]
-        case ShortTag  => System.out.println("Short"); value.asInstanceOf[short].asInstanceOf[double]
-        case CharTag   => System.out.println("Char"); value.asInstanceOf[char].asInstanceOf[double]
-        case IntTag    => System.out.println("Int"); value.asInstanceOf[int].asInstanceOf[double]
-        case LongTag   => System.out.println("Long"); value.asInstanceOf[long].asInstanceOf[double]
-        case FloatTag  => System.out.println("Float"); value.asInstanceOf[float].asInstanceOf[double]
-        case DoubleTag => System.out.println("Double"); value.asInstanceOf[double]
-        case _         => System.out.println("error"); throw new Error("value " + value + " is not a double")
-      }
-    }
-*/
+
     def doubleValue: double = tag match {
       case ByteTag   => value.asInstanceOf[byte].asInstanceOf[double]
       case ShortTag  => value.asInstanceOf[short].asInstanceOf[double]
@@ -191,6 +180,8 @@ trait Constants requires SymbolTable {
       else value.toString();
 
     def typeValue: Type = value.asInstanceOf[Type]
+
+    def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
     override def hashCode(): int =
       if (value == null) 0 else value.hashCode() * 41 + 17;

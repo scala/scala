@@ -309,7 +309,8 @@ abstract class ClassfileParser {
       val name = pool.getName(in.nextChar);
       val info = pool.getType(in.nextChar);
       val sym = getOwner(jflags)
-        .newValue(Position.NOPOS, name).setFlag(sflags).setInfo(info);
+        .newValue(Position.NOPOS, name).setFlag(sflags);
+      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else ConstantType(Constant(sym)));
       setPrivateWithin(sym, jflags);
       parseAttributes(sym, info);
       getScope(jflags).enter(sym);
