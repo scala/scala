@@ -2,7 +2,7 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: $
+// $Id$
 
 package scala.tools.nsc
 

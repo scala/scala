@@ -2,7 +2,7 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author Martin Odersky
  */
-// $Id: Mixin.scala 7249 2006-04-25 16:01:59 +0200 (Tue, 25 Apr 2006) odersky $
+// $Id$
 
 package scala.tools.nsc.transform
 
