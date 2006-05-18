@@ -243,7 +243,7 @@ trait Contexts requires Analyzer {
 
       /** Is `clazz' a subclass of an enclosing class? */
       def isSubClassOfEnclosing(clazz: Symbol): boolean = {
-	var c = this;
+	var c = this.enclClass;
 	while (c != NoContext && !clazz.isSubClass(c.owner)) c = c.outer.enclClass;
 	c != NoContext;
       }

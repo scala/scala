@@ -124,20 +124,24 @@ trait Typers requires Analyzer {
     /** Report a type error.
      *  @param pos    The position where to report the error
      *  @param ex     The exception that caused the error */
-    def reportTypeError(pos: int, ex: TypeError): unit = ex match {
-      case CyclicReference(sym, info: TypeCompleter) =>
-        context.unit.error(pos,
-          info.tree match {
-            case ValDef(_, _, tpt, _) if (tpt.tpe == null) =>
-              "recursive "+sym+" needs type"
-            case DefDef(_, _, _, _, tpt, _) if (tpt.tpe == null) =>
-              (if (sym.owner.isClass && sym.owner.info.member(sym.name).hasFlag(OVERLOADED)) "overloaded "
-               else "recursive ")+sym+" needs result type"
-            case _ =>
-              ex.getMessage()
-          })
-      case _ =>
-        context.error(pos, ex.getMessage())
+    def reportTypeError(pos: int, ex: TypeError): unit = {
+      if (settings.debug.value) ex.printStackTrace()
+      ex match {
+        case CyclicReference(sym, info: TypeCompleter) =>
+          context.unit.error(
+            pos,
+            info.tree match {
+              case ValDef(_, _, tpt, _) if (tpt.tpe == null) =>
+                "recursive "+sym+" needs type"
+              case DefDef(_, _, _, _, tpt, _) if (tpt.tpe == null) =>
+                (if (sym.owner.isClass && sym.owner.info.member(sym.name).hasFlag(OVERLOADED)) "overloaded "
+                 else "recursive ")+sym+" needs result type"
+              case _ =>
+                ex.getMessage()
+            })
+        case _ =>
+          context.error(pos, ex.getMessage())
+      }
     }
 
     /** Check that tree is a stable expression.

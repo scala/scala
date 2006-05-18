@@ -944,6 +944,8 @@ trait Symbols requires SymbolTable {
       tp match { //debug
         case TypeRef(_, sym, _) =>
           assert(sym != this, this);
+        case ClassInfoType(parents, _, _) =>
+          for(val p <- parents) assert(p.symbol != this, owner)
         case _ =>
       }
       super.setInfo(tp);

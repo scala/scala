@@ -1,0 +1,10 @@
+Run in resident:
+
+bash-3.00$ ~/runtime-workspace/scala/dists/latest/bin/scalac -resident -d ../bin -sourcepath .
+
+nsc> test/Test.scala
+
+nsc> test/Main.scala
+Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
+
+I think there is a recursive function gone crazy somewhere.

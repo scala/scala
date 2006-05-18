@@ -973,7 +973,7 @@ trait Types requires SymbolTable {
   /** Rebind symbol `sym' to an overriding member in type `pre' */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner;
-    if (owner.isClass && owner != pre.symbol && !sym.isFinal) {
+    if (owner.isClass && owner != pre.symbol && !sym.isFinal && !sym.isClass) {
       val rebind = pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable);
       if (rebind == NoSymbol) sym else rebind
     } else sym
@@ -1409,10 +1409,17 @@ trait Types requires SymbolTable {
       if (sym.isModuleClass && !phase.flatClasses) adaptToNewRun(pre, sym.sourceModule).moduleClass;
       else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) sym
       else {
-        val rebind0 = pre.member(sym.name)
+        var rebind0 = pre.member(sym.name)
+        if (sym.owner.name != rebind0.owner.name) {
+          if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          val bcs = pre.baseClasses.dropWhile(bc => bc.name != sym.owner.name);
+          assert(!bcs.isEmpty)
+          rebind0 = pre.baseType(bcs.head).member(sym.name)
+          if (settings.debug.value) Console.println("ADAPT2 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+        }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
-          System.out.println("" + phase + " " + phase.flatClasses+sym.owner+sym.name)
+          if (settings.debug.value) Console.println("" + phase + " " + phase.flatClasses+sym.owner+sym.name)//debug
           throw new MalformedType(pre, sym.name.toString())
         }
         rebind
