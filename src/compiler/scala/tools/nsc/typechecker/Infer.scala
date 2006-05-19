@@ -96,6 +96,7 @@ trait Infer requires Analyzer {
         val up = if (variance != CONTRAVARIANT) upper else !upper;
         tvar.constr.inst = null;
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo;
+        //Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
         var cyclic = false;
         for (val Pair(tvar2, Pair(tparam2, variance2)) <- config) {
           if (tparam2 != tparam &&
@@ -127,6 +128,8 @@ trait Infer requires Analyzer {
                   tparam2.tpe.subst(tparams, tvars) :: tvar.constr.lobounds;
           }
         }
+        //Console.println("solveOne2 "+tvar+" "+config+" "+tvar.constr.hibounds);//DEBUG
+        tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
         tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
       }
     }

@@ -73,6 +73,7 @@ abstract class UnCurry extends InfoTransform {
     private var inPattern = false;
     private var inConstructorFlag = 0L;
     private var localTyper: analyzer.Typer = analyzer.newTyper(analyzer.rootContext(unit));
+    private var byNameArgs = new HashSet[Tree](16)
 
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree));
@@ -86,10 +87,10 @@ abstract class UnCurry extends InfoTransform {
      * x.apply()? Note that this is not the case if `x' is used as an argument to another
      * call by name parameter.
      */
-    def isByNameRef(tree: Tree): boolean = (
+    def isByNameRef(tree: Tree): boolean =
       tree.isTerm && tree.hasSymbol &&
-      tree.symbol.tpe.symbol == ByNameParamClass && tree.tpe == tree.symbol.tpe.typeArgs.head
-    );
+      tree.symbol.tpe.symbol == ByNameParamClass &&
+      !byNameArgs.contains(tree)
 
     /** Uncurry a type of a tree node.
      *  This function is sensitive to whether or not we are in a pattern -- when in a pattern
@@ -266,15 +267,19 @@ abstract class UnCurry extends InfoTransform {
 	      }
             case _ => args
           }
-	List.map2(formals, args1) ((formal, arg) =>
-	  if (formal.symbol != ByNameParamClass) arg
-	  else if (isByNameRef(arg)) arg setType functionType(List(), arg.tpe)
-	  else {
+	List.map2(formals, args1) { (formal, arg) =>
+	  if (formal.symbol != ByNameParamClass) {
+            arg
+	  } else if (isByNameRef(arg)) {
+            byNameArgs.addEntry(arg)
+            arg setType functionType(List(), arg.tpe)
+	  } else {
             val fun = localTyper.atOwner(currentOwner).typed(
               Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
             new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
             transformFunction(fun)
-          })
+          }
+        }
       }
     }
 

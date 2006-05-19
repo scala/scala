@@ -950,7 +950,9 @@ trait Types requires SymbolTable {
   case class TypeVar(origin: Type, constr: TypeConstraint) extends Type {
     override def symbol = origin.symbol
     override def toString(): String =
-      if (constr.inst eq NoType) "?" + origin else constr.inst.toString();
+      if (constr.inst == null) "<null "+origin+">"
+      else if (constr.inst eq NoType) "?" + origin
+      else constr.inst.toString();
   }
 
   /** A class representing an as-yet unevaluated type.

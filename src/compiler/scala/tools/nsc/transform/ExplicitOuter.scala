@@ -333,11 +333,12 @@ abstract class ExplicitOuter extends InfoTransform {
               sym.makeNotPrivate(sym.owner); //(2)
             tree1
 	  case Select(qual, name) =>
-	    if (currentOwner.enclClass != sym.owner) // (3)
+            val enclClass = currentOwner.enclClass
+	    if (enclClass != sym.owner && enclClass != sym.moduleClass) // (3)
               sym.makeNotPrivate(sym.owner);
 	    if ((sym hasFlag PROTECTED) && //(4)
 		!(qual.isInstanceOf[Super] ||
-		  (qual.tpe.widen.symbol isSubClass currentOwner.enclClass)))
+		  (qual.tpe.widen.symbol isSubClass enclClass)))
 	      sym setFlag notPROTECTED;
 	    tree1
 	  case _ =>
