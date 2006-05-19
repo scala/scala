@@ -6,7 +6,9 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedReader,FileReader}
+import java.io.{BufferedReader, FileReader, File}
+import scala.tools.nsc.util._
+import scala.tools.nsc.io._
 
 /** A main routine to support putting Scala code into scripts.
  *
@@ -32,49 +34,39 @@ import java.io.{BufferedReader,FileReader}
  * of stdout....
  */
 object MainScript {
-  /** Read the contents of the specified file, skipping the header
-    * part if there is one.  The header part starts with "#!"
-    * and ends with a line that begins with "!#".
+  /** Read the entire contents of a file as a String. */
+  private def contentsOfFile(filename: String): String = {
+    val strbuf = new StringBuffer
+    val reader = new FileReader(filename)
+    val cbuf = new Array[Char](1024)
+    while(true) {
+      val n = reader.read(cbuf)
+      if(n <= 0)
+        return strbuf.toString
+      strbuf.append(cbuf, 0, n)
+    }
+    throw new Error("impossible")
+  }
+
+  /** Find the length of the header in the specified file, if
+    * there is one.  The header part starts with "#!" or "::#!"
+    * and ends with a line that begins with "!#" ar "::!#".
     */
-  val startRegexp = "^(::)?#!.*"
-  val endRegexp = "^(::)?!#.*"
+  def headerLength(filename: String): Int = {
+    import java.util.regex._
 
-  def readFileSkippingHeader(filename: String): String = {
-    val file =
-      new BufferedReader(
-          new FileReader(filename))
-    val contents = new StringBuffer
+    val fileContents = contentsOfFile(filename)
 
-    // skip the header, if there is one
-    val firstLine = file.readLine
-    if (firstLine == null)
-      return ""
-    else if (firstLine.matches(startRegexp)) {
-      // skip until !# is seen
-      def lp: Unit = {
-        val line = file.readLine
-        if (line == null)
-          ()
-        else if (!line.matches(endRegexp))
-          lp
-      }
-      lp
-    }
-    else
-      contents.append(firstLine)
+    if(!(fileContents.startsWith("#!") || fileContents.startsWith("::#!")))
+      return 0
 
-    // now read the rest of the file
-    def lp: Unit = {
-      val line = file.readLine
-      if (line == null)
-        return ()
-      contents.append(line)
-      contents.append("\n")
-      lp
-    }
-    lp
+    val matcher =
+      (Pattern.compile("^(::)?!#.*(\\r|\\n|\\r\\n)", Pattern.MULTILINE)
+              .matcher(fileContents))
+    if(! matcher.find)
+      throw new Error("script file does not close its header with !# or ::!#")
 
-    contents.toString
+    return matcher.end
   }
 
   /** Print a usage message and then exit. */
@@ -121,6 +113,26 @@ object MainScript {
     }
   }
 
+
+  def wrappedScript(filename: String): SourceFile = {
+    val preamble =
+      new SourceFile("<script preamble>",
+          ("package scala.scripting\n" +
+          "object Main {\n" +
+          "  def main(argv: Array[String]): Unit = {\n").toCharArray)
+
+    val middle =
+      new SourceFileFragment(
+          new SourceFile(new PlainFile(new File(filename))),
+          headerLength(filename),
+          new File(filename).length.asInstanceOf[Int])
+
+    val end = new SourceFile("<script trailer>", "\n} }\n".toCharArray)
+
+    new CompoundSourceFile(preamble, middle, end)
+  }
+
+
   def main(args: Array[String]): Unit = {
     val parsedArgs = parseArgs(args.toList)
     val compilerArgs = parsedArgs._1
@@ -141,17 +153,11 @@ object MainScript {
       usageExit
     }
 
-    val scriptContents = readFileSkippingHeader(scriptFile)
-    val toRun =
-      "package scala.scripting\n" +
-      "object Main {\n" +
-      "  def main(argv: Array[String]): Unit = {\n" +
-      scriptContents +
-      "\n} }\n"
 
     val interpreter = new Interpreter(command.settings)
     interpreter.beQuiet
-    if (!interpreter.compileString(toRun))
+
+    if(!interpreter.compileSources(List(wrappedScript(scriptFile))))
       return () // compilation error
     interpreter.bind("argv", "Array[String]", scriptArgs)
     interpreter.interpret("scala.scripting.Main.main(argv)")
