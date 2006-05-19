@@ -35,7 +35,7 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
 
   def subArray(start: Int, end: Int): Array[Byte] = {
     val result = new Array[Byte](end - start);
-    Array.copy(value, 0, result, 0, end - start)
+    Array.copy(value, start, result, 0, end - start)
     result
   }
 

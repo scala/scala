@@ -35,7 +35,7 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
 
   def subArray(start: Int, end: Int): Array[Double] = {
     val result = new Array[Double](end - start);
-    Array.copy(value, 0, result, 0, end - start)
+    Array.copy(value, start, result, 0, end - start)
     result
   }
 

@@ -38,7 +38,7 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
 
   override def subArray(start: Int, end: Int): Array[Object] = {
     val result = create(end - start)
-    Array.copy(value, 0, result, 0, end - start)
+    Array.copy(value, start, result, 0, end - start)
     result
   }
 

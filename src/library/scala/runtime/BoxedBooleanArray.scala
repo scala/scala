@@ -35,7 +35,7 @@ final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {
 
   def subArray(start: Int, end: Int): Array[Boolean] = {
     val result = new Array[Boolean](end - start);
-    Array.copy(value, 0, result, 0, end - start)
+    Array.copy(value, start, result, 0, end - start)
     result
   }
 

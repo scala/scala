@@ -35,7 +35,7 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
 
   def subArray(start: Int, end: Int): Array[Float] = {
     val result = new Array[Float](end - start);
-    Array.copy(value, 0, result, 0, end - start)
+    Array.copy(value, start, result, 0, end - start)
     result
   }
 

@@ -234,7 +234,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
   override def subArray(start: Int, end: Int): Object = {
     val result = new BoxedAnyArray(end - start);
-    Array.copy(this, 0, result, 0, end - start)
+    Array.copy(this, start, result, 0, end - start)
     result
   }
 
