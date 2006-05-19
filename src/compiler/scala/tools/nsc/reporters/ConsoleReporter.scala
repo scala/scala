@@ -68,8 +68,9 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
   def printMessage(msg : String) = writer.println(msg);
 
   /** Prints the message with the given position indication. */
-  def printMessage(pos : Position, msg : String) : Unit = {
-    if (pos != null) {
+  def printMessage(posIn : Position, msg : String) : Unit = {
+    if (posIn != null) {
+      val pos = posIn.inUltimateSource
       val buf = new StringBuffer(msg);
       buf.insert(0, " ");
       if (pos.line != Position.NOLINE)
