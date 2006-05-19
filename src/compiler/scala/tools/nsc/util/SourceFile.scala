@@ -51,6 +51,10 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   def position(offset : Int) = new Position(this, offset);
   def position(line : Int, column : Int) = new Position(this, lineToOffset(line) + column);
 
+  /** Map a position to a position in the underlying source file.
+    * For regular source files, simply return the argument. */
+  def positionInUltimateSource(position: Position) = position
+
   // constants
 
   // NOTE: all indexes are based on zero!!!!
@@ -135,8 +139,71 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
       content(input.length) = SU;
       content;
     }
+}
+
+/** A source file composed of multiple other source files.  */
+class CompoundSourceFile(
+    name: String,
+    components: List[SourceFile],
+    contents: Array[Char])
+extends SourceFile(name, contents)
+{
+  /** The usual constructor.  Specify a name for the compound file and
+    * a list of component sources */
+  def this(name: String, components: SourceFile*) = {
+    /* Note that the contents leaves off the final SU character
+     * of all components */
+    this(
+      name,
+      components.toList,
+      Array.concat(components.toList.map(comp =>
+        comp.content.subArray(0, comp.content.length-1)):_*))
+  }
+
+  /** Create an instance with the specified components and a generic name. */
+  def this(components: SourceFile*) = this("(virtual file)", components.toList:_*)
+
+  override def positionInUltimateSource(position: Position) = {
+    var off = position.offset
+    var compsLeft = components
+    while(compsLeft.head.content.length-1 <= off) {
+      off = off - compsLeft.head.content.length + 1
+      compsLeft = compsLeft.tail
+    }
+    compsLeft.head.positionInUltimateSource(new Position(compsLeft.head, off))
+  }
+}
 
 
+/** One portion of an underlying file.  The fragment includes
+  * the indeces from the specified start (inclusively) to stop
+  * (not inclusively).
+  */
+class SourceFileFragment(
+    name: String,
+    underlyingFile: SourceFile,
+    start: Int,
+    stop: Int,
+    contents: Array[Char])
+extends SourceFile(name, contents)
+{
+  def this(name: String, underlyingFile: SourceFile, start: Int, stop: Int) =
+    this(
+      name,
+      underlyingFile,
+      start,
+      stop,
+      underlyingFile.content.subArray(start, stop))
 
+  def this(underlyingFile: SourceFile, start: Int, stop: Int) =
+    this(
+      "(fragment of " + underlyingFile.file.name + ")",
+      underlyingFile,
+      start,
+      stop)
 
+  override def positionInUltimateSource(position: Position) = {
+    underlyingFile.positionInUltimateSource(
+        new Position(underlyingFile, position.offset + start))
+  }
 }
