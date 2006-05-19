@@ -68,6 +68,7 @@ abstract class GenJVM extends SubComponent {
     val TransientAtt     = definitions.getClass("scala.transient").tpe;
     val VolatileAttr     = definitions.getClass("scala.volatile").tpe;
     val RemoteAttr       = definitions.getClass("scala.remote").tpe;
+    val ThrowsAttr       = definitions.getClass("scala.throws").tpe
 
     val CloneableClass   = if (forCLDC) null else definitions.getClass("java.lang.Cloneable");
     val RemoteInterface  = if (forCLDC) null else definitions.getClass("java.rmi.Remote");
@@ -175,6 +176,34 @@ abstract class GenJVM extends SubComponent {
       emitClass(jclass, c.symbol)
     }
 
+    def addExceptionsAttribute(jm: JMethod, throws: List[AttrInfo]): Unit = {
+      if (throws.forall(a => a match {
+        case Pair(ThrowsAttr, _) => false
+        case _ => true
+      })) return;
+
+      val cpool = jm.getConstantPool();
+      val buf: ByteBuffer = ByteBuffer.allocate(512);
+      var nattr = 0;
+
+      // put some radom value; the actual number is determined at the end
+      buf.putShort(0xbaba.toShort)
+
+      for (val Pair(ThrowsAttr, List(exc)) <- throws) {
+        buf.putShort(cpool.addClass(exc.typeValue.toString()).shortValue)
+        nattr = nattr + 1;
+      }
+
+      assert (nattr > 0);
+      val length = buf.position();
+      buf.putShort(0, nattr.toShort)
+      val arr = buf.array().subArray(0, length);
+
+      val attr = jm.getContext().JOtherAttribute(jm.getJClass(), jm,
+                                                 nme.ExceptionsATTR.toString(),
+                                                 arr, length)
+      jm.addAttribute(attr)
+    }
 
     def addAttributes(jmember: JMember, attributes: List[AttrInfo]): Unit = {
       if (attributes.isEmpty) return;
@@ -330,6 +359,7 @@ abstract class GenJVM extends SubComponent {
         genLocalVariableTable;
       }
 
+      addExceptionsAttribute(jmethod, m.symbol.attributes)
       addAttributes(jmethod, m.symbol.attributes)
     }
 

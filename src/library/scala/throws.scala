@@ -11,9 +11,7 @@
 
 package scala;
 
-
 /**
- * Attribute for specifying the static SerialVersionUID field
- * of a serializable class
+ * Attribute for specifying the exceptions thrown by a method.
  */
-class SerialVersionUID(uid: Long) extends Attribute {}
+class throws(clazz: java.lang.Class) extends Attribute;
