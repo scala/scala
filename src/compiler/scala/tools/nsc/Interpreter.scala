@@ -183,14 +183,19 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     cr.compileSources(List(new SourceFile(PlainFile.fromFile(jfile))))
   }
 
-  /** Compile a string.  Returns true if there are no
-    * compilation errors, or false otherwise. */
-  def compileString(code: String): Boolean = {
+  /** Compile an nsc SourceFile.  Returns true if there are
+    * no compilation errors, or false othrewise. */
+  def compileSources(sources: List[SourceFile]): Boolean = {
     val cr = new compiler.Run
     reporter.reset
-    cr.compileSources(List(new SourceFile("<script>", code.toCharArray)))
+    cr.compileSources(sources)
     return (reporter.errors == 0)
   }
+
+  /** Compile a string.  Returns true if there are no
+    * compilation errors, or false otherwise. */
+  def compileString(code: String): Boolean =
+    compileSources(List(new SourceFile("<script>", code.toCharArray)))
 
   /** build a request from the user.  "tree" is "line" after being parsed */
   private def buildRequest(trees: List[Tree], line: String,  lineName: String): Request = {
