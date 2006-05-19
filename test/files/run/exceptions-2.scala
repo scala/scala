@@ -1,7 +1,7 @@
 /*
  * Try exception handling and finally blocks.
  *
- * $Id: $
+ * $Id$
  */
 
 
@@ -124,6 +124,35 @@ object Test {
     Console.println(x);
   }
 
+  def tryFinallyTry: Unit = {
+    try {
+      ()
+    } finally {
+      try {
+        error("a");
+      } catch {
+        case _ => Console.println("Silently ignore exception in finally");
+      }
+    }
+  }
+
+  def valInFinally: Unit =
+    try {
+    } finally {
+      val fin = "Abc";
+      Console.println(fin);
+    };
+
+  def tryAndValInFinally: Unit =
+    try {
+    } finally {
+      val fin = "Abc";
+      try {
+        Console.println(fin);
+      } catch { case _ => () }
+    };
+
+
   def execute(f: => Unit) = try {
     f;
   } catch {
@@ -149,6 +178,14 @@ object Test {
 
     Console.println("method3:");
     execute(method3);
+
+    Console.println("tryFinallyTry:");
+    execute(tryFinallyTry);
+
+    Console.println("valInFinally:");
+    execute(valInFinally);
+    Console.println("tryAndValInFinally");
+    execute(tryAndValInFinally);
 
     Console.println("=================");
 

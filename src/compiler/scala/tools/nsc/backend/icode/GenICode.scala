@@ -364,8 +364,8 @@ abstract class GenICode extends SubComponent  {
 
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol;
-          val local = new Local(sym, toTypeKind(sym.info), false);
-          ctx.method.addLocal(local);
+          var local = new Local(sym, toTypeKind(sym.info), false);
+          local = ctx.method.addLocal(local);
 
           if (rhs == EmptyTree) {
             if (settings.debug.value)
@@ -461,7 +461,13 @@ abstract class GenICode extends SubComponent  {
           if (finalizer != EmptyTree)
             handlers = Pair(NoSymbol, {
                             ctx: Context =>
+                              val exception = new Local(ctx.method.symbol.newVariable(finalizer.pos, unit.fresh.newName("exc"))
+                                    .setInfo(definitions.ThrowableClass.tpe),
+                                  REFERENCE(definitions.ThrowableClass), false);
+                              ctx.method.addLocal(exception);
+                              ctx.bb.emit(STORE_LOCAL(exception));
                               val ctx1 = genLoad(finalizer, ctx, UNIT);
+                              ctx1.bb.emit(LOAD_LOCAL(exception));
                               ctx1.bb.emit(THROW());
                               ctx1.bb.enterIgnoreMode;
                               ctx1
@@ -471,7 +477,16 @@ abstract class GenICode extends SubComponent  {
             bodyCtx => {
               generatedType = kind; //toTypeKind(block.tpe);
               val ctx1 = genLoad(block, bodyCtx, generatedType);
-              genLoad(finalizer, ctx1, UNIT)
+              if (kind != UNIT && mayCleanStack(finalizer)) {
+                val tmp = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe),
+                    kind, false);
+                ctx1.method.addLocal(tmp);
+                ctx1.bb.emit(STORE_LOCAL(tmp));
+                val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                ctx2.bb.emit(LOAD_LOCAL(tmp));
+                ctx2
+              } else
+                genLoad(finalizer, ctx1, UNIT)
             },
             handlers)
 
@@ -1285,6 +1300,18 @@ abstract class GenICode extends SubComponent  {
         case _ =>
           abort("Malformed parameter list: " + vparamss);
       }
+
+    /** Does this tree have a try-catch block? */
+    def mayCleanStack(tree: Tree): Boolean = {
+      var hasTry = false;
+      new Traverser() {
+        override def traverse(t: Tree) = t match {
+          case Try(_, _, _) => hasTry = true;
+          case _ => super.traverse(t);
+        }
+      }.traverse(tree);
+      hasTry
+    }
 
     /**
      *  If the block consists of a single unconditional jump, prune

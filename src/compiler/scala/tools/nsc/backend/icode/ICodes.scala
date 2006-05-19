@@ -55,6 +55,28 @@ abstract class ICodes extends AnyRef
     printer.printMethod(m);
   }
 
+  /** Merge together blocks that have a single successor which has a
+   * single predecessor. Exception handlers are taken into account (they
+   * might force to break a block of straight line code like that).
+   *
+   * This method should be most effective after heavy inlining.
+   */
+  def normalize(m: IMethod): Unit = if (m.code ne null) {
+    Console.println("Method " + m);
+    val mergeablePairs =
+      for (val b <- m.code.blocks.toList;
+         b.successors.length == 1;
+         val succ = b.successors.head;
+         succ.predecessors.length == 1;
+         succ.predecessors.head == b
+/*         !(m.exh.contains { (e: ExceptionHandler) => e.covers(b) && !e.covers(succ) }) */) {
+        Console.println("Block " + b + ".lastInstruction" + b.lastInstruction);
+        Console.println(" has successors: " + b.successors + " and succ has pred: " + succ.predecessors);
+        //yield Pair(b, succ)
+      }
+//    Console.println("Mergeable: " + mergeablePairs.mkString("", "\n", ""));
+    ()
+  }
 
   def init = { }
 }

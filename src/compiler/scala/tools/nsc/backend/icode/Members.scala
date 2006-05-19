@@ -173,12 +173,16 @@ trait Members requires ICodes {
       this
     }
 
-    def addLocal(l: Local): Unit =
-      if (!(locals contains l))
-        locals = l :: locals;
+    def addLocal(l: Local): Local =
+      locals find (l.==) match {
+        case Some(loc) => loc
+        case None =>
+          locals = l :: locals;
+          l
+      }
 
     def addLocals(ls: List[Local]): Unit =
-      ls foreach addLocal;
+      ls foreach { l => addLocal(l); };
 
     def addParam(p: Local): Unit =
       if (!(params contains p)) {
