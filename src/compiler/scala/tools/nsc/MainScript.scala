@@ -155,12 +155,16 @@ object MainScript {
 
 
     val interpreter = new Interpreter(command.settings)
-    interpreter.beQuiet
+    try {
+      interpreter.beQuiet
 
-    if(!interpreter.compileSources(List(wrappedScript(scriptFile))))
-      return () // compilation error
-    interpreter.bind("argv", "Array[String]", scriptArgs)
-    interpreter.interpret("scala.scripting.Main.main(argv)")
+      if(!interpreter.compileSources(List(wrappedScript(scriptFile))))
+        return () // compilation error
+      interpreter.bind("argv", "Array[String]", scriptArgs)
+      interpreter.interpret("scala.scripting.Main.main(argv)")
+    } finally {
+      interpreter.close
+    }
   }
 
 }
