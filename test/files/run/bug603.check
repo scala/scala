@@ -1,0 +1,5 @@
+s = Susp(?)
+evaluating...
+s() = 3
+s = Susp(3)
+2 + s = 5

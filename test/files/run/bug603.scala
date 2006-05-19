@@ -20,7 +20,7 @@ object lazy {
   implicit def force[A](s: Susp[A]): A = s()
 }
 
-object lazy_test {
+object Test {
   import lazy._
 
   def main(args: Array[String]) = {
