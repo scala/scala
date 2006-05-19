@@ -68,7 +68,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   /** whether to print out result lines */
   private var printResults: Boolean = true
 
-  /** be quiet; do not print out the results of each submitted command */
+  /** Be quiet.  Do not print out the results of each
+    * submitted command unless an exception is thrown.  */
   def beQuiet = { printResults = false }
 
   /** directory to save .class files to */
@@ -245,7 +246,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     val Pair(interpreterResultString, succeeded) = req.loadAndRun
 
-    if(printResults) {
+    if(printResults || !succeeded) {
       // print the result
       out.print(interpreterResultString)
 
