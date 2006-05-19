@@ -37,7 +37,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
         succs foreach { p =>
           if (!worklist.contains(p))
             worklist += p;
-          in(p) = lattice.lub(p.predecessors map out.apply)
+          in(p) = lattice.lub(in(p) :: (p.predecessors map out.apply))
         }
       }
     }

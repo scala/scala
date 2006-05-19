@@ -541,6 +541,18 @@ abstract class GenJVM extends SubComponent {
       var crtPC = 0;
 
       b traverse ( instr => {
+        class CompilationError(msg: String) extends Error {
+          override def toString(): String = {
+            msg +
+            "\nCurrent method: " + method +
+            "\nCurrent block: " + b +
+            "\nCurrent instruction: " + instr +
+            "\n---------------------" +
+            dump(method)
+          }
+        }
+        def assert(cond: Boolean, msg: String) = if (!cond) throw new CompilationError(msg);
+
         if (b.lastInstruction == instr)
           endPC(b) = jcode.getPC();
 
@@ -816,7 +828,9 @@ abstract class GenJVM extends SubComponent {
 
         crtPC = jcode.getPC();
         val crtLine = try { clasz.cunit.position(instr.pos).line; } catch {
-            case _: Error => lastLineNr;
+            case _: Error =>
+              log("Warning: wrong position in: " + method);
+              lastLineNr;
         }
 	//System.err.println("CRTLINE: " + instr.pos + " " +
 	//	   /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
@@ -1044,13 +1058,13 @@ abstract class GenJVM extends SubComponent {
     def indexOf(m: IMethod, sym: Symbol): Int = {
       val Some(local) = m.lookupLocal(sym);
       assert (local.index >= 0,
-              "Invalid index for: " + local);
+              "Invalid index for: " + local + "{" + local.hashCode + "}");
       local.index
     }
 
     def indexOf(local: Local): Int = {
       assert (local.index >= 0,
-              "Invalid index for: " + local);
+              "Invalid index for: " + local + "{" + local.hashCode + "}");
       local.index
     }
 
@@ -1065,7 +1079,7 @@ abstract class GenJVM extends SubComponent {
 
       for (val l <- m.locals) {
         if (settings.debug.value)
-          log("Index value for " + l + ": " + idx);
+          log("Index value for " + l + "{" + l.hashCode + "}: " + idx);
         l.index = idx;
         idx = idx + sizeOf(l.kind);
       }
@@ -1204,5 +1218,12 @@ abstract class GenJVM extends SubComponent {
                                         lvTab.array());
         jcode.addAttribute(attr);
     }
+
+    def assert(cond: Boolean, msg: String) = if (!cond) {
+        dump(method);
+        throw new Error(msg + "\nMethod: " + method)
+      }
+
+    def assert(cond: Boolean): Unit = assert(cond, "Assertion failed.");
   }
 }

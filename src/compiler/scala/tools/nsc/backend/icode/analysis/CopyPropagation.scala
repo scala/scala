@@ -15,14 +15,15 @@ abstract class CopyPropagation {
   /** Locations can be local variables. */
   abstract sealed class Location;
   case class LocalVar(l: Local) extends Location;
+  case class Field(r: Record, sym: Symbol) extends Location;
 
   /** Values that can be on the stack. */
   abstract class Value;
   case class This extends Value;
   case class Record(cls: Symbol, bindings: Map[Symbol, Value]) extends Value;
   case class Deref(l: Location) extends Value;
-  case class Field(r: Record, sym: Symbol)   extends Value;
   case object Unknown extends Value;
+  object AllRecords extends Record(NoSymbol, new HashMap[Symbol, Value]);
 
   /** The lattice for this analysis.   */
   object copyLattice extends CompleteLattice {
@@ -51,7 +52,6 @@ abstract class CopyPropagation {
         var stop = false;
 
         while (bindings.isDefinedAt(LocalVar(target)) && !stop) {
-          Console.println("finding alias for " + target);
           bindings(LocalVar(target)) match {
             case Deref(LocalVar(t)) => target = t;
             case _ => stop = true;
@@ -112,8 +112,8 @@ abstract class CopyPropagation {
       else if (b eq bottom) a
       else if (a == b) a
       else {
-        assert(a.stack.length == b.stack.length,
-               "Invalid stacks in states: " + a + b);
+        if (a.stack.length != b.stack.length)
+          throw new LubError(a, b, "Invalid stacks in states: ");
         val resStack = List.map2(a.stack, b.stack) { (v1, v2) =>
           if (v1 == v2) v1 else Unknown
         }
@@ -145,6 +145,9 @@ abstract class CopyPropagation {
         m.exh foreach { e =>
           in(e.startBlock) = new copyLattice.State(copyLattice.emptyBinding, Unknown :: Nil);
         }
+
+        // first block is special: it's not bottom, but a precisely defined state with no bindings
+        in(m.code.startBlock) = new lattice.State(lattice.emptyBinding, Nil);
       }
     }
 
@@ -168,17 +171,18 @@ abstract class CopyPropagation {
       var out = in.dup;
 
       if (settings.debug.value) {
-        Console.println("- " + i);
-        Console.println("in: " + in);
-        Console.println("\n");
+        log("- " + i);
+        log("in: " + in);
+        log("\n");
       }
 
       i match {
         case THIS(_) =>
           out.stack = This :: out.stack;
 
-        case CONSTANT(_) =>
-          out.stack = Unknown :: out.stack;
+        case CONSTANT(k) =>
+        	if (k.tag != UnitTag)
+        	  out.stack = Unknown :: out.stack;
 
         case LOAD_ARRAY_ITEM(_) =>
           out.stack = (Unknown :: out.stack.drop(2));
@@ -192,7 +196,7 @@ abstract class CopyPropagation {
           else {
             val v1 = in.stack match {
               case (r @ Record(cls, bindings)) :: xs =>
-                Field(r, field)
+                Deref(Field(r, field))
 
               case _ => Unknown
             }
@@ -206,7 +210,7 @@ abstract class CopyPropagation {
           out.stack = out.stack.drop(3);
 
         case STORE_LOCAL(local) =>
-          cleanReferencesTo(out, local.sym);
+          cleanReferencesTo(out, LocalVar(local));
           in.stack match {
             case Unknown :: xs => ();
             case v :: vs =>
@@ -225,7 +229,7 @@ abstract class CopyPropagation {
             out.stack = out.stack.drop(1);
           else {
             out.stack = out.stack.drop(2);
-            cleanReferencesTo(out, field);
+            cleanReferencesTo(out, Field(AllRecords, field));
             in.stack match {
               case v :: Record(_, bindings) :: vs =>
                 bindings += field -> v;
@@ -327,12 +331,11 @@ abstract class CopyPropagation {
      *  and bindings. It is called when a new assignment destroys
      *  previous copy-relations.
      */
-    final def cleanReferencesTo(s: copyLattice.State, sym: Symbol): Unit = {
+    final def cleanReferencesTo(s: copyLattice.State, target: Location): Unit = {
       def cleanRecord(r: Record): Record = {
         r.bindings filter { (loc, value) =>
           value match {
-            case Deref(LocalVar(sym1)) if (sym1 == sym) => false
-            case Field(_, sym1) if (sym1 == sym) => false
+            case Deref(loc1) if (loc1 == target) => false
             case _ => true
           }
         }
@@ -346,14 +349,17 @@ abstract class CopyPropagation {
       }}
 
       s.bindings filter { (loc, value) =>
-        value match {
-          case Deref(LocalVar(sym1)) if (sym1 == sym) => false
-          case Field(_, sym1) if (sym1 == sym) => false
+        (value match {
+          case Deref(loc1) if (loc1 == target) => false
           case Record(_, _) =>
             cleanRecord(value.asInstanceOf[Record]);
             true
           case _ => true
-        }
+        }) &&
+        (loc match {
+          case l: Location if (l == target) => false
+          case _ => true
+        })
       }
     }
 
@@ -361,17 +367,10 @@ abstract class CopyPropagation {
      * by the result of the call. If the method is impure, all bindings to record fields are cleared.
      */
     final def simulateCall(s: copyLattice.State, method: Symbol, static: Boolean): copyLattice.State = {
-//       if (static)
-//         Console.println("Method type is: " + method.info);
-
       val out = new copyLattice.State(s.bindings, s.stack);
       out.stack = out.stack.drop(method.info.paramTypes.length + (if (static) 0 else 1));
-//       if (static)
-//         Console.println("Stack after drops: " + out.stack);
       if (method.info.resultType != definitions.UnitClass.tpe)
         out.stack = Unknown :: out.stack;
-//       if (static)
-//         Console.println("Stack after return type: " + out.stack);
       if (!isPureMethod(method))
         invalidateRecords(out);
       out
@@ -387,7 +386,7 @@ abstract class CopyPropagation {
 
       s.bindings filter { (loc, value) =>
         value match {
-          case Field(_, _) => false
+          case Deref(Field(_, _)) => false
           case _ => true
         }
       }

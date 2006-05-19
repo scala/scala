@@ -61,9 +61,10 @@ abstract class Inliners extends SubComponent {
                block:  BasicBlock,
                instr:  Instruction,
                callee: IMethod): Unit = {
-       log("Inlining " + callee + " in " + caller + " at pos: " +
-           classes(caller.symbol.owner).cunit.position(instr.pos));
+//       log("Inlining " + callee + " in " + caller + " at pos: " +
+//           classes(caller.symbol.owner).cunit.position(instr.pos));
 
+       val targetPos = instr.pos;
        val a = new analysis.MethodTFA(callee);
 
        /* The exception handlers that are active at the current block. */
@@ -71,6 +72,9 @@ abstract class Inliners extends SubComponent {
 
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap;
+
+       /* Map callee's parameters to inlined local variables. */
+       val argsToLocal: Map[Local, Local] = new HashMap;
 
        val instrBefore = block.toList.takeWhile( i => i ne instr);
        val instrAfter  = block.toList.drop(instrBefore.length + 1);
@@ -101,6 +105,23 @@ abstract class Inliners extends SubComponent {
          handler
        }
 
+       /** Adds parameters from another method as locals */
+       def addParamsAsLocals(m: IMethod, ls: List[Local]): Unit = {
+         m.locals = m.locals ::: (ls map { a =>
+           if (a.arg) {
+             val l = new Local(a.sym, a.kind, false);
+             argsToLocal += a -> l;
+             l
+           } else
+             a
+        });
+       }
+
+       def addLocals(m: IMethod, ls: List[Local]) =
+         m.locals = m.locals ::: ls;
+       def addLocal(m: IMethod, l: Local): Unit =
+         addLocals(m, List(l));
+
        val afterBlock = newBlock;
 
        /** Map an instruction from the callee to one suitable for the caller. */
@@ -123,6 +144,14 @@ abstract class Inliners extends SubComponent {
            case RETURN(kind) =>
              JUMP(afterBlock);
 
+           case LOAD_LOCAL(l) if (argsToLocal.isDefinedAt(l)) =>
+             Console.println("Replacing load_local");
+             LOAD_LOCAL(argsToLocal(l))
+
+           case STORE_LOCAL(l) if (argsToLocal.isDefinedAt(l)) =>
+             Console.println("Replacing store_local");
+             STORE_LOCAL(argsToLocal(l))
+
            case _ => i
          }
 
@@ -140,16 +169,16 @@ abstract class Inliners extends SubComponent {
        // re-emit the instructions before the call
        block.open;
        block.clear;
-       instrBefore.foreach(block.emit);
+       instrBefore.foreach(i => block.emit(i, i.pos));
 
        // store the arguments into special locals
        callee.params.reverse.foreach { param =>
-         block.emit(STORE_LOCAL(param));
+         block.emit(STORE_LOCAL(param), targetPos);
        }
-       block.emit(STORE_LOCAL(inlinedThis));
+       block.emit(STORE_LOCAL(inlinedThis), targetPos);
 
        // jump to the start block of the callee
-       block.emit(JUMP(inlinedBlock(callee.code.startBlock)));
+       block.emit(JUMP(inlinedBlock(callee.code.startBlock)), targetPos);
        block.close;
 
        // duplicate the other blocks in the callee
@@ -160,41 +189,30 @@ abstract class Inliners extends SubComponent {
              case RETURN(kind) => kind match {
                  case UNIT =>
                    if (!info._2.types.isEmpty) {
-                     info._2.types foreach { t => inlinedBlock(bb).emit(DROP(t)); }
+                     info._2.types foreach { t => inlinedBlock(bb).emit(DROP(t), targetPos); }
                    }
                  case _ =>
                    if (info._2.length > 1) {
-                     inlinedBlock(bb).emit(STORE_LOCAL(retVal));
-                     info._2.types.drop(1) foreach { t => inlinedBlock(bb).emit(DROP(t)); }
-                     inlinedBlock(bb).emit(LOAD_LOCAL(retVal));
+                     inlinedBlock(bb).emit(STORE_LOCAL(retVal), targetPos);
+                     info._2.types.drop(1) foreach { t => inlinedBlock(bb).emit(DROP(t), targetPos); }
+                     inlinedBlock(bb).emit(LOAD_LOCAL(retVal), targetPos);
                    }
                }
              case _ => ();
            }
-           inlinedBlock(bb).emit(map(i), 0);
+           inlinedBlock(bb).emit(map(i), targetPos);
            info = a.interpret(info, i);
          }
          inlinedBlock(bb).close;
        }
 
-       instrAfter.foreach(afterBlock.emit);
+       instrAfter.foreach(i => afterBlock.emit(i, i.pos));
        afterBlock.close;
        count = count + 1;
 
        // add exception handlers of the callee
        caller.exh = (callee.exh map translateExh) ::: caller.exh;
      }
-
-
-    /** Add a local to this method, alfa-renaming is not
-     *  necessary because we use symbols to refer to locals.
-     */
-    def addLocals(m: IMethod, ls: List[Local]): Unit = {
-      m.locals = m.locals ::: ls map { l => new Local(l.sym, l.kind, false) };
-    }
-
-    def addLocal(m: IMethod, l: Local): Unit =
-      addLocals(m, List(l));
 
     val InlineAttr = if (settings.inline.value) global.definitions.getClass("scala.inline").tpe else null;
 
@@ -214,7 +232,7 @@ abstract class Inliners extends SubComponent {
       do {
         retry = false;
         if (m.code ne null) {
-          this.count = 0;
+//          this.count = 0;
           if (settings.debug.value)
             log("Analyzing " + m + " count " + count);
           tfa.init(m);
@@ -262,9 +280,12 @@ abstract class Inliners extends SubComponent {
                 info = tfa.interpret(info, i);
               }}}}
       } while (retry && count < 5);
+      normalize(m);
     } catch {
       case e =>
         Console.println("############# Cought exception: " + e + " #################");
+        Console.println("\nMethod: " + m +
+                        "\nMethod owner: " + m.symbol.owner);
         e.printStackTrace();
         dump(m);
         throw e;

@@ -1,4 +1,4 @@
-/* NSC -- new scala compiler
+ /* NSC -- new scala compiler
  * Copyright 2005 LAMP/EPFL
  * @author  Iulian Dragos
  */
@@ -8,6 +8,7 @@
 package scala.tools.nsc.backend.opt;
 
 import scala.collection.mutable.{Map, HashMap};
+import scala.tools.nsc.backend.icode.analysis.LubError;
 import scala.tools.nsc.symtab._;
 
 /**
@@ -56,10 +57,34 @@ abstract class ClosureElimination extends SubComponent {
       ret
     }
 
+    /** A simple peephole optimizer. */
+    val peephole = new PeepholeOpt( (i1, i2) =>
+    	Pair(i1, i2) match {
+        case Pair(CONSTANT(c), DROP(_)) =>
+          if (c.tag == UnitTag)
+            Some(List(i2))
+          else
+            Some(Nil);
+
+        case Pair(LOAD_LOCAL(x), STORE_LOCAL(y)) =>
+        	if (x eq y) Some(Nil) else None
+
+        case Pair(LOAD_LOCAL(_), DROP(_)) =>
+          Some(Nil)
+
+        case Pair(LOAD_FIELD(sym, isStatic), DROP(_)) =>
+        	if (isStatic)
+            Some(Nil)
+          else
+            Some(DROP(REFERENCE(definitions.ObjectClass)) :: Nil);
+
+        case _ => None;
+      });
+
     def analyzeClass(cls: IClass): Unit = if (settings.Xcloselim.value) {
-      if (settings.debug.value)
-      	log("Analyzing " + cls);
-      cls.methods.foreach { m => analyzeMethod(m)
+      cls.methods.foreach { m =>
+        analyzeMethod(m);
+        peephole.transformMethod(m);
      }}
 
 
@@ -69,8 +94,8 @@ abstract class ClosureElimination extends SubComponent {
     import copyPropagation._;
 
     /* Some embryonic copy propagation. */
-    def analyzeMethod(m: IMethod): Unit = if (m.code ne null) {
-      Console.println("Analyzing " + m);
+    def analyzeMethod(m: IMethod): Unit = try {if (m.code ne null) {
+      log("Analyzing " + m);
       cpp.init(m);
       cpp.run;
 
@@ -84,27 +109,25 @@ abstract class ClosureElimination extends SubComponent {
               t match {
                 case Deref(LocalVar(v)) =>
                   bb.replaceInstruction(i, valueToInstruction(t));
-                  Console.println("replaced " + i + " with " + t);
+                  log("replaced " + i + " with " + t);
 
                 case This() =>
                   bb.replaceInstruction(i, valueToInstruction(t));
-                  Console.println("replaced " + i + " with " + t);
+                  log("replaced " + i + " with " + t);
 
                 case _ =>
                   bb.replaceInstruction(i, LOAD_LOCAL(info.getAlias(l)));
-                  Console.println("replaced " + i + " with " + info.getAlias(l));
+                  log("replaced " + i + " with " + info.getAlias(l));
 
               }
 
             case LOAD_FIELD(f, false) =>
-              Console.println(" * * * \n" + i + "\n" + info);
-
               info.stack(0) match {
                 case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
                   bb.replaceInstruction(i,
                                         DROP(REFERENCE(cls)) ::
                                         valueToInstruction(info.getBinding(r, f)) :: Nil);
-                  Console.println("Replaced " + i + " with " + info.getBinding(r, f));
+                  log("Replaced " + i + " with " + info.getBinding(r, f));
 
                 case Deref(LocalVar(l)) =>
                   info.getBinding(l) match {
@@ -112,10 +135,9 @@ abstract class ClosureElimination extends SubComponent {
                       bb.replaceInstruction(i,
                                             DROP(REFERENCE(cls)) ::
                                             valueToInstruction(info.getBinding(r, f)) :: Nil);
-                      Console.println("Replaced " + i + " with " + info.getBinding(r, f));
+                      log("Replaced " + i + " with " + info.getBinding(r, f));
                     case _ => ();
                   }
-                  Console.println(info.getBinding(l));
 
                 case _ => ();
               }
@@ -125,6 +147,10 @@ abstract class ClosureElimination extends SubComponent {
           info = cpp.interpret(info, i);
         }
       }
+    }} catch {
+      case e: LubError =>
+        Console.println("In method: " + m);
+        Console.println(e);
     }
 
     /* Partial mapping from values to instructions that load them. */
@@ -140,7 +166,7 @@ abstract class ClosureElimination extends SubComponent {
 
 
   /** Peephole optimization. */
-/*  class PeepholeOpt(f: (Instruction, Instruction) => List[Instruction]) {
+  class PeepholeOpt(peep: (Instruction, Instruction) => Option[List[Instruction]]) {
 
     private var method: IMethod = null;
 
@@ -150,30 +176,34 @@ abstract class ClosureElimination extends SubComponent {
         transformBlock(b);
     }
 
-    def transformBlock(b: BasicBlock): Unit = {
+    def transformBlock(b: BasicBlock): Unit = if (b.size >= 2) {
       var newInstructions: List[Instruction] = Nil;
-      var first: Instruction = null;
-      var second: Instruction = null;
 
-      def emit(i: Instruction) = {
-        if (first == null)
-          first = i;
-        else if (second == null)
-          second = i
-        else {
-          newInstructions = second :: newInstructions;
-          first = second;
-          second = i;
-        }
-      }
+      newInstructions = b.toList;
 
-      for (val i <- b.toList) {
-        if (first && second) {
-          first = null; second = null;
-          f(first, second) foreach emit;
+      var redo = false;
+      do {
+        var h = newInstructions.head;
+        var t = newInstructions.tail;
+        var seen: List[Instruction] = Nil;
+        redo = false;
+
+        while (t != Nil) {
+          peep(h, t.head) match {
+            case Some(newInstrs) =>
+            	Console.println("Replacing " + h + " : " + t.head + " by " + newInstrs);
+              newInstructions = seen.reverse ::: newInstrs ::: t.tail;
+              redo = true;
+            case None =>
+            	()
+          }
+          seen = h :: seen;
+          h = t.head;
+          t = t.tail;
         }
-      }
+      } while (redo);
+      b.fromList(newInstructions);
     }
   }
-*/
+
 } /* class ClosureElimination */
