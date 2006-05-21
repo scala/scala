@@ -1419,12 +1419,12 @@ trait Parsers requires SyntaxAnalyzer {
     /** Def    ::= val PatDef
      *           | var VarDef
      *           | def FunDef
-     *           | type TypeDef
+     *           | type [NewLine] TypeDef
      *           | TmplDef
      *  Dcl    ::= val ValDcl
      *           | var ValDcl
      *           | def FunDcl
-     *           | type TypeDcl
+     *           | type [NewLine] TypeDcl
      */
     def defOrDcl(mods: Modifiers): List[Tree] = {
       in.token match {
@@ -1436,6 +1436,7 @@ trait Parsers requires SyntaxAnalyzer {
           List(funDefOrDcl(mods));
         case TYPE =>
           in.nextToken();
+          newLineOpt();
           List(typeDefOrDcl(mods))
         case _ =>
           List(tmplDef(mods))

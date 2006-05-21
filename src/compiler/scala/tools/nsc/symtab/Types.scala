@@ -552,6 +552,19 @@ trait Types requires SymbolTable {
       }
       singleDerefCache
     }
+
+    override def narrow: Type = {
+      if (phase.erasedTypes) this
+      else {
+        val thissym = refinedType(List(this), sym.owner, EmptyScope).symbol
+        if (sym.owner != NoSymbol) {
+          //Console.println("narrowing module " + sym + thissym.owner);
+          thissym.typeOfThis = this
+        }
+        thissym.thisType
+      }
+    }
+
     override def symbol = sym
     override def prefix: Type = pre
     override def prefixString: String =
@@ -1500,11 +1513,13 @@ trait Types requires SymbolTable {
       case Pair(_, NoType) => false
       case Pair(_, NoPrefix) => tp1.symbol.isPackageClass
 
-      case Pair(ThisType(sym1), ThisType(sym2)) =>
-        sym1 == sym2
+      case Pair(ThisType(sym1), ThisType(sym2))
+      if (sym1 == sym2) =>
+        true
       case Pair(SingleType(pre1, sym1), SingleType(pre2, sym2))
       if ((sym1 == sym2) && (pre1 =:= pre2)) =>
         true
+/*
       case Pair(SingleType(pre1, sym1), ThisType(sym2))
       if (sym1.isModule &&
           sym1.moduleClass == sym2 &&
@@ -1515,6 +1530,7 @@ trait Types requires SymbolTable {
           sym2.moduleClass == sym1 &&
           pre2 =:= sym1.owner.thisType) =>
         true
+*/
       case Pair(ConstantType(value1), ConstantType(value2)) =>
         value1 == value2
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
@@ -1544,14 +1560,14 @@ trait Types requires SymbolTable {
       case Pair(_, TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
         else constr2 instantiate (wildcardToTypeVarMap(tp1))
-      case Pair(SingleType(_, _), _)
-      if (tp2.isStable && tp1.singleDeref =:= tp2) =>
-        true
-      case Pair(_, SingleType(_, _))
-      if (tp1.isStable && tp1 =:= tp2.singleDeref) =>
-        true
       case _ =>
-        false
+        if (tp1.isStable && tp2.isStable) {
+          var origin1 = tp1
+          while (origin1.singleDeref.isStable) origin1 = origin1.singleDeref
+          var origin2 = tp2
+          while (origin2.singleDeref.isStable) origin2 = origin2.singleDeref
+          ((origin1 ne tp1) || (origin2 ne tp2)) && (origin1 =:= origin2)
+        } else false
     }
   }
 
@@ -1680,15 +1696,12 @@ trait Types requires SymbolTable {
 
   /** Does member `sym1' of `tp1' have a stronger type than member `sym2' of `tp2'? */
   private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): boolean = {
-//    System.out.println("specializes " + tp1 + " " + tp2)//DEBUG
+    //System.out.println("specializes "+tp1+"."+sym1+" "+tp2+"."+sym2)//DEBUG
     val info1 = tp1.memberInfo(sym1);
     val info2 = tp2.memberInfo(sym2).substThis(tp2.symbol, tp1);
-    (sym2.isTerm &&
-       info1 <:< info2 ||
-     sym2.isAbstractType &&
-       (info2.bounds containsType info1) ||
-     sym2.isAliasType &&
-       tp2.memberType(sym2) =:= tp1.memberType(sym1))
+    sym2.isTerm && (info1 <:< info2) ||
+    sym2.isAbstractType && info2.bounds.containsType(info1) ||
+    sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.symbol, tp1) =:= tp1.memberType(sym1)
   }
 
   /** A function implementing tp1 matches tp2 */

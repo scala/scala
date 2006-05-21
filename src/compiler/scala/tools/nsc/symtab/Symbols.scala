@@ -545,7 +545,7 @@ trait Symbols requires SymbolTable {
     def thisSym: Symbol = this;
 
     /** The type of `this' in a class, or else the type of the symbol itself. */
-    final def typeOfThis = thisSym.tpe;
+    def typeOfThis = thisSym.tpe;
 
     /** Sets the type of `this' in a class */
     def typeOfThis_=(tp: Type): unit = throw new Error("typeOfThis cannot be set for " + this);
@@ -747,7 +747,7 @@ trait Symbols requires SymbolTable {
      *  E.g. $eq => =.
      *  If settings.uniquId adds id.
      */
-    def nameString: String = //todo: should be final
+    def nameString: String =
       simpleName.decode + idString;
 
     /** String representation of symbol's full name with `separator'
@@ -758,7 +758,7 @@ trait Symbols requires SymbolTable {
     final def fullNameString(separator: char): String = {
       assert(owner != NoSymbol, this)
       if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
-      else owner.fullNameString(separator) + separator + simpleName;
+      else owner.fullNameString(separator) + separator + simpleName + idString;
     }
 
     final def fullNameString: String = fullNameString('.');
@@ -1015,21 +1015,18 @@ trait Symbols requires SymbolTable {
       val p = thisTypePhase;
       if (p != phase) {
         thisTypePhase = phase;
-        if (!(isValid(p) /*||
-        thisTypePhase != null && thisTypePhase.erasedTypes && phase.erasedTypes*/)) {
-          thisTypeCache = ThisType(this)
-/*
-            if (isModuleClass && !isRoot && !phase.erasedTypes)
-              singleType(owner.thisType, sourceModule);
-            else ThisType(this);
-*/
-        }
+        if (!isValid(p)) thisTypeCache = ThisType(this)
       }
       thisTypeCache
     }
 
     /** A symbol carrying the self type of the class as its type */
     override def thisSym: Symbol = thissym;
+
+    override def typeOfThis: Type =
+      if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
+        singleType(owner.thisType, sourceModule)
+      else thissym.tpe
 
     /** Sets the self type of the class */
     override def typeOfThis_=(tp: Type): unit =

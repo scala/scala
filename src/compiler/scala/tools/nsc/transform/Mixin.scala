@@ -64,9 +64,11 @@ abstract class Mixin extends InfoTransform {
     member setFlag MIXEDIN
   }
 
-  def addLateInterfaceMembers(clazz: Symbol) =
+  def addLateInterfaceMembers(clazz: Symbol): unit =
     if (!(clazz hasFlag MIXEDIN)) {
       clazz setFlag MIXEDIN;
+      for (val bc <- clazz.info.baseClasses.reverse)
+        if (bc.hasFlag(lateINTERFACE)) addLateInterfaceMembers(bc)
       def newGetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterName(field.name))
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
@@ -109,6 +111,7 @@ abstract class Mixin extends InfoTransform {
       //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
       val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=);
       def mixinMembers(mixinClass: Symbol, mmap: Symbol => Symbol): unit = {
+        //Console.println("mixin members of "+mixinClass+" to "+clazz+" "+clazz.info.baseClasses)//DEBUG
         if (mixinClass.isImplClass) {
           addLateInterfaceMembers(mixinClass.toInterface);
           for (val member <- mixinClass.info.decls.toList) {
