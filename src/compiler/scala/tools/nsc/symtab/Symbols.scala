@@ -695,7 +695,7 @@ trait Symbols requires SymbolTable {
       }
 
     def expandedName(name: Name): Name =
-      newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name);
+      newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name)
 
     def sourceFile: AbstractFile =
       (if (isModule) moduleClass else toplevelClass).sourceFile;
@@ -757,8 +757,11 @@ trait Symbols requires SymbolTable {
      */
     final def fullNameString(separator: char): String = {
       assert(owner != NoSymbol, this)
-      if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
-      else owner.fullNameString(separator) + separator + simpleName + idString;
+      var str =
+        if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
+        else owner.fullNameString(separator) + separator + simpleName + idString;
+      if (str.charAt(str.length - 1) == ' ') str = str.substring(0, str.length - 1)
+      str
     }
 
     final def fullNameString: String = fullNameString('.');
