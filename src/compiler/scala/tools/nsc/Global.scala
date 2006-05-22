@@ -1,32 +1,33 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc;
 
-import java.io._;
-import java.nio.charset._;
-import scala.tools.nsc.io.{SourceReader,AbstractFile};
-import scala.tools.nsc.util.ClassPath;
-import scala.tools.nsc.util.{Position,SourceFile};
-import scala.tools.nsc.reporters._;
+package scala.tools.nsc
 
-import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
+import java.io._
+import java.nio.charset._
+import scala.tools.nsc.io.{SourceReader, AbstractFile}
+import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.util.{Position, SourceFile}
+import scala.tools.nsc.reporters._
 
-import symtab._;
-import symtab.classfile.{PickleBuffer, Pickler};
-import util.Statistics;
-import ast._;
-import ast.parser._;
-import typechecker._;
-import matching.TransMatcher;
-import transform._;
-import backend.icode.{ICodes, GenICode, Checkers};
-import backend.ScalaPrimitives;
-import backend.jvm.GenJVM;
-import backend.opt.{Inliners, ClosureElimination};
-import backend.icode.analysis._;
+import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
+
+import symtab._
+import symtab.classfile.{PickleBuffer, Pickler}
+import util.Statistics
+import ast._
+import ast.parser._
+import typechecker._
+import matching.TransMatcher
+import transform._
+import backend.icode.{ICodes, GenICode, Checkers}
+import backend.ScalaPrimitives
+import backend.jvm.GenJVM
+import backend.opt.{Inliners, ClosureElimination}
+import backend.icode.analysis._
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
                                                              with Trees
@@ -93,65 +94,65 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
 // reporting -------------------------------------------------------
 
-  def error(msg: String) = reporter.error(null, msg);
-  def warning(msg: String) = reporter.warning(null, msg);
-  def inform(msg: String) = System.err.println(msg);
+  def error(msg: String) = reporter.error(null, msg)
+  def warning(msg: String) = reporter.warning(null, msg)
+  def inform(msg: String) = System.err.println(msg)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
 
     //reporter.info(null, msg, true);
   def informProgress(msg: String) =
-    if (settings.verbose.value) inform("[" + msg + "]");
+    if (settings.verbose.value) inform("[" + msg + "]")
 
-  def informTime(msg: String, start: long) =
-    informProgress(msg + " in " + (System.currentTimeMillis() - start) + "ms");
+  def informTime(msg: String, start: Long) =
+    informProgress(msg + " in " + (System.currentTimeMillis() - start) + "ms")
 
   def log(msg: Object): unit =
-    if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
+    if (settings.log contains phase.name) inform("[log " + phase + "] " + msg)
 
-  class ErrorWithPosition(val pos : Int, val error : Throwable) extends Error;
+  class ErrorWithPosition(val pos: Int, val error: Throwable) extends Error
 
-  def tryWith[T](pos : Int, body : => T) : T = try {
-    body;
+  def tryWith[T](pos: Int, body: => T): T = try {
+    body
   } catch {
-    case e : ErrorWithPosition => throw e;
-    case te: TypeError => throw te;
-    case e : Error            => throw new ErrorWithPosition(pos, e);
-    case e : RuntimeException => throw new ErrorWithPosition(pos, e);
+    case e : ErrorWithPosition => throw e
+    case te: TypeError => throw te
+    case e : Error            => throw new ErrorWithPosition(pos, e)
+    case e : RuntimeException => throw new ErrorWithPosition(pos, e)
   }
   def catchWith[T](source : SourceFile, body : => T) : T = try {
-    body;
+    body
   } catch {
     case e : ErrorWithPosition =>
       logError("POS: " + source.dbg(e.pos), e);
-      throw e.error;
+      throw e.error
   }
 
-  def logError(msg: String, t: Throwable): Unit = {};
+  def logError(msg: String, t: Throwable): Unit = {}
 
-  def abort(msg: String) = throw new Error(msg);
+  def abort(msg: String) = throw new Error(msg)
 
 // file interface -------------------------------------------------------
 
   private val reader: SourceReader = {
     def stdCharset: Charset = {
       settings.encoding.value = "ISO-8859-1"; // A mandatory charset
-      Charset.forName(settings.encoding.value);
+      Charset.forName(settings.encoding.value)
     }
     val charset =
       try {
-        Charset.forName(settings.encoding.value);
+        Charset.forName(settings.encoding.value)
       } catch {
         case _: IllegalCharsetNameException =>
-          error("illegal charset name '" + settings.encoding.value + "'");
+          error("illegal charset name '" + settings.encoding.value + "'")
           stdCharset
         case _: UnsupportedCharsetException =>
-          error("unsupported charset '" + settings.encoding.value + "'");
+          error("unsupported charset '" + settings.encoding.value + "'")
           stdCharset
       }
     new SourceReader(charset.newDecoder());
   }
 
-  val classPath0 = new ClassPath(onlyPresentation);
+  val classPath0 = new ClassPath(onlyPresentation)
 
   val classPath = new classPath0.Build(
     settings.classpath.value,
@@ -161,45 +162,45 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     settings.extdirs.value);
 
   if (settings.verbose.value) {
-    System.err.println("classpath = " + classPath);
+    System.err.println("classpath = " + classPath)
   }
 
   def getSourceFile(f: AbstractFile): SourceFile =
-    new SourceFile(f, reader.read(f));
+    new SourceFile(f, reader.read(f))
 
   def getSourceFile(name: String): SourceFile = {
-    val f = AbstractFile.getFile(name);
+    val f = AbstractFile.getFile(name)
     if (f == null) throw new FileNotFoundException(
       "source file '" + name + "' could not be found");
     getSourceFile(f)
   }
 
   def getSourceFile(clazz: Symbol): SourceFile = {
-		val ret = classPath.root.find(clazz.fullNameString(File.separatorChar), false);
-		if (!ret.isSourceFile) throw new FileNotFoundException(
-			      "source file for " + clazz + " could not be found");
-		getSourceFile(ret.sourceFile);
+    val ret = classPath.root.find(clazz.fullNameString(File.separatorChar), false)
+    if (!ret.isSourceFile) throw new FileNotFoundException(
+      "source file for " + clazz + " could not be found");
+    getSourceFile(ret.sourceFile)
   }
 
   object loaders extends SymbolLoaders {
     val global: Global.this.type = Global.this
   }
 
-  def rootLoader: LazyType = new loaders.PackageLoader(classPath.root /* getRoot() */);
+  def rootLoader: LazyType = new loaders.PackageLoader(classPath.root /* getRoot() */)
 
   val migrateMsg = "migration problem when moving from Scala version 1.0 to version 2.0:\n";
 
 // Phases ------------------------------------------------------------
 
-  var globalPhase: Phase = NoPhase;
+  var globalPhase: Phase = NoPhase
 
-  val MaxPhases = 64;
+  val MaxPhases = 64
 
   val phaseWithId = new Array[Phase](MaxPhases);
   { for (val i <- List.range(0, MaxPhases)) phaseWithId(i) = NoPhase }
 
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
-    phaseWithId(id) = this;
+    phaseWithId(id) = this
     def run: unit = currentRun.units foreach applyPhase;
 
     def apply(unit: CompilationUnit): unit;
@@ -239,7 +240,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object liftcode extends LiftCode {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object uncurry extends UnCurry {
@@ -277,7 +278,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   object flatten extends Flatten {
     val global: Global.this.type = Global.this
   }
-
+/*
+  object detach extends Detach {
+    val global: Global.this.type = Global.this
+  }
+*/
   object mixer extends Mixin {
     val global: Global.this.type = Global.this
   }
@@ -314,10 +319,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object icodeChecker extends checkers.ICodeChecker();
+  object icodeChecker extends checkers.ICodeChecker()
 
   object typer extends analyzer.Typer(
-    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope()));
+    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope()))
 
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory,
@@ -341,93 +346,93 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     inliner,
     closser,
     genJVM,
-    sampleTransform)
+    sampleTransform);
 
   protected def insertBefore(c: SubComponent, cs: List[SubComponent], before: SubComponent): List[SubComponent] = cs match {
     case List() => List(c)
     case c1 :: cs1 => if (c1 == before) c :: cs else c1 :: insertBefore(c, cs1, before)
   }
 
-  private var curRun: Run = NoRun;
-  override def currentRun: Run = curRun;
+  private var curRun: Run = NoRun
+  override def currentRun: Run = curRun
 
-  def onlyPresentation = settings.doc.value;
+  def onlyPresentation = settings.doc.value
 
   def forCLDC: Boolean = settings.target.value == "cldc"
 
   class Run extends CompilerRun {
-    var currentUnit: CompilationUnit = _;
-    curRun = this;
+    var currentUnit: CompilationUnit = _
+    curRun = this
     override val firstPhase = syntaxAnalyzer.newPhase(NoPhase);
     phase = firstPhase;
     definitions.init; // needs firstPhase and phase to be defined != NoPhase,
                       // that's why it is placed here.
     icodes.init;
 
-    private var p: Phase = firstPhase;
-    private var stopped = false;
+    private var p: Phase = firstPhase
+    private var stopped = false
     for (val pd <- phaseDescriptors) {
       if (!stopped) {
         if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p);
-        stopped = settings.stop contains pd.phaseName;
+        stopped = settings.stop contains pd.phaseName
       }
     }
     // progress tracking
     def progress(current: Int, total: Int): Unit = {}
 
-    private var phasec: Int = 0;
-    private var unitc: Int = 0;
+    private var phasec: Int = 0
+    private var unitc: Int = 0
     def advancePhase: Unit = {
-      unitc = 0;
-      phasec = phasec + 1;
-      refreshProgress;
+      unitc = 0
+      phasec = phasec + 1
+      refreshProgress
     }
     def advanceUnit: Unit = {
-      unitc = unitc + 1;
-      refreshProgress;
+      unitc = unitc + 1
+      refreshProgress
     }
     private def refreshProgress = if (fileset.size > 0)
       progress((phasec * fileset.size) + unitc,
                (phaseDescriptors.length+1) * fileset.size);
 
     override def phaseNamed(name: String): Phase = {
-      var p: Phase = firstPhase;
+      var p: Phase = firstPhase
       while (p.next != p && p.name != name) p = p.next;
       if (p.name != name) NoPhase else p
     }
 
-    override val namerPhase = phaseNamed("namer");
-    override val typerPhase = phaseNamed("typer");
-    override val refchecksPhase = phaseNamed("refchecks");
+    override val namerPhase = phaseNamed("namer")
+    override val typerPhase = phaseNamed("typer")
+    override val refchecksPhase = phaseNamed("refchecks")
 
-    override val explicitOuterPhase = phaseNamed("explicitouter");
-    override val erasurePhase = phaseNamed("erasure");
-    override val flattenPhase = phaseNamed("flatten");
-    override val mixinPhase = phaseNamed("mixin");
-    override val icodePhase = phaseNamed("icode");
+    override val explicitOuterPhase = phaseNamed("explicitouter")
+    override val erasurePhase = phaseNamed("erasure")
+    override val flattenPhase = phaseNamed("flatten")
+    override val mixinPhase = phaseNamed("mixin")
+    override val icodePhase = phaseNamed("icode")
 
     private var unitbuf = new ListBuffer[CompilationUnit];
     private var fileset = new HashSet[AbstractFile];
 
     override val terminalPhase : Phase =
-      if (onlyPresentation) typerPhase.next.next;
+      if (onlyPresentation) typerPhase.next.next
       else new GlobalPhase(p) {
-        def name = "terminal";
+        def name = "terminal"
         def apply(unit: CompilationUnit): unit = {}
       }
 
     private def addUnit(unit: CompilationUnit): unit = {
-      unitbuf += unit;
-      fileset += unit.source.getFile();
+      unitbuf += unit
+      fileset += unit.source.getFile()
     }
 
-    def units: Iterator[CompilationUnit] = unitbuf.elements;
+    def units: Iterator[CompilationUnit] = unitbuf.elements
 
     /** A map from compiled top-level symbols to their source files */
-    val symSource = new HashMap[Symbol, AbstractFile];
+    val symSource = new HashMap[Symbol, AbstractFile]
 
     /** A map from compiled top-level symbols to their picklers */
-    val symData = new HashMap[Symbol, PickleBuffer];
+    val symData = new HashMap[Symbol, PickleBuffer]
 
     /** does this run compile given class, module, or case factory? */
     def compiles(sym: Symbol): boolean =
@@ -439,11 +444,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     def compileSources(sources: List[SourceFile]): unit = {
       val startTime = System.currentTimeMillis();
-      reporter.reset;
+      reporter.reset
       for (val source <- sources)
         addUnit(new CompilationUnit(source));
 
-      globalPhase = firstPhase;
+      globalPhase = firstPhase
       while (globalPhase != terminalPhase && reporter.errors == 0) {
         val startTime = System.currentTimeMillis();
         phase = globalPhase;
@@ -460,7 +465,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
           else checker.checkTrees;
         }
         if (settings.statistics.value) statistics.print(phase);
-        advancePhase;
+        advancePhase
       }
 
       if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
@@ -475,39 +480,40 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
         }
       }
       for (val Pair(sym, file) <- symSource.elements) resetPackageClass(sym.owner);
-      informTime("total", startTime);
+      informTime("total", startTime)
     }
 
     def compileLate(file: AbstractFile): unit =
       if (fileset == null) {
-    	  val msg = "No class file for " + file + " was found\n(This file cannot be loaded as a source file)";
-    	  System.err.println(msg);
-				throw new FatalError(msg);
+        val msg = "No class file for " + file +
+                  " was found\n(This file cannot be loaded as a source file)";
+        System.err.println(msg)
+        throw new FatalError(msg)
       }
       else if (!(fileset contains file)) {
-				val unit = new CompilationUnit(getSourceFile(file));
-				addUnit(unit);
-				var localPhase = firstPhase.asInstanceOf[GlobalPhase];
-				while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) &&
-				  reporter.errors == 0) {
-				  atPhase(localPhase)(localPhase.applyPhase(unit));
-				  localPhase = localPhase.next.asInstanceOf[GlobalPhase];
-				}
-				refreshProgress;
+        val unit = new CompilationUnit(getSourceFile(file));
+        addUnit(unit);
+        var localPhase = firstPhase.asInstanceOf[GlobalPhase];
+        while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) &&
+            reporter.errors == 0) {
+          atPhase(localPhase)(localPhase.applyPhase(unit));
+          localPhase = localPhase.next.asInstanceOf[GlobalPhase];
+        }
+        refreshProgress
       }
 
     def compileFiles(files: List[AbstractFile]): unit =
       try {
         compileSources(files map getSourceFile)
       } catch {
-      case ex: IOException => error(ex.getMessage());
+        case ex: IOException => error(ex.getMessage())
       }
 
     def compile(filenames: List[String]): unit =
       try {
         compileSources(filenames map getSourceFile)
       } catch {
-      case ex: IOException => error(ex.getMessage());
+        case ex: IOException => error(ex.getMessage())
       }
 
     private def resetPackageClass(pclazz: Symbol): unit = {
@@ -515,56 +521,55 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       atPhase(firstPhase) {
         pclazz.setInfo(atPhase(typerPhase)(pclazz.info))
       }
-      if (!pclazz.isRoot) resetPackageClass(pclazz.owner);
+      if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
-  }
-
+  } // class Run
 
   def showDef(name: Name, module: boolean): unit = {
     def getSym(name: Name, module: boolean): Symbol = {
-      var i = name.length - 1;
-      while (i != 0 && name(i) != '#' && name(i) != '.') i = i - 1;
+      var i = name.length - 1
+      while (i != 0 && name(i) != '#' && name(i) != '.') i = i - 1
       if (i == 0)
         definitions.getModule(name)
       else {
-        val root = getSym(name.subName(0, i), name(i) == '.');
-        var selector = name.subName(i+1, name.length);
-        if (module) selector = selector.toTypeName;
+        val root = getSym(name.subName(0, i), name(i) == '.')
+        var selector = name.subName(i+1, name.length)
+        if (module) selector = selector.toTypeName
         root.info.member(selector)
       }
     }
     val sym = getSym(name, module);
     System.err.println("" + sym.name + ":" +
-		       (if (module) sym.tpe.symbol.info else sym.info))
+                       (if (module) sym.tpe.symbol.info else sym.info))
   }
 
   /** Returns the file with the given suffix for the given class. */
   def getFile(clazz: Symbol, suffix: String) = {
-    val outdirname = settings.outdir.value;
-    var outdir = new File(if (outdirname == "") "." else outdirname);
-    val filename = clazz.fullNameString('.');
-    var start = 0;
-    var end = filename.indexOf('.', start);
+    val outdirname = settings.outdir.value
+    var outdir = new File(if (outdirname == "") "." else outdirname)
+    val filename = clazz.fullNameString('.')
+    var start = 0
+    var end = filename.indexOf('.', start)
     while (end >= start) {
       outdir = new File(outdir, filename.substring(start, end));
       if (!outdir.exists()) outdir.mkdir();
       start = end + 1;
-      end = filename.indexOf('.', start);
+      end = filename.indexOf('.', start)
     }
     new File(outdir, filename.substring(start) + suffix)
   }
 
   private def writeSymblFile(clazz: Symbol, pickled: PickleBuffer) = {
-    val file = getFile(clazz, ".symbl");
+    val file = getFile(clazz, ".symbl")
     try {
       val stream = new FileOutputStream(file);
       stream.write(pickled.bytes, 0, pickled.writeIndex);
       stream.close();
-      informProgress("wrote " + file);
+      informProgress("wrote " + file)
     } catch {
       case ex: IOException =>
       if (settings.debug.value) ex.printStackTrace();
-      error("could not write file " + file);
+      error("could not write file " + file)
     }
   }
 
@@ -587,4 +592,5 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       }
     });
   }
+
 }
