@@ -293,12 +293,12 @@ trait Types requires SymbolTable {
     /** The index of given class symbol in the closure of this type,
      *  or -1 if no base type with given class symbol exists */
     def closurePos(sym: Symbol): int = {
-      val cl = closure;
-      var lo = 0;
-      var hi = cl.length - 1;
+      val cl = closure
+      var lo = 0
+      var hi = cl.length - 1
       while (lo <= hi) {
-        val mid = (lo + hi) / 2;
-        val clsym = cl(mid).symbol;
+        val mid = (lo + hi) / 2
+        val clsym = cl(mid).symbol
         if (sym == clsym) return mid
         else if (sym isLess clsym) hi = mid - 1
         else if (clsym isLess sym) lo = mid + 1
@@ -1542,7 +1542,7 @@ trait Types requires SymbolTable {
             sym1 != NoSymbol &&
             sym1.info =:= sym2.info.substThis(sym2.owner, sym1.owner.thisType)
         }
-        System.out.println("is same? " + tp1 + " " + tp2 + " " + tp1.symbol.owner + " " + tp2.symbol.owner)
+        //System.out.println("is same? " + tp1 + " " + tp2 + " " + tp1.symbol.owner + " " + tp2.symbol.owner)//DEBUG
         isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
