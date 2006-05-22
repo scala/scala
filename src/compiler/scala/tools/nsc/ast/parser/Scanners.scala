@@ -434,7 +434,7 @@ trait Scanners requires SyntaxAnalyzer {
 
     def inLastOfStat(token: int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
-           IDENTIFIER | THIS | NULL | TRUE | FALSE | RETURN | USCORE | TYPE |
+           IDENTIFIER | THIS | NULL | TRUE | FALSE | RETURN | USCORE | TYPE | XMLSTART |
            RPAREN | RBRACKET | RBRACE =>
         true
       case _ =>

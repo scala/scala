@@ -1539,8 +1539,10 @@ trait Types requires SymbolTable {
         def isSubScope(s1: Scope, s2: Scope): boolean = s2.toList.forall {
           sym2 =>
             val sym1 = s1.lookup(sym2.name);
+            sym1 != NoSymbol &&
             sym1.info =:= sym2.info.substThis(sym2.owner, sym1.owner.thisType)
         }
+        System.out.println("is same? " + tp1 + " " + tp2 + " " + tp1.symbol.owner + " " + tp2.symbol.owner)
         isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
@@ -1931,11 +1933,14 @@ trait Types requires SymbolTable {
             // add a refinement symbol for all non-class members of lubBase
             // which are refined by every type in ts.
             if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
-              addMember(lubThisType, lubType, lubsym(sym));
+              try {
+                addMember(lubThisType, lubType, lubsym(sym))
+              } catch {
+                case ex: NoCommonType =>
+              }
           if (lubType.decls.isEmpty) lubBase else lubType;
         }
     }
-
     if (settings.debug.value) {
       log(indent + "lub of " + ts);//debug
       indent = indent + "  ";
@@ -2004,7 +2009,11 @@ trait Types requires SymbolTable {
             }
             for (val t <- ts; val sym <- t.nonPrivateMembers)
               if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
-                addMember(glbThisType, glbType, glbsym(sym));
+                try {
+                  addMember(glbThisType, glbType, glbsym(sym))
+                } catch {
+                  case ex: NoCommonType =>
+                }
             if (glbType.decls.isEmpty) glbBase else glbType
           }
         } catch {
@@ -2099,7 +2108,7 @@ trait Types requires SymbolTable {
       case PolyType(tparams1, _) if (tparams1.length == tparams.length) =>
         tparams1 map (tparam => tparam.info.substSym(tparams1, tparams))
       case _ =>
-        throw new Error("lub/glb of incompatible types: " + tps.mkString("", " and ", ""))
+        throw new NoCommonType(tps)
     }
 
   /** All types in list must be polytypes with type parameter lists of
@@ -2112,7 +2121,7 @@ trait Types requires SymbolTable {
       case PolyType(tparams1, restpe) if (tparams1.length == tparams.length) =>
         restpe.substSym(tparams1, tparams)
       case _ =>
-        throw new Error("lub/glb of incompatible types: " + tps.mkString("", " and ", ""))
+        throw new NoCommonType(tps)
     }
 
   /** All types in list must be method types with equal parameter types.
@@ -2123,13 +2132,16 @@ trait Types requires SymbolTable {
       case MethodType(pts1, res) if (isSameTypes(pts1, pts)) =>
         res
       case _ =>
-        throw new Error("lub/glb of incompatible types: " + tps.mkString("", " and ", ""))
+        throw new NoCommonType(tps)
     }
 
 // Errors and Diagnostics ---------------------------------------------------------
 
   /** An exception signalling a type error */
   class TypeError(val msg: String) extends java.lang.Error(msg);
+
+  class NoCommonType(tps: List[Type]) extends java.lang.Error(
+    "lub/glb of incompatible types: " + tps.mkString("", " and ", ""));
 
   /** An exception signalling a malformed type */
   class MalformedType(msg: String) extends TypeError(msg) {
