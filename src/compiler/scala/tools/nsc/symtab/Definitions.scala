@@ -392,16 +392,22 @@ trait Definitions requires SymbolTable {
     def isUnboxedClass(sym: Symbol): boolean = isValueClass(sym) || sym == ArrayClass;
 
     def signature(tp: Type): String = {
+      def erasure(tp: Type): Type = tp match {
+        case st: SubType => erasure(st.supertype)
+        case RefinedType(parents, _) => erasure(parents.head)
+        case _ => tp
+      }
       def flatNameString(sym: Symbol, separator: char): String =
         if (sym.owner.isPackageClass) sym.fullNameString('.')
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
-      def signature1(tp: Type): String = {
-        if (tp.symbol == ArrayClass) "[" + signature1(tp.typeArgs.head);
-        else if (isValueClass(tp.symbol)) String.valueOf(abbrvTag(tp.symbol))
-        else "L" + flatNameString(tp.symbol, '/') + ";"
+      def signature1(etp: Type): String = {
+        if (etp.symbol == ArrayClass) "[" + signature1(erasure(etp.typeArgs.head))
+        else if (isValueClass(etp.symbol)) String.valueOf(abbrvTag(etp.symbol))
+        else "L" + flatNameString(etp.symbol, '/') + ";"
       }
-      if (tp.symbol == ArrayClass) signature1(tp);
-      else flatNameString(tp.symbol, '.')
+      val etp = erasure(tp)
+      if (etp.symbol == ArrayClass) signature1(etp)
+      else flatNameString(etp.symbol, '.')
     }
 
     private var isInitialized = false;
