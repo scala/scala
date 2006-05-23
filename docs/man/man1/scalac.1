@@ -9,7 +9,7 @@
 .\"
 .\" Process this file with nroff -man scalac.1
 .\"
-.TH scalac 1  "April 29, 2005" "version 0.1" "USER COMMANDS"
+.TH scalac 1  "May 23, 2006" "version 0.2" "USER COMMANDS"
 .\"
 .\" ################################# NAME ###################################
 .\"
@@ -82,18 +82,45 @@ Specify where to place generated class files.
 \fB\-encoding\fR <\fIencoding\fR>
 Specify character encoding used by source files.
 .TP
-\fB\-separate:\fR<\fIseparate\fR>
-Read symbol files for separate compilation: (\fIyes\fR, \fIno\fR).
-.TP
 \fB\-target:\fR<\fItarget\fR>
-Specify which backend to use (\fIjvm\fR, \fImsil\fR).
+Specify which backend to use (\fIjvm-1.5\fR, \fIjvm-1.4\fR, \fImsil\fR, \fIcldc\fR).
+.\" .TP
+.\" \fB\-r\fR <\fIassembly files\fR>
+.\" CLR Assemblies referenced by the source program (only relevant with
+.\" option '-target:msil').
+.\" .TP
+.\" \fB\-o\fR <\fIassembly name\fR>
+.\" Name of the output assembly (only relevant with option '-target:msil').
 .TP
-\fB\-r\fR <\fIassembly files\fR>
-CLR Assemblies referenced by the source program (only relevant with
-option '-target:msil').
+\fB\-migrate\fR
+Assist in migrating from Scala version 1.0.
 .TP
-\fB\-o\fR <\fIassembly name\fR>
-Name of the output assembly (only relevant with option '-target:msil').
+\fB\-debug\fR
+Output debugging messages.
+.TP
+\fB\-statistics\fR
+Print compiler statistics.
+.TP
+\fB\-explaintypes\fR
+Explain type errors in more detail.
+.TP
+\fB\-resident\fR
+Compiler stays resident, files to compile are read from standard input.
+.TP
+\fB\-uniqid\fR
+Print identifiers with unique names (debugging option).
+.TP
+\fB\-printtypes\fR
+Print tree types (debugging option).
+.TP
+\fB\-prompt\fR
+Display a prompt after each error (debugging option).
+.TP
+\fB\-noimports\fR
+Compile without any implicit imports.
+.TP
+\fB\-nopredefs\fR
+Compile without any implicit predefined values.
 .TP
 \fB\-version\fR
 Print product version and exit.
@@ -102,35 +129,56 @@ Print product version and exit.
 Print a synopsis of standard options.
 .SS Non-Standard Options
 .TP
-\fB\-Xshortname\fR
-Display short file names in error reports.
-.TP
-\fB\-Xmarkup\fR
-No effect, only for compatibility.
-.TP
-\fB\-Xnewmatch\fR
-New pattern matching.
-.TP
-\fB\-XpreserveWS\fR
-Don't trim whitespace in XML literals.
-.TP
-\fB\-XrootClass\fR <\fIclass\fR>
-Specify the root class of the global application.
-.TP
-\fB\-XappFile\fR <\fIfile\fR>
-Specify the filename where to dump the whole-application inferred from the rootclass.
-.TP
-\fB\-XdotFile\fR <\fIfile\fR>
-Specify the filename where to print the AST in graphviz dot format.
-.TP
-\fB\-Xrta\fR
-Perform Rapid Type analysis for method call resolution.
-.TP
 \fB\-Xinline\fR
-Inline method calls that can be resolved statically.
+Perform inlining when possible.
 .TP
-\fB\-Xrtt\fR
-Enable run-time types.
+\fB\-Xcloselim\fR
+Perform closure elimination.
+.TP
+\fB\-Xshowcls\fR <\fIclass\fR>
+Show class info.
+.TP
+\fB\-Xshowobj\fR <\fIobject\fR>
+Show object info.
+.TP
+\fB\-Xshowicode\fR
+Print the generated ICode.
+.TP
+\fB\-Xgadt\fR
+Enable gadt for classes.
+.TP
+\fB\-Xlinearizer\fR <\fIXlinearizer\fR>
+Linearizer to use (normal,dfs,rpo).
+.TP
+\fB\-Xgenerics\fR
+Use generic Java types.
+.\" .TP
+.\" \fB\-Xshortname\fR
+.\" Display short file names in error reports.
+.\" .TP
+.\" \fB\-Xmarkup\fR
+.\" No effect, only for compatibility.
+.\" .TP
+.\" \fB\-Xnewmatch\fR
+.\" New pattern matching.
+.\" .TP
+.\" \fB\-XpreserveWS\fR
+.\" Don't trim whitespace in XML literals.
+.\" .TP
+.\" \fB\-XrootClass\fR <\fIclass\fR>
+.\" Specify the root class of the global application.
+.\" .TP
+.\" \fB\-XappFile\fR <\fIfile\fR>
+.\" Specify the filename where to dump the whole-application inferred from the rootclass.
+.\" .TP
+.\" \fB\-XdotFile\fR <\fIfile\fR>
+.\" Specify the filename where to print the AST in graphviz dot format.
+.\" .TP
+.\" \fB\-Xrta\fR
+.\" Perform Rapid Type analysis for method call resolution.
+.\" .TP
+.\" \fB\-Xrtt\fR
+.\" Enable run-time types.
 .SS Debug Options
 .TP
 .B \-debug
@@ -293,7 +341,8 @@ NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 .BR scala(1)
 .\" ,
 .\" .BR scaladoc(1),
-.\" .BR scalaint(1)
+.\" .BR scalaint(1),
+.\" .BR scalascript(1)
 .\"
 .\" ##########################################################################
 .\" $Id$
