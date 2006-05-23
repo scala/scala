@@ -1,0 +1,6 @@
+bug608.scala:16 error: no type parameters for method bimap: ((ha) => c)hs{override type a = c} exist so that it can be applied to arguments ((ha) => ha)
+ --- because ---
+result type hs{override type a = c} is incompatible with expected type hs{override type s = hs; override type a = ha}
+	     = g(f(x).bimap(id))
+                     ^
+one error found

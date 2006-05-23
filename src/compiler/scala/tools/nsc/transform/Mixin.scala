@@ -67,8 +67,10 @@ abstract class Mixin extends InfoTransform {
   def addLateInterfaceMembers(clazz: Symbol): unit =
     if (!(clazz hasFlag MIXEDIN)) {
       clazz setFlag MIXEDIN;
+/*
       for (val bc <- clazz.info.baseClasses.reverse)
         if (bc.hasFlag(lateINTERFACE)) addLateInterfaceMembers(bc)
+*/
       def newGetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterName(field.name))
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
@@ -115,9 +117,10 @@ abstract class Mixin extends InfoTransform {
         if (mixinClass.isImplClass) {
           addLateInterfaceMembers(mixinClass.toInterface);
           for (val member <- mixinClass.info.decls.toList) {
-            //System.out.println("adding forwarded method " + member + " " + mmap(member) + member.locationString + " to " + clazz + " " + clazz.info.member(member.name).alternatives);//DEBUG
+            //System.out.println("adding forwarded method " + member + " " + mmap(member) + member.locationString + " to " + clazz + " " + atPhase(currentRun.explicitOuterPhase)(clazz.info.member(member.name).alternatives));//DEBUG
             if (isForwarded(member) && !isStatic(member) &&
-                (clazz.info.findMember(member.name, 0, 0).alternatives contains mmap(member))) {
+                (atPhase(currentRun.explicitOuterPhase)(
+                  clazz.info.findMember(member.name, 0, 0).alternatives) contains mmap(member))) {
                   val member1 = addMember(
                     clazz,
                     member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED));

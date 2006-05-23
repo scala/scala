@@ -759,7 +759,7 @@ trait Symbols requires SymbolTable {
       assert(owner != NoSymbol, this)
       var str =
         if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
-        else owner.fullNameString(separator) + separator + simpleName + idString;
+        else owner.fullNameString(separator) + separator + simpleName;
       if (str.charAt(str.length - 1) == ' ') str = str.substring(0, str.length - 1)
       str
     }
