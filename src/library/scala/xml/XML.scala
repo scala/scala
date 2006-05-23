@@ -69,20 +69,33 @@ object XML  {
   final def loadString( string:String ): scala.xml.Elem =
     load(new StringReader(string))
 
-  /** saves XML to filename with encoding ISO-8859-1 */
-  final def save( filename:String, doc:Elem ):Unit = {
+  /** saves XML to filename with encoding ISO-8859-1. Does not write an xml-decl or doctype. */
+  final def save(filename: String, doc: Elem): Unit =
+    save(filename, doc, "ISO-8859-1");
+
+  /** saves XML to filename with given encoding. Does not write an xml-decl or doctype. */
+  final def save(filename: String, doc: Elem, enc: String): Unit =
+    saveFull(filename, doc, enc, false, null);
+
+  final def saveFull(filename: String, doc: Document, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
+    saveFull(filename, doc, "ISO-8859-1", xmlDecl, doctype);
+
+  final def saveFull(filename: String, doc: Document, enc: String, xmlDecl: Boolean, doctype: dtd.DocType): Unit = {
     /* using NIO classes of JDK 1.4 */
     import java.io.{FileOutputStream,Writer};
     import java.nio.channels.{Channels,FileChannel};
 
     val fos = new FileOutputStream( filename );
-    val w:Writer = Channels.newWriter( fos.getChannel(), "ISO-8859-1" );
+    val w: Writer = Channels.newWriter( fos.getChannel(), enc );
 
     /* 2do: optimize by giving writer parameter to toXML*/
-    w.write( Utility.toXML( doc ));
+    if(xmlDecl) w.write( "<?xml version='1.0' encoding='"+enc+"'?>\n");
+    if(doctype!=null) w.write( doctype.toString()+"\n");
+    w.write( Utility.toXML( doc.docElem ));
 
     w.close();
     fos.close();
+
   }
 
 }
