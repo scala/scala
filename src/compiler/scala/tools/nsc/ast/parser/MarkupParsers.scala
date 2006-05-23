@@ -48,10 +48,11 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
 
   /** munch expected XML token, report syntax error for unexpected */
   /*[Duplicate]*/ def xToken(that: Char): Unit = {
-    if( ch == that )
+    if( ch == that ) {
       nextch;
-    else
+    } else {
       reportSyntaxError("'" + that + "' expected instead of '" + ch + "'");
+    }
   }
 
   var debugLastStartElement = new mutable.Stack[Pair[Int,String]];
@@ -92,11 +93,13 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
           Literal(Constant("<syntax-error>"))
       };
       // well-formedness constraint: unique attribute names
-      if( aMap.contains( key ))
+      if( aMap.contains( key )) {
         reportSyntaxError( "attribute "+key+" may only be defined once" );
+      }
       aMap.update( key, value );
-      if(( ch != '/' )&&( ch != '>' ))
+      if(( ch != '/' )&&( ch != '>' )) {
         xSpace;
+      }
     };
    aMap
   }
@@ -219,12 +222,14 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   };
 
   /*[Duplicate]*/ def appendText(pos: int, ts:mutable.Buffer[Tree], txt:String):Unit = {
-    if( !preserveWS )
+    if( !preserveWS ) {
       for( val t <- TextBuffer.fromString( txt ).toText ) {
         ts.append( handle.text( pos, t.text ) );
       }
-    else
+    }
+    else {
       ts.append( handle.text( pos, txt ));
+    }
   }
 
   /*[Duplicate]*/ def content: mutable.Buffer[Tree] = {
@@ -374,9 +379,9 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /*[Duplicate]*/ def xText: String = {
     if( xEmbeddedBlock ) Predef.error("internal error: encountered embedded block"); // assert
 
-    if( xCheckEmbeddedBlock )
+    if( xCheckEmbeddedBlock ) {
       return ""
-    else {
+    } else {
       var exit = false;
       while( !exit ) {
         putChar( ch );
@@ -408,7 +413,14 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     init;
     handle.isPattern = false;
     val pos = s.currentPos;
+    var lastend = 0;
+    var lastch  = ch;
     var tree = element;
+    lastend = s.in.bp;
+    lastch  = s.in.ch;
+    //if (settings.debug.value) {
+    //  Console.println("DEBUG 1: I am getting char '"+ch+"' at lastend "+lastend+" pos = "+pos); // DEBUG
+    //}
     xSpaceOpt;
     // parse more XML ?
     if (ch == '<') {
@@ -416,14 +428,20 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       ts.append( tree );
       while( ch == '<' ) {
         nextch;
-        //Console.println("DEBUG 1: I am getting char '"+ch+"'"); // DEBUG
         ts.append( element );
+	lastend = s.in.bp;
+	lastch  = s.in.ch;
         xSpaceOpt;
       }
       tree = handle.makeXMLseq( pos, ts );
     }
+    s.in.bp = lastend; // ugly hack
+    s.in.ch = lastch;
+    //if (settings.debug.value) {
+    //  Console.println("DEBUG 2: restoring char '"+lastch+"' at lastend "+lastend+" pos = "+pos); // DEBUG
+    //}
     //Console.println("out of xLiteral, parsed:"+tree.toString());
-    s.next.token = EMPTY;
+    s.next.token = Tokens.EMPTY;
     s.nextToken(); /* s.fetchToken(); */
     tree
   }
@@ -478,8 +496,9 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   def xEmbeddedExpr:Tree = {
     sync;
     val b = p.expr(true,false);
-    if(/*s.*/token != RBRACE)
+    if(/*s.*/token != RBRACE) {
       reportSyntaxError(" expected end of Scala block");
+    }
     init;
     //Console.println("[out of xScalaExpr s.ch = "+s.ch+" ch="+ch+"]");
     return b
@@ -490,8 +509,9 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   def xScalaPatterns: List[Tree] = {
     sync;
     val b = p.patterns();
-    if (/*s.*/token != RBRACE)
+    if (/*s.*/token != RBRACE) {
       reportSyntaxError(" expected end of Scala patterns");
+    }
     init;
     return b
   }
