@@ -70,17 +70,17 @@ object XML  {
     load(new StringReader(string))
 
   /** saves XML to filename with encoding ISO-8859-1. Does not write an xml-decl or doctype. */
-  final def save(filename: String, doc: Elem): Unit =
+  final def save(filename: String, doc: Node): Unit =
     save(filename, doc, "ISO-8859-1");
 
   /** saves XML to filename with given encoding. Does not write an xml-decl or doctype. */
-  final def save(filename: String, doc: Elem, enc: String): Unit =
+  final def save(filename: String, doc: Node, enc: String): Unit =
     saveFull(filename, doc, enc, false, null);
 
-  final def saveFull(filename: String, doc: Document, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
+  final def saveFull(filename: String, doc: Node, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
     saveFull(filename, doc, "ISO-8859-1", xmlDecl, doctype);
 
-  final def saveFull(filename: String, doc: Document, enc: String, xmlDecl: Boolean, doctype: dtd.DocType): Unit = {
+  final def saveFull(filename: String, doc: Node, enc: String, xmlDecl: Boolean, doctype: dtd.DocType): Unit = {
     /* using NIO classes of JDK 1.4 */
     import java.io.{FileOutputStream,Writer};
     import java.nio.channels.{Channels,FileChannel};
@@ -91,7 +91,7 @@ object XML  {
     /* 2do: optimize by giving writer parameter to toXML*/
     if(xmlDecl) w.write( "<?xml version='1.0' encoding='"+enc+"'?>\n");
     if(doctype!=null) w.write( doctype.toString()+"\n");
-    w.write( Utility.toXML( doc.docElem ));
+    w.write( Utility.toXML( doc ));
 
     w.close();
     fos.close();
