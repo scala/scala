@@ -20,6 +20,7 @@ object Predef {
 
   // classOf dummy -------------------------------------------------
 
+  /** Return the runtime representation of a class type. */
   def classOf[T]: java.lang.Class = null
 
   // aliases -------------------------------------------------------
