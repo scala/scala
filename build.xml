@@ -706,7 +706,7 @@ GENERATES A DISTRIBUTION
   <target name="dist"
     depends="build.dist"
     description="Creates a complete Scala distribution"/>
-  
+
   <target name="pack"
     depends="build.archive, build.sbaz"
     description="Packs a distribution for SBaz and ZIP/TAR"/>
@@ -764,7 +764,9 @@ GENERATES A DISTRIBUTION
   <!-- Recreate the 'latest' link to point to this distribution -->
     <if><isset property="os.win"/>
       <then>
-        <copy file="${dist.current.dir}" tofile="${dist.dir}/latest"/>
+        <copy todir="${dist.dir}/latest">
+          <fileset dir="${dist.current.dir}"/>
+        </copy>
       </then>
       <else>
         <symlink
