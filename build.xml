@@ -639,7 +639,7 @@ DOCUMENTATION
     description="Generated the API for library sources">
     <mkdir dir="${api-lib.dir}"/>
     <quickdoc
-      srcdir="${src.dir}/library"
+      srcdir="${src.dir}"
       destdir="${api-lib.dir}"
       sourcepath=""
       windowtitle="Scala Library Documentation"
