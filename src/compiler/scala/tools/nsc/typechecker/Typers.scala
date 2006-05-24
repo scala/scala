@@ -1016,9 +1016,11 @@ trait Typers requires Analyzer {
           if (tparams.length == args.length) {
             val targs = args map (.tpe)
             checkBounds(tree.pos, tparams, targs, "")
-            if (fun.symbol == Predef_classOf)
+            if (fun.symbol == Predef_classOf) {
+              if (!targs.head.symbol.isClass || targs.head.symbol.isRefinementClass)
+                error(args.head.pos, "class type required");
               Literal(Constant(targs.head)) setPos tree.pos setType ClassClass.tpe
-            else
+            } else
               copy.TypeApply(tree, fun, args) setType restpe.subst(tparams, targs)
           } else {
             errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun))
