@@ -1,99 +1,99 @@
-/* NSC -- new scala compiler
+/* NSC -- new Scala compiler
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.symtab;
 
-import scala.tools.nsc.util.Position;
-import collection.mutable.HashMap;
-import Flags._;
+package scala.tools.nsc.symtab
+
+import scala.tools.nsc.util.Position
+import collection.mutable.HashMap
+import Flags._
 
 trait Definitions requires SymbolTable {
 
   object definitions {
-    def isDefinitionsInitialized = isInitialized;
+    def isDefinitionsInitialized = isInitialized
 
     // root packages and classes
-    var RootPackage: Symbol = _;
-    var RootClass: Symbol = _;
-    var EmptyPackage: Symbol = _;
-    var EmptyPackageClass: Symbol = _;
-    var emptypackagescope: Scope = null; //debug
+    var RootPackage: Symbol = _
+    var RootClass: Symbol = _
+    var EmptyPackage: Symbol = _
+    var EmptyPackageClass: Symbol = _
+    var emptypackagescope: Scope = null //debug
 
-    var JavaPackage: Symbol = _;
-    var JavaLangPackage: Symbol = _;
-    var ScalaPackage: Symbol = _;
-    var ScalaPackageClass: Symbol = _;
+    var JavaPackage: Symbol = _
+    var JavaLangPackage: Symbol = _
+    var ScalaPackage: Symbol = _
+    var ScalaPackageClass: Symbol = _
 
-    var AnyClass: Symbol = _;
-    var AnyValClass: Symbol = _;
-    var ObjectClass: Symbol = _;
+    var AnyClass: Symbol = _
+    var AnyValClass: Symbol = _
+    var ObjectClass: Symbol = _
 
-    var AnyRefClass: Symbol = _;
+    var AnyRefClass: Symbol = _
 
-    var AllRefClass: Symbol = _;
-    var AllClass: Symbol = _;
+    var AllRefClass: Symbol = _
+    var AllClass: Symbol = _
 
-    var ClassClass: Symbol = _;
-    var StringClass: Symbol = _;
-    var ThrowableClass: Symbol = _;
-    var NullPointerExceptionClass: Symbol = _;
-    var NonLocalReturnExceptionClass: Symbol = _;
+    var ClassClass: Symbol = _
+    var StringClass: Symbol = _
+    var ThrowableClass: Symbol = _
+    var NullPointerExceptionClass: Symbol = _
+    var NonLocalReturnExceptionClass: Symbol = _
 
     // the scala value classes
-    var UnitClass: Symbol = _;
-    var BooleanClass: Symbol = _;
-      def Boolean_not = getMember(BooleanClass, nme.ZNOT);
-      def Boolean_and = getMember(BooleanClass, nme.ZAND);
-      def Boolean_or  = getMember(BooleanClass, nme.ZOR);
-    var ByteClass: Symbol = _;
-    var ShortClass: Symbol = _;
-    var CharClass: Symbol = _;
-    var IntClass: Symbol = _;
-    var LongClass: Symbol = _;
-    var FloatClass: Symbol = _;
-    var DoubleClass: Symbol = _;
+    var UnitClass: Symbol = _
+    var BooleanClass: Symbol = _
+      def Boolean_not = getMember(BooleanClass, nme.ZNOT)
+      def Boolean_and = getMember(BooleanClass, nme.ZAND)
+      def Boolean_or  = getMember(BooleanClass, nme.ZOR)
+    var ByteClass: Symbol = _
+    var ShortClass: Symbol = _
+    var CharClass: Symbol = _
+    var IntClass: Symbol = _
+    var LongClass: Symbol = _
+    var FloatClass: Symbol = _
+    var DoubleClass: Symbol = _
 
     // the scala reference classes
-    var ScalaObjectClass: Symbol = _;
-      def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag);
-    var AttributeClass: Symbol = _;
+    var ScalaObjectClass: Symbol = _
+      def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag)
+    var AttributeClass: Symbol = _
     //var RemoteRefClass: Symbol = _
-    //var TypedCodeClass: Symbol = _;
-    var CodeClass: Symbol = _;
-    var CodeModule: Symbol = _;
-    var PartialFunctionClass: Symbol = _;
-    var IterableClass: Symbol = _;
-      def Iterable_next = getMember(IterableClass, nme.next);
-      def Iterable_hasNext = getMember(IterableClass, nme.hasNext);
-    var IteratorClass: Symbol = _;
-    var SeqClass: Symbol = _;
-      def Seq_length = getMember(SeqClass, nme.length);
-    var ListClass: Symbol = _;
-      def List_isEmpty = getMember(ListClass, nme.isEmpty);
-      def List_head = getMember(ListClass, nme.head);
-      def List_tail = getMember(ListClass, nme.tail);
-    var ArrayClass: Symbol = _;
-    var SerializableClass: Symbol = _;
-    var PredefModule: Symbol = _;
+    var CodeClass: Symbol = _
+    var CodeModule: Symbol = _
+    var PartialFunctionClass: Symbol = _
+    var IterableClass: Symbol = _
+      def Iterable_next = getMember(IterableClass, nme.next)
+      def Iterable_hasNext = getMember(IterableClass, nme.hasNext)
+    var IteratorClass: Symbol = _
+    var SeqClass: Symbol = _
+      def Seq_length = getMember(SeqClass, nme.length)
+    var ListClass: Symbol = _
+      def List_isEmpty = getMember(ListClass, nme.isEmpty)
+      def List_head = getMember(ListClass, nme.head)
+      def List_tail = getMember(ListClass, nme.tail)
+    var ArrayClass: Symbol = _
+    var SerializableClass: Symbol = _
+    var PredefModule: Symbol = _
       def Predef_classOf = getMember(PredefModule, nme.classOf)
-    var ConsoleModule: Symbol = _;
-    var MatchErrorClass: Symbol = _;
-    var MatchErrorModule: Symbol = _;
-      def MatchError_fail = getMember(MatchErrorModule, nme.fail);
-      def MatchError_report = getMember(MatchErrorModule, nme.report);
+    var ConsoleModule: Symbol = _
+    var MatchErrorClass: Symbol = _
+    var MatchErrorModule: Symbol = _
+      def MatchError_fail = getMember(MatchErrorModule, nme.fail)
+      def MatchError_report = getMember(MatchErrorModule, nme.report)
     //var RemoteExecutionModule: Symbol = _
     //  def RemoteExecution_detach = getMember(RemoteExecutionModule, "detach")
-    var ScalaRunTimeModule: Symbol = _;
+    var ScalaRunTimeModule: Symbol = _
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
-      def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined");
-    var RepeatedParamClass: Symbol = _;
-    var ByNameParamClass: Symbol = _;
+      def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
+    var RepeatedParamClass: Symbol = _
+    var ByNameParamClass: Symbol = _
 
-    val MaxTupleArity = 9;
-    val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1);
-      def tupleField(n:int, j:int) = getMember(TupleClass(n), "_" + j);
+    val MaxTupleArity = 9
+    val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
+      def tupleField(n:int, j:int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): boolean = tp match {
         case TypeRef(_, sym, elems) =>
           elems.length <= MaxTupleArity && sym == TupleClass(elems.length);
@@ -102,7 +102,7 @@ trait Definitions requires SymbolTable {
       }
       def tupleType(elems: List[Type]) =
         if (elems.length <= MaxTupleArity) {
-          val sym = TupleClass(elems.length);
+          val sym = TupleClass(elems.length)
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType;
 
@@ -123,56 +123,56 @@ trait Definitions requires SymbolTable {
       }
 
     def seqType(arg: Type) =
-      typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg));
+      typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
 
-    def NilModule: Symbol = getModule("scala.Nil");
-    def ConsClass: Symbol = getClass("scala.$colon$colon");
+    def NilModule: Symbol = getModule("scala.Nil")
+    def ConsClass: Symbol = getClass("scala.$colon$colon")
 
     // members of class scala.Any
-    var Any_==          : Symbol = _;
-    var Any_!=          : Symbol = _;
-    var Any_equals      : Symbol = _;
-    var Any_hashCode    : Symbol = _;
-    var Any_toString    : Symbol = _;
-    var Any_isInstanceOf: Symbol = _;
-    var Any_asInstanceOf: Symbol = _;
-    var Any_isInstanceOfErased: Symbol = _;
-    var Any_asInstanceOfErased: Symbol = _;
+    var Any_==          : Symbol = _
+    var Any_!=          : Symbol = _
+    var Any_equals      : Symbol = _
+    var Any_hashCode    : Symbol = _
+    var Any_toString    : Symbol = _
+    var Any_isInstanceOf: Symbol = _
+    var Any_asInstanceOf: Symbol = _
+    var Any_isInstanceOfErased: Symbol = _
+    var Any_asInstanceOfErased: Symbol = _
 
     // members of class java.lang.{Object, String}
-    var Object_eq          : Symbol = _;
-    var Object_ne          : Symbol = _;
-    var Object_==          : Symbol = _;
-    var Object_!=          : Symbol = _;
-    var Object_synchronized: Symbol = _;
-    var Object_isInstanceOf: Symbol = _;
-    var Object_asInstanceOf: Symbol = _;
-      def Object_equals   = getMember(ObjectClass, nme.equals_);
-      def Object_hashCode = getMember(ObjectClass, nme.hashCode_);
-      def Object_toString = getMember(ObjectClass, nme.toString_);
+    var Object_eq          : Symbol = _
+    var Object_ne          : Symbol = _
+    var Object_==          : Symbol = _
+    var Object_!=          : Symbol = _
+    var Object_synchronized: Symbol = _
+    var Object_isInstanceOf: Symbol = _
+    var Object_asInstanceOf: Symbol = _
+      def Object_equals   = getMember(ObjectClass, nme.equals_)
+      def Object_hashCode = getMember(ObjectClass, nme.hashCode_)
+      def Object_toString = getMember(ObjectClass, nme.toString_)
 
-    var String_+           : Symbol = _;
+    var String_+           : Symbol = _
 
     // members of class scala.Iterator
-    var Iterator_next      : Symbol = _;
-    var Iterator_hasNext   : Symbol = _;
+    var Iterator_next      : Symbol = _
+    var Iterator_hasNext   : Symbol = _
 
     // pattern wildcard
-    var PatternWildcard: Symbol = _;
+    var PatternWildcard: Symbol = _
 
     // boxed classes
-    var BoxedArrayClass: Symbol = _;
-    var BoxedAnyArrayClass: Symbol = _;
-    var BoxedObjectArrayClass: Symbol = _;
-    var BoxedNumberClass: Symbol = _;
-    var BoxedUnitClass: Symbol = _;
-    var BoxedUnitModule: Symbol = _;
-      def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT");
-    var ObjectRefClass: Symbol = _;
+    var BoxedArrayClass: Symbol = _
+    var BoxedAnyArrayClass: Symbol = _
+    var BoxedObjectArrayClass: Symbol = _
+    var BoxedNumberClass: Symbol = _
+    var BoxedUnitClass: Symbol = _
+    var BoxedUnitModule: Symbol = _
+      def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
+    var ObjectRefClass: Symbol = _
 
     // special attributes
-    var SerializableAttr: Symbol = _;
-    var BeanPropertyAttr: Symbol = _;
+    var SerializableAttr: Symbol = _
+    var BeanPropertyAttr: Symbol = _
 
     def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true);
 
@@ -186,9 +186,9 @@ trait Definitions requires SymbolTable {
     }
 
     private def getModuleOrClass(fullname: Name, module: boolean): Symbol = {
-      var sym = RootClass;
-      var i = 0;
-      var j = fullname.pos('.', i);
+      var sym = RootClass
+      var i = 0
+      var j = fullname.pos('.', i)
       while (j < fullname.length) {
         sym = sym.info.member(fullname.subName(i, j));
         i = j + 1;
@@ -249,10 +249,10 @@ trait Definitions requires SymbolTable {
       owner.newTypeParameter(Position.NOPOS, "T" + index)
         .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor));
 
-    val boxedClass = new HashMap[Symbol, Symbol];
-    val boxedArrayClass = new HashMap[Symbol, Symbol];
-    val refClass = new HashMap[Symbol, Symbol];
-    private val abbrvTag = new HashMap[Symbol, char];
+    val boxedClass = new HashMap[Symbol, Symbol]
+    val boxedArrayClass = new HashMap[Symbol, Symbol]
+    val refClass = new HashMap[Symbol, Symbol]
+    private val abbrvTag = new HashMap[Symbol, char]
 
     private def newValueClass(name: Name, tag: char): Symbol = {
       val clazz =
@@ -265,8 +265,8 @@ trait Definitions requires SymbolTable {
     }
 
     private def initValueClasses: Unit = {
-      val booltype = BooleanClass.typeConstructor;
-      val boolparam = List(booltype);
+      val booltype = BooleanClass.typeConstructor
+      val boolparam = List(booltype)
       val bytetype = ByteClass.typeConstructor
       val byteparam = List(bytetype)
       val chartype = CharClass.typeConstructor
@@ -286,14 +286,14 @@ trait Definitions requires SymbolTable {
       val stringtype = StringClass.typeConstructor
 
       // init scala.Boolean
-      newParameterlessMethod(BooleanClass, nme.ZNOT, booltype);
-      newMethod(BooleanClass, nme.EQ,   boolparam, booltype);
-      newMethod(BooleanClass, nme.NE,   boolparam, booltype);
-      newMethod(BooleanClass, nme.ZOR,  boolparam, booltype);
-      newMethod(BooleanClass, nme.ZAND, boolparam, booltype);
-      newMethod(BooleanClass, nme.OR,   boolparam, booltype);
-      newMethod(BooleanClass, nme.AND,  boolparam, booltype);
-      newMethod(BooleanClass, nme.XOR,  boolparam, booltype);
+      newParameterlessMethod(BooleanClass, nme.ZNOT, booltype)
+      newMethod(BooleanClass, nme.EQ,   boolparam, booltype)
+      newMethod(BooleanClass, nme.NE,   boolparam, booltype)
+      newMethod(BooleanClass, nme.ZOR,  boolparam, booltype)
+      newMethod(BooleanClass, nme.ZAND, boolparam, booltype)
+      newMethod(BooleanClass, nme.OR,   boolparam, booltype)
+      newMethod(BooleanClass, nme.AND,  boolparam, booltype)
+      newMethod(BooleanClass, nme.XOR,  boolparam, booltype)
 
       def initValueClass(clazz: Symbol, isCardinal: Boolean): Unit = {
         assert (clazz != null)
@@ -389,7 +389,8 @@ trait Definitions requires SymbolTable {
       (sym ne BooleanClass) && (boxedClass contains sym);
 
     /** Is symbol a value or array class? */
-    def isUnboxedClass(sym: Symbol): boolean = isValueClass(sym) || sym == ArrayClass;
+    def isUnboxedClass(sym: Symbol): boolean =
+      isValueClass(sym) || sym == ArrayClass;
 
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
@@ -410,11 +411,11 @@ trait Definitions requires SymbolTable {
       else flatNameString(etp.symbol, '.')
     }
 
-    private var isInitialized = false;
+    private var isInitialized = false
 
     def init: unit = {
-      if (isInitialized) return;
-      isInitialized = true;
+      if (isInitialized) return
+      isInitialized = true
       RootClass =
         NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
           .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
@@ -427,78 +428,78 @@ trait Definitions requires SymbolTable {
       EmptyPackageClass = EmptyPackage.moduleClass;
       EmptyPackageClass.setInfo(ClassInfoType(List(), new Scope(), EmptyPackageClass));
 
-      EmptyPackage.setInfo(EmptyPackageClass.tpe);
-      RootClass.info.decls.enter(EmptyPackage);
-      RootClass.info.decls.enter(RootPackage);
+      EmptyPackage.setInfo(EmptyPackageClass.tpe)
+      RootClass.info.decls.enter(EmptyPackage)
+      RootClass.info.decls.enter(RootPackage)
 
-      JavaPackage = getModule("java");
-      JavaLangPackage = getModule("java.lang");
-      ScalaPackage = getModule("scala");
-      assert(ScalaPackage != null, "Scala package is null");
-      ScalaPackageClass = ScalaPackage.tpe.symbol;
+      JavaPackage = getModule("java")
+      JavaLangPackage = getModule("java.lang")
+      ScalaPackage = getModule("scala")
+      assert(ScalaPackage != null, "Scala package is null")
+      ScalaPackageClass = ScalaPackage.tpe.symbol
 
-      AnyClass = newClass(ScalaPackageClass, nme.Any, List());
+      AnyClass = newClass(ScalaPackageClass, nme.Any, List())
 
-      val anyparam = List(AnyClass.typeConstructor);
+      val anyparam = List(AnyClass.typeConstructor)
 
       AnyValClass = newClass(ScalaPackageClass, nme.AnyVal, anyparam)
         .setFlag(SEALED);
 
-      ObjectClass = getClass("java.lang.Object");
+      ObjectClass = getClass("java.lang.Object")
 
       AnyRefClass =
-        newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor);
+        newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor)
 
-      val anyrefparam = List(AnyRefClass.typeConstructor);
+      val anyrefparam = List(AnyRefClass.typeConstructor)
 
       AllRefClass = newClass(ScalaPackageClass, nme.AllRef, anyrefparam)
-        .setFlag(ABSTRACT | TRAIT | FINAL);
+        .setFlag(ABSTRACT | TRAIT | FINAL)
 
       AllClass = newClass(ScalaPackageClass, nme.All, anyparam)
-        .setFlag(ABSTRACT | TRAIT | FINAL);
+        .setFlag(ABSTRACT | TRAIT | FINAL)
 
-      ClassClass = getClass("java.lang.Class");
-      StringClass = getClass("java.lang.String");
-      ThrowableClass = getClass("java.lang.Throwable");
-      NullPointerExceptionClass = getClass("java.lang.NullPointerException");
-      NonLocalReturnExceptionClass = getClass("scala.runtime.NonLocalReturnException");
+      ClassClass = getClass("java.lang.Class")
+      StringClass = getClass("java.lang.String")
+      ThrowableClass = getClass("java.lang.Throwable")
+      NullPointerExceptionClass = getClass("java.lang.NullPointerException")
+      NonLocalReturnExceptionClass = getClass("scala.runtime.NonLocalReturnException")
 
       UnitClass =
-        newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor));
+        newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor))
       abbrvTag(UnitClass) = 'V'
 
-      BooleanClass = newValueClass(nme.Boolean, 'Z');
-      ByteClass =    newValueClass(nme.Byte, 'B');
-      ShortClass =   newValueClass(nme.Short, 'S');
-      CharClass =    newValueClass(nme.Char, 'C');
-      IntClass =     newValueClass(nme.Int, 'I');
-      LongClass =    newValueClass(nme.Long, 'L');
+      BooleanClass = newValueClass(nme.Boolean, 'Z')
+      ByteClass =    newValueClass(nme.Byte, 'B')
+      ShortClass =   newValueClass(nme.Short, 'S')
+      CharClass =    newValueClass(nme.Char, 'C')
+      IntClass =     newValueClass(nme.Int, 'I')
+      LongClass =    newValueClass(nme.Long, 'L')
       if (!forCLDC) {
-        FloatClass =   newValueClass(nme.Float, 'F');
-        DoubleClass =  newValueClass(nme.Double, 'D');
+        FloatClass =   newValueClass(nme.Float, 'F')
+        DoubleClass =  newValueClass(nme.Double, 'D')
       }
 
       // the scala reference classes
-      ScalaObjectClass = getClass("scala.ScalaObject");
-      AttributeClass = getClass("scala.Attribute");
-      //RemoteRefClass = getClass("scala.distributed.RemoteRef");
+      ScalaObjectClass = getClass("scala.ScalaObject")
+      AttributeClass = getClass("scala.Attribute")
+      //RemoteRefClass = getClass("scala.distributed.RemoteRef")
       if (!forCLDC) {
-        CodeClass = getClass("scala.reflect.Code");
-        CodeModule = getModule("scala.reflect.Code");
+        CodeClass = getClass("scala.reflect.Code")
+        CodeModule = getModule("scala.reflect.Code")
       }
-      PartialFunctionClass = getClass("scala.PartialFunction");
-      IterableClass = getClass("scala.Iterable");
-      IteratorClass = getClass("scala.Iterator");
-      SeqClass = getClass("scala.Seq");
-      ListClass = getClass("scala.List");
-      ArrayClass = getClass("scala.Array");
-      SerializableClass = if (forCLDC) null else getClass("java.io.Serializable");
-      PredefModule = getModule("scala.Predef");
-      ConsoleModule = getModule("scala.Console");
-      MatchErrorClass = getClass("scala.MatchError");
-      MatchErrorModule = getModule("scala.MatchError");
-      //RemoteExecutionModule = getModule("scala.distributed.RemoteExecution");
-      ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime");
+      PartialFunctionClass = getClass("scala.PartialFunction")
+      IterableClass = getClass("scala.Iterable")
+      IteratorClass = getClass("scala.Iterator")
+      SeqClass = getClass("scala.Seq")
+      ListClass = getClass("scala.List")
+      ArrayClass = getClass("scala.Array")
+      SerializableClass = if (forCLDC) null else getClass("java.io.Serializable")
+      PredefModule = getModule("scala.Predef")
+      ConsoleModule = getModule("scala.Console")
+      MatchErrorClass = getClass("scala.MatchError")
+      MatchErrorModule = getModule("scala.MatchError")
+      //RemoteExecutionModule = getModule("scala.distributed.RemoteExecution")
+      ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
@@ -507,11 +508,14 @@ trait Definitions requires SymbolTable {
       for (val i <- Iterator.range(1, MaxTupleArity + 1))
         TupleClass(i) = getClass("scala.Tuple" + i);
       for (val i <- Iterator.range(0, MaxFunctionArity + 1))
-        FunctionClass(i) = getClass("scala.Function" + i);
+      FunctionClass(i) = getClass("scala.Function" + i);
+      //for (val i <- Iterator.range(0, MaxFunctionArity + 1)) {
+      //  FunctionClass(i) = getClass("scala.Function" + i)
+      //  RemoteFunctionClass(i) = getClass("scala.distributed.RemoteFunction" + i)
+      //}
+      initValueClasses
 
-      initValueClasses;
-
-      val booltype = BooleanClass.typeConstructor;
+      val booltype = BooleanClass.typeConstructor
 
       // members of class scala.Any
       Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL;
@@ -550,16 +554,16 @@ trait Definitions requires SymbolTable {
 
       PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor);
 
-      BoxedArrayClass = getClass("scala.runtime.BoxedArray");
-      BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray");
-      BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray");
-      BoxedNumberClass = getClass("scala.runtime.BoxedNumber");
-      BoxedUnitClass = getClass("scala.runtime.BoxedUnit");
-      BoxedUnitModule = getModule("scala.runtime.BoxedUnit");
-      ObjectRefClass = getClass("scala.runtime.ObjectRef");
+      BoxedArrayClass = getClass("scala.runtime.BoxedArray")
+      BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
+      BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")
+      BoxedNumberClass = getClass("scala.runtime.BoxedNumber")
+      BoxedUnitClass = getClass("scala.runtime.BoxedUnit")
+      BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
+      ObjectRefClass = getClass("scala.runtime.ObjectRef")
 
-      SerializableAttr = getClass("scala.serializable");
-      BeanPropertyAttr = if (forCLDC) null else getClass("scala.reflect.BeanProperty");
+      SerializableAttr = getClass("scala.serializable")
+      BeanPropertyAttr = if (forCLDC) null else getClass("scala.reflect.BeanProperty")
     }
   }
 }
