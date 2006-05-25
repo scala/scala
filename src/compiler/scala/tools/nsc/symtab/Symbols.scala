@@ -202,14 +202,15 @@ trait Symbols requires SymbolTable {
     /** Is this symbol an implementation class for a mixin? */
     final def isImplClass: boolean = isClass && hasFlag(IMPLCLASS);
 
+    /** Is this symbol a trait which needs an implementation class? */
     final def needsImplClass: boolean =
       isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass;
 
+    /** Is this a symbol which exists only in the implementation class, not in its trait? */
     final def isImplOnly: boolean = (
       hasFlag(PRIVATE) ||
       (owner.isImplClass || owner.isTrait) &&
-      (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR) ||
-       isConstructor)
+      (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR) || isConstructor)
     );
 
     /** Is this symbol a module variable ? */

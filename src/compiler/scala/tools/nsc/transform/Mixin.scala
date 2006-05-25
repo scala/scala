@@ -67,8 +67,6 @@ abstract class Mixin extends InfoTransform {
   def addLateInterfaceMembers(clazz: Symbol): unit =
     if (!(clazz hasFlag MIXEDIN)) {
       clazz setFlag MIXEDIN;
-      for (val bc <- clazz.info.baseClasses.reverse)
-        if (bc.hasFlag(lateINTERFACE)) addLateInterfaceMembers(bc)
       def newGetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterName(field.name))
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
@@ -110,25 +108,53 @@ abstract class Mixin extends InfoTransform {
       addMixedinMembers(superclazz);
       //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
       val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=);
-      def mixinMembers(mixinClass: Symbol, mmap: Symbol => Symbol): unit = {
+      def mixinMembers(mixinClass: Symbol): unit = {
         //Console.println("mixin members of "+mixinClass+" to "+clazz+" "+clazz.info.baseClasses)//DEBUG
         if (mixinClass.isImplClass) {
           addLateInterfaceMembers(mixinClass.toInterface);
           for (val member <- mixinClass.info.decls.toList) {
+            if (isForwarded(member) && !member.isImplOnly) {
+              val imember = member.overriddenSymbol(mixinClass.toInterface)
+              if (imember.overridingSymbol(clazz) == NoSymbol &&
+                  atPhase(phase.next)(clazz.info)
+                    .findMember(member.name, 0, lateDEFERRED).alternatives.contains(imember)) {
+                val member1 = addMember(
+                  clazz,
+                  member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
+                member1.asInstanceOf[TermSymbol] setAlias member;
+              }
+            }
+/*
             //System.out.println("adding forwarded method " + member + " " + mmap(member) + member.locationString + " to " + clazz + " " + (clazz.info.member(member.name).alternatives));//DEBUG
-            if (isForwarded(member) && !isStatic(member) &&
-                (clazz.info.findMember(member.name, 0, 0).alternatives contains mmap(member))) {
-                  val member1 = addMember(
-                    clazz,
-                    member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED));
-                  member1.asInstanceOf[TermSymbol] setAlias member;
-                }
+            if (isForwarded(member) && !isStatic(member)) {
+              if (clazz.info.findMember(member.name, 0, 0).alternatives contains mmap(member)) {
+                val mmember = member.overriddenSymbol(mixinClass.toInterface)
+                if (!mmember.hasFlag(lateDEFERRED))
+                  Console.println("SURPRISE0: "+member+" "+mmember+mmember.locationString+" is not late deferred")
+                if (mmember.overridingSymbol(clazz) != NoSymbol)
+                  Console.println("SURPRISE1: "+member+" "+mmember+mmember.locationString+" is overridden by class")
+                if (!atPhase(phase.next)(clazz.info).findMember(member.name, 0, lateDEFERRED).alternatives.contains(mmember))
+                  Console.println("SURPRISE2: "+member+" "+mmember+mmember.locationString+" is not among late deferred members")
+                val member1 = addMember(
+                  clazz,
+                  member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED));
+                member1.asInstanceOf[TermSymbol] setAlias member;
+              } else {
+                val mmember = member.overriddenSymbol(mixinClass.toInterface)
+                if (!mmember.hasFlag(lateDEFERRED))
+                  Console.println("SURPRISE3: "+member+" "+mmember+mmember.locationString+" is not late deferred")
+                if (mmember.overridingSymbol(clazz) == NoSymbol)
+                  if (atPhase(phase.next)(clazz.info).findMember(member.name, 0, lateDEFERRED).alternatives.contains(mmember))
+                    Console.println("SURPRISE4: "+member+" "+mmember+mmember.locationString+" is mixed in but violates conditions")
+              }
+            }
+*/
           }
         } else if (mixinClass.hasFlag(lateINTERFACE)) {
           addLateInterfaceMembers(mixinClass);
           val impl = implClass(mixinClass);
           //System.out.println("late impl " + mixinClass + " " + impl);//DEBUG
-          if (!(mixins contains impl)) mixinMembers(impl, .overriddenSymbol(mixinClass));
+          if (!(mixins contains impl)) mixinMembers(impl);
           for (val member <- mixinClass.info.decls.toList) {
             if (member hasFlag ACCESSOR) {
               val member1 = addMember(
@@ -160,7 +186,7 @@ abstract class Mixin extends InfoTransform {
         }
       }
 //      for (val mixinClass <- mixins) if (mixinClass.hasFlag(lateINTERFACE)) addLateInterfaceMembers(mixinClass);
-      for (val mixinClass <- mixins) mixinMembers(mixinClass, identity);
+      for (val mixinClass <- mixins) mixinMembers(mixinClass);
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
     }
   }

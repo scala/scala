@@ -360,7 +360,7 @@ trait Types requires SymbolTable {
     }
 
     //todo: use narrow only for modules? (correct? efficiency gain?)
-    def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
+    def findMember(name: Name, excludedFlags: int, requiredFlags: long): Symbol = {
       if (util.Statistics.enabled) findMemberCount = findMemberCount + 1;
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
 
@@ -475,7 +475,7 @@ trait Types requires SymbolTable {
     // todo see whether we can do without
     override def isError: boolean = true;
     override def decls: Scope = new ErrorScope(NoSymbol);
-    override def findMember(name: Name, excludedFlags: int, requiredFlags: int): Symbol = {
+    override def findMember(name: Name, excludedFlags: int, requiredFlags: long): Symbol = {
       var sym = decls lookup name;
       if (sym == NoSymbol) {
         sym = NoSymbol.newErrorSymbol(name);

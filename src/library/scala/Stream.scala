@@ -39,7 +39,7 @@ object Stream {
     }
     def printElems(buf: StringBuffer, prefix: String): StringBuffer = {
       val buf1 = buf.append(prefix).append(hd);
-      if (tlDefined) printElems(buf1, ", ") else buf1 append ", ?";
+      if (tlDefined) tlVal.printElems(buf1, ", ") else buf1 append ", ?";
     }
   }
 
@@ -146,124 +146,158 @@ object Stream {
  */
 trait Stream[+a] extends Seq[a] {
 
-  def isEmpty: Boolean;
-  def head: a;
-  def tail: Stream[a];
+  def isEmpty: Boolean
+  def head: a
+  def tail: Stream[a]
 
-  def length: int = if (isEmpty) 0 else tail.length + 1;
+  def length: Int = if (isEmpty) 0 else tail.length + 1
 
   def append[b >: a](rest: => Stream[b]): Stream[b] =
     if (isEmpty) rest
-    else Stream.cons(head, tail.append(rest));
+    else Stream.cons(head, tail.append(rest))
 
   def elements: Iterator[a] = new Iterator[a] {
-    var current = Stream.this;
-    def hasNext: boolean = !current.isEmpty;
+    var current = Stream.this
+    def hasNext: boolean = !current.isEmpty
     def next: a = { val result = current.head; current = current.tail; result }
   }
 
   def init: Stream[a] =
     if (isEmpty) error("Stream.empty.init")
     else if (tail.isEmpty) Stream.empty
-    else Stream.cons(head, tail.init);
+    else Stream.cons(head, tail.init)
 
   def last: a =
     if (isEmpty) error("Stream.empty.last")
-    else if (tail.isEmpty) head
-    else tail.last;
+    else {
+      def loop(s: Stream[a]): a = {
+        if (s.tail.isEmpty) s.head
+        else loop(s.tail)
+      }
+      loop(this)
+    }
 
-  override def take(n: int): Stream[a] =
+  override def take(n: Int): Stream[a] =
     if (n == 0) Stream.empty
-    else Stream.cons(head, tail.take(n-1));
+    else Stream.cons(head, tail.take(n-1))
 
-  override def drop(n: int): Stream[a] =
-    if (n == 0) this
-    else tail.drop(n-1);
+  override def drop(n: Int): Stream[a] = {
+    def loop(s: Stream[a], n: Int): Stream[a] =
+      if (n == 0) s
+      else loop(s.tail, n-1)
+    loop(this, n)
+  }
 
-  def apply(n: int) = drop(n).head;
-  def at(n: int) = drop(n).head;
+  def apply(n: Int) = drop(n).head
+  def at(n: Int) = drop(n).head
 
   def takeWhile(p: a => Boolean): Stream[a] =
     if (isEmpty || !p(head)) Stream.empty
-    else Stream.cons(head, tail.takeWhile(p));
+    else Stream.cons(head, tail.takeWhile(p))
 
-  def dropWhile(p: a => Boolean): Stream[a] =
-    if (isEmpty || !p(head)) this
-    else tail.dropWhile(p);
+  def dropWhile(p: a => Boolean): Stream[a] = {
+    def loop(s: Stream[a]): Stream[a] =
+      if (s.isEmpty || !p(s.head)) this
+      else loop(s.tail)
+    loop(this)
+  }
 
   def map[b](f: a => b): Stream[b] =
     if (isEmpty) Stream.empty
-    else Stream.cons(f(head), tail.map(f));
+    else Stream.cons(f(head), tail.map(f))
 
-  override def foreach(f: a => unit): unit =
-    if (isEmpty) {}
-    else { f(head); tail.foreach(f) }
+  override def foreach(f: a => unit): unit = {
+    def loop(s: Stream[a]): unit =
+      if (s.isEmpty) {}
+      else { f(s.head); loop(s.tail) }
+    loop(this)
+  }
 
-  def filter(p: a => Boolean): Stream[a] =
-    if (isEmpty) this
-    else if (p(head)) Stream.cons(head, tail.filter(p))
-    else tail.filter(p);
+  def filter(p: a => Boolean): Stream[a] = {
+    def loop(s: Stream[a]): Stream[a] =
+      if (s.isEmpty) s
+      else if (p(s.head)) Stream.cons(head, loop(s.tail))
+      else loop(s.tail)
+    loop(this)
+  }
 
-  override def forall(p: a => Boolean): Boolean =
-    isEmpty || (p(head) && tail.forall(p));
+  override def forall(p: a => Boolean): Boolean = {
+    def loop(s: Stream[a]): Boolean = {
+      if (s.isEmpty) true
+      else if (p(s.head)) loop(s.tail)
+      else false
+    }
+    loop(this)
+  }
 
-  override def exists(p: a => Boolean): Boolean =
-    !isEmpty && (p(head) || tail.exists(p));
+  override def exists(p: a => Boolean): Boolean = {
+    def loop(s: Stream[a]): Boolean = {
+      if (s.isEmpty) false
+      else if (p(s.head)) true
+      else loop(s.tail)
+    }
+    loop(this)
+  }
 
-  override def foldLeft[b](z: b)(f: (b, a) => b): b =
-    if (isEmpty) z
-    else tail.foldLeft[b](f(z, head))(f);
+  override def foldLeft[b](z: b)(f: (b, a) => b): b = {
+    def loop(s: Stream[a], z: b): b =
+      if (s.isEmpty) z
+      else loop(s.tail, f(z, s.head))
+    loop(this, z)
+  }
 
   override def foldRight[b](z: b)(f: (a, b) => b): b =
     if (isEmpty) z
-    else f(head, tail.foldRight(z)(f));
+    else f(head, tail.foldRight(z)(f))
 
   def reduceLeft[b >: a](f: (b, b) => b): b =
     if (isEmpty) error("Stream.empty.reduceLeft")
-    else ((tail: Stream[b]) foldLeft (head: b))(f);
+    else ((tail: Stream[b]) foldLeft (head: b))(f)
 
   def reduceRight[b >: a](f: (b, b) => b): b =
     if (isEmpty) error("Stream.empty.reduceRight")
     else if (tail.isEmpty) head: b
-    else f(head, tail.reduceRight(f));
+    else f(head, tail.reduceRight(f))
 
   def flatMap[b](f: a => Stream[b]): Stream[b] =
     if (isEmpty) Stream.empty
-    else f(head).append(tail.flatMap(f));
+    else f(head).append(tail.flatMap(f))
 
   def reverse: Stream[a] =
-    foldLeft(Stream.empty: Stream[a])((xs, x) => Stream.cons(x, xs));
+    foldLeft(Stream.empty: Stream[a])((xs, x) => Stream.cons(x, xs))
 
   // The following method is not compilable without run-time type
   // information. It should therefore be left commented-out for
   // now.
   //       def toArray: Array[a] = {
-  //         val xs = new Array[a](length);
-  //         copyToArray(xs, 0);
+  //         val xs = new Array[a](length)
+  //         copyToArray(xs, 0)
   //         xs
   //       }
 
-  override def copyToArray[b >: a](xs: Array[b], start: int): Array[b] =
-    if (isEmpty) xs
-    else { xs(start) = head; tail.copyToArray(xs, start + 1) }
+  override def copyToArray[b >: a](xs: Array[b], start: Int): Array[b] = {
+    def loop(s: Stream[a], start: Int): Array[b] =
+      if (s.isEmpty) xs
+      else { xs(start) = head; loop(s.tail, start + 1) }
+    loop(this, start)
+  }
 
   def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
     if (this.isEmpty || that.isEmpty) Stream.empty
-    else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail));
+    else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail))
 
-  def zipWithIndex: Stream[Tuple2[a, int]] =
+  def zipWithIndex: Stream[Tuple2[a, Int]] =
     zip(Stream.from(0))
 
-  def print: unit =
-    if (isEmpty) Console.println("Stream.empty")
-    else {
-      Console.print(head);
-      Console.print(", ");
-      tail.print
-    }
+  def print: unit = {
+    def loop(s: Stream[a]): unit =
+      if (s.isEmpty) Console.println("Stream.empty")
+      else { Console.print(s.head); Console.print(", "); loop(s.tail) }
+    loop(this)
+  }
 
   override def toString() =
-    "Stream(" + printElems(new StringBuffer(), "") + ")";
+    "Stream(" + printElems(new StringBuffer(), "") + ")"
 
-  def printElems(buf: StringBuffer, prefix: String): StringBuffer;
+  def printElems(buf: StringBuffer, prefix: String): StringBuffer
 }
