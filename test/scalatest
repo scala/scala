@@ -149,6 +149,7 @@ test_print_help() {
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
     echo "--msil          next files test the .NET backend";
+    echo "--script        next files test Scala embedded in scripts";
     echo "--quick         use the 'quick' build instead of distribution";
     echo '--installed     use the installed programs on $PATH'
     echo "--no-run        run no test, use results of last run";
@@ -261,6 +262,18 @@ test_run_msil() {
     rm -f "$dstbase".EXE &&
     rm -f "$dstbase".il;
 }
+
+# Tests a script with Scala code embedded in it
+test_run_script() {
+    argsfile="$srcbase.args"
+    if [ ! -r "$argsfile" ]
+    then
+        argsfile=/dev/null
+    fi
+    chmod +x "$srcbase.scala" 2> /dev/null
+    PATH="$BIN_DIR:$PATH" "$srcbase.scala" `cat $argsfile`
+}
+
 
 # Checks the specified test.
 test_check_test() {
@@ -377,6 +390,8 @@ test_check_all() {
         "neg" $FILES_NEG;
     test_check_kind "Testing .NET backend" \
 	"msil" $FILES_MSIL;
+    test_check_kind "Testing Scala embedded in script files"  \
+        "script" $FILES_SCRIPT;
 }
 
 
@@ -395,13 +410,14 @@ test_add_file() {
     esac;
     TEST_ALL="false";
     case "$TEST_TYPE" in
-        auto ) ;;
-        run  ) FILES_RUN="$FILES_RUN $1"; return;;
-        jvm  ) FILES_JVM="$FILES_JVM $1"; return;;
-        pos  ) FILES_POS="$FILES_POS $1"; return;;
-        neg  ) FILES_NEG="$FILES_NEG $1"; return;;
-	msil ) FILES_MSIL="$FILES_MSIL $1"; return;;
-        *    ) abort "unknown test type \`$TEST_TYPE'";;
+        auto   ) ;;
+        run    ) FILES_RUN="$FILES_RUN $1"; return;;
+        jvm    ) FILES_JVM="$FILES_JVM $1"; return;;
+        pos    ) FILES_POS="$FILES_POS $1"; return;;
+        neg    ) FILES_NEG="$FILES_NEG $1"; return;;
+        msil   ) FILES_MSIL="$FILES_MSIL $1"; return;;
+        script ) FILES_SCRIPT="$FILES_SCRIPT $1"; return;;
+        *      ) abort "unknown test type \`$TEST_TYPE'";;
     esac;
     case "$1" in
         run  | */run  | */run/*  | run/*  ) FILES_RUN="$FILES_RUN $1";;
@@ -409,6 +425,7 @@ test_add_file() {
         pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
         neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
         msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
+        script | */script | */script/* | script/* ) FILES_SCRIPT="$FILES_SCRIPT $1";;
         * ) abort "don't known what to do with \`$1'";;
     esac;
 }
@@ -479,6 +496,7 @@ FILES_JVM="";
 FILES_POS="";
 FILES_NEG="";
 FILES_MSIL="";
+FILES_SCRIPT="";
 
 QUICK="$PREFIX/build/quick/bin"
 if [ -d "$PREFIX/dists" ]; then
@@ -488,7 +506,7 @@ elif [ -d "$PREFIX/build" ]; then
 elif [ -d "$PREFIX/bin" ]; then
     LATEST="$PREFIX/bin";
 else
-    abort "Scala binaries not be found";
+    abort "Scala binaries could not be found";
 fi;
 BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
                     # it can also be set to the empty string
@@ -509,6 +527,7 @@ while [ $# -gt 0 ]; do
         --pos        ) TEST_TYPE="pos"; shift 1;;
         --neg        ) TEST_TYPE="neg"; shift 1;;
         --msil       ) TEST_TYPE="msil"; shift 1;;
+        --script     ) TEST_TYPE="script"; shift 1;;
         --quick      ) BIN_DIR="$QUICK/"; shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
@@ -541,7 +560,7 @@ printf_initialization "${COLOR:-many}";
 
 if [ "$TEST_ALL" = "true" ]; then
     case "$TEST_TYPE" in
-               run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
+        run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
     esac;
     case "$TEST_TYPE" in
         auto | jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
@@ -553,7 +572,10 @@ if [ "$TEST_ALL" = "true" ]; then
         auto | neg ) FILES_NEG="$FILES_NEG $SRCDIR/neg";;
     esac;
     case "$TEST_TYPE" in
-               msil ) FILES_MSIL="$FILES_MSIL $SRCDIR/run";;
+        msil ) FILES_MSIL="$FILES_MSIL $SRCDIR/run";;
+    esac;
+    case "$TEST_TYPE" in
+        auto | script ) FILES_SCRIPT="$FILES_SCRIPT $SRCDIR/script";;
     esac;
 fi;
 
