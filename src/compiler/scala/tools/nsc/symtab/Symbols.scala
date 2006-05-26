@@ -855,6 +855,8 @@ trait Symbols requires SymbolTable {
 
     def setAlias(alias: Symbol): TermSymbol = {
       assert(alias != NoSymbol, this);
+      assert(!(alias hasFlag OVERLOADED), alias)
+
       assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN), this);
       referenced = alias;
       this

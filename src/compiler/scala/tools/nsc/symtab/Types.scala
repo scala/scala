@@ -201,13 +201,21 @@ trait Types requires SymbolTable {
     /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
       sym.tpe match {
-        case OverloadedType(pre, alts) =>
+        case ov @ OverloadedType(pre, alts) =>
+          OverloadedType(this, alts)
+/*
           val pre1 = pre match {
             case ClassInfoType(_, _, clazz) => clazz.tpe
             case _ => pre
           }
-          assert(this =:= pre1);
-          sym.tpe
+          if (this =:= pre1) ov
+          else if (this =:= pre1.narrow) OverloadedType(this, alts)
+          else {
+            Console.println("bad memberType of overloaded symbol: "+this+"/"+pre1+"/"+pre1.narrow)
+            assert(false)
+            ov
+          }
+*/
         case _ =>
           //System.out.println("" + this + ".memberType(" + sym +":" + sym.tpe +")");//DEBUG
           sym.tpe.asSeenFrom(this, sym.owner)

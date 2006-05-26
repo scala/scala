@@ -54,8 +54,8 @@ abstract class SuperAccessors extends transform.Transform {
             superAcc =
               clazz.newMethod(tree.pos, supername)
 		.setFlag(SUPERACCESSOR | PRIVATE)
+		.setInfo(clazz.thisType.memberType(tree.symbol))
 		.setAlias(tree.symbol)
-		.setInfo(clazz.thisType.memberType(tree.symbol));
             clazz.info.decls enter superAcc;
 	    accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
 	  }
