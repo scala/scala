@@ -9,13 +9,13 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 /**
  * Function with 6 parameters
  */
 trait Function6[-T0, -T1, -T2, -T3, -T4, -T5, +R] extends AnyRef {
-  def apply(v0: T0, v1: T1, v2: T2, v3: T3, v4: T4, v5: T5): R;
-  override def toString() = "<function>";
+  def apply(v0: T0, v1: T1, v2: T2, v3: T3, v4: T4, v5: T5): R
+  override def toString() = "<function>"
 }

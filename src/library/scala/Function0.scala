@@ -9,13 +9,13 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 /**
  * Function with no parameters
  */
 trait Function0[+R] extends AnyRef {
-  def apply(): R;
-  override def toString() = "<function>";
+  def apply(): R
+  override def toString() = "<function>"
 }
