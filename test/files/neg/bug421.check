@@ -1,0 +1,5 @@
+new foo.this.Bar.this("foo", "meets", Array[java.lang.String]{"bar"}) match List(case (java.lang.String,java.lang.Object,scala.Seq[java.lang.String])foo.this.Bar("foo", (_)*, Array[java.lang.String]{}) => scala.this.Predef.error("huh?"))
+bug421.scala:4 error: regular expressions not yet implemented
+  Bar("foo","meets","bar") match {
+     ^
+one error found

@@ -1,5 +1,5 @@
 bug452.scala:3 error: type mismatch;
- found   : Test.type (with underlying type Test)
+ found   : Test.type (with underlying type <object Test>)
  required: Test.this.Foo
     def this() = this(this);
                       ^
