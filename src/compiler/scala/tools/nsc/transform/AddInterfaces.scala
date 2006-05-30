@@ -120,8 +120,9 @@ abstract class AddInterfaces extends InfoTransform {
           else if (clazz.isImplClass || clazz == ArrayClass) parents
 	  else parents map mixinToImplClass
         }
-      val decls1 = if (clazz hasFlag INTERFACE) new Scope(decls.toList filter isInterfaceMember)
-                   else decls;
+      val decls1 = decls filter (sym =>
+        if (clazz hasFlag INTERFACE) isInterfaceMember(sym) else (!sym.isType || sym.isClass))
+
       //if (!clazz.isPackageClass) System.out.println("Decls of "+clazz+" after explicitOuter = " + decls1);//DEBUG
       if ((parents1 eq parents) && (decls1 eq decls)) tp
       else ClassInfoType(parents1, decls1, clazz)

@@ -52,20 +52,26 @@ abstract class TreeBuilder {
     }
   }
 
-  /** Traverse pattern and collect all variable names in buffer */
+  /** Traverse pattern and collect all variable names with their types in buffer */
   private object getvarTraverser extends Traverser {
-    val buf = new ListBuffer[Name];
+    val buf = new ListBuffer[Pair[Name, Tree]];
     def init: Traverser = { buf.clear; this }
     override def traverse(tree: Tree): unit = tree match {
-      case Bind(name, tpe) =>
-	if ((name != nme.WILDCARD) && (buf.elements forall (name !=))) buf += name;
-	traverse(tpe)
-      case _ => super.traverse(tree)
+      case Bind(name, Typed(tree1, tpt)) =>
+	if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
+          buf += Pair(name, tpt)
+        traverse(tree1)
+      case Bind(name, tree1) =>
+	if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
+          buf += Pair(name, TypeTree())
+	traverse(tree1)
+      case _ =>
+        super.traverse(tree)
     }
   }
 
-  /** Returns list of all pattern variables without duplicates */
-  private def getVariables(tree: Tree): List[Name] = {
+  /** Returns list of all pattern variables, possibly with their types, without duplicates */
+  private def getVariables(tree: Tree): List[Pair[Name, Tree]] = {
     getvarTraverser.init.traverse(tree);
     getvarTraverser.buf.toList
   }
@@ -355,20 +361,20 @@ abstract class TreeBuilder {
       val pat1 = patvarTransformer.transform(pat);
       val vars = getVariables(pat1);
       val matchExpr = atPos(pat1.pos){
-        Match(rhs, List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map Ident))))
+        Match(rhs, List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident))))
       }
       vars match {
 	case List() =>
 	  List(matchExpr)
-	case List(vname) =>
-	  List(ValDef(mods, vname, TypeTree(), matchExpr))
+	case List(Pair(vname, tpt)) =>
+	  List(ValDef(mods, vname, tpt, matchExpr))
 	case _ =>
 	  val tmp = freshName();
 	  val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), tmp, TypeTree(), matchExpr);
 	  var cnt = 0;
-	  val restDefs = for (val v <- vars) yield {
+	  val restDefs = for (val Pair(vname, tpt) <- vars) yield {
 	    cnt = cnt + 1;
-	    ValDef(mods, v, TypeTree(), Select(Ident(tmp), newTermName("_" + cnt)))
+	    ValDef(mods, vname, tpt, Select(Ident(tmp), newTermName("_" + cnt)))
 	  }
 	  firstDef :: restDefs
       }

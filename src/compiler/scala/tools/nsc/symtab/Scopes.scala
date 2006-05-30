@@ -215,6 +215,9 @@ trait Scopes requires SymbolTable {
      */
     def elements: Iterator[Symbol] = toList.elements;
 
+    def filter(p: Symbol => boolean): Scope =
+      if (!(toList forall p)) new Scope(toList filter p) else this
+
     def mkString(start: String, sep: String, end: String) =
       toList.map(.defString).mkString(start, sep, end);
 

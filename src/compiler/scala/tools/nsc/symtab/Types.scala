@@ -883,8 +883,9 @@ trait Types requires SymbolTable {
         if (isFunctionType(this))
           return args.init.mkString("(", ", ", ")") + " => " + args.last;
       }
-      (pre.prefixString + sym.nameString +
-        (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
+      val str = (pre.prefixString + sym.nameString +
+                 (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
+      if (sym.isModuleClass) "<object "+str+">" else str
     }
 
     override def prefixString =

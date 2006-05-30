@@ -90,7 +90,7 @@ object ScalaRunTime {
 
   def _equals(x: CaseClass, y: Any): Boolean = y match {
     case y1: CaseClass =>
-      (x.getClass() eq y1.getClass()) && {
+      /*(x.getClass() eq y1.getClass() &&*/ {
 	val arity = x.caseArity;
 	var i = 0;
 	while (i < arity && x.caseElement(i) == y1.caseElement(i))
