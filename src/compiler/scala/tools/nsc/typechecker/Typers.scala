@@ -119,7 +119,10 @@ trait Typers requires Analyzer {
 
     val LHSmode       = 0x400;   // Set for the left-hand side of an assignment
 
-    private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode
+    val CONSTmode     = 0x800    // expressions should evaluate to constants
+                                 // used for attribute arguments
+
+    private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | CONSTmode
 
     /** Report a type error.
      *  @param pos    The position where to report the error
@@ -1070,7 +1073,20 @@ trait Typers requires Analyzer {
                   case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
                   case _ => tp
                 }
-                constfold(copy.Apply(tree, fun, args1).setType(ifPatternSkipFormals(restpe)))
+                if ((mode & CONSTmode) != 0 && fun.symbol.owner == PredefModule.tpe.symbol && fun.symbol.name == nme.Array) {
+                  val elems = new Array[Constant](args1.length)
+                  var i = 0;
+                  for (val arg <- args1) arg match {
+                    case Literal(value) =>
+                      elems(i) = value
+                      i = i + 1
+                    case _ => errorTree(arg, "constant required")
+                  }
+                  val arrayConst = new ArrayConstant(elems, restpe)
+                  Literal(arrayConst) setType ConstantType(arrayConst)
+                }
+                else
+                  constfold(copy.Apply(tree, fun, args1).setType(ifPatternSkipFormals(restpe)))
               } else {
                 assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
                 val lenientTargs = protoTypeArgs(tparams, formals, restpe, pt)
@@ -1335,7 +1351,7 @@ trait Typers requires Analyzer {
           typer1.typedLabelDef(ldef)
 
         case Attributed(attr, defn) =>
-          val attr1 = typed(attr, AttributeClass.tpe)
+          val attr1 = typed(attr, mode | CONSTmode, AttributeClass.tpe)
           val attrInfo = attr1 match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
               Pair(tpt.tpe, args map {

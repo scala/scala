@@ -222,44 +222,51 @@ abstract class GenJVM extends SubComponent {
         assert(consts.length == 1, consts.toString())
         buf.putShort(1.toShort); // for now only 1 constructor parameter
         buf.putShort(cpool.addUtf8("value").toShort);
-        for (val const <- consts) {
-          const.tag match {
-            case BooleanTag =>
-              buf.put('Z'.toByte)
-              buf.putShort(cpool.addInteger(if(const.booleanValue) 1 else 0).toShort)
-            case ByteTag    =>
-              buf.put('B'.toByte)
-              buf.putShort(cpool.addInteger(const.byteValue).toShort)
-            case ShortTag   =>
-              buf.put('S'.toByte)
-              buf.putShort(cpool.addInteger(const.shortValue).toShort)
-            case CharTag    =>
-              buf.put('C'.toByte)
-              buf.putShort(cpool.addInteger(const.charValue).toShort)
-            case IntTag     =>
-              buf.put('I'.toByte)
-              buf.putShort(cpool.addInteger(const.intValue).toShort)
-            case LongTag    =>
-              buf.put('J'.toByte)
-              buf.putShort(cpool.addLong(const.longValue).toShort)
-            case FloatTag   =>
-              buf.put('F'.toByte)
-              buf.putShort(cpool.addFloat(const.floatValue).toShort)
-            case DoubleTag  =>
-              buf.put('D'.toByte)
-              buf.putShort(cpool.addDouble(const.doubleValue).toShort)
-            case StringTag  =>
-              buf.put('s'.toByte)
-              buf.putShort(cpool.addUtf8(const.stringValue).toShort)
-            case ClassTag   =>
-              buf.put('c'.toByte)
-              buf.putShort(cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort)
-            case EnumTag =>
-              buf.put('e'.toByte)
-              buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
-              buf.putShort(cpool.addUtf8(const.symbolValue.name.toString()).toShort)
-            //case NullTag    => AllRefClass.tpe
+        def emitElement(const: Constant): Unit = const.tag match {
+          case BooleanTag =>
+            buf.put('Z'.toByte)
+            buf.putShort(cpool.addInteger(if(const.booleanValue) 1 else 0).toShort)
+          case ByteTag    =>
+            buf.put('B'.toByte)
+            buf.putShort(cpool.addInteger(const.byteValue).toShort)
+          case ShortTag   =>
+            buf.put('S'.toByte)
+            buf.putShort(cpool.addInteger(const.shortValue).toShort)
+          case CharTag    =>
+            buf.put('C'.toByte)
+            buf.putShort(cpool.addInteger(const.charValue).toShort)
+          case IntTag     =>
+            buf.put('I'.toByte)
+            buf.putShort(cpool.addInteger(const.intValue).toShort)
+          case LongTag    =>
+            buf.put('J'.toByte)
+            buf.putShort(cpool.addLong(const.longValue).toShort)
+          case FloatTag   =>
+            buf.put('F'.toByte)
+            buf.putShort(cpool.addFloat(const.floatValue).toShort)
+          case DoubleTag  =>
+            buf.put('D'.toByte)
+            buf.putShort(cpool.addDouble(const.doubleValue).toShort)
+          case StringTag  =>
+            buf.put('s'.toByte)
+            buf.putShort(cpool.addUtf8(const.stringValue).toShort)
+          case ClassTag   =>
+            buf.put('c'.toByte)
+            buf.putShort(cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort)
+          case EnumTag =>
+            buf.put('e'.toByte)
+            buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
+            buf.putShort(cpool.addUtf8(const.symbolValue.name.toString()).toShort)
+          case ArrayTag =>
+            buf.put('['.toByte)
+            val arr = const.arrayValue;
+            buf.putShort(arr.length.toShort);
+            for (val elem <- arr) emitElement(elem)
+          //case NullTag    => AllRefClass.tpe
           }
+
+        for (val const <- consts) {
+          emitElement(const)
         }
       }
       if (nattr > 0) {

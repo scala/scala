@@ -24,7 +24,8 @@ trait Constants requires SymbolTable {
   final val StringTag  = LITERALstring - LITERAL;
   final val NullTag    = LITERALnull - LITERAL;
   final val ClassTag   = LITERALclass - LITERAL;
-  final val EnumTag    = ClassTag + 1
+  final val EnumTag    = ClassTag + 1;
+  final val ArrayTag   = EnumTag + 1;
 
   case class Constant(value: Any) {
 
@@ -41,6 +42,7 @@ trait Constants requires SymbolTable {
       else if (value.isInstanceOf[String]) StringTag
       else if (value.isInstanceOf[Type]) ClassTag
       else if (value.isInstanceOf[Symbol]) EnumTag
+      else if (value.isInstanceOf[Array[Constant]]) ArrayTag
       else if (value == null) NullTag
       else throw new Error("bad constant value: " + value);
 
@@ -183,7 +185,15 @@ trait Constants requires SymbolTable {
 
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
+    def arrayValue: Array[Constant] =
+      throw new Error("value " + value + " is not an array");
+
     override def hashCode(): int =
       if (value == null) 0 else value.hashCode() * 41 + 17;
   }
+
+  class ArrayConstant(override val arrayValue: Array[Constant],
+                   override val tpe: Type)
+  extends Constant(arrayValue);
+
 }
