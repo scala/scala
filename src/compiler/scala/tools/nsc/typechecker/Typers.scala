@@ -490,7 +490,7 @@ trait Typers requires Analyzer {
 
     def adaptToMember(qual: Tree, name: Name, tp: Type): Tree = {
       val qtpe = qual.tpe.widen;
-      if (qual.isTerm && (qual.symbol == null || qual.symbol.isValue) &&
+      if (qual.isTerm && (qual.symbol == null || !qual.symbol.isTerm || qual.symbol.isValue) &&
           !phase.erasedTypes && !qtpe.isError && !tp.isError &&
           qtpe.symbol != AllRefClass && qtpe.symbol != AllClass && qtpe != WildcardType) {
         val coercion = inferView(qual.pos, qtpe, name, tp, true)
