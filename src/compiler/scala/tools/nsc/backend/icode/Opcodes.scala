@@ -62,6 +62,12 @@ trait Opcodes requires ICodes {
     /** This abstract method returns the number of produced elements on the stack */
     def produced : Int = 0;
 
+    /** This instruction consumes these types from the top of the stack. */
+    def consumedTypes: List[TypeKind] = Nil;
+
+    /** This instruction produces these types on top of the stack. */
+    def producedTypes: List[TypeKind] = Nil;
+
     /** This method returns the difference of size of the stack when the instruction is used */
     def difference = produced-consumed;
 
@@ -71,7 +77,7 @@ trait Opcodes requires ICodes {
 
   object opcodes {
 
-    /** Loads the "this" references on top of the stack.
+    /** Loads "this" on top of the stack.
      * Stack: ...
      *    ->: ...:ref
      */
@@ -81,6 +87,8 @@ trait Opcodes requires ICodes {
 
       override def consumed = 0;
       override def produced = 1;
+
+      override def producedTypes = List(REFERENCE(clasz));
     }
 
     /** Loads a constant on the stack.
@@ -93,6 +101,8 @@ trait Opcodes requires ICodes {
 
       override def consumed = 0;
       override def produced = 1;
+
+      override def producedTypes = List(toTypeKind(constant.tpe));
     }
 
     /** Loads an element of an array. The array and the index should
@@ -106,6 +116,9 @@ trait Opcodes requires ICodes {
 
       override def consumed = 2;
       override def produced = 1;
+
+      override def consumedTypes = List(ARRAY(kind), INT);
+      override def producedTypes = List(kind);
     }
 
     /** Load a local variable on the stack. It can be a method argument.
@@ -118,6 +131,8 @@ trait Opcodes requires ICodes {
 
       override def consumed = 0;
       override def produced = 1;
+
+      override def producedTypes = List(local.kind);
     }
 
     /** Load a field on the stack. The object to which it refers should be
@@ -132,6 +147,9 @@ trait Opcodes requires ICodes {
 
       override def consumed = if(isStatic) 0 else 1;
       override def produced = 1;
+
+      override def consumedTypes = if (isStatic) Nil else List(REFERENCE(field.owner));
+      override def producedTypes = List(toTypeKind(field.tpe));
     }
 
     case class LOAD_MODULE(module: Symbol) extends Instruction {
@@ -143,6 +161,8 @@ trait Opcodes requires ICodes {
 
       override def consumed = 0;
       override def produced = 1;
+
+      override def producedTypes = List(REFERENCE(module));
     }
 
     /** Store a value into an array at a specified index.
@@ -155,6 +175,8 @@ trait Opcodes requires ICodes {
 
       override def consumed = 3;
       override def produced = 0;
+
+      override def consumedTypes = List(ARRAY(kind), INT, kind);
     }
 
     /** Store a value into a local variable. It can be an argument.
@@ -167,6 +189,8 @@ trait Opcodes requires ICodes {
 
       override def consumed = 1;
       override def produced = 0;
+
+      override def consumedTypes = List(local.kind);
     }
 
     /** Store a value into a field.
@@ -180,6 +204,12 @@ trait Opcodes requires ICodes {
 
       override def consumed = if(isStatic) 1 else 2;
       override def produced = 0;
+
+      override def consumedTypes =
+        if (isStatic)
+          List(toTypeKind(field.tpe))
+        else
+          List(REFERENCE(field.owner), toTypeKind(field.tpe));
     }
 
     /** Call a primitive function.
@@ -206,7 +236,38 @@ trait Opcodes requires ICodes {
         case EndConcat => 1;
       }
       override def produced = 1;
-    }
+
+      override def consumedTypes = primitive match {
+        case Negation(kind) => List(kind);
+        case Test(_, kind, true) => List(kind);
+        case Test(_, kind, false) => List(kind, kind);
+        case Comparison(_, kind) => List(kind, kind);
+        case Arithmetic(NOT, kind) => List(kind);
+        case Arithmetic(_, kind) => List(kind, kind);
+        case Logical(_, kind) => List(kind, kind);
+        case Shift(_, kind) => List(kind, INT);
+        case Conversion(from, _) => List(from);
+        case ArrayLength(kind) => List(ARRAY(kind));
+        case StringConcat(kind) => List(ConcatClass, kind);
+        case StartConcat => Nil;
+        case EndConcat => List(ConcatClass);
+      }
+
+      override def producedTypes = primitive match {
+        case Negation(kind) => List(kind);
+        case Test(_, _, true) => List(BOOL);
+        case Test(_, _, false) => List(BOOL);
+        case Comparison(_, _) => List(INT);
+        case Arithmetic(_, kind) => List(kind);
+        case Logical(_, kind) => List(kind);
+        case Shift(_, kind) => List(kind);
+        case Conversion(_, to) => List(to);
+        case ArrayLength(_) => List(INT);
+        case StringConcat(_) => List(ConcatClass);
+        case StartConcat => List(ConcatClass);
+        case EndConcat => List(REFERENCE(global.definitions.StringClass));
+      }
+   }
 
     /** This class represents a CALL_METHOD instruction
      * STYLE: dynamic / static(StaticInstance)

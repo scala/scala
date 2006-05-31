@@ -15,5 +15,5 @@ trait CompleteLattice {
   def bottom: Elem;
 
   /** Compute the least upper bound of a list of elements. */
-  def lub(xs: List[Elem]): Elem =  xs reduceLeft lub2;
+  def lub(xs: List[Elem]): Elem = if (xs == Nil) bottom else xs reduceLeft lub2;
 }

@@ -18,7 +18,7 @@ abstract class ClosureElimination extends SubComponent {
   import icodes._;
   import icodes.opcodes._;
 
-  val phaseName = "closurelim";
+  val phaseName = "closurelimination";
 
   /** Create a new phase */
   override def newPhase(p: Phase) = new ClosureEliminationPhase(p);

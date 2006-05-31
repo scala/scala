@@ -42,4 +42,21 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
       }
     }
   }
+
+  def backwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit = {
+    while (!worklist.isEmpty) {
+      val point = worklist.elements.next; worklist -= point;
+
+      out(point) = lattice.lub(point.successors map in.apply);
+      val input = f(point, out(point));
+
+      if (in(point) == (lattice.bottom) || input != in(point)) {
+        in(point) = input;
+        point.predecessors foreach { p =>
+          if (!worklist.contains(p))
+            worklist += p;
+        }
+      }
+    }
+  }
 }

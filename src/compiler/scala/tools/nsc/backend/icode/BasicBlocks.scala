@@ -87,6 +87,29 @@ trait BasicBlocks requires ICodes {
       else
         instructionList.length;
 
+    /** Return the index of the instruction which produced the value
+	   *  consumed by the given instruction. */
+    def findDef(pos: Int): Option[Int] = {
+      assert(closed);
+      var i = pos;
+      var d = 0;
+      while (i > 0 && d >= 0) {
+        i = i - 1;
+        d = d + (instrs(i).consumed - instrs(i).produced);
+      }
+      if (i >= 0)
+        Some(i)
+      else
+        None
+    }
+
+    /** Return the n-th instruction. */
+    def apply(n: Int): Instruction = {
+      if (closed)
+        instrs(n)
+      else
+        instructionList.reverse(n)
+    }
 
     ///////////////////// Substitutions ///////////////////////
 
@@ -144,6 +167,23 @@ trait BasicBlocks requires ICodes {
       }
 
       changed
+    }
+
+    /** Remove instructions found at the given positions. */
+    def removeInstructionsAt(positions: Int*): Unit = {
+      assert(closed);
+      val removed = positions.toList;
+      val newInstrs = new Array[Instruction](instrs.length - positions.length);
+      var i = 0;
+      var j = 0;
+      while (i < instrs.length) {
+        if (!removed.contains(i)) {
+          newInstrs(j) = instrs(i);
+          j = j + 1;
+        }
+        i = i + 1;
+      }
+      instrs = newInstrs;
     }
 
     /** Replace all instructions found in the map. */

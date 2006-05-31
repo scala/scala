@@ -11,6 +11,7 @@ import java.io.PrintWriter;
 
 import scala.tools.nsc.symtab._;
 import scala.collection.mutable.HashMap;
+import analysis.Liveness;
 
 /** Glue together ICode parts.
  */
@@ -68,14 +69,14 @@ abstract class ICodes extends AnyRef
          b.successors.length == 1;
          val succ = b.successors.head;
          succ.predecessors.length == 1;
-         succ.predecessors.head == b
-/*         !(m.exh.contains { (e: ExceptionHandler) => e.covers(b) && !e.covers(succ) }) */) {
-        Console.println("Block " + b + ".lastInstruction" + b.lastInstruction);
-        Console.println(" has successors: " + b.successors + " and succ has pred: " + succ.predecessors);
-        //yield Pair(b, succ)
-      }
-//    Console.println("Mergeable: " + mergeablePairs.mkString("", "\n", ""));
+         succ.predecessors.head == b;
+         !(m.exh.contains { (e: ExceptionHandler) => e.covers(b) && !e.covers(succ) }))
+        yield Pair(b, succ)
     ()
+  }
+
+  object liveness extends Liveness {
+    val global: ICodes.this.global.type = ICodes.this.global;
   }
 
   def init = { }

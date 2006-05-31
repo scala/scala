@@ -26,7 +26,7 @@ import transform._
 import backend.icode.{ICodes, GenICode, Checkers}
 import backend.ScalaPrimitives
 import backend.jvm.GenJVM
-import backend.opt.{Inliners, ClosureElimination}
+import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
 
 class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
@@ -99,7 +99,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   def inform(msg: String) = System.err.println(msg)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
 
-    //reporter.info(null, msg, true);
+  //reporter.info(null, msg, true);
   def informProgress(msg: String) =
     if (settings.verbose.value) inform("[" + msg + "]")
 
@@ -311,7 +311,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object closser extends ClosureElimination {
+  object closureElimination extends ClosureElimination {
+    val global: Global.this.type = Global.this
+  }
+
+  object deadCode extends DeadCodeElimination {
     val global: Global.this.type = Global.this
   }
 
@@ -344,7 +348,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     cleanup,
     genicode,
     inliner,
-    closser,
+    closureElimination,
+    deadCode,
     genJVM,
     sampleTransform);
 
@@ -416,10 +421,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     override val terminalPhase : Phase =
       if (onlyPresentation) typerPhase.next.next
-      else new GlobalPhase(p) {
+      else /* new GlobalPhase(p) {
         def name = "terminal"
         def apply(unit: CompilationUnit): unit = {}
-      }
+      }*/ p;
 
     private def addUnit(unit: CompilationUnit): unit = {
       unitbuf += unit
