@@ -13,10 +13,18 @@ import scala.collection.mutable.HashSet;
 
 trait CompilationUnits requires Global {
 
+  private var unitCount = 0;
+
   class CompilationUnit(val source: SourceFile) {
+    unitCount = unitCount + 1
+    if (settings.statistics.value) Console.println("creating unit: "+unitCount)
+    override def finalize() = {
+      unitCount = unitCount - 1
+      if (settings.statistics.value) Console.println("collecting unit: "+unitCount)
+    }
 
     /** the fresh name creator */
-    val fresh = new FreshNameCreator;
+    var fresh = new FreshNameCreator;
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree;
@@ -36,6 +44,12 @@ trait CompilationUnits requires Global {
     def warning(pos: int, msg: String) = reporter.warning(position(pos), msg);
     override def toString() = source.toString();
 
+    def clear() = {
+      fresh = null
+      body = null
+      depends.clear
+      errorPositions.clear
+    }
   }
 }
 

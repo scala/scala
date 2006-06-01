@@ -505,10 +505,10 @@ trait Definitions requires SymbolTable {
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
-      for (val i <- Iterator.range(1, MaxTupleArity + 1))
+      for (val i <- 1 to MaxTupleArity)
         TupleClass(i) = getClass("scala.Tuple" + i);
-      for (val i <- Iterator.range(0, MaxFunctionArity + 1))
-      FunctionClass(i) = getClass("scala.Function" + i);
+      for (val i <- 0 to MaxFunctionArity)
+        FunctionClass(i) = getClass("scala.Function" + i);
       //for (val i <- Iterator.range(0, MaxFunctionArity + 1)) {
       //  FunctionClass(i) = getClass("scala.Function" + i)
       //  RemoteFunctionClass(i) = getClass("scala.distributed.RemoteFunction" + i)

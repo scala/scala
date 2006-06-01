@@ -832,9 +832,9 @@ trait Scanners requires SyntaxAnalyzer {
 
       // Build keyword array
       key = new Array[byte](maxKey+1)
-      for (val i <- Iterator.range(0, maxKey + 1))
+      for (val i <- 0 to maxKey)
         key(i) = IDENTIFIER
-      for (val j <- Iterator.range(0, tokenCount))
+      for (val j <- 0 until tokenCount)
         if (tokenName(j) != null)
           key(tokenName(j).start) = j.asInstanceOf[byte]
 

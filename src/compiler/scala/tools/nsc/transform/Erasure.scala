@@ -254,16 +254,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       else gen.mkAttributedCast(tree, pt);
 
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
-    private def isUnboxedArrayMember(sym: Symbol) = (
+    private def isUnboxedArrayMember(sym: Symbol) =
       sym.name == nme.apply || sym.name == nme.length || sym.name == nme.update ||
       sym.owner == ObjectClass
-    );
 
-    /** Is symbol a member of a boxed value class (which will not be expanded later)? */
-    def isBoxedValueMember(sym: Symbol) =
-      (sym.name == nme.equals_ || sym.name == nme.hashCode_ || sym.name == nme.toString_ ||
-       (sym.name == nme.EQ || sym.name == nme.NE) && sym.info.paramTypes.head.symbol == ObjectClass ||
-       sym == Object_isInstanceOf || sym == Object_asInstanceOf);
+    private def isUnboxedValueMember(sym: Symbol) =
+      sym != NoSymbol && isValueClass(sym.owner)
 
     /** Adapt `tree' to expected type `pt' */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
@@ -323,31 +319,28 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	  else
             tree
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
-          if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
+          if (tree.symbol == NoSymbol)
+            tree
+          else if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
           else if (tree.symbol == Any_isInstanceOf || tree.symbol == Any_isInstanceOfErased)
             adaptMember(atPos(tree.pos)(Select(qual, Object_isInstanceOf)))
-          else if (tree.symbol != NoSymbol && tree.symbol.owner == AnyClass)
+          else if (tree.symbol.owner == AnyClass)
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
           else {
             var qual1 = typedQualifier(qual);
-            if ((isValueClass(qual1.tpe.symbol) && isBoxedValueMember(tree.symbol)) ||
-                (qual1.tpe.symbol == ArrayClass && !isUnboxedArrayMember(tree.symbol))) {
+            if ((isValueClass(qual1.tpe.symbol) && !isUnboxedValueMember(tree.symbol)) ||
+                (qual1.tpe.symbol == ArrayClass && !isUnboxedArrayMember(tree.symbol)))
               qual1 = box(qual1);
-            } else if (!isValueClass(qual1.tpe.symbol) &&
-                       tree.symbol != NoSymbol &&
-                       isValueClass(tree.symbol.owner) &&
-                       !isBoxedValueMember(tree.symbol)) {
+            else if (!isValueClass(qual1.tpe.symbol) && isUnboxedValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
-            }
-            if (tree.symbol != NoSymbol)
-              if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
-                tree.symbol = NoSymbol
-              else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.paramTypes.isEmpty) {
-                assert(qual1.symbol.isStable);
-                qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType;
-              } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
-                qual1 = cast(qual1, tree.symbol.owner.tpe);
+            if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
+              tree.symbol = NoSymbol
+            else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.paramTypes.isEmpty) {
+              assert(qual1.symbol.isStable);
+              qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType;
+            } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
+              qual1 = cast(qual1, tree.symbol.owner.tpe);
             copy.Select(tree, qual1, name)
           }
         case _ =>

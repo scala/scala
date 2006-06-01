@@ -30,10 +30,10 @@ abstract class SymbolTable extends Names
     ph = p
   }
 
-  final val NoRun = null;
+  final val NoRunId = null;
 
   /** The current compiler run. */
-  def currentRun: CompilerRun;
+  def currentRunId: RunId;
 
   def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase;

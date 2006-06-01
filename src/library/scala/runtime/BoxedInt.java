@@ -54,5 +54,4 @@ public final class BoxedInt extends BoxedNumber
     public final String toString() {
 	return String.valueOf(value);
     }
-
 }

@@ -143,7 +143,7 @@ object ShowPickled extends Names {
         out.println("BAD ENTRY END: , computed = " + end + ", factual = " + buf.readIndex);
     }
 
-    for (val i <- Iterator.range(0, index.length))
+    for (val i <- 0 until index.length)
       printEntry(i);
   }
 

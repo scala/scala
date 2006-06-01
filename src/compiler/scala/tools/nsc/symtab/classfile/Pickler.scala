@@ -253,7 +253,7 @@ abstract class Pickler extends SubComponent {
       writeNat(MinorVersion);
       writeNat(ep);
       if (settings.debug.value) log("" + ep + " entries");//debug
-      for (val i <- Iterator.range(0, ep)) writeEntry(entries(i));
+      for (val i <- 0 until ep) writeEntry(entries(i));
     }
 
     override def toString() = "" + rootName + " in " + rootOwner;

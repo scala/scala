@@ -33,7 +33,7 @@ trait Symbols requires SymbolTable {
     private var rawpos = initPos;
     val id = { ids = ids + 1; ids }
 
-    var validForRun: CompilerRun = NoRun;
+    var validForRunId: RunId = NoRunId;
 
     def pos = rawpos;
     def setPos(pos: int): this.type = { this.rawpos = pos; this }
@@ -276,7 +276,7 @@ trait Symbols requires SymbolTable {
       this != NoSymbol && (!owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType });
 
     final def isInitialized: boolean =
-      validForRun == currentRun;
+      validForRunId == currentRunId;
 
     final def isCovariant: boolean = isType && hasFlag(COVARIANT);
 
@@ -327,7 +327,7 @@ trait Symbols requires SymbolTable {
      */
     final def info: Type = {
       var cnt = 0;
-      while (validForRun != currentRun) {
+      while (validForRunId != currentRunId) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         var ifs = infos;
         assert(ifs != null, this.name);
@@ -345,7 +345,7 @@ trait Symbols requires SymbolTable {
         try {
           phase = phaseWithId(ifs.start);
           tp.complete(this);
-          // if (settings.debug.value && (validForRun == currentRun) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
+          // if (settings.debug.value && (validForRunId == currentRunId) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
           rawflags = rawflags & ~LOCKED
         } finally {
           phase = current
@@ -371,10 +371,10 @@ trait Symbols requires SymbolTable {
       limit = pid;
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED;
-        validForRun = currentRun
+        validForRunId = currentRunId
       } else {
         rawflags = rawflags & ~LOCKED;
-        validForRun = NoRun
+        validForRunId = NoRunId
       }
       this
     }
@@ -390,7 +390,7 @@ trait Symbols requires SymbolTable {
     /** Return info without checking for initialization or completing */
     final def rawInfo: Type = {
       if (limit < phase.id) {
-        if (validForRun == currentRun) {
+        if (validForRunId == currentRunId) {
           val current = phase;
           var itr = infoTransformers.nextFrom(limit);
           infoTransformers = itr; // caching optimization
@@ -915,7 +915,7 @@ trait Symbols requires SymbolTable {
     override def isType = true;
     privateWithin = NoSymbol;
     private var tyconCache: Type = null;
-    private var tyconRun: CompilerRun = null;
+    private var tyconRun: RunId = null;
     private var tpeCache: Type = _;
     private var tpePhase: Phase = null;
     override def tpe: Type = {
@@ -936,9 +936,9 @@ trait Symbols requires SymbolTable {
     }
 
     override def typeConstructor: Type = {
-      if (tyconCache == null || tyconRun != currentRun) {
+      if (tyconCache == null || tyconRun != currentRunId) {
         tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List());
-        tyconRun = currentRun;
+        tyconRun = currentRunId;
       }
       assert(tyconCache != null);
       tyconCache

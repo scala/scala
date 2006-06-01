@@ -35,7 +35,7 @@ abstract class UnPickler {
     private val entries = new Array[AnyRef](index.length)
     private val symScopes = new HashMap[Symbol, Scope]
 
-    for (val i <- Iterator.range(0, index.length)) {
+    for (val i <- 0 until index.length) {
       if (isSymbolEntry(i)) { at(i, readSymbol); () }
     }
 
@@ -259,11 +259,11 @@ abstract class UnPickler {
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
     private class LazyTypeRef(i: int) extends LazyType {
-      private val definedAtRun = currentRun
+      private val definedAtRunId = currentRunId
       override def complete(sym: Symbol): unit = {
 	val tp = at(i, readType)
 	sym setInfo tp
-	if (currentRun != definedAtRun) tp.complete(sym)
+	if (currentRunId != definedAtRunId) tp.complete(sym)
       }
       override def load(sym: Symbol): unit = complete(sym)
     }
