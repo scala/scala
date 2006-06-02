@@ -57,7 +57,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   // convenience methods
   private def LL[A](x:A*):List[List[A]] = List(List(x:_*));
 
-  private def _scala(name: Name) = Select(Ident(nme.scala_), name);
+  private def _scala(name: Name) = Select(Select(Ident(nme.ROOTPKG), nme.scala_), name);
 
   private def _scala_Seq  = _scala( _Seq );
   private def _scala_xml(name: Name) = Select( _scala(_xml), name );
