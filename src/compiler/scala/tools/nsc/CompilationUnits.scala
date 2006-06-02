@@ -13,8 +13,6 @@ import scala.collection.mutable.HashSet;
 
 trait CompilationUnits requires Global {
 
-  private var unitCount = 0;
-
   class CompilationUnit(val source: SourceFile) {
 
     /** the fresh name creator */

@@ -58,7 +58,7 @@ trait Namers requires Analyzer {
         updatePosFlags(sym.moduleClass, pos, (flags & ModuleToClassFlags) | MODULE | FINAL);
       if (sym.owner.isPackageClass &&
           (sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
-           sym.linkedSym.rawInfo.isComplete && sym.validForRunId != currentRunId))
+           sym.linkedSym.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
         // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
         sym.linkedSym.setInfo(NoType);
       sym

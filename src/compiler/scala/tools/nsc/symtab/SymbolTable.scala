@@ -23,8 +23,19 @@ abstract class SymbolTable extends Names
   /** Are we compiling for the J2ME CLDC platform? */
   def forCLDC: Boolean
 
+  /** A period is an ordinal number for a phase in a run.
+   *  Phases in later runs have higher periods than phases in earlier runs.
+   *  Later phases have higher periods than earlier phases in the same run.
+   */
+  type Period = int
+  final val NoPeriod = 0
+
+  /** An ordinal number for compiler runs. First run has number 1. */
+  type RunId = int
+  final val NoRunId = 0
+
   private var ph: Phase = NoPhase
-  private var period = 0
+  private var period = NoPeriod
 
   def phase: Phase = ph
 
@@ -35,20 +46,8 @@ abstract class SymbolTable extends Names
     period = (currentRunId << 8) + p.id
   }
 
-  /** An ordinal number for compiler runs. First run has number 1. */
-  type RunId = int
-
-  val NoRunId = 0
-
   /** The current compiler run identifier. */
   def currentRunId: RunId
-
-  /** A period is an ordinal number for a phase in a run.
-   *  Phases in later runs have higher periods than phases in earlier runs.
-   *  Later phases have higher periods than earlier phases in the same run.
-   */
-  type Period = int
-  val NoPeriod = -1
 
   /** The run identifier of the given period */
   def runId(period: Period): RunId = period >> 8

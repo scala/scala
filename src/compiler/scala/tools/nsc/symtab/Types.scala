@@ -335,10 +335,10 @@ trait Types requires SymbolTable {
 
     /** If this is a lazy type, assign a new type to `sym'. */
     def complete(sym: Symbol): unit = {
-      if (sym == NoSymbol || sym.isPackageClass) sym.validForRunId = currentRunId
+      if (sym == NoSymbol || sym.isPackageClass) sym.validTo = currentPeriod
       else {
         val this1 = adaptToNewRunMap(this)
-        if (this1 eq this) sym.validForRunId = currentRunId
+        if (this1 eq this) sym.validTo = currentPeriod
         else {
           //System.out.println("new type of " + sym + "=" + this1);//DEBUG
           sym.setInfo(this1)
@@ -1122,11 +1122,16 @@ trait Types requires SymbolTable {
 
 // Hash consing --------------------------------------------------------------
 
-  private val uniques = new HashSet[AnyRef](20000)
+  private var uniques: HashSet[AnyRef] = _
+  private var uniqueRunId = NoRunId
 
   def uniqueTypeCount = uniques.size // for statistics
 
   private def unique[T <: AnyRef](tp: T): T = {
+    if (uniqueRunId != currentRunId) {
+      uniques = new HashSet(20000)
+      uniqueRunId = currentRunId
+    }
     val tp1 = uniques.findEntry(tp);
     if (tp1 == null) {
       uniques.addEntry(tp); tp

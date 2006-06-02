@@ -33,7 +33,7 @@ trait Symbols requires SymbolTable {
     private var rawpos = initPos
     val id = { ids = ids + 1; ids }
 
-    var validForRunId: RunId = NoRunId
+    var validTo: Period = NoPeriod
 
     def pos = rawpos
     def setPos(pos: int): this.type = { this.rawpos = pos; this }
@@ -276,7 +276,7 @@ trait Symbols requires SymbolTable {
       this != NoSymbol && (!owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType })
 
     final def isInitialized: boolean =
-      validForRunId == currentRunId
+      runId(validTo) == currentRunId
 
     final def isCovariant: boolean = isType && hasFlag(COVARIANT)
 
@@ -314,7 +314,6 @@ trait Symbols requires SymbolTable {
 // Info and Type -------------------------------------------------------------------
 
     private var infos: TypeHistory = null
-    private var limit: Phase#Id = 0
 
     /** Get type. The type of a symbol is:
      *  for a type symbol, the type corresponding to the symbol itself
@@ -327,7 +326,7 @@ trait Symbols requires SymbolTable {
      */
     final def info: Type = {
       var cnt = 0
-      while (validForRunId != currentRunId) {
+      while (runId(validTo) != currentRunId) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         var ifs = infos
         assert(ifs != null, this.name)
@@ -345,7 +344,7 @@ trait Symbols requires SymbolTable {
         try {
           phase = phaseWithId(ifs.start)
           tp.complete(this)
-          // if (settings.debug.value && validForRunId == currentRunId) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
+          // if (settings.debug.value && runId(validTo) == currentRunId) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
           rawflags = rawflags & ~LOCKED
         } finally {
           phase = current
@@ -361,20 +360,19 @@ trait Symbols requires SymbolTable {
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
       assert(info != null)
-      var pid = phase.id
-      if (pid == 0) {
+      var period = currentPeriod
+      if (phaseId(period) == 0) {
         // can happen when we initialize NoSymbol before running the compiler
         assert(name == nme.NOSYMBOL)
-        pid = 1
+        period = period + 1
       }
-      infos = new TypeHistory(pid, info, null)
-      limit = pid
+      infos = new TypeHistory(phaseId(period), info, null)
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED
-        validForRunId = currentRunId
+        validTo = currentPeriod
       } else {
         rawflags = rawflags & ~LOCKED
-        validForRunId = NoRunId
+        validTo = NoPeriod
       }
       this
     }
@@ -388,26 +386,31 @@ trait Symbols requires SymbolTable {
     }
 
     /** Return info without checking for initialization or completing */
-    final def rawInfo: Type = {
-      if (limit < phase.id) {
-        if (validForRunId == currentRunId) {
-          val current = phase
-          var itr = infoTransformers.nextFrom(limit)
-          infoTransformers = itr; // caching optimization
-          while (itr.pid != NoPhase.id && itr.pid < current.id) {
-            phase = phaseWithId(itr.pid)
-            val info1 = itr.transform(this, infos.info)
-            limit = phase.id + 1
-            if (info1 ne infos.info) {
-              infos = new TypeHistory(limit, info1, infos)
-            }
-            itr = itr.nextFrom(limit)
-          }
-          phase = current
-          limit = current.id
-        }
-        assert(infos != null, name)
+    final def rawInfo: Type =
+      if (validTo == currentPeriod) {
         infos.info
+      } else {
+        var limit = phaseId(validTo)
+        if (limit < phase.id) {
+          if (runId(validTo) == currentRunId) {
+            val current = phase
+            var itr = infoTransformers.nextFrom(limit)
+            infoTransformers = itr; // caching optimization
+            while (itr.pid != NoPhase.id && itr.pid < current.id) {
+              limit = itr.pid
+              phase = phaseWithId(limit)
+              val info1 = itr.transform(this, infos.info)
+              validTo = currentPeriod + 1
+              if (info1 ne infos.info) {
+                infos = new TypeHistory(limit + 1, info1, infos)
+              }
+              itr = itr.nextFrom(limit + 1)
+            }
+            phase = current
+            validTo = currentPeriod
+          }
+          assert(infos != null, name)
+          infos.info
       } else {
         var infos = this.infos
         while (phase.id < infos.start && infos.prev != null) infos = infos.prev
@@ -450,7 +453,8 @@ trait Symbols requires SymbolTable {
     def reset(completer: Type): unit = {
       resetFlags
       infos = null
-      limit = NoPhase.id
+      validTo = NoPeriod
+      //limit = NoPhase.id
       setInfo(completer)
     }
 
