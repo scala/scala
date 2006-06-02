@@ -116,7 +116,7 @@ trait SequenceMatchers requires TransMatcher  {
     this._m = _m;
     //assert body.length == pat.length;
     if( defaultCase == null )
-      defaultCase = ThrowMatchError( _m.pos, resultType );
+      defaultCase = ThrowMatchError( _m.pos, TypeTree(resultType) );
 
     val seqType = pat( 0 ).tpe;
     val elementType1 = getElemType_Sequence( seqType );

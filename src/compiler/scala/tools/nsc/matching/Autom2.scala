@@ -153,7 +153,7 @@ trait Autom2 requires TransMatcher {
     /** some error happened which is due to bug in translation/automaton
      */
     final def code_error(): Tree = {
-        ThrowMatchError( pos , funRetType() );
+        ThrowMatchError( pos , TypeTree(funRetType()) );
     }
 
     def code_fail(): Tree = {

@@ -366,19 +366,15 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   private var curRun: Run = null
   def currentRun: Run = curRun
-  override def currentRunId: RunId = if (curRun == null) NoRunId else curRun.id
+  private var curRunId = 0
+  override def currentRunId = curRunId
 
   private var runCount = 0;
 
   class Run {
-    runCount = runCount + 1
-    if (settings.statistics.value) Console.println("creating run: "+runCount)
-    override def finalize() = {
-      runCount = runCount - 1
-      if (settings.statistics.value) Console.println("collecting run: "+runCount)
-    }
-
-    val id = new RunId
+    curRunId = curRunId + 1
+    assert(curRunId > 0)
+    //Console.println("starting run: " + id);
     var currentUnit: CompilationUnit = _
     curRun = this
     val firstPhase = syntaxAnalyzer.newPhase(NoPhase)

@@ -5,7 +5,6 @@
 // $Id$
 package scala.tools.nsc.typechecker;
 
-import symtab.RunId
 import symtab.Flags._
 import scala.tools.nsc.util.Position
 
@@ -278,7 +277,7 @@ trait Contexts requires Analyzer {
     }
 
     private var implicitsCache: List[List[ImplicitInfo]] = null
-    private var implicitsRunId: RunId = NoRunId
+    private var implicitsRunId = NoRunId
 
     private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
       for (val sym <- syms; sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))

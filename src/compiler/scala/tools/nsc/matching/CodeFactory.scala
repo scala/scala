@@ -188,17 +188,6 @@ trait CodeFactory requires TransMatcher  {
 
   def  GreaterThan(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.GT), List(right));
 
-  //deprecated
-  def ThrowMatchError(pos: Int, tpe: Type ) =
-    atPos(pos) {
-      Throw(
-        New(
-          TypeTree(definitions.MatchErrorClass.tpe),
-          List(List(
-            Literal(cunit.toString()),
-            Literal(Position.line(cunit.source, pos))))))
-    }
-//new
   def ThrowMatchError(pos: Int, obj: Tree ) =
     atPos(pos) {
       Throw(
@@ -209,43 +198,5 @@ trait CodeFactory requires TransMatcher  {
           ))))
     }
 
-/*
- Apply(
-      TypeApply(
-        gen.mkAttributedRef(definitions.MatchError_fail),
-        List(TypeTree(tpe))
-      ),
-      List(
-        Literal(cunit.toString()),
-        Literal(Position.line(cunit.source, pos))
-      )
-    );
-*/
-
-  /* // ?!
-  def ThrowMatchError(pos:int , tree:Tree ) =
-   Apply(
-     gen.mkAttributedRef(definitions.MatchError_report),
-     List(
-       Literal(cunit.toString()),
-       Literal(Position.line(cunit.source, pos)),
-       tree
-     )
-   );
-  */
-
-//  def Error(pos: Int) =
-//    ThrowMatchError(pos);
-
-
-  /*
-  def newPair(left: Tree, right: Tree) =
-    New(
-      Apply(
-        gen.mkAttributedRef(definitions.TupleClass(2)),
-        List(left,right)
-      )
-    );
-  */
 }
 

@@ -53,6 +53,7 @@ abstract class GenICode extends SubComponent  {
       this.unit = unit;
       log("Generating icode for " + unit);
       gen(unit.body);
+      this.unit = null
     }
 
     def gen(tree: Tree): Context = gen(tree, new Context());

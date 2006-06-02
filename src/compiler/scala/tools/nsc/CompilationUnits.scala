@@ -16,12 +16,6 @@ trait CompilationUnits requires Global {
   private var unitCount = 0;
 
   class CompilationUnit(val source: SourceFile) {
-    unitCount = unitCount + 1
-    if (settings.statistics.value) Console.println("creating unit: "+unitCount)
-    override def finalize() = {
-      unitCount = unitCount - 1
-      if (settings.statistics.value) Console.println("collecting unit: "+unitCount)
-    }
 
     /** the fresh name creator */
     var fresh = new FreshNameCreator;

@@ -549,12 +549,12 @@ trait Types requires SymbolTable {
     // override def isNullable = supertype.isNullable
     // override def isNonNull = supertype.isNonNull
     private var singleDerefCache: Type = _
-    private var singleDerefPhase: Phase = null
+    private var singleDerefPeriod = NoPeriod
     override def singleDeref: Type = {
-      val p = singleDerefPhase
-      if (p != phase) {
-        singleDerefPhase = phase;
-        if (!isValid(p)) {
+      val period = singleDerefPeriod
+      if (period != currentPeriod) {
+        singleDerefPeriod = currentPeriod
+        if (!isValid(period)) {
           singleDerefCache = pre.memberType(sym).resultType;
         }
       }
@@ -609,9 +609,9 @@ trait Types requires SymbolTable {
   abstract class CompoundType extends Type {
 
     private var closureCache: Array[Type] = _
-    private var closurePhase: Phase = null
+    private var closurePeriod = NoPeriod
     private var baseClassesCache: List[Symbol] = _
-    private var baseClassesPhase: Phase = null
+    private var baseClassesPeriod = NoPeriod
 
     override def closure: Array[Type] = {
       def computeClosure: Array[Type] =
@@ -679,10 +679,10 @@ trait Types requires SymbolTable {
               "the type intersection " + this + " is malformed" +
               "\n --- because ---\n" + ex.getMessage())
         }
-      val p = closurePhase;
-      if (p != phase) {
-        closurePhase = phase;
-        if (!isValidForBaseClasses(p)) {
+      val period = closurePeriod;
+      if (period != currentPeriod) {
+        closurePeriod = currentPeriod;
+        if (!isValidForBaseClasses(period)) {
           closureCache = null;
           closureCache = computeClosure
         }
@@ -720,10 +720,10 @@ trait Types requires SymbolTable {
           }
           symbol :: bcs
         }
-      val p = baseClassesPhase;
-      if (p != phase) {
-        baseClassesPhase = phase;
-        if (!isValidForBaseClasses(p)) {
+      val period = baseClassesPeriod;
+      if (period != currentPeriod) {
+        baseClassesPeriod = currentPeriod;
+        if (!isValidForBaseClasses(period)) {
           baseClassesCache = null;
           baseClassesCache = computeBaseClasses;
         }
@@ -797,9 +797,9 @@ trait Types requires SymbolTable {
     assert(!sym.isTypeParameterOrSkolem || pre == NoPrefix, this);
 
     private var parentsCache: List[Type] = _
-    private var parentsPhase: Phase = null
+    private var parentsPeriod = NoPeriod
     private var closureCache: Array[Type] = _
-    private var closurePhase: Phase = null
+    private var closurePeriod = NoPeriod
 
     override val isTrivial: boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(.isTrivial)
@@ -821,10 +821,10 @@ trait Types requires SymbolTable {
       else super.bounds;
 
     override def parents: List[Type] = {
-      val p = parentsPhase;
-      if (p != phase) {
-        parentsPhase = phase;
-        if (!isValidForBaseClasses(p)) {
+      val period = parentsPeriod;
+      if (period != currentPeriod) {
+        parentsPeriod = currentPeriod;
+        if (!isValidForBaseClasses(period)) {
           parentsCache = sym.info.parents map transform
         }
       }
@@ -857,10 +857,10 @@ trait Types requires SymbolTable {
       else pre.memberInfo(sym).baseType(clazz);
 
     override def closure: Array[Type] = {
-      val p = closurePhase;
-      if (p != phase) {
-        closurePhase = phase;
-        if (!isValidForBaseClasses(p)) {
+      val period = closurePeriod;
+      if (period != currentPeriod) {
+        closurePeriod = currentPeriod;
+        if (!isValidForBaseClasses(period)) {
           if (util.Statistics.enabled) typerefClosureCount = typerefClosureCount + 1;
           closureCache =
             if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
@@ -1492,20 +1492,22 @@ trait Types requires SymbolTable {
 
 // Helper Methods  -------------------------------------------------------------
 
-  final def isValid(p: Phase): boolean =
-    p != null && phaseWithId(p.id) == p && {
-      if (phase.id > p.id) infoTransformers.nextFrom(p.id).pid >= phase.id
-      else infoTransformers.nextFrom(phase.id).pid >= p.id
+  final def isValid(period: Period): boolean =
+    period != 0 && runId(period) == currentRunId && {
+      val pid = phaseId(period)
+      if (phase.id > pid) infoTransformers.nextFrom(pid).pid >= phase.id
+      else infoTransformers.nextFrom(phase.id).pid >= pid
     }
 
-  final def isValidForBaseClasses(p: Phase): boolean = {
+  final def isValidForBaseClasses(period: Period): boolean = {
     def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): boolean = (
       it.pid >= limit ||
       !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)
     );
-    p != null && phaseWithId(p.id) == p && {
-      if (phase.id > p.id) noChangeInBaseClasses(infoTransformers.nextFrom(p.id), phase.id)
-      else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), p.id)
+    period != 0 && runId(period) == currentRunId && {
+      val pid = phaseId(period)
+      if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)
+      else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), pid)
     }
   }
 

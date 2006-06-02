@@ -31,7 +31,6 @@ with RightTracers {
   val phaseName = "transmatcher";
 
   protected def newTransformer(unit: global.CompilationUnit): global.Transformer = {
-    cunit = unit;
     new TransMatch
   }
 
@@ -178,6 +177,12 @@ with RightTracers {
   }
 
   class TransMatch extends Transformer {
+
+    override def transformUnit(unit: CompilationUnit) = {
+      cunit = unit
+      super.transformUnit(unit)
+      cunit = null
+    }
 
     /** a casedef with sequence subpatterns like
      *

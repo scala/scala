@@ -52,7 +52,7 @@ object Main extends Object with EvalLoop {
       try {
         object compiler extends Global(command.settings, reporter);
         if (command.settings.resident.value)
-          resident(compiler);
+          resident(compiler)
         else if (command.files.isEmpty)
           reporter.info(null, command.usageMsg, true)
         else {
