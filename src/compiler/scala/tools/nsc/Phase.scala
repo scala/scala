@@ -7,19 +7,7 @@ package scala.tools.nsc;
 
 import symtab.Flags;
 
-object Phase {
-  var phaseCount = 0;
-
-}
-
 abstract class Phase(val prev: Phase) {
-
-  Phase.phaseCount = Phase.phaseCount + 1
-  Console.println("creating phase: "+Phase.phaseCount)
-  override def finalize() = {
-    Phase.phaseCount = Phase.phaseCount - 1
-    Console.println("collecting phase: "+Phase.phaseCount)
-  }
 
   type Id = int;
 

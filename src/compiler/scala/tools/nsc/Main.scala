@@ -32,12 +32,22 @@ object Main extends Object with EvalLoop {
 
   def errors() = reporter.errors
 
-  def resident(compiler: Global): unit = {
-    loop(line => {
+  def resident(compiler: Global): unit =
+    loop { line =>
       val args = List.fromString(line, ' ')
       val command = new CompilerCommand(args, error, true)
       (new compiler.Run) compile command.files
-    })
+    }
+
+  def forever(compiler: Global): unit = {
+    var cnt = 0
+    while (true) {
+      Console.println("Iteration: "+cnt)
+      cnt = cnt + 1
+      val args = List("Global.scala")
+      val command = new CompilerCommand(args, error, true)
+      (new compiler.Run) compile command.files
+    }
   }
 
   def process(args: Array[String]): unit = {
@@ -51,6 +61,8 @@ object Main extends Object with EvalLoop {
     else {
       try {
         object compiler extends Global(command.settings, reporter);
+        if (command.settings.Xgenerics.value)
+          forever(compiler)
         if (command.settings.resident.value)
           resident(compiler)
         else if (command.files.isEmpty)
