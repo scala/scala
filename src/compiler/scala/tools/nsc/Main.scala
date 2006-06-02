@@ -39,6 +39,7 @@ object Main extends Object with EvalLoop {
       (new compiler.Run) compile command.files
     }
 
+/*
   def forever(compiler: Global): unit = {
     var cnt = 0
     while (true) {
@@ -49,6 +50,7 @@ object Main extends Object with EvalLoop {
       (new compiler.Run) compile command.files
     }
   }
+*/
 
   def process(args: Array[String]): unit = {
     reporter = new ConsoleReporter();
@@ -61,8 +63,10 @@ object Main extends Object with EvalLoop {
     else {
       try {
         object compiler extends Global(command.settings, reporter);
+/*
         if (command.settings.Xgenerics.value)
           forever(compiler)
+*/
         if (command.settings.resident.value)
           resident(compiler)
         else if (command.files.isEmpty)
