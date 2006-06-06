@@ -186,7 +186,7 @@ trait TypeKinds requires ICodes {
   /** A 4-byte floating point number */
   case object FLOAT extends TypeKind {
     override def maxType(other: TypeKind): TypeKind = other match {
-      case BYTE | SHORT | CHAR | INT | FLOAT => FLOAT;
+      case BYTE | SHORT | CHAR | INT | LONG | FLOAT => FLOAT;
       case DOUBLE => DOUBLE;
       case _ => abort("Uncomparbale type kinds: FLOAT with " + other);
     }
