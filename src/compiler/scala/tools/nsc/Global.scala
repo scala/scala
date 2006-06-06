@@ -29,7 +29,7 @@ import backend.jvm.GenJVM
 import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
 
-class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
+class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with Trees
                                                              with CompilationUnits
 {
@@ -163,7 +163,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     settings.extdirs.value)
 
   if (settings.verbose.value) {
-    System.err.println("classpath = " + classPath)
+    inform("[Classpath = " + classPath+"]")
   }
 
   def getSourceFile(f: AbstractFile): SourceFile =
@@ -500,7 +500,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       if (fileset == null) {
         val msg = "No class file for " + file +
                   " was found\n(This file cannot be loaded as a source file)"
-        System.err.println(msg)
+        inform(msg)
         throw new FatalError(msg)
       }
       else if (!(fileset contains file)) {
@@ -552,8 +552,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       }
     }
     val sym = getSym(name, module)
-    System.err.println("" + sym.name + ":" +
-                       (if (module) sym.tpe.symbol.info else sym.info))
+    inform("" + sym.name + ":" +(if (module) sym.tpe.symbol.info else sym.info))
   }
 
   /** Returns the file with the given suffix for the given class. */

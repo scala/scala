@@ -123,6 +123,11 @@ class Settings(error: String => unit) {
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
 
+  /** Disable a setting */
+  def disable(s: Setting) = {
+    allsettings = allsettings filter (s !=)
+  }
+
   /** A base class for settings of all types.
    *  Subclasses each define a `value' field of the appropriate type.
    */

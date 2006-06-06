@@ -35,7 +35,7 @@ abstract class SymbolTable extends Names
   final val NoRunId = 0
 
   private var ph: Phase = NoPhase
-  private var period = NoPeriod
+  private var per = NoPeriod
 
   def phase: Phase = ph
 
@@ -43,7 +43,7 @@ abstract class SymbolTable extends Names
     //System.out.println("setting phase to " + p)
     assert(p != null && p != NoPhase)
     ph = p
-    period = (currentRunId << 8) + p.id
+    per = (currentRunId << 8) + p.id
   }
 
   /** The current compiler run identifier. */
@@ -57,9 +57,12 @@ abstract class SymbolTable extends Names
 
   /** The current period */
   def currentPeriod: Period = {
-    //assert(period == (currentRunId << 8) + phase.id)
-    period
+    //assert(per == (currentRunId << 8) + phase.id)
+    per
   }
+
+  final def period(rid: RunId, pid: Phase#Id): Period =
+    (currentRunId << 8) + pid
 
   /** Perform given operation at given phase */
   def atPhase[T](ph: Phase)(op: => T): T = {

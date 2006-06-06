@@ -335,10 +335,11 @@ trait Types requires SymbolTable {
 
     /** If this is a lazy type, assign a new type to `sym'. */
     def complete(sym: Symbol): unit = {
-      if (sym == NoSymbol || sym.isPackageClass) sym.validTo = currentPeriod
+      if (sym == NoSymbol || sym.isPackageClass)
+        sym.validTo = period(currentRunId, phaseId(sym.validTo))
       else {
         val this1 = adaptToNewRunMap(this)
-        if (this1 eq this) sym.validTo = currentPeriod
+        if (this1 eq this) sym.validTo = period(currentRunId, phaseId(sym.validTo))
         else {
           //System.out.println("new type of " + sym + "=" + this1);//DEBUG
           sym.setInfo(this1)
