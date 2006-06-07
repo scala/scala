@@ -61,6 +61,9 @@ abstract class Constructors extends Transform {
 	  case Select(This(_), _)
 	  if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
 	    gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
+          case Select(_, _) =>
+            thisRefSeen = true;
+            super.transform(tree)
           case This(_) =>
             thisRefSeen = true;
             super.transform(tree)

@@ -59,7 +59,7 @@ abstract class SymbolLoaders {
 	  setSource(root.linkedModule.moduleClass, sourceFile0);
 	  setSource(root.linkedClass,  sourceFile0);
 */
-	} else error(source + " does not define " + root)
+	} else throw new TypeError(source + " does not define " + root)
       } catch {
         case ex: IOException =>
           ok = false;
