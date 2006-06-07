@@ -496,7 +496,7 @@ BUILD QUICK-TEST LAYER
   </target>
 
   <target name="test.quick" depends="build">
-    <echo level="error"
+    <echo level="info"
       message="Ant test bench is not available yet."/>
   </target>
 
@@ -654,7 +654,7 @@ TEST
   </target>
 
   <target name="test.strap" depends="build.strap">
-    <echo level="error" message="Ant test bench is not available yet."/>
+    <echo level="info" message="Ant test bench is not available yet."/>
   </target>
 
 <!-- ===========================================================================
