@@ -477,7 +477,7 @@ BUILD QUICK-TEST LAYER
       copyright="${copyright.string}"/>
     <quicktool
       file="${quick.dir}/bin/${fsc.exec.name}"
-      name="Fast Scala compiler"
+      name="Scala scripting tool"
       class="scala.tools.nsc.CompileClient"
       version="${version.number}"
       copyright="${copyright.string}"/>
@@ -607,7 +607,7 @@ TEST
       copyright="${copyright.string}"/>
     <straptool
       file="${strap.dir}/bin/${fsc.exec.name}"
-      name="Fast Scala compiler"
+      name="Scala scripting tool"
       class="scala.tools.nsc.CompileClient"
       version="${version.number}"
       copyright="${copyright.string}"/>
@@ -785,8 +785,9 @@ GENERATES A DISTRIBUTION
     <copy todir="${dist.current.dir}/doc/scala/examples">
       <fileset dir="${docs.dir}/examples"/>
     </copy>
+    <ant dir="${docs.dir}/man" target="dist" inheritAll="false"/>
     <copy todir="${dist.current.dir}/man">
-      <fileset dir="${docs.dir}/man"/>
+      <fileset dir="${docs.dir}/man/dists" includes="**/*.1"/>
     </copy>
   <!-- Recreate the 'latest' link to point to this distribution -->
     <if><isset property="os.win"/>

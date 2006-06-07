@@ -14,7 +14,7 @@
   <property name="dist.dir" value="${basedir}/dists"/>
 
   <target name="init">
-    <echo level="verbose">scala.dir=${scala.dir}</echo>
+    <echo level="verbose">scala.lib.dir=${scala.lib.dir}</echo>
     <fail message="A required Scala library is missing.">
       <condition><not><and>
         <available file="${scala-library.jar}"/>
