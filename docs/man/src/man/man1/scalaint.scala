@@ -32,7 +32,18 @@ object scalaint extends Command {
 
     "The " & MBold(command) & " tool reads class and object definitions, " &
     "written in the Scala programming language, and interprets them in an " &
-    "interactive shell environment.")
+    "interactive shell environment.",
+
+    "The shell environment provides the following internal commands:",
+
+    CodeSample("This is an interpreter for Scala.\n" +
+      "Type in expressions to have them evaluated.\n" +
+      "Type :quit to exit the interpreter.\n" +
+      "Type :compile followed by a filename to compile a complete Scala file.\n" +
+      "Type :load followed by a filename to load a sequence of interpreter commands.\n" +
+      "Type :replay to reset execution and replay all previous commands.\n" +
+      "Type :help to repeat this message later.\n\n" +
+      "scala>"))
 
   val examples = Section("EXAMPLES",
 

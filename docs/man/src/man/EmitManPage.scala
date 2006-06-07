@@ -88,7 +88,7 @@ object EmitManPage {
         case CodeSample(text) =>
           out.println("\n.nf")
           out.print(text)
-          out.println(".fi")
+          out.println("\n.fi")
 
         case lst:BulletList =>
           out.println("<ul>")

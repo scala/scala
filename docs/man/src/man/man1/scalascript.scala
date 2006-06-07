@@ -46,7 +46,7 @@ object scalascript extends Command {
     CodeSample(
       "#!/bin/sh\n" +
       "exec scalascript \"$0\" \"$@\"\n" +
-      "!#\n"),
+      "!#"),
 
     "To write a Scala script as a Microsoft Windows batch file, start " &
     "the " & Mono(".bat") & " file with the following header:",
@@ -56,7 +56,7 @@ object scalascript extends Command {
       "@echo off\n" +
       "call scalascript %0 %*\n" +
       "goto :eof\n" +
-      "::!#\n"))
+      "::!#"))
 
   val examples = Section("EXAMPLES",
 
@@ -68,7 +68,7 @@ object scalascript extends Command {
       "exec scalascript \"$0\" \"$@\"\n" +
       "!#\n" +
       "Console.println(\"Hello, world!\")\n" +
-      "argv.toList foreach Console.println\n"))
+      "argv.toList foreach Console.println"))
 
   override val authors = Section("AUTHOR",
 
