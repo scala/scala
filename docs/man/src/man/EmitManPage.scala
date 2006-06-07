@@ -156,8 +156,10 @@ object EmitManPage {
       val doc = meth.invoke(null, Array[Object]()).asInstanceOf[Document]
       emitDocument(doc)
     } catch {
-      case e: Exception =>
-        System.err.println(e.getMessage())
+      case ex: Exception =>
+        ex.printStackTrace()
+        System.err.println("Error in EmitManPage")
+        exit(1)
     }
 
 }

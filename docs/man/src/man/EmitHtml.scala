@@ -340,8 +340,10 @@ object EmitHtml {
       val addDocType = (args.length > 1 && "-doctype".equals(args(1)))
       emitDocument(doc, addDocType)
     } catch {
-      case e: Exception =>
-        System.err.println(e.getMessage())
+      case ex: Exception =>
+        ex.printStackTrace()
+        System.err.println("Error in EmitHtml")
+        exit(1)
     }
   }
 }
