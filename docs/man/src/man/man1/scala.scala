@@ -121,6 +121,7 @@ object scala extends Command {
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
     Link(Bold("scalaint") & "(1)", "scalaint.html") & ", " &
+    Link(Bold("scalap") & "(1)", "scalap.html") & ", " &
     Link(Bold("scalascript") & "(1)", "scalascript.html"))
 
   def manpage = new Document {

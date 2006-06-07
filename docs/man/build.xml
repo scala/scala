@@ -51,6 +51,7 @@
     <emit command="scalac"/>
     <emit command="scaladoc"/>
     <emit command="scalaint"/>
+    <emit command="scalap"/>
     <emit command="scalascript"/>
     <fixcrlf srcdir="${dist.dir}" eol="lf"/>
   </target>
