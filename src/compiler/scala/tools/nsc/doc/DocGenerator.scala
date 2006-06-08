@@ -113,7 +113,7 @@ abstract class DocGenerator extends Models {
 
   val doctitle: NodeSeq =
     <div class="doctitle-larger">
-      {/* load */ (documentTitle)}
+      {load(documentTitle)}
     </div>;
 
   abstract class ListModuleFrame extends Frame {

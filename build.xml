@@ -789,6 +789,15 @@ GENERATES A DISTRIBUTION
     <copy todir="${dist.current.dir}/man">
       <fileset dir="${docs.dir}/man/dists" includes="**/*.1"/>
     </copy>
+    <copy todir="${dist.current.dir}/doc/scala/tools">
+      <fileset dir="${docs.dir}/man/src">
+        <include name="**/*.html"/>
+        <include name="**/*.css"/>
+        <include name="**/*.gif"/>
+        <include name="**/*.png"/>
+      </fileset>
+      <fileset dir="${docs.dir}/man/dists" includes="**/*.html"/>
+    </copy>
   <!-- Recreate the 'latest' link to point to this distribution -->
     <if><isset property="os.win"/>
       <then>
