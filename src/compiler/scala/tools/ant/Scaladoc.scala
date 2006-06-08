@@ -393,9 +393,9 @@ package scala.tools.ant {
         run.compile(sourceFiles.map(f: File => f.toString()))
         object generator extends DocGenerator {
           val global = compiler
-          val outdir = settings.outdir.value
-          val windowTitle = settings.windowtitle.value
-          val documentTitle = settings.documenttitle.value
+          def outdir = settings.outdir.value
+          def windowTitle = settings.windowtitle.value
+          def documentTitle = settings.documenttitle.value
         }
         generator.process(run.units)
         if (reporter.errors > 0)
