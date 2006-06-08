@@ -146,17 +146,17 @@ object sbaz extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
-    Link("scala(1)", "scala.html") & ", " &
-    Link("scalac(1)", "scalac.html") & ", " &
-    Link("scaladoc(1)", "scaladoc.html") & ", " &
-    Link("scalaint(1)", "scalaint.html") & ", " &
-    Link("scalascript(1)", "scalascript.html"))
+    Link(Bold("scala") & "(1)", "scala.html") & ", " &
+    Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
+    Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
+    Link(Bold("scalaint") & "(1)", "scalaint.html") & ", " &
+    Link(Bold("scalascript") & "(1)", "scalascript.html"))
 
   def manpage = new Document {
     title = command
-    date = "April 29, 2005"
+    date = "June 8, 2006"
     author = "Stephane Micheloud"
-    version = "0.1"
+    version = "0.2"
     sections = List(
       name,
       synopsis,
