@@ -344,10 +344,7 @@
 
 
 
-  <target name="docs.lib"
-    description="Generated the API for library sources"
-    depends="setup"
-  >
+  <target name="docs.lib" depends="setup">
     <mkdir dir="${api.lib.dir}"/>
     <starrdoc
       srcdir="${src.dir}"
