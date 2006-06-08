@@ -77,9 +77,9 @@ object Main extends Object with EvalLoop {
           if (command.settings.doc.value) {
             object generator extends DocGenerator {
               val global : compiler.type = compiler
-              val outdir = command.settings.outdir.value
-              val windowTitle = command.settings.windowtitle.value
-              val documentTitle = command.settings.documenttitle.value
+              def outdir = command.settings.outdir.value
+              def windowTitle = command.settings.windowtitle.value
+              def documentTitle = command.settings.documenttitle.value
             };
             generator.process(run.units)
           }
