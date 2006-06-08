@@ -22,7 +22,13 @@ trait Command {
     Mono(Bold(NDash & opt) & " " & params & " ")
 
   protected def CmdOption(opt: String): AbstractText =
-    CmdOption(opt, "")
+    Mono(Bold(NDash & opt) & " ")
+
+  protected def CmdOptionLong(opt: String, params: AbstractText) =
+    Mono(Bold(NDash & NDash & opt) & " " & params & " ")
+
+  protected def CmdOptionLong(opt: String): AbstractText =
+    Mono(Bold(NDash & NDash & opt) & " ")
 
   protected def Argument(arg: String): AbstractText =
     "<" & Italic(arg) & ">"

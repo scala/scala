@@ -118,8 +118,8 @@ object sbaz extends Command {
           "but it may also be specified on the command line with the " &
           CmdOption("i") & " option."),
         Definition(
-          MBold("share") & " " & CmdOption("-template"),
-          "If " & CmdOption("-template") & " is specified, then instead " &
+          MBold("share") & " " & CmdOptionLong("template"),
+          "If " & CmdOptionLong("template") & " is specified, then instead " &
           "of uploading a description, the command prints out a template " &
           "of a package advertisement."),
         Definition(
