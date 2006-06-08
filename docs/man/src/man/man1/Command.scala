@@ -29,7 +29,8 @@ trait Command {
 
   def authors = Section("AUTHOR",
 
-    "Written by Stephane Micheloud.")
+    "Written by Martin Odersky and other members of the " &
+    Link("Scala team", "http://scala.epfl.ch/community/") & ".")
 
   def copyright = Section("COPYRIGHT",
 

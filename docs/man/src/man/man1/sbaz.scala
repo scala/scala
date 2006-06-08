@@ -37,12 +37,15 @@ object sbaz extends Command {
 
   val description = Section("DESCRIPTION",
 
-    "The " & MBold(command) & " tool ...")
+    "The " & MBold(command) & " tool is a system used by Scala enthusiasts " &
+    "to share computer files with each other. In particular, it makes it " &
+    "easy to share libraries and applications.")
 
   val options = Section("OPTIONS",
 
-    "The " & MBold(command) & " tool has a set of standard options that are supported " &
-    "on the current development environment and will be supported in future releases.",
+    "The " & MBold(command) & " tool has a set of standard options that are " &
+    "supported on the current development environment and will be supported " &
+    "in future releases.",
 
     Section("Global Options",
       DefinitionList(
@@ -58,7 +61,12 @@ object sbaz extends Command {
       DefinitionList(
         Definition(
           MBold("available"),
-          "List the available packages for installation."),
+          "List the available packages for installation; only display the " +
+          "three most recent versions of each package."),
+        Definition(
+          MBold("available") & " " & CmdOption("a"),
+          "List the available packages for installation; display all shared " +
+          "versions of each package."),
         Definition(
           MBold("compact"),
           "Clear the download cache to save space."),
