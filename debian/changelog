@@ -1,3 +1,9 @@
+scala (2.1.5-1) unstable; urgency=low
+
+  * upstream update.
+
+ -- Lex Spoon <lex@debian.org>  Sun, 9 Jun 2006 14:45:26 +0100
+
 scala (2.1.1-1) unstable; urgency=low
 
   * Initial Release.
