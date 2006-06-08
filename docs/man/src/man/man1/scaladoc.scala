@@ -2,7 +2,7 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author Stephane Micheloud
  */
-//$Id: $
+//$Id$
 
 package man.man1
 
@@ -82,6 +82,7 @@ object scaladoc extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
+    Link(Bold("sbaz") & "(1)", "sbaz.html") & ", " &
     Link(Bold("scala") & "(1)", "scala.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scalaint") & "(1)", "scalaint.html") & ", " &
@@ -90,9 +91,9 @@ object scaladoc extends Command {
 
   def manpage = new Document {
     title = command
-    date = "April 29, 2005"
+    date = "June 8, 2006"
     author = "Stephane Micheloud"
-    version = "0.1"
+    version = "0.2"
     sections = List(
       name,
       synopsis,

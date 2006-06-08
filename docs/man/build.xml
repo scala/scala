@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id$ -->
 
 <project name="scala-manpages" default="build">
 
@@ -47,6 +48,7 @@
 
   <target name="dist" depends="build">
     <mkdir dir="${dist.dir}"/>
+    <emit command="sbaz"/>
     <emit command="scala"/>
     <emit command="scalac"/>
     <emit command="scaladoc"/>
