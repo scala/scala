@@ -60,12 +60,13 @@ class ClassPath(onlyPresentation: Boolean) {
           val clazz = if (head.location == null) null
                       else head.location.lookupPath(name0, isDir)
 
-          val source0 = if (head.source == null) null else {
+          val source0 = if (head.source == null) null else if (clazz == null || isDir) {
             val source1 = head.source.location.lookupPath(
               name + (if (isDir) "" else ".scala"), isDir)
             if (source1 == null && !isDir && clazz != null) head.source.location
             else source1
-          }
+          } else head.source.location;
+
           if (clazz == null && source0 == null) ret
           else {
             val entry = new Entry(clazz) {
@@ -73,7 +74,13 @@ class ClassPath(onlyPresentation: Boolean) {
                 if (source0 == null) null
                 else new Source(source0, head.source.compile)
             }
-            new Context(entry :: ret.entries)
+            try {
+              //System.err.println("this=" + this + "\nclazz=" + clazz + "\nsource0=" + source0 + "\n");
+              new Context(entry :: ret.entries)
+            } catch {
+              case e : Error =>
+              throw e;
+            }
           }
         }
       }
@@ -133,8 +140,21 @@ class ClassPath(onlyPresentation: Boolean) {
 
     def classFile = if (!isSourceFile) entries.head.location else null
 
+    {
+      val sourcePath0 = sourcePath;
+      if (sourcePath0 != null) {
+        if (!sourcePath0.isDirectory) {
+          System.err.println(""+sourcePath0 + " cannot be a directory");
+          assert(false);
+        }
+      }
+    }
+
     def sourcePath =
-      if (!isSourceFile && entries.head.source != null) entries.head.source.location
+      if (!isSourceFile && !entries.isEmpty && entries.head.source != null) {
+        val ret = entries.head.source.location
+        ret
+      }
       else null
 
     def validPackage(name: String): Boolean =
