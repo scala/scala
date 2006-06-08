@@ -3,12 +3,10 @@
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
 
-export DH_ALWAYS_EXCLUDE=.svn
-
 build: build-stamp
 build-stamp:
 	dh_testdir
-	ANT_OPTS=-Xmx512M ant dist
+	ANT_OPTS=-Xmx512M ant -f debian/simpbuild.xml dist
 	touch build-stamp
 
 clean:
@@ -23,14 +21,14 @@ install: build
 	dh_clean -k
 	dh_installdirs -A
 
-	install dists/latest/lib/scala-library.jar $(CURDIR)/debian/scala-library/usr/share/java/
-	install dists/latest/lib/scala-dbc.jar $(CURDIR)/debian/scala-library/usr/share/java/
+	install simpbuild/lib/scala-library.jar $(CURDIR)/debian/scala-library/usr/share/java/
+	install simpbuild/lib/scala-dbc.jar $(CURDIR)/debian/scala-library/usr/share/java/
 
-	install -m 644 dists/latest/lib/scala-compiler.jar $(CURDIR)/debian/scala-dev/usr/share/java/
+	install simpbuild/lib/scala-compiler.jar $(CURDIR)/debian/scala-dev/usr/share/java/
 	install debian/command-scripts/* $(CURDIR)/debian/scala-dev/usr/bin/
 
 	dh_installdocs -A
-	dh_installman -pscala-dev docs/man/*/*
+	dh_installman -pscala-dev docs/man/*/*.1
 	dh_installchangelogs  -A
 	dh_compress -A
 	dh_fixperms -A
@@ -44,6 +42,9 @@ binary-indep: build install
 	dh_md5sums
 	dh_builddeb
 
+
+# no arch-specific stuff, but Lintian complains if this is missing
+binary-arch:
 
 binary: binary-indep
 
