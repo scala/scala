@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This is a simplified build file for Scala on Debian -->
+<!-- $Id -->
+
+<project name="scala" default="build">
+  <property environment="env"/>
+
+  <!-- Prevents system classpath from being used -->
+  <property name="build.sysclasspath" value="ignore"/>
+
+  <!-- Base properties -->
+  <property name="topdir" value="${basedir}/.."/>
+  <property name="debian.dir" value="${topdir}/debian"/>
+  <property name="docs.dir" value="${topdir}/docs"/>
+  <property name="examples.pdir" value="${docs.dir}"/>
+  <property name="examples.dir" value="${examples.pdir}/examples"/>
+  <property name="lib.dir" value="${topdir}/lib"/>
+  <property name="src.dir" value="${topdir}/src"/>
+  <property name="properties" value="${debian.dir}/build.properties"/>
+
+  <!-- User properties -->
+  <property file="${properties}"/>
+
+  <!-- General properties -->
+  <property name="copyright.holder" value="LAMP/EPFL"/>
+
+  <!-- Javac configuration properties -->
+  <property name="jc.source" value="1.4"/>
+  <property name="jc.target" value="1.4"/>
+  <property name="jc.deprecation" value="true"/>
+
+
+  <!-- Location of pre-compiled libraries  -->
+  <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
+  <property name="starr.comp.jar" value="${lib.dir}/scala-compiler.jar"/>
+  <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
+  <property name="ant.jar" value="/usr/share/java/ant.jar"/>
+
+  <!-- Location of build products properties -->
+  <property name="build.dir" value="${topdir}/simpbuild"/>
+  <property name="api.dir" value="${build.dir}/api"/>
+
+  <!-- Location of source and build elements names properties -->
+  <property name="lib.dir.name" value="library"/>
+  <property name="comp.dir.name" value="compiler"/>
+  <property name="dbc.dir.name" value="dbc"/>
+  <property name="src.lib.dir" value="${src.dir}/${lib.dir.name}"/>
+  <property name="src.comp.dir" value="${src.dir}/${comp.dir.name}"/>
+  <property name="src.dbc.dir" value="${src.dir}/${dbc.dir.name}"/>
+  <property name="exec.dir.name" value="exec"/>
+
+  <!-- Location of structure of the distribution properties -->
+  <property name="dist.sbaz.dir" value="${build.dir}/sbaz"/>
+  <property name="dist.name" value="scala"/>
+  <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
+  <property name="lib-dbc.jar.name" value="${dist.name}-dbc.jar"/>
+  <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
+  <property name="scala.exec.name" value="${dist.name}"/>
+  <property name="scalac.exec.name" value="scalac"/>
+  <property name="scaladoc.exec.name" value="scaladoc"/>
+  <property name="scalaint.exec.name" value="scalaint"/>
+
+  <!-- Shorcut names -->
+  <property name="build.lib.dir" value="${build.dir}/${lib.dir.name}"/>
+  <property name="build.comp.dir" value="${build.dir}/${comp.dir.name}"/>
+  <property name="build.dbc.dir" value="${build.dir}/${dbc.dir.name}"/>
+  <property name="build.jar.dir" value="${build.dir}/lib"/>
+  <property name="build.bin.dir" value="${build.dir}/bin"/>
+  <property name="api.lib.pdir" value="${api.dir}/${lib.dir.name}"/>
+  <property name="api.lib.dir" value="${api.lib.pdir}/api"/>
+  <property name="api.comp.pdir" value="${api.dir}/${comp.dir.name}"/>
+  <property name="api.comp.dir" value="${api.comp.pdir}/api"/>
+
+  <!-- sbaz properties -->
+  <property name="sbaz.lib.name" value="${dist.name}-library"/>
+  <property name="sbaz.dev.name" value="${dist.name}-devel"/>
+  <property name="sbaz.test.name" value="${dist.name}-test"/>
+  <property name="sbaz.scala.name" value="${dist.name}"/>
+  <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
+
+
+  <target name="init" unless="init.avail">
+    <tstamp prefix="time">
+      <format
+        property="human"
+        pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"
+      />
+      <format
+        property="short"
+        pattern="yyyyMMdd-HHmmss"
+      />
+      <format
+       property="this.year"
+       pattern="yyyy"
+     />
+    </tstamp>
+    <property
+      name="copyright"
+      value="(c) 2002-${time.this.year} ${copyright.holder}"
+    />
+
+    <!-- Testing if everything is in place -->
+    <echo level="verbose" message="starr.lib.jar=${starr.lib.jar}"/>
+    <fail message="STARR library in 'lib/' is not available">
+      <condition><not><and>
+        <available
+          classname="scala.Predef" 
+          classpath="${starr.lib.jar}"
+        />
+        <available
+          classname="scala.List"
+          classpath="${starr.lib.jar}"
+        />
+        <available
+          classname="scala.runtime.ObjectRef"
+          classpath="${starr.lib.jar}"
+        />
+      </and></not></condition>
+    </fail>
+    <echo level="verbose" message="starr.comp.jar=${starr.comp.jar}"/>
+    <fail message="STARR compiler in 'lib/' is not available">
+      <condition><not>
+        <available
+          classname="scala.tools.ant.Scalac"
+          classpath="${starr.comp.jar}:${starr.lib.jar}"
+        />
+      </not></condition>
+    </fail>
+    <echo level="verbose" message="fjbg.jar=${fjbg.jar}"/>
+    <fail message="FJBG library in 'lib/' is not available">
+      <condition><not>
+        <available
+          classname="ch.epfl.lamp.fjbg.JCode"
+          classpath="${fjbg.jar}"
+        />
+      </not></condition>
+    </fail>
+
+    <path id="starr.classpath">
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${starr.lib.jar}"/>
+      <pathelement location="${starr.comp.jar}"/>
+    </path>
+
+
+    <property name="os.type" value="UNIX"/>
+
+
+    <!-- Printing out some information about what environment I am running in -->
+    <echo
+      level="info"
+      message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"
+    />
+    <echo
+      level="info"
+      message="Java: ${java.version} ('${java.home}');"
+    />
+    <echo
+      level="info"
+      message="JVM:  ${java.vm.name} ${java.vm.version};"
+    />
+    <echo
+      level="info"
+      message="Ant:  ${ant.version}."
+    />
+
+    <!-- Generating version number -->
+    <property file="${topdir}/build.number"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}"
+    />
+    <echo level="verbose" message="version.number=${version.number}"/>
+
+    <property name="init.avail" value="yes"/>
+  </target>
+
+  <target name="setup" depends="init">
+    <!-- Creating tasks -->
+    <taskdef
+      name="starr"
+      classname="scala.tools.ant.Scalac"
+      classpathref="starr.classpath"
+    />
+    <taskdef
+      name="starrtool"
+      classname="scala.tools.ant.ScalaTool"
+      classpathref="starr.classpath"
+    />
+    <taskdef
+      name="starrdoc"
+      classname="scala.tools.ant.Scaladoc"
+      classpathref="starr.classpath"
+    />
+    <taskdef
+      name="starrsbaz"
+      classname="scala.tools.ant.ScalaBazaar"
+      classpathref="starr.classpath"
+    />
+
+  </target>
+
+
+  <target name="build" depends="setup">
+    <!-- Build library -->
+    <mkdir dir="${build.lib.dir}"/>
+    <javac
+      srcdir="${src.lib.dir}"
+      destdir="${build.lib.dir}"
+      source="${jc.source}"
+      target="${jc.target}"
+      deprecation="${jc.deprecation}"
+    >
+      <classpath>
+        <pathelement location="${build.lib.dir}"/> <!-- XXX ??? -->
+      </classpath>
+      <include name="**/*.java"/>
+    </javac>
+    <starr
+      srcdir="${src.lib.dir}"
+      destdir="${build.lib.dir}"
+      usepredefs="no"
+    >
+      <classpath>
+        <pathelement location="${build.lib.dir}"/> <!-- XXX ??? -->
+      </classpath>
+      <include name="scala/Predef.scala"/>
+      <include name="scala/runtime/ScalaRunTime.scala"/>
+    </starr>
+    <starr
+      srcdir="${src.lib.dir}"
+      destdir="${build.lib.dir}"
+    >
+      <classpath>
+        <pathelement location="${build.lib.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/runtime/ScalaRunTime.scala"/>
+      <exclude name="scala/dbc/**"/>
+    </starr>
+
+    <!-- Build compiler -->
+    <mkdir dir="${build.comp.dir}"/>
+    <starr
+      srcdir="${src.comp.dir}"
+      destdir="${build.comp.dir}"
+    >
+      <classpath>
+        <pathelement location="${build.lib.dir}"/>
+        <pathelement location="${ant.jar}"/>
+        <path refid="starr.classpath"/>
+      </classpath>
+      <include name="**/*.scala"/>
+    </starr>
+
+    <!-- Build DBC -->
+    <mkdir dir="${build.dbc.dir}"/>
+    <starr
+      srcdir="${src.dbc.dir}"
+      destdir="${build.dbc.dir}"
+    >
+      <classpath>
+        <pathelement location="${build.lib.dir}"/>
+        <pathelement location="${build.comp.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+    </starr>
+        	
+    <!-- Build jars -->
+    <mkdir dir="${build.jar.dir}"/>
+    <jar destfile="${build.jar.dir}/${comp.jar.name}">
+      <fileset dir="${build.comp.dir}"/>
+      <zipfileset src="${fjbg.jar}"/>
+      <fileset dir="${src.lib.dir}">
+        <include name="**/*.tmpl"/>
+            <include name="**/*.xml"/>
+            <include name="**/*.js"/>
+            <include name="**/*.css"/>
+          </fileset>
+          <fileset dir="${src.comp.dir}">
+            <include name="**/*.tmpl"/>
+            <include name="**/*.xml"/>
+            <include name="**/*.js"/>
+            <include name="**/*.css"/>
+          </fileset>
+      <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
+      </manifest>
+    </jar>
+    <jar destfile="${build.jar.dir}/${lib.jar.name}">
+      <fileset dir="${build.lib.dir}"/>
+      <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
+      </manifest>
+    </jar>
+    <jar destfile="${build.jar.dir}/${lib-dbc.jar.name}">
+      <fileset dir="${build.dbc.dir}"/>
+      <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
+      </manifest>
+    </jar>
+	
+
+    <!-- build tool scripts -->
+    <mkdir dir="${build.bin.dir}"/>
+    <starrtool
+      file="${build.bin.dir}/${scala.exec.name}"
+      version="${version.number}"
+      copyright="${copyright}"
+    />
+    <starrtool
+      file="${build.bin.dir}/${scalac.exec.name}"
+      name="Scala compiler"
+      class="scala.tools.nsc.Main"
+      version="${version.number}"
+      copyright="${copyright}"
+      javaFlags="-Xmx256M -Xms16M"
+    />
+    <starrtool
+      file="${build.bin.dir}/${scaladoc.exec.name}"
+      name="Scala doc generator"
+      class="scala.tools.nsc.Main"
+      toolflags="-doc"
+      version="${version.number}"
+      copyright="${copyright}"
+      javaFlags="-Xmx256M -Xms16M"
+    />
+    <starrtool
+      file="${build.bin.dir}/${scalaint.exec.name}"
+      name="Scala interpreter"
+      class="scala.tools.nsc.MainInterpreter"
+      version="${version.number}"
+      copyright="${copyright}"
+    />
+    <starrtool
+      file="${build.bin.dir}/scalascript"
+      name="Scala script runner"
+      class="scala.tools.nsc.MainScript"
+      version="${version.number}"
+      copyright="${copyright}"
+    />
+  </target>
+
+
+
+  <target name="docs.lib"
+    description="Generated the API for library sources"
+    depends="setup"
+  >
+    <mkdir dir="${api.lib.dir}"/>
+    <starrdoc
+      srcdir="${src.dir}"
+      destdir="${api.lib.dir}"
+      sourcepath=""
+      windowtitle="Scala Library Documentation"
+      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;v${version.number}&lt;/div&gt;&lt;/div&gt;"
+    >
+      <classpath>
+        <pathelement location="${build.jar.dir}/${lib.jar.name}"/>
+      </classpath>
+      <include name="${dbc.dir.name}/**/*.scala"/>
+      <include name="${lib.dir.name}/**/*.scala"/>
+    </starrdoc>
+  </target>
+
+  <target name="docs" depends="docs.lib"/>
+
+  <target name="dist"
+    depends="build, docs.lib"
+  >
+    <!-- Create the SBaz packages -->
+    <mkdir dir="${dist.sbaz.dir}"/>
+    <!-- Create the Scala library package -->
+    <starrsbaz
+      file="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.advert"
+      name="${sbaz.lib.name}"
+      version="${version.number}"
+      desc="The Scala library. This is the minimal requirement to run any Scala program."
+      link="${sbaz.universe}/${sbaz.lib.name}-${version.number}.sbp"
+    >
+      <libset dir="${build.jar.dir}" includes="${lib.jar.name},${lib-dbc.jar.name}"/>
+    </starrsbaz>
+    <!-- Create the Scala developper package -->
+    <starrsbaz
+      file="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.advert"
+      name="${sbaz.dev.name}"
+      version="${version.number}"
+      desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
+      depends="${sbaz.lib.name}"
+      link="${sbaz.universe}/${sbaz.dev.name}-${version.number}.sbp"
+    >
+      <binset dir="${build.bin.dir}" includes="**"/>
+      <libset dir="${build.jar.dir}" includes="${comp.jar.name}"/>
+      <manset dir="${docs.dir}/man" includes="**"/>
+      <docset dir="${docs.dir}" includes="README,LICENSE"/>
+      <docset dir="${api.lib.pdir}" includes="api/**"/>
+    </starrsbaz>
+    <!-- Creates the empty umbrella Scala package -->
+    <starrsbaz
+      file="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.advert"
+      name="${sbaz.scala.name}"
+      version="${version.number}"
+      desc="The base Scala package that contains everything needed to start using Scala."
+      depends="${sbaz.lib.name},${sbaz.dev.name}"
+      link="${sbaz.universe}/${sbaz.scala.name}-${version.number}.sbp"
+    />
+    <!-- Creates the Scala test package -->
+    <starrsbaz
+      file="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.advert"
+      name="${sbaz.test.name}"
+      version="${version.number}"
+      desc="The Scala test package contains everything needed to test Scala."
+      link="${sbaz.universe}/${sbaz.test.name}-${version.number}.sbp"
+    >
+      <binset
+        dir="${topdir}/test"
+        includes="scalatest"
+      />
+      <miscset
+        dir="${topdir}/test"
+        includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/**/*.args,files/cli/**/*.check.*"
+      />
+    </starrsbaz>
+  </target>
+
+  <target name="install" depends="dist">
+    <exec executable="sbaz">
+      <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"/>
+    </exec>
+    <exec executable="sbaz">
+      <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.sbp"/>
+    </exec>
+    <exec executable="sbaz">
+      <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"/>
+    </exec>
+    <exec executable="sbaz">
+      <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"/>
+    </exec>
+  </target>
+	
+
+  <target name="clean">
+    <delete
+      dir="${build.dir}"
+      includeemptydirs="yes"
+      quiet="yes"
+      failonerror="no"
+    />
+  </target>
+</project>
