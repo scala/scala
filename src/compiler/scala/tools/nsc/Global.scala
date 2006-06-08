@@ -493,7 +493,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       for (val Pair(sym, file) <- symSource.elements) resetPackageClass(sym.owner)
       //units foreach (.clear())
       informTime("total", startTime)
-      curRun = null
     }
 
     def compileLate(file: AbstractFile): unit =
