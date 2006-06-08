@@ -3,6 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id: Main.scala 7679 2006-06-02 14:36:18 +0000 (Fri, 02 Jun 2006) odersky $
+
 package scala.tools.nsc
 
 import scala.tools.util.StringOps
@@ -56,8 +57,10 @@ object CompileClient {
 
   def main(args: Array[String]): unit = {
     val Pair(vmArgs, serverAdr) = normalize(args)
-    if (args exists ("-verbose" ==))
-      System.out.println("[Server arguments: "+args.mkString("", " ", "]"))
+    if (args exists ("-verbose" ==)) {
+      System.out.println("[Server arguments: " + args.mkString("", " ", "]"))
+      System.out.println("[VM arguments: " + vmArgs + "]")
+    }
     val socket = if (serverAdr == "") CompileSocket.getOrCreateSocket(vmArgs)
                  else CompileSocket.getSocket(serverAdr)
     val out = new PrintWriter(socket.getOutputStream(), true)

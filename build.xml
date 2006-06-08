@@ -350,6 +350,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       file="${locker.dir}/bin/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
+      toolflags='-JDjava.class.path="$MERGED_CLASSPATH"'
       version="${version.number}"
       copyright="${copyright.string}"
       javaFlags="-Xmx256M -Xms16M"/>
@@ -477,8 +478,9 @@ BUILD QUICK-TEST LAYER
       copyright="${copyright.string}"/>
     <quicktool
       file="${quick.dir}/bin/${fsc.exec.name}"
-      name="Scala scripting tool"
+      name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
+      toolflags='-JDjava.class.path="$MERGED_CLASSPATH"'
       version="${version.number}"
       copyright="${copyright.string}"/>
     <chmod perm="ugo+rx"
@@ -607,8 +609,9 @@ TEST
       copyright="${copyright.string}"/>
     <straptool
       file="${strap.dir}/bin/${fsc.exec.name}"
-      name="Scala scripting tool"
+      name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
+      toolflags='-JDjava.class.path="$MERGED_CLASSPATH"'
       version="${version.number}"
       copyright="${copyright.string}"/>
     <chmod perm="ugo+rx"
@@ -865,7 +868,7 @@ GENERATES A DISTRIBUTION
         includes="clitest,diff.exe,lib*.dll,scalatest,scalatest.bat"/>
       <miscset
         dir="${basedir}/test"
-        includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*"/>
+        includes="files/**/*.args,files/**/*.check,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*"/>
     </quicksbaz>
   </target>
 
