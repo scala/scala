@@ -55,7 +55,7 @@
     <emit command="scalaint"/>
     <emit command="scalap"/>
     <emit command="scalascript"/>
-    <fixcrlf srcdir="${dist.dir}" eol="lf"/>
+    <!--<fixcrlf srcdir="${dist.dir}" eol="lf"/>-->
     <copy todir="${dist.dir}">
       <fileset dir="${src.dir}">
         <include name="**/*.html"/>
