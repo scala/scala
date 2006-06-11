@@ -63,13 +63,12 @@ goto :loop
 
 :exec
 if not "%_EXTENSION_CLASSPATH%"=="" set _MYCLASSPATH=%_USER_CLASSPATH%;%_EXTENSION_CLASSPATH%
-if not "%_BOOT_CLASSPATH%"=="" set _MYCLASSPATH=%_BOOT_CLASSPATH%;%_MYCLASSPATH%
 
 rem Variable _USER_CLASSPATH is set to CLASSPATH, %1 or . and DO NOT need to be quoted
 set _PROPS=-Dscala.home="%_SCALA_HOME%" @properties@
 
-rem echo %_JAVACMD% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
-%_JAVACMD% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
+rem echo %_JAVACMD% -Xbootclasspath/a:%_BOOT_CLASSPATH% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
+%_JAVACMD% -Xbootclasspath/a:%_BOOT_CLASSPATH% @javaflags@ %_PROPS% -cp %_MYCLASSPATH% %_ARGS%
 goto end
 
 :version

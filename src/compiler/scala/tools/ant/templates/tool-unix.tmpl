@@ -54,9 +54,6 @@ if [ "$BOOT_CLASSPATH" = "" ] ; then
     fi
 fi
 
-# The merge of the two previous classpaths. All Scala code must currently be in a single class loader.
-MERGED_CLASSPATH="$BOOT_CLASSPATH:$EXTENSION_CLASSPATH"
-
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
         format=mixed
@@ -64,7 +61,8 @@ if $cygwin; then
         format=windows
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    MERGED_CLASSPATH=`cygpath --path --$format "$MERGED_CLASSPATH"`
+    EXTENSION_CLASSPATH=`cygpath --path --$format "$EXTENSION_CLASSPATH"`
+    BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
 fi
 
-${JAVACMD:=java} @javaflags@ -cp "$MERGED_CLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ @class@ @toolflags@ "$@@"
+${JAVACMD:=java} @javaflags@ -Xbootclasspath/a:"$BOOT_CLASSPATH" -cp "$EXTENSION_CLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" -Dscala.tool.name="@name@" -Dscala.tool.version="@version@" @properties@ @class@ @toolflags@ "$@@"
