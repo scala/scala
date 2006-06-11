@@ -350,7 +350,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       file="${locker.dir}/bin/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
-      toolflags='-JDjava.class.path="$MERGED_CLASSPATH"'
+      toolflags='-JDjava.class.path="$EXTENSION_CLASSPATH" -JXbootclasspath/a:"$BOOT_CLASSPATH"'
       version="${version.number}"
       copyright="${copyright.string}"
       javaFlags="-Xmx256M -Xms16M"/>
@@ -480,7 +480,7 @@ BUILD QUICK-TEST LAYER
       file="${quick.dir}/bin/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
-      toolflags='-JDjava.class.path="$MERGED_CLASSPATH"'
+      toolflags='-JDjava.class.path="$EXTENSION_CLASSPATH" -JXbootclasspath/a:"$BOOT_CLASSPATH"'
       version="${version.number}"
       copyright="${copyright.string}"/>
     <chmod perm="ugo+rx"
@@ -611,7 +611,7 @@ TEST
       file="${strap.dir}/bin/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
-      toolflags='-JDjava.class.path="$MERGED_CLASSPATH"'
+      toolflags='-JDjava.class.path="$EXTENSION_CLASSPATH" -JXbootclasspath/a:"$BOOT_CLASSPATH"'
       version="${version.number}"
       copyright="${copyright.string}"/>
     <chmod perm="ugo+rx"
