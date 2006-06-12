@@ -74,6 +74,8 @@ trait Definitions requires SymbolTable {
       def List_isEmpty = getMember(ListClass, nme.isEmpty)
       def List_head = getMember(ListClass, nme.head)
       def List_tail = getMember(ListClass, nme.tail)
+    var ListModule: Symbol = _;
+      def List_apply = getMember(ListModule, nme.apply);
     var ArrayClass: Symbol = _
     var SerializableClass: Symbol = _
     var PredefModule: Symbol = _
@@ -492,6 +494,7 @@ trait Definitions requires SymbolTable {
       IteratorClass = getClass("scala.Iterator")
       SeqClass = getClass("scala.Seq")
       ListClass = getClass("scala.List")
+      ListModule = getModule("scala.List")
       ArrayClass = getClass("scala.Array")
       SerializableClass = if (forCLDC) null else getClass("java.io.Serializable")
       PredefModule = getModule("scala.Predef")
