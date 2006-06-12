@@ -2,14 +2,14 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author Stephane Micheloud
  */
-//$Id$
+//$Id: $
 
-package man.man1
+package scala.man1
 
 object scala extends Command {
-  import ManPage._
+  import _root_.scala.tools.docutil.ManPage._
 
-  protected val cn = new Error().getStackTrace()(0).getClassName()
+  protected def cn = new Error().getStackTrace()(0).getClassName()
 
   val name = Section("NAME",
 
@@ -127,7 +127,7 @@ object scala extends Command {
 
   def manpage = new Document {
     title = command
-    date = "June 8, 2006"
+    date = lastModified
     author = "Stephane Micheloud"
     version = "0.2"
     sections = List(

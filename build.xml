@@ -47,6 +47,7 @@ PROPERTIES
   <property name="strap.dir" value="${build.dir}/strap"/>
   <property name="api-lib.dir" value="${build.dir}/api-library"/>
   <property name="api-comp.dir" value="${build.dir}/api-compiler"/>
+  <property name="tooldocs.dir" value="${build.dir}/tooldocs"/>
   <property name="examples.dir" value="${build.dir}/examples"/>
   <!--  Sets location and structure of the distribution -->
   <property name="dist.dir" value="${basedir}/dists"/>
@@ -700,6 +701,57 @@ DOCUMENTATION
     </quickdoc>
   </target>
 
+  <target name="docs.manual" depends="setup.quick"
+    description="Generated the manual for the Scala tools">
+    <mkdir dir="${tooldocs.dir}/classes"/>
+    <path id="manual.classpath">
+      <pathelement location="${quick.dir}/lib/library"/>
+      <pathelement location="${tooldocs.dir}/classes"/>
+    </path>
+    <quick
+      srcdir="${src.dir}/manual"
+      destdir="${tooldocs.dir}/classes"
+      classpathref="manual.classpath">
+      <include name="**/*.scala"/>
+    </quick>
+    <emit command="sbaz"/>
+    <emit command="scala"/>
+    <emit command="scalac"/>
+    <emit command="scaladoc"/>
+    <emit command="scalaint"/>
+    <emit command="scalap"/>
+    <emit command="scalascript"/>
+    <fixcrlf srcdir="${tooldocs.dir}" eol="unix" includes="**/*.1"/>
+    <copy todir="${tooldocs.dir}">
+      <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
+        <include name="**/*.html"/>
+        <include name="**/*.css"/>
+        <include name="**/*.gif"/>
+        <include name="**/*.png"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <macrodef name="emit">
+    <attribute name="command"/>
+    <sequential>
+      <java classname="scala.tools.docutil.EmitHtml"
+        output="${tooldocs.dir}/@{command}.html"
+        classpathref="manual.classpath"
+        fork="true" logError="yes"
+      >
+        <arg value="scala.man1.@{command}"/>
+      </java>
+      <java classname="scala.tools.docutil.EmitManPage"
+        output="${tooldocs.dir}/@{command}.1"
+        classpathref="manual.classpath"
+        fork="true" logError="yes"
+      >
+        <arg value="scala.man1.@{command}"/>
+      </java>
+    </sequential>
+  </macrodef>
+
 <!-- ===========================================================================
 GENERATES A DISTRIBUTION
 ============================================================================ -->
@@ -741,7 +793,7 @@ GENERATES A DISTRIBUTION
     description="Packs a distribution for SBaz and ZIP/TAR"/>
 
   <target name="build.dist"
-    depends="test,docs"
+    depends="test,docs,docs.manual"
     description="Creates the latest Scala distribution">
     <property name="dist.current.dir"
       value="${dist.dir}/scala-${version.number}"/>
@@ -788,18 +840,16 @@ GENERATES A DISTRIBUTION
     <copy todir="${dist.current.dir}/doc/scala/examples">
       <fileset dir="${docs.dir}/examples"/>
     </copy>
-    <ant dir="${docs.dir}/man" target="dist" inheritAll="false"/>
     <copy todir="${dist.current.dir}/man">
-      <fileset dir="${docs.dir}/man/dists" includes="**/*.1"/>
+      <fileset dir="${tooldocs.dir}" includes="**/*.1"/>
     </copy>
     <copy todir="${dist.current.dir}/doc/scala/tools">
-      <fileset dir="${docs.dir}/man/src">
+      <fileset dir="${tooldocs.dir}">
         <include name="**/*.html"/>
         <include name="**/*.css"/>
         <include name="**/*.gif"/>
         <include name="**/*.png"/>
       </fileset>
-      <fileset dir="${docs.dir}/man/dists" includes="**/*.html"/>
     </copy>
   <!-- Recreate the 'latest' link to point to this distribution -->
     <if><isset property="os.win"/>

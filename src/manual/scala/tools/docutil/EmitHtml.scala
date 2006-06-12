@@ -3,9 +3,9 @@
  * @author Stephane Micheloud
  * Adapted from Lex Spoon's sbaz manual
  */
-//$Id$
+//$Id: $
 
-package man
+package scala.tools.docutil
 
 object EmitHtml {
   import scala.xml.{Node, NodeBuffer, NodeSeq, XML}
@@ -334,9 +334,9 @@ object EmitHtml {
     }
     try {
       val cl = ClassLoader.getSystemClassLoader()
-      val clasz = cl.loadClass("man.man1." + args(0))
-      val meth = clasz.getDeclaredMethod("manpage", Array[Class]())
-      val doc = meth.invoke(null, Array[Object]()).asInstanceOf[Document]
+      val clasz = cl.loadClass(args(0))
+      val meth = clasz.getDeclaredMethod("manpage", Predef.Array[Class]())
+      val doc = meth.invoke(null, Predef.Array[Object]()).asInstanceOf[Document]
       val addDocType = (args.length > 1 && "-doctype".equals(args(1)))
       emitDocument(doc, addDocType)
     } catch {

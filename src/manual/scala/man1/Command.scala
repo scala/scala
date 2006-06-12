@@ -2,15 +2,15 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author Stephane Micheloud
  */
-//$Id$
+//$Id: $
 
-package man.man1
+package scala.man1
 
 trait Command {
-  import ManPage._
+  import _root_.scala.tools.docutil.ManPage._
 
-  protected val cn: String
-  val command = cn.substring(cn.lastIndexOf(".") + 1, cn.length() - 1)
+  protected def cn: String
+  def command = cn.substring(cn.lastIndexOf(".") + 1, cn.length() - 1)
 
   protected def MBold(contents: AbstractText) = Mono(Bold(contents))
   protected def MItalic(contents: AbstractText) = Mono(Italic(contents))
@@ -47,6 +47,11 @@ trait Command {
   def bugs = Section("REPORTING BUGS",
 
     "Report bugs to " & Mono("<scala@listes.epfl.ch>") & ".")
+
+  //private val df = new java.text.SimpleDateFormat("MMM d, yyyy")
+  //private val rightNow = new java.util.Date()
+
+  def lastModified: String = "June 8, 2006" // df.format(rightNow)
 
   def manpage: Document
 }

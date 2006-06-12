@@ -3,9 +3,9 @@
  * @author Stephane Micheloud
  * Adapted from Lex Spoon's sbaz manual
  */
-//$Id$
+//$Id: $
 
-package man
+package scala.tools.docutil
 
 object ManPage {
   abstract class AbstractText {

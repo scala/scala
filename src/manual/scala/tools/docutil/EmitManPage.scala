@@ -3,9 +3,9 @@
  * @author Stephane Micheloud
  * Adapted from Lex Spoon's sbaz manual
  */
-//$Id$
+//$Id: $
 
-package man
+package scala.tools.docutil
 
 // For help on man pages see:
 // - http://www.linuxfocus.org/English/November2003/article309.shtml
@@ -151,9 +151,9 @@ object EmitManPage {
   def main(args: Array[String]) =
     try {
       val cl = ClassLoader.getSystemClassLoader()
-      val clasz = cl.loadClass("man.man1." + args(0))
-      val meth = clasz.getDeclaredMethod("manpage", Array[Class]())
-      val doc = meth.invoke(null, Array[Object]()).asInstanceOf[Document]
+      val clasz = cl.loadClass(args(0))
+      val meth = clasz.getDeclaredMethod("manpage", Predef.Array[Class]())
+      val doc = meth.invoke(null, Predef.Array[Object]()).asInstanceOf[Document]
       emitDocument(doc)
     } catch {
       case ex: Exception =>

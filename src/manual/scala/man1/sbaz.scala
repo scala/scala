@@ -2,12 +2,12 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author Stephane Micheloud
  */
-//$Id$
+//$Id: $
 
-package man.man1
+package scala.man1
 
 object sbaz extends Command {
-  import ManPage._
+  import _root_.scala.tools.docutil.ManPage._
 
   protected val cn = new Error().getStackTrace()(0).getClassName()
 
