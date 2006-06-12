@@ -278,23 +278,26 @@ abstract class ClassfileParser {
       for (val i <- 0 until fieldCount) parseField()
       val methodCount = in.nextChar
       for (val i <- 0 until methodCount) parseMethod()
-      if ((instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol
-           && (sflags & INTERFACE) == 0) ||
-          isAttribute)
+      if ((instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
+           (sflags & INTERFACE) == 0))
         {
           //System.out.println("adding constructor to " + clazz);//DEBUG
-          val constrParamTypes =
-            if (isAttribute) {
-              val value = instanceDefs.lookup(nme.value)
-              if (value == NoSymbol) List ()
-              else List(value.tpe.resultType)
-              //System.out.println("" + value + " : " + value.tpe)
-            }
-            else List()
           instanceDefs.enter(
             clazz.newConstructor(Position.NOPOS)
             .setFlag(clazz.flags & ConstrFlags)
-            .setInfo(MethodType(constrParamTypes, clazz.tpe)))
+            .setInfo(MethodType(List(), clazz.tpe)))
+
+          // If the annotation has an attribute with name 'value'
+          // add a constructor for it
+          if (isAttribute) {
+            val value = instanceDefs.lookup(nme.value)
+            if (value != NoSymbol) {
+              instanceDefs.enter(
+                clazz.newConstructor(Position.NOPOS)
+                .setFlag(clazz.flags & ConstrFlags)
+                .setInfo(MethodType(List(value.tpe.resultType), clazz.tpe)))
+            }
+          }
         }
     }
   }
