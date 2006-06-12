@@ -20,7 +20,7 @@ trait Symbols requires SymbolTable {
   var typeSymbolCount = 0
   var classSymbolCount = 0
 
-  type AttrInfo = Pair[Type, List[Constant]]
+  type AttrInfo = Triple[Type, List[Constant], List[Pair[Symbol,Constant]]]
 
   val emptySymbolArray = new Array[Symbol](0)
 
@@ -133,7 +133,7 @@ trait Symbols requires SymbolTable {
     final def newAnonymousFunctionClass(pos: int) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
       anonfun.attributes =
-        Pair(definitions.SerializableAttr.tpe, List()) :: anonfun.attributes
+        Triple(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
       anonfun
     }
     final def newRefinementClass(pos: int) =

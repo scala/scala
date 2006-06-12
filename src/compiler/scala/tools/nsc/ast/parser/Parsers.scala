@@ -1791,12 +1791,29 @@ trait Parsers requires SyntaxAnalyzer {
     /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)']
      */
     def attribute(): Tree = {
+      def nameValuePair(): Tree = {
+        var pos = in.currentPos;
+        val aname = atPos(pos) { Ident(ident()) }
+        accept(EQUALS);
+        atPos(pos) { Assign(aname, prefixExpr()) }
+      }
       val pos = in.currentPos;
       var t: Tree = convertToTypeId(stableId());
       if (in.token == LBRACKET)
         t = atPos(in.currentPos)(AppliedTypeTree(t, typeArgs()));
       val args = if (in.token == LPAREN) argumentExprs() else List();
-      atPos(pos) { New(t, List(args)) }
+      val nameValuePairs: List[Tree] = if (in.token == LBRACE) {
+        in.nextToken();
+        val nvps = new ListBuffer[Tree] + nameValuePair();
+        while (in.token == COMMA) {
+          in.nextToken();
+          nvps += nameValuePair()
+        }
+        accept(RBRACE);
+        nvps.toList
+      } else List()
+      val constr = atPos(pos) { New(t, List(args)) }
+      atPos(pos) { Attribute(constr, nameValuePairs) }
     }
 
     def mixinAttribute(attrs: List[Tree]) = {

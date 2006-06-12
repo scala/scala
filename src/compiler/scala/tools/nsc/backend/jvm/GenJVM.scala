@@ -125,13 +125,13 @@ abstract class GenJVM extends SubComponent {
         parents = definitions.ObjectClass.tpe :: parents;
 
       c.symbol.attributes foreach { a => a match {
-          case Pair(SerializableAttr, _) if (!forCLDC) =>
+          case Triple(SerializableAttr, _, _) if (!forCLDC) =>
             parents = parents ::: List(definitions.SerializableClass.tpe);
-          case Pair(CloneableAttr, _) if (!forCLDC) =>
+          case Triple(CloneableAttr, _, _) if (!forCLDC) =>
             parents = parents ::: List(CloneableClass.tpe);
-          case Pair(SerialVersionUID, value :: _) if (!forCLDC) =>
+          case Triple(SerialVersionUID, value :: _, _) if (!forCLDC) =>
             serialVUID = Some(value.longValue);
-          case Pair(RemoteAttr, _) if (!forCLDC) =>
+          case Triple(RemoteAttr, _, _) if (!forCLDC) =>
             parents = parents ::: List(RemoteInterface.tpe);
             remoteClass = true;
           case _ => ();
@@ -178,7 +178,7 @@ abstract class GenJVM extends SubComponent {
 
     def addExceptionsAttribute(jm: JMethod, throws: List[AttrInfo]): Unit = {
       if (throws.forall(a => a match {
-        case Pair(ThrowsAttr, _) => false
+        case Triple(ThrowsAttr, _, _) => false
         case _ => true
       })) return;
 
@@ -189,7 +189,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val Pair(ThrowsAttr, List(exc)) <- throws) {
+      for (val Triple(ThrowsAttr, List(exc), _) <- throws) {
         buf.putShort(cpool.addClass(exc.typeValue.toString()).shortValue)
         nattr = nattr + 1;
       }
@@ -215,13 +215,12 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val Pair(typ, consts) <- attributes; typ.symbol.hasFlag(Flags.JAVA)) {
+      for (val Triple(typ, consts, nvPairs) <- attributes; typ.symbol.hasFlag(Flags.JAVA)) {
         nattr = nattr + 1;
         val jtype = javaType(typ);
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort);
-        assert(consts.length == 1, consts.toString())
-        buf.putShort(1.toShort); // for now only 1 constructor parameter
-        buf.putShort(cpool.addUtf8("value").toShort);
+        assert(consts.length <= 1, consts.toString())
+        buf.putShort((consts.length + nvPairs.length).toShort);
         def emitElement(const: Constant): Unit = const.tag match {
           case BooleanTag =>
             buf.put('Z'.toByte)
@@ -264,9 +263,13 @@ abstract class GenJVM extends SubComponent {
             for (val elem <- arr) emitElement(elem)
           //case NullTag    => AllRefClass.tpe
           }
-
-        for (val const <- consts) {
-          emitElement(const)
+        if (!consts.isEmpty) {
+          buf.putShort(cpool.addUtf8("value").toShort);
+          emitElement(consts.head);
+        }
+        for (val Pair(symbol, value) <- nvPairs) {
+          buf.putShort(cpool.addUtf8(symbol.name.toString()).toShort)
+          emitElement(value)
         }
       }
       if (nattr > 0) {
@@ -298,8 +301,8 @@ abstract class GenJVM extends SubComponent {
       var attributes = 0;
 
       f.symbol.attributes foreach { a => a match {
-        case Pair(TransientAtt, _) => attributes = attributes | JAccessFlags.ACC_TRANSIENT;
-        case Pair(VolatileAttr, _) => attributes = attributes | JAccessFlags.ACC_VOLATILE;
+        case Triple(TransientAtt, _, _) => attributes = attributes | JAccessFlags.ACC_TRANSIENT;
+        case Triple(VolatileAttr, _, _) => attributes = attributes | JAccessFlags.ACC_VOLATILE;
         case _ => ();
       }}
       val jfield =

@@ -307,7 +307,11 @@ trait Trees requires Global {
   case class Import(expr: Tree, selectors: List[Pair[Name, Name]])
        extends SymTree;
 
-  /** Attribuetd definition */
+  /** Attribute application (constructor arguments + name-value pairs) */
+  case class Attribute(constr: Tree, elements: List[Tree])
+       extends TermTree;
+
+  /** Attributed definition */
   case class Attributed(attribute: Tree, definition: Tree)
        extends Tree {
     override def symbol: Symbol = definition.symbol;
@@ -553,6 +557,7 @@ trait Trees requires Global {
   case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
   case LabelDef(name, params, rhs) =>
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
+  case Attribute(constr, elements) =>                             (eliminated by typecheck)
   case Attributed(attribute, definition) =>                       (eliminated by typecheck)
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
   case Template(parents, body) =>
@@ -596,6 +601,7 @@ trait Trees requires Global {
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef;
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef;
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import;
+    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]): Attribute;
     def Attributed(tree: Tree, attribute: Tree, definition: Tree): Attributed;
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef;
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template;
@@ -648,6 +654,8 @@ trait Trees requires Global {
       new LabelDef(name, params, rhs).copyAttrs(tree);
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) =
       new Import(expr, selectors).copyAttrs(tree);
+    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) =
+      new Attribute(constr, elements);
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) =
       new Attributed(attribute, definition).copyAttrs(tree);
     def DocDef(tree: Tree, comment: String, definition: Tree) =
@@ -758,6 +766,11 @@ trait Trees requires Global {
       case t @ Import(expr0, selectors0)
       if ((expr0 == expr) && (selectors0 == selectors)) => t
       case _ => copy.Import(tree, expr, selectors)
+    }
+    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) = tree match {
+      case t @ Attribute(constr0, elements0)
+      if ((constr0 == constr) && (elements0 == elements)) => t
+      case _ => copy.Attribute(tree, constr, elements)
     }
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) = tree match {
       case t @ Attributed(attribute0, definition0)
@@ -954,6 +967,8 @@ trait Trees requires Global {
         copy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
       case Import(expr, selectors) =>
         copy.Import(tree, transform(expr), selectors)
+      case Attribute(constr, elements) =>
+        copy.Attribute(tree, transform(constr), transformTrees(elements))
       case Attributed(attribute, definition) =>
         copy.Attributed(tree, transform(attribute), transform(definition))
       case DocDef(comment, definition) =>
@@ -1084,6 +1099,8 @@ trait Trees requires Global {
         traverseTrees(params); traverse(rhs)
       case Import(expr, selectors) =>
         traverse(expr)
+      case Attribute(constr, elements) =>
+        traverse(constr); traverseTrees(elements);
       case Attributed(attribute, definition) =>
         traverse(attribute); traverse(definition)
       case DocDef(comment, definition) =>

@@ -100,9 +100,21 @@ abstract class TreePrinters {
     }
 
     def printAttributes(attrs: List[AttrInfo]): unit = {
-      def attrToString(attr: AttrInfo): String = attr match {
-        case Pair(tp, List()) => tp.toString()
-        case Pair(tp, args) => tp.toString()+args.mkString("(", ",", ")")
+      def attrToString(attr: AttrInfo): String = {
+        val str = new StringBuffer()
+        attr match {
+          case Triple(tp, args, nvPairs) =>
+            str.append(tp.toString());
+            if (!args.isEmpty)
+              str.append(args.mkString("(", ",", ")"))
+            if (!nvPairs.isEmpty)
+              for (val Pair(Pair(sym, value), index) <- nvPairs.zipWithIndex) {
+                if (index > 0)
+                  str.append(", ")
+                str.append(sym.name).append(" = ").append(value)
+              }
+            str.toString
+        }
       }
       if (!attrs.isEmpty) print(attrs.map(attrToString).mkString("[", ",", "]"))
     }
