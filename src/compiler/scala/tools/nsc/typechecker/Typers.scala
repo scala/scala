@@ -1073,7 +1073,10 @@ trait Typers requires Analyzer {
                   case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
                   case _ => tp
                 }
-                if ((mode & CONSTmode) != 0 && fun.symbol.owner == PredefModule.tpe.symbol && fun.symbol.name == nme.Array) {
+                if (fun.symbol == List_apply && args.isEmpty) {
+                  gen.mkNil setType restpe
+                }
+                else if ((mode & CONSTmode) != 0 && fun.symbol.owner == PredefModule.tpe.symbol && fun.symbol.name == nme.Array) {
                   val elems = new Array[Constant](args1.length)
                   var i = 0;
                   for (val arg <- args1) arg match {
