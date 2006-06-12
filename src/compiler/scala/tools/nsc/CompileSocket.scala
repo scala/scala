@@ -2,7 +2,7 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Main.scala 7679 2006-06-02 14:36:18 +0000 (Fri, 02 Jun 2006) odersky $
+// $Id$
 package scala.tools.nsc
 
 import java.io._

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: RichInt.scala 7625 2006-05-30 10:47:58 +0000 (Tue, 30 May 2006) odersky $
+// $Id$
 package scala.runtime
 
 final class RichInt(x: Int) {
