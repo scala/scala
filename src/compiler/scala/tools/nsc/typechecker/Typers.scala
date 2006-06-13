@@ -1354,39 +1354,39 @@ trait Typers requires Analyzer {
           typer1.typedLabelDef(ldef)
 
         case Attributed(Attribute(constr, elements), defn) =>
-          val constr1 = typed(constr, mode | CONSTmode, AttributeClass.tpe)
-          val attrInfo = constr1 match {
+          var attrError: Boolean = false;
+          def getConstant(tree: Tree): Constant = tree match {
+            case Literal(value) =>
+              value
+            case arg =>
+              error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
+              attrError = true;
+            null
+          }
+          typed(constr, mode | CONSTmode, AttributeClass.tpe) match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              val constrArgs = args map {
-                case Literal(value) =>
-                  value
-                case arg =>
-                  error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
-                  null
-              }
+              val constrArgs = args map getConstant
+              val attrScope = tpt.tpe.decls;
               val nvPairs = elements map {
-                case Assign(Ident(name), rhs) => {
-                  val sym = tpt.tpe.decls.lookupEntry(name).sym;
+                case Assign(ntree @ Ident(name), rhs) => {
+                  val sym = attrScope.lookup(name);
                   if (sym == NoSymbol) {
+                    error(ntree.pos, "unknown attribute element name: " + name)
+                    attrError = true;
                     null
                   } else {
-                    val rhs1 = typed(rhs, mode | CONSTmode, sym.tpe.resultType)
-                    val value = rhs1 match {
-                      case Literal(v) => v
-                      case arg =>
-                        error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
-                      null
-                    }
-                    Pair(sym, value)
+                    Pair(sym, getConstant(typed(rhs, mode | CONSTmode,
+                                                sym.tpe.resultType)))
                   }
                 }
               }
-              Triple(tpt.tpe, constrArgs, nvPairs)
-          }
-          if (attrInfo != null) {
-            val attributed =
-              if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol;
-            attributed.attributes = attributed.attributes ::: List(attrInfo)
+              if (!attrError) {
+                val attrInfo = Triple(tpt.tpe, constrArgs, nvPairs)
+                val attributed =
+                  if (defn.symbol.isModule) defn.symbol.moduleClass
+                  else defn.symbol;
+                attributed.attributes = attributed.attributes ::: List(attrInfo)
+              }
           }
           typed(defn, mode, pt)
 
