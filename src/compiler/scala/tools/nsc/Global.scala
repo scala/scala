@@ -348,6 +348,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     explicitOuter,
     erasure,
     lambdaLift,
+//    detach,
     constructors,
     flatten,
     mixer,

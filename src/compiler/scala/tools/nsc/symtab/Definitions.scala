@@ -74,8 +74,8 @@ trait Definitions requires SymbolTable {
       def List_isEmpty = getMember(ListClass, nme.isEmpty)
       def List_head = getMember(ListClass, nme.head)
       def List_tail = getMember(ListClass, nme.tail)
-    var ListModule: Symbol = _;
-      def List_apply = getMember(ListModule, nme.apply);
+    var ListModule: Symbol = _
+      def List_apply = getMember(ListModule, nme.apply)
     var ArrayClass: Symbol = _
     var SerializableClass: Symbol = _
     var PredefModule: Symbol = _
@@ -95,8 +95,8 @@ trait Definitions requires SymbolTable {
 
     val MaxTupleArity = 9
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
-      def tupleField(n:int, j:int) = getMember(TupleClass(n), "_" + j)
-      def isTupleType(tp: Type): boolean = tp match {
+      def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
+      def isTupleType(tp: Type): Boolean = tp match {
         case TypeRef(_, sym, elems) =>
           elems.length <= MaxTupleArity && sym == TupleClass(elems.length);
         case _ =>
@@ -110,7 +110,7 @@ trait Definitions requires SymbolTable {
 
     val MaxFunctionArity = 9;
     val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1);
-      def functionApply(n:int) = getMember(FunctionClass(n), nme.apply);
+      def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply);
       def functionType(formals: List[Type], restpe: Type) =
         if (formals.length <= MaxFunctionArity) {
           val sym = FunctionClass(formals.length);
@@ -123,7 +123,21 @@ trait Definitions requires SymbolTable {
           case _ =>
             false
       }
-
+/*    val RemoteFunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
+      def remoteFunctionApply(n:int) = getMember(RemoteFunctionClass(n), nme.apply)
+      def remoteFunctionType(formals: List[Type], restpe: Type) =
+        if (formals.length <= MaxFunctionArity) {
+          val sym = RemoteFunctionClass(formals.length)
+          typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
+        } else NoType;
+      def isRemoteFunctionType(tp: Type): boolean = tp match {
+        case TypeRef(_, sym, args) =>
+          ((args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
+           (sym == RemoteFunctionClass(args.length - 1)))
+          case _ =>
+            false
+      }
+*/
     def seqType(arg: Type) =
       typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
 
@@ -176,12 +190,12 @@ trait Definitions requires SymbolTable {
     var SerializableAttr: Symbol = _
     var BeanPropertyAttr: Symbol = _
 
-    def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true);
+    def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true)
 
-    def getClass(fullname: Name): Symbol = getModuleOrClass(fullname, false);
+    def getClass(fullname: Name): Symbol = getModuleOrClass(fullname, false)
 
     def getMember(owner: Symbol, name: Name) = {
-      val result = owner.info.nonPrivateMember(name);
+      val result = owner.info.nonPrivateMember(name)
       if (result == NoSymbol)
         throw new FatalError(owner.toString() + " does not have a member " + name);
       result
@@ -509,13 +523,11 @@ trait Definitions requires SymbolTable {
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
       for (val i <- 1 to MaxTupleArity)
-        TupleClass(i) = getClass("scala.Tuple" + i);
-      for (val i <- 0 to MaxFunctionArity)
-        FunctionClass(i) = getClass("scala.Function" + i);
-      //for (val i <- Iterator.range(0, MaxFunctionArity + 1)) {
-      //  FunctionClass(i) = getClass("scala.Function" + i)
-      //  RemoteFunctionClass(i) = getClass("scala.distributed.RemoteFunction" + i)
-      //}
+        TupleClass(i) = getClass("scala.Tuple" + i)
+      for (val i <- 0 to MaxFunctionArity) {
+        FunctionClass(i) = getClass("scala.Function" + i)
+        //RemoteFunctionClass(i) = getClass("scala.distributed.RemoteFunction" + i)
+      }
       initValueClasses
 
       val booltype = BooleanClass.typeConstructor

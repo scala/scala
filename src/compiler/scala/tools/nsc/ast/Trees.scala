@@ -1,81 +1,80 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.ast;
 
-import scala.tools.nsc.symtab.Flags;
-import java.io.StringWriter;
-import java.io.PrintWriter;
-import scala.tools.nsc.util.{Position,SourceFile};
-import symtab.Flags._;
+package scala.tools.nsc.ast
+
+import java.io.{PrintWriter, StringWriter}
+import scala.tools.nsc.symtab.Flags
+import scala.tools.nsc.util.{Position, SourceFile}
+import symtab.Flags._
 
 
 trait Trees requires Global {
   //statistics
-  var nodeCount = 0;
+  var nodeCount = 0
 
   case class Modifiers(flags: int, privateWithin: Name) {
-    def isPrivate   = ((flags & PRIVATE  ) != 0);
-    def isProtected = ((flags & PROTECTED) != 0);
-    def isVariable  = ((flags & MUTABLE  ) != 0);
-    def isArgument  = ((flags & PARAM    ) != 0);
-    def isAccessor  = ((flags & ACCESSOR ) != 0);
-    def isOverride  = ((flags & OVERRIDE ) != 0);
-    def isAbstract  = ((flags & ABSTRACT) != 0);
-    def isCase      = ((flags & CASE    ) != 0);
-    def isSealed    = ((flags & SEALED) != 0);
-    def isFinal     = ((flags & FINAL   ) != 0);
-    def isTrait     = ((flags & TRAIT   ) != 0);
-    def isPublic    = !isPrivate && !isProtected;
-    def hasFlag(flag: int) = (flags & flag) != 0;
+    def isPrivate   = ((flags & PRIVATE  ) != 0)
+    def isProtected = ((flags & PROTECTED) != 0)
+    def isVariable  = ((flags & MUTABLE  ) != 0)
+    def isArgument  = ((flags & PARAM    ) != 0)
+    def isAccessor  = ((flags & ACCESSOR ) != 0)
+    def isOverride  = ((flags & OVERRIDE ) != 0)
+    def isAbstract  = ((flags & ABSTRACT) != 0)
+    def isCase      = ((flags & CASE    ) != 0)
+    def isSealed    = ((flags & SEALED) != 0)
+    def isFinal     = ((flags & FINAL   ) != 0)
+    def isTrait     = ((flags & TRAIT   ) != 0)
+    def isPublic    = !isPrivate && !isProtected
+    def hasFlag(flag: int) = (flags & flag) != 0
     def | (flag: int): Modifiers = {
-      val flags1 = flags | flag;
+      val flags1 = flags | flag
       if (flags1 == flags) this else Modifiers(flags1, privateWithin)
     }
   }
 
+  def Modifiers(flags: int): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
+  def Modifiers(flags: long): Modifiers = Modifiers(flags.asInstanceOf[int])
 
-  def Modifiers(flags: int): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName);
-  def Modifiers(flags: long): Modifiers = Modifiers(flags.asInstanceOf[int]);
-
-  val NoMods = Modifiers(0);
+  val NoMods = Modifiers(0)
 
   abstract class Tree {
 
-    if (util.Statistics.enabled) nodeCount = nodeCount + 1;
+    if (util.Statistics.enabled) nodeCount = nodeCount + 1
 
-    private var posx: int = Position.NOPOS;
+    private var posx: int = Position.NOPOS
 
-    def pos = posx;
+    def pos = posx
 
-    var tpe: Type = _;
+    var tpe: Type = _
 
     def setPos(p: int): this.type = { posx = p; this }
     def setType(tp: Type): this.type = { tpe = tp; this }
 
-    def symbol: Symbol = null;
+    def symbol: Symbol = null
     def symbol_=(sym: Symbol): unit =
       throw new Error("symbol_= inapplicable for " + this);
     def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
 
-    def hasSymbol = false;
-    def isDef = false;
-    def isTerm = false;
-    def isType = false;
-    def isEmpty = false;
+    def hasSymbol = false
+    def isDef = false
+    def isTerm = false
+    def isType = false
+    def isEmpty = false
 
     def isErroneous = tpe != null && tpe.isErroneous;
 
     override def toString(): String = {
-      val buffer = new StringWriter();
-      val printer = treePrinters.create(new PrintWriter(buffer));
+      val buffer = new StringWriter()
+      val printer = treePrinters.create(new PrintWriter(buffer))
       printer.print(this); printer.flush;
       buffer.toString()
     }
 
-    override def hashCode(): int = super.hashCode();
+    override def hashCode(): int = super.hashCode()
 
     override def equals(that: Any): boolean = that match {
       case t: Tree => this eq t
@@ -85,21 +84,21 @@ trait Trees requires Global {
     def duplicate: this.type = (duplicator transform this).asInstanceOf[this.type];
 
     def copyAttrs(tree: Tree): this.type = {
-      posx = tree.posx;
-      tpe = tree.tpe;
-      if (hasSymbol) symbol = tree.symbol;
+      posx = tree.posx
+      tpe = tree.tpe
+      if (hasSymbol) symbol = tree.symbol
       this
     }
   }
 
   trait SymTree extends Tree {
-    override def hasSymbol = true;
-    override var symbol: Symbol = NoSymbol;
+    override def hasSymbol = true
+    override var symbol: Symbol = NoSymbol
   }
 
   abstract class DefTree extends SymTree {
-    def name: Name;
-    override def isDef = true;
+    def name: Name
+    override def isDef = true
   }
 
   trait TermTree extends Tree {
@@ -113,11 +112,11 @@ trait Trees requires Global {
 // ----- auxiliary objects and methods ------------------------------
 
   private val duplicator = new Transformer {
-    override val copy = new StrictTreeCopier;
+    override val copy = new StrictTreeCopier
   }
 
   private def syntheticParams(owner: Symbol, formals: List[Type]): List[Symbol] = {
-    var cnt = 0;
+    var cnt = 0
     def freshName() = { cnt = cnt + 1; newTermName("x$" + cnt) }
     for (val formal <- formals) yield
       owner.newValueParameter(owner.pos, freshName()).setInfo(formal);
@@ -138,29 +137,26 @@ trait Trees requires Global {
 
   /** The empty tree */
   case object EmptyTree extends TermTree {
-    tpe = NoType;
-    override def isEmpty = true;
+    tpe = NoType
+    override def isEmpty = true
   }
 
   abstract class MemberDef extends DefTree {
-    def mods: Modifiers;
-    def name: Name;
-    def keyword : String;
-    final def hasFlag(mask: long): boolean = (mods.flags & mask) != 0;
-
-
+    def mods: Modifiers
+    def name: Name
+    def keyword: String
+    final def hasFlag(mask: long): boolean = (mods.flags & mask) != 0
   }
 
   /** Package clause */
   case class PackageDef(name: Name, stats: List[Tree])
        extends MemberDef {
-    def mods = NoMods;
-    def keyword = "package";
+    def mods = NoMods
+    def keyword = "package"
   }
 
   def PackageDef(sym: Symbol, stats: List[Tree]): PackageDef =
     PackageDef(sym.name, stats) setSymbol sym;
-
 
   abstract class ImplDef extends MemberDef {
     def impl: Template
@@ -169,9 +165,7 @@ trait Trees requires Global {
   /** Class definition */
   case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
        extends ImplDef {
-    def keyword = "class";
-
-
+    def keyword = "class"
   }
 
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
@@ -191,7 +185,7 @@ trait Trees requires Global {
    *  @param body      the template statements without primary constructor and value parameter fields.
    */
   def ClassDef(sym: Symbol, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): ClassDef =
-    ClassDef(sym, Template(sym.info.parents map TypeTree, vparamss, argss, body));
+    ClassDef(sym, Template(sym.info.parents map TypeTree, vparamss, argss, body))
 
   /** Singleton object definition */
   case class ModuleDef(mods: Modifiers, name: Name, impl: Template)
@@ -206,18 +200,17 @@ trait Trees requires Global {
 
 
   abstract class ValOrDefDef extends MemberDef {
-    def tpt: Tree;
-    def rhs: Tree;
+    def tpt: Tree
+    def rhs: Tree
   }
 
   /** Value definition */
   case class ValDef(mods: Modifiers, name: Name, tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
-         assert(tpt.isType, tpt);
-         assert(rhs.isTerm, rhs);
-	 def keyword = if (mods.isVariable) "var" else "val";
+         assert(tpt.isType, tpt)
+         assert(rhs.isTerm, rhs)
+         def keyword = if (mods.isVariable) "var" else "val"
   }
-
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef = {
     posAssigner.atPos(sym.pos) {
@@ -229,11 +222,11 @@ trait Trees requires Global {
 
   /** Method definition */
   case class DefDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef],
-		    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
+                    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
-	 assert(tpt.isType);
-	 assert(rhs.isTerm);
-         def keyword = "def";
+         assert(tpt.isType)
+         assert(rhs.isTerm)
+         def keyword = "def"
        }
 
   def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
@@ -248,20 +241,20 @@ trait Trees requires Global {
     }
 
   def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = {
-    val vparamss = syntheticParams(sym, sym.tpe);
-    DefDef(sym, vparamss map (.map(ValDef)), rhs(vparamss));
+    val vparamss = syntheticParams(sym, sym.tpe)
+    DefDef(sym, vparamss map (.map(ValDef)), rhs(vparamss))
   }
 
   /** Abstract type or type parameter */
   case class AbsTypeDef(mods: Modifiers, name: Name, lo: Tree, hi: Tree)
        extends DefTree {
-	 def keyword = "";
+         def keyword = "";
 
-	 override def setPos(pos : Int) : this.type = {
-	   val ret = super.setPos(pos);
-	   ret;
-	 }
-	 def namePos = pos - name.length;
+         override def setPos(pos : Int) : this.type = {
+           val ret = super.setPos(pos);
+           ret;
+         }
+         def namePos = pos - name.length;
   }
 
   def AbsTypeDef(sym: Symbol): AbsTypeDef =
@@ -295,7 +288,7 @@ trait Trees requires Global {
    */
   case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree {
-    assert(rhs.isTerm);
+    assert(rhs.isTerm)
   }
 
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
@@ -314,30 +307,30 @@ trait Trees requires Global {
   /** Attributed definition */
   case class Attributed(attribute: Tree, definition: Tree)
        extends Tree {
-    override def symbol: Symbol = definition.symbol;
+    override def symbol: Symbol = definition.symbol
     override def symbol_=(sym: Symbol): unit = { definition.symbol = sym }
   }
 
   /** Documented definition, eliminated by analyzer */
   case class DocDef(comment: String, definition: Tree)
        extends Tree {
-    override def symbol: Symbol = definition.symbol;
+    override def symbol: Symbol = definition.symbol
     override def symbol_=(sym: Symbol): unit = { definition.symbol = sym }
   }
 
   /** Instantiation template */
   case class Template(parents: List[Tree], body: List[Tree])
        extends SymTree {
-	 // System.err.println("TEMPLATE: " + parents);
+         // System.err.println("TEMPLATE: " + parents);
        }
 
   def Template(parents: List[Tree], vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
     /** Add constructor to template */
     var vparamss1 =
       vparamss map (.map (vd =>
-	ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM), vd.name, vd.tpt.duplicate, EmptyTree)));
+        ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM), vd.name, vd.tpt.duplicate, EmptyTree)));
     if (vparamss1.isEmpty ||
-	!vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
+        !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
       vparamss1 = List() :: vparamss1;
     val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR);
     val superCall = posAssigner.atPos(parents.head.pos) { (superRef /: argss) (Apply) };
@@ -443,14 +436,14 @@ trait Trees requires Global {
   /** Type application */
   case class TypeApply(fun: Tree, args: List[Tree])
        extends GenericApply(fun, args) {
-    override def symbol: Symbol = fun.symbol;
+    override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
   }
 
   /** Value application */
   case class Apply(fun: Tree, args: List[Tree])
        extends GenericApply(fun, args) {
-    override def symbol: Symbol = fun.symbol;
+    override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
   }
 
@@ -478,6 +471,7 @@ trait Trees requires Global {
       // if (pos == 74) Thread.dumpStack();
       ret;
     }
+
   }
 
   def Select(qualifier: Tree, sym: Symbol): Select =
@@ -510,11 +504,11 @@ trait Trees requires Global {
 
   /** General type term, introduced by RefCheck. */
   case class TypeTree() extends TypTree {
-    var original : Tree = _;
+    var original : Tree = _
 
     def setOriginal(tree : Tree) : this.type = {
-      original = tree;
-      setPos(tree.pos);
+      original = tree
+      setPos(tree.pos)
     }
     override def setPos(pos : Int) : this.type = {
       val ret = super.setPos(pos);
@@ -592,88 +586,88 @@ trait Trees requires Global {
 */
 
   abstract class TreeCopier {
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template): ClassDef;
-    def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef;
-    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef;
-    def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef;
-    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef;
-    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree): AbsTypeDef;
-    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef;
-    def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef;
-    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import;
-    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]): Attribute;
-    def Attributed(tree: Tree, attribute: Tree, definition: Tree): Attributed;
-    def DocDef(tree: Tree, comment: String, definition: Tree): DocDef;
-    def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template;
-    def Block(tree: Tree, stats: List[Tree], expr: Tree): Block;
-    def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef;
-    def Sequence(tree: Tree, trees: List[Tree]): Sequence;
-    def Alternative(tree: Tree, trees: List[Tree]): Alternative;
-    def Star(tree: Tree, elem: Tree): Star;
-    def Bind(tree: Tree, name: Name, body: Tree): Bind;
-    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue;
-    def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function;
-    def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign;
-    def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If;
-    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]): Match;
-    def Return(tree: Tree, expr: Tree): Return;
-    def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree): Try;
-    def Throw(tree: Tree, expr: Tree): Throw;
-    def New(tree: Tree, tpt: Tree): New;
-    def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed;
-    def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply;
-    def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply;
-    def Super(tree: Tree, qual: Name, mix: Name): Super;
-    def This(tree: Tree, qual: Name): This;
-    def Select(tree: Tree, qualifier: Tree, selector: Name): Select;
-    def Ident(tree: Tree, name: Name): Ident;
-    def Literal(tree: Tree, value: Constant): Literal;
-    def TypeTree(tree: Tree): TypeTree;
-    def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree;
-    def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree;
-    def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree;
-    def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree;
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template): ClassDef
+    def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef
+    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
+    def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
+    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
+    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree): AbsTypeDef
+    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef
+    def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
+    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import
+    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]): Attribute
+    def Attributed(tree: Tree, attribute: Tree, definition: Tree): Attributed
+    def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
+    def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template
+    def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
+    def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef
+    def Sequence(tree: Tree, trees: List[Tree]): Sequence
+    def Alternative(tree: Tree, trees: List[Tree]): Alternative
+    def Star(tree: Tree, elem: Tree): Star
+    def Bind(tree: Tree, name: Name, body: Tree): Bind
+    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue
+    def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function
+    def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
+    def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]): Match
+    def Return(tree: Tree, expr: Tree): Return
+    def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree): Try
+    def Throw(tree: Tree, expr: Tree): Throw
+    def New(tree: Tree, tpt: Tree): New
+    def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed
+    def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply
+    def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply
+    def Super(tree: Tree, qual: Name, mix: Name): Super
+    def This(tree: Tree, qual: Name): This
+    def Select(tree: Tree, qualifier: Tree, selector: Name): Select
+    def Ident(tree: Tree, name: Name): Ident
+    def Literal(tree: Tree, value: Constant): Literal
+    def TypeTree(tree: Tree): TypeTree
+    def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree
+    def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
+    def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree
+    def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree
   }
 
   class StrictTreeCopier extends TreeCopier {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) =
       new ClassDef(mods, name, tparams, tpt, impl).copyAttrs(tree);
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
-      new PackageDef(name, stats).copyAttrs(tree);
+      new PackageDef(name, stats).copyAttrs(tree)
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
-      new ModuleDef(mods, name, impl).copyAttrs(tree);
+      new ModuleDef(mods, name, impl).copyAttrs(tree)
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) =
-      new ValDef(mods, name, tpt, rhs).copyAttrs(tree);
+      new ValDef(mods, name, tpt, rhs).copyAttrs(tree)
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
-      new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree);
+      new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree)
     def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree) =
-      new AbsTypeDef(mods, name, lo, hi).copyAttrs(tree);
+      new AbsTypeDef(mods, name, lo, hi).copyAttrs(tree)
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
-      new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree);
+      new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
       new LabelDef(name, params, rhs).copyAttrs(tree);
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) =
-      new Import(expr, selectors).copyAttrs(tree);
+      new Import(expr, selectors).copyAttrs(tree)
     def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) =
-      new Attribute(constr, elements);
+      new Attribute(constr, elements)
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) =
-      new Attributed(attribute, definition).copyAttrs(tree);
+      new Attributed(attribute, definition).copyAttrs(tree)
     def DocDef(tree: Tree, comment: String, definition: Tree) =
-      new DocDef(comment, definition).copyAttrs(tree);
+      new DocDef(comment, definition).copyAttrs(tree)
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]) =
-      new Template(parents, body).copyAttrs(tree);
+      new Template(parents, body).copyAttrs(tree)
     def Block(tree: Tree, stats: List[Tree], expr: Tree) =
-      new Block(stats, expr).copyAttrs(tree);
+      new Block(stats, expr).copyAttrs(tree)
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) =
-      new CaseDef(pat, guard, body).copyAttrs(tree);
+      new CaseDef(pat, guard, body).copyAttrs(tree)
     def Sequence(tree: Tree, trees: List[Tree]) =
-      new Sequence(trees).copyAttrs(tree);
+      new Sequence(trees).copyAttrs(tree)
     def Alternative(tree: Tree, trees: List[Tree]) =
-      new Alternative(trees).copyAttrs(tree);
+      new Alternative(trees).copyAttrs(tree)
     def Star(tree: Tree, elem: Tree) =
-      new Star(elem).copyAttrs(tree);
+      new Star(elem).copyAttrs(tree)
     def Bind(tree: Tree, name: Name, body: Tree) =
-      new Bind(name, body).copyAttrs(tree);
+      new Bind(name, body).copyAttrs(tree)
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]) =
       new ArrayValue(elemtpt, trees).copyAttrs(tree);
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
@@ -709,13 +703,13 @@ trait Trees requires Global {
     def Literal(tree: Tree, value: Constant) =
       new Literal(value).copyAttrs(tree);
     def TypeTree(tree: Tree) =
-      new TypeTree().copyAttrs(tree);
+      new TypeTree().copyAttrs(tree)
     def SingletonTypeTree(tree: Tree, ref: Tree) =
-      new SingletonTypeTree(ref).copyAttrs(tree);
+      new SingletonTypeTree(ref).copyAttrs(tree)
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) =
-      new SelectFromTypeTree(qualifier, selector).copyAttrs(tree);
+      new SelectFromTypeTree(qualifier, selector).copyAttrs(tree)
     def CompoundTypeTree(tree: Tree, templ: Template) =
-      new CompoundTypeTree(templ).copyAttrs(tree);
+      new CompoundTypeTree(templ).copyAttrs(tree)
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) =
       new AppliedTypeTree(tpt, args).copyAttrs(tree)
   }
@@ -935,34 +929,34 @@ trait Trees requires Global {
       case EmptyTree =>
         tree
       case PackageDef(name, stats) =>
-	atOwner(tree.symbol.moduleClass) {
+        atOwner(tree.symbol.moduleClass) {
           copy.PackageDef(tree, name, transformStats(stats, currentOwner))
-	}
+        }
       case ClassDef(mods, name, tparams, tpt, impl) =>
-	atOwner(tree.symbol) {
+        atOwner(tree.symbol) {
           copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(tpt), transformTemplate(impl))
-	}
+        }
       case ModuleDef(mods, name, impl) =>
       atOwner(tree.symbol.moduleClass) {
         copy.ModuleDef(tree, mods, name, transformTemplate(impl))
-	}
+        }
       case ValDef(mods, name, tpt, rhs) =>
       atOwner(tree.symbol) {
         copy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
-	}
+        }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
       atOwner(tree.symbol) {
         copy.DefDef(
             tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
-	}
+        }
       case AbsTypeDef(mods, name, lo, hi) =>
-	atOwner(tree.symbol) {
+        atOwner(tree.symbol) {
           copy.AbsTypeDef(tree, mods, name, transform(lo), transform(hi))
-	}
+        }
       case AliasTypeDef(mods, name, tparams, rhs) =>
-	atOwner(tree.symbol) {
+        atOwner(tree.symbol) {
           copy.AliasTypeDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(rhs))
-	}
+        }
       case LabelDef(name, params, rhs) =>
         copy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
       case Import(expr, selectors) =>
@@ -996,9 +990,9 @@ trait Trees requires Global {
       case If(cond, thenp, elsep) =>
         copy.If(tree, transform(cond), transform(thenp), transform(elsep))
       case Match(selector, cases) =>
-	copy.Match(tree, transform(selector), transformCaseDefs(cases))
+        copy.Match(tree, transform(selector), transformCaseDefs(cases))
       case Return(expr) =>
-	copy.Return(tree, transform(expr))
+        copy.Return(tree, transform(expr))
       case Try(block, catches, finalizer) =>
         copy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
       case Throw(expr) =>
@@ -1034,30 +1028,30 @@ trait Trees requires Global {
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
-      List.mapConserve(trees)(transform);
+      List.mapConserve(trees)(transform)
     def transformTemplate(tree: Template): Template =
-      transform(tree: Tree).asInstanceOf[Template];
+      transform(tree: Tree).asInstanceOf[Template]
     def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[AbsTypeDef]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[AbsTypeDef])
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[ValDef]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[ValDef])
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
-      List.mapConserve(treess)(tree => transformValDefs(tree));
+      List.mapConserve(treess)(tree => transformValDefs(tree))
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[CaseDef]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[CaseDef])
     def transformIdents(trees: List[Ident]): List[Ident] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[Ident]);
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[Ident])
     def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       List.mapConserve(stats)(stat =>
-	if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
-	else transform(stat)) filter (EmptyTree !=);
+        if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
+        else transform(stat)) filter (EmptyTree !=);
     def transformUnit(unit: CompilationUnit): unit = { unit.body = transform(unit.body) }
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
-      val prevOwner = currentOwner;
-      currentOwner = owner;
-      val result = trans;
-      currentOwner = prevOwner;
+      val prevOwner = currentOwner
+      currentOwner = owner
+      val result = trans
+      currentOwner = prevOwner
       result
     }
   }
@@ -1068,39 +1062,39 @@ trait Trees requires Global {
       case EmptyTree =>
         ;
       case PackageDef(name, stats) =>
-	atOwner(tree.symbol.moduleClass) {
+        atOwner(tree.symbol.moduleClass) {
           traverseTrees(stats)
-	}
+        }
       case ClassDef(mods, name, tparams, tpt, impl) =>
-	atOwner(tree.symbol) {
+        atOwner(tree.symbol) {
           traverseTrees(tparams); traverse(tpt); traverse(impl)
-	}
+        }
       case ModuleDef(mods, name, impl) =>
-	atOwner(tree.symbol.moduleClass) {
+        atOwner(tree.symbol.moduleClass) {
           traverse(impl)
-	}
+        }
       case ValDef(mods, name, tpt, rhs) =>
-	atOwner(tree.symbol) {
+        atOwner(tree.symbol) {
           traverse(tpt); traverse(rhs)
-	}
+        }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-	atOwner(tree.symbol) {
+        atOwner(tree.symbol) {
           traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
-	}
+        }
       case AbsTypeDef(mods, name, lo, hi) =>
-	atOwner(tree.symbol) {
-          traverse(lo); traverse(hi);
-	}
+        atOwner(tree.symbol) {
+          traverse(lo); traverse(hi)
+        }
       case AliasTypeDef(mods, name, tparams, rhs) =>
-	atOwner(tree.symbol) {
+        atOwner(tree.symbol) {
           traverseTrees(tparams); traverse(rhs)
-	}
+        }
       case LabelDef(name, params, rhs) =>
         traverseTrees(params); traverse(rhs)
       case Import(expr, selectors) =>
         traverse(expr)
       case Attribute(constr, elements) =>
-        traverse(constr); traverseTrees(elements);
+        traverse(constr); traverseTrees(elements)
       case Attributed(attribute, definition) =>
         traverse(attribute); traverse(definition)
       case DocDef(comment, definition) =>
@@ -1128,9 +1122,9 @@ trait Trees requires Global {
       case If(cond, thenp, elsep) =>
         traverse(cond); traverse(thenp); traverse(elsep)
       case Match(selector, cases) =>
-	traverse(selector); traverseTrees(cases)
+        traverse(selector); traverseTrees(cases)
       case Return(expr) =>
-	traverse(expr)
+        traverse(expr)
       case Try(block, catches, finalizer) =>
         traverse(block); traverseTrees(catches); traverse(finalizer)
       case Throw(expr) =>
@@ -1171,15 +1165,15 @@ trait Trees requires Global {
       treess foreach traverseTrees;
     def traverseStats(stats: List[Tree], exprOwner: Symbol): unit =
       stats foreach (stat =>
-	if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(traverse(stat))
-	else traverse(stat));
+        if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(traverse(stat))
+        else traverse(stat));
     def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
 
     def atOwner(owner: Symbol)(traverse: => unit): unit = {
-      val prevOwner = currentOwner;
-      currentOwner = owner;
-      traverse;
-      currentOwner = prevOwner;
+      val prevOwner = currentOwner
+      currentOwner = owner
+      traverse
+      currentOwner = prevOwner
     }
   }
 
@@ -1197,9 +1191,9 @@ trait Trees requires Global {
   }
 
   class TreeTypeSubstituter(from: List[Symbol], to: List[Type]) extends Traverser {
-    val typeSubst = new SubstTypeMap(from, to);
+    val typeSubst = new SubstTypeMap(from, to)
     override def traverse(tree: Tree): unit = {
-      if (tree.tpe != null) tree.tpe = typeSubst(tree.tpe);
+      if (tree.tpe != null) tree.tpe = typeSubst(tree.tpe)
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
@@ -1213,8 +1207,8 @@ trait Trees requires Global {
           if (tree.symbol == from.head) tree setSymbol to.head
           else subst(from.tail, to.tail)
       }
-      if (tree.tpe != null) tree.tpe = symSubst(tree.tpe);
-      if (tree.hasSymbol) subst(from, to);
+      if (tree.tpe != null) tree.tpe = symSubst(tree.tpe)
+      if (tree.hasSymbol) subst(from, to)
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
@@ -1229,24 +1223,25 @@ trait Trees requires Global {
   }
 
   final class TreeList {
-    private var trees = List[Tree]();
+    private var trees = List[Tree]()
     def append(t: Tree): TreeList = { trees = t :: trees; this }
     def append(ts: List[Tree]): TreeList = { trees = ts reverse_::: trees; this }
-    def toList: List[Tree] = trees.reverse;
+    def toList: List[Tree] = trees.reverse
   }
 
   object posAssigner extends Traverser {
-    private var pos: int = _;
+    private var pos: int = _
     override def traverse(t: Tree): unit =
       if (t != EmptyTree && t.pos == Position.NOPOS) {
-        t.setPos(pos);
-        super.traverse(t);
+        t.setPos(pos)
+        super.traverse(t)
       }
     def atPos[T <: Tree](pos: int)(tree: T): T = {
-      this.pos = pos;
-      traverse(tree);
+      this.pos = pos
+      traverse(tree)
       tree
     }
   }
+
 }
 
