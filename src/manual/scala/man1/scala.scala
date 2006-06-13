@@ -13,79 +13,109 @@ object scala extends Command {
 
   val name = Section("NAME",
 
-    MBold(command) & " " & NDash & " Launcher for the " &
-    Link("Scala 2", "http://scala.epfl.ch/") & " language")
+    MBold(command) & " " & NDash & " Run code in the " &
+    Link("Scala 2", "http://scala.epfl.ch/") &
+    " language")
 
   val synopsis = Section("SYNOPSIS",
 
-    CmdLine(" [ " & Argument("options") & " ] " &
-            Argument("class file") & " [ " & Argument("args") & " ]"))
+    CmdLine(" [ " & Argument("compiler-options") & " - ] " &
+            "[ [ -object | -script ] "
+              & " " & Argument("object-or-file")
+              & " " & Argument("arguments") & " ]"))
 
   val parameters = Section("PARAMETERS",
 
     DefinitionList(
       Definition(
-        Mono(Argument("options")),
-        "Command line options. See " & Link(Bold("OPTIONS"), "#options") &
-        " below."),
+        Mono(Argument("compiler-options")),
+        "Options for the compiler.  See " &
+        Link(Bold("scalac") & "(1)", "scalac.html")),
+
       Definition(
-        Mono(Argument("class file")),
-        "Name of the class to be invoked."),
+        Mono("-object"),
+        "The following argument specifies a pre-compiled class to run."),
+
       Definition(
-        Mono(Argument("args")),
-        "Program arguments passed to the main function.")))
+        Mono("-script"),
+        "The following argument specifies a script file to run."),
+
+      Definition(
+        Mono(Argument("object-or-file")),
+        "A top-level object or a script file to run"),
+
+      Definition(
+        Mono(Argument("arguments")),
+        "Arguments to pass to the object or script")))
 
   val description = Section("DESCRIPTION",
 
-    "The " & MBold(command) & " utility launches a Scala application. " &
-    "It does this by starting a Java runtime environment, loading a " &
-    "specified class, and invoking that class's " & Bold("main") &
-    " method. The method must have the following signature:",
+    "The "&MBold(command)&" utility runs Scala code using a Java runtime "&
+    "environment.  The Scala code to run is " &
+    "specified in one of three ways:",
+
+    BulletList(
+        "With no arguments specified, an interactive interpreter starts " &
+        "and reads commands interactively.",
+
+        "With -object specified, the fully qualified name of a top-level " &
+        "Scala object may be specified.  The object should previously have " &
+        "been compiled using " & Link(Bold("scalac") & "(1)", "scalac.html") &
+        ".",
+
+        "With -script specified, a file containing Scala code may be " &
+        "specified."
+        ),
+
+    "If " & Argument("object-or-file") & " is specified but both -object " &
+    " and -script are omitted, then " & MBold(command) &
+    " will check whether a file of the " &
+    "specified name exists.  If it does, then it will treat it as a " &
+    "script file; if it does not, then it will treat it as the name " &
+    "of an object",
+
+    "In all three cases, arbitrary scalac options may be specified. "&
+    "The most common option is to specify a classpath with " &
+    Mono("-classpath") & ", but see the " &
+    Link(Bold("scalac") & "(1)", "scalac.html") & " page for " &
+    "full details.",
+
+
+    "If an object is specified to run, then that object must be a top-level " &
+    "Scala object with the specified name.  The object must define a method " &
+    Bold("main") & " with the following signature:",
 
     BlockQuote(Mono(Bold("def") & " main(args: Array[String]): Unit")),
 
     "The method must return a " & Bold("Unit") & " value, and it must " &
-    "accept a " & Bold("String") & " array as a parameter. By default, " &
-    "the first non-option argument is the name of the class to be invoked. "&
-    "A fully-qualified class name should be used.",
+    "accept a " & Bold("String") & " array as a parameter.  All arguments " &
+    "specified on the command line will be passed as " &
+    "arguments to the " & Bold("main") & " method.",
 
-    "The Scala runtime searches for the startup class, and other classes " &
-    "used, in three sets of locations: the bootstrap class path, the " &
-    "installed extensions, and the user class path.")
+    "If a script file is specified to run, then the file is read and all " &
+    "Scala statements and declarations in the file are processed in order. ",
+
+    "Script files may have an optional header fthat is ignored if " &
+    "present.  There are two ways to format the header: either beginning with " &
+    Mono("#!") & " and ending with " & Mono("!#") & ", or beginning with " &
+    Mono("::#!") & " and ending with " & Mono("::!#") & ".",
+
+    "Such a header must have each header boundary start at the beginning of a " &
+    "line.  Headers can be used to make stand-alone script files, as shown " &
+    "in the examples below.")
+
 
   val options = Section("OPTIONS",
 
-    "The launcher has a set of standard options that are supported on the " &
-    "current runtime environment and will be supported in future releases. " &
-    "An additional set of non-standard options are specific to the current " &
-    "virtual machine implementation and are subject to change in the future. " &
-    "Non-standard options begin with " & CmdOption("X") & ".",
-
-    Section("Standard Options",
-      DefinitionList(
-        Definition(
-          CmdOption("cp") & "| " & CmdOption("classpath", Argument("path")),
-          "Specify where to find user class files (on Unix-based systems " &
-          "a colon-separated list of paths, on Windows-based systems, a " &
-          "semicolon-separate list of paths)."),
-        Definition(
-          CmdOption("D", Argument("name") & "=" & Argument("value")),
-          "Set a system property."),
-        Definition(
-          CmdOption("verbose", "[:class|gc|jni]"),
-          "Enable verbose output."),
-        Definition(
-          CmdOption("showversion"),
-          "Print product version and continue."),
-        Definition(
-          CmdOption("version"),
-          "Print product version and exit."),
-        Definition(
-          CmdOption("help"),
-          "Print this help message."))),
-
-    Section("Non-Standard Options",
-      "Same options as the " & MBold("java") & " command."))
+    "If any compiler options are specified, they must be first in the " &
+    "command line and must be followed by a bare hypen (" & Quote("-") &
+    ") character. " &
+    "If no arguments are specified after the optional compiler arguments, " &
+    "then an interactive interpreter is started.  Otherwise, either a " &
+    "script file is run, or a pre-compiled Scala object is run.  It " &
+    "is possible to distinguish the last two cases by using an explicit " &
+    Mono("-object") & " or " & Mono("-script") & " flag, but usually the " &
+    "program can guess correctly.")
 
   val environment = Section("ENVIRONMENT",
 
@@ -97,39 +127,65 @@ object scala extends Command {
 
   val examples = Section("EXAMPLES",
 
+    "Here are some examples of running Scala code:",
+
     DefinitionList(
       Definition(
         "Execute a Scala program generated in the current directory",
         CmdLine("hello.HelloWorld")),
+
       Definition(
         "Execute a Scala program generated in a user-defined " &
         "directory " & Bold("classes"),
         CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
+
       Definition(
         "Execute a Scala program using a user-defined " & MBold("java") & " " &
         "command",
         MBold("env JAVACMD") & Mono("=/usr/local/bin/cacao ") &
-        CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))))
+        CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))),
+
+    "Here is a complete Scala script for Unix: ",
+
+    CodeSample(
+      "#!/bin/sh\n" +
+      "exec scalascript \"$0\" \"$@\"\n" +
+      "!#\n" +
+      "Console.println(\"Hello, world!\")\n" +
+      "argv.toList foreach Console.println"),
+
+    "Here is a complete Scala script for Unix: ",
+
+    CodeSample(
+      "::#!\n" +
+      "@echo off\n" +
+      "call scalascript %0 %*\n" +
+      "goto :eof\n" +
+      "::!#\n" +
+      "Console.println(\"Hello, world!\")\n" +
+      "argv.toList foreach Console.println"))
+
 
   val exitStatus = Section("EXIT STATUS",
 
-    MBold(command) & " returns a zero exit status if it succeeds. " &
-    "Non zero is returned in case of failure.")
+    "The " & MBold(command) & " command " &
+    "returns a zero exit status if it succeeds. " &
+    "Non zero is returned in case of any error.  If a script or " &
+    "top-level object is executed and returns a value, then that " &
+    "return value is passed on to " & MBold(command) & ".")
 
   val seeAlso = Section("SEE ALSO",
 
     Link(Bold("sbaz") & "(1)", "sbaz.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
-    Link(Bold("scalaint") & "(1)", "scalaint.html") & ", " &
-    Link(Bold("scalap") & "(1)", "scalap.html") & ", " &
-    Link(Bold("scalascript") & "(1)", "scalascript.html"))
+    Link(Bold("scalap") & "(1)", "scalap.html"))
 
   def manpage = new Document {
     title = command
     date = lastModified
-    author = "Stephane Micheloud"
-    version = "0.2"
+    author = "LAMP"
+    version = "0.3"
     sections = List(
       name,
       synopsis,
