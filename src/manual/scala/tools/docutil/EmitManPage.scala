@@ -91,23 +91,27 @@ object EmitManPage {
           out.println("\n.fi")
 
         case lst:BulletList =>
-          out.println("<ul>")
           for(val item <- lst.items) {
-            out.print("<li>")
+            out.println(".IP")
             emitText(item)
+            out.println
           }
-          out.println("</ul>")
 
         case lst:NumberedList =>
-          out.println("<ol>")
-          for(val item <- lst.items) {
-            out.print("<li>")
+          for {
+            val idx <- List.range(0, lst.items.length)
+            val item = lst.items(idx)
+          } {
+            out.println(".IP \"   " + (idx+1) + ".\"")
             emitText(item)
+            out.println
           }
-          out.println("</ol>")
 
         case TitledPara(title, text) =>
-          out.println("<p><strong>" + escape(title) + "</strong>")
+          out.println(".PP")
+          out.print("\\fB")
+          emitText(title)
+          out.print("\\fR")
           emitText(text)
 
         case EmbeddedSection(sect) =>
