@@ -121,7 +121,7 @@ abstract class UnPickler {
 	  val owner = if (readIndex == end) definitions.RootClass else readSymbolRef()
 	  sym = if (tag == EXTref) owner.info.decl(name)
 		else if (name.toTermName == nme.ROOT) definitions.RootClass
-		else if (name.toTermName == nme.ROOTPKG) definitions.RootPackage
+		else if (name == nme.ROOTPKG) definitions.RootPackage
 		else owner.info.decl(name).moduleClass
 	  if (sym == NoSymbol)
 	    errorBadSignature(
