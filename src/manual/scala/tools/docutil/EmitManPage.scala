@@ -150,7 +150,7 @@ object EmitManPage {
 
   def main(args: Array[String]) =
     try {
-      val cl = ClassLoader.getSystemClassLoader()
+      val cl = this.getClass.getClassLoader()
       val clasz = cl.loadClass(args(0))
       val meth = clasz.getDeclaredMethod("manpage", Predef.Array[Class]())
       val doc = meth.invoke(null, Predef.Array[Object]()).asInstanceOf[Document]
