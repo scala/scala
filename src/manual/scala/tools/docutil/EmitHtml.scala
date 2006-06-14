@@ -158,12 +158,10 @@ object EmitHtml {
     out.println("</div>")
   }
 
-  def emitDocument(document: Document, addDocType: Boolean) = {
-    if (addDocType) {
-      out.println("<?xml version=\"1.1\" encoding=\"" + document.encoding + "\"?>")
-      out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">")
-    }
-    out.println("<html xml:lang=\"en\">")
+  def emitDocument(document: Document) = {
+    out.println("<?xml version=\"1.1\" encoding=\"" + document.encoding + "\"?>")
+    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">")
+    out.println("<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n")
 
     out.println("<head>")
     out.println("<title>" + document.title + " man page</title>")
@@ -177,7 +175,7 @@ object EmitHtml {
     out.println("  p { margin:0 2em 0 2em; text-align:justify; }")
     out.println("  //-->")
     out.println("</style>")
-    out.println("</head>")
+    out.println("</head>\n")
 
     out.println("<body>")
     val name = document.title + "(" + document.category.id + ")"
@@ -329,7 +327,7 @@ object EmitHtml {
 */
   def main(args: Array[String]) = {
     if (args.length < 1) {
-      System.err.println("usage: EmitHtml <classname> [ -short ]")
+      System.err.println("usage: EmitHtml <classname>")
       exit(1)
     }
     try {
@@ -337,8 +335,7 @@ object EmitHtml {
       val clasz = cl.loadClass(args(0))
       val meth = clasz.getDeclaredMethod("manpage", Predef.Array[Class]())
       val doc = meth.invoke(null, Predef.Array[Object]()).asInstanceOf[Document]
-      val addDocType = (args.length > 1 && "-doctype".equals(args(1)))
-      emitDocument(doc, addDocType)
+      emitDocument(doc)
     } catch {
       case ex: Exception =>
         ex.printStackTrace()
