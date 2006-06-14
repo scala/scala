@@ -3,7 +3,7 @@
  * @author Stephane Micheloud
  * Adapted from Lex Spoon's sbaz manual
  */
-//$Id: $
+//$Id$
 
 package scala.tools.docutil
 

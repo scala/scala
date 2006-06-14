@@ -2,7 +2,7 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author Stephane Micheloud
  */
-//$Id: $
+//$Id$
 
 package scala.man1
 
@@ -19,7 +19,7 @@ object sbaz extends Command {
   val synopsis = Section("SYNOPSIS",
 
     CmdLine(" [ " & Argument("global_options") & " ] " & Argument("command") &
-            " [ " & Argument("command_options") & "]"))
+            " [ " & Argument("command_options") & " ]"))
 
   val parameters = Section("PARAMETERS",
 
@@ -110,7 +110,7 @@ object sbaz extends Command {
           MBold("setup"),
           "Initialize a directory to be managed."),
         Definition(
-          MBold("share") & " filename",
+          MBold("share") & " " & Argument("filename"),
           "Share a package advertisement on a bazaar."),
         Definition(
           MBold("share") & " " & CmdOption("i", Argument("descriptor")),
@@ -154,11 +154,11 @@ object sbaz extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
-    Link(Bold("scala") & "(1)", "scala.html") & ", " &
-    Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
-    Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
-    Link(Bold("scalaint") & "(1)", "scalaint.html") & ", " &
-    Link(Bold("scalascript") & "(1)", "scalascript.html"))
+    Link(MBold("scala") & "(1)", "scala.html") & ", " &
+    Link(MBold("scalac") & "(1)", "scalac.html") & ", " &
+    Link(MBold("scaladoc") & "(1)", "scaladoc.html") & ", " &
+    Link(MBold("scalaint") & "(1)", "scalaint.html") & ", " &
+    Link(MBold("scalascript") & "(1)", "scalascript.html"))
 
   def manpage = new Document {
     title = command
