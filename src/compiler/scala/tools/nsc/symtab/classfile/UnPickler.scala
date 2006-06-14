@@ -119,14 +119,15 @@ abstract class UnPickler {
 	case EXTref | EXTMODCLASSref =>
 	  val name = readNameRef()
 	  val owner = if (readIndex == end) definitions.RootClass else readSymbolRef()
-	  sym = if (tag == EXTref) owner.info.decl(name)
-		else if (name.toTermName == nme.ROOT) definitions.RootClass
+	  sym = if (name.toTermName == nme.ROOT) definitions.RootClass
 		else if (name == nme.ROOTPKG) definitions.RootPackage
+                else if (tag == EXTref) owner.info.decl(name)
 		else owner.info.decl(name).moduleClass
-	  if (sym == NoSymbol)
+	  if (sym == NoSymbol) {
 	    errorBadSignature(
 	      "reference " + (if (name.isTypeName) "type " else "value ") +
 	      name.decode + " of " + owner + " refers to nonexisting symbol.")
+          }
 	case NONEsym =>
 	  sym = NoSymbol
 	case _ =>

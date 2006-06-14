@@ -345,6 +345,12 @@ abstract class UnCurry extends InfoTransform {
 	    mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
           }
 
+        case Apply(Select(Function(vparams, body), nme.apply), args) =>
+	  // perform beta-reduction; this helps keep view applications small
+          withNeedLift(true) {
+	    mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
+          }
+
         case Apply(fn, args) =>
           if (settings.noassertions.value &&
               fn.symbol != null &&
