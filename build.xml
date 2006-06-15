@@ -319,7 +319,10 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <lockertool
       file="${locker.dir}/bin/${scala.exec.name}"
       version="${version.number}"
-      copyright="${copyright.string}"/>
+      copyright="${copyright.string}"
+      name="Scala code runner"
+      class="scala.tools.nsc.MainGenericRunner"
+      javaFlags="-Xmx256M -Xms16M"/>
     <lockertool
       file="${locker.dir}/bin/${scalac.exec.name}"
       name="Scala compiler"
@@ -449,6 +452,8 @@ BUILD QUICK-TEST LAYER
       file="${quick.dir}/bin/${scala.exec.name}"
       version="${version.number}"
       copyright="${copyright.string}"
+      name="Scala code runner"
+      class="scala.tools.nsc.MainGenericRunner"
       javaFlags="-Xmx256M -Xms16M"/>
     <quicktool
       file="${quick.dir}/bin/${scalac.exec.name}"
@@ -580,6 +585,8 @@ TEST
       file="${strap.dir}/bin/${scala.exec.name}"
       version="${version.number}"
       copyright="${copyright.string}"
+      name="Scala code runner"
+      class="scala.tools.nsc.MainGenericRunner"
       javaFlags="-Xmx256M -Xms16M"/>
     <straptool
       file="${strap.dir}/bin/${scalac.exec.name}"
@@ -718,9 +725,7 @@ DOCUMENTATION
     <emit command="scala"/>
     <emit command="scalac"/>
     <emit command="scaladoc"/>
-    <emit command="scalaint"/>
     <emit command="scalap"/>
-    <emit command="scalascript"/>
     <fixcrlf srcdir="${tooldocs.dir}" eol="unix" includes="**/*.1"/>
     <copy todir="${tooldocs.dir}">
       <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
