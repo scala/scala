@@ -19,34 +19,34 @@ object scala extends Command {
 
   val synopsis = Section("SYNOPSIS",
 
-    CmdLine(" [ " & Argument("compiler-options") & " - ] " &
-            "[ [ -object | -script ] "
-              & " " & Argument("object-or-file")
-              & " " & Argument("arguments") & " ]"))
+    CmdLine(
+      " [ " & Argument("compiler-option") & " | " &
+      Mono("-howtorun:") & Argument("how") & " ]... " &
+      "[ " & Argument("torun") & " " & Argument("argument") &
+      "... ]"))
 
   val parameters = Section("PARAMETERS",
 
     DefinitionList(
       Definition(
-        Mono(Argument("compiler-options")),
+        Mono(Argument("compiler-option")),
         "Options for the compiler.  See " &
-        Link(Bold("scalac") & "(1)", "scalac.html")),
+        Link(Bold("scalac") & "(1)", "scalac.html") & "."),
 
       Definition(
-        Mono("-object"),
-        "The following argument specifies a pre-compiled class to run."),
+        Mono("-howtorun:") & Argument("how"),
+        "How to execute " & Argument("torun") & ", if it is present. " &
+        "Options for " & Argument("how") & " are " & Mono("guess") &
+        " (the default), " & Mono("script") & ", and " & Mono("object") &
+        "."),
 
       Definition(
-        Mono("-script"),
-        "The following argument specifies a script file to run."),
+        Mono(Argument("torun")),
+        "A top-level object or a script file to run."),
 
       Definition(
-        Mono(Argument("object-or-file")),
-        "A top-level object or a script file to run"),
-
-      Definition(
-        Mono(Argument("arguments")),
-        "Arguments to pass to the object or script")))
+        Mono(Argument("argument")),
+        "An arguments to pass to " & Argument("torun") & ".")))
 
   val description = Section("DESCRIPTION",
 
@@ -54,31 +54,32 @@ object scala extends Command {
     "environment.  The Scala code to run is " &
     "specified in one of three ways:",
 
-    BulletList(
+    NumberedList(
         "With no arguments specified, an interactive interpreter starts " &
         "and reads commands interactively.",
 
-        "With -object specified, the fully qualified name of a top-level " &
+        "With " & Mono("-howtorun:object") & " specified, the fully " &
+        "qualified name of a top-level " &
         "Scala object may be specified.  The object should previously have " &
         "been compiled using " & Link(Bold("scalac") & "(1)", "scalac.html") &
         ".",
 
-        "With -script specified, a file containing Scala code may be " &
-        "specified."
+        "With " & Mono("-howtorun:script") & " specified, a file " &
+        "containing Scala code may be specified."
         ),
 
-    "If " & Argument("object-or-file") & " is specified but both -object " &
-    " and -script are omitted, then " & MBold(command) &
-    " will check whether a file of the " &
+    "If " & Mono("-howtorun:") & " is left as the default (" & Mono("guess") &
+    "), then the " & MBold(command) & " command " &
+    "will check whether a file of the " &
     "specified name exists.  If it does, then it will treat it as a " &
     "script file; if it does not, then it will treat it as the name " &
-    "of an object",
+    "of an object.",
 
     "In all three cases, arbitrary scalac options may be specified. "&
     "The most common option is to specify a classpath with " &
     Mono("-classpath") & ", but see the " &
     Link(Bold("scalac") & "(1)", "scalac.html") & " page for " &
-    "full details.",
+    "full details.   ",
 
 
     "If an object is specified to run, then that object must be a top-level " &
