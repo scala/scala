@@ -1,11 +1,14 @@
-package scala.tools.nsc
-import java.io.File
-
-/* NSC -- new scala compiler
+/* NSC -- new Scala compiler
  * Copyright 2006 LAMP/EPFL
  * @author  Lex Spoon
  */
+
 // $Id$
+
+package scala.tools.nsc
+
+import java.io.File
+
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -15,19 +18,19 @@ object MainGenericRunner {
   def main(args: Array[String]): Unit = {
     def error(str: String) = Console.println(str)
     val command = new GenericRunnerCommand(args.toList, error)
-    if(!command.ok) {
+    if (!command.ok) {
       Console.println(command.usageMessage)
       return ()
     }
 
     val settings = command.settings
 
-    if(settings.help.value) {
+    if (settings.help.value) {
       Console.println(command.usageMessage)
       return ()
     }
 
-    if(settings.version.value) {
+    if (settings.version.value) {
       val version =
         System.getProperty("scala.tool.version", "unknown version")
       Console.println("scala version " + version)
@@ -36,10 +39,10 @@ object MainGenericRunner {
     }
 
     command.thingToRun match {
-      case None => {
+      case None =>
         (new InterpreterLoop).main(settings)
-      }
-      case Some(thingToRun) => {
+
+      case Some(thingToRun) =>
         val isObjectName =
           settings.howtorun.value match {
             case "guess" => !(new File(thingToRun)).exists
@@ -47,7 +50,7 @@ object MainGenericRunner {
             case "script" => false
           }
 
-        if(isObjectName) {
+        if (isObjectName) {
           def paths(str: String) = str.split(File.pathSeparator).toList
 
           val classpath =
@@ -58,7 +61,6 @@ object MainGenericRunner {
         } else {
           MainScript.runScript(settings, thingToRun, command.arguments)
         }
-      }
     }
   }
 }

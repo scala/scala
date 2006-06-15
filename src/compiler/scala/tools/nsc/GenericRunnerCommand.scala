@@ -1,7 +1,14 @@
+/* NSC -- new Scala compiler
+ * Copyright 2006 LAMP/EPFL
+ * @author  Lex Spoon
+ */
+
+// $Id$
+
 package scala.tools.nsc
 
 /** A command for ScriptRunner */
-class GenericRunnerCommand(allargs: List[String], error: String=>Unit) {
+class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
   def this(allargs: List[String]) = this(allargs, str:String => {
     Console.println("Error: " + str)
   })
