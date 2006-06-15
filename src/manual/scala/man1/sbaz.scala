@@ -53,9 +53,15 @@ object sbaz extends Command {
           CmdOption("d", Argument("dir")),
           "Operate on dir as the local managed directory."),
         Definition(
-          CmdOption("n"),
+          CmdOption("n") & "| " & CmdOptionLong("dryrun"),
           "Do not actually do anything.  Only print out what " +
-          "tool would normally do with the following arguments."))),
+          "tool would normally do with the following arguments."),
+        Definition(
+          CmdOption("v") & "| " & CmdOptionLong("verbose"),
+          "Output messages about what the " & MBold(command) & " tool is doing"),
+        Definition(
+          CmdOption("version"),
+          "Display the version information"))),
 
     Section("Available Commands",
       DefinitionList(

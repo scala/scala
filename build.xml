@@ -840,7 +840,7 @@ GENERATES A DISTRIBUTION
     <copy todir="${dist.current.dir}/doc/scala/examples">
       <fileset dir="${docs.dir}/examples"/>
     </copy>
-    <copy todir="${dist.current.dir}/man">
+    <copy todir="${dist.current.dir}/man/man1">
       <fileset dir="${tooldocs.dir}" includes="**/*.1"/>
     </copy>
     <copy todir="${dist.current.dir}/doc/scala/tools">
