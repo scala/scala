@@ -119,7 +119,8 @@ object MainScript {
       new SourceFile("<script preamble>",
           ("package scala.scripting\n" +
           "object Main {\n" +
-          "  def main(argv: Array[String]): Unit = {\n").toCharArray)
+          "  def main(argv: Array[String]): Unit = {\n" +
+          "  val args = argv;\n").toCharArray)
 
     val middle =
       new SourceFileFragment(
@@ -133,11 +134,30 @@ object MainScript {
   }
 
 
+  def runScript(
+      settings: Settings,
+      scriptFile: String,
+      scriptArgs: List[String]): Unit =
+  {
+    val interpreter = new Interpreter(settings)
+    try {
+      interpreter.beQuiet
+
+      if(!interpreter.compileSources(List(wrappedScript(scriptFile))))
+        return () // compilation error
+
+      interpreter.bind("argv", "Array[String]", scriptArgs.toArray)
+      interpreter.interpret("scala.scripting.Main.main(argv)")
+    } finally {
+      interpreter.close
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     val parsedArgs = parseArgs(args.toList)
     val compilerArgs = parsedArgs._1
     val scriptFile = parsedArgs._2
-    val scriptArgs = parsedArgs._3.toArray
+    val scriptArgs = parsedArgs._3
 
     val command =
       new CompilerCommand(
@@ -154,17 +174,7 @@ object MainScript {
     }
 
 
-    val interpreter = new Interpreter(command.settings)
-    try {
-      interpreter.beQuiet
-
-      if(!interpreter.compileSources(List(wrappedScript(scriptFile))))
-        return () // compilation error
-      interpreter.bind("argv", "Array[String]", scriptArgs)
-      interpreter.interpret("scala.scripting.Main.main(argv)")
-    } finally {
-      interpreter.close
-    }
+    runScript(command.settings, scriptFile, scriptArgs)
   }
 
 }
