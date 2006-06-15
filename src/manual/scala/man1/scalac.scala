@@ -290,9 +290,7 @@ object scalac extends Command {
     Link(Bold("sbaz") & "(1)", "sbaz.html") & ", " &
     Link(Bold("scala") & "(1)", "scala.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
-    Link(Bold("scalaint") & "(1)", "scalaint.html") & ", " &
-    Link(Bold("scalap") & "(1)", "scalap.html") & ", " &
-    Link(Bold("scalascript") & "(1)", "scalascript.html"))
+    Link(Bold("scalap") & "(1)", "scalap.html"))
 
   def manpage = new Document {
     title = command

@@ -94,7 +94,9 @@ object scala extends Command {
     "arguments to the " & Bold("main") & " method.",
 
     "If a script file is specified to run, then the file is read and all " &
-    "Scala statements and declarations in the file are processed in order. ",
+    "Scala statements and declarations in the file are processed in order. " &
+    "Any arguments specified will be available via the " & Mono("args") &
+    "variable.",
 
     "Script files may have an optional header fthat is ignored if " &
     "present.  There are two ways to format the header: either beginning with " &
@@ -124,7 +126,10 @@ object scala extends Command {
       Definition(
         MBold("JAVACMD"),
         "Specify the " & MBold("java") & " command to be used " &
-        "for running the Scala commands")))
+        "for running the Scala code.  Arguments may be specified; " &
+        "they will be expanded by the shell.  (Likewise, if the " &
+        "command includes any spaces, then the command should be " &
+        "wrapped in explicit quotation marks.)")))
 
   val examples = Section("EXAMPLES",
 
@@ -150,7 +155,7 @@ object scala extends Command {
 
     CodeSample(
       "#!/bin/sh\n" +
-      "exec scalascript \"$0\" \"$@\"\n" +
+      "exec scala \"$0\" \"$@\"\n" +
       "!#\n" +
       "Console.println(\"Hello, world!\")\n" +
       "argv.toList foreach Console.println"),
@@ -160,7 +165,7 @@ object scala extends Command {
     CodeSample(
       "::#!\n" +
       "@echo off\n" +
-      "call scalascript %0 %*\n" +
+      "call scala %0 %*\n" +
       "goto :eof\n" +
       "::!#\n" +
       "Console.println(\"Hello, world!\")\n" +
