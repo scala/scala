@@ -39,6 +39,7 @@
   <!-- Location of build products properties -->
   <property name="build.dir" value="${topdir}/simpbuild"/>
   <property name="api.dir" value="${build.dir}/api"/>
+  <property name="tooldocs.dir" value="${build.dir}/manual"/>
 
   <!-- Location of source and build elements names properties -->
   <property name="lib.dir.name" value="library"/>
@@ -66,6 +67,7 @@
   <property name="build.dbc.dir" value="${build.dir}/${dbc.dir.name}"/>
   <property name="build.jar.dir" value="${build.dir}/lib"/>
   <property name="build.bin.dir" value="${build.dir}/bin"/>
+  <property name="build.manual.dir" value="${build.dir}/manual.classes"/>
   <property name="api.lib.pdir" value="${api.dir}/${lib.dir.name}"/>
   <property name="api.lib.dir" value="${api.lib.pdir}/api"/>
   <property name="api.comp.pdir" value="${api.dir}/${comp.dir.name}"/>
@@ -78,130 +80,136 @@
   <property name="sbaz.scala.name" value="${dist.name}"/>
   <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
 
-
-  <target name="init" unless="init.avail">
-    <tstamp prefix="time">
-      <format
-        property="human"
-        pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"
+  <!-- Testing if everything is in place -->
+  <echo level="verbose" message="starr.lib.jar=${starr.lib.jar}"/>
+  <fail message="STARR library in 'lib/' is not available">
+    <condition><not><and>
+      <available
+        classname="scala.Predef" 
+        classpath="${starr.lib.jar}"
       />
-      <format
-        property="short"
-        pattern="yyyyMMdd-HHmmss"
+      <available
+        classname="scala.List"
+        classpath="${starr.lib.jar}"
       />
-      <format
-       property="this.year"
-       pattern="yyyy"
-     />
-    </tstamp>
-    <property
-      name="copyright"
-      value="(c) 2002-${time.this.year} ${copyright.holder}"
-    />
+      <available
+        classname="scala.runtime.ObjectRef"
+        classpath="${starr.lib.jar}"
+      />
+    </and></not></condition>
+  </fail>
 
-    <!-- Testing if everything is in place -->
-    <echo level="verbose" message="starr.lib.jar=${starr.lib.jar}"/>
-    <fail message="STARR library in 'lib/' is not available">
-      <condition><not><and>
-        <available
-          classname="scala.Predef" 
-          classpath="${starr.lib.jar}"
-        />
-        <available
-          classname="scala.List"
-          classpath="${starr.lib.jar}"
-        />
-        <available
-          classname="scala.runtime.ObjectRef"
-          classpath="${starr.lib.jar}"
-        />
-      </and></not></condition>
-    </fail>
-    <echo level="verbose" message="starr.comp.jar=${starr.comp.jar}"/>
-    <fail message="STARR compiler in 'lib/' is not available">
-      <condition><not>
-        <available
-          classname="scala.tools.ant.Scalac"
-          classpath="${starr.comp.jar}:${starr.lib.jar}"
-        />
-      </not></condition>
-    </fail>
-    <echo level="verbose" message="fjbg.jar=${fjbg.jar}"/>
-    <fail message="FJBG library in 'lib/' is not available">
-      <condition><not>
-        <available
-          classname="ch.epfl.lamp.fjbg.JCode"
-          classpath="${fjbg.jar}"
-        />
-      </not></condition>
-    </fail>
+  <echo level="verbose" message="starr.comp.jar=${starr.comp.jar}"/>
+  <fail message="STARR compiler in 'lib/' is not available">
+    <condition><not>
+      <available
+        classname="scala.tools.ant.Scalac"
+        classpath="${starr.comp.jar}:${starr.lib.jar}"
+      />
+    </not></condition>
+  </fail>
 
-    <path id="starr.classpath">
-      <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${starr.lib.jar}"/>
-      <pathelement location="${starr.comp.jar}"/>
-    </path>
+  <echo level="verbose" message="fjbg.jar=${fjbg.jar}"/>
+  <fail message="FJBG library in 'lib/' is not available">
+    <condition><not>
+      <available
+        classname="ch.epfl.lamp.fjbg.JCode"
+        classpath="${fjbg.jar}"
+      />
+    </not></condition>
+  </fail>
+
+  <path id="starr.classpath">
+    <pathelement location="${fjbg.jar}"/>
+    <pathelement location="${starr.lib.jar}"/>
+    <pathelement location="${starr.comp.jar}"/>
+  </path>
 
 
-    <property name="os.type" value="UNIX"/>
+  <property name="os.type" value="UNIX"/>
 
 
-    <!-- Printing out some information about what environment I am running in -->
-    <echo
-      level="info"
-      message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"
-    />
-    <echo
-      level="info"
-      message="Java: ${java.version} ('${java.home}');"
-    />
-    <echo
-      level="info"
-      message="JVM:  ${java.vm.name} ${java.vm.version};"
-    />
-    <echo
-      level="info"
-      message="Ant:  ${ant.version}."
-    />
+  <!-- Printing out some information about what environment I am running in -->
+  <echo
+    level="info"
+    message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"
+  />
+  <echo
+    level="info"
+    message="Java: ${java.version} ('${java.home}');"
+  />
+  <echo
+    level="info"
+    message="JVM:  ${java.vm.name} ${java.vm.version};"
+  />
+  <echo
+    level="info"
+    message="Ant:  ${ant.version}."
+  />
 
-    <!-- Generating version number -->
-    <property file="${topdir}/build.number"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}"
-    />
-    <echo level="verbose" message="version.number=${version.number}"/>
-
-    <property name="init.avail" value="yes"/>
-  </target>
-
-  <target name="setup" depends="init">
-    <!-- Creating tasks -->
-    <taskdef
-      name="starr"
-      classname="scala.tools.ant.Scalac"
-      classpathref="starr.classpath"
-    />
-    <taskdef
-      name="starrtool"
-      classname="scala.tools.ant.ScalaTool"
-      classpathref="starr.classpath"
-    />
-    <taskdef
-      name="starrdoc"
-      classname="scala.tools.ant.Scaladoc"
-      classpathref="starr.classpath"
-    />
-    <taskdef
-      name="starrsbaz"
-      classname="scala.tools.ant.ScalaBazaar"
-      classpathref="starr.classpath"
-    />
-
-  </target>
+  <!-- Generating version number -->
+  <property file="${topdir}/build.number"/>
+  <property
+    name="version.number"
+    value="${version.major}.${version.minor}.${version.patch}"
+  />
+  <echo level="verbose" message="version.number=${version.number}"/>
 
 
-  <target name="build" depends="setup">
+  <!-- Creating tasks -->
+  <taskdef
+    name="starr"
+    classname="scala.tools.ant.Scalac"
+    classpathref="starr.classpath"
+  />
+  <taskdef
+    name="starrtool"
+    classname="scala.tools.ant.ScalaTool"
+    classpathref="starr.classpath"
+  />
+  <taskdef
+    name="starrdoc"
+    classname="scala.tools.ant.Scaladoc"
+    classpathref="starr.classpath"
+  />
+  <taskdef
+    name="starrsbaz"
+    classname="scala.tools.ant.ScalaBazaar"
+    classpathref="starr.classpath"
+  />
+
+  <macrodef name="emit">
+    <attribute name="command"/>
+    <sequential>
+      <mkdir dir="${tooldocs.dir}"/>
+      <java classname="scala.tools.docutil.EmitHtml"
+        output="${tooldocs.dir}/@{command}.html"
+        fork="false" logError="yes"
+        failonerror="true"
+      >
+        <arg value="scala.man1.@{command}"/>
+        <classpath>
+          <pathelement location="${build.manual.dir}"/>
+          <path refid="starr.classpath"/>
+        </classpath>
+      </java>
+      <java classname="scala.tools.docutil.EmitManPage"
+        output="${tooldocs.dir}/@{command}.1"
+        fork="false" logError="yes"
+        failonerror="true"
+      >
+        <arg value="scala.man1.@{command}"/>
+        <classpath>
+          <pathelement location="${build.manual.dir}"/>
+          <path refid="starr.classpath"/>
+        </classpath>
+      </java>
+    </sequential>
+  </macrodef>
+
+
+
+  <target name="build">
     <!-- Build library -->
     <mkdir dir="${build.lib.dir}"/>
     <javac
@@ -211,9 +219,6 @@
       target="${jc.target}"
       deprecation="${jc.deprecation}"
     >
-      <classpath>
-        <pathelement location="${build.lib.dir}"/> <!-- XXX ??? -->
-      </classpath>
       <include name="**/*.java"/>
     </javac>
     <starr
@@ -308,6 +313,9 @@
       file="${build.bin.dir}/${scala.exec.name}"
       version="${version.number}"
       copyright="${copyright}"
+      name="Scala code runner"
+      class="scala.tools.nsc.MainGenericRunner"
+      javaFlags="-Xmx256M -Xms16M"
     />
     <starrtool
       file="${build.bin.dir}/${scalac.exec.name}"
@@ -326,32 +334,18 @@
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
-    <starrtool
-      file="${build.bin.dir}/${scalaint.exec.name}"
-      name="Scala interpreter"
-      class="scala.tools.nsc.MainInterpreter"
-      version="${version.number}"
-      copyright="${copyright}"
-    />
-    <starrtool
-      file="${build.bin.dir}/scalascript"
-      name="Scala script runner"
-      class="scala.tools.nsc.MainScript"
-      version="${version.number}"
-      copyright="${copyright}"
-    />
   </target>
 
 
 
-  <target name="docs.lib" depends="setup">
+  <target name="docs.lib">
     <mkdir dir="${api.lib.dir}"/>
     <starrdoc
       srcdir="${src.dir}"
       destdir="${api.lib.dir}"
       sourcepath=""
       windowtitle="Scala Library Documentation"
-      documenttitle="&lt;div&gt;Scala 2&lt;div&gt;v${version.number}&lt;/div&gt;&lt;/div&gt;"
+      documenttitle="Scala 2v${version.number}"
     >
       <classpath>
         <pathelement location="${build.jar.dir}/${lib.jar.name}"/>
@@ -361,10 +355,31 @@
     </starrdoc>
   </target>
 
-  <target name="docs" depends="docs.lib"/>
+  <target name="docs.manual">
+    <mkdir dir="${build.manual.dir}"/>
+    <starr srcdir="${topdir}/src/manual" destdir="${build.manual.dir}">
+      <classpath>
+        <path refid="starr.classpath"/>
+      </classpath>
+    </starr>
+    <emit command="scala"/>
+    <emit command="scalac"/>
+    <emit command="scaladoc"/>
+    <emit command="scalap"/>
+    <copy todir="${tooldocs.dir}">
+      <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
+        <include name="**/*.html"/>
+        <include name="**/*.css"/>
+        <include name="**/*.gif"/>
+        <include name="**/*.png"/>
+      </fileset>
+    </copy>
+  </target>
+	
+  <target name="docs" depends="docs.lib, docs.manual"/>
 
   <target name="dist"
-    depends="build, docs.lib"
+    depends="build, docs"
   >
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
@@ -391,9 +406,10 @@
     >
       <binset dir="${build.bin.dir}" includes="**"/>
       <libset dir="${build.jar.dir}" includes="${comp.jar.name}"/>
-      <manset dir="${docs.dir}/man" includes="**"/>
+      <manset dir="${tooldocs.dir}" includes="*.1"/>
       <docset dir="${docs.dir}" includes="README,LICENSE"/>
       <docset dir="${api.lib.pdir}" includes="api/**"/>
+      <docset dir="${tooldocs.dir}" includes="*.html"/>
     </starrsbaz>
     <!-- Creates the empty umbrella Scala package -->
     <starrsbaz
