@@ -1,10 +1,8 @@
+package test
+class Lst[T]
+case class cons[T](x: T, xs: Lst[T]) extends Lst[T]
+case class nil[T] extends Lst[T]
 object test {
-
-  def f[a, b <: a](x: b): a = x: a;
-  def g[a >: b, b](x: b): a = x: a;
-
-  val x: int = f(1);
-  val y: String = g("")
-
+  Console.println(cons(1, nil()))
 }
 

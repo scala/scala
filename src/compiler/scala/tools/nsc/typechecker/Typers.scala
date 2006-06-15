@@ -383,7 +383,8 @@ trait Typers requires Analyzer {
       case mt: MethodType
       if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
-        if (!tree.symbol.isConstructor && pt != WildcardType && isCompatible(mt, pt) &&
+        if (!tree.symbol.isConstructor && pt != WildcardType &&
+            isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
             (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe);
@@ -391,7 +392,8 @@ trait Typers requires Analyzer {
         } else if (!tree.symbol.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else if (context.implicitsEnabled) {
-          if (settings.migrate.value && !tree.symbol.isConstructor && isCompatible(mt, pt))
+          if (settings.migrate.value && !tree.symbol.isConstructor &&
+              isCompatible(tparamsToWildcards(mt, context.undetparams), pt))
             errorTree(tree, migrateMsg + " method can be converted to function only if an expected function type is given");
           else
             errorTree(tree, "missing arguments for "+tree.symbol+tree.symbol.locationString+
@@ -452,11 +454,11 @@ trait Typers requires Analyzer {
                    adaptToName(tree, nme.apply).tpe.nonLocalMember(nme.apply)
                      .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
           typed(atPos(tree.pos)(Select(adaptToName(tree, nme.apply), nme.apply)), mode, pt)
-        } else if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
-            val tparams = context.undetparams
-            context.undetparams = List()
-            inferExprInstance(tree, tparams, pt)
-            adapt(tree, mode, pt)
+        } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
+          val tparams = context.undetparams
+          context.undetparams = List()
+          inferExprInstance(tree, tparams, pt)
+          adapt(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
           tree
         } else {
@@ -471,6 +473,12 @@ trait Typers requires Analyzer {
                   if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) // (12)
                     return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
                 case _ =>
+              }
+              if (!context.undetparams.isEmpty) {
+                val tparams = context.undetparams
+                context.undetparams = List()
+                inferExprInstance(tree, tparams, pt)
+                return adapt(tree, mode, pt)
               }
               if (context.implicitsEnabled && !tree.tpe.isError && !pt.isError) {
                 // (13); the condition prevents chains of views
@@ -1034,14 +1042,14 @@ trait Typers requires Analyzer {
           errorTree(tree, treeSymTypeMsg(fun)+" does not take type parameters.")
         }
 
-      def typedArg(arg: Tree, pt: Type): Tree = {
+      def typedArg(arg: Tree, pt: Type, polyMode: int): Tree = {
         val argTyper = if ((mode & SCCmode) != 0) newTyper(context.makeConstructorContext)
                        else this
-        argTyper.typed(arg, mode & stickyModes, pt)
+        argTyper.typed(arg, mode & stickyModes | polyMode, pt)
       }
 
       def typedArgs(args: List[Tree]) =
-        List.mapConserve(args)(arg => typedArg(arg, WildcardType))
+        List.mapConserve(args)(arg => typedArg(arg, WildcardType, 0))
 
       def typedApply(fun0: Tree, args: List[Tree]): Tree = {
         var fun = fun0;
@@ -1068,7 +1076,7 @@ trait Typers requires Analyzer {
               val tparams = context.undetparams
               context.undetparams = List()
               if (tparams.isEmpty) {
-                val args1 = List.map2(args, formals)(typedArg)
+                val args1 = List.map2(args, formals)((arg, formal) => typedArg(arg, formal, 0))
                 def ifPatternSkipFormals(tp: Type) = tp match {
                   case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
                   case _ => tp
@@ -1097,7 +1105,7 @@ trait Typers requires Analyzer {
                   if (targ == WildcardType) tparam.tpe else targ)
                 def typedArgToPoly(arg: Tree, formal: Type): Tree = {
                   val lenientPt = formal.subst(tparams, lenientTargs)
-                  val arg1 = typedArg(arg, lenientPt)
+                  val arg1 = typedArg(arg, lenientPt, POLYmode)
                   val argtparams = context.undetparams
                   context.undetparams = List()
                   if (!argtparams.isEmpty) {
@@ -1145,6 +1153,7 @@ trait Typers requires Analyzer {
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val reportGeneralErrors = context.reportGeneralErrors
+        val undetparams = context.undetparams
         try {
           context.reportGeneralErrors = false
           typedApply(fun, args)
@@ -1153,11 +1162,12 @@ trait Typers requires Analyzer {
             throw ex
           case ex: TypeError =>
             val Select(qual, name) = fun
-            val args1 = tryTypedArgs(args map UnTyper.apply)
+            context.undetparams = undetparams
+            val args1 = tryTypedArgs(args map (arg => UnTyper.apply(arg)))
             context.reportGeneralErrors = reportGeneralErrors
             val qual1 = if (args1 == null || pt.isError) qual
                         else adaptToMember(qual, name, MethodType(args1 map (.tpe), pt))
-            val tree1 = Apply(Select(qual1, name) setPos fun.pos, args map UnTyper.apply) setPos tree.pos
+            val tree1 = Apply(Select(qual1, name) setPos fun.pos, args map (arg => UnTyper.apply(arg))) setPos tree.pos
             typed1(tree1, mode | SNDTRYmode, pt)
         } finally {
           context.reportGeneralErrors = reportGeneralErrors
@@ -1513,12 +1523,16 @@ trait Typers requires Analyzer {
 
         case Typed(expr, Function(List(), EmptyTree)) =>
           val expr1 = typed1(expr, mode, pt);
-          expr1.tpe match {
+          if (isFunctionType(pt)) expr1
+          else expr1.tpe match {
+            case PolyType(_, MethodType(formals, _)) =>
+              adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
             case MethodType(formals, _) =>
               adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
             case ErrorType =>
               expr1
             case _ =>
+//              Console.println(expr1.tpe.isInstanceOf[PolyType])
               errorTree(expr1, "`&' must be applied to method type; cannot be applied to " + expr1.tpe)
           }
 
@@ -1674,12 +1688,12 @@ trait Typers requires Analyzer {
       try {
         if (settings.debug.value) {
           assert(pt != null, tree);//debug
-          //System.out.println("typing "+tree);//debug
         }
+        //System.out.println("typing "+tree+", "+context.undetparams);//DEBUG
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt)
-        //System.out.println("typed "+tree1+":"+tree1.tpe);//debug
+        //System.out.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
-        //System.out.println("adapted "+tree1+":"+tree1.tpe+" to "+pt);//debug
+        //System.out.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
         result
       } catch {
         case ex: TypeError =>
@@ -1751,8 +1765,11 @@ trait Typers requires Analyzer {
 */
     /* -- Views --------------------------------------------------------------- */
 
+    private def tparamsToWildcards(tp: Type, tparams: List[Symbol]) =
+      tp.subst(tparams, tparams map (t => WildcardType))
+
     private def depoly(tp: Type): Type = tp match {
-      case PolyType(tparams, restpe) => restpe.subst(tparams, tparams map (t => WildcardType))
+      case PolyType(tparams, restpe) => tparamsToWildcards(restpe, tparams)
       case _ => tp
     }
 
