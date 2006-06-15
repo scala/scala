@@ -27,19 +27,24 @@ object ObjectRunner {
       classpath: List[String],
       objectName: String,
       arguments: Seq[String]): Unit =
-  {
-    val classpathURLs = classpath.map(s => new File(s).toURL).toArray
-    val mainLoader = new URLClassLoader(classpathURLs, null)
-    val clsToRun = Class.forName(objectName, true, mainLoader)
+    try {
+      val classpathURLs = classpath.map(s => new File(s).toURL).toArray
+      val mainLoader = new URLClassLoader(classpathURLs, null)
+      val clsToRun = Class.forName(objectName, true, mainLoader)
 
-    val method = clsToRun.getMethods.find(isMainMethod) match {
-      case Some(meth) =>
-        meth
-      case None => {
-        throw new Error("no main method in object " + objectName)
+      val method = clsToRun.getMethods.find(isMainMethod) match {
+        case Some(meth) =>
+          meth
+        case None =>
+          throw new Error("no main method in object " + objectName)
       }
+      val res = method.invoke(null, List(arguments.toArray).toArray)
+      ()
+    } catch {
+      case e: Exception =>
+        // ClassNotFoundException, InvocationTargetException, ..
+        Console.println(e)
+        exit(1)
     }
-    val res = method.invoke(null, List(arguments.toArray).toArray)
-    ()
-  }
+
 }

@@ -45,7 +45,9 @@ object MainGenericRunner {
       case Some(thingToRun) =>
         val isObjectName =
           settings.howtorun.value match {
-            case "guess" => !(new File(thingToRun)).exists
+            case "guess" =>
+              val f = new File(thingToRun)
+              !f.exists || f.isDirectory
             case "object" => true
             case "script" => false
           }

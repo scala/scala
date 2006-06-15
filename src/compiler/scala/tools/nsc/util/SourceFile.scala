@@ -1,55 +1,58 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
 
+// $Id$
 
-package scala.tools.nsc.util;
+package scala.tools.nsc.util
 
 
-import scala.tools.nsc.io.{AbstractFile, CharArrayFile};
+import scala.tools.nsc.io.{AbstractFile, CharArrayFile}
 
 /** Uses positions that are offsets rather than line/column pairs.
  *
  *  @author Sean McDirmid
  */
 object SourceFile {
-  val LF : Char = 0x0A;
-  val FF : Char = 0x0C;
-  val CR : Char = 0x0D;
-  val SU : Char = 0x1A;
-  def isLineBreak(c : Char) = c == LF || c == FF || c == CR || c == SU;
+  val LF: Char = 0x0A
+  val FF: Char = 0x0C
+  val CR: Char = 0x0D
+  val SU: Char = 0x1A
+  def isLineBreak(c: Char) = c == LF || c == FF || c == CR || c == SU
 }
 
 
-class SourceFile(_file : AbstractFile, _content : Array[Char]) {
-  import SourceFile._;
+class SourceFile(_file: AbstractFile, _content: Array[Char]) {
+  import SourceFile._
 
   def this(_file: AbstractFile) = {
     this(_file, (new String(_file.read)).toCharArray)
   }
 
-  val file    = _file;
-  val content = normalize(_content);
+  val file    = _file
+  val content = normalize(_content)
 
-  def getContent() = content;
+  def getContent() = content
 
-  def getFile() = file;
+  def getFile() = file
 
-  def this(sourceName: String, content : Array[Char]) =
-    this(new CharArrayFile(sourceName, content), content);
+  def this(sourceName: String, content: Array[Char]) =
+    this(new CharArrayFile(sourceName, content), content)
 
-  def isLineBreak(idx : Int) = if (!SourceFile.isLineBreak(content(idx))) false;
-			       else if (content(idx) == CR && idx + 1 < content.length && content(idx + 1) == LF) false;
-			       else true;
+  def isLineBreak(idx: Int) =
+    if (!SourceFile.isLineBreak(content(idx))) false
+    else if (content(idx) == CR && idx + 1 < content.length && content(idx + 1) == LF) false;
+    else true
 
+  def position(offset: Int) =
+    new Position(this, offset)
 
-  def position(offset : Int) = new Position(this, offset);
-  def position(line : Int, column : Int) = new Position(this, lineToOffset(line) + column);
+  def position(line: Int, column: Int) =
+    new Position(this, lineToOffset(line) + column)
 
   /** Map a position to a position in the underlying source file.
     * For regular source files, simply return the argument. */
@@ -60,28 +63,26 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
   // NOTE: all indexes are based on zero!!!!
   override def toString(): String = file.name /* + ":" + content.length */ ;
 
-
-  def dbg(offset : Int) = (new Position(this, offset)).dbgString;
-
+  def dbg(offset: Int) = (new Position(this, offset)).dbgString
 
   object line {
-    var index  = 0;
-    var offset = 0;
+    var index  = 0
+    var offset = 0
 
-    def find(toFind : Int, isIndex : Boolean) : Int = {
-      if (toFind == 0) return 0;
+    def find(toFind: Int, isIndex: Boolean): Int = {
+      if (toFind == 0) return 0
 
-      if (!isIndex) assert(toFind != Position.NOPOS);
-      if ( isIndex) assert(toFind > Position.NOLINE - Position.FIRSTLINE);
+      if (!isIndex) assert(toFind != Position.NOPOS)
+      if ( isIndex) assert(toFind > Position.NOLINE - Position.FIRSTLINE)
 
       if (!isIndex && (toFind >= content.length))
         throw new Error(toFind + " not valid offset in " + file.name + ":" + content.length);
 
       def get(isIndex : Boolean) = if (isIndex) index else offset;
 
-      val isBackward = toFind <= get(isIndex);
-      val increment = if (isBackward) -1 else + 1;
-      val oneIfBackward = if (isBackward) +1 else 0;
+      val isBackward = toFind <= get(isIndex)
+      val increment = if (isBackward) -1 else + 1
+      val oneIfBackward = if (isBackward) +1 else 0
 
       // System.err.println("FIND-0: " + toFind + " " + isIndex);
 
@@ -102,42 +103,40 @@ class SourceFile(_file : AbstractFile, _content : Array[Char]) {
       throw new Error();
     }
   }
-  def offsetToLine(offset : Int) : Int = line.find(offset, false);
-  def lineToOffset(index  : Int) : Int = line.find(index , true);
+  def offsetToLine(offset: Int): Int = line.find(offset, false)
+  def lineToOffset(index : Int): Int = line.find(index , true)
 
-  def beginsWith(offset : Int, text : String): Boolean = {
-    var idx = 0;
+  def beginsWith(offset: Int, text: String): Boolean = {
+    var idx = 0
     while (idx < text.length()) {
-      if (offset + idx >= content.length) return false;
-      if (content(offset + idx) != text.charAt(idx)) return false;
-      idx = idx + 1;
+      if (offset + idx >= content.length) return false
+      if (content(offset + idx) != text.charAt(idx)) return false
+      idx = idx + 1
     }
-    return true;
+    return true
   }
-  def path = getFile().path;
+  def path = getFile().path
 
-  def skipWhitespace(offset : Int): Int =
+  def skipWhitespace(offset: Int): Int =
     if (Character.isWhitespace(content(offset))) skipWhitespace(offset + 1) else offset;
 
-
-  def lineToString(index : Int) = {
-    var offset = lineToOffset(index);
-    val buf = new StringBuffer();
+  def lineToString(index: Int): String = {
+    var offset = lineToOffset(index)
+    val buf = new StringBuffer()
     while (!isLineBreak(offset) && offset < content.length) {
-      buf.append(content(offset));
-      offset = offset + 1;
+      buf.append(content(offset))
+      offset = offset + 1
     }
-    buf.toString();
+    buf.toString()
   }
 
-
   private def normalize(input : Array[char]): Array[char] =
-    if (input.length > 0 && input(input.length - 1) == SU) input;
+    if (input.length > 0 && input(input.length - 1) == SU) input
     else {
-      val content = new Array[char](input.length + 1);
-      System.arraycopy(input, 0, content, 0, input.length);
-      content(input.length) = SU;
-      content;
+      val content = new Array[char](input.length + 1)
+      System.arraycopy(input, 0, content, 0, input.length)
+      content(input.length) = SU
+      content
     }
 }
 
