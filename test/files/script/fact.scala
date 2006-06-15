@@ -7,7 +7,7 @@ case "`uname`" in
     CYGWIN*) cygwin=true ;;
 esac
 
-SOURCE=$0;
+SOURCE="$0";
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
         format=mixed
@@ -17,7 +17,7 @@ if $cygwin; then
     SOURCE=`cygpath --$format "$SOURCE"`;
 fi
 
-exec scalascript $SOURCE "$@"
+exec scala "$SOURCE" "$@"
 !#
 
 
