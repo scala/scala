@@ -164,8 +164,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       replay
     else if (line.startsWith(":"))
       out.println("Unknown command.  Type :help for help.")
-    else if (line.startsWith("#!/")) // skip the first line of Unix scripts
-      ()
     else {
       if(interpreter.interpret(line))
         shouldReplay = true
@@ -173,18 +171,29 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     Pair(true, shouldReplay)
   }
 
-
-  /** process command-line arguments and do as they request */
-  def main(args: Array[String]): unit = {
-    def error1(msg: String): Unit = out.println("scalaint: " + msg)
-    val command = new InterpreterCommand(List.fromArray(args), error1)
-    settings = command.settings
+  def main(settings: Settings) = {
+    this.settings = settings
 
     uglinessxxx =
       new java.net.URLClassLoader(
                  settings.classpath.value.split(File.pathSeparator).
                          map(s => new File(s).toURL),
                  ClassLoader.getSystemClassLoader)
+
+    createInterpreter
+
+    try {
+      printHelp
+      repl
+    } finally {
+      closeInterpreter
+    }
+  }
+
+  /** process command-line arguments and do as they request */
+  def main(args: Array[String]): unit = {
+    def error1(msg: String): Unit = out.println("scalaint: " + msg)
+    val command = new InterpreterCommand(List.fromArray(args), error1)
 
     if (!command.ok || command.settings.help.value) {
       // either the command line is wrong, or the user
@@ -194,23 +203,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       return ()
     }
 
-    createInterpreter
-
-    try {
-      if (!command.files.isEmpty) {
-        interpreter.beQuiet
-        command.files match {
-          case List(filename) => interpretAllFrom(filename)
-          case _ => out.println(
-              "Sorry, arguments to interpreter scripts are not currently supported.")
-        }
-      } else {
-        printHelp
-        repl
-      }
-    } finally {
-      closeInterpreter
-    }
+    main(command.settings)
   }
-
 }
