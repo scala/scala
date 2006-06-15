@@ -1792,6 +1792,7 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def attribute(): Tree = {
       def nameValuePair(): Tree = {
+        accept(VAL);
         var pos = in.currentPos;
         val aname = atPos(pos) { Ident(ident()) }
         accept(EQUALS);
