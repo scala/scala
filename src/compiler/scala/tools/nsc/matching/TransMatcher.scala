@@ -215,13 +215,14 @@ with RightTracers {
 		isReg = true; // cause there are ArrayValues now
 		copy.Sequence(pat, trees map { isRegular1 });
 
-      case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
+      //case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
+	case Apply(fn, List(pat2, ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) =>
 	//Console.println("OPTIMIZING");
 	//Console.println(pat);
 	//Console.println(pat.tpe);
 	//Console.println(b.tpe);
-        b.symbol.setInfo(pat.tpe);
-		b.setType(pat.tpe);
+        b.symbol.setInfo(pat2.tpe);
+	b.setType(pat2.tpe);
         val res = copy.Bind(b, id, wc);
 	//Console.println("====>");
 	//Console.println(res);
@@ -249,7 +250,7 @@ with RightTracers {
       //  Console.println(pat);
       //  Console.println(pat.getClass());
       //  scala.Predef.error"( what is this ? ")
-	  }
+      }
 
 	   var res:List[CaseDef] = Nil;
 	   val it = pats.elements; while(it.hasNext) {
@@ -268,7 +269,7 @@ with RightTracers {
 		 res = copy.CaseDef(cdef, newt, cdef.guard, nbody) :: res;
 	   }
 	   Pair(res.reverse, existsReg);
-	}
+    }
 
 
 
