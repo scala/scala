@@ -10,21 +10,21 @@ import java.io.{BufferedReader, FileReader, File}
 import scala.tools.nsc.util._
 import scala.tools.nsc.io._
 
-/** A main routine to support putting Scala code into scripts.
+/** An object that runs Scala code in script files.
  *
- *  An shell script example on Unix would look like this:
+ *  For example, here is a complete Scala script on Unix:
  *
  *    #!/bin/sh
- *    exec scalascript "$0" "$@"
+ *    exec scala "$0" "$@"
  *    !#
  *    Console.println("Hello, world!")
  *    argv.toList foreach Console.println
  *
- * A batch file example on Windows XP would look like this:
+ * And here is a batch file example on Windows XP:
  *
  *    ::#!
  *    @echo off
- *    call scalascript %0 %*
+ *    call scala %0 %*
  *    goto :eof
  *    ::!#
  *    Console.println("Hello, world!")
