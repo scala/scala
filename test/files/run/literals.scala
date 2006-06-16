@@ -12,7 +12,7 @@ object Test {
   def \u03b1\u03c1\u03b5\u03c4\u03b7 = "alpha rho epsilon tau eta";
 
   case class GGG(i:int) {
-    def \u21a1\u21a1( that:GGG ) = that;
+    def \u03b1\u03b1( that:GGG ) = i+that.i;
   }
   def check_success[a](name: String, closure: => a, expected: a): Unit = {
     Console.print("test " + name);
@@ -126,10 +126,10 @@ object Test {
 
     Console.println;
     check_success("\"\".length()", "\u001a".length(), 1);
-/*
-    val ggg = GGG( 1 ) \u21a1\u21a1 GGG( 2 );
-    check_success("ggg == GGG( 2 )", ggg, GGG( 2 ));
-*/
+
+    val ggg = GGG( 1 ) \u03b1\u03b1 GGG( 2 );
+    check_success("ggg == 3", ggg, 3);
+
   }
 }
 
