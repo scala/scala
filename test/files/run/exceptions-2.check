@@ -22,6 +22,13 @@ java.lang.NullPointerException
 	at Test$.execute(exceptions-2.scala:157)
 	at Test$.main(exceptions-2.scala:180)
 	at Test.main(exceptions-2.scala)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at scala.tools.nsc.ObjectRunner$.run(ObjectRunner.scala:27)
+	at scala.tools.nsc.MainGenericRunner$.main(MainGenericRunner.scala:62)
+	at scala.tools.nsc.MainGenericRunner.main(MainGenericRunner.scala)
 tryFinallyTry:
 Silently ignore exception in finally
 valInFinally:
