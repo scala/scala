@@ -14,7 +14,7 @@ object CompileSocket {
   private val dirName = "scalac-compile-server-port"
 
   /** The vm-part of the command to start a new scala compile server */
-  private val vmCommand = "java"
+  private val vmCommand = "scala"
 
   /** The class name of the scala compile server */
   private val serverClass = "scala.tools.nsc.CompileServer"
@@ -112,10 +112,12 @@ object CompileSocket {
           case e: IOException =>
             System.err.println(e)
             System.err.println("...connection attempt to server at port "+port+" failed; re-trying...")
+            if (attempts % 2 == 0) portFile(port).delete()
+            Thread.sleep(100)
             getsock(attempts - 1)
         }
       }
-    getsock(3)
+    getsock(9)
   }
 
   def getSocket(serverAdr: String): Socket = {

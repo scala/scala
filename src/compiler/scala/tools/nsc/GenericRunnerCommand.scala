@@ -9,9 +9,8 @@ package scala.tools.nsc
 
 /** A command for ScriptRunner */
 class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
-  def this(allargs: List[String]) = this(allargs, str:String => {
-    Console.println("Error: " + str)
-  })
+  def this(allargs: List[String]) =
+    this(allargs, str => Console.println("Error: " + str))
 
   /** Settings specified by this command */
   val settings = new GenericRunnerSettings(error)

@@ -115,7 +115,7 @@ package scala.tools.ant {
     /** Sets the platforms attribute. Used by Ant.
       * @param input The value for <code>platforms</code>. */
     def setPlatforms(input: String) = {
-      platforms = List.fromArray(input.split(",")).flatMap(s: String => {
+      platforms = List.fromArray(input.split(",")).flatMap { s: String =>
         val st = s.trim()
         if (Platforms.isPermissible(st))
           (if (input != "") List(st) else Nil)
@@ -123,7 +123,7 @@ package scala.tools.ant {
           error("Platform " + st + " does not exist.")
           Nil
         }
-      })
+      }
     }
 
     /** Sets the version attribute. Used by Ant.
@@ -149,12 +149,12 @@ package scala.tools.ant {
     /** Sets the properties attribute. Used by Ant.
       * @param input The value for <code>properties</code>. */
     def setProperties(input: String) = {
-      properties = List.fromArray(input.split(",")).flatMap(s: String => {
+      properties = List.fromArray(input.split(",")).flatMap { s: String =>
         val st = s.trim(); val stArray = st.split("=", 2)
         if (stArray.length == 2) {
           if (input != "") List(Pair(stArray(0), stArray(1))) else Nil
         } else error("Property " + st + " does not conform to specification.")
-      })
+      }
     }
 
     /** Sets the version attribute. Used by Ant.

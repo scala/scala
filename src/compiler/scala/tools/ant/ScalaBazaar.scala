@@ -104,10 +104,10 @@ package scala.tools.ant {
     /** Sets the depends attribute. Used by Ant.
       * @param input The value for <code>depends</code>. */
     def setDepends(input: String) = {
-      depends = List.fromArray(input.split(",")).flatMap(s: String => {
+      depends = List.fromArray(input.split(",")).flatMap { s: String =>
         val st = s.trim()
         (if (st != "") List(st) else Nil)
-      })
+      }
     }
 
     /** Sets the description attribute of this package. Used by Ant.

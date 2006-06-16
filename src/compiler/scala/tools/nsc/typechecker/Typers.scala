@@ -352,7 +352,6 @@ trait Typers requires Analyzer {
      *  (13) When in mode EXPRmode, apply a view
      *  If all this fails, error
      */
-//    def adapt(tree: Tree, mode: int, pt: Type): Tree = {
     protected def adapt(tree: Tree, mode: int, pt: Type): Tree = tree.tpe match {
       case ct @ ConstantType(value) if ((mode & TYPEmode) == 0 && (ct <:< pt)) => // (0)
         copy.Literal(tree, value)
@@ -455,10 +454,7 @@ trait Typers requires Analyzer {
                      .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
           typed(atPos(tree.pos)(Select(adaptToName(tree, nme.apply), nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
-          val tparams = context.undetparams
-          context.undetparams = List()
-          inferExprInstance(tree, tparams, pt)
-          adapt(tree, mode, pt)
+          instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
           tree
         } else {
@@ -475,10 +471,7 @@ trait Typers requires Analyzer {
                 case _ =>
               }
               if (!context.undetparams.isEmpty) {
-                val tparams = context.undetparams
-                context.undetparams = List()
-                inferExprInstance(tree, tparams, pt)
-                return adapt(tree, mode, pt)
+                return instantiate(tree, mode, pt)
               }
               if (context.implicitsEnabled && !tree.tpe.isError && !pt.isError) {
                 // (13); the condition prevents chains of views
@@ -498,6 +491,13 @@ trait Typers requires Analyzer {
 //      System.out.println("adapt "+tree+":"+tree.tpe+", mode = "+mode+", pt = "+pt)
 //      adapt(tree, mode, pt)
 //    }
+
+    def instantiate(tree: Tree, mode: int, pt: Type): Tree = {
+      val tparams = context.undetparams
+      context.undetparams = List()
+      inferExprInstance(tree, tparams, pt)
+      adapt(tree, mode, pt)
+    }
 
     def adaptToMember(qual: Tree, name: Name, tp: Type): Tree = {
       val qtpe = qual.tpe.widen;

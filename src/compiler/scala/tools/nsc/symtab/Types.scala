@@ -886,7 +886,9 @@ trait Types requires SymbolTable {
       }
       val str = (pre.prefixString + sym.nameString +
                  (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
-      if (sym.isModuleClass) "<object "+str+">" else str
+      if (sym.isPackageClass) "package "+str
+      else if (sym.isModuleClass) "object "+str
+      else str
     }
 
     override def prefixString =
@@ -1818,7 +1820,7 @@ trait Types requires SymbolTable {
    *  @See glbList for more explanations.
    */
   private def glbArray(tss: List[Array[Type]]): Array[Type] = {
-    val tss1 = tss map (ts: Array[Type] => List.fromArray(ts));
+    val tss1 = tss map { ts: Array[Type] => List.fromArray(ts) }
     val glbs = glbList(tss1);
     val result = new Array[Type](glbs.length);
     var i = 0;
@@ -1846,7 +1848,7 @@ trait Types requires SymbolTable {
    *  of closures.
    *  @See lubList for more explanations. */
   private def lubArray(tss: List[Array[Type]]): Array[Type] = {
-    var lubs = lubList(tss map (ts: Array[Type] => List.fromArray(ts)));
+    var lubs = lubList(tss map { ts: Array[Type] => List.fromArray(ts) });
     var arr = new Array[Type](lubs.length);
     var i = 0;
     while (i < arr.length) {

@@ -27,8 +27,11 @@ object CompileServer extends SocketServer {
 
   val MaxCharge = 0.8
 
-  var compiler: Global = null
   var shutDown: boolean = false
+
+  private var compiler: Global = null
+  private var inSession: boolean = false
+  private var progress: boolean = false
 
   private def settingsAreCompatible(s1: Settings, s2: Settings) =
     s1.encoding.value == s2.encoding.value &&
@@ -45,19 +48,18 @@ object CompileServer extends SocketServer {
   }
 
   private def spawnWatchDog(): unit = spawn {
-    try {
-      while (true) {
-        Thread.sleep(10000)
-        if (!CompileSocket.portFile(port).exists()) {
-          System.err.println("port file no longer exists; exiting")
-          exit(1)
+    while (true) {
+      Thread.sleep(10000)
+      if (!CompileSocket.portFile(port).exists() && !inSession) {
+        progress = false
+        spawn {
+          Thread.sleep(10000)
+          if (!progress) {
+            System.err.println("port file no longer exists; exiting")
+            exit(1)
+          }
         }
       }
-    } catch {
-      case ex: Throwable =>
-        ex.printStackTrace()
-        System.err.println("exiting")
-        exit(1)
     }
   }
 
@@ -69,71 +71,77 @@ object CompileServer extends SocketServer {
                        ", free memory = "+runtime.freeMemory)
     val input = in.readLine()
     if (input != null) {
-      val args = StringOps.words(input)
-      if (args contains "-shutdown") {
-        out.println("[Scala compile server exited]")
-        shutDown = true
-        return
-      }
-      if (args contains "-reset") {
-        out.println("[Scala compile server was reset]")
-        compiler = null
-      }
-      val reporter = new ConsoleReporter(in, out) {
-        // disable prompts, so that compile server cannot block
-        override def displayPrompt = {}
-      }
-      def error(msg: String): unit =
-        reporter.error(new Position(PRODUCT),
-                       msg + "\n  " + PRODUCT + " -help  gives more information")
-      val command = new CompilerCommand(args, error, false) {
-        override val cmdName = "fsc"
-        settings.disable(settings.prompt)
-        settings.disable(settings.resident)
-        new settings.BooleanSetting("-reset", "Reset compile server caches")
-        new settings.BooleanSetting("-shutdown", "Shutdown compile server")
-        new settings.StringSetting("-server", "hostname:portnumber",
-                                   "Specify compile server socket", "")
-        new settings.BooleanSetting("-J<flag>", "Pass <flag> directly to runtime system")
-      }
-
-      reporter.prompt = command.settings.prompt.value;
-      if (command.settings.version.value)
-        reporter.info(null, versionMsg, true)
-      else if (command.settings.help.value)
-        reporter.info(null, command.usageMsg, true)
-      else if (command.files.isEmpty)
-        reporter.info(null, command.usageMsg, true)
-      else {
-        try {scala.tools.nsc.CompileServer
-          if (compiler != null && settingsAreCompatible(command.settings, compiler.settings)) {
-            compiler.settings = command.settings
-            compiler.reporter = reporter
-          } else {
-            if (args exists ("-verbose" ==))
-              out.println("[Starting new Scala compile server instance]")
-            compiler = new Global(command.settings, reporter) {
-              override def inform(msg: String) = out.println(msg)
-            }
-          }
-          val c = compiler
-          val run = new c.Run
-          run compile command.files
-        } catch {
-          case ex @ FatalError(msg) =>
-            if (command.settings.debug.value)
-              ex.printStackTrace(out);
-            reporter.error(null, "fatal error: " + msg)
-            compiler = null
-          case ex: Throwable =>
-            ex.printStackTrace(out);
-            reporter.error(null, "fatal error (server aborted): " + ex.getMessage())
-            shutDown = true
+      try {
+        inSession = true
+        progress = true
+        val args = StringOps.words(input)
+        if (args contains "-shutdown") {
+          out.println("[Scala compile server exited]")
+          shutDown = true
+          return
         }
-        reporter.printSummary()
-        runtime.gc()
-        if ((runtime.totalMemory() - runtime.freeMemory()).toDouble /
-            runtime.maxMemory().toDouble > MaxCharge) compiler = null
+        if (args contains "-reset") {
+          out.println("[Scala compile server was reset]")
+          compiler = null
+        }
+        val reporter = new ConsoleReporter(in, out) {
+          // disable prompts, so that compile server cannot block
+          override def displayPrompt = {}
+        }
+        def error(msg: String): unit =
+          reporter.error(new Position(PRODUCT),
+                         msg + "\n  " + PRODUCT + " -help  gives more information")
+        val command = new CompilerCommand(args, error, false) {
+          override val cmdName = "fsc"
+          settings.disable(settings.prompt)
+          settings.disable(settings.resident)
+          new settings.BooleanSetting("-reset", "Reset compile server caches")
+          new settings.BooleanSetting("-shutdown", "Shutdown compile server")
+          new settings.StringSetting("-server", "hostname:portnumber",
+                                     "Specify compile server socket", "")
+          new settings.BooleanSetting("-J<flag>", "Pass <flag> directly to runtime system")
+        }
+
+        reporter.prompt = command.settings.prompt.value;
+        if (command.settings.version.value)
+          reporter.info(null, versionMsg, true)
+        else if (command.settings.help.value)
+          reporter.info(null, command.usageMsg, true)
+        else if (command.files.isEmpty)
+          reporter.info(null, command.usageMsg, true)
+        else {
+          try {scala.tools.nsc.CompileServer
+            if (compiler != null && settingsAreCompatible(command.settings, compiler.settings)) {
+              compiler.settings = command.settings
+              compiler.reporter = reporter
+            } else {
+              if (args exists ("-verbose" ==))
+                out.println("[Starting new Scala compile server instance]")
+              compiler = new Global(command.settings, reporter) {
+                override def inform(msg: String) = out.println(msg)
+              }
+            }
+            val c = compiler
+            val run = new c.Run
+            run compile command.files
+          } catch {
+            case ex @ FatalError(msg) =>
+              if (command.settings.debug.value)
+                ex.printStackTrace(out);
+              reporter.error(null, "fatal error: " + msg)
+              compiler = null
+            case ex: Throwable =>
+              ex.printStackTrace(out);
+              reporter.error(null, "fatal error (server aborted): " + ex.getMessage())
+              shutDown = true
+          }
+          reporter.printSummary()
+          runtime.gc()
+          if ((runtime.totalMemory() - runtime.freeMemory()).toDouble /
+              runtime.maxMemory().toDouble > MaxCharge) compiler = null
+        }
+      } finally {
+        inSession = false
       }
     }
   }
