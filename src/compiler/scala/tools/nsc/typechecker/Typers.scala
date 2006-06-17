@@ -371,14 +371,12 @@ trait Typers requires Analyzer {
         context.undetparams = context.undetparams ::: tparams1
         adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
-        val tree1 =
-          if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
-            val tparams = context.undetparams
-            context.undetparams = List()
-            inferExprInstance(tree, tparams, pt)
-            adapt(tree, mode, pt)
-          } else tree
-        typed(applyImplicitArgs(tree1), mode, pt)
+        if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
+          val tparams = context.undetparams
+          context.undetparams = List()
+          inferExprInstance(tree, tparams, pt)
+          adapt(tree, mode, pt)
+        } else typed(applyImplicitArgs(tree), mode, pt)
       case mt: MethodType
       if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
