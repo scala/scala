@@ -103,6 +103,13 @@ abstract class LiftCode extends Transform {
         env.addTarget(name.toString(), sym)
         val res = reflect.Target(sym, reify(body))
         res
+
+      case vd @ ValDef(mods, name, tpt, rhs) =>
+        val rtpe = reify(vd.tpe) // will return null, currently?!
+        val sym  = reflect.LocalValue(currentOwner, name.toString(), rtpe)
+        val rhs_ = reify(rhs)
+        reflect.ValDef(sym, rhs_)
+
       case _ =>
         throw new TypeError("cannot reify tree: " + tree)
     }
@@ -173,6 +180,7 @@ abstract class LiftCode extends Transform {
       case reflect.MethodType(_, _) =>
         if (value.isInstanceOf[reflect.ImplicitMethodType]) "scala.reflect.ImplicitMethodType" else "scala.reflect.MethodType"
       case reflect.PolyType(_, _, _) => "scala.reflect.PolyType"
+      case x:reflect.ValDef => "scala.reflect.ValDef" // bq
       case _ =>
         ""
     }

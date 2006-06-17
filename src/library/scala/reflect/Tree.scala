@@ -27,3 +27,4 @@ case class If(condition: Tree, trueCase: Tree, falseCase: Tree) extends Tree;
 case class Assign(destination: Tree, source: Tree) extends Tree;
 case class Target(sym: LabelSymbol, body: Tree) extends Tree;
 case class Goto(target: LabelSymbol) extends Tree;
+case class ValDef(sym: Symbol, rhs: Tree) extends Tree;
