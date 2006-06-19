@@ -1,13 +1,14 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author
  */
 // $Id$
-package scala.tools.nsc.typechecker;
 
-import symtab.Flags._;
-import util.FreshNameCreator;
-import scala.collection.mutable.ListBuffer;
+package scala.tools.nsc.typechecker
+
+import symtab.Flags._
+import util.FreshNameCreator
+import scala.collection.mutable.ListBuffer
 
 /**
  *   - caseArity, caseElement implementations added to case classes
@@ -19,77 +20,83 @@ import scala.collection.mutable.ListBuffer;
  *       different from java.lang.Object
 */
 trait SyntheticMethods requires Analyzer {
-  import global._;                  // the global environment
-  import definitions._;             // standard classes and methods
-  import typer.{typed};             // methods to type trees
+  import global._                  // the global environment
+  import definitions._             // standard classes and methods
+  import typer.{typed}             // methods to type trees
 
   def addSyntheticMethods(templ: Template, clazz: Symbol, unit: CompilationUnit): Template = {
 
-    def hasImplementation(name: Name): boolean = {
-      val sym = clazz.info.nonPrivateMember(name);
+    def hasImplementation(name: Name): Boolean = {
+      val sym = clazz.info.nonPrivateMember(name)
       (sym.isTerm &&
        (sym.owner == clazz ||
         !(ObjectClass isSubClass sym.owner) && !(sym hasFlag DEFERRED)))
     }
 
-    def syntheticMethod(name: Name, flags: int, tpe: Type) =
-      newSyntheticMethod(name, flags | OVERRIDE, tpe);
+    def syntheticMethod(name: Name, flags: Int, tpe: Type) =
+      newSyntheticMethod(name, flags | OVERRIDE, tpe)
 
-    def newSyntheticMethod(name: Name, flags: int, tpe: Type) = {
-      val method = clazz.newMethod(clazz.pos, name) setFlag (flags) setInfo tpe;
-      clazz.info.decls.enter(method);
+    def newSyntheticMethod(name: Name, flags: Int, tpe: Type) = {
+      val method = clazz.newMethod(clazz.pos, name) setFlag (flags) setInfo tpe
+      clazz.info.decls.enter(method)
       method
     }
 
     def caseElementMethod: Tree = {
       val method = syntheticMethod(
-	nme.caseElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe));
-      val caseFields = clazz.caseFieldAccessors map gen.mkAttributedRef;
+        nme.caseElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe))
+      val caseFields = clazz.caseFieldAccessors map gen.mkAttributedRef
       typed(
-	DefDef(method, vparamss =>
-	  if (caseFields.isEmpty) Literal(Constant(null))
-	  else {
-	    var i = caseFields.length;
-	    var cases = List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(null))));
-	    for (val field <- caseFields.reverse) {
-	      i = i - 1; cases = CaseDef(Literal(Constant(i)), EmptyTree, field) :: cases
-	    }
-	    Match(Ident(vparamss.head.head), cases)
-	  }))
+        DefDef(method, vparamss =>
+          if (caseFields.isEmpty) Literal(Constant(null))
+          else {
+            var i = caseFields.length
+            var cases = List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(null))))
+            for (val field <- caseFields.reverse) {
+              i = i - 1; cases = CaseDef(Literal(Constant(i)), EmptyTree, field) :: cases
+            }
+            Match(Ident(vparamss.head.head), cases)
+          }))
     }
 
     def caseArityMethod: Tree = {
-      val method = syntheticMethod(nme.caseArity, FINAL, PolyType(List(), IntClass.tpe));
+      val method = syntheticMethod(nme.caseArity, FINAL, PolyType(List(), IntClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(clazz.caseFieldAccessors.length))))
     }
 
     def caseNameMethod: Tree = {
-      val method = syntheticMethod(nme.caseName, FINAL, PolyType(List(), StringClass.tpe));
+      val method = syntheticMethod(nme.caseName, FINAL, PolyType(List(), StringClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
     def moduleToStringMethod: Tree = {
-      val method = syntheticMethod(nme.toString_, FINAL, MethodType(List(), StringClass.tpe));
+      val method = syntheticMethod(nme.toString_, FINAL, MethodType(List(), StringClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
     def tagMethod: Tree = {
-      val method = syntheticMethod(nme.tag, FINAL, MethodType(List(), IntClass.tpe));
+      val method = syntheticMethod(nme.tag, FINAL, MethodType(List(), IntClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(clazz.tag))))
     }
 
     def forwardingMethod(name: Name): Tree = {
-      val target = getMember(ScalaRunTimeModule, "_" + name);
+      val target = getMember(ScalaRunTimeModule, "_" + name)
+      val paramtypes =
+        if (target.tpe.paramTypes.isEmpty) List()
+        else target.tpe.paramTypes.tail
       val method = syntheticMethod(
-	name, 0, MethodType(target.tpe.paramTypes.tail, target.tpe.resultType));
+        name, 0, MethodType(paramtypes, target.tpe.resultType))
       typed(DefDef(method, vparamss =>
-	Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))));
+        Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))
     }
 
     def equalsMethod: Tree = {
-      val target = getMember(ScalaRunTimeModule, nme._equals);
+      val target = getMember(ScalaRunTimeModule, nme._equals)
+      val paramtypes =
+        if (target.tpe.paramTypes.isEmpty) List()
+        else target.tpe.paramTypes.tail
       val method = syntheticMethod(
-       nme.equals_, 0, MethodType(target.tpe.paramTypes.tail, target.tpe.resultType));
+       nme.equals_, 0, MethodType(paramtypes, target.tpe.resultType))
       typed(DefDef(method, vparamss =>
         Apply(
           Select(
@@ -97,7 +104,7 @@ trait SyntheticMethods requires Analyzer {
               Select(Ident(vparamss.head.head), Any_isInstanceOf),
               List(TypeTree(clazz.tpe))),
             Boolean_and),
-	  List(
+          List(
             Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))));
     }
 
@@ -108,34 +115,34 @@ trait SyntheticMethods requires Analyzer {
       // !!! the synthetic method "readResolve" should be private,
       // but then it is renamed !!!
       val method = newSyntheticMethod(nme.readResolve, PROTECTED,
-                                      MethodType(List(), ObjectClass.tpe));
+                                      MethodType(List(), ObjectClass.tpe))
       typed(DefDef(method, vparamss => gen.mkAttributedRef(clazz.sourceModule)))
     }
 
     def newAccessorMethod(tree: Tree): Tree = tree match {
       case DefDef(_, _, _, _, _, rhs) =>
-        val newAcc = tree.symbol.cloneSymbol;
-        newAcc.name = unit.fresh.newName(""+tree.symbol.name+"$");
-        newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR);
-        newAcc.owner.info.decls enter newAcc;
-        val result = typed(DefDef(newAcc, vparamss => rhs.duplicate));
+        val newAcc = tree.symbol.cloneSymbol
+        newAcc.name = unit.fresh.newName("" + tree.symbol.name + "$")
+        newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR)
+        newAcc.owner.info.decls enter newAcc
+        val result = typed(DefDef(newAcc, vparamss => rhs.duplicate))
         log("new accessor method " + result)
         result
     }
 
     def beanSetterOrGetter(sym: Symbol): Symbol =
       if (!Character.isLetter(sym.name(0))) {
-        unit.error(sym.pos, "attribute `BeanProperty' can be applied only to fields that start with a letter");
+        unit.error(sym.pos, "attribute `BeanProperty' can be applied only to fields that start with a letter")
         NoSymbol
       } else {
-        var name0 = sym.name;
-        if (sym.isSetter) name0 = nme.setterToGetter(name0);
-        val prefix = if (sym.isSetter) "set" else "get";
-        val arity = if (sym.isSetter) 1 else 0;
-        val name1 = prefix + Character.toUpperCase(name0(0)) + name0.subName(1, name0.length);
-        val sym1 = clazz.info.decl(name1);
+        var name0 = sym.name
+        if (sym.isSetter) name0 = nme.setterToGetter(name0)
+        val prefix = if (sym.isSetter) "set" else "get"
+        val arity = if (sym.isSetter) 1 else 0
+        val name1 = prefix + Character.toUpperCase(name0(0)) + name0.subName(1, name0.length)
+        val sym1 = clazz.info.decl(name1)
         if (sym1 != NoSymbol && sym1.tpe.paramTypes.length == arity) {
-          unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz);
+          unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz)
           NoSymbol
         } else {
           clazz.newMethod(sym.pos, name1)
@@ -144,10 +151,10 @@ trait SyntheticMethods requires Analyzer {
         }
       }
 
-    val ts = new ListBuffer[Tree];
+    val ts = new ListBuffer[Tree]
 
     def addBeanGetterMethod(sym: Symbol) = {
-      val getter = beanSetterOrGetter(sym);
+      val getter = beanSetterOrGetter(sym)
       if (getter != NoSymbol)
         ts += typed(DefDef(
           getter,
@@ -155,7 +162,7 @@ trait SyntheticMethods requires Analyzer {
     }
 
     def addBeanSetterMethod(sym: Symbol) = {
-      val setter = beanSetterOrGetter(sym);
+      val setter = beanSetterOrGetter(sym)
       if (setter != NoSymbol)
         ts += typed(DefDef(
           setter,
@@ -168,34 +175,34 @@ trait SyntheticMethods requires Analyzer {
 
       if (clazz hasFlag CASE) {
         // case classes are implicitly declared serializable
-        clazz.attributes = Triple(SerializableAttr.tpe, List(), List()) :: clazz.attributes;
+        clazz.attributes = Triple(SerializableAttr.tpe, List(), List()) :: clazz.attributes
 
         for (val stat <- templ.body) {
           if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) &&
               (stat.symbol.hasFlag(PRIVATE | PROTECTED) || stat.symbol.privateWithin != NoSymbol)) {
-                ts += newAccessorMethod(stat);
+                ts += newAccessorMethod(stat)
                 stat.symbol.resetFlag(CASEACCESSOR)
               }
         }
 
-        ts += tagMethod;
+        ts += tagMethod
         if (clazz.isModuleClass) {
-	  if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod;
+          if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod
         } else {
-	  if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_);
-	  if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_);
-          if (!hasImplementation(nme.equals_)) ts += equalsMethod //forwardingMethod(nme.equals_);
+          if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_)
+          if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_)
+          if (!hasImplementation(nme.equals_)) ts += equalsMethod //forwardingMethod(nme.equals_)
         }
-        if (!hasImplementation(nme.caseElement)) ts += caseElementMethod;
-        if (!hasImplementation(nme.caseArity)) ts += caseArityMethod;
-        if (!hasImplementation(nme.caseName)) ts += caseNameMethod;
+        if (!hasImplementation(nme.caseElement)) ts += caseElementMethod
+        if (!hasImplementation(nme.caseArity)) ts += caseArityMethod
+        if (!hasImplementation(nme.caseName)) ts += caseNameMethod
       }
       if (clazz.isModuleClass && isSerializable(clazz)) {
         // If you serialize a singleton and then deserialize it twice,
         // you will have two instances of your singleton, unless you implement
         // the readResolve() method (see http://www.javaworld.com/javaworld/
         // jw-04-2003/jw-0425-designpatterns_p.html)
-        if (!hasImplementation(nme.readResolve)) ts += readResolveMethod;
+        if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
       }
       if (!forCLDC)
         for (val sym <- clazz.info.decls.toList)
@@ -205,9 +212,9 @@ trait SyntheticMethods requires Analyzer {
             else if (sym.isSetter)
               addBeanSetterMethod(sym)
             else if (sym.isMethod || sym.isType)
-              unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym);
+              unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym)
     }
-    val synthetics = ts.toList;
+    val synthetics = ts.toList
     copy.Template(
       templ, templ.parents, if (synthetics.isEmpty) templ.body else templ.body ::: synthetics)
   }
