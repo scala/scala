@@ -166,13 +166,12 @@ with RightTracers {
   };
 
   // @todo: this should be isNotRegular :-/ premature opt src of all evil
-  // check special case Seq(_,...,_,_*)
+  // check special case Seq(p1,...,pk,_*) where pi not regular
   protected def isRightIgnoring(p:ArrayValue): Boolean = p match {
     case ArrayValue(s,trees) =>
       val it = trees.elements;
       var c: Tree = null;
-      while(it.hasNext && {c = it.next; //Console.println("isReg?("+c+" = "+isRegularPattern(c)); // DEBUG
-!isRegularPattern(c)}) {}
+      while(it.hasNext && {c = it.next; !isRegularPattern(c)}) {}
       (!it.hasNext) && isDefaultStar(c)
   }
 

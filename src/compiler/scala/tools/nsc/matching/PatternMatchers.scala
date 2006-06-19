@@ -42,7 +42,6 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
 
   protected var optimize = true;
-  protected var delegateSequenceMatching = false;
   protected var doBinding = true;
 
   /** the owner of the pattern matching expression
@@ -155,34 +154,22 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     val res = tree match {
       case Bind(_, pat) =>
         patternArgs(pat);
-      case a @ Apply(_, args) =>
-        //Console.println(" isSeqApply? "+isSeqApply(a));
-        //Console.println(" isExtendedSeqApply? "+isExtendedSeqApply(a));
 
-        if ( isSeqApply( a )  && !delegateSequenceMatching)
-          args(0) match {
-            case av @ ArrayValue(_, ts) => // test array values
-              if(isRightIgnoring(av)) {
-                //Console.println(" is RIGHT IGNORING");
-                ts.reverse.drop(1).reverse
-              } else {
-                //Console.println(" is N O T  RIGHT IGNORING");
-                ts;
-              }
-            //case Sequence(ts) =>
-            //  ts;
-            case _ =>
-              args;
-          }
-        else args
-      // Sequence nodes should not appear here anymore, they are ArrayValue now
-      //case Sequence(ts) if (!delegateSequenceMatching) =>
-      //  ts;
-      case av @ ArrayValue(_, ts) => // test array values
-        if(isRightIgnoring(av))
-          ts.reverse.drop(1).reverse
-        else
-          ts;
+      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isRightIgnoring(av) =>
+	ts.reverse.drop(1).reverse
+
+      case a @ Apply(_, List(av @ ArrayValue(_, ts))) =>
+	ts
+
+      case a @ Apply(_, args) =>
+        args;
+
+      case av @ ArrayValue(_, ts) if isRightIgnoring(av) =>
+        ts.reverse.drop(1).reverse
+
+      case av @ ArrayValue(_, ts) =>
+        ts;
+
       case _ =>
         List();
     }
@@ -269,10 +256,8 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
       case t @ Apply(fn, args) =>             // pattern with args
         //Console.println("Apply node: "+t);
         //Console.println("isSeqApply "+isSeqApply(t));
-        //Console.println("delegateSequenceMatching "+delegateSequenceMatching);
         if (isSeqApply(t)) {
-          if (!delegateSequenceMatching) {
-            args(0) match {
+          args(0) match {
             //  case Sequence(ts)=>
               case av @ ArrayValue(_, ts)=>
                 if(isRightIgnoring(av)) {
@@ -285,29 +270,21 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
                 } else
                   //Console.println(av.toString()+" IS  N O T  RIGHTIGNORING");
                   pSequencePat(tree.pos, tree.tpe, ts.length);
-                 }
-          } else {
-            //Console.println("delegating ... ");
-            val res = pConstrPat(tree.pos, tree.tpe);
-            res.and = pHeader(tree.pos, header.getTpe(), header.selector);
-            //res.and.and = pSeqContainerPat(tree.pos, tree.tpe, args(0));
-            res.and.and = pSeqContainerPat(tree.pos, tree.tpe, Sequence(args(0).asInstanceOf[ArrayValue].elems));
-            res;
           }
-        } else if ((fn.symbol != null) &&
+	} else if ((fn.symbol != null) &&
                    fn.symbol.isStable &&
                    !(fn.symbol.isModule &&
                      ((fn.symbol.flags & Flags.CASE) != 0))) {
                        pVariablePat(tree.pos, tree);
                      }
-           else {
+          else {
              /*
             Console.println("apply but not seqApply");
             Console.println("tree.tpe="+tree.tpe);
             Console.println("tree.symbol="+tree.symbol);
              */
              pConstrPat(tree.pos, tree.tpe);
-           }
+          }
       case Typed(Ident( nme.WILDCARD ), tpe) => // x@_:Type
         val doTest = isSubType(header.getTpe(),tpe.tpe);
           if(doTest)
@@ -391,13 +368,10 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
           pRightIgnoringSequencePat(tree.pos, tree.tpe, castedRest, ts.length-1);
         } else {
           //Console.println("array value "+av+" is not considered right ignoring")
-          if ( !delegateSequenceMatching ) {
-            //lastSequencePat =
-            pSequencePat(tree.pos, tree.tpe, ts.length);
-            //lastSequencePat
-          } else {
-            pSeqContainerPat(tree.pos, tree.tpe, tree);
-          }
+          //lastSequencePat =
+          pSequencePat(tree.pos, tree.tpe, ts.length);
+          //lastSequencePat
+
         }
       case Alternative(ts) =>
         if(ts.length < 2)
