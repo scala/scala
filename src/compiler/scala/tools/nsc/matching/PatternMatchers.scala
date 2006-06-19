@@ -155,10 +155,10 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
       case Bind(_, pat) =>
         patternArgs(pat);
 
-      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isRightIgnoring(av) =>
+      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) && isRightIgnoring(av) =>
 	ts.reverse.drop(1).reverse
 
-      case a @ Apply(_, List(av @ ArrayValue(_, ts))) =>
+      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) =>
 	ts
 
       case a @ Apply(_, args) =>
