@@ -221,8 +221,11 @@ with RightTracers {
 	//Console.println(pat);
 	//Console.println(pat.tpe);
 	//Console.println(b.tpe);
-        b.symbol.setInfo(pat2.tpe);
-	b.setType(pat2.tpe);
+	  val tpe1:Type = pat2.tpe.widen.baseType( definitions.SeqClass ).typeArgs(0);
+
+	  val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
+        b.symbol.setInfo(tpe);
+	b.setType(tpe);
         val res = copy.Bind(b, id, wc);
 	//Console.println("====>");
 	//Console.println(res);
