@@ -38,6 +38,7 @@ where possible options include:
   -help                           Print a synopsis of standard options
   -Xinline                        Perform inlining when possible
   -Xcloselim                      Perform closure elimination
+  -Xdce                           Perform dead code elimination
   -Xshowcls <class>               Show class info
   -Xshowobj <object>              Show object info
   -Xshowicode                     Print the generated ICode
