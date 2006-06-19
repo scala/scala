@@ -20,7 +20,6 @@ trait AlgebraicMatchers  requires TransMatcher {
 
   var _m: PartialMatcher = _;
 
-  /*override protected var*/ delegateSequenceMatching = true;
   /*override protected var*/ optimize = false;
 
   /** constructs an algebraic pattern matcher from cases */
