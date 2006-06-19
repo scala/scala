@@ -34,9 +34,9 @@ SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 
 # Constructing the extension classpath
 EXTENSION_CLASSPATH="@extclasspath@"
-if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+if [ -z "$EXTENSION_CLASSPATH" ] ; then
     for ext in `ls -L "$SCALA_HOME"/lib/*` ; do
-        if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+        if [ -z "$EXTENSION_CLASSPATH" ] ; then
             EXTENSION_CLASSPATH="$ext"
         else
             EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$ext"
@@ -46,7 +46,7 @@ fi
 
 # Setting the boot class-path to be the standard library (either as a JAR or a folder)
 BOOT_CLASSPATH="@bootclasspath@"
-if [ "$BOOT_CLASSPATH" = "" ] ; then
+if [ -z "$BOOT_CLASSPATH" ] ; then
     if [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
         BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
     elif [ -d "$SCALA_HOME/lib/library" ] ; then

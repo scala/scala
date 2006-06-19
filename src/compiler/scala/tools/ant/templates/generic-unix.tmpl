@@ -49,7 +49,7 @@ USER_ARGS=""
 # Step 1: Class-path set to default value "."
 USER_CLASSPATH="."
 # Step 2: Class-path overridden to value of "CLASSPATH" environment variable
-if [ "$CLASSPATH" != "" ] ; then
+if [ -n "$CLASSPATH" ] ; then
       USER_CLASSPATH="$CLASSPATH"
 fi
 # Step 3: Class-path overridden to value of "-classpath" script parameter 
@@ -70,9 +70,9 @@ done
 
 # Constructing the extension classpath
 EXTENSION_CLASSPATH="@extclasspath@"
-if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+if [ -z "$EXTENSION_CLASSPATH" ] ; then
     for ext in `ls -L "$SCALA_HOME"/lib/*` ; do
-        if [ "$EXTENSION_CLASSPATH" = "" ] ; then
+        if [ -z "$EXTENSION_CLASSPATH" ] ; then
             EXTENSION_CLASSPATH="$ext"
         else
             EXTENSION_CLASSPATH="$EXTENSION_CLASSPATH:$ext"
@@ -82,7 +82,7 @@ fi
 
 # Setting the boot class-path to be the standard library (either as a JAR or a folder)
 BOOT_CLASSPATH="@bootclasspath@"
-if [ "$BOOT_CLASSPATH" = "" ] ; then
+if [ -z "$BOOT_CLASSPATH" ] ; then
     if [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
         BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
     elif [ -d "$SCALA_HOME/lib/library" ] ; then
