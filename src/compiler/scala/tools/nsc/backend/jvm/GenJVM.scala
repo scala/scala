@@ -338,7 +338,7 @@ abstract class GenJVM extends SubComponent {
       if (m.symbol.hasFlag(Flags.BRIDGE))
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
                                                          new Array[Byte](0)));
-      if (remoteClass || (m.symbol.attributes contains Pair(RemoteAttr, Nil)))
+      if (remoteClass || (m.symbol.attributes contains Triple(RemoteAttr, Nil, Nil)))
         if (jmethod.isPublic()) {
           // (see http://java.sun.com/docs/books/vmspec/html/ClassFile.doc.html#3129)
           // Exceptions_attribute {
