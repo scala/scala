@@ -43,7 +43,7 @@ where possible options include:
   -Xshowobj <object>              Show object info
   -Xshowicode                     Print the generated ICode
   -Xgadt                          enable gadt for classes
-  -Xlinearizer:<Xlinearizer>      Linearizer to use (normal,dfs,rpo)
+  -Xlinearizer:<Xlinearizer>      Linearizer to use (normal,dfs,rpo,dump)
   -Xgenerics                      Use generic Java types
 
 
@@ -55,7 +55,7 @@ Type :load followed by a filename to load a sequence of interpreter commands.
 Type :replay to reset execution and replay all previous commands.
 Type :help to repeat this message later.
 
-scala> 1: test 1 passed
+scala> 1: test 1 passed (1)
 line0: scala.Unit = ()
 
 scala> 

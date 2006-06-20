@@ -44,7 +44,7 @@ where possible options include:
   -Xshowobj <object>              Show object info
   -Xshowicode                     Print the generated ICode
   -Xgadt                          enable gadt for classes
-  -Xlinearizer:<Xlinearizer>      Linearizer to use (normal,dfs,rpo)
+  -Xlinearizer:<Xlinearizer>      Linearizer to use (normal,dfs,rpo,dump)
   -Xgenerics                      Use generic Java types
 
 one error found

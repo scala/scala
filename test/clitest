@@ -225,8 +225,8 @@ test_interpret() {
     printf "\\n" >> $LOG_FILE  # newline
 
     printf "Interpret $main with variable CLASSPATH\\n"
-    test_run "(env CLASSPATH=$OUTPUT_DIR \
-        printf $main'.main(Array(\"1\"))\n:q' | $INTERPRETER_COMMAND \
+    test_run "(printf $main'.main(Array(\"1\"))\n:q' \
+        | env CLASSPATH=$OUTPUT_DIR $INTERPRETER_COMMAND \
         2>> $LOG_FILE 1>> $LOG_FILE)";
     printf "\\n" >> $LOG_FILE  # newline
 
