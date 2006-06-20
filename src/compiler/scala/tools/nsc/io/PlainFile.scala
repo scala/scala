@@ -83,7 +83,7 @@ class PlainFile(val file: File) extends AbstractFile {
     assert(isDirectory, "not a directory '" + this + "'");
     val names: Array[String] = file.list();
     if (names == null || names.length == 0) Iterator.empty;
-    else Iterator.fromArray(names).map(name: String => new File(file, name))
+    else Iterator.fromArray(names).map { name: String => new File(file, name) }
       .filter(.exists()).map(file => new PlainFile(file))
   }
 

@@ -14,7 +14,7 @@ object CompileSocket {
   private val dirName = "scalac-compile-server-port"
 
   /** The vm-part of the command to start a new scala compile server */
-  private val vmCommand = "scala"
+  private val vmCommand = "java"
 
   /** The class name of the scala compile server */
   private val serverClass = "scala.tools.nsc.CompileServer"

@@ -106,7 +106,7 @@ trait HashTable[A] extends AnyRef {
         }
     }
 
-    private def entryFor(key: A) = (e: Entry => elemEquals(entryKey(e), key));
+    private def entryFor(key: A) = { e: Entry => elemEquals(entryKey(e), key) }
 
     protected def initTable(tb: Array[List[Entry]]): Unit = {
         var i = tb.length - 1;

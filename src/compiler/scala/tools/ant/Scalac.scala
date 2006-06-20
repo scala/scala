@@ -255,7 +255,7 @@ package scala.tools.ant {
     /** Sets the log attribute. Used by Ant.
       * @param input The value for <code>logPhase</code>. */
     def setLogPhase(input: String) = {
-      logPhase = List.fromArray(input.split(",")).flatMap(s: String => {
+      logPhase = List.fromArray(input.split(",")).flatMap { s: String =>
         val st = s.trim()
         if (CompilerPhase.isPermissible(st))
           (if (input != "") List(st) else Nil)
@@ -263,7 +263,7 @@ package scala.tools.ant {
           error("Phase " + st + " in log does not exist.")
           Nil
         }
-      })
+      }
     }
 
     /** Sets the use predefs attribute. Used by Ant.
@@ -479,7 +479,7 @@ package scala.tools.ant {
       // Compiles the actual code
       val compiler = new Global(settings, reporter)
       try {
-        (new compiler.Run).compile(sourceFiles.map(f:File=>f.toString()))
+        (new compiler.Run).compile(sourceFiles.map { f:File=>f.toString() })
        } catch {
         case exception: Throwable if (exception.getMessage != null) =>
           exception.printStackTrace()

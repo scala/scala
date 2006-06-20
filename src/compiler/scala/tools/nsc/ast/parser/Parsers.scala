@@ -608,9 +608,9 @@ trait Parsers requires SyntaxAnalyzer {
       ts.toList
     }
 
-    /** Expr       ::= Bindings `=>' Expr
+    /** Expr       ::= (Bindings | Id)  `=>' Expr
      *               | Expr1
-     *  ResultExpr ::= Bindings `=>' Block
+     *  ResultExpr ::= (Bindings | Id `:' Type1) `=>' Block
      *               | Expr1
      *  Expr1      ::= if (' Expr `)' [NewLine] Expr [[`;'] else Expr]
      *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
@@ -625,8 +625,7 @@ trait Parsers requires SyntaxAnalyzer {
      *               | PostfixExpr [`:' Type1]
      *               | PostfixExpr match `{' CaseClauses `}'
      *               | MethodClosure
-     *  Bindings   ::= Id [`:' Type1]
-     *               | `(' [Binding {`,' Binding}] `)'
+     *  Bindings   ::= `(' [Binding {`,' Binding}] `)'
      *  Binding    ::= Id [`:' Type]
      */
     def expr(): Tree =
@@ -726,7 +725,19 @@ trait Parsers requires SyntaxAnalyzer {
               syntaxError(in.currentPos, "`*' expected", true);
             }
           } else {
-            t = atPos(pos) { Typed(t, type1()) }
+            t = atPos(pos) { Typed(t, if (isInBlock) type1() else typ()) }
+            if (isInBlock && in.token == COMMA) {
+              val vdefs = new ListBuffer[ValDef];
+              while (in.token == COMMA) {
+                in.nextToken();
+                vdefs += ValDef(Modifiers(Flags.PARAM), ident(), typedOpt(), EmptyTree)
+              }
+              if (in.token == ARROW) {
+                t = atPos(in.skipToken()) {
+                  Function(convertToParams(t) ::: vdefs.toList, block())
+                }
+              } else syntaxError(in.currentPos, "`=>' expected", true)
+            }
           }
         } else if (in.token == MATCH) {
           t = atPos(in.skipToken()) {

@@ -390,7 +390,7 @@ package scala.tools.ant {
       object compiler extends Global(settings, reporter)
       try {
         val run = new compiler.Run
-        run.compile(sourceFiles.map(f: File => f.toString()))
+        run.compile(sourceFiles.map { f: File => f.toString() })
         object generator extends DocGenerator {
           val global = compiler
           def outdir = settings.outdir.value
