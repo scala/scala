@@ -111,8 +111,7 @@ object Test {
     }
   } catch {
     case npe: NullPointerException =>
-      Console.println("Exception occurred with stack trace:");
-      npe.printStackTrace();
+      Console.println("Cought an NPE");
   }
 
   def withValue1: Unit = {

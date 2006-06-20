@@ -436,15 +436,15 @@ abstract class GenICode extends SubComponent  {
               case Typed(Ident(nme.WILDCARD), tpt) => Pair(tpt.tpe.symbol, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(tpt.tpe.symbol)));
-                  val ctx1 = genLoad(finalizer, ctx, UNIT);
-                  genLoad(body, ctx1, kind);
+                  val ctx1 = genLoad(body, ctx, kind);
+                  genLoad(finalizer, ctx1, UNIT);
                 })
 
               case Ident(nme.WILDCARD) => Pair(definitions.ThrowableClass, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(definitions.ThrowableClass)));
-                  val ctx1 = genLoad(finalizer, ctx, UNIT);
-                  genLoad(body, ctx1, kind)
+                  val ctx1 = genLoad(body, ctx, kind);
+                  genLoad(finalizer, ctx1, UNIT);
                 })
 
               case Bind(name, _) =>
@@ -454,8 +454,8 @@ abstract class GenICode extends SubComponent  {
                 Pair(pat.symbol.tpe.symbol, {
                      ctx: Context =>
                        ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
-                       val ctx1 = genLoad(finalizer, ctx, UNIT);
-                       genLoad(body, ctx1, kind)
+                       val ctx1 = genLoad(body, ctx, kind);
+                       genLoad(finalizer, ctx1, UNIT);
                      })
             }
 
