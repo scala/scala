@@ -79,7 +79,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     Test1.run
     Test2.run
-    Test3.run
-    Test4.run
+    //Test3.run     // requires the use of -target:jvm-1.5
+    //Test4.run
   }
 }

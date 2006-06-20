@@ -1,4 +1,2 @@
 class java.rmi.RemoteException
 class java.io.IOException
-@java.lang.Deprecated()
-@test.Source(url=http://scala.epfl.ch, mail=scala@lists.epfl.ch)
