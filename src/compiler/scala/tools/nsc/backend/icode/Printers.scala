@@ -108,6 +108,7 @@ abstract class Printers {
     def printExceptionHandler(e: ExceptionHandler) = {
       indent;
       println("catch (" + e.cls.simpleName + ") in " + e.covered + " starting at: " + e.startBlock);
+      println("consisting of blocks: " + e.blocks);
       undent;
       println("with finalizer: " + e.finalizer);
 //      linearizer.linearize(e.startBlock) foreach printBlock;

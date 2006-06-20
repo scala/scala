@@ -38,6 +38,8 @@ abstract class ICodes extends AnyRef
       new DepthFirstLinerizer();
     else if (global.settings.Xlinearizer.value == "normal")
       new NormalLinearizer();
+    else if (global.settings.Xlinearizer.value == "dump")
+      new DumpLinearizer();
     else
       global.abort("Unknown linearizer: " + global.settings.Xlinearizer.value);
 

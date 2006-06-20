@@ -1378,6 +1378,7 @@ abstract class GenICode extends SubComponent  {
             method.code.removeBlock(block);
             for (val e <- method.exh) {
               e.covered = e.covered filter (.!=(block))
+              e.blocks  = e.blocks filter (.!=(block))
               if (e.startBlock eq block)
                 e setStartBlock cont;
             }
@@ -1450,6 +1451,9 @@ abstract class GenICode extends SubComponent  {
       /** The current monitors, if inside synchronized blocks. */
       var monitors: List[Local] = Nil;
 
+      /** The current exception handler, when we generate code for one. */
+      var currentExceptionHandler: Option[ExceptionHandler] = None;
+
       var handlerCount = 0;
 
       override def toString(): String = {
@@ -1476,6 +1480,7 @@ abstract class GenICode extends SubComponent  {
         this.handlers = other.handlers;
         this.handlerCount = other.handlerCount;
         this.monitors = other.monitors;
+        this.currentExceptionHandler = other.currentExceptionHandler;
       }
 
       def setPackage(p: Name): this.type = {
@@ -1523,12 +1528,18 @@ abstract class GenICode extends SubComponent  {
       /** Return a new context for a new basic block. */
       def newBlock: Context = {
         val block = method.code.newBlock;
-        handlers foreach (h => h addBlock block);
+        handlers foreach (h => h addCoveredBlock block);
+        currentExceptionHandler match {
+          case Some(e) => e.addBlock(block)
+          case None    => ()
+        }
         new Context(this) setBasicBlock block;
       }
 
       /** Create a new exception handler and adds it in the list
-       * of current exception handlers.
+       * of current exception handlers. All new blocks will be
+       * 'covered' by this exception handler (in addition to the
+       * previously active handlers).
        */
       def newHandler(cls: Symbol): ExceptionHandler = {
         handlerCount = handlerCount + 1;
@@ -1545,12 +1556,14 @@ abstract class GenICode extends SubComponent  {
        * exception handler.
        */
       def enterHandler(exh: ExceptionHandler): Context = {
+        currentExceptionHandler = Some(exh);
         val ctx = newBlock;
         exh.setStartBlock(ctx.bb);
         ctx
       }
 
-      def exitHandler(exh: ExceptionHandler): Unit = {
+      /** Remove the given handler from the list of active exception handlers. */
+      def removeHandler(exh: ExceptionHandler): Unit = {
         assert(handlerCount > 0 && handlers.head == exh,
                "Wrong nesting of exception handlers." + this + " for " + exh);
         handlerCount = handlerCount - 1;
@@ -1599,7 +1612,7 @@ abstract class GenICode extends SubComponent  {
         outerCtx.bb.emit(JUMP(bodyCtx.bb));
         outerCtx.bb.close;
 
-        exhs.reverse foreach finalCtx.exitHandler;
+        exhs.reverse foreach finalCtx.removeHandler;
 
         finalCtx.bb.emit(JUMP(afterCtx.bb));
         finalCtx.bb.close;
