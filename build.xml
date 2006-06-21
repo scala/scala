@@ -53,6 +53,7 @@ PROPERTIES
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="lib.jar.name" value="scala-library.jar"/>
   <property name="dbc.jar.name" value="scala-dbc.jar"/>
+  <property name="actors.jar.name" value="scala-actors.jar"/>
   <property name="comp.jar.name" value="scala-compiler.jar"/>
   <property name="scala.exec.name" value="scala"/>
   <property name="scalac.exec.name" value="scalac"/>
@@ -289,6 +290,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
+      <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </starr>
   <!-- Build compiler -->
@@ -405,6 +407,7 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
+      <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
   <!-- Build DBC -->
@@ -419,6 +422,20 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${quick.dir}/lib/dbc"/>
       </classpath>
       <include name="scala/dbc/**/*.scala"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
+    </locker>
+  <!-- Build actors library -->
+    <mkdir dir="${quick.dir}/lib/actors"/>
+    <locker
+      srcdir="${src.dir}/actors"
+      destdir="${quick.dir}/lib/actors"
+      addparams="${nsc.params}"
+      scalacdebugging="${nsc.log-files}">
+      <classpath>
+        <pathelement location="${quick.dir}/lib/library"/>
+        <pathelement location="${quick.dir}/lib/actors"/>
+      </classpath>
+      <include name="scala/actors/**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
   <!-- Build compiler -->
@@ -540,6 +557,7 @@ TEST
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
+      <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
   <!-- Build DBC -->
@@ -553,6 +571,19 @@ TEST
         <pathelement location="${strap.dir}/lib/dbc"/>
       </classpath>
       <include name="scala/dbc/**/*.scala"/>
+      <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
+    </quick>
+  <!-- Build actors library -->
+    <mkdir dir="${strap.dir}/lib/actors"/>
+    <quick
+      srcdir="${src.dir}/actors"
+      destdir="${strap.dir}/lib/actors"
+      addparams="${nsc.params}">
+      <classpath>
+        <pathelement location="${strap.dir}/lib/library"/>
+        <pathelement location="${strap.dir}/lib/actors"/>
+      </classpath>
+      <include name="scala/actors/**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
   <!-- Build compiler -->
@@ -683,6 +714,7 @@ DOCUMENTATION
       documenttitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;"
       classpath="${quick.dir}/lib/library">
       <include name="dbc/**/*.scala"/>
+      <include name="actors/**/*.scala"/>
       <include name="library/**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quickdoc>
@@ -824,6 +856,12 @@ GENERATES A DISTRIBUTION
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
     </jar>
+    <jar destfile="${dist.current.dir}/lib/${actors.jar.name}">
+      <fileset dir="${strap.dir}/lib/actors"/>
+      <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
+      </manifest>
+    </jar>
   <!-- Copy executable files -->
     <mkdir dir="${dist.current.dir}/bin"/>
     <copy todir="${dist.current.dir}/bin">
@@ -886,7 +924,7 @@ GENERATES A DISTRIBUTION
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/scala-library-${version.number}.sbp">
-      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name}"/>
+      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name},${actors.jar.name}"/>
     </quicksbaz>
   <!-- Create the Scala developper package -->
     <quicksbaz
