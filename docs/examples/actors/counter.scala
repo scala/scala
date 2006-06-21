@@ -1,9 +1,12 @@
+/**
+ * @author Philipp Haller <philipp.haller@epfl.ch>
+ *
+ */
+
+package examples.actors
 
 import scala.actors.multi.Pid
-import actors.distributed.RemoteActor
-import actors.distributed.TCP
-import actors.distributed.TcpNode
-import actors.distributed.TcpService
+import scala.actors.distributed.{RemoteActor,TCP,TcpNode,TcpService}
 
 abstract class CounterMessage
 case class Incr() extends CounterMessage

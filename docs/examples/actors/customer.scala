@@ -1,16 +1,18 @@
 /**
- @author Philipp Haller <philipp.haller@epfl.ch>
-
- This shows "customer passing" for implementing
- recursive algorithms using actors.
+ * @author Philipp Haller <philipp.haller@epfl.ch>
+ *
+ * This shows "customer passing" for implementing
+ * recursive algorithms using actors.
  */
 
-import scala.actors._;
-import scala.actors.single._;
+package examples.actors
 
-abstract class FactorialMessage;
-case class Factorial(n: int, resTo: Actor) extends FactorialMessage;
-case class Value(n: int) extends FactorialMessage;
+import scala.actors._
+import scala.actors.single._
+
+abstract class FactorialMessage
+case class Factorial(n: int, resTo: Actor) extends FactorialMessage
+case class Value(n: int) extends FactorialMessage
 
 class FactorialProcess extends Actor {
   override def run: unit = {
