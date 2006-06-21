@@ -8,7 +8,10 @@ package scala.tools.nsc.typechecker;
 import scala.collection.mutable.ListBuffer;
 import nsc.symtab.Flags._;
 
-/** A sample transform.
+/** This phase adds super accessors for all super calls that
+ *  either appear in a trait or have as a target a member of some outer class.
+ *  It also replaces references to parameter accessors with aliases by super
+ *  references to these aliases.
  */
 abstract class SuperAccessors extends transform.Transform {
   // inherits abstract value `global' and class `Phase' from Transform
@@ -43,19 +46,32 @@ abstract class SuperAccessors extends transform.Transform {
 	val body1 = transformTrees(body);
 	accDefs = accDefs.tail;
 	copy.Template(tree, parents, ownAccDefs.toList ::: body1);
+      case Select(qual @ This(_), name) =>
+        val sym = tree.symbol;
+ 	if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
+          val result = typed {
+            Select(
+              Super(qual.symbol, nme.EMPTY.toTypeName/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
+              sym.alias) setPos tree.pos
+          }
+	  if (settings.debug.value)
+	    System.out.println("alias replacement: " + tree + " ==> " + result);//debug
+          transform(result)
+        } else tree
       case Select(sup @ Super(_, mix), name) =>
+        val sym = tree.symbol;
 	val clazz = sup.symbol;
 	if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
 	    (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
-	  val supername = nme.superName(tree.symbol.name);
-	  var superAcc = clazz.info.decl(supername).suchThat(.alias.==(tree.symbol));
+	  val supername = nme.superName(sym.name);
+	  var superAcc = clazz.info.decl(supername).suchThat(.alias.==(sym));
 	  if (superAcc == NoSymbol) {
-	    if (settings.debug.value) log("add super acc " + tree.symbol + tree.symbol.locationString + " to `" + clazz);//debug
+	    if (settings.debug.value) log("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
             superAcc =
               clazz.newMethod(tree.pos, supername)
 		.setFlag(SUPERACCESSOR | PRIVATE)
-		.setInfo(clazz.thisType.memberType(tree.symbol))
-		.setAlias(tree.symbol)
+		.setInfo(clazz.thisType.memberType(sym))
+		.setAlias(sym)
             clazz.info.decls enter superAcc;
 	    accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
 	  }

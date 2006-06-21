@@ -23,8 +23,6 @@ import transform.InfoTransform;
  *
  *   - Local modules are replaced by variables and classes
  *   - Calls to case factory methods are replaced by new's.
- *   - References to parameter accessors with aliases are replaced by super references to
- *     these aliases.
  *   - eliminate branches in a conditional if the condition is a constant
  */
 abstract class RefChecks extends InfoTransform {
@@ -607,13 +605,13 @@ abstract class RefChecks extends InfoTransform {
               if (base.isTrait && sym.isTerm && mix == nme.EMPTY.toTypeName) {
                 val superAccName = nme.superName(sym.name);
 	        val superAcc = base.info.decl(superAccName) suchThat (.alias.==(sym));
-	        assert(superAcc != NoSymbol, "" + sym + " " + base + " " + superAccName);//debug
                 val tree1 = Select(This(base), superAcc);
                 if (settings.debug.value) log("super-replacement: " + tree + "=>" + tree1);
                 result = atPos(tree.pos) {
                   Select(gen.mkAttributedThis(base), superAcc) setType superAcc.tpe
                 }
 	      }
+/*
             case This(_) =>
 	      if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
                 result = typed {
@@ -624,6 +622,7 @@ abstract class RefChecks extends InfoTransform {
 		if (settings.debug.value)
 		  System.out.println("alias replacement: " + tree + " ==> " + result);//debug
               }
+*/
             case _ =>
           }
 	case _ =>
