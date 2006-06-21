@@ -1163,8 +1163,10 @@ trait Typers requires Analyzer {
             context.undetparams = undetparams
             val args1 = tryTypedArgs(args map (arg => UnTyper.apply(arg)))
             context.reportGeneralErrors = reportGeneralErrors
+            def templateArgType(arg: Tree) =
+              new BoundedWildcardType(TypeBounds(arg.tpe, AnyClass.tpe))
             val qual1 = if (args1 == null || pt.isError) qual
-                        else adaptToMember(qual, name, MethodType(args1 map (.tpe), pt))
+                        else adaptToMember(qual, name, MethodType(args1 map templateArgType, pt))
             val tree1 = Apply(Select(qual1, name) setPos fun.pos, args map (arg => UnTyper.apply(arg))) setPos tree.pos
             typed1(tree1, mode | SNDTRYmode, pt)
         } finally {
@@ -1572,7 +1574,9 @@ trait Typers requires Analyzer {
                 fun1.isInstanceOf[Select] &&
                 !fun1.tpe.isInstanceOf[ImplicitMethodType] &&
                 (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) tryTypedApply(fun1, args)
-            else typedApply(fun1, args)
+            else {
+              typedApply(fun1, args)
+            }
           }
 
         case Super(qual, mix) =>
@@ -1785,7 +1789,7 @@ trait Typers requires Analyzer {
      *  @returns A typed tree if the implicit info can be made to conform to `pt', EmptyTree otherwise.
      *  @pre info.tpe does not contain an error
      */
-    private def typedImplicit(pos: int, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree =
+    private def typedImplicit(pos: int, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree = {
       if (isCompatible(depoly(info.tpe), pt)) {
         val tree = Ident(info.name) setPos pos
         def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
@@ -1799,12 +1803,14 @@ trait Typers requires Analyzer {
           if (settings.debug.value) log("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt);
           val tree2 = adapt(tree1, EXPRmode, pt)
           if (settings.debug.value) log("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt);
-          if (!tree2.tpe.isError && info.sym == tree1.symbol) tree2
+          if (tree2.tpe.isError) EmptyTree
+          else if (info.sym == tree1.symbol) tree2
           else fail("syms differ: ", tree1.symbol, info.sym)
         } catch {
           case ex: TypeError => fail(ex.getMessage(), NoSymbol, NoSymbol)
         }
       } else EmptyTree
+    }
 
     /** Infer implicit argument or view
      *  @param  pos     position for error reporting

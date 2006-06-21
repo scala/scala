@@ -21,7 +21,7 @@ object M0 {
       xs
     else {
       val pivot = xs.head;
-      val sub = partition(xs.tail, (elem : a => less(elem, pivot)));
+      val sub = partition(xs.tail, { elem : a => less(elem, pivot) });
       quicksort(less)(sub._1) ::: List(pivot) ::: quicksort(less)(sub._2)
     }
   }
@@ -61,7 +61,7 @@ object M1 {
       xs
     else {
       val pivot = xs.head;
-      val sub = partition(xs.tail, (elem : a => less(elem, pivot)));
+      val sub = partition(xs.tail, (elem : a) => less(elem, pivot));
       quicksort(less)(sub._1) ::: List(pivot) ::: quicksort(less)(sub._2)
     }
   }
@@ -97,7 +97,7 @@ object M2 {
     else {
       val x = s.head;
       val withoutX = powerset(s.tail);
-      withoutX ::: withoutX.map(s1 : List[a] => x::s1)
+      withoutX ::: withoutX.map { s1 : List[a] => x::s1 }
     }
   }
 

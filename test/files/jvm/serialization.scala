@@ -43,7 +43,7 @@ object Test1_scala {
   val x1 = Nil;
   val x2 = None;
   val x3 = Array(1, 2, 3);
-  val x4 = x: Int => 2 * x;
+  val x4 = { x: Int => 2 * x }
 
   try {
     val y1: List[All]          = Serialize.read(Serialize.write(x1));

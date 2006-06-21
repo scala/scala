@@ -362,6 +362,7 @@ trait Contexts requires Analyzer {
       if (tpeCache == null) tpeCache = pre.memberType(sym)
       tpeCache
     }
+    override def toString = "ImplicitInfo("+name+","+pre+","+sym+")"
   }
 
   val NoImplicitInfo = new ImplicitInfo(null, null, null)

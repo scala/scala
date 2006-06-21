@@ -42,6 +42,14 @@ object Predef {
   type NullPointerException = java.lang.NullPointerException
   type Throwable = java.lang.Throwable
 
+/*
+  type ~[a, b] = Tuple2[a, b]
+  class FirstOfPair[a](x: a) {
+    def ~[b](y: b): Tuple2[a, b] = Tuple2(x, y)
+  }
+  implicit def any2firstOfPair[a](x: a): FirstOfPair[a] = new FirstOfPair(x)
+*/
+
   type Pair[+a, +b] = Tuple2[a, b]
   def Pair[a, b](x: a, y: b) = Tuple2(x, y)
 

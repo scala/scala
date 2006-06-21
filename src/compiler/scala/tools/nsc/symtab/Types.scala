@@ -504,6 +504,10 @@ trait Types requires SymbolTable {
     // override def isNullable: boolean = true
   }
 
+  case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
+    override def toString(): String = "?" + bounds
+  }
+
   /** An object representing a non-existing type */
   case object NoType extends Type {
     override def isTrivial: boolean = true
@@ -1147,9 +1151,10 @@ trait Types requires SymbolTable {
 
   /** A class expressing upper and lower bounds constraints
    *  for type variables, as well as their instantiations */
-  class TypeConstraint {
-    var lobounds: List[Type] = List()
-    var hibounds: List[Type] = List()
+  class TypeConstraint(lo: List[Type], hi: List[Type]) {
+    def this() = this(List(), List())
+    var lobounds: List[Type] = lo
+    var hibounds: List[Type] = hi
     var inst: Type = NoType
 
     def instantiate(tp: Type): boolean =
@@ -1208,6 +1213,10 @@ trait Types requires SymbolTable {
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
+      case BoundedWildcardType(bounds) =>
+        val bounds1 = this(bounds)
+        if (bounds1 eq bounds) tp
+        else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
       case RefinedType(parents, decls) =>
         val parents1 = List.mapConserve(parents)(this);
         val decls1 = mapOver(decls);
@@ -1379,8 +1388,12 @@ trait Types requires SymbolTable {
    *  type variable */
   object wildcardToTypeVarMap extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case WildcardType => TypeVar(tp, new TypeConstraint)
-      case _ => mapOver(tp)
+      case WildcardType =>
+        TypeVar(tp, new TypeConstraint)
+      case BoundedWildcardType(bounds) =>
+        TypeVar(tp, new TypeConstraint(List(bounds.lo), List(bounds.hi)))
+      case _ =>
+        mapOver(tp)
     }
   }
 
@@ -1575,6 +1588,10 @@ trait Types requires SymbolTable {
          res1 =:= res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo1 =:= lo2 && hi1 =:= hi2
+      case Pair(BoundedWildcardType(bounds), _) =>
+        bounds containsType tp2
+      case Pair(_, BoundedWildcardType(bounds)) =>
+        bounds containsType tp1
       case Pair(TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst =:= tp2
         else constr1 instantiate (wildcardToTypeVarMap(tp2))
@@ -1664,6 +1681,10 @@ trait Types requires SymbolTable {
          res1 <:< res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
+      case Pair(BoundedWildcardType(bounds), _) =>
+        bounds.lo <:< tp2
+      case Pair(_, BoundedWildcardType(bounds)) =>
+        tp1 <:< bounds.hi
       case Pair(_, TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 <:< constr2.inst
         else { constr2.lobounds = tp1 :: constr2.lobounds; true }
