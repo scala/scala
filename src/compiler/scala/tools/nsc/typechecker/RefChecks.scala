@@ -169,12 +169,11 @@ abstract class RefChecks extends InfoTransform {
 	  overrideError("needs `abstract override' modifiers")
         } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) && (other hasFlag ACCESSOR) && other.accessed.isVariable) {
           overrideError("cannot override a mutable variable")
-	} else if (other.isStable) {
-          if (!member.isStable) // (1.4)
-	    overrideError("needs to be an immutable value")
-          else if (!(other hasFlag DEFERRED) && other.owner.isTrait && (member hasFlag OVERRIDE))
-            overrideError("cannot override a value or variable definition in a trait " +
-                          "\n (this is an implementation restriction)")
+	} else if (other.isStable && !member.isStable) { // (1.4)
+	  overrideError("needs to be an immutable value")
+        } else if (other.isStable && !(other hasFlag DEFERRED) && other.owner.isTrait && (member hasFlag OVERRIDE)) {
+          overrideError("cannot override a value or variable definition in a trait " +
+                        "\n (this is an implementation restriction)")
 	} else {
 	  if (other.isAliasType) {
 	    if (!member.typeParams.isEmpty) // (1.5)
