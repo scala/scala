@@ -126,10 +126,9 @@ object scala extends Command {
       Definition(
         MBold("JAVACMD"),
         "Specify the " & MBold("java") & " command to be used " &
-        "for running the Scala code.  Arguments may be specified; " &
-        "they will be expanded by the shell.  (Likewise, if the " &
-        "command includes any spaces, then the command should be " &
-        "wrapped in explicit quotation marks.)")))
+        "for running the Scala code.  Arguments may be specified " &
+        "as part of the environment variable; spaces, quotation marks " &
+        "etc., will be passed directly to the shell for expansion.")))
 
   val examples = Section("EXAMPLES",
 
@@ -146,10 +145,15 @@ object scala extends Command {
         CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
 
       Definition(
-        "Execute a Scala program using a user-defined " & MBold("java") & " " &
-        "command",
-        MBold("env JAVACMD") & Mono("=/usr/local/bin/cacao ") &
-        CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))),
+          "Execute a Scala program using a user-defined " & MBold("java") & " " &
+          "command",
+          MBold("env JAVACMD") & Mono("=/usr/local/bin/cacao ") &
+          CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
+
+      Definition(
+          "Execute a Scala program using JVM options",
+          MBold("env JAVACMD") & Mono("=\"java -Dmsg=hello -enableassertions\" ") &
+          CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))),
 
     "Here is a complete Scala script for Unix: ",
 
