@@ -154,12 +154,12 @@ object scala extends Command {
       Definition(
           "Execute a Scala program using a user-defined " & MBold("java") & " " &
           "command",
-          MBold("env JAVACMD") & Mono("=/usr/local/bin/cacao ") &
+          MBold("JAVACMD") & Mono("=/usr/local/bin/cacao ") &
           CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
 
       Definition(
           "Execute a Scala program using JVM options",
-          MBold("env JAVACMD") & Mono("=\"java -Dmsg=hello -enableassertions\" ") &
+          MBold("JAVACMD") & Mono("=\"java -Dmsg=hello -enableassertions\" ") &
           CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))),
 
     "Here is a complete Scala script for Unix: ",
