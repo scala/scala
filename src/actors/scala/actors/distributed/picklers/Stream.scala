@@ -2,40 +2,34 @@ package scala.actors.distributed.picklers;
 
 import java.io.Reader;
 import java.io.Writer;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 
-import scala.collection.mutable._;
+import scala.collection.mutable.HashMap;
 
-class OutStream(writer: Writer) {
-  val picklerEnv = new PicklerEnv;
-
-  private var loc: int = 0;
+abstract class Stream {
+  protected var loc: int = 0;
 
   def getLocation = loc;
+}
+
+class OutStream(writer: Writer) extends Stream {
+  val picklerEnv = new PicklerEnv;
 
   def write(s: String): unit = {
     loc = loc + s.length()
     writer.write(s)
-    //Console.println("new loc: " + loc)
   }
 
   def write(c: char): unit = {
     loc = loc + 1
     writer.write(c)
-    //Console.println("new loc: " + loc)
   }
 
   def flush(): unit =
     writer.flush();
 }
 
-class InStream(reader: Reader) {
+class InStream(reader: Reader) extends Stream {
   val unpicklerEnv = new UnpicklerEnv;
-
-  private var loc: int = 0;
-
-  def getLocation = loc;
 
   def read(num: int): String = {
     val carr = new Array[char](num)
