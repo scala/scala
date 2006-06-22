@@ -9,31 +9,36 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
-
+/**
+ * The class <code>Actor</code> ...
+ *
+ * @author Martin Odersky
+ * @version 1.0
+ */
 abstract class Actor extends Thread {
-  private val in = new MailBox;
+  private val in = new MailBox
 
   def send(msg: in.Message) =
-    in.send(msg);
+    in.send(msg)
 
   def receive[a](f: PartialFunction[in.Message, a]): a =
-    if (Thread.currentThread() == this) in.receive(f);
-    else error("receive called not on own process");
+    if (Thread.currentThread() == this) in.receive(f)
+    else error("receive called not on own process")
 
   def receiveWithin[a](msec: long)(f: PartialFunction[in.Message, a]): a =
-    if (Thread.currentThread() == this) in.receiveWithin(msec)(f);
-    else error("receiveWithin called not on own process");
+    if (Thread.currentThread() == this) in.receiveWithin(msec)(f)
+    else error("receiveWithin called not on own process")
 
-  private var pid: Pid = null;
+  private var pid: Pid = null
 
   def self = {
-    if (pid == null) pid = new Pid(this);
+    if (pid == null) pid = new Pid(this)
     pid
   }
 
-  def self_= (p: Pid) = pid = p;
+  def self_= (p: Pid) = pid = p
 }
 
 

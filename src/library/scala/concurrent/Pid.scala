@@ -9,35 +9,40 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
-
+/**
+ * The class <code>Pid</code> provides process identifiers
+ * to thread-based actors.
+ *
+ * @author Philipp Haller
+ * @version 1.0
+ */
 class Pid(actor: Actor) {
-  var target = actor;
+  private var target = actor
 
-  def !(msg: MailBox#Message) = target send msg;
+  def !(msg: MailBox#Message) = target send msg
 
   def spawn(body: Actor => Unit): Pid = {
     val a = new Actor {
-      override def run: Unit = body(this);
-    };
-    a.start;
+      override def run: Unit = body(this)
+    }
+    a.start
     a.self
   }
 
-  def spawnReceive(cases: PartialFunction[MailBox#Message,Unit]) = {
+  def spawnReceive(cases: PartialFunction[MailBox#Message, Unit]) = {
     val a = new Actor {
-      override def run: Unit = receive(cases);
-    };
-    a.start;
+      override def run: Unit = receive(cases)
+    }
+    a.start
     a.self
   }
 
-  override def hashCode() = target.hashCode();
+  override def hashCode() = target.hashCode()
 
   override def equals(that: Any) =
-    if (this.hashCode() == that.hashCode()) true;
-    else false;
+    this.hashCode() == that.hashCode()
 
-  override def toString() = "Pid(" + target + ")";
+  override def toString() = "Pid(" + target + ")"
 }
