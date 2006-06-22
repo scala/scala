@@ -562,7 +562,7 @@ trait Trees requires Global {
   case Star(elem) =>                                              (eliminated by transmatch)
   case Bind(name, body) =>                                        (eliminated by transmatch)
   case ArrayValue(elemtpt, trees) =>                              (introduced by uncurry)
-  case Function(vparams, body) =>                                 (eliminated by typecheck)
+  case Function(vparams, body) =>                                 (eliminated by lambdaLift)
   case Assign(lhs, rhs) =>
   case If(cond, thenp, elsep) =>
   case Match(selector, cases) =>
