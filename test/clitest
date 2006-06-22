@@ -151,7 +151,7 @@ test_compile() {
     check="$1"; shift 1;
     info="$1"; shift 1;
     [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR;
-    [ -f "$LOG_FILE" ] && rm $LOG_FILE;
+    [ -f "$LOG_FILE" ] && $RM $LOG_FILE;
     if [ "$COMPILER" = "javac" ] || [ "$COMPILER" = "jikes" ]; then
         suffix=".${COMPILER}";
         [ "$LANG" = "java5" ] && suffix=".${COMPILER}5";
@@ -201,7 +201,7 @@ test_execute() {
     suffix=".$LANG";
     [ "$LANG" = "java6" ] && suffix=".java5";
 
-    [ -f "$LOG_FILE" ] && rm $LOG_FILE;
+    [ -f "$LOG_FILE" ] && $RM $LOG_FILE;
     printf "\\n";
 
     printf "Execute $main with unknown option '-cpp'\\n"
@@ -236,7 +236,7 @@ test_interpret() {
     main="$1"; shift 1;
     check="$1"; shift 1;
     [ "$LANG" = "scala" ] || return;
-    [ -f "$LOG_FILE" ] && rm $LOG_FILE;
+    [ -f "$LOG_FILE" ] && $RM $LOG_FILE;
     printf "\\n"
 
     printf "Interpret $main with unknown option '-cpp'\\n"
@@ -264,6 +264,35 @@ test_interpret() {
     printf "\\n" >> $LOG_FILE # newline
 
     test_diff "$check.scalaint" "$LOG_FILE";
+}
+
+test_docgen() {
+    [ $# = 2 ] || abort "internal error";
+    source="$1"; shift 1;
+    check="$1"; shift 1;
+    [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR;
+    [ -f "$LOG_FILE" ] && $RM $LOG_FILE;
+    [ -d "$API_DIR" ] && $RM -r "$API_DIR/*" || mkdir -p $API_DIR; 
+    suffix=".${LANG}_api";
+    file=`echo $source | sed -e "s#$PREFIX/##g"`;
+    if [ "$LEVEL" = "info" ] || [ "$LEVEL" = "verbose" ] ; then
+        printf_outline "\\nSource file: $file\\n"
+        cat $source;
+    fi
+    printf "\\n";
+
+    printf "Generate documentation for $file\\n"
+    test_run "env CLASSPATH= $DOCGEN_COMMAND \
+        -d $API_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";
+
+    n=`$TREE $API_DIR | wc -l`;
+    $TREE $API_DIR | tail -n `echo "$n-1" | bc` > "$LOG_FILE";
+    test_diff "$check$suffix" "$LOG_FILE";
+
+    if [ "$LEVEL" = "verbose" ] ; then
+        printf_outline "\\nAPI directory:\\n";
+        $TREE $API_DIR;
+    fi
 }
 
 ##############################################################################
@@ -314,6 +343,7 @@ else
 fi;
 SOURCE_DIR=$TEST_DIR/files/cli
 OUTPUT_DIR=$TMP_DIR/classes
+API_DIR=$TMP_DIR/api
 
 DIFF="diff";
 RM="rm -f";
@@ -352,11 +382,13 @@ if [ "$LANG" = "scala" ]; then
     RUNTIME_COMMAND="${BIN_DIR}scala"
     COMPILER_COMMAND="${BIN_DIR}$COMPILER"
     INTERPRETER_COMMAND="${BIN_DIR}scalaint"
+    DOCGEN_COMMAND="${BIN_DIR}scaladoc";
 elif [ "$LANG" = "java" ]; then
     RUNTIME_COMMAND=`which ${JAVACMD:=java}`
     BIN_DIR=`dirname $RUNTIME_COMMAND`;
     [ "$COMPILER" = "javac" ] && COMPILER_COMMAND=$BIN_DIR/$COMPILER;
     [ "$COMPILER" = "jikes" ] && COMPILER_COMMAND=`which $COMPILER`;
+    DOCGEN_COMMAND=`dirname "$COMPILER_COMMAND"`/javadoc;
 else
     abort "unknown language '$LANG'"
 fi
@@ -413,6 +445,7 @@ for testfile in "" $FILES; do
             sed -e "s#${SOURCE_DIR}/\(.*\)\${SUFFIX}#\1#g" -e "s#\/#\.#g"`;
         test_execute "$scala_main" "$checkfile";
         test_interpret "$scala_main" "$checkfile";
+        test_docgen "$testfile" "$checkfile";
     fi
 done;
 

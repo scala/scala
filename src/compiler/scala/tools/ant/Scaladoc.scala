@@ -384,7 +384,14 @@ package scala.tools.ant {
       if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
       if (!encoding.isEmpty) settings.encoding.value = encoding.get
       if (!windowtitle.isEmpty) settings.windowtitle.value = windowtitle.get
-      if (!documenttitle.isEmpty) settings.documenttitle.value = documenttitle.get
+      if (!documenttitle.isEmpty) settings.documenttitle.value =
+        // In Ant script characters '<' and '>' must be encoded when
+        // used in attribute values, e.g. for attribute "documenttitle"
+        // in task Scaladoc you may write:
+        //   documenttitle="&lt;div&gt;Scala&lt;/div&gt;"
+        // so we have to decode them here.
+        documenttitle.get.replaceAll("&lt;", "<").replaceAll("&gt;",">")
+                         .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
 
       // Compiles the actual code
       object compiler extends Global(settings, reporter)

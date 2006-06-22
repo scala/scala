@@ -18,11 +18,10 @@ object DocUtil {
     DQUOTE :: Text(str) :: DQUOTE :: Nil
 
   def load(str: String): NodeSeq = {
-    val xmlStr = str.replaceAll("&lt;", "<").replaceAll("&gt;",">")
-                    .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
-    val xmlSrc = new InputSource(new StringReader(xmlStr))
-    //System.err.println("loading: " + xmlStr); // debug
-    XML.load(xmlSrc)
+    val xmlSrc =
+      if (str.matches("^(<!--.*-->)*<[^>]+>.*<[^>]+>(<!--.*-->)*$")) str
+      else "<span>" + str + "</span>"
+    XML.load(new StringReader(xmlSrc))
   }
 
   object DQUOTE extends SpecialNode {
