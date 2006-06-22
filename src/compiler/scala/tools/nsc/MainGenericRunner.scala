@@ -8,13 +8,39 @@
 package scala.tools.nsc
 
 import java.io.File
-
+import java.lang.reflect.InvocationTargetException
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
   * or interactive entry.
   */
 object MainGenericRunner {
+  /** Append jars found in ${scala.home}/lib to
+    * a specified classpath.  Also append "." if the
+    * input classpath is empty; otherwise do not.
+    */
+  def addClasspathExtras(classpath: String): String = {
+    val scalaHome = System.getProperty("scala.home")
+    if (scalaHome == null)
+      return classpath
+
+    val libdir = new File(new File(scalaHome), "lib")
+    if(!libdir.exists || libdir.isFile)
+      return classpath
+
+    val filesInLib = libdir.listFiles
+    val jarsInLib =
+      filesInLib.filter(f =>
+        f.isFile && f.getName.endsWith(".jar"))
+    val sep = File.pathSeparator
+    val extraClassPath = jarsInLib.mkString("", sep, "")
+
+    if(classpath == "")
+      extraClassPath + sep + "."
+    else
+      classpath + sep + extraClassPath
+  }
+
   def main(args: Array[String]): Unit = {
     def error(str: String) = Console.println(str)
     val command = new GenericRunnerCommand(args.toList, error)
@@ -24,6 +50,9 @@ object MainGenericRunner {
     }
 
     val settings = command.settings
+
+    settings.classpath.value =
+      addClasspathExtras(settings.classpath.value)
 
     if (settings.help.value) {
       Console.println(command.usageMessage)
@@ -59,7 +88,16 @@ object MainGenericRunner {
             paths(settings.bootclasspath.value) :::
             paths(settings.classpath.value)
 
-          ObjectRunner.run(classpath, thingToRun, command.arguments)
+          try {
+            ObjectRunner.run(classpath, thingToRun, command.arguments)
+          } catch {
+            case e: ClassNotFoundException =>
+              Console.println(e)
+            case e: NoSuchMethodError =>
+              Console.println(e)
+            case e: InvocationTargetException =>
+              e.getCause.printStackTrace
+          }
         } else {
           MainScript.runScript(settings, thingToRun, command.arguments)
         }
