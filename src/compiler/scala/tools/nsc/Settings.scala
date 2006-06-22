@@ -79,6 +79,7 @@ class Settings(error: String => unit) {
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing")
   val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault)
+      classpath.abbreviation = "-cp"
   val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
@@ -165,10 +166,12 @@ class Settings(error: String => unit) {
   /** A setting represented by a string, (`default' unless set) */
   case class StringSetting(name: String, arg: String, descr: String, default: String)
   extends Setting(name, descr) {
+    var abbreviation: String = null
+
     var value: String = default
 
     def tryToSet(args: List[String]): List[String] = args match {
-      case n :: rest if (n == name) =>
+      case n :: rest if (name == n || abbreviation == n) =>
         if (rest.isEmpty) {
           error("missing argument")
           List()
