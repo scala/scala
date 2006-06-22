@@ -56,7 +56,6 @@ abstract class GenJVM extends SubComponent {
     val MIN_SWITCH_DENSITY = 0.7;
     val MODULE_INSTANCE_NAME = "MODULE$";
     val JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer";
-    val JAVA_RMI_REMOTEEXCEPTION = "java.rmi.RemoteException";
 
     val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER);
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY);
@@ -70,8 +69,12 @@ abstract class GenJVM extends SubComponent {
     val RemoteAttr       = definitions.getClass("scala.remote").tpe;
     val ThrowsAttr       = definitions.getClass("scala.throws").tpe
 
-    val CloneableClass   = if (forCLDC) null else definitions.getClass("java.lang.Cloneable");
-    val RemoteInterface  = if (forCLDC) null else definitions.getClass("java.rmi.Remote");
+    val CloneableClass   =
+      if (forCLDC) null else definitions.getClass("java.lang.Cloneable");
+    val RemoteInterface  =
+      if (forCLDC) null else definitions.getClass("java.rmi.Remote");
+    val RemoteException  =
+      if (forCLDC) null else definitions.getClass("java.rmi.RemoteException").tpe;
 
     var clasz: IClass = _;
     var method: IMethod = _;
@@ -124,19 +127,20 @@ abstract class GenJVM extends SubComponent {
       if (parents.isEmpty)
         parents = definitions.ObjectClass.tpe :: parents;
 
-      c.symbol.attributes foreach { a => a match {
-          case Triple(SerializableAttr, _, _) if (!forCLDC) =>
+      if (!forCLDC)
+        for (val attr <- c.symbol.attributes) attr match {
+          case Triple(SerializableAttr, _, _) =>
             parents = parents ::: List(definitions.SerializableClass.tpe);
-          case Triple(CloneableAttr, _, _) if (!forCLDC) =>
+          case Triple(CloneableAttr, _, _)  =>
             parents = parents ::: List(CloneableClass.tpe);
-          case Triple(SerialVersionUID, value :: _, _) if (!forCLDC) =>
+          case Triple(SerialVersionUID, value :: _, _) =>
             serialVUID = Some(value.longValue);
-          case Triple(RemoteAttr, _, _) if (!forCLDC) =>
+          case Triple(RemoteAttr, _, _) =>
             parents = parents ::: List(RemoteInterface.tpe);
             remoteClass = true;
           case _ => ();
         }
-      }
+
       parents = parents.removeDuplicates;
 
       if (parents.length > 1 ) {
@@ -176,11 +180,13 @@ abstract class GenJVM extends SubComponent {
       emitClass(jclass, c.symbol)
     }
 
-    def addExceptionsAttribute(jm: JMethod, throws: List[AttrInfo]): Unit = {
-      if (throws.forall(a => a match {
-        case Triple(ThrowsAttr, _, _) => false
-        case _ => true
-      })) return;
+    def addExceptionsAttribute(jm: JMethod, sym: Symbol): Unit = {
+      val Pair(excs, others) = sym.attributes.partition((a => a match {
+        case Triple(ThrowsAttr, _, _) => true
+        case _ => false
+      }));
+      if (excs isEmpty) return;
+      sym.attributes = others;
 
       val cpool = jm.getConstantPool();
       val buf: ByteBuffer = ByteBuffer.allocate(512);
@@ -189,7 +195,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val Triple(ThrowsAttr, List(exc), _) <- throws) {
+      for (val Triple(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
         buf.putShort(cpool.addClass(exc.typeValue.toString()).shortValue)
         nattr = nattr + 1;
       }
@@ -338,23 +344,12 @@ abstract class GenJVM extends SubComponent {
       if (m.symbol.hasFlag(Flags.BRIDGE))
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
                                                          new Array[Byte](0)));
-      if (remoteClass || (m.symbol.attributes contains Triple(RemoteAttr, Nil, Nil)))
-        if (jmethod.isPublic()) {
-          // (see http://java.sun.com/docs/books/vmspec/html/ClassFile.doc.html#3129)
-          // Exceptions_attribute {
-          // ..
-          // u2 number_of_exceptions;
-    	  // u2 exception_index_table[number_of_exceptions];
-          // }
-          val cp = jclass.getConstantPool();
-          val reInx = cp.addClass(JAVA_RMI_REMOTEEXCEPTION);
-          val contents = ByteBuffer.allocate(4); // u2 + u2[1]
-          contents.putShort(1.asInstanceOf[Short]);
-          contents.putShort(reInx.asInstanceOf[Short]);
-          if (settings.debug.value)
-            log("adding 'Exceptions_attribute' " + contents + " for remote method " + method);
-          jmethod.addAttribute(
-            fjbgContext.JOtherAttribute(jclass, jmethod, "Exceptions", contents.array()));
+      if ((remoteClass ||
+          (m.symbol.attributes contains Triple(RemoteAttr, Nil, Nil))) &&
+          jmethod.isPublic() && !forCLDC)
+        {
+          m.symbol.attributes =
+            Triple(ThrowsAttr, List(Constant(RemoteException)), List()) :: m.symbol.attributes;
         }
 
       if (!jmethod.isAbstract()) {
@@ -369,7 +364,7 @@ abstract class GenJVM extends SubComponent {
         genLocalVariableTable;
       }
 
-      addExceptionsAttribute(jmethod, m.symbol.attributes)
+      addExceptionsAttribute(jmethod, m.symbol)
       addAttributes(jmethod, m.symbol.attributes)
     }
 
