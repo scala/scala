@@ -105,7 +105,14 @@ object scala extends Command {
 
     "Such a header must have each header boundary start at the beginning of a " &
     "line.  Headers can be used to make stand-alone script files, as shown " &
-    "in the examples below.")
+    "in the examples below.",
+
+    "If " & Mono("scala") & " is run from an sbaz(1) directory, " &
+    "then it will add to its classpath any jars installed in the " &
+    "lib directory of the sbaz directory.  Additionally, if no " &
+    "-classpath option is specified, then " & Mono("scala") &
+    " will add " & Quote(".") & ", the current directory, to the " &
+    "end of the classpath.")
 
 
   val options = Section("OPTIONS",
