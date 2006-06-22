@@ -8,7 +8,7 @@
 #                           |/                                               #
 ##############################################################################
 
-# $Id: $
+# $Id$
 
 ##############################################################################
 # Error functions
@@ -99,7 +99,28 @@ test_print_help() {
 # Prints the clitest version.
 test_print_version() {
     [ $# = 0 ] || abort "internal error";
-    echo "$SCRIPT 1.2";
+    echo "$SCRIPT 1.3";
+}
+
+# Adds a new file to the appropriate file list(s).
+test_add_file() {
+    [ $# = 1 ] || abort "internal error";
+    case "$1" in
+        *.scala )
+            if [ ! \( -d "$1" -o -f "$1" \) ]; then
+                abort "don't know what to do with '$1'";
+            fi;
+            dir=`dirname "$1"`;
+            file=`cd $dir && pwd`/`basename $1`;
+            FILES="$FILES $file";;
+        * )
+            if [ ! -d "$1" ]; then
+                abort "don't know what to do with '$1'";
+            fi;
+            dir=`cd "$1" && pwd`;
+            file=`find "$dir" -name "Main$SUFFIX" -a -type f -print`;
+            FILES="$FILES $file";;
+    esac;
 }
 
 test_run() {
@@ -169,7 +190,7 @@ test_compile() {
 
     if [ "$LEVEL" = "verbose" ] ; then
         printf_outline "\\nTest directory:\\n";
-        tree $TMP_DIR;
+        $TREE $TMP_DIR;
     fi
 }
 
@@ -281,7 +302,7 @@ BIN_DIR="$LATEST"
 if [ -n "`which mktemp`" ] ; then
     TMP_DIR=`mktemp -d`
 else
-    TMP_DIR=${TMPDIR-/tmp}/tmp.123
+    TMP_DIR=${TMPDIR-/tmp}/tmp-$USER.`basename $0`
 fi
 
 if [ -d "$PREFIX/test" ]; then
@@ -295,6 +316,8 @@ SOURCE_DIR=$TEST_DIR/files/cli
 OUTPUT_DIR=$TMP_DIR/classes
 
 DIFF="diff";
+RM="rm -f";
+TREE="tree";
 
 case `uname` in
     CYGWIN* )
@@ -304,6 +327,7 @@ esac;
 
 DEBUG="";
 LANG="scala";
+SUFFIX=".scala";
 COMPILER="scalac";
 LEVEL="";
 while [ $# -gt 0 ]; do
@@ -312,8 +336,8 @@ while [ $# -gt 0 ]; do
         --quick    ) BIN_DIR="$QUICK"; shift 1;;
         --installed) BIN_DIR=""; shift 1;;
         --info     ) LEVEL="info"; shift 1;;
-        --javac    ) LANG="java"; COMPILER="javac"; shift 1;;
-        --jikes    ) LANG="java"; COMPILER="jikes"; shift 1;;
+        --javac    ) LANG="java"; SUFFIX=".java"; COMPILER="javac"; shift 1;;
+        --jikes    ) LANG="java"; SUFFIX=".java"; COMPILER="jikes"; shift 1;;
         --jredir=* ) JRE_DIR=`expr "$1" : "--jredir=\(.*\)"`; shift 1;;
         --objdir=* ) OUTPUT_DIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
         --verbose  ) LEVEL="verbose"; shift 1;;
@@ -328,13 +352,11 @@ if [ "$LANG" = "scala" ]; then
     RUNTIME_COMMAND="${BIN_DIR}scala"
     COMPILER_COMMAND="${BIN_DIR}$COMPILER"
     INTERPRETER_COMMAND="${BIN_DIR}scalaint"
-    SUFFIX=".scala"
 elif [ "$LANG" = "java" ]; then
     RUNTIME_COMMAND=`which ${JAVACMD:=java}`
     BIN_DIR=`dirname $RUNTIME_COMMAND`;
     [ "$COMPILER" = "javac" ] && COMPILER_COMMAND=$BIN_DIR/$COMPILER;
     [ "$COMPILER" = "jikes" ] && COMPILER_COMMAND=`which $COMPILER`;
-    SUFFIX=".java"
 else
     abort "unknown language '$LANG'"
 fi
@@ -378,8 +400,10 @@ TMP_FILE=${TMP_DIR}/${SCRIPT}.tmp
 
 ##############################################################################
 
-#for testfile in "$SOURCE_DIR/test2/Main.scala"; do
-for testfile in "" `find "$SOURCE_DIR" -name "Main$SUFFIX" -a -type f -print`; do
+if [ -z "$FILES" ]; then
+    FILES=`find "$SOURCE_DIR" -name "Main$SUFFIX" -a -type f -print`;
+fi;
+for testfile in "" $FILES; do
     [ -z "$testfile" ] && continue;
     checkfile=`dirname "$testfile"`/`basename "$testfile" "$SUFFIX"`.check
     info=`awk '$1 ~ /^\/\//{i=index($0,"@info ");if(i>0){print substr($0,i+6)}}' "$testfile"`;
@@ -395,6 +419,6 @@ done;
 ##############################################################################
 # Epilog
 
-rm -rf $TMP_DIR
+$RM -r $TMP_DIR
 
 ##############################################################################
