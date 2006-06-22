@@ -182,6 +182,7 @@
     <attribute name="command"/>
     <sequential>
       <mkdir dir="${tooldocs.dir}"/>
+      <mkdir dir="${tooldocs.dir}/man1"/>
       <java classname="scala.tools.docutil.EmitHtml"
         output="${tooldocs.dir}/@{command}.html"
         fork="false" logError="yes"
@@ -194,7 +195,7 @@
         </classpath>
       </java>
       <java classname="scala.tools.docutil.EmitManPage"
-        output="${tooldocs.dir}/@{command}.1"
+        output="${tooldocs.dir}/man1/@{command}.1"
         fork="false" logError="yes"
         failonerror="true"
       >
@@ -345,7 +346,7 @@
       destdir="${api.lib.dir}"
       sourcepath=""
       windowtitle="Scala Library Documentation"
-      documenttitle="Scala 2v${version.number}"
+      documenttitle="&lt;div&gt;Scala 2v${version.number}&lt;/div&gt;"
     >
       <classpath>
         <pathelement location="${build.jar.dir}/${lib.jar.name}"/>
@@ -406,7 +407,7 @@
     >
       <binset dir="${build.bin.dir}" includes="**"/>
       <libset dir="${build.jar.dir}" includes="${comp.jar.name}"/>
-      <manset dir="${tooldocs.dir}" includes="*.1"/>
+      <manset dir="${tooldocs.dir}" includes="man1/*.1"/>
       <docset dir="${docs.dir}" includes="README,LICENSE"/>
       <docset dir="${api.lib.pdir}" includes="api/**"/>
       <docset dir="${tooldocs.dir}" includes="*.html"/>
