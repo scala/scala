@@ -7,11 +7,11 @@ object parsers2 {
   case class Num(n: int)            extends Tree
   case class Lst(elems: List[Tree]) extends Tree
 
-  def isLetter = c: char => Character.isLetter(c)
+  def isLetter = (c: char) => Character.isLetter(c)
   def isLetterOrDigit: char => boolean = Character.isLetterOrDigit
   def isDigit: char => boolean = Character.isDigit
 
-  mixin class ListParsers extends CharParsers {
+  trait ListParsers extends CharParsers {
 
     def ident: Parser[Tree] =
       for (

@@ -149,7 +149,7 @@ object typeInfer {
     )
   }
 
-  mixin class MiniMLParsers extends CharParsers {
+  trait MiniMLParsers extends CharParsers {
 
     /** whitespace */
     def whitespace = rep{chr(' ') ||| chr('\t') ||| chr('\n')}
@@ -157,11 +157,14 @@ object typeInfer {
     /** A given character, possible preceded by whitespace */
     def wschr(ch: char) = whitespace &&& chr(ch)
 
+    def isLetter = (c: char) => Character.isLetter(c)
+    def isLetterOrDigit: char => boolean = Character.isLetterOrDigit
+
     /** identifiers or keywords */
     def id: Parser[String] =
       for (
-        val c: char <- rep(chr(' ')) &&& chr(Character.isLetter);
-        val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
+        val c: char <- rep(chr(' ')) &&& chr(isLetter);
+        val cs: List[char] <- rep(chr(isLetterOrDigit))
       ) yield (c :: cs).mkString("", "", "")
 
     /** Non-keyword identifiers */
