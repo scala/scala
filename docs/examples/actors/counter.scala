@@ -35,8 +35,8 @@ class CounterUser extends RemoteActor {
   override def run(): unit = {
     alive(TCP())
 
-    spawn(TcpNode("127.0.0.1", 9090), "Counter")
-
+    val host = java.net.InetAddress.getLocalHost().getHostAddress()
+    spawn(TcpNode(host, 9090), classOf[Counter].getName())
     receive {
       case p: Pid =>
         // communicate with counter
