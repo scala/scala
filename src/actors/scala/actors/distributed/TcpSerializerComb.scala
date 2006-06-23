@@ -19,8 +19,6 @@ import scala.actors.distributed.MessagesComb._
 import scala.actors.distributed.NodeComb._
 import scala.actors.multi._
 
-//import scala.actors.distributed.examples.CounterMessagesComb._
-
 /**
  * @author Philipp Haller
  */

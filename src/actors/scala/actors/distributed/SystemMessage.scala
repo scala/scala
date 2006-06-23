@@ -10,8 +10,7 @@
 
 package scala.actors.distributed
 
-import scala.actors.multi.Pid
-import scala.actors.multi.ExcHandlerDesc
+import scala.actors.multi.{Pid,ExcHandlerDesc}
 
 abstract class MessageTyper {
   type DataType = Array[Byte]

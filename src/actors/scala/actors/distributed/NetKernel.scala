@@ -10,19 +10,16 @@
 
 package scala.actors.distributed
 
-import java.io.StringReader
-import java.io.StringWriter
+import java.io.{StringReader,StringWriter}
 import java.util.logging._
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.{HashMap,HashSet}
 
 import java.net.UnknownHostException
 import java.io.IOException
 import java.lang.SecurityException
 
-import scala.actors.multi.Actor
-import scala.actors.multi.ExcHandlerDesc
+import scala.actors.multi.{Actor,ExcHandlerDesc}
 
 case class RA(a: RemoteActor)
 

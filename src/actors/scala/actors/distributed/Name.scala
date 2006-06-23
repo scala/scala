@@ -10,6 +10,9 @@
 
 package scala.actors.distributed
 
+/**
+ * @author Philipp Haller
+ */
 case class Name(node: Node, sym: Symbol, kernel: NetKernel) {
   def !(msg: AnyRef): unit = {
     kernel.namedSend(this, msg)

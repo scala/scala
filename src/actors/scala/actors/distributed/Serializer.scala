@@ -10,9 +10,7 @@
 
 package scala.actors.distributed
 
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.EOFException
+import java.io.{DataInputStream,DataOutputStream,EOFException}
 
 import scala.actors.distributed.picklers.BytePickle.SPU
 import scala.actors.multi.Pid

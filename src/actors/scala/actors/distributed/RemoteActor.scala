@@ -10,12 +10,7 @@
 
 package scala.actors.distributed
 
-import scala.actors.multi.MailBox
-import scala.actors.multi.Actor
-import scala.actors.multi.Pid
-import scala.actors.multi.LocalPid
-import scala.actors.multi.ExcHandlerDesc
-
+import scala.actors.multi.{MailBox,Actor,Pid,LocalPid,ExcHandlerDesc}
 import scala.collection.mutable.{HashMap,Stack}
 
 abstract class ServiceName
