@@ -10,7 +10,7 @@
 
 package scala.actors.distributed
 
-[serializable] abstract class Node
+[serializable] abstract class Node;
 
 [serializable] case class TcpNode(address: String, port: Int) extends Node
 [serializable] case class JXTANode(name: String) extends Node
