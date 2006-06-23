@@ -1,16 +1,29 @@
-package scala.actors.distributed;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import java.io._;
-import scala.collection.mutable._;
+// $Id$
 
-import scala.actors.distributed.picklers.BytePickle._;
+package scala.actors.distributed
 
-import scala.actors.distributed.MessagesComb._;
-import scala.actors.distributed.NodeComb._;
-import scala.actors.multi._;
+import java.io._
+import scala.collection.mutable._
 
-//import scala.actors.distributed.examples.CounterMessagesComb._;
+import scala.actors.distributed.picklers.BytePickle._
 
+import scala.actors.distributed.MessagesComb._
+import scala.actors.distributed.NodeComb._
+import scala.actors.multi._
+
+//import scala.actors.distributed.examples.CounterMessagesComb._
+
+/**
+ * @author Philipp Haller
+ */
 //TODO: change Service to NetKernel in Serializer interface
 class TcpSerializerComb(serv: Service) extends Serializer(serv) {
 

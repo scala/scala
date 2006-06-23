@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.actors.distributed
 
 import scala.actors.multi.MailBox
@@ -6,13 +16,15 @@ import scala.actors.multi.Pid
 import scala.actors.multi.LocalPid
 import scala.actors.multi.ExcHandlerDesc
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.Stack
+import scala.collection.mutable.{HashMap,Stack}
 
 abstract class ServiceName
 case class JXTA(groupName: String) extends ServiceName
 case class TCP() extends ServiceName
 
+/**
+ * @author Philipp Haller
+ */
 class RemoteActor extends Actor {
   override def forwardExc(destDesc: ExcHandlerDesc, e: Throwable) = {
     // locality check (handler local to this actor?)
@@ -129,40 +141,39 @@ class RemoteActor extends Actor {
   }
 
   def spawnLink(fun: RemoteActor => unit): RemotePid =
-    kernel.spawnLink(self, fun);
+    kernel.spawnLink(self, fun)
 
   def monitorNode(node: Node, cond: boolean) =
-    kernel.monitorNode(self, node, cond);
+    kernel.monitorNode(self, node, cond)
 
   // this should be:
   // self.link(pid)
   // if self is RemotePid it will invoke NetKernel
 
   def link(pid: RemotePid): unit =
-    kernel.link(self, pid);
+    kernel.link(self, pid)
 
   def unlink(pid: RemotePid): unit =
-    kernel.unlink(self, pid);
+    kernel.unlink(self, pid)
 
   override def exit(reason: Symbol): unit =
-    kernel.exit(self, reason);
+    kernel.exit(self, reason)
 
   override def processFlag(flag: Symbol, set: boolean) =
-    kernel.processFlag(self, flag, set);
+    kernel.processFlag(self, flag, set)
 
-  override def die(reason: Symbol) = {
+  override def die(reason: Symbol) =
     if (isAlive) {
       isAlive = false
       Debug.info("" + this + " died.")
       kernel.exit(self, reason)
     }
-  }
 
-  override def die() = {
+  override def die() =
     if (isAlive) {
       isAlive = false
       Debug.info("" + this + " died.")
       kernel.exit(self, 'normal)
     }
-  }
+
 }

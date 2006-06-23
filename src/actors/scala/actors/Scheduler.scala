@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.actors
 
 import scala.collection.mutable._
@@ -8,13 +18,13 @@ import scala.actors.multi._
  * @author Philipp Haller
  */
 abstract class IScheduler /*extends java.util.concurrent.Executor*/ {
-  def execute(item: ReceiverTask): unit;
-  def getTask(worker: WorkerThread): Runnable;
-  def tick(a: MailBox): unit;
+  def execute(item: ReceiverTask): Unit
+  def getTask(worker: WorkerThread): Runnable
+  def tick(a: MailBox): Unit
 
   val QUIT_TASK = new Runnable() {
-    def run(): unit = {};
-    override def toString() = "QUIT_TASK";
+    def run(): Unit = {}
+    override def toString() = "QUIT_TASK"
   }
 }
 

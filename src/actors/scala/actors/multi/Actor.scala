@@ -1,15 +1,23 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.actors.multi
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.Stack
+import scala.collection.mutable.{HashMap,HashSet,Stack}
 
-case class ExcHandlerDesc(pid: Pid, eid: int)
+case class ExcHandlerDesc(pid: Pid, eid: Int)
 
-class ExcHandler(actions: PartialFunction[Throwable, unit],
+class ExcHandler(actions: PartialFunction[Throwable, Unit],
                  actor: Actor,
                  parent: ExcHandlerDesc) {
-  def handle(e: Throwable): unit = {
+  def handle(e: Throwable): Unit = {
     if (!actions.isDefinedAt(e)) {
       if (parent != null) actor.forwardExc(parent, e)
     }

@@ -1,6 +1,16 @@
-package scala.actors.single;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import scala.collection.mutable.Queue;
+// $Id$
+
+package scala.actors.single
+
+import scala.collection.mutable.Queue
 
 /**
  * @author Philipp Haller
@@ -31,9 +41,9 @@ class MailBox {
 
   var isAlive = true
 
-  private var duration: long = 0
-  private var timeInitial: long = 0
-  private var timeoutEnabled: boolean = false
+  private var duration: Long = 0
+  private var timeInitial: Long = 0
+  private var timeoutEnabled: Boolean = false
 
   def send(msg: Message): unit = synchronized {
     if (isAlive)

@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.actors.single
 
 /**
@@ -38,7 +48,7 @@ abstract class Actor extends MailBox {
     }
   }
 
-  def spawn(body: Actor => unit): Pid = {
+  def spawn(body: Actor => Unit): Pid = {
     val a = new Actor {
       override def run = body(this)
     }
@@ -51,7 +61,7 @@ abstract class Actor extends MailBox {
     a.self
   }
 
-  def spawnReceive(cases: PartialFunction[MailBox#Message,unit]) = {
+  def spawnReceive(cases: PartialFunction[MailBox#Message,Unit]) = {
     val a = new Actor {
       override def run = receive(cases)
     }

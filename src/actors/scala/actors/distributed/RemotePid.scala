@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.actors.distributed
 
 import scala.actors.multi.Pid
@@ -6,6 +16,9 @@ import scala.actors.multi.ExcHandlerDesc
 
 import java.io._
 
+/**
+ * @author Philipp Haller
+ */
 [serializable]
 abstract class RemotePid(locId: int, kern: NetKernel, actor: RemoteActor) extends Pid {
   def this() = this(0, null, null) // for serialization

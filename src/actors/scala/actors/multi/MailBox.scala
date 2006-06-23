@@ -1,6 +1,16 @@
-package scala.actors.multi;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import scala.collection.mutable.Queue;
+// $Id$
+
+package scala.actors.multi
+
+import scala.collection.mutable.Queue
 
 /**
  * @author Philipp Haller

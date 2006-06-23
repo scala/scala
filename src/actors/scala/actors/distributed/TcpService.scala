@@ -1,10 +1,23 @@
-package scala.actors.distributed;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import java.net._;
-import java.io._;
+// $Id$
 
-import java.util.logging._;
+package scala.actors.distributed
 
+import java.net._
+import java.io._
+
+import java.util.logging._
+
+/**
+ * @author Philipp Haller
+ */
 object TcpService {
   val random = new java.util.Random(0)
 
@@ -35,11 +48,14 @@ object TestPorts {
   }
 }
 
-class TcpService(port: int) extends Thread with Service {
-  val serializer: JavaSerializer = new JavaSerializer(this);
+/**
+ * @author Philipp Haller
+ */
+class TcpService(port: Int) extends Thread with Service {
+  val serializer: JavaSerializer = new JavaSerializer(this)
 
   private val internalNode = new TcpNode(InetAddress.getLocalHost().getHostAddress(), port);
-  def node: TcpNode = internalNode;
+  def node: TcpNode = internalNode
 
   def createPid(actor: RemoteActor): RemotePid =
     new TcpPid(internalNode, makeUid, kernel, actor)
@@ -97,10 +113,10 @@ class TcpService(port: int) extends Thread with Service {
       }
     }
     catch {
-      case ioe:IOException => {
+      case ioe: IOException => {
         // do nothing
       }
-      case sec:SecurityException => {
+      case sec: SecurityException => {
         // do nothing
       }
     }

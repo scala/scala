@@ -1,6 +1,16 @@
-package scala.actors.multi;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import scala.collection.mutable.Queue;
+// $Id$
+
+package scala.actors.multi
+
+import scala.collection.mutable.Queue
 
 /**
  * @author Philipp Haller
@@ -8,14 +18,14 @@ import scala.collection.mutable.Queue;
 class LocalPid(actor: Actor) extends Pid {
   var target = actor
 
-  def !(msg: MailBox#Message): unit = target send msg
+  def !(msg: MailBox#Message): Unit = target send msg
 
-  def link(other: Pid): unit = target link other
-  def linkTo(other: Pid): unit = target linkTo other
-  def unlink(other: Pid): unit = target unlink other
-  def unlinkFrom(other: Pid): unit = target unlinkFrom other
-  def exit(reason: Symbol): unit = target exit reason
-  def exit(from: Pid, reason: Symbol): unit = target.exit(from, reason)
+  def link(other: Pid): Unit = target link other
+  def linkTo(other: Pid): Unit = target linkTo other
+  def unlink(other: Pid): Unit = target unlink other
+  def unlinkFrom(other: Pid): Unit = target unlinkFrom other
+  def exit(reason: Symbol): Unit = target exit reason
+  def exit(from: Pid, reason: Symbol): Unit = target.exit(from, reason)
 
   def spawn(body: Actor => Unit): Pid = {
     val a = new Actor {
@@ -71,13 +81,13 @@ class LocalPid(actor: Actor) extends Pid {
     }
   }
 
-  def becomeReceiveLoop(f: PartialFunction[MailBox#Message,unit]) = {
+  def becomeReceiveLoop(f: PartialFunction[MailBox#Message,Unit]) = {
 
     become(a => a receive new ProxyPartialFunction(a, f))
 
     /*become(
       a:Actor => {
-        def loop: unit = {
+        def loop: Unit = {
           def proxyFun(m: MailBox#Message): unit = {
             if (f.isDefinedAt(m)) {
               f(m);

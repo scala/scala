@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.actors.distributed
 
 import java.io.StringReader
@@ -14,12 +24,15 @@ import java.lang.SecurityException
 import scala.actors.multi.Actor
 import scala.actors.multi.ExcHandlerDesc
 
-case class RA(a: RemoteActor);
+case class RA(a: RemoteActor)
 
 object NetKernel {
-  var kernel: NetKernel = null;
+  var kernel: NetKernel = null
 }
 
+/**
+ * @author Philipp Haller
+ */
 class NetKernel(service: Service) {
   NetKernel.kernel = this
 
@@ -80,9 +93,9 @@ class NetKernel(service: Service) {
   def addConstructor(key: String, value: () => RemoteActor) =
     ptable.update(key, value);
 
-  def node: Node = service.node;
+  def node: Node = service.node
 
-  def nodes: List[Node] = service.nodes;
+  def nodes: List[Node] = service.nodes
 
   def pidOf(actor: RemoteActor): RemotePid = synchronized {
     pidTable.get(actor) match {

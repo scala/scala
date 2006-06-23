@@ -1,33 +1,46 @@
-package scala.actors.distributed;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import java.io.StringWriter;
+// $Id$
 
+package scala.actors.distributed
+
+import java.io.StringWriter
+
+/**
+ * @author Philipp Haller
+ */
 trait Service {
-  val serializer: Serializer;
-  def node: Node;
-  def createPid(actor: RemoteActor): RemotePid;
-  def send(node: Node, data: Array[byte]): unit;
-  def connect(node: Node): unit; // non blocking.
-  def disconnectNode(node: Node): unit;
-  def isConnected(node: Node): boolean;
+  val serializer: Serializer
+  def node: Node
+  def createPid(actor: RemoteActor): RemotePid
+  def send(node: Node, data: Array[byte]): Unit
+  def connect(node: Node): Unit // non blocking.
+  def disconnectNode(node: Node): Unit
+  def isConnected(node: Node): Boolean
 
   //blocking. timeout depends on Implementation.
-  def isReachable(node: Node): boolean;
+  def isReachable(node: Node): Boolean
 
-  def getRoundTripTimeMillis(node:Node): long; //blocking
+  def getRoundTripTimeMillis(node: Node): Long //blocking
 
   def nodes:List[Node]
 
 // implemented parts:
 
-  private val kern = new NetKernel(this);
-  def kernel = kern;
+  private val kern = new NetKernel(this)
+  def kernel = kern
 
   def spawn(name: String): RemotePid =
-    kern spawn name;
+    kern spawn name
 
   def spawn(name: String, arg: RemotePid): RemotePid =
-    kern.spawn(name, arg);
+    kern.spawn(name, arg)
 
 
   //suggested addition by seb
@@ -64,9 +77,7 @@ trait Service {
     send(pid.node, bytes2)
   }
 
-  private var idCnt = 0;
+  private var idCnt = 0
   def makeUid = { idCnt = idCnt + 1; idCnt }
-
-
 
 }

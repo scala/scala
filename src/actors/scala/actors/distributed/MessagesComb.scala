@@ -1,8 +1,21 @@
-package scala.actors.distributed;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import scala.actors.distributed.picklers.BytePickle._;
-import scala.actors.multi.Pid;
+// $Id$
 
+package scala.actors.distributed
+
+import scala.actors.distributed.picklers.BytePickle._
+import scala.actors.multi.Pid
+
+/**
+ * @author Philipp Haller
+ */
 object MessagesComb {
   def sendPU(ser: Serializer): SPU[Send] =
     wrap((p: Pair[Pid,Array[byte]]) => Send(p._1, p._2),

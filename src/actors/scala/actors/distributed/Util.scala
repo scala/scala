@@ -1,25 +1,38 @@
-package scala.actors.distributed;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import java.io._;
-import scala.collection.mutable._;
+// $Id$
 
+package scala.actors.distributed
+
+import java.io._
+import scala.collection.mutable._
+
+/**
+ * @author Philipp Haller
+ */
 object Util {
   def pad(s: String, req: int): String = {
-    val buf = new StringBuffer;
-    val add: int = req - s.length();
+    val buf = new StringBuffer
+    val add: int = req - s.length()
     for (val i <- List.range(1, add+1))
       buf append "0";
-    buf append s;
+    buf append s
     buf.toString()
   }
 
-  def encode(i: int) = pad(Integer.toHexString(i), 8);
-  def encode(l: long) = pad(java.lang.Long.toHexString(l), 16);
-  def decode(s: String): int = Integer.decode("0x" + s).intValue();
-  def decodeLong(s: String): long = java.lang.Long.decode("0x" + s).longValue();
+  def encode(i: Int) = pad(Integer.toHexString(i), 8)
+  def encode(l: Long) = pad(java.lang.Long.toHexString(l), 16)
+  def decode(s: String): Int = Integer.decode("0x" + s).intValue()
+  def decodeLong(s: String): Long = java.lang.Long.decode("0x" + s).longValue()
 
   def baseName(o: Any) = {
-    val s = o.toString();
+    val s = o.toString()
 
     def baseName(s: String): String = {
       if (s.indexOf('$') != -1)

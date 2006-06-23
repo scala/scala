@@ -1,29 +1,37 @@
-package scala.actors;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
+// $Id$
+
+package scala.actors
+
+import java.awt._
+import java.awt.event._
+import javax.swing.event._
+import javax.swing._
+import java.io._
 
 /*
  * SPanel.scala
  * GUI for simple texts
  *
+ * @author Sebastien Noir
  */
-import java.awt._;
-import java.awt.event._;
-import javax.swing.event._;
-import javax.swing._;
-import java.io._;
+class SPanel(WIDTH: Int, HEIGHT: Int, title: String) extends JFrame {
 
+  private var textArea:JTextArea = null
+  private var resetButton:JButton = null
 
-
-class SPanel (WIDTH:int, HEIGHT:int, title:String)  extends JFrame{
-
-  private var textArea:JTextArea = null;
-  private var resetButton:JButton = null;
-
-  private var scrollPane:JScrollPane = null;
-  private var panel:JPanel = null;
-  private var contentPane:Container = null;
-  private var levelChoice:JComboBox  = null;
-  private var formatChoice:JComboBox  = null;
+  private var scrollPane:JScrollPane = null
+  private var panel:JPanel = null
+  private var contentPane:Container = null
+  private var levelChoice:JComboBox = null
+  private var formatChoice:JComboBox = null
 
   //init
   setTitle(title);
@@ -50,11 +58,10 @@ class SPanel (WIDTH:int, HEIGHT:int, title:String)  extends JFrame{
     }
   );
 
-  this.repaint();
-  this.show();
+  this.repaint()
+  this.show()
 
-
-  def addText(text:String):Unit = {
+  def addText(text: String): Unit = {
     textArea.append(text+'\n');
 
     if ( textArea.getHeight() > scrollPane.getHeight() ) {
@@ -63,12 +70,11 @@ class SPanel (WIDTH:int, HEIGHT:int, title:String)  extends JFrame{
     repaint();
   }
 /*
-  def  actionPerformed(ActionEvent e):Unit {
+  def actionPerformed(ActionEvent e):Unit {
   }
 */
 
- override def  paint(g:Graphics ): unit = {
-   super.paint( g );
- }
+ override def paint(g: Graphics): Unit =
+   super.paint(g)
 
 }

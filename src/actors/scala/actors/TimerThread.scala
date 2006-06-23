@@ -1,16 +1,28 @@
-/**
- @author Sebastien Noir
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
- This class allows the (locl) sending of a message to an actor after a timeout. Used by the library to build receiveWithin(time:long). Note that the library deletes non received TIMEOUT() message if a messsage is received before the time-out occurs.
- */
+// $Id$
 
- package scala.actors
+package scala.actors
 
 import scala.collection.mutable.PriorityQueue
 
 import scala.actors.multi.Actor
 import scala.actors.multi.MailBox
 
+/**
+ * This class allows the (locl) sending of a message to an actor after
+ * a timeout.  Used by the library to build receiveWithin(time:long).
+ * Note that the library deletes non received TIMEOUT() message if a
+ * messsage is received before the time-out occurs.
+ *
+ * @author Sebastien Noir
+ */
 case class Signal()
 
 object TimerThread extends AnyRef with Runnable {

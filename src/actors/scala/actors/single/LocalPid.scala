@@ -1,6 +1,16 @@
-package scala.actors.single;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import scala.collection.mutable.Queue;
+// $Id$
+
+package scala.actors.single
+
+import scala.collection.mutable.Queue
 
 /**
  * @author Philipp Haller
@@ -36,21 +46,21 @@ class LocalPid(actor: Actor) extends Pid {
   }
 
   private class ProxyPartialFunction(a: Actor, f: PartialFunction[MailBox#Message,unit]) extends PartialFunction[MailBox#Message, unit] {
-    def isDefinedAt(m: MailBox#Message): boolean = f.isDefinedAt(m)
+    def isDefinedAt(m: MailBox#Message): Boolean = f.isDefinedAt(m)
     def apply(m: MailBox#Message): unit = {
       f(m)
       a receive this
     }
   }
 
-  def becomeReceiveLoop(f: PartialFunction[MailBox#Message,unit]) = {
+  def becomeReceiveLoop(f: PartialFunction[MailBox#Message,Unit]) = {
 
     become(a => a receive new ProxyPartialFunction(a, f))
 
     /*become(
       a:Actor => {
-        def loop: unit = {
-          def proxyFun(m: MailBox#Message): unit = {
+        def loop: Unit = {
+          def proxyFun(m: MailBox#Message): Unit = {
             if (f.isDefinedAt(m)) {
               f(m);
               loop

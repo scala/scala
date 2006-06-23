@@ -1,24 +1,37 @@
-package scala.actors.distributed;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import java.net._;
-import java.io._;
+// $Id$
 
+package scala.actors.distributed
+
+import java.net._
+import java.io._
+
+/**
+ * @author Philipp Haller
+ */
 class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
-  val in = so.getInputStream();
-  val out = so.getOutputStream();
+  val in = so.getInputStream()
+  val out = so.getOutputStream()
 
-  val datain = new DataInputStream(in);
-  val dataout = new DataOutputStream(out);
+  val datain = new DataInputStream(in)
+  val dataout = new DataOutputStream(out)
 
-  val reader = new BufferedReader(new InputStreamReader(in));
-  val writer = new PrintWriter(new OutputStreamWriter(out));
+  val reader = new BufferedReader(new InputStreamReader(in))
+  val writer = new PrintWriter(new OutputStreamWriter(out))
 
   val log = new Debug("TcpServiceWorker")
   log.level = 2
 
   def transmit(msg: Send): unit = synchronized {
-    val data = parent.serializer.serialize(msg);
-    transmit(data);
+    val data = parent.serializer.serialize(msg)
+    transmit(data)
   }
 
   def transmit(data: String): unit = synchronized {
@@ -29,39 +42,39 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
 
   def transmit(data: Array[byte]): unit = synchronized {
     log.info("Transmitting " + data)
-    dataout.writeInt(data.length);
+    dataout.writeInt(data.length)
     dataout.write(data)
     dataout.flush()
   }
 
   def sendNode = {
-    Console.println("Sending our name " + parent.node);
-    parent.serializer.writeObject(dataout, parent.node);
+    Console.println("Sending our name " + parent.node)
+    parent.serializer.writeObject(dataout, parent.node)
   }
 
-  var connectedNode: TcpNode = _;
+  var connectedNode: TcpNode = _
 
   def readNode = {
-    Console.println("" + parent.node + ": Reading node name...");
-    //val node = parent.serializer.deserialize(reader);
-    val node = parent.serializer.readObject(datain);
-    Console.println("Connection from " + node);
+    Console.println("" + parent.node + ": Reading node name...")
+    //val node = parent.serializer.deserialize(reader)
+    val node = parent.serializer.readObject(datain)
+    Console.println("Connection from " + node)
     node match {
       case n: TcpNode => {
         connectedNode = n
-        Console.println("Adding connection to " + node + " to table.");
+        Console.println("Adding connection to " + node + " to table.")
         parent.addConnection(n, this)
       }
     }
   }
 
-  var running = true;
+  var running = true
   def halt = synchronized {
-    so.close(); // close socket
-    running = false; // stop
+    so.close() // close socket
+    running = false // stop
   }
 
-  override def run(): unit = {
+  override def run(): Unit = {
     try {
       while (running) {
         if (in.available() > 0) {
@@ -74,10 +87,10 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
       }
     }
     catch {
-      case ioe:IOException =>
+      case ioe: IOException =>
         Console.println("" + ioe + " while reading from socket.");
         parent nodeDown connectedNode
-      case e:Exception =>
+      case e: Exception =>
         // catch-all
         Console.println("" + e + " while reading from socket.");
         parent nodeDown connectedNode
