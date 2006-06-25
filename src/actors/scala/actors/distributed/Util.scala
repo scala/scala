@@ -10,8 +10,7 @@
 
 package scala.actors.distributed
 
-import java.io._
-import scala.collection.mutable._
+import scala.collection.mutable.{ArrayBuffer,Buffer}
 
 /**
  * @author Philipp Haller

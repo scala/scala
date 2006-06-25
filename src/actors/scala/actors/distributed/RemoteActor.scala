@@ -21,6 +21,7 @@ case class TCP() extends ServiceName
  * @author Philipp Haller
  */
 class RemoteActor extends Actor {
+
   override def forwardExc(destDesc: ExcHandlerDesc, e: Throwable) = {
     // locality check (handler local to this actor?)
     if (destDesc.pid == self)
@@ -29,7 +30,7 @@ class RemoteActor extends Actor {
       kernel.forwardExc(destDesc, e)
   }
 
-  override def receive(f: PartialFunction[Message,unit]): scala.All = {
+  override def receive(f: PartialFunction[Message,Unit]): scala.All = {
     if (isAlive) {
       continuation = null
       sent.dequeueFirst(f.isDefinedAt) match {
@@ -55,10 +56,9 @@ class RemoteActor extends Actor {
     throw new Done
   }
 
-  var kernel: NetKernel = null;
+  var kernel: NetKernel = null
 
-  def node =
-    self.node
+  def node = self.node
 
   def nodes = kernel.nodes
 
@@ -71,9 +71,9 @@ class RemoteActor extends Actor {
   }
 
   def serialize(index: String, rep: Serializer => AnyRef) =
-    kernel.registerSerializer(index, rep);
+    kernel.registerSerializer(index, rep)
 
-  def alive(s: ServiceName): unit = {
+  def alive(s: ServiceName): Unit = {
     var service: Service = null
     s match {
       case TCP() =>
@@ -96,7 +96,8 @@ class RemoteActor extends Actor {
         }
         service = serv
         serv.start()*/
-      case _ => throw new Exception ("Unknown Service in RemoteActor")
+      case _ =>
+        throw new Exception ("Unknown Service in RemoteActor")
     }
     // create RemotePid
     selfCached = service.kernel.register(this)
@@ -108,26 +109,27 @@ class RemoteActor extends Actor {
   }
 
   def disconnectNode(node: Node) =
-    kernel.disconnectNode(node);
+    kernel.disconnectNode(node)
+
   //does not call start def of Actor
-  def register(name: Symbol, pid: RemotePid): unit =
-    kernel.registerName(name, pid);
+  def register(name: Symbol, pid: RemotePid): Unit =
+    kernel.registerName(name, pid)
 
   //calls start def of Actor
-  def register(name: Symbol, a: RemoteActor): unit =
-    kernel.registerName(name, a);
+  def register(name: Symbol, a: RemoteActor): Unit =
+    kernel.registerName(name, a)
 
   def name(node: Node, sym: Symbol): Name =
     Name(node, sym, kernel)
 
   def spawn(node: Node, name: String): RemotePid =
-    kernel.spawn(self, node, name);
+    kernel.spawn(self, node, name)
 
-  def spawn(node: Node, a: RemoteActor): unit =
-    kernel.spawn(self, node, a);
+  def spawn(node: Node, a: RemoteActor): Unit =
+    kernel.spawn(self, node, a)
 
-  def spawn(fun: RemoteActor => unit): RemotePid =
-    kernel.spawn(fun);
+  def spawn(fun: RemoteActor => Unit): RemotePid =
+    kernel.spawn(fun)
 
   def spawn(a: RemoteActor): RemotePid = {
     val pid = kernel.register(a)
@@ -138,23 +140,23 @@ class RemoteActor extends Actor {
   def spawnLink(fun: RemoteActor => unit): RemotePid =
     kernel.spawnLink(self, fun)
 
-  def monitorNode(node: Node, cond: boolean) =
+  def monitorNode(node: Node, cond: Boolean) =
     kernel.monitorNode(self, node, cond)
 
   // this should be:
   // self.link(pid)
   // if self is RemotePid it will invoke NetKernel
 
-  def link(pid: RemotePid): unit =
+  def link(pid: RemotePid): Unit =
     kernel.link(self, pid)
 
-  def unlink(pid: RemotePid): unit =
+  def unlink(pid: RemotePid): Unit =
     kernel.unlink(self, pid)
 
-  override def exit(reason: Symbol): unit =
+  override def exit(reason: Symbol): Unit =
     kernel.exit(self, reason)
 
-  override def processFlag(flag: Symbol, set: boolean) =
+  override def processFlag(flag: Symbol, set: Boolean) =
     kernel.processFlag(self, flag, set)
 
   override def die(reason: Symbol) =

@@ -10,16 +10,14 @@
 
 package scala.actors.distributed
 
-import java.net._
-import java.io._
-
-import java.util.logging._
+import java.io.IOException
+import java.net.{InetAddress,ServerSocket,Socket,UnknownHostException}
 
 /**
  * @author Philipp Haller
  */
 object TcpService {
-  val random = new java.util.Random(0)
+  val random = new java.util.Random(System.currentTimeMillis())
 
   def generatePort: int = {
     var portnum = 0
@@ -41,8 +39,8 @@ object TcpService {
 }
 
 object TestPorts {
-  def main(args: Array[String]): unit = {
-    val random = new java.util.Random(0)
+  def main(args: Array[String]): Unit = {
+    val random = new java.util.Random(System.currentTimeMillis())
     val socket = new ServerSocket(8000 + random.nextInt(500))
     Console.println(TcpService.generatePort)
   }
@@ -92,7 +90,7 @@ class TcpService(port: Int) extends Thread with Service {
     }
   }
 
-  override def run(): unit = {
+  override def run(): Unit =
     try {
       val socket = new ServerSocket(port);
       Console.println("Tcp Service started: " + node);
@@ -113,20 +111,19 @@ class TcpService(port: Int) extends Thread with Service {
       }
     }
     catch {
-      case ioe: IOException => {
+      case ioe: IOException =>
         // do nothing
-      }
-      case sec: SecurityException => {
+      case sec: SecurityException =>
         // do nothing
-      }
     }
-  }
 
   // connection management
 
-  private val connections = new scala.collection.mutable.HashMap[TcpNode,TcpServiceWorker];
+  private val connections =
+    new scala.collection.mutable.HashMap[TcpNode,TcpServiceWorker]
 
-  def nodes:List[Node] = throw new Exception ("nodes need to be implemented in TcpService!")
+  def nodes: List[Node] =
+    throw new Exception ("nodes need to be implemented in TcpService!")
 
   def addConnection(n: TcpNode, w: TcpServiceWorker) = synchronized {
     connections += n -> w
@@ -136,18 +133,16 @@ class TcpService(port: Int) extends Thread with Service {
     connections.get(n)
   }
 
-  def isConnected(n: Node): boolean = synchronized {
+  def isConnected(n: Node): Boolean = synchronized {
     n match {
       case tnode: TcpNode =>
-        connections.get(tnode) match {
-          case None => false
-          case Some(x) => true
-        }
-      case _ => false
+        ! connections.get(tnode).isEmpty
+      case _ =>
+        false
     }
   }
 
-  def connect(n: Node): unit = synchronized {
+  def connect(n: Node): Unit = synchronized {
     n match {
       case tnode: TcpNode =>
       	connect(tnode)
@@ -202,9 +197,9 @@ class TcpService(port: Int) extends Thread with Service {
         false
     }
 
-  def getRoundTripTimeMillis(node: Node): long = 0
+  def getRoundTripTimeMillis(node: Node): Long = 0
 
-  def nodeDown(mnode: TcpNode): unit = synchronized {
+  def nodeDown(mnode: TcpNode): Unit = synchronized {
     kernel nodeDown mnode
     connections -= mnode
   }

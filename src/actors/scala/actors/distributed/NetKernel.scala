@@ -10,15 +10,12 @@
 
 package scala.actors.distributed
 
-import java.io.{StringReader,StringWriter}
-import java.util.logging._
+import java.io.{IOException,StringReader,StringWriter}
+import java.lang.SecurityException
+import java.net.UnknownHostException
+import java.util.logging.{ConsoleHandler,Level,Logger}
 
 import scala.collection.mutable.{HashMap,HashSet}
-
-import java.net.UnknownHostException
-import java.io.IOException
-import java.lang.SecurityException
-
 import scala.actors.multi.{Actor,ExcHandlerDesc}
 
 case class RA(a: RemoteActor)
@@ -35,15 +32,15 @@ class NetKernel(service: Service) {
 
   // contains constructors
   private val ptable =
-    new HashMap[String, () => RemoteActor];
+    new HashMap[String, () => RemoteActor]
 
   // maps local ids to scala.actors
   private val rtable =
-    new HashMap[int, RemoteActor];
+    new HashMap[int, RemoteActor]
 
   // maps scala.actors to their RemotePid
   private val pidTable =
-    new HashMap[RemoteActor, RemotePid];
+    new HashMap[RemoteActor, RemotePid]
 
   private var running = true;
 
@@ -57,7 +54,7 @@ class NetKernel(service: Service) {
   //start // start NetKernel
 
   /** only called if destDesc is local. */
-  def handleExc(destDesc: ExcHandlerDesc, e: Throwable) = {
+  def handleExc(destDesc: ExcHandlerDesc, e: Throwable) =
     destDesc.pid match {
       case rpid: RemotePid =>
         (rtable get rpid.localId) match {
@@ -67,9 +64,8 @@ class NetKernel(service: Service) {
             error("exc desc refers to non-registered actor")
         }
     }
-  }
 
-  def forwardExc(destDesc: ExcHandlerDesc, e: Throwable) = {
+  def forwardExc(destDesc: ExcHandlerDesc, e: Throwable) =
     // locality check (handler local to this node?)
     destDesc.pid match {
       case rpid: RemotePid =>
@@ -78,7 +74,6 @@ class NetKernel(service: Service) {
         else
           sendToNode(rpid.node, ForwardExc(destDesc, e))
     }
-  }
 
   def sendToNode(node: Node, msg: AnyRef) = {
     //val sw = new StringWriter
@@ -105,7 +100,7 @@ class NetKernel(service: Service) {
     service.disconnectNode(n)
   }
 
-  def getLocalRef(locId: int): RemoteActor =
+  def getLocalRef(locId: Int): RemoteActor =
     rtable.get(locId) match {
       case None =>
         error("" + locId + " is not registered at " + this)
@@ -113,7 +108,7 @@ class NetKernel(service: Service) {
         remoteActor
     }
 
-  def localSend(localId: int, msg: AnyRef): unit = synchronized {
+  def localSend(localId: Int, msg: AnyRef): Unit = synchronized {
     rtable.get(localId) match {
       case None =>
         error("" + localId + " is not registered at " + this)
@@ -123,15 +118,15 @@ class NetKernel(service: Service) {
     }
   }
 
-  def localSend(pid: RemotePid, msg: AnyRef): unit =
-    localSend(pid.localId, msg);
+  def localSend(pid: RemotePid, msg: AnyRef): Unit =
+    localSend(pid.localId, msg)
 
   def remoteSend(pid: RemotePid, msg: AnyRef) = synchronized {
     //Console.println("NetKernel: Remote msg delivery to " + pid)
     service.remoteSend(pid, msg)
   }
 
-  def namedSend(name: Name, msg: AnyRef): unit = {
+  def namedSend(name: Name, msg: AnyRef): Unit =
     if (name.node == this.node) {
       // look-up name
       nameTable.get(name.sym) match {
@@ -151,15 +146,14 @@ class NetKernel(service: Service) {
       sendToNode(name.node, NamedSend(name.sym, bytes))
       //sendToNode(name.node, NamedSend(name.sym, sw.toString()))
     }
-  }
 
-  val nameTable = new HashMap[Symbol, int]
+  val nameTable = new HashMap[Symbol, Int]
 
-  def registerName(name: Symbol, pid: RemotePid): unit = synchronized {
+  def registerName(name: Symbol, pid: RemotePid): Unit = synchronized {
     nameTable += name -> pid.localId
   }
 
-  def registerName(name: Symbol, a: RemoteActor): unit = synchronized {
+  def registerName(name: Symbol, a: RemoteActor): Unit = synchronized {
     val pid = register(a)
     registerName(name, pid)
     a.start
@@ -247,7 +241,7 @@ class NetKernel(service: Service) {
     service.send(remoteNode, sw.toString())
   }*/
 
-  def processMsg(msg: AnyRef): unit = synchronized {
+  def processMsg(msg: AnyRef): Unit = synchronized {
     msg match {
       case Spawn(reply: RemotePid, pname) =>
         val newPid = spawn(pname)
@@ -358,7 +352,7 @@ class NetKernel(service: Service) {
   }
 
   // assume this.node != node
-  def spawn(replyTo: RemotePid, node: Node, a: RemoteActor): unit = {
+  def spawn(replyTo: RemotePid, node: Node, a: RemoteActor): Unit = {
     val ra = RA(a)
     //val rsw = new StringWriter
     //service.serializer.serialize(ra, rsw)
@@ -389,7 +383,7 @@ class NetKernel(service: Service) {
 
   /* Spawns a new actor (locally), executing "fun".
    */
-  def spawn(fun: RemoteActor => unit): RemotePid = synchronized {
+  def spawn(fun: RemoteActor => Unit): RemotePid = synchronized {
     val newProc = new RemoteActor {
       override def run: unit =
         fun(this);
@@ -427,7 +421,7 @@ class NetKernel(service: Service) {
   // which of the local processes traps exit signals?
   private val trapExits = new HashSet[int];
 
-  def processFlag(pid: RemotePid, flag: Symbol, set: boolean) = synchronized {
+  def processFlag(pid: RemotePid, flag: Symbol, set: Boolean) = synchronized {
     if (flag.name.equals("trapExit")) {
       if (trapExits.contains(pid.localId) && !set)
         trapExits -= pid.localId
@@ -437,7 +431,7 @@ class NetKernel(service: Service) {
   }
 
   // assume from.node == this.node
-  private def unlinkFromLocal(from: RemotePid, to: RemotePid): unit =
+  private def unlinkFromLocal(from: RemotePid, to: RemotePid): Unit =
     links.get(from.localId) match {
       case None =>
         // has no links -> ignore
@@ -450,7 +444,7 @@ class NetKernel(service: Service) {
    unlinks bi-directional link
    assume from.node == this.node
    */
-  def unlink(from: RemotePid, to: RemotePid): unit = synchronized {
+  def unlink(from: RemotePid, to: RemotePid): Unit = synchronized {
     unlinkFromLocal(from, to)
     if (to.node == this.node)
       unlinkFromLocal(to, from)
@@ -461,7 +455,7 @@ class NetKernel(service: Service) {
   }
 
   // assume from.node == this.node
-  private def linkFromLocal(from: RemotePid, to: RemotePid): unit =
+  private def linkFromLocal(from: RemotePid, to: RemotePid): Unit =
     // TODO: send Exit to from if to is invalid
     links.get(from.localId) match {
       case None =>
@@ -504,7 +498,7 @@ class NetKernel(service: Service) {
 
    Assume pid is local.
    */
-  def exit(pid: RemotePid, reason: Symbol): unit = synchronized {
+  def exit(pid: RemotePid, reason: Symbol): Unit = synchronized {
     if (!(exitMarks contains pid)) {
       exitMarks += pid  // mark pid as exiting
       //Console.println("" + pid + " is exiting (" + reason + ").")
@@ -548,9 +542,9 @@ class NetKernel(service: Service) {
   }
 
   private val monNodes =
-    new HashMap[Node,HashMap[RemotePid,int]];
+    new HashMap[Node,HashMap[RemotePid,Int]]
 
-  def monitorNode(client: RemotePid, mnode: Node, cond: boolean) = synchronized {
+  def monitorNode(client: RemotePid, mnode: Node, cond: Boolean) = synchronized {
     monNodes.get(mnode) match {
       case None =>
         // nobody is monitoring this node
@@ -580,7 +574,7 @@ class NetKernel(service: Service) {
     }
   }
 
-  def nodeDown(mnode: Node) = {
+  def nodeDown(mnode: Node) =
     // send NodeDown msg to registered RemotePids
     monNodes.get(mnode) match {
       case None =>
@@ -596,6 +590,5 @@ class NetKernel(service: Service) {
           }
         }
     }
-  }
 
 }

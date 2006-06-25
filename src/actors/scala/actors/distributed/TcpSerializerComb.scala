@@ -10,14 +10,13 @@
 
 package scala.actors.distributed
 
-import java.io._
-import scala.collection.mutable._
+import java.io.Reader
 
 import scala.actors.distributed.picklers.BytePickle._
-
 import scala.actors.distributed.MessagesComb._
 import scala.actors.distributed.NodeComb._
-import scala.actors.multi._
+import scala.actors.multi.Pid
+import scala.collection.mutable.HashMap
 
 /**
  * @author Philipp Haller
@@ -96,26 +95,26 @@ class TcpSerializerComb(serv: Service) extends Serializer(serv) {
   }
 
   def addRep(name: String, repCons: Serializer => AnyRef) =
-    table.update(name, repCons(this));
+    table.update(name, repCons(this))
 
   def +=(name: String) =
-    new InternalMapTo(name);
+    new InternalMapTo(name)
 
   class InternalMapTo(name: String) {
     def ->(repCons: Serializer => AnyRef): unit =
-      table.update(name, repCons(TcpSerializerComb.this));
+      table.update(name, repCons(TcpSerializerComb.this))
   }
 
   def serialize(o: AnyRef): Array[byte] = {
-    log.info("pickling value of type " + Util.baseName(o));
-    val op = table.get(Util.baseName(o));
+    log.info("pickling value of type " + Util.baseName(o))
+    val op = table.get(Util.baseName(o))
     op match {
       case None => error("No type representation for " + Util.baseName(o) + " found. Cannot serialize.");
       case Some(rep) =>
         // first write type name
         val bytes = pickle(string, Util.baseName(o))
-        val repr = rep.asInstanceOf[SPU[AnyRef]];
-        log.info("using type representation " + repr);
+        val repr = rep.asInstanceOf[SPU[AnyRef]]
+        log.info("using type representation " + repr)
         val res = repr.appP(o, new PicklerState(bytes, new PicklerEnv)).stream
         res
     }

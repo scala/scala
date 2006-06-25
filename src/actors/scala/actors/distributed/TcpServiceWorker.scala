@@ -10,8 +10,8 @@
 
 package scala.actors.distributed
 
-import java.net._
 import java.io._
+import java.net.Socket
 
 /**
  * @author Philipp Haller
@@ -29,18 +29,18 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   val log = new Debug("TcpServiceWorker")
   log.level = 2
 
-  def transmit(msg: Send): unit = synchronized {
+  def transmit(msg: Send): Unit = synchronized {
     val data = parent.serializer.serialize(msg)
     transmit(data)
   }
 
-  def transmit(data: String): unit = synchronized {
+  def transmit(data: String): Unit = synchronized {
     log.info("Transmitting " + data)
     writer.write(data)
     writer.flush()
   }
 
-  def transmit(data: Array[byte]): unit = synchronized {
+  def transmit(data: Array[byte]): Unit = synchronized {
     log.info("Transmitting " + data)
     dataout.writeInt(data.length)
     dataout.write(data)

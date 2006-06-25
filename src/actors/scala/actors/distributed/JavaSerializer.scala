@@ -11,11 +11,9 @@
 package scala.actors.distributed
 
 import java.io._
-import scala.collection.mutable._
 
 import scala.actors.distributed.picklers.BytePickle.SPU
-import scala.actors.distributed.picklers._
-import scala.actors.multi._
+import scala.actors.multi.Pid
 
 [serializable]
 class JavaSerializer(serv: Service) extends Serializer(serv) {
@@ -32,7 +30,7 @@ class JavaSerializer(serv: Service) extends Serializer(serv) {
     bos.toByteArray()
   }
 
-  def deserialize(bytes: Array[byte]): AnyRef = {
+  def deserialize(bytes: Array[Byte]): AnyRef = {
     val bis = new ByteArrayInputStream(bytes)
     val in = new ObjectInputStream(bis)
     in.readObject()
