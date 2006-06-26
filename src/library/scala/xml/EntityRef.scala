@@ -34,8 +34,14 @@ case class EntityRef(entityName: String) extends SpecialNode {
 
   override def hashCode() = entityName.hashCode();
 
-  override def text = "";
-
+  override def text = entityName match {
+   case "lt"   => "<";
+   case "gt"   => ">";
+   case "amp"  => "&";
+   case "apos" => "'";
+   case "quot" => "\"";
+   case _ => val sb=new StringBuffer();toString(sb).toString()
+  }
   /** appends "&amp; entityName;" to this stringbuffer */
   def toString(sb:StringBuffer) =
     sb.append("&").append(entityName).append(";");
