@@ -189,6 +189,8 @@ trait Definitions requires SymbolTable {
     // special attributes
     var SerializableAttr: Symbol = _
     var BeanPropertyAttr: Symbol = _
+    def AnnotationDefaultAttr: Symbol =
+      getClass("scala.tools.nsc.symtab.classfile.AnnotationDefault")
 
     def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true)
 

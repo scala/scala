@@ -331,6 +331,7 @@ trait StdNames requires SymbolTable {
     val SignatureATTR = newTermName("Signature");
     val ScalaSignatureATTR = newTermName("ScalaSig");
     val JavaInterfaceATTR = newTermName("JacoInterface");
+    val AnnotationDefaultATTR = newTermName("AnnotationDefault");
     val RuntimeAnnotationATTR = newTermName("RuntimeVisibleAnnotations");
     val ClassfileAnnotationATTR = newTermName("RuntimeInvisibleAnnotations");
 

@@ -1374,9 +1374,14 @@ trait Typers requires Analyzer {
             null
           }
           typed(constr, mode | CONSTmode, AttributeClass.tpe) match {
-            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+            case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
               val constrArgs = args map getConstant
-              val attrScope = tpt.tpe.decls;
+              val attrScope = tpt.tpe.decls.filter(s => (s.isMethod && !s.isConstructor))
+              val names = new collection.mutable.HashSet[Symbol]
+              names ++= attrScope.elements
+              if (args.length == 1) {
+                names.filter(sym => sym.name != nme.value)
+              }
               val nvPairs = elements map {
                 case Assign(ntree @ Ident(name), rhs) => {
                   val sym = attrScope.lookup(name);
@@ -1384,10 +1389,21 @@ trait Typers requires Analyzer {
                     error(ntree.pos, "unknown attribute element name: " + name)
                     attrError = true;
                     null
+                  } else if (!names.contains(sym)) {
+                    error(ntree.pos, "duplicate value for element " + name)
+                    attrError = true;
+                    null
                   } else {
+                    names -= sym
                     Pair(sym, getConstant(typed(rhs, mode | CONSTmode,
                                                 sym.tpe.resultType)))
                   }
+                }
+              }
+              for (val name <- names) {
+                if (!name.attributes.contains(Triple(AnnotationDefaultAttr.tpe, List(), List()))) {
+                  error(t.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
+                  attrError = true;
                 }
               }
               if (!attrError) {

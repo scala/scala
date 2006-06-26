@@ -24,6 +24,8 @@ import scala.collection.immutable.{Map, ListMap}
 
 import java.io.IOException
 
+class AnnotationDefault extends Attribute;
+
 abstract class ClassfileParser {
   def sourcePath : AbstractFile = null
 
@@ -522,6 +524,10 @@ abstract class ClassfileParser {
             }
             staticModule.moduleClass.sourceFile = clazz.sourceFile
           }
+        case nme.AnnotationDefaultATTR =>
+          sym.attributes =
+            Triple(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
+          in.skip(attrLen)
         case nme.RuntimeAnnotationATTR =>
           //parseAnnotations(attrLen)
           in.skip(attrLen)
