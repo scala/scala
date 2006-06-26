@@ -73,6 +73,30 @@ abstract class LambdaLift extends InfoTransform {
     private def outer(sym: Symbol): Symbol =
       if (sym.isConstructor) sym.owner.owner else sym.owner;
 
+    /** The method or class which logically encloses the current symbol.
+     *  If the symbol is defined in the initialization part of a template
+     *  this is the template's primary constructor, otherwise it is
+     *  the physically enclosing method or class.
+     *
+     *  Example 1:
+     *
+     *  def f() { val x = { def g() = ...; g() } }
+     *
+     *  In this case the owner chain of `g' is `x', followed by `f' and
+     *  enclMethOrClass(`g') == `f'.
+     *
+     *  Example 2:
+     *
+     *  class C {
+     *    def <init> = { ... }
+     *    val x = { def g() = ...; g() } }
+     *  }
+     *
+     *  In this case the owner chain of `g' is `x', followed by `C' but
+     *  enclMethOrClass(`g') is the primary constructor symbol `<init>'
+     *  (or, for traits: `$init') of `C'.
+     *
+     */
     private def enclMethOrClass(sym: Symbol): Symbol = {
       def localToConstr(sym: Symbol) =
         if (sym.isLocalDummy) sym.owner.primaryConstructor else sym;
@@ -88,6 +112,29 @@ abstract class LambdaLift extends InfoTransform {
      *  Return `true' if there is no class between `owner' and
      *  the owner of sym.
      *  pre: sym.isLocal, (owner.isMethod || owner.isClass)
+     *
+     *  The idea of `markFree' is illustrated with an example:
+     *
+     *  def f(x: int) = {
+     *    class C {
+     *      class D {
+     *        val y = x
+     *      }
+     *    }
+     *  }
+     *
+     *  In this case `x' is free in the primary constructor of class `C'.
+     *  but it is not free in `D', because after lambda lift the code would be transformed
+     *  as follows:
+     *
+     *  def f(x$0: int) {
+     *    class C(x$0: int) {
+     *      val x$1 = x$0
+     *      class D {
+     *        val y = outer.x$1
+     *      }
+     *    }
+     *  }
      */
     private def markFree(sym: Symbol, owner: Symbol): boolean = {
       if (settings.debug.value) log("mark " + sym + " of " + sym.owner + " free in " + owner)
