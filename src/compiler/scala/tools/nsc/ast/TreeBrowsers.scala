@@ -50,6 +50,21 @@ abstract class TreeBrowsers {
    */
   class SwingBrowser {
 
+    def browse(t: Tree): Unit = {
+      val phase: Phase = globalPhase;
+
+      val tm = new ASTTreeModel(t);
+
+      val frame = new BrowserFrame();
+      frame.setTreeModel(tm);
+
+      val lock = new Lock();
+      frame.createFrame(lock);
+
+      // wait for the frame to be closed
+      lock.acquire;
+    }
+
     def browse(units: Iterator[CompilationUnit]): Unit =
       browse(units.toList);
 
@@ -75,7 +90,7 @@ abstract class TreeBrowsers {
   }
 
   /** Tree model for abstract syntax trees */
-  class ASTTreeModel(val program: ProgramTree) extends TreeModel {
+  class ASTTreeModel(val program: Tree) extends TreeModel {
     var listeners: List[TreeModelListener] = Nil;
 
     /** Add a listener to this tree */
