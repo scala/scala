@@ -460,23 +460,4 @@ abstract class UnCurry extends InfoTransform {
       }
     }
   }
-
-  private val resetAttrs = new Traverser {
-    val erasedSyms = new HashSet[Symbol](8)
-    override def traverse(tree: Tree): unit = tree match {
-      case EmptyTree | TypeTree() =>
-	;
-      case Bind(_, body) =>
-        if (tree.hasSymbol && tree.symbol != NoSymbol) {
-          erasedSyms.addEntry(tree.symbol);
-          tree.symbol = NoSymbol;
-        }
-	tree.tpe = null;
-	super.traverse(tree)
-      case _ =>
-	if (tree.hasSymbol && erasedSyms.contains(tree.symbol)) tree.symbol = NoSymbol;
-	tree.tpe = null;
-	super.traverse(tree)
-    }
-  }
 }

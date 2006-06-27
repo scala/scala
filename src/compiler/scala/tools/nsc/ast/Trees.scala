@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.ast
 
+import util.HashSet
 import java.io.{PrintWriter, StringWriter}
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.util.{Position, SourceFile}
@@ -1243,5 +1244,26 @@ trait Trees requires Global {
     }
   }
 
+  /** A traverser which resets symbol and tpe fields of all nodes in a given tree
+   *  except for (1) TypeTree nodes, whose .tpe field is kept and
+   *  (2) is a .symbol field refers to a symbol which is defined outside the
+   *  tree, it is also kept.
+   */
+  object resetAttrs extends Traverser {
+    private val erasedSyms = new HashSet[Symbol](8)
+    override def traverse(tree: Tree): unit = tree match {
+      case EmptyTree | TypeTree() =>
+	;
+      case _: DefTree =>
+        erasedSyms.addEntry(tree.symbol);
+        tree.symbol = NoSymbol;
+	tree.tpe = null;
+	super.traverse(tree)
+      case _ =>
+	if (tree.hasSymbol && erasedSyms.contains(tree.symbol)) tree.symbol = NoSymbol;
+	tree.tpe = null;
+	super.traverse(tree)
+    }
+  }
 }
 
