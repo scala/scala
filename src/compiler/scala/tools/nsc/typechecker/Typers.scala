@@ -1098,7 +1098,7 @@ trait Typers requires Analyzer {
             }
           }
         case ErrorType =>
-          setError(tree)
+          setError(copy.Apply(tree, fun, args))
         case _ =>
           errorTree(tree, ""+fun+" does not take parameters")
       }
@@ -1404,7 +1404,7 @@ trait Typers requires Analyzer {
               attrError = true;
             null
           }
-          typed(constr, mode | CONSTmode, AttributeClass.tpe) match {
+          typed(constr, EXPRmode | CONSTmode, AttributeClass.tpe) match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
               val constrArgs = args map getConstant
               val attrScope = tpt.tpe.decls;
