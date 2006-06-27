@@ -99,6 +99,7 @@ object CompileSocket {
   def deletePort(port: int): unit = portFile(port).delete()
 
   def getOrCreateSocket(vmArgs: String): Socket = {
+    val nAttempts = 9;
     def getsock(attempts: int): Socket =
       if (attempts == 0) {
         System.err.println("unable to establish connection to server; exiting");
@@ -114,10 +115,13 @@ object CompileSocket {
             System.err.println("...connection attempt to server at port "+port+" failed; re-trying...")
             if (attempts % 2 == 0) portFile(port).delete()
             Thread.sleep(100)
-            getsock(attempts - 1)
+            val result = getsock(attempts - 1)
+            if (attempts == nAttempts)
+              System.err.println("... connection established at port "+port)
+            result
         }
       }
-    getsock(9)
+    getsock(nAttempts)
   }
 
   def getSocket(serverAdr: String): Socket = {

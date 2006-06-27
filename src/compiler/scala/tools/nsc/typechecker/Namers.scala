@@ -233,7 +233,7 @@ trait Namers requires Analyzer {
         		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
         	          .setInfo(innerNamer.caseFactoryCompleter(tree));
                       setPrivateWithin(tree.symbol, mods);
-      }
+            }
 	    tree.symbol = enterClassSymbol(tree.pos, mods.flags, name);
             setPrivateWithin(tree.symbol, mods);
 	    finishWith(tparams);
@@ -459,73 +459,75 @@ trait Namers requires Analyzer {
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
       makePolyType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
 
-    private def typeSig(tree: Tree): Type = deSkolemize {
-      try {
-	val sym: Symbol = tree.symbol;
-	tree match {
-	  case ClassDef(_, _, tparams, tpt, impl) =>
-	    new Namer(context.makeNewScope(tree, sym)).classSig(tparams, tpt, impl)
+    private def typeSig(tree: Tree): Type = {
+      val result =
+        try {
+	  val sym: Symbol = tree.symbol;
+	  tree match {
+	    case ClassDef(_, _, tparams, tpt, impl) =>
+	      new Namer(context.makeNewScope(tree, sym)).classSig(tparams, tpt, impl)
 
-	  case ModuleDef(_, _, impl) =>
-	    val clazz = sym.moduleClass;
-	    clazz.setInfo(new Namer(context.make(tree, clazz)).templateSig(impl));
-	    //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
-	    clazz.tpe;
+	    case ModuleDef(_, _, impl) =>
+	      val clazz = sym.moduleClass;
+	      clazz.setInfo(new Namer(context.make(tree, clazz)).templateSig(impl));
+	      //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
+	      clazz.tpe;
 
-	  case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-	    val result =
-	      new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
-	    checkContractive(sym, result)
+	    case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
+	      val result =
+	        new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
+	      checkContractive(sym, result)
 
-	  case ValDef(_, _, tpt, rhs) =>
-	    if (tpt.isEmpty) {
-	      if (rhs.isEmpty) {
-		context.error(tpt.pos, "missing parameter type");
-		ErrorType
+	    case ValDef(_, _, tpt, rhs) =>
+	      if (tpt.isEmpty) {
+	        if (rhs.isEmpty) {
+		  context.error(tpt.pos, "missing parameter type");
+		  ErrorType
+	        } else {
+		  tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
+		  tpt.tpe
+	        }
 	      } else {
-		tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
-		tpt.tpe
+                val typer1 =
+                  if (sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes)
+                    newTyper(context.makeConstructorContext)
+                  else typer;
+                typer1.typedType(tpt).tpe
+              }
+
+	    case AliasTypeDef(_, _, tparams, rhs) =>
+	      new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
+
+	    case AbsTypeDef(_, _, lo, hi) =>
+              //System.out.println("bounds of " + sym + ":" + sym.tpe + " = " + typer.typedType(hi).tpe);
+	      TypeBounds(typer.typedType(lo).tpe, typer.typedType(hi).tpe);
+
+	    case Import(expr, selectors) =>
+	      val expr1 = typer.typedQualifier(expr);
+	      val base = expr1.tpe;
+	      typer.checkStable(expr1);
+	      def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
+	        case Pair(from, to) :: rest =>
+		  if (from != nme.WILDCARD && base != ErrorType &&
+		      base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
+		    context.error(tree.pos, from.decode + " is not a member of " + expr);
+		  if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
+		    context.error(tree.pos, from.decode + " is renamed twice");
+		  if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
+		    context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
+		  checkSelectors(rest)
+	        case Nil =>
 	      }
-	    } else {
-              val typer1 =
-                if (sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes)
-                  newTyper(context.makeConstructorContext)
-                else typer;
-              typer1.typedType(tpt).tpe
-            }
-
-	  case AliasTypeDef(_, _, tparams, rhs) =>
-	    new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
-
-	  case AbsTypeDef(_, _, lo, hi) =>
-            //System.out.println("bounds of " + sym + ":" + sym.tpe + " = " + typer.typedType(hi).tpe);
-	    TypeBounds(typer.typedType(lo).tpe, typer.typedType(hi).tpe);
-
-	  case Import(expr, selectors) =>
-	    val expr1 = typer.typedQualifier(expr);
-	    val base = expr1.tpe;
-	    typer.checkStable(expr1);
-	    def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
-	      case Pair(from, to) :: rest =>
-		if (from != nme.WILDCARD && base != ErrorType &&
-		    base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
-		  context.error(tree.pos, from.decode + " is not a member of " + expr);
-		if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
-		  context.error(tree.pos, from.decode + " is renamed twice");
-		if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
-		  context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
-		checkSelectors(rest)
-	      case Nil =>
-	    }
-	    checkSelectors(selectors);
-	    ImportType(expr1)
-	}
-      } catch {
-        case ex: TypeError =>
-          //System.out.println("caught " + ex + " in typeSig");//DEBUG
-	  typer.reportTypeError(tree.pos, ex);
-	  ErrorType
-      }
+	      checkSelectors(selectors);
+	      ImportType(expr1)
+	  }
+        } catch {
+          case ex: TypeError =>
+            //System.out.println("caught " + ex + " in typeSig");//DEBUG
+	    typer.reportTypeError(tree.pos, ex);
+	    ErrorType
+        }
+      deSkolemize(result)
     }
 
     /** Check that symbol's definition is well-formed. This means:
@@ -546,7 +548,7 @@ trait Namers requires Analyzer {
 	      Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2));
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
 	context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods");
-      if (sym.hasFlag(IMPLICIT) && sym.owner.isPackage)
+      if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass)
 	context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects");
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
 	context.error(sym.pos, "`abstract' modifier can be used only for classes; " +

@@ -72,7 +72,7 @@ trait Contexts requires Analyzer {
                                             // template or package definition
     var enclMethod: Context = _;            // The next outer context whose tree is a method
     var variance: int = _;                  // Variance relative to enclosing class.
-    private var _undetparams: List[Symbol] = List(); // Undetermined type parameters
+    private var _undetparams: List[Symbol] = List(); // Undetermined type parameters, not inherited to child contexts
     var depth: int = 0
     var imports: List[ImportInfo] = List()
 
@@ -83,6 +83,7 @@ trait Contexts requires Analyzer {
     var reportGeneralErrors = false
     var implicitsEnabled = false
     var checking = false
+    var retyping = false
 
     var savedTypeBounds: List[Pair[Symbol, Type]] = List()
 
@@ -121,6 +122,7 @@ trait Contexts requires Analyzer {
       c.reportGeneralErrors = this.reportGeneralErrors
       c.implicitsEnabled = this.implicitsEnabled
       c.checking = this.checking
+      c.retyping = this.retyping
       c.outer = this
       c
     }
@@ -148,10 +150,15 @@ trait Contexts requires Analyzer {
     def make(tree: Tree): Context =
       make(tree, owner)
 
-    def makeImplicit(reportAmbiguousErrors: boolean) = {
+    def makeSilent(reportAmbiguousErrors: boolean): Context = {
       val c = make(tree)
-      c.reportAmbiguousErrors = reportAmbiguousErrors
       c.reportGeneralErrors = false
+      c.reportAmbiguousErrors = reportAmbiguousErrors
+      c
+    }
+
+    def makeImplicit(reportAmbiguousErrors: boolean) = {
+      val c = makeSilent(reportAmbiguousErrors)
       c.implicitsEnabled = false
       c
     }
@@ -191,7 +198,7 @@ trait Contexts requires Analyzer {
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
-        throw new TypeError(msg)
+        throw new TypeError(pos, msg)
 
     def ambiguousError(pos: int, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): unit = {
       val msg =
@@ -202,7 +209,7 @@ trait Contexts requires Analyzer {
       if (reportAmbiguousErrors) {
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
           unit.error(pos, msg)
-      } else throw new TypeError(msg)
+      } else throw new TypeError(pos, msg)
     }
 
     def outerContext(clazz: Symbol): Context = {

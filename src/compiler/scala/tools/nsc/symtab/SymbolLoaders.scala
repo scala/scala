@@ -49,8 +49,9 @@ abstract class SymbolLoaders {
         phase = currentphase;
 	def source = kindString + " " + sourceString;
         informTime("loaded " + source, start);
-        if (root.rawInfo != this) {
-	  ok = true;
+        if (root.rawInfo == this && root.linkedSym.rawInfo == this)
+          throw new TypeError(source + " does not define " + root)
+	ok = true;
 /*
 	  val sourceFile0 = if (sourceFile == null) (root match {
 	    case clazz: ClassSymbol => clazz.sourceFile;
@@ -59,7 +60,6 @@ abstract class SymbolLoaders {
 	  setSource(root.linkedModule.moduleClass, sourceFile0);
 	  setSource(root.linkedClass,  sourceFile0);
 */
-	} else throw new TypeError(source + " does not define " + root)
       } catch {
         case ex: IOException =>
           ok = false;
@@ -72,6 +72,7 @@ abstract class SymbolLoaders {
       initRoot(root);
       if (!root.isPackageClass) initRoot(root.linkedSym);
     }
+
     override def load(root: Symbol): unit = complete(root);
 
     private def initRoot(root: Symbol): unit = {

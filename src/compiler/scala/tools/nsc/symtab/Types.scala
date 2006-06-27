@@ -890,8 +890,14 @@ trait Types requires SymbolTable {
       }
       val str = (pre.prefixString + sym.nameString +
                  (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
-      if (sym.isPackageClass) "package "+str
-      else if (sym.isModuleClass) "object "+str
+      if (sym.isPackageClass)
+        "package "+str
+      else if (sym.isModuleClass)
+        "object "+str
+      else if (sym.isAnonymousClass && sym.isInitialized)
+        sym.info.parents.mkString("", " with ", "{ ... }")
+      else if (sym.isRefinementClass && sym.isInitialized)
+        sym.info.toString()
       else str
     }
 
@@ -2178,7 +2184,9 @@ trait Types requires SymbolTable {
 // Errors and Diagnostics ---------------------------------------------------------
 
   /** An exception signalling a type error */
-  class TypeError(val msg: String) extends java.lang.Error(msg);
+  class TypeError(val pos: int, val msg: String) extends java.lang.Error(msg) {
+    def this(msg: String) = this(Position.NOPOS, msg)
+  }
 
   class NoCommonType(tps: List[Type]) extends java.lang.Error(
     "lub/glb of incompatible types: " + tps.mkString("", " and ", ""));

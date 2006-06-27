@@ -43,9 +43,10 @@ import Tokens._;
 trait Parsers requires SyntaxAnalyzer {
 
   import global._;
+  private val glob: global.type = global;
   import posAssigner.atPos;
 
-  class Parser(unit: CompilationUnit) {
+  class Parser(unit: global.CompilationUnit) {
 
     val in = new Scanner(unit);
 
@@ -1316,7 +1317,7 @@ trait Parsers requires SyntaxAnalyzer {
         param
       }
       val params = new ListBuffer[AbsTypeDef];
-      newLineOptWhenFollowedBy(LBRACKET);
+      //newLineOptWhenFollowedBy(LBRACKET);
       if (in.token == LBRACKET) {
         in.nextToken();
         params += typeParam();
@@ -1825,7 +1826,7 @@ trait Parsers requires SyntaxAnalyzer {
         nvps.toList
       } else List()
       val constr = atPos(pos) { New(t, List(args)) }
-      atPos(pos) { Attribute(constr, nameValuePairs) }
+      atPos(pos) { glob.Attribute(constr, nameValuePairs) }
     }
 
     def mixinAttribute(attrs: List[Tree]) = {

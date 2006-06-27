@@ -1,0 +1,9 @@
+/home/odersky/scala/test/files/pos/bug639.scala:1 error: not found: value a
+import a._
+       ^
+/home/odersky/scala/test/files/pos/bug639.scala:2 error: type mismatch;
+ found   : B
+ required: scala.Attribute
+[B]
+ ^
+two errors found
