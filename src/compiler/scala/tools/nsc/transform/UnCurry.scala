@@ -360,6 +360,15 @@ abstract class UnCurry extends InfoTransform {
           } else {
             withNeedLift(true) {
 	      val formals = fn.tpe.paramTypes;
+              if (inPattern && fn.symbol != null && fn.symbol.isSubClass(SeqClass)) {
+                // normalization to fix bug401
+                val tpe1 = tree.tpe.baseType(fn.symbol)
+                tree.setType(tpe1)
+                fn.setType(
+                  fn.tpe match {
+                    case MethodType(formals, restpe) => MethodType(formals, tpe1)
+                  })
+              }
               copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
             }
           }

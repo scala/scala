@@ -411,26 +411,28 @@ class SemanticTokens(val compiler: Global) {
 			}
     case tree : TypeApply =>
 		  //System.err.println("TYPE_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
-      if (!tree.args0.isEmpty) {
+      if (!tree.args.isEmpty) {
         //System.err.println("ARGS: " + unit.source.dbg(tree.args0.head.pos));
       }
-      build(tree.fun0);
-      build(tree.args0);
+      build(tree.fun);
+      build(tree.args);
     case tree : Apply =>
       //System.err.println("NORM_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
-      build(tree.fun0);
-      build(tree.args0);
+      build(tree.fun);
+      build(tree.args);
 	  case tree : GenericApply =>
 	    //System.err.println("GEN_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
-  	  build(tree.fun0);
-			build(tree.args0);
-	  case tree : Typed => build(tree.expr); build(tree.tpt);
+  	    build(tree.fun);
+	    build(tree.args);
+	  case tree : Typed =>
+            build(tree.expr);
+            build(tree.tpt);
 	  case tree : Block =>
-    	if (false) {
-				if (!tree.stats.isEmpty)
-          System.err.println("BLOCKS: " + tree.stats.head + " " + tree.stats.head.getClass());
-        System.err.println("BLOCKE: " + tree.expr + " " + tree.expr.getClass());
-      }
+    	    if (false) {
+	      if (!tree.stats.isEmpty)
+                System.err.println("BLOCKS: " + tree.stats.head + " " + tree.stats.head.getClass());
+              System.err.println("BLOCKE: " + tree.expr + " " + tree.expr.getClass());
+            }
 	    build(tree.stats); build(tree.expr);
 	  case tree : CaseDef    =>
 	    build(tree.pat); build(tree.guard); build(tree.body);

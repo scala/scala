@@ -117,7 +117,7 @@ object CompileSocket {
             Thread.sleep(100)
             val result = getsock(attempts - 1)
             if (attempts == nAttempts)
-              System.err.println("... connection established at port "+port)
+              System.err.println("...connection established at port "+port+"...")
             result
         }
       }

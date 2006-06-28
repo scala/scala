@@ -431,19 +431,21 @@ trait Trees requires Global {
   case class Typed(expr: Tree, tpt: Tree)
        extends TermTree;
 
-  abstract class GenericApply(val fun0: Tree, val args0: List[Tree]) extends TermTree;
-
+  abstract class GenericApply extends TermTree {
+    val fun: Tree
+    val args: List[Tree]
+  }
 
   /** Type application */
   case class TypeApply(fun: Tree, args: List[Tree])
-       extends GenericApply(fun, args) {
+       extends GenericApply {
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
   }
 
   /** Value application */
   case class Apply(fun: Tree, args: List[Tree])
-       extends GenericApply(fun, args) {
+       extends GenericApply {
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
   }

@@ -211,6 +211,8 @@ object Predef {
 
   implicit def intWrapper(x: int) = new runtime.RichInt(x)
 
+  implicit def stringWrapper(x: String) = new runtime.RichString(x)
+
   implicit def char2ordered(x: char): Ordered[char] = new Ordered[char] with Proxy {
     def self: Any = x
     def compare [b >: char <% Ordered[b]](y: b): int = y match {

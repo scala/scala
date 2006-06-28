@@ -65,10 +65,10 @@ trait Scanners requires SyntaxAnalyzer {
 
     /** append Unicode character to "lit" buffer
     */
-    protected def putChar(c: char) = cbuf.append(c)
+    protected def putChar(c: char): unit = cbuf.append(c)
 
     /** Clear buffer and set name */
-    private def setName = {
+    private def setName: unit = {
       name = newTermName(cbuf.toString())
       cbuf.setLength(0)
     }
@@ -271,18 +271,31 @@ trait Scanners requires SyntaxAnalyzer {
                   base = 8
                 }
                 getNumber
-                return;       // scala-mode: return is a keyword
+                return
               case '1' | '2' | '3' | '4' |
                    '5' | '6' | '7' | '8' | '9' =>
                 base = 10
                 getNumber
                 return
-              case '`' => //"   scala-mode: need to understand literals
+              case '`' =>
+                in.next
                 getStringLit('`')
                 token = IDENTIFIER
                 return
-              case '\"' => //"   scala-mode: need to understand literals
-                getStringLit('\"')
+              case '\"' =>
+                in.next
+                if (in.ch == '\"') {
+                  in.next
+                  if (in.ch == '\"') {
+                    in.next
+                    getMultiLineStringLit
+                  } else {
+                    token = STRINGLIT
+                    name = nme.EMPTY
+                  }
+                } else {
+                  getStringLit('\"')
+                }
                 return
               case '\'' =>
                 in.next
@@ -549,7 +562,6 @@ trait Scanners requires SyntaxAnalyzer {
       }
 
     private def getStringLit(delimiter: char): unit = {
-      in.next
       while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
         getlitch()
       }
@@ -561,6 +573,32 @@ trait Scanners requires SyntaxAnalyzer {
         syntaxError("unclosed string literal")
       }
     }
+
+    private def getMultiLineStringLit: unit =
+      if (in.ch == '\"') {
+        in.next
+        if (in.ch == '\"') {
+          in.next
+          if (in.ch == '\"') {
+            in.next
+            token = STRINGLIT
+            setName
+          } else {
+            putChar('\"')
+            putChar('\"')
+            getMultiLineStringLit
+          }
+        } else {
+          putChar('\"')
+          getMultiLineStringLit
+        }
+      } else if (in.ch == SU) {
+        syntaxError("unclosed multi-line string literal")
+      } else {
+        putChar(in.ch)
+        in.next
+        getMultiLineStringLit
+      }
 
 // Literals -----------------------------------------------------------------
 
