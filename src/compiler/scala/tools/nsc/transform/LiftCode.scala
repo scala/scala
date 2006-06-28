@@ -62,8 +62,14 @@ abstract class LiftCode extends Transform {
     def reify(tree: Tree): reflect.Tree = tree match {
       case Ident(_) =>
         val rsym = reify(tree.symbol);
-        if (rsym == reflect.NoSymbol) FreeValue(tree)
-        else reflect.Ident(rsym)
+        //Console.println("LiftCode: seen ident")
+        if (rsym == reflect.NoSymbol) {
+          //Console.println("  free = "+tree)
+          FreeValue(tree)
+        } else {
+          //Console.println("  rsym = "+rsym)
+          reflect.Ident(rsym)
+        }
       case Select(qual, _) =>
         val rsym = reify(tree.symbol);
         if (rsym == reflect.NoSymbol) throw new TypeError("cannot reify symbol: " + tree.symbol)
@@ -107,6 +113,7 @@ abstract class LiftCode extends Transform {
       case vd @ ValDef(mods, name, tpt, rhs) =>
         val rtpe = reify(vd.tpe) // will return null, currently?!
         val sym  = reflect.LocalValue(currentOwner, name.toString(), rtpe)
+        env(vd.symbol) = sym // bq: despite Scala's scoping rules, this should work because references to vd.symbol were type checked.
         val rhs_ = reify(rhs)
         reflect.ValDef(sym, rhs_)
 
