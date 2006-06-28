@@ -279,8 +279,14 @@ abstract class TreePrinters {
           })
 
         case TypeTree() =>
-	  if (tree.tpe == null) print("<type ?>")
-          else print(tree.tpe.toString());
+          print(
+	    if (tree.tpe == null)
+              "<type ?>"
+            else if (tree.tpe.symbol != null && tree.tpe.symbol.isAnonymousClass)
+              tree.tpe.symbol.toString()
+            else
+              tree.tpe.toString()
+          )
 
         case SingletonTypeTree(ref) =>
           print(ref); print(".type")
