@@ -198,6 +198,8 @@ abstract class TreeInfo {
       isSequencePattern(body)
     case Alternative(ts) =>
       ts forall isSequencePattern
+    case _ =>
+      false
   }
 
   /** The method part of an application node
