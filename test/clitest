@@ -379,9 +379,9 @@ while [ $# -gt 0 ]; do
 done;
 
 if [ "$LANG" = "scala" ]; then
-    RUNTIME_COMMAND="${BIN_DIR}scala"
-    COMPILER_COMMAND="${BIN_DIR}$COMPILER"
-    INTERPRETER_COMMAND="${BIN_DIR}scalaint"
+    RUNTIME_COMMAND="${BIN_DIR}scala";
+    COMPILER_COMMAND="${BIN_DIR}$COMPILER";
+    INTERPRETER_COMMAND="${BIN_DIR}scala";
     DOCGEN_COMMAND="${BIN_DIR}scaladoc";
 elif [ "$LANG" = "java" ]; then
     RUNTIME_COMMAND=`which ${JAVACMD:=java}`

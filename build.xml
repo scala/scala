@@ -58,8 +58,6 @@ PROPERTIES
   <property name="scala.exec.name" value="scala"/>
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
-  <property name="scalaint.exec.name" value="scalaint"/>
-  <property name="scalascript.exec.name" value="scalascript"/>
   <property name="fsc.exec.name" value="fsc"/>
 
 <!-- ===========================================================================
@@ -341,18 +339,6 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       copyright="${copyright.string}"
       javaFlags="-Xmx256M -Xms16M"/>
     <lockertool
-      file="${locker.dir}/bin/${scalaint.exec.name}"
-      name="Scala interpreter"
-      class="scala.tools.nsc.MainInterpreter"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
-    <lockertool
-      file="${locker.dir}/bin/${scalascript.exec.name}"
-      name="Scala scripting tool"
-      class="scala.tools.nsc.MainScript"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
-    <lockertool
       file="${locker.dir}/bin/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
@@ -366,10 +352,6 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       file="${locker.dir}/bin/${scala.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${locker.dir}/bin/${scaladoc.exec.name}"/>
-    <chmod perm="ugo+rx"
-      file="${locker.dir}/bin/${scalaint.exec.name}"/>
-    <chmod perm="ugo+rx"
-      file="${locker.dir}/bin/${scalascript.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${locker.dir}/bin/${fsc.exec.name}"/>
     <!-- Mark LOCKER as being completely built -->
@@ -488,18 +470,6 @@ BUILD QUICK-TEST LAYER
       copyright="${copyright.string}"
       javaFlags="-Xmx256M -Xms16M"/>
     <quicktool
-      file="${quick.dir}/bin/${scalaint.exec.name}"
-      name="Scala interpreter"
-      class="scala.tools.nsc.MainInterpreter"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
-    <quicktool
-      file="${quick.dir}/bin/${scalascript.exec.name}"
-      name="Scala scripting tool"
-      class="scala.tools.nsc.MainScript"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
-    <quicktool
       file="${quick.dir}/bin/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
@@ -512,10 +482,6 @@ BUILD QUICK-TEST LAYER
       file="${quick.dir}/bin/${scala.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${quick.dir}/bin/${scaladoc.exec.name}"/>
-    <chmod perm="ugo+rx"
-      file="${quick.dir}/bin/${scalaint.exec.name}"/>
-    <chmod perm="ugo+rx"
-      file="${quick.dir}/bin/${scalascript.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${quick.dir}/bin/${fsc.exec.name}"/>
   </target>
@@ -635,18 +601,6 @@ TEST
       copyright="${copyright.string}"
       javaFlags="-Xmx256M -Xms16M"/>
     <straptool
-      file="${strap.dir}/bin/${scalaint.exec.name}"
-      name="Scala interpreter"
-      class="scala.tools.nsc.MainInterpreter"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
-    <straptool
-      file="${strap.dir}/bin/${scalascript.exec.name}"
-      name="Scala scripting tool"
-      class="scala.tools.nsc.MainScript"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
-    <straptool
       file="${strap.dir}/bin/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
@@ -659,10 +613,6 @@ TEST
       file="${strap.dir}/bin/${scala.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${strap.dir}/bin/${scaladoc.exec.name}"/>
-    <chmod perm="ugo+rx"
-      file="${strap.dir}/bin/${scalaint.exec.name}"/>
-    <chmod perm="ugo+rx"
-      file="${strap.dir}/bin/${scalascript.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${strap.dir}/bin/${fsc.exec.name}"/>
   </target>
@@ -870,8 +820,6 @@ GENERATES A DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scalac.exec.name}"/>
     <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scala.exec.name}"/>
     <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scaladoc.exec.name}"/>
-    <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scalaint.exec.name}"/>
-    <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scalascript.exec.name}"/>
     <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${fsc.exec.name}"/>
   <!-- Copy the API, examples and man -->
     <copy todir="${dist.current.dir}/doc/scala">
