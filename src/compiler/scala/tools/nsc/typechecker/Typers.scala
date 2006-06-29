@@ -58,7 +58,7 @@ trait Typers requires Analyzer {
 
     private def inferView(pos: int, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
       if (settings.debug.value) log("infer view from "+from+" to "+to);//debug
-      if (phase.erasedTypes) EmptyTree
+      if (phase.id > currentRun.typerPhase.id) EmptyTree
       else from match {
         case MethodType(_, _) => EmptyTree
         case OverloadedType(_, _) => EmptyTree
@@ -502,7 +502,7 @@ trait Typers requires Analyzer {
     def adaptToMember(qual: Tree, name: Name, tp: Type): Tree = {
       val qtpe = qual.tpe.widen;
       if (qual.isTerm && (qual.symbol == null || !qual.symbol.isTerm || qual.symbol.isValue) &&
-          !phase.erasedTypes && !qtpe.isError && !tp.isError &&
+          phase.id <= currentRun.typerPhase.id && !qtpe.isError && !tp.isError &&
           qtpe.symbol != AllRefClass && qtpe.symbol != AllClass && qtpe != WildcardType) {
         val coercion = inferView(qual.pos, qtpe, name, tp, true)
         if (coercion != EmptyTree)
@@ -1602,6 +1602,7 @@ trait Typers requires Analyzer {
             if (settings.debug.value) log("trans app "+fun1+":"+fun1.symbol+":"+fun1.tpe+" "+args);//DEBUG
             if (util.Statistics.enabled) appcnt = appcnt + 1
             if (xviews &&
+                phase.id <= currentRun.typerPhase.id &&
                 fun1.isInstanceOf[Select] &&
                 !fun1.tpe.isInstanceOf[ImplicitMethodType] &&
                 (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) tryTypedApply(fun1, args)
