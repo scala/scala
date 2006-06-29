@@ -285,12 +285,6 @@ abstract class UnCurry extends InfoTransform {
 
 // ------ The tree transformers --------------------------------------------------------
 
-    def isSequencePattern(tree: Tree) =
-      inPattern &&
-      tree.symbol != null &&
-      !tree.symbol.hasFlag(CASE) &&
-      tree.symbol.isSubClass(SeqClass)
-
     def mainTransform(tree: Tree): Tree = {
 
       def withNeedLift(needLift: Boolean)(f: => Tree): Tree = {
@@ -366,25 +360,9 @@ abstract class UnCurry extends InfoTransform {
           } else {
             withNeedLift(true) {
 	      val formals = fn.tpe.paramTypes;
-              if (isSequencePattern(fn)) {
-                // normalization to fix bug401
-                val tpe1 = tree.tpe.baseType(fn.symbol)
-                tree.setType(tpe1)
-                fn.setType(
-                  fn.tpe match {
-                    case MethodType(formals, restpe) => MethodType(formals, tpe1)
-                  })
-              }
               copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
             }
           }
-
-        case Bind(name, body @ Apply(fn, args)) if isSequencePattern(fn) =>
-          val body1 = transform(body)
-          tree.symbol.setInfo(
-            if (treeInfo.isSequenceValued(body1)) seqType(body1.tpe) else body1.tpe)
-          Console.println("retyping "+tree+" to "+tree.symbol.tpe)//debug
-          copy.Bind(tree, name, body1) setType body1.tpe
 
         case Assign(Select(_, _), _) =>
           withNeedLift(true) { super.transform(tree) }

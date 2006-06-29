@@ -426,9 +426,10 @@ trait Typers requires Analyzer {
                 }
                 tree1
               } else if (clazz.isSubClass(SeqClass)) { // (5.2)
-                pt.baseType(clazz).baseType(SeqClass) match {
+                val restpe = pt.baseType(clazz)
+                restpe.baseType(SeqClass) match {
                   case TypeRef(pre, seqClass, args) =>
-                    tree.setType(MethodType(List(typeRef(pre, RepeatedParamClass, args)), pt))
+                    tree.setType(MethodType(List(typeRef(pre, RepeatedParamClass, args)), restpe))
                   case NoType =>
                     errorTree(tree, "expected pattern type "+pt +
                               " does not conform to sequence "+clazz)
@@ -456,6 +457,8 @@ trait Typers requires Analyzer {
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
+          tree
+        } else if ((mode & PATTERNmode) != 0 && treeInfo.isSequencePattern(tree)) {
           tree
         } else {
           val tree1 = constfold(tree, pt); // (10) (11)
