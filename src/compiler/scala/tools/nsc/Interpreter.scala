@@ -73,7 +73,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   def beQuiet = { printResults = false }
 
   /** directory to save .class files to */
-  private val classfilePath = File.createTempFile("scalaint", "")
+  val classfilePath = File.createTempFile("scalaint", "")
   classfilePath.delete  // the file is created as a file; make it a directory
   classfilePath.mkdirs
 
