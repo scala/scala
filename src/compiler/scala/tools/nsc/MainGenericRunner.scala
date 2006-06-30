@@ -99,7 +99,7 @@ object MainGenericRunner {
               e.getCause.printStackTrace
           }
         } else {
-          MainScript.runScript(settings, thingToRun, command.arguments)
+          ScriptRunner.runScript(settings, thingToRun, command.arguments)
         }
     }
   }

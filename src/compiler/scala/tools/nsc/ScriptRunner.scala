@@ -35,8 +35,7 @@ import scala.tools.nsc.io._
  * TODO: It would be better if error output went to stderr instead
  * of stdout....
  */
-   // XXX rename to ScriptRunner
-object MainScript {
+object ScriptRunner {
   /** Choose a jar filename to hold the compiled version
     * of a script
     */
