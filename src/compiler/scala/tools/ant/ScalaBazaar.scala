@@ -265,10 +265,11 @@ package scala.tools.ant {
           log(file, Project.MSG_DEBUG)
           zip.putNextEntry(new ZipEntry(destFolder + "/" + file))
           val input = new FileInputStream(nameToFile(srcFolder)(file))
-          var byte = input.read()
-          while (byte != -1) {
-            zip.write (byte)
-            byte = input.read()
+          val buf = new Array[byte](10240)
+          var n = input.read(buf, 0, buf.length)
+          while (n >= 0) {
+            zip.write (buf, 0, n)
+            n = input.read(buf, 0, buf.length)
           }
           zip.closeEntry()
           input.close()
