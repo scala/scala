@@ -16,7 +16,7 @@ object ObjectRunner {
   /** Run a given object, specified by name, using a
     * specified classpath and argument list.
     *
-    * Throws: ClassNotFoundException, NoSuchMtehodError,
+    * Throws: ClassNotFoundException, NoSuchMethodError,
     *         InvocationTargetException
     */
   def run(
