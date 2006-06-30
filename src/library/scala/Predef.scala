@@ -70,8 +70,6 @@ object Predef {
   def fst[a](x: a, y: Any): a = x
   def scd[a](x: Any, y: a): a = y
 */
-//todo: remove from here!
-  val namespace$default = ""
   val $scope = scala.xml.TopScope
 
   type Function[-a,+b] = Function1[a,b]
