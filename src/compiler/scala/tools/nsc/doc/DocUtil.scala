@@ -14,8 +14,8 @@ import scala.xml._
 
 object DocUtil {
 
-  def dquote(str: String): NodeSeq =
-    DQUOTE :: Text(str) :: DQUOTE :: Nil
+  //def dquote(str: String): NodeSeq =
+  //  DQUOTE :: Text(str) :: DQUOTE :: Nil
 
   def load(str: String): NodeSeq = {
     val xmlSrc =
@@ -24,12 +24,12 @@ object DocUtil {
     XML.load(new StringReader(xmlSrc))
   }
 
-  object DQUOTE extends SpecialNode {
-    def toString(sb: StringBuffer) = {
-      sb.append("\""); sb
-    }
-    def label = "#PCDATA"
-  }
+  //object DQUOTE extends SpecialNode {
+   // def toString(sb: StringBuffer) = {
+   //   sb.append("\""); sb
+   // }
+   // def label = "#PCDATA"
+  //}
 
   def br(nodes: NodeSeq): NodeSeq = {
     val x = <br/>;
