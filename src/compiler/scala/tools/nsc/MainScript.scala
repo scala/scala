@@ -6,7 +6,9 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedReader, FileReader, File}
+import java.io._
+import java.util.jar._
+import java.lang.reflect.InvocationTargetException
 import scala.tools.nsc.util._
 import scala.tools.nsc.io._
 
@@ -33,7 +35,56 @@ import scala.tools.nsc.io._
  * TODO: It would be better if error output went to stderr instead
  * of stdout....
  */
+   // XXX rename to ScriptRunner
 object MainScript {
+  /** Choose a jar filename to hold the compiled version
+    * of a script
+    */
+  private def jarFileFor(scriptFile: String): File = {
+    val filename =
+      if(scriptFile.matches(".*\\.[^.\\\\/]*"))
+        scriptFile.replaceFirst("\\.[^.\\\\/]*$", ".jar")
+      else
+        scriptFile + ".jar"
+
+    new File(filename)
+  }
+
+  /** Try to create a jar out of all the contents
+    * of a directory.
+    */
+  private def tryMakeJar(jarFile: File, sourcePath: File) = {
+    try {
+      val jarFileStream = new FileOutputStream(jarFile)
+      val jar = new JarOutputStream(jarFileStream)
+      val buf = new Array[byte](10240)
+
+      def addFromDir(dir: File, prefix: String): Unit = {
+        for(val entry <- dir.listFiles) {
+          if(entry.isFile) {
+            jar.putNextEntry(new JarEntry(prefix + entry.getName))
+
+            val input = new FileInputStream(entry)
+            var n = input.read(buf, 0, buf.length)
+            while (n >= 0) {
+              jar.write (buf, 0, n)
+              n = input.read(buf, 0, buf.length)
+            }
+            jar.closeEntry
+            input.close
+          } else {
+            addFromDir(entry, prefix + entry.getName + "/")
+          }
+        }
+      }
+
+      addFromDir(sourcePath, "")
+      jar.close
+    } catch {
+      case _ => jarFile.delete // XXX what errors to catch?
+    }
+  }
+
   /** Read the entire contents of a file as a String. */
   private def contentsOfFile(filename: String): String = {
     val strbuf = new StringBuffer
@@ -50,9 +101,9 @@ object MainScript {
 
   /** Find the length of the header in the specified file, if
     * there is one.  The header part starts with "#!" or "::#!"
-    * and ends with a line that begins with "!#" ar "::!#".
+    * and ends with a line that begins with "!#" or "::!#".
     */
-  def headerLength(filename: String): Int = {
+  private def headerLength(filename: String): Int = {
     import java.util.regex._
 
     val fileContents = contentsOfFile(filename)
@@ -69,52 +120,10 @@ object MainScript {
     return matcher.end
   }
 
-  /** Print a usage message and then exit. */
-  def usageExit: Nothing = {
-    Console.println(
-        "scalascript [ compiler arguments... - ] scriptfile " +
-        "[ script arguments... ]")
-    Console.println
-    Console.println(
-        "Note that if you do specify compiler arguments, you \n" +
-        "must put an explicit hyphen (\"-\") at the end of them.")
-    System.exit(1).asInstanceOf[Nothing]
-  }
-
-  /** Parse an argument list into three portions:
-    *
-    *   Arguments to the compiler
-    *   The filename of the script to run
-    *   Arguments to pass to the script
+  /** Wrap a script file into a runnable object named
+    * scala.scripting.Main .
     */
-  def parseArgs(args: List[String])
-      :Tuple3[List[String], String, List[String]] =
-  {
-    if (args.length == 0)
-      usageExit
-
-    if (args(0).startsWith("-")) {
-      // the line includes compiler arguments
-      val hyphenIndex = args.indexOf("-")
-      if (hyphenIndex < 0)
-        usageExit
-      if (hyphenIndex == (args.length - 1))
-        usageExit
-
-      Tuple3(
-        args.subseq(0, hyphenIndex).toList,
-        args(hyphenIndex + 1),
-        args.subseq(hyphenIndex + 2, args.length - hyphenIndex - 2).toList)
-    } else {
-      Tuple3(
-        Nil,
-        args(0),
-        args.subseq(1, args.length-1).toList)
-    }
-  }
-
-
-  def wrappedScript(filename: String): SourceFile = {
+  private def wrappedScript(filename: String): SourceFile = {
     val preamble =
       new SourceFile("<script preamble>",
           ("package scala.scripting\n" +
@@ -134,47 +143,70 @@ object MainScript {
   }
 
 
+  /** Compile a script and then run the specified closure with
+    * a classpath for the compiled script.
+    */
+  private def withCompiledScript
+        (settings: Settings, scriptFile: String)
+        (handler: String=>Unit) =
+  {
+    val jarFile = jarFileFor(scriptFile)
+
+    def jarOK = (jarFile.canRead &&
+      (jarFile.lastModified > new File(scriptFile).lastModified))
+
+    if(jarOK)
+    {
+      // pre-compiled jar is current
+      handler(jarFile.getAbsolutePath)
+    } else {
+      // The pre-compiled jar is old.  Recompile the script.
+      jarFile.delete
+      val interpreter = new Interpreter(settings)
+      interpreter.beQuiet
+      if(interpreter.compileSources(List(wrappedScript(scriptFile)))) {
+        tryMakeJar(jarFile, interpreter.classfilePath)
+        if(jarOK) {
+          // use the jar if possible, so that
+          // the interpreter gets closed more reliably
+          interpreter.close
+          handler(jarFile.getAbsolutePath)
+        } else {
+          try {
+            handler(interpreter.classfilePath.getAbsolutePath)
+          } finally {
+            interpreter.close
+          }
+        }
+      }
+    }
+  }
+
+  /** Run a script file with the specified arguments and compilation
+    * settings.
+    */
   def runScript(
       settings: Settings,
       scriptFile: String,
       scriptArgs: List[String]): Unit =
   {
-    val interpreter = new Interpreter(settings)
-    try {
-      interpreter.beQuiet
+    withCompiledScript(settings, scriptFile)(compiledLocation => {
+      def pparts(path: String) = path.split(File.pathSeparator).toList
 
-      if(!interpreter.compileSources(List(wrappedScript(scriptFile))))
-        return () // compilation error
+      val classpath =
+        pparts(settings.bootclasspath.value) :::
+        List(compiledLocation) :::
+        pparts(settings.classpath.value)
 
-      interpreter.bind("argv", "Array[String]", scriptArgs.toArray)
-      interpreter.interpret("scala.scripting.Main.main(argv)")
-    } finally {
-      interpreter.close
-    }
+      try {
+        ObjectRunner.run(
+          classpath,
+          "scala.scripting.Main",
+          scriptArgs.toArray)
+      } catch {
+        case e:InvocationTargetException =>
+          e.getCause.printStackTrace
+      }
+    })
   }
-
-  def main(args: Array[String]): Unit = {
-    val parsedArgs = parseArgs(args.toList)
-    val compilerArgs = parsedArgs._1
-    val scriptFile = parsedArgs._2
-    val scriptArgs = parsedArgs._3
-
-    val command =
-      new CompilerCommand(
-        compilerArgs,
-        Console.println,
-        false)
-
-    if (!command.ok || command.settings.help.value) {
-      // either the command line is wrong, or the user
-      // explicitly requested a help listing
-      if (!command.ok)
-        Console.println
-      usageExit
-    }
-
-
-    runScript(command.settings, scriptFile, scriptArgs)
-  }
-
 }
