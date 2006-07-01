@@ -236,7 +236,7 @@ trait Scanners requires SyntaxAnalyzer {
               val last = in.last
               in.next
               last match {
-                case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(in.ch) =>
+                case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(in.ch) || in.ch == '!' || in.ch == '?' =>
                   token = XMLSTART
                 case _ =>
                   // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG

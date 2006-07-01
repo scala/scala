@@ -232,6 +232,60 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     }
   }
 
+
+  /** adds entity/character to to ts as side-effect
+   *  @precond ch == '&amp;'
+   */
+  def content_AMP(ts:mutable.ArrayBuffer[Tree]): Unit = {
+    nextch;
+    ch match {
+    case '#' => // CharacterRef
+      nextch;
+      val theChar = handle.text( tmppos, xCharRef );
+      xToken(';');
+      ts.append( theChar );
+    case _ => // EntityRef
+      val n = xName ;
+      xToken(';');
+      ts.append( handle.entityRef( tmppos, n ) );
+    }
+  }
+
+  /**
+   *  @precond ch == '{'
+   *  @postcond: xEmbeddedBlock == false!
+   */
+  def content_BRACE(p:Int, ts:mutable.ArrayBuffer[Tree]): Unit = {
+    if( xCheckEmbeddedBlock ) {
+      ts.append(xEmbeddedExpr);
+    } else {
+      val str = new StringBuffer("{");
+      str.append( xText );
+      appendText(p, ts, str.toString());
+    }
+  }
+
+  /** returns true if it encounters an end tag (without consuming it), appends trees to ts as side-effect
+   */
+  def content_LT(ts:mutable.ArrayBuffer[Tree]): Boolean = {
+    ch match {
+      case '/' =>
+        return true                  // end tag
+      case '!' =>
+        nextch;
+        if( '[' == ch )           // CDATA
+          ts.append( xCharData );
+        else                      // comment
+          ts.append( xComment );
+      case '?' =>                 // PI
+        nextch;
+        ts.append( xProcInstr );
+      case _   =>
+        ts.append( element );     // child node
+    }
+    return false
+  }
+
   /*[Duplicate]*/ def content: mutable.Buffer[Tree] = {
     var ts = new mutable.ArrayBuffer[Tree];
     var exit = false;
@@ -241,47 +295,14 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       } else {
         tmppos = pos;
         ch match {
-          case '<' => // another tag
-            nextch;
-            ch match {
-              case '/' =>
-                exit = true;                    // end tag
-              case '!' =>
-                nextch;
-                if( '[' == ch )                 // CDATA
-                  ts.append( xCharData );
-                else                            // comment
-                  ts.append( xComment );
-              case '?' =>                       // PI
-                nextch;
-                ts.append( xProcInstr );
-              case _   =>
-                ts.append( element );     // child
-            }
-
-          case '{' =>
-            if( xCheckEmbeddedBlock ) {
-              ts.append(xEmbeddedExpr);
-            } else {
-              val str = new StringBuffer("{");
-              str.append( xText );
-              appendText(tmppos, ts, str.toString());
-            }
-          // postcond: xEmbeddedBlock == false!
+          case '<' => // end tag, cdata, comment, pi or child node
+            nextch
+            exit = content_LT(ts)
+          case '{' => // either the character '{' or an embedded scala block
+            content_BRACE(tmppos, ts)
           case '&' => // EntityRef or CharRef
-            nextch;
-            ch match {
-              case '#' => // CharacterRef
-                nextch;
-              val theChar = handle.text( tmppos, xCharRef );
-              xToken(';');
-              ts.append( theChar );
-              case _ => // EntityRef
-                val n = xName ;
-                xToken(';');
-                ts.append( handle.entityRef( tmppos, n ) );
-            }
-          case _ => // text content
+            content_AMP(ts)
+          case _ =>  // text content
             appendText(tmppos, ts, xText);
           // here xEmbeddedBlock might be true
         }
@@ -410,33 +431,41 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    * precondition: s.xStartsXML == true
   */
   def xLiteral: Tree = try {
-    init;
-    handle.isPattern = false;
-    val pos = s.currentPos;
-    var lastend = 0;
-    var lastch  = ch;
-    var tree = element;
-    lastend = s.in.bp;
-    lastch  = s.in.ch;
+    //Console.println("entering xLiteral!!")
+    init
+    handle.isPattern = false
+    val pos = s.currentPos
+    var lastend = 0
+    var lastch  = ch
+    //var tree = element;
+    var tree:Tree = null
+    val ts = new mutable.ArrayBuffer[Tree]()
+    content_LT(ts)
+    //Console.println("xLiteral:ts = "+ts.toList)
+    lastend = s.in.bp
+    lastch  = s.in.ch
     //if (settings.debug.value) {
     //  Console.println("DEBUG 1: I am getting char '"+ch+"' at lastend "+lastend+" pos = "+pos); // DEBUG
     //}
-    xSpaceOpt;
+    xSpaceOpt
     // parse more XML ?
     if (ch == '<') {
-      val ts = new mutable.ArrayBuffer[Tree]();
-      ts.append( tree );
+      //val ts = new mutable.ArrayBuffer[Tree]();
+      //ts.append( tree );
       while( ch == '<' ) {
-        nextch;
-        ts.append( element );
-	lastend = s.in.bp;
-	lastch  = s.in.ch;
-        xSpaceOpt;
+        nextch
+        ts.append( element )
+	lastend = s.in.bp
+	lastch  = s.in.ch
+        xSpaceOpt
       }
-      tree = handle.makeXMLseq( pos, ts );
+      tree = handle.makeXMLseq( pos, ts )
+    } else {
+      assert(ts.length == 1)
+      tree = ts(0)
     }
-    s.in.bp = lastend; // ugly hack
-    s.in.ch = lastch;
+    s.in.bp = lastend // ugly hack
+    s.in.ch = lastch
     //if (settings.debug.value) {
     //  Console.println("DEBUG 2: restoring char '"+lastch+"' at lastend "+lastend+" pos = "+pos); // DEBUG
     //}

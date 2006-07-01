@@ -44,7 +44,6 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
    _toList              ,
    _xml                 ,
    _Comment             ,
-   _CharData            ,
    _Node                ,
    _ProcInstr           ,
    _Text                ,
@@ -71,7 +70,6 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   private def _scala_xml_NodeBuffer         = _scala_xml( _NodeBuffer );
   private def _scala_xml_EntityRef          = _scala_xml( _EntityRef );
   private def _scala_xml_Comment            = _scala_xml( _Comment );
-  private def _scala_xml_CharData           = _scala_xml( _CharData );
   private def _scala_xml_ProcInstr          = _scala_xml( _ProcInstr );
   private def _scala_xml_Text               = _scala_xml( _Text );
   private def _scala_xml_Elem               = _scala_xml( _Elem );
@@ -127,7 +125,9 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
 
   // create scala.xml.Text here <: scala.xml.Node
   def makeTextPat(txt:Tree ) = Apply(_scala_xml_Text, List(txt));
-  def makeText1(txt:Tree )   = New( _scala_xml_Text, LL( txt ));
+  def makeText1(txt:Tree )   = {
+    New( _scala_xml_Text, LL( txt ));
+  }
 
   // create
   def comment( pos: int, text: String ):Tree =
@@ -135,13 +135,12 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
 
   // create
   def charData( pos: int, txt: String ):Tree =
-    atPos(pos) { CharData( Literal(Constant(txt))) };
+    atPos(pos) { makeText1(Literal(Constant(txt))) }; //{ CharData( Literal(Constant(txt))) };
 
   // create scala.xml.Text here <: scala.xml.Node
   def procInstr( pos: int, target: String, txt: String ) =
     atPos(pos) { ProcInstr(Literal(Constant(target)), Literal(Constant(txt))) };
 
-  protected def CharData(txt: Tree) = New( _scala_xml_CharData, LL(txt));
   protected def Comment(txt: Tree)  = New( _scala_xml_Comment, LL(txt));
   protected def ProcInstr(target: Tree, txt: Tree) =
     New(_scala_xml_ProcInstr, LL( target, txt ));
@@ -200,28 +199,6 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     val i = name.indexOf(':');
     if( i != -1 ) Some( name.substring(0, i) ) else None
   }
-
-  /** splits */
-  protected def qualifiedAttr( pos:Int, namespace:String, name:String ):Pair[String,String] = {
-    getPrefix( name ) match {
-      case Some( pref ) =>
-        val newLabel = name.substring( pref.length()+1, name.length() );
-        // if( newLabel.indexOf(':') != -1 )  syntaxError
-        Pair( "namespace$"+pref, newLabel );
-      case None =>
-        Pair( namespace, name );
-    }
-  }
-  protected def qualified( pos:Int, name:String ):Pair[String,String] =
-    getPrefix( name ) match {
-      case Some( pref ) =>
-        val newLabel = name.substring( pref.length()+1, name.length() );
-        // if( newLabel.indexOf(':') != -1 )  syntaxError
-        Pair( "namespace$"+pref, newLabel );
-      case None =>
-        Pair( "namespace$default", name );
-    }
-
 
   /** makes an element */
   def element(pos: int, qname: String, attrMap: mutable.Map[String,Tree], args: mutable.Buffer[Tree]): Tree = {
