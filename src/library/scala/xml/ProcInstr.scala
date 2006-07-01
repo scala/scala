@@ -59,7 +59,7 @@ case class ProcInstr(target:String, proctext:String) extends SpecialNode {
     if( proctext.length() > 0 ) {
       sb
       .append(' ')
-      .append(text);
+      .append(proctext);
     };
     sb.append("?>");
   }
