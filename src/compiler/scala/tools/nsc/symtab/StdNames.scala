@@ -357,7 +357,6 @@ trait StdNames requires SymbolTable {
     val _toList              = newTermName("toList")
     val _xml                 = newTermName("xml")
     val _Comment             = newTypeName("Comment")
-    val _CharData            = newTypeName("CharData")
     val _Node                = newTypeName("Node")
     val _None                = newTermName("None")
     val _Some                = newTypeName("Some")
