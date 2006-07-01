@@ -117,8 +117,33 @@ abstract class LiftCode extends Transform {
         val rhs_ = reify(rhs)
         reflect.ValDef(sym, rhs_)
 
+      case cd @ ClassDef(mods, name, tparams, tpt, impl) =>
+        if(!tparams.isEmpty)
+          throw new TypeError("cannot handle polymorphic ClassDef ("+name+"): " + tparams)
+        val rsym = reify(cd.symbol)
+        val rimp = reify(impl)
+        val rtpe = reify(tpt.tpe)
+        reflect.ClassDef(rsym, rtpe, rimp.asInstanceOf[reflect.Template])
+
+      case tmpl @ Template(parents, body) =>
+        val rparents = for(val p <- parents) yield { reify(p.tpe) }
+        reflect.Template(rparents, body.map(reify))
+
+      case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        if(!tparams.isEmpty)
+          throw new TypeError("cannot handle polymorphic DefDef ("+name+"): " + tparams)
+        val rsym   = reify(dd.symbol)
+        val rparss = vparamss map { x => x map (reify) }
+        val rret   = reify(tpt.tpe)
+        val rrhs   = reify(rhs)
+        reflect.DefDef(rsym, rparss, rret, rrhs)
+
+      case sp @ Super(qual: Name, mix: Name) =>
+        val rsym = reify(sp.symbol)
+        reflect.Super(rsym)
+
       case _ =>
-        throw new TypeError("cannot reify tree: " + tree)
+        throw new TypeError("cannot reify tree ("+tree.getClass()+"): " + tree)
     }
 
     private def mkGlobalSymbol(fullname: String, sym: Symbol): reflect.Symbol =
@@ -147,7 +172,43 @@ abstract class LiftCode extends Transform {
         }
     }
 
-    def reify(tp: Type): reflect.Type = null
+    var _log_reify_type_ = false
+
+    def reify(tp: Type): reflect.Type = tp match {
+      case ErrorType =>
+        if (_log_reify_type_) Console.println("cannot handle ErrorType"); null
+      case WildcardType =>
+        if (_log_reify_type_) Console.println("cannot handle WildcardType"); null
+      case NoType =>
+        if (_log_reify_type_) Console.println("cannot handle NoType"); null
+      case NoPrefix =>
+        if (_log_reify_type_) Console.println("cannot handle NoPrefix"); null
+      case ThisType(sym) =>
+        if (_log_reify_type_) Console.println("ThisType ("+sym+")")
+        val rsym = reify(sym)
+        if (_log_reify_type_) Console.println("reified is "+rsym+" cannot handle ThisType "+tp); null
+      case SingleType(pre, sym) =>
+        if (_log_reify_type_) Console.println("cannot handle SingleType "+tp); null
+      case ConstantType(value) =>
+        if (_log_reify_type_) Console.println("cannot handle ConstantType("+value+")  "+tp); null
+      case TypeRef(pre, sym, args) =>
+        if (_log_reify_type_) Console.println("TypeRef! try to handle prefix")
+        val rpre = reify(pre)
+        if (_log_reify_type_) Console.println("cannot handle TypeRef("+pre+","+sym+","+args+") == "+tp+")"); null
+
+      case TypeBounds(lo, hi) =>
+        if (_log_reify_type_) Console.println("cannot handle TypeBounds "+tp); null
+      case RefinedType(parents, defs) =>
+        if (_log_reify_type_) Console.println("cannot handle RefinedType "+tp); null
+      case ClassInfoType(parents, defs, clazz) =>
+        if (_log_reify_type_) Console.println("cannot handle ClassInfoType "+tp); null
+      case MethodType(paramtypes, result) =>
+        if (_log_reify_type_) Console.println("cannot handle MethodType "+tp); null
+      case PolyType(tparams, result) =>
+        if (_log_reify_type_) Console.println("cannot handle PolyType  "+tp); null;
+      case _ =>
+        null
+    }
 
   }
 
@@ -158,36 +219,10 @@ abstract class LiftCode extends Transform {
     // todo replace className by caseName in CaseClass once we have switched to nsc.
     def className(value: CaseClass): String = value match {
       case _ :: _ => "scala.$colon$colon"
-      case reflect.Ident(_) => "scala.reflect.Ident"
-      case reflect.Select(_, _) => "scala.reflect.Select"
-      case reflect.Literal(_) => "scala.reflect.Literal"
-      case reflect.Apply(_, _) => "scala.reflect.Apply"
-      case reflect.TypeApply(_, _) => "scala.reflect.TypeApply"
-      case reflect.Function(_, _) => "scala.reflect.Function"
-      case reflect.Class(_) => "scala.reflect.Class"
-      case reflect.Method(_, _) => "scala.reflect.Method"
-      case reflect.Field(_, _) => "scala.reflect.Field"
-      case reflect.TypeField(_, _) => "scala.reflect.TypeField"
-      case reflect.LocalValue(_, _, _) => "scala.reflect.LocalValue"
-      case reflect.LocalMethod(_, _, _) => "scala.reflect.LocalMethod"
-      case reflect.LabelSymbol(_) => "scala.reflect.LabelSymbol"
-      case reflect.This(_) => "scala.reflect.This"
-      case reflect.Block(_,_) => "scala.reflect.Block"
-      case reflect.New(_) => "scala.reflect.New"
-      case reflect.If(_,_,_) => "scala.reflect.If"
-      case reflect.Assign(_,_) => "scala.reflect.Assign"
-      case reflect.Target(_,_) => "scala.reflect.Target"
-      case reflect.Goto(_) => "scala.reflect.Goto"
-      case reflect.NamedType(_) => "scala.reflect.NamedType"
-      case reflect.PrefixedType(_, _) => "scala.reflect.PrefixedType"
-      case reflect.SingleType(_, _) => "scala.reflect.SingleType"
-      case reflect.ThisType(_) => "scala.reflect.ThisType"
-      case reflect.AppliedType(_, _) => "scala.reflect.AppliedType"
-      case reflect.TypeBounds(_, _) => "scala.reflect.TypeBounds"
       case reflect.MethodType(_, _) =>
         if (value.isInstanceOf[reflect.ImplicitMethodType]) "scala.reflect.ImplicitMethodType" else "scala.reflect.MethodType"
-      case reflect.PolyType(_, _, _) => "scala.reflect.PolyType"
-      case x:reflect.ValDef => "scala.reflect.ValDef" // bq
+      case x =>
+        "scala.reflect."+x.caseName
       case _ =>
         ""
     }
