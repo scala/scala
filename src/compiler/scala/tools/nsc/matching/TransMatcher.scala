@@ -306,7 +306,8 @@ with RightTracers {
 
         System.out.println("" + sel + " match " + ocases);
 	cunit.error(sel.pos, "regular expressions not yet implemented");
-        sel
+        //sel
+        EmptyTree
       } else {
         val pm = new PatternMatcher();
         pm.initialize(sel, currentOwner, true );
@@ -356,10 +357,12 @@ with RightTracers {
         //Console.println("TransMatcher currentOwner ="+currentOwner+")");
         //Console.println("TransMatcher selector.tpe ="+selector.tpe+")");
         //Console.println("TransMatcher resultType ="+resultType+")");
-        val t_untyped = handle(nselector, ncases.asInstanceOf[List[CaseDef]]);
-        //Console.println("t_untyped "+t_untyped.toString());
-        val t         = typed { atPos(tree.pos) (t_untyped) };
-        //Console.println("t typed "+t.toString());
+        val t_untyped = handle(nselector, ncases.asInstanceOf[List[CaseDef]])
+        //Console.println("t_untyped "+t_untyped.toString())
+        val t         = atPos(tree.pos) { typer.atOwner(tree,currentOwner).typed(t_untyped, resultType) }
+        //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
+        //val t         = atPos(tree.pos) { typed(t_untyped) }
+        //Console.println("t typed "+t.toString())
         t
       case _ =>
         super.transform(tree);
