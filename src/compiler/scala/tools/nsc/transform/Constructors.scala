@@ -6,9 +6,8 @@
 
 package scala.tools.nsc.transform
 
-import symtab._
-import Flags._
 import scala.collection.mutable.ListBuffer
+import symtab.Flags._
 import util.TreeSet
 
 abstract class Constructors extends Transform {
@@ -19,7 +18,8 @@ abstract class Constructors extends Transform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "constructors"
 
-  protected def newTransformer(unit: CompilationUnit): Transformer = new ConstructorTransformer
+  protected def newTransformer(unit: CompilationUnit): Transformer =
+    new ConstructorTransformer
 
   class ConstructorTransformer extends Transformer {
 
@@ -35,19 +35,20 @@ abstract class Constructors extends Transform {
         stat match {
           case ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, Literal(_))) =>
             if (ddef.symbol.isPrimaryConstructor) {
-              constr = ddef;
-              constrParams = vparams map (.symbol);
+              constr = ddef
+              constrParams = vparams map (.symbol)
               constrBody = rhs
             }
           case _ =>
         }
       }
+      assert(constr != null && constrBody != null, impl)
 
       val paramAccessors = clazz.constrParamAccessors
       def parameter(acc: Symbol) = {
         val accname = nme.getterName(acc.originalName)
         val ps = constrParams.filter { param => accname == param.name }
-        if (ps.isEmpty) assert(false, "" + accname + " not in " + constrParams);
+        if (ps.isEmpty) assert(false, "" + accname + " not in " + constrParams)
         ps.head
       }
 
@@ -57,18 +58,18 @@ abstract class Constructors extends Transform {
         override def transform(tree: Tree): Tree = tree match {
           case Apply(Select(This(_), _), List())
           if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-            gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos;
-	  case Select(This(_), _)
-	  if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-	    gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
+            gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
+          case Select(This(_), _)
+          if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
+            gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
-            thisRefSeen = true;
+            thisRefSeen = true
             super.transform(tree)
           case This(_) =>
-            thisRefSeen = true;
+            thisRefSeen = true
             super.transform(tree)
           case Super(_, _) =>
-            thisRefSeen = true;
+            thisRefSeen = true
             super.transform(tree)
           case _ =>
             super.transform(tree)
@@ -77,7 +78,7 @@ abstract class Constructors extends Transform {
 
       def intoConstructor(oldowner: Symbol, tree: Tree) =
         intoConstructorTransformer.transform(
-          new ChangeOwnerTraverser(oldowner, constr.symbol)(tree));
+          new ChangeOwnerTraverser(oldowner, constr.symbol)(tree))
 
       def canBeMoved(tree: Tree) = tree match {
         case ValDef(_, _, _, _) => !thisRefSeen
@@ -92,7 +93,7 @@ abstract class Constructors extends Transform {
       }
 
       def copyParam(to: Symbol, from: Symbol): Tree = {
-        var result = mkAssign(to, Ident(from));
+        var result = mkAssign(to, Ident(from))
         if (from.name == nme.OUTER)
           result =
             atPos(to.pos) {
