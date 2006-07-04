@@ -578,6 +578,7 @@ trait Typers requires Analyzer {
       }
     } catch {
       case ex: TypeError =>
+        templ.tpe = null
         reportTypeError(templ.pos, ex)
         List(TypeTree(AnyRefClass.tpe))
     }
@@ -886,6 +887,11 @@ trait Typers requires Analyzer {
     }
 
     def typedBlock(block: Block, mode: int, pt: Type): Block = {
+      if (context.retyping) {
+        for (val stat <- block.stats) {
+          if (stat.isDef) context.scope.enter(stat.symbol)
+        }
+      }
       namer.enterSyms(block.stats)
       block.stats foreach enterLabelDef
       val stats1 = typedStats(block.stats, context.owner)
@@ -957,6 +963,7 @@ trait Typers requires Analyzer {
               }
               else argpt
           namer.enterSym(vparam)
+          if (context.retyping) context.scope enter vparam.symbol
           vparam.symbol
         }
         val vparams = List.mapConserve(fun.vparams)(typedValDef)
@@ -1474,8 +1481,9 @@ trait Typers requires Analyzer {
 /*
           newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)
 */
-          tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME)
-            .setFlag(SYNTHETIC).setInfo(NoType)
+          if (tree.symbol == NoSymbol)
+            tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME)
+              .setFlag(SYNTHETIC).setInfo(NoType)
           newTyper(context.makeNewScope(tree, tree.symbol)).typedFunction(fun, mode, pt)
 
         case Assign(lhs, rhs) =>
@@ -1608,6 +1616,7 @@ trait Typers requires Analyzer {
                 phase.id <= currentRun.typerPhase.id &&
                 fun1.isInstanceOf[Select] &&
                 !fun1.tpe.isInstanceOf[ImplicitMethodType] &&
+                (fun1.symbol == null || !fun1.symbol.isConstructor) &&
                 (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) tryTypedApply(fun1, args)
             else {
               typedApply(tree, fun1, args, mode, pt)
@@ -1739,6 +1748,7 @@ trait Typers requires Analyzer {
         result
       } catch {
         case ex: TypeError =>
+          tree.tpe = null
           //System.out.println("caught "+ex+" in typed");//DEBUG
           reportTypeError(tree.pos, ex)
           setError(tree)

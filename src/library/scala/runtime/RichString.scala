@@ -22,7 +22,7 @@ final class RichString(s: String) {
    */
   def apply(index: Int): Char = s charAt index
 
-  /** Strip trailing line end characters from this string
+  /** Strip trailing line end character from this string if it has one.
    *  A line end character is one of
    *   LF - line feed   (0x0A hex)
    *   FF - form feed   (0x0C hex)
