@@ -421,6 +421,10 @@ test_add_file() {
     esac;
     case "$1" in
         run  | */run  | */run/*  | run/*  ) FILES_RUN="$FILES_RUN $1";;
+        jvm5 | */jvm5 | */jvm5*  | jvm5/* )
+            if [ "$JAVA5" = "true" ]; then
+                FILES_JVM="$FILES_JVM $1"
+            fi;;
         jvm  | */jvm  | */jvm/*  | jvm/*  ) FILES_JVM="$FILES_JVM $1";;
         pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
         neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
@@ -511,6 +515,11 @@ fi;
 BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
                     # it can also be set to the empty string
 
+case `${JAVACMD:=java} \-version 2>&1 | head -1` in
+    *1.5*) JAVA5="true";;
+        *) JAVA5="false";;
+esac;
+
 DIFF="diff";
 
 case `uname` in
@@ -549,6 +558,10 @@ while [ $# -gt 0 ]; do
     esac;
 done;
 
+if [ "$JAVA5" = "true" ]; then
+    FLAGS="$FLAGS -target:jvm-1.5"
+fi;
+
 if [ -z "$ERRORS" ]; then
     abort "illegal non-numerical argument for option --errors";
 fi;
@@ -563,7 +576,11 @@ if [ "$TEST_ALL" = "true" ]; then
         run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
     esac;
     case "$TEST_TYPE" in
-        auto | jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
+        auto | jvm )
+            FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm"
+            if [ "$JAVA5" = "true" ]; then
+                FILES_JVM="$FILES_JVM $SRCDIR/jvm5";
+            fi;;
     esac;
     case "$TEST_TYPE" in
         auto | pos ) FILES_POS="$FILES_POS $SRCDIR/pos";;
