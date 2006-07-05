@@ -1,11 +1,14 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
- * @author buraq
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Burak Emir
  */
 // $Id$
-package scala.tools.nsc.matching;
+
+package scala.tools.nsc.matching
 
 /** Translation of pattern matching
+ *
+ *  @author Burak Emir
  */
 abstract class TransMatcher extends transform.Transform
 with PatternNodes
@@ -23,12 +26,12 @@ with WordAutoms
 with LeftTracers
 with RightTracers {
 
-  import global._;
-  import definitions._;
-  import posAssigner.atPos;
-  import typer.typed;
+  import global._
+  import definitions._
+  import posAssigner.atPos
+  import typer.typed
 
-  val phaseName = "transmatcher";
+  val phaseName = "transmatcher"
 
   protected def newTransformer(unit: global.CompilationUnit): global.Transformer = {
     new TransMatch
@@ -42,17 +45,17 @@ with RightTracers {
 
     /** owner of the code we create (input)
      */
-    val owner: Symbol;
+    val owner: Symbol
 
     /** the selector value (input)
      */
-    val selector:Tree;
+    val selector: Tree
 
     /** tree representing the matcher (output)
      */
-    var tree: Tree  = _ ;
+    var tree: Tree  = _
 
-    def pos: int = selector.pos;
+    def pos: int = selector.pos
 
     //assert( owner != null ) : "owner is null";
     //assert owner != Symbol.NONE ;
@@ -66,65 +69,60 @@ with RightTracers {
     //this.resultType = resultType;
 
     //this.pos        = root.pos; // for convenience only
-
   }
 
-  var cunit: CompilationUnit = _;
+  var cunit: CompilationUnit = _
 
-  def fresh = cunit.fresh ;
+  def fresh = cunit.fresh
 
-  var currentOwner: Symbol = _;
+  var currentOwner: Symbol = _
 
-  var resultType: Type = _;
+  var resultType: Type = _
 
   def containsBinding(pat: Tree): Boolean = {
-    var generatedVars = false;
+    var generatedVars = false
 
     def handleVariableSymbol(sym: Symbol): Unit  =
       if (sym.name.toString().indexOf("$") == -1) {
-        generatedVars = true; // .add(sym);
+        generatedVars = true // .add(sym)
       }
 
     def isVariableName(name: Name): Boolean =
-      ( treeInfo.isVariableName(name) ) && ( name != nme.USCOREkw ) ;
+      (treeInfo.isVariableName(name)) && (name != nme.USCOREkw)
 
     def isVariableSymbol(sym: Symbol): Boolean =
-      ( sym != null )&&( !sym.isPrimaryConstructor );
+      (sym != null) && (!sym.isPrimaryConstructor)
 
     def traverse(tree: Tree): Unit = {
-
       tree match {
         case x @ Ident(name) =>
-          if(x.symbol != definitions.PatternWildcard)
-            error("shouldn't happen?!");
+          if (x.symbol != definitions.PatternWildcard)
+            error("shouldn't happen?!")
 
         case Bind(name, subtree) =>
-          var sym: Symbol = null;
-
-        if (isVariableName(name)
-            && isVariableSymbol( {sym = tree.symbol; tree.symbol} ))
-          handleVariableSymbol(sym);
-
-        traverse( subtree );
+          var sym: Symbol = null
+          if (isVariableName(name)
+              && isVariableSymbol( {sym = tree.symbol; tree.symbol} ))
+            handleVariableSymbol(sym)
+          traverse(subtree)
 
         // congruence
-
-        case Apply(fun, args) => args foreach traverse;
+        case Apply(fun, args) => args foreach traverse
         case Sequence(trees)  => trees foreach traverse
         case Star(arg)        => traverse(arg)
-        case Typed(expr, tpe) => traverse(expr); // needed??
+        case Typed(expr, tpe) => traverse(expr) // needed??
 
-        case  _ : Select |
-               _ : Alternative |
-               _ : Select |
-               _ : Literal =>  ; // no variables
+        case _ : Select |
+             _ : Alternative |
+             _ : Select |
+             _ : Literal =>  ; // no variables
 
         case _ =>
-          cunit.error(tree.pos, "unknown pattern node:" + tree + " = " + tree.getClass());
+          cunit.error(tree.pos, "unknown pattern node:" + tree + " = " + tree.getClass())
       }
     }
-    traverse(pat);
-    generatedVars;
+    traverse(pat)
+    generatedVars
   }
 
     /** a casedef with sequence subpatterns like
@@ -137,41 +135,42 @@ with RightTracers {
      */
 
   def isRegularPattern(pat: Tree): Boolean = pat match {
-    case Alternative(trees)          =>
-      trees exists { isRegularPattern };
-    case Star(t)                 => true
-    case Ident(_)                => false
-    case Bind( n, pat1 )         => isRegularPattern( pat1 );
-    case Sequence( trees )       => true // cause there are ArrayValues now
-    case ArrayValue( tt, trees ) =>
-      trees exists { isRegularPattern };
-    case Apply( fn, List(Sequence(List())))      =>
+    case Alternative(trees)    =>
+      trees exists { isRegularPattern }
+    case Star(t)               => true
+    case Ident(_)              => false
+    case Bind(n, pat1)         => isRegularPattern(pat1)
+    case Sequence(trees)       => true // cause there are ArrayValues now
+    case ArrayValue(tt, trees) =>
+      trees exists { isRegularPattern }
+    case Apply(fn, List(Sequence(List()))) =>
       false
-    case Apply( fn, trees )      =>
-      trees exists { isRegularPattern };
-    case Literal(_)              => false
-    case Select(_,_)             => false
-    case Typed(_,_)              => false
+    case Apply(fn, trees)      =>
+      trees exists { isRegularPattern }
+    case Literal(_)            => false
+    case Select(_, _)          => false
+    case Typed(_, _)           => false
   }
 
   protected def isDefault(p: Tree): Boolean = p match {
-    case Bind(_,q)            => isDefault(q);
+    case Bind(_, q)           => isDefault(q)
     case Ident(nme.WILDCARD)  => true
     case _                    => false
-  };
+  }
+
   protected def isDefaultStar(p: Tree): Boolean = p match {
-    case Bind(_,q)                  => isDefaultStar(q);
+    case Bind(_, q)                 => isDefaultStar(q)
     case Star(Ident(nme.WILDCARD))  => true
     case _                          => false
-  };
+  }
 
   // @todo: this should be isNotRegular :-/ premature opt src of all evil
   // check special case Seq(p1,...,pk,_*) where pi not regular
-  protected def isRightIgnoring(p:ArrayValue): Boolean = p match {
-    case ArrayValue(s,trees) =>
-      val it = trees.elements;
-      var c: Tree = null;
-      while(it.hasNext && {c = it.next; !isRegularPattern(c)}) {}
+  protected def isRightIgnoring(p: ArrayValue): Boolean = p match {
+    case ArrayValue(s, trees) =>
+      val it = trees.elements
+      var c: Tree = null
+      while (it.hasNext && {c = it.next; !isRegularPattern(c)}) {}
       (!it.hasNext) && isDefaultStar(c)
   }
 
@@ -191,108 +190,112 @@ with RightTracers {
      *
      *  case    .. () .. => val x = Nil; body
      */
-    def isRegular(pats:List[CaseDef]): Pair[List[CaseDef],Boolean] = {
-      var existsReg = false;
-      var isReg = false;
-      var nilVars:List[Symbol] = null;
+    def isRegular(pats: List[CaseDef]): Pair[List[CaseDef],Boolean] = {
+      var existsReg = false
+      var isReg = false
+      var nilVars: List[Symbol] = null
 
       def isRegular1(pat: Tree): Tree = pat match {
-        case Alternative(trees)          =>
-          copy.Alternative(pat, trees map { isRegular1 });
+        case Alternative(trees) =>
+          copy.Alternative(pat, trees map { isRegular1 })
 
-        case Star(t)                 => isReg = true; copy.Star(pat, isRegular1(t) );
+        case Star(t) =>
+          isReg = true; copy.Star(pat, isRegular1(t))
 
-        case Ident(_)                => pat;
-
-        case Bind( id, empt @ Sequence(List())) =>
-          nilVars = pat.symbol /*id.symbol()*/ :: nilVars;
-		  empt;
-        case Bind( n, pat1 )         => copy.Bind(pat, n, isRegular1( pat1 ));
-
-      case Sequence( trees )       =>
-	    //isReg = isReg || ( trees.length == 0 );
-		isReg = true; // cause there are ArrayValues now
-		copy.Sequence(pat, trees map { isRegular1 });
-
-      //case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
-	case Apply(fn, List(pat2, ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) =>
-	//Console.println("OPTIMIZING");
-	//Console.println(pat);
-	//Console.println(pat.tpe);
-	//Console.println(b.tpe);
-	  val tpe1:Type = pat2.tpe.widen.baseType( definitions.SeqClass ).typeArgs(0);
-
-	  val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
-        b.symbol.setInfo(tpe);
-	b.setType(tpe);
-        val res = copy.Bind(b, id, wc);
-	//Console.println("====>");
-	//Console.println(res);
-	res
-
-      case av @ ArrayValue( s, trees )       =>
-        if(isRightIgnoring(av))
+        case Ident(_) =>
           pat
-        else
-          copy.ArrayValue( pat, s, (trees map { isRegular1 }));
 
-      case Apply( fn, List(Sequence(List())))      =>
-        pat;
+        case Bind(id, empt @ Sequence(List())) =>
+          nilVars = pat.symbol /*id.symbol()*/ :: nilVars
+          empt
 
-      case Apply( fn, trees )      =>
-	    //Console.println(" IN isRegular, apply node "+pat.toString());
-	    //Console.println(" trees are:"+(trees map {x => x.getClass().toString()}));
-        copy.Apply( pat, fn, ( trees map { isRegular1 }) )
+        case Bind(n, pat1) =>
+          copy.Bind(pat, n, isRegular1(pat1))
 
-      case Literal(_)              => pat
-      case Select(_,_)             => pat
-      case Typed(_,_)              => pat
+        case Sequence(trees) =>
+          //isReg = isReg || ( trees.length == 0 );
+          isReg = true // cause there are ArrayValues now
+          copy.Sequence(pat, trees map { isRegular1 })
 
-      //case _   =>
-      //  Console.println(pat);
-      //  Console.println(pat.getClass());
-      //  scala.Predef.error"( what is this ? ")
+        //case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
+
+        case Apply(fn, List(pat2, ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) =>
+          //Console.println("OPTIMIZING")
+          //Console.println(pat)
+          //Console.println(pat.tpe)
+          //Console.println(b.tpe)
+          val tpe1:Type = pat2.tpe.widen.baseType( definitions.SeqClass ).typeArgs(0)
+
+          val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
+          b.symbol.setInfo(tpe)
+          b.setType(tpe)
+          val res = copy.Bind(b, id, wc)
+          //Console.println("====>")
+          //Console.println(res)
+          res
+
+        case av @ ArrayValue(s, trees) =>
+          if (isRightIgnoring(av)) pat
+          else copy.ArrayValue(pat, s, (trees map { isRegular1 }))
+
+        case Apply(fn, List(Sequence(List()))) =>
+          pat
+
+        case Apply(fn, trees) =>
+          //Console.println(" IN isRegular, apply node "+pat.toString());
+          //Console.println(" trees are:"+(trees map {x => x.getClass().toString()}));
+          copy.Apply(pat, fn, (trees map { isRegular1 }))
+
+        case Literal(_) =>
+          pat
+
+        case Select(_, _) =>
+          pat
+
+        case Typed(_, _) =>
+          pat
+
+        //case _ =>
+        //  Console.println(pat);
+        //  Console.println(pat.getClass());
+        //  scala.Predef.error"( what is this ? ")
       }
 
-	   var res:List[CaseDef] = Nil;
-	   val it = pats.elements; while(it.hasNext) {
-	     nilVars = Nil;
-	     val cdef = it.next;
-		 val newt = isRegular1(cdef.pat);
-		 existsReg = existsReg || isReg;
+      var res: List[CaseDef] = Nil
+      val it = pats.elements; while (it.hasNext) {
+        nilVars = Nil
+        val cdef = it.next
+        val newt = isRegular1(cdef.pat)
+        existsReg = existsReg || isReg
 
-         val nbody = if(nilVars.isEmpty) cdef.body else
-              atPos(cdef.body.pos)(
-                Block(nilVars map {
-                  x => ValDef(x, Ident(definitions.NilModule))
-                }, cdef.body)
-              );
+        val nbody = if (nilVars.isEmpty) cdef.body else
+          atPos(cdef.body.pos)(
+            Block(nilVars map {
+              x => ValDef(x, Ident(definitions.NilModule))
+            }, cdef.body)
+          )
 
-		 res = copy.CaseDef(cdef, newt, cdef.guard, nbody) :: res;
-	   }
-	   Pair(res.reverse, existsReg);
+        res = copy.CaseDef(cdef, newt, cdef.guard, nbody) :: res
+      }
+      Pair(res.reverse, existsReg)
     }
-
-
 
     /** handles all translation of pattern matching
      */
-    def handle(sel:Tree, ocases:List[CaseDef]): Tree = {
-
+    def handle(sel: Tree, ocases: List[CaseDef]): Tree = {
       // TEMPORARY
       //new NewMatcher().toIR(sel, ocases)
       //
       // 1. is there a regular pattern?
 
-      val Pair(cases, containsReg) = isRegular(ocases);
-
+      val Pair(cases, containsReg) = isRegular(ocases)
 
       // @todo: remove unused variables
 
-      if(containsReg) {
+      if (containsReg) {
         // 2. replace nilVariables
         //@todo: bring over AlgebraicMatcher
-		/*
+                /*
         val matcher = new PartialMatcher {
           val global: TransMatcher.this.global.type = TransMatcher.this.global;
           val owner = currentOwner;
@@ -302,16 +305,16 @@ with RightTracers {
           val tm: TransMatcher.this.type = TransMatcher.this;
         }.construct( matcher, cases );
         matcher.tree
-		*/
+                */
 
-        System.out.println("" + sel + " match " + ocases);
-	cunit.error(sel.pos, "regular expressions not yet implemented");
+        System.out.println("" + sel + " match " + ocases)
+        cunit.error(sel.pos, "regular expressions not yet implemented")
         //sel
         EmptyTree
       } else {
-        val pm = new PatternMatcher();
-        pm.initialize(sel, currentOwner, true );
-        pm.construct( cases );
+        val pm = new PatternMatcher()
+        pm.initialize(sel, currentOwner, true)
+        pm.construct(cases)
         //if (global.log()) {
         //  global.log("internal pattern matching structure");
         //  pm.print();
@@ -319,6 +322,7 @@ with RightTracers {
         pm.toTree()
       }
     }
+
     override def transform(tree: Tree): Tree = tree match {
       /* // test code to generate forward jumps
       case Match(selector, CaseDef(Ident(nme.WILDCARD), EmptyTree, exp)::Nil) => // inserting test-code
@@ -342,21 +346,21 @@ with RightTracers {
 */
 
       case Match(selector, cases) =>
-	val nselector = transform(selector).setType(selector.tpe);
-        val ncases = cases map { transform };
+        val nselector = transform(selector).setType(selector.tpe)
+        val ncases = cases map { transform }
 /*
-      Console.println("TransMatch translating cases: ");
+      Console.println("TransMatch translating cases: ")
       for(val t <- cases) {
-	Console.println(t.pat.toString());
-	Console.println("BODY "+t.body.toString());
+        Console.println(t.pat.toString())
+        Console.println("BODY "+t.body.toString())
       }
 */
         // @todo: remove from partial matcher
-        TransMatcher.this.currentOwner = currentOwner;
-        TransMatcher.this.resultType   = tree.tpe;
-        //Console.println("TransMatcher currentOwner ="+currentOwner+")");
-        //Console.println("TransMatcher selector.tpe ="+selector.tpe+")");
-        //Console.println("TransMatcher resultType ="+resultType+")");
+        TransMatcher.this.currentOwner = currentOwner
+        TransMatcher.this.resultType = tree.tpe
+        //Console.println("TransMatcher currentOwner ="+currentOwner+")")
+        //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
+        //Console.println("TransMatcher resultType ="+resultType+")")
         val t_untyped = handle(nselector, ncases.asInstanceOf[List[CaseDef]])
         //Console.println("t_untyped "+t_untyped.toString())
         val t         = atPos(tree.pos) { typer.atOwner(tree,currentOwner).typed(t_untyped, resultType) }
@@ -365,7 +369,7 @@ with RightTracers {
         //Console.println("t typed "+t.toString())
         t
       case _ =>
-        super.transform(tree);
+        super.transform(tree)
     }
   }
 }
