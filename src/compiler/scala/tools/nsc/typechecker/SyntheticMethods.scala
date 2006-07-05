@@ -137,7 +137,8 @@ trait SyntheticMethods requires Analyzer {
       } else {
         var name0 = sym.name
         if (sym.isSetter) name0 = nme.setterToGetter(name0)
-        val prefix = if (sym.isSetter) "set" else "get"
+        val prefix = if (sym.isSetter) "set" else
+          if (sym.tpe.resultType == BooleanClass.tpe) "is" else "get"
         val arity = if (sym.isSetter) 1 else 0
         val name1 = prefix + Character.toUpperCase(name0(0)) + name0.subName(1, name0.length)
         val sym1 = clazz.info.decl(name1)
