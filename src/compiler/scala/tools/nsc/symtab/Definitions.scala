@@ -189,8 +189,7 @@ trait Definitions requires SymbolTable {
     // special attributes
     var SerializableAttr: Symbol = _
     var BeanPropertyAttr: Symbol = _
-    def AnnotationDefaultAttr: Symbol =
-      getClass("scala.tools.nsc.symtab.classfile.AnnotationDefault")
+    var AnnotationDefaultAttr: Symbol = _
 
     def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true)
 
@@ -579,6 +578,9 @@ trait Definitions requires SymbolTable {
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
       ObjectRefClass = getClass("scala.runtime.ObjectRef")
 
+      AnnotationDefaultAttr = newClass(RootClass,
+                                       nme.AnnotationDefaultATTR,
+                                       List(AttributeClass.typeConstructor));
       SerializableAttr = getClass("scala.serializable")
       BeanPropertyAttr = if (forCLDC) null else getClass("scala.reflect.BeanProperty")
     }
