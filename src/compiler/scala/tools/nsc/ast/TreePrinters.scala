@@ -111,10 +111,10 @@ abstract class TreePrinters {
             if (!args.isEmpty)
               str.append(args.mkString("(", ",", ")"))
             if (!nvPairs.isEmpty)
-              for (val Pair(Pair(sym, value), index) <- nvPairs.zipWithIndex) {
+              for (val Pair(Pair(name, value), index) <- nvPairs.zipWithIndex) {
                 if (index > 0)
                   str.append(", ")
-                str.append(sym.name).append(" = ").append(value)
+                str.append(name).append(" = ").append(value)
               }
             str.toString
         }

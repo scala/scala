@@ -19,12 +19,11 @@ package scala.tools.nsc.symtab.classfile
 
 import scala.tools.nsc.util.Position
 import scala.tools.nsc.io.{AbstractFile, AbstractFileReader}
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
 
 import java.io.IOException
 
-class AnnotationDefault extends Attribute;
 
 abstract class ClassfileParser {
   def sourcePath : AbstractFile = null
@@ -529,55 +528,57 @@ abstract class ClassfileParser {
             Triple(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
           in.skip(attrLen)
         case nme.RuntimeAnnotationATTR =>
-          //parseAnnotations(attrLen)
-          in.skip(attrLen)
+          parseAnnotations(attrLen)
+          if (settings.debug.value)
+            global.inform("" + sym + "; attributes = " + sym.attributes)
         case _ =>
           in.skip(attrLen)
       }
     }
-    def parseTaggedConstant(): Any = {
+    def parseTaggedConstant(): Constant = {
       val tag = in.nextByte
       val index = in.nextChar
       tag match {
-        case STRING_TAG => pool.getName(index).toString()
-        case BOOL_TAG   => pool.getConstant(index).intValue != 0
-        case BYTE_TAG   => pool.getConstant(index).byteValue
-        case CHAR_TAG   => pool.getConstant(index).charValue
-        case SHORT_TAG  => pool.getConstant(index).shortValue
-        case INT_TAG    => pool.getConstant(index).intValue
-        case LONG_TAG   => pool.getConstant(index).longValue
-        case FLOAT_TAG  => pool.getConstant(index).floatValue
-        case DOUBLE_TAG => pool.getConstant(index).doubleValue
-        case CLASS_TAG  => pool.getType(index).toString() + ".class"
+        case STRING_TAG => Constant(pool.getName(index).toString())
+        case BOOL_TAG   => pool.getConstant(index)
+        case BYTE_TAG   => pool.getConstant(index)
+        case CHAR_TAG   => pool.getConstant(index)
+        case SHORT_TAG  => pool.getConstant(index)
+        case INT_TAG    => pool.getConstant(index)
+        case LONG_TAG   => pool.getConstant(index)
+        case FLOAT_TAG  => pool.getConstant(index)
+        case DOUBLE_TAG => pool.getConstant(index)
+        case CLASS_TAG  => Constant(pool.getType(index))
         case ENUM_TAG   =>
-          pool.getType(index).toString() + "." + pool.getName(in.nextChar)
+          val t = pool.getType(index);
+          val n = pool.getName(in.nextChar);
+          val s = t.symbol.linkedModule.info.decls.lookup(n)
+          assert (s != NoSymbol, "while processing " + in.file + ": " + t + "." + n + ": " + t.decls)
+          Constant(s)
         case ARRAY_TAG  =>
-          val arr = new ListBuffer[Any]()
+          val arr = new ArrayBuffer[Constant]()
           for (val i <- 0 until index) {
             arr += parseTaggedConstant()
           }
-        arr.toList.mkString("{", ",", "}")
+          new ArrayConstant(arr.toArray,
+              appliedType(definitions.ArrayClass.typeConstructor, List(arr(0).tpe)))
       }
     }
     def parseAnnotations(len: Int): Unit = {
-      val buf = new StringBuffer()
       val nAttr = in.nextChar
       for (val n <- 0 until nAttr) {
         val attrNameIndex = in.nextChar
         val attrType = pool.getType(attrNameIndex)
-        buf.append("@").append(attrType.toString()).append("(")
         val nargs = in.nextChar
+        val nvpairs = new ListBuffer[Pair[Name,Constant]]
         for (val i <- 0 until nargs) {
-          if (i > 0) buf.append(", ")
           val name = pool.getName(in.nextChar)
-          buf.append(name).append(" = ")
-          val value = parseTaggedConstant()
-          buf.append(value)
+          nvpairs += Pair(name, parseTaggedConstant())
         }
-        buf.append(")")
+        sym.attributes = Triple(attrType, List(), nvpairs.toList) :: sym.attributes
       }
-      global.informProgress("parsed attribute " + buf)
     }
+
     def parseInnerClasses(): unit = {
       for (val i <- 0 until in.nextChar) {
 	val innerIndex = in.nextChar

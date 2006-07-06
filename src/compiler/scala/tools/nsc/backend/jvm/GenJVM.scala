@@ -273,8 +273,8 @@ abstract class GenJVM extends SubComponent {
           buf.putShort(cpool.addUtf8("value").toShort);
           emitElement(consts.head);
         }
-        for (val Pair(symbol, value) <- nvPairs) {
-          buf.putShort(cpool.addUtf8(symbol.name.toString()).toShort)
+        for (val Pair(name, value) <- nvPairs) {
+          buf.putShort(cpool.addUtf8(name.toString()).toShort)
           emitElement(value)
         }
       }

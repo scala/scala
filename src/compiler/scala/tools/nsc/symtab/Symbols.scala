@@ -20,7 +20,7 @@ trait Symbols requires SymbolTable {
   var typeSymbolCount = 0
   var classSymbolCount = 0
 
-  type AttrInfo = Triple[Type, List[Constant], List[Pair[Symbol,Constant]]]
+  type AttrInfo = Triple[Type, List[Constant], List[Pair[Name,Constant]]]
 
   val emptySymbolArray = new Array[Symbol](0)
 

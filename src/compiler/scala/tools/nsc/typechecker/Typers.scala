@@ -1437,7 +1437,7 @@ trait Typers requires Analyzer {
                     null
                   } else {
                     names -= sym
-                    Pair(sym, getConstant(typed(rhs, mode | CONSTmode,
+                    Pair(sym.name, getConstant(typed(rhs, mode | CONSTmode,
                                                 sym.tpe.resultType)))
                   }
                 }

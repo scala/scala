@@ -194,6 +194,8 @@ trait Constants requires SymbolTable {
 
   class ArrayConstant(override val arrayValue: Array[Constant],
                    override val tpe: Type)
-  extends Constant(arrayValue);
+  extends Constant(arrayValue) {
+    override def toString() = arrayValue.mkString("Constant(", "," , ")")
+  }
 
 }
