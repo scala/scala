@@ -976,6 +976,7 @@ trait Types requires SymbolTable {
     override def toString() = pre.toString() + targs.mkString("(with type arguments ", ",", ")");
     override def memberType(sym: Symbol) = pre.memberType(sym) match {
       case PolyType(tparams, restp) => restp.subst(tparams, targs)
+      case ErrorType => ErrorType
     }
   }
 
