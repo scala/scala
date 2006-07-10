@@ -8,7 +8,7 @@ object Responder {
 
   /** creates a responder that answer continuations with the constant a */
   def constant[a](x: a) = new Responder[a] {
-    def foreach(k: a => unit) = k(x)
+    def respond(k: a => unit) = k(x)
   }
 
   /** executes x and returns true, useful as syntactic convenience in
@@ -42,22 +42,23 @@ object Responder {
  */
 abstract class Responder[+a] {
 
-  def foreach(k: a => unit): unit
+  def respond(k: a => unit): unit
+
+  def foreach(k: a => unit): unit = respond(k)
 
   def map[b](f: a => b) = new Responder[b] {
-    def foreach(k: b => unit): unit =
-      Responder.this.foreach(x => k(f(x)))
+    def respond(k: b => unit): unit =
+      Responder.this.respond(x => k(f(x)))
   }
 
   def flatMap[b](f: a => Responder[b]) = new Responder[b] {
-    def foreach(k: b => unit): unit =
-      Responder.this.foreach(x => f(x).foreach(k))
+    def respond(k: b => unit): unit =
+      Responder.this.respond(x => f(x).respond(k))
   }
 
   def filter(p: a => boolean) = new Responder[a] {
-    def foreach(k: a => unit): unit =
-      Responder.this.foreach(x => if (p(x)) k(x) else ())
+    def respond(k: a => unit): unit =
+      Responder.this.respond(x => if (p(x)) k(x) else ())
   }
-
 }
 

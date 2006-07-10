@@ -85,7 +85,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
   def print(pos : Position, msg : String, severity : Severity) = printMessage(pos, clabel(severity) + msg);
 
   def printSourceLine(pos : Position) = if (pos != null && pos.offset != Position.NOPOS) {
-    printMessage(pos.lineContent);
+    printMessage(pos.lineContent.stripLineEnd);
     printColumnMarker(pos);
   }
   /** Prints the column marker of the given position. */

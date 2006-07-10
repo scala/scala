@@ -416,6 +416,8 @@ object Predef {
     }
   }
 
+  implicit def any2stringadd(x: String) = new runtime.StringAdd(x)
+
   implicit def string2seq(str: String): Seq[Char] = new Seq[Char] {
     def length = str.length()
     def elements = Iterator.fromString(str)
