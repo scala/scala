@@ -528,25 +528,6 @@ trait Typers requires Analyzer {
       tree.tpe
     }
 
-/*
-    def completeParentType(tpt: Tree, templ: Template): Tree =
-      if (tpt.hasSymbol) {
-        val tparams = tpt.symbol.typeParams
-        if (!tparams.isEmpty) {
-          val constr @ DefDef(_, _, _, vparamss, _, rhs) = treeInfo.firstConstructor(templ.body)
-          val Apply(_, superargs) = treeInfo.superCall(rhs, tpt.symbol.name)
-          val outercontext = context.outer
-          TypeTree(
-            newTyper(outercontext.makeNewScope(constr, outercontext.owner))
-              .completeParentType(
-                tpt,
-                tparams,
-                context.owner.unsafeTypeParams,
-                vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
-                superargs map (.duplicate))) setPos tpt.pos
-        } else tpt
-      } else tpt
-*/
     def parentTypes(templ: Template): List[Tree] = try {
       if (templ.parents.isEmpty) List()
       else {
@@ -560,17 +541,21 @@ trait Typers requires Analyzer {
         if (supertpt.hasSymbol) {
           val tparams = supertpt.symbol.typeParams
           if (!tparams.isEmpty) {
-            val constr @ DefDef(_, _, _, vparamss, _, Apply(_, superargs)) =
-              treeInfo.firstConstructor(templ.body)
-            val outercontext = context.outer
-            supertpt = TypeTree(
-              newTyper(outercontext.makeNewScope(constr, outercontext.owner))
-                .completeParentType(
-                  supertpt,
-                  tparams,
-                  context.owner.unsafeTypeParams,
-                  vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
-                  superargs map (.duplicate))) setOriginal supertpt /* setPos supertpt.pos */
+            val constr = treeInfo.firstConstructor(templ.body)
+            constr match {
+              case EmptyTree =>
+                error(supertpt.pos, "missing type arguments")
+              case DefDef(_, _, _, vparamss, _, Apply(_, superargs)) =>
+                val outercontext = context.outer
+                supertpt = TypeTree(
+                  newTyper(outercontext.makeNewScope(constr, outercontext.owner))
+                    .completeParentType(
+                      supertpt,
+                      tparams,
+                      context.owner.unsafeTypeParams,
+                      vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
+                      superargs map (.duplicate))) setOriginal supertpt /* setPos supertpt.pos */
+            }
           }
         }
         //System.out.println("parents("+context.owner+") = "+supertpt :: mixins);//DEBUG
