@@ -1,0 +1,4 @@
+bug649.scala:3 error: method foo is defined twice
+  def foo[A] = foo[A]
+  ^
+one error found
