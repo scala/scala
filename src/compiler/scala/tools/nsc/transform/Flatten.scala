@@ -97,7 +97,6 @@ abstract class Flatten extends InfoTransform {
         case _ =>
           tree
       }
-      assert(tree1.tpe != null, tree1)// debug
       tree1 setType flattened(tree1.tpe)
     }
 
