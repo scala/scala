@@ -11,6 +11,7 @@
 
 package scala.io;
 
+import scala.runtime.compat.StringBuilder;
 
 /** convenience methods to encode line and column number in one
  *  single integer. The encode line (column)
@@ -86,7 +87,7 @@ object Position {
 
   /** Returns a string representation of the encoded position. */
   def toString(pos: Int): String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     sb.append(line(pos));
     sb.append(':');
     sb.append(column(pos));

@@ -11,6 +11,7 @@
 
 package scala;
 
+import scala.runtime.compat.StringBuilder;
 
 /**
  * The object <code>Stream</code> provides helper functions
@@ -25,7 +26,7 @@ object Stream {
     def isEmpty = true;
     def head: Nothing = error("head of empty stream");
     def tail: Stream[Nothing] = error("tail of empty stream");
-    def printElems(buf: StringBuffer, prefix: String): StringBuffer = buf;
+    def printElems(buf: StringBuilder, prefix: String): StringBuilder = buf;
   }
 
   def cons[a](hd: a, tl: => Stream[a]) = new Stream[a] {
@@ -37,7 +38,7 @@ object Stream {
       if (!tlDefined) { tlVal = tl; tlDefined = true; }
       tlVal
     }
-    def printElems(buf: StringBuffer, prefix: String): StringBuffer = {
+    def printElems(buf: StringBuilder, prefix: String): StringBuilder = {
       val buf1 = buf.append(prefix).append(hd);
       if (tlDefined) tlVal.printElems(buf1, ", ") else buf1 append ", ?";
     }
@@ -297,7 +298,7 @@ trait Stream[+a] extends Seq[a] {
   }
 
   override def toString() =
-    "Stream(" + printElems(new StringBuffer(), "") + ")"
+    "Stream(" + printElems(new StringBuilder(), "") + ")"
 
-  def printElems(buf: StringBuffer, prefix: String): StringBuffer
+  def printElems(buf: StringBuilder, prefix: String): StringBuilder
 }

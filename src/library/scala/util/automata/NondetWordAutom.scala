@@ -86,7 +86,7 @@ abstract class NondetWordAutom[T <: AnyRef] {
   }
 
   override def toString() = {
-    val sb = new StringBuffer();
+    val sb = new scala.runtime.compat.StringBuilder();
     sb.append("[NondetWordAutom  nstates=");
     sb.append(nstates);
     sb.append("  finals=");

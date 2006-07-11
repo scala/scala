@@ -11,6 +11,7 @@
 
 package scala.util.parsing;
 
+import scala.runtime.compat.StringBuilder;
 
 class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[String] {
 
@@ -34,7 +35,7 @@ class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[S
 
   private var ch: int = nextChar;
 
-  private val buf = new StringBuffer();
+  private val buf = new StringBuilder();
 
   def hasNext: boolean = ch != EOI;
 

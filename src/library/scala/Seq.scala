@@ -190,7 +190,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    *  @return a string representation of this sequence.
    */
   def mkString(start: String, sep: String, end: String): String = {
-    val buf = new StringBuffer()
+    val buf = new StringBuilder()
     buf.append(start)
     val elems = elements
     if (elems.hasNext) buf.append(elems.next)

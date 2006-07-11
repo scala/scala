@@ -11,6 +11,7 @@
 
 package scala.testing;
 
+import scala.runtime.compat.StringBuilder
 
 /**
  * Unit testing methods in the spirit of JUnit framework.
@@ -80,7 +81,7 @@ object SUnit {
       failedTest.toString()+" failed due to "+thrownException.toString();
 
     def trace(): String = {
-      val s = new StringBuffer();
+      val s = new StringBuilder();
       for(val trElem <- thrownException.getStackTrace()) {
         s.append(trElem.toString());
         s.append('\n');
