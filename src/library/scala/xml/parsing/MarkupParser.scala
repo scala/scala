@@ -11,7 +11,7 @@
 
 package scala.xml.parsing;
 
-
+import scala.runtime.compat.StringBuilder
 import scala.io.Source;
 import scala.xml.dtd._ ;
 
@@ -61,7 +61,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
   var ch: Char = _;
 
   /** character buffer, for names */
-  protected val cbuf = new StringBuffer();
+  protected val cbuf = new StringBuilder();
 
   var dtd: DTD = null;
 
@@ -392,7 +392,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
   def xCharData: NodeSeq = {
     xToken("[CDATA[");
     val pos1 = pos;
-    val sb: StringBuffer = new StringBuffer();
+    val sb: StringBuilder = new StringBuilder();
     while (true) {
       if (ch==']'  &&
          { sb.append(ch); nextch; ch == ']' } &&
@@ -440,7 +440,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
    * see [15]
    */
   def xComment: NodeSeq = {
-    val sb: StringBuffer = new StringBuffer();
+    val sb: StringBuilder = new StringBuilder();
     xToken('-');
     xToken('-');
     while (true) {
@@ -455,7 +455,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     throw FatalError("this cannot happen");
   };
 
-  /* todo: move this into the NodeBuffer class */
+  /* todo: move this into the NodeBuilder class */
   def appendText(pos: Int, ts: NodeBuffer, txt: String): Unit = {
     if (preserveWS)
       ts &+ handle.text(pos, txt);
@@ -510,7 +510,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
 /*            if( xCheckEmbeddedBlock ) {
               ts.appendAll(xEmbeddedExpr);
             } else {*/
-          //    val str = new StringBuffer("{");
+          //    val str = new StringBuilder("{");
           //    str.append(xText);
           //    appendText(tmppos, ts, str.toString());
             /*}*/
@@ -731,7 +731,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
    * see [15]
    */
   def xProcInstr: NodeSeq = {
-    val sb:StringBuffer = new StringBuffer();
+    val sb:StringBuilder = new StringBuilder();
     val n = xName;
     if (isSpace(ch)) {
       xSpace;
@@ -1197,7 +1197,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
             val s = xCharRef ({ () => c }, { () => c = it.next });
             cbuf.append(s);
           case nchar =>
-            val nbuf = new StringBuffer();
+            val nbuf = new StringBuilder();
             var d = nchar;
             do {
               nbuf.append(d);

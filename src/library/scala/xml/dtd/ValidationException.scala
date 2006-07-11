@@ -11,6 +11,7 @@
 
 package scala.xml.dtd;
 
+import scala.runtime.compat.StringBuilder
 
 case class ValidationException( e:String ) extends Exception( e );
 
@@ -28,7 +29,7 @@ object MakeValidationException {
     new ValidationException("attribute " + key +" not allowed here" );
 
   def fromMissingAttribute( allKeys:scala.collection.Set[String] ) = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     sb.append("missing value for REQUIRED attribute");
     if( allKeys.size > 1 ) sb.append('s');
     val it = allKeys.elements;

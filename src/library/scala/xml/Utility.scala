@@ -11,8 +11,7 @@
 
 package scala.xml
 
-
-import java.lang.StringBuffer
+import scala.runtime.compat.StringBuilder
 import scala.collection.mutable
 
 /**
@@ -25,10 +24,10 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   /* escapes the characters &lt; &gt; &amp; and &quot; from string */
   final def escape(text: String): String =
-    escape(text, new StringBuffer()).toString()
+    escape(text, new StringBuilder()).toString()
 
   /* appends escaped string to s */
-  final def escape(text: String, s: StringBuffer): StringBuffer = {
+  final def escape(text: String, s: StringBuilder): StringBuilder = {
     for (val c <- Iterator.fromString(text)) c match {
       case '<' => s.append("&lt;")
       case '>' => s.append("&gt;")
@@ -83,7 +82,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @todo define a way to escape literal characters to &amp;xx; references
    */
   def toXML(n: Node, stripComment: Boolean): String = {
-    val sb = new StringBuffer()
+    val sb = new StringBuilder()
     toXML(n, TopScope, sb, stripComment)
     sb.toString()
   }
@@ -96,7 +95,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    *   @param sb           stringbuffer to append to
    *   @param stripComment if true, strip comments
    */
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuffer, stripComment: Boolean): Unit = {
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
     x match {
 
       case c: Comment if !stripComment =>
@@ -159,23 +158,23 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
 
   def systemLiteralToString(s: String): String = {
-    val sb = new StringBuffer()
+    val sb = new StringBuilder()
     systemLiteralToString(sb, s)
     sb.toString()
   }
 
-  def systemLiteralToString(sb: StringBuffer, s: String): StringBuffer = {
+  def systemLiteralToString(sb: StringBuilder, s: String): StringBuilder = {
     sb.append("SYSTEM ")
     appendQuoted(s, sb)
   }
 
   def publicLiteralToString(s: String): String = {
-    val sb = new StringBuffer()
+    val sb = new StringBuilder()
     systemLiteralToString(sb, s)
     sb.toString()
   }
 
-  def publicLiteralToString(sb: StringBuffer, s: String): StringBuffer = {
+  def publicLiteralToString(sb: StringBuilder, s: String): StringBuilder = {
     sb.append("PUBLIC \"").append(s).append('"')
   }
 
@@ -186,7 +185,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param s
    * @param sb
    */
-  def appendQuoted(s: String, sb: StringBuffer) = {
+  def appendQuoted(s: String, sb: StringBuilder) = {
     val ch = if (s.indexOf('"'.asInstanceOf[Int]) == -1) '"' else '\'';
     sb.append(ch).append(s).append(ch)
   }
@@ -197,7 +196,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param s
    * @param sb
    */
-  def appendEscapedQuoted(s: String, sb: StringBuffer) = {
+  def appendEscapedQuoted(s: String, sb: StringBuilder) = {
     sb.append('"')
     val z:Seq[Char] = Predef.string2seq(s)
     for( val c <- z ) c match {
@@ -209,7 +208,7 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   def getName(s: String, index: Int): String = {
     var i = index;
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     if (i < s.length()) {
       var c = s.charAt(i);
       if (isNameStart(s.charAt(i)))

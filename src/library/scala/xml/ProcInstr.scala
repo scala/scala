@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 /** an XML node for processing instructions (PI)
  *
@@ -52,7 +53,7 @@ case class ProcInstr(target:String, proctext:String) extends SpecialNode {
   /** appends &quot;&lt;?&quot; target (&quot; &quot;+text)?+&quot;?&gt;&quot;
    *  to this stringbuffer.
    */
-  def toString(sb: StringBuffer) = {
+  def toString(sb: StringBuilder) = {
     sb
     .append("<?")
     .append(target);

@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 /** an XML node for entity references
  *
@@ -40,10 +41,10 @@ case class EntityRef(entityName: String) extends SpecialNode {
    case "amp"  => "&";
    case "apos" => "'";
    case "quot" => "\"";
-   case _ => val sb=new StringBuffer();toString(sb).toString()
+   case _ => val sb=new StringBuilder();toString(sb).toString()
   }
   /** appends "&amp; entityName;" to this stringbuffer */
-  def toString(sb:StringBuffer) =
+  def toString(sb:StringBuilder) =
     sb.append("&").append(entityName).append(";");
 
 }

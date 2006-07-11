@@ -11,7 +11,7 @@
 
 package scala.xml.dtd;
 
-
+import scala.runtime.compat.StringBuilder;
 import scala.util.regexp.WordExp;
 import scala.util.automata._;
 
@@ -57,13 +57,13 @@ object ContentModel extends WordExp  {
   }
 
   def toString(r: RegExp):String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     toString(r, sb);
     sb.toString();
   }
 
   /* precond: rs.length >= 1 */
-  private def toString(rs: Seq[RegExp], sb: StringBuffer, sep: Char): Unit = {
+  private def toString(rs: Seq[RegExp], sb: StringBuilder, sep: Char): Unit = {
 
     val it = rs.elements;
     val fst = it.next;
@@ -75,7 +75,7 @@ object ContentModel extends WordExp  {
     sb
   }
 
-  def toString(c: ContentModel, sb: StringBuffer): StringBuffer = c match {
+  def toString(c: ContentModel, sb: StringBuilder): StringBuilder = c match {
 
       case ANY    =>
         sb.append("ANY");
@@ -91,7 +91,7 @@ object ContentModel extends WordExp  {
 
   }
 
-  def toString(r: RegExp, sb:StringBuffer): StringBuffer = {
+  def toString(r: RegExp, sb:StringBuilder): StringBuilder = {
     r match {
       case Eps     =>
         sb
@@ -115,12 +115,12 @@ object ContentModel extends WordExp  {
 
 sealed abstract class ContentModel {
   override def toString(): String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     toString(sb);
     sb.toString();
   }
 
-  def toString(sb:StringBuffer): StringBuffer;
+  def toString(sb:StringBuilder): StringBuilder;
   /*
   def validate(cs: NodeSeq): Boolean = this.match {
     case ANY         => true ;
@@ -134,13 +134,13 @@ sealed abstract class ContentModel {
 }
 
 case object PCDATA extends ContentModel {
-  def toString(sb:StringBuffer): StringBuffer = sb.append("(#PCDATA)");
+  def toString(sb:StringBuilder): StringBuilder = sb.append("(#PCDATA)");
 }
 case object EMPTY extends ContentModel {
-  def toString(sb:StringBuffer): StringBuffer = sb.append("EMPTY");
+  def toString(sb:StringBuilder): StringBuilder = sb.append("EMPTY");
 }
 case object ANY extends ContentModel {
-  def toString(sb:StringBuffer): StringBuffer = sb.append("ANY");
+  def toString(sb:StringBuilder): StringBuilder = sb.append("ANY");
 }
 abstract class DFAContentModel extends ContentModel {
   import ContentModel.{ ElemName };
@@ -178,7 +178,7 @@ Console.println("ns = "+ns);
     }
   }
   */
-  def toString(sb:StringBuffer): StringBuffer =  {
+  def toString(sb:StringBuilder): StringBuilder =  {
     sb.append("(#PCDATA|");
     //r match {
     //  case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);
@@ -207,6 +207,6 @@ case class  ELEMENTS(r:ContentModel.RegExp) extends DFAContentModel {
     }
   }
   */
-  def toString(sb:StringBuffer): StringBuffer =
+  def toString(sb:StringBuilder): StringBuilder =
     ContentModel.toString(r, sb);
 }

@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder;
 
 /** an XML node for comments.
  *
@@ -40,7 +41,7 @@ case class Comment(commentText: String) extends SpecialNode {
   override def text = "";
 
   /** appends &quot;<!-- text -->&quot; to this stringbuffer */
-  def toString(sb: StringBuffer) = {
+  def toString(sb: StringBuilder) = {
     sb.append("<!--").append(commentText).append("-->")
   }
 }

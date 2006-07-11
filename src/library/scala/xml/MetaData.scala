@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder;
 
 /** Attribute information item, and linked list of attribute information items.
  *  These are triples consisting of prefix,key,value. To obtain the namespace,
@@ -136,21 +137,21 @@ abstract class MetaData extends Iterable[MetaData] {
   override def hashCode(): Int;
 
   def toString1(): String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     toString1(sb);
     sb.toString();
   }
 
-  //appends string representations of single attribute to StringBuffer
-  def toString1(sb:StringBuffer): Unit;
+  //appends string representations of single attribute to StringBuilder
+  def toString1(sb:StringBuilder): Unit;
 
   override def toString(): String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     toString(sb);
     sb.toString();
   }
 
-  def toString(sb: StringBuffer): Unit = {
+  def toString(sb: StringBuilder): Unit = {
     sb.append(' ');
     toString1(sb);
     next.toString(sb);

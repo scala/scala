@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder;
 
 /** an XML node for a list of data items.
  * @author buraq
@@ -36,7 +37,7 @@ class Molecule[+A]( val list: List[A] ) extends SpecialNode {
   override def text = list.mkString(""," ","");
 
   /** returns text, with some characters escaped according to XML spec */
-  def toString(sb:StringBuffer) =
+  def toString(sb:StringBuilder) =
     sb.append(list.mkString(""," ",""))
 
 }

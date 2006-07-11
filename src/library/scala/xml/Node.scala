@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 /**
  * This object provides methods
@@ -150,12 +151,12 @@ abstract class Node extends NodeSeq {
   override def toString(): String = toString(false);
 
   /**
-   * Appends qualified name of this node to <code>StringBuffer</code>.
+   * Appends qualified name of this node to <code>StringBuilder</code>.
    *
    * @param sb
    * @return ..
    */
-  def nameToString(sb: StringBuffer): StringBuffer  = {
+  def nameToString(sb: StringBuilder): StringBuilder  = {
     if (null != prefix) {
       sb.append(prefix);
       sb.append(':');

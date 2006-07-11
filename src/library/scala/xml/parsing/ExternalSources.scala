@@ -11,7 +11,7 @@
 
 package scala.xml.parsing;
 
-
+import scala.runtime.compat.StringBuilder
 import scala.io.Source;
 import java.net._;
 import java.io._;
@@ -26,7 +26,7 @@ trait ExternalSources requires (ExternalSources with MarkupParser with MarkupHan
 
     //@todo: replace this hack with proper Source implementation
 
-    val str = new StringBuffer();
+    val str = new StringBuilder();
     var inputLine:String = null;
 
     //while (inputLine = in.readLine()) != null) {

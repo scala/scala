@@ -11,7 +11,7 @@
 package scala.xml;
 
 
-import java.lang.StringBuffer ; /* Java dependency! */
+import scala.runtime.compat.StringBuilder
 import scala.collection.Map ;
 
 /** Class for pretty printing. After instantiating, you can use the
@@ -48,7 +48,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     val tmp = width - cur;
     if( s.length() < tmp )
       return List(Box(ind,s));
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     var i = s.indexOf(' ');
     if(i > tmp || i == -1) throw new BrokenException(); // cannot break
 
@@ -97,7 +97,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   protected def leafTag( n:Node ) = {
-    val sb = new StringBuffer("<");
+    val sb = new StringBuilder().append('<');
     n.nameToString(sb);
     //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
     n.attributes.toString(sb);
@@ -107,7 +107,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   protected def startTag(n: Node, pscope: NamespaceBinding): Pair[String, Int] = {
-    val sb = new StringBuffer("<");
+    val sb = new StringBuilder().append('<');
     n.nameToString(sb); //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
     val i = sb.length() + 1;
     n.attributes.toString(sb);
@@ -117,7 +117,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   protected def endTag(n: Node) = {
-    val sb = new StringBuffer("</");
+    val sb = new StringBuilder().append("</");
     n.nameToString(sb); //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
     sb.append('>');
     sb.toString();
@@ -150,7 +150,7 @@ class PrettyPrinter( width:Int, step:Int ) {
 
       case _ =>
         val test = {
-	  val sb = new StringBuffer();
+	  val sb = new StringBuilder();
 	  Utility.toXML(node, pscope, sb, false);
           if(node.attribute("http://www.w3.org/XML/1998/namespace", "space") == "preserve")
 	    sb.toString();
@@ -206,11 +206,11 @@ class PrettyPrinter( width:Int, step:Int ) {
    * @param pmap the namespace to prefix mapping
    * @param sb the stringbuffer to append to
    */
-  def format(n: Node, sb: StringBuffer ): Unit = { // entry point
+  def format(n: Node, sb: StringBuilder ): Unit = { // entry point
     format(n,null,sb)
   }
 
-  def format(n: Node, pscope:NamespaceBinding, sb: StringBuffer): Unit = { // entry point
+  def format(n: Node, pscope:NamespaceBinding, sb: StringBuilder): Unit = { // entry point
     var lastwasbreak = false;
     reset();
     traverse( n, pscope, 0 );
@@ -252,7 +252,7 @@ class PrettyPrinter( width:Int, step:Int ) {
    * @param pmap the namespace to prefix mapping
    */
   def format(n: Node, pscope: NamespaceBinding): String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     format( n, pscope, sb );
     sb.toString();
   }
@@ -269,7 +269,7 @@ class PrettyPrinter( width:Int, step:Int ) {
    * @param pmap the namespace to prefix mapping
    */
   def formatNodes( nodes:Seq[Node], pscope: NamespaceBinding ):String = {
-    var sb = new StringBuffer();
+    var sb = new StringBuilder();
     formatNodes( nodes, pscope, sb );
     sb.toString();
   }
@@ -280,7 +280,7 @@ class PrettyPrinter( width:Int, step:Int ) {
    * @param pmap the namespace to prefix mapping
    * @param sb the string buffer to which to append to
    */
-  def formatNodes( nodes: Seq[Node], pscope: NamespaceBinding, sb: StringBuffer ): Unit = {
+  def formatNodes( nodes: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder ): Unit = {
     for( val n <- nodes.elements ) {
       sb.append(format( n, pscope ))
     }

@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 case object Null extends MetaData {
 
@@ -65,12 +66,12 @@ case object Null extends MetaData {
 
   override def toString1(): String = "";
 
-  //appends string representations of single attribute to StringBuffer
-  def toString1(sb:StringBuffer) = {};
+  //appends string representations of single attribute to StringBuilder
+  def toString1(sb:StringBuilder) = {};
 
   override def toString(): String = "";
 
-  override def toString(sb: StringBuffer): Unit = {}
+  override def toString(sb: StringBuilder): Unit = {}
 
   override def wellformed(scope: NamespaceBinding) = true;
 

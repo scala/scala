@@ -11,6 +11,7 @@
 
 package scala.xml.dtd;
 
+import scala.runtime.compat.StringBuilder
 
 /** an XML node for document type declaration
  *
@@ -30,7 +31,7 @@ case class DocType( name:String, extID:ExternalID, intSubset:Seq[dtd.Decl]) {
 
   /** returns "&lt;!DOCTYPE + name + extID? + ("["+intSubSet+"]")? >" */
   final override def toString() = {
-    val sb = new StringBuffer("<!DOCTYPE ");
+    val sb = new StringBuilder().append("<!DOCTYPE ");
     sb.append( name );
     sb.append(' ');
     sb.append(extID.toString());

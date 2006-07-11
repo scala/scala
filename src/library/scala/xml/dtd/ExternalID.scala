@@ -11,6 +11,7 @@
 
 package scala.xml.dtd;
 
+import scala.runtime.compat.StringBuilder
 
 /** an ExternalIDs - either PublicID or SystemID
  *
@@ -25,7 +26,7 @@ abstract class ExternalID  {
   override def toString(): String;
 
   /** returns "PUBLIC "+publicLiteral+" SYSTEM "+systemLiteral */
-   def toString(sb: StringBuffer): StringBuffer;
+   def toString(sb: StringBuilder): StringBuilder;
 
   def systemId: String;
 
@@ -47,7 +48,7 @@ case class SystemID( systemId:String ) extends ExternalID with parsing.TokenTest
   final override def toString() =
     Utility.systemLiteralToString( systemId );
 
-  final def toString(sb: StringBuffer): StringBuffer =
+  final def toString(sb: StringBuilder): StringBuilder =
     Utility.systemLiteralToString( sb, systemId );
 }
 
@@ -83,11 +84,11 @@ case class PublicID( publicId:String, systemId:String ) extends ExternalID with 
 
   /** returns "PUBLIC "+publicId+" SYSTEM "+systemId */
   final override def toString(): String = {
-    toString(new StringBuffer()).toString();
+    toString(new StringBuilder()).toString();
   }
 
   /** appends "PUBLIC "+publicId+" SYSTEM "+systemId to argument */
-  final def toString(sb: StringBuffer): StringBuffer = {
+  final def toString(sb: StringBuilder): StringBuilder = {
     Utility.publicLiteralToString( sb, publicId ).append(' ');
     if(systemId!=null)
       Utility.systemLiteralToString( sb, systemId );

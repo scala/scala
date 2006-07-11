@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null
@@ -42,18 +43,18 @@ class NamespaceBinding(val prefix: String,
     if (_uri == uri) uri else parent.getURI(_uri);
 
   override def toString(): String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     toString(sb, TopScope);
     sb.toString();
   }
 
   def toString(stop: NamespaceBinding): String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     toString(sb, stop);
     sb.toString();
   }
 
-  def toString(sb:StringBuffer, stop:NamespaceBinding): Unit = {
+  def toString(sb:StringBuilder, stop:NamespaceBinding): Unit = {
     if (this ne stop) { // contains?
       sb.append(" xmlns");
       if (prefix != null) {

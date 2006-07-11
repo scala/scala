@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 /** unprefixed attributes have the null namespace
  */
@@ -59,7 +60,7 @@ class UnprefixedAttribute(val key: String, val value: String, val next: MetaData
   /** returns false */
   final def isPrefixed = false;
 
-  def toString1(sb:StringBuffer): Unit = {
+  def toString1(sb:StringBuilder): Unit = {
     sb.append(key);
     sb.append('=');
     Utility.appendQuoted(value, sb);

@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 /** a special XML node is either text (PCDATA), a comment, a PI, or
  *  an entity ref
@@ -27,8 +28,8 @@ abstract class SpecialNode extends Node {
   final def child = Nil;
 
   final override def toString(): String =
-    toString(new StringBuffer()).toString();
+    toString(new StringBuilder()).toString();
 
-  def toString(sb:StringBuffer): StringBuffer ;
+  def toString(sb:StringBuilder): StringBuilder ;
 
 }

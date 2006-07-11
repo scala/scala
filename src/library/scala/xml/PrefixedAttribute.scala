@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 /** prefixed attributes always have a non-null namespace
  */
@@ -72,7 +73,7 @@ class PrefixedAttribute(val pre: String,
     pre.hashCode() * 41 + key.hashCode() * 7 + value.hashCode() * 3 + next.hashCode();
 
 
-  def toString1(sb:StringBuffer): Unit = {
+  def toString1(sb:StringBuilder): Unit = {
     sb.append(pre);
     sb.append(':');
     sb.append(key);

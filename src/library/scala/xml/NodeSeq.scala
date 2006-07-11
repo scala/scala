@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder
 
 object NodeSeq {
   final val Empty = new NodeSeq { def theSeq = Nil; }
@@ -98,7 +99,7 @@ abstract class NodeSeq extends Seq[Node] {
   def filter(f:Node => Boolean): NodeSeq = { val x = toList filter f; x }
 
   def text: String = {
-    val sb = new StringBuffer();
+    val sb = new StringBuilder();
     val it = elements;
     while(it.hasNext) {
       sb.append(it.next.text);

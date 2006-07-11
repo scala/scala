@@ -11,6 +11,7 @@
 
 package scala.xml
 
+import scala.runtime.compat.StringBuilder
 
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML
  *  representations
@@ -29,7 +30,7 @@ case class Text(_data: String) extends Atom[String](_data) {
   }
 
   /** returns text, with some characters escaped according to XML spec */
-  override def toString(sb: StringBuffer) =
+  override def toString(sb: StringBuilder) =
     Utility.escape(data.toString(), sb)
 
 }

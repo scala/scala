@@ -11,6 +11,7 @@
 
 package scala.xml;
 
+import scala.runtime.compat.StringBuilder;
 
 object TextBuffer {
   def fromString(str: String): TextBuffer = {
@@ -25,7 +26,7 @@ object TextBuffer {
  */
 class TextBuffer {
 
-  val sb = new StringBuffer();
+  val sb = new StringBuilder();
   var ws = true;
 
   def appendSpace        = if( !ws ) { ws = true;  sb.append(' ');} else {};
