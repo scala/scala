@@ -341,7 +341,7 @@ trait Types requires SymbolTable {
         val this1 = adaptToNewRunMap(this)
         if (this1 eq this) sym.validTo = period(currentRunId, phaseId(sym.validTo))
         else {
-          //System.out.println("new type of " + sym + "=" + this1);//DEBUG
+          //System.out.println("new type of " + sym + "=" + this1 + ", used to be " + this);//debug
           sym.setInfo(this1)
         }
       }
@@ -1462,9 +1462,12 @@ trait Types requires SymbolTable {
       else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) sym
       else {
         var rebind0 = pre.member(sym.name)
-        if (sym.owner.name != rebind0.owner.name) {
+        /** The two symbols have the same fully qualified name */
+        def corresponds(sym1: Symbol, sym2: Symbol): boolean =
+          sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
+        if (!corresponds(sym.owner, rebind0.owner)) {
           if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
-          val bcs = pre.baseClasses.dropWhile(bc => bc.name != sym.owner.name);
+          val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           assert(!bcs.isEmpty)
           rebind0 = pre.baseType(bcs.head).member(sym.name)
           if (settings.debug.value) Console.println("ADAPT2 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
