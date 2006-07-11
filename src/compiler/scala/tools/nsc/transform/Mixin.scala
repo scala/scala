@@ -23,7 +23,7 @@ abstract class Mixin extends InfoTransform {
 
   private def isForwarded(sym: Symbol) = (
     sym.owner.isImplClass && sym.isMethod &&
-    !sym.isModule && !(sym hasFlag (ACCESSOR | SUPERACCESSOR))
+    (!sym.isModule || sym.hasFlag(PRIVATE)) && !(sym hasFlag (ACCESSOR | SUPERACCESSOR))
   )
 
   private def isStatic(sym: Symbol) = isForwarded(sym) && sym.isImplOnly
