@@ -115,11 +115,12 @@ trait BasicBlocks requires ICodes {
 
     /**
      * Replace the instruction at the given position. Used by labels when
-     * they are anchored.
+     * they are anchored. It retains the position of the previous instruction.
      */
     def replaceInstruction(pos: Int, instr: Instruction): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed");
 
+      instr.pos = instrs(pos).pos;
       instrs(pos) = instr;
       true
     }
@@ -127,6 +128,7 @@ trait BasicBlocks requires ICodes {
     /**
      * Replace the given instruction with the new one.
      * Returns `true' if it actually changed something.
+     * It retains the position of the previous instruction.
      */
     def replaceInstruction(oldInstr: Instruction, newInstr: Instruction): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed");
@@ -135,6 +137,7 @@ trait BasicBlocks requires ICodes {
       var changed = false;
       while (i < instrs.length && !changed) {
         if (instrs(i) == oldInstr) {
+          newInstr.pos = oldInstr.pos;
           instrs(i) = newInstr;
           changed = true;
         }
@@ -143,6 +146,10 @@ trait BasicBlocks requires ICodes {
       changed
     }
 
+    /** Replaces iold with 'is'. It does not update the position field in the newly
+     *  inserted instrucitons, so it behaves differently than the one-instruction
+     *  versions of this function.
+     */
     def replaceInstruction(iold: Instruction, is: List[Instruction]): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed");
 
