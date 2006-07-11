@@ -308,7 +308,8 @@ abstract class TreePrinters {
       }
     }
 
-    def print(tree: Tree): unit =
+    def print(tree: Tree): unit = {
+      if (settings.Xprintpos.value) print("["+tree.pos+"]")
       printRaw(
         if (tree.isDef && tree.symbol != NoSymbol) {
           tree match {
@@ -320,7 +321,8 @@ abstract class TreePrinters {
             case AliasTypeDef(_, _, _, rhs) => AliasTypeDef(tree.symbol, rhs)
             case _ => tree
           }
-        } else tree);
+        } else tree)
+    }
 
     def print(unit: CompilationUnit): unit = {
       print("// Scala source: " + unit.source + "\n")

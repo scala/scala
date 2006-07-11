@@ -1,0 +1,16 @@
+object xfor {
+
+  import scala.xml.NodeSeq
+
+    val books =
+    <bks>
+      <title>Blabla</title>
+      <title>Blubabla</title>
+      <title>Baaaaaaalabla</title>
+    </bks>;
+
+  new NodeSeq { val theSeq = books.child } match {
+    case t @ <title>Blabla</title> => t
+  }
+
+}
