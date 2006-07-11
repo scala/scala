@@ -135,9 +135,9 @@ abstract class DocGenerator extends Models {
   }
 
   abstract class ListModuleContentFrame extends Frame {
-    val path  = "root-content";
-    val title = "All Packages";
-    def modules : TreeMap[String,ModuleClassSymbol];
+    val path  = "root-content"
+    val title = "All Packages"
+    def modules: TreeMap[String, ModuleClassSymbol]
     def body : NodeSeq = {
       <span><div class="page-title">
         Scala 2
@@ -245,9 +245,9 @@ abstract class DocGenerator extends Models {
     } else NodeSeq.Empty;
 
     def listMembersFull(mmbr : HasTree) : NodeSeq = if (mmbr.isInstanceOf[Composite]) {
-      val map = organize(mmbr.asInstanceOf[Composite], emptyMap);
-      val mmbrx = mmbr;
-      val pathx = path;
+      val map = organize(mmbr.asInstanceOf[Composite], emptyMap)
+      val mmbrx = mmbr
+      val pathx = path
       for (val kind0 <- OBJECT :: CLASS :: Nil; map.contains(kind0)) for (val mmbr <- map(kind0)) {
         new ContentFrame {
           def clazz = mmbr.asInstanceOf[ImplMod];
@@ -285,12 +285,16 @@ abstract class DocGenerator extends Models {
     def fullComment(mmbr: HasTree): NodeSeq = {
       if (comments.contains(mmbr.tree.symbol))
         comment(comments(mmbr.tree.symbol), false) else NodeSeq.Empty;
-    };
+    }
+
     def shortComment(mmbr: HasTree): NodeSeq = {
       if (comments.contains(mmbr.tree.symbol))
         comment(comments(mmbr.tree.symbol), true) else NodeSeq.Empty;
-    };
-    def ifT (cond: Boolean, nodes: NodeSeq) = if (cond) nodes else NodeSeq.Empty;
+    }
+
+    def ifT (cond: Boolean, nodes: NodeSeq) =
+      if (cond) nodes else NodeSeq.Empty
+
     def ifT (tree : Tree, nodes : NodeSeq, before : Boolean) = {
       if (tree != EmptyTree &&
         tree.tpe.symbol != definitions.AnyClass &&
@@ -319,6 +323,7 @@ abstract class DocGenerator extends Models {
       case EmptyTree => NodeSeq.Empty;
       case _ => Text("XX=" + tree.getClass() + " " + tree.toString());
     }
+
     def forTrees(trees: List[Tree]) : NodeSeq = {
       if (trees.isEmpty) NodeSeq.Empty;
       else {
@@ -341,6 +346,7 @@ abstract class DocGenerator extends Models {
       if (tparams.isEmpty) Text("");
       else surround("[", "]", forTrees(tparams));
     }
+
     def  argsFor(ht: HasTree): NodeSeq = ht.tree match {
       case ddef : DefDef =>
         if (!ddef.vparamss.isEmpty &&
@@ -351,6 +357,7 @@ abstract class DocGenerator extends Models {
         } else NodeSeq.Empty;
       case _ => NodeSeq.Empty;
     }
+
     def resultFor(ht: HasTree): NodeSeq = ht.tree match {
       case vdef : ValOrDefDef =>
         if (!vdef.symbol.nameString.equals("this"))
@@ -480,8 +487,8 @@ abstract class DocGenerator extends Models {
       };
       val module0 = module;
       new ListClassContentFrame {
-        def classes = top._2;
-        def module = module0;
+        def classes = top._2
+        def module = module0
       };
 
       // do root frame for each class and object
@@ -542,10 +549,11 @@ abstract class DocGenerator extends Models {
   }
 
   def parse(str : String) : NodeSeq = {
+    import scala.runtime.compat.StringBuilder
     new SpecialNode {
       def label = "#PCDATA"
-      def toString(sb: StringBuffer): StringBuffer = {
-        sb.append(str.trim());
+      def toString(sb: StringBuilder): StringBuilder = {
+        sb.append(str.trim())
         sb
       }
 

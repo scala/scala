@@ -9,27 +9,29 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
 import scala.runtime.compat.StringBuilder
 
-/** a special XML node is either text (PCDATA), a comment, a PI, or
- *  an entity ref
-**/
+/** &lt;code&gt;SpecialNode&lt;/code&gt; is a special XML node which
+ *  represents either text (PCDATA), a comment, a PI, or an entity ref.
+ *
+ *  @author Burak Emir
+ */
 abstract class SpecialNode extends Node {
 
   /** always empty */
-  final override def attributes = Null;
+  final override def attributes = Null
 
   /** always Node.EmptyNamespace */
-  final override def namespace = null;
+  final override def namespace = null
 
   /** always empty */
-  final def child = Nil;
+  final def child = Nil
 
   final override def toString(): String =
-    toString(new StringBuilder()).toString();
+    toString(new StringBuilder()).toString()
 
-  def toString(sb:StringBuilder): StringBuilder ;
+  def toString(sb: StringBuilder): StringBuilder
 
 }
