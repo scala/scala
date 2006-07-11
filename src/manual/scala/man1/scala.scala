@@ -81,7 +81,6 @@ object scala extends Command {
     Link(Bold("scalac") & "(1)", "scalac.html") & " page for " &
     "full details.   ",
 
-
     "If an object is specified to run, then that object must be a top-level " &
     "Scala object with the specified name.  The object must define a method " &
     Bold("main") & " with the following signature:",
@@ -113,7 +112,6 @@ object scala extends Command {
     "-classpath option is specified, then " & Mono("scala") &
     " will add " & Quote(".") & ", the current directory, to the " &
     "end of the classpath.")
-
 
   val options = Section("OPTIONS",
 
@@ -193,6 +191,7 @@ object scala extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
+    Link(Bold("fsc") & "(1)", "fsc.html") & ", " &
     Link(Bold("sbaz") & "(1)", "sbaz.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &

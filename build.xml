@@ -703,6 +703,7 @@ DOCUMENTATION
       classpathref="manual.classpath">
       <include name="**/*.scala"/>
     </quick>
+    <emit command="fsc"/>
     <emit command="sbaz"/>
     <emit command="scala"/>
     <emit command="scalac"/>
