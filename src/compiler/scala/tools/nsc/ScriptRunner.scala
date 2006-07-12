@@ -80,7 +80,7 @@ object ScriptRunner {
       addFromDir(sourcePath, "")
       jar.close
     } catch {
-      case _ => jarFile.delete // XXX what errors to catch?
+      case _:Error => jarFile.delete // XXX what errors to catch?
     }
   }
 
@@ -146,37 +146,57 @@ object ScriptRunner {
     * a classpath for the compiled script.
     */
   private def withCompiledScript
-        (settings: Settings, scriptFile: String)
-        (handler: String=>Unit) =
+        (settings: GenericRunnerSettings, scriptFile: String)
+        (handler: String=>Unit)
+        :Unit =
   {
-    val jarFile = jarFileFor(scriptFile)
-
-    def jarOK = (jarFile.canRead &&
-      (jarFile.lastModified > new File(scriptFile).lastModified))
-
-    if(jarOK)
-    {
-      // pre-compiled jar is current
-      handler(jarFile.getAbsolutePath)
-    } else {
-      // The pre-compiled jar is old.  Recompile the script.
-      jarFile.delete
+    def compileWithInterp: Pair[Interpreter, Boolean] = {
       val interpreter = new Interpreter(settings)
       interpreter.beQuiet
-      if(interpreter.compileSources(List(wrappedScript(scriptFile)))) {
-        tryMakeJar(jarFile, interpreter.classfilePath)
-        if(jarOK) {
-          // use the jar if possible, so that
-          // the interpreter gets closed more reliably
-          interpreter.close
-          handler(jarFile.getAbsolutePath)
-        } else {
-          try {
-            handler(interpreter.classfilePath.getAbsolutePath)
-          } finally {
-            interpreter.close
+      val ok = interpreter.compileSources(List(wrappedScript(scriptFile)))
+      Pair(interpreter, ok)
+    }
+
+    if(settings.savecompiled.value) {
+      val jarFile = jarFileFor(scriptFile)
+
+      def jarOK = (jarFile.canRead &&
+        (jarFile.lastModified > new File(scriptFile).lastModified))
+
+      if(jarOK) {
+        // pre-compiled jar is current
+        handler(jarFile.getAbsolutePath)
+      } else {
+        // The pre-compiled jar is old.  Recompile the script.
+        jarFile.delete
+        val Pair(interpreter, compok) = compileWithInterp
+        try {
+          if(compok) {
+            tryMakeJar(jarFile, interpreter.classfilePath)
+            if(jarOK) {
+              // close the interpreter early and use the
+              // jar file
+              interpreter.close
+              handler(jarFile.getAbsolutePath)
+            } else {
+              // run from the interpreter's temporary
+              // directory
+              handler(interpreter.classfilePath.getAbsolutePath)
+            }
           }
+        } finally {
+          interpreter.close
         }
+      }
+    } else {
+      // don't use the cache; just run from the interpreter's temporary directory
+      val Pair(interpreter, compok) = compileWithInterp
+      try {
+        if(compok) {
+          handler(interpreter.classfilePath.getAbsolutePath)
+        }
+      } finally {
+          interpreter.close
       }
     }
   }
@@ -185,7 +205,7 @@ object ScriptRunner {
     * settings.
     */
   def runScript(
-      settings: Settings,
+      settings: GenericRunnerSettings,
       scriptFile: String,
       scriptArgs: List[String]): Unit =
   {
