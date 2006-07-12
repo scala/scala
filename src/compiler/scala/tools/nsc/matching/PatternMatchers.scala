@@ -1063,7 +1063,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
                   ValDef(casted,
                          gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true)),
                   ValDef(castedRest, {
-                    var res:Tree = gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true);
+                    var res:Tree = Ident(casted) // gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true);
                     if(minlen != 0) {
                       res = Apply(Select(Select(res, "toList"), "drop"),List(Literal(Constant(minlen))))
 

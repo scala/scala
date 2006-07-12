@@ -7,7 +7,8 @@ object Test {
 
       new Test01,
       new Test02,
-      new Test03
+      new Test03,
+      new Test04
 
     ).run(tr)
 
@@ -15,7 +16,7 @@ object Test {
       Console println f
   }
 
-  class Test01 extends TestCase("numero uno (all ignoring patterns on List)") {
+  class Test01 extends TestCase("uno (all ignoring patterns on List)") {
     def doMatch(l:List[String]):String = l match {
         case List(_*) => "ok"
     }
@@ -40,7 +41,7 @@ object Test {
     }
     */
 
-  class Test02 extends TestCase("numero due (all ignoring patterns on Seq)") {
+  class Test02 extends TestCase("due (all ignoring patterns on Seq)") {
     def doMatch(l:Seq[String]):String = l match {
         case Seq(_*) => "ok"
     }
@@ -56,7 +57,7 @@ object Test {
     }
   }
 
-  class Test03 extends TestCase("numero tre (right-ignoring patterns on List, defaults)") {
+  class Test03 extends TestCase("tre (right-ignoring patterns on List, defaults)") {
     def doMatch(l:List[String]):String = l match {
         case List(_,_,_,_*) => "ok"
         case _ => "not ok"
@@ -70,5 +71,29 @@ object Test {
       assertEquals(doMatch(list3), "ok");
     }
   }
+
+
+  class Test04 extends TestCase("quattro (all- and right-ignoring pattern on case class w/ seq param)") {
+    case class Foo(i: Int, chars: Char*)
+
+    override def runTest() = {
+      val a = Foo(0, 'a') match {
+        case Foo(i, c, chars @ _*) =>
+          c
+        case _ =>
+          null
+      }
+      assertEquals(a,'a')
+
+      val b = Foo(0, 'a') match {
+        case Foo(i, chars @ _*) =>
+          'b'
+        case _ =>
+          null
+      }
+      assertEquals(b,'b')
+    }
+  }
+
 
 }

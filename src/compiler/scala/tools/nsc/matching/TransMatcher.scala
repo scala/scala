@@ -219,11 +219,14 @@ with RightTracers {
 
         //case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
 
-        case Apply(fn, List(pat2, ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) =>
+        case Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) =>
           //Console.println("OPTIMIZING")
           //Console.println(pat)
           //Console.println(pat.tpe)
-          //Console.println(b.tpe)
+          //Console.println(tt.tpe)
+          //Console.println("b.tpe "+b.tpe+" widened"+b.tpe.widen)
+          //Console.println("b.symbol.tpe "+b.symbol.tpe+" widened"+b.symbol.tpe.widen)
+          //Console.println("pat2.tpe "+pat2.tpe+" widened"+pat2.tpe.widen)
           val tpe1:Type = pat2.tpe.widen.baseType( definitions.SeqClass ).typeArgs(0)
 
           val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
