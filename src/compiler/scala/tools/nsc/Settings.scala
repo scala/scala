@@ -202,7 +202,7 @@ class Settings(error: String => unit) {
           error(
             if (choice == "") "missing " + argument
             else "unknown " + argument + " '" + choice + "'")
-          List()
+          args
         } else {
           value = choice
           rest
