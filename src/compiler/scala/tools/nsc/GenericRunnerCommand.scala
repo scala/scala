@@ -45,7 +45,8 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
   parseArguments
 
   val usageMessage = {
-    "scala [ <compiler-option> | -howtorun:how ]... [<torun> <arguments>]\n" +
+    "scala [ <compiler-option> | -howtorun:how | -savecompiled ]... \n " +
+    "      [<torun> <arguments>]\n" +
     "\n" +
     "<compiler-option>'s are as for scalac; see scalac -help.\n" +
     "<torun>, if present, is an object or script file to run.\n" +
@@ -53,6 +54,8 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
     "-howtorun allows explicitly specifying how to run <torun>:\n" +
     "    script: it is a script file\n" +
     "    object: it is an object name\n" +
-    "    guess: (the default) try to guess\n"
+    "    guess: (the default) try to guess\n" +
+    "If -savecompiled is specified, then try to cache the compilation\n" +
+    "of any script file that is run."
   }
 }

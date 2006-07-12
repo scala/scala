@@ -11,8 +11,13 @@ class GenericRunnerSettings(error: String => Unit)
 extends Settings(error) {
   val howtorun =
     ChoiceSetting(
-      "howtorun",
+      "-howtorun",
       "how to run the specified code",
       List("guess", "object", "script"),
       "guess")
+
+  val savecompiled =
+    BooleanSetting(
+        "-savecompiled",
+        "save the compiled script (assumes -howtorun script)")
 }
