@@ -11,6 +11,7 @@
 
 package scala;
 
+import scala.runtime.compat.StringBuilder;
 
 object Seq {
 
