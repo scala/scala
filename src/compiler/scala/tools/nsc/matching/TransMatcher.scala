@@ -360,7 +360,7 @@ with RightTracers {
         EmptyTree
       } else {
         val pm = new PatternMatcher()
-        pm.initialize(sel, currentOwner, true)
+        pm.initialize(sel, currentOwner)
         pm.construct(cases)
         //if (global.log()) {
         //  global.log("internal pattern matching structure");

@@ -42,7 +42,6 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
 
   protected var optimize = true;
-  protected var doBinding = true;
 
   /** the owner of the pattern matching expression
    */
@@ -63,7 +62,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
   def defs = definitions;
   /** init method, also needed in subclass AlgebraicMatcher
    */
-  def initialize(selector: Tree, owner: Symbol, doBinding: Boolean): Unit = {
+  def initialize(selector: Tree, owner: Symbol): Unit = {
 
     //Konsole.println("pm.initialize selector.tpe = "+selector.tpe);
 
@@ -94,7 +93,6 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     this.selector = selector;
 
     //this.optimize = this.optimize && (settings.target.value == "jvm");
-    this.doBinding = doBinding;
   }
 
   /** pretty printer
@@ -393,6 +391,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     }
   }
 
+
   private def newHeader(pos: Int, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+","+index+")");
     //Console.println("  casted.tpe"+casted.tpe);
@@ -446,13 +445,31 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
    */
   protected def enter1(pat: Tree, index: Int, target: PatternNode, casted: Symbol,  env: CaseEnv): PatternNode = {
     //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
-    val patArgs = patternArgs(pat);        // get pattern arguments
+    var bodycond: PatternNode => Body = null; // in case we run into a body (combination of typed pattern and constructor pattern, see bug#644)
+    val patArgs = patternArgs(pat);      // get pattern arguments
     //System.err.println("patArgs = "+patArgs);
-    var curHeader = target.and.asInstanceOf[Header];    // advance one step in intermediate representation
+    var curHeader: Header = target.and match {
+      case null => null
+      case h: Header => h;    // advance one step in intermediate representation
+      case b: Body if b.or != null => b.or.asInstanceOf[Header]
+      case b: Body =>
+        if(b.guard(b.guard.length - 1) == EmptyTree) {
+          cunit.error(pat.pos, "unreachable code")
+          null
+        }
+        else {
+          bodycond = {h => b.or = h; b} // depends on the side-effect to curHeader (*)
+          null
+        }
+    }
     if (curHeader == null) {                  // check if we have to add a new header
       //assert index >= 0 : casted;
       if (index < 0) { scala.Predef.error("error entering:" + casted); return null }
-      target.and = {curHeader = newHeader(pat.pos, casted, index); curHeader};
+      target.and = {curHeader = newHeader(pat.pos, casted, index); curHeader}; // (*)
+
+      if(bodycond != null)
+        target.and = bodycond(target.and) // restores body with the guards
+
       curHeader.or = patternNode(pat, curHeader, env);
       enter(patArgs, curHeader.or, casted, env);
     }
@@ -822,6 +839,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     //Console.println("pm.toTree  res.tpe "+res.tpe);
     while (node != null)
     node match {
+
       case _h:Header =>
         val selector = _h.selector;
         val next = _h.next;
@@ -841,8 +859,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
             (guard.length == 0) &&
             (body.length == 0)) {
               return Literal(Constant(true));
-            } else if (!doBinding)
-              bound = Predef.Array[Array[ValDef]]( Predef.Array[ValDef]() );
+            }
         var i = guard.length - 1; while(i >= 0) {
         val ts:Seq[Tree] = bound(i).asInstanceOf[Array[Tree]];
         val temp = currentOwner.newValue(body(i).pos, cunit.fresh.newName("r$"))
@@ -862,7 +879,9 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
           res = Or(Block(ts.toList, res0), res);
           i = i - 1
         }
-        return res;
+      if (_b.or != null)
+        res = Or(res, toTree(_b.or))
+      return res;
         case _ =>
           scala.Predef.error("I am tired");
       }

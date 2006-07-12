@@ -9,7 +9,8 @@ object Test {
       new Test02,
       new Test03,
       new Test04,
-      new Test05
+      new Test05,
+      new Test06
 
     ).run(tr)
 
@@ -110,4 +111,24 @@ object Test {
     }
   }
 
+  class Test06 extends TestCase("sei (not regular) fancy guards / bug#644 ") {
+
+    case class A(i:Any)
+
+    def doMatch(x:Any, bla:int) = x match {
+      case x:A if (bla==1) =>
+        0
+      case A(1) =>
+        1
+      case A(A(1)) =>
+        2
+    }
+
+    override def runTest(): Unit= {
+      assertEquals(doMatch(A(null),1), 0)
+      assertEquals(doMatch(A(1),2), 1)
+      assertEquals(doMatch(A(A(1)),2), 2)
+    }
+
+  }
 }
