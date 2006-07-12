@@ -32,8 +32,11 @@ trait Trees requires Global {
     def hasFlag(flag: int) = (flags & flag) != 0
     def | (flag: int): Modifiers = {
       val flags1 = flags | flag
-      if (flags1 == flags) this else Modifiers(flags1, privateWithin)
+      if (flags1 == flags) this
+      else Modifiers(flags1, privateWithin) setAttr attributes
     }
+    def setAttr(attrs: List[Attribute]): this.type = {attributes = attrs; this }
+    var attributes: List[Attribute] = List()
   }
 
   def Modifiers(flags: int): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
@@ -334,13 +337,6 @@ trait Trees requires Global {
   case class Attribute(constr: Tree, elements: List[Tree])
        extends TermTree
 
-  /** Attributed definition */
-  case class Attributed(attribute: Tree, definition: Tree)
-       extends Tree {
-    override def symbol: Symbol = definition.symbol
-    override def symbol_=(sym: Symbol): unit = { definition.symbol = sym }
-  }
-
   /** Documented definition, eliminated by analyzer */
   case class DocDef(comment: String, definition: Tree)
        extends Tree {
@@ -362,7 +358,8 @@ trait Trees requires Global {
     /** Add constructor to template */
     var vparamss1 =
       vparamss map (.map (vd =>
-        ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM), vd.name, vd.tpt.duplicate, EmptyTree)));
+        ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) setAttr vd.mods.attributes,
+               vd.name, vd.tpt.duplicate, EmptyTree)));
     if (vparamss1.isEmpty ||
         !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
       vparamss1 = List() :: vparamss1;
@@ -576,7 +573,6 @@ trait Trees requires Global {
   case LabelDef(name, params, rhs) =>
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
   case Attribute(constr, elements) =>                             (eliminated by typecheck)
-  case Attributed(attribute, definition) =>                       (eliminated by typecheck)
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
   case Template(parents, body) =>
   case Block(stats, expr) =>
@@ -620,7 +616,6 @@ trait Trees requires Global {
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import
     def Attribute(tree: Tree, constr: Tree, elements: List[Tree]): Attribute
-    def Attributed(tree: Tree, attribute: Tree, definition: Tree): Attributed
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
@@ -674,8 +669,6 @@ trait Trees requires Global {
       new Import(expr, selectors).copyAttrs(tree)
     def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) =
       new Attribute(constr, elements)
-    def Attributed(tree: Tree, attribute: Tree, definition: Tree) =
-      new Attributed(attribute, definition).copyAttrs(tree)
     def DocDef(tree: Tree, comment: String, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]) =
@@ -789,11 +782,6 @@ trait Trees requires Global {
       case t @ Attribute(constr0, elements0)
       if ((constr0 == constr) && (elements0 == elements)) => t
       case _ => copy.Attribute(tree, constr, elements)
-    }
-    def Attributed(tree: Tree, attribute: Tree, definition: Tree) = tree match {
-      case t @ Attributed(attribute0, definition0)
-      if ((attribute0 == attribute) && (definition0 == definition)) => t
-      case _ => copy.Attributed(tree, attribute, definition)
     }
     def DocDef(tree: Tree, comment: String, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
@@ -958,7 +946,8 @@ trait Trees requires Global {
         }
       case ClassDef(mods, name, tparams, tpt, impl) =>
         atOwner(tree.symbol) {
-          copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(tpt), transformTemplate(impl))
+          copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams),
+                        transform(tpt), transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
       atOwner(tree.symbol.moduleClass) {
@@ -987,8 +976,6 @@ trait Trees requires Global {
         copy.Import(tree, transform(expr), selectors)
       case Attribute(constr, elements) =>
         copy.Attribute(tree, transform(constr), transformTrees(elements))
-      case Attributed(attribute, definition) =>
-        copy.Attributed(tree, transform(attribute), transform(definition))
       case DocDef(comment, definition) =>
         copy.DocDef(tree, comment, transform(definition))
       case Template(parents, body) =>
@@ -1119,8 +1106,6 @@ trait Trees requires Global {
         traverse(expr)
       case Attribute(constr, elements) =>
         traverse(constr); traverseTrees(elements)
-      case Attributed(attribute, definition) =>
-        traverse(attribute); traverse(definition)
       case DocDef(comment, definition) =>
         traverse(definition)
       case Template(parents, body) =>

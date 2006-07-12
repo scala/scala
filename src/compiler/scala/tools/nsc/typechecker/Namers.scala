@@ -271,7 +271,7 @@ trait Namers requires Analyzer {
                 .setFlag(mods.flags);
 	      finish
             }
-	  case DefDef(mods, nme.CONSTRUCTOR, tparams, vparams, tp, rhs) =>
+	  case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
 	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
 	      .setFlag(mods.flags | owner.getFlag(ConstrFlags));
             setPrivateWithin(tree.symbol, mods);
@@ -291,8 +291,6 @@ trait Namers requires Analyzer {
               .setFlag(mods.flags);
             setPrivateWithin(tree.symbol, mods);
 	    finishWith(tparams)
-	  case Attributed(attr, defn) =>
-	    enterSym(defn);
 	  case DocDef(_, defn) =>
 	    enterSym(defn)
 	  case imp @ Import(_, _) =>

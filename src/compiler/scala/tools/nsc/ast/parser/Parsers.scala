@@ -1208,6 +1208,7 @@ trait Parsers requires SyntaxAnalyzer {
       var caseParam = ofCaseClass
       def param(): ValDef = {
         atPos(in.currentPos) {
+          val attrs = attributeClauses();
           var mods = Modifiers(Flags.PARAM);
           if (owner.isTypeName) {
             mods = modifiers() | Flags.PARAMACCESSOR;
@@ -1233,7 +1234,7 @@ trait Parsers requires SyntaxAnalyzer {
                   " parameters may not be call-by-name", false)
               Flags.BYNAMEPARAM
             } else 0;
-          ValDef(mods | implicitmod | bynamemod, name, paramType(), EmptyTree)
+          ValDef((mods | implicitmod | bynamemod) setAttr attrs, name, paramType(), EmptyTree)
         }
       }
       def paramClause(): List[ValDef] = {
@@ -1638,7 +1639,7 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** ObjectDef       ::= Id ClassTemplate
      */
-    def objectDef(mods: Modifiers): Tree =
+    def objectDef(mods: Modifiers): ModuleDef =
       atPos(in.skipToken()) {
         val name = ident();
         val template = classTemplate(mods, name, List());
@@ -1786,8 +1787,8 @@ trait Parsers requires SyntaxAnalyzer {
     /** AttributeClauses   ::= {AttributeClause}
      *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]' [NewLine]
      */
-    def attributeClauses(): List[Tree] = {
-      var attrs = new ListBuffer[Tree]
+    def attributeClauses(): List[Attribute] = {
+      var attrs = new ListBuffer[Attribute]
       while (in.token == LBRACKET) {
         in.nextToken()
         attrs += attribute()
@@ -1803,7 +1804,7 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)']
      */
-    def attribute(): Tree = {
+    def attribute(): Attribute = {
       def nameValuePair(): Tree = {
         accept(VAL)
         var pos = in.currentPos
@@ -1827,7 +1828,7 @@ trait Parsers requires SyntaxAnalyzer {
         nvps.toList
       } else List()
       val constr = atPos(pos) { New(t, List(args)) }
-      atPos(pos) { glob.Attribute(constr, nameValuePairs) }
+      glob.Attribute(constr, nameValuePairs) setPos pos
     }
 
     def mixinAttribute(attrs: List[Tree]) = {
@@ -1841,9 +1842,16 @@ trait Parsers requires SyntaxAnalyzer {
       if (attrs exists isMixinAttribute) Flags.TRAIT else 0
     }
 
-    def joinAttributes(attrs: List[Tree], defs: List[Tree]): List[Tree] =
-      defs map (defn =>
-        (attrs :\ defn) ((attr, tree) => Attributed(attr, tree) setPos attr.pos));
+    def joinAttributes(attrs: List[Attribute], defs: List[Tree]): List[Tree] = {
+      def setAttr(defn: Tree): Unit = defn match {
+        case DocDef(_, def0) => setAttr(def0)
+        case m: MemberDef => m.mods setAttr attrs
+        case _ => ()
+      }
+      if (!attrs.isEmpty)
+        defs foreach setAttr
+      defs;
+    }
 
     /** RefineStatSeq    ::= RefineStat {StatementSeparator RefineStat}
      *  RefineStat       ::= Dcl

@@ -553,7 +553,7 @@ trait Typers requires Analyzer {
                       supertpt,
                       tparams,
                       context.owner.unsafeTypeParams,
-                      vparamss map (.map(.duplicate.asInstanceOf[ValDef])),
+                      vparamss map (.map(.duplicate)),
                       superargs map (.duplicate))) setOriginal supertpt /* setPos supertpt.pos */
             }
           }
@@ -621,6 +621,7 @@ trait Typers requires Analyzer {
     }
 
     def typedClassDef(cdef: ClassDef): Tree = {
+      attributes(cdef)
       val clazz = cdef.symbol
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
@@ -635,6 +636,7 @@ trait Typers requires Analyzer {
 
     def typedModuleDef(mdef: ModuleDef): Tree = {
       //System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile);
+      attributes(mdef)
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope()))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
@@ -655,6 +657,7 @@ trait Typers requires Analyzer {
               else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe))
           result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
+          result.mods setAttr vdef.mods.attributes
           result
         }
         def setterDef: DefDef = {
@@ -667,19 +670,21 @@ trait Typers requires Analyzer {
 
           assert(setter != NoSymbol, getter);//debug
 
-          atPos(vdef.pos)(
+          val result = atPos(vdef.pos)(
             DefDef(setter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
               else typed(Assign(Select(This(value.owner), value),
                                 Ident(vparamss.head.head)))))
+          result.mods setAttr vdef.mods.attributes
+          result
         }
         val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
                  else List(getterDef)
         if (mods hasFlag DEFERRED) gs else vdef :: gs
+
       case DocDef(comment, defn) =>
         addGetterSetter(defn) map (stat => DocDef(comment, stat))
-      case Attributed(attr, defn) =>
-        addGetterSetter(defn) map (stat => Attributed(attr.duplicate, stat))
+
       case _ =>
         List(stat)
     }
@@ -700,6 +705,7 @@ trait Typers requires Analyzer {
     }
 
     def typedValDef(vdef: ValDef): ValDef = {
+      attributes(vdef)
       val sym = vdef.symbol
       val typer1 = if (sym.hasFlag(PARAM) && sym.owner.isConstructor)
                      newTyper(context.makeConstructorContext)
@@ -769,6 +775,8 @@ trait Typers requires Analyzer {
     }
 
     def typedDefDef(ddef: DefDef): DefDef = {
+      attributes(ddef)
+
       val meth = ddef.symbol
 
       def checkPrecedes(tree: Tree): unit = tree match {
@@ -1099,6 +1107,64 @@ trait Typers requires Analyzer {
       }
     }
 
+    protected def attributes(defn: MemberDef): Unit = {
+      var attrError: Boolean = false;
+      def getConstant(tree: Tree): Constant = tree match {
+        case Literal(value) => value
+        case arg =>
+          error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
+          attrError = true;
+          null
+      }
+      val attrInfos =
+        for (val t @ Attribute(constr, elements) <- defn.mods.attributes) yield {
+          typed(constr, EXPRmode | CONSTmode, AttributeClass.tpe) match {
+            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+              val constrArgs = args map getConstant
+              val attrScope = tpt.tpe.decls.
+                filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA));
+              val names = new collection.mutable.HashSet[Symbol]
+              names ++= attrScope.elements.filter(.isMethod)
+              if (args.length == 1) {
+                names.filter(sym => sym.name != nme.value)
+              }
+              val nvPairs = elements map {
+                case Assign(ntree @ Ident(name), rhs) => {
+                  val sym = attrScope.lookup(name);
+                  if (sym == NoSymbol) {
+                    error(ntree.pos, "unknown attribute element name: " + name)
+                    attrError = true;
+                    null
+                  } else if (!names.contains(sym)) {
+                    error(ntree.pos, "duplicate value for element " + name)
+                    attrError = true;
+                    null
+                  } else {
+                    names -= sym
+                    Pair(sym.name, getConstant(typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType)))
+                  }
+                }
+              }
+              for (val name <- names) {
+                if (!name.attributes.contains(Triple(AnnotationDefaultAttr.tpe, List(), List()))) {
+                  error(t.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
+                  attrError = true;
+                }
+              }
+              Triple(tpt.tpe, constrArgs, nvPairs)
+          }
+        }
+      if (!attrError) {
+        val attributed =
+          if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol
+        if (attributed.attributes.isEmpty) {
+          attributed.attributes = attrInfos
+          defn.mods setAttr List();
+        }
+      }
+    }
+
+
     protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
 
       def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps)
@@ -1388,60 +1454,6 @@ trait Typers requires Analyzer {
             typer1.enterLabelDef(ldef)
           }
           typer1.typedLabelDef(ldef)
-
-        case Attributed(Attribute(constr, elements), defn) =>
-          var attrError: Boolean = false;
-          def getConstant(tree: Tree): Constant = tree match {
-            case Literal(value) =>
-              value
-            case arg =>
-              error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
-              attrError = true;
-            null
-          }
-          typed(constr, EXPRmode | CONSTmode, AttributeClass.tpe) match {
-            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              val constrArgs = args map getConstant
-              val attrScope = tpt.tpe.decls.
-                filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA));
-              val names = new collection.mutable.HashSet[Symbol]
-              names ++= attrScope.elements
-              if (args.length == 1) {
-                names.filter(sym => sym.name != nme.value)
-              }
-              val nvPairs = elements map {
-                case Assign(ntree @ Ident(name), rhs) => {
-                  val sym = attrScope.lookup(name);
-                  if (sym == NoSymbol) {
-                    error(ntree.pos, "unknown attribute element name: " + name)
-                    attrError = true;
-                    null
-                  } else if (!names.contains(sym)) {
-                    error(ntree.pos, "duplicate value for element " + name)
-                    attrError = true;
-                    null
-                  } else {
-                    names -= sym
-                    Pair(sym.name, getConstant(typed(rhs, mode | CONSTmode,
-                                                sym.tpe.resultType)))
-                  }
-                }
-              }
-              for (val name <- names) {
-                if (!name.attributes.contains(Triple(AnnotationDefaultAttr.tpe, List(), List()))) {
-                  error(constr.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
-                  attrError = true;
-                }
-              }
-              if (!attrError) {
-                val attrInfo = Triple(tpt.tpe, constrArgs, nvPairs)
-                val attributed =
-                  if (defn.symbol.isModule) defn.symbol.moduleClass
-                  else defn.symbol;
-                attributed.attributes = attributed.attributes ::: List(attrInfo)
-              }
-          }
-          typed(defn, mode, pt)
 
         case DocDef(comment, defn) => {
           val ret = typed(defn, mode, pt)

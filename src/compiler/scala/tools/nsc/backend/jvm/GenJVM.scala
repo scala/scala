@@ -175,12 +175,12 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField;
       clasz.methods foreach genMethod;
 
-      addAttributes(jclass, c.symbol.attributes);
+      addAnnotations(jclass, c.symbol.attributes);
 
       emitClass(jclass, c.symbol)
     }
 
-    def addExceptionsAttribute(jm: JMethod, sym: Symbol): Unit = {
+    def addExceptionsAttribute(sym: Symbol): Unit = {
       val Pair(excs, others) = sym.attributes.partition((a => a match {
         case Triple(ThrowsAttr, _, _) => true
         case _ => false
@@ -188,7 +188,7 @@ abstract class GenJVM extends SubComponent {
       if (excs isEmpty) return;
       sym.attributes = others;
 
-      val cpool = jm.getConstantPool();
+      val cpool = jmethod.getConstantPool();
       val buf: ByteBuffer = ByteBuffer.allocate(512);
       var nattr = 0;
 
@@ -201,24 +201,59 @@ abstract class GenJVM extends SubComponent {
       }
 
       assert (nattr > 0);
-      val length = buf.position();
       buf.putShort(0, nattr.toShort)
-      val arr = buf.array().subArray(0, length);
-
-      val attr = jm.getContext().JOtherAttribute(jm.getJClass(), jm,
-                                                 nme.ExceptionsATTR.toString(),
-                                                 arr, length)
-      jm.addAttribute(attr)
+      addAttribute(jmethod, nme.ExceptionsATTR, buf)
     }
 
-    def addAttributes(jmember: JMember, attributes: List[AttrInfo]): Unit = {
-      if (attributes.isEmpty) return;
+    private def emitAttributes(buf: ByteBuffer, attributes: List[AttrInfo]): Int = {
+      val cpool = jclass.getConstantPool();
 
-      val cpool = jmember.getConstantPool();
-      val buf: ByteBuffer = ByteBuffer.allocate(2048);
+      def emitElement(const: Constant): Unit = const.tag match {
+        case BooleanTag =>
+          buf.put('Z'.toByte)
+          buf.putShort(cpool.addInteger(if(const.booleanValue) 1 else 0).toShort)
+        case ByteTag    =>
+          buf.put('B'.toByte)
+          buf.putShort(cpool.addInteger(const.byteValue).toShort)
+        case ShortTag   =>
+          buf.put('S'.toByte)
+          buf.putShort(cpool.addInteger(const.shortValue).toShort)
+        case CharTag    =>
+          buf.put('C'.toByte)
+          buf.putShort(cpool.addInteger(const.charValue).toShort)
+        case IntTag     =>
+          buf.put('I'.toByte)
+          buf.putShort(cpool.addInteger(const.intValue).toShort)
+        case LongTag    =>
+          buf.put('J'.toByte)
+          buf.putShort(cpool.addLong(const.longValue).toShort)
+        case FloatTag   =>
+          buf.put('F'.toByte)
+          buf.putShort(cpool.addFloat(const.floatValue).toShort)
+        case DoubleTag  =>
+          buf.put('D'.toByte)
+          buf.putShort(cpool.addDouble(const.doubleValue).toShort)
+        case StringTag  =>
+          buf.put('s'.toByte)
+          buf.putShort(cpool.addUtf8(const.stringValue).toShort)
+        case ClassTag   =>
+          buf.put('c'.toByte)
+          buf.putShort(cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort)
+        case EnumTag =>
+          buf.put('e'.toByte)
+          buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
+          buf.putShort(cpool.addUtf8(const.symbolValue.name.toString()).toShort)
+        case ArrayTag =>
+          buf.put('['.toByte)
+          val arr = const.arrayValue;
+          buf.putShort(arr.length.toShort);
+          for (val elem <- arr) emitElement(elem)
+      }
+
       var nattr = 0;
+      val pos = buf.position();
 
-      // put some radom value; the actual number is determined at the end
+      // put some radom value; the actual number of annotations is determined at the end
       buf.putShort(0xbaba.toShort)
 
       for (val Triple(typ, consts, nvPairs) <- attributes; typ.symbol.hasFlag(Flags.JAVA)) {
@@ -227,48 +262,6 @@ abstract class GenJVM extends SubComponent {
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort);
         assert(consts.length <= 1, consts.toString())
         buf.putShort((consts.length + nvPairs.length).toShort);
-        def emitElement(const: Constant): Unit = const.tag match {
-          case BooleanTag =>
-            buf.put('Z'.toByte)
-            buf.putShort(cpool.addInteger(if(const.booleanValue) 1 else 0).toShort)
-          case ByteTag    =>
-            buf.put('B'.toByte)
-            buf.putShort(cpool.addInteger(const.byteValue).toShort)
-          case ShortTag   =>
-            buf.put('S'.toByte)
-            buf.putShort(cpool.addInteger(const.shortValue).toShort)
-          case CharTag    =>
-            buf.put('C'.toByte)
-            buf.putShort(cpool.addInteger(const.charValue).toShort)
-          case IntTag     =>
-            buf.put('I'.toByte)
-            buf.putShort(cpool.addInteger(const.intValue).toShort)
-          case LongTag    =>
-            buf.put('J'.toByte)
-            buf.putShort(cpool.addLong(const.longValue).toShort)
-          case FloatTag   =>
-            buf.put('F'.toByte)
-            buf.putShort(cpool.addFloat(const.floatValue).toShort)
-          case DoubleTag  =>
-            buf.put('D'.toByte)
-            buf.putShort(cpool.addDouble(const.doubleValue).toShort)
-          case StringTag  =>
-            buf.put('s'.toByte)
-            buf.putShort(cpool.addUtf8(const.stringValue).toShort)
-          case ClassTag   =>
-            buf.put('c'.toByte)
-            buf.putShort(cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort)
-          case EnumTag =>
-            buf.put('e'.toByte)
-            buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
-            buf.putShort(cpool.addUtf8(const.symbolValue.name.toString()).toShort)
-          case ArrayTag =>
-            buf.put('['.toByte)
-            val arr = const.arrayValue;
-            buf.putShort(arr.length.toShort);
-            for (val elem <- arr) emitElement(elem)
-          //case NullTag    => AllRefClass.tpe
-          }
         if (!consts.isEmpty) {
           buf.putShort(cpool.addUtf8("value").toShort);
           emitElement(consts.head);
@@ -278,18 +271,50 @@ abstract class GenJVM extends SubComponent {
           emitElement(value)
         }
       }
-      if (nattr > 0) {
-        val length = buf.position();
-        buf.putShort(0, nattr.toShort)
-        val arr = buf.array().subArray(0, length);
 
-        val attr = jmember.getContext().JOtherAttribute(jmember.getJClass(),
-                                                        jmember,
-                                                        nme.RuntimeAnnotationATTR.toString(),
-                                                        arr,
-                                                        length)
-        jmember.addAttribute(attr)
-      }
+      // save the number of annotations
+      buf.putShort(pos, nattr.toShort);
+      nattr
+    }
+
+    def addAnnotations(jmember: JMember, attributes: List[AttrInfo]): Unit = {
+      if (attributes.isEmpty) return;
+
+      val buf: ByteBuffer = ByteBuffer.allocate(2048);
+
+      emitAttributes(buf, attributes)
+
+      addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
+    }
+
+    def addParamAnnotations(pattrss: List[List[AttrInfo]]): Unit = {
+      val attributes = for (val attrs <- pattrss) yield
+        for (val attr @ Triple(tpe, _, _) <- attrs; tpe.symbol hasFlag Flags.JAVA) yield attr;
+      if (attributes.forall(.isEmpty)) return;
+
+      val buf: ByteBuffer = ByteBuffer.allocate(2048);
+
+      // number of parameters
+      buf.put(attributes.length.toByte)
+      for (val attrs <- attributes)
+        emitAttributes(buf, attrs)
+
+      addAttribute(jmethod, nme.RuntimeParamAnnotationATTR, buf)
+    }
+
+    def addAttribute(jmember: JMember, name: Name, buf: ByteBuffer): Unit = {
+      if (buf.position() <= 2)
+        return
+
+      val length = buf.position();
+      val arr = buf.array().subArray(0, length);
+
+      val attr = jmember.getContext().JOtherAttribute(jmember.getJClass(),
+                                                      jmember,
+                                                      name.toString(),
+                                                      arr,
+                                                      length)
+      jmember.addAttribute(attr)
     }
 
     def isTopLevelModule(sym: Symbol): Boolean =
@@ -316,7 +341,7 @@ abstract class GenJVM extends SubComponent {
                            javaName(f.symbol),
                            javaType(f.symbol.tpe));
 
-      addAttributes(jfield, f.symbol.attributes)
+      addAnnotations(jfield, f.symbol.attributes)
     }
 
     def genMethod(m: IMethod): Unit = {
@@ -364,8 +389,9 @@ abstract class GenJVM extends SubComponent {
         genLocalVariableTable;
       }
 
-      addExceptionsAttribute(jmethod, m.symbol)
-      addAttributes(jmethod, m.symbol.attributes)
+      addExceptionsAttribute(m.symbol)
+      addAnnotations(jmethod, m.symbol.attributes)
+      addParamAnnotations(m.params.map(.sym.attributes))
     }
 
     def addModuleInstanceField: Unit = {

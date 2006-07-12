@@ -337,6 +337,7 @@ trait StdNames requires SymbolTable {
     val AnnotationDefaultATTR = newTermName("AnnotationDefault")
     val RuntimeAnnotationATTR = newTermName("RuntimeVisibleAnnotations")
     val ClassfileAnnotationATTR = newTermName("RuntimeInvisibleAnnotations")
+    val RuntimeParamAnnotationATTR = newTermName("RuntimeVisibleParameterAnnotations")
 
     // '_' is temporary
     val _Attribute           = newTypeName("Attribute")

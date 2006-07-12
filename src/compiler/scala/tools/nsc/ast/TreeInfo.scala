@@ -44,7 +44,6 @@ abstract class TreeInfo {
     case DefDef(mods, _, _, _, _, __)  => mods.hasFlag(DEFERRED)
     case ValDef(mods, _, _, _)         => mods.hasFlag(DEFERRED)
     case DocDef(_, definition)         => isInterfaceMember(definition)
-    case Attributed(_, definition)     => isInterfaceMember(definition)
     case _ => false
   }
 
@@ -62,8 +61,6 @@ abstract class TreeInfo {
     case ValDef(mods, _, _, rhs) =>
       !mods.hasFlag(MUTABLE) && isPureExpr(rhs)
     case DocDef(_, definition) =>
-      isPureDef(definition)
-    case Attributed(_, definition) =>
       isPureDef(definition)
     case _ =>
       false

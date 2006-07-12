@@ -455,8 +455,7 @@ class SemanticTokens(val compiler: Global) {
 	  case tree : AliasTypeDef =>
 	    System.err.println("ALIAS: " + tree);
 	    build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
-    case tree : DocDef     => build(tree.definition);
-    case tree : Attributed => build(tree.definition);
+          case tree : DocDef     => build(tree.definition);
 	  case tree : Import     => build(tree.expr);
     case tree : AppliedTypeTree => ;
     case tree : SingletonTypeTree => ;

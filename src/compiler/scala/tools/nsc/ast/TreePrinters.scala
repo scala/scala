@@ -63,6 +63,7 @@ abstract class TreePrinters {
 
     def printParam(tree: Tree): unit = tree match {
       case ValDef(mods, name, tp, rhs) =>
+        printAttributes(tree)
         print(symName(tree, name)); printOpt(": ", tp)
       case AbsTypeDef(mods, name, lo, hi) =>
         print(symName(tree, name))
@@ -102,8 +103,8 @@ abstract class TreePrinters {
       if (s.length() != 0) print(s + " ")
     }
 
-    def printAttributes(attrs: List[AttrInfo]): unit = {
-      def attrToString(attr: AttrInfo): String = {
+    def printAttributes(tree: Tree): unit = {
+      def attrInfoToString(attr: AttrInfo): String = {
         val str = new StringBuffer()
         attr match {
           case Triple(tp, args, nvPairs) =>
@@ -119,7 +120,16 @@ abstract class TreePrinters {
             str.toString
         }
       }
-      if (!attrs.isEmpty) print(attrs.map(attrToString).mkString("[", ",", "]"))
+      val attrs = tree.symbol.attributes;
+      if (!attrs.isEmpty) {
+        print(attrs.map(attrInfoToString).mkString("[", ",", "]"))
+      }
+      else {
+        val attrs = tree.asInstanceOf[MemberDef].mods.attributes
+        if (!attrs.isEmpty) {
+          printRow(attrs, "[", ",", "]")
+        }
+      }
     }
 
     def print(str: String): unit = out.print(str)
@@ -131,22 +141,23 @@ abstract class TreePrinters {
           print("<empty>")
 
         case ClassDef(mods, name, tparams, tp, impl) =>
-          printAttributes(tree.symbol.attributes)
+          printAttributes(tree)
           printModifiers(tree, mods)
           print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
           printTypeParams(tparams)
           printOpt("requires ", tp); print(" extends "); print(impl)
 
         case PackageDef(packaged, stats) =>
+          printAttributes(tree)
           print("package "); print(packaged); printColumn(stats, " {", ";", "}")
 
         case ModuleDef(mods, name, impl) =>
-          printAttributes(tree.symbol.attributes)
+          printAttributes(tree)
           printModifiers(tree, mods); print("object " + symName(tree, name))
           print(" extends "); print(impl)
 
         case ValDef(mods, name, tp, rhs) =>
-          printAttributes(tree.symbol.attributes)
+          printAttributes(tree)
           printModifiers(tree, mods)
           print(if (mods.hasFlag(MUTABLE)) "var " else "val ")
           print(symName(tree, name))
@@ -157,18 +168,17 @@ abstract class TreePrinters {
           }
 
         case DefDef(mods, name, tparams, vparamss, tp, rhs) =>
-          printAttributes(tree.symbol.attributes)
+          printAttributes(tree)
           printModifiers(tree, mods)
           print("def " + symName(tree, name))
           printTypeParams(tparams); vparamss foreach printValueParams
           printOpt(": ", tp); printOpt(" = ", rhs)
 
         case AbsTypeDef(mods, name, lo, hi) =>
-          printAttributes(tree.symbol.attributes)
           printModifiers(tree, mods); print("type "); printParam(tree)
 
         case AliasTypeDef(mods, name, tparams, rhs) =>
-          printAttributes(tree.symbol.attributes)
+          printAttributes(tree)
           printModifiers(tree, mods); print("type " + symName(tree, name))
           printTypeParams(tparams); printOpt(" = ", rhs)
 
@@ -182,13 +192,16 @@ abstract class TreePrinters {
           print("import "); print(expr)
           print(selectors.map(selectorToString).mkString(".{", ", ", "}"))
 
-        case Attributed(attr, definition) =>
-          if (tree.symbol == NoSymbol) {
-            print("["); print(attr); print("]"); println; print(definition)
-          }
-
         case DocDef(comment, definition) =>
           print(comment); println; print(definition)
+
+        case Attribute(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements) =>
+          print(tpt)
+          if (!args.isEmpty)
+            printRow(args, "(", ",", ")")
+          if (!elements.isEmpty)
+            print((for (val Assign(name, value) <- elements) yield "val " + name + " = " + value).
+                  mkString("{", ",", "}"))
 
         case Template(parents, body) =>
           printRow(parents, " with ")

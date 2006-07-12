@@ -251,9 +251,6 @@ abstract class TreeBrowsers {
       case UnitTree(unit) =>
         Pair("CompilationUnit", unit.toString());
 
-      case Attributed(attribute, definition) =>
-        Pair("Attributed", EMPTY);
-
       case DocDef(comment, definition) =>
         Pair("DocDef", EMPTY);
 
@@ -382,9 +379,6 @@ abstract class TreeBrowsers {
 
       case UnitTree(unit) =>
         List(unit.body);
-
-      case Attributed(attribute, definition) =>
-        List(attribute, definition);
 
       case DocDef(comment, definition) =>
         List(definition);
