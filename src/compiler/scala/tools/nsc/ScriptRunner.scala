@@ -122,7 +122,7 @@ object ScriptRunner {
   /** Wrap a script file into a runnable object named
     * scala.scripting.Main .
     */
-  private def wrappedScript(filename: String): SourceFile = {
+  def wrappedScript(filename: String): SourceFile = {
     val preamble =
       new SourceFile("<script preamble>",
           ("package scala.scripting\n" +

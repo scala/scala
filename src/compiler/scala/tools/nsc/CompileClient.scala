@@ -57,7 +57,7 @@ object CompileClient {
 
   def main(args: Array[String]): unit = {
     val Pair(vmArgs, serverAdr) = normalize(args)
-    if (args exists ("-verbose" ==)) {
+    if (args.toList contains "-verbose") {
       System.out.println("[Server arguments: " + args.mkString("", " ", "]"))
       System.out.println("[VM arguments: " + vmArgs + "]")
     }
@@ -65,7 +65,8 @@ object CompileClient {
                  else CompileSocket.getSocket(serverAdr)
     val out = new PrintWriter(socket.getOutputStream(), true)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-    out.println(args.mkString("", " ", ""))
+    out.println(CompileSocket.getPassWord(socket.getPort()))
+    out.println(args.mkString("", "\0", ""))
     var fromServer = in.readLine()
     while (fromServer != null) {
       System.out.println(fromServer)

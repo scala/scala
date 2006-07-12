@@ -14,7 +14,7 @@ object CompileSocket {
   private val dirName = "scalac-compile-server-port"
 
   /** The vm-part of the command to start a new scala compile server */
-  private val vmCommand = "java"
+  private val vmCommand = "scala"
 
   /** The class name of the scala compile server */
   private val serverClass = "scala.tools.nsc.CompileServer"
@@ -87,7 +87,8 @@ object CompileSocket {
   /** Set the port number to which a scala compile server is connected */
   def setPort(port: int): unit =
     try {
-      val f = new FileOutputStream(portFile(port));
+      val f = new DataOutputStream(new FileOutputStream(portFile(port)))
+      f.writeChars(new java.util.Random().nextInt.toString)
       f.close()
     } catch {
       case ex: IOException =>
@@ -151,4 +152,11 @@ object CompileSocket {
           "unable to establish connection to server "+hostName+":"+port+"; exiting")
         exit(1)
     }
+
+  def getPassWord(port: int): String = {
+    val f = new DataInputStream(new FileInputStream(portFile(port)))
+    val result = f.readLine()
+    f.close()
+    result
+  }
 }

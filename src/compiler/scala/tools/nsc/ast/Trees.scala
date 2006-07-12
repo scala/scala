@@ -1252,6 +1252,13 @@ trait Trees requires Global {
     }
   }
 
+  object resetPos extends Traverser {
+    override def traverse(t: Tree): unit = {
+      if (t != EmptyTree) t.setPos(Position.NOPOS)
+      super.traverse(t)
+    }
+  }
+
   /** A traverser which resets symbol and tpe fields of all nodes in a given tree
    *  except for (1) TypeTree nodes, whose .tpe field is kept and
    *  (2) is a .symbol field refers to a symbol which is defined outside the

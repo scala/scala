@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc
 
-import scala.tools.util.{SocketServer, StringOps}
+import scala.tools.util.SocketServer
 import scala.tools.nsc.util.Position
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.doc.DocGenerator
@@ -69,12 +69,14 @@ object CompileServer extends SocketServer {
     System.out.println("New session, total memory = "+runtime.totalMemory()+
                        ", max memory = "+runtime.maxMemory()+
                        ", free memory = "+runtime.freeMemory)
+    val passWord = CompileSocket.getPassWord(port)
+    val guestPassWord = in.readLine()
     val input = in.readLine()
-    if (input != null) {
+    if (input != null && passWord == guestPassWord) {
       try {
         inSession = true
         progress = true
-        val args = StringOps.words(input)
+        val args = input.split("\0").toList
         if (args contains "-shutdown") {
           out.println("[Scala compile server exited]")
           shutDown = true
@@ -110,7 +112,7 @@ object CompileServer extends SocketServer {
         else if (command.files.isEmpty)
           reporter.info(null, command.usageMsg, true)
         else {
-          try {scala.tools.nsc.CompileServer
+          try {
             if (compiler != null && settingsAreCompatible(command.settings, compiler.settings)) {
               compiler.settings = command.settings
               compiler.reporter = reporter

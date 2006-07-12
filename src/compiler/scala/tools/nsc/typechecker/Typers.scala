@@ -1400,7 +1400,7 @@ trait Typers requires Analyzer {
                 imports1 = imports1.tail
               }
               defSym = impSym
-              qual = imports.head.qual
+              qual = atPos(tree.pos)(resetPos(imports.head.qual.duplicate))
               pre = qual.tpe
             } else {
               if (settings.debug.value) {

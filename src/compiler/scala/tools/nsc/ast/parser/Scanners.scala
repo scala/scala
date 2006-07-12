@@ -328,6 +328,14 @@ trait Scanners requires SyntaxAnalyzer {
                         token = SYMBOLLIT
                         return
                       }
+                    } else if (isSpecial(in.ch)) {
+                      putChar(in.ch)
+                      in.next
+                      if (in.ch != '\'') {
+                        getOperatorRest
+                        token = SYMBOLLIT
+                        return
+                      }
                     } else {
                       getlitch()
                     }

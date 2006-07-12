@@ -121,6 +121,7 @@ class Settings(error: String => unit) {
   val Xlinearizer   = ChoiceSetting ("-Xlinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types");
   val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)");
+  val Xscript       = BooleanSetting("-Xscript", "compile script file");
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
