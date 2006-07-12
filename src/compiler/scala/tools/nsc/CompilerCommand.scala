@@ -47,17 +47,20 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
   // initialization
   var args = arguments
   var ok = true
+
   while (!args.isEmpty && ok) {
-    val args0 = args
     if (args.head.startsWith("-")) {
       if (interactive) {
         error("no options can be given in interactive mode")
         ok = false
       } else {
-        for (val setting <- settings.allSettings)
-          args = setting.tryToSet(args);
+        val args0 = args
+        for(val setting <- settings.allSettings)
+          if(args eq args0)
+            args = setting.tryToSet(args)
+
         if (args eq args0) {
-          error("unknown option: '" + args.head + "'")
+          error("bad option: '" + args.head + "'")
           ok = false
         }
       }
