@@ -54,7 +54,7 @@ object MainGenericRunner {
     settings.classpath.value =
       addClasspathExtras(settings.classpath.value)
 
-    if (settings.help.value) {
+    if (settings.help.value || !command.ok) {
       Console.println(command.usageMessage)
       return ()
     }
