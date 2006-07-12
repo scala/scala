@@ -21,7 +21,8 @@ object scala extends Command {
 
     CmdLine(
       " [ " & Argument("compiler-option") & " | " &
-      Mono("-howtorun:") & Argument("how") & " ]... " &
+      Mono("-howtorun:") & Argument("how") & " | " &
+      Mono("-savecompiled") & " ]... " &
       "[ " & Argument("torun") & " " & Argument("argument") &
       "... ]"))
 
@@ -39,6 +40,15 @@ object scala extends Command {
         "Options for " & Argument("how") & " are " & Mono("guess") &
         " (the default), " & Mono("script") & ", and " & Mono("object") &
         "."),
+
+      Definition(
+        Mono("-savecompiled"),
+        "Save this compiled version of scripts in order to speed up " &
+        "later executions of the same script.  When running a script, " &
+        "save the compiled version of in a file with the same name as the " &
+        "script but with an extension of " & Mono(".jar") & ".  On subsequent " &
+        "runs of the same script, the pre-compiled " & Mono(".jar") & " file " &
+        "will be used if it is newer than the script file."),
 
       Definition(
         Mono(Argument("torun")),
@@ -169,7 +179,7 @@ object scala extends Command {
       "Console.println(\"Hello, world!\")\n" +
       "argv.toList foreach Console.println"),
 
-    "Here is a complete Scala script for Unix: ",
+    "Here is a complete Scala script for MS Windows: ",
 
     CodeSample(
       "::#!\n" +
@@ -178,7 +188,18 @@ object scala extends Command {
       "goto :eof\n" +
       "::!#\n" +
       "Console.println(\"Hello, world!\")\n" +
-      "argv.toList foreach Console.println"))
+      "argv.toList foreach Console.println"),
+
+    "If you want to use the compilation cache to speed up multiple executions " +
+    "of the script, then add " & Mono("-savecompiled") & " to the scala " +
+    "command:",
+
+    CodeSample(
+        "#!/bin/sh\n" +
+        "exec scala -savecompiled \"$0\" \"$@\"\n" +
+        "!#\n" +
+        "Console.println(\"Hello, world!\")\n" +
+        "argv.toList foreach Console.println"))
 
 
   val exitStatus = Section("EXIT STATUS",
