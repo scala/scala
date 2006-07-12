@@ -8,7 +8,8 @@ object Test {
       new Test01,
       new Test02,
       new Test03,
-      new Test04
+      new Test04,
+      new Test05
 
     ).run(tr)
 
@@ -95,5 +96,18 @@ object Test {
     }
   }
 
+  class Test05 extends TestCase("cinque (sealed case class with ignoring seq patterns)") {
+    sealed abstract class Con;
+
+    case class Foo() extends Con
+    case class Bar(xs:Con*) extends Con
+
+    override def runTest() = {
+      val res = (Bar(Foo()):Con) match {
+        case Bar(xs@_*) => xs // this should be optimized away to a pattern Bar(xs)
+      }
+      assertEquals("res instance"+res.isInstanceOf[Seq[Con]]+" res(0)="+res(0), true, res.isInstanceOf[Seq[Foo]] && res(0) == Foo() )
+    }
+  }
 
 }

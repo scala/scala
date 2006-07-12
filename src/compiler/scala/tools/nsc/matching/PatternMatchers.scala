@@ -177,29 +177,6 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     res
   }
 
-  /** returns true if apply is a "sequence apply". analyzer inserts Sequence nodes if something is a
-   *
-   *  - last update: discussion with Martin 2005-02-18
-   *
-   *  - if true, tree.fn must be ignored. The analyzer ensures that the selector will be a subtype
-   *    of fn; it thus assigns the expected type from the context (which is surely a subtype,
-   *    but may have different flags etc.
-   *
-   *  - so should be
-   *     (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
-   *     but fails
-   */
-  protected def isSeqApply( tree: Apply  ): Boolean =  {
-   // Console.print("isSeqApply? "+tree.toString());
-   // val res =
-	tree match {
-	  case Apply(_, List(ArrayValue(_,_))) => (tree.tpe.symbol.flags & Flags.CASE) == 0
-	  case _ => false;
-	}
-	//Console.println(res);
-	//res;
-  }
-
    /* currently no need for extendedSeqApply, ArrayValue in Elem(... _*) style patterns
     * handled in the ArrayValue case
   protected def isExtendedSeqApply( tree: Apply  ): Boolean =  { // NEW

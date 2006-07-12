@@ -30,6 +30,7 @@ with RightTracers {
   import definitions._
   import posAssigner.atPos
   import typer.typed
+  import symtab.Flags
 
   val phaseName = "transmatcher"
 
@@ -123,6 +124,29 @@ with RightTracers {
     }
     traverse(pat)
     generatedVars
+  }
+
+  /** returns true if apply is a "sequence apply". analyzer inserts Sequence nodes if something is a
+   *
+   *  - last update: discussion with Martin 2005-02-18
+   *
+   *  - if true, tree.fn must be ignored. The analyzer ensures that the selector will be a subtype
+   *    of fn; it thus assigns the expected type from the context (which is surely a subtype,
+   *    but may have different flags etc.
+   *
+   *  - so should be
+   *     (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
+   *     but fails
+   */
+  protected def isSeqApply( tree: Apply  ): Boolean =  {
+   // Console.print("isSeqApply? "+tree.toString());
+   // val res =
+	tree match {
+	  case Apply(_, List(ArrayValue(_,_))) => (tree.tpe.symbol.flags & Flags.CASE) == 0
+	  case _ => false;
+	}
+	//Console.println(res);
+	//res;
   }
 
     /** a casedef with sequence subpatterns like
@@ -219,7 +243,8 @@ with RightTracers {
 
         //case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
 
-        case Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) =>
+        // a pattern of the form List(foo@_*)
+        case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) if isSeqApply(app) =>
           //Console.println("OPTIMIZING")
           //Console.println(pat)
           //Console.println(pat.tpe)
@@ -233,6 +258,25 @@ with RightTracers {
           b.symbol.setInfo(tpe)
           b.setType(tpe)
           val res = copy.Bind(b, id, wc)
+          //Console.println("====>")
+          //Console.println(res)
+          res
+
+        // a pattern of the form MyCaseConstructor(foo@_*)
+        case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD)))))))  =>
+          //Console.println("OPTIMIZING")
+          //Console.println(pat)
+          //Console.println(pat.tpe)
+          //Console.println(tt.tpe)
+          //Console.println("b.tpe "+b.tpe+" widened"+b.tpe.widen)
+          //Console.println("b.symbol.tpe "+b.symbol.tpe+" widened"+b.symbol.tpe.widen)
+          //Console.println("pat2.tpe "+pat2.tpe+" widened"+pat2.tpe.widen)
+          val tpe1:Type = pat2.tpe.widen.baseType( definitions.SeqClass ).typeArgs(0)
+
+          val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
+          b.symbol.setInfo(tpe)
+          b.setType(tpe)
+          val res =  copy.Apply(pat, fn, List(copy.Bind(b, id, wc)))
           //Console.println("====>")
           //Console.println(res)
           res
