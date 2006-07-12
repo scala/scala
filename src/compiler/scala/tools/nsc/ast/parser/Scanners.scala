@@ -407,7 +407,8 @@ trait Scanners requires SyntaxAnalyzer {
         docBuffer = null
         var openComments = 1
         in.next
-        if (in.ch == '*') docBuffer = new StringBuffer("/**")
+        if (in.ch == '*' && settings.doc.value)
+          docBuffer = new StringBuffer("/**")
         while (openComments > 0) {
           do {
             do {
