@@ -1037,33 +1037,39 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
           case RightIgnoringSequencePat(casted, castedRest, minlen) =>
           Or(
-            And(
-              And(gen.mkIsInstanceOf(selector.duplicate, node.getTpe()),
-                  GreaterThan(
-                    typed(
-                      Apply(
-                        Select(
-                          gen.mkAsInstanceOf(selector.duplicate,
-                                             node.getTpe(),
-                                             true),
-                          node.getTpe().member(nme.length) /*defs.Seq_length*/),
-                        List())
-                    ),
-                    typed(
-                      Literal(Constant(minlen))
-                    ))),
+            And({
+              var cond:Tree = gen.mkIsInstanceOf(selector.duplicate, node.getTpe()); // test for sequence
+
+              if(minlen > 0) { // test for minimum length if necessary
+                cond = And(cond,
+                           GreaterThanOrEquals(
+                             typed(
+                               Apply(
+                                 Select(
+                                   gen.mkAsInstanceOf(selector.duplicate,
+                                                      node.getTpe(),
+                                                      true),
+                                   node.getTpe().member(nme.length) /*defs.Seq_length*/),
+                                 List())
+                             ),
+                             typed(
+                               Literal(Constant(minlen))
+                             )));
+              }
+              cond
+            },
               Block(
                 List(
                   ValDef(casted,
                          gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true)),
-                  ValDef(castedRest,
-                         Apply(
-                           Select(
-                             Select(
-                               gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true),
-                               "toList"),
-                             "drop"),
-                           List(Literal(Constant(minlen)))))),
+                  ValDef(castedRest, {
+                    var res:Tree = gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true);
+                    if(minlen != 0) {
+                      res = Apply(Select(Select(res, "toList"), "drop"),List(Literal(Constant(minlen))))
+
+                    }
+                    res
+                  })),
                 toTree(node.and))),
             toTree(node.or, selector.duplicate));
 
