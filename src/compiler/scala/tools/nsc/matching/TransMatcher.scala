@@ -13,18 +13,7 @@ package scala.tools.nsc.matching
 abstract class TransMatcher extends transform.Transform
 with PatternNodes
 with CodeFactory
-with PatternMatchers
-//with NewMatchers
-with SequenceMatchers
-with AlgebraicMatchers
-with MatcherLabels
-with BerrySethis
-with DetWordAutoms
-with NondetWordAutoms
-with Autom2
-with WordAutoms
-with LeftTracers
-with RightTracers {
+with PatternMatchers {
 
   import global._
   import definitions._
