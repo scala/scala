@@ -31,7 +31,7 @@ import scala.tools.nsc.util.HashSet
  *  - convert non-local returns to throws with enclosing try statements.
  */
 /*</export>*/
-abstract class UnCurry extends InfoTransform {
+abstract class UnCurry extends InfoTransform with TypingTransformers {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import posAssigner.atPos         // for filling in tree positions
@@ -69,12 +69,11 @@ abstract class UnCurry extends InfoTransform {
     if (sym.isType) tp
     else uncurry(tp)
 
-  class UnCurryTransformer(unit: CompilationUnit) extends Transformer {
+  class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     private var needTryLift = false
     private var inPattern = false
     private var inConstructorFlag = 0L
-    private var localTyper: analyzer.Typer = analyzer.newTyper(analyzer.rootContext(unit))
     private var byNameArgs = new HashSet[Tree](16)
 
     override def transform(tree: Tree): Tree = try { //debug
@@ -132,7 +131,7 @@ abstract class UnCurry extends InfoTransform {
      *    throw new NonLocalReturnException(key, expr)
      */
     private def nonLocalReturnThrow(expr: Tree, meth: Symbol) =
-      localTyper.atOwner(currentOwner).typed {
+      localTyper.typed {
         Throw(
           New(
             TypeTree(nonLocalReturnExceptionType(meth)),
@@ -153,7 +152,7 @@ abstract class UnCurry extends InfoTransform {
      *  }
      */
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
-      localTyper.atOwner(currentOwner).typed {
+      localTyper.typed {
         val extpe = nonLocalReturnExceptionType(meth)
         val ex = meth.newValue(body.pos, nme.ex) setInfo extpe
         val pat = Bind(ex, Typed(Ident(nme.WILDCARD), TypeTree(extpe)))
@@ -235,7 +234,7 @@ abstract class UnCurry extends InfoTransform {
         }
         members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
       }
-      localTyper.atOwner(currentOwner).typed {
+      localTyper.typed {
         atPos(fun.pos) {
           Block(
             List(ClassDef(anonClass, List(List()), List(List()), members)),
@@ -276,7 +275,7 @@ abstract class UnCurry extends InfoTransform {
             byNameArgs.addEntry(arg)
             arg setType functionType(List(), arg.tpe)
           } else {
-            val fun = localTyper.atOwner(currentOwner).typed(
+            val fun = localTyper.typed(
               Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
             new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
             transformFunction(fun)
@@ -302,14 +301,6 @@ abstract class UnCurry extends InfoTransform {
         this.inConstructorFlag = inConstructorFlag
         val t = f
         this.inConstructorFlag = savedInConstructorFlag
-        t
-      }
-
-      def withNewTyper(tree: Tree, owner: Symbol)(f: => Tree): Tree = {
-        val savedLocalTyper = localTyper
-        localTyper = localTyper.atOwner(tree, owner)
-        val t = f
-        localTyper = savedLocalTyper
         t
       }
 
@@ -392,11 +383,8 @@ abstract class UnCurry extends InfoTransform {
         case fun @ Function(_, _) =>
           mainTransform(transformFunction(fun))
 
-        case PackageDef(_, _) =>
-          withNewTyper(tree, tree.symbol.moduleClass) { super.transform(tree) }
-
         case Template(_, _) =>
-          withNewTyper(tree, currentOwner) { withInConstructorFlag(0) { super.transform(tree) } }
+          withInConstructorFlag(0) { super.transform(tree) }
 
         case _ =>
           val tree1 = super.transform(tree)
@@ -439,7 +427,7 @@ abstract class UnCurry extends InfoTransform {
                   Match(Ident(exname), cases))
               }
             if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
-            val catches1 = localTyper.atOwner(currentOwner).typedCases(
+            val catches1 = localTyper.typedCases(
               tree, List(catchall), ThrowableClass.tpe, WildcardType);
             copy.Try(tree, body, catches1, finalizer)
           }
