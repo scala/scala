@@ -1,7 +1,6 @@
 package scala.io
 
 import scala.collection.mutable.{HashMap,ArrayBuffer}
-import scala.tools.util.UTF8Codec
 
 /**
   Pickler combinators.
