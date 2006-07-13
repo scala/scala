@@ -44,7 +44,9 @@ object fsc extends Command {
           "Shutdown compile server"),
         Definition(
           CmdOption("server", Argument("hostname:portnumber")),
-          "Specify compile server socket"),
+          "Specify compile server host at port number.  Usually this option " &
+          "is not needed.  Note that the hostname must be for a host that shares " &
+          "the same filesystem."),
         Definition(
           CmdOption("J", Argument("flag")),
           "Pass <flag> directly to runtime system")
