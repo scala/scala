@@ -69,10 +69,10 @@ object CompileServer extends SocketServer {
     System.out.println("New session, total memory = "+runtime.totalMemory()+
                        ", max memory = "+runtime.maxMemory()+
                        ", free memory = "+runtime.freeMemory)
-    val passWord = CompileSocket.getPassWord(port)
-    val guestPassWord = in.readLine()
+    val password = CompileSocket.getPassword(port)
+    val guessedPassword = in.readLine()
     val input = in.readLine()
-    if (input != null && passWord == guestPassWord) {
+    if (input != null && password == guessedPassword) {
       try {
         inSession = true
         progress = true

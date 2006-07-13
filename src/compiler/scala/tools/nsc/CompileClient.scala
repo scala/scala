@@ -65,7 +65,7 @@ object CompileClient {
                  else CompileSocket.getSocket(serverAdr)
     val out = new PrintWriter(socket.getOutputStream(), true)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-    out.println(CompileSocket.getPassWord(socket.getPort()))
+    out.println(CompileSocket.getPassword(socket.getPort()))
     out.println(args.mkString("", "\0", ""))
     var fromServer = in.readLine()
     while (fromServer != null) {

@@ -87,8 +87,8 @@ object CompileSocket {
   /** Set the port number to which a scala compile server is connected */
   def setPort(port: int): unit =
     try {
-      val f = new DataOutputStream(new FileOutputStream(portFile(port)))
-      f.writeChars(new java.util.Random().nextInt.toString)
+      val f = new PrintWriter(new FileOutputStream(portFile(port)))
+      f.println(new java.util.Random().nextInt.toString)
       f.close()
     } catch {
       case ex: IOException =>
@@ -153,8 +153,8 @@ object CompileSocket {
         exit(1)
     }
 
-  def getPassWord(port: int): String = {
-    val f = new DataInputStream(new FileInputStream(portFile(port)))
+  def getPassword(port: int): String = {
+    val f = new BufferedReader(new FileReader(portFile(port)))
     val result = f.readLine()
     f.close()
     result
