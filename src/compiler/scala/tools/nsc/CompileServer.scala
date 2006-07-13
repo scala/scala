@@ -85,6 +85,7 @@ object CompileServer extends SocketServer {
         if (args contains "-reset") {
           out.println("[Scala compile server was reset]")
           compiler = null
+          return
         }
         val reporter = new ConsoleReporter(in, out) {
           // disable prompts, so that compile server cannot block
