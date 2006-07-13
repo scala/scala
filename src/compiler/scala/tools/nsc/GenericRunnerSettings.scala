@@ -22,6 +22,11 @@ extends Settings(error) {
         "-savecompiled",
         "save the compiled script (assumes the code is a script)")
 
+  val nocompdaemon =
+    BooleanSetting(
+        "-nocompdaemon",
+        "do not use the fsc compilation daemon")
+
   /* For some reason, "object defines extends Setting(...)"
      does not work here.  The object is present but the setting
      is not added to allsettings.  Thus,
@@ -59,6 +64,12 @@ extends Settings(error) {
       for(val Pair(key, value) <- props.toList)
         systemProps.setProperty(key, value)
     }
+
+    def unparse: List[String] =
+      (props.toList.foldLeft[List[String]]
+        (Nil)
+        ((args, prop) =>
+         ("-D" + prop._1 + "=" + prop._2) :: args))
   }
 
   val defines = new DefinesSetting
