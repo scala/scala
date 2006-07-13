@@ -30,7 +30,8 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
     while (!args.isEmpty && ok && args.head.startsWith("-")) {
       val args0 = args
       for (val setting <- settings.allSettings)
-        args = setting.tryToSet(args)
+        if(args eq args0)
+          args = setting.tryToSet(args)
       if (args eq args0) {
         error("unknown option: '" + args.head + "'")
         ok = false
