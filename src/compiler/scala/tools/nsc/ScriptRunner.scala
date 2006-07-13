@@ -11,6 +11,7 @@ import java.util.jar._
 import java.lang.reflect.InvocationTargetException
 import scala.tools.nsc.util._
 import scala.tools.nsc.io._
+import scala.tools.nsc.reporters.ConsoleReporter
 
 /** An object that runs Scala code in script files.
  *
@@ -141,6 +142,48 @@ object ScriptRunner {
     new CompoundSourceFile(preamble, middle, end)
   }
 
+  /** Compile a script using the fsc compilation deamon */
+  private def compileWithDaemon
+    (settings: GenericRunnerSettings, scriptFile: String)
+    :Boolean =
+  {
+    val compSettingNames =
+      (new Settings(error)).allSettings.map(.name)
+
+    val compSettings =
+      settings.allSettings.filter(stg =>
+        compSettingNames.contains(stg.name))
+
+    val coreCompArgs =
+      compSettings.foldLeft[List[String]](Nil)((args, stg) =>
+        stg.unparse ::: args)
+
+    val compArgs = coreCompArgs ::: List("-Xscript", scriptFile)
+
+    val socket = CompileSocket.getOrCreateSocket("")
+    val out = new PrintWriter(socket.getOutputStream(), true)
+    val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
+
+    out.println(CompileSocket.getPassword(socket.getPort))
+    out.println(compArgs.mkString("", "\0", ""))
+
+    var compok = true
+
+    var fromServer = in.readLine()
+    while (fromServer != null) {
+      System.out.println(fromServer)
+      if(fromServer.matches(".*errors? found.*"))
+        compok = false
+
+      fromServer = in.readLine()
+    }
+    in.close()
+    out.close()
+    socket.close()
+
+    compok
+  }
+
 
   /** Compile a script and then run the specified closure with
     * a classpath for the compiled script.
@@ -150,12 +193,31 @@ object ScriptRunner {
         (handler: String=>Unit)
         :Unit =
   {
-    def compileWithInterp: Pair[Interpreter, Boolean] = {
-      val interpreter = new Interpreter(settings)
-      interpreter.beQuiet
-      val ok = interpreter.compileSources(List(wrappedScript(scriptFile)))
-      Pair(interpreter, ok)
+    import Interpreter.deleteRecursively
+
+    /** Compiles the script file, and returns two things:
+      * the directory with the compiled class files,
+      * and a flag for whether the compilation succeeded.
+      */
+    def compile: Pair[File, Boolean] = {
+      val compiledPath = File.createTempFile("scalascript", "")
+      compiledPath.delete  // the file is created as a file; make it a directory
+      compiledPath.mkdirs
+
+      settings.outdir.value = compiledPath.getPath
+
+      if(settings.nocompdaemon.value) {
+        val reporter = new ConsoleReporter
+        val compiler = new Global(settings, reporter)
+        val cr = new compiler.Run
+	cr.compileSources(List(wrappedScript(scriptFile)))
+        Pair(compiledPath, reporter.errors == 0)
+      } else {
+        val compok = compileWithDaemon(settings, scriptFile)
+        Pair(compiledPath, compok)
+      }
     }
+
 
     if(settings.savecompiled.value) {
       val jarFile = jarFileFor(scriptFile)
@@ -169,34 +231,31 @@ object ScriptRunner {
       } else {
         // The pre-compiled jar is old.  Recompile the script.
         jarFile.delete
-        val Pair(interpreter, compok) = compileWithInterp
+        val Pair(compiledPath, compok) = compile
         try {
           if(compok) {
-            tryMakeJar(jarFile, interpreter.classfilePath)
+            tryMakeJar(jarFile, compiledPath)
             if(jarOK) {
-              // close the interpreter early and use the
-              // jar file
-              interpreter.close
+              deleteRecursively(compiledPath)
               handler(jarFile.getAbsolutePath)
             } else {
               // run from the interpreter's temporary
               // directory
-              handler(interpreter.classfilePath.getAbsolutePath)
+              handler(compiledPath.getPath)
             }
           }
         } finally {
-          interpreter.close
+          deleteRecursively(compiledPath)
         }
       }
     } else {
       // don't use the cache; just run from the interpreter's temporary directory
-      val Pair(interpreter, compok) = compileWithInterp
+      val Pair(compiledPath, compok) = compile
       try {
-        if(compok) {
-          handler(interpreter.classfilePath.getAbsolutePath)
-        }
+        if(compok)
+          handler(compiledPath.getPath)
       } finally {
-          interpreter.close
+        deleteRecursively(compiledPath)
       }
     }
   }
@@ -209,6 +268,11 @@ object ScriptRunner {
       scriptFile: String,
       scriptArgs: List[String]): Unit =
   {
+    if(!(new File(scriptFile)).exists) {
+      Console.println("no such file: " + scriptFile)
+      return ()
+    }
+
     withCompiledScript(settings, scriptFile)(compiledLocation => {
       def pparts(path: String) = path.split(File.pathSeparator).toList
 
