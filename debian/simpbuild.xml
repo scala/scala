@@ -335,6 +335,14 @@
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
+    <starrtool
+      file="${build.bin.dir}/fsc"
+      name="Fasc Scala compiler"
+      class="scala.tools.nsc.CompileClient"
+      version="${version.number}"
+      copyright="${copyright}"
+      javaFlags="-Xmx256M -Xms16M"
+    />
   </target>
 
 
