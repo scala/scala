@@ -220,7 +220,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         null
       }
     }
-
   }
 
   /** interpret one line of input.  All feedback, including parse errors
@@ -317,17 +316,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     interpret("val " + name + " = " + binderName + ".value")
   }
 
-  /** Delete a directory tree recursively.  Use with care! */
-  private def deleteRecursively(path: File): Unit = {
-    path match  {
-      case _ if(!path.exists) => ()
-      case _ if(path.isDirectory) =>
-        for(val p <- path.listFiles)
-          deleteRecursively(p)
-        path.delete
-      case _ => path.delete
-    }
-  }
 
   /** This instance is no longer needed, so release any resources
       it is using.
@@ -337,7 +325,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       are executed becaus of Java's demand loading.
   */
   def close: Unit = {
-    deleteRecursively(classfilePath)
+    Interpreter.deleteRecursively(classfilePath)
   }
 
   /** A traverser that finds all mentioned identifiers, i.e. things
@@ -615,6 +603,20 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     override val usedNames = Nil
     override def resultExtractionCode(code: PrintWriter): Unit = {
       code.println("+ \"" + line + "\"")
+    }
+  }
+}
+
+object Interpreter {
+  /** Delete a directory tree recursively.  Use with care! */
+  def deleteRecursively(path: File): Unit = {
+    path match  {
+      case _ if(!path.exists) => ()
+      case _ if(path.isDirectory) =>
+        for(val p <- path.listFiles)
+          deleteRecursively(p)
+        path.delete
+      case _ => path.delete
     }
   }
 }
