@@ -1,9 +1,10 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
- * @author
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Martin Odersky
  */
-// $Id: TypingTransformers.scala 5359 2005-12-16 15:33:49Z dubochet $
-package scala.tools.nsc.transform;
+// $Id$
+
+package scala.tools.nsc.transform
 
 /** A base class for transforms.
  *  A transform contains a compiler phase which applies a tree transformer.
