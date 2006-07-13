@@ -6,6 +6,7 @@
 // $Id$
 
 package scala.tools.nsc
+import scala.collection.mutable.Queue
 
 class GenericRunnerSettings(error: String => Unit)
 extends Settings(error) {
@@ -19,5 +20,46 @@ extends Settings(error) {
   val savecompiled =
     BooleanSetting(
         "-savecompiled",
-        "save the compiled script (assumes -howtorun script)")
+        "save the compiled script (assumes the code is a script)")
+
+  /* For some reason, "object defines extends Setting(...)"
+     does not work here.  The object is present but the setting
+     is not added to allsettings.  Thus,
+  */
+  class DefinesSetting
+  extends Setting("-D<prop>", "set a Java property")
+  {
+    private val props = new Queue[Pair[String, String]]
+
+    def value = props.toList
+
+    def tryToSet(args: List[String]): List[String] = {
+      args match {
+        case arg0::rest
+        if arg0.startsWith("-D") =>
+        {
+          val stripD = arg0.substring(2)
+          val eqidx = stripD.indexOf('=')
+          val addition =
+            if(eqidx < 0)
+              Pair(stripD, "")
+            else
+              Pair(stripD.substring(0, eqidx), stripD.substring(eqidx+1))
+          props += addition
+          rest
+        }
+
+        case _ => args
+      }
+    }
+
+    /** Apply the specified properties to the current JVM */
+    def applyToCurrentJVM = {
+      val systemProps = System.getProperties
+      for(val Pair(key, value) <- props.toList)
+        systemProps.setProperty(key, value)
+    }
+  }
+
+  val defines = new DefinesSetting
 }
