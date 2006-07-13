@@ -14,20 +14,82 @@ object CompileSocket {
   private val dirName = "scalac-compile-server-port"
 
   /** The vm-part of the command to start a new scala compile server */
-  private val vmCommand = "scala"
+  private val vmCommand =
+    System.getProperty("scala.home") match {
+      case null => "scala"
+      case dirname =>
+        val trial = new File(new File(dirname, "bin"), "scala")
+        if(trial.canRead)
+          trial.getPath
+        else
+          "scala"
+    }
 
   /** The class name of the scala compile server */
   private val serverClass = "scala.tools.nsc.CompileServer"
 
   /** The temporary directory in which the port identification file is stored */
   private val tmpDir = {
-    val d = new File(System.getProperty("java.io.tmpdir"), dirName)
-    if (!d.isDirectory())
-      if (!d.mkdir()) {
-        System.err.println("cannot create directory "+dirName+"; exiting")
-        exit(1)
+    val totry = List(
+        Pair("scala.home", List("var", "scala-devel")),
+        Pair("user.home", List("tmp")),
+        Pair("java.io.tmpdir", Nil))
+
+    /** Expand a property-extensions pair into a complete File object */
+    def expand(trial: Pair[String, List[String]]): Option[File] = {
+      val Pair(topdirProp, extensions) = trial
+      val topdir = System.getProperty(topdirProp)
+      if(topdir == null)
+        return None
+
+      val fulldir =
+        extensions.foldLeft[File](new File(topdir))(
+            (dir,ext)=>new File(dir, ext))
+
+      Some(fulldir)
+    }
+
+    /** Write a test file to a directory to see if it is writable */
+    def dirWritable(dir: File): Boolean = {
+      dir.mkdirs
+      if(!dir.exists)
+        return false
+
+      val f = new File(dir, "caniwrite")
+
+      try {
+        f.createNewFile
+        if(!f.canWrite)
+          return false
+        f.delete
+        if(f.exists)
+          return false
+      } catch {
+        case _:java.io.IOException =>
+          f.delete
+          return false
       }
-    d
+
+      return true
+    }
+
+    val potentials =
+      for {
+        val trial <- totry
+        val expanded = expand(trial)
+        !expanded.isEmpty
+        dirWritable(expanded.get)
+      }
+      yield expanded.get
+
+    if(potentials.isEmpty) {
+      Console.println("could not find a directory for port files")
+      exit(1)
+    } else {
+      val d = new File(potentials.head, dirName)
+      d.mkdirs
+      d
+    }
   }
 
   /** Maximum number of polls for an available port */
