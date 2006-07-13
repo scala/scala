@@ -134,7 +134,7 @@ class Settings(error: String => unit) {
   /** A base class for settings of all types.
    *  Subclasses each define a `value' field of the appropriate type.
    */
-  abstract class Setting(name: String, descr: String) {
+  abstract class Setting(val name: String, descr: String) {
 
     /** If first arg defines this setting, consume it as well as all following
      *  args needed to define the setting. If this can be done without
@@ -150,24 +150,35 @@ class Settings(error: String => unit) {
     /** A description of the purpose of this setting in a help string */
     def helpDescription = descr
 
+    /** Return a list of strings that can be used to recreate
+      * the receiver's current setting.
+      */
+    def unparse: List[String]
+
     // initialization
     allsettings = this :: allsettings
   }
 
   /** A setting represented by a boolean flag (false, unless set) */
-  case class BooleanSetting(name: String, descr: String)
-  extends Setting(name, descr) {
+  case class BooleanSetting(nme: String, descr: String)
+  extends Setting(nme, descr) {
     var value: boolean = false
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) => value = true; rest
       case _ => args
     }
+
+    def unparse: List[String] =
+      if(value)
+        List(name)
+      else
+        Nil
   }
 
   /** A setting represented by a string, (`default' unless set) */
-  case class StringSetting(name: String, arg: String, descr: String, default: String)
-  extends Setting(name, descr) {
+  case class StringSetting(nme: String, arg: String, descr: String, default: String)
+  extends Setting(nme, descr) {
     var abbreviation: String = null
 
     var value: String = default
@@ -185,13 +196,19 @@ class Settings(error: String => unit) {
     }
 
     override def helpSyntax = name + " <" + arg + ">"
+
+    def unparse: List[String] =
+      if(value == default)
+        Nil
+      else
+        List(name, value)
   }
 
   /** A setting represented by a string in a given set of `choices',
    *  (`default' unless set)
    */
-  case class ChoiceSetting(name: String, descr: String, choices: List[String], default: String)
-  extends Setting(name, descr + choices.mkString(" (", ",", ")")) {
+  case class ChoiceSetting(nme: String, descr: String, choices: List[String], default: String)
+  extends Setting(nme, descr + choices.mkString(" (", ",", ")")) {
     var value: String = default
 
     private def argument: String = name.substring(1)
@@ -212,14 +229,20 @@ class Settings(error: String => unit) {
     }
 
     override def helpSyntax = name + ":<" + argument + ">"
+
+    def unparse: List[String] =
+      if(value == default)
+        Nil
+      else
+        List(name + ":" + value)
   }
 
   /** A setting represented by a list of strings which should be prefixes of
    *  phase names. This is not checked here, however.
    *  (the empty list, unless set)
    */
-  case class PhasesSetting(name: String, descr: String)
-  extends Setting(name, descr + " <phase>") { // (see -showphases)") {
+  case class PhasesSetting(nme: String, descr: String)
+  extends Setting(nme, descr + " <phase>") { // (see -showphases)") {
     var value: List[String] = List()
 
     def tryToSet(args: List[String]): List[String] = args match {
@@ -239,5 +262,11 @@ class Settings(error: String => unit) {
 
     def contains(phasename: String): boolean =
       value exists (str => phasename startsWith str)
+
+    def unparse: List[String] =
+      (value.foldLeft[List[String]]
+          (Nil)
+          ((args, phase) =>
+            List(name + ":" + phase) ::: args))
   }
 }
