@@ -67,6 +67,13 @@ object MainGenericRunner {
       return ()
     }
 
+    def paths(str: String) = str.split(File.pathSeparator).toList
+
+    val classpath =
+      paths(settings.bootclasspath.value) :::
+      paths(settings.classpath.value)
+
+
     command.thingToRun match {
       case None =>
         (new InterpreterLoop).main(settings)
@@ -74,19 +81,13 @@ object MainGenericRunner {
       case Some(thingToRun) =>
         val isObjectName =
           settings.howtorun.value match {
-            case "guess" =>
-              val f = new File(thingToRun)
-              !f.exists || f.isDirectory
             case "object" => true
             case "script" => false
+            case "guess" =>
+              ObjectRunner.classExists(classpath, thingToRun)
           }
 
         if (isObjectName) {
-          def paths(str: String) = str.split(File.pathSeparator).toList
-
-          val classpath =
-            paths(settings.bootclasspath.value) :::
-            paths(settings.classpath.value)
 
           try {
             ObjectRunner.run(classpath, thingToRun, command.arguments)

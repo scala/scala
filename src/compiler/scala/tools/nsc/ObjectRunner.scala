@@ -13,6 +13,25 @@ import java.net.URLClassLoader
 
 /** An object that runs another object specified by name. */
 object ObjectRunner {
+  /** Look up a class with a given class path */
+  def findClass(classpath: List[String], objectName: String)
+  : Option[Class] =
+  {
+    val classpathURLs = classpath.map(s => new File(s).toURL).toArray
+    val mainLoader = new URLClassLoader(classpathURLs, null)
+    try {
+      Some(Class.forName(objectName, true, mainLoader))
+    } catch {
+      case _:ClassNotFoundException => None
+    }
+  }
+
+  /** Check whether a class with the specified name
+    * exists on the specified class path.
+    */
+  def classExists(classpath: List[String], objectName: String) =
+    !(findClass(classpath, objectName).isEmpty)
+
   /** Run a given object, specified by name, using a
     * specified classpath and argument list.
     *
@@ -24,9 +43,10 @@ object ObjectRunner {
       objectName: String,
       arguments: Seq[String]): Unit =
   {
-      val classpathURLs = classpath.map(s => new File(s).toURL).toArray
-      val mainLoader = new URLClassLoader(classpathURLs, null)
-      val clsToRun = Class.forName(objectName, true, mainLoader)
+      val clsToRun = findClass(classpath, objectName) match {
+        case Some(cls) => cls
+        case None => throw new ClassNotFoundException(objectName)
+      }
 
       val method = clsToRun.getMethod("main", List(classOf[Array[String]]).toArray)
 
