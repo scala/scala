@@ -354,6 +354,10 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       file="${locker.dir}/bin/${scaladoc.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${locker.dir}/bin/${fsc.exec.name}"/>
+    <fixcrlf
+      srcdir="${locker.dir}/bin"
+      eol="dos"
+      includes="**/*.bat"/>
     <!-- Mark LOCKER as being completely built -->
     <touch file="${locker.dir}/complete" verbose="no"/>
   </target>
@@ -484,6 +488,10 @@ BUILD QUICK-TEST LAYER
       file="${quick.dir}/bin/${scaladoc.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${quick.dir}/bin/${fsc.exec.name}"/>
+    <fixcrlf
+      srcdir="${quick.dir}/bin"
+      eol="dos"
+      includes="**/*.bat"/>
   </target>
 
   <target name="test.quick" depends="build">
@@ -615,6 +623,10 @@ TEST
       file="${strap.dir}/bin/${scaladoc.exec.name}"/>
     <chmod perm="ugo+rx"
       file="${strap.dir}/bin/${fsc.exec.name}"/>
+    <fixcrlf
+      srcdir="${strap.dir}/bin"
+      eol="dos"
+      includes="**/*.bat"/>
   </target>
 
   <!-- Compares quick and test level -->
