@@ -43,7 +43,7 @@ class HashSet[A] extends Set[A] with HashTable[A] {
 
     protected def entryKey(e: Entry) = e;
 
-    override def clone(): HashSet[A] = {
+    override def clone(): Set[A] = {
         val res = new HashSet[A];
         res ++= this;
         res
