@@ -46,17 +46,23 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
   parseArguments
 
   val usageMessage = {
-    "scala [ <compiler-option> | -howtorun:how | -savecompiled ]... \n " +
-    "      [<torun> <arguments>]\n" +
+    "scala [ <option> ]... [<torun> <arguments>]\n" +
     "\n" +
-    "<compiler-option>'s are as for scalac; see scalac -help.\n" +
+    "All options to scalac are allowed.  See scalac -help.\n" +
+    "\n" +
     "<torun>, if present, is an object or script file to run.\n" +
     "If no <torun> is present, run an interactive interpreter.\n" +
-    "-howtorun allows explicitly specifying how to run <torun>:\n" +
+    "\n" +
+    "Option -howtorun allows explicitly specifying how to run <torun>:\n" +
     "    script: it is a script file\n" +
     "    object: it is an object name\n" +
     "    guess: (the default) try to guess\n" +
-    "If -savecompiled is specified, then try to cache the compilation\n" +
-    "of any script file that is run."
+    "\n" +
+    "Option -savecompiled requests that the compiled script be saved\n" +
+    "for future use.\n" +
+    "\n" +
+    "Option -nocompdaemon requests that the fsc offline compiler not be used.\n" +
+    "\n" +
+    "Option -Dproperty=value sets a Java system property.\n"
   }
 }
