@@ -1,17 +1,15 @@
 /**
  * @author Philipp Haller <philipp.haller@epfl.ch>
- *
  */
 
 package examples.actors
 
-import scala.actors.multi.Pid
+import scala.actors.Process
 import scala.actors.distributed.{RemoteActor,TCP,TcpNode,TcpService}
 
-abstract class CounterMessage
-case class Incr() extends CounterMessage
-case class Value(p: Pid) extends CounterMessage
-case class Result(v: int) extends CounterMessage
+case class Incr()
+case class Value(p: Process)
+case class Result(v: int)
 
 class Counter extends RemoteActor {
   override def run(): unit =
@@ -39,7 +37,7 @@ class CounterUser extends RemoteActor {
     spawn(TcpNode(host, 9090), classOf[Counter].getName())
 
     receive {
-      case p: Pid =>
+      case p: Process =>
         // communicate with counter
         Console.println("" + node + ": Sending Incr() to remote Counter (" + p + ")...")
         p ! Incr()
