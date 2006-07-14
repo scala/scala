@@ -15,24 +15,20 @@ import scala.collection.mutable.Queue
 /**
  * @author Philipp Haller
  */
-class MailBox {
-
-  type Message = AnyRef
-  case class TIMEOUT() extends Message
-
+trait MailBox {
   /** Unconsumed messages. */
-  var sent = new Queue[Message]
+  var sent = new Queue[Any]
 
-  var continuation: PartialFunction[Message,Unit] = null
+  var continuation: PartialFunction[Any,Unit] = null
   // more complex continuation
-  var contCases: PartialFunction[Message,Message] = null
-  var contThen: Message => unit = null
+  var contCases: PartialFunction[Any,Any] = null
+  var contThen: Any => unit = null
 
   def hasCont =
     if ((continuation == null) && (contCases == null)) false
     else true
 
-  def contDefinedAt(msg: Message) =
+  def contDefinedAt(msg: Any) =
     if (((continuation != null) && continuation.isDefinedAt(msg)) ||
         ((contCases != null) && contCases.isDefinedAt(msg)))
       true
@@ -45,7 +41,7 @@ class MailBox {
   private var timeInitial: Long = 0
   private var timeoutEnabled: Boolean = false
 
-  def send(msg: Message): unit = synchronized {
+  def send(msg: Any): Unit = synchronized {
     if (isAlive)
       if (!hasCont) {
         Debug.info("no cont avail/task already scheduled. appending msg to mailbox.")
@@ -98,7 +94,7 @@ class MailBox {
       }
   }
 
-  def receive(f: PartialFunction[Message,unit]): scala.All = {
+  def receive(f: PartialFunction[Any, Unit]): Nothing = {
     continuation = null
     sent.dequeueFirst(f.isDefinedAt) match {
       case Some(msg) =>
@@ -111,7 +107,7 @@ class MailBox {
     throw new Done
   }
 
-  def receiveWithin(msec: long)(f: PartialFunction[Message, unit]): scala.All = {
+  def receiveWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
     timeInitial = System.currentTimeMillis()
     duration = msec
 
@@ -136,11 +132,7 @@ class MailBox {
     throw new Done
   }
 
-  // original wish:
-  // receiveAndReturn[A, B](cases: PartialFunction[Message, A], then: A => B): B
-  // receiveAndReturn[A](cases: PartialFunction[Message, A], then: A => unit): unit
-
-  def receiveAndReturn(cases: PartialFunction[Message,Message], then: Message => unit): scala.All = {
+  def receiveAndReturn(cases: PartialFunction[Any, Any], then: Any => Unit): Nothing = {
     contCases = null
     contThen = null
     sent.dequeueFirst(cases.isDefinedAt) match {

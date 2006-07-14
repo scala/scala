@@ -11,8 +11,8 @@
 package scala.actors.distributed
 
 import java.io.{DataInputStream,DataOutputStream,EOFException}
+import scala.io.BytePickle.SPU
 
-import scala.actors.distributed.picklers.BytePickle.SPU
 import scala.actors.multi.Pid
 
 /**
@@ -57,7 +57,7 @@ abstract class Serializer(s: Service) {
     writeBytes(outputStream, bytes)
   }
 
-  def pid: SPU[Pid]
+  def pid: SPU[RemotePid]
   def service = s
   def addRep(name: String, repCons: Serializer => AnyRef): unit
 }

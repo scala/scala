@@ -6,15 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
-package scala.actors.single
+package scala.actors
 
 /**
  * @author Philipp Haller
  */
-abstract class Pid {
-  def !(msg: MailBox#Message): Unit
-  //def become(clos: Actor => Unit): Unit
-  //def becomeReceiveLoop(f: PartialFunction[MailBox#Message,Unit]): Unit
+trait Process extends Actor {
+  def link(to: Process): Unit
+  def linkTo(to: Process): Unit
+  def unlink(from: Process): Unit
+  def unlinkFrom(from: Process): Unit
+  def exit(reason: Symbol): Unit
+  def exit(from: Process, reason: Symbol): Unit
 }

@@ -15,23 +15,20 @@ import scala.collection.mutable.Queue
 /**
  * @author Philipp Haller
  */
-class MailBox {
-  type Message = AnyRef
-  case class TIMEOUT() extends Message
-
+trait MailBox {
   /** Unconsumed messages. */
-  var sent = new Queue[Message]
+  var sent = new Queue[Any]
 
-  var continuation: PartialFunction[Message,Unit] = null
+  var continuation: PartialFunction[Any,Unit] = null
   // more complex continuation
-  var contCases: PartialFunction[Message,Message] = null
-  var contThen: Message => unit = null
+  var contCases: PartialFunction[Any,Any] = null
+  var contThen: Any => unit = null
 
   def hasCont =
     if ((continuation == null) && (contCases == null)) false
     else true
 
-  def contDefinedAt(msg: Message) =
+  def contDefinedAt(msg: Any) =
     if (((continuation != null) && continuation.isDefinedAt(msg)) ||
         ((contCases != null) && contCases.isDefinedAt(msg)))
       true
@@ -43,7 +40,7 @@ class MailBox {
 
   private var pendingSignal = false
 
-  def send(msg: Message): unit = synchronized {
+  def send(msg: Any): unit = synchronized {
     if (isAlive) {
       if (!hasCont || scheduled) {
         //Debug.info("no cont avail/task already scheduled. appending msg to mailbox.")
@@ -81,7 +78,7 @@ class MailBox {
     }
   }
 
-  def receiveMsg(msg: MailBox#Message) = {
+  def receiveMsg(msg: Any) = {
     //Debug.info("" + Thread.currentThread() + ": Resuming " + this)
     if (continuation != null) {
       val f = continuation
@@ -103,7 +100,7 @@ class MailBox {
     }
   }
 
-  def receive(f: PartialFunction[Message,unit]): scala.All = {
+  def receive(f: PartialFunction[Any,unit]): Nothing = {
     if (isAlive) {
       Scheduler.tick(this)
       continuation = null
@@ -119,7 +116,7 @@ class MailBox {
     throw new Done
   }
 
-  def receiveWithin(msec: long)(f: PartialFunction[Message, unit]): scala.All = {
+  def receiveWithin(msec: long)(f: PartialFunction[Any, unit]): Nothing = {
     Scheduler.tick(this)
     continuation = null
     sent.dequeueFirst(f.isDefinedAt) match {
@@ -145,11 +142,7 @@ class MailBox {
     throw new Done
   }
 
-  // original wish:
-  // receiveAndReturn[A, B](cases: PartialFunction[Message, A], then: A => B): B
-  // receiveAndReturn[A](cases: PartialFunction[Message, A], then: A => unit): unit
-
-  def receiveAndReturn(cases: PartialFunction[Message,Message], then: Message => unit): unit = {
+  def receiveAndReturn(cases: PartialFunction[Any,Any], then: Any => unit): unit = {
     contCases = null
     contThen = null
     sent.dequeueFirst(cases.isDefinedAt) match {
@@ -169,11 +162,11 @@ class MailBox {
 
   // receiv {...} then (msg => {...msg...})
 
-  class ReceiveAndReturn(cases: PartialFunction[Message,Message]) {
-    def then(body: Message => unit): unit = receiveAndReturn(cases, body)
+  class ReceiveAndReturn(cases: PartialFunction[Any,Any]) {
+    def then(body: Any => unit): unit = receiveAndReturn(cases, body)
   }
 
-  def receiv(cases: PartialFunction[Message,Message]): ReceiveAndReturn =
+  def receiv(cases: PartialFunction[Any,Any]): ReceiveAndReturn =
     new ReceiveAndReturn(cases)
 
   def die() = {

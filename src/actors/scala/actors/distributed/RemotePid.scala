@@ -10,7 +10,7 @@
 
 package scala.actors.distributed
 
-import scala.actors.multi.{Pid,MailBox,ExcHandlerDesc}
+import scala.actors.multi.{MailBox,ExcHandlerDesc}
 
 import java.io._
 
@@ -18,7 +18,7 @@ import java.io._
  * @author Philipp Haller
  */
 [serializable]
-abstract class RemotePid(locId: int, kern: NetKernel, actor: RemoteActor) extends Pid {
+abstract class RemotePid(locId: int, kern: NetKernel, actor: RemoteActor) extends scala.actors.multi.Process {
   def this() = this(0, null, null) // for serialization
 
   private var _locId = locId
@@ -54,7 +54,7 @@ abstract class RemotePid(locId: int, kern: NetKernel, actor: RemoteActor) extend
 
   def kernel = kern;
 
-  def !(msg: MailBox#Message): unit = {
+  override def !(msg: Any): unit = {
     //Console.println("! " + msg)
     if (actor != null)
       actor send msg
@@ -62,41 +62,41 @@ abstract class RemotePid(locId: int, kern: NetKernel, actor: RemoteActor) extend
       kernel.remoteSend(this, msg)
   }
 
-  def link(other: Pid): unit =
+  override def link(other: Process): Unit =
     other match {
       case rpid: RemotePid =>
         kernel.link(this, rpid)
     };
 
   //TODO (dont know if this is local to kernel.node)
-  def linkTo(other: Pid): unit =
+  override def linkTo(other: Process): Unit =
     other match {
       case rpid: RemotePid =>
         // do nothing
     };
 
-  def unlink(other: Pid): unit =
+  override def unlink(other: Process): Unit =
     other match {
       case rpid: RemotePid =>
         kernel.unlink(this, rpid)
     };
 
   //TODO (dont know if this is local to kernel.node)
-  def unlinkFrom(other: Pid): unit =
+  override def unlinkFrom(other: Process): Unit =
     other match {
       case rpid: RemotePid =>
         // do nothing
     };
 
-  def exit(reason: Symbol): unit = kernel.exit(this, reason);
-  def exit(from: Pid, reason: Symbol): unit = {
+  override def exit(reason: Symbol): Unit = kernel.exit(this, reason);
+  override def exit(from: Process, reason: Symbol): unit = {
     from match {
       case rpid: RemotePid =>
         kernel.exit(rpid, reason);
     }
   }
 
-  def handleExc(destDesc: ExcHandlerDesc, e: Throwable): unit = {}
+  override def handleExc(destDesc: ExcHandlerDesc, e: Throwable): unit = {}
 }
 
 [serializable] case class TcpPid(n: TcpNode, locId: int, kern: NetKernel, actor: RemoteActor) extends RemotePid(locId, kern, actor) {

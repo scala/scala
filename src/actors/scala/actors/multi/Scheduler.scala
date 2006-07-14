@@ -8,11 +8,9 @@
 
 // $Id$
 
-package scala.actors
+package scala.actors.multi
 
 import scala.collection.mutable._
-
-import scala.actors.multi._
 
 /**
  * @author Philipp Haller
@@ -21,6 +19,7 @@ abstract class IScheduler /*extends java.util.concurrent.Executor*/ {
   def execute(item: ReceiverTask): Unit
   def getTask(worker: WorkerThread): Runnable
   def tick(a: MailBox): Unit
+  def getProcess(t: Thread): Process
 
   val QUIT_TASK = new Runnable() {
     def run(): Unit = {}
@@ -47,6 +46,9 @@ object Scheduler /*extends java.util.concurrent.Executor*/ {
 
   def tick(a: MailBox) =
     sched.tick(a)
+
+  def getProcess(t: Thread): Process =
+    sched.getProcess(t)
 }
 
 
@@ -57,6 +59,7 @@ class SpareWorkerScheduler2 extends IScheduler {
   val idle = new Queue[WorkerThread];
   val ticks = new HashMap[WorkerThread, long]
   val executing = new HashMap[MailBox, WorkerThread]
+  val rexec = new HashMap[Thread, MailBox]
 
   var TICKFREQ = 50
 
@@ -81,10 +84,18 @@ class SpareWorkerScheduler2 extends IScheduler {
     }
   }
 
+  def getProcess(t: Thread): Process = synchronized {
+    rexec.get(t) match {
+      case None => null
+      case Some(p: Process) => p
+    }
+  }
+
   def execute(item: ReceiverTask): unit = synchronized {
     if (idle.length > 0) {
       val wt = idle.dequeue
       executing.update(item.actor, wt)
+      rexec.update(wt, item.actor)
       wt.execute(item)
     }
     else {
@@ -116,6 +127,7 @@ class SpareWorkerScheduler2 extends IScheduler {
         maxWorkers = workers.length // statistics
 
         executing.update(item.actor, newWorker)
+        rexec.update(newWorker, item.actor)
 
         newWorker.execute(item)
         newWorker.start()
@@ -132,6 +144,7 @@ class SpareWorkerScheduler2 extends IScheduler {
     if (tasks.length > 0) {
       val item = tasks.dequeue
       executing.update(item.actor, worker)
+      rexec.update(worker, item.actor)
       item
     }
     else {
@@ -144,9 +157,9 @@ class SpareWorkerScheduler2 extends IScheduler {
 /**
  * @author Philipp Haller
  */
-class SpareWorkerScheduler extends IScheduler {
+abstract class SpareWorkerScheduler extends IScheduler {
   private var canQuit = false;
-  private val tasks = new Queue[Runnable];
+  private val tasks = new Queue[ReceiverTask];
   private val idle = new Queue[WorkerThread];
 
   private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread];
@@ -201,9 +214,9 @@ class SpareWorkerScheduler extends IScheduler {
 /**
  * @author Philipp Haller
  */
-class FixedWorkersScheduler(workercnt: int) extends IScheduler {
+abstract class FixedWorkersScheduler(workercnt: int) extends IScheduler {
   private var canQuit = false;
-  private val tasks = new Queue[Runnable];
+  private val tasks = new Queue[ReceiverTask];
   private val idle = new Queue[WorkerThread];
 
   //Console.println("Running with " + workercnt + " workers")

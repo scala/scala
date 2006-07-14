@@ -10,7 +10,7 @@
 
 package scala.actors.distributed
 
-import scala.actors.multi.{MailBox,Actor,Pid,LocalPid,ExcHandlerDesc}
+import scala.actors.multi.{MailBox,Process,ExcHandlerDesc}
 import scala.collection.mutable.{HashMap,Stack}
 
 abstract class ServiceName
@@ -20,17 +20,17 @@ case class TCP() extends ServiceName
 /**
  * @author Philipp Haller
  */
-class RemoteActor extends Actor {
+class RemoteActor extends Process {
 
   override def forwardExc(destDesc: ExcHandlerDesc, e: Throwable) = {
     // locality check (handler local to this actor?)
-    if (destDesc.pid == self)
+    if (destDesc.p == this)
       handleExc(destDesc, e)
     else
       kernel.forwardExc(destDesc, e)
   }
 
-  override def receive(f: PartialFunction[Message,Unit]): scala.All = {
+  override def receive(f: PartialFunction[Any,Unit]): scala.All = {
     if (isAlive) {
       continuation = null
       sent.dequeueFirst(f.isDefinedAt) match {
@@ -64,7 +64,7 @@ class RemoteActor extends Actor {
 
   private var selfCached: RemotePid = null
 
-  override def self: RemotePid = {
+  def self: RemotePid = {
     if (selfCached == null)
       selfCached = kernel pidOf this
     selfCached
@@ -103,10 +103,7 @@ class RemoteActor extends Actor {
     selfCached = service.kernel.register(this)
   }
 
-  def node(pid: Pid): Node = pid match {
-    case rpid: RemotePid => rpid.node
-    case lpid: LocalPid => null
-  }
+  def node(pid: RemotePid) = pid.node
 
   def disconnectNode(node: Node) =
     kernel.disconnectNode(node)

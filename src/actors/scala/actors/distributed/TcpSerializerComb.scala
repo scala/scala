@@ -11,8 +11,8 @@
 package scala.actors.distributed
 
 import java.io.Reader
+import scala.io.BytePickle._
 
-import scala.actors.distributed.picklers.BytePickle._
 import scala.actors.distributed.MessagesComb._
 import scala.actors.distributed.NodeComb._
 import scala.actors.multi.Pid
@@ -46,14 +46,14 @@ class TcpSerializerComb(serv: Service) extends Serializer(serv) {
     lookup(new String(content))
   }
 
-  def pid: SPU[Pid] = {
+  def pid: SPU[RemotePid] = {
     val nodeIntPU = wrap((p: Pair[TcpNode,int]) => TcpPid(p._1, p._2, serv.kernel,
                                                       if (p._1 == serv.node) serv.kernel.getLocalRef(p._2)
                                                       else null),
                          (t: TcpPid) => Pair(t.node, t.localId),
                          pair(tcpNodePU, nat));
 
-    wrap((p:Pid) => p, (pid:Pid) => pid match {
+    wrap((p:RemotePid) => p, (pid:RemotePid) => pid match {
       case tpid: TcpPid =>
         tpid
       case other =>

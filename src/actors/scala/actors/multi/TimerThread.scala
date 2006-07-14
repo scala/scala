@@ -8,12 +8,9 @@
 
 // $Id$
 
-package scala.actors
+package scala.actors.multi
 
 import scala.collection.mutable.PriorityQueue
-
-import scala.actors.multi.Actor
-import scala.actors.multi.MailBox
 
 /**
  * This class allows the (locl) sending of a message to an actor after
@@ -74,7 +71,7 @@ object TimerThread extends AnyRef with Runnable {
     lateList = Nil
   }
 
-  def requestSignal(a: Actor, waitMillis: long, reason: String): unit = this.synchronized {
+  def requestSignal(a: multi.Actor, waitMillis: long, reason: String): unit = this.synchronized {
     Console.println("TTTT Actor "+a+" requests Signal in "+waitMillis +" ms for :"+reason)
     val wakeTime = now + waitMillis
     if (waitMillis < 0) {
@@ -146,7 +143,7 @@ object TimerThreadTest {
     new Tester (500, "TWO").start
   }
 
-  class Tester (duration : int, name:String) extends Actor {
+  class Tester (duration : int, name:String) extends multi.Actor {
     var i = 0
 
     def loop:unit = {

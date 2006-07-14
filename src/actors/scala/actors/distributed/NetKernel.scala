@@ -55,7 +55,7 @@ class NetKernel(service: Service) {
 
   /** only called if destDesc is local. */
   def handleExc(destDesc: ExcHandlerDesc, e: Throwable) =
-    destDesc.pid match {
+    destDesc.p match {
       case rpid: RemotePid =>
         (rtable get rpid.localId) match {
           case Some(actor) =>
@@ -67,7 +67,7 @@ class NetKernel(service: Service) {
 
   def forwardExc(destDesc: ExcHandlerDesc, e: Throwable) =
     // locality check (handler local to this node?)
-    destDesc.pid match {
+    destDesc.p match {
       case rpid: RemotePid =>
         if (rpid.node == this.node)
           handleExc(destDesc, e)
@@ -121,9 +121,12 @@ class NetKernel(service: Service) {
   def localSend(pid: RemotePid, msg: AnyRef): Unit =
     localSend(pid.localId, msg)
 
-  def remoteSend(pid: RemotePid, msg: AnyRef) = synchronized {
+  def remoteSend(pid: RemotePid, msg: Any) = synchronized {
     //Console.println("NetKernel: Remote msg delivery to " + pid)
-    service.remoteSend(pid, msg)
+    msg match {
+      case m: AnyRef =>
+        service.remoteSend(pid, m)
+    }
   }
 
   def namedSend(name: Name, msg: AnyRef): Unit =

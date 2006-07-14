@@ -6,15 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
-package scala.actors.multi
+package scala.actors
 
 /**
  * @author Philipp Haller
  */
-trait AbstractPid {
-  def !(msg: MailBox#Message): Unit
-  def become(clos: Actor => Unit): Unit
-  def becomeReceiveLoop(f: PartialFunction[MailBox#Message,Unit]): Unit
+trait Actor {
+  def run(): Unit
+  def start(): Unit
+  def !(msg: Any): Unit
 }

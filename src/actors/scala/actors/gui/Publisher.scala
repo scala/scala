@@ -8,7 +8,7 @@ import scala.actors.single.Pid
 import scala.actors.gui.event.Event
 
 class EventHandlers {
-  type Handler = PartialFunction[AnyRef,unit]
+  type Handler = PartialFunction[Any,unit]
 
   private val handlers = new ListBuffer[Handler]
 
@@ -16,9 +16,9 @@ class EventHandlers {
   def -= (h: Handler) = { handlers -= h }
 
   def compoundHandler = new Handler {
-    def isDefinedAt(e: AnyRef): boolean = handlers.exists(.isDefinedAt(e))
+    def isDefinedAt(e: Any): boolean = handlers.exists(.isDefinedAt(e))
 
-    def apply(e: AnyRef): unit =
+    def apply(e: Any): unit =
       handlers.find(.isDefinedAt(e)) match {
         case Some(h) => h.apply(e)
         case None => // do nothing
@@ -29,10 +29,10 @@ class EventHandlers {
 trait Responder extends Actor {
   protected val handlers = new EventHandlers
 
-  final def eventloop(f: PartialFunction[Message,unit]): scala.All =
+  final def eventloop(f: PartialFunction[Any,unit]): scala.All =
     receive(new RecursiveProxyHandler(this, f))
 
-  def eventblock(f: PartialFunction[Message,unit]): unit = {
+  def eventblock(f: PartialFunction[Any,unit]): unit = {
     try {
       receive(new RecursiveProxyHandler(this, f))
     }
@@ -42,11 +42,11 @@ trait Responder extends Actor {
     }
   }
 
-  private class RecursiveProxyHandler(a: Actor, f: PartialFunction[Message,unit]) extends PartialFunction[Message,unit] {
-    def isDefinedAt(m: Message): boolean =
+  private class RecursiveProxyHandler(a: Actor, f: PartialFunction[Any,unit]) extends PartialFunction[Any,unit] {
+    def isDefinedAt(m: Any): boolean =
       true // events should be removed from the mailbox immediately!
 
-    def apply(m: Message): unit = {
+    def apply(m: Any): unit = {
       if (f.isDefinedAt(m)) f(m) // overrides any installed handler
       else
         if (handlers.compoundHandler.isDefinedAt(m))
@@ -63,7 +63,7 @@ case class Subscribe(s: Subscriber)
 case class Publish(e: Event)
 
 trait Subscriber extends Responder {
-  type Handler = PartialFunction[AnyRef,unit]
+  type Handler = PartialFunction[Any,unit]
   def subscribe(ps: Publisher*) = for (val p <- ps) p send Subscribe(this)
 }
 
@@ -98,11 +98,11 @@ trait Publisher extends Responder {
   }
 
   // TODO: super.receive might already be overridden!
-  //final override def receive(f: PartialFunction[Message,unit]): scala.All =
+  //final override def receive(f: PartialFunction[Any,unit]): scala.All =
     //super.receive(new ProxyPubSubHandler(f))
 
-  private class ProxyPubSubHandler(f: PartialFunction[Message,unit]) extends PartialFunction[Message,unit] {
-    def isDefinedAt(m: Message): boolean =
+  private class ProxyPubSubHandler(f: PartialFunction[Any,unit]) extends PartialFunction[Any,unit] {
+    def isDefinedAt(m: Any): boolean =
       if (f.isDefinedAt(m)) true
       else m match {
         case Subscribe(s) => true
@@ -110,7 +110,7 @@ trait Publisher extends Responder {
         case other => false
       }
 
-    def apply(m: Message): unit = {
+    def apply(m: Any): unit = {
       m match {
         case Subscribe(s) =>
           //Console.println("Rec subscription: " + s)

@@ -6,15 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+package scala.actors
 
-package scala.actors.single
-
-/**
- * @author Philipp Haller
- */
-trait AbstractPid {
-  def !(msg: MailBox#Message): Unit
-  def become(clos: Actor => Unit): Unit
-  def becomeReceiveLoop(f: PartialFunction[MailBox#Message,Unit]): Unit
-}
+case class TIMEOUT()

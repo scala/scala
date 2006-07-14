@@ -13,7 +13,7 @@ package scala.actors.multi
 /**
  * @author Philipp Haller
  */
-class ReceiverTask(val actor: MailBox, msg: MailBox#Message) extends Runnable {
+class ReceiverTask(val actor: MailBox, msg: Any) extends Runnable {
   def run(): Unit = {
     try {
       actor receiveMsg msg

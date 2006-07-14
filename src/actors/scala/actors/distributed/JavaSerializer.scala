@@ -12,7 +12,7 @@ package scala.actors.distributed
 
 import java.io._
 
-import scala.actors.distributed.picklers.BytePickle.SPU
+import scala.io.BytePickle.SPU
 import scala.actors.multi.Pid
 
 [serializable]
@@ -36,6 +36,6 @@ class JavaSerializer(serv: Service) extends Serializer(serv) {
     in.readObject()
   }
 
-  def pid: SPU[Pid] = null
+  def pid: SPU[RemotePid] = null
   def addRep(name: String, repCons: Serializer => AnyRef): Unit = {}
 }

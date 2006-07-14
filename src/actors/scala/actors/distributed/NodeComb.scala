@@ -10,7 +10,7 @@
 
 package scala.actors.distributed
 
-import scala.actors.distributed.picklers.BytePickle._
+import scala.io.BytePickle._
 
 /**
  * @author Philipp Haller
