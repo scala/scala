@@ -98,11 +98,36 @@ object CompileSocket {
   /** Time (in ms) to sleep between two polls */
   private val sleepTime = 20
 
-  /** The command which starts the compile server, given vm arguments
-   *  @param vmArgs  the argument string to be passed to the java or scala command
-   *                 the string must be either empty or start with a ' '.
-   */
-  def serverCommand(vmArgs: String): String = vmCommand+vmArgs+" "+serverClass
+  /** The command which starts the compile server, given vm arguments.
+    * Multiple responses are given because different commands are needed
+    * on different platforms; each possibility should be tried in order.
+    *
+    *  @param vmArgs  the argument string to be passed to the java or scala command
+    *                 the string must be either empty or start with a ' '.
+    */
+  def serverCommands(vmArgs: String): List[String] =
+    List(
+      vmCommand+vmArgs+" "+serverClass,
+      vmCommand+".bat"+vmArgs+" "+serverClass)
+
+  /** Start a new server; returns true iff it succeeds */
+  def startNewServer(vmArgs: String): Boolean = {
+    for(val cmd <- serverCommands(vmArgs)) {
+      try {
+Console.println("trying: " + cmd + "...\n")
+        Runtime.getRuntime().exec(cmd)
+        Console.println("succeeded")
+        return true
+      } catch {
+        case e:IOException => {
+          Console.println(e)
+          ()
+        }
+      }
+    }
+    return false
+  }
+
 
   /** The port identification file */
   def portFile(port: int) = new File(tmpDir, port.toString())
@@ -124,6 +149,7 @@ object CompileSocket {
       }
   }
 
+
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, create one
    */
@@ -131,7 +157,12 @@ object CompileSocket {
     var attempts = 0;
     var port = pollPort()
     if (port < 0) {
-      Runtime.getRuntime().exec(serverCommand(vmArgs))
+      if(!startNewServer(vmArgs)) {
+        System.err.println("cannot start server.  tried commands:")
+        for(val cmd <- serverCommands(vmArgs))
+          System.err.println(cmd)
+        exit(1)
+      }
     }
     while (port < 0 && attempts < MaxAttempts) {
       attempts = attempts + 1
@@ -139,8 +170,7 @@ object CompileSocket {
       port = pollPort()
     }
     if (port < 0) {
-      System.err.println("cannot start server with command")
-      System.err.println(serverCommand(vmArgs))
+      Console.println("Could not connect to server.")
       exit(1)
     }
     port
