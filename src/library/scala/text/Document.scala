@@ -12,7 +12,6 @@
 package scala.text;
 
 
-import java.io.PrintWriter;
 import java.io.Writer;
 
 case object DocNil extends Document;
