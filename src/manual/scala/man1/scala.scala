@@ -20,9 +20,7 @@ object scala extends Command {
   val synopsis = Section("SYNOPSIS",
 
     CmdLine(
-      " [ " & Argument("compiler-option") & " | " &
-      Mono("-howtorun:") & Argument("how") & " | " &
-      Mono("-savecompiled") & " ]... " &
+      " [ " & Argument("option") & " ]... " &
       "[ " & Argument("torun") & " " & Argument("argument") &
       "... ]"))
 
@@ -31,7 +29,7 @@ object scala extends Command {
     DefinitionList(
       Definition(
         Mono(Argument("compiler-option")),
-        "Options for the compiler.  See " &
+        "Any scalac option.  See " &
         Link(Bold("scalac") & "(1)", "scalac.html") & "."),
 
       Definition(
@@ -49,6 +47,15 @@ object scala extends Command {
         "script but with an extension of " & Mono(".jar") & ".  On subsequent " &
         "runs of the same script, the pre-compiled " & Mono(".jar") & " file " &
         "will be used if it is newer than the script file."),
+
+      Definition(
+        Mono("-nocompdaemon"),
+        "Do not use the " & Bold("fsc") & " offline compiler."),
+
+      Definition(
+        Mono("-D") & Argument("property=value"),
+        "Set a Java system property.  If no value is specified, " &
+        "then the property is set to the empty string."),
 
       Definition(
         Mono(Argument("torun")),
