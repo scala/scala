@@ -319,8 +319,16 @@ trait Types requires SymbolTable {
      *  by `owner'. Identity for all other types. */
     def cloneInfo(owner: Symbol) = this
 
+    protected def objectPrefix = "object "
+    protected def packagePrefix = "package "
+
+    def trimPrefix(str: String) =
+      if (str.startsWith(objectPrefix)) str.substring(objectPrefix.length)
+      else if (str.startsWith(packagePrefix)) str.substring(packagePrefix.length)
+      else str
+
     /** The string representation of this type used as a prefix */
-    def prefixString = toString() + "#";
+    def prefixString = trimPrefix(toString()) + "#";
 
     /** The string representation of this type, with singletypes explained */
     def toLongString = {
@@ -891,9 +899,9 @@ trait Types requires SymbolTable {
       val str = (pre.prefixString + sym.nameString +
                  (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
       if (sym.isPackageClass)
-        "package "+str
+        packagePrefix+str
       else if (sym.isModuleClass)
-        "object "+str
+        objectPrefix+str
       else if (sym.isAnonymousClass && sym.isInitialized)
         sym.info.parents.mkString("", " with ", "{ ... }")
       else if (sym.isRefinementClass && sym.isInitialized)

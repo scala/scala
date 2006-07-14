@@ -320,9 +320,10 @@ abstract class Mixin extends InfoTransform {
           val rhs0 =
             Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
                   vparams map (vparam => Ident(vparam.symbol)));
-          if (settings.debug.value) log("complete super acc " + stat.symbol + stat.symbol.locationString + " " + rhs0 + " " + stat.symbol.alias + stat.symbol.alias.locationString)//debug
-          val rhs1 = postTransform(localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType));
-          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs1)
+          val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType);
+          val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
+          if (settings.debug.value) log("complete super acc " + stat.symbol + stat.symbol.locationString + " " + rhs1 + " " + stat.symbol.alias + stat.symbol.alias.locationString + "/" + stat.symbol.alias.owner.hasFlag(lateINTERFACE))//debug
+          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs2)
         case _ =>
           stat
       }
@@ -374,7 +375,7 @@ abstract class Mixin extends InfoTransform {
         case Apply(Select(qual, _), args) =>
           def staticCall(target: Symbol) = {
             if (target == NoSymbol)
-              assert(false, "" + sym + " " + sym.owner + " " + implClass(sym.owner) + " " + sym.owner.owner + atPhase(phase.prev)(sym.owner.owner.info.decls.toList));//debug
+              assert(false, "" + sym + ":" + sym.tpe + " " + sym.owner + " " + implClass(sym.owner) + " " + implClass(sym.owner).info.member(sym.name) + " " + atPhase(phase.prev)(implClass(sym.owner).info.member(sym.name).tpe) + " " + phase);//debug
             localTyper.typed {
               atPos(tree.pos) {
                 val qual1 =
