@@ -58,7 +58,9 @@ object fsc extends Command {
       Definition(
         MBold("JAVACMD"),
         "Specify the " & MBold("java") & " command to be used " &
-        "for running the Scala commands")))
+        "for running the Scala code.  Arguments may be specified " &
+        "as part of the environment variable; spaces, quotation marks " &
+        "etc., will be passed directly to the shell for expansion.")))
 
   val examples = Section("EXAMPLES",
 
