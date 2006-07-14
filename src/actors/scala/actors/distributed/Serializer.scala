@@ -13,8 +13,6 @@ package scala.actors.distributed
 import java.io.{DataInputStream,DataOutputStream,EOFException}
 import scala.io.BytePickle.SPU
 
-import scala.actors.multi.Pid
-
 /**
  * @author Philipp Haller
  */

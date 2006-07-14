@@ -3,7 +3,6 @@ package scala.actors.gui
 import scala.collection.mutable.ListBuffer
 
 import scala.actors.single.Actor
-import scala.actors.single.Pid
 
 import scala.actors.gui.event.Event
 

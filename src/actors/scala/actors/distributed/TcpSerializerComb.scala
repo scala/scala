@@ -15,7 +15,6 @@ import scala.io.BytePickle._
 
 import scala.actors.distributed.MessagesComb._
 import scala.actors.distributed.NodeComb._
-import scala.actors.multi.Pid
 import scala.collection.mutable.HashMap
 
 /**
