@@ -65,6 +65,8 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
 
   var dtd: DTD = null;
 
+  protected var doc: Document = null;
+
   var eof: Boolean = false;
 
   //
@@ -172,10 +174,10 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
   def document(): Document = {
 
     //Console.println("(DEBUG) document");
+    doc = new Document();
 
     this.dtd = null;
-    var info_prolog: Tuple3[Option[String], Option[String], Option[Boolean]] =
-      Tuple3(None, None, None);
+    var info_prolog: Tuple3[Option[String], Option[String], Option[Boolean]] = Tuple3(None, None, None);
     if ('<' != ch) {
       reportSyntaxError("< expected");
       return null;
@@ -186,11 +188,17 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     if ('?' == ch) {
       //Console.println("[MarkupParser::document] starts with xml declaration");
       nextch;
-      info_prolog = prolog();
+      info_prolog = prolog()
+      doc.version    = info_prolog._1
+      doc.encoding   = info_prolog._2
+      doc.standAlone = info_prolog._3
+
       children = content(TopScope); // DTD handled as side effect
 
     } else {
       //Console.println("[MarkupParser::document] does not start with xml declaration");
+ //
+
       val ts = new NodeBuffer();
       content1(TopScope, ts); // DTD handled as side effect
       ts &+ content(TopScope);
@@ -216,13 +224,8 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
       Console.println(children.toList);
     }
 
-    val doc = new Document();
     doc.children   = children;
     doc.docElem    = theNode;
-    doc.version    = info_prolog._1;
-    doc.encoding   = info_prolog._2;
-    doc.standAlone = info_prolog._3;
-    doc.dtd        = this.dtd;
     return doc
   }
 
@@ -245,7 +248,6 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
       } else {
         eof = true;
         ch = 0.asInstanceOf[Char];
-      //throw new Exception("this is the end")
       }
     }
   }
@@ -268,15 +270,6 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     while (it.hasNext)
       xToken(it.next);
   }
-
-  /** checks whether next character starts a Scala block, if yes, skip it.
-   * @return true if next character starts a scala block
-  def xCheckEmbeddedBlock:Boolean = {
-    xEmbeddedBlock =
-      enableEmbeddedExpressions && (ch == '{') && { nextch; ch != '{' };
-    return xEmbeddedBlock;
-  }
-   */
 
   /** parse attribute and create namespace scope, metadata
    *  [41] Attributes    ::= { S Name Eq AttValue }
@@ -651,6 +644,9 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
       /*override val */decls      = handle.decls.reverse;
     }
     //this.dtd.initializeEntities();
+    if(doc!=null)
+      doc.dtd = this.dtd
+
     handle.endDTD(n);
   }
 

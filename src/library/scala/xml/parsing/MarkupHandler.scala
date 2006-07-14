@@ -76,7 +76,8 @@ abstract class MarkupHandler extends AnyRef with Logged {
    *  @param pre      the prefix
    *  @param label    the local name
    *  @param attrs    the attributes (metadata)
-   */  def elemEnd(pos: int, pre: String, label: String): Unit = {}
+   */
+  def elemEnd(pos: int, pre: String, label: String): Unit = {}
 
   /** callback method invoked by MarkupParser after parsing an elementm,
    *  between the elemStart and elemEnd callbacks

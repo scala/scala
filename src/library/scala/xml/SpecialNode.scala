@@ -15,10 +15,10 @@ import scala.runtime.compat.StringBuilder
 
 /** &lt;code&gt;SpecialNode&lt;/code&gt; is a special XML node which
  *  represents either text (PCDATA), a comment, a PI, or an entity ref.
- *
+ *  SpecialNodes also play the role of XMLEvents for pull-parsing.
  *  @author Burak Emir
  */
-abstract class SpecialNode extends Node {
+abstract class SpecialNode extends Node with pull.XMLEvent {
 
   /** always empty */
   final override def attributes = Null

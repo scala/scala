@@ -43,25 +43,43 @@ abstract class NodeSeq extends Seq[Node] {
    *  of all elements of this sequence that are labelled with "foo".
    *  Use \ "_" as a wildcard. The document order is preserved.
    */
-  def \(that: String):NodeSeq = {
-    var res: NodeSeq = NodeSeq.Empty;
-    that match {
-      case "_" =>
-        res = for( val x <- this; val y <- x.child; y.typeTag$ != -1) yield { y }
-
-      case _ if (that.charAt(0) == '@') && (this.length == 1) =>
-        val k = that.substring(1);
-        val y = this(0);
-        val v = y.attribute(k);
-        if( v != null ) {
-          res = NodeSeq.fromSeq(Seq.single(Text(v)));
+  def \(that: String): NodeSeq = that match {
+    case "_" =>
+      var zs:List[Node] = List[Node]()
+      val it = this.elements
+      while(it.hasNext) {
+        val x = it.next
+        val jt = x.child.elements
+        while(jt.hasNext) {
+          val y = jt.next
+          if(y.typeTag$ != -1)
+            zs = y::zs
         }
+      }
+    NodeSeq.fromSeq(zs.reverse)
 
-      case _   =>
-        res = for( val x <- this; val y <- x.child: NodeSeq; y.label == that )
-              yield { y }
-    }
-    res
+    case _ if (that.charAt(0) == '@') && (this.length == 1) =>
+      val k = that.substring(1);
+      val y = this(0);
+      val v = y.attribute(k);
+      if( v != null ) {
+        NodeSeq.fromSeq(Seq.single(Text(v):Node));
+      } else
+        NodeSeq.Empty
+
+    case _   =>
+      var zs:List[Node] = Nil
+      val it = this.elements
+      while(it.hasNext) {
+        val x = it.next
+        val jt = x.child.elements
+        while(jt.hasNext) {
+          val y = jt.next
+          if(y.label == that)
+            zs = y::zs
+        }
+      }
+      NodeSeq.fromSeq(zs.reverse)
   }
 
   /** projection function. Similar to XPath, use this \\ 'foo to get a list
@@ -70,22 +88,51 @@ abstract class NodeSeq extends Seq[Node] {
    */
 
   def \\ ( that:String ): NodeSeq = that match {
-      case "_" => for( val x <- this;
-                       val y <- x.descendant_or_self: NodeSeq;
-                      y.typeTag$ != -1 )
-                  yield { y }
-      case _ if that.charAt(0) == '@' =>
-        val attrib = that.substring(1);
-        (for(val x <- this;
-             val y <- x.descendant_or_self: NodeSeq;
-             y.typeTag$ != -1;
-             val z <- y \ that)
-         yield { z }):NodeSeq
-      case _ => for( val x <- this;
-                     val y <- x.descendant_or_self: NodeSeq;
-                     y.typeTag$ != -1;
-                     y.label == that)
-                  yield { y }
+    case "_" =>
+      var zs:List[Node] = List[Node]()
+      val it = this.elements
+      while(it.hasNext) {
+        val x = it.next
+        val jt = x.descendant_or_self.elements
+        while(jt.hasNext) {
+          val y = jt.next
+          if(y.typeTag$ != -1)
+            zs = y::zs
+        }
+      }
+      zs.reverse
+
+    case _ if that.charAt(0) == '@' =>
+      var zs: List[Node] = Nil
+      val it = this.elements
+      while(it.hasNext) {
+        val x = it.next
+        val jt = x.descendant_or_self.elements
+        while(jt.hasNext) {
+          val y = jt.next
+          if(y.typeTag$ != -1) {
+            val kt = (y \ that).elements
+            while(kt.hasNext) {
+              zs = (kt.next)::zs
+            }
+          }
+        }
+      }
+      zs.reverse
+
+    case _ =>
+      var zs:List[Node] = List[Node]()
+      val it = this.elements
+      while(it.hasNext) {
+        val x = it.next
+        val jt = x.descendant_or_self.elements
+        while(jt.hasNext) {
+          val y = jt.next
+          if(y.typeTag$ != -1 && y.label == that)
+            zs = y::zs
+        }
+      }
+    zs.reverse
   }
 
   override def toString():String = theSeq.elements.foldLeft ("") {

@@ -15,8 +15,9 @@ package scala.xml;
 /** A document information item (according to InfoSet spec). The comments
  *  are copied from the Infoset spec, only augmented with some information
  *  on the Scala types for definitions that might have no value.
+ *  also plays the role of an XMLEvent for pull parsing
  */
-class Document extends NodeSeq {
+class Document extends NodeSeq with pull.XMLEvent {
 
   /** An ordered list of child information items, in document
   *  order. The list contains exactly one element information item. The
