@@ -245,12 +245,12 @@ BUILD SUPPORT MACROS
     <attribute name="build.dir"/>
     <sequential>
       <if><not><available file="@{build.dir}/lib/fjbg.jar"/></not><then>
-        <if><isset property="os.unix"/><then>
+        <if><isset property="os.win"/><then>
+          <copy file="${fjbg.jar}" tofile="@{build.dir}/lib/fjbg.jar"/>
+        </then><else>
           <symlink
             link="@{build.dir}/lib/fjbg.jar"
             resource="${fjbg.jar}" overwrite="yes" failonerror="no"/>
-        </then><else>
-          <copy file="${fjbg.jar}" tofile="@{build.dir}/lib/fjbg.jar"/>
         </else></if>
       </then></if>
     </sequential>

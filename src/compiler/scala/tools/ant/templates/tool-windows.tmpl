@@ -27,6 +27,9 @@ if "%_JAVACMD%"=="" set _JAVACMD=java
 set _EXTENSION_CLASSPATH=@extclasspath@
 if "%_EXTENSION_CLASSPATH%"=="" (
   for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
+  if "%OS%"=="Windows_NT" (
+    for /d %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
+  )
 )
 
 set _BOOT_CLASSPATH=@bootclasspath@
