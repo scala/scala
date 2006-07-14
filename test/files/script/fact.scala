@@ -17,7 +17,7 @@ if $cygwin; then
     SOURCE=`cygpath --$format "$SOURCE"`;
 fi
 
-exec scala "$SOURCE" "$@"
+exec scala -nocompdaemon "$SOURCE" "$@"
 !#
 
 
