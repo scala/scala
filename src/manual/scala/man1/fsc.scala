@@ -49,7 +49,7 @@ object fsc extends Command {
           "the same filesystem."),
         Definition(
           CmdOption("J", Argument("flag")),
-          "Pass <flag> directly to runtime system")
+          "Pass <flag> directly to runtime system (not yet implemented)")
     ))
 
   val environment = Section("ENVIRONMENT",
@@ -65,7 +65,7 @@ object fsc extends Command {
     DefinitionList(
       Definition(
         "Compile a Scala program to the current directory",
-        CmdLine("HelloWorld")),
+        CmdLine("HelloWorld.scala")),
       Definition(
         "Compile a Scala program to the destination directory " &
         MBold("classes"),
