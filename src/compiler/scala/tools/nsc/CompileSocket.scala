@@ -114,9 +114,7 @@ object CompileSocket {
   def startNewServer(vmArgs: String): Boolean = {
     for(val cmd <- serverCommands(vmArgs)) {
       try {
-Console.println("trying: " + cmd + "...\n")
         Runtime.getRuntime().exec(cmd)
-        Console.println("succeeded")
         return true
       } catch {
         case e:IOException => {
