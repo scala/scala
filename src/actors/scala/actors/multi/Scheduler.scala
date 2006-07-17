@@ -210,7 +210,6 @@ abstract class SpareWorkerScheduler extends IScheduler {
   }
 }
 
-
 /**
  * @author Philipp Haller
  */

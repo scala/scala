@@ -100,7 +100,7 @@ trait MailBox {
     }
   }
 
-  def receive(f: PartialFunction[Any,unit]): Nothing = {
+  def receive(f: PartialFunction[Any,Unit]): Nothing = {
     if (isAlive) {
       Scheduler.tick(this)
       continuation = null

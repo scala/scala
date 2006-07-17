@@ -108,7 +108,7 @@ class NetKernel(service: Service) {
         remoteActor
     }
 
-  def localSend(localId: Int, msg: AnyRef): Unit = synchronized {
+  def localSend(localId: Int, msg: Any): Unit = synchronized {
     rtable.get(localId) match {
       case None =>
         error("" + localId + " is not registered at " + this)
@@ -118,7 +118,7 @@ class NetKernel(service: Service) {
     }
   }
 
-  def localSend(pid: RemotePid, msg: AnyRef): Unit =
+  def localSend(pid: RemotePid, msg: Any): Unit =
     localSend(pid.localId, msg)
 
   def remoteSend(pid: RemotePid, msg: Any) = synchronized {

@@ -72,7 +72,7 @@ object Process {
 /**
  * @author Philipp Haller
  */
-class Process extends scala.actors.Process with Actor {
+class Process extends scala.actors.Process with Actor[Any] {
   private val links = new HashSet[scala.actors.Process]
 
   override def start(): Unit = try { run() }
@@ -211,7 +211,7 @@ class Process extends scala.actors.Process with Actor {
     }
   }
 
-  override def receive(f: PartialFunction[Any,unit]): scala.All = {
+  override def receive(f: PartialFunction[Any,unit]): Nothing = {
     if (isAlive) {
       Scheduler.tick(this)
       continuation = null

@@ -13,7 +13,7 @@ package scala.actors.multi
 /**
  * @author Philipp Haller
  */
-trait Actor extends scala.actors.Actor with MailBox {
+trait Actor[T] extends scala.actors.Actor[T] with MailBox {
   def run(): Unit = {}
 
   def start(): Unit = try { run() }
@@ -21,5 +21,5 @@ trait Actor extends scala.actors.Actor with MailBox {
     case d: Done => // do nothing
   }
 
-  def !(msg: Any): Unit = send(msg)
+  def !(msg: T): Unit = send(msg)
 }

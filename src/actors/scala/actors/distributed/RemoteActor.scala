@@ -10,7 +10,7 @@
 
 package scala.actors.distributed
 
-import scala.actors.multi.{MailBox,Process,ExcHandlerDesc}
+import scala.actors.multi.{Process,ExcHandlerDesc}
 import scala.collection.mutable.{HashMap,Stack}
 
 abstract class ServiceName
@@ -30,7 +30,7 @@ class RemoteActor extends Process {
       kernel.forwardExc(destDesc, e)
   }
 
-  override def receive(f: PartialFunction[Any,Unit]): scala.All = {
+  override def receive(f: PartialFunction[Any,Unit]): Nothing = {
     if (isAlive) {
       continuation = null
       sent.dequeueFirst(f.isDefinedAt) match {

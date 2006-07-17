@@ -11,7 +11,7 @@ package scala.actors
 /**
  * @author Philipp Haller
  */
-trait Process extends Actor {
+trait Process extends Actor[Any] {
   def link(to: Process): Unit
   def linkTo(to: Process): Unit
   def unlink(from: Process): Unit

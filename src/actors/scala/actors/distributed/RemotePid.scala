@@ -10,7 +10,7 @@
 
 package scala.actors.distributed
 
-import scala.actors.multi.{MailBox,ExcHandlerDesc}
+import scala.actors.multi.ExcHandlerDesc
 
 import java.io._
 

@@ -11,8 +11,8 @@ package scala.actors
 /**
  * @author Philipp Haller
  */
-trait Actor {
+trait Actor[T] {
   def run(): Unit
   def start(): Unit
-  def !(msg: Any): Unit
+  def !(msg: T): Unit
 }

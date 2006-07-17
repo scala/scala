@@ -15,7 +15,7 @@ import scala.collection.mutable.HashSet
 /**
  * @author Philipp Haller
  */
-class Process extends scala.actors.Process with Actor {
+class Process extends scala.actors.Process with Actor[Any] {
   case class Exit(from: scala.actors.Process, reason: Symbol)
 
   private val links = new HashSet[scala.actors.Process]

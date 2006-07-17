@@ -25,7 +25,7 @@ class EventHandlers {
   }
 }
 
-trait Responder extends Actor {
+trait Responder extends Actor[Any] {
   protected val handlers = new EventHandlers
 
   final def eventloop(f: PartialFunction[Any,unit]): scala.All =
@@ -41,7 +41,7 @@ trait Responder extends Actor {
     }
   }
 
-  private class RecursiveProxyHandler(a: Actor, f: PartialFunction[Any,unit]) extends PartialFunction[Any,unit] {
+  private class RecursiveProxyHandler(a: Actor[Any], f: PartialFunction[Any,unit]) extends PartialFunction[Any,unit] {
     def isDefinedAt(m: Any): boolean =
       true // events should be removed from the mailbox immediately!
 
