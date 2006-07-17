@@ -13,7 +13,7 @@ object fsc extends Command {
 
   val name = Section("NAME",
 
-    MBold(command) & " " & NDash & " Offline compiler for the " &
+    MBold(command) & " " & NDash & " Fast offline compiler for the " &
     Link("Scala 2", "http://scala.epfl.ch/") & " language")
 
   val synopsis = Section("SYNOPSIS",
@@ -33,8 +33,13 @@ object fsc extends Command {
     "as its source file. You can specify a separate destination directory " &
     "with -d (see " & Link(Bold("OPTIONS"), "#options") & ", below).")
 
-  val options =
+  val options = Section("OPTIONS",
+
     Section("Standard Options",
+      "The offline compiler has the same set of " & Link(Bold("Standard Options"),
+      "scalac#standard_options") & " as the " & MBold("scalac") & " commands " &
+      "with the following additional options:",
+
       DefinitionList(
         Definition(
           CmdOption("reset"),
@@ -50,6 +55,16 @@ object fsc extends Command {
         Definition(
           CmdOption("J", Argument("flag")),
           "Pass <flag> directly to runtime system (not yet implemented)")
+    )),
+
+    Section("Non-Standard Options",
+      "See the " & Link(Bold("Non-Standard Options"), "scalac.html#non-standard_options") &
+      " of the " & MBold("scalac") & " command."
+    ),
+
+    Section("Debug Options",
+      "See the " & Link(Bold("Debug Options"), "scalac.html#debug_options") &
+      " of the " & MBold("scalac") & " command."
     ))
 
   val environment = Section("ENVIRONMENT",
