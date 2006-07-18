@@ -504,7 +504,6 @@ trait Typers requires Analyzer {
 
     def adaptToMember(qual: Tree, name: Name, tp: Type): Tree = {
       val qtpe = qual.tpe.widen;
-      Console.println("adapt to mem "+qual+":"+qtpe+"/"+tp)//debug
       if (qual.isTerm && (qual.symbol == null || !qual.symbol.isTerm || qual.symbol.isValue) &&
           phase.id <= currentRun.typerPhase.id && !qtpe.isError && !tp.isError &&
           qtpe.symbol != AllRefClass && qtpe.symbol != AllClass && qtpe != WildcardType) {
