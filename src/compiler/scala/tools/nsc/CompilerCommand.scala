@@ -67,6 +67,8 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
     } else if (settings.Xscript.value || args.head.endsWith(fileEnding)) {
       fs = args.head :: fs
       args = args.tail
+    } else if (args.head.length == 0) {//quick fix
+      args = args.tail
     } else {
       error("don't know what to do with " + args.head)
       ok = false

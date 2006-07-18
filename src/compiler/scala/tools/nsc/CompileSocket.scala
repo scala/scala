@@ -49,40 +49,20 @@ object CompileSocket {
       Some(fulldir)
     }
 
-    /** Write a test file to a directory to see if it is writable */
-    def dirWritable(dir: File): Boolean = {
-      dir.mkdirs
-      if(!dir.exists)
-        return false
-
-      val f = new File(dir, "caniwrite")
-
-      try {
-        f.createNewFile
-        if(!f.canWrite)
-          return false
-        f.delete
-        if(f.exists)
-          return false
-      } catch {
-        case _:java.io.IOException =>
-          f.delete
-          return false
-      }
-
-      return true
-    }
+    /** Test if file f is a writable directory */
+    def isDirWritable(f: File): Boolean =
+      f.isDirectory && f.canWrite
 
     val potentials =
       for {
         val trial <- totry
         val expanded = expand(trial)
         !expanded.isEmpty
-        dirWritable(expanded.get)
+        isDirWritable(expanded.get)
       }
       yield expanded.get
 
-    if(potentials.isEmpty) {
+    if (potentials.isEmpty) {
       Console.println("could not find a directory for port files")
       exit(1)
     } else {
