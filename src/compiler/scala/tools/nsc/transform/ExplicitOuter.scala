@@ -319,7 +319,7 @@ abstract class ExplicitOuter extends InfoTransform {
      *   2. Remove private modifiers from members M of mixins T. (@see makeNotPrivate)
      *   3. Remove `private' modifier from class members M that are accessed from an inner class.
      *   4. Remove `protected' modifier from class members M that are accessed
-     *      without a super qualifier accessed from an inner class.
+     *      without a super qualifier accessed from an inner class or trait.
      *   5. Remove `private' and `protected' modifiers from type symbols
      */
     private val secondTransformer = new Transformer {
@@ -337,9 +337,9 @@ abstract class ExplicitOuter extends InfoTransform {
             val enclClass = currentOwner.enclClass
             if (enclClass != sym.owner && enclClass != sym.moduleClass) // (3)
               sym.makeNotPrivate(sym.owner);
+            val qsym = qual.tpe.widen.symbol
             if ((sym hasFlag PROTECTED) && //(4)
-                !(qual.isInstanceOf[Super] ||
-                  (qual.tpe.widen.symbol isSubClass enclClass)))
+                (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass enclClass))))
               sym setFlag notPROTECTED;
             tree1
           case _ =>

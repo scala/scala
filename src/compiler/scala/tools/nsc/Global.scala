@@ -534,7 +534,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
 
     private def resetPackageClass(pclazz: Symbol): unit = {
-      assert(pclazz.isPackageClass, pclazz)
       atPhase(firstPhase) {
         pclazz.setInfo(atPhase(typerPhase)(pclazz.info))
       }
