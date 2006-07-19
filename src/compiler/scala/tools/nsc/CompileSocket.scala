@@ -50,7 +50,7 @@ object CompileSocket {
     def expand(trial: Pair[String, List[String]]): Option[File] = {
       val Pair(topdirProp, extensions) = trial
       val topdir = System.getProperty(topdirProp)
-      if(topdir == null)
+      if (topdir == null)
         return None
 
       val fulldir =
@@ -126,7 +126,6 @@ object CompileSocket {
                 "\nplease remove the file and try again")
       }
   }
-
 
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, create one
