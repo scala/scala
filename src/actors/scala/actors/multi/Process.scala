@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: LocalPid.scala 7969 2006-06-23 11:44:31Z michelou $
+// $Id$
 
 package scala.actors.multi
 

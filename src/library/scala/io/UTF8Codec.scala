@@ -4,7 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id: UTF8Codec.scala 7116 2006-04-11 15:36:05Z mihaylov $
+// $Id$
 
 
 package scala.io;

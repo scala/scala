@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: StringAdd.scala 7771 2006-06-12 13:22:39Z dubochet $
+// $Id$
 package scala.runtime
 
 final class StringAdd(self: Any) {
