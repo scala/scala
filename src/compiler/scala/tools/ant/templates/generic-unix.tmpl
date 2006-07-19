@@ -103,6 +103,7 @@ if $cygwin; then
     else
         format=windows
     fi
+    SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
     MERGED_CLASSPATH=`cygpath --path --$format "$MERGED_CLASSPATH"`
     BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
 fi

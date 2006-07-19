@@ -64,6 +64,7 @@ if $cygwin; then
     else
         format=windows
     fi
+    SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
     EXTENSION_CLASSPATH=`cygpath --path --$format "$EXTENSION_CLASSPATH"`
     BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
 fi
