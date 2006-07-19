@@ -1,9 +1,24 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $id: $
+
 package scala.tools.util
 
 import java.io._
 import java.net._
 
-class SocketConnection(hostname: String, port: int) {
+/** This class implements the connection to the server.
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
+class SocketConnection(hostname: String, port: Int) {
 
   def this(port: int) = this(InetAddress.getLocalHost().getHostName(), port)
 
@@ -12,7 +27,7 @@ class SocketConnection(hostname: String, port: int) {
   var in: BufferedReader = _
   var errorMessage: String = _
 
-  def open(): boolean = {
+  def open(): Boolean = {
     try {
       socket = new Socket(hostname, port)
       out = new PrintWriter(socket.getOutputStream(), true)
@@ -20,10 +35,10 @@ class SocketConnection(hostname: String, port: int) {
       true
     } catch {
       case e: UnknownHostException =>
-        errorMessage = "Don't know about host: "+hostname+"."
+        errorMessage = "Don't know about host: " + hostname + "."
         false
       case e: IOException =>
-        errorMessage = "Couldn't get I/O for the connection to: "+hostname+"."
+        errorMessage = "Couldn't get I/O for the connection to: " + hostname + "."
         false
     }
   }
@@ -34,4 +49,3 @@ class SocketConnection(hostname: String, port: int) {
     socket.close()
   }
 }
-

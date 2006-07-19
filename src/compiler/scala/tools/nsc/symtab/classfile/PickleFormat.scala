@@ -1,10 +1,16 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.symtab.classfile;
 
+package scala.tools.nsc.symtab.classfile
+
+/** This object provides constants for pickling attributes.
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 object PickleFormat {
 
 /***************************************************
@@ -57,50 +63,50 @@ object PickleFormat {
  *
  *   len is remaining length after `len'.
  */
-  val MajorVersion = 4;
-  val MinorVersion = 0;
+  val MajorVersion = 4
+  val MinorVersion = 0
 
-  final val TERMname = 1;
-  final val TYPEname = 2;
-  final val NONEsym = 3;
-  final val TYPEsym = 4;
-  final val ALIASsym = 5;
-  final val CLASSsym = 6;
-  final val MODULEsym = 7;
-  final val VALsym = 8;
-  final val EXTref = 9;
-  final val EXTMODCLASSref = 10;
-  final val NOtpe = 11;
-  final val NOPREFIXtpe = 12;
-  final val THIStpe = 13;
-  final val SINGLEtpe = 14;
-  final val CONSTANTtpe = 15;
-  final val TYPEREFtpe = 16;
-  final val TYPEBOUNDStpe = 17;
-  final val REFINEDtpe = 18;
-  final val CLASSINFOtpe = 19;
-  final val METHODtpe = 20;
-  final val POLYtpe = 21;
-  final val IMPLICITMETHODtpe = 22;
-  final val LITERAL = 23;   // base line for literals
-  final val LITERALunit = 24;
-  final val LITERALboolean = 25;
-  final val LITERALbyte = 26;
-  final val LITERALshort = 27;
-  final val LITERALchar = 28;
-  final val LITERALint = 29;
-  final val LITERALlong = 30;
-  final val LITERALfloat = 31;
-  final val LITERALdouble = 32;
-  final val LITERALstring = 33;
-  final val LITERALnull = 34;
-  final val LITERALclass = 35;
-  final val ATTRIBUTE = 40;
+  final val TERMname = 1
+  final val TYPEname = 2
+  final val NONEsym = 3
+  final val TYPEsym = 4
+  final val ALIASsym = 5
+  final val CLASSsym = 6
+  final val MODULEsym = 7
+  final val VALsym = 8
+  final val EXTref = 9
+  final val EXTMODCLASSref = 10
+  final val NOtpe = 11
+  final val NOPREFIXtpe = 12
+  final val THIStpe = 13
+  final val SINGLEtpe = 14
+  final val CONSTANTtpe = 15
+  final val TYPEREFtpe = 16
+  final val TYPEBOUNDStpe = 17
+  final val REFINEDtpe = 18
+  final val CLASSINFOtpe = 19
+  final val METHODtpe = 20
+  final val POLYtpe = 21
+  final val IMPLICITMETHODtpe = 22
+  final val LITERAL = 23   // base line for literals
+  final val LITERALunit = 24
+  final val LITERALboolean = 25
+  final val LITERALbyte = 26
+  final val LITERALshort = 27
+  final val LITERALchar = 28
+  final val LITERALint = 29
+  final val LITERALlong = 30
+  final val LITERALfloat = 31
+  final val LITERALdouble = 32
+  final val LITERALstring = 33
+  final val LITERALnull = 34
+  final val LITERALclass = 35
+  final val ATTRIBUTE = 40
 
-  final val firstSymTag = NONEsym;
-  final val lastSymTag = VALsym;
-  final val lastExtSymTag = EXTMODCLASSref;
-  final val firstTypeTag = NOtpe;
-  final val lastTypeTag = POLYtpe;
-  final val PosOffset = 64;
+  final val firstSymTag = NONEsym
+  final val lastSymTag = VALsym
+  final val lastExtSymTag = EXTMODCLASSref
+  final val firstTypeTag = NOtpe
+  final val lastTypeTag = POLYtpe
+  final val PosOffset = 64
 }

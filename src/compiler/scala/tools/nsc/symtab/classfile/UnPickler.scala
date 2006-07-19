@@ -1,8 +1,9 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc.symtab.classfile
 
 import scala.tools.nsc.util.Position
@@ -14,6 +15,11 @@ import PickleFormat._
 import collection.mutable.HashMap
 import java.io.IOException
 
+/** This abstract class implements ..
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 abstract class UnPickler {
   val global: Global
   import global._
@@ -89,12 +95,12 @@ abstract class UnPickler {
     private def at[T <: AnyRef](i: int, op: () => T): T = {
       var r = entries(i)
       if (r == null) {
-	val savedIndex = readIndex
-	readIndex = index(i)
-	r = op()
-	assert(entries(i) == null, entries(i))
-	entries(i) = r
-	readIndex = savedIndex
+        val savedIndex = readIndex
+        readIndex = index(i)
+        r = op()
+        assert(entries(i) == null, entries(i))
+        entries(i) = r
+        readIndex = savedIndex
       }
       r.asInstanceOf[T]
     }
@@ -104,9 +110,9 @@ abstract class UnPickler {
       val tag = readByte()
       val len = readNat()
       tag match {
-	case TERMname => newTermName(bytes, readIndex, len)
-	case TYPEname => newTypeName(bytes, readIndex, len)
-	case _ => errorBadSignature("bad name tag: " + tag)
+        case TERMname => newTermName(bytes, readIndex, len)
+        case TYPEname => newTypeName(bytes, readIndex, len)
+        case _ => errorBadSignature("bad name tag: " + tag)
       }
     }
 
@@ -116,70 +122,70 @@ abstract class UnPickler {
       val end = readNat() + readIndex
       var sym: Symbol = NoSymbol
       tag match {
-	case EXTref | EXTMODCLASSref =>
-	  val name = readNameRef()
-	  val owner = if (readIndex == end) definitions.RootClass else readSymbolRef()
-	  sym = if (name.toTermName == nme.ROOT) definitions.RootClass
-		else if (name == nme.ROOTPKG) definitions.RootPackage
+        case EXTref | EXTMODCLASSref =>
+          val name = readNameRef()
+          val owner = if (readIndex == end) definitions.RootClass else readSymbolRef()
+          sym = if (name.toTermName == nme.ROOT) definitions.RootClass
+                else if (name == nme.ROOTPKG) definitions.RootPackage
                 else if (tag == EXTref) owner.info.decl(name)
-		else owner.info.decl(name).moduleClass
-	  if (sym == NoSymbol) {
-	    errorBadSignature(
-	      "reference " + (if (name.isTypeName) "type " else "value ") +
-	      name.decode + " of " + owner + " refers to nonexisting symbol.")
+                else owner.info.decl(name).moduleClass
+          if (sym == NoSymbol) {
+            errorBadSignature(
+              "reference " + (if (name.isTypeName) "type " else "value ") +
+              name.decode + " of " + owner + " refers to nonexisting symbol.")
           }
-	case NONEsym =>
-	  sym = NoSymbol
-	case _ =>
+        case NONEsym =>
+          sym = NoSymbol
+        case _ =>
           val pos = if (tag > PosOffset) readNat() else Position.NOPOS
-	  val name = readNameRef()
-	  val owner = readSymbolRef()
-	  val flags = readNat()
+          val name = readNameRef()
+          val owner = readSymbolRef()
+          val flags = readNat()
           var privateWithin: Symbol = NoSymbol
           var inforef = readNat()
           if (isSymbolRef(inforef)) {
             privateWithin = at(inforef, readSymbol)
             inforef = readNat()
           }
-	  (tag % PosOffset) match {
-	    case TYPEsym =>
-	      sym = owner.newAbstractType(pos, name)
-	    case ALIASsym =>
-	      sym = owner.newAliasType(pos, name)
-	    case CLASSsym =>
-	      sym =
+          (tag % PosOffset) match {
+            case TYPEsym =>
+              sym = owner.newAbstractType(pos, name)
+            case ALIASsym =>
+              sym = owner.newAliasType(pos, name)
+            case CLASSsym =>
+              sym =
                 if (name == classRoot.name && owner == classRoot.owner)
                   (if ((flags & MODULE) != 0) moduleRoot.moduleClass
                    else classRoot).setPos(pos)
-		else
+                else
                   if ((flags & MODULE) != 0) owner.newModuleClass(pos, name)
                   else owner.newClass(pos, name)
-	      if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
-	    case MODULEsym =>
-	      val clazz = at(inforef, readType).symbol
-	      sym =
+              if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
+            case MODULEsym =>
+              val clazz = at(inforef, readType).symbol
+              sym =
                 if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot
-		else {
-		  assert(clazz.isInstanceOf[ModuleClassSymbol], clazz)
-		  val mclazz = clazz.asInstanceOf[ModuleClassSymbol]
+                else {
+                  assert(clazz.isInstanceOf[ModuleClassSymbol], clazz)
+                  val mclazz = clazz.asInstanceOf[ModuleClassSymbol]
                   val m = owner.newModule(pos, name, mclazz)
                   mclazz.setSourceModule(m)
                   m
                 }
-	    case VALsym =>
-	      sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
-		    else owner.newValue(pos, name)
-	    case _ =>
-	      errorBadSignature("bad symbol tag: " + tag)
-	  }
-	  sym.setFlag(flags)
+            case VALsym =>
+              sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
+                    else owner.newValue(pos, name)
+            case _ =>
+              errorBadSignature("bad symbol tag: " + tag)
+          }
+          sym.setFlag(flags)
           sym.privateWithin = privateWithin
-	  if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR))
-	  if (sym hasFlag SUPERACCESSOR) assert(readIndex != end)
-	  sym.setInfo(
-	    if (readIndex != end) new LazyTypeRefAndAlias(inforef, readNat())
-	    else new LazyTypeRef(inforef))
-	  if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
+          if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR))
+          if (sym hasFlag SUPERACCESSOR) assert(readIndex != end)
+          sym.setInfo(
+            if (readIndex != end) new LazyTypeRefAndAlias(inforef, readNat())
+            else new LazyTypeRef(inforef))
+          if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
               !sym.isModuleClass && !sym.isRefinementClass && !sym.isTypeParameter)
             symScope(sym.owner) enter sym
       }
@@ -191,42 +197,42 @@ abstract class UnPickler {
       val tag = readByte()
       val end = readNat() + readIndex
       tag match {
-	case NOtpe =>
-	  NoType
-	case NOPREFIXtpe =>
-	  NoPrefix
-	case THIStpe =>
-	  ThisType(readSymbolRef())
-	case SINGLEtpe =>
-	  singleType(readTypeRef(), readSymbolRef())
-	case CONSTANTtpe =>
-	  ConstantType(readConstantRef())
-	case TYPEREFtpe =>
-	  rawTypeRef(readTypeRef(), readSymbolRef(), until(end, readTypeRef))
+        case NOtpe =>
+          NoType
+        case NOPREFIXtpe =>
+          NoPrefix
+        case THIStpe =>
+          ThisType(readSymbolRef())
+        case SINGLEtpe =>
+          singleType(readTypeRef(), readSymbolRef())
+        case CONSTANTtpe =>
+          ConstantType(readConstantRef())
+        case TYPEREFtpe =>
+          rawTypeRef(readTypeRef(), readSymbolRef(), until(end, readTypeRef))
         case TYPEBOUNDStpe =>
           TypeBounds(readTypeRef(), readTypeRef())
-	case REFINEDtpe =>
-	  val clazz = readSymbolRef()
+        case REFINEDtpe =>
+          val clazz = readSymbolRef()
 /*
           val ps = until(end, readTypeRef)
           val dcls = symScope(clazz)
           new RefinedType(ps, dcls) { override def symbol = clazz }
 */
-	  new RefinedType(until(end, readTypeRef), symScope(clazz)) { override def symbol = clazz }
-	case CLASSINFOtpe =>
-	  val clazz = readSymbolRef()
-	  ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
-	case METHODtpe =>
-	  val restpe = readTypeRef()
-	  MethodType(until(end, readTypeRef), restpe)
-	case IMPLICITMETHODtpe =>
-	  val restpe = readTypeRef()
-	  ImplicitMethodType(until(end, readTypeRef), restpe)
-	case POLYtpe =>
-	  val restpe = readTypeRef()
-	  PolyType(until(end, readSymbolRef), restpe)
-	case _ =>
-	  errorBadSignature("bad type tag: " + tag)
+          new RefinedType(until(end, readTypeRef), symScope(clazz)) { override def symbol = clazz }
+        case CLASSINFOtpe =>
+          val clazz = readSymbolRef()
+          ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
+        case METHODtpe =>
+          val restpe = readTypeRef()
+          MethodType(until(end, readTypeRef), restpe)
+        case IMPLICITMETHODtpe =>
+          val restpe = readTypeRef()
+          ImplicitMethodType(until(end, readTypeRef), restpe)
+        case POLYtpe =>
+          val restpe = readTypeRef()
+          PolyType(until(end, readSymbolRef), restpe)
+        case _ =>
+          errorBadSignature("bad type tag: " + tag)
       }
     }
 
@@ -235,19 +241,19 @@ abstract class UnPickler {
       val tag = readByte()
       val len = readNat()
       tag match {
-	case LITERALunit    => Constant(())
-	case LITERALboolean => Constant(if (readLong(len) == 0) false else true)
-	case LITERALbyte    => Constant(readLong(len).asInstanceOf[byte])
-	case LITERALshort   => Constant(readLong(len).asInstanceOf[short])
-	case LITERALchar    => Constant(readLong(len).asInstanceOf[char])
-	case LITERALint     => Constant(readLong(len).asInstanceOf[int])
-	case LITERALlong    => Constant(readLong(len))
-	case LITERALfloat   => Constant(Float.intBitsToFloat(readLong(len).asInstanceOf[int]))
-	case LITERALdouble  => Constant(Double.longBitsToDouble(readLong(len)))
-	case LITERALstring  => Constant(readNameRef().toString())
-	case LITERALnull    => Constant(null)
-	case LITERALclass   => Constant(readTypeRef())
-	case _              => errorBadSignature("bad constant tag: " + tag)
+        case LITERALunit    => Constant(())
+        case LITERALboolean => Constant(if (readLong(len) == 0) false else true)
+        case LITERALbyte    => Constant(readLong(len).asInstanceOf[byte])
+        case LITERALshort   => Constant(readLong(len).asInstanceOf[short])
+        case LITERALchar    => Constant(readLong(len).asInstanceOf[char])
+        case LITERALint     => Constant(readLong(len).asInstanceOf[int])
+        case LITERALlong    => Constant(readLong(len))
+        case LITERALfloat   => Constant(Float.intBitsToFloat(readLong(len).asInstanceOf[int]))
+        case LITERALdouble  => Constant(Double.longBitsToDouble(readLong(len)))
+        case LITERALstring  => Constant(readNameRef().toString())
+        case LITERALnull    => Constant(null)
+        case LITERALclass   => Constant(readTypeRef())
+        case _              => errorBadSignature("bad constant tag: " + tag)
       }
     }
 
@@ -263,20 +269,20 @@ abstract class UnPickler {
     private class LazyTypeRef(i: int) extends LazyType {
       private val definedAtRunId = currentRunId
       override def complete(sym: Symbol): unit = {
-	val tp = at(i, readType)
-	sym setInfo tp
-	if (currentRunId != definedAtRunId) tp.complete(sym)
+        val tp = at(i, readType)
+        sym setInfo tp
+        if (currentRunId != definedAtRunId) tp.complete(sym)
       }
       override def load(sym: Symbol): unit = complete(sym)
     }
 
     private class LazyTypeRefAndAlias(i: int, j: int) extends LazyTypeRef(i) {
       override def complete(sym: Symbol): unit = {
-	super.complete(sym)
+        super.complete(sym)
         var alias = at(j, readSymbol)
         if (alias hasFlag OVERLOADED)
           alias = alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))
-	sym.asInstanceOf[TermSymbol].setAlias(alias)
+        sym.asInstanceOf[TermSymbol].setAlias(alias)
       }
     }
   }

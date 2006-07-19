@@ -1,11 +1,12 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.ast;
 
-import symtab.Flags._;
+package scala.tools.nsc.ast
+
+import symtab.Flags._
 
 abstract class TreeInfo {
 
@@ -46,7 +47,6 @@ abstract class TreeInfo {
     case DocDef(_, definition)         => isInterfaceMember(definition)
     case _ => false
   }
-
 
   /** Is tree a pure (i.e. non-side-effecting) definition?
    */

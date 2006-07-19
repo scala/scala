@@ -1,9 +1,25 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.tools.util
 
+/** This objects provides methods to extract elements from
+ *  a string according to some defined character separator.
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 object StringOps {
 
-  def decompose(str: String, sep: char): List[String] = {
-    def ws(start: int): List[String] =
+  def decompose(str: String, sep: Char): List[String] = {
+    def ws(start: Int): List[String] =
       if (start == str.length) List()
       else if (str.charAt(start) == sep) ws(start + 1)
       else {
@@ -16,4 +32,3 @@ object StringOps {
 
   def words(str: String): List[String] = decompose(str, ' ')
 }
-
