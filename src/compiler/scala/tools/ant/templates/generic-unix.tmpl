@@ -41,6 +41,10 @@ while [ -h "$SOURCE" ]; do
 done;
 SCALA_HOME=`dirname "$SOURCE"`/..;
 SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
+if $cygwin; then
+    SCALA_HOME=`cygpath --windows --short-name "$SCALA_HOME"`
+    SCALA_HOME=`cygpath --unix "$SCALA_HOME"`
+fi
 
 # Will contain (at the end of the script) all arguments that weren't explicitly handled
 USER_ARGS=""
@@ -99,7 +103,6 @@ if $cygwin; then
     else
         format=windows
     fi
-    SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
     MERGED_CLASSPATH=`cygpath --path --$format "$MERGED_CLASSPATH"`
     BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
 fi
