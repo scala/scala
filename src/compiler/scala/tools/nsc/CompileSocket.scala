@@ -11,23 +11,33 @@ import java.net._
 
 object CompileSocket {
 
-  /** The prefix of the port identification file, which is followed by the port number */
+  /** The prefix of the port identification file, which is followed
+   *  by the port number.
+   */
   private val dirName = "scalac-compile-server-port"
+
+  private val isWin = System.getProperty("os.name") startsWith "Windows"
+  private val cmdName = if (isWin) "scala.bat" else "scala"
 
   /** The vm-part of the command to start a new scala compile server */
   private val vmCommand =
     System.getProperty("scala.home") match {
-      case null => "scala"
+      case null => cmdName
       case dirname =>
-        val trial = new File(new File(dirname, "bin"), "scala")
-        if(trial.canRead)
+        val trial = new File(new File(dirname, "bin"), cmdName)
+        if (trial.canRead)
           trial.getPath
         else
-          "scala"
+          cmdName
     }
 
   /** The class name of the scala compile server */
   private val serverClass = "scala.tools.nsc.CompileServer"
+
+  private def fatal(msg: String) = {
+    System.err.println(msg)
+    exit(1)
+  }
 
   /** The temporary directory in which the port identification file is stored */
   private val tmpDir = {
@@ -64,8 +74,7 @@ object CompileSocket {
       yield expanded.get
 
     if (potentials.isEmpty) {
-      Console.println("could not find a directory for port files")
-      exit(1)
+      fatal("could not find a directory for port files")
     } else {
       val d = new File(potentials.head, dirName)
       d.mkdirs
@@ -80,32 +89,23 @@ object CompileSocket {
   private val sleepTime = 20
 
   /** The command which starts the compile server, given vm arguments.
-    * Multiple responses are given because different commands are needed
-    * on different platforms; each possibility should be tried in order.
     *
     *  @param vmArgs  the argument string to be passed to the java or scala command
     *                 the string must be either empty or start with a ' '.
     */
-  def serverCommands(vmArgs: String): List[String] =
-    List(
-      vmCommand + vmArgs + " " + serverClass,
-      vmCommand + ".bat" + vmArgs + " " + serverClass)
+  private def serverCommand(vmArgs: String): String =
+    vmCommand + vmArgs + " " + serverClass
 
   /** Start a new server; returns true iff it succeeds */
-  def startNewServer(vmArgs: String): Boolean = {
-    for (val cmd <- serverCommands(vmArgs)) {
-      try {
-        Runtime.getRuntime().exec(cmd)
-        return true
-      } catch {
-        case e: IOException => {
-          //Console.println(e)
-          ()
-        }
+  def startNewServer(vmArgs: String): Boolean =
+    try {
+      Runtime.getRuntime().exec(serverCommand(vmArgs))
+      true
+    } catch {
+      case ex: Throwable => {
+        false
       }
     }
-    return false
-  }
 
   /** The port identification file */
   def portFile(port: int) = new File(tmpDir, port.toString())
@@ -120,10 +120,10 @@ object CompileSocket {
         Integer.parseInt(hits(0).getName)
       } catch {
         case ex: Throwable =>
-          System.err.println(ex)
-          System.err.println("bad file in temp directory: "+hits(0).getAbsolutePath())
-          System.err.println("please remove the file and try again")
-          exit(1)
+          fatal(ex.toString() +
+                "\nbad file in temp directory: " +
+                hits(0).getAbsolutePath() +
+                "\nplease remove the file and try again")
       }
   }
 
@@ -132,14 +132,12 @@ object CompileSocket {
    *  If no server is running yet, create one
    */
   def getPort(vmArgs: String): int = {
-    var attempts = 0;
+    var attempts = 0
     var port = pollPort()
     if (port < 0) {
-      if(!startNewServer(vmArgs)) {
-        System.err.println("cannot start server.  tried commands:")
-        for (val cmd <- serverCommands(vmArgs))
-          System.err.println(cmd)
-        exit(1)
+      if (!startNewServer(vmArgs)) {
+        fatal("cannot start server." +
+              "\ntried command: " + serverCommand(vmArgs))
       }
     }
     while (port < 0 && attempts < MaxAttempts) {
@@ -147,10 +145,8 @@ object CompileSocket {
       Thread.sleep(sleepTime)
       port = pollPort()
     }
-    if (port < 0) {
-      Console.println("Could not connect to server.")
-      exit(1)
-    }
+    if (port < 0)
+      fatal("Could not connect to server.")
     port
   }
 
@@ -162,19 +158,18 @@ object CompileSocket {
       f.close()
     } catch {
       case ex: IOException =>
-        System.err.println("cannot create file: "+portFile(port).getAbsolutePath()+"; exiting")
-        throw new Error()
+        fatal("cannot create file: " +
+              portFile(port).getAbsolutePath() + "; exiting")
     }
 
   /** Delete the port number to which a scala compile server was connected */
   def deletePort(port: int): unit = portFile(port).delete()
 
   def getOrCreateSocket(vmArgs: String): Socket = {
-    val nAttempts = 9;
+    val nAttempts = 9
     def getsock(attempts: int): Socket =
       if (attempts == 0) {
-        System.err.println("unable to establish connection to server; exiting");
-        exit(1)
+        fatal("unable to establish connection to server; exiting")
       } else {
         val port = getPort(vmArgs)
         val hostName = InetAddress.getLocalHost().getHostName()
@@ -198,16 +193,14 @@ object CompileSocket {
   def getSocket(serverAdr: String): Socket = {
     val cpos = serverAdr indexOf ':'
     if (cpos < 0) {
-      System.err.println("malformed server address: "+serverAdr+"; exiting")
-      exit(1)
+      fatal("malformed server address: " + serverAdr + "; exiting")
     } else {
       val hostName = serverAdr.substring(0, cpos)
       val port = try {
         Integer.parseInt(serverAdr.substring(cpos+1))
       } catch {
         case ex: Throwable =>
-          System.err.println("malformed server address: "+serverAdr+"; exiting")
-        exit(1)
+          fatal("malformed server address: " + serverAdr + "; exiting")
       }
       getSocket(hostName, port)
     }
@@ -218,9 +211,8 @@ object CompileSocket {
       new Socket(hostName, port)
     } catch {
       case e: IOException =>
-        System.err.println(
-          "unable to establish connection to server "+hostName+":"+port+"; exiting")
-        exit(1)
+        fatal("unable to establish connection to server " +
+              hostName + ":" + port + "; exiting")
     }
 
   def getPassword(port: int): String = {
