@@ -113,14 +113,15 @@ abstract class ClassfileParser {
     private val internalized = new Array[Name](len)
     { var i = 1
       while (i < starts.length) {
-        starts(i) = in.bp;
+        starts(i) = in.bp
         i = i + 1
         in.nextByte match {
           case CONSTANT_UTF8 | CONSTANT_UNICODE =>
             in.skip(in.nextChar)
           case CONSTANT_CLASS | CONSTANT_STRING =>
             in.skip(2)
-          case CONSTANT_FIELDREF | CONSTANT_METHODREF | CONSTANT_INTFMETHODREF | CONSTANT_NAMEANDTYPE | CONSTANT_INTEGER | CONSTANT_FLOAT =>
+          case CONSTANT_FIELDREF | CONSTANT_METHODREF | CONSTANT_INTFMETHODREF
+             | CONSTANT_NAMEANDTYPE | CONSTANT_INTEGER | CONSTANT_FLOAT =>
             in.skip(4)
           case CONSTANT_LONG | CONSTANT_DOUBLE =>
             in.skip(8)
@@ -138,7 +139,7 @@ abstract class ClassfileParser {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_UTF8) errorBadTag(start)
         name = newTermName(in.buf, start + 3, in.getChar(start + 1))
-        values(index) = name;
+        values(index) = name
       }
       name
     }
@@ -203,7 +204,7 @@ abstract class ClassfileParser {
 
     /** Throws an exception signaling a bad tag at given address. */
     private def errorBadTag(start: int) =
-      throw new RuntimeException("bad constant pool tag " + in.buf(start) + " at byte " + start);
+      throw new RuntimeException("bad constant pool tag " + in.buf(start) + " at byte " + start)
   }
 
   private def sigToType(name: Name): Type = {
@@ -553,10 +554,10 @@ abstract class ClassfileParser {
         case CLASS_TAG  => Constant(pool.getType(index))
         case ENUM_TAG   =>
           val t = pool.getType(index)
-          val n = pool.getName(in.nextChar);
+          val n = pool.getName(in.nextChar)
           val s = t.symbol.linkedModule.info.decls.lookup(n)
           //assert (s != NoSymbol, "while processing " + in.file + ": " + t + "." + n + ": " + t.decls)
-          assert (s != NoSymbol, t) // avoid string concatenation!
+          assert(s != NoSymbol, t) // avoid string concatenation!
           Constant(s)
         case ARRAY_TAG  =>
           val arr = new ArrayBuffer[Constant]()
