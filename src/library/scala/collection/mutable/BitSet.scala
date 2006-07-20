@@ -60,6 +60,7 @@ class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
 
   /** Clears <code>i<sup>th</sup></code> bit  */
   def -=(i: Int): Unit = {
+    if (i >= capacity) return;
     val oldInt = arr(offset(i));
     val newInt = oldInt & ~mask(i);
     if (oldInt != newInt) {
