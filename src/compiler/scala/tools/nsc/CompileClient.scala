@@ -14,6 +14,8 @@ import java.io._
  */
 object CompileClient {
 
+  var verbose = false
+
   def normalize(args: Array[String]): Pair[String, String] = {
     def absFileName(path: String) = new File(path).getAbsolutePath()
     def absFileNames(paths: String) = {
@@ -35,6 +37,8 @@ object CompileClient {
       } else if (arg startsWith "-J") {
         vmArgs append " -"+arg.substring(2)
         args(i) = ""
+      } else if (arg == "-verbose") {
+        verbose = true
       }
       i = i + 1
       if (i < args.length) {
@@ -57,7 +61,7 @@ object CompileClient {
 
   def main(args: Array[String]): unit = {
     val Pair(vmArgs, serverAdr) = normalize(args)
-    if (args.toList contains "-verbose") {
+    if (verbose) {
       System.out.println("[Server arguments: " + args.mkString("", " ", "]"))
       System.out.println("[VM arguments: " + vmArgs + "]")
     }

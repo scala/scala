@@ -39,6 +39,9 @@ object CompileSocket {
     exit(1)
   }
 
+  private def info(msg: String) =
+    if (CompileClient.verbose) System.out.println(msg)
+
   /** The temporary directory in which the port identification file is stored */
   private val tmpDir = {
     val totry = List(
@@ -55,7 +58,7 @@ object CompileSocket {
 
       val fulldir =
         extensions.foldLeft[File](new File(topdir))(
-            (dir,ext)=>new File(dir, ext))
+            (dir,ext) => new File(dir, ext))
 
       Some(fulldir)
     }
@@ -73,10 +76,11 @@ object CompileSocket {
       }
       yield expanded.get
 
-    if (potentials.isEmpty) {
-      fatal("could not find a directory for port files")
-    } else {
+    if (potentials.isEmpty)
+      fatal("Could not find a directory for port files")
+    else {
       val d = new File(potentials.head, dirName)
+      info("[Temp directory: " + d + "]")
       d.mkdirs
       d
     }
@@ -97,15 +101,19 @@ object CompileSocket {
     vmCommand + vmArgs + " " + serverClass
 
   /** Start a new server; returns true iff it succeeds */
-  def startNewServer(vmArgs: String): Boolean =
+  private def startNewServer(vmArgs: String): unit = {
+    val cmd = serverCommand(vmArgs)
+    info("[Executed command: " + cmd + "]")
     try {
-      Runtime.getRuntime().exec(serverCommand(vmArgs))
-      true
+      val proc = Runtime.getRuntime().exec(cmd)
+      val exitVal = proc.waitFor()
+      info("[Exit value: " + exitVal + "]")
     } catch {
-      case ex: Throwable => {
-        false
-      }
+      case ex: Throwable =>
+        fatal("cannot start server." +
+              "\ntried command: " + cmd)
     }
+  }
 
   /** The port identification file */
   def portFile(port: int) = new File(tmpDir, port.toString())
@@ -133,17 +141,14 @@ object CompileSocket {
   def getPort(vmArgs: String): int = {
     var attempts = 0
     var port = pollPort()
-    if (port < 0) {
-      if (!startNewServer(vmArgs)) {
-        fatal("cannot start server." +
-              "\ntried command: " + serverCommand(vmArgs))
-      }
-    }
+    if (port < 0)
+      startNewServer(vmArgs)
     while (port < 0 && attempts < MaxAttempts) {
       attempts = attempts + 1
       Thread.sleep(sleepTime)
       port = pollPort()
     }
+    info("[Port number: " + port + "]")
     if (port < 0)
       fatal("Could not connect to server.")
     port
@@ -156,8 +161,8 @@ object CompileSocket {
       f.println(new java.util.Random().nextInt.toString)
       f.close()
     } catch {
-      case ex: IOException =>
-        fatal("cannot create file: " +
+      case ex: /*FileNotFound+Security*/Exception =>
+        fatal("Cannot create file: " +
               portFile(port).getAbsolutePath() + "; exiting")
     }
 
@@ -167,22 +172,24 @@ object CompileSocket {
   def getOrCreateSocket(vmArgs: String): Socket = {
     val nAttempts = 9
     def getsock(attempts: int): Socket =
-      if (attempts == 0) {
-        fatal("unable to establish connection to server; exiting")
-      } else {
+      if (attempts == 0)
+        fatal("Unable to establish connection to server; exiting")
+      else {
         val port = getPort(vmArgs)
         val hostName = InetAddress.getLocalHost().getHostName()
         try {
           new Socket(hostName, port)
         } catch {
-          case e: IOException =>
+          case e: /*IO+Security*/Exception =>
             System.err.println(e)
-            System.err.println("...connection attempt to server at port "+port+" failed; re-trying...")
+            System.err.println("...connection attempt to server at port " +
+                               port + " failed; re-trying...")
             if (attempts % 2 == 0) portFile(port).delete()
             Thread.sleep(100)
             val result = getsock(attempts - 1)
             if (attempts == nAttempts)
-              System.err.println("...connection established at port "+port+"...")
+              System.err.println("...connection established at port " +
+                                 port + "...")
             result
         }
       }
@@ -191,15 +198,15 @@ object CompileSocket {
 
   def getSocket(serverAdr: String): Socket = {
     val cpos = serverAdr indexOf ':'
-    if (cpos < 0) {
-      fatal("malformed server address: " + serverAdr + "; exiting")
-    } else {
+    if (cpos < 0)
+      fatal("Malformed server address: " + serverAdr + "; exiting")
+    else {
       val hostName = serverAdr.substring(0, cpos)
       val port = try {
         Integer.parseInt(serverAdr.substring(cpos+1))
       } catch {
         case ex: Throwable =>
-          fatal("malformed server address: " + serverAdr + "; exiting")
+          fatal("Malformed server address: " + serverAdr + "; exiting")
       }
       getSocket(hostName, port)
     }
@@ -209,8 +216,8 @@ object CompileSocket {
     try {
       new Socket(hostName, port)
     } catch {
-      case e: IOException =>
-        fatal("unable to establish connection to server " +
+      case e: /*IO+Security*/Exception =>
+        fatal("Unable to establish connection to server " +
               hostName + ":" + port + "; exiting")
     }
 

@@ -27,19 +27,19 @@ abstract class SocketServer {
   var out: PrintWriter = _
   var in: BufferedReader = _
 
-  private def error(msg: String) = {
+  def fatal(msg: String) = {
     System.err.println(msg)
     exit(1)
   }
 
   val port: int = try {
-    val s = new ServerSocket(0)
+    val s = new ServerSocket(0) // a port of 0 creates a socket on any free port.
     val p = s.getLocalPort()
     s.close()
     p
   } catch {
     case e: IOException =>
-      error("Could not listen on any port; exiting.")
+      fatal("Could not listen on any port; exiting.")
   }
 
   def run(): unit = {
@@ -48,13 +48,13 @@ abstract class SocketServer {
         new ServerSocket(port)
       } catch {
         case e: IOException =>
-          error("Could not listen on port: " + port + "; exiting.")
+          fatal("Could not listen on port: " + port + "; exiting.")
       }
       val clientSocket = try {
         serverSocket.accept()
       } catch {
         case e: IOException =>
-          error("Accept on port " + port + " failed; exiting.")
+          fatal("Accept on port " + port + " failed; exiting.")
       }
 
       out = new PrintWriter(clientSocket.getOutputStream(), true)
