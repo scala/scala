@@ -105,11 +105,11 @@ object CompileSocket {
     val cmd = serverCommand(vmArgs)
     info("[Executed command: " + cmd + "]")
     try {
-      val proc = Runtime.getRuntime().exec(cmd)
-      val exitVal = proc.waitFor()
-      info("[Exit value: " + exitVal + "]")
+      Runtime.getRuntime().exec(cmd)
+//      val exitVal = proc.waitFor()
+//      info("[Exit value: " + exitVal + "]")
     } catch {
-      case ex: Throwable =>
+      case ex: IOException =>
         fatal("cannot start server." +
               "\ntried command: " + cmd)
     }
@@ -127,7 +127,7 @@ object CompileSocket {
         for (val i <- 1 until hits.length) hits(i).delete()
         Integer.parseInt(hits(0).getName)
       } catch {
-        case ex: Throwable =>
+        case ex: NumberFormatException =>
           fatal(ex.toString() +
                 "\nbad file in temp directory: " +
                 hits(0).getAbsolutePath() +
