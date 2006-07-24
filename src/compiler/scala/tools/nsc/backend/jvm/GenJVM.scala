@@ -445,7 +445,7 @@ abstract class GenJVM extends SubComponent {
                                            clasz.cunit.source.toString());
       for (val m <- clasz.symbol.tpe.nonPrivateMembers;
            m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
-           m.isMethod && !m.isConstructor && !isStaticSymbol(m) )
+           m.isMethod && !m.hasFlag(Flags.CASE) && !m.isConstructor && !isStaticSymbol(m) )
       {
         val paramJavaTypes = m.tpe.paramTypes map (t => toTypeKind(t));
         val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
@@ -1159,11 +1159,14 @@ abstract class GenJVM extends SubComponent {
      * for interfaces:
      *  - the same as for classes, without 'final'
      * for fields:
-     *  - public, protected, private
+     *  - public, private (*)
      *  - static, final
      * for methods:
      *  - the same as for fields, plus:
      *  - abstract, synchronized (not used), strictfp (not used), native (not used)
+     *
+     *  (*) protected cannot be used, since inner classes 'see' protected members,
+     *      and they would fail verification after lifted.
      */
     def javaFlags(sym: Symbol): Int = {
       import JAccessFlags._;
