@@ -1,5 +1,3 @@
-parent types scala.ScalaObjectList(java.lang.Object)
-parent types scala.ScalaObjectList(java.lang.Object)
 bug664.scala:4 error: type Foo is not a member of test.Test with scala.ScalaObject
   trait Foo extends super.Foo {
                          ^
