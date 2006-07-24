@@ -14,6 +14,7 @@ package scala;
 import Predef.error;
 
 object Iterable {
+/*
   implicit def view[A <% Ordered[A]](x: Iterable[A]): Ordered[Iterable[A]] =
     new Ordered[Iterable[A]] {
       def compare[B >: Iterable[A] <% Ordered[B]](that: B): Int = that match {
@@ -31,7 +32,7 @@ object Iterable {
           -(that compare x)
       }
     }
-
+*/
   /** The minimum element of a non-empty sequence of ordered elements */
   def min[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.elements;

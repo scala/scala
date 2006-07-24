@@ -337,7 +337,6 @@ object List {
     else (xss map (xs => xs.head)) :: transpose(xss map (xs => xs.tail));
 
   /** Lists with ordered elements are ordered
-   */
   implicit def list2ordered[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
     def compare [b >: List[a] <% Ordered[b]](y: b): Int = y match {
       case y1: List[a] => compareLists(x, y1);
@@ -354,7 +353,7 @@ object List {
       }
     }
   }
-  def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = list2ordered(x);
+   */
 }
 
 /** A class representing an ordered collection of elements of type
@@ -366,7 +365,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class List[+a] extends Seq[a] {
+sealed abstract class List[+a] extends Seq[a] with CaseClass {
 
   /** Returns true if the list does not contain any elements.
    *  @return true, iff the list is empty.

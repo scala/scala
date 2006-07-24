@@ -80,6 +80,7 @@ trait Definitions requires SymbolTable {
     var SerializableClass: Symbol = _
     var PredefModule: Symbol = _
       def Predef_classOf = getMember(PredefModule, nme.classOf)
+      def Predef_identity = getMember(PredefModule, nme.identity)
     var ConsoleModule: Symbol = _
     var MatchErrorClass: Symbol = _
     var MatchErrorModule: Symbol = _

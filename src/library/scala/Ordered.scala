@@ -17,7 +17,7 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.0, 23/04/2004
  */
-trait Ordered[+a] {
+trait Ordered[a] {
 
   /** Result of comparing `this' with operand `that'.
    *  returns `x' where
@@ -25,14 +25,11 @@ trait Ordered[+a] {
    *  <code>x == 0</code>   iff    <code>this == that</code>
    *  <code>x &gt; 0</code>    iff    <code>this &gt; that</code>
    */
-  def compareTo [b >: a <% Ordered[b]](that: b): Int = compare(that)
-  def compare [b >: a <% Ordered[b]](that: b): Int;
+  def compare(that: a): Int;
 
-  def <  [b >: a <% Ordered[b]](that: b): Boolean = (this compare that) <  0;
-
-  def >  [b >: a <% Ordered[b]](that: b): Boolean = (this compare that) >  0;
-
-  def <= [b >: a <% Ordered[b]](that: b): Boolean = (this compare that) <= 0;
-
-  def >= [b >: a <% Ordered[b]](that: b): Boolean = (this compare that) >= 0;
+  def <  (that: a): Boolean = (this compare that) <  0
+  def >  (that: a): Boolean = (this compare that) >  0
+  def <= (that: a): Boolean = (this compare that) <= 0
+  def >= (that: a): Boolean = (this compare that) >= 0
+  def compareTo(that: a): Int = compare(that)
 }

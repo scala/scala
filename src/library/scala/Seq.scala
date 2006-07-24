@@ -24,7 +24,7 @@ object Seq {
     override def isDefinedAt(x: Int): Boolean = (x == 0);
     def apply(i:Int) = x; // caller's responsibility to check isDefinedAt
   }
-
+/*
   implicit def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] =
     new Ordered[Seq[A]] with Proxy {
       def self: Any = xs;
@@ -41,6 +41,7 @@ object Seq {
           -(that compare xs)
       }
     }
+*/
 }
 
 

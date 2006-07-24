@@ -115,11 +115,8 @@ abstract class Enumeration(initial: Int, names: String*) {
     protected final def Value(i: Int, name: String): Value = new Val(i, name);
 
     abstract class Value extends Ordered[Value] {
-        def id: Int;
-        override def compare[S >: Value <% Ordered[S]](that: S): Int = that match {
-          case that1: Value => id - that1.id
-          case _            => -(that compare this)
-        }
+      def id: Int;
+      override def compare(that: Value): Int = this.id - that.id
     }
 
     protected class Val(i: Int, name: String) extends Value {

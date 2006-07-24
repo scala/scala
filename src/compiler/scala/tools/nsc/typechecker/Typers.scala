@@ -1922,6 +1922,7 @@ trait Typers requires Analyzer {
         def isApplicable(info: ImplicitInfo): boolean =
           !containsError(info.tpe) &&
           !(isLocal && shadowed.contains(info.name)) &&
+          (!isView || info.sym != Predef_identity) &&
           tc.typedImplicit(pos, info, pt, isLocal) != EmptyTree
         def applicableInfos(is: List[ImplicitInfo]) = {
           val result = is filter isApplicable

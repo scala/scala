@@ -79,10 +79,7 @@ object BigInt {
    */
   implicit def bigInt2ordered(x: BigInt): Ordered[BigInt] = new Ordered[BigInt] with Proxy {
     def self: Any = x;
-    def compare [b >: BigInt <% Ordered[b]](y: b): Int = y match {
-      case y: BigInt => x.bigInteger.compareTo(y.bigInteger)
-      case _ => -(y compare x)
-    }
+    def compare (y: BigInt): int = x.bigInteger.compareTo(y.bigInteger)
   }
 }
 

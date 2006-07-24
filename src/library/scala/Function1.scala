@@ -18,4 +18,6 @@ package scala
 trait Function1[-T0, +R] extends AnyRef {
   def apply(v0: T0): R
   override def toString() = "<function>"
+  def compose[A](g: A => T0): A => R = { x => apply(g(x)) }
 }
+

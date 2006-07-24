@@ -1,17 +1,18 @@
 package testview;
 
 trait Tree[+a <% Ordered[a]] {
-  def insert[b >: a <% Ordered[b]](x: b): Tree[b];
+  def insert[c >: b, b >: a <: c](x: b)(implicit d: c => Ordered[c]): Tree[b]
   def elements: List[a]
 }
 
 object Empty extends Tree[All] {
-  def insert[b >: All <% Ordered[b]](x: b): Tree[b] = new Node(x, Empty, Empty);
+  def insert[c >: b, b >: a <: c](x: b)(implicit d: c => Ordered[c]): Tree[b] =
+    new Node(x, Empty, Empty);
   def elements: List[All] = List();
 }
 
 class Node[a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
-  def insert[b >: a <% Ordered[b]](x: b): Tree[b] =
+  def insert[c >: b, b >: a <: c](x: b)(implicit d: c => Ordered[c]): Tree[b] =
     if (x == elem) this
     else if (x < elem) new Node(elem, l insert x, r)
     else new Node(elem, l, r insert x);

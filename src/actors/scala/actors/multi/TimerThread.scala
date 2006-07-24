@@ -25,10 +25,7 @@ case class Signal()
 object TimerThread extends AnyRef with Runnable {
   case class WakedActor(actor: MailBox, time: long, reason: String) extends Ordered[WakedActor] {
     var valid = true
-    def compare [b >: WakedActor <% Ordered[b]](that: b): int = that match {
-      case that2: WakedActor => -(this.time compare that2.time)
-      case _ => error("not comparable")
-    }
+    def compare (that: WakedActor): int = -(this.time compare that.time)
   }
 
   var queue = new PriorityQueue[WakedActor]

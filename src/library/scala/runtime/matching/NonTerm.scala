@@ -35,11 +35,8 @@ case class TreeNT(i:int) extends NonTerm with Ordered[TreeNT] {
     this.vset = new immutable.TreeSet[Int]() incl vset ;
   }
 
-  def compare [b >: TreeNT <% Ordered[b]](y: b): int = y match {
-    case TreeNT( y1 ) => i compare y1;
-    case _ => -(y compare this)
-  }
-};
+  def compare (y: TreeNT): int = i compare y.i
+}
 
 /** hedge nonterminals. holds nullable property.
  */
@@ -52,11 +49,8 @@ case class HedgeNT(i:int) extends NonTerm with Ordered[HedgeNT] {
     this.nullable = nullable;
   }
 
-  def compare [b >: HedgeNT <% Ordered[b]](y: b): int = y match {
-    case HedgeNT( y1 ) => i compare y1;
-    case _ => -(y compare this)
-  }
-};
+  def compare (y: HedgeNT): int = i compare y.i
+}
 
 //case object EMPTYHEDGE extends HedgeNT( 0, true ) ;
 //case object ANYHEDGE   extends HedgeNT( 1, true ) ;
