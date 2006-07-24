@@ -75,7 +75,7 @@ done
 # Constructing the extension classpath
 EXTENSION_CLASSPATH="@extclasspath@"
 if [ -z "$EXTENSION_CLASSPATH" ] ; then
-    for ext in `ls -L "$SCALA_HOME"/lib/*` ; do
+    for ext in `ls -d "$SCALA_HOME"/lib/*` ; do
         if [ -z "$EXTENSION_CLASSPATH" ] ; then
             EXTENSION_CLASSPATH="$ext"
         else
