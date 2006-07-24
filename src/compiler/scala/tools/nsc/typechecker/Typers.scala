@@ -247,7 +247,10 @@ trait Typers requires Analyzer {
         def checkNoEscape(sym: Symbol): unit = {
           if (sym.hasFlag(PRIVATE)) {
             var o = owner
-            while (o != NoSymbol && o != sym.owner && !o.isLocal && !o.hasFlag(PRIVATE))
+            var leaking = true
+            while (o != NoSymbol && o != sym.owner &&
+                   !o.isLocal && !o.hasFlag(PRIVATE) &&
+                   !o.privateWithin.ownerChain.contains(sym.owner))
               o = o.owner
             if (o == sym.owner) badSymbol = sym
           } else if (sym.owner.isTerm) {
@@ -1160,10 +1163,10 @@ trait Typers requires Analyzer {
       if (!attrError) {
         val attributed =
           if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol
-//        if (attrInfos.length attributed.attributes.isEmpty) { does not work under resident!
+        if (attributed.attributes.isEmpty) { // Nik: this does not work under resident!
           attributed.attributes = attrInfos
           defn.mods setAttr List();
-//        }
+        }
       }
     }
 
