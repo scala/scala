@@ -535,8 +535,11 @@ trait Typers requires Analyzer {
         var mixins = templ.parents.tail map typedType
         // If first parent is a trait, make it first mixin and add its superclass as first parent
         while (supertpt.tpe.symbol != null && supertpt.tpe.symbol.initialize.isTrait) {
-          mixins = typedType(supertpt) :: mixins
-          supertpt = TypeTree(supertpt.tpe.parents.head) setOriginal supertpt /* setPos supertpt.pos */
+          val supertpt1 = typedType(supertpt)
+          if (!supertpt1.tpe.isError) {
+            mixins = supertpt1 :: mixins
+            supertpt = TypeTree(supertpt1.tpe.parents.head) setOriginal supertpt /* setPos supertpt.pos */
+          }
         }
         if (supertpt.hasSymbol) {
           val tparams = supertpt.symbol.typeParams
@@ -1157,10 +1160,10 @@ trait Typers requires Analyzer {
       if (!attrError) {
         val attributed =
           if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol
-        if (attributed.attributes.isEmpty) {
+//        if (attrInfos.length attributed.attributes.isEmpty) { does not work under resident!
           attributed.attributes = attrInfos
           defn.mods setAttr List();
-        }
+//        }
       }
     }
 
