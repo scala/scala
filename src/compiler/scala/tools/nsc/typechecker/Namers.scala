@@ -383,9 +383,21 @@ trait Namers requires Analyzer {
 
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner;
-      val parents = typer.parentTypes(templ) map (p => if (p.tpe.isError) AnyRefClass.tpe else p.tpe);
+      def checkParent(tpt: Tree): Type = {
+        val tp = tpt.tpe
+        if (tp.symbol == context.owner) {
+          context.error(tpt.pos, ""+tp.symbol+" inherits itself");
+          AnyRefClass.tpe
+        } else if (tp.isError) {
+          AnyRefClass.tpe
+        } else {
+          tp
+        }
+      }
+      val parents = typer.parentTypes(templ) map checkParent
       val decls = new Scope();
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
+
       ClassInfoType(parents, decls, clazz)
     }
 
