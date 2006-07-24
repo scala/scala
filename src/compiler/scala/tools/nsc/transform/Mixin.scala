@@ -413,6 +413,7 @@ abstract class Mixin extends InfoTransform {
         case Select(Super(_, _), name) =>
           tree
         case Select(qual, name) if sym.owner.isImplClass && !isStatic(sym) =>
+          if (sym.isMethod) Console.println("####"+sym+sym.isImplOnly+" "+flagsToString(sym.flags))
           assert(!sym.isMethod, sym)
           val getter = sym.getter(enclInterface)
           assert(getter != NoSymbol)

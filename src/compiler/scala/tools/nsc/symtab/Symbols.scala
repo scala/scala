@@ -210,7 +210,7 @@ trait Symbols requires SymbolTable {
     final def isImplOnly: boolean = (
       hasFlag(PRIVATE) ||
       (owner.isImplClass || owner.isTrait) &&
-      (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR) || isConstructor)
+      (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor)
     )
 
     /** Is this symbol a module variable ? */
