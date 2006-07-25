@@ -1,0 +1,7 @@
+bug663.scala:11 error: name clash between defined and inherited member:
+method asMatch:(Test.this.Node)scala.Any and
+method asMatch:(Test.this.Matchable)scala.Any in trait MatchableImpl
+have same type after erasure: (test.Test#NodeImpl)java.lang.Object
+    def asMatch(m : Node) : Any = {
+    ^
+one error found
