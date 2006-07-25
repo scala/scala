@@ -1,7 +1,19 @@
-package scala
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+package scala.actors
 
 /** An enclosing trait for reactions.
  *  Examples of reactions are: actor.receive's, event.handle's, etc
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ *
  *  @param m The input type of a Reaction; typically the type of messages or events.
  */
 trait Reactions[m] {
@@ -51,4 +63,3 @@ trait Reactions[m] {
     )
   }
 }
-
