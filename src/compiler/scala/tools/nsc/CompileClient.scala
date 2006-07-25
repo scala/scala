@@ -35,7 +35,8 @@ object CompileClient {
       if (arg endsWith ".scala") {
         args(i) = absFileName(arg)
       } else if (arg startsWith "-J") {
-        vmArgs append " -"+arg.substring(2)
+        //see http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javac.html#J
+        vmArgs append " "+arg.substring(2)
         args(i) = ""
       } else if (arg == "-verbose") {
         verbose = true
