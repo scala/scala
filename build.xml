@@ -28,7 +28,8 @@ PROPERTIES
   <property name="properties.file" value="${basedir}/build.properties"/>
   <property file="${properties.file}"/>
   <!-- Defines the product being built -->
-  <property name="copyright.string" value="copyright 2002-2006 LAMP EPFL"/>
+  <property name="vendor.name" value="LAMP/EPFL"/>
+  <property name="copyright.string" value="copyright 2002-2006 ${vendor.name}"/>
   <property name="number.file" value="${basedir}/build.number"/>
   <!-- Configuring how the compiler is run -->
   <property name="nsc.log-files" value="no"/>
@@ -789,11 +790,11 @@ GENERATES A DISTRIBUTION
     depends="build.archive, build.sbaz"
     description="Packs a distribution for SBaz and ZIP/TAR"/>
 
-  <target name="build.dist"
-    depends="test,docs,docs.manual"
-    description="Creates the latest Scala distribution">
+  <target name="binaries"
+    depends="test"
+    description="Creates a binary Scala distribution">
     <property name="dist.current.dir"
-      value="${dist.dir}/scala-${version.number}"/>
+              value="${dist.dir}/scala-${version.number}"/>
     <mkdir dir="${dist.current.dir}"/>
   <!-- Copy all requires libraries -->
     <mkdir dir="${dist.current.dir}/lib"/>
@@ -802,24 +803,67 @@ GENERATES A DISTRIBUTION
       <zipfileset src="${fjbg.jar}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <section name="scala/tools/nsc">
+          <attribute name="Extension-Name" value="scala.tools.nsc"/>
+          <attribute name="Specification-Title" value="Scala Compiler"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala.tools.nsc"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${lib.jar.name}">
       <fileset dir="${strap.dir}/lib/library"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <section name="scala">
+          <attribute name="Extension-Name" value="scala"/>
+          <attribute name="Specification-Title" value="Scala Library"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${dbc.jar.name}">
       <fileset dir="${strap.dir}/lib/dbc"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <section name="scala/dbc">
+          <attribute name="Extension-Name" value="scala.dbc"/>
+          <attribute name="Specification-Title" value="Scala DBC Library"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala.dbc"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${actors.jar.name}">
       <fileset dir="${strap.dir}/lib/actors"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <section name="scala/actors">
+          <attribute name="Extension-Name" value="scala.actors"/>
+          <attribute name="Specification-Title" value="Scala Actors Library"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala.actors"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
       </manifest>
     </jar>
   <!-- Copy executable files -->
@@ -831,6 +875,25 @@ GENERATES A DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scala.exec.name}"/>
     <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${scaladoc.exec.name}"/>
     <chmod perm="ugo+rx" file="${dist.current.dir}/bin/${fsc.exec.name}"/>
+    <!-- Recreate the 'latest' link to point to this distribution -->
+    <if><isset property="os.win"/>
+      <then>
+        <copy todir="${dist.dir}/latest">
+          <fileset dir="${dist.current.dir}"/>
+        </copy>
+      </then>
+      <else>
+        <symlink
+          link="${dist.dir}/latest"
+          resource="${dist.current.dir}"
+          overwrite="yes" failonerror="no"/>
+      </else>
+    </if>
+  </target>
+
+  <target name="build.dist"
+    depends="binaries,docs,docs.manual"
+    description="Creates the latest Scala distribution">
   <!-- Copy the API, examples and man -->
     <copy todir="${dist.current.dir}/doc/scala">
       <fileset dir="${docs.dir}" includes="README,LICENSE"/>
@@ -852,24 +915,9 @@ GENERATES A DISTRIBUTION
         <include name="**/*.png"/>
       </fileset>
     </copy>
-  <!-- Recreate the 'latest' link to point to this distribution -->
-    <if><isset property="os.win"/>
-      <then>
-        <copy todir="${dist.dir}/latest">
-          <fileset dir="${dist.current.dir}"/>
-        </copy>
-      </then>
-      <else>
-        <symlink
-          link="${dist.dir}/latest"
-          resource="${dist.current.dir}"
-          overwrite="yes" failonerror="no"/>
-      </else>
-    </if>
-  <!-- Print-out distribution time -->
     <stopwatch name="timer.dist" action="total"/>
   </target>
-  
+
   <!-- Create the SBaz packages -->
   <target name="build.sbaz" depends="build.dist">
     <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
