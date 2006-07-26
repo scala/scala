@@ -71,7 +71,13 @@ object CompileClient {
     Pair(vmArgs.toString, serverAdr)
   }
 
-  def main(args: Array[String]): unit = {
+  def main(args0: Array[String]): unit = {
+    val args =
+      if(args0.exists(arg => arg=="-d"))
+        args0
+      else
+        ("-d" :: "." :: args0.toList).toArray
+
     val Pair(vmArgs, serverAdr) = normalize(args)
     if(version) {
       System.out.println(versionMsg)
