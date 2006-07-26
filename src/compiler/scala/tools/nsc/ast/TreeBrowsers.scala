@@ -27,7 +27,7 @@ import scala.text._
  * Tree browsers can show the AST in a graphical and interactive
  * way, useful for debugging and understanding.
  *
- * @author Martin Odersky
+ * @author Iulian Dragos
  * @version 1.0
  */
 abstract class TreeBrowsers {
@@ -222,7 +222,8 @@ abstract class TreeBrowsers {
         case ProgramTree(_) => ()
         case UnitTree(_)    => ()
         case _ =>
-          str.append("Symbol: ").append(TreeInfo.symbolText(t))
+          str.append("tree.pos: ").append(t.pos)
+          str.append("\nSymbol: ").append(TreeInfo.symbolText(t))
           str.append("\nSymbol info: \n")
           TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf)
           str.append(buf.toString())
