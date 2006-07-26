@@ -13,8 +13,17 @@ import java.io._
  *  language Scala.
  */
 object CompileClient {
+  val PRODUCT: String =
+    System.getProperty("scala.tool.name", "scalac")
+  val VERSION: String =
+    System.getProperty("scala.tool.version", "unknown version")
+  val COPYRIGHT: String =
+    System.getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
+
+  val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
 
   var verbose = false
+  var version = false
 
   def normalize(args: Array[String]): Pair[String, String] = {
     def absFileName(path: String) = new File(path).getAbsolutePath()
@@ -40,6 +49,8 @@ object CompileClient {
         args(i) = ""
       } else if (arg == "-verbose") {
         verbose = true
+      } else if (arg == "-version") {
+        version = true
       }
       i = i + 1
       if (i < args.length) {
@@ -62,6 +73,10 @@ object CompileClient {
 
   def main(args: Array[String]): unit = {
     val Pair(vmArgs, serverAdr) = normalize(args)
+    if(version) {
+      System.out.println(versionMsg)
+      return
+    }
     if (verbose) {
       System.out.println("[Server arguments: " + args.mkString("", " ", "]"))
       System.out.println("[VM arguments: " + vmArgs + "]")

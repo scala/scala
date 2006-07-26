@@ -58,15 +58,16 @@ object MainGenericRunner {
 
     if (settings.help.value || !command.ok) {
       Console.println(command.usageMessage)
-      return ()
+      return
     }
 
     if (settings.version.value) {
       val version =
         System.getProperty("scala.tool.version", "unknown version")
-      Console.println("scala version " + version)
-      Console.println("(c) 2002-2006 LAMP/EPFL")
-      return ()
+      Console.println(
+          "Scala code runner version " + version + " -- " +
+           "(c) 2002-2006 LAMP/EPFL")
+      return
     }
 
     def paths(str: String) = str.split(File.pathSeparator).toList
