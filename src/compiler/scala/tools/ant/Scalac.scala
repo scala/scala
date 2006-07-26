@@ -43,7 +43,7 @@ package scala.tools.ant {
     *  <li>logging,</li>
     *  <li>logphase,</li>
     *  <li>usepredefs,</li>
-    *  <li>debugcode,</li>
+    *  <li>debuginfo,</li>
     *  <li>addparams.</li>
     * </ul>
     * It also takes the following parameters as nested elements:<ul>
@@ -123,7 +123,7 @@ package scala.tools.ant {
     /** Whether to use implicit predefined values or not. */
     private var usepredefs: Boolean = true;
     /** Instruct the compiler to generate debugging information */
-    private var debugCode: Boolean = false
+    private var debugInfo: String = "line"
     /** Instruct the compiler to generate debugging information */
     private var addParams: String = ""
 
@@ -272,8 +272,8 @@ package scala.tools.ant {
       usepredefs = input;
 
     /** Set the debug info attribute. */
-    def setDebugCode(input: Boolean): Unit =
-      debugCode = input
+    def setDebuginfo(input: String): Unit =
+      debugInfo = input
 
     /** Set the debug info attribute. */
     def setAddparams(input: String): Unit =
@@ -460,7 +460,7 @@ package scala.tools.ant {
       }
       if (!logPhase.isEmpty) settings.log.value = logPhase
       settings.nopredefs.value = !usepredefs;
-      settings.debuginfo.value = debugCode
+      settings.debuginfo.value = debugInfo;
 
       log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
       var args =

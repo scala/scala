@@ -85,6 +85,10 @@ abstract class GenJVM extends SubComponent {
 
     val fjbgContext = if (settings.target.value == "jvm-1.5") new FJBGContext(49, 0) else new FJBGContext();
 
+    val emitSource = settings.debuginfo.level >= 1;
+    val emitLines  = settings.debuginfo.level >= 2;
+    val emitVars   = settings.debuginfo.level >= 3;
+
     def emitClass(jclass: JClass, sym: Symbol): Unit = {
       def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
         case Some(pickle) =>
@@ -386,7 +390,8 @@ abstract class GenJVM extends SubComponent {
 
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode];
         genCode(m);
-        genLocalVariableTable;
+        if (emitVars)
+          genLocalVariableTable;
       }
 
       addExceptionsAttribute(m.symbol)
@@ -1224,7 +1229,7 @@ abstract class GenJVM extends SubComponent {
     private def genLocalVariableTable: Unit = {
         val vars: Array[JLocalVariable] = jmethod.getLocalVariables();
 
-        if (!settings.debuginfo.value || vars.length == 0)
+        if (vars.length == 0)
             return;
 
         val pool = jclass.getConstantPool();

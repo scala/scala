@@ -74,7 +74,7 @@ class Settings(error: String => unit) {
   private val documenttitleDefault = "Scala 2"
 
   val doc           = BooleanSetting("-doc", "Generate documentation");
-  val debuginfo     = BooleanSetting("-g", "Generate debugging info")
+  val debuginfo     = new DebugSetting("-g", "Generate debugging info", List("none", "source", "line", "vars", "notc"), "line", "vars")
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing")
@@ -211,7 +211,7 @@ class Settings(error: String => unit) {
   extends Setting(nme, descr + choices.mkString(" (", ",", ")")) {
     var value: String = default
 
-    private def argument: String = name.substring(1)
+    protected def argument: String = name.substring(1)
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n startsWith (name + ":")) =>
@@ -235,6 +235,44 @@ class Settings(error: String => unit) {
         Nil
       else
         List(name + ":" + value)
+  }
+  /** Same as ChoiceSetting but have a 'level' int which tells the index of the selected
+  	* choice. The 'defaultEmpty' is used when this setting is used without specifying any of
+  	* the available choices.
+    */
+  class DebugSetting(nme: String, descr: String, choices: List[String], default: String, defaultEmpty: String)
+  	extends ChoiceSetting(nme, descr, choices, default) {
+
+    def indexOf[a](xs: List[a], e: a): Option[Int] = xs match {
+      case y :: ys => if (e == y) Some(0) else indexOf(ys, e) match {
+          case Some(idx) => Some(1 + idx)
+          case None => None
+        }
+      case _ => None;
+    }
+  	var level: Int = indexOf(choices, default).get;
+
+    override def tryToSet(args: List[String]): List[String] = args match {
+      case n :: rest if (n startsWith (name + ":")) =>
+        val choice = n.substring(name.length() + 1)
+        if (!(choices contains choice)) {
+          error(
+              if (choice == "") "missing " + argument
+              else "unknown " + argument + " '" + choice + "'")
+          args
+        } else {
+          value = choice
+          level = indexOf(choices, choice).get;
+          rest
+        }
+
+      case n :: rest if (n startsWith name) =>
+        value = defaultEmpty;
+        level  = indexOf(choices, defaultEmpty).get;
+        rest
+
+      case _ => args
+    }
   }
 
   /** A setting represented by a list of strings which should be prefixes of

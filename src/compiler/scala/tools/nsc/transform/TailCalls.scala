@@ -21,6 +21,17 @@ abstract class TailCalls extends Transform
   val phaseName: String = "tailcalls";
   def newTransformer(unit: CompilationUnit): Transformer = new TailCallElimination(unit);
 
+  /** Create a new phase which applies transformer */
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new Phase(prev);
+
+  /** The phase defined by this transform */
+  class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
+    def apply(unit: global.CompilationUnit): unit = if (!(settings.debuginfo.value == "notc")) {
+      newTransformer(unit).transformUnit(unit);
+    }
+  }
+
+
   /**
    * A Tail Call Transformer
    *
@@ -138,8 +149,6 @@ abstract class TailCalls extends Transform
                 newCtx.tparams = tparams map (.symbol);
                 newCtx.label.setInfo(
                   restpe.substSym(tpes, tparams map (.symbol)));
-                log("adding types: " + newCtx.tparams);
-                log("setting return resultType to: " + newCtx.label.tpe);
               case _ => ();
             }
 
@@ -156,8 +165,6 @@ abstract class TailCalls extends Transform
             } else
               copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
           } else {
-            log("Non-final method: " + name);
-            // Martin: OK like that?
             copy.DefDef(tree, mods, name, tparams, vparams, tpt, transform(rhs, newCtx))
           }
           log("Leaving DefDef: " + name);
@@ -199,7 +206,9 @@ abstract class TailCalls extends Transform
         case If(cond, thenp, elsep) =>
           copy.If(tree, cond, transform(thenp), transform(elsep));
 
-        case Match(selector, cases) => super.transform(tree);
+        case Match(selector, cases) => //super.transform(tree);
+          copy.Match(tree, transform(selector, mkContext(ctx, false)), transformTrees(cases).asInstanceOf[List[CaseDef]]);
+
         case Return(expr) =>           super.transform(tree);
         case Try(block, catches, finalizer) => super.transform(tree);
 
@@ -258,7 +267,6 @@ abstract class TailCalls extends Transform
 
     private def isSameTypes(ts1: List[Symbol], ts2: List[Symbol]): Boolean = {
       def isSameType(t1: Symbol, t2: Symbol) = {
-        log("" + t1 + " vs " + t2);
         t1 == t2
       }
       List.forall2(ts1, ts2)(isSameType)
