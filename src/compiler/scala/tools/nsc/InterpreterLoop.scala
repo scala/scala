@@ -192,7 +192,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
 
   /** process command-line arguments and do as they request */
   def main(args: Array[String]): unit = {
-    def error1(msg: String): Unit = out.println("scalaint: " + msg)
+    def error1(msg: String): Unit = out.println("scala: " + msg)
     val command = new InterpreterCommand(List.fromArray(args), error1)
 
     if (!command.ok || command.settings.help.value) {

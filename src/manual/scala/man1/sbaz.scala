@@ -162,9 +162,7 @@ object sbaz extends Command {
 
     Link(MBold("scala") & "(1)", "scala.html") & ", " &
     Link(MBold("scalac") & "(1)", "scalac.html") & ", " &
-    Link(MBold("scaladoc") & "(1)", "scaladoc.html") & ", " &
-    Link(MBold("scalaint") & "(1)", "scalaint.html") & ", " &
-    Link(MBold("scalascript") & "(1)", "scalascript.html"))
+    Link(MBold("scaladoc") & "(1)", "scaladoc.html"))
 
   def manpage = new Document {
     title = command
