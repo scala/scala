@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Process.scala 7931 2006-06-20 16:34:51Z odersky $
+// $Id$
 
 
 package scala.actors.threads;

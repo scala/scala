@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: MailBox.scala 6679 2006-03-10 16:09:08Z odersky $
+// $Id$
 
 
 package scala.actors.threads;

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: NameServer.scala 5889 2006-03-05 00:33:02Z mihaylov $
+// $Id$
 
 
 package scala.actors.threads;

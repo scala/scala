@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Actor.scala 7955 2006-06-22 13:55:30Z michelou $
+// $Id$
 
 package scala.actors.threads
 
