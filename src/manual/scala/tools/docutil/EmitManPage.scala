@@ -20,10 +20,17 @@ object EmitManPage {
     text.replaceAll("-", "\\-")
 
   def emitSection(section: Section, depth: int): Unit = {
+    def emitPara(text: AbstractText): Unit = {
+      emitText(text)
+      out.println("\n.IP")
+    }
     def emitText(text: AbstractText): Unit =
       text match {
         case seq:SeqText =>
           seq.components.foreach(emitText)
+
+        case seq:SeqPara =>
+          seq.components.foreach(emitPara)
 
         case Text(text) =>
           out.print(escape(text))
@@ -70,7 +77,7 @@ object EmitManPage {
           emitText(label)
 
         case _ =>
-          error("unknown text node " + text)
+          error("unknown text node: " + text)
       }
 
     def emitParagraph(para: Paragraph): Unit =
@@ -115,10 +122,10 @@ object EmitManPage {
           emitText(text)
 
         case EmbeddedSection(sect) =>
-          emitSection(sect, depth+1)
+          emitSection(sect, depth + 1)
 
         case _ =>
-          error("unknown paragraph node " + para)
+          error("unknown paragraph node: " + para)
       }
 
     out.println(".\\\"")

@@ -57,6 +57,19 @@ object scalac extends Command {
           CmdOption("g"),
           "Generate debugging info"),
         Definition(
+          CmdOption("g:none"),
+          "Generate no debugging info"),
+        Definition(
+          CmdOption("g:{source,lines,vars,notc}"),
+          SeqPara(
+            "Generate only some debugging info.",
+            Mono("\"source\"") & " generates only the source file attribute,",
+            Mono("\"lines\"") & " generates source and line number information,",
+            Mono("\"vars\"") & " generates source, line number and local " &
+            "variable information,",
+            Mono("\"notc\"") & " generates all of the above and " &
+            Italic("will not") & " perform tail call optimization.")),
+        Definition(
           CmdOption("nowarn"),
           "Generate no warnings"),
         Definition(
@@ -64,10 +77,16 @@ object scalac extends Command {
           "Output messages about what the compiler is doing"),
         Definition(
           CmdOption("classpath", Argument("path")),
-          "Specify where to find user class files (on Unix-based systems " &
-          "a colon-separated list of paths, on Windows-based systems, a " &
-          "semicolon-separate list of paths). This does not override the " &
-          "built-in (" & Mono("\"boot\"") & ") search path."),
+          SeqPara(
+            "Specify where to find user class files (on Unix-based systems " &
+            "a colon-separated list of paths, on Windows-based systems, a " &
+            "semicolon-separate list of paths). This does not override the " &
+            "built-in (" & Mono("\"boot\"") & ") search path.",
+            "The default class path is the current directory. Setting the " &
+            Mono("CLASSPATH") & " variable or using the " & Mono("-classpath") & " " &
+            "command-line option overrides that default, so if you want to " &
+            "include the current directory in the search path, you must " &
+            "include " & Mono("\".\"") & " in the new settings.")),
         Definition(
           CmdOption("sourcepath", Argument("path")),
           "Specify where to find input source files."),
@@ -83,12 +102,20 @@ object scalac extends Command {
           "Specify where to place generated class files."),
         Definition(
           CmdOption("encoding", Argument("encoding")),
-          "Specify character encoding used by source files."),
+          SeqPara(
+            "Specify character encoding used by source files.",
+            "The default value is platform-specific (Linux: " & Mono("\"UTF8\"") &
+            ", Windows: " & Mono("\"Cp1252\"") & "). Executing the following " &
+            "code in the Scala interpreter will return the default value " &
+            "on your system:",
+            MBold("    scala>") &
+            Mono("new java.io.InputStreamReader(System.in).getEncoding"))),
         Definition(
           CmdOption("target:", Argument("target")),
-          "Specify which backend to use (" & Mono(Italic("jvm-1.5") & ", " &
-          Italic("jvm-1.4") & ", " & Italic("msil") & ", " & Italic("cldc")) &
-          ")."),
+          SeqPara(
+            "Specify which backend to use (" & Mono("jvm-1.5,jvm-1.4," &
+            "msil,cldc") & ").",
+            "The default value is " & Mono("\"jvm-1.4\"") & ".")),
         Definition(
           CmdOption("migrate"),
           "Assist in migrating from Scala version 1.0."),
@@ -128,7 +155,9 @@ object scalac extends Command {
           "Enable gadt for classes."),
         Definition(
           CmdOption("Xlinearizer", Argument("Xlinearizer")),
-          "Linearizer to use (" & Mono("normal,dfs,rpo") & ")."),
+          SeqPara(
+            "Linearizer to use (" & Mono("dfs,dump,normal,rpo") & ").",
+            "The default value is " & Mono("\"rpo\"") & ".")),
         Definition(
           CmdOption("Xgenerics"),
           "Use generic Java types."))),
@@ -167,7 +196,9 @@ object scalac extends Command {
           "Print out program after " & Argument("phases") & " (see below)."),
         Definition(
           CmdOption("printer:", Argument("printer")),
-          "Printer to use."),
+          SeqPara(
+            "Printer to use (" & Mono("text,html") & ").",
+            "The default value is " & Mono("\"text\"") & ".")),
         Definition(
           CmdOption("print-file", Argument("file")),
           "Specify file in which to print trees."),

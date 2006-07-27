@@ -20,10 +20,18 @@ object EmitHtml {
 
 /* */
   def emitSection(section: Section, depth: int): Unit = {
+    def emitPara(text: AbstractText): Unit = {
+      out.println("<div>")
+      emitText(text)
+      out.println("\n</div>")
+    }
     def emitText(text: AbstractText): Unit =
       text match {
         case seq:SeqText =>
           seq.components.foreach(emitText)
+
+        case seq:SeqPara =>
+          seq.components.foreach(emitPara)
 
         case Text(text) =>
           out.print(escape(text))
@@ -77,7 +85,7 @@ object EmitHtml {
            out.print("</a>")
 
         case _ =>
-          error("unknown text node " + text)
+          error("unknown text node: " + text)
       }
 
     def emitParagraph(para: Paragraph): Unit =
@@ -122,7 +130,7 @@ object EmitHtml {
           emitSection(sect, depth + 1)
 
         case _ =>
-          error("unknown paragraph node " + para)
+          error("unknown paragraph node: " + para)
       }
 
     val name = section.title.replaceAll("\\p{Space}", "_").toLowerCase()
