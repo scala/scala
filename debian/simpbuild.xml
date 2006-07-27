@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This is a simplified build file for Scala on Debian -->
-<!-- $Id -->
+<!-- $Id$ -->
 
 <project name="scala" default="build">
   <property environment="env"/>
@@ -59,7 +59,7 @@
   <property name="scala.exec.name" value="${dist.name}"/>
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
-  <property name="scalaint.exec.name" value="scalaint"/>
+  <property name="fsc.exec.name" value="fsc"/>
 
   <!-- Shorcut names -->
   <property name="build.lib.dir" value="${build.dir}/${lib.dir.name}"/>
@@ -125,9 +125,7 @@
     <pathelement location="${starr.comp.jar}"/>
   </path>
 
-
   <property name="os.type" value="UNIX"/>
-
 
   <!-- Printing out some information about what environment I am running in -->
   <echo
@@ -154,7 +152,6 @@
     value="${version.major}.${version.minor}.${version.patch}"
   />
   <echo level="verbose" message="version.number=${version.number}"/>
-
 
   <!-- Creating tasks -->
   <taskdef
@@ -207,8 +204,6 @@
       </java>
     </sequential>
   </macrodef>
-
-
 
   <target name="build">
     <!-- Build library -->
@@ -272,7 +267,7 @@
       </classpath>
       <include name="**/*.scala"/>
     </starr>
-        	
+
     <!-- Build jars -->
     <mkdir dir="${build.jar.dir}"/>
     <jar destfile="${build.jar.dir}/${comp.jar.name}">
@@ -306,7 +301,6 @@
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
     </jar>
-	
 
     <!-- build tool scripts -->
     <mkdir dir="${build.bin.dir}"/>
@@ -336,16 +330,14 @@
       javaFlags="-Xmx256M -Xms16M"
     />
     <starrtool
-      file="${build.bin.dir}/fsc"
-      name="Fasc Scala compiler"
+      file="${build.bin.dir}/${fsc.exec.name}"
+      name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
       version="${version.number}"
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
   </target>
-
-
 
   <target name="docs.lib">
     <mkdir dir="${api.lib.dir}"/>
@@ -384,7 +376,7 @@
       </fileset>
     </copy>
   </target>
-	
+
   <target name="docs" depends="docs.lib, docs.manual"/>
 
   <target name="dist"
@@ -464,7 +456,6 @@
       <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"/>
     </exec>
   </target>
-	
 
   <target name="clean">
     <delete
@@ -474,4 +465,5 @@
       failonerror="no"
     />
   </target>
+
 </project>
