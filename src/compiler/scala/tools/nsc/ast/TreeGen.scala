@@ -26,16 +26,12 @@ abstract class TreeGen {
       if (clazz.isRoot || clazz.isEmptyPackageClass) EmptyTree
       else mkAttributedThis(clazz)
     case SingleType(pre, sym) =>
-      if (sym.isThisSkolem) {
-        mkAttributedQualifier(ThisType(sym.deSkolemize))
-      } else {
-        val qual = mkAttributedStableRef(pre, sym)
-        qual.tpe match {
-          case MethodType(List(), restpe) =>
-            Apply(qual, List()) setType restpe
-          case _ =>
-            qual
-        }
+      val qual = mkAttributedStableRef(pre, sym)
+      qual.tpe match {
+        case MethodType(List(), restpe) =>
+          Apply(qual, List()) setType restpe
+        case _ =>
+          qual
       }
     case TypeRef(pre, sym, args) =>
       assert(phase.erasedTypes)

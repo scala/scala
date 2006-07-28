@@ -604,6 +604,20 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                   if (qual.tpe <:< targ.tpe) Typed(qual, TypeTree(qual.tpe))
                   else tree
               }
+              // todo: get rid of instanceOfErased
+              // todo: also handle the case where the singleton type is buried in a compound
+	    else if (fn.symbol == Any_isInstanceOf || fn.symbol == Any_isInstanceOfErased)
+              fn match {
+                case TypeApply(Select(qual, _), List(targ)) =>
+                  targ.tpe match {
+                    case SingleType(pre, sym) =>
+                      val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
+                      Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+                    case _ =>
+                      tree
+                  }
+                case _ => tree
+              }
             else tree
 
           case Template(parents, body) =>
