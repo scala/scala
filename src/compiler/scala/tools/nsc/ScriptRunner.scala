@@ -42,7 +42,7 @@ object ScriptRunner {
     */
   private def jarFileFor(scriptFile: String): File = {
     val filename =
-      if(scriptFile.matches(".*\\.[^.\\\\/]*"))
+      if (scriptFile.matches(".*\\.[^.\\\\/]*"))
         scriptFile.replaceFirst("\\.[^.\\\\/]*$", ".jar")
       else
         scriptFile + ".jar"
@@ -60,8 +60,8 @@ object ScriptRunner {
       val buf = new Array[byte](10240)
 
       def addFromDir(dir: File, prefix: String): Unit = {
-        for(val entry <- dir.listFiles) {
-          if(entry.isFile) {
+        for (val entry <- dir.listFiles) {
+          if (entry.isFile) {
             jar.putNextEntry(new JarEntry(prefix + entry.getName))
 
             val input = new FileInputStream(entry)
@@ -92,7 +92,7 @@ object ScriptRunner {
     val cbuf = new Array[Char](1024)
     while(true) {
       val n = reader.read(cbuf)
-      if(n <= 0)
+      if (n <= 0)
         return strbuf.toString
       strbuf.append(cbuf, 0, n)
     }
@@ -108,13 +108,13 @@ object ScriptRunner {
 
     val fileContents = contentsOfFile(filename)
 
-    if(!(fileContents.startsWith("#!") || fileContents.startsWith("::#!")))
+    if (!(fileContents.startsWith("#!") || fileContents.startsWith("::#!")))
       return 0
 
     val matcher =
       (Pattern.compile("^(::)?!#.*(\\r|\\n|\\r\\n)", Pattern.MULTILINE)
               .matcher(fileContents))
-    if(! matcher.find)
+    if (! matcher.find)
       throw new Error("script file does not close its header with !# or ::!#")
 
     return matcher.end
@@ -131,21 +131,22 @@ object ScriptRunner {
           "  def main(argv: Array[String]): Unit = {\n" +
           "  val args = argv;\n").toCharArray)
 
-    val middle =
+    val middle = {
+      val f = new File(filename)
       new SourceFileFragment(
-          new SourceFile(new PlainFile(new File(filename))),
+          new SourceFile(new PlainFile(f)),
           headerLength(filename),
-          new File(filename).length.asInstanceOf[Int])
-
+          f.length.asInstanceOf[Int])
+    }
     val end = new SourceFile("<script trailer>", "\n} }\n".toCharArray)
 
     new CompoundSourceFile(preamble, middle, end)
   }
 
   /** Compile a script using the fsc compilation deamon */
-  private def compileWithDaemon
-    (settings: GenericRunnerSettings, scriptFile: String)
-    :Boolean =
+  private def compileWithDaemon(
+      settings: GenericRunnerSettings,
+      scriptFile: String): Boolean =
   {
     val compSettingNames =
       (new Settings(error)).allSettings.map(.name)
@@ -172,7 +173,7 @@ object ScriptRunner {
     var fromServer = in.readLine()
     while (fromServer != null) {
       System.out.println(fromServer)
-      if(fromServer.matches(".*errors? found.*"))
+      if (fromServer.matches(".*errors? found.*"))
         compok = false
 
       fromServer = in.readLine()
@@ -184,14 +185,13 @@ object ScriptRunner {
     compok
   }
 
-
   /** Compile a script and then run the specified closure with
     * a classpath for the compiled script.
     */
   private def withCompiledScript
         (settings: GenericRunnerSettings, scriptFile: String)
-        (handler: String=>Unit)
-        :Unit =
+        (handler: String => Unit)
+        : Unit =
   {
     import Interpreter.deleteRecursively
 
@@ -206,11 +206,11 @@ object ScriptRunner {
 
       settings.outdir.value = compiledPath.getPath
 
-      if(settings.nocompdaemon.value) {
+      if (settings.nocompdaemon.value) {
         val reporter = new ConsoleReporter
         val compiler = new Global(settings, reporter)
         val cr = new compiler.Run
-	cr.compileSources(List(wrappedScript(scriptFile)))
+        cr.compileSources(List(wrappedScript(scriptFile)))
         Pair(compiledPath, reporter.errors == 0)
       } else {
         val compok = compileWithDaemon(settings, scriptFile)
@@ -218,14 +218,13 @@ object ScriptRunner {
       }
     }
 
-
-    if(settings.savecompiled.value) {
+    if (settings.savecompiled.value) {
       val jarFile = jarFileFor(scriptFile)
 
       def jarOK = (jarFile.canRead &&
         (jarFile.lastModified > new File(scriptFile).lastModified))
 
-      if(jarOK) {
+      if (jarOK) {
         // pre-compiled jar is current
         handler(jarFile.getAbsolutePath)
       } else {
@@ -233,9 +232,9 @@ object ScriptRunner {
         jarFile.delete
         val Pair(compiledPath, compok) = compile
         try {
-          if(compok) {
+          if (compok) {
             tryMakeJar(jarFile, compiledPath)
-            if(jarOK) {
+            if (jarOK) {
               deleteRecursively(compiledPath)
               handler(jarFile.getAbsolutePath)
             } else {
@@ -252,7 +251,7 @@ object ScriptRunner {
       // don't use the cache; just run from the interpreter's temporary directory
       val Pair(compiledPath, compok) = compile
       try {
-        if(compok)
+        if (compok)
           handler(compiledPath.getPath)
       } finally {
         deleteRecursively(compiledPath)
@@ -268,9 +267,10 @@ object ScriptRunner {
       scriptFile: String,
       scriptArgs: List[String]): Unit =
   {
-    if(!(new File(scriptFile)).exists) {
+    val f = new File(scriptFile)
+    if (!f.exists || f.isDirectory) {
       Console.println("no such file: " + scriptFile)
-      return ()
+      return
     }
 
     withCompiledScript(settings, scriptFile)(compiledLocation => {
