@@ -505,6 +505,37 @@ trait Infer requires Analyzer {
         }
     }
 
+    /** Is given type populated? */
+    def isPopulated(tp: Type) = tp match {
+      case RefinedType(parents, _) => intersectionIsPopulated(parents)
+      case _ => true
+    }
+
+    /** Is intersection of given types populated? That is,
+     *  for all types tp1, tp2 in intersection
+     *    for all common base classes bc of tp1 and tp2
+     *      let bt1, bt2 be the base types of tp1, tp2 relative to class bc
+     *      Then:
+     *        bt1 and bt2 have the same prefix, and
+     *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
+     */
+    def intersectionIsPopulated(tps: List[Type]) =
+      tps.isEmpty || {
+        def isConsistent(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
+          case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
+            assert(sym1 == sym2)
+            pre1 =:= pre2 &&
+            !(List.map3(args1, args2, sym1.typeParams)
+               ((arg1, arg2, tparam) => tparam.variance != 0 || arg1 =:= arg2) contains false)
+        }
+        tps.head.baseClasses forall { bc =>
+          tps.tail forall { tp =>
+            tp.closurePos(bc) < 0 ||
+            isConsistent(tps.head.baseType(bc), tp.baseType(bc))
+          }
+        }
+      }
+
     /** Substitite free type variables `undetparams' of type constructor `tree' in pattern,
      *  given prototype `pt'.
      */
@@ -534,8 +565,9 @@ trait Infer requires Analyzer {
       if (restpe.subst(undetparams, tvars) <:< pt) {
         computeArgs
       } else if (isFullyDefined(pt)) {
+
         if (settings.debug.value) log("infer constr " + tree + ":" + restpe + ", pt = " + pt);
-        val ptparams = freeTypeParams.collect(pt);
+        var ptparams = freeTypeParams.collect(pt);
         if (settings.debug.value) log("free type params = " + ptparams);
         val ptWithWildcards = pt.subst(ptparams, ptparams map (ptparam => WildcardType));
         tvars = undetparams map freshVar;
@@ -544,14 +576,17 @@ trait Infer requires Analyzer {
           restpe = skipImplicit(tree.tpe.resultType);
           if (settings.debug.value) log("new tree = " + tree + ":" + restpe);
           val ptvars = ptparams map freshVar;
-          if (restpe <:< pt.subst(ptparams, ptvars)) {
+          val pt1 = pt.subst(ptparams, ptvars)
+          val isCompatible = if (restpe.symbol.hasFlag(FINAL)) restpe <:< pt1
+                             else intersectionIsPopulated(List(restpe, pt1))
+          if (isCompatible) {
             for (val tvar <- ptvars) {
               val tparam = tvar.origin.symbol;
               val Pair(loBounds, hiBounds) =
-                 if (tvar.constr.inst != NoType && isFullyDefined(tvar.constr.inst))
+                if (tvar.constr.inst != NoType && isFullyDefined(tvar.constr.inst))
                   Pair(List(tvar.constr.inst), List(tvar.constr.inst))
                 else
-                  Pair(tvar.constr.lobounds, tvar.constr.hibounds);
+                  Pair(tvar.constr.lobounds, tvar.constr.hibounds)
               if (!loBounds.isEmpty || !hiBounds.isEmpty) {
                 context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam);
                 tparam setInfo TypeBounds(
