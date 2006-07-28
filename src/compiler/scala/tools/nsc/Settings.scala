@@ -209,7 +209,10 @@ class Settings(error: String => unit) {
    */
   case class ChoiceSetting(nme: String, descr: String, choices: List[String], default: String)
   extends Setting(nme, descr + choices.mkString(" (", ",", ")")) {
-    var value: String = default
+    protected var v: String = default;
+
+    def value: String = this.v;
+    def value_=(s: String): Unit = this.v = s;
 
     protected def argument: String = name.substring(1)
 
@@ -236,10 +239,11 @@ class Settings(error: String => unit) {
       else
         List(name + ":" + value)
   }
+
   /** Same as ChoiceSetting but have a 'level' int which tells the index of the selected
-  	* choice. The 'defaultEmpty' is used when this setting is used without specifying any of
-  	* the available choices.
-    */
+   * choice. The 'defaultEmpty' is used when this setting is used without specifying any of
+   * the available choices.
+   */
   class DebugSetting(nme: String, descr: String, choices: List[String], default: String, defaultEmpty: String)
   	extends ChoiceSetting(nme, descr, choices, default) {
 
@@ -250,7 +254,12 @@ class Settings(error: String => unit) {
         }
       case _ => None;
     }
-  	var level: Int = indexOf(choices, default).get;
+    var level: Int = indexOf(choices, default).get;
+
+    override def value_=(choice: String): Unit = {
+      this.v     = choice;
+      this.level = indexOf(choices, choice).get;
+    }
 
     override def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n startsWith (name + ":")) =>
@@ -262,13 +271,11 @@ class Settings(error: String => unit) {
           args
         } else {
           value = choice
-          level = indexOf(choices, choice).get;
           rest
         }
 
       case n :: rest if (n startsWith name) =>
         value = defaultEmpty;
-        level  = indexOf(choices, defaultEmpty).get;
         rest
 
       case _ => args
