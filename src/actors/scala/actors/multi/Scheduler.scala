@@ -15,22 +15,9 @@ import scala.collection.mutable._
 /**
  * @author Philipp Haller
  */
-abstract class IScheduler /*extends java.util.concurrent.Executor*/ {
-  def execute(item: ReceiverTask): Unit
-  def getTask(worker: WorkerThread): Runnable
-  def tick(a: MailBox): Unit
-  def getProcess(t: Thread): Process
-
-  val QUIT_TASK = new Runnable() {
-    def run(): Unit = {}
-    override def toString() = "QUIT_TASK"
-  }
-}
-
-
 object Scheduler /*extends java.util.concurrent.Executor*/ {
   private var sched: /*java.util.concurrent.Executor*/ IScheduler =
-    //java.util.concurrent.Executors.newFixedThreadPool(2);
+    //java.util.concurrent.Executors.newFixedThreadPool(4);
     //new FixedWorkersScheduler(2);
     new SpareWorkerScheduler2
     //new SpareWorkerScheduler
@@ -41,17 +28,45 @@ object Scheduler /*extends java.util.concurrent.Executor*/ {
     sched = scheduler
   }
 
-  def execute(item: ReceiverTask) =
+  def execute(item: ReceiverTask) = synchronized {
     sched.execute(item)
+  }
 
-  def tick(a: MailBox) =
+  def tick(a: MailBox) = {
     sched.tick(a)
+  }
 
-  def getProcess(t: Thread): Process =
-    sched.getProcess(t)
+  private val process = new HashMap[Thread, MailBox]
+
+  def getProcess(t: Thread): Process = synchronized {
+    process.get(t) match {
+      case None => null
+      case Some(p: Process) => p
+    }
+  }
+
+  def setProcess(t: Thread, m: MailBox) = synchronized {
+    process.update(t, m)
+  }
 }
 
+/**
+ * @author Philipp Haller
+ */
+abstract class IScheduler /*extends java.util.concurrent.Executor*/ {
+  def execute(item: ReceiverTask): Unit
+  def getTask(worker: WorkerThread): Runnable
+  def tick(a: MailBox): Unit
 
+  val QUIT_TASK = new Runnable() {
+    def run(): Unit = {}
+    override def toString() = "QUIT_TASK"
+  }
+}
+
+/**
+ * @author Philipp Haller
+ */
 class SpareWorkerScheduler2 extends IScheduler {
   private val tasks = new Queue[ReceiverTask];
   private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread];
@@ -59,7 +74,6 @@ class SpareWorkerScheduler2 extends IScheduler {
   val idle = new Queue[WorkerThread];
   val ticks = new HashMap[WorkerThread, long]
   val executing = new HashMap[MailBox, WorkerThread]
-  val rexec = new HashMap[Thread, MailBox]
 
   var TICKFREQ = 50
 
@@ -84,18 +98,10 @@ class SpareWorkerScheduler2 extends IScheduler {
     }
   }
 
-  def getProcess(t: Thread): Process = synchronized {
-    rexec.get(t) match {
-      case None => null
-      case Some(p: Process) => p
-    }
-  }
-
   def execute(item: ReceiverTask): unit = synchronized {
     if (idle.length > 0) {
       val wt = idle.dequeue
       executing.update(item.actor, wt)
-      rexec.update(wt, item.actor)
       wt.execute(item)
     }
     else {
@@ -127,7 +133,6 @@ class SpareWorkerScheduler2 extends IScheduler {
         maxWorkers = workers.length // statistics
 
         executing.update(item.actor, newWorker)
-        rexec.update(newWorker, item.actor)
 
         newWorker.execute(item)
         newWorker.start()
@@ -144,7 +149,6 @@ class SpareWorkerScheduler2 extends IScheduler {
     if (tasks.length > 0) {
       val item = tasks.dequeue
       executing.update(item.actor, worker)
-      rexec.update(worker, item.actor)
       item
     }
     else {

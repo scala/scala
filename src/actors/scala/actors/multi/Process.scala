@@ -211,22 +211,6 @@ class Process extends scala.actors.Process with Actor[Any] {
     }
   }
 
-  override def receive(f: PartialFunction[Any,unit]): Nothing = {
-    if (isAlive) {
-      Scheduler.tick(this)
-      continuation = null
-      sent.dequeueFirst(f.isDefinedAt) match {
-        case Some(msg) =>
-          process(f, msg)
-          die()
-        case None =>
-          continuation = f
-          //Debug.info("No msg found. " + this + " has continuation " + continuation + ".")
-      }
-    }
-    throw new Done
-  }
-
   override def receiveMsg(msg: Any) = {
     //Debug.info("" + Thread.currentThread() + ": Resuming " + this)
     if (continuation != null) {

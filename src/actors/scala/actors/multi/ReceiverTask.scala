@@ -15,6 +15,7 @@ package scala.actors.multi
  */
 class ReceiverTask(val actor: MailBox, msg: Any) extends Runnable {
   def run(): Unit = {
+    Scheduler.setProcess(Thread.currentThread(), actor)
     try {
       actor receiveMsg msg
     }

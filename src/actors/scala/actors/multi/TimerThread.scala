@@ -102,8 +102,8 @@ object TimerThread extends AnyRef with Runnable {
       notify()
     } else
       if (queue.max.time > wakeTime) { // add to 1st position and restart sleeping
-	      queue += WakedActor (a, wakeTime, "")
-	      notify()
+	queue += WakedActor (a, wakeTime, "")
+	notify()
       }
       else // simply add to queue
 	queue += WakedActor (a, wakeTime, "")

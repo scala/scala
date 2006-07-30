@@ -19,10 +19,10 @@ trait MailBox {
   /** Unconsumed messages. */
   var sent = new Queue[Any]
 
-  var continuation: PartialFunction[Any,Unit] = null
+  var continuation: PartialFunction[Any, Unit] = null
   // more complex continuation
-  var contCases: PartialFunction[Any,Any] = null
-  var contThen: Any => unit = null
+  var contCases: PartialFunction[Any, Any] = null
+  var contThen: Any => Unit = null
 
   def hasCont =
     if ((continuation == null) && (contCases == null)) false
@@ -40,7 +40,14 @@ trait MailBox {
 
   private var pendingSignal = false
 
-  def send(msg: Any): unit = synchronized {
+  def scheduleContinuation(msg: Any): Unit = {
+    val task = new ReceiverTask(this, msg)
+    //Debug.info("ready to receive. dispatch new task " + task)
+    scheduled = true
+    Scheduler.execute(task)
+  }
+
+  def send(msg: Any): Unit = synchronized {
     if (isAlive) {
       if (!hasCont || scheduled) {
         //Debug.info("no cont avail/task already scheduled. appending msg to mailbox.")
@@ -55,12 +62,8 @@ trait MailBox {
         msg match {
           case Signal() =>
             if (!contDefinedAt(TIMEOUT())) die()
-            else {
-              val task = new ReceiverTask(this, TIMEOUT())
-              //Debug.info("ready to receive. dispatch new task " + task)
-              scheduled = true
-              Scheduler.execute(task)
-            }
+            else
+              scheduleContinuation(TIMEOUT())
           case _ =>
             if (!contDefinedAt(msg))
               sent += msg
@@ -69,10 +72,7 @@ trait MailBox {
                 pendingSignal = false
                 TimerThread.trashRequest(this)
               }
-              val task = new ReceiverTask(this, msg)
-              //Debug.info("ready to receive. dispatch new task " + task)
-              scheduled = true
-              Scheduler.execute(task)
+              scheduleContinuation(msg)
             }
         }
     }
@@ -82,8 +82,10 @@ trait MailBox {
     //Debug.info("" + Thread.currentThread() + ": Resuming " + this)
     if (continuation != null) {
       val f = continuation
-      continuation = null
-      scheduled = false
+      this.synchronized {
+        continuation = null
+        scheduled = false
+      }
       f(msg)
       die()
     }
@@ -100,14 +102,14 @@ trait MailBox {
     }
   }
 
-  def receive(f: PartialFunction[Any,Unit]): Nothing = {
+  def receive(f: PartialFunction[Any, Unit]): Nothing = synchronized {
     if (isAlive) {
       Scheduler.tick(this)
       continuation = null
       sent.dequeueFirst(f.isDefinedAt) match {
         case Some(msg) =>
-	  f(msg)
-          die()
+          continuation = f
+          scheduleContinuation(msg)
         case None =>
           continuation = f
           //Debug.info("No msg found. " + this + " has continuation " + continuation + ".")
@@ -116,33 +118,37 @@ trait MailBox {
     throw new Done
   }
 
-  def receiveWithin(msec: long)(f: PartialFunction[Any, unit]): Nothing = {
-    Scheduler.tick(this)
-    continuation = null
-    sent.dequeueFirst(f.isDefinedAt) match {
-      case Some(msg) =>
-	f(msg)
-        die()
-      case None =>
-        // if timeout == 0 then execute timeout action if specified (see Erlang book)
-        if (msec == 0) {
-          if (f.isDefinedAt(TIMEOUT()))
-            f(TIMEOUT())
-          die()
-        }
-        else {
-          if (msec > 0) {
-            TimerThread.requestTimeout(this, msec)
-            pendingSignal = true
-          }
+  def receiveWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = synchronized {
+    if (isAlive) {
+      Scheduler.tick(this)
+      continuation = null
+      sent.dequeueFirst(f.isDefinedAt) match {
+        case Some(msg) => {
           continuation = f
-          //Debug.info("No msg found. " + this + " has continuation " + continuation + ".")
+          scheduleContinuation(msg)
         }
+        case None =>
+          // if timeout == 0 then execute timeout action if specified (see Erlang book)
+          if (msec == 0) {
+            if (f.isDefinedAt(TIMEOUT())) {
+              continuation = f
+              scheduleContinuation(TIMEOUT())
+            }
+            die()
+          } else {
+            if (msec > 0) {
+              TimerThread.requestTimeout(this, msec)
+              pendingSignal = true
+            }
+            continuation = f
+            //Debug.info("No msg found. " + this + " has continuation " + continuation + ".")
+          }
+      }
     }
     throw new Done
   }
 
-  def receiveAndReturn(cases: PartialFunction[Any,Any], then: Any => unit): unit = {
+  def receiveAndReturn(cases: PartialFunction[Any, Any], then: Any => Unit): Unit = {
     contCases = null
     contThen = null
     sent.dequeueFirst(cases.isDefinedAt) match {
@@ -162,17 +168,15 @@ trait MailBox {
 
   // receiv {...} then (msg => {...msg...})
 
-  class ReceiveAndReturn(cases: PartialFunction[Any,Any]) {
-    def then(body: Any => unit): unit = receiveAndReturn(cases, body)
+  class ReceiveAndReturn(cases: PartialFunction[Any, Any]) {
+    def then(body: Any => Unit): Unit = receiveAndReturn(cases, body)
   }
 
-  def receiv(cases: PartialFunction[Any,Any]): ReceiveAndReturn =
+  def receiv(cases: PartialFunction[Any, Any]): ReceiveAndReturn =
     new ReceiveAndReturn(cases)
 
-  def die() = {
-    if (isAlive) {
-      isAlive = false
-      //Debug.info("" + this + " died.")
-    }
+  def die() = if (isAlive) {
+    isAlive = false
+    //Debug.info("" + this + " died.")
   }
 }
