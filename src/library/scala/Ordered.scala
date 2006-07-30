@@ -12,10 +12,10 @@
 package scala;
 
 
-/** A class for totally ordered data.
- *
+/** A class for totally ordered data. bq: Note that since version 2006-07-24,
+ * this class is no longer covariant in a.
  *  @author  Martin Odersky
- *  @version 1.0, 23/04/2004
+ *  @version 2006-07-24
  */
 trait Ordered[a] {
 
