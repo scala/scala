@@ -9,9 +9,9 @@ package examples.actors
 
 import scala.actors.single.Actor
 
-case class Factorial(n: int, resTo: Actor)
+case class Factorial(n: int, resTo: Actor[int])
 
-class FactorialProcess extends Actor {
+class FactorialProcess extends Actor[Factorial] {
   override def run: unit = {
     receive {
       case Factorial(n, resTo) =>
@@ -28,7 +28,7 @@ class FactorialProcess extends Actor {
   }
 }
 
-class MultiplyActor(factor: int, resTo: Actor) extends Actor {
+class MultiplyActor(factor: int, resTo: Actor[int]) extends Actor[int] {
   override def run: unit =
     receive {
       case value: int =>
@@ -41,7 +41,7 @@ object CustomerPassing {
     val fac = new FactorialProcess
     fac.start()
 
-    val c = new Actor {
+    val c = new Actor[int] {
       override def run: unit = {
         fac ! Factorial(3, this)
 
