@@ -161,7 +161,7 @@ class SpareWorkerScheduler2 extends IScheduler {
 /**
  * @author Philipp Haller
  */
-abstract class SpareWorkerScheduler extends IScheduler {
+class SpareWorkerScheduler extends IScheduler {
   private var canQuit = false;
   private val tasks = new Queue[ReceiverTask];
   private val idle = new Queue[WorkerThread];
