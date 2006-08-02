@@ -116,7 +116,6 @@ class Settings(error: String => unit) {
   val Xdce          = BooleanSetting("-Xdce", "Perform dead code elimination")
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
-  val Xshowicode    = BooleanSetting("-Xshowicode", "Print the generated ICode")
   val Xgadt         = BooleanSetting("-Xgadt", "enable gadt for classes")
   val Xlinearizer   = ChoiceSetting ("-Xlinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types");

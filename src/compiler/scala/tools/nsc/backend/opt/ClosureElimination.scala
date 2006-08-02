@@ -124,18 +124,24 @@ abstract class ClosureElimination extends SubComponent {
             case LOAD_FIELD(f, false) =>
               info.stack(0) match {
                 case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
-                  bb.replaceInstruction(i,
-                                        DROP(REFERENCE(cls)) ::
-                                        valueToInstruction(info.getBinding(r, f)) :: Nil);
-                  log("Replaced " + i + " with " + info.getBinding(r, f));
+                  info.getLocalForField(r, f) match {
+                    case Some(local) =>
+                      bb.replaceInstruction(i,
+                          DROP(REFERENCE(cls)) :: valueToInstruction(local) :: Nil);
+                      log("Replaced " + i + " with " + info.getBinding(r, f));
+                    case None => ();
+                  }
 
                 case Deref(LocalVar(l)) =>
                   info.getBinding(l) match {
                     case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
-                      bb.replaceInstruction(i,
-                                            DROP(REFERENCE(cls)) ::
-                                            valueToInstruction(info.getBinding(r, f)) :: Nil);
-                      log("Replaced " + i + " with " + info.getBinding(r, f));
+                      info.getLocalForField(r, f) match {
+                        case Some(local) =>
+                          bb.replaceInstruction(i,
+                              DROP(REFERENCE(cls)) :: valueToInstruction(local) :: Nil);
+                          log("Replaced " + i + " with " + info.getBinding(r, f));
+                        case None => ();
+                      }
                     case _ => ();
                   }
 

@@ -61,8 +61,8 @@ abstract class Inliners extends SubComponent {
                block:  BasicBlock,
                instr:  Instruction,
                callee: IMethod): Unit = {
-//       log("Inlining " + callee + " in " + caller + " at pos: " +
-//           classes(caller.symbol.owner).cunit.position(instr.pos));
+       log("Inlining " + callee + " in " + caller + " at pos: " +
+           classes(caller.symbol.owner).cunit.position(instr.pos));
 
        val targetPos = instr.pos;
        val a = new analysis.MethodTFA(callee);
@@ -105,11 +105,19 @@ abstract class Inliners extends SubComponent {
          handler
        }
 
+       /** alfa-rename `l' in caller's context. */
+       def dupLocal(l: Local): Local = {
+         val sym = caller.symbol.newVariable(l.sym.pos, freshName(l.sym.name.toString()));
+         sym.setInfo(l.sym.tpe);
+         new Local(sym, l.kind, false)
+       }
+
        /** Adds parameters from another method as locals */
        def addParamsAsLocals(m: IMethod, ls: List[Local]): Unit = {
          m.locals = m.locals ::: (ls map { a =>
            if (a.arg) {
-             val l = new Local(a.sym, a.kind, false);
+             //val l = new Local(a.sym, a.kind, false);
+             val l = dupLocal(a);
              argsToLocal += a -> l;
              l
            } else
@@ -253,6 +261,8 @@ abstract class Inliners extends SubComponent {
                       if (settings.debug.value)
                         log("" + i + " has actual receiver: " + receiver);
                     }
+                    if (settings.debug.value)
+                      log("Treating " + i);
 
                     if (   classes.contains(receiver)
                         && (isClosureClass(receiver)
@@ -263,7 +273,8 @@ abstract class Inliners extends SubComponent {
                           if (inc != m && (inc.code ne null)
                               && isSafeToInline(m, inc, info._2)) {
                             retry = true;
-                            count = count + 1;
+                            if (!isClosureClass(receiver)) // only count non-closures
+                                count = count + 1;
                             inline(m, bb, i, inc);
 
                             /* Remove this method from the cache, as the calls-private relation
@@ -279,7 +290,7 @@ abstract class Inliners extends SubComponent {
                 }
                 info = tfa.interpret(info, i);
               }}}}
-      } while (retry && count < 5);
+      } while (retry && count < 15);
       normalize(m);
     } catch {
       case e =>
@@ -354,7 +365,8 @@ abstract class Inliners extends SubComponent {
 
       if (stack.length > (1 + callee.symbol.info.paramTypes.length) &&
           (callee.exh exists (.covered.contains(callee.code.startBlock)))) {
-        false;
+        if (settings.debug.value) log("method " + callee.symbol + " is used on a non-empty stack with finalizer.");
+        false
       } else
         true
     }

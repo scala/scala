@@ -13,10 +13,11 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
 
   val in:  Map[P, lattice.Elem] = new HashMap;
   val out: Map[P, lattice.Elem] = new HashMap;
+  val visited: HashSet[P] = new HashSet;
 
   /* Implement this function to initialize the worklist.  */
   def init(f: => Unit): Unit = {
-    in.clear; out.clear; worklist.clear;
+    in.clear; out.clear; worklist.clear; visited.clear;
     f;
   }
 
@@ -28,7 +29,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
    */
   def forwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit = {
     while (!worklist.isEmpty) {
-      val point = worklist.elements.next; worklist -= point;
+      val point = worklist.elements.next; worklist -= point; visited += point;
       val output = f(point, in(point));
 
       if (out(point) == (lattice.bottom) || output != out(point)) {

@@ -25,9 +25,13 @@ abstract class CopyPropagation {
   case class Field(r: Record, sym: Symbol) extends Location;
 
   /** Values that can be on the stack. */
-  abstract class Value;
+  abstract class Value {
+    def isRecord = false;
+  }
   case class This extends Value;
-  case class Record(cls: Symbol, bindings: Map[Symbol, Value]) extends Value;
+  case class Record(cls: Symbol, bindings: Map[Symbol, Value]) extends Value {
+    override def isRecord = true;
+  }
   case class Deref(l: Location) extends Value;
   case object Unknown extends Value;
   object AllRecords extends Record(NoSymbol, new HashMap[Symbol, Value]);
@@ -95,6 +99,19 @@ abstract class CopyPropagation {
         target match {
           case Deref(LocalVar(sym)) => getBinding(sym)
           case _ => target
+        }
+      }
+
+      /** Return a local which contains the same value as this field, if any. */
+      def getLocalForField(r: Record, f: Symbol): Option[Value] = {
+        assert(r.bindings.isDefinedAt(f),
+            "Record " + r + " does not contain a field " + f);
+
+        var target: Value = r.bindings(f);
+        target match {
+          case Deref(LocalVar(l)) => Some(Deref(LocalVar(getAlias(l))))
+          case This()    => Some(target)
+          case _  => None
         }
       }
 
