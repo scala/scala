@@ -417,7 +417,14 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           else {
             val exname = unit.fresh.newName("ex$")
             val cases =
-              if (catches exists treeInfo.isDefaultCase) catches
+              if ((catches exists treeInfo.isDefaultCase) || (catches.last match {  // bq: handle try { } catch { ... case ex:Throwable => ...}
+                    case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
+                      true
+                    case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
+                      true
+                    case _ =>
+                      false
+                  })) catches
               else catches ::: List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname))));
             val catchall =
               atPos(tree.pos) {
