@@ -30,7 +30,6 @@ object ShowPickled extends Names {
     case TYPEBOUNDStpe => "TYPEBOUNDStpe";
     case REFINEDtpe => "REFINEDtpe";
     case CLASSINFOtpe => "CLASSINFOtpe";
-    case CLASSINFOtpe => "CLASSINFOtpe";
     case METHODtpe => "METHODtpe";
     case POLYtpe => "POLYtpe";
     case LITERALunit => "LITERALunit";

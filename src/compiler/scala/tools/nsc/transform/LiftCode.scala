@@ -223,8 +223,8 @@ abstract class LiftCode extends Transform {
         if (value.isInstanceOf[reflect.ImplicitMethodType]) "scala.reflect.ImplicitMethodType" else "scala.reflect.MethodType"
       case x =>
         "scala.reflect."+x.caseName
-      case _ =>
-        ""
+      //case _ => // bq:unreachable code
+      //  ""
     }
 
     def objectName(value: Any): String = value match {
