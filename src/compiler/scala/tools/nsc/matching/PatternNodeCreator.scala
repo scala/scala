@@ -1,6 +1,7 @@
 package scala.tools.nsc.matching;
 
 import scala.tools.nsc.util.Position;
+import scala.tools.nsc.symtab.Flags;
 
 /** PatternNode factory.
  *  we inherit the globals from PatternTool.
@@ -112,7 +113,7 @@ trait PatternNodeCreator requires (TransMatcher with PatternNodes) {
   }
 
   def newVar(pos: int, tpe: Type): Symbol = {
-    newVar(pos, cunit.fresh.newName("temp"), tpe);
+    newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(Flags.SYNTHETIC);
   }
 }
 

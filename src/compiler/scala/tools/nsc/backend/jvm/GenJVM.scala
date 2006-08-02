@@ -391,7 +391,7 @@ abstract class GenJVM extends SubComponent {
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode];
         genCode(m);
         if (emitVars)
-          genLocalVariableTable;
+          genLocalVariableTable(m);
       }
 
       addExceptionsAttribute(m.symbol)
@@ -1178,6 +1178,7 @@ abstract class GenJVM extends SubComponent {
 
       var jf: Int = 0;
       val f = sym.flags;
+      jf = jf | (if (sym hasFlag Flags.SYNTHETIC) ACC_SYNTHETIC else 0);
       jf = jf | (if (sym hasFlag Flags.PRIVATE) ACC_PRIVATE else ACC_PUBLIC);
       jf = jf | (if ((sym hasFlag Flags.ABSTRACT) ||
                      (sym hasFlag Flags.DEFERRED)) ACC_ABSTRACT else 0);
@@ -1226,29 +1227,41 @@ abstract class GenJVM extends SubComponent {
       settings.outdir.value + File.separatorChar + path + suffix
     }
 
-    private def genLocalVariableTable: Unit = {
-        val vars: Array[JLocalVariable] = jmethod.getLocalVariables();
+    /** Emit a Local variable table for debugging purposes.
+     *  Synthetic locals are skipped. All variables are method-scoped.
+     */
+    private def genLocalVariableTable(m: IMethod): Unit = {
+        var vars = m.locals.filter(l => !l.sym.hasFlag(Flags.SYNTHETIC));
 
-        if (vars.length == 0)
-            return;
+        if (vars.length == 0) return;
 
         val pool = jclass.getConstantPool();
         val pc = jcode.getPC();
         var anonCounter = 0;
+        val locals = if (jmethod.isStatic()) vars.length else 1 + vars.length;
 
-        val lvTab = ByteBuffer.allocate(2 + 10 * vars.length);
-        lvTab.putShort(vars.length.asInstanceOf[Short]);
+        val lvTab = ByteBuffer.allocate(2 + 10 * locals);
+        def emitEntry(name: String, signature: String, idx: Short): Unit = {
+          lvTab.putShort(0.asInstanceOf[Short]);
+          lvTab.putShort(pc.asInstanceOf[Short]);
+          lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short]);
+          lvTab.putShort(pool.addUtf8(signature).asInstanceOf[Short]);
+          lvTab.putShort(idx);
+        }
+
+        lvTab.putShort(locals.asInstanceOf[Short]);
+
+        if (!jmethod.isStatic()) {
+          emitEntry("this", jclass.getType().getSignature(), 0);
+        }
+
         for (val lv <- vars) {
-            val name = if (lv.getName() == null) {
+            val name = if (javaName(lv.sym) eq null) {
               anonCounter = anonCounter + 1;
               "<anon" + anonCounter + ">"
-            } else lv.getName();
+            } else javaName(lv.sym)
 
-            lvTab.putShort(0.asInstanceOf[Short]);
-            lvTab.putShort(pc.asInstanceOf[Short]);
-            lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short]);
-            lvTab.putShort(pool.addUtf8(lv.getType().getSignature()).asInstanceOf[Short]);
-            lvTab.putShort(lv.getIndex().asInstanceOf[Short]);
+            emitEntry(name, javaType(lv.kind).getSignature(), indexOf(lv).asInstanceOf[Short]);
         }
         val attr =
             fjbgContext.JOtherAttribute(jclass,

@@ -463,6 +463,7 @@ abstract class GenICode extends SubComponent  {
             handlers = Pair(NoSymbol, {
                             ctx: Context =>
                               val exception = new Local(ctx.method.symbol.newVariable(finalizer.pos, unit.fresh.newName("exc"))
+                                    .setFlag(Flags.SYNTHETIC)
                                     .setInfo(definitions.ThrowableClass.tpe),
                                   REFERENCE(definitions.ThrowableClass), false);
                               ctx.method.addLocal(exception);
@@ -479,7 +480,7 @@ abstract class GenICode extends SubComponent  {
               generatedType = kind; //toTypeKind(block.tpe);
               val ctx1 = genLoad(block, bodyCtx, generatedType);
               if (kind != UNIT && mayCleanStack(finalizer)) {
-                val tmp = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe),
+                val tmp = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
                     kind, false);
                 ctx1.method.addLocal(tmp);
                 ctx1.bb.emit(STORE_LOCAL(tmp));
@@ -651,7 +652,8 @@ abstract class GenICode extends SubComponent  {
               generatedType = BOOL;
               ctx1 = afterCtx;
             } else if (code == scalaPrimitives.SYNCHRONIZED) {
-              val monitor = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("monitor")).setInfo(definitions.ObjectClass.tpe),
+              val monitor = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("monitor"))
+                                      .setInfo(definitions.ObjectClass.tpe).setFlag(Flags.SYNTHETIC),
                                       ANY_REF_CLASS, false);
               ctx.method.addLocal(monitor);
 
@@ -1246,7 +1248,7 @@ abstract class GenICode extends SubComponent  {
       ctx.method.lookupLocal(eqEqTemp) match {
         case Some(local) => eqEqTempVar = local.sym; eqEqTempLocal = local;
         case None =>
-          eqEqTempVar = ctx.method.symbol.newVariable(l.pos, eqEqTemp);
+          eqEqTempVar = ctx.method.symbol.newVariable(l.pos, eqEqTemp).setFlag(Flags.SYNTHETIC);
           eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor);
           eqEqTempLocal = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false);
           ctx.method.addLocal(eqEqTempLocal);
