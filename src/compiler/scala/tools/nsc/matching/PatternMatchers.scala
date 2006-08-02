@@ -128,7 +128,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
   protected def updateBody(tree: Body, bound: Array[ValDef], guard: Tree , body: Tree): Unit = {
     if (tree.guard(tree.guard.length - 1) == EmptyTree) {
-      //unit.error(body.pos, "unreachable code");
+      cunit.error(body.pos, "unreachable code");
     } else {
       val bd = new Array[Array[ValDef]](tree.bound.length + 1);
       val ng = new Array[Tree](tree.guard.length + 1);
