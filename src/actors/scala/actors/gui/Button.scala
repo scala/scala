@@ -9,7 +9,7 @@ class Button(val jbutton: JButton) extends Container(jbutton) with SwingComponen
   def this() = this(new JButton())
   def text: String = jbutton.getText()
   def text_=(s: String) = jbutton.setText(s)
- 	def icon: Icon = jbutton.getIcon()
+  def icon: Icon = jbutton.getIcon()
   def icon_=(i: Icon) = jbutton.setIcon(i)
   jbutton.addActionListener {
     new java.awt.event.ActionListener {

@@ -9,7 +9,7 @@ class Frame(val jframe: JFrame) extends Container(jframe) with Publisher {
   def title_=(s: String) = jframe.setTitle(s)
   val contents = new Container(jframe.getContentPane())
   private var default_button: Button = null
- 	def defaultButton = default_button
+  def defaultButton = default_button
   def defaultButton_=(b: Button) = { default_button = b; jframe.getRootPane().setDefaultButton(b.jbutton) }
   def pack: this.type = { jframe.pack(); this }
   jframe.addWindowListener {

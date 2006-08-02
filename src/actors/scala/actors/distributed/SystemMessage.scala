@@ -16,30 +16,18 @@ abstract class MessageTyper {
   type DataType = Array[Byte]
 }
 
-case class Send(rec: RemotePid, data: MessageTyper#DataType)
-case class NamedSend(sym: Symbol, data: MessageTyper#DataType)
-case class Spawn(replyto: RemotePid, p: String)
-case class SpawnObject(replyto: RemotePid, data: MessageTyper#DataType)
-case class Exit1(from: RemotePid, to: RemotePid, reason: Symbol)
+abstract class SystemMessage
+case class Send(rec: RemotePid, data: MessageTyper#DataType) extends SystemMessage
+case class NamedSend(sym: Symbol, data: MessageTyper#DataType) extends SystemMessage
+case class Spawn(replyto: RemotePid, p: String) extends SystemMessage
+case class SpawnObject(replyto: RemotePid, data: MessageTyper#DataType) extends SystemMessage
+case class Exit1(from: RemotePid, to: RemotePid, reason: Symbol) extends SystemMessage
 
-case class RemotePidReply(res: RemotePid)
-case class Disconnect()
-case class NodeDown()
+case class RemotePidReply(res: RemotePid) extends SystemMessage
+case class Disconnect() extends SystemMessage
+case class NodeDown() extends SystemMessage
 
 // CAUTION: Tells "from" to create a _uni-directional_ link!
-case class Link(from: RemotePid, to: RemotePid)
-case class UnLink(from: RemotePid, to: RemotePid)
-case class ForwardExc(destDesc: ExcHandlerDesc, e: Throwable)
-
-/*
-case class NamedSendRep (ser:Serializer) extends TypeRep[NamedSend](ser) {
-  def serialize(content: NamedSend, w: java.io.Writer): unit = {
-    StringRep(ser).serialize(content.sym.name, w)
-    StringRep(ser).serialize(content.data, w)
-  }
-  def deserialize(r:java.io.Reader): NamedSend = {
-    NamedSend(Symbol(StringRep(ser).deserialize(r)),
-	      StringRep(ser).deserialize(r))
-  }
-}
-*/
+case class Link(from: RemotePid, to: RemotePid) extends SystemMessage
+case class UnLink(from: RemotePid, to: RemotePid) extends SystemMessage
+case class ForwardExc(destDesc: ExcHandlerDesc, e: Throwable) extends SystemMessage
