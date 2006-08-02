@@ -11,7 +11,7 @@ abstract class TypeFlowAnalysis {
   /** The lattice of ICode types.
    */
   object typeLattice extends CompleteLattice {
-  	type Elem = icodes.TypeKind;
+    type Elem = icodes.TypeKind;
 
     val Object = icodes.REFERENCE(global.definitions.ObjectClass);
     val All    = icodes.REFERENCE(global.definitions.AllClass);
@@ -132,8 +132,8 @@ abstract class TypeFlowAnalysis {
       forwardAnalysis(blockTransfer);
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
-          assert(in(b) != lattice.bottom,
-            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"));
+          assert(visited.contains(b),
+            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
       }
     }
 
