@@ -261,7 +261,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
              pConstrPat(tree.pos, tree.tpe);
           }
       case Typed(Ident( nme.WILDCARD ), tpe) => // x@_:Type
-        val doTest = isSubType(header.getTpe(),tpe.tpe);
+        val doTest = isSubType(header.getTpe(),tpe.tpe); // this is already an optimization
           if(doTest)
             pDefaultPat(tree.pos, tpe.tpe)
           else
@@ -296,32 +296,15 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
       case Ident(nme.WILDCARD) => pDefaultPat(tree.pos, header.getTpe());
 
-      case Ident(name) => // pattern without args or variable, nsc: wildcard's have no symbols
-        //if (tree.symbol == defs.PatternWildcard)
-        //  pDefaultPat(tree.pos, header.getTpe());
-        //else
-
-        if (tree.symbol.isPrimaryConstructor) {
+      case Ident(name) => // pattern without args or named constant
+        if (tree.symbol.isPrimaryConstructor)
           scala.Predef.error("error may not happen: ident is primary constructor"+tree.symbol); // Burak
+        else if (treeInfo.isVariableName(name))
+          scala.Predef.error("this may not happen"); // because id => id @ _
+        else
+          pVariablePat(tree.pos, tree); // named constant (capitalized variable Foo)
 
-        } else if (treeInfo.isVariableName(name)) {//  Burak
-          //old scalac
-          scala.Predef.error("this may not happen"); // Burak
-
-          //nsc: desugarize (in case nsc does not do it)
-          /*
-           Console.println("Ident("+name+") in unit"+cunit);
-           Console.println("tree.symbol = "+tree.symbol);
-           //     = treat the same as Bind(name, _)
-           val node = pDefaultPat(tree.pos, header.getTpe());
-           if ((env != null) && (tree.symbol != defs.PatternWildcard))
-           env.newBoundVar( tree.symbol, tree.tpe, header.selector);
-           node;
-           */
-        } else
-          pVariablePat(tree.pos, tree); // a named constant Foo
-
-      case Select(_, name) =>                                  // variable
+      case Select(_, name) => // named constant
         if (tree.symbol.isPrimaryConstructor)
           pConstrPat(tree.pos, tree.tpe);
         else
@@ -329,9 +312,6 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
       case Literal(Constant(value)) =>
         pConstantPat(tree.pos, tree.tpe, value);
-
-      //case Sequence(ts) =>
-
 
       case av @ ArrayValue(_, ts) =>
         if(isRightIgnoring(av)) {
@@ -1077,9 +1057,14 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
           case VariablePat(tree) =>
-            return myIf(Equals(selector.duplicate, tree),
+            val cmp = if(tree.tpe.symbol.isModuleClass) // objects are compared by eq, not == (avoids unnecessary null-magic)
+                        Eq(selector.duplicate, tree)
+                      else
+                        Equals(selector.duplicate, tree)
+            return myIf( cmp,
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
+
           case AltPat(header) =>
             return myIf(toTree(header),
                       toTree(node.and),

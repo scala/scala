@@ -186,6 +186,8 @@ trait CodeFactory requires TransMatcher  {
 */
   def  Equals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.EQEQ), List(right));
 
+  def  Eq(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.eq), List(right));
+
   def  GreaterThanOrEquals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.GE), List(right));
 
   def ThrowMatchError(pos: Int, obj: Tree ) =
