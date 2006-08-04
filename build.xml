@@ -60,7 +60,6 @@ PROPERTIES
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
   <property name="fsc.exec.name" value="fsc"/>
-  <property name="version.separator" value="patch"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -182,7 +181,7 @@ SETUP
     <property file="${number.file}"/>
     <property
       name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.separator}${svn.number}.${time.short}"/>
+      value="${version.major}.${version.minor}.${version.patch}.${svn.number}.${time.short}"/>
   <!-- And print-out what we are building -->
     <echo level="info" message="Build number is '${version.number}'"/>
     <echo level="info" message="Built ${time.human} from SVN revision ${svn.number}"/>
@@ -758,7 +757,7 @@ GENERATES A DISTRIBUTION
   <target name="dist.devel" depends="init">
     <property file="${number.file}"/>
     <property name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.separator}${svn.number}"/>
+      value="${version.major}.${version.minor}.${version.patch}.${svn.number}"/>
     <runtarget target="pack"/>
   </target>
 
