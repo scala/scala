@@ -1057,10 +1057,12 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
           case VariablePat(tree) =>
-            val cmp = if(tree.tpe.symbol.isModuleClass) // objects are compared by eq, not == (avoids unnecessary null-magic)
+            val cmp = if(tree.tpe.symbol.isModuleClass && // objects are compared by eq, not == (avoids unnecessary null-magic)
+                         selector.tpe <:< definitions.AnyRefClass.tpe) {
                         Eq(selector.duplicate, tree)
-                      else
+                      } else  {
                         Equals(selector.duplicate, tree)
+                      }
             return myIf( cmp,
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
