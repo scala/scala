@@ -48,21 +48,21 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   }
 
   def sendNode = {
-    Console.println("Sending our name " + parent.node)
+    scala.Console.println("Sending our name " + parent.node)
     parent.serializer.writeObject(dataout, parent.node)
   }
 
   var connectedNode: TcpNode = _
 
   def readNode = {
-    Console.println("" + parent.node + ": Reading node name...")
+    scala.Console.println("" + parent.node + ": Reading node name...")
     //val node = parent.serializer.deserialize(reader)
     val node = parent.serializer.readObject(datain)
-    Console.println("Connection from " + node)
+    scala.Console.println("Connection from " + node)
     node match {
       case n: TcpNode => {
         connectedNode = n
-        Console.println("Adding connection to " + node + " to table.")
+        scala.Console.println("Adding connection to " + node + " to table.")
         parent.addConnection(n, this)
       }
     }
@@ -88,11 +88,11 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
     }
     catch {
       case ioe: IOException =>
-        Console.println("" + ioe + " while reading from socket.");
+        scala.Console.println("" + ioe + " while reading from socket.");
         parent nodeDown connectedNode
       case e: Exception =>
         // catch-all
-        Console.println("" + e + " while reading from socket.");
+        scala.Console.println("" + e + " while reading from socket.");
         parent nodeDown connectedNode
     }
   }

@@ -31,19 +31,19 @@ abstract class RemotePid(locId: int, kern: NetKernel, actor: RemoteActor) extend
 
   //[throws(classOf[IOException])]
   private def writeObject(out: ObjectOutputStream): Unit = {
-    //Console.println("writing locID"+locId)
+    //scala.Console.println("writing locID"+locId)
     out.writeInt(locId)
   }
 
   //[throws(classOf[IOException]), throws(classOf[ClassNotFoundException])]
   private def readObject(in: ObjectInputStream): Unit = {
     _locId = in.readInt()
-    //Console.println("read _locID"+_locId)
+    //scala.Console.println("read _locID"+_locId)
   }
 
   //[throws(classOf[ObjectStreamException])]
   private def readResolve(): AnyRef = {
-    Console.println("readResolve")
+    scala.Console.println("readResolve")
     null
     //build nothing. Subclasses will do...
   }
@@ -55,7 +55,7 @@ abstract class RemotePid(locId: int, kern: NetKernel, actor: RemoteActor) extend
   def kernel = kern;
 
   override def !(msg: Any): unit = {
-    //Console.println("! " + msg)
+    //scala.Console.println("! " + msg)
     if (actor != null)
       actor send msg
     else
@@ -181,15 +181,15 @@ object CaseTest {
     val pid1 = JXTAPid (node, 4, null, null);
     val pid2 = JXTAPid (node, 4, new NetKernel(null), null);
 
-    Console.println("node Before: " + node)
-    Console.println("node After : " + getObject(getBytes(node)))
+    scala.Console.println("node Before: " + node)
+    scala.Console.println("node After : " + getObject(getBytes(node)))
 
-    Console.println("pid1 Before: " + pid1)
-    Console.println("pid1 After : " + getObject(getBytes(pid1)))
+    scala.Console.println("pid1 Before: " + pid1)
+    scala.Console.println("pid1 After : " + getObject(getBytes(pid1)))
 
-    Console.println("pid2 Before: " + pid2)
-    Console.println("pid2 After : " + getObject(getBytes(pid2)))
+    scala.Console.println("pid2 Before: " + pid2)
+    scala.Console.println("pid2 After : " + getObject(getBytes(pid2)))
 
-    Console.println("pid2 After : " + getObject((new String (getBytes(pid2))).getBytes))
+    scala.Console.println("pid2 After : " + getObject((new String (getBytes(pid2))).getBytes))
   }
 }

@@ -19,7 +19,7 @@ class JavaSerializer(serv: Service) extends Serializer(serv) {
   val debug = true
 
   def log (s: String) =
-    if (debug) Console.println("JAVASerializer: " + s)
+    if (debug) scala.Console.println("JAVASerializer: " + s)
 
   def serialize(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream()

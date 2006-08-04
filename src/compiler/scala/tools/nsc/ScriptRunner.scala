@@ -269,7 +269,7 @@ object ScriptRunner {
   {
     val f = new File(scriptFile)
     if (!f.exists || f.isDirectory) {
-      Console.println("no such file: " + scriptFile)
+      scala.Console.println("no such file: " + scriptFile)
       return
     }
 
