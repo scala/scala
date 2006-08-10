@@ -1,9 +1,7 @@
 package scala.actors.gui
 
 import scala.collection.mutable.ListBuffer
-
 import scala.actors.single.Actor
-
 import scala.actors.gui.event.Event
 
 class EventHandlers {
@@ -28,7 +26,7 @@ class EventHandlers {
 trait Responder extends Actor[Any] {
   protected val handlers = new EventHandlers
 
-  final def eventloop(f: PartialFunction[Any,unit]): scala.All =
+  final def eventloop(f: PartialFunction[Any,unit]): Nothing =
     receive(new RecursiveProxyHandler(this, f))
 
   def eventblock(f: PartialFunction[Any,unit]): unit = {
@@ -97,7 +95,7 @@ trait Publisher extends Responder {
   }
 
   // TODO: super.receive might already be overridden!
-  //final override def receive(f: PartialFunction[Any,unit]): scala.All =
+  //final override def receive(f: PartialFunction[Any,unit]): Nothing =
     //super.receive(new ProxyPubSubHandler(f))
 
   private class ProxyPubSubHandler(f: PartialFunction[Any,unit]) extends PartialFunction[Any,unit] {
