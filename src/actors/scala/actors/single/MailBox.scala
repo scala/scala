@@ -54,10 +54,10 @@ trait MailBox {
         if (timeoutEnabled && (System.currentTimeMillis() - timeInitial > duration))
           timeoutOccurred = true
 
-        if (timeoutOccurred && !contDefinedAt(TIMEOUT()))
+        if (timeoutOccurred && !contDefinedAt(TIMEOUT))
           die()
         else {
-          if (timeoutOccurred) message = TIMEOUT()
+          if (timeoutOccurred) message = TIMEOUT
 
           if (contDefinedAt(message)) {
             // we exit receive, so reset timeoutEnabled
@@ -119,8 +119,8 @@ trait MailBox {
       case None =>
         // if timeout == 0 then execute timeout action if specified (see Erlang book)
         if (duration == 0) {
-          if (f.isDefinedAt(TIMEOUT()))
-            f(TIMEOUT())
+          if (f.isDefinedAt(TIMEOUT))
+            f(TIMEOUT)
           die()
         }
         else {

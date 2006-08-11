@@ -8,4 +8,4 @@
 
 package scala.actors
 
-case class TIMEOUT()
+case object TIMEOUT

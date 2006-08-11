@@ -61,9 +61,9 @@ trait MailBox {
       else
         msg match {
           case Signal() =>
-            if (!contDefinedAt(TIMEOUT())) die()
+            if (!contDefinedAt(TIMEOUT)) die()
             else
-              scheduleContinuation(TIMEOUT())
+              scheduleContinuation(TIMEOUT)
           case _ =>
             if (!contDefinedAt(msg))
               sent += msg
@@ -130,9 +130,9 @@ trait MailBox {
         case None =>
           // if timeout == 0 then execute timeout action if specified (see Erlang book)
           if (msec == 0) {
-            if (f.isDefinedAt(TIMEOUT())) {
+            if (f.isDefinedAt(TIMEOUT)) {
               continuation = f
-              scheduleContinuation(TIMEOUT())
+              scheduleContinuation(TIMEOUT)
             }
             die()
           } else {
