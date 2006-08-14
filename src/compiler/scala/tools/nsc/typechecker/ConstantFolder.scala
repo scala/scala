@@ -16,21 +16,21 @@ abstract class ConstantFolder {
     case Apply(Select(Literal(x), op), List(Literal(y))) => foldBinop(op, x, y)
     case Select(Literal(x), op) => foldUnop(op, x)
     case _ => null
-  });
+  })
 
   /** If tree is a constant value that can be converted to type `pt', perform the conversion */
   def apply(tree: Tree, pt: Type): Tree = fold(tree, tree.tpe match {
     case ConstantType(x) => x convertTo pt
     case _ => null
-  });
+  })
 
-  private def fold(tree: Tree, compX: =>Constant): Tree =
+  private def fold(tree: Tree, compX: => Constant): Tree =
     try {
       val x = compX
       if (x != null && x.tag != UnitTag) tree setType ConstantType(x)
-      else tree;
+      else tree
     } catch {
-      case _:ArithmeticException => tree   // the code will crash at runtime,
+      case _: ArithmeticException => tree   // the code will crash at runtime,
 	                                   // but that is better than the
                                            // compiler itself crashing
     }
@@ -55,7 +55,10 @@ abstract class ConstantFolder {
   }
 
   private def foldBinop(op: Name, x: Constant, y: Constant): Constant = try {
-    val optag = if (x.tag > y.tag) x.tag else y.tag;
+    val optag = if (x.tag == y.tag) x.tag
+                else if (isNumeric(x.tag) && isNumeric(y.tag))
+                  if (x.tag > y.tag) x.tag else y.tag
+                else NoTag
     optag match {
       case BooleanTag =>
 	op match {

@@ -12,6 +12,7 @@ trait Constants requires SymbolTable {
 
   import definitions._;
 
+  final val NoTag      = LITERAL - LITERAL
   final val UnitTag    = LITERALunit - LITERAL;
   final val BooleanTag = LITERALboolean - LITERAL;
   final val ByteTag    = LITERALbyte - LITERAL;
@@ -26,6 +27,8 @@ trait Constants requires SymbolTable {
   final val ClassTag   = LITERALclass - LITERAL;
   final val EnumTag    = ClassTag + 1;
   final val ArrayTag   = EnumTag + 1;
+
+  def isNumeric(tag: int) = ByteTag <= tag && tag <= DoubleTag
 
   case class Constant(value: Any) {
 

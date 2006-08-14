@@ -1,0 +1,4 @@
+bug700.scala:6 error: method foobar in trait Bar is accessed from super. It may not be abstract unless it is overridden by a member declared `abstract' and `override'
+  def foobar: unit = super.foobar
+                          ^
+one error found
