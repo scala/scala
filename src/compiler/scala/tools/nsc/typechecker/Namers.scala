@@ -212,7 +212,7 @@ trait Namers requires Analyzer {
         if (!tparams.isEmpty) {
 	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
 	  ltype = new LazyPolyType(tparams map (.symbol), ltype);
-          if (tree.symbol.isTerm || settings.Xgadt.value) skolemize(tparams);
+          if (tree.symbol.isTerm) skolemize(tparams);
 	}
 	tree.symbol.setInfo(ltype);
       }

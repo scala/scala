@@ -701,7 +701,6 @@ trait Typers requires Analyzer {
       val selfType =
         if (clazz.isAnonymousClass && !phase.erasedTypes)
           intersectionType(clazz.info.parents, clazz.owner)
-        else if (settings.Xgadt.value) clazz.typeOfThis.asSeenFrom(context.prefix, clazz)
         else clazz.typeOfThis
       // the following is necessary for templates generated later
       new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body)
