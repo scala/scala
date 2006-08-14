@@ -136,8 +136,7 @@ trait TypeKinds requires ICodes {
   case object BYTE extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case INT => INT;
-        case BYTE | SHORT | INT | LONG | FLOAT | DOUBLE => other;
+        case BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE => other;
         case _ => abort("Uncomparbale type kinds: BYTE with " + other);
       }
   }
