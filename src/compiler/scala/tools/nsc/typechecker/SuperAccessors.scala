@@ -12,6 +12,8 @@ import nsc.symtab.Flags._;
  *  either appear in a trait or have as a target a member of some outer class.
  *  It also replaces references to parameter accessors with aliases by super
  *  references to these aliases.
+ *  The phase also checks that symbols accessed from super are not abstract,
+ *  or are overridden by an abstract override.
  */
 abstract class SuperAccessors extends transform.Transform {
   // inherits abstract value `global' and class `Phase' from Transform
@@ -23,9 +25,9 @@ abstract class SuperAccessors extends transform.Transform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "superaccessors";
 
-  protected def newTransformer(unit: CompilationUnit): Transformer = new SuperAccTransformer;
+  protected def newTransformer(unit: CompilationUnit): Transformer = new SuperAccTransformer(unit);
 
-  class SuperAccTransformer extends Transformer {
+  class SuperAccTransformer(unit: CompilationUnit) extends Transformer {
     private var validCurrentOwner = true;
     private var accDefs: List[Pair[Symbol, ListBuffer[Tree]]] = List();
 
@@ -61,6 +63,13 @@ abstract class SuperAccessors extends transform.Transform {
       case Select(sup @ Super(_, mix), name) =>
         val sym = tree.symbol;
 	val clazz = sup.symbol;
+        if (sym hasFlag DEFERRED) {
+	  val member = sym.overridingSymbol(clazz);
+	  if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
+	      !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
+	    unit.error(tree.pos, ""+member+member.locationString+" is accessed from super. It may not be abstract "+
+                                 "unless it is overridden by a member declared `abstract' and `override'");
+        }
 	if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
 	    (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
 	  val supername = nme.superName(sym.name);

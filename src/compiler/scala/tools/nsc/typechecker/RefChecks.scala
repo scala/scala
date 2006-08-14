@@ -593,35 +593,9 @@ abstract class RefChecks extends InfoTransform {
 	    result = toConstructor
 	  else qual match {
 	    case Super(qualifier, mix) =>
-              val base = currentOwner.enclClass;
-              if (sym hasFlag DEFERRED) {
-	        val member = sym.overridingSymbol(base);//???
-	        if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
-		    !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(base)))
-		  unit.error(tree.pos, "symbol accessed from super may not be abstract");
-              }
+              val base = qual.symbol;
               //System.out.println("super: " + tree + " in " + base);//DEBUG
-              if (base.isTrait && sym.isTerm && mix == nme.EMPTY.toTypeName) {
-                val superAccName = nme.superName(sym.name);
-	        val superAcc = base.info.decl(superAccName) suchThat (.alias.==(sym));
-                val tree1 = Select(This(base), superAcc);
-                if (settings.debug.value) log("super-replacement: " + tree + "=>" + tree1);
-                result = atPos(tree.pos) {
-                  Select(gen.mkAttributedThis(base), superAcc) setType superAcc.tpe
-                }
-	      }
-/*
-            case This(_) =>
-	      if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
-                result = typed {
-                  Select(
-                    Super(qual.symbol, qual.symbol.info.parents.head.symbol.name) setPos qual.pos,
-                    sym.alias) setPos tree.pos
-                }
-		if (settings.debug.value)
-		  System.out.println("alias replacement: " + tree + " ==> " + result);//debug
-              }
-*/
+              assert(!(base.isTrait && sym.isTerm && mix == nme.EMPTY.toTypeName)) // term should have been eliminated by super accessors
             case _ =>
           }
 	case _ =>
