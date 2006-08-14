@@ -111,9 +111,14 @@ abstract class RefChecks extends InfoTransform {
       );
 
       def overridesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
-        case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) => rtp1 <:< rtp2
-        case Pair(PolyType(List(), rtp1), MethodType(List(), rtp2)) => rtp1 <:< rtp2
-        case _ => tp1 <:< tp2
+        case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
+          rtp1 <:< rtp2
+        case Pair(PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
+          rtp1 <:< rtp2
+        case Pair(TypeRef(_, sym, _),  _) if (sym.isModuleClass) =>
+          overridesType(PolyType(List(), tp1), tp2)
+        case _ =>
+          tp1 <:< tp2
       }
 
       /* Check that all conditions for overriding `other' by `member' are met. */
@@ -127,7 +132,7 @@ abstract class RefChecks extends InfoTransform {
 
 	def overrideTypeError(): unit = {
 	  if (other.tpe != ErrorType && member.tpe != ErrorType) {
-	    overrideError("has incompatible type");
+	    overrideError("has incompatible type "+member.tpe);
 	    explainTypes(member.tpe, other.tpe);
 	  }
 	}
