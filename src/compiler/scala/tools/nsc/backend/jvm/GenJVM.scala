@@ -10,7 +10,7 @@ package scala.tools.nsc.backend.jvm;
 import java.io.File;
 import java.nio.ByteBuffer;
 
-import scala.collection.mutable.{Map, HashMap};
+import scala.collection.mutable.{Map, HashMap, Set, HashSet};
 import scala.tools.nsc.symtab._;
 import scala.tools.nsc.util.Position;
 
@@ -83,6 +83,8 @@ abstract class GenJVM extends SubComponent {
     var jmethod: JMethod = _;
     var jcode: JExtendedCode = _;
 
+    var innerClasses: Set[Symbol] = new HashSet; // referenced inner classes
+
     val fjbgContext = if (settings.target.value == "jvm-1.5") new FJBGContext(49, 0) else new FJBGContext();
 
     val emitSource = settings.debuginfo.level >= 1;
@@ -107,6 +109,8 @@ abstract class GenJVM extends SubComponent {
       }
       if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
+      addInnerClasses;
+
       val outfile = getFile(jclass, ".class");
       jclass.writeTo(outfile);
       val file = scala.tools.nsc.io.AbstractFile.getFile(outfile);
@@ -122,6 +126,8 @@ abstract class GenJVM extends SubComponent {
       if (settings.debug.value)
         log("Generating class " + c.symbol + " flags: " + Flags.flagsToString(c.symbol.flags));
       clasz = c;
+      innerClasses.clear;
+
       var parents = c.symbol.info.parents;
       var ifaces  = JClass.NO_INTERFACES;
       val name    = javaName(c.symbol);
@@ -319,6 +325,21 @@ abstract class GenJVM extends SubComponent {
                                                       arr,
                                                       length)
       jmember.addAttribute(attr)
+    }
+
+    def addInnerClasses: Unit = {
+      // add inner classes which might not have been referenced yet
+      atPhase(currentRun.erasurePhase) {
+        for (val sym <- clasz.symbol.info.decls.elements; sym.isClass)
+          innerClasses += sym;
+      }
+
+      val innerClassesAttr = jclass.getInnerClasses();
+      for (val innerSym <- innerClasses)
+        innerClassesAttr.addEntry(javaName(innerSym),
+            javaName(innerSym.rawowner),
+            innerSym.rawname.toString(),
+            javaFlags(innerSym));
     }
 
     def isTopLevelModule(sym: Symbol): Boolean =
@@ -1002,6 +1023,14 @@ abstract class GenJVM extends SubComponent {
             jcode.emitT2T(javaType(INT), javaType(kind));
         }
 
+        case Comparison(op, kind) => Pair(op, kind) match {
+          case Pair(CMP, LONG)    => jcode.emitLCMP();
+          case Pair(CMPL, FLOAT)  => jcode.emitFCMPL();
+          case Pair(CMPG, FLOAT)  => jcode.emitFCMPG();
+          case Pair(CMPL, DOUBLE) => jcode.emitDCMPL();
+          case Pair(CMPG, DOUBLE) => jcode.emitDCMPL();
+        }
+
         case Conversion(src, dst) =>
           if (settings.debug.value)
             log("Converting from: " + src + " to: " + dst);
@@ -1144,6 +1173,9 @@ abstract class GenJVM extends SubComponent {
       else if (sym == definitions.AllRefClass)
         return "scala.AllRef$";
 
+      if (sym.isClass && !sym.rawowner.isPackageClass)
+        innerClasses += sym;
+
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
       else
@@ -1179,7 +1211,10 @@ abstract class GenJVM extends SubComponent {
       var jf: Int = 0;
       val f = sym.flags;
       jf = jf | (if (sym hasFlag Flags.SYNTHETIC) ACC_SYNTHETIC else 0);
-      jf = jf | (if (sym hasFlag Flags.PRIVATE) ACC_PRIVATE else ACC_PUBLIC);
+/*      jf = jf | (if (sym hasFlag Flags.PRIVATE) ACC_PRIVATE else
+                  if (sym hasFlag Flags.PROTECTED) ACC_PROTECTED else ACC_PUBLIC);
+*/
+      jf = jf | (if (sym hasFlag Flags.PRIVATE) ACC_PRIVATE else  ACC_PUBLIC);
       jf = jf | (if ((sym hasFlag Flags.ABSTRACT) ||
                      (sym hasFlag Flags.DEFERRED)) ACC_ABSTRACT else 0);
       jf = jf | (if (sym hasFlag Flags.INTERFACE) ACC_INTERFACE else 0);

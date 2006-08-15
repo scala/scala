@@ -208,6 +208,9 @@ trait Members requires ICodes {
       symbol.owner.hasFlag(Flags.INTERFACE)
     );
 
+    def isStatic: Boolean =
+      symbol.hasFlag(Flags.STATIC) || symbol.hasFlag(Flags.STATICMEMBER) || symbol.owner.isImplClass;
+
     override def toString() = symbol.fullNameString;
   }
 
@@ -222,5 +225,4 @@ trait Members requires ICodes {
 
     override def toString(): String = sym.toString();
   }
-
 }
