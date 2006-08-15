@@ -10,7 +10,8 @@ package scala.tools.nsc.backend.jvm;
 import java.io.File;
 import java.nio.ByteBuffer;
 
-import scala.collection.mutable.{Map, HashMap, Set, HashSet};
+import scala.collection.mutable.{Map, HashMap};
+import scala.collection.immutable.{Set, ListSet};
 import scala.tools.nsc.symtab._;
 import scala.tools.nsc.util.Position;
 
@@ -83,7 +84,7 @@ abstract class GenJVM extends SubComponent {
     var jmethod: JMethod = _;
     var jcode: JExtendedCode = _;
 
-    var innerClasses: Set[Symbol] = new HashSet; // referenced inner classes
+    var innerClasses: Set[Symbol] = ListSet.Empty; // referenced inner classes
 
     val fjbgContext = if (settings.target.value == "jvm-1.5") new FJBGContext(49, 0) else new FJBGContext();
 
@@ -126,7 +127,7 @@ abstract class GenJVM extends SubComponent {
       if (settings.debug.value)
         log("Generating class " + c.symbol + " flags: " + Flags.flagsToString(c.symbol.flags));
       clasz = c;
-      innerClasses.clear;
+      innerClasses = ListSet.Empty;
 
       var parents = c.symbol.info.parents;
       var ifaces  = JClass.NO_INTERFACES;
@@ -331,7 +332,7 @@ abstract class GenJVM extends SubComponent {
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase) {
         for (val sym <- clasz.symbol.info.decls.elements; sym.isClass)
-          innerClasses += sym;
+          innerClasses = innerClasses + sym;
       }
 
       val innerClassesAttr = jclass.getInnerClasses();
@@ -1174,7 +1175,7 @@ abstract class GenJVM extends SubComponent {
         return "scala.AllRef$";
 
       if (sym.isClass && !sym.rawowner.isPackageClass)
-        innerClasses += sym;
+        innerClasses = innerClasses + sym;
 
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
