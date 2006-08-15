@@ -151,9 +151,6 @@ object scalac extends Command {
           CmdOption("Xshowicode"),
           "Print the generated ICode."),
         Definition(
-          CmdOption("Xgadt"),
-          "Enable gadt for classes."),
-        Definition(
           CmdOption("Xlinearizer", Argument("Xlinearizer")),
           SeqPara(
             "Linearizer to use (" & Mono("dfs,dump,normal,rpo") & ").",
