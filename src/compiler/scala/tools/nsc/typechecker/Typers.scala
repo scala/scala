@@ -1162,11 +1162,11 @@ trait Typers requires Analyzer {
       if (!attrError) {
         val attributed =
           if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol
-        if (attributed.attributes.isEmpty) { // Nik: this does not work under resident!
+        if (!attrInfos.isEmpty) {
           attributed.attributes = attrInfos
-          defn.mods setAttr List();
         }
       }
+      defn.mods setAttr List();
     }
 
 
