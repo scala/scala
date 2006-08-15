@@ -988,6 +988,8 @@ trait Symbols requires SymbolTable {
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
 
+    /** The classfile from which this class was loaded. Maybe null. */
+    var classFile: AbstractFile = _;
     private var source: AbstractFile = null
     override def sourceFile = if (owner.isPackageClass) source else super.sourceFile
     override def sourceFile_=(f: AbstractFile): unit = {
