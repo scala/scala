@@ -16,7 +16,7 @@ import scala.tools.nsc.reporters._
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
 import symtab._
-import symtab.classfile.{PickleBuffer, Pickler}
+import symtab.classfile.{PickleBuffer, Pickler, ICodeReader}
 import util.Statistics
 import ast._
 import ast.parser._
@@ -63,6 +63,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   }
 
   object icodes extends ICodes {
+    val global: Global.this.type = Global.this
+  }
+
+  object icodeReader extends ICodeReader {
     val global: Global.this.type = Global.this
   }
 
