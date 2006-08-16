@@ -29,9 +29,9 @@ abstract class SymblfileParser {
     current = file
     val in = new AbstractFileReader(file)
     if (root.isModule)
-      unpickler.unpickle(in.buf, 0, root.linkedClass, root, file.toString())
+      unpickler.unpickle(in.buf, 0, root.linkedClassOfModule, root, file.toString())
     else
-      unpickler.unpickle(in.buf, 0, root, root.linkedModule, file.toString())
+      unpickler.unpickle(in.buf, 0, root, root.linkedModuleOfClass, file.toString())
     current = null
   }
 }

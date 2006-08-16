@@ -172,10 +172,10 @@ abstract class GenJVM extends SubComponent {
         addStaticInit(jclass);
 
         if (isTopLevelModule(c.symbol)) {
-          if (c.symbol.linkedClass == NoSymbol)
+          if (c.symbol.linkedClassOfModule == NoSymbol)
             dumpMirrorClass;
-          else if (c.symbol.linkedClass != NoSymbol &&
-              !currentRun.compiles(c.symbol.linkedClass)) {
+          else if (c.symbol.linkedClassOfModule != NoSymbol &&
+              !currentRun.compiles(c.symbol.linkedClassOfModule)) {
             log("Dumping mirror class for " + c.symbol + " even though linked class exists, but is not compiled in this run");
             dumpMirrorClass;
           } else

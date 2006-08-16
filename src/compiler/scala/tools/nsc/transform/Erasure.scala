@@ -171,7 +171,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                              else BoxedObjectArrayClass;
             Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
           } else {
-            val boxedModule = boxedClass(tree.tpe.symbol).linkedModule;
+            val boxedModule = boxedClass(tree.tpe.symbol).linkedModuleOfClass;
             Apply(Select(gen.mkAttributedRef(boxedModule), nme.box), List(tree))
           }
         }

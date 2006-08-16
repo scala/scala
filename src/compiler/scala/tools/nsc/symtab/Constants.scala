@@ -62,7 +62,7 @@ trait Constants requires SymbolTable {
       case StringTag  => StringClass.tpe
       case NullTag    => AllRefClass.tpe
       case ClassTag   => ClassClass.tpe
-      case EnumTag    => symbolValue.owner.linkedClass.tpe
+      case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
     }
 
     /** We need the equals method to take account of tags as well as values */

@@ -580,11 +580,15 @@ trait Symbols requires SymbolTable {
      *  an alias, NoSymbol for all others */
     def alias: Symbol = NoSymbol
 
+    /** The top-level class containing this symbol */
+    def toplevelClass: Symbol =
+      if (isClass && owner.isPackageClass) this else owner.toplevelClass
+
     /** The class with the same name in the same package as this module or
      *  case class factory
      */
-    final def linkedClass: Symbol = {
-      if (this != NoSymbol && owner.isPackageClass)
+    final def linkedClassOfModule: Symbol = {
+      if (this != NoSymbol)
         owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo ne NoType)
       else NoSymbol
     }
@@ -592,22 +596,22 @@ trait Symbols requires SymbolTable {
     /** The module or case class factory with the same name in the same
      *  package as this class.
      */
-    final def linkedModule: Symbol =
-      if (owner.isPackageClass)
+    final def linkedModuleOfClass: Symbol =
+      if (this != NoSymbol)
         owner.info.decl(name.toTermName).suchThat(
           sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType))
       else NoSymbol
 
-    /** The top-level class containing this symbol */
-    def toplevelClass: Symbol =
-      if (isClass && owner.isPackageClass) this else owner.toplevelClass
-
     /** For a module its linked class, for a class its linked module or case factory otherwise */
     final def linkedSym: Symbol =
-      if (isTerm) linkedClass
-      else if (isClass && owner.isPackageClass)
-        owner.info.decl(name.toTermName).suchThat(sym => sym.rawInfo ne NoType)
+      if (isTerm) linkedClassOfModule
+      else if (isClass) owner.info.decl(name.toTermName).suchThat(sym => sym.rawInfo ne NoType)
       else NoSymbol
+
+    /** For a module class its linked class, for a plain class
+     *  the module class of itys linked module */
+    final def linkedClassOfClass: Symbol =
+      if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
 
     final def toInterface: Symbol =
       if (isImplClass) {
@@ -1051,7 +1055,7 @@ trait Symbols requires SymbolTable {
       clone
     }
 
-    override def sourceModule = if (isModuleClass) linkedModule else NoSymbol
+    override def sourceModule = if (isModuleClass) linkedModuleOfClass else NoSymbol
 
     if (util.Statistics.enabled) classSymbolCount = classSymbolCount + 1
   }

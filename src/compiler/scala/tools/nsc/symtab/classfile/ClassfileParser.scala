@@ -71,11 +71,11 @@ abstract class ClassfileParser {
 
     this.in = new AbstractFileReader(file)
     if (root.isModule) {
-      this.clazz = root.linkedClass
+      this.clazz = root.linkedClassOfModule
       this.staticModule = root
     } else {
       this.clazz = root
-      this.staticModule = root.linkedModule
+      this.staticModule = root.linkedModuleOfClass
     }
     this.isScala = false
     this.hasMeta = false
@@ -181,10 +181,10 @@ abstract class ClassfileParser {
             in.buf(start) != CONSTANT_METHODREF &&
             in.buf(start) != CONSTANT_INTFMETHODREF) errorBadTag(start)
         val cls = getClassSymbol(in.getChar(start + 1))
-	val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), cls);
-        f = ((if (static) cls.linkedModule.moduleClass else cls)
-              .info.decl(name).suchThat(s => s.tpe =:= tpe));
-        assert(f != NoSymbol, "Could not find symbol for " + name + ": " + tpe + " in " + cls);
+	val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), cls)
+        val owner = if (static) cls.linkedClassOfClass else cls
+        f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
+        assert(f != NoSymbol, "Could not find symbol for " + name + ": " + tpe + " in " + owner)
         values(index) = f
       }
       f
@@ -524,7 +524,7 @@ abstract class ClassfileParser {
     def parseAttribute(): unit = {
       val attrName = pool.getName(in.nextChar)
       val attrLen = in.nextInt
-      val oldpb = in.bp;
+      val oldpb = in.bp
       attrName match {
         case nme.SignatureATTR =>
           if (global.settings.Xgenerics.value) {
@@ -554,7 +554,7 @@ abstract class ClassfileParser {
           if (!isScala) parseInnerClasses() else in.skip(attrLen)
         case nme.ScalaSignatureATTR =>
           unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
-          in.skip(attrLen);
+          in.skip(attrLen)
           this.isScala = true
         case nme.JacoMetaATTR =>
           val meta = pool.getName(in.nextChar).toString().trim()
@@ -599,7 +599,7 @@ abstract class ClassfileParser {
         case ENUM_TAG   =>
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
-          val s = t.symbol.linkedModule.info.decls.lookup(n)
+          val s = t.symbol.linkedModuleOfClass.info.decls.lookup(n)
           //assert (s != NoSymbol, "while processing " + in.file + ": " + t + "." + n + ": " + t.decls)
           assert(s != NoSymbol, t) // avoid string concatenation!
           Constant(s)

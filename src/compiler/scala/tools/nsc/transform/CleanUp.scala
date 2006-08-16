@@ -36,7 +36,7 @@ abstract class CleanUp extends Transform {
       case Some(meth) =>
         meth
       case None =>
-        val forName = getMember(ClassClass.linkedModule, nme.forName)
+        val forName = getMember(ClassClass.linkedModuleOfClass, nme.forName)
         val owner = currentOwner.enclClass
 
         val cvar = owner.newVariable(pos, freshClassConstantVarName())

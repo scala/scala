@@ -29,7 +29,7 @@ abstract class ICodeReader extends ClassfileParser {
     assert(cls.classFile ne null, "No classfile for " + cls);
 
     this.instanceCode = new IClass(cls);
-    this.staticCode   = new IClass(cls.linkedClass);
+    this.staticCode   = new IClass(cls.linkedClassOfModule);
     parse(cls.classFile, cls);
 
     Pair(staticCode, instanceCode)

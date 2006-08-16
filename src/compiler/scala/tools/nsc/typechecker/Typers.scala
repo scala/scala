@@ -1916,7 +1916,7 @@ trait Typers requires Analyzer {
         def isSubClassOrObject(sym1: Symbol, sym2: Symbol) = {
           (sym1 isSubClass sym2) ||
           sym1.isModuleClass && sym2.isModuleClass &&
-          (sym1.sourceModule.linkedClass isSubClass sym2.sourceModule.linkedClass)
+          (sym1.linkedClassOfClass isSubClass sym2.linkedClassOfClass)
         }
         def improves(info1: ImplicitInfo, info2: ImplicitInfo) =
           (info2 == NoImplicitInfo) ||
@@ -1951,8 +1951,8 @@ trait Typers requires Analyzer {
       }
 
       def implicitsOfClass(clazz: Symbol): List[ImplicitInfo] = (
-        clazz.initialize.linkedModule.moduleClass.info.members.toList.filter(.hasFlag(IMPLICIT)) map
-          (sym => new ImplicitInfo(sym.name, clazz.linkedModule.tpe, sym))
+        clazz.initialize.linkedClassOfClass.info.members.toList.filter(.hasFlag(IMPLICIT)) map
+          (sym => new ImplicitInfo(sym.name, clazz.linkedModuleOfClass.tpe, sym))
       )
 
       var tree = searchImplicit(context.implicitss, true)

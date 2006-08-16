@@ -52,14 +52,6 @@ abstract class SymbolLoaders {
         if (root.rawInfo == this && root.linkedSym.rawInfo == this)
           throw new TypeError(source + " does not define " + root)
 	ok = true;
-/*
-	  val sourceFile0 = if (sourceFile == null) (root match {
-	    case clazz: ClassSymbol => clazz.sourceFile;
-	    case _ => null;
-	  }) else sourceFile;
-	  setSource(root.linkedModule.moduleClass, sourceFile0);
-	  setSource(root.linkedClass,  sourceFile0);
-*/
       } catch {
         case ex: IOException =>
           ok = false;
@@ -124,8 +116,8 @@ abstract class SymbolLoaders {
           module.moduleClass.sourceFile = completer.sourceFile
         }
 */
-        assert(clazz.linkedModule == module, module);
-        assert(module.linkedClass == clazz, clazz);
+        assert(clazz.linkedModuleOfClass == module, module);
+        assert(module.linkedClassOfModule == clazz, clazz);
       }
 
       val classes  = new HashMap[String, global.classPath0.Context];

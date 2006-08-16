@@ -243,7 +243,8 @@ trait Contexts requires Analyzer {
         ||
         (!sym.hasFlag(PRIVATE | PROTECTED))
         ||
-        accessWithin(sym.owner) && (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
+        (accessWithin(sym.owner) || accessWithin(sym.owner.linkedClassOfClass)) &&
+        (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
         ||
         (!sym.hasFlag(PRIVATE) &&
          (superAccess ||
