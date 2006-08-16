@@ -349,7 +349,7 @@ trait Types requires SymbolTable {
         val this1 = adaptToNewRunMap(this)
         if (this1 eq this) sym.validTo = period(currentRunId, phaseId(sym.validTo))
         else {
-          //System.out.println("new type of " + sym + "=" + this1 + ", used to be " + this);//debug
+          //System.out.println("new type of " + sym + "=" + this1 + ", used to be " + this);//DEBUG
           sym.setInfo(this1)
         }
       }
@@ -679,7 +679,8 @@ trait Types requires SymbolTable {
             closureCache(j) match {
               case RefinedType(parents, decls) =>
                 assert(decls.isEmpty);
-                closureCache(j) = glb(parents)
+                //Console.println("compute closure of "+this+" => glb("+parents+")")
+                closureCache(j) = glbNoRefinement(parents)
               case _ =>
             }
             j = j + 1
@@ -924,7 +925,7 @@ trait Types requires SymbolTable {
     override val isTrivial: boolean =
       paramTypes.forall(.isTrivial) && resultType.isTrivial;
 
-    assert(paramTypes forall (pt => !pt.symbol.isImplClass));//debug
+    //assert(paramTypes forall (pt => !pt.symbol.isImplClass));//DEBUG
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
 
     override def finalResultType: Type = resultType.finalResultType;
@@ -1118,10 +1119,27 @@ trait Types requires SymbolTable {
     new JavaMethodType(paramTypes, resultType); // don't unique this!
 
   /** A creator for intersection type where intersections of a single type are
-   *  replaced by the type itself. */
+   *  replaced by the type itself, and repeated parent classes are merged. */
   def intersectionType(tps: List[Type], owner: Symbol): Type = tps match {
-    case List(tp) => tp
-    case _ => refinedType(tps, owner)
+    case List(tp) =>
+      tp
+    case _ =>
+       refinedType(tps, owner)
+/*
+      def merge(tps: List[Type]): List[Type] = tps match {
+        case tp :: tps1 =>
+          val tps1a = tps1 filter (.symbol.==(tp.symbol))
+          val tps1b = tps1 filter (.symbol.!=(tp.symbol))
+          mergePrefixAndArgs(tps1a, -1) match {
+            case Some(tp1) => tp1 :: merge(tps1b)
+            case None => throw new MalformedType(
+              "malformed type: "+refinedType(tps, owner)+" has repeated parent class "+
+              tp.symbol+" with incompatible prefixes or type arguments")
+          }
+        case _ => tps
+      }
+      refinedType(merge(tps), owner)
+*/
   }
 
   /** A creator for intersection type where intersections of a single type are
@@ -1482,7 +1500,7 @@ trait Types requires SymbolTable {
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
-          if (settings.debug.value) Console.println("" + phase + " " + phase.flatClasses+sym.owner+sym.name)//debug
+          if (settings.debug.value) Console.println("" + phase + " " + phase.flatClasses+sym.owner+sym.name)
           throw new MalformedType(pre, sym.name.toString())
         }
         rebind
@@ -1794,7 +1812,6 @@ trait Types requires SymbolTable {
   /** Prepend type `tp' to closure `cl' */
   private def addClosure(tp: Type, cl: Array[Type]): Array[Type] = {
     val cl1 = new Array[Type](cl.length + 1);
-    assert(!tp.isInstanceOf[CompoundType], tp);//debug
     cl1(0) = tp;
     System.arraycopy(cl, 0, cl1, 1, cl.length);
     cl1
@@ -1967,7 +1984,6 @@ trait Types requires SymbolTable {
               val symtypes =
                 (List.map2(narrowts, syms)
                    ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType)));
-              if (settings.debug.value) log("common symbols: " + syms + ":" + symtypes);//debug
               if (proto.isTerm)
                 proto.cloneSymbol(lubType.symbol).setInfo(lub(symtypes))
               else if (symtypes.tail forall (symtypes.head =:=))
@@ -2011,8 +2027,11 @@ trait Types requires SymbolTable {
     res
   }
 
+  def glb(ts: List[Type]): Type = glb(ts, !phase.erasedTypes);
+  def glbNoRefinement(ts: List[Type]): Type = glb(ts, false);
+
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
-  def glb(ts: List[Type]): Type = {
+  private def glb(ts: List[Type], computeRefinement: boolean): Type = {
     def glb0(ts0: List[Type]): Type = elimSuper(ts0 map (.deconst)) match {
       case List() => AnyClass.tpe
       case List(t) => t
@@ -2029,8 +2048,7 @@ trait Types requires SymbolTable {
         try {
           val glbOwner = commonOwner(ts);
           val glbBase = intersectionType(ts, glbOwner);
-          if (phase.erasedTypes) glbBase
-          else {
+          if (computeRefinement) {
             val glbType = refinedType(ts, glbOwner);
             val glbThisType = glbType.symbol.thisType;
             def glbsym(proto: Symbol): Symbol = {
@@ -2073,6 +2091,8 @@ trait Types requires SymbolTable {
                   case ex: NoCommonType =>
                 }
             if (glbType.decls.isEmpty) glbBase else glbType
+          } else {
+            glbBase
           }
         } catch {
           case _: MalformedClosure =>
@@ -2109,7 +2129,7 @@ trait Types requires SymbolTable {
     commonOwnerMap.result
   }
 
-  /** Compute lub (if variance == 1) or glb (if variance == 0) of given list of types
+  /** Compute lub (if variance == 1) or glb (if variance == -1) of given list of types
    *  `tps'. All types in `tps' are typerefs or singletypes with the same symbol.
    *  Return Some(x) if the computation succeeds with result `x'.
    *  Return None if the computuation fails.
