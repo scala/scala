@@ -60,11 +60,6 @@ object fsc extends Command {
     Section("Non-Standard Options",
       "See the " & Link(Bold("Non-Standard Options"), "scalac.html#non-standard_options") &
       " of the " & MBold("scalac") & " command."
-    ),
-
-    Section("Debug Options",
-      "See the " & Link(Bold("Debug Options"), "scalac.html#debug_options") &
-      " of the " & MBold("scalac") & " command."
     ))
 
   val environment = Section("ENVIRONMENT",
