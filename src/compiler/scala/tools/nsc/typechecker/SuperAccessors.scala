@@ -14,6 +14,8 @@ import nsc.symtab.Flags._;
  *  references to these aliases.
  *  The phase also checks that symbols accessed from super are not abstract,
  *  or are overridden by an abstract override.
+ *  Finally, the phase also mangles the names of class-members which are private
+ *  up to an enclosing non-package class, in order to avoid overriding conflicts.
  */
 abstract class SuperAccessors extends transform.Transform {
   // inherits abstract value `global' and class `Phase' from Transform
@@ -42,6 +44,12 @@ abstract class SuperAccessors extends transform.Transform {
     }
 
     override def transform(tree: Tree): Tree = tree match {
+      case ClassDef(_, _, _, _, _) =>
+        for (val sym <- tree.symbol.info.decls.elements) {
+          if (sym.privateWithin.isClass && !sym.privateWithin.isModuleClass)
+            sym.expandName(sym.privateWithin)
+        }
+        super.transform(tree)
       case Template(parents, body) =>
 	val ownAccDefs = new ListBuffer[Tree];
 	accDefs = Pair(currentOwner, ownAccDefs) :: accDefs;
