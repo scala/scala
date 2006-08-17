@@ -1,23 +1,26 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
- * @author
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.transform;
+
+package scala.tools.nsc.transform
 
 /** A sample transform.
  */
 abstract class SampleTransform extends Transform {
   // inherits abstract value `global' and class `Phase' from Transform
 
-  import global._;                  // the global environment
-  import definitions._;             // standard classes and methods
-  import typer.{typed, atOwner};               // methods to type trees
-  import posAssigner.atPos;         // for filling in tree positions
+  import global._                  // the global environment
+  import definitions._             // standard classes and methods
+  import typer.{typed, atOwner}    // methods to type trees
+  import posAssigner.atPos         // for filling in tree positions
 
   /** the following two members override abstract members in Transform */
-  val phaseName: String = "sample-phase";
-  protected def newTransformer(unit: CompilationUnit): Transformer = new SampleTransformer(unit);
+  val phaseName: String = "sample-phase"
+
+  protected def newTransformer(unit: CompilationUnit): Transformer =
+    new SampleTransformer(unit)
 
   class SampleTransformer(unit: CompilationUnit) extends Transformer {
 
