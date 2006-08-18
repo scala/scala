@@ -85,6 +85,7 @@ object Flags {
   final val lateFINAL    = (FINAL: long) << LateShift;
   final val lateMETHOD   = (METHOD: long) << LateShift;
   final val notPRIVATE   = (PRIVATE: long) << AntiShift;
+  final val notDEFERRED  = (DEFERRED: long) << AntiShift;
   final val notPROTECTED = (PROTECTED: long) << AntiShift;
   final val notABSTRACT  = (ABSTRACT: long) << AntiShift;
   final val notOVERRIDE  = (OVERRIDE: long) << AntiShift;

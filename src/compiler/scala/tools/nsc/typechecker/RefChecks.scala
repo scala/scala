@@ -46,30 +46,6 @@ abstract class RefChecks extends InfoTransform {
     } else tp
   }
 
-  // var m$: T = null; or, if class member: local var m$: T = _;
-  def newModuleVarDef(accessor: Symbol) = {
-    val mvar = accessor.owner.newVariable(accessor.pos, nme.moduleVarName(accessor.name))
-      .setInfo(accessor.tpe.finalResultType)
-      .setFlag(MODULEVAR);
-    if (mvar.owner.isClass) {
-      mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
-      mvar.owner.info.decls.enter(mvar);
-    }
-    ValDef(mvar, if (mvar.owner.isClass) EmptyTree else Literal(Constant(null)))
-  }
-
-  // def m: T = { if (m$ == null) m$ = new m$class; m$ }
-  def newModuleAccessDef(accessor: Symbol, mvar: Symbol) =
-    DefDef(accessor, vparamss =>
-      gen.mkCached(mvar,
-        New(TypeTree(mvar.tpe),
-            List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
-                 yield This(accessor.owner.enclClass)))))
-
-  // def m: T;
-  def newModuleAccessDcl(accessor: Symbol) =
-    DefDef(accessor setFlag lateDEFERRED, vparamss => EmptyTree);
-
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
@@ -458,15 +434,15 @@ abstract class RefChecks extends InfoTransform {
           val vdef =
             localTyper.typed {
               atPos(tree.pos) {
-                newModuleVarDef(sym)
+                gen.mkModuleVarDef(sym)
               }
             }
 
           val ddef =
 	    atPhase(phase.next) {
 	      localTyper.typed {
-                if (sym.owner.isTrait) newModuleAccessDcl(sym)
-                else newModuleAccessDef(sym, vdef.symbol)
+                if (sym.owner.isTrait) gen.mkModuleAccessDcl(sym)
+                else gen.mkModuleAccessDef(sym, vdef.symbol)
               }
             }
 

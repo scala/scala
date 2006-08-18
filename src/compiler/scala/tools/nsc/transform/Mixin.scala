@@ -90,11 +90,6 @@ abstract class Mixin extends InfoTransform {
             var setter = member.setter(clazz)
             if (setter == NoSymbol) setter = addMember(clazz, newSetter(member))
           }
-/*
-        } else if ((member hasFlag BRIDGE) && !(member hasFlag PRIVATE)) {
-          member.expandName(clazz);
-          addMember(clazz, member.cloneSymbol(clazz) resetFlag FINAL);
-*/
         }
       }
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
@@ -125,31 +120,6 @@ abstract class Mixin extends InfoTransform {
                 member1.asInstanceOf[TermSymbol] setAlias member;
               }
             }
-/*
-            //System.out.println("adding forwarded method " + member + " " + mmap(member) + member.locationString + " to " + clazz + " " + (clazz.info.member(member.name).alternatives));//DEBUG
-            if (isForwarded(member) && !isStatic(member)) {
-              if (clazz.info.findMember(member.name, 0, 0).alternatives contains mmap(member)) {
-                val mmember = member.overriddenSymbol(mixinClass.toInterface)
-                if (!mmember.hasFlag(lateDEFERRED))
-                  Console.println("SURPRISE0: "+member+" "+mmember+mmember.locationString+" is not late deferred")
-                if (mmember.overridingSymbol(clazz) != NoSymbol)
-                  Console.println("SURPRISE1: "+member+" "+mmember+mmember.locationString+" is overridden by class")
-                if (!atPhase(phase.next)(clazz.info).findMember(member.name, 0, lateDEFERRED).alternatives.contains(mmember))
-                  Console.println("SURPRISE2: "+member+" "+mmember+mmember.locationString+" is not among late deferred members")
-                val member1 = addMember(
-                  clazz,
-                  member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED));
-                member1.asInstanceOf[TermSymbol] setAlias member;
-              } else {
-                val mmember = member.overriddenSymbol(mixinClass.toInterface)
-                if (!mmember.hasFlag(lateDEFERRED))
-                  Console.println("SURPRISE3: "+member+" "+mmember+mmember.locationString+" is not late deferred")
-                if (mmember.overridingSymbol(clazz) == NoSymbol)
-                  if (atPhase(phase.next)(clazz.info).findMember(member.name, 0, lateDEFERRED).alternatives.contains(mmember))
-                    Console.println("SURPRISE4: "+member+" "+mmember+mmember.locationString+" is mixed in but violates conditions")
-              }
-            }
-*/
           }
         } else if (mixinClass.hasFlag(lateINTERFACE)) {
           addLateInterfaceMembers(mixinClass)
@@ -289,16 +259,14 @@ abstract class Mixin extends InfoTransform {
 
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
       val newDefs = new ListBuffer[Tree]
-      def addDef(pos: int, tree: Tree): unit = {
+      def attributedDef(pos: int, tree: Tree): Tree = {
         if (settings.debug.value) System.out.println("add new def to " + clazz + ": " + tree);
-        newDefs += localTyper.typed {
-          atPos(pos) {
-            tree
-          }
-        }
+        localTyper.typed { atPos(pos) { tree } }
       }
       def position(sym: Symbol) =
         if (sym.pos == Position.NOPOS) clazz.pos else sym.pos
+      def addDef(pos: int, tree: Tree): unit =
+        newDefs += attributedDef(pos, tree)
       def addDefDef(sym: Symbol, rhs: List[Symbol] => Tree): unit =
         addDef(position(sym), DefDef(sym, vparamss => rhs(vparamss.head)))
       def add(stats: List[Tree], newDefs: List[Tree]) = {
@@ -327,6 +295,23 @@ abstract class Mixin extends InfoTransform {
         case _ =>
           stat
       }
+      def implementPrivateObject(stat: Tree): List[Tree] = {
+        val sym = stat.symbol
+        stat match {
+          case _: DefDef if (sym.isModule && sym.hasFlag(PRIVATE)) =>
+            val vdef = attributedDef(position(sym), gen.mkModuleVarDef(sym))
+            val adef = attributedDef(
+              position(sym),
+              DefDef(sym, vparamss =>
+                gen.mkCached(
+                  vdef.symbol,
+                  New(TypeTree(vdef.symbol.tpe), vparamss map (.map(Ident))))))
+            sym resetFlag lateDEFERRED
+            List(vdef, adef)
+          case _ =>
+            List(stat)
+        }
+      }
       for (val sym <- clazz.info.decls.toList) {
         if (sym hasFlag MIXEDIN) {
           if (clazz hasFlag lateINTERFACE) {
@@ -340,9 +325,9 @@ abstract class Mixin extends InfoTransform {
                 }
                 if (sym.isSetter) Assign(accessedRef, Ident(vparams.head)) else accessedRef})
             } else if (sym.isModule && !(sym hasFlag LIFTED)) {
-              val vdef = refchecks.newModuleVarDef(sym);
+              val vdef = gen.mkModuleVarDef(sym);
               addDef(position(sym), vdef)
-              addDef(position(sym), refchecks.newModuleAccessDef(sym, vdef.symbol))
+              addDef(position(sym), gen.mkModuleAccessDef(sym, vdef.symbol))
             } else if (!sym.isMethod) {
               addDef(position(sym), ValDef(sym))
             } else if (sym hasFlag SUPERACCESSOR) {
@@ -353,10 +338,11 @@ abstract class Mixin extends InfoTransform {
                 Apply(staticRef(sym.alias), gen.mkAttributedThis(clazz) :: (vparams map Ident)))
             }
           }
-        }
       }
-      val stats1 = add(stats, newDefs.toList)
-      if (clazz.isTrait) stats1 else stats1 map completeSuperAccessor;
+      var stats1 = add(stats, newDefs.toList)
+      if (!clazz.isTrait) stats1 = stats1 map completeSuperAccessor
+      if (clazz.isImplClass) stats1 = stats1 flatMap implementPrivateObject
+      stats1
     }
 
     private def postTransform(tree: Tree): Tree = {

@@ -171,6 +171,30 @@ abstract class TreeGen {
     )
   }
 
+  // var m$: T = null; or, if class member: local var m$: T = _;
+  def mkModuleVarDef(accessor: Symbol) = {
+    val mvar = accessor.owner.newVariable(accessor.pos, nme.moduleVarName(accessor.name))
+      .setInfo(accessor.tpe.finalResultType)
+      .setFlag(MODULEVAR);
+    if (mvar.owner.isClass) {
+      mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
+      mvar.owner.info.decls.enter(mvar);
+    }
+    ValDef(mvar, if (mvar.owner.isClass) EmptyTree else Literal(Constant(null)))
+  }
+
+  // def m: T = { if (m$ == null) m$ = new m$class; m$ }
+  def mkModuleAccessDef(accessor: Symbol, mvar: Symbol) =
+    DefDef(accessor, vparamss =>
+      mkCached(mvar,
+        New(TypeTree(mvar.tpe),
+            List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
+                 yield This(accessor.owner.enclClass)))))
+
+  // def m: T;
+  def mkModuleAccessDcl(accessor: Symbol) =
+    DefDef(accessor setFlag lateDEFERRED, vparamss => EmptyTree)
+
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
 }
