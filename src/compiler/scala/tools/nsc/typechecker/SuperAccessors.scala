@@ -45,9 +45,13 @@ abstract class SuperAccessors extends transform.Transform {
 
     override def transform(tree: Tree): Tree = tree match {
       case ClassDef(_, _, _, _, _) =>
-        for (val sym <- tree.symbol.info.decls.elements) {
-          if (sym.privateWithin.isClass && !sym.privateWithin.isModuleClass)
+        val decls = tree.symbol.info.decls
+        for (val sym <- decls.toList) {
+          if (sym.privateWithin.isClass && !sym.privateWithin.isModuleClass) {
+            decls.unlink(sym)
             sym.expandName(sym.privateWithin)
+            decls.enter(sym)
+          }
         }
         super.transform(tree)
       case Template(parents, body) =>

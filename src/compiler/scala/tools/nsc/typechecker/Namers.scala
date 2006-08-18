@@ -42,9 +42,9 @@ trait Namers requires Analyzer {
 
     val typer = newTyper(context);
 
-    def setPrivateWithin(sym: Symbol, mods: Modifiers): Symbol = {
+    def setPrivateWithin(tree: Tree, sym: Symbol, mods: Modifiers): Symbol = {
       if (!mods.privateWithin.isEmpty)
-        sym.privateWithin = typer.qualifyingClassContext(EmptyTree, mods.privateWithin).owner;
+        sym.privateWithin = typer.qualifyingClassContext(tree, mods.privateWithin).owner;
       sym
     }
 
@@ -232,15 +232,15 @@ trait Namers requires Analyzer {
 	      tree.symbol = enterCaseFactorySymbol(
         		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
         	          .setInfo(innerNamer.caseFactoryCompleter(tree));
-                      setPrivateWithin(tree.symbol, mods);
+                      setPrivateWithin(tree, tree.symbol, mods);
             }
 	    tree.symbol = enterClassSymbol(tree.pos, mods.flags, name);
-            setPrivateWithin(tree.symbol, mods);
+            setPrivateWithin(tree, tree.symbol, mods);
 	    finishWith(tparams);
 	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods.flags | MODULE | FINAL, name);
-            setPrivateWithin(tree.symbol, mods);
-            setPrivateWithin(tree.symbol.moduleClass, mods);
+            setPrivateWithin(tree, tree.symbol, mods);
+            setPrivateWithin(tree, tree.symbol.moduleClass, mods);
 	    tree.symbol.moduleClass.setInfo(innerNamer.moduleClassTypeCompleter(tree));
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>
@@ -251,13 +251,13 @@ trait Namers requires Analyzer {
 	      val getter = owner.newMethod(tree.pos, name)
 	        .setFlag(accflags)
                 .setInfo(innerNamer.getterTypeCompleter(tree));
-              setPrivateWithin(getter, mods);
+              setPrivateWithin(tree, getter, mods);
 	      enterInScope(getter);
 	      if ((mods.flags & MUTABLE) != 0) {
 	        val setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
 		  .setFlag(accflags & ~STABLE & ~CASEACCESSOR)
                   .setInfo(innerNamer.setterTypeCompleter(tree));
-                setPrivateWithin(setter, mods);
+                setPrivateWithin(tree, setter, mods);
 	        enterInScope(setter)
 	      }
 	      tree.symbol =
@@ -274,22 +274,22 @@ trait Namers requires Analyzer {
 	  case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
 	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
 	      .setFlag(mods.flags | owner.getFlag(ConstrFlags));
-            setPrivateWithin(tree.symbol, mods);
+            setPrivateWithin(tree, tree.symbol, mods);
 	    finishWith(tparams);
 	  case DefDef(mods, name, tparams, _, _, _) =>
 	    tree.symbol = enterInScope(owner.newMethod(tree.pos, name))
               .setFlag(mods.flags);
-            setPrivateWithin(tree.symbol, mods);
+            setPrivateWithin(tree, tree.symbol, mods);
 	    finishWith(tparams);
 	  case AbsTypeDef(mods, name, _, _) =>
 	    tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name))
               .setFlag(mods.flags);
-            setPrivateWithin(tree.symbol, mods);
+            setPrivateWithin(tree, tree.symbol, mods);
 	    finish
 	  case AliasTypeDef(mods, name, tparams, _) =>
 	    tree.symbol = enterInScope(owner.newAliasType(tree.pos, name))
               .setFlag(mods.flags);
-            setPrivateWithin(tree.symbol, mods);
+            setPrivateWithin(tree, tree.symbol, mods);
 	    finishWith(tparams)
 	  case DocDef(_, defn) =>
 	    enterSym(defn)
@@ -365,7 +365,7 @@ trait Namers requires Analyzer {
 	param.symbol = owner.newValueParameter(param.pos, param.name)
 	  .setInfo(typeCompleter(param))
           .setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT));
-        setPrivateWithin(param.symbol, param.mods);
+        setPrivateWithin(param, param.symbol, param.mods);
         context.scope enter param.symbol;
         param.symbol
       }

@@ -701,6 +701,7 @@ trait Symbols requires SymbolTable {
           setter(owner).expandName(base)
         }
         name = base.expandedName(name)
+        if (isType) name = name.toTypeName
       }
 
     def expandedName(name: Name): Name =

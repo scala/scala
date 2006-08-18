@@ -1021,6 +1021,7 @@ trait Types requires SymbolTable {
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner;
     if (owner.isClass && owner != pre.symbol && !sym.isFinal && !sym.isClass) {
+      //Console.println("rebind "+pre+" "+sym)//DEBUG
       val rebind = pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable);
       if (rebind == NoSymbol) sym else rebind
     } else sym
