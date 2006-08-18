@@ -47,7 +47,8 @@ abstract class SuperAccessors extends transform.Transform {
       case ClassDef(_, _, _, _, _) =>
         val decls = tree.symbol.info.decls
         for (val sym <- decls.toList) {
-          if (sym.privateWithin.isClass && !sym.privateWithin.isModuleClass) {
+          if (sym.privateWithin.isClass && !sym.privateWithin.isModuleClass &&
+              !sym.hasFlag(EXPANDEDNAME)) {
             decls.unlink(sym)
             sym.expandName(sym.privateWithin)
             decls.enter(sym)
