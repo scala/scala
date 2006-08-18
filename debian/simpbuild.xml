@@ -31,8 +31,13 @@
 
 
   <!-- Location of pre-compiled libraries  -->
+  <!--
   <property name="starr.lib.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="starr.comp.jar" value="${lib.dir}/scala-compiler.jar"/>
+  -->
+  <property name="scala.home" value="${user.home}/sbaz"/>
+  <property name="starr.lib.jar" value="${scala.home}/lib/scala-library.jar"/>
+  <property name="starr.comp.jar" value="${scala.home}/lib/scala-compiler.jar"/>
   <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
   <property name="ant.jar" value="/usr/share/java/ant.jar"/>
 
@@ -367,6 +372,7 @@
     <emit command="scalac"/>
     <emit command="scaladoc"/>
     <emit command="scalap"/>
+    <emit command="fsc"/>
     <copy todir="${tooldocs.dir}">
       <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
         <include name="**/*.html"/>
