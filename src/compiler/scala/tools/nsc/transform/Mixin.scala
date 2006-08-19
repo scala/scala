@@ -338,6 +338,7 @@ abstract class Mixin extends InfoTransform {
                 Apply(staticRef(sym.alias), gen.mkAttributedThis(clazz) :: (vparams map Ident)))
             }
           }
+        }
       }
       var stats1 = add(stats, newDefs.toList)
       if (!clazz.isTrait) stats1 = stats1 map completeSuperAccessor
