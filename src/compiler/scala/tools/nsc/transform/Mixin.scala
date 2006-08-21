@@ -298,14 +298,18 @@ abstract class Mixin extends InfoTransform {
       def implementPrivateObject(stat: Tree): List[Tree] = {
         val sym = stat.symbol
         stat match {
-          case _: DefDef if (sym.isModule && sym.hasFlag(PRIVATE)) =>
+          case _: DefDef if (sym.isModule && sym.owner.isClass && sym.hasFlag(PRIVATE)) =>
+            Console.println("implementing "+sym+sym.locationString)//debug
             val vdef = attributedDef(position(sym), gen.mkModuleVarDef(sym))
             val adef = attributedDef(
               position(sym),
-              DefDef(sym, vparamss =>
+              DefDef(sym, { vparamss =>
+                val args = vparamss.head.map(Ident).take(
+                  vdef.symbol.primaryConstructor.info.paramTypes.length)
                 gen.mkCached(
                   vdef.symbol,
-                  New(TypeTree(vdef.symbol.tpe), vparamss map (.map(Ident))))))
+                  New(TypeTree(vdef.symbol.tpe), List(args)))
+               }))
             sym resetFlag lateDEFERRED
             List(vdef, adef)
           case _ =>
