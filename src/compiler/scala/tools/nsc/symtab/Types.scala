@@ -1327,7 +1327,11 @@ trait Types requires SymbolTable {
           def toPrefix(pre: Type, clazz: Symbol): Type =
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
             else if ((sym isNonBottomSubClass clazz) &&
-                     (pre.widen.symbol isNonBottomSubClass sym)) pre
+                     (pre.widen.symbol isNonBottomSubClass sym))
+              pre match {
+                case SuperType(thistp, _) => thistp
+                case _ => pre
+              }
             else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
