@@ -145,7 +145,7 @@ trait Typers requires Analyzer {
                 ex.getMessage()
             })
         case _ =>
-          context.error(pos, ex.getMessage())
+          context.error(pos, ex)
       }
     }
 
@@ -1786,8 +1786,10 @@ trait Typers requires Analyzer {
       new Typer(context.make(tree, owner))
 
     /** Types expression or definition `tree' */
-    def typed(tree: Tree): Tree =
-      typed(tree, EXPRmode, WildcardType)
+    def typed(tree: Tree): Tree = {
+      val ret = typed(tree, EXPRmode, WildcardType)
+      ret;
+    }
 
     /** Types expression `tree' with given prototype `pt' */
     def typed(tree: Tree, pt: Type): Tree =

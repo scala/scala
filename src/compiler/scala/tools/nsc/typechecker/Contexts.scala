@@ -178,6 +178,14 @@ trait Contexts requires Analyzer {
       c
     }
 
+    def error(pos : Int, er : Error): Unit = {
+      val msg = er.getMessage();
+      if (reportGeneralErrors)
+        unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
+      else
+        throw er;
+    }
+
     def error(pos: int, msg: String): unit =
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
