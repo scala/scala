@@ -984,8 +984,15 @@ trait Typers requires Analyzer {
 
     def typedRefinement(stats: List[Tree]): List[Tree] = {
       namer.enterSyms(stats)
-      for (val stat <- stats) stat.symbol setFlag OVERRIDE
-      typedStats(stats, NoSymbol)
+      val stats1 = typedStats(stats, NoSymbol)
+      for (val stat <- stats1; stat.isDef) {
+        val member = stat.symbol
+        member setFlag OVERRIDE
+        if (context.owner.info.baseClasses.tail forall
+            (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol))
+          error(member.pos, member.toString+" does not refine a member of its base type")
+      }
+      stats1
     }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
@@ -1002,18 +1009,7 @@ trait Typers requires Analyzer {
             case _ =>
               val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
                                else newTyper(context.make(stat, exprOwner))
-              val stat1 = localTyper.typed(stat)
-              val member = stat1.symbol
-              // Check that every defined member with an `override' modifier
-              // overrides some other member
-              if (stat1.isDef &&
-                  (member hasFlag(OVERRIDE | ABSOVERRIDE)) &&
-	          (context.owner.info.baseClasses.tail forall
-                   (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol))) {
-                error(member.pos, member.toString+" overrides nothing")
-	        member resetFlag OVERRIDE
-              }
-              stat1
+              localTyper.typed(stat)
           }
         }
       val scope = if (inBlock) context.scope else context.owner.info.decls;
