@@ -74,7 +74,7 @@ class Settings(error: String => unit) {
   private val documenttitleDefault = "Scala 2"
 
   val doc           = BooleanSetting("-doc", "Generate documentation");
-  val debuginfo     = new DebugSetting("-g", "Generate debugging info", List("none", "source", "line", "vars", "notc"), "line", "vars")
+  val debuginfo     = new DebugSetting("-g", "Generate debugging info", List("none", "source", "line", "vars", "notc"), "vars", "vars")
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing")
