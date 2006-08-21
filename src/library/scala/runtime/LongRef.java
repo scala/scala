@@ -15,4 +15,5 @@ package scala.runtime;
 public class LongRef implements java.io.Serializable {
     public long elem;
     public LongRef(long elem) { this.elem = elem; }
+    public String toString() { return Long.toString(elem); }
 }
